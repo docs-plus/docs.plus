@@ -30,7 +30,7 @@ var padManager = require("../db/PadManager")
   , importHtml = require("../utils/ImportHtml")
   , importEtherpad = require("../utils/ImportEtherpad")
   , log4js = require("log4js")
-  , hooks = require("ep_etherpad-lite/static/js/pluginfw/hooks.js")
+  , hooks = require("app/src/static/js/pluginfw/hooks.js")
   , util = require("util");
 
 let fsp_exists = util.promisify(fs.exists);

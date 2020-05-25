@@ -15,8 +15,8 @@
  */
 
 var log4js = require('log4js');
-var Changeset = require("ep_etherpad-lite/static/js/Changeset");
-var contentcollector = require("ep_etherpad-lite/static/js/contentcollector");
+var Changeset = require("app/src/static/js/Changeset");
+var contentcollector = require("app/src/static/js/contentcollector");
 var cheerio = require("cheerio");
 
 exports.setPadHTML = function(pad, html)

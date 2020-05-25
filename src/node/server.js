@@ -55,8 +55,8 @@ var npm = require("npm/lib/npm.js");
 npm.load({}, function() {
   var settings = require('./utils/Settings');
   var db = require('./db/DB');
-  var plugins = require("ep_etherpad-lite/static/js/pluginfw/plugins");
-  var hooks = require("ep_etherpad-lite/static/js/pluginfw/hooks");
+  var plugins = require("app/src/static/js/pluginfw/plugins");
+  var hooks = require("app/src/static/js/pluginfw/hooks");
   hooks.plugins = plugins;
 
   db.init()

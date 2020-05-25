@@ -1,6 +1,6 @@
 var os = require("os");
 var db = require('../../db/DB');
-var stats = require('ep_etherpad-lite/node/stats')
+var stats = require('app/src/node/stats')
 
 
 exports.onShutdown = false;

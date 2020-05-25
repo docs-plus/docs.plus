@@ -25,7 +25,7 @@ var exportEtherpad = require("../utils/ExportEtherpad");
 var fs = require("fs");
 var settings = require('../utils/Settings');
 var os = require('os');
-var hooks = require("ep_etherpad-lite/static/js/pluginfw/hooks");
+var hooks = require("app/src/static/js/pluginfw/hooks");
 var TidyHtml = require('../utils/TidyHtml');
 const util = require("util");
 

@@ -1,5 +1,5 @@
 var $, jQuery;
-$ = jQuery = require("ep_etherpad-lite/static/js/rjquery").$;
+$ = jQuery = require("app/src/static/js/rjquery").$;
 var _ = require("underscore");
 
 var pluginUtils = require('./shared');
@@ -59,7 +59,7 @@ function adoptPluginsFromAncestorsOf(frame) {
     // Silence (this can only be a XDomain issue).
   }
   if (parentRequire) {
-    var ancestorPlugins = parentRequire("ep_etherpad-lite/static/js/pluginfw/client_plugins");
+    var ancestorPlugins = parentRequire("app/src/static/js/pluginfw/client_plugins");
     exports.adoptPlugins(ancestorPlugins);
   } else {
     throw new Error("Parent plugins could not be found.")

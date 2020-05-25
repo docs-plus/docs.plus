@@ -1,6 +1,6 @@
-var eejs = require('ep_etherpad-lite/node/eejs');
-var settings = require('ep_etherpad-lite/node/utils/Settings');
-var hooks = require("ep_etherpad-lite/static/js/pluginfw/hooks");
+var eejs = require('app/src/node/eejs');
+var settings = require('app/src/node/utils/Settings');
+var hooks = require("app/src/static/js/pluginfw/hooks");
 var fs = require('fs');
 
 exports.expressCreateServer = function (hook_name, args, cb) {
@@ -12,7 +12,7 @@ exports.expressCreateServer = function (hook_name, args, cb) {
       errors: []
     };
 
-    res.send( eejs.require("ep_etherpad-lite/templates/admin/settings.html", render_args) );
+    res.send( eejs.require("app/src/templates/admin/settings.html", render_args) );
 
   });
 }

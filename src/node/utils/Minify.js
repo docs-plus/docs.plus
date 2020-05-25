@@ -27,7 +27,7 @@ var StringDecoder = require('string_decoder').StringDecoder;
 var CleanCSS = require('clean-css');
 var uglifyJS = require("uglify-js");
 var path = require('path');
-var plugins = require("ep_etherpad-lite/static/js/pluginfw/plugins");
+var plugins = require("app/src/static/js/pluginfw/plugins");
 var RequireKernel = require('etherpad-require-kernel');
 var urlutil = require('url');
 
@@ -45,7 +45,7 @@ var LIBRARY_WHITELIST = [
     ];
 
 // Rewrite tar to include modules with no extensions and proper rooted paths.
-var LIBRARY_PREFIX = 'ep_etherpad-lite/static/js';
+var LIBRARY_PREFIX = 'app/src/static/js';
 exports.tar = {};
 function prefixLocalLibraryPath(path) {
   if (path.charAt(0) == '$') {

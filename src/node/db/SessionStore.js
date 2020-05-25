@@ -7,9 +7,9 @@
  *      express-session, which can't actually use promises anyway.
  */
 
-var Store = require('ep_etherpad-lite/node_modules/express-session').Store,
-  db = require('ep_etherpad-lite/node/db/DB').db,
-  log4js = require('ep_etherpad-lite/node_modules/log4js'),
+var Store = require('app/src/node_modules/express-session').Store,
+  db = require('app/src/node/db/DB').db,
+  log4js = require('app/src/node_modules/log4js'),
   messageLogger = log4js.getLogger("SessionStore");
 
 var SessionStore = module.exports = function SessionStore() {};

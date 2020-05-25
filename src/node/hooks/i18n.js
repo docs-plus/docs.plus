@@ -3,7 +3,7 @@ var languages = require('languages4translatewiki')
   , path = require('path')
   , _ = require('underscore')
   , npm = require('npm')
-  , plugins = require('ep_etherpad-lite/static/js/pluginfw/plugins.js').plugins
+  , plugins = require('app/src/static/js/pluginfw/plugins.js').plugins
   , semver = require('semver')
   , existsSync = require('../utils/path_exists')
 ;
@@ -38,7 +38,7 @@ function getAllLocales() {
   }
 
   //add core supported languages first
-  extractLangs(npm.root+"/ep_etherpad-lite/locales");
+  extractLangs(npm.root+"/app/src/locales");
 
   //add plugins languages (if any)
   for(var pluginName in plugins) extractLangs(path.join(npm.root, pluginName, 'locales'));

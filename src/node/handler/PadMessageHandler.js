@@ -20,19 +20,19 @@
 
 
 var padManager = require("../db/PadManager");
-var Changeset = require("ep_etherpad-lite/static/js/Changeset");
-var AttributePool = require("ep_etherpad-lite/static/js/AttributePool");
-var AttributeManager = require("ep_etherpad-lite/static/js/AttributeManager");
+var Changeset = require("app/src/static/js/Changeset");
+var AttributePool = require("app/src/static/js/AttributePool");
+var AttributeManager = require("app/src/static/js/AttributeManager");
 var authorManager = require("../db/AuthorManager");
 var readOnlyManager = require("../db/ReadOnlyManager");
 var settings = require('../utils/Settings');
 var securityManager = require("../db/SecurityManager");
-var plugins = require("ep_etherpad-lite/static/js/pluginfw/plugins.js");
+var plugins = require("app/src/static/js/pluginfw/plugins.js");
 var log4js = require('log4js');
 var messageLogger = log4js.getLogger("message");
 var accessLogger = log4js.getLogger("access");
 var _ = require('underscore');
-var hooks = require("ep_etherpad-lite/static/js/pluginfw/hooks.js");
+var hooks = require("app/src/static/js/pluginfw/hooks.js");
 var channels = require("channels");
 var stats = require('../stats');
 var remoteAddress = require("../utils/RemoteAddress").remoteAddress;

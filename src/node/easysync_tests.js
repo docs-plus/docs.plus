@@ -21,8 +21,8 @@
  */
 
 
-var Changeset = require("ep_etherpad-lite/static/js/Changeset");
-var AttributePool = require("ep_etherpad-lite/static/js/AttributePool");
+var Changeset = require("app/src/static/js/Changeset");
+var AttributePool = require("app/src/static/js/AttributePool");
 
 function random() {
   this.nextInt = function (maxValue) {

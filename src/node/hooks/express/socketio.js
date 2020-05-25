@@ -1,8 +1,8 @@
 var settings = require('../../utils/Settings');
 var socketio = require('socket.io');
 var socketIORouter = require("../../handler/SocketIORouter");
-var hooks = require("ep_etherpad-lite/static/js/pluginfw/hooks");
-var webaccess = require("ep_etherpad-lite/node/hooks/express/webaccess");
+var hooks = require("app/src/static/js/pluginfw/hooks");
+var webaccess = require("app/src/node/hooks/express/webaccess");
 
 var padMessageHandler = require("../../handler/PadMessageHandler");
 

@@ -1,25 +1,25 @@
 var path = require('path');
-var eejs = require('ep_etherpad-lite/node/eejs');
-var toolbar = require("ep_etherpad-lite/node/utils/toolbar");
-var hooks = require('ep_etherpad-lite/static/js/pluginfw/hooks');
+var eejs = require('app/src/node/eejs');
+var toolbar = require("app/src/node/utils/toolbar");
+var hooks = require('app/src/static/js/pluginfw/hooks');
 var settings = require('../../utils/Settings');
 
 exports.expressCreateServer = function (hook_name, args, cb) {
   // expose current stats
   args.app.get('/stats', function(req, res) {
-    res.json(require('ep_etherpad-lite/node/stats').toJSON())
+    res.json(require('app/src/node/stats').toJSON())
   })
 
   //serve index.html under /
   args.app.get('/', function(req, res)
   {
-    res.send(eejs.require("ep_etherpad-lite/templates/index.html"));
+    res.send(eejs.require("app/src/templates/index.html"));
   });
 
   //serve javascript.html
   args.app.get('/javascript', function(req, res)
   {
-    res.send(eejs.require("ep_etherpad-lite/templates/javascript.html"));
+    res.send(eejs.require("app/src/templates/javascript.html"));
   });
 
 
@@ -49,7 +49,7 @@ exports.expressCreateServer = function (hook_name, args, cb) {
       isReadOnly: isReadOnly
     });
 
-    res.send(eejs.require("ep_etherpad-lite/templates/pad.html", {
+    res.send(eejs.require("app/src/templates/pad.html", {
       req: req,
       toolbar: toolbar,
       isReadOnly: isReadOnly
@@ -63,7 +63,7 @@ exports.expressCreateServer = function (hook_name, args, cb) {
       toolbar: toolbar
     });
 
-    res.send(eejs.require("ep_etherpad-lite/templates/timeslider.html", {
+    res.send(eejs.require("app/src/templates/timeslider.html", {
       req: req,
       toolbar: toolbar
     }));

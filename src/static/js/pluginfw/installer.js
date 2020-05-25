@@ -1,5 +1,5 @@
-var plugins = require("ep_etherpad-lite/static/js/pluginfw/plugins");
-var hooks = require("ep_etherpad-lite/static/js/pluginfw/hooks");
+var plugins = require("app/src/static/js/pluginfw/plugins");
+var hooks = require("app/src/static/js/pluginfw/hooks");
 var npm = require("npm");
 var request = require("request");
 

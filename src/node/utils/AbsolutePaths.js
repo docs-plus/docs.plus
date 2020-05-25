@@ -95,9 +95,9 @@ exports.findEtherpadRoot = function() {
      * Windows, we may still be running from a prebuilt package, whose directory
      * structure is different:
      *
-     *   <BASE_DIR>\node_modules\ep_etherpad-lite
+     *   <BASE_DIR>\node_modules\app/src
      */
-    maybeEtherpadRoot = popIfEndsWith(splitFoundRoot, ['node_modules', 'ep_etherpad-lite']);
+    maybeEtherpadRoot = popIfEndsWith(splitFoundRoot, ['node_modules', 'app/src']);
   }
 
   if (maybeEtherpadRoot === false) {

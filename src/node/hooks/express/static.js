@@ -1,5 +1,5 @@
 var minify = require('../../utils/Minify');
-var plugins = require("ep_etherpad-lite/static/js/pluginfw/plugins");
+var plugins = require("app/src/static/js/pluginfw/plugins");
 var CachingMiddleware = require('../../utils/caching_middleware');
 var settings = require("../../utils/Settings");
 var Yajsml = require('etherpad-yajsml');

@@ -20,7 +20,7 @@
 
 var db = require("./DB");
 var customError = require("../utils/customError");
-var randomString = require('ep_etherpad-lite/static/js/pad_utils').randomString;
+var randomString = require('app/src/static/js/pad_utils').randomString;
 
 exports.getColorPalette = function() {
   return [
