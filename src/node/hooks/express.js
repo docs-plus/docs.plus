@@ -46,8 +46,6 @@ exports.restartServer = function () {
 
   var app = express(); // New syntax for express v3
 
-  app.get('/health', (req, res) => res.json(true))
-
   if (settings.ssl) {
     console.log("SSL -- enabled");
     console.log(`SSL -- server key file: ${settings.ssl.key}`);
@@ -113,6 +111,8 @@ exports.restartServer = function () {
 
   hooks.callAll("expressConfigure", {"app": app});
   hooks.callAll("expressCreateServer", {"app": app, "server": server});
+
+  app.get('/health', (req, res) => res.json(true))
 
   server.listen(settings.port, settings.ip);
 }
