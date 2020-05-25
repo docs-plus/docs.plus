@@ -46,6 +46,8 @@ exports.restartServer = function () {
 
   var app = express(); // New syntax for express v3
 
+  app.get('/health', (req, res) => res.json(true))
+
   if (settings.ssl) {
     console.log("SSL -- enabled");
     console.log(`SSL -- server key file: ${settings.ssl.key}`);
