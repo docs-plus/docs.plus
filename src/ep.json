@@ -1,29 +1,29 @@
 {
   "parts": [
     { "name": "express", "hooks": {
-      "createServer": "app/src/node/hooks/express:createServer",
-      "restartServer": "app/src/node/hooks/express:restartServer"
+      "createServer": "/app/src/node/hooks/express:createServer",
+      "restartServer": "/app/src/node/hooks/express:restartServer"
       } },
-    { "name": "static", "hooks": { "expressCreateServer": "app/src/node/hooks/express/static:expressCreateServer" } },
-    { "name": "i18n", "hooks": { "expressCreateServer": "app/src/node/hooks/i18n:expressCreateServer" } },
-    { "name": "specialpages", "hooks": { "expressCreateServer": "app/src/node/hooks/express/specialpages:expressCreateServer" } },
-    { "name": "padurlsanitize", "hooks": { "expressCreateServer": "app/src/node/hooks/express/padurlsanitize:expressCreateServer" } },
-    { "name": "padreadonly", "hooks": { "expressCreateServer": "app/src/node/hooks/express/padreadonly:expressCreateServer" } },
-    { "name": "webaccess", "hooks": { "expressConfigure": "app/src/node/hooks/express/webaccess:expressConfigure" } },
-    { "name": "apicalls", "hooks": { "expressCreateServer": "app/src/node/hooks/express/apicalls:expressCreateServer" } },
-    { "name": "importexport", "hooks": { "expressCreateServer": "app/src/node/hooks/express/importexport:expressCreateServer" } },
-    { "name": "errorhandling", "hooks": { "expressCreateServer": "app/src/node/hooks/express/errorhandling:expressCreateServer" } },
-    { "name": "socketio", "hooks": { "expressCreateServer": "app/src/node/hooks/express/socketio:expressCreateServer" } },
-    { "name": "tests", "hooks": { "expressCreateServer": "app/src/node/hooks/express/tests:expressCreateServer" } },
-    { "name": "admin", "hooks": { "expressCreateServer": "app/src/node/hooks/express/admin:expressCreateServer" } },
+    { "name": "static", "hooks": { "expressCreateServer": "/app/src/node/hooks/express/static:expressCreateServer" } },
+    { "name": "i18n", "hooks": { "expressCreateServer": "/app/src/node/hooks/i18n:expressCreateServer" } },
+    { "name": "specialpages", "hooks": { "expressCreateServer": "/app/src/node/hooks/express/specialpages:expressCreateServer" } },
+    { "name": "padurlsanitize", "hooks": { "expressCreateServer": "/app/src/node/hooks/express/padurlsanitize:expressCreateServer" } },
+    { "name": "padreadonly", "hooks": { "expressCreateServer": "/app/src/node/hooks/express/padreadonly:expressCreateServer" } },
+    { "name": "webaccess", "hooks": { "expressConfigure": "/app/src/node/hooks/express/webaccess:expressConfigure" } },
+    { "name": "apicalls", "hooks": { "expressCreateServer": "/app/src/node/hooks/express/apicalls:expressCreateServer" } },
+    { "name": "importexport", "hooks": { "expressCreateServer": "/app/src/node/hooks/express/importexport:expressCreateServer" } },
+    { "name": "errorhandling", "hooks": { "expressCreateServer": "/app/src/node/hooks/express/errorhandling:expressCreateServer" } },
+    { "name": "socketio", "hooks": { "expressCreateServer": "/app/src/node/hooks/express/socketio:expressCreateServer" } },
+    { "name": "tests", "hooks": { "expressCreateServer": "/app/src/node/hooks/express/tests:expressCreateServer" } },
+    { "name": "admin", "hooks": { "expressCreateServer": "/app/src/node/hooks/express/admin:expressCreateServer" } },
     { "name": "adminplugins", "hooks": {
-      "expressCreateServer": "app/src/node/hooks/express/adminplugins:expressCreateServer",
-      "socketio": "app/src/node/hooks/express/adminplugins:socketio" }
+      "expressCreateServer": "/app/src/node/hooks/express/adminplugins:expressCreateServer",
+      "socketio": "/app/src/node/hooks/express/adminplugins:socketio" }
     },
     { "name": "adminsettings", "hooks": {
-      "expressCreateServer": "app/src/node/hooks/express/adminsettings:expressCreateServer",
-      "socketio": "app/src/node/hooks/express/adminsettings:socketio" }
+      "expressCreateServer": "/app/src/node/hooks/express/adminsettings:expressCreateServer",
+      "socketio": "/app/src/node/hooks/express/adminsettings:socketio" }
     },
-    { "name": "openapi", "hooks": { "expressCreateServer": "app/src/node/hooks/express/openapi:expressCreateServer" } }
+    { "name": "openapi", "hooks": { "expressCreateServer": "/app/src/node/hooks/express/openapi:expressCreateServer" } }
   ]
 }

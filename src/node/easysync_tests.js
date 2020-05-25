@@ -21,8 +21,8 @@
  */
 
 
-var Changeset = require("app/src/static/js/Changeset");
-var AttributePool = require("app/src/static/js/AttributePool");
+var Changeset = require("/app/src/static/js/Changeset");
+var AttributePool = require("/app/src/static/js/AttributePool");
 
 function random() {
   this.nextInt = function (maxValue) {

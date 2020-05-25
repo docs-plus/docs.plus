@@ -1,6 +1,6 @@
 <%
-  var settings = require("app/src/node/utils/Settings")
-    , langs = require("app/src/node/hooks/i18n").availableLangs
+  var settings = require("/app/src/node/utils/Settings")
+    , langs = require("/app/src/node/hooks/i18n").availableLangs
 %>
 <!doctype html>
 <html class="<%=settings.skinVariants%>">
@@ -249,8 +249,8 @@
 <script type="text/javascript" src="../../socket.io/socket.io.js?v=<%=settings.randomVersionString%>"></script>
 
 <!-- Include base packages manually (this help with debugging) -->
-<script type="text/javascript" src="../../javascripts/lib/app/src/static/js/timeslider.js?callback=require.define&v=<%=settings.randomVersionString%>"></script>
-<script type="text/javascript" src="../../javascripts/lib/app/src/static/js/ace2_common.js?callback=require.define&v=<%=settings.randomVersionString%>"></script>
+<script type="text/javascript" src="../../javascripts/lib//app/src/static/js/timeslider.js?callback=require.define&v=<%=settings.randomVersionString%>"></script>
+<script type="text/javascript" src="../../javascripts/lib//app/src/static/js/ace2_common.js?callback=require.define&v=<%=settings.randomVersionString%>"></script>
 
 <script type="text/javascript" src="../../static/skins/<%=encodeURI(settings.skinName)%>/timeslider.js?v=<%=settings.randomVersionString%>"></script>
 
@@ -270,25 +270,25 @@
     require.setLibraryURI(baseURL + "javascripts/lib");
     require.setGlobalKeyPath("require");
 
-    $ = jQuery = require('app/src/static/js/rjquery').jQuery; // Expose jQuery #HACK
-    browser = require('app/src/static/js/browser');
+    $ = jQuery = require('/app/src/static/js/rjquery').jQuery; // Expose jQuery #HACK
+    browser = require('/app/src/static/js/browser');
 
-    var plugins = require('app/src/static/js/pluginfw/client_plugins');
-    var socket = require('app/src/static/js/timeslider').socket;
-    BroadcastSlider = require('app/src/static/js/timeslider').BroadcastSlider;
+    var plugins = require('/app/src/static/js/pluginfw/client_plugins');
+    var socket = require('/app/src/static/js/timeslider').socket;
+    BroadcastSlider = require('/app/src/static/js/timeslider').BroadcastSlider;
     plugins.baseURL = baseURL;
 
     plugins.update(function () {
-      var hooks = require('app/src/static/js/pluginfw/hooks');
+      var hooks = require('/app/src/static/js/pluginfw/hooks');
       hooks.plugins = plugins;
 
-      var timeslider = require('app/src/static/js/timeslider')
+      var timeslider = require('/app/src/static/js/timeslider')
       timeslider.baseURL = baseURL;
       timeslider.init();
 
       /* TODO: These globals shouldn't exist. */
-      padeditbar = require('app/src/static/js/pad_editbar').padeditbar;
-      padimpexp = require('app/src/static/js/pad_impexp').padimpexp;
+      padeditbar = require('/app/src/static/js/pad_editbar').padeditbar;
+      padimpexp = require('/app/src/static/js/pad_impexp').padimpexp;
 
       padeditbar.init()
     });

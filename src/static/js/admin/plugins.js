@@ -203,7 +203,7 @@ $(document).ready(function () {
 
     // filter out epl
     installed.list = installed.list.filter(function(plugin) {
-      return plugin.name != 'app/src'
+      return plugin.name != '/app/src'
     })
 
     // remove all installed plugins (leave plugins that are still being installed)

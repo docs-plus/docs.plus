@@ -263,13 +263,13 @@ require.setRootURI("../javascripts/src");\n\
 require.setLibraryURI("../javascripts/lib");\n\
 require.setGlobalKeyPath("require");\n\
 \n\
-var hooks = require("app/src/static/js/pluginfw/hooks");\n\
-var plugins = require("app/src/static/js/pluginfw/client_plugins");\n\
+var hooks = require("/app/src/static/js/pluginfw/hooks");\n\
+var plugins = require("/app/src/static/js/pluginfw/client_plugins");\n\
 hooks.plugins = plugins;\n\
 plugins.adoptPluginsFromAncestorsOf(window);\n\
 \n\
-$ = jQuery = require("app/src/static/js/rjquery").jQuery; // Expose jQuery #HACK\n\
-var Ace2Inner = require("app/src/static/js/ace2_inner");\n\
+$ = jQuery = require("/app/src/static/js/rjquery").jQuery; // Expose jQuery #HACK\n\
+var Ace2Inner = require("/app/src/static/js/ace2_inner");\n\
 \n\
 plugins.ensure(function () {\n\
   Ace2Inner.init();\n\

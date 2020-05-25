@@ -2,9 +2,9 @@ var express = require('express');
 var log4js = require('log4js');
 var httpLogger = log4js.getLogger("http");
 var settings = require('../../utils/Settings');
-var hooks = require('app/src/static/js/pluginfw/hooks');
+var hooks = require('/app/src/static/js/pluginfw/hooks');
 var ueberStore = require('../../db/SessionStore');
-var stats = require('app/src/node/stats');
+var stats = require('/app/src/node/stats');
 var sessionModule = require('express-session');
 var cookieParser = require('cookie-parser');
 

@@ -1,4 +1,4 @@
-var hooks = require("app/src/static/js/pluginfw/hooks");
+var hooks = require("/app/src/static/js/pluginfw/hooks");
 var express = require('express');
 var settings = require('../utils/Settings');
 var fs = require('fs');

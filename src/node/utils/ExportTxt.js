@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-var Changeset = require("app/src/static/js/Changeset");
+var Changeset = require("/app/src/static/js/Changeset");
 var padManager = require("../db/PadManager");
 var _analyzeLine = require('./ExportHelper')._analyzeLine;
 

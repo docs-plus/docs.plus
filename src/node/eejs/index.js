@@ -22,7 +22,7 @@
 var ejs = require("ejs");
 var fs = require("fs");
 var path = require("path");
-var hooks = require("app/src/static/js/pluginfw/hooks.js");
+var hooks = require("/app/src/static/js/pluginfw/hooks.js");
 var resolve = require("resolve");
 
 exports.info = {
