@@ -11,7 +11,7 @@
     "test": "tests"
   },
   "scripts": {
-    "build": "./bin/installDeps.sh",
+    "build": "bash ./bin/installDeps.sh",
     "start": "node ./node_modules/ep_etherpad-lite/node/server.js"
   },
   "repository": {
