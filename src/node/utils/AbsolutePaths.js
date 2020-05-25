@@ -78,7 +78,7 @@ exports.findEtherpadRoot = function() {
   }
 
   const findRoot = require('find-root');
-  const foundRoot = findRoot(__dirname);
+  const foundRoot = findRoot(process.cwd());
   const splitFoundRoot = foundRoot.split(path.sep);
 
   /*
