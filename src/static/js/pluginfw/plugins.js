@@ -30,7 +30,7 @@ exports.formatPlugins = function () {
 exports.formatPluginsWithVersion = function () {
   var plugins = [];
   _.forEach(exports.plugins, function(plugin){
-    if(plugin.package.name !== "/app/src"){
+    if(plugin.package.name !== "ep_etherpad-lite"){
       var pluginStr = plugin.package.name + "@" + plugin.package.version;
       plugins.push(pluginStr);
     }

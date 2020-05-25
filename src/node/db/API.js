@@ -18,7 +18,7 @@
  * limitations under the License.
  */
 
-var Changeset = require("/app/src/static/js/Changeset");
+var Changeset = require("ep_etherpad-lite/static/js/Changeset");
 var customError = require("../utils/customError");
 var padManager = require("./PadManager");
 var padMessageHandler = require("../handler/PadMessageHandler");

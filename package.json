@@ -1,91 +1,23 @@
 {
-  "name": "ep_etherpad-lite",
-  "description": "A free and open source realtime collaborative editor",
-  "homepage": "https://etherpad.org",
-  "keywords": [
-    "etherpad",
-    "realtime",
-    "collaborative",
-    "editor"
-  ],
-  "author": "Etherpad Foundation",
-  "contributors": [
-    {
-      "name": "John McLear"
-    },
-    {
-      "name": "Antonio Muci"
-    },
-    {
-      "name": "Hans Pinckaers"
-    },
-    {
-      "name": "Robin Buse"
-    },
-    {
-      "name": "Marcel Klehr"
-    },
-    {
-      "name": "Peter Martischka"
-    }
-  ],
-  "dependencies": {
-    "async": "0.9.0",
-    "async-stacktrace": "0.0.2",
-    "channels": "0.0.4",
-    "cheerio": "0.22.0",
-    "clean-css": "4.2.3",
-    "cookie-parser": "1.4.4",
-    "ejs": "2.6.1",
-    "etherpad-require-kernel": "1.0.9",
-    "etherpad-yajsml": "0.0.2",
-    "express": "4.17.1",
-    "express-rate-limit": "5.1.1",
-    "express-session": "1.17.0",
-    "find-root": "1.1.0",
-    "formidable": "1.2.1",
-    "graceful-fs": "4.2.2",
-    "http-errors": "1.7.3",
-    "jsonminify": "0.4.1",
-    "languages4translatewiki": "0.1.3",
-    "lodash.clonedeep": "4.5.0",
-    "log4js": "0.6.35",
-    "measured-core": "1.11.2",
-    "nodeify": "1.0.1",
-    "npm": "6.14.4",
-    "openapi-backend": "2.4.1",
-    "request": "2.88.0",
-    "resolve": "1.1.7",
-    "security": "1.0.0",
-    "semver": "5.6.0",
-    "slide": "1.1.6",
-    "socket.io": "2.1.1",
-    "tinycon": "0.0.1",
-    "ueberdb2": "0.4.9",
-    "uglify-js": "3.8.1",
-    "underscore": "1.8.3",
-    "unorm": "1.4.1"
-  },
+  "name": "ether",
+  "version": "1.0.0",
+  "description": "<a href=\"https://hub.docker.com/r/etherpad/etherpad\"><img alt=\"Docker Pulls\" src=\"https://img.shields.io/docker/pulls/etherpad/etherpad\"></a> [![Travis (.org)](https://img.shields.io/travis/ether/etherpad-lite)](https://travis-ci.org/github/ether/etherpad-lite) ![Demo Etherpad Animated Jif](doc/images/etherpad_demo.gif \"Etherpad in action\")",
+  "main": "index.js",
   "bin": {
-    "etherpad-lite": "./node/server.js"
+    "ether": "checkAllPads.js"
   },
-  "devDependencies": {
-    "mocha": "7.1.1",
-    "nyc": "15.0.0",
-    "supertest": "4.0.2",
-    "wd": "1.11.4"
+  "directories": {
+    "doc": "doc",
+    "test": "tests"
   },
-  "engines": {
-    "node": ">=10.13.0",
-    "npm": ">=5.5.1"
+  "scripts": {
+    "build": "./bin/installDeps.sh",
+    "start": "node ./node_modules/ep_etherpad-lite/node/server.js"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ether/etherpad-lite.git"
+    "url": "ultima@build.onultima.com:joshbalfour/ether.git"
   },
-  "scripts": {
-    "start": "cd src && DB_TYPE=postgres DB_HOST=$PGHOST DB_PORT=$PGPORT DB_USER=$PGUSER DB_PASS=$PGPASSWORD DB_NAME=$PGDATABASE node ./node/server.js"
-  },
-  "version": "1.8.4",
-  "license": "Apache-2.0"
+  "author": "",
+  "license": "ISC"
 }

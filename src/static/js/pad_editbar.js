@@ -25,8 +25,8 @@ var hooks = require('./pluginfw/hooks');
 var padutils = require('./pad_utils').padutils;
 var padeditor = require('./pad_editor').padeditor;
 var padsavedrevs = require('./pad_savedrevs');
-var _ = require('/app/src/static/js/underscore');
-require('/app/src/static/js/vendors/nice-select');
+var _ = require('ep_etherpad-lite/static/js/underscore');
+require('ep_etherpad-lite/static/js/vendors/nice-select');
 
 var ToolbarItem = function (element) {
   this.$el = element;

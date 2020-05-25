@@ -33,7 +33,7 @@ if(browser.msie){
 
 Ace2Common = require('./ace2_common');
 
-plugins = require('/app/src/static/js/pluginfw/client_plugins');
+plugins = require('ep_etherpad-lite/static/js/pluginfw/client_plugins');
 $ = jQuery = require('./rjquery').$;
 _ = require("./underscore");
 

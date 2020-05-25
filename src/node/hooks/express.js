@@ -1,4 +1,4 @@
-var hooks = require("/app/src/static/js/pluginfw/hooks");
+var hooks = require("ep_etherpad-lite/static/js/pluginfw/hooks");
 var express = require('express');
 var settings = require('../utils/Settings');
 var fs = require('fs');
@@ -45,8 +45,6 @@ exports.restartServer = function () {
   }
 
   var app = express(); // New syntax for express v3
-
-  app.get('/health', (req, res) => res.json(true))
 
   if (settings.ssl) {
     console.log("SSL -- enabled");

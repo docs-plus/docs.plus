@@ -3,8 +3,8 @@
  */
 
 
-var Changeset = require("/app/src/static/js/Changeset");
-var AttributePool = require("/app/src/static/js/AttributePool");
+var Changeset = require("ep_etherpad-lite/static/js/Changeset");
+var AttributePool = require("ep_etherpad-lite/static/js/AttributePool");
 var db = require("./DB");
 var settings = require('../utils/Settings');
 var authorManager = require("./AuthorManager");
@@ -15,7 +15,7 @@ var customError = require("../utils/customError");
 var readOnlyManager = require("./ReadOnlyManager");
 var crypto = require("crypto");
 var randomString = require("../utils/randomstring");
-var hooks = require('/app/src/static/js/pluginfw/hooks');
+var hooks = require('ep_etherpad-lite/static/js/pluginfw/hooks');
 var promises = require('../utils/promises')
 
 // serialization/deserialization attributes
