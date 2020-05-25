@@ -1,0 +1,151 @@
+#editbar {
+  padding: 10px;
+  display: block;
+}
+
+.timeslider-bar {
+  display: flex;
+  flex-direction: row;
+}
+
+/* TITLE */
+
+.timeslider-title-container {
+  flex: 1 auto;
+}
+.timeslider-title {
+  font-size: 1.8rem !important;
+}
+.timeslider-subtitle {
+  margin-top: 10px;
+}
+
+/* RIGHT TOOLBAR (export, settings, back to pad) */
+
+.editbarright ul li a {
+  background-color: transparent;
+  border: none;
+  margin-left: 10px
+}
+
+
+/*  SLIDER  */
+
+#timeslider-wrapper {
+  display: flex;
+  flex-direction: row;
+  height: 40px;
+}
+
+#timeslider-slider {
+  flex: 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  cursor: pointer;
+  position: relative;
+}
+
+#timeslider-slider #timer {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+}
+
+#timeslider-slider #ui-slider-bar {
+  height: 10px;
+  width: 100%;
+  background-color: #c2c2c2;
+  position: relative;
+}
+
+#timeslider-slider #ui-slider-handle {
+  height: 40px;
+  width: 10px;
+  z-index: 2;
+  position: absolute;
+  background-color: #3e3e3e;
+  cursor: move;
+}
+
+#timeslider-slider .star {
+  cursor: pointer;
+  position: absolute;
+  top: -8px
+}
+#timeslider-slider .star:before{
+  font-family: fontawesome-etherpad;
+  color: #da9700;
+  content: "\e856";
+  vertical-align:middle;
+  font-size:16px;
+  margin-left: -2px;
+}
+
+/* BUTTONS TO MOVE SLIDER (Play/Pause, Next, Prev)*/
+
+#slider-btn-container {
+  margin-left: 15px;
+  display: flex;
+  align-items: center;
+}
+#slider-btn-container button {
+  border: 1px solid #666;
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  margin-left: 5px;
+}
+#slider-btn-container #playpause_button_icon {
+  width: 40px;
+  height: 40px;
+  padding-left: 2px;
+}
+#slider-btn-container #playpause_button_icon:before {
+  font-size: 22px;
+}
+#slider-btn-container #playpause_button_icon.pause:before {
+  content: "\e829";
+  padding-left: 0;
+  padding-right: 2px;
+}
+
+
+/* PAD CONTENT */
+
+#editorcontainerbox {
+  overflow-y: auto;
+}
+#outerdocbody {
+  display: block;
+  width: 100%;
+}
+
+#innerdocbody {
+  white-space: normal;
+  word-break: break-word;
+  width: 100%;
+  margin: 0 auto;
+  height: auto;
+}
+
+@media (max-width: 800px) {
+  #timeslider-slider #timer { display: none; }
+
+  .editbarright [data-key="timeslider_returnToPad"] {
+    position: absolute;
+    right: 10px;
+    top: 0;
+  }
+  .timeslider-title {
+    font-size: 1.5rem !important;
+  }
+  .timeslider-title-container {
+    width: 100%;
+  }
+  .authors-label { display: none; }
+  #authorsList {
+    display: flex;
+    flex-wrap: wrap;
+  }
+}

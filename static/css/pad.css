@@ -1,0 +1,77 @@
+@import url("pad/normalize.css");
+
+@import url("pad/layout.css");
+@import url("pad/fonts.css");
+@import url("pad/toolbar.css");
+@import url("pad/popup.css");
+@import url("pad/popup_connectivity.css");
+@import url("pad/popup_import_export.css");
+@import url("pad/popup_users.css");
+@import url("pad/icons.css");
+@import url("pad/chat.css");
+@import url("pad/gritter.css");
+@import url("pad/loadingbox.css");
+@import url("pad/form.css");
+
+html {
+  font-size: 14px;
+  line-height: 20px;
+  color: #3e3e3e;
+}
+
+html,
+#sidedivinner > div:before {
+  font-family: Cantarell, Roboto, "Open Sans", "Helvetica Neue", Arial, sans-serif;
+}
+
+.clear {
+  clear: both
+}
+a {
+  color: inherit;
+}
+a img {
+  border: 0
+}
+
+.thin-scrollbar::-webkit-scrollbar-track {
+  background-color: #f6f6f6;
+  border: 1px solid #f0f0f0;
+}
+.thin-scrollbar::-webkit-scrollbar {
+  width: 7px;
+}
+.thin-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #C5C5C5;
+}
+
+.buttontext::-moz-focus-inner {
+  padding: 0;
+  border: 0;
+}
+.buttontext:focus{
+  /* Not sure why important is required here but it is */
+  border: 1px solid #666 !important;
+}
+.rtl {
+  direction: RTL
+}
+
+/* fix for misaligned checkboxes */
+input[type=checkbox] {
+  vertical-align: -1px
+}
+input {
+  color: inherit;
+}
+.right {
+  float: right
+}
+
+@media (max-width: 800px) {
+  .hide-for-mobile { display: none; }
+}
+
+#importmessagepermission {
+  display: none;
+}

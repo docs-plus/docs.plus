@@ -1,0 +1,140 @@
+/*
+  These CSS rules are included in both the outer and inner ACE iframe (pad editor)
+*/
+
+@import url('./lists_and_indents.css');
+
+html.inner-editor {
+  height: auto !important;
+  background-color: transparent !important;
+}
+#outerdocbody {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  min-height: 100vh; /* take at least full height */
+}
+#outerdocbody iframe {
+  flex: 1 auto;
+  display: flex;
+  width: 100%;
+}
+#outerdocbody #sidediv {
+  order: -1; /* display it on the first row positionning, i.e. on the left */
+}
+
+/* ACE-PAD Container (i.e. where the text is displayed) */
+#innerdocbody {
+  padding: 10px;
+  overflow: hidden;
+  background-color: white;
+
+  /* Be careful editing following rules. Longs words should not overflow, ep_align justify should work,
+     Test on chrome, firefox and safari... Copy / Paste a word inside a sentence should not add line-breaks
+     and preserve the style */
+  display: block; /* for safari and firefox, otherwise the break-word does not work */
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+#innerdocbody, #sidediv {
+  padding-top: 10px; /* Both must have same top padding, so line number are aligned with the rows */
+  padding-bottom: 10px; /* some space when we scroll to the bottom */
+}
+
+#innerdocbody a {
+  color: #2e96f3;
+}
+#innerdocbody.authorColors [class^='author-'] a {
+  color: inherit;
+}
+
+#innerdocbody span {
+  line-height: 125%;
+  padding: 6px 0 !important;
+}
+
+option {
+  text-transform: capitalize;
+}
+
+#innerdocbody h1,
+#innerdocbody h2,
+#innerdocbody h3,
+#innerdocbody h4 {
+  margin-bottom: .5em;
+}
+
+/* --------------------- */
+/* -- BROWSER SUPPORT -- */
+/* --------------------- */
+
+body.mozilla, body.safari {
+  display: table-cell; /* cause "body" area (e.g. where clicks are heard) to grow horizontally with text */
+}
+.safari div {
+  padding-right: 1px; /* prevents the caret from disappearing on the longest line of the doc */
+}
+
+
+/* ------------------------------------------ */
+/* -- SIDEDIV (line number, text author..) -- */
+/* ------------------------------------------ */
+
+#sidediv {
+  background-color: transparent;
+  border-right: 1px solid #ccc;
+}
+#sidediv .line-number {
+  font-size: 9px;
+  padding: 0 10px;
+  font-family: monospace;
+}
+#sidedivinner {
+  text-align: right;
+  opacity: .9;
+}
+#sidediv:not(.sidedivdelayed) { /* before sidediv get initialized, hide text */
+  color: transparent;
+}
+.line-numbers-hidden #sidediv .line-number {
+  display: none;
+}
+#linemetricsdiv {
+  position: absolute;
+  left: -1000px;
+  top: -1000px;
+  color: white;
+  z-index: -1;
+  font-size: 12px; /* overridden by lineMetricsDiv.style */
+  font-family: monospace; /* overridden by lineMetricsDiv.style */
+}
+@media (max-width: 800px) {
+  #sidediv {
+    /* Do not use display: none to hide the sidediv, otherwise the parent container does not
+       get its height properly calculated by flexboxes */
+    visibility: hidden;
+    width: 0;
+    padding: 0;
+  }
+}
+
+
+
+
+/* ----------- */
+/* -- OTHER -- */
+/* ----------- */
+
+::selection {
+  background: #acf;
+}
+::-moz-selection {
+  background: #acf;
+}
+#innerdocbody a {
+  cursor: pointer !important;
+}
+body.grayedout {
+  background-color: #eee !important
+}

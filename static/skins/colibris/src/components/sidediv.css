@@ -1,0 +1,19 @@
+#sidediv {
+  background-color: transparent;
+  border: none;
+  opacity: .8;
+}
+
+#sidedivinner>div:before {
+  font-family: var(--main-font-family); /* the parent div have font-family monospace (line number) */
+  color: #485365;
+  color: var(--text-color);
+  font-weight: bold;
+}
+
+#sidedivinner>div .line-number {
+  line-height: 24px;
+  font-family: RobotoMono;
+  color: #576273;
+  color: var(--text-soft-color);
+}
