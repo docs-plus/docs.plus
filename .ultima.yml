@@ -2,4 +2,4 @@ api:
   type: api
   runtime: node
   branch-domains:
-    master: ether.joshbalfour.co.uk
+    master: handbook.technology
