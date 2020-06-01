@@ -19,5 +19,8 @@
     "url": "ultima@build.onultima.com:joshbalfour/ether.git"
   },
   "author": "",
-  "license": "ISC"
+  "license": "ISC",
+  "dependencies": {
+    "ep_headings2": "^0.1.3"
+  }
 }
