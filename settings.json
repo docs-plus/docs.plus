@@ -551,5 +551,12 @@
       */
 
       ]
-    } // logconfig
+    }, // logconfig
+    "ep_page_view_default" : true,
+    "ep_page_view_disable_change" : true ,
+    // Display comments as icons, not boxes
+    "ep_comments_page": {
+      "displayCommentAsIcon": true,
+      "highlightSelectedText": true
+    }
 }
