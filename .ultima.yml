@@ -2,4 +2,4 @@ api:
   type: api
   runtime: node
   branch-domains:
-    master: handbook.technology
+    master: docs.plus
