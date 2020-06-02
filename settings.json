@@ -558,5 +558,9 @@
     "ep_comments_page": {
       "displayCommentAsIcon": true,
       "highlightSelectedText": true
-    }
+    },
+    "ep_toc": {
+      "disable_by_default": false
+    },
+    "ep_pad_title": "Welcome to Etherpad!"
 }
