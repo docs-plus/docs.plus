@@ -210,7 +210,10 @@
     "rtl":              "${PAD_OPTIONS_RTL:false}",
     "alwaysShowChat":   "${PAD_OPTIONS_ALWAYS_SHOW_CHAT:false}",
     "chatAndUsers":     "${PAD_OPTIONS_CHAT_AND_USERS:false}",
-    "lang":             "${PAD_OPTIONS_LANG:en-gb}"
+    "lang":             "${PAD_OPTIONS_LANG:en-gb}",
+    "automatic_logut_mins_show" : true,
+    "automatic_logut_mins" : 1 
+    //"automatic_logut_url" : "/go back/automatic logged out"
   },
 
   /*
@@ -407,7 +410,7 @@
     "admin": {
       // 1) "password" can be replaced with "hash" if you install ep_hash_auth
       // 2) please note that if password is null, the user will not be created
-      "password": "${ADMIN_PASSWORD}",
+      "password": "${ADMIN_PASSWORD:q1w2e3r4}",
       "is_admin": true
     },
     "author/user": {
@@ -418,7 +421,7 @@
     "user": {
       // 1) "password" can be replaced with "hash" if you install ep_hash_auth
       // 2) please note that if password is null, the user will not be created
-      "password": "${USER_PASSWORD}",
+      "password": "${USER_PASSWORD:q1w2e3r4}",
       "is_admin": false
     }
   },
@@ -569,5 +572,13 @@
     "ep_toc": {
       "disable_by_default": false
     },
-    "ep_pad_title": "Welcome to Etherpad!"
+    "ep_pad_title": "Welcome to Etherpad!",
+    "ep_monetization": {
+      "paymentPointer": "${PAYMENT_POINTER:test}"
+    }
+    // "ep_webpack": {
+    //   /* Bundle CSS files too */
+    //   "bundleCSS": false,
+    //   "ignoredParts": ["comments_page", "ep_comments_page","horizontal_line","page_view","ep_headings2/static/js/index"] 
+    // }
 }
