@@ -22,6 +22,7 @@
   "license": "ISC",
   "dependencies": {
     "ep_align": "^0.2.0",
+    "ep_auth_author": "0.0.5",
     "ep_comments_page": "^0.1.5",
     "ep_cursortrace": "^2.0.15",
     "ep_headings2": "^0.1.3",
