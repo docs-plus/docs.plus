@@ -566,7 +566,7 @@
     "ep_page_view_disable_change" : false ,
     // Display comments as icons, not boxes
     "ep_comments_page": {
-      "displayCommentAsIcon": true,
+      "displayCommentAsIcon": false,
       "highlightSelectedText": true
     },
     "ep_toc": {
