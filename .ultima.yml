@@ -3,3 +3,12 @@ api:
   runtime: node
   branch-domains:
     master: docs.plus
+  start: yarn start
+  install:
+    command: bash ./bin/installDeps.sh
+    watch:
+      - yarn.lock
+  dev:
+    command: yarn start
+    watch:
+      - "*.js"
