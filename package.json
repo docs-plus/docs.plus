@@ -22,9 +22,7 @@
   "license": "ISC",
   "dependencies": {
     "@fortawesome/fontawesome-free": "^5.13.0",
-    "ep_adminpads2": "0.0.4",
     "ep_align": "^0.2.0",
-    "ep_auth_author": "0.0.5",
     "ep_comments_page": "^0.1.5",
     "ep_delete_empty_pads": "0.0.6",
     "ep_headings2": "^0.1.3",
