@@ -34,6 +34,7 @@
     "ep_resizable_bars": "0.0.6",
     "ep_set_title_on_pad": "^0.2.0",
     "ep_sticky_attributes": "^0.1.0",
-    "ep_subscript_and_superscript": "^0.1.2"
+    "ep_subscript_and_superscript": "^0.1.2",
+    "ep_wrtc_heading": "^0.2.0"
   }
 }
