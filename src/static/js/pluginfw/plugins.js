@@ -98,7 +98,6 @@ exports.getPackages = async function () {
   // Load list of installed NPM packages, flatten it to a list, and filter out only packages with names that
   var dir = settings.root;
   let data = await util.promisify(readInstalled)(dir);
-
   var packages = {};
   function flatten(deps) {
     _.chain(deps).keys().each(function (name) {
@@ -122,26 +121,28 @@ exports.getPackages = async function () {
 };
 
 async function loadPlugin(packages, plugin_name, plugins, parts) {
+  var dir = settings.root;
   let fsp_readFile = util.promisify(fs.readFile);
-
-  var plugin_path = path.resolve(packages[plugin_name].path, "ep.json");
-  try {
-    let data = await fsp_readFile(plugin_path);
+  var module_path = (packages[plugin_name].path) ?  packages[plugin_name].path : `${dir}/node_modules/${plugin_name}`
+  var plugin_path = path.resolve(module_path, "ep.json");
     try {
-      var plugin = JSON.parse(data);
-      plugin['package'] = packages[plugin_name];
-      plugins[plugin_name] = plugin;
-      _.each(plugin.parts, function (part) {
-        part.plugin = plugin_name;
-        part.full_name = plugin_name + "/" + part.name;
-        parts[part.full_name] = part;
-      });
-    } catch (ex) {
-      console.error("Unable to parse plugin definition file " + plugin_path + ": " + ex.toString());
+      let data = await fsp_readFile(plugin_path);
+      try {
+        var plugin = JSON.parse(data);
+        plugin['package'] = packages[plugin_name];
+        plugins[plugin_name] = plugin;
+        _.each(plugin.parts, function (part) {
+          part.plugin = plugin_name;
+          part.full_name = plugin_name + "/" + part.name;
+          parts[part.full_name] = part;
+        });
+      } catch (ex) {
+        console.error("Unable to parse plugin definition file " + plugin_path + ": " + ex.toString());
+      }
+    } catch (er) {
+      console.error("Unable to load plugin definition file " + plugin_path);
     }
-  } catch (er) {
-    console.error("Unable to load plugin definition file " + plugin_path);
-  }
+
 }
 
 function partsToParentChildList(parts) {
