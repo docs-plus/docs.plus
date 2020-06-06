@@ -28,8 +28,10 @@ if [ "$(id -u)" -eq 0 ] && [ $ignoreRoot -eq 0 ]; then
   fi
 fi
 
+npm install --save --loglevel error
+
 #Prepare the environment
-bin/installDeps.sh "$@" || exit 1
+bash bin/installDeps.sh "$@" || exit 1
 
 #Move to the node folder and start
 echo "Started Etherpad..."

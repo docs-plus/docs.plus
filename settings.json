@@ -211,8 +211,8 @@
     "alwaysShowChat":   "${PAD_OPTIONS_ALWAYS_SHOW_CHAT:false}",
     "chatAndUsers":     "${PAD_OPTIONS_CHAT_AND_USERS:false}",
     "lang":             "${PAD_OPTIONS_LANG:en-gb}",
-    "automatic_logut_mins_show" : true,
-    "automatic_logut_mins" : 1 
+    //"automatic_logut_mins_show" : true,
+    //"automatic_logut_mins" : 1 
     //"automatic_logut_url" : "/go back/automatic logged out"
   },
 
@@ -478,13 +478,12 @@
    * Uncomment to customize.
    */
 
-  /*
+  
   "toolbar": {
     "left": [
       ["bold", "italic", "underline", "strikethrough"],
       ["orderedlist", "unorderedlist", "indent", "outdent"],
-      ["undo", "redo"],
-      ["clearauthorship"]
+      ["undo", "redo"]
     ],
     "right": [
       ["importexport", "timeslider", "savedrevision"],
@@ -495,7 +494,7 @@
       ["timeslider_export", "timeslider_returnToPad"]
     ]
   },
-  */
+  
 
   /*
    * Expose Etherpad version in the web interface and in the Server http header.
@@ -509,7 +508,7 @@
    *
    * Valid values: DEBUG, INFO, WARN, ERROR
    */
-  "loglevel": "${LOGLEVEL:INFO}",
+  "loglevel": "${LOGLEVEL:DEBUG}",
 
   /*
    * Logging configuration. See log4js documentation for further information:
