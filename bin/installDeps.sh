@@ -88,6 +88,8 @@ for arg in "$@"; do
   a=$arg
 done
 
+npm install --save --loglevel warn
+
 #Does a $settings exist? if not copy the template
 if [ ! -f $settings ]; then
   echo "Copy the settings template to $settings..."
