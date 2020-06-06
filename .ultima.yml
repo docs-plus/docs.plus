@@ -3,7 +3,9 @@ api:
   runtime: node
   branch-domains:
     master: docs.plus
-  start: yarn start
+  start: DB_TYPE=postgres DB_HOST=$PGHOST DB_PORT=$PGPORT DB_USER=$PGUSER
+    DB_PASS=$PGPASSWORD DB_NAME=$PGDATABASE node
+    ./node_modules/ep_etherpad-lite/node/server.js
   install:
     command: bash ./bin/installDeps.sh
     watch:
