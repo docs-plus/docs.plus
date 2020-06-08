@@ -7,7 +7,10 @@
 
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+        <meta name="referrer" content="no-referrer">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="shortcut icon" href="<%=settings.favicon%>">
+
         <title><%=settings.title%></title>
         <link rel="localizations" type="application/l10n+json" href="locales.json">
         <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&display=swap" rel="stylesheet"> 
@@ -15,6 +18,7 @@
         <script type="text/javascript" src="static/js/l10n.js?v=<%=settings.randomVersionString%>"></script>
     </head>
     <style>
+        
         * {
             box-sizing: border-box;
         }
@@ -22,6 +26,8 @@
         body {
             margin: 0;
             padding: 0;
+            font: 14px helvetica, sans-serif;
+
         }
         
         .hero-wrapper {
@@ -81,7 +87,21 @@
             font-weight: 700;
         }
         
-    
+        @media only screen and (max-width: 600px) {
+        .title {
+            width: 100%;
+
+        }
+        .content {
+            width: 100%;
+            margin: 0 auto;
+            padding-top: 60px;
+        }
+        .content p {
+           font-size: 1.0em;
+        }
+        
+        }
     </style>
     <body>
         <div class="hero-wrapper">
