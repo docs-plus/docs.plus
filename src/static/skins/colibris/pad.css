@@ -29,7 +29,9 @@
  * If you want to change main colors, please replace following CSS variables
  * -----------------------------------------------------------------
  */
-
+.logo {
+  width: 48px;
+}
 :root {
   --super-dark-color: #485365; /*#374256;*/
   --dark-color: #576273; /*#4d5d77*/
