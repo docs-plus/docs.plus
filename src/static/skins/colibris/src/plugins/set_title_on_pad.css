@@ -1,7 +1,8 @@
 #pad_title {
   border-bottom: 1px solid var(--border-color) !important;
-  background-color: var(--bg-color) !important;
+  /* background-color: var(--bg-color) !important; */
+  background-color: #fff;
 }
 #edit_title {
-  color: var(--text-soft-color);
+  /* color: var(--text-soft-color); */
 }
