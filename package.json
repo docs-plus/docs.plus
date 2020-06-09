@@ -26,7 +26,7 @@
     "ep_set_title_on_pad": "^0.2.0",
     "ep_remove_embed": "0.0.2",
     "ep_resizable_bars": "0.0.6",
-    "ep_page_view": "^0.5.24"
+    "ep_hide_line_numbers": "0.0.1"
 
   }
 }
