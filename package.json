@@ -25,7 +25,7 @@
     "ep_sticky_attributes": "^0.1.0",
     "ep_set_title_on_pad": "^0.2.0",
     "ep_remove_embed": "0.0.2",
-    "ep_horizontal_line": "0.0.4"
+    "ep_resizable_bars": "0.0.6"
 
   }
 }
