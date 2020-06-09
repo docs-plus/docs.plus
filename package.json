@@ -21,6 +21,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "ep_subscript_and_superscript": "^0.1.2"
+    "ep_subscript_and_superscript": "^0.1.2",
+    "ep_sticky_attributes": "^0.1.0"
+
   }
 }
