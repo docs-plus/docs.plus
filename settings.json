@@ -275,7 +275,7 @@
    * This will improve the loading performance massively, but makes it difficult
    * to debug the javascript/css
    */
-  "minify": "${MINIFY:false}",
+  "minify": "${MINIFY:true}",
 
   /*
    * How long may clients use served javascript code (in seconds)?
@@ -522,14 +522,14 @@
         //, "category": "access"// only logs pad access
         }
 
-      /*
+      
       , { "type": "file"
-      , "filename": "your-log-file-here.log"
+      , "filename": "logs.log"
       , "maxLogSize": 1024
-      , "backups": 3 // how many log files there're gonna be at max
+      , "backups": 4 // how many log files there're gonna be at max
       //, "category": "test" // only log a specific category
         }
-      */
+      
 
       /*
       , { "type": "logLevelFilter"
