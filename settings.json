@@ -283,7 +283,7 @@
    * Not setting this may cause problems during deployment.
    * Set to 0 to disable caching.
    */
-  "maxAge": "${MAX_AGE:21600}", // 60 * 60 * 6 = 6 hours
+  "maxAge": 0, // 60 * 60 * 6 = 6 hours
 
   /*
    * Absolute path to the Abiword executable.
@@ -523,12 +523,12 @@
         }
 
       
-      , { "type": "file"
-      , "filename": "logs.log"
-      , "maxLogSize": 1024
-      , "backups": 4 // how many log files there're gonna be at max
+      // , { "type": "file"
+      // , "filename": "logs.log"
+      // , "maxLogSize": 1024
+      // , "backups": 4 // how many log files there're gonna be at max
       //, "category": "test" // only log a specific category
-        }
+      // }
       
 
       /*
