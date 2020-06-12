@@ -17,7 +17,7 @@
     background-color: #576273;
     background-color: var(--scrollbar-thumb);
     border: 7px solid #dadce0;
-    /* border: 7px solid var(--scrollbar-bg); */
+    border: 7px solid var(--scrollbar-bg);
   }
 }
 
