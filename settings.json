@@ -209,7 +209,7 @@
     "userColor":        "${PAD_OPTIONS_USER_COLOR:false}",
     "rtl":              "${PAD_OPTIONS_RTL:false}",
     "alwaysShowChat":   "${PAD_OPTIONS_ALWAYS_SHOW_CHAT:true}",
-    "chatAndUsers":     "${PAD_OPTIONS_CHAT_AND_USERS:true}",
+    "chatAndUsers":     "${PAD_OPTIONS_CHAT_AND_USERS:false}",
     "lang":             "${PAD_OPTIONS_LANG:en-gb}",
     //"automatic_logut_mins_show" : true,
     //"automatic_logut_mins" : 1 
