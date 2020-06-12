@@ -77,7 +77,7 @@
   /*
    * Name your instance!
    */
-  "title": "${TITLE:Etherpad}",
+  "title": "${TITLE:Untitle Document}",
 
   /*
    * favicon default name
