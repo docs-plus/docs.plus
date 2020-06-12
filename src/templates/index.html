@@ -10,8 +10,8 @@
         <meta name="referrer" content="no-referrer">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <link rel="shortcut icon" href="<%=settings.favicon%>">
-        <meta property="og:title" content="<%=settings.title%>" />
-        <meta property="og:description" content="Description" />
+        <meta property="og:title" content="<%=settings.title%> - docs but better!" />
+        <meta property="og:description" content="<%=settings.title%> - docs but better! - Built on Etherpad - Funded by Grant for Web & Nesta" />
         <meta property="og:image" content="https://docs.plus/static/images/social-logo.png?v=<%=settings.randomVersionString%>" />
         <title><%=settings.title%></title>
         <link rel="localizations" type="application/l10n+json" href="locales.json">
@@ -106,7 +106,6 @@
         }
     </style>
     <body>
-        <%= JSON.stringify(settings)%>
         <div class="hero-wrapper">
             <div class="title">
                 <img class="logo" src="static/images/logo.png?v=<%=settings.randomVersionString%>">
