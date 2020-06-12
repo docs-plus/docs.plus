@@ -594,9 +594,7 @@
             "stun:stun.rixtelecom.se",
             "stun:stun.schlund.de",
             "stun:stun.xtratelecom.es:3478",
-            "stun:stun.yesss.at:3478",
-            "turn:turn01.hubl.in?transport=udp",
-            "turn:turn02.hubl.in?transport=tcp"
+            "stun:stun.yesss.at:3478"
           ]
         },
         {
