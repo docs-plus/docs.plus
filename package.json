@@ -29,6 +29,6 @@
     "ep_set_title_on_pad": "^0.2.0",
     "ep_sticky_attributes": "^0.1.0",
     "ep_subscript_and_superscript": "^0.1.2",
-    "ep_wrtc_heading": "^0.3.6"
+    "ep_wrtc_heading": "git+https://github.com/HMarzban/ep_wrtc_heading#291f8d4"
   }
 }
