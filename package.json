@@ -22,15 +22,14 @@
   "license": "ISC",
   "dependencies": {
     "ep_adminpads2": "0.0.4",
+    "ep_drag-and-drop": "0.0.1",
     "ep_headings2": "^0.1.3",
     "ep_hide_line_numbers": "0.0.1",
     "ep_monetization": "^1.0.0",
     "ep_remove_embed": "0.0.2",
     "ep_resizable_bars": "0.0.6",
     "ep_set_title_on_pad": "git+https://github.com/samirsayyad/ep_set_title_on_pad.git",
-    "ep_social_preview": "^1.0.2",
     "ep_sticky_attributes": "^0.1.0",
-    "ep_subscript_and_superscript": "^0.1.2",
     "ep_wrtc_heading": "git+https://github.com/HMarzban/ep_wrtc_heading#31a9b3f"
   }
 }

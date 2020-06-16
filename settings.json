@@ -482,8 +482,8 @@
   "toolbar": {
     "left": [
       ["bold", "italic", "underline", "strikethrough"],
-      ["orderedlist", "unorderedlist", "indent", "outdent"],
-      ["undo", "redo"]
+      ["orderedlist", "unorderedlist", "indent", "outdent"]
+      // ["undo", "redo"]
     ],
     "right": [
       ["importexport", "timeslider", "savedrevision"],
