@@ -482,7 +482,7 @@
   "toolbar": {
     "left": [
       ["bold", "italic", "underline", "strikethrough"],
-      ["orderedlist", "unorderedlist", "indent", "outdent"]
+      ["orderedlist", "unorderedlist"] // "indent", "outdent"
       // ["undo", "redo"]
     ],
     "right": [
