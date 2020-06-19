@@ -3,6 +3,7 @@ var eejs = require('ep_etherpad-lite/node/eejs');
 var toolbar = require("ep_etherpad-lite/node/utils/toolbar");
 var hooks = require('ep_etherpad-lite/static/js/pluginfw/hooks');
 var settings = require('../../utils/Settings');
+var db = require("../../db/DB");
 
 exports.expressCreateServer = function (hook_name, args, cb) {
   // expose current stats
@@ -39,7 +40,7 @@ exports.expressCreateServer = function (hook_name, args, cb) {
   });
 
   //serve pad.html under /p
-  args.app.get('/p/:pad', function(req, res, next)
+  args.app.get('/p/:pad', async function(req, res, next)
   {
     // The below might break for pads being rewritten
     var isReadOnly = req.url.indexOf("/p/r.") === 0;
@@ -48,8 +49,12 @@ exports.expressCreateServer = function (hook_name, args, cb) {
       toolbar: toolbar,
       isReadOnly: isReadOnly
     });
-
+    // @Samir Sayyad Added for social preview
+    let pad_title = await db.get("title:"+req.params.pad) ;
+//      console.log("Found ", value, " for ", req.params.pad);
+ 
     res.send(eejs.require("ep_etherpad-lite/templates/pad.html", {
+      meta : { title : (pad_title) ? pad_title :"docs.plus - docs but better!"  } ,
       req: req,
       toolbar: toolbar,
       isReadOnly: isReadOnly
