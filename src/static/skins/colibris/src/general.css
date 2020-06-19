@@ -13,19 +13,3 @@ h1 {
   color: #333;
   /* color: var(--primary-color); */
 }
-#title h1{
-  font-size: 16px !important;
-  font-weight: normal;
-  font-family: 'Google Sans',Roboto,RobotoDraft,Helvetica,Arial,sans-serif !important;
-}
-#title {
-  /* margin-top: -24px; */
-  margin-left: 15px;
-}
-#pad_title {
-  border-bottom: 1px solid #ccc !important;
-}
-#edit_title {
-  padding-top: 0px !important;
-
-}
