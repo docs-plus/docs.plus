@@ -3,12 +3,16 @@ api:
   runtime: node
   branch-domains:
     master: docs.plus
-  start: NODE_ENV=production DB_TYPE=postgres DB_HOST=$PGHOST DB_PORT=$PGPORT DB_USER=$PGUSER DB_PASS=$PGPASSWORD DB_NAME=$PGDATABASE node ./node_modules/ep_etherpad-lite/node/server.js
+  start: NODE_ENV=production DB_TYPE=postgres DB_HOST=$PGHOST DB_PORT=$PGPORT
+    DB_USER=$PGUSER DB_PASS=$PGPASSWORD DB_NAME=$PGDATABASE node
+    ./node_modules/ep_etherpad-lite/node/server.js
   install:
-    command: bash ./bin/installDeps.sh
+    command: "bash ./bin/installDeps.sh && yarn "
     watch:
       - yarn.lock
   dev:
-    command: NODE_ENV=production DB_TYPE=postgres DB_HOST=$PGHOST DB_PORT=$PGPORT DB_USER=$PGUSER DB_PASS=$PGPASSWORD DB_NAME=$PGDATABASE node ./node_modules/ep_etherpad-lite/node/server.js
+    command: NODE_ENV=production DB_TYPE=postgres DB_HOST=$PGHOST DB_PORT=$PGPORT
+      DB_USER=$PGUSER DB_PASS=$PGPASSWORD DB_NAME=$PGDATABASE node
+      ./node_modules/ep_etherpad-lite/node/server.js
     watch:
       - "*.js"
