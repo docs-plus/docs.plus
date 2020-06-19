@@ -482,8 +482,8 @@
   "toolbar": {
     "left": [
       ["bold", "italic", "underline", "strikethrough"],
-      ["orderedlist", "unorderedlist", "indent", "outdent"],
-      ["undo", "redo"]
+      ["orderedlist", "unorderedlist"] // "indent", "outdent"
+      // ["undo", "redo"]
     ],
     "right": [
       ["importexport", "timeslider", "savedrevision"],
@@ -573,14 +573,16 @@
     },
     "ep_pad_title": "Welcome to Etherpad!",
     "ep_monetization": {
-      "paymentPointer": "${PAYMENT_POINTER:test}"
+      "paymentPointer": "${PAYMENT_POINTER:$pay.stronghold.co/1a18448192af7924854a52078ffc535a89b}"
     },
     // "ep_webpack": {
     //   /* Bundle CSS files too */
     //   "bundleCSS": false,
     //   "ignoredParts": ["comments_page", "ep_comments_page","horizontal_line","page_view","ep_headings2/static/js/index"] 
     // }
-
+    "ep_meta_desc" : "docs.plus - docs but better !",
+    "ep_meta_img_url":"https://docs.plus/static/images/social-logo.png",
+    "ep_meta_default_title" : "docs.plus",
     "ep_wrtc_heading": {
       "iceServers": [
         {

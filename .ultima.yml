@@ -9,6 +9,6 @@ api:
     watch:
       - yarn.lock
   dev:
-    command: DB_TYPE=postgres DB_HOST=$PGHOST DB_PORT=$PGPORT DB_USER=$PGUSER DB_PASS=$PGPASSWORD DB_NAME=$PGDATABASE node ./node_modules/ep_etherpad-lite/node/server.js
+    command: NODE_ENV=production DB_TYPE=postgres DB_HOST=$PGHOST DB_PORT=$PGPORT DB_USER=$PGUSER DB_PASS=$PGPASSWORD DB_NAME=$PGDATABASE node ./node_modules/ep_etherpad-lite/node/server.js
     watch:
       - "*.js"
