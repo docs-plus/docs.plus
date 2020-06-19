@@ -88,7 +88,8 @@ for arg in "$@"; do
   a=$arg
 done
 
-npm install --save --loglevel warn
+# npm install --save --loglevel warn
+yarn
 
 #Does a $settings exist? if not copy the template
 if [ ! -f $settings ]; then
@@ -102,7 +103,8 @@ echo "Ensure that all dependencies are up to date...  If this is the first time 
   cd node_modules
   [ -e ep_etherpad-lite ] || ln -s ../src ep_etherpad-lite
   cd ep_etherpad-lite
-  npm install --save --loglevel warn
+  # npm install --save --loglevel warn
+  yarn 
 ) || {
   rm -rf src/node_modules
   exit 1
