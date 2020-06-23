@@ -29,6 +29,6 @@
     "ep_resizable_bars": "0.0.6",
     "ep_set_title_on_pad": "git+https://github.com/samirsayyad/ep_set_title_on_pad.git",
     "ep_sticky_attributes": "^0.1.0",
-    "ep_wrtc_heading": "git+https://github.com/HMarzban/ep_wrtc_heading#3b3c846"
+    "ep_wrtc_heading": "^0.5.8"
   }
 }

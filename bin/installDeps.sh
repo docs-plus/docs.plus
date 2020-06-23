@@ -90,7 +90,6 @@ done
 
 # npm install --save --loglevel warn
 yarn
-
 #Does a $settings exist? if not copy the template
 if [ ! -f $settings ]; then
   echo "Copy the settings template to $settings..."
