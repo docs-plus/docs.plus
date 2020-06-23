@@ -28,7 +28,8 @@ if [ "$(id -u)" -eq 0 ] && [ $ignoreRoot -eq 0 ]; then
   fi
 fi
 
-npm install --save --loglevel error
+# npm install --save --loglevel error
+yarn
 
 #Prepare the environment
 bash bin/installDeps.sh "$@" || exit 1
