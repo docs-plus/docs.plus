@@ -16,5 +16,3 @@ api:
       ./node_modules/ep_etherpad-lite/node/server.js
     watch:
       - "*.js"
-docs.plus-image:
-  type: bucket
