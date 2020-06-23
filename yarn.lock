@@ -88,9 +88,9 @@ ep_image_upload@^1.0.13:
     stream_upload "0.0.5"
     uuid "3.2.1"
 
-"ep_loading_pad@git+https://github.com/samirsayyad/ep_loading_pad.git":
+"ep_loading_pad@https://github.com/samirsayyad/ep_loading_pad.git":
   version "1.0.0"
-  resolved "git+https://github.com/samirsayyad/ep_loading_pad.git#c94c13eed4c6d4a87aa0dea30952cadd4a1dc593"
+  resolved "https://github.com/samirsayyad/ep_loading_pad.git#887ae84cdd836cfabcdd749e3b72e39162b3cb12"
 
 ep_monetization@^1.0.0:
   version "1.0.0"
