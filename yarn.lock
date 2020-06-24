@@ -19,12 +19,17 @@ ep_hide_line_numbers@0.0.1:
 
 "ep_loading_pad@https://github.com/samirsayyad/ep_loading_pad.git":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_loading_pad.git#9141d1a57c0bf03541ad3fea3d7740184cd5d3c1"
+  resolved "https://github.com/samirsayyad/ep_loading_pad.git#48da6e20c72402d6500084ccdb7926e5dc87f9b2"
 
 ep_monetization@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/ep_monetization/-/ep_monetization-1.0.0.tgz#0f008b254bff9692bf2af05493c93e25a6a6590a"
   integrity sha512-tFSFQ9skkGwwaJ0SQ6sdsp+LXTL8wo3vE9tX2SOJQzkd56PqjaTkyhUnWWzPMlZZi2VKEZDatAr+AFR1u/JK6g==
+
+ep_prompt_for_name@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/ep_prompt_for_name/-/ep_prompt_for_name-1.0.0.tgz#1a0439bd32d0c1d84f73af5c48d646bcafb8d588"
+  integrity sha512-+6E4/6NG5IANqI1RHj6xmjTIrtFLhsrCla54RYGW8PowUa3DYtsHf2Mz9QGfk3HwmXWjrdXuQaTnHv7IvHrO1A==
 
 ep_remove_embed@0.0.2:
   version "0.0.2"
