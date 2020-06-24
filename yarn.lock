@@ -19,7 +19,7 @@ ep_hide_line_numbers@0.0.1:
 
 "ep_loading_pad@https://github.com/samirsayyad/ep_loading_pad.git":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_loading_pad.git#48da6e20c72402d6500084ccdb7926e5dc87f9b2"
+  resolved "https://github.com/samirsayyad/ep_loading_pad.git#17a466e20b485922379951ac6c9e6d59552ba122"
 
 ep_monetization@^1.0.0:
   version "1.0.0"

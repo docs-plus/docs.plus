@@ -481,14 +481,16 @@
   
   "toolbar": {
     "left": [
-      ["bold", "italic", "underline", "strikethrough"],
-      ["orderedlist", "unorderedlist"] // "indent", "outdent"
+      ["bold", "italic", "underline"], //, "strikethrough"
+      ["orderedlist", "unorderedlist"], // "indent", "outdent"
+      [ "savedrevision" ,"timeslider","settings"]
+   
       // ["undo", "redo"]
     ],
     "right": [
-      [ "timeslider", "savedrevision"], //"importexport",
-      ["settings" ], //"embed"
-      ["showusers"]
+       //"importexport",
+       //"embed"
+      [  "showusers"]
     ],
     "timeslider": [
       ["timeslider_export", "timeslider_returnToPad"]
