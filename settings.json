@@ -192,7 +192,7 @@
   /*
    * The default text of a pad
    */
-  "defaultPadText" : "${DEFAULT_PAD_TEXT:Welcome to docs.plus\n\n \nEmojies : 😫😞😔😒😕😐😌😀😎🤩 \nA new & experimental platform for collaborative writing and online events \n It works much like any other collaborative document, except... \n Every heading in the document is also a videochat! \n Anyone can create a new videochat by editing the document to create a heading! \n\n docs.plus is still a prototype \n Expect major bugs! Content may be deleted without warning! \n If you would like to do anything serious with it, please contact us: \n https:\/\/twitter.com\/docsdotplus \n ed@newspeak.house \n Keep up with our progress at https:\/\/twitter.com\/docsdotplus \n docs.plus is brought to you by https:\/\/newspeak.house \n Back us on Patreon to help pay for hosting & continued development https:\/\/www.patreon.com\/docsplus}",
+  "defaultPadText" : "${DEFAULT_PAD_TEXT:Welcome to docs.plus\n\n A new & experimental platform for collaborative writing and online events \n\n  It works much like any other collaborative document, except... \n Every heading in the document is also a videochat! \n\n  Anyone can create a new videochat by editing the document to create a heading! \n\n\n docs.plus is still a prototype \n\n Expect major bugs! Content may be deleted without warning! \n If you would like to do anything serious with it, please contact us: \n https:\/\/twitter.com\/docsdotplus \n ed@newspeak.house \n\n  Keep up with our progress at https:\/\/twitter.com\/docsdotplus \n\n  docs.plus is brought to you by https:\/\/newspeak.house \n\n Back us on Patreon to help pay for hosting & continued development https:\/\/www.patreon.com\/docsplus}",
 
   /*
    * Default Pad behavior.
