@@ -192,7 +192,7 @@
   /*
    * The default text of a pad
    */
-  "defaultPadText" : "${DEFAULT_PAD_TEXT:Welcome to Etherpad!\n\nThis pad text is synchronized as you type, so that everyone viewing this page sees the same text. This allows you to collaborate seamlessly on documents!\n\nGet involved with Etherpad at https:\/\/etherpad.org\n}",
+  "defaultPadText" : "${DEFAULT_PAD_TEXT:Welcome to docs.plus\n\n A new & experimental platform for collaborative writing and online events \n\n It works much like any other collaborative document, except... \n Every heading in the document is also a videochat! \n\n  Anyone can create a new videochat by editing the document to create a heading! \n\n\n docs.plus is still a prototype \n\n Expect major bugs! Content may be deleted without warning! \n If you would like to do anything serious with it, please contact us: \n https:\/\/twitter.com\/docsdotplus \n ed@newspeak.house \n\n  Keep up with our progress at https:\/\/twitter.com\/docsdotplus \n\n  docs.plus is brought to you by https:\/\/newspeak.house \n\n Back us on Patreon to help pay for hosting & continued development https:\/\/www.patreon.com\/docsplus}",
 
   /*
    * Default Pad behavior.
@@ -481,14 +481,16 @@
   
   "toolbar": {
     "left": [
-      ["bold", "italic", "underline", "strikethrough"],
-      ["orderedlist", "unorderedlist"] // "indent", "outdent"
+      ["bold", "italic", "underline"], //, "strikethrough"
+      ["orderedlist", "unorderedlist"], // "indent", "outdent"
+      [ "savedrevision" ,"timeslider","settings"]
+   
       // ["undo", "redo"]
     ],
     "right": [
-      ["importexport", "timeslider", "savedrevision"],
-      ["settings", "embed"],
-      ["showusers"]
+       //"importexport",
+       //"embed"
+      [  "showusers"]
     ],
     "timeslider": [
       ["timeslider_export", "timeslider_returnToPad"]
@@ -583,13 +585,19 @@
     "ep_meta_desc" : "docs.plus - docs but better !",
     "ep_meta_img_url":"https://docs.plus/static/images/social-logo.png",
     "ep_meta_default_title" : "docs.plus",
-    "ep_wrtc_heading": {
-      "video": {
-        "sizes": {
-          "small": 110,
-          "large": 110
-        }
+    "ep_image_upload":{
+      "storage":{
+        "type": "S3",
+        "accessKeyId": "${ULTIMA_BUCKET_ACCESS_KEY_ID:null}",
+        "secretAccessKey": "${ULTIMA_BUCKET_ACCESS_KEY_SECRET:null}",
+        "region": "UK",
+        "bucket": "docs.plus-image_BUCKET_NAME",
+        "baseFolder": "${FOLDER_PATH:null}"
       },
+      "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"],
+      "maxFileSize": 5000000
+    },
+    "ep_wrtc_heading": {
       "videoChatLimit": 7,
       "iceServers": [
         {
