@@ -36,6 +36,10 @@ ep_remove_embed@0.0.2:
   resolved "https://registry.yarnpkg.com/ep_remove_embed/-/ep_remove_embed-0.0.2.tgz#7058253a0539a17c927a316b12177feebf1dfde4"
   integrity sha1-cFglOgU5oXySejFrEhd/7r8d/eQ=
 
+"ep_remove_savedrevision_right_side@https://github.com/samirsayyad/ep_remove_savedrevision_right_side":
+  version "1.0.0"
+  resolved "https://github.com/samirsayyad/ep_remove_savedrevision_right_side#e3cbc6b06eff20210a08643360c48ecc61471f00"
+
 ep_resizable_bars@0.0.6:
   version "0.0.6"
   resolved "https://registry.yarnpkg.com/ep_resizable_bars/-/ep_resizable_bars-0.0.6.tgz#777a0adae47507720feef4cd4292909def0cbaad"
