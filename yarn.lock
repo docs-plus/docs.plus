@@ -54,6 +54,6 @@ ep_sticky_attributes@^0.1.0:
   resolved "https://registry.yarnpkg.com/ep_sticky_attributes/-/ep_sticky_attributes-0.1.0.tgz#52da0bd2bece5d614050380d6e7bc69b5c7bb98b"
   integrity sha1-UtoL0r7OXWFAUDgNbnvGm1x7uYs=
 
-"ep_wrtc_heading@git+https://github.com/HMarzban/ep_wrtc_heading#3b3c846":
-  version "0.5.3"
-  resolved "git+https://github.com/HMarzban/ep_wrtc_heading#3b3c846dfceb3e5bc3ab50c3b0e395ff823b9df0"
+"ep_wrtc_heading@git+https://github.com/HMarzban/ep_wrtc_heading#619334b":
+  version "0.7.0"
+  resolved "git+https://github.com/HMarzban/ep_wrtc_heading#619334b72c868146a14e0f63590e029db8d854ed"
