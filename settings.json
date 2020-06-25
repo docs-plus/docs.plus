@@ -490,7 +490,7 @@
     "right": [
        //"importexport",
        //"embed"
-      [  "showusers"]
+      [  "savedrevision" ,"showusers"]
     ],
     "timeslider": [
       ["timeslider_export", "timeslider_returnToPad"]
