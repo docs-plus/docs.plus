@@ -584,6 +584,13 @@
     "ep_meta_img_url":"https://docs.plus/static/images/social-logo.png",
     "ep_meta_default_title" : "docs.plus",
     "ep_wrtc_heading": {
+      "video": {
+        "sizes": {
+          "small": 110,
+          "large": 110
+        }
+      },
+      "videoChatLimit": 7,
       "iceServers": [
         {
           "urls": [ 
