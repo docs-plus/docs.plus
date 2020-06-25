@@ -51,10 +51,10 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     });
     // @Samir Sayyad Added for social preview
     let pad_title = await db.get("title:"+req.params.pad) ;
-//      console.log("Found ", value, " for ", req.params.pad);
+    //console.log("Found ", pad_title, " for ", req.params.pad);
  
     res.send(eejs.require("ep_etherpad-lite/templates/pad.html", {
-      meta : { title : (pad_title) ? pad_title :"docs.plus - docs but better!"  } ,
+      meta : { title : (pad_title) ? pad_title :req.params.pad } ,
       req: req,
       toolbar: toolbar,
       isReadOnly: isReadOnly

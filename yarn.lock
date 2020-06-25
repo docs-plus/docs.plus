@@ -45,9 +45,9 @@ ep_resizable_bars@0.0.6:
   resolved "https://registry.yarnpkg.com/ep_resizable_bars/-/ep_resizable_bars-0.0.6.tgz#777a0adae47507720feef4cd4292909def0cbaad"
   integrity sha1-d3oK2uR1B3IP7vTNQpKQne8Muq0=
 
-"ep_set_title_on_pad@git+https://github.com/samirsayyad/ep_set_title_on_pad.git":
+"ep_set_title_on_pad@https://github.com/samirsayyad/ep_set_title_on_pad.git":
   version "0.2.0"
-  resolved "git+https://github.com/samirsayyad/ep_set_title_on_pad.git#e33eaf73d944668cdaecb3bd129a5f4ccb053482"
+  resolved "https://github.com/samirsayyad/ep_set_title_on_pad.git#61eeb9f314dc016bc742bdeda4135037a67fff78"
 
 ep_sticky_attributes@^0.1.0:
   version "0.1.0"
