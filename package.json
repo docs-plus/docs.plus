@@ -29,7 +29,7 @@
     "ep_monetization": "^1.0.0",
     "ep_prompt_for_name": "^1.0.0",
     "ep_remove_embed": "0.0.2",
-    "ep_resizable_bars": "0.0.6",
+    "ep_resizable_bars": "https://github.com/samirsayyad/ep_resizable_bars",
     "ep_set_title_on_pad": "https://github.com/samirsayyad/ep_set_title_on_pad.git",
     "ep_sticky_attributes": "^0.1.0",
     "ep_wrtc_heading": "git+https://github.com/HMarzban/ep_wrtc_heading#80ab3ff"

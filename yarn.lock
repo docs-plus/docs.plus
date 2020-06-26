@@ -9,7 +9,7 @@ ep_adminpads2@0.0.4:
 
 "ep_bottom_chat_bar@https://github.com/samirsayyad/ep_bottom_chat_bar":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_bottom_chat_bar#4ab67056742433c217d672a751b81c926247759c"
+  resolved "https://github.com/samirsayyad/ep_bottom_chat_bar#6ddf29933a8648734914f89c38738039381b6d55"
 
 ep_headings2@^0.1.3:
   version "0.1.3"
@@ -40,10 +40,9 @@ ep_remove_embed@0.0.2:
   resolved "https://registry.yarnpkg.com/ep_remove_embed/-/ep_remove_embed-0.0.2.tgz#7058253a0539a17c927a316b12177feebf1dfde4"
   integrity sha1-cFglOgU5oXySejFrEhd/7r8d/eQ=
 
-ep_resizable_bars@0.0.6:
+"ep_resizable_bars@https://github.com/samirsayyad/ep_resizable_bars":
   version "0.0.6"
-  resolved "https://registry.yarnpkg.com/ep_resizable_bars/-/ep_resizable_bars-0.0.6.tgz#777a0adae47507720feef4cd4292909def0cbaad"
-  integrity sha1-d3oK2uR1B3IP7vTNQpKQne8Muq0=
+  resolved "https://github.com/samirsayyad/ep_resizable_bars#cb37b8c463962bc29b3f716695e175325687bbaa"
 
 "ep_set_title_on_pad@https://github.com/samirsayyad/ep_set_title_on_pad.git":
   version "0.2.0"
