@@ -7,6 +7,10 @@ ep_adminpads2@0.0.4:
   resolved "https://registry.yarnpkg.com/ep_adminpads2/-/ep_adminpads2-0.0.4.tgz#22ccde18c435698c9fc8390742c8f7dce18bc851"
   integrity sha512-sZ7h5VcRJygBQblI3edyuxoy3owfot90zDfNWo7uiIcdxjk1tK9Vyu287/IMxfwOwRLXEg9Zzf77nOKLGxAjDw==
 
+"ep_bottom_chat_bar@https://github.com/samirsayyad/ep_bottom_chat_bar":
+  version "1.0.0"
+  resolved "https://github.com/samirsayyad/ep_bottom_chat_bar#4ab67056742433c217d672a751b81c926247759c"
+
 ep_headings2@^0.1.3:
   version "0.1.3"
   resolved "https://registry.yarnpkg.com/ep_headings2/-/ep_headings2-0.1.3.tgz#9f3055665fe123c3d549f13b4d43a27da355a5e2"
@@ -50,6 +54,6 @@ ep_sticky_attributes@^0.1.0:
   resolved "https://registry.yarnpkg.com/ep_sticky_attributes/-/ep_sticky_attributes-0.1.0.tgz#52da0bd2bece5d614050380d6e7bc69b5c7bb98b"
   integrity sha1-UtoL0r7OXWFAUDgNbnvGm1x7uYs=
 
-"ep_wrtc_heading@git+https://github.com/HMarzban/ep_wrtc_heading#619334b":
-  version "0.7.0"
-  resolved "git+https://github.com/HMarzban/ep_wrtc_heading#619334b72c868146a14e0f63590e029db8d854ed"
+"ep_wrtc_heading@git+https://github.com/HMarzban/ep_wrtc_heading#80ab3ff":
+  version "0.7.3"
+  resolved "git+https://github.com/HMarzban/ep_wrtc_heading#80ab3ff0f7574c0f647f1caf6655166c9f9eb81e"
