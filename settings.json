@@ -275,7 +275,7 @@
    * This will improve the loading performance massively, but makes it difficult
    * to debug the javascript/css
    */
-  "minify": "${MINIFY:false}",
+  "minify": "${MINIFY:true}",
 
   /*
    * How long may clients use served javascript code (in seconds)?
@@ -482,14 +482,14 @@
   "toolbar": {
     "left": [
       ["bold", "italic", "underline"], //, "strikethrough"
-      ["orderedlist", "unorderedlist"], // "indent", "outdent"
-      [ "savedrevision" ,"timeslider","settings"]
+      ["orderedlist", "unorderedlist"] // "indent", "outdent"
+      //[ "savedrevision" ,"timeslider","settings"]
    
       // ["undo", "redo"]
     ],
     "right": [
-       //"importexport",
-       //"embed"
+      [ "timeslider", "savedrevision"], //"importexport",
+      ["settings" ], //"embed"
       ["showusers"]
     ],
     "timeslider": [
