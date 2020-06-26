@@ -600,8 +600,8 @@
     "ep_wrtc_heading": {
       "video": {
         "sizes": {
-          "small": 110,
-          "large": 110
+          "small": 90,
+          "large": 90
         }
       },
       "videoChatLimit": 7,
