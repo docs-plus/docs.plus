@@ -601,7 +601,7 @@
       "video": {
         "sizes": {
           "small": 130,
-          "large": 140
+          "large": 180
         }
       },
       "videoChatLimit": 7,
