@@ -113,7 +113,7 @@ ep_adminpads2@0.0.4:
 
 "ep_bottom_chat_bar@https://github.com/samirsayyad/ep_bottom_chat_bar":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_bottom_chat_bar#df1324d97c58e9fdb8ca7aaeaea8aec2b6d6c7fd"
+  resolved "https://github.com/samirsayyad/ep_bottom_chat_bar#62bf905235e894e42dc60c23d8bd8d6ef9578c36"
 
 "ep_comments_page@https://github.com/ether/ep_comments":
   version "0.1.5"
