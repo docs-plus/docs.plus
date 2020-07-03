@@ -11,8 +11,20 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     res.json(require('ep_etherpad-lite/node/stats').toJSON())
   })
 
+  //serve index.html under /
+  args.app.get('/', function(req, res)
+  {
+    res.send(eejs.require("ep_etherpad-lite/templates/index.html"));
+  });
+
+  //serve javascript.html
+  args.app.get('/javascript', function(req, res)
+  {
+    res.send(eejs.require("ep_etherpad-lite/templates/javascript.html"));
+  });
+
   //serve pad.html under /p
-  args.app.get(['/:pad', '/p/:pad'], async function(req, res, next)
+  args.app.get('/p/:pad', async function(req, res, next)
   {
     // The below might break for pads being rewritten
     var isReadOnly = req.url.indexOf("/p/r.") === 0;
@@ -33,31 +45,6 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     }));
   });
 
-  //serve timeslider.html under /p/$padname/timeslider
-  args.app.get(['/:pad/timeslider', '/p/:pad/timeslider'], function(req, res, next)
-  {
-    hooks.callAll("padInitToolbar", {
-      toolbar: toolbar
-    });
-
-    res.send(eejs.require("ep_etherpad-lite/templates/timeslider.html", {
-      req: req,
-      toolbar: toolbar
-    }));
-  });
-
-  //serve index.html under /
-  args.app.get('/', function(req, res)
-  {
-    res.send(eejs.require("ep_etherpad-lite/templates/index.html"));
-  });
-
-  //serve javascript.html
-  args.app.get('/javascript', function(req, res)
-  {
-    res.send(eejs.require("ep_etherpad-lite/templates/javascript.html"));
-  });
-
   //serve robots.txt
   args.app.get('/robots.txt', function(req, res)
   {
@@ -71,6 +58,19 @@ exports.expressCreateServer = function (hook_name, args, cb) {
         res.sendFile(filePath);
       }
     });
+  });
+
+  //serve timeslider.html under /p/$padname/timeslider
+  args.app.get('/p/:pad/timeslider', function(req, res, next)
+  {
+    hooks.callAll("padInitToolbar", {
+      toolbar: toolbar
+    });
+
+    res.send(eejs.require("ep_etherpad-lite/templates/timeslider.html", {
+      req: req,
+      toolbar: toolbar
+    }));
   });
 
   //serve favicon.ico from all path levels except as a pad name
