@@ -113,7 +113,7 @@ ep_adminpads2@0.0.4:
 
 "ep_bottom_chat_bar@https://github.com/samirsayyad/ep_bottom_chat_bar":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_bottom_chat_bar#df1324d97c58e9fdb8ca7aaeaea8aec2b6d6c7fd"
+  resolved "https://github.com/samirsayyad/ep_bottom_chat_bar#62bf905235e894e42dc60c23d8bd8d6ef9578c36"
 
 "ep_comments_page@https://github.com/ether/ep_comments":
   version "0.1.5"
@@ -134,7 +134,7 @@ ep_hide_line_numbers@0.0.1:
 
 "ep_loading_pad@https://github.com/samirsayyad/ep_loading_pad.git":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_loading_pad.git#17a466e20b485922379951ac6c9e6d59552ba122"
+  resolved "https://github.com/samirsayyad/ep_loading_pad.git#38ce509923c3e0904f0d7f0b1115c35baa8ba5de"
 
 ep_monetization@^1.0.0:
   version "1.0.0"
@@ -153,7 +153,7 @@ ep_remove_embed@0.0.2:
 
 "ep_set_title_on_pad@https://github.com/samirsayyad/ep_set_title_on_pad.git":
   version "0.2.0"
-  resolved "https://github.com/samirsayyad/ep_set_title_on_pad.git#61eeb9f314dc016bc742bdeda4135037a67fff78"
+  resolved "https://github.com/samirsayyad/ep_set_title_on_pad.git#89b8816c3bb3c900c84456447f6f9c9686c9938d"
 
 ep_sticky_attributes@^0.1.0:
   version "0.1.0"

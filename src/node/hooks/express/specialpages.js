@@ -23,6 +23,27 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     res.send(eejs.require("ep_etherpad-lite/templates/javascript.html"));
   });
 
+  //serve pad.html under /p
+  args.app.get('/p/:pad', async function(req, res, next)
+  {
+    // The below might break for pads being rewritten
+    var isReadOnly = req.url.indexOf("/p/r.") === 0;
+
+    hooks.callAll("padInitToolbar", {
+      toolbar: toolbar,
+      isReadOnly: isReadOnly
+    });
+    // @Samir Sayyad Added for social preview
+    let pad_title = await db.get("title:"+req.params.pad) ;
+    //console.log("Found ", pad_title, " for ", req.params.pad);
+  
+    res.send(eejs.require("ep_etherpad-lite/templates/pad.html", {
+      meta : { title : (pad_title) ? pad_title :req.params.pad } ,
+      req: req,
+      toolbar: toolbar,
+      isReadOnly: isReadOnly
+    }));
+  });
 
   //serve robots.txt
   args.app.get('/robots.txt', function(req, res)
@@ -37,28 +58,6 @@ exports.expressCreateServer = function (hook_name, args, cb) {
         res.sendFile(filePath);
       }
     });
-  });
-
-  //serve pad.html under /p
-  args.app.get('/p/:pad', async function(req, res, next)
-  {
-    // The below might break for pads being rewritten
-    var isReadOnly = req.url.indexOf("/p/r.") === 0;
-
-    hooks.callAll("padInitToolbar", {
-      toolbar: toolbar,
-      isReadOnly: isReadOnly
-    });
-    // @Samir Sayyad Added for social preview
-    let pad_title = await db.get("title:"+req.params.pad) ;
-    //console.log("Found ", pad_title, " for ", req.params.pad);
- 
-    res.send(eejs.require("ep_etherpad-lite/templates/pad.html", {
-      meta : { title : (pad_title) ? pad_title :req.params.pad } ,
-      req: req,
-      toolbar: toolbar,
-      isReadOnly: isReadOnly
-    }));
   });
 
   //serve timeslider.html under /p/$padname/timeslider
