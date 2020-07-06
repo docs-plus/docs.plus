@@ -124,7 +124,7 @@ ep_adminpads2@0.0.4:
 
 "ep_custom_header_message@https://github.com/samirsayyad/ep_custom_header_message":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_custom_header_message#e57044b103d6628d8c262918ee4d7e91c87aac31"
+  resolved "https://github.com/samirsayyad/ep_custom_header_message#ed77eb52d1f440516860dd930704b7cfd7789962"
 
 ep_headings2@^0.1.3:
   version "0.1.3"
