@@ -30,6 +30,7 @@
     "ep_hide_line_numbers": "0.0.1",
     "ep_loading_pad": "https://github.com/samirsayyad/ep_loading_pad.git",
     "ep_monetization": "^1.0.0",
+    "ep_profile_modal": "https://github.com/samirsayyad/ep_profile_modal",
     "ep_prompt_for_name": "^1.0.0",
     "ep_remove_embed": "0.0.2",
     "ep_set_title_on_pad": "https://github.com/samirsayyad/ep_set_title_on_pad.git",
