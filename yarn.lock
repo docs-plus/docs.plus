@@ -227,7 +227,7 @@ ep_monetization@^1.0.0:
 
 "ep_profile_modal@https://github.com/samirsayyad/ep_profile_modal":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_profile_modal#6179326e4982a9178fe64314e221ddcc69199589"
+  resolved "https://github.com/samirsayyad/ep_profile_modal#1ab17e698f00d1bef0dd4baecb4dc90e5b20df58"
   dependencies:
     gravatar "^1.8.0"
     node-fetch "^2.6.0"
