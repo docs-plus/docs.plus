@@ -71,7 +71,7 @@
  *    use "\n" as usual.
  *
  *    "defaultPadText" : "${DEFAULT_PAD_TEXT}Line 1\nLine 2"
- */
+ */  
 {
   /*
    * Name your instance!
