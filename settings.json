@@ -488,8 +488,8 @@
     ],
     "right": [
       [ "timeslider", "savedrevision"], //"importexport",
-      ["settings" ], //"embed"
-      ["showusers"]
+      ["settings" ] //"embed"
+      //["showusers"]
     ],
     "timeslider": [
       ["timeslider_export", "timeslider_returnToPad"]
