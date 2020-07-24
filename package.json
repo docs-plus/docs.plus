@@ -35,6 +35,6 @@
     "ep_remove_embed": "0.0.2",
     "ep_set_title_on_pad": "https://github.com/samirsayyad/ep_set_title_on_pad.git",
     "ep_sticky_attributes": "^0.1.0",
-    "ep_wrtc_heading": "git+https://github.com/HMarzban/ep_wrtc_heading#c701b4b"
+    "ep_wrtc_heading": "git+https://github.com/HMarzban/ep_wrtc_heading#3804f42"
   }
 }
