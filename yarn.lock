@@ -218,28 +218,23 @@ ep_monetization@^1.0.0:
     gravatar "^1.8.0"
     node-fetch "^2.6.0"
 
-ep_prompt_for_name@^1.0.0:
-  version "1.0.0"
-  resolved "https://registry.yarnpkg.com/ep_prompt_for_name/-/ep_prompt_for_name-1.0.0.tgz#1a0439bd32d0c1d84f73af5c48d646bcafb8d588"
-  integrity sha512-+6E4/6NG5IANqI1RHj6xmjTIrtFLhsrCla54RYGW8PowUa3DYtsHf2Mz9QGfk3HwmXWjrdXuQaTnHv7IvHrO1A==
-
 ep_remove_embed@0.0.2:
   version "0.0.2"
   resolved "https://registry.yarnpkg.com/ep_remove_embed/-/ep_remove_embed-0.0.2.tgz#7058253a0539a17c927a316b12177feebf1dfde4"
   integrity sha1-cFglOgU5oXySejFrEhd/7r8d/eQ=
 
-"ep_set_title_on_pad@https://github.com/samirsayyad/ep_set_title_on_pad.git":
+"ep_set_title_on_pad@https://github.com/samirsayyad/ep_set_title_on_pad":
   version "0.2.0"
-  resolved "https://github.com/samirsayyad/ep_set_title_on_pad.git#89b8816c3bb3c900c84456447f6f9c9686c9938d"
+  resolved "https://github.com/samirsayyad/ep_set_title_on_pad#57c53d8c696a0e5c8b4d0132b89c5ae7af6c8d4e"
 
 ep_sticky_attributes@^0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/ep_sticky_attributes/-/ep_sticky_attributes-0.1.0.tgz#52da0bd2bece5d614050380d6e7bc69b5c7bb98b"
   integrity sha1-UtoL0r7OXWFAUDgNbnvGm1x7uYs=
 
-"ep_wrtc_heading@git+https://github.com/HMarzban/ep_wrtc_heading#c701b4b":
-  version "0.14.4"
-  resolved "git+https://github.com/HMarzban/ep_wrtc_heading#c701b4bd9d95fc0eef77b9f8ac1e4b0059d34c82"
+"ep_wrtc_heading@git+https://github.com/HMarzban/ep_wrtc_heading#3804f42":
+  version "0.14.10"
+  resolved "git+https://github.com/HMarzban/ep_wrtc_heading#3804f4255099f3ea3c710930db926b3ae79ad52d"
 
 execa@^1.0.0:
   version "1.0.0"
