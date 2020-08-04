@@ -484,13 +484,14 @@ ep_adminpads2@0.0.4:
 
 "ep_full_hyperlinks@https://github.com/samirsayyad/ep_full_hyperlinks":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_full_hyperlinks#b891fcf3e944b1e1f52b7911ab30783f62285a40"
+  resolved "https://github.com/samirsayyad/ep_full_hyperlinks#91a6221ff4492e939bd349228de264845fe14d14"
   dependencies:
     formidable "*"
     html-metadata-parser "^1.0.3"
     meta-resolver "^0.0.3"
     opengraphjs "^1.1.0"
     socket.io-client "*"
+    uri-js "^4.2.2"
 
 ep_headings2@^0.1.3:
   version "0.1.3"
@@ -1443,6 +1444,13 @@ uri-js@^3.0.2:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/uri-js/-/uri-js-3.0.2.tgz#f90b858507f81dea4dcfbb3c4c3dbfa2b557faaa"
   integrity sha1-+QuFhQf4HepNz7s8TD2/orVX+qo=
+  dependencies:
+    punycode "^2.1.0"
+
+uri-js@^4.2.2:
+  version "4.2.2"
+  resolved "https://registry.yarnpkg.com/uri-js/-/uri-js-4.2.2.tgz#94c540e1ff772956e2299507c010aea6c8838eb0"
+  integrity sha512-KY9Frmirql91X2Qgjry0Wd4Y+YTdrdZheS8TFwvkbLWf/G5KNJDCh6pKL5OZctEW4+0Baa5idK2ZQuELRwPznQ==
   dependencies:
     punycode "^2.1.0"
 
