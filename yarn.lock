@@ -329,7 +329,7 @@ ep_adminpads2@0.0.4:
 
 "ep_full_hyperlinks@https://github.com/samirsayyad/ep_full_hyperlinks":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_full_hyperlinks#d0c0b8c75006de6566b5040afe04f274213d4a95"
+  resolved "https://github.com/samirsayyad/ep_full_hyperlinks#92ea91916873a9e48145fb8569c1a136ab23d74f"
   dependencies:
     formidable "*"
     meta-resolver "0.0.3"
