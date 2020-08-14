@@ -599,11 +599,14 @@
     },
     "ep_insert_media":{
       "storage":{
-        "type": "S3",
+        "endPoint" : "${ULTIMA_BUCKET_S3_SERVER:null}",
+        "port":80,
+        "useSSL" : true ,
+        "type": "min.io",
         "accessKeyId": "${ULTIMA_BUCKET_ACCESS_KEY_ID:null}",
         "secretAccessKey": "${ULTIMA_BUCKET_ACCESS_KEY_SECRET:null}",
         "region": "UK",
-        "bucket": "samirsayyad",
+        "bucket": "EP_MEDIA_BUCKET_NAME",
         "baseFolder": "${ULTIMA_FOLDER_PATH:./}"
       },
       "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"],
