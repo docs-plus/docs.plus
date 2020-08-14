@@ -603,8 +603,8 @@
         "accessKeyId": "${ULTIMA_BUCKET_ACCESS_KEY_ID:null}",
         "secretAccessKey": "${ULTIMA_BUCKET_ACCESS_KEY_SECRET:null}",
         "region": "UK",
-        "bucket": "docs.plus-image_BUCKET_NAME",
-        "baseFolder": "${FOLDER_PATH:null}"
+        "bucket": "EP_MEDIA",
+        "baseFolder": "${ULTIMA_FOLDER_PATH:./}"
       },
       "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"],
       "maxFileSize": 5000000
