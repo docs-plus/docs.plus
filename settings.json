@@ -599,7 +599,7 @@
     },
     "ep_insert_media":{
       "storage":{
-        "endPoint" : "${ULTIMA_BUCKET_S3_SERVER:null}",
+        "endPoint" : "${78.46.16.197:9000}",
         "port":null,
         "useSSL" : true ,
         "type": "min.io",
