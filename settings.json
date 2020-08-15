@@ -601,7 +601,7 @@
       "storage":{
         "endPoint" : "${ULTIMA_BUCKET_S3_SERVER}",
         "useSSL" : true ,
-        "type": "min.io",
+        "type": "s3",
         "accessKeyId": "${ULTIMA_BUCKET_ACCESS_KEY_ID:null}",
         "secretAccessKey": "${ULTIMA_BUCKET_ACCESS_KEY_SECRET:null}",
         "region": "UK",
