@@ -16,5 +16,5 @@ api:
       ./node_modules/ep_etherpad-lite/node/server.js
     watch:
       - "*.js"
-ep_media:
+media:
   type: bucket
