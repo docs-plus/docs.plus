@@ -407,7 +407,7 @@ ep_hide_line_numbers@0.0.1:
 
 "ep_insert_media@https://github.com/samirsayyad/ep_insert_media":
   version "0.0.1"
-  resolved "https://github.com/samirsayyad/ep_insert_media#31bc124076d43475806769f7a78d3c1224fa31be"
+  resolved "https://github.com/samirsayyad/ep_insert_media#cb7b3ca35896ed5e2e57b28ac545d8387c654d93"
   dependencies:
     busboy "^0.3.1"
     mime-db "^1.44.0"
