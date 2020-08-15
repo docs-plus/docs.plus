@@ -599,8 +599,7 @@
     },
     "ep_insert_media":{
       "storage":{
-        "endPoint" : "${78.46.16.197}",
-        "port":9000,
+        "endPoint" : "${ULTIMA_BUCKET_S3_SERVER}",
         "useSSL" : true ,
         "type": "min.io",
         "accessKeyId": "${ULTIMA_BUCKET_ACCESS_KEY_ID:null}",
