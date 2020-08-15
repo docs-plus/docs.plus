@@ -608,7 +608,8 @@
         "bucket": "${MEDIA_BUCKET_NAME}",
         "baseFolder": "${ULTIMA_FOLDER_PATH:./}"
       },
-      "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"],
+      "fileTypes": ["jpeg", "jpg", "bmp", "gif","png","webm","mp4","m4v","mp3",
+        "ogg", "m4a","flac","wav","wma", "aac"  ],
       "maxFileSize": 50000000
     },
     "ep_wrtc_heading": {
