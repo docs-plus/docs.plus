@@ -609,7 +609,7 @@
         "baseFolder": "${ULTIMA_FOLDER_PATH:./}"
       },
       "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"],
-      "maxFileSize": 5000000
+      "maxFileSize": 50000000
     },
     "ep_wrtc_heading": {
       "video": {
