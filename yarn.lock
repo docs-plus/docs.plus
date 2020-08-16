@@ -345,6 +345,22 @@ ep_hide_line_numbers@0.0.1:
   resolved "https://registry.yarnpkg.com/ep_hide_line_numbers/-/ep_hide_line_numbers-0.0.1.tgz#9f3fac543f8a2311ff88a634eba947c6f34c1b66"
   integrity sha1-nz+sVD+KIxH/iKY066lHxvNMG2Y=
 
+<<<<<<< HEAD
+=======
+"ep_insert_media@https://github.com/samirsayyad/ep_insert_media":
+  version "0.0.1"
+  resolved "https://github.com/samirsayyad/ep_insert_media#8e9f6b4a41837e8976d4dae2336bd61d9c2f3c3f"
+  dependencies:
+    busboy "^0.3.1"
+    mime-db "^1.44.0"
+    mime-types "^2.1.27"
+    minio "^7.0.16"
+    path "^0.12.7"
+    stream_upload "^0.0.5"
+    url "^0.11.0"
+    uuid "^8.3.0"
+
+>>>>>>> dev
 "ep_loading_pad@https://github.com/samirsayyad/ep_loading_pad.git":
   version "1.0.0"
   resolved "https://github.com/samirsayyad/ep_loading_pad.git#38ce509923c3e0904f0d7f0b1115c35baa8ba5de"
@@ -375,9 +391,9 @@ ep_sticky_attributes@^0.1.0:
   resolved "https://registry.yarnpkg.com/ep_sticky_attributes/-/ep_sticky_attributes-0.1.0.tgz#52da0bd2bece5d614050380d6e7bc69b5c7bb98b"
   integrity sha1-UtoL0r7OXWFAUDgNbnvGm1x7uYs=
 
-"ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#777a954":
-  version "0.19.13"
-  resolved "https://github.com/HMarzban/ep_wrtc_heading#777a954d2028b10dbf01a944d765099d6a33db05"
+"ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#3804f42":
+  version "0.14.10"
+  resolved "https://github.com/HMarzban/ep_wrtc_heading#3804f4255099f3ea3c710930db926b3ae79ad52d"
 
 execa@^1.0.0:
   version "1.0.0"
