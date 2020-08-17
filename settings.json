@@ -274,7 +274,7 @@
    * This will improve the loading performance massively, but makes it difficult
    * to debug the javascript/css
    */
-  "minify": "${MINIFY:true}",
+  "minify": false,
 
   /*
    * How long may clients use served javascript code (in seconds)?
@@ -566,7 +566,7 @@
     "ep_page_view_disable_change" : false ,
     // Display comments as icons, not boxes
     "ep_comments_page": {
-      "displayCommentAsIcon": false,
+      "displayCommentAsIcon": true,
       "highlightSelectedText": true
     },
     "ep_toc": {
