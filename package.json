@@ -34,8 +34,12 @@
     "ep_monetization": "^1.0.0",
     "ep_profile_modal": "https://github.com/samirsayyad/ep_profile_modal",
     "ep_remove_embed": "0.0.2",
-    "ep_set_title_on_pad": "https://github.com/samirsayyad/ep_set_title_on_pad.git",
+    "ep_set_title_on_pad": "https://github.com/samirsayyad/ep_set_title_on_pad",
     "ep_sticky_attributes": "^0.1.0",
+<<<<<<< HEAD
     "ep_wrtc_heading": "https://github.com/HMarzban/ep_wrtc_heading#3804f42"
+=======
+    "ep_wrtc_heading": "https://github.com/HMarzban/ep_wrtc_heading#2d10dd8"
+>>>>>>> master
   }
 }

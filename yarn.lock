@@ -38,9 +38,15 @@ asynckit@^0.4.0:
   integrity sha1-x57Zf380y48robyXkLzDZkdLS3k=
 
 aws-sdk@^2.224.1:
+<<<<<<< HEAD
   version "2.733.0"
   resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.733.0.tgz#2f3c8b1c6afc26bed97213682cbec47f996f6120"
   integrity sha512-unW3UYTwhpNZmCgMHby+8EFDNROoaU5ogWWjcUj/ZlFQCAtYCJdf2JqUT+rIi7+6KWqrDKY3sTredfK1KKXZ8A==
+=======
+  version "2.734.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.734.0.tgz#522370a95e70d6df44d94677bc01fe3b3522da3c"
+  integrity sha512-F5SrcOm6WyaN5j+pybx97vfSCa0SIz/kukJNSeDzMdk5q0xsKUjtUzL/kc0QwtCspCni0WTNmBKiD+firP5JKQ==
+>>>>>>> master
   dependencies:
     buffer "4.9.2"
     events "1.1.1"
@@ -389,7 +395,7 @@ ep_adminpads2@0.0.4:
 
 "ep_full_hyperlinks@https://github.com/samirsayyad/ep_full_hyperlinks":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_full_hyperlinks#6f25d293b758ce71d711621aac236dc5a2f3dbed"
+  resolved "https://github.com/samirsayyad/ep_full_hyperlinks#4f961a9d3d543f0ff956c7e1bc378b287136114e"
   dependencies:
     formidable "*"
     meta-resolver "0.0.3"
@@ -407,7 +413,11 @@ ep_hide_line_numbers@0.0.1:
 
 "ep_insert_media@https://github.com/samirsayyad/ep_insert_media":
   version "0.0.1"
+<<<<<<< HEAD
   resolved "https://github.com/samirsayyad/ep_insert_media#30abd58ba09c0a100a4e74d66c018c07e7e490db"
+=======
+  resolved "https://github.com/samirsayyad/ep_insert_media#8e9f6b4a41837e8976d4dae2336bd61d9c2f3c3f"
+>>>>>>> master
   dependencies:
     busboy "^0.3.1"
     mime-db "^1.44.0"
@@ -429,7 +439,7 @@ ep_monetization@^1.0.0:
 
 "ep_profile_modal@https://github.com/samirsayyad/ep_profile_modal":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_profile_modal#2499a0a8ebc983701a95c4973e0ac116c54136a6"
+  resolved "https://github.com/samirsayyad/ep_profile_modal#51e4d5af7e07652ae2c375241083162c0393f94c"
   dependencies:
     gravatar "^1.8.0"
     node-fetch "^2.6.0"
@@ -439,18 +449,24 @@ ep_remove_embed@0.0.2:
   resolved "https://registry.yarnpkg.com/ep_remove_embed/-/ep_remove_embed-0.0.2.tgz#7058253a0539a17c927a316b12177feebf1dfde4"
   integrity sha1-cFglOgU5oXySejFrEhd/7r8d/eQ=
 
-"ep_set_title_on_pad@https://github.com/samirsayyad/ep_set_title_on_pad.git":
+"ep_set_title_on_pad@https://github.com/samirsayyad/ep_set_title_on_pad":
   version "0.2.0"
-  resolved "https://github.com/samirsayyad/ep_set_title_on_pad.git#89b8816c3bb3c900c84456447f6f9c9686c9938d"
+  resolved "https://github.com/samirsayyad/ep_set_title_on_pad#57c53d8c696a0e5c8b4d0132b89c5ae7af6c8d4e"
 
 ep_sticky_attributes@^0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/ep_sticky_attributes/-/ep_sticky_attributes-0.1.0.tgz#52da0bd2bece5d614050380d6e7bc69b5c7bb98b"
   integrity sha1-UtoL0r7OXWFAUDgNbnvGm1x7uYs=
 
+<<<<<<< HEAD
 "ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#3804f42":
   version "0.14.10"
   resolved "https://github.com/HMarzban/ep_wrtc_heading#3804f4255099f3ea3c710930db926b3ae79ad52d"
+=======
+"ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#2d10dd8":
+  version "0.14.10"
+  resolved "https://github.com/HMarzban/ep_wrtc_heading#2d10dd8721952cbb124d69b31b7ade1732433856"
+>>>>>>> master
 
 es6-error@^4.1.1:
   version "4.1.1"
