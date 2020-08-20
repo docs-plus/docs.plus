@@ -185,7 +185,7 @@
     "user":     "${DB_USER}",
     "password": "${DB_PASS}",
     "charset":  "${DB_CHARSET}",
-    "filename": "${DB_FILENAME:var/dirty.db}"
+    "filename": "${DB_FILENAME:null}"
   },
 
   /*
