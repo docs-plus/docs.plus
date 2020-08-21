@@ -25,6 +25,7 @@ var log4js = require('log4js');
 const util = require("util");
 
 // set database settings
+console.log("#################### we are connecting to db from",settings.dbType,settings.dbSettings)
 let db = new ueberDB.database(settings.dbType, settings.dbSettings, null, log4js.getLogger("ueberDB"));
 
 /**

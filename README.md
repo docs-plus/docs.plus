@@ -15,6 +15,8 @@ It solves many common organising problems, and can be frictionlessly adopted by 
 <p>docs.plus is built with <a href="https://github.com/ether/etherpad-lite">etherpad lite</a> and a set of custom plugins:</p>
 <ul>
 <li><a href="https://github.com/HMarzban/ep_wrtc_heading">ep_wrtc_heading</a></li>
+<li><a href="https://github.com/samirsayyad/ep_insert_media">ep_insert_media</a></li>
+<li><a href="https://github.com/samirsayyad/ep_full_hyperlinks">ep_full_hyperlinks</a></li>
 <li><a href="https://github.com/samirsayyad/ep_bottom_chat_bar">ep_bottom_chat_bar</a></li>
 <li><a href="https://github.com/samirsayyad/ep_custom_header_message">ep_custom_header_message</a></li>
 <li><a href="https://github.com/samirsayyad/ep_docs_plus_customize">ep_docs_plus_customise</a></li>

@@ -3,7 +3,7 @@
  *
  * By default, some runtime customizations are supported (see the
  * documentation).
- * 
+ *
  * If you need more control, edit this file and rebuild the container.
  */
 /*
@@ -177,7 +177,7 @@
    * https://www.npmjs.com/package/ueberdb2
    */
 
-  "dbType": "${DB_TYPE:dirty}",
+  "dbType": "${DB_TYPE:null}",
   "dbSettings": {
     "host":     "${DB_HOST}",
     "port":     "${DB_PORT}",
@@ -185,7 +185,7 @@
     "user":     "${DB_USER}",
     "password": "${DB_PASS}",
     "charset":  "${DB_CHARSET}",
-    "filename": "${DB_FILENAME:var/dirty.db}"
+    "filename": "${DB_FILENAME:null}"
   },
 
   /*
