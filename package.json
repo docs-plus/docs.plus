@@ -12,7 +12,8 @@
   },
   "scripts": {
     "build": "bash ./bin/installDeps.sh",
-    "start": "DB_TYPE=postgres DB_HOST=$PGHOST DB_PORT=$PGPORT DB_USER=$PGUSER DB_PASS=$PGPASSWORD DB_NAME=$PGDATABASE bash ./bin/run.sh --root"
+    "start": "DB_TYPE=postgres DB_HOST=$PGHOST DB_PORT=$PGPORT DB_USER=$PGUSER DB_PASS=$PGPASSWORD DB_NAME=$PGDATABASE bash ./bin/run.sh --root",
+    "backup" : "node backup-pg-to-s3/index.js"
   },
   "repository": {
     "type": "git",

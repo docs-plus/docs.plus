@@ -21,7 +21,7 @@ media:
 backup:
   type: api
   runtime: node
-  start: npm run start
+  start: npm run backup
   install:
     command: npm install
     watch:
