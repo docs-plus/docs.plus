@@ -1,3 +1,0 @@
-[submodule "backup-pg-to-s3"]
-	path = backup-pg-to-s3
-	url = https://github.com/samirsayyad/backup-pg-to-s3
