@@ -18,16 +18,3 @@ api:
       - "*.js"
 media:
   type: bucket
-backup:
-  type: api
-  runtime: node
-  start: npm run backup
-  install:
-    command: npm install
-    watch:
-      - yarn.lock
-  dev:
-    command: npm run start
-    back-sync: node_modules
-    watch:
-      - "*.js"
