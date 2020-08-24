@@ -130,7 +130,7 @@ exports.getPad = async function(id, text)
   }
 
   let pad = globalPads.get(id);
-
+  console.log("global pads is " , pad)
   // return pad if it's already loaded
   if (pad != null) {
     return pad;
@@ -138,6 +138,7 @@ exports.getPad = async function(id, text)
 
   // try to load pad
   pad = new Pad(id);
+  console.log("load pads is " , pad)
 
   // initalize the pad
   await pad.init(text);
