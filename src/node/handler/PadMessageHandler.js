@@ -926,6 +926,7 @@ async function handleClientReady(client, message)
 
   // get timestamp of latest revision needed for timeslider
   let currentTime = await pad.getRevisionDate(pad.getHeadRevisionNumber());
+  messageLogger.info("the current time is : ",currentTime);
 
   // get all author data out of the database (in parallel)
   let historicalAuthorData = {};
