@@ -374,9 +374,9 @@ ep_sticky_attributes@^0.1.0:
   resolved "https://registry.yarnpkg.com/ep_sticky_attributes/-/ep_sticky_attributes-0.1.0.tgz#52da0bd2bece5d614050380d6e7bc69b5c7bb98b"
   integrity sha1-UtoL0r7OXWFAUDgNbnvGm1x7uYs=
 
-"ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#c83c17d":
-  version "0.25.2"
-  resolved "https://github.com/HMarzban/ep_wrtc_heading#c83c17d33f24ce0b287375f8bced66ce248fffa0"
+"ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#90a138f":
+  version "0.26.0"
+  resolved "https://github.com/HMarzban/ep_wrtc_heading#90a138f559dd95669da7ef83eb8a3fbebf239f7a"
   dependencies:
     lodash "^4.17.20"
 
