@@ -1,4 +1,4 @@
-/**
+/***
  * THIS IS THE SETTINGS FILE THAT IS COPIED INSIDE THE DOCKER CONTAINER.
  *
  * By default, some runtime customizations are supported (see the
