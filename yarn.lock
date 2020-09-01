@@ -335,10 +335,9 @@ ep_adminpads2@0.0.4:
     meta-resolver "0.0.3"
     socket.io-client "*"
 
-ep_headings2@^0.1.3:
+"ep_headings2@https://github.com/samirsayyad/ep_headings2":
   version "0.1.3"
-  resolved "https://registry.yarnpkg.com/ep_headings2/-/ep_headings2-0.1.3.tgz#9f3055665fe123c3d549f13b4d43a27da355a5e2"
-  integrity sha512-WRk7zWalTyDLkD2lOt4J03xcI9tGiq5CiZmRxp7bUURoEFuc90aQpTSPadhIsbkHmgsF7rkAHj6SoRDiXiMtJg==
+  resolved "https://github.com/samirsayyad/ep_headings2#d52226d9b5f895f341a7e08f9db28f8b19dead2d"
 
 ep_hide_line_numbers@0.0.1:
   version "0.0.1"
