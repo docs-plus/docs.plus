@@ -38,9 +38,15 @@ asynckit@^0.4.0:
   integrity sha1-x57Zf380y48robyXkLzDZkdLS3k=
 
 aws-sdk@^2.224.1:
+<<<<<<< HEAD
   version "2.743.0"
   resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.743.0.tgz#c72a471c80cf88d78d854c780de861fb8475ae34"
   integrity sha512-xujZGeA5gnbPBIlq6w/b+WYDKLXYiPWeVHvR0LKcvLLAr8IgzYYInmLx+7CU6ynXuBwVQtqGl2lZ2JSZbnMydg==
+=======
+  version "2.738.0"
+  resolved "https://registry.yarnpkg.com/aws-sdk/-/aws-sdk-2.738.0.tgz#37e4b75ab1acf9bc01bea5d4f83ebb937842de6a"
+  integrity sha512-oO1odRT4DGssivoP6lHO3yB6I+5sU0uqpj6UJ0kS5wrHQ9J9EGrictLVKA9y6XhN0sNW+XPNLD9jMMY/A+gXWA==
+>>>>>>> master
   dependencies:
     buffer "4.9.2"
     events "1.1.1"
@@ -406,7 +412,11 @@ ep_hide_line_numbers@0.0.1:
 
 "ep_insert_media@https://github.com/samirsayyad/ep_insert_media":
   version "0.0.1"
+<<<<<<< HEAD
   resolved "https://github.com/samirsayyad/ep_insert_media#266724d79e6671c1cda52e5a0ac41c60a6e75a45"
+=======
+  resolved "https://github.com/samirsayyad/ep_insert_media#44c55c1a98b8a266d5d8f8d6565b3d371a921d87"
+>>>>>>> master
   dependencies:
     busboy "^0.3.1"
     mime-db "^1.44.0"
@@ -723,7 +733,11 @@ lodash@^4.11.1:
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.19.tgz#e48ddedbe30b3321783c5b4301fbd353bc1e4a4b"
   integrity sha512-JNvd8XER9GQX0v2qJgsaN/mzFCNA5BRe/j8JN9d+tWyGLSodKQHKFicdwNYzWwI3wjRnaKPsGj1XkBjx/F96DQ==
 
+<<<<<<< HEAD
 lodash@^4.14.2, lodash@^4.17.20:
+=======
+lodash@^4.14.2:
+>>>>>>> master
   version "4.17.20"
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.20.tgz#b44a9b6297bcb698f1c51a3545a2b3b368d59c52"
   integrity sha512-PlhdFcillOINfeV7Ni6oF1TAEayyZBoZ8bcshTHqOYJYlrqzRK5hagpagky5o4HfCzzd1TRkXPMFq6cKk9rGmA==
@@ -1199,9 +1213,15 @@ to-array@0.1.4:
   integrity sha1-F+bBH3PdTz10zaek/zI46a2b+JA=
 
 underscore@^1.8.3:
+<<<<<<< HEAD
   version "1.11.0"
   resolved "https://registry.yarnpkg.com/underscore/-/underscore-1.11.0.tgz#dd7c23a195db34267186044649870ff1bab5929e"
   integrity sha512-xY96SsN3NA461qIRKZ/+qox37YXPtSBswMGfiNptr+wrt6ds4HaMw23TP612fEyGekRE6LNRiLYr/aqbHXNedw==
+=======
+  version "1.10.2"
+  resolved "https://registry.yarnpkg.com/underscore/-/underscore-1.10.2.tgz#73d6aa3668f3188e4adb0f1943bd12cfd7efaaaf"
+  integrity sha512-N4P+Q/BuyuEKFJ43B9gYuOj4TQUHXX+j2FqguVOpjkssLUUrnJofCcBccJSCoeturDoZU6GorDTHSvUDlSQbTg==
+>>>>>>> master
 
 universalify@^0.1.0:
   version "0.1.2"

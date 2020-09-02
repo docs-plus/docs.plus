@@ -1,4 +1,4 @@
-/**
+/***
  * THIS IS THE SETTINGS FILE THAT IS COPIED INSIDE THE DOCKER CONTAINER.
  *
  * By default, some runtime customizations are supported (see the
@@ -274,7 +274,7 @@
    * This will improve the loading performance massively, but makes it difficult
    * to debug the javascript/css
    */
-  "minify": "${MINIFY:true}",
+  "minify": "${MINIFY:false}",
 
   /*
    * How long may clients use served javascript code (in seconds)?
