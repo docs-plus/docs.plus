@@ -440,7 +440,7 @@ ep_remove_embed@0.0.2:
 
 "ep_set_title_on_pad@https://github.com/samirsayyad/ep_set_title_on_pad":
   version "0.2.0"
-  resolved "https://github.com/samirsayyad/ep_set_title_on_pad#a161cccb3070271c3242feafe446fc619527b6ea"
+  resolved "https://github.com/samirsayyad/ep_set_title_on_pad#5712e5fe4fd881023ab25126460b20f0cd111281"
 
 ep_sticky_attributes@^0.1.0:
   version "0.1.0"
