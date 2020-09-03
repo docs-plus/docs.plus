@@ -389,7 +389,7 @@ ep_adminpads2@0.0.4:
 
 "ep_full_hyperlinks@https://github.com/samirsayyad/ep_full_hyperlinks":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_full_hyperlinks#f37ec3ef7cc43fb11f54b8e6bbdf6fb1688d82a3"
+  resolved "https://github.com/samirsayyad/ep_full_hyperlinks#0e94abd1c833fddd16843f7e22fabb165953da12"
   dependencies:
     formidable "*"
     meta-resolver "0.0.3"
@@ -440,16 +440,16 @@ ep_remove_embed@0.0.2:
 
 "ep_set_title_on_pad@https://github.com/samirsayyad/ep_set_title_on_pad":
   version "0.2.0"
-  resolved "https://github.com/samirsayyad/ep_set_title_on_pad#a161cccb3070271c3242feafe446fc619527b6ea"
+  resolved "https://github.com/samirsayyad/ep_set_title_on_pad#5712e5fe4fd881023ab25126460b20f0cd111281"
 
 ep_sticky_attributes@^0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/ep_sticky_attributes/-/ep_sticky_attributes-0.1.0.tgz#52da0bd2bece5d614050380d6e7bc69b5c7bb98b"
   integrity sha1-UtoL0r7OXWFAUDgNbnvGm1x7uYs=
 
-"ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#7996018":
-  version "0.26.2"
-  resolved "https://github.com/HMarzban/ep_wrtc_heading#799601804470c22f0e54ac047f1167422669ace3"
+"ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#8c378dd":
+  version "0.26.6"
+  resolved "https://github.com/HMarzban/ep_wrtc_heading#8c378dddf9ac9d7c0948cac1a2aadbbd99f7414a"
   dependencies:
     lodash "^4.17.20"
 
