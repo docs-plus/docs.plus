@@ -385,7 +385,7 @@ ep_adminpads2@0.0.4:
 
 "ep_docs_plus_customize@https://github.com/samirsayyad/ep_docs_plus_customize":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_docs_plus_customize#9d2795204f0d4a84a9379e4b33af516491330819"
+  resolved "https://github.com/samirsayyad/ep_docs_plus_customize#0fe2088271002eec279ed1f665575a1c880b99b4"
 
 "ep_full_hyperlinks@https://github.com/samirsayyad/ep_full_hyperlinks":
   version "1.0.0"
@@ -447,9 +447,9 @@ ep_sticky_attributes@^0.1.0:
   resolved "https://registry.yarnpkg.com/ep_sticky_attributes/-/ep_sticky_attributes-0.1.0.tgz#52da0bd2bece5d614050380d6e7bc69b5c7bb98b"
   integrity sha1-UtoL0r7OXWFAUDgNbnvGm1x7uYs=
 
-"ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#8c378dd":
-  version "0.26.6"
-  resolved "https://github.com/HMarzban/ep_wrtc_heading#8c378dddf9ac9d7c0948cac1a2aadbbd99f7414a"
+"ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#8b391ce":
+  version "0.26.14"
+  resolved "https://github.com/HMarzban/ep_wrtc_heading#8b391ceff59fe4d84ee2067bce2eecf36e25f0b9"
   dependencies:
     lodash "^4.17.20"
 
