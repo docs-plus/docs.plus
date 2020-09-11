@@ -276,10 +276,10 @@ Pad.prototype.appendText = function appendText(newText) {
   this.appendRevision(changeset);
 };
 
-Pad.prototype.appendChatMessage = function appendChatMessage(text, userId, time) {
+Pad.prototype.appendChatMessage = function appendChatMessage(text, userId, time ,chatTextType) {
   this.chatHead++;
   // save the chat entry in the database
-  db.set("pad:" + this.id + ":chat:" + this.chatHead, { "text": text, "userId": userId, "time": time });
+  db.set("pad:" + this.id + ":chat:" + this.chatHead, { "text": text, "userId": userId, "time": time, "chatTextType" : chatTextType  });
   this.saveToDatabase();
 };
 
