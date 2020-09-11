@@ -428,7 +428,7 @@ ep_monetization@^1.0.0:
 
 "ep_profile_modal@https://github.com/samirsayyad/ep_profile_modal":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_profile_modal#9d6c124d0072ca7437f26283a729a79ce106c304"
+  resolved "https://github.com/samirsayyad/ep_profile_modal#95cac405edbb02bd5e3fa7c48c34fb79ca021a6c"
   dependencies:
     gravatar "^1.8.0"
     node-fetch "^2.6.0"
@@ -447,9 +447,9 @@ ep_sticky_attributes@^0.1.0:
   resolved "https://registry.yarnpkg.com/ep_sticky_attributes/-/ep_sticky_attributes-0.1.0.tgz#52da0bd2bece5d614050380d6e7bc69b5c7bb98b"
   integrity sha1-UtoL0r7OXWFAUDgNbnvGm1x7uYs=
 
-"ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#8b391ce":
-  version "0.26.14"
-  resolved "https://github.com/HMarzban/ep_wrtc_heading#8b391ceff59fe4d84ee2067bce2eecf36e25f0b9"
+"ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#78ac7a0":
+  version "0.26.16"
+  resolved "https://github.com/HMarzban/ep_wrtc_heading#78ac7a0592081c0b0b9b506b89ecf541414001a6"
   dependencies:
     lodash "^4.17.20"
 
