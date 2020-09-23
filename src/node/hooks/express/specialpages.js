@@ -4,6 +4,7 @@ var toolbar = require("ep_etherpad-lite/node/utils/toolbar");
 var hooks = require('ep_etherpad-lite/static/js/pluginfw/hooks');
 var settings = require('../../utils/Settings');
 var db = require("../../db/DB");
+var minify = require('../../utils/Minify');
 
 exports.expressCreateServer = function (hook_name, args, cb) {
   // expose current stats
@@ -23,27 +24,58 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     res.send(eejs.require("ep_etherpad-lite/templates/javascript.html"));
   });
 
-  //serve pad.html under /p
-  args.app.get('/p/:pad', async function(req, res, next)
-  {
-    // The below might break for pads being rewritten
-    var isReadOnly = req.url.indexOf("/p/r.") === 0;
-
-    hooks.callAll("padInitToolbar", {
-      toolbar: toolbar,
-      isReadOnly: isReadOnly
-    });
-    // @Samir Sayyad Added for social preview
-    let pad_title = await db.get("title:"+req.params.pad) ;
-    //console.log("Found ", pad_title, " for ", req.params.pad);
-  
-    res.send(eejs.require("ep_etherpad-lite/templates/pad.html", {
-      meta : { title : (pad_title) ? pad_title :req.params.pad } ,
-      req: req,
-      toolbar: toolbar,
-      isReadOnly: isReadOnly
-    }));
+  // Backward compatibility for plugins
+  args.app.get(/(\/static\/plugins\/(.*))/ , function (req, res, next) {
+    const path = req.path.split("/");
+    const startPath = path.findIndex(path => path === "plugins");
+    const newPath = path.slice(startPath, path.length).join("/");
+    req.params.filename = newPath;
+    return minify.minify(req, res);
   });
+
+  //serve timeslider.html under /p/$padname/timeslider
+  args.app.get(/^\/p\/(.*)\/timeslider$/i, function(req, res, next){
+      const padId = req.params['0'].split('/').join(":");
+      const staticRootAddress = req.path.split("/")
+        .filter(x=> x.length)
+        .map(path => "../")
+        .join("");
+      hooks.callAll("padInitToolbar", {
+        toolbar: toolbar
+      });
+      res.send(eejs.require("ep_etherpad-lite/templates/timeslider.html", {
+        padId,
+        staticRootAddress,
+        req: req,
+        toolbar: toolbar
+      }));
+    });
+
+   //serve pad.html under /p
+   args.app.get(/^\/p\/(.*)/i, function(req, res, next){
+     // The below might break for pads being rewritten
+     const isReadOnly = req.url.indexOf("/p/r.") === 0;
+     const padId = req.params['0'].split('/').join(":");
+     const staticRootAddress = req.path.split("/")
+       .filter(x=> x.length)
+       .map(path => "../")
+       .join("");
+     hooks.callAll("padInitToolbar", {
+       toolbar: toolbar,
+       isReadOnly: isReadOnly
+     });
+      // @Samir Sayyad Added for social preview
+      let pad_title = await db.get("title:"+req.params.pad) ;
+      //console.log("Found ", pad_title, " for ", req.params.pad);
+     res.send(eejs.require("ep_etherpad-lite/templates/pad.html", {
+        meta : { title : (pad_title) ? pad_title :req.params.pad } ,
+        padId,
+        staticRootAddress,
+        req: req,
+        toolbar: toolbar,
+        isReadOnly: isReadOnly
+     }));
+   });
 
   //serve robots.txt
   args.app.get('/robots.txt', function(req, res)
@@ -60,21 +92,9 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     });
   });
 
-  //serve timeslider.html under /p/$padname/timeslider
-  args.app.get('/p/:pad/timeslider', function(req, res, next)
-  {
-    hooks.callAll("padInitToolbar", {
-      toolbar: toolbar
-    });
-
-    res.send(eejs.require("ep_etherpad-lite/templates/timeslider.html", {
-      req: req,
-      toolbar: toolbar
-    }));
-  });
 
   //serve favicon.ico from all path levels except as a pad name
-  args.app.get( /\/favicon.ico$/, function(req, res)
+  args.app.get( /static\/favicon.ico$/, function(req, res)
   {
     var filePath = path.join(settings.root, "src", "static", "skins", settings.skinName, "favicon.ico");
 
