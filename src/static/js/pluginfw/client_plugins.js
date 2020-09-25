@@ -29,10 +29,10 @@ exports.update = function (cb) {
     exports.hooks = pluginUtils.extractHooks(exports.parts, "client_hooks");
     exports.loaded = true;
     callback();
-   }).error(function(xhr, s, err){
-     console.error("Failed to load plugin-definitions: " + err);
-     callback();
-   });
+  }).fail(function(error){
+    console.error("Failed to load plugin-definitions: " + error);
+    callback();
+  });
 };
 
 function adoptPlugins(plugins) {
