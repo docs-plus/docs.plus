@@ -18,6 +18,10 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     res.send(eejs.require("ep_etherpad-lite/templates/index.html"));
   });
 
+  args.app.get(/^\/p\/(.*)/i, function(req, res, next){
+    const padId = req.params['0'].split('/').join(":");
+    res.redirect(`/${padId}`);
+  })
     //  serve pad.html under /p
     args.app.get(/^\/(?!.*(static|javascripts|javascript|pluginfw|socket.io|tests|lib))(.*)+/i, async function(req, res, next){
       // The below might break for pads being rewritten
