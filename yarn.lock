@@ -819,12 +819,13 @@ ep_monetization@^1.0.0:
 
 "ep_profile_modal@https://github.com/samirsayyad/ep_profile_modal":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_profile_modal#897c37ec0eb3d4439826a056c5cc960a27cce59c"
+  resolved "https://github.com/samirsayyad/ep_profile_modal#f874aafcfcf1d8c6904c9ca6fda4b7e47b975df3"
   dependencies:
     buffer-image-size "^0.6.4"
     gravatar "^1.8.0"
     image-size "^0.9.1"
     node-fetch "^2.6.0"
+    nodemailer "^6.4.11"
     path "^0.12.7"
     resize-img "^2.0.0"
     sharp "^0.26.1"
@@ -1393,6 +1394,11 @@ node-fetch@^2.6.0:
   version "2.6.0"
   resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.0.tgz#e633456386d4aa55863f676a7ab0daa8fdecb0fd"
   integrity sha512-8dG4H5ujfvFiqDmVu9fQ5bOHUC15JMjMY/Zumv26oOvvVJjM67KF8koCWIabKQ1GJIa9r2mMZscBq/TbdOcmNA==
+
+nodemailer@^6.4.11:
+  version "6.4.11"
+  resolved "https://registry.yarnpkg.com/nodemailer/-/nodemailer-6.4.11.tgz#1f00b4ffd106403f17c03f3d43d5945b2677046c"
+  integrity sha512-BVZBDi+aJV4O38rxsUh164Dk1NCqgh6Cm0rQSb9SK/DHGll/DrCMnycVDD7msJgZCnmVa8ASo8EZzR7jsgTukQ==
 
 noop-logger@^0.1.1:
   version "0.1.1"
