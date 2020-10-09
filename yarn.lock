@@ -819,7 +819,7 @@ ep_monetization@^1.0.0:
 
 "ep_profile_modal@https://github.com/samirsayyad/ep_profile_modal":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_profile_modal#35cf91115a0e8116d9e06c32eb8b7a8153db6e4d"
+  resolved "https://github.com/samirsayyad/ep_profile_modal#34d1d90be675ff3c5244f645d2ad7774df55204e"
   dependencies:
     buffer-image-size "^0.6.4"
     gravatar "^1.8.0"
