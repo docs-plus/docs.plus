@@ -28,7 +28,7 @@
     "ep_custom_header_message": "https://github.com/samirsayyad/ep_custom_header_message",
     "ep_docs_plus_customize": "https://github.com/samirsayyad/ep_docs_plus_customize",
     "ep_full_hyperlinks": "https://github.com/samirsayyad/ep_full_hyperlinks",
-    "ep_headings2": "^0.1.3",
+    "ep_headings2": "https://github.com/samirsayyad/ep_headings2",
     "ep_hide_line_numbers": "0.0.1",
     "ep_insert_media": "https://github.com/samirsayyad/ep_insert_media",
     "ep_loading_pad": "https://github.com/samirsayyad/ep_loading_pad.git",
@@ -37,6 +37,6 @@
     "ep_remove_embed": "0.0.2",
     "ep_set_title_on_pad": "https://github.com/samirsayyad/ep_set_title_on_pad",
     "ep_sticky_attributes": "^0.1.0",
-    "ep_wrtc_heading": "https://github.com/HMarzban/ep_wrtc_heading#2d10dd8"
+    "ep_wrtc_heading": "https://github.com/HMarzban/ep_wrtc_heading#9fbfe04"
   }
 }

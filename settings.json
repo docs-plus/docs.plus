@@ -1,4 +1,4 @@
-/**
+/***
  * THIS IS THE SETTINGS FILE THAT IS COPIED INSIDE THE DOCKER CONTAINER.
  *
  * By default, some runtime customizations are supported (see the
@@ -274,7 +274,7 @@
    * This will improve the loading performance massively, but makes it difficult
    * to debug the javascript/css
    */
-  "minify": "${MINIFY:true}",
+  "minify": "${MINIFY:false}",
 
   /*
    * How long may clients use served javascript code (in seconds)?
@@ -567,7 +567,7 @@
     "ep_page_view_disable_change" : false ,
     // Display comments as icons, not boxes
     "ep_comments_page": {
-      "displayCommentAsIcon": false,
+      "displayCommentAsIcon": true,
       "highlightSelectedText": true
     },
     "ep_toc": {
@@ -596,6 +596,30 @@
       },
       "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"],
       "maxFileSize": 5000000
+    },
+    "ep_profile_modal":{
+      "storage":{
+        "endPoint" : "${ULTIMA_BUCKET_S3_SERVER}",
+        "useSSL" : true ,
+        "type": "s3",
+        "accessKeyId": "${ULTIMA_BUCKET_ACCESS_KEY_ID:null}",
+        "secretAccessKey": "${ULTIMA_BUCKET_ACCESS_KEY_SECRET:null}",
+        "region": "UK",
+        "bucket": "${MEDIA_BUCKET_NAME}",
+        "baseFolder": "${ULTIMA_FOLDER_PATH:./}"
+      },
+      "email":{
+        "smtp" : "smtp.mailgun.org",
+        "port" : "587",
+        "user" : "postmaster@sandbox89b7f25fc7434ae3bb70017851ccf5c0.mailgun.org",
+        "pass" : "218e98e6fd10c600292381b824937866-aff2d1b9-47606b1c",
+        "template" : {
+          "fromName" : "docs.plus <info@docs.plus>",
+          "fromEmail" : "info@docs.plus"
+        }
+      },
+      "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"  ],
+      "maxFileSize": 50000000
     },
     "ep_insert_media":{
       "storage":{

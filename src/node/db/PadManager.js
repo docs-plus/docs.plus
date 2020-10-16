@@ -130,7 +130,6 @@ exports.getPad = async function(id, text)
   }
 
   let pad = globalPads.get(id);
-
   // return pad if it's already loaded
   if (pad != null) {
     return pad;

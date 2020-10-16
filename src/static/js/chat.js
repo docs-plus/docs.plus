@@ -110,6 +110,8 @@ var chat = (function()
     },
     addMessage: function(msg, increment, isHistoryAdd)
     {
+      // Added by Samir Sayyad 
+      var chatTextType = (typeof msg.chatTextType !== undefined) ?  msg.chatTextType : null ;
       //correct the time
       msg.time += this._pad.clientTimeOffset;
 
@@ -151,7 +153,8 @@ var chat = (function()
         "sticky" : false,
         "timestamp" : msg.time,
         "timeStr" : timeStr,
-        "duration" : 4000
+        "duration" : 4000,
+        "chatTextType" : chatTextType // Added by Samir Sayyad
       }
 
       // is the users focus already in the chatbox?
@@ -173,8 +176,10 @@ var chat = (function()
 
       // Call chat message hook
       hooks.aCallAll("chatNewMessage", ctx, function() {
-
-        var html = "<p data-authorId='" + msg.userId + "' class='" + authorClass + "'><b>" + authorName + ":</b><span class='time " + authorClass + "'>" + ctx.timeStr + "</span> " + ctx.text + "</p>";
+        if (ctx.chatTextType =="PLUGIN")
+          var html = "<p data-authorId='" + msg.userId + "' class='" + authorClass + "'><b>" + authorName + "</b><span class='time " + authorClass + "'>" + ctx.timeStr + "</span> <b>" + ctx.text + "</b></p>";
+        else
+          var html = "<p data-authorId='" + msg.userId + "' class='" + authorClass + "'><b>" + authorName + ":</b><span class='time " + authorClass + "'>" + ctx.timeStr + "</span> " + ctx.text + "</p>";
         if(isHistoryAdd)
           $(html).insertAfter('#chatloadmessagesbutton');
         else
