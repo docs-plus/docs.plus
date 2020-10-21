@@ -23,6 +23,7 @@
   "dependencies": {
     "ep_adminpads2": "0.0.4",
     "ep_bottom_chat_bar": "https://github.com/samirsayyad/ep_bottom_chat_bar",
+    "ep_comments_page": "https://github.com/ether/ep_comments",
     "ep_custom_header_message": "https://github.com/samirsayyad/ep_custom_header_message",
     "ep_docs_plus_customize": "https://github.com/samirsayyad/ep_docs_plus_customize",
     "ep_full_hyperlinks": "https://github.com/samirsayyad/ep_full_hyperlinks",
