@@ -515,7 +515,7 @@
    *
    * Valid values: DEBUG, INFO, WARN, ERROR
    */
-  "loglevel": "${LOGLEVEL:WARN}",
+  "loglevel": "INFO",
 
   /*
    * Logging configuration. See log4js documentation for further information:
