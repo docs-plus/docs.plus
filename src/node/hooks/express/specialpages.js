@@ -42,7 +42,7 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     res.redirect(`/${padId}`);
   })
     //  serve pad.html under /p
-    args.app.get(/^\/(?!.*(static|javascripts|javascript|pluginfw|socket.io|tests|lib))(.*)+/i, async function(req, res, next){
+    args.app.get(/^\/(?!.*(admin|static|javascripts|javascript|pluginfw|socket.io|tests|lib))(.*)+/i, async function(req, res, next){
       // The below might break for pads being rewritten
       console.log(req.params, req.url)
       const isReadOnly = req.url.indexOf("/p/r.") === 0;
