@@ -510,7 +510,7 @@
    *
    * Valid values: DEBUG, INFO, WARN, ERROR
    */
-  "loglevel": "${LOGLEVEL:INFO}",
+  "loglevel": "${LOGLEVEL:DEBUG}",
 
   /*
    * Logging configuration. See log4js documentation for further information:
@@ -614,8 +614,8 @@
         "user" : "postmaster@sandbox89b7f25fc7434ae3bb70017851ccf5c0.mailgun.org",
         "pass" : "218e98e6fd10c600292381b824937866-aff2d1b9-47606b1c",
         "template" : {
-          "fromName" : "docs.plus <info@docs.plus>",
-          "fromEmail" : "info@docs.plus"
+          "fromName" : "",
+          "fromEmail" : ""
         }
       },
       "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"  ],
@@ -656,14 +656,8 @@
             "stun:stun.rixtelecom.se",
             "stun:stun.schlund.de",
             "stun:stun.xtratelecom.es:3478",
-            "stun:stun.yesss.at:3478",
-            "stun:130.185.122.49:3478"
+            "stun:stun.yesss.at:3478"
           ]
-        },
-        {
-          "url": ["turn:130.185.122.49:3478"],
-          "credential": "docsplus",
-          "username": "strongPassword"
         },
         {
           "url": ["turn:numb.viagenie.ca"],
