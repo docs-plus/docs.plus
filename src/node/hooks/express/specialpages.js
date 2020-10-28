@@ -18,6 +18,7 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     res.send(eejs.require("ep_etherpad-lite/templates/index.html"));
   });
 
+  
   //serve timeslider.html under /p/$padname/timeslider
   args.app.get(/^\/(.*)\/timeslider$/i, function(req, res, next){
     const padId = req.params['0'].split('/').join(":");
@@ -99,6 +100,8 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     req.params.filename = newPath;
     return minify.minify(req, res);
   });
+
+
 
       //serve robots.txt
   args.app.get('/robots.txt', function(req, res)
