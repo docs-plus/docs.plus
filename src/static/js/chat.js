@@ -112,7 +112,7 @@ var chat = (function()
     {
       // Added by Samir Sayyad 
       var chatTextType = (typeof msg.chatTextType !== undefined) ?  msg.chatTextType : null ;
-      var beforeText = (typeof msg.beforeText !== undefined) ?  msg.beforeText : null ;
+      var beforeText = (typeof msg.beforeText !== undefined) ?  msg.beforeText : "" ;
 
       //correct the time
       msg.time += this._pad.clientTimeOffset;
@@ -180,7 +180,9 @@ var chat = (function()
       // Call chat message hook
       hooks.aCallAll("chatNewMessage", ctx, function() {
         if (ctx.chatTextType =="PLUGIN"){
-          var html = "<p data-authorId='" + msg.userId + "' class='" + authorClass + "'> <b>" + ctx.beforeText + "</b> <b>" + authorName + "</b><span class='time " + authorClass + "'>" + ctx.timeStr + "</span> <b>" + ctx.text + "</b></p>";
+          var beforeText =  ((msg.beforeText !== "undefined") && (typeof msg.beforeText !== undefined)&&  msg.beforeText !== undefined ) ? msg.beforeText :""
+
+          var html = "<p data-authorId='" + msg.userId + "' class='" + authorClass + "'> <b>" + beforeText + "</b> <b>" + authorName + "</b><span class='time " + authorClass + "'>" + ctx.timeStr + "</span> <b>" + ctx.text + "</b></p>";
         }else
           var html = "<p data-authorId='" + msg.userId + "' class='" + authorClass + "'><b>" + authorName + ":</b><span class='time " + authorClass + "'>" + ctx.timeStr + "</span> " + ctx.text + "</p>";
         if(isHistoryAdd)
