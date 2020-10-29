@@ -112,6 +112,8 @@ var chat = (function()
     {
       // Added by Samir Sayyad 
       var chatTextType = (typeof msg.chatTextType !== undefined) ?  msg.chatTextType : null ;
+      var beforeText = (typeof msg.beforeText !== undefined) ?  msg.beforeText : null ;
+
       //correct the time
       msg.time += this._pad.clientTimeOffset;
 
@@ -154,7 +156,8 @@ var chat = (function()
         "timestamp" : msg.time,
         "timeStr" : timeStr,
         "duration" : 4000,
-        "chatTextType" : chatTextType // Added by Samir Sayyad
+        "chatTextType" : chatTextType, // Added by Samir Sayyad
+        "beforeText" : beforeText// Added by Samir Sayyad
       }
 
       // is the users focus already in the chatbox?
@@ -176,9 +179,9 @@ var chat = (function()
 
       // Call chat message hook
       hooks.aCallAll("chatNewMessage", ctx, function() {
-        if (ctx.chatTextType =="PLUGIN")
-          var html = "<p data-authorId='" + msg.userId + "' class='" + authorClass + "'><b>" + authorName + "</b><span class='time " + authorClass + "'>" + ctx.timeStr + "</span> <b>" + ctx.text + "</b></p>";
-        else
+        if (ctx.chatTextType =="PLUGIN"){
+          var html = "<p data-authorId='" + msg.userId + "' class='" + authorClass + "'> <b>" + ctx.beforeText + "</b> <b>" + authorName + "</b><span class='time " + authorClass + "'>" + ctx.timeStr + "</span> <b>" + ctx.text + "</b></p>";
+        }else
           var html = "<p data-authorId='" + msg.userId + "' class='" + authorClass + "'><b>" + authorName + ":</b><span class='time " + authorClass + "'>" + ctx.timeStr + "</span> " + ctx.text + "</p>";
         if(isHistoryAdd)
           $(html).insertAfter('#chatloadmessagesbutton');

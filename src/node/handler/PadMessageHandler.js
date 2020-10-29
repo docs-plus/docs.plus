@@ -378,7 +378,7 @@ function handleChatMessage(client, message)
  * @param padId the padId to send the chat message to
  * @param chatTextType kind of chat text message that add by Samir Sayyad
  */
-exports.sendChatMessageToPadClients = async function(time, userId, text, padId,chatTextType)
+exports.sendChatMessageToPadClients = async function(time, userId, text, padId,chatTextType,beforeText)
 {
   // get the pad
   let pad = await padManager.getPad(padId);
@@ -387,11 +387,11 @@ exports.sendChatMessageToPadClients = async function(time, userId, text, padId,c
   let userName = await authorManager.getAuthorName(userId);
 
   // save the chat message
-  pad.appendChatMessage(text, userId, time,chatTextType);
+  pad.appendChatMessage(text, userId, time,chatTextType,beforeText);
 
   let msg = {
     type: "COLLABROOM",
-    data: { type: "CHAT_MESSAGE", userId, userName, time, text , chatTextType }
+    data: { type: "CHAT_MESSAGE", userId, userName, time, text , chatTextType,beforeText }
   };
 
   // broadcast the chat message to everyone on the pad
