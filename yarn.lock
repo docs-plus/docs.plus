@@ -816,9 +816,9 @@ ep_monetization@^1.0.0:
   resolved "https://registry.yarnpkg.com/ep_monetization/-/ep_monetization-1.0.0.tgz#0f008b254bff9692bf2af05493c93e25a6a6590a"
   integrity sha512-tFSFQ9skkGwwaJ0SQ6sdsp+LXTL8wo3vE9tX2SOJQzkd56PqjaTkyhUnWWzPMlZZi2VKEZDatAr+AFR1u/JK6g==
 
-"ep_profile_modal@https://github.com/samirsayyad/ep_profile_modal#fb1a1db":
+"ep_profile_modal@https://github.com/samirsayyad/ep_profile_modal#44f37bc":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_profile_modal#fb1a1db29a01eb7696a597539c60a11e3e7545b5"
+  resolved "https://github.com/samirsayyad/ep_profile_modal#44f37bcf0d50d65dca56e8f57f41d57b337490f5"
   dependencies:
     buffer-image-size "^0.6.4"
     gravatar "^1.8.0"
