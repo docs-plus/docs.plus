@@ -6,7 +6,12 @@
 
 FROM node:10-buster-slim
 LABEL maintainer="Etherpad team, https://github.com/ether/etherpad-lite"
-
+ARG GIT_USER
+ARG GIT_TOKEN
+ARG GIT_COMMIT
+ARG SW_VERSION
+RUN apt-get update
+RUN apt-get -y install git
 # plugins to install while building the container. By default no plugins are
 # installed.
 # If given a value, it has to be a space-separated, quoted list of plugin names.
