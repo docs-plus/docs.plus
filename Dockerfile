@@ -56,4 +56,4 @@ RUN for PLUGIN_NAME in ${ETHERPAD_PLUGINS}; do npm install "${PLUGIN_NAME}"; don
 RUN chmod -R g=u .
 
 EXPOSE 9001
-CMD ["node", "/node/server.js"]
+CMD ["node", "node/server.js"]
