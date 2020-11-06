@@ -510,7 +510,7 @@
    *
    * Valid values: DEBUG, INFO, WARN, ERROR
    */
-  "loglevel": "${LOGLEVEL:INFO}",
+  "loglevel": "${LOGLEVEL:DEBUG}",
 
   /*
    * Logging configuration. See log4js documentation for further information:
@@ -608,6 +608,16 @@
         "bucket": "${MEDIA_BUCKET_NAME}",
         "baseFolder": "${ULTIMA_FOLDER_PATH:./}"
       },
+      "email":{
+        "smtp" : "",
+        "port" : "",
+        "user" : "",
+        "pass" : "",
+        "template" : {
+          "fromName" : "",
+          "fromEmail" : ""
+        }
+      },
       "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"  ],
       "maxFileSize": 50000000
     },
@@ -646,14 +656,8 @@
             "stun:stun.rixtelecom.se",
             "stun:stun.schlund.de",
             "stun:stun.xtratelecom.es:3478",
-            "stun:stun.yesss.at:3478",
-            "stun:130.185.122.49:3478"
+            "stun:stun.yesss.at:3478"
           ]
-        },
-        {
-          "url": ["turn:130.185.122.49:3478"],
-          "credential": "docsplus",
-          "username": "strongPassword"
         },
         {
           "url": ["turn:numb.viagenie.ca"],
