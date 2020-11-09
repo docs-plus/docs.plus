@@ -100,6 +100,7 @@ exports.restartServer = function () {
   });
 
   app.get('/health', (req, res) => res.json(true))
+  app.get('/api/health', (req, res) => res.json(true))
 
   if (settings.trustProxy) {
     /*
