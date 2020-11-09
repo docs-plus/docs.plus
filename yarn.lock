@@ -759,44 +759,44 @@ ep_adminpads2@0.0.4:
   resolved "https://registry.yarnpkg.com/ep_adminpads2/-/ep_adminpads2-0.0.4.tgz#22ccde18c435698c9fc8390742c8f7dce18bc851"
   integrity sha512-sZ7h5VcRJygBQblI3edyuxoy3owfot90zDfNWo7uiIcdxjk1tK9Vyu287/IMxfwOwRLXEg9Zzf77nOKLGxAjDw==
 
-"ep_bottom_chat_bar@https://github.com/samirsayyad/ep_bottom_chat_bar":
+"ep_bottom_chat_bar@git+https://github.com/samirsayyad/ep_bottom_chat_bar":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_bottom_chat_bar#62bf905235e894e42dc60c23d8bd8d6ef9578c36"
+  resolved "git+https://github.com/samirsayyad/ep_bottom_chat_bar#df1324d97c58e9fdb8ca7aaeaea8aec2b6d6c7fd"
 
-"ep_comments_page@https://github.com/ether/ep_comments":
-  version "0.1.7"
-  resolved "https://github.com/ether/ep_comments#40abe6ca54c7480376d242560ff9a74d0a5d8030"
+"ep_comments_page@git+https://github.com/ether/ep_comments":
+  version "0.1.19"
+  resolved "git+https://github.com/ether/ep_comments#cccfef28680220f88877d10c25d0c16e9a8547ac"
   dependencies:
     formidable "*"
 
-"ep_custom_header_message@https://github.com/samirsayyad/ep_custom_header_message":
+"ep_custom_header_message@git+https://github.com/samirsayyad/ep_custom_header_message":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_custom_header_message#d616ad97f1f0cbdb69a4e293ba9cbd4c24a659ed"
+  resolved "git+https://github.com/samirsayyad/ep_custom_header_message#d616ad97f1f0cbdb69a4e293ba9cbd4c24a659ed"
 
-"ep_docs_plus_customize@https://github.com/samirsayyad/ep_docs_plus_customize":
+"ep_docs_plus_customize@git+https://github.com/samirsayyad/ep_docs_plus_customize":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_docs_plus_customize#0fe2088271002eec279ed1f665575a1c880b99b4"
+  resolved "git+https://github.com/samirsayyad/ep_docs_plus_customize#0fe2088271002eec279ed1f665575a1c880b99b4"
 
-"ep_full_hyperlinks@https://github.com/samirsayyad/ep_full_hyperlinks":
+"ep_full_hyperlinks@git+https://github.com/samirsayyad/ep_full_hyperlinks":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_full_hyperlinks#c413a45dd6472c05e183e83d3099333ce4076726"
+  resolved "git+https://github.com/samirsayyad/ep_full_hyperlinks#c413a45dd6472c05e183e83d3099333ce4076726"
   dependencies:
     formidable "*"
     meta-resolver "0.0.3"
     socket.io-client "*"
 
-"ep_headings2@https://github.com/samirsayyad/ep_headings2":
+"ep_headings2@git+https://github.com/samirsayyad/ep_headings2":
   version "0.1.3"
-  resolved "https://github.com/samirsayyad/ep_headings2#a636becd4fd6719683421dcdabaf6f4fcf9c0e90"
+  resolved "git+https://github.com/samirsayyad/ep_headings2#a636becd4fd6719683421dcdabaf6f4fcf9c0e90"
 
 ep_hide_line_numbers@0.0.1:
   version "0.0.1"
   resolved "https://registry.yarnpkg.com/ep_hide_line_numbers/-/ep_hide_line_numbers-0.0.1.tgz#9f3fac543f8a2311ff88a634eba947c6f34c1b66"
   integrity sha1-nz+sVD+KIxH/iKY066lHxvNMG2Y=
 
-"ep_insert_media@https://github.com/samirsayyad/ep_insert_media":
+"ep_insert_media@git+https://github.com/samirsayyad/ep_insert_media":
   version "0.0.1"
-  resolved "https://github.com/samirsayyad/ep_insert_media#44c55c1a98b8a266d5d8f8d6565b3d371a921d87"
+  resolved "git+https://github.com/samirsayyad/ep_insert_media#266724d79e6671c1cda52e5a0ac41c60a6e75a45"
   dependencies:
     busboy "^0.3.1"
     mime-db "^1.44.0"
@@ -807,18 +807,18 @@ ep_hide_line_numbers@0.0.1:
     url "^0.11.0"
     uuid "^8.3.0"
 
-"ep_loading_pad@https://github.com/samirsayyad/ep_loading_pad.git":
+"ep_loading_pad@git+https://github.com/samirsayyad/ep_loading_pad.git":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_loading_pad.git#38ce509923c3e0904f0d7f0b1115c35baa8ba5de"
+  resolved "git+https://github.com/samirsayyad/ep_loading_pad.git#38ce509923c3e0904f0d7f0b1115c35baa8ba5de"
 
 ep_monetization@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/ep_monetization/-/ep_monetization-1.0.0.tgz#0f008b254bff9692bf2af05493c93e25a6a6590a"
   integrity sha512-tFSFQ9skkGwwaJ0SQ6sdsp+LXTL8wo3vE9tX2SOJQzkd56PqjaTkyhUnWWzPMlZZi2VKEZDatAr+AFR1u/JK6g==
 
-"ep_profile_modal@https://github.com/samirsayyad/ep_profile_modal#995a21d":
+"ep_profile_modal@git+https://github.com/samirsayyad/ep_profile_modal#995a21d":
   version "1.0.0"
-  resolved "https://github.com/samirsayyad/ep_profile_modal#995a21dfaeeabd93ef8001ea324ad579bdf00086"
+  resolved "git+https://github.com/samirsayyad/ep_profile_modal#995a21dfaeeabd93ef8001ea324ad579bdf00086"
   dependencies:
     buffer-image-size "^0.6.4"
     gravatar "^1.8.0"
@@ -834,18 +834,18 @@ ep_remove_embed@0.0.2:
   resolved "https://registry.yarnpkg.com/ep_remove_embed/-/ep_remove_embed-0.0.2.tgz#7058253a0539a17c927a316b12177feebf1dfde4"
   integrity sha1-cFglOgU5oXySejFrEhd/7r8d/eQ=
 
-"ep_set_title_on_pad@https://github.com/samirsayyad/ep_set_title_on_pad":
+"ep_set_title_on_pad@git+https://github.com/samirsayyad/ep_set_title_on_pad":
   version "0.2.0"
-  resolved "https://github.com/samirsayyad/ep_set_title_on_pad#5712e5fe4fd881023ab25126460b20f0cd111281"
+  resolved "git+https://github.com/samirsayyad/ep_set_title_on_pad#5712e5fe4fd881023ab25126460b20f0cd111281"
 
 ep_sticky_attributes@^0.1.0:
   version "0.1.0"
   resolved "https://registry.yarnpkg.com/ep_sticky_attributes/-/ep_sticky_attributes-0.1.0.tgz#52da0bd2bece5d614050380d6e7bc69b5c7bb98b"
   integrity sha1-UtoL0r7OXWFAUDgNbnvGm1x7uYs=
 
-"ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#9fbfe04":
+"ep_wrtc_heading@git+https://github.com/HMarzban/ep_wrtc_heading#9fbfe04":
   version "0.26.20"
-  resolved "https://github.com/HMarzban/ep_wrtc_heading#9fbfe0404f7ae237eb637ac09ae2fa0c358a5809"
+  resolved "git+https://github.com/HMarzban/ep_wrtc_heading#9fbfe0404f7ae237eb637ac09ae2fa0c358a5809"
   dependencies:
     lodash "^4.17.20"
 
