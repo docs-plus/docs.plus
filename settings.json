@@ -177,7 +177,7 @@
    * https://www.npmjs.com/package/ueberdb2
    */
 
-  "dbType": "${DB_TYPE:null}",
+  "dbType": "${DB_TYPE:dirty}",
   "dbSettings": {
     "host":     "${DB_HOST}",
     "port":     "${DB_PORT}",
@@ -185,7 +185,7 @@
     "user":     "${DB_USER}",
     "password": "${DB_PASS}",
     "charset":  "${DB_CHARSET}",
-    "filename": "${DB_FILENAME:null}"
+    "filename": "${DB_FILENAME:var/dirty.db}"
   },
 
   /*
