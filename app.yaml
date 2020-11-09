@@ -1,0 +1,8 @@
+spec:
+    name: docs.plus
+    services:
+    - environment_slug: node-js
+      git:
+        branch: digitalocean
+        repo_clone_url: https://github.com/nwspk/docs.plus.git
+      name: docs.plus
