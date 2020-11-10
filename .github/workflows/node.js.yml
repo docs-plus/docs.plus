@@ -26,7 +26,7 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: npm ci
     - run: npm run build --if-present
-    - run: DB_TYPE=mongodb DB_HOST="$MONGO_HOST" DB_PORT="27017" DB_USER="$MONGO_USERNAME" DB_PASS="$MONGO_PASSWORD" DB_NAME="doc" npm start
+    - run: DB_TYPE=mongodb DB_HOST="${{ secrets.MONGO_HOST }}" DB_PORT="27017" DB_USER="$MONGO_USERNAME" DB_PASS="$MONGO_PASSWORD" DB_NAME="doc" npm start
     env:
       MONGO_USERNAME : ${{ secrets.MONGO_USERNAME }}
       MONGO_PASSWORD : ${{ secrets.MONGO_PASSWORD }}
