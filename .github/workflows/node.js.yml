@@ -27,9 +27,9 @@ jobs:
     - run: npm run build --if-present
     - run: node ./node_modules/ep_etherpad-lite/node/server.js
     env:
-      DB_USER : ${{ secrets.MONGO_USERNAME }}
-      DB_PASS : ${{ secrets.MONGO_PASSWORD }}
-      DB_HOST : ${{ secrets.MONGO_HOST }}
+      DB_USER : ${{secrets.MONGO_USERNAME}}
+      DB_PASS : ${{secrets.MONGO_PASSWORD}}
+      DB_HOST : ${{secrets.MONGO_HOST}}
       DB_TYPE : mongodb
       DB_PORT : 27017
       DB_NAME : docs
