@@ -5,9 +5,9 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ digitalocean ]
   pull_request:
-    branches: [ master ]
+    branches: [ digitalocean ]
 
 jobs:
   build:
