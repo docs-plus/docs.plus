@@ -72,9 +72,8 @@ exports.init = function() {
         resolve();
       });
     }catch(err){
-      console.error("ERROR: Problem while initalizing the database");
-      console.error(err.stack ? err.stack : err);
-      process.exit(1);
+      console.log("ERROR: Problem while initalizing the database");
+      console.log(err.stack ? err.stack : err);
     }
     
   });
