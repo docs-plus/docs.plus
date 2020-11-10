@@ -177,7 +177,7 @@
    * https://www.npmjs.com/package/ueberdb2
    */
 
-  "dbType": "${DB_TYPE:dirty}",
+  "dbType": "${DB_TYPE:mongodb}",
   "dbSettings": {
     "host":     "${DB_HOST}",
     "port":     "${DB_PORT}",

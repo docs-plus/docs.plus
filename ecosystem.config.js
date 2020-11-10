@@ -5,7 +5,7 @@ module.exports = {
       script: "./node_modules/ep_etherpad-lite/node/server.js",
       env: {
         NODE_ENV: "production",
-
+        PORT:"9001"
       },
     },
     {
@@ -13,6 +13,7 @@ module.exports = {
       script: "./node_modules/ep_etherpad-lite/node/server.js",
       env: {
         NODE_ENV: "development",
+        PORT:"9002"
       },
     }
 
