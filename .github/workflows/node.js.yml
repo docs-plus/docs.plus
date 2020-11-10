@@ -25,8 +25,8 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - run: npm run build --if-present
+    - run: DB_TYPE=mongodb DB_PORT="27017" DB_NAME="doc" node ./node_modules/ep_etherpad-lite/node/server.js
     env:
-      MONGO_USERNAME : ${{ secrets.MONGO_USERNAME }}
-      MONGO_PASSWORD : ${{ secrets.MONGO_PASSWORD }}
-      MONGO_HOST : ${{ secrets.MONGO_HOST }}
-    - run: DB_TYPE=mongodb DB_HOST="$MONGO_HOST" DB_PORT="27017" DB_USER="$MONGO_USERNAME" DB_PASS="$MONGO_PASSWORD" DB_NAME="doc" node ./node_modules/ep_etherpad-lite/node/server.js
+      DB_USER : ${{ secrets.MONGO_USERNAME }}
+      DB_PASS : ${{ secrets.MONGO_PASSWORD }}
+      DB_HOST : ${{ secrets.MONGO_HOST }}
