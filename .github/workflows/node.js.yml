@@ -12,11 +12,11 @@ on:
 jobs:
   build:
 
-    runs-on: ubuntu-latest
+    runs-on: debian-latest
 
     strategy:
       matrix:
-        node-version: [10.x, 12.x, 14.x]
+        node-version: [10.x]
 
     steps:
     - uses: actions/checkout@v2
@@ -26,4 +26,9 @@ jobs:
         node-version: ${{ matrix.node-version }}
     - run: npm ci
     - run: npm run build --if-present
-    - run: npm start
+        env:
+          MONGO_USERNAME : ${{ secrets.MONGO_USERNAME }}
+          MONGO_PASSWORD : ${{ secrets.MONGO_PASSWORD }}
+          MONGO_HOST : ${{ secrets.MONGO_HOST }}
+
+    - run: DB_TYPE=mongodb DB_HOST=MONGO_HOST DB_PORT="27017" DB_USER=MONGO_USERNAME DB_PASS=MONGO_PASSWORD DB_NAME="doc" npm start
