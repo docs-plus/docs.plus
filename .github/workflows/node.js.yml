@@ -11,10 +11,13 @@ on:
 
 jobs:
   build:
+
     runs-on: docs.plus
+
     strategy:
       matrix:
         node-version: [10.x]
+
     steps:
     - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
@@ -22,10 +25,8 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - run: npm run build --if-present
-  run:
     env:
       MONGO_USERNAME : ${{ secrets.MONGO_USERNAME }}
       MONGO_PASSWORD : ${{ secrets.MONGO_PASSWORD }}
       MONGO_HOST : ${{ secrets.MONGO_HOST }}
-    - run: echo "$MONGO_HOST"
     - run: DB_TYPE=mongodb DB_HOST="$MONGO_HOST" DB_PORT="27017" DB_USER="$MONGO_USERNAME" DB_PASS="$MONGO_PASSWORD" DB_NAME="doc" node ./node_modules/ep_etherpad-lite/node/server.js
