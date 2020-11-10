@@ -30,3 +30,4 @@ jobs:
       DB_TYPE : mongodb
       DB_PORT : 27017
       DB_NAME : docs
+      
