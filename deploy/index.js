@@ -34,5 +34,7 @@ MongoClient.connect('mongodb://'+userName+ ':' + userPassword + '@' +mongoHost+'
     if (err){
       return console.log('Error: could not add new row')
     }
+    process.exit(0);
+
   })
 })
