@@ -26,4 +26,4 @@ jobs:
       DB_HOST : ${{secrets.MONGO_HOST}}
       DB_TYPE : mongodb
       DB_PORT : 27017
-      DB_NAME : docs
+      DB_NAME : ${{BRANCH_NAME}}
