@@ -23,7 +23,7 @@ MongoClient.connect('mongodb://'+mongoHost+':'+mongoPort+'/'+dbName,
   }
 
   // Use the admin database for the operation
-  const adminDb = client.db("admin");
+  const adminDb = client.db(dbName);
 
   
   // Add the new user to the admin database
