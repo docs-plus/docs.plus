@@ -15,7 +15,7 @@ var userPassword =  process.env.DB_PASS
 //  start
 //
 
-MongoClient.connect('mongodb://'+mongoHost+':'+mongoPort+'/'+dbName,
+MongoClient.connect('mongodb://'+mongoHost+':'+mongoPort+'/admin',
   function(err, client) {
 
   if (err){
@@ -24,15 +24,11 @@ MongoClient.connect('mongodb://'+mongoHost+':'+mongoPort+'/'+dbName,
 
   // Use the admin database for the operation
   const adminDb = client.db(dbName);
+  const collection = adminDb.collection('test');
 
   
   // Add the new user to the admin database
-  adminDb.addUser(userName, userPassword, {
-      roles:  [{
-        role : "userAdmin",
-        db   : dbName
-        }]
-    },
+  collection.insert({"a":1},
     function(err, result) {
 
     if (err){

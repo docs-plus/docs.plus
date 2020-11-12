@@ -19,6 +19,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - run: npm run build --if-present
+    - run: npm run deploy --if-present
     - run: DB_NAME=${BRANCH_NAME} pm2 start ecosystem.config.js --only ${BRANCH_NAME}
     env:
       DB_USER : ${{secrets.MONGO_USERNAME}}
