@@ -19,11 +19,11 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - run: npm run build --if-present
-    - run: pm2 start ecosystem.config.js --only ${BRANCH_NAME}
+    - run: DB_NAME=${BRANCH_NAME} pm2 start ecosystem.config.js --only ${BRANCH_NAME}
     env:
       DB_USER : ${{secrets.MONGO_USERNAME}}
       DB_PASS : ${{secrets.MONGO_PASSWORD}}
       DB_HOST : ${{secrets.MONGO_HOST}}
       DB_TYPE : mongodb
       DB_PORT : 27017
-      DB_NAME : ${BRANCH_NAME}
+      
