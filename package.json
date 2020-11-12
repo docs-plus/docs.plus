@@ -11,6 +11,7 @@
     "test": "tests"
   },
   "scripts": {
+    "deploy" : "cd deploy && npm run build && npm run start",
     "build": "bash ./bin/installDeps.sh",
     "start": "bash ./bin/run.sh --root"
   },
