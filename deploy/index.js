@@ -15,7 +15,7 @@ var userPassword =  process.env.DB_PASS
 //  start
 //
 
-MongoClient.connect('mongodb://'+mongoHost+':'+mongoPort+'/admin',
+MongoClient.connect('mongodb://'+userName+ ':' + userPassword + '@' +mongoHost+':'+mongoPort+'/admin',
   function(err, client) {
 
   if (err){
@@ -32,7 +32,7 @@ MongoClient.connect('mongodb://'+mongoHost+':'+mongoPort+'/admin',
     function(err, result) {
 
     if (err){
-      return console.log('Error: could not add new user')
+      return console.log('Error: could not add new row')
     }
   })
 })
