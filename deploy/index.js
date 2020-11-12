@@ -28,22 +28,11 @@ MongoClient.connect('mongodb://'+mongoHost+':'+mongoPort+'/admin',
 
   
   // Add the new user to the admin database
-  collection.insert({"a":1},
+  collection.insertOne({"a":1},
     function(err, result) {
 
     if (err){
       return console.log('Error: could not add new user')
     }
-
-    // Authenticate using the newly added user
-    adminDb.authenticate(userName, userPassword, function(err, result) {
-
-      if (err){
-        return console.log('Error: could authenticate with created user')
-      }
-
-      console.log('Ok')
-      client.close()
-    })
   })
 })
