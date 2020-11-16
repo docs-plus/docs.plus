@@ -25,6 +25,10 @@ jobs:
       DB_USER : ${{secrets.MONGO_USERNAME}}
       DB_PASS : ${{secrets.MONGO_PASSWORD}}
       DB_HOST : ${{secrets.MONGO_HOST}}
+      MEDIA_BUCKET_NAME : ${{secrets.MEDIA_BUCKET_NAME}}
+      BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
+      ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
+      ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
       DB_TYPE : mongodb
       DB_PORT : 27017
       

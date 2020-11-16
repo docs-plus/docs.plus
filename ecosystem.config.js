@@ -12,7 +12,13 @@ module.exports = {
         DB_TYPE : `${process.env.DB_TYPE}`,
         DB_PORT : `${process.env.DB_PORT}`,
         DB_NAME : `${process.env.DB_NAME}`,
+        BUCKET_S3_SERVER : `${process.env.BUCKET_S3_SERVER}`,
+        ACCESS_KEY_ID : `${process.env.ACCESS_KEY_ID}`,
+        ACCESS_KEY_SECRET : `${process.env.ACCESS_KEY_SECRET}`,
+        MEDIA_BUCKET_NAME : `${process.env.MEDIA_BUCKET_NAME}`,
       },
+      instances: 2,
+
     },
     {
       name: "docs_plus_dev",
