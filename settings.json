@@ -275,7 +275,7 @@
    * This will improve the loading performance massively, but makes it difficult
    * to debug the javascript/css
    */
-  "minify": "${MINIFY:true}",
+  "minify": "${MINIFY:false}",
 
   /*
    * How long may clients use served javascript code (in seconds)?
@@ -586,42 +586,30 @@
     "ep_meta_desc" : "docs.plus - docs but better !",
     "ep_meta_img_url":"https://docs.plus/static/images/social-logo.png",
     "ep_meta_default_title" : "docs.plus",
-    "ep_image_upload":{
-      "storage":{
-        "type": "S3",
-        "accessKeyId": "${ULTIMA_BUCKET_ACCESS_KEY_ID:null}",
-        "secretAccessKey": "${ULTIMA_BUCKET_ACCESS_KEY_SECRET:null}",
-        "region": "UK",
-        "bucket": "docs.plus-image_BUCKET_NAME",
-        "baseFolder": "${FOLDER_PATH:null}"
-      },
-      "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"],
-      "maxFileSize": 5000000
-    },
     "ep_profile_modal":{
       "storage":{
-        "endPoint" : "${ULTIMA_BUCKET_S3_SERVER}",
+        "endPoint" : "${BUCKET_S3_SERVER}",
         "useSSL" : true ,
         "type": "s3",
-        "accessKeyId": "${ULTIMA_BUCKET_ACCESS_KEY_ID:null}",
-        "secretAccessKey": "${ULTIMA_BUCKET_ACCESS_KEY_SECRET:null}",
+        "accessKeyId": "${ACCESS_KEY_ID:null}",
+        "secretAccessKey": "${ACCESS_KEY_SECRET:null}",
         "region": "UK",
         "bucket": "${MEDIA_BUCKET_NAME}",
-        "baseFolder": "${ULTIMA_FOLDER_PATH:./}"
+        "baseFolder": "${FOLDER_PATH:./}"
       },
       "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"  ],
       "maxFileSize": 50000000
     },
     "ep_insert_media":{
       "storage":{
-        "endPoint" : "${ULTIMA_BUCKET_S3_SERVER}",
+        "endPoint" : "${BUCKET_S3_SERVER}",
         "useSSL" : true ,
         "type": "s3",
-        "accessKeyId": "${ULTIMA_BUCKET_ACCESS_KEY_ID:null}",
-        "secretAccessKey": "${ULTIMA_BUCKET_ACCESS_KEY_SECRET:null}",
+        "accessKeyId": "${ACCESS_KEY_ID:null}",
+        "secretAccessKey": "${ACCESS_KEY_SECRET:null}",
         "region": "UK",
         "bucket": "${MEDIA_BUCKET_NAME}",
-        "baseFolder": "${ULTIMA_FOLDER_PATH:./}"
+        "baseFolder": "${FOLDER_PATH:./}"
       },
       "fileTypes": ["jpeg", "jpg", "bmp", "gif","png","webm","mp4","m4v","mp3",
         "ogg", "m4a","flac","wav","wma", "aac"  ],
