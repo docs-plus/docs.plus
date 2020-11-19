@@ -25,8 +25,7 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - run: npm run build --if-present
-    - run: npm run deploy --if-present
-    - run: DB_NAME=${BRANCH_NAME} pm2 start ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
+    - run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 start ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}
@@ -37,5 +36,4 @@ jobs:
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
       DB_TYPE : postgres
       DB_PORT : ${{secrets.PG_PORT}}
-      PORT : 8001
-
+      PORT : 8001,
