@@ -12,11 +12,11 @@ on:
 jobs:
   build:
 
-    runs-on: handbook
+    runs-on: docs.plus
 
     strategy:
       matrix:
-        node-version: [10.x, 12.x, 14.x]
+        node-version: [10.x]
 
     steps:
     - uses: actions/checkout@v2
@@ -37,3 +37,5 @@ jobs:
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
       DB_TYPE : postgres
       DB_PORT : ${{secrets.PG_PORT}}
+      PORT : 8001
+
