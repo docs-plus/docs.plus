@@ -3,7 +3,10 @@
 
 name: Node.js CI
 
-on: push 
+on: 
+  push:
+    branches:
+      - '!handbook'
     
 jobs:
   build:
@@ -30,4 +33,3 @@ jobs:
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
       DB_TYPE : mongodb
       DB_PORT : 27017
-      
