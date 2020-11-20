@@ -283,7 +283,7 @@
    * This will improve the loading performance massively, but makes it difficult
    * to debug the javascript/css
    */
-  "minify": "${MINIFY:false}",
+  "minify": false,
 
   /*
    * How long may clients use served javascript code (in seconds)?
