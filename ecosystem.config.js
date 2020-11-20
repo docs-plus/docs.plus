@@ -12,6 +12,7 @@ module.exports = {
           DB_TYPE : `${process.env.DB_TYPE}`,
           DB_PORT : `${process.env.DB_PORT}`,
           DB_NAME : `${process.env.DB_NAME}`,
+          SSL : `${process.env.SSL}`,
           BUCKET_S3_SERVER : `${process.env.BUCKET_S3_SERVER}`,
           ACCESS_KEY_ID : `${process.env.ACCESS_KEY_ID}`,
           ACCESS_KEY_SECRET : `${process.env.ACCESS_KEY_SECRET}`,
