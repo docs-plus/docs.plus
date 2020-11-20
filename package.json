@@ -13,7 +13,12 @@
   "scripts": {
     "deploy" : "cd deploy && npm run build && npm run start",
     "build": "bash ./bin/installDeps.sh",
+<<<<<<< HEAD
     "start": "bash ./bin/run.sh --root"
+=======
+    "start": "DB_TYPE=postgres DB_HOST=$PGHOST DB_PORT=$PGPORT DB_USER=$PGUSER DB_PASS=$PGPASSWORD DB_NAME=$PGDATABASE bash ./bin/run.sh --root",
+    "backup": "node ./backup/backup-pg-to-s3/index.js"
+>>>>>>> 9f6bfe92ef0ad7d415617cdf44fbc5ee40132c05
   },
   "repository": {
     "type": "git",
@@ -33,7 +38,7 @@
     "ep_insert_media": "git+https://github.com/samirsayyad/ep_insert_media",
     "ep_loading_pad": "git+https://github.com/samirsayyad/ep_loading_pad.git",
     "ep_monetization": "^1.0.0",
-    "ep_profile_modal": "git+https://github.com/samirsayyad/ep_profile_modal",
+    "ep_profile_modal": "https://github.com/samirsayyad/ep_profile_modal#4a717c9",
     "ep_remove_embed": "0.0.2",
     "ep_set_title_on_pad": "git+https://github.com/samirsayyad/ep_set_title_on_pad",
     "ep_sticky_attributes": "^0.1.0",
