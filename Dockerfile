@@ -6,14 +6,19 @@
 
 FROM node:10-buster-slim
 LABEL maintainer="Etherpad team, https://github.com/ether/etherpad-lite"
-
+ARG GIT_USER
+ARG GIT_TOKEN
+ARG GIT_COMMIT
+ARG SW_VERSION
+RUN apt-get update
+RUN apt-get -y install git
 # plugins to install while building the container. By default no plugins are
 # installed.
 # If given a value, it has to be a space-separated, quoted list of plugin names.
 #
 # EXAMPLE:
 #   ETHERPAD_PLUGINS="ep_codepad ep_author_neat"
-ARG ETHERPAD_PLUGINS=
+ARG ETHERPAD_PLUGINS="ep_adminpads2"
 
 # By default, Etherpad container is built and run in "production" mode. This is
 # leaner (development dependencies are not installed) and runs faster (among
@@ -45,10 +50,10 @@ RUN bin/installDeps.sh && \
 RUN for PLUGIN_NAME in ${ETHERPAD_PLUGINS}; do npm install "${PLUGIN_NAME}"; done
 
 # Copy the configuration file.
-COPY --chown=etherpad:0 ./settings.json.docker /opt/etherpad-lite/settings.json
+#COPY --chown=etherpad:0 ./settings.json.docker /opt/etherpad-lite/settings.json
 
 # Fix permissions for root group
 RUN chmod -R g=u .
 
 EXPOSE 9001
-CMD ["node", "node_modules/ep_etherpad-lite/node/server.js"]
+CMD ["node", "--experimental-worker", "node_modules/ep_etherpad-lite/node/server.js"]

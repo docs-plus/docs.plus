@@ -1,4 +1,4 @@
-/**
+/***
  * THIS IS THE SETTINGS FILE THAT IS COPIED INSIDE THE DOCKER CONTAINER.
  *
  * By default, some runtime customizations are supported (see the
@@ -158,6 +158,7 @@
             "ca": ["/path-to-your/epl-intermediate-cert1.crt", "/path-to-your/epl-intermediate-cert2.crt"]
           },
   */
+  
 
   /*
    * The type of the database.
@@ -177,21 +178,17 @@
    * https://www.npmjs.com/package/ueberdb2
    */
 
-   "dbType": "dirty",
-   "dbSettings": {
-     "filename": "var/dirty.db"
-   },
-
-  // "dbType": "${DB_TYPE:null}",
-  // "dbSettings": {
-  //   "host":     "${DB_HOST}",
-  //   "port":     "${DB_PORT}",
-  //   "database": "${DB_NAME}",
-  //   "user":     "${DB_USER}",
-  //   "password": "${DB_PASS}",
-  //   "charset":  "${DB_CHARSET}",
-  //   "filename": "${DB_FILENAME:null}"
-  // },
+  "dbType": "${DB_TYPE:mongodb}",
+  "dbSettings": {
+    "host":     "${DB_HOST}",
+    "port":     "${DB_PORT}",
+    "dbname":   "${DB_NAME}",
+    "database": "${DB_NAME}",
+    "user":     "${DB_USER}",
+    "password": "${DB_PASS}",
+    "charset":  "${DB_CHARSET}",
+    "filename": "${DB_FILENAME:var/dirty.db}"
+  },
 
   /*
    * The default text of a pad
@@ -279,7 +276,11 @@
    * This will improve the loading performance massively, but makes it difficult
    * to debug the javascript/css
    */
+<<<<<<< HEAD
   "minify": false,
+=======
+  "minify": "${MINIFY:false}",
+>>>>>>> dev
 
   /*
    * How long may clients use served javascript code (in seconds)?
@@ -515,7 +516,11 @@
    *
    * Valid values: DEBUG, INFO, WARN, ERROR
    */
+<<<<<<< HEAD
   "loglevel": "INFO",
+=======
+  "loglevel": "${LOGLEVEL:INFO}",
+>>>>>>> dev
 
   /*
    * Logging configuration. See log4js documentation for further information:
@@ -590,28 +595,30 @@
     "ep_meta_desc" : "docs.plus - docs but better !",
     "ep_meta_img_url":"https://docs.plus/static/images/social-logo.png",
     "ep_meta_default_title" : "docs.plus",
-    "ep_image_upload":{
+    "ep_profile_modal":{
       "storage":{
-        "type": "S3",
-        "accessKeyId": "${ULTIMA_BUCKET_ACCESS_KEY_ID:null}",
-        "secretAccessKey": "${ULTIMA_BUCKET_ACCESS_KEY_SECRET:null}",
+        "endPoint" : "${BUCKET_S3_SERVER}",
+        "useSSL" : true ,
+        "type": "s3",
+        "accessKeyId": "${ACCESS_KEY_ID:null}",
+        "secretAccessKey": "${ACCESS_KEY_SECRET:null}",
         "region": "UK",
-        "bucket": "docs.plus-image_BUCKET_NAME",
-        "baseFolder": "${FOLDER_PATH:null}"
+        "bucket": "${MEDIA_BUCKET_NAME}",
+        "baseFolder": "${FOLDER_PATH:./}"
       },
-      "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"],
-      "maxFileSize": 5000000
+      "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"  ],
+      "maxFileSize": 50000000
     },
     "ep_insert_media":{
       "storage":{
-        "endPoint" : "${ULTIMA_BUCKET_S3_SERVER}",
+        "endPoint" : "${BUCKET_S3_SERVER}",
         "useSSL" : true ,
         "type": "s3",
-        "accessKeyId": "${ULTIMA_BUCKET_ACCESS_KEY_ID:null}",
-        "secretAccessKey": "${ULTIMA_BUCKET_ACCESS_KEY_SECRET:null}",
+        "accessKeyId": "${ACCESS_KEY_ID:null}",
+        "secretAccessKey": "${ACCESS_KEY_SECRET:null}",
         "region": "UK",
         "bucket": "${MEDIA_BUCKET_NAME}",
-        "baseFolder": "${ULTIMA_FOLDER_PATH:./}"
+        "baseFolder": "${FOLDER_PATH:./}"
       },
       "fileTypes": ["jpeg", "jpg", "bmp", "gif","png","webm","mp4","m4v","mp3",
         "ogg", "m4a","flac","wav","wma", "aac"  ],
@@ -637,8 +644,14 @@
             "stun:stun.rixtelecom.se",
             "stun:stun.schlund.de",
             "stun:stun.xtratelecom.es:3478",
-            "stun:stun.yesss.at:3478"
+            "stun:stun.yesss.at:3478",
+            "stun:130.185.122.49:3478"
           ]
+        },
+        {
+          "url": ["turn:130.185.122.49:3478"],
+          "credential": "docsplus",
+          "username": "strongPassword"
         },
         {
           "url": ["turn:numb.viagenie.ca"],

@@ -23,3 +23,5 @@ out/
 .idea
 logs.*
 logs.*
+.history
+.hostory
