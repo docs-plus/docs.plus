@@ -276,11 +276,7 @@
    * This will improve the loading performance massively, but makes it difficult
    * to debug the javascript/css
    */
-<<<<<<< HEAD
   "minify": false,
-=======
-  "minify": "${MINIFY:false}",
->>>>>>> dev
 
   /*
    * How long may clients use served javascript code (in seconds)?
@@ -516,11 +512,7 @@
    *
    * Valid values: DEBUG, INFO, WARN, ERROR
    */
-<<<<<<< HEAD
-  "loglevel": "INFO",
-=======
   "loglevel": "${LOGLEVEL:INFO}",
->>>>>>> dev
 
   /*
    * Logging configuration. See log4js documentation for further information:
