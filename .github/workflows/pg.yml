@@ -5,9 +5,9 @@ name: Handbook.js CI
 
 on:
   push:
-    branches: [ handbook ]
+    branches: [ master ]
   pull_request:
-    branches: [ handbook ]
+    branches: [ master ]
 
 jobs:
   build:
@@ -36,4 +36,4 @@ jobs:
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
       DB_TYPE : postgres
       DB_PORT : ${{secrets.PG_PORT}}
-      PORT : 8001,
+      PORT : 9001,
