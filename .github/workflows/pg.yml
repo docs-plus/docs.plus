@@ -37,4 +37,3 @@ jobs:
       DB_TYPE : postgres
       DB_PORT : ${{secrets.PG_PORT}}
       PORT : 9001,
-      SSL: true

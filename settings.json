@@ -188,7 +188,13 @@
     "password": "${DB_PASS}",
     "charset":  "${DB_CHARSET}",
     "filename": "${DB_FILENAME:var/dirty.db}",
-    "ssl": "${SSL}"
+    "ssl": {
+      "rejectUnauthorized" : false,
+      "ssl" : {
+                "key"  : "/etc/nginx/ssl/ssl-handbook-key.key",
+                "cert" : "/etc/nginx/ssl/ssl-handbook-crt.crt"
+              }
+    }
   },
 
   /*
