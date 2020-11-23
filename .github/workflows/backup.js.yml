@@ -4,25 +4,29 @@ on:
     schedule:
         - cron: "*/5 * * * *"
 jobs:
-  backup:
+  build:
+
     runs-on: backup-runner
-    # Map a step output to a job output
+
+    strategy:
+      matrix:
+        node-version: [10.x]
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v1
+      with:
+        node-version: ${{ matrix.node-version }}
+    - run: pg_dump --dbname handbook -Ft -f aaa.tar
     env:
-      -U : ${{secrets.PG_USER}}
-      --password : ${{secrets.PG_PASS}}
-      -h : ${{secrets.PG_HOST}}
-      -p : ${{secrets.PG_PORT}}
+      DB_USER : ${{secrets.PG_USER}}
+      DB_PASS : ${{secrets.PG_PASS}}
+      --host : ${{secrets.PG_HOST}}
       MEDIA_BUCKET_NAME : ${{secrets.MEDIA_BUCKET_NAME}}
       BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
-    steps:
-    - id: step1
-      run: pg_dump -d handbook -Ft -f aaa.tar
-    - id: step2
-      run: echo "STEP 2"
-  upload:
-    runs-on: backup-runner
-    needs: backup
-    steps:
-    - run: echo "--"
+      DB_TYPE : postgres
+      DB_PORT : ${{secrets.PG_PORT}}
+      PORT : 9001,
