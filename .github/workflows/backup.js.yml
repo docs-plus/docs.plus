@@ -4,7 +4,7 @@ on:
     schedule:
         - cron: "*/3 * * * *"
 jobs:
-  job1:
+  backup:
     runs-on: backup-runner
     # Map a step output to a job output
     outputs:
@@ -21,8 +21,8 @@ jobs:
       run: pg_dump -d handbook 
     - id: step2
       run: echo "STEP 2"
-  job2:
+  upload:
     runs-on: backup-runner
-    needs: job1
+    needs: backup
     steps:
     - run: echo ${{needs.job1.outputs.-U}} ${{needs.job1.outputs.--password}}
