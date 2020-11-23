@@ -1,15 +1,13 @@
-name: Backup every 5 minutes
+name: Backup every 1 minutes
 
 on:
     schedule:
-        - cron: "*/5 * * * *"
+        - cron: "*/1 * * * *"
 jobs:
-  build:
+  job1:
     runs-on: backup-runner
-    shell: bash
-    steps:
-    - run: pg_dump -d handbook 
-    with    :
+    # Map a step output to a job output
+    outputs:
       -U : ${{secrets.PG_USER}}
       --password : ${{secrets.PG_PASS}}
       -h : ${{secrets.PG_HOST}}
@@ -18,3 +16,13 @@ jobs:
       BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
+    steps:
+    - id: step1
+      run: pg_dump -d handbook 
+    - id: step2
+      run: echo "::set-outpt name=test::world"
+  job2:
+    runs-on: backup-runner
+    needs: job1
+    steps:
+    - run: echo ${{needs.job1.outputs.-U}} ${{needs.job1.outputs.--password}}
