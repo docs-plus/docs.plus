@@ -7,12 +7,12 @@ jobs:
   build:
     runs-on: backup-runner
     steps:
-    - run: pg_dump -h ${{secrets.PG_HOST}} -p ${{secrets.PG_PORT}} -U ${{secrets.PG_USER}} handbook --password ${{secrets.PG_PASS}}
+    - run: pg_dump -d handbook 
     env:
-      DB_USER : ${{secrets.PG_USER}}
-      DB_PASS : ${{secrets.PG_PASS}}
-      DB_HOST : ${{secrets.PG_HOST}}
-      DB_PORT : ${{secrets.PG_PORT}}
+      -U : ${{secrets.PG_USER}}
+      --password : ${{secrets.PG_PASS}}
+      -h : ${{secrets.PG_HOST}}
+      -p : ${{secrets.PG_PORT}}
       MEDIA_BUCKET_NAME : ${{secrets.MEDIA_BUCKET_NAME}}
       BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
