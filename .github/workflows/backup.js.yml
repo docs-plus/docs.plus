@@ -18,11 +18,11 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: pg_dump -h ${{secrets.PG_HOST}} --dbname handbook -Ft -f aaa.tar
+    - run: pg_dump -h $DB_HOST --dbname handbook -Ft -f aaa.tar
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}
-      --host : ${{secrets.PG_HOST}}
+      DB_HOST : ${{secrets.PG_HOST}}
       MEDIA_BUCKET_NAME : ${{secrets.MEDIA_BUCKET_NAME}}
       BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
