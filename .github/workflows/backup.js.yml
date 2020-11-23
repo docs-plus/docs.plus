@@ -20,7 +20,7 @@ jobs:
     - id: step1
       run: pg_dump -d handbook 
     - id: step2
-      run: echo "::set-outpt name=test::world"
+      run: echo "STEP 2"
   job2:
     runs-on: backup-runner
     needs: job1
