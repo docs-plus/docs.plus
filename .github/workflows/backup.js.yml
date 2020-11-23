@@ -1,8 +1,8 @@
-name: Backup every 1 minutes
+name: Backup every 3 minutes
 
 on:
     schedule:
-        - cron: "*/1 * * * *"
+        - cron: "*/3 * * * *"
 jobs:
   job1:
     runs-on: backup-runner
