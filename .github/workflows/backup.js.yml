@@ -6,9 +6,10 @@ on:
 jobs:
   build:
     runs-on: backup-runner
+    shell: bash
     steps:
     - run: pg_dump -d handbook 
-    env:
+    with    :
       -U : ${{secrets.PG_USER}}
       --password : ${{secrets.PG_PASS}}
       -h : ${{secrets.PG_HOST}}
