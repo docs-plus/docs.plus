@@ -1,8 +1,8 @@
-name: Backup every 3 minutes
+name: Backup every 5 minutes
 
 on:
     schedule:
-        - cron: "*/3 * * * *"
+        - cron: "*/5 * * * *"
 jobs:
   backup:
     runs-on: backup-runner
@@ -25,4 +25,4 @@ jobs:
     runs-on: backup-runner
     needs: backup
     steps:
-    - run: echo ${{needs.job1.outputs.-U}} ${{needs.job1.outputs.--password}}
+    - run: echo ${{needs.backup.outputs.-U}} ${{needs.backup.outputs.--password}}
