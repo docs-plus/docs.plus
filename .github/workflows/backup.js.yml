@@ -13,11 +13,6 @@ jobs:
         node-version: [10.x]
 
     steps:
-    - uses: actions/checkout@v2
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v1
-      with:
-        node-version: ${{ matrix.node-version }}
     - run: pg_dump -h $DB_HOST --dbname handbook -Ft -f aaa.tar
     env:
       DB_USER : ${{secrets.PG_USER}}
