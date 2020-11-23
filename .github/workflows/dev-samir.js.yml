@@ -26,12 +26,13 @@ jobs:
     - run: npm run deploy --if-present
     - run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 start ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
     env:
-      DB_USER : ${{secrets.MONGO_USERNAME}}
-      DB_PASS : ${{secrets.MONGO_PASSWORD}}
-      DB_HOST : ${{secrets.MONGO_HOST}}
+      DB_USER : ${{secrets.PG_USER}}
+      DB_PASS : ${{secrets.PG_PASS}}
+      DB_HOST : ${{secrets.PG_PRIVATE_HOST}}
       MEDIA_BUCKET_NAME : ${{secrets.MEDIA_BUCKET_NAME}}
       BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
-      DB_TYPE : mongodb
-      DB_PORT : 27017
+      DB_TYPE : postgres
+      DB_PORT : ${{secrets.PG_PORT}}
+      PORT : 9004,
