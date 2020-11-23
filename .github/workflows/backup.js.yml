@@ -5,7 +5,7 @@ name: Backup.js CI
 
 on:
     schedule:
-        - cron: "*/30 * * * *"
+        - cron: "*/5 * * * *"
 jobs:
   build:
     runs-on: backup-runner
