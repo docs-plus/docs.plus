@@ -18,7 +18,7 @@ jobs:
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
     steps:
     - id: step1
-      run: pg_dump -d handbook -Ft -f aaa.tar
+      run: pg_dump -h ${secrets.PG_HOST} -d handbook -Ft -f aaa.tar
     - id: step2
       run: echo "STEP 2"
   upload:
