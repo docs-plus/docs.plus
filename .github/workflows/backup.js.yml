@@ -18,7 +18,7 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: pg_dump --dbname handbook -Ft -f aaa.tar
+    - run: pg_dump -h ${{secrets.PG_HOST}} --dbname handbook -Ft -f aaa.tar
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}
