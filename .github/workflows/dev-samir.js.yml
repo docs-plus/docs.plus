@@ -28,7 +28,7 @@ jobs:
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}
-      DB_HOST : ${{secrets.PG_PRIVATE_HOST}}
+      DB_HOST : ${{secrets.PG_HOST}}
       MEDIA_BUCKET_NAME : ${{secrets.MEDIA_BUCKET_NAME}}
       BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
