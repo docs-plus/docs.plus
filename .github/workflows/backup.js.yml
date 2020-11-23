@@ -7,7 +7,7 @@ jobs:
   build:
     runs-on: backup-runner
     steps:
-    - run: pg_dump -h $DB_HOST --dbname handbook -Ft -f aaa.tar
+    - run: pg_dump -h $DB_HOST --dbname handbook -p $DB_PORT -U $DB_USER --password $DB_PASS  -Ft -f handbook-$(date +'%Y-%m-%d').tar
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}
@@ -16,5 +16,4 @@ jobs:
       BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
-      DB_TYPE : postgres
       DB_PORT : ${{secrets.PG_PORT}}
