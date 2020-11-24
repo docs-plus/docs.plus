@@ -7,7 +7,7 @@ jobs:
   dump:
     runs-on: backup-runner
     steps:
-    - run: ( [-d $(date +'%Y-%m-%d') ] || mkdir $(date +'%Y-%m-%d') ) &&  PGPASSWORD=$DB_PASS pg_dump -h $DB_HOST --dbname handbook -p $DB_PORT -U $DB_USER -Ft -f handbook-$(date +'%Y-%m-%d-%H').tar
+    - run: ( [-d $(date +'%Y-%m-%d') ] || mkdir $(date +'%Y-%m-%d') ) &&  PGPASSWORD=$DB_PASS pg_dump -h $DB_HOST --dbname handbook -p $DB_PORT -U $DB_USER -Ft -f $(date +'%Y-%m-%d')/handbook-$(date +'%Y-%m-%d-%H').tar
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}
