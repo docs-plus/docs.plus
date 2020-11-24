@@ -14,6 +14,7 @@ jobs:
       DB_HOST : ${{secrets.PG_HOST}}
       DB_PORT : ${{secrets.PG_PORT}}
   upload:
+    runs-on: backup-runner
     needs: dump
     steps:
       - run: rclone sync -i . space:$BACKUP_BUCKET_NAME --s3-access-key-id=$ACCESS_KEY_ID --s3-secret-access-key=$ACCESS_KEY_SECRET --s3-endpoint=$BUCKET_S3_SERVER
