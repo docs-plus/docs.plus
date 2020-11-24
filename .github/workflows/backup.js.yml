@@ -1,8 +1,8 @@
-name: Backup every 5 minutes
+name: Backup every hour
 
 on:
     schedule:
-        - cron: "*/5 * * * *"
+        - cron: "0 * * * *"
 jobs:
   dump:
     runs-on: backup-runner
