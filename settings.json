@@ -634,15 +634,11 @@
       "iceServers": [
         {
           "urls": [ 
-            "turn:143.110.171.40",
-            "stun:stun.l.google.com:19302",
-            "stun:stun2.l.google.com:19302",
-            "stun:stun3.l.google.com:19302",
-            "stun:stun4.l.google.com:19302"
+            "stun:143.110.171.40"
           ]
         },
         {
-          "url": ["turn:143.110.171.40"],
+          "url": ["turn:143.110.171.40:3478"],
           "credential": "docsplus",
           "username": "strongdoc"
         }
