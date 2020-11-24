@@ -444,7 +444,7 @@
    *
    * WARNING: this will disable security on the instance.
    */
-  "loadTest": "${LOAD_TEST:true}",
+  "loadTest": "${LOAD_TEST:false}",
 
   /*
    * Disable indentation on new line when previous line ends with some special
@@ -519,7 +519,7 @@
    *
    * Valid values: DEBUG, INFO, WARN, ERROR
    */
-  "loglevel": "${LOGLEVEL:INFO}",
+  "loglevel": "${LOGLEVEL:DEBUG}",
 
   /*
    * Logging configuration. See log4js documentation for further information:
