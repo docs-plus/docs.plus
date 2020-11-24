@@ -640,7 +640,7 @@
           ]
         },
         {
-          "url": ["turn:143.110.171.40"],
+          "url": ["turn:143.110.171.40:3478"],
           "credential": "docsplus",
           "username": "strongdoc"
         }
