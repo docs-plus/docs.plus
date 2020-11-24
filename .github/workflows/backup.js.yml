@@ -27,7 +27,4 @@ jobs:
     runs-on: backup-runner
     needs: upload
     steps:
-      - run: del=$(date --date="6 days ago" +"%Y-%m-%d")
-             for i in `find . -type d -name "2*"`; do 
-                (($del < $(basename $i))) && rm -rf $i || echo "keep $i"
-             done
+      - run: del=$(date --date="6 days ago" +"%Y-%m-%d"); for i in `find . -type d -name "2*"`; do (($del < $(basename $i))) && rm -rf $i || echo "keep $i";  done
