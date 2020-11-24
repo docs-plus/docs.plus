@@ -7,7 +7,7 @@ jobs:
   build:
     runs-on: backup-runner
     steps:
-    - run: PGPASSWORD=$DB_PASS pg_dump -h $DB_HOST --dbname handbook -p $DB_PORT -U $DB_USER -Ft -f handbook-$(date +'%Y-%m-%d %H').tar
+    - run: PGPASSWORD=$DB_PASS pg_dump -h $DB_HOST --dbname handbook -p $DB_PORT -U $DB_USER -Ft -f handbook-$(date +'%Y-%m-%d-%H').tar
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}
