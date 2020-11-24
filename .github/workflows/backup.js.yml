@@ -27,4 +27,4 @@ jobs:
     runs-on: backup-runner
     needs: upload
     steps:
-      - run: 
+      - run: echo "$(date -d "7 days ago" +'%Y-%m-%d')"
