@@ -444,7 +444,7 @@
    *
    * WARNING: this will disable security on the instance.
    */
-  "loadTest": "${LOAD_TEST:false}",
+  "loadTest": "${LOAD_TEST:true}",
 
   /*
    * Disable indentation on new line when previous line ends with some special
