@@ -418,12 +418,12 @@
    *          follow the section "secure your installation" in README.md
    */
 
-  /*
+  
   "users": {
     "admin": {
       // 1) "password" can be replaced with "hash" if you install ep_hash_auth
       // 2) please note that if password is null, the user will not be created
-      "password": "changeme1",
+      "password": "StrongPassword",
       "is_admin": true
     },
     "user": {
@@ -433,7 +433,7 @@
       "is_admin": false
     }
   },
-  */
+  
 
   /*
    * Restrict socket.io transport methods
