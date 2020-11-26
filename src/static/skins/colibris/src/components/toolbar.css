@@ -5,8 +5,7 @@
   background-color: var(--bg-color);
   color: #576273;
   color: var(--text-soft-color);
-  /* border-bottom: none; */
-  border-bottom: 1px solid #ccc !important
+  border-bottom: none;
 }
 
 #editbar.editor-scrolled {

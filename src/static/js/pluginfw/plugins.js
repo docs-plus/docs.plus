@@ -8,28 +8,25 @@ var _ = require("underscore");
 var settings = require('../../../node/utils/Settings');
 
 var pluginUtils = require('./shared');
+var defs = require('./plugin_defs');
 
 exports.prefix = 'ep_';
-exports.loaded = false;
-exports.plugins = {};
-exports.parts = [];
-exports.hooks = {};
 
 // @TODO RPB this appears to be unused
 exports.ensure = function (cb) {
-  if (!exports.loaded)
+  if (!defs.loaded)
     exports.update(cb);
   else
     cb();
 };
 
 exports.formatPlugins = function () {
-  return _.keys(exports.plugins).join(", ");
+  return _.keys(defs.plugins).join(", ");
 };
 
 exports.formatPluginsWithVersion = function () {
   var plugins = [];
-  _.forEach(exports.plugins, function(plugin){
+  _.forEach(defs.plugins, function(plugin) {
     if(plugin.package.name !== "ep_etherpad-lite"){
       var pluginStr = plugin.package.name + "@" + plugin.package.version;
       plugins.push(pluginStr);
@@ -39,12 +36,12 @@ exports.formatPluginsWithVersion = function () {
 };
 
 exports.formatParts = function () {
-  return _.map(exports.parts, function (part) { return part.full_name; }).join("\n");
+  return _.map(defs.parts, function(part) { return part.full_name; }).join('\n');
 };
 
 exports.formatHooks = function (hook_set_name) {
   var res = [];
-  var hooks = pluginUtils.extractHooks(exports.parts, hook_set_name || "hooks");
+  var hooks = pluginUtils.extractHooks(defs.parts, hook_set_name || 'hooks');
 
   _.chain(hooks).keys().forEach(function (hook_name) {
     _.forEach(hooks[hook_name], function (hook) {
@@ -60,8 +57,8 @@ exports.callInit = function () {
 
   var hooks = require("./hooks");
 
-  let p = Object.keys(exports.plugins).map(function (plugin_name) {
-    let plugin = exports.plugins[plugin_name];
+  let p = Object.keys(defs.plugins).map(function(plugin_name) {
+    let plugin = defs.plugins[plugin_name];
     let ep_init = path.normalize(path.join(plugin.package.path, ".ep_initialized"));
     return fsp_stat(ep_init).catch(async function() {
       await fsp_writeFile(ep_init, "done");
@@ -72,13 +69,17 @@ exports.callInit = function () {
   return Promise.all(p);
 }
 
-exports.pathNormalization = function (part, hook_fn_name) {
-  return path.normalize(path.join(path.dirname(exports.plugins[part.plugin].package.path), hook_fn_name));
+exports.pathNormalization = function (part, hook_fn_name, hook_name) {
+  const parts = hook_fn_name.split(':');
+  const functionName = (parts.length > 1) ? parts.pop() : hook_name;
+  const packageDir = path.dirname(defs.plugins[part.plugin].package.path);
+  const fileName = path.normalize(path.join(packageDir, parts.join(':')));
+  return fileName + ((functionName == null) ? '' : (':' + functionName));
 }
 
 exports.update = async function () {
   let packages = await exports.getPackages();
-  var parts = [];
+  var parts = {}; // Key is full name. sortParts converts this into a topologically sorted array.
   var plugins = {};
 
   // Load plugin metadata ep.json
@@ -87,10 +88,10 @@ exports.update = async function () {
   });
 
   return Promise.all(p).then(function() {
-    exports.plugins = plugins;
-    exports.parts = sortParts(parts);
-    exports.hooks = pluginUtils.extractHooks(exports.parts, "hooks", exports.pathNormalization);
-    exports.loaded = true;
+    defs.plugins = plugins;
+    defs.parts = sortParts(parts);
+    defs.hooks = pluginUtils.extractHooks(defs.parts, 'hooks', exports.pathNormalization);
+    defs.loaded = true;
   }).then(exports.callInit);
 }
 
@@ -98,6 +99,7 @@ exports.getPackages = async function () {
   // Load list of installed NPM packages, flatten it to a list, and filter out only packages with names that
   var dir = settings.root;
   let data = await util.promisify(readInstalled)(dir);
+
   var packages = {};
   function flatten(deps) {
     _.chain(deps).keys().each(function (name) {
@@ -121,28 +123,26 @@ exports.getPackages = async function () {
 };
 
 async function loadPlugin(packages, plugin_name, plugins, parts) {
-  var dir = settings.root;
   let fsp_readFile = util.promisify(fs.readFile);
-  var module_path = (packages[plugin_name].path) ?  packages[plugin_name].path : `${dir}/node_modules/${plugin_name}`
-  var plugin_path = path.resolve(module_path, "ep.json");
-    try {
-      let data = await fsp_readFile(plugin_path);
-      try {
-        var plugin = JSON.parse(data);
-        plugin['package'] = packages[plugin_name];
-        plugins[plugin_name] = plugin;
-        _.each(plugin.parts, function (part) {
-          part.plugin = plugin_name;
-          part.full_name = plugin_name + "/" + part.name;
-          parts[part.full_name] = part;
-        });
-      } catch (ex) {
-        console.error("Unable to parse plugin definition file " + plugin_path + ": " + ex.toString());
-      }
-    } catch (er) {
-      console.error("Unable to load plugin definition file " + plugin_path);
-    }
 
+  var plugin_path = path.resolve(packages[plugin_name].path, "ep.json");
+  try {
+    let data = await fsp_readFile(plugin_path);
+    try {
+      var plugin = JSON.parse(data);
+      plugin['package'] = packages[plugin_name];
+      plugins[plugin_name] = plugin;
+      _.each(plugin.parts, function (part) {
+        part.plugin = plugin_name;
+        part.full_name = plugin_name + "/" + part.name;
+        parts[part.full_name] = part;
+      });
+    } catch (ex) {
+      console.error("Unable to parse plugin definition file " + plugin_path + ": " + ex.toString());
+    }
+  } catch (er) {
+    console.error("Unable to load plugin definition file " + plugin_path);
+  }
 }
 
 function partsToParentChildList(parts) {
