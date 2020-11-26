@@ -22,5 +22,7 @@
   },
   "author": "",
   "license": "ISC",
-  "dependencies": {}
+  "dependencies": {
+    "ep_comments_page": "git+https://github.com/ether/ep_comments"
+  }
 }
