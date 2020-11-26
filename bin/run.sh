@@ -27,6 +27,9 @@ EOF
   [ "$rocks" = "Etherpad rocks my socks" ] || fatal "Your input was incorrect"
 fi
 
+# npm install --save --loglevel error
+yarn
+
 # Prepare the environment
 bin/installDeps.sh "$@" || exit 1
 
