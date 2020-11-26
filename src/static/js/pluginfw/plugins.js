@@ -124,7 +124,7 @@ exports.getPackages = async function () {
 
 async function loadPlugin(packages, plugin_name, plugins, parts) {
   let fsp_readFile = util.promisify(fs.readFile);
-
+  console.log(packages[plugin_name].path, "========")
   var plugin_path = path.resolve(packages[plugin_name].path, "ep.json");
   try {
     let data = await fsp_readFile(plugin_path);
