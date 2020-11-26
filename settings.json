@@ -634,48 +634,13 @@
       "iceServers": [
         {
           "urls": [ 
-            "stun:stun.l.google.com:19302",
-            "stun:stun1.voiceeclipse.net:3478",
-            "stun:stun2.l.google.com:19302",
-            "stun:stun3.l.google.com:19302",
-            "stun:stun4.l.google.com:19302 ",
-            "stun:stun.ideasip.com",
-            "stun:stun.rixtelecom.se",
-            "stun:stun.schlund.de",
-            "stun:stun.xtratelecom.es:3478",
-            "stun:stun.yesss.at:3478",
-            "stun:130.185.122.49:3478"
+            "stun:143.110.171.40"
           ]
         },
         {
-          "url": ["turn:130.185.122.49:3478"],
+          "url": ["turn:143.110.171.40:3478"],
           "credential": "docsplus",
-          "username": "strongPassword"
-        },
-        {
-          "url": ["turn:numb.viagenie.ca"],
-          "credential": "muazkh",
-          "username": "webrtc@live.com"
-        },
-        {
-          "url": ["turn:192.158.29.39:3478?transport=udp"],
-          "credential": "JZEOEt2V3Qb0y27GRntt2u2PAYA=",
-          "username": "28224511:1379330808"
-        },
-        {
-          "url": ["turn:192.158.29.39:3478?transport=tcp"],
-          "credential": "JZEOEt2V3Qb0y27GRntt2u2PAYA=",
-          "username": "28224511:1379330808"
-        },
-        {
-          "url": ["turn:turn.bistri.com:80"],
-          "credential": "homeo",
-          "username": "homeo"
-        },
-        {
-          "url": "turn:turn.anyfirewall.com:443?transport=tcp",
-          "credential": "webrtc",
-          "username": "webrtc"
+          "username": "strongdoc"
         }
       ]
     }
