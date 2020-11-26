@@ -289,7 +289,7 @@
    * This will improve the loading performance massively, but makes it difficult
    * to debug the javascript/css
    */
-  "minify": true,
+  "minify": false,
 
   /*
    * How long may clients use served javascript code (in seconds)?
@@ -297,7 +297,7 @@
    * Not setting this may cause problems during deployment.
    * Set to 0 to disable caching.
    */
-  "maxAge": 21600, // 60 * 60 * 6 = 6 hours
+  "maxAge": 0, // 60 * 60 * 6 = 6 hours
 
   /*
    * Absolute path to the Abiword executable.
