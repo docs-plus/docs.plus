@@ -39,7 +39,7 @@ exports.expressCreateServer = function (hook_name, args, cb) {
   });
 
   //serve pad.html under /p
-  args.app.get('/p/:pad', function(req, res, next)
+  args.app.get('/p/:pad', async function(req, res, next)
   {
     // The below might break for pads being rewritten
     var isReadOnly = req.url.indexOf("/p/r.") === 0;
