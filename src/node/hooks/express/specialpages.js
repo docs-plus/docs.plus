@@ -3,6 +3,7 @@ var eejs = require('ep_etherpad-lite/node/eejs');
 var toolbar = require("ep_etherpad-lite/node/utils/toolbar");
 var hooks = require('ep_etherpad-lite/static/js/pluginfw/hooks');
 var settings = require('../../utils/Settings');
+var db = require("../../db/DB");  // @Samir
 
 exports.expressCreateServer = function (hook_name, args, cb) {
   // expose current stats
