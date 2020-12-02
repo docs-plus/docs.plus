@@ -49,7 +49,11 @@ exports.expressCreateServer = function (hook_name, args, cb) {
       isReadOnly: isReadOnly
     });
 
+    // @Samir Sayyad Added for social preview
+    const pad_title = await db.get("title:"+ padId.split(":").pop() || padId) ;
+
     res.send(eejs.require("ep_etherpad-lite/templates/pad.html", {
+      meta : { title : (pad_title) ? pad_title :req.params.pad } ,
       req: req,
       toolbar: toolbar,
       isReadOnly: isReadOnly
