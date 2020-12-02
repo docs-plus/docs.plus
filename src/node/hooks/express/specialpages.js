@@ -51,7 +51,7 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     });
 
     // @Samir Sayyad Added for social preview
-    const pad_title = await db.get("title:"+ padId.split(":").pop() || padId) ;
+    const pad_title = await db.get("title:"+ req.params.pad) ;
 
     res.send(eejs.require("ep_etherpad-lite/templates/pad.html", {
       meta : { title : (pad_title) ? pad_title :req.params.pad } ,
