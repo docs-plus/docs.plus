@@ -23,7 +23,7 @@ select, .nice-select {
   -ms-user-select: none;
   user-select: none;
   white-space: nowrap;
-  min-width: 100px;
+  width: 120px;
   text-transform: capitalize;
 }
 .popup .nice-select {
@@ -31,6 +31,11 @@ select, .nice-select {
 }
 .nice-select:hover {
   border-color: #dbdbdb;
+}
+.nice-select .current {
+  width: 90px;
+  display: inline-block;
+  overflow: hidden;
 }
 .nice-select:after {
   border-bottom: 2px solid #999;
