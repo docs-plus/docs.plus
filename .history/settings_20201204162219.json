@@ -169,10 +169,10 @@
    * https://www.npmjs.com/package/ueberdb2
    */
 
-  //  "dbType": "dirty",
-  //  "dbSettings": {
-  //    "filename": "var/dirty.db"
-  //  },
+   "dbType": "dirty",
+   "dbSettings": {
+     "filename": "var/dirty.db"
+   },
 
    "dbType": "${DB_TYPE:mongodb}",
    "dbSettings": {
