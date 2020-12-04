@@ -126,7 +126,7 @@
    *    "port" : "/somepath/etherpad.socket", // <-- path to a Unix socket
    */
    "ip": "${IP:0.0.0.0}",
-   "port": "${PORT:9001}",
+   "port": "${PORT:9002}",
 
   /*
    * Option to hide/show the settings.json in admin page.
