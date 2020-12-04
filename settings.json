@@ -1,11 +1,3 @@
-/***
- * THIS IS THE SETTINGS FILE THAT IS COPIED INSIDE THE DOCKER CONTAINER.
- *
- * By default, some runtime customizations are supported (see the
- * documentation).
- *
- * If you need more control, edit this file and rebuild the container.
- */
 /*
  * This file must be valid JSON. But comments are allowed
  *
@@ -71,8 +63,8 @@
  *    use "\n" as usual.
  *
  *    "defaultPadText" : "${DEFAULT_PAD_TEXT}Line 1\nLine 2"
- */  
-{
+ */
+ {
   /*
    * Name your instance!
    */
@@ -133,8 +125,8 @@
    *    "ip": "",                             // <-- has to be an empty string
    *    "port" : "/somepath/etherpad.socket", // <-- path to a Unix socket
    */
-  "ip": "${IP:0.0.0.0}",
-  "port": "${PORT:9001}",
+   "ip": "${IP:0.0.0.0}",
+   "port": "${PORT:9001}",
 
   /*
    * Option to hide/show the settings.json in admin page.
@@ -158,7 +150,6 @@
             "ca": ["/path-to-your/epl-intermediate-cert1.crt", "/path-to-your/epl-intermediate-cert2.crt"]
           },
   */
-  
 
   /*
    * The type of the database.
@@ -178,30 +169,52 @@
    * https://www.npmjs.com/package/ueberdb2
    */
 
-  "dbType": "${DB_TYPE:mongodb}",
-  "dbSettings": {
-    "host":     "${DB_HOST}",
-    "port":     "${DB_PORT}",
-    "dbname":   "${DB_NAME}",
-    "database": "${DB_NAME}",
-    "user":     "${DB_USER}",
-    "password": "${DB_PASS}",
-    "charset":  "${DB_CHARSET}",
-    "filename": "${DB_FILENAME:var/dirty.db}",
-    "ssl": {
-      "rejectUnauthorized" : false,
-      "ssl" : {
-                "key"  : "/etc/nginx/ssl/ssl-handbook-key.key",
-                "cert" : "/etc/nginx/ssl/ssl-handbook-crt.crt"
-              }
-    }
+  //  "dbType": "dirty",
+  //  "dbSettings": {
+  //    "filename": "var/dirty.db"
+  //  },
+
+   "dbType": "${DB_TYPE:mongodb}",
+   "dbSettings": {
+     "host":     "${DB_HOST}",
+     "port":     "${DB_PORT}",
+     "dbname":   "${DB_NAME}",
+     "database": "${DB_NAME}",
+     "user":     "${DB_USER}",
+     "password": "${DB_PASS}",
+     "charset":  "${DB_CHARSET}",
+     "filename": "${DB_FILENAME:var/dirty.db}",
+     "ssl": {
+       "rejectUnauthorized" : false,
+       "ssl" : {
+                 "key"  : "/etc/nginx/ssl/ssl-handbook-key.key",
+                 "cert" : "/etc/nginx/ssl/ssl-handbook-crt.crt"
+               }
+     }
+   },
+
+  /*
+   * An Example of MySQL Configuration (commented out).
+   *
+   * See: https://github.com/ether/etherpad-lite/wiki/How-to-use-Etherpad-Lite-with-MySQL
+   */
+
+  /*
+  "dbType" : "mysql",
+  "dbSettings" : {
+    "user":     "etherpaduser",
+    "host":     "localhost",
+    "port":     3306,
+    "password": "PASSWORD",
+    "database": "etherpad_lite_db",
+    "charset":  "utf8mb4"
   },
+  */
 
   /*
    * The default text of a pad
    */
-  "defaultPadText" : "${DEFAULT_PAD_TEXT:Welcome to docs.plus, a new & experimental platform for collaborative writing and online events! 🌟 \n\n docs.plus works much like any other collaborative document, except...\n • Every heading in the document is also a videochat! 😱 \n • Anyone can create a new videochat by editing the document to create a heading! 🤯\n\n ⚠️ docs.plus is still a prototype ⚠️ you may encounter bugs, and your content may be deleted without warning. \n\n If you would like to do anything serious with it, please contact us via twitter at https://twitter.com/docsdotplus (preferred) or via email at 📧 ed@newspeak.house. You can keep up with our progress at https://groups.io/g/docsdotplus 📯 \n\n docs.plus is a non-profit, open-source project. If you like the concept, please back us on Patreon to help pay for hosting & continued development https://www.patreon.com/docsplus 🙏\n\n docs.plus is brought to you by https://newspeak.house, The London College of Political Technologists 🎓 }",
-
+   "defaultPadText" : "${DEFAULT_PAD_TEXT:Welcome to docs.plus, a new & experimental platform for collaborative writing and online events! 🌟 \n\n docs.plus works much like any other collaborative document, except...\n • Every heading in the document is also a videochat! 😱 \n • Anyone can create a new videochat by editing the document to create a heading! 🤯\n\n ⚠️ docs.plus is still a prototype ⚠️ you may encounter bugs, and your content may be deleted without warning. \n\n If you would like to do anything serious with it, please contact us via twitter at https://twitter.com/docsdotplus (preferred) or via email at 📧 ed@newspeak.house. You can keep up with our progress at https://groups.io/g/docsdotplus 📯 \n\n docs.plus is a non-profit, open-source project. If you like the concept, please back us on Patreon to help pay for hosting & continued development https://www.patreon.com/docsplus 🙏\n\n docs.plus is brought to you by https://newspeak.house, The London College of Political Technologists 🎓 }",
   /*
    * Default Pad behavior.
    *
@@ -219,49 +232,46 @@
     "alwaysShowChat":   "${PAD_OPTIONS_ALWAYS_SHOW_CHAT:false}",
     "chatAndUsers":     "${PAD_OPTIONS_CHAT_AND_USERS:false}",
     "lang":             "${PAD_OPTIONS_LANG:en-gb}"
-    //"automatic_logut_mins_show" : true,
-    //"automatic_logut_mins" : 1 
-    //"automatic_logut_url" : "/go back/automatic logged out"
   },
 
   /*
    * Pad Shortcut Keys
    */
   "padShortcutEnabled" : {
-    "altF9":     "${PAD_SHORTCUTS_ENABLED_ALT_F9:true}",      /* focus on the File Menu and/or editbar */
-    "altC":      "${PAD_SHORTCUTS_ENABLED_ALT_C:true}",       /* focus on the Chat window */
-    "cmdShift2": "${PAD_SHORTCUTS_ENABLED_CMD_SHIFT_2:true}", /* shows a gritter popup showing a line author */
-    "delete":    "${PAD_SHORTCUTS_ENABLED_DELETE:true}",
-    "return":    "${PAD_SHORTCUTS_ENABLED_RETURN:true}",
-    "esc":       "${PAD_SHORTCUTS_ENABLED_ESC:true}",         /* in mozilla versions 14-19 avoid reconnecting pad */
-    "cmdS":      "${PAD_SHORTCUTS_ENABLED_CMD_S:true}",       /* save a revision */
-    "tab":       "${PAD_SHORTCUTS_ENABLED_TAB:true}",         /* indent */
-    "cmdZ":      "${PAD_SHORTCUTS_ENABLED_CMD_Z:true}",       /* undo/redo */
-    "cmdY":      "${PAD_SHORTCUTS_ENABLED_CMD_Y:true}",       /* redo */
-    "cmdI":      "${PAD_SHORTCUTS_ENABLED_CMD_I:true}",       /* italic */
-    "cmdB":      "${PAD_SHORTCUTS_ENABLED_CMD_B:true}",       /* bold */
-    "cmdU":      "${PAD_SHORTCUTS_ENABLED_CMD_U:true}",       /* underline */
-    "cmd5":      "${PAD_SHORTCUTS_ENABLED_CMD_5:true}",       /* strike through */
-    "cmdShiftL": "${PAD_SHORTCUTS_ENABLED_CMD_SHIFT_L:true}", /* unordered list */
-    "cmdShiftN": "${PAD_SHORTCUTS_ENABLED_CMD_SHIFT_N:true}", /* ordered list */
-    "cmdShift1": "${PAD_SHORTCUTS_ENABLED_CMD_SHIFT_1:true}", /* ordered list */
-    "cmdShiftC": "${PAD_SHORTCUTS_ENABLED_CMD_SHIFT_C:true}", /* clear authorship */
-    "cmdH":      "${PAD_SHORTCUTS_ENABLED_CMD_H:true}",       /* backspace */
-    "ctrlHome":  "${PAD_SHORTCUTS_ENABLED_CTRL_HOME:true}",   /* scroll to top of pad */
-    "pageUp":    "${PAD_SHORTCUTS_ENABLED_PAGE_UP:true}",
-    "pageDown":  "${PAD_SHORTCUTS_ENABLED_PAGE_DOWN:true}"
+    "altF9":     true, /* focus on the File Menu and/or editbar */
+    "altC":      true, /* focus on the Chat window */
+    "cmdShift2": true, /* shows a gritter popup showing a line author */
+    "delete":    true,
+    "return":    true,
+    "esc":       true, /* in mozilla versions 14-19 avoid reconnecting pad */
+    "cmdS":      true, /* save a revision */
+    "tab":       true, /* indent */
+    "cmdZ":      true, /* undo/redo */
+    "cmdY":      true, /* redo */
+    "cmdI":      true, /* italic */
+    "cmdB":      true, /* bold */
+    "cmdU":      true, /* underline */
+    "cmd5":      true, /* strike through */
+    "cmdShiftL": true, /* unordered list */
+    "cmdShiftN": true, /* ordered list */
+    "cmdShift1": true, /* ordered list */
+    "cmdShiftC": true, /* clear authorship */
+    "cmdH":      true, /* backspace */
+    "ctrlHome":  true, /* scroll to top of pad */
+    "pageUp":    true,
+    "pageDown":  true
   },
 
   /*
    * Should we suppress errors from being visible in the default Pad Text?
    */
-  "suppressErrorsInPadText": "${SUPPRESS_ERRORS_IN_PAD_TEXT:false}",
+  "suppressErrorsInPadText": false,
 
   /*
    * If this option is enabled, a user must have a session to access pads.
    * This effectively allows only group pads to be accessed.
    */
-  "requireSession": "${REQUIRE_SESSION:false}",
+  "requireSession": false,
 
   /*
    * Users may edit pads but not create new ones.
@@ -269,13 +279,13 @@
    * Pad creation is only via the API.
    * This applies both to group pads and regular pads.
    */
-  "editOnly": "${EDIT_ONLY:false}",
+  "editOnly": false,
 
   /*
    * If set to true, those users who have a valid session will automatically be
    * granted access to password protected pads.
    */
-  "sessionNoPassword": "${SESSION_NO_PASSWORD:false}",
+  "sessionNoPassword": false,
 
   /*
    * If true, all css & js will be minified before sending to the client.
@@ -283,7 +293,7 @@
    * This will improve the loading performance massively, but makes it difficult
    * to debug the javascript/css
    */
-  "minify": false,
+  "minify": true,
 
   /*
    * How long may clients use served javascript code (in seconds)?
@@ -300,7 +310,7 @@
    * it to null disables Abiword and will only allow plain text and HTML
    * import/exports.
    */
-  "abiword": "${ABIWORD}",
+  "abiword": null,
 
   /*
    * This is the absolute path to the soffice executable.
@@ -308,7 +318,7 @@
    * LibreOffice can be used in lieu of Abiword to export pads.
    * Setting it to null disables LibreOffice exporting.
    */
-  "soffice": "${SOFFICE}",
+  "soffice": null,
 
   /*
    * Path to the Tidy executable.
@@ -316,25 +326,25 @@
    * Tidy is used to improve the quality of exported pads.
    * Setting it to null disables Tidy.
    */
-  "tidyHtml": "${TIDY_HTML}",
+  "tidyHtml": null,
 
   /*
    * Allow import of file types other than the supported ones:
    * txt, doc, docx, rtf, odt, html & htm
    */
-  "allowUnknownFileEnds": "${ALLOW_UNKNOWN_FILE_ENDS:true}",
+  "allowUnknownFileEnds": true,
 
   /*
    * This setting is used if you require authentication of all users.
    *
    * Note: "/admin" always requires authentication.
    */
-  "requireAuthentication": "${REQUIRE_AUTHENTICATION:false}",
+  "requireAuthentication": false,
 
   /*
    * Require authorization by a module, or a user with is_admin set, see below.
    */
-  "requireAuthorization": "${REQUIRE_AUTHORIZATION:false}",
+  "requireAuthorization": false,
 
   /*
    * When you use NGINX or another proxy/load-balancer set this to true.
@@ -350,7 +360,7 @@
   /*
    * Privacy: disable IP logging
    */
-  "disableIPlogging": "${DISABLE_IP_LOGGING:false}",
+  "disableIPlogging": false,
 
   /*
    * Time (in seconds) to automatically reconnect pad when a "Force reconnect"
@@ -358,7 +368,7 @@
    *
    * Set to 0 to disable automatic reconnection.
    */
-  "automaticReconnectionTimeout": "${AUTOMATIC_RECONNECTION_TIMEOUT:0}",
+  "automaticReconnectionTimeout": 0,
 
   /*
    * By default, when caret is moved out of viewport, it scrolls the minimum
@@ -376,21 +386,21 @@
      * Set to 0 to disable extra scrolling
      */
     "percentage": {
-      "editionAboveViewport": "${FOCUS_LINE_PERCENTAGE_ABOVE:0}",
-      "editionBelowViewport": "${FOCUS_LINE_PERCENTAGE_BELOW:0}"
+      "editionAboveViewport": 0,
+      "editionBelowViewport": 0
     },
 
     /*
      * Time (in milliseconds) used to animate the scroll transition.
      * Set to 0 to disable animation
      */
-    "duration": "${FOCUS_LINE_DURATION:0}",
+    "duration": 0,
 
     /*
      * Flag to control if it should scroll when user places the caret in the
      * last line of the viewport
      */
-    "scrollWhenCaretIsInTheLastLineOfViewport": "${FOCUS_LINE_CARET_SCROLL:false}",
+    "scrollWhenCaretIsInTheLastLineOfViewport": false,
 
     /*
      * Percentage of viewport height to be additionally scrolled when user
@@ -398,7 +408,7 @@
      *
      * Set to 0 to let the scroll to be handled as default by Etherpad
      */
-    "percentageToScrollWhenUserPressesArrowUp": "${FOCUS_LINE_PERCENTAGE_ARROW_UP:0}"
+    "percentageToScrollWhenUserPressesArrowUp": 0
   },
 
   /*
@@ -411,9 +421,11 @@
    *          If you want to mitigate this, please install ep_hash_auth and
    *          follow the section "secure your installation" in README.md
    */
-  "ep_auth_author": {
-    "prefix": "author/"
-  },
+
+   "ep_auth_author": {
+     "prefix": "author/"
+   },
+  
   "users": {
     "admin": {
       // 1) "password" can be replaced with "hash" if you install ep_hash_auth
@@ -433,6 +445,7 @@
       "is_admin": false
     }
   },
+  
 
   /*
    * Restrict socket.io transport methods
@@ -444,7 +457,7 @@
    *
    * WARNING: this will disable security on the instance.
    */
-  "loadTest": "${LOAD_TEST:false}",
+  "loadTest": false,
 
   /*
    * Disable indentation on new line when previous line ends with some special
@@ -466,10 +479,10 @@
    */
   "importExportRateLimiting": {
     // duration of the rate limit window (milliseconds)
-    "windowMs": "${IMPORT_EXPORT_RATE_LIMIT_WINDOW:90000}",
+    "windowMs": 90000,
 
     // maximum number of requests per IP to allow during the rate limit window
-    "max": "${IMPORT_EXPORT_MAX_REQ_PER_IP:10}"
+    "max": 10
   },
 
   /*
@@ -478,8 +491,37 @@
    *
    * File size is specified in bytes. Default is 50 MB.
    */
-   
-  "importMaxFileSize": "${IMPORT_MAX_FILE_SIZE:52428800}", // 50 * 1024 * 1024
+  "importMaxFileSize": 52428800, // 50 * 1024 * 1024
+
+
+  /*
+   * From Etherpad 1.8.3 onwards import was restricted to authors who had
+   * content within the pad.
+   *
+   * This setting will override that restriction and allow any user to import
+   * without the requirement to add content to a pad.
+   *
+   * This setting is useful for when you use a plugin for authentication so you
+   * can already trust each user.
+   */
+  "allowAnyoneToImport": false, 
+
+  /*
+   * From Etherpad 1.9.0 onwards, when Etherpad is in production mode commits from individual users are rate limited
+   *
+   * The default is to allow at most 10 changes per IP in a 1 second window.
+   * After that the change is rejected.
+   *
+   * See https://github.com/animir/node-rate-limiter-flexible/wiki/Overall-example#websocket-single-connection-prevent-flooding for more options
+   */
+  "commitRateLimiting": {
+    // duration of the rate limit window (seconds)
+    "duration": 1,
+
+    // maximum number of chanes per IP to allow during the rate limit window
+    "points": 10
+  },
+
 
   /*
    * Toolbar buttons configuration.
@@ -492,9 +534,8 @@
     "left": [
       ["bold", "italic", "underline"], //, "strikethrough"
       ["orderedlist", "unorderedlist"] // "indent", "outdent"
-      //[ "savedrevision" ,"timeslider","settings"]
-   
       // ["undo", "redo"]
+      // ["clearauthorship"]
     ],
     "right": [
       [ "timeslider", "savedrevision"], //"importexport",
@@ -505,7 +546,7 @@
       ["timeslider_export", "timeslider_returnToPad"]
     ]
   },
-  
+
 
   /*
    * Expose Etherpad version in the web interface and in the Server http header.
@@ -533,14 +574,14 @@
         //, "category": "access"// only logs pad access
         }
 
-      
-      // , { "type": "file"
-      // , "filename": "logs.log"
-      // , "maxLogSize": 1024
-      // , "backups": 4 // how many log files there're gonna be at max
+      /*
+      , { "type": "file"
+      , "filename": "logs.log"
+      , "maxLogSize": 1024
+      , "backups": 4 // how many log files there're gonna be at max
       //, "category": "test" // only log a specific category
-      // }
-      
+        }
+      */
 
       /*
       , { "type": "logLevelFilter"
@@ -643,5 +684,8 @@
           "username": "strongdoc"
         }
       ]
-    }
+    },
+
+  /* Override any strings found in locale directories */
+  "customLocaleStrings": {}
 }

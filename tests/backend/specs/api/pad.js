@@ -33,7 +33,20 @@ var ulHtml = '<!doctype html><html><body><ul class="bullet"><li>one</li><li>two<
  * textually, but at least it remains standard compliant and has an equal DOM
  * structure.
  */
-var expectedHtml = '<!doctype html><html><body><ul class="bullet"><li>one</li><li>two</li><li>0</li><li>1</li><li>2<ul class="bullet"><li>3</li><li>4</ul></li></ul><ol class="number"><li>item<ol class="number"><li>item1</li><li>item2</ol></li></ol></body></html>';
+var expectedHtml = '<!doctype html><html><body><ul class="bullet"><li>one</li><li>two</li><li>0</li><li>1</li><li>2<ul class="bullet"><li>3</li><li>4</ul></li></ul><ol start="1" class="number"><li>item<ol start="2" class="number"><li>item1</li><li>item2</ol></li></ol></body></html>';
+
+/*
+ * Html document with space between list items, to test its import and
+ * verify it is exported back correctly
+ */
+var ulSpaceHtml = '<!doctype html><html><body><ul class="bullet"> <li>one</li></ul></body></html>';
+
+/*
+ * When exported back, Etherpad produces an html which is not exactly the same
+ * textually, but at least it remains standard compliant and has an equal DOM
+ * structure.
+ */
+var expectedSpaceHtml = '<!doctype html><html><body><ul class="bullet"><li>one</ul></body></html>';
 
 describe('Connectivity', function(){
   it('can connect', function(done) {
@@ -414,6 +427,7 @@ describe('deletePad', function(){
 
 var originalPadId = testPadId;
 var newPadId = makeid();
+var copiedPadId = makeid();
 
 describe('createPad', function(){
   it('creates a new Pad with text', function(done) {
@@ -573,7 +587,7 @@ describe('setHTML', function(){
       "html":  html,
     })
     .expect(function(res){
-      if(res.body.code !== 1) throw new Error("Allowing crappy HTML to be imported")
+      if(res.body.code !== 0) throw new Error("Crappy HTML Can't be Imported[we weren't able to sanitize it']")
     })
     .expect('Content-Type', /json/)
     .expect(200, done)
@@ -618,6 +632,39 @@ describe('getHTML', function(){
   });
 })
 
+describe('setHTML', function(){
+  it('Sets the HTML of a Pad with white space between list items', function(done) {
+    api.get(endPoint('setHTML')+"&padID="+testPadId+"&html="+ulSpaceHtml)
+    .expect(function(res){
+      if(res.body.code !== 0) throw new Error("List HTML cant be imported")
+    })
+    .expect('Content-Type', /json/)
+    .expect(200, done)
+  });
+})
+
+describe('getHTML', function(){
+  it('Gets back the HTML of a Pad with complex nested lists of different types', function(done) {
+    api.get(endPoint('getHTML')+"&padID="+testPadId)
+    .expect(function(res){
+      var receivedHtml = res.body.data.html.replace("<br></body>", "</body>").toLowerCase();
+      if (receivedHtml !== expectedSpaceHtml) {
+        throw new Error(`HTML received from export is not the one we were expecting.
+           Received:
+           ${receivedHtml}
+
+           Expected:
+           ${expectedSpaceHtml}
+
+           Which is a slightly modified version of the originally imported one:
+           ${ulSpaceHtml}`);
+      }
+    })
+    .expect('Content-Type', /json/)
+    .expect(200, done)
+  });
+})
+
 describe('createPad', function(){
   it('errors if pad can be created', function(done) {
     var badUrlChars = ["/", "%23", "%3F", "%26"];
@@ -635,11 +682,125 @@ describe('createPad', function(){
   });
 })
 
+describe('copyPad', function(){
+  it('copies the content of a existent pad', function(done) {
+    api.get(endPoint('copyPad')+"&sourceID="+testPadId+"&destinationID="+copiedPadId+"&force=true")
+      .expect(function(res){
+        if(res.body.code !== 0) throw new Error("Copy Pad Failed")
+      })
+      .expect('Content-Type', /json/)
+      .expect(200, done)
+  });
+})
+
+describe('copyPadWithoutHistory', function(){
+  var sourcePadId = makeid();
+  var newPad;
+
+  before(function(done) {
+    createNewPadWithHtml(sourcePadId, ulHtml, done);
+  });
+
+  beforeEach(function() {
+    newPad = makeid();
+  })
+
+  it('returns a successful response', function(done) {
+    api.get(endPoint('copyPadWithoutHistory')+"&sourceID="+sourcePadId+"&destinationID="+newPad+"&force=false")
+      .expect(function(res){
+        if(res.body.code !== 0) throw new Error("Copy Pad Without History Failed")
+      })
+      .expect('Content-Type', /json/)
+      .expect(200, done)
+  });
+
+  // this test validates if the source pad's text and attributes are kept
+  it('creates a new pad with the same content as the source pad', function(done) {
+    api.get(endPoint('copyPadWithoutHistory')+"&sourceID="+sourcePadId+"&destinationID="+newPad+"&force=false")
+      .expect(function(res){
+        if(res.body.code !== 0) throw new Error("Copy Pad Without History Failed")
+      })
+      .end(function() {
+        api.get(endPoint('getHTML')+"&padID="+newPad)
+          .expect(function(res){
+            var receivedHtml = res.body.data.html.replace("<br><br></body>", "</body>").toLowerCase();
+
+            if (receivedHtml !== expectedHtml) {
+              throw new Error(`HTML received from export is not the one we were expecting.
+                 Received:
+                 ${receivedHtml}
+
+                 Expected:
+                 ${expectedHtml}
+
+                 Which is a slightly modified version of the originally imported one:
+                 ${ulHtml}`);
+            }
+          })
+        .expect(200, done);
+      });
+  });
+
+  context('when try copy a pad with a group that does not exist', function() {
+    var padId = makeid();
+    var padWithNonExistentGroup = `notExistentGroup$${padId}`
+    it('throws an error', function(done) {
+      api.get(endPoint('copyPadWithoutHistory')+"&sourceID="+sourcePadId+"&destinationID="+padWithNonExistentGroup+"&force=true")
+        .expect(function(res){
+          // code 1, it means an error has happened
+          if(res.body.code !== 1) throw new Error("It should report an error")
+        })
+        .expect(200, done);
+    })
+  });
+
+  context('when try copy a pad and destination pad already exist', function() {
+    var padIdExistent = makeid();
+
+    before(function(done) {
+      createNewPadWithHtml(padIdExistent, ulHtml, done);
+    });
+
+    context('and force is false', function() {
+      it('throws an error', function(done) {
+        api.get(endPoint('copyPadWithoutHistory')+"&sourceID="+sourcePadId+"&destinationID="+padIdExistent+"&force=false")
+          .expect(function(res){
+            // code 1, it means an error has happened
+            if(res.body.code !== 1) throw new Error("It should report an error")
+          })
+          .expect(200, done);
+      });
+    });
+
+    context('and force is true', function() {
+      it('returns a successful response', function(done) {
+        api.get(endPoint('copyPadWithoutHistory')+"&sourceID="+sourcePadId+"&destinationID="+padIdExistent+"&force=true")
+          .expect(function(res){
+            // code 1, it means an error has happened
+            if(res.body.code !== 0) throw new Error("Copy pad without history with force true failed")
+          })
+          .expect(200, done);
+      });
+    });
+  })
+})
 
 /*
                           -> movePadForce Test
 
 */
+
+var createNewPadWithHtml = function(padId, html, cb) {
+  api.get(endPoint('createPad')+"&padID="+padId)
+    .end(function() {
+      api.post(endPoint('setHTML'))
+        .send({
+          "padID": padId,
+          "html":  html,
+        })
+        .end(cb);
+    })
+}
 
 var endPoint = function(point, version){
   version = version || apiVersion;

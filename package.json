@@ -11,7 +11,7 @@
     "test": "tests"
   },
   "scripts": {
-    "deploy" : "cd deploy && npm run build && npm run start",
+    "deploy": "cd deploy && npm run build && npm run start",
     "build": "bash ./bin/installDeps.sh",
     "start": "DB_TYPE=postgres DB_HOST=$PGHOST DB_PORT=$PGPORT DB_USER=$PGUSER DB_PASS=$PGPASSWORD DB_NAME=$PGDATABASE bash ./bin/run.sh --root",
     "backup": "node ./backup/backup-pg-to-s3/index.js"
@@ -38,6 +38,6 @@
     "ep_remove_embed": "0.0.2",
     "ep_set_title_on_pad": "git+https://github.com/samirsayyad/ep_set_title_on_pad",
     "ep_sticky_attributes": "^0.1.0",
-    "ep_wrtc_heading": "https://github.com/HMarzban/ep_wrtc_heading#8f66408"
+    "ep_wrtc_heading": "https://github.com/HMarzban/ep_wrtc_heading#6cc4990"
   }
 }

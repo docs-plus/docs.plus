@@ -47,6 +47,9 @@ var chat = (function()
     },
     stickToScreen: function(fromInitialCall) // Make chat stick to right hand side of screen
     {
+      if(pad.settings.hideChat){
+        return;
+      }
       chat.show();
       isStuck = (!isStuck || fromInitialCall);
       $('#chatbox').hide();
@@ -110,7 +113,7 @@ var chat = (function()
     },
     addMessage: function(msg, increment, isHistoryAdd)
     {
-      // Added by Samir Sayyad 
+      // @Samir 
       var chatTextType = (typeof msg.chatTextType !== undefined) ?  msg.chatTextType : null ;
       var beforeText = (typeof msg.beforeText !== undefined) ?  msg.beforeText : "" ;
 
@@ -156,8 +159,8 @@ var chat = (function()
         "timestamp" : msg.time,
         "timeStr" : timeStr,
         "duration" : 4000,
-        "chatTextType" : chatTextType, // Added by Samir Sayyad
-        "beforeText" : beforeText// Added by Samir Sayyad
+        "chatTextType" : chatTextType,  // @Samir
+        "beforeText" : beforeText       // @Samir
       }
 
       // is the users focus already in the chatbox?
@@ -179,12 +182,8 @@ var chat = (function()
 
       // Call chat message hook
       hooks.aCallAll("chatNewMessage", ctx, function() {
-        if (ctx.chatTextType =="PLUGIN"){
-          var beforeText =  ((msg.beforeText !== "undefined") && (typeof msg.beforeText !== undefined)&&  msg.beforeText !== undefined ) ? msg.beforeText :""
 
-          var html = "<p data-authorId='" + msg.userId + "' class='" + authorClass + "'> <b>" + beforeText + "</b> <b>" + authorName + "</b><span class='time " + authorClass + "'>" + ctx.timeStr + "</span> <b>" + ctx.text + "</b></p>";
-        }else
-          var html = "<p data-authorId='" + msg.userId + "' class='" + authorClass + "'><b>" + authorName + ":</b><span class='time " + authorClass + "'>" + ctx.timeStr + "</span> " + ctx.text + "</p>";
+        var html = "<p data-authorId='" + msg.userId + "' class='" + authorClass + "'><b>" + authorName + ":</b><span class='time " + authorClass + "'>" + ctx.timeStr + "</span> " + ctx.text + "</p>";
         if(isHistoryAdd)
           $(html).insertAfter('#chatloadmessagesbutton');
         else

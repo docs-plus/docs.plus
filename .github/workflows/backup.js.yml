@@ -1,28 +1,30 @@
-name: Backup every 3 minutes
+name: Backup every hour
 
 on:
     schedule:
-        - cron: "*/3 * * * *"
+        - cron: "0 * * * *"
 jobs:
-  job1:
+  dump:
     runs-on: backup-runner
-    # Map a step output to a job output
-    outputs:
-      -U : ${{secrets.PG_USER}}
-      --password : ${{secrets.PG_PASS}}
-      -h : ${{secrets.PG_HOST}}
-      -p : ${{secrets.PG_PORT}}
-      MEDIA_BUCKET_NAME : ${{secrets.MEDIA_BUCKET_NAME}}
+    steps:
+    - run: ( [ -d $(date +'%Y-%m-%d') ] || mkdir $(date +'%Y-%m-%d') ) &&  PGPASSWORD=$DB_PASS pg_dump -h $DB_HOST --dbname handbook -p $DB_PORT -U $DB_USER -Ft -f $(date +'%Y-%m-%d')/handbook-$(date +'%Y-%m-%d-%H').tar
+    env:
+      DB_USER : ${{secrets.PG_USER}}
+      DB_PASS : ${{secrets.PG_PASS}}
+      DB_HOST : ${{secrets.PG_HOST}}
+      DB_PORT : ${{secrets.PG_PORT}}
+  upload:
+    runs-on: backup-runner
+    needs: dump
+    steps:
+      - run: rclone sync . space:$BACKUP_BUCKET_NAME --s3-access-key-id=$ACCESS_KEY_ID --s3-secret-access-key=$ACCESS_KEY_SECRET --s3-endpoint=$BUCKET_S3_SERVER -vv
+    env:
+      BACKUP_BUCKET_NAME : ${{secrets.BACKUP_BUCKET_NAME}}
       BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
-    steps:
-    - id: step1
-      run: pg_dump -d handbook 
-    - id: step2
-      run: echo "STEP 2"
-  job2:
+  deleteOldBackup:
     runs-on: backup-runner
-    needs: job1
+    needs: upload
     steps:
-    - run: echo ${{needs.job1.outputs.-U}} ${{needs.job1.outputs.--password}}
+      - run: del=$(date --date="6 days ago" +"%Y-%m-%d"); for i in `find . -type d -name "2*"`; do (($del < $(basename $i))) && rm -rf $i || echo "keep $i";  done
