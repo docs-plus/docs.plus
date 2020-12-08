@@ -352,14 +352,14 @@ exports.getChatHistory = async function(padID, start, end)
 
 /**
 appendChatMessage(padID, text, authorID, time), creates a chat message for the pad id, time is a timestamp
-chatTextType added by Samir Sayyad
-beforeText added by Samir Sayyad
+chatTextType added by @Samir
+beforeText added by @Samir
 Example returns:
 
 {code: 0, message:"ok", data: null}
 {code: 1, message:"padID does not exist", data: null}
 */
-exports.appendChatMessage = async function(padID, text, authorID, time,chatTextType,beforeText)
+exports.appendChatMessage = async function(padID, text, authorID, time, chatTextType, beforeText)
 {
   // text is required
   if (typeof text !== "string") {
@@ -374,7 +374,7 @@ exports.appendChatMessage = async function(padID, text, authorID, time,chatTextT
   // @TODO - missing getPadSafe() call ?
 
   // save chat message to database and send message to all connected clients
-  padMessageHandler.sendChatMessageToPadClients(time, authorID, text, padID,chatTextType,beforeText);
+  padMessageHandler.sendChatMessageToPadClients(time, authorID, text, padID, chatTextType, beforeText);
 }
 
 /*****************/
@@ -596,6 +596,21 @@ exports.copyPad = async function(sourceID, destinationID, force)
 {
   let pad = await getPadSafe(sourceID, true);
   await pad.copy(destinationID, force);
+}
+
+/**
+copyPadWithoutHistory(sourceID, destinationID[, force=false]) copies a pad. If force is true,
+  the destination will be overwritten if it exists.
+
+Example returns:
+
+{code: 0, message:"ok", data: {padID: destinationID}}
+{code: 1, message:"padID does not exist", data: null}
+*/
+exports.copyPadWithoutHistory = async function(sourceID, destinationID, force)
+{
+  let pad = await getPadSafe(sourceID, true);
+  await pad.copyPadWithoutHistory(destinationID, force);
 }
 
 /**

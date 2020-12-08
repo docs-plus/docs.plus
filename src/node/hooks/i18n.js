@@ -3,9 +3,10 @@ var languages = require('languages4translatewiki')
   , path = require('path')
   , _ = require('underscore')
   , npm = require('npm')
-  , plugins = require('ep_etherpad-lite/static/js/pluginfw/plugins.js').plugins
+  , plugins = require('ep_etherpad-lite/static/js/pluginfw/plugin_defs.js').plugins
   , semver = require('semver')
   , existsSync = require('../utils/path_exists')
+  , settings = require('../utils/Settings')
 ;
 
 
@@ -43,16 +44,38 @@ function getAllLocales() {
   //add plugins languages (if any)
   for(var pluginName in plugins) extractLangs(path.join(npm.root, pluginName, 'locales'));
 
-  // Build a locale index (merge all locale data)
+  // Build a locale index (merge all locale data other than user-supplied overrides)
   var locales = {}
   _.each (locales2paths, function(files, langcode) {
     locales[langcode]={};
 
     files.forEach(function(file) {
-     var fileContents = JSON.parse(fs.readFileSync(file,'utf8'));
+      let fileContents;
+      try {
+        fileContents = JSON.parse(fs.readFileSync(file,'utf8'));
+      } catch (err) {
+        console.error(`failed to read JSON file ${file}: ${err}`);
+        throw err;
+      }
       _.extend(locales[langcode], fileContents);
     });
   });
+
+  // Add custom strings from settings.json
+  // Since this is user-supplied, we'll do some extra sanity checks
+  const wrongFormatErr = Error(
+    "customLocaleStrings in wrong format. See documentation " +
+    "for Customization for Administrators, under Localization.")
+  if (settings.customLocaleStrings) {
+    if (typeof settings.customLocaleStrings !== "object") throw wrongFormatErr
+    _.each(settings.customLocaleStrings, function(overrides, langcode) {
+      if (typeof overrides !== "object") throw wrongFormatErr
+      _.each(overrides, function(localeString, key) {
+        if (typeof localeString !== "string") throw wrongFormatErr
+        locales[langcode][key] = localeString
+      })
+    })
+  }
 
   return locales;
 }
@@ -84,7 +107,7 @@ exports.expressCreateServer = function(n, args) {
   var localeIndex = generateLocaleIndex(locales);
   exports.availableLangs = getAvailableLangs(locales);
 
-  args.app.get ('/static/locales/:locale', function(req, res) {
+  args.app.get ('/locales/:locale', function(req, res) {
     //works with /locale/en and /locale/en.json requests
     var locale = req.params.locale.split('.')[0];
     if (exports.availableLangs.hasOwnProperty(locale)) {
@@ -95,7 +118,7 @@ exports.expressCreateServer = function(n, args) {
     }
   })
 
-  args.app.get('/static/locales.json', function(req, res) {
+  args.app.get('/locales.json', function(req, res) {
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.send(localeIndex);
   })

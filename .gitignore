@@ -1,4 +1,5 @@
 node_modules
+/settings.json
 !settings.json.template
 APIKEY.txt
 SESSIONKEY.txt
@@ -21,6 +22,4 @@ out/
 .nyc_output
 ./package-lock.json
 .idea
-logs.*
-logs.*
 .history
