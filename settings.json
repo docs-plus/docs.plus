@@ -126,7 +126,7 @@
    *    "port" : "/somepath/etherpad.socket", // <-- path to a Unix socket
    */
    "ip": "${IP:0.0.0.0}",
-   "port": "${PORT:9002}",
+   "port": "${PORT:9001}",
 
   /*
    * Option to hide/show the settings.json in admin page.
@@ -169,29 +169,29 @@
    * https://www.npmjs.com/package/ueberdb2
    */
 
-  //  "dbType": "dirty",
-  //  "dbSettings": {
-  //    "filename": "var/dirty.db"
-  //  },
-
-   "dbType": "${DB_TYPE:mongodb}",
+   "dbType": "dirty",
    "dbSettings": {
-     "host":     "${DB_HOST}",
-     "port":     "${DB_PORT}",
-     "dbname":   "${DB_NAME}",
-     "database": "${DB_NAME}",
-     "user":     "${DB_USER}",
-     "password": "${DB_PASS}",
-     "charset":  "${DB_CHARSET}",
-     "filename": "${DB_FILENAME:var/dirty.db}",
-     "ssl": {
-       "rejectUnauthorized" : false,
-       "ssl" : {
-                 "key"  : "/etc/nginx/ssl/ssl-handbook-key.key",
-                 "cert" : "/etc/nginx/ssl/ssl-handbook-crt.crt"
-               }
-     }
+     "filename": "var/dirty.db"
    },
+
+  //  "dbType": "${DB_TYPE:mongodb}",
+  //  "dbSettings": {
+  //    "host":     "${DB_HOST}",
+  //    "port":     "${DB_PORT}",
+  //    "dbname":   "${DB_NAME}",
+  //    "database": "${DB_NAME}",
+  //    "user":     "${DB_USER}",
+  //    "password": "${DB_PASS}",
+  //    "charset":  "${DB_CHARSET}",
+  //    "filename": "${DB_FILENAME:var/dirty.db}",
+  //    "ssl": {
+  //      "rejectUnauthorized" : false,
+  //      "ssl" : {
+  //                "key"  : "/etc/nginx/ssl/ssl-handbook-key.key",
+  //                "cert" : "/etc/nginx/ssl/ssl-handbook-crt.crt"
+  //              }
+  //    }
+  //  },
 
   /*
    * An Example of MySQL Configuration (commented out).
@@ -293,7 +293,7 @@
    * This will improve the loading performance massively, but makes it difficult
    * to debug the javascript/css
    */
-  "minify": true,
+  "minify": false,
 
   /*
    * How long may clients use served javascript code (in seconds)?

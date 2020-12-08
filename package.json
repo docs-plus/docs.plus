@@ -34,10 +34,10 @@
     "ep_insert_media": "git+https://github.com/samirsayyad/ep_insert_media",
     "ep_loading_pad": "https://github.com/samirsayyad/ep_loading_pad#9146483",
     "ep_monetization": "^1.0.0",
-    "ep_profile_modal": "https://github.com/samirsayyad/ep_profile_modal#33f6d1b",
+    "ep_profile_modal": "https://github.com/samirsayyad/ep_profile_modal#0fca30b",
     "ep_remove_embed": "0.0.2",
     "ep_set_title_on_pad": "git+https://github.com/samirsayyad/ep_set_title_on_pad",
     "ep_sticky_attributes": "^0.1.0",
-    "ep_wrtc_heading": "https://github.com/HMarzban/ep_wrtc_heading#ccaa674"
+    "ep_wrtc_heading": "https://github.com/HMarzban/ep_wrtc_heading#4c78b0f"
   }
 }
