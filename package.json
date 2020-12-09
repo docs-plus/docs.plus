@@ -34,7 +34,7 @@
     "ep_insert_media": "git+https://github.com/samirsayyad/ep_insert_media",
     "ep_loading_pad": "https://github.com/samirsayyad/ep_loading_pad#9146483",
     "ep_monetization": "^1.0.0",
-    "ep_profile_modal": "https://github.com/samirsayyad/ep_profile_modal#7ba6e13",
+    "ep_profile_modal": "https://github.com/samirsayyad/ep_profile_modal#c67a8a4",
     "ep_remove_embed": "0.0.2",
     "ep_set_title_on_pad": "git+https://github.com/samirsayyad/ep_set_title_on_pad",
     "ep_sticky_attributes": "^0.1.0",
