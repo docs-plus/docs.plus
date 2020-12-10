@@ -479,10 +479,10 @@
    */
   "importExportRateLimiting": {
     // duration of the rate limit window (milliseconds)
-    "windowMs": 90000,
+    "windowMs": 1000,
 
     // maximum number of requests per IP to allow during the rate limit window
-    "max": 10000
+    "max": 20
   },
 
   /*
@@ -519,7 +519,7 @@
     "duration": 1,
 
     // maximum number of chanes per IP to allow during the rate limit window
-    "points": 10
+    "points": 20
   },
 
 
