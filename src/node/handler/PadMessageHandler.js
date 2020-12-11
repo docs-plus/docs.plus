@@ -811,9 +811,7 @@ function handleSwitchToPad(client, message)
   let currentSession = sessioninfos[client.id];
   let padId = currentSession.padId;
   let roomClients = _getRoomClients(padId);
-  console.log(roomClients,"before error")
   roomClients.forEach(client => {
-    console.log(client,"before error")
     let sinfo = sessioninfos[client.id];
     if (sinfo && sinfo.author === currentSession.author) {
       // fix user's counter, works on page refresh or if user closes browser window and then rejoins
@@ -938,6 +936,7 @@ async function handleClientReady(client, message)
   let roomClients = _getRoomClients(pad.id);
 
   for (let client of roomClients) {
+    console.log("this client should have id ",client)
     let sinfo = sessioninfos[client.id];
     if (sinfo && sinfo.author === authorID) {
       // fix user's counter, works on page refresh or if user closes browser window and then rejoins
