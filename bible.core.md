@@ -13,7 +13,8 @@ Docs.plus roadmap for migrating and updating etherpad core,
 - After all, change and modify these files according to the instructions below.
 
 ``` bash
-replace:    ~\src\templates\index.html
+replace:    ~\src\templates\index.html  # just for meta
+replace:    ~\src\templates\pad.html # just for meta
 replace:    ~\src\static\css
 replace:    ~\src\static\font
 replace:    ~\src\static\skins
@@ -22,4 +23,5 @@ modify:     ~\src\node\hooks\express\specialpages.js    # tag by @Samir
 modify:     ~\src\node\handler\PadMessageHandler.js     # tag by @Samir
 modify:     ~\src\node\db\API.js                        # tag by @Samir
 modify:     ~\src\static\js\chat.js                     # tag by @Samir
+replace:     ~\settings.json to #  "title": "${TITLE:docs.plus | Loading...}",
 ```
