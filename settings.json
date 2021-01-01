@@ -68,7 +68,7 @@
   /*
    * Name your instance!
    */
-  "title": "${TITLE:Untitle Document}",
+  "title": "${TITLE:docs.plus | Loading...}",
 
   /*
    * favicon default name
