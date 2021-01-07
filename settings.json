@@ -68,7 +68,7 @@
   /*
    * Name your instance!
    */
-  "title": "${TITLE:docs.plus | Loading...}",
+   "title": "${TITLE:docs.plus | Loading...}",
 
   /*
    * favicon default name
@@ -169,29 +169,29 @@
    * https://www.npmjs.com/package/ueberdb2
    */
 
-   "dbType": "dirty",
-   "dbSettings": {
-     "filename": "var/dirty.db"
-   },
-
-  //  "dbType": "${DB_TYPE:mongodb}",
+  //  "dbType": "dirty",
   //  "dbSettings": {
-  //    "host":     "${DB_HOST}",
-  //    "port":     "${DB_PORT}",
-  //    "dbname":   "${DB_NAME}",
-  //    "database": "${DB_NAME}",
-  //    "user":     "${DB_USER}",
-  //    "password": "${DB_PASS}",
-  //    "charset":  "${DB_CHARSET}",
-  //    "filename": "${DB_FILENAME:var/dirty.db}",
-  //    "ssl": {
-  //      "rejectUnauthorized" : false,
-  //      "ssl" : {
-  //                "key"  : "/etc/nginx/ssl/ssl-handbook-key.key",
-  //                "cert" : "/etc/nginx/ssl/ssl-handbook-crt.crt"
-  //              }
-  //    }
+  //    "filename": "var/dirty.db"
   //  },
+
+   "dbType": "${DB_TYPE:mongodb}",
+   "dbSettings": {
+     "host":     "${DB_HOST}",
+     "port":     "${DB_PORT}",
+     "dbname":   "${DB_NAME}",
+     "database": "${DB_NAME}",
+     "user":     "${DB_USER}",
+     "password": "${DB_PASS}",
+     "charset":  "${DB_CHARSET}",
+     "filename": "${DB_FILENAME:var/dirty.db}",
+     "ssl": {
+       "rejectUnauthorized" : false,
+       "ssl" : {
+                 "key"  : "/etc/nginx/ssl/ssl-handbook-key.key",
+                 "cert" : "/etc/nginx/ssl/ssl-handbook-crt.crt"
+               }
+     }
+   },
 
   /*
    * An Example of MySQL Configuration (commented out).
@@ -479,10 +479,10 @@
    */
   "importExportRateLimiting": {
     // duration of the rate limit window (milliseconds)
-    "windowMs": 90000,
+    "windowMs": 1000,
 
     // maximum number of requests per IP to allow during the rate limit window
-    "max": 0
+    "max": 20
   },
 
   /*
@@ -519,7 +519,7 @@
     "duration": 1,
 
     // maximum number of chanes per IP to allow during the rate limit window
-    "points": 10
+    "points": 99999999999999999999
   },
 
 
