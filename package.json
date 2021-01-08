@@ -1,6 +1,5 @@
 {
   "dependencies": {
-    "ep_etherpad-lite": "file:src",
     "ep_adminpads2": "0.0.4",
     "ep_bottom_chat_bar": "git+https://github.com/samirsayyad/ep_bottom_chat_bar",
     "ep_custom_header_message": "git+https://github.com/samirsayyad/ep_custom_header_message#073510a",
