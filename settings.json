@@ -68,13 +68,13 @@
   /*
    * Name your instance!
    */
-   "title": "${TITLE:docs.plus | Loading...}",
+  "title": "Etherpad",
 
   /*
    * favicon default name
    * alternatively, set up a fully specified Url to your own favicon
    */
-  "favicon": "${FAVICON:favicon.ico}",
+  "favicon": "favicon.ico",
 
   /*
    * Skin name.
@@ -87,7 +87,7 @@
    * - "colibris": the new experimental skin (since Etherpad 1.8), candidate to
    *               become the default in Etherpad 2.0
    */
-  "skinName": "${SKIN_NAME:colibris}",
+  "skinName": "colibris",
 
   /*
    * Skin Variants
@@ -113,7 +113,7 @@
    * "full-width-editor" variant (by default editor is rendered as a page, with
    * a max-width of 900px).
    */
-  "skinVariants": "${SKIN_VARIANTS:super-light-toolbar super-light-editor light-background}",
+  "skinVariants": "super-light-toolbar super-light-editor light-background",
 
   /*
    * IP and port which Etherpad should bind at.
@@ -125,15 +125,15 @@
    *    "ip": "",                             // <-- has to be an empty string
    *    "port" : "/somepath/etherpad.socket", // <-- path to a Unix socket
    */
-   "ip": "${IP:0.0.0.0}",
-   "port": "${PORT:9001}",
+  "ip": "0.0.0.0",
+  "port": 9001,
 
   /*
    * Option to hide/show the settings.json in admin page.
    *
    * Default option is set to true
    */
-  "showSettingsInAdminPage": "${SHOW_SETTINGS_IN_ADMIN_PAGE:true}",
+  "showSettingsInAdminPage": true,
 
   /*
    * Node native SSL support
@@ -169,29 +169,10 @@
    * https://www.npmjs.com/package/ueberdb2
    */
 
-   "dbType": "dirty",
-   "dbSettings": {
-     "filename": "var/dirty.db"
-   },
-
-  //  "dbType": "${DB_TYPE:mongodb}",
-  //  "dbSettings": {
-  //    "host":     "${DB_HOST}",
-  //    "port":     "${DB_PORT}",
-  //    "dbname":   "${DB_NAME}",
-  //    "database": "${DB_NAME}",
-  //    "user":     "${DB_USER}",
-  //    "password": "${DB_PASS}",
-  //    "charset":  "${DB_CHARSET}",
-  //    "filename": "${DB_FILENAME:var/dirty.db}",
-  //    "ssl": {
-  //      "rejectUnauthorized" : false,
-  //      "ssl" : {
-  //                "key"  : "/etc/nginx/ssl/ssl-handbook-key.key",
-  //                "cert" : "/etc/nginx/ssl/ssl-handbook-crt.crt"
-  //              }
-  //    }
-  //  },
+  "dbType": "dirty",
+  "dbSettings": {
+    "filename": "var/dirty.db"
+  },
 
   /*
    * An Example of MySQL Configuration (commented out).
@@ -214,24 +195,25 @@
   /*
    * The default text of a pad
    */
-   "defaultPadText" : "${DEFAULT_PAD_TEXT:Welcome to docs.plus, a new & experimental platform for collaborative writing and online events! 🌟 \n\n docs.plus works much like any other collaborative document, except...\n • Every heading in the document is also a videochat! 😱 \n • Anyone can create a new videochat by editing the document to create a heading! 🤯\n\n ⚠️ docs.plus is still a prototype ⚠️ you may encounter bugs, and your content may be deleted without warning. \n\n If you would like to do anything serious with it, please contact us via twitter at https://twitter.com/docsdotplus (preferred) or via email at 📧 ed@newspeak.house. You can keep up with our progress at https://groups.io/g/docsdotplus 📯 \n\n docs.plus is a non-profit, open-source project. If you like the concept, please back us on Patreon to help pay for hosting & continued development https://www.patreon.com/docsplus 🙏\n\n docs.plus is brought to you by https://newspeak.house, The London College of Political Technologists 🎓 }",
+  "defaultPadText" : "Welcome to Etherpad!\n\nThis pad text is synchronized as you type, so that everyone viewing this page sees the same text. This allows you to collaborate seamlessly on documents!\n\nGet involved with Etherpad at https:\/\/etherpad.org\n",
+
   /*
    * Default Pad behavior.
    *
    * Change them if you want to override.
    */
   "padOptions": {
-    "noColors":         "${PAD_OPTIONS_NO_COLORS:true}",
-    "showControls":     "${PAD_OPTIONS_SHOW_CONTROLS:true}",
-    "showChat":         "${PAD_OPTIONS_SHOW_CHAT:true}",
-    "showLineNumbers":  "${PAD_OPTIONS_SHOW_LINE_NUMBERS:true}",
-    "useMonospaceFont": "${PAD_OPTIONS_USE_MONOSPACE_FONT:false}",
-    "userName":         "${PAD_OPTIONS_USER_NAME:false}",
-    "userColor":        "${PAD_OPTIONS_USER_COLOR:false}",
-    "rtl":              "${PAD_OPTIONS_RTL:false}",
-    "alwaysShowChat":   "${PAD_OPTIONS_ALWAYS_SHOW_CHAT:false}",
-    "chatAndUsers":     "${PAD_OPTIONS_CHAT_AND_USERS:false}",
-    "lang":             "${PAD_OPTIONS_LANG:en-gb}"
+    "noColors":         false,
+    "showControls":     true,
+    "showChat":         true,
+    "showLineNumbers":  true,
+    "useMonospaceFont": false,
+    "userName":         false,
+    "userColor":        false,
+    "rtl":              false,
+    "alwaysShowChat":   false,
+    "chatAndUsers":     false,
+    "lang":             "en-gb"
   },
 
   /*
@@ -282,18 +264,12 @@
   "editOnly": false,
 
   /*
-   * If set to true, those users who have a valid session will automatically be
-   * granted access to password protected pads.
-   */
-  "sessionNoPassword": false,
-
-  /*
    * If true, all css & js will be minified before sending to the client.
    *
    * This will improve the loading performance massively, but makes it difficult
    * to debug the javascript/css
    */
-  "minify": false,
+  "minify": true,
 
   /*
    * How long may clients use served javascript code (in seconds)?
@@ -301,7 +277,7 @@
    * Not setting this may cause problems during deployment.
    * Set to 0 to disable caching.
    */
-  "maxAge": 0, // 60 * 60 * 6 = 6 hours
+  "maxAge": 21600, // 60 * 60 * 6 = 6 hours
 
   /*
    * Absolute path to the Abiword executable.
@@ -355,7 +331,25 @@
    * The other effect will be that the logs will contain the real client's IP,
    * instead of the reverse proxy's IP.
    */
-  "trustProxy": "${TRUST_PROXY:true}",
+  "trustProxy": false,
+
+  /*
+   * Settings controlling the session cookie issued by Etherpad.
+   */
+  "cookie": {
+    /*
+     * Value of the SameSite cookie property. "Lax" is recommended unless
+     * Etherpad will be embedded in an iframe from another site, in which case
+     * this must be set to "None". Note: "None" will not work (the browser will
+     * not send the cookie to Etherpad) unless https is used to access Etherpad
+     * (either directly or via a reverse proxy with "trustProxy" set to true).
+     *
+     * "Strict" is not recommended because it has few security benefits but
+     * significant usability drawbacks vs. "Lax". See
+     * https://stackoverflow.com/q/41841880 for discussion.
+     */
+    "sameSite": "Lax"
+  },
 
   /*
    * Privacy: disable IP logging
@@ -412,40 +406,44 @@
   },
 
   /*
-   * Users for basic authentication.
+   * User accounts. These accounts are used by:
+   *   - default HTTP basic authentication if no plugin handles authentication
+   *   - some but not all authentication plugins
+   *   - some but not all authorization plugins
    *
-   * is_admin = true gives access to /admin.
-   * If you do not uncomment this, /admin will not be available!
+   * User properties:
+   *   - password: The user's password. Some authentication plugins will ignore
+   *     this.
+   *   - is_admin: true gives access to /admin. Defaults to false. If you do not
+   *     uncomment this, /admin will not be available!
+   *   - readOnly: If true, this user will not be able to create new pads or
+   *     modify existing pads. Defaults to false.
+   *   - canCreate: If this is true and readOnly is false, this user can create
+   *     new pads. Defaults to true.
+   *
+   * Authentication and authorization plugins may define additional properties.
    *
    * WARNING: passwords should not be stored in plaintext in this file.
    *          If you want to mitigate this, please install ep_hash_auth and
    *          follow the section "secure your installation" in README.md
    */
 
-   "ep_auth_author": {
-     "prefix": "author/"
-   },
-  
+  /*
   "users": {
     "admin": {
       // 1) "password" can be replaced with "hash" if you install ep_hash_auth
       // 2) please note that if password is null, the user will not be created
-      "password": "${ADMIN_PASSWORD:q1w2e3r4}",
+      "password": "changeme1",
       "is_admin": true
-    },
-    "author/user": {
-      "is_admin": false,
-      "author_name": "Test User",
-      "password": "q1w2e3r4"
     },
     "user": {
       // 1) "password" can be replaced with "hash" if you install ep_hash_auth
       // 2) please note that if password is null, the user will not be created
-      "password": "${USER_PASSWORD:q1w2e3r4}",
+      "password": "changeme1",
       "is_admin": false
     }
   },
-  
+  */
 
   /*
    * Restrict socket.io transport methods
@@ -479,10 +477,10 @@
    */
   "importExportRateLimiting": {
     // duration of the rate limit window (milliseconds)
-    "windowMs": 1000,
+    "windowMs": 90000,
 
     // maximum number of requests per IP to allow during the rate limit window
-    "max": 20
+    "max": 10
   },
 
   /*
@@ -492,19 +490,6 @@
    * File size is specified in bytes. Default is 50 MB.
    */
   "importMaxFileSize": 52428800, // 50 * 1024 * 1024
-
-
-  /*
-   * From Etherpad 1.8.3 onwards import was restricted to authors who had
-   * content within the pad.
-   *
-   * This setting will override that restriction and allow any user to import
-   * without the requirement to add content to a pad.
-   *
-   * This setting is useful for when you use a plugin for authentication so you
-   * can already trust each user.
-   */
-  "allowAnyoneToImport": false, 
 
   /*
    * From Etherpad 1.9.0 onwards, when Etherpad is in production mode commits from individual users are rate limited
@@ -519,7 +504,7 @@
     "duration": 1,
 
     // maximum number of chanes per IP to allow during the rate limit window
-    "points": 99999999999999999999
+    "points": 10
   },
 
 
@@ -529,38 +514,38 @@
    * Uncomment to customize.
    */
 
-  
+  /*
   "toolbar": {
     "left": [
-      ["bold", "italic", "underline"], //, "strikethrough"
-      ["orderedlist", "unorderedlist"] // "indent", "outdent"
-      // ["undo", "redo"]
-      // ["clearauthorship"]
+      ["bold", "italic", "underline", "strikethrough"],
+      ["orderedlist", "unorderedlist", "indent", "outdent"],
+      ["undo", "redo"],
+      ["clearauthorship"]
     ],
     "right": [
-      [ "timeslider", "savedrevision"], //"importexport",
-      ["settings" ] //"embed"
-      //["showusers"]
+      ["importexport", "timeslider", "savedrevision"],
+      ["settings", "embed"],
+      ["showusers"]
     ],
     "timeslider": [
       ["timeslider_export", "timeslider_returnToPad"]
     ]
   },
-
+  */
 
   /*
    * Expose Etherpad version in the web interface and in the Server http header.
    *
    * Do not enable on production machines.
    */
-  "exposeVersion": "${EXPOSE_VERSION:false}",
+  "exposeVersion": false,
 
   /*
    * The log level we are using.
    *
    * Valid values: DEBUG, INFO, WARN, ERROR
    */
-  "loglevel": "${LOGLEVEL:INFO}",
+  "loglevel": "INFO",
 
   /*
    * Logging configuration. See log4js documentation for further information:
@@ -576,9 +561,9 @@
 
       /*
       , { "type": "file"
-      , "filename": "logs.log"
+      , "filename": "your-log-file-here.log"
       , "maxLogSize": 1024
-      , "backups": 4 // how many log files there're gonna be at max
+      , "backups": 3 // how many log files there're gonna be at max
       //, "category": "test" // only log a specific category
         }
       */
@@ -613,78 +598,6 @@
 
       ]
     }, // logconfig
-    "ep_page_view_default" : false,
-    "ep_page_view_disable_change" : false ,
-    // Display comments as icons, not boxes
-    "ep_comments_page": {
-      "displayCommentAsIcon": true,
-      "highlightSelectedText": true
-    },
-    "ep_toc": {
-      "disable_by_default": false
-    },
-    "ep_pad_title": "Welcome to Etherpad!",
-    "ep_monetization": {
-      "paymentPointer": "${PAYMENT_POINTER:$pay.stronghold.co/1a18448192af7924854a52078ffc535a89b}"
-    },
-    // "ep_webpack": {
-    //   /* Bundle CSS files too */
-    //   "bundleCSS": false,
-    //   "ignoredParts": ["comments_page", "ep_comments_page","horizontal_line","page_view","ep_headings2/static/js/index"] 
-    // }
-    "ep_meta_desc" : "docs.plus - docs but better !",
-    "ep_meta_img_url":"https://docs.plus/static/images/social-logo.png",
-    "ep_meta_default_title" : "docs.plus",
-    "ep_profile_modal":{
-      "storage":{
-        "endPoint" : "${BUCKET_S3_SERVER}",
-        "useSSL" : true ,
-        "type": "s3",
-        "accessKeyId": "${ACCESS_KEY_ID:null}",
-        "secretAccessKey": "${ACCESS_KEY_SECRET:null}",
-        "region": "UK",
-        "bucket": "${MEDIA_BUCKET_NAME}",
-        "baseFolder": "${FOLDER_PATH:./}"
-      },
-      "fileTypes": ["jpeg", "jpg", "bmp", "gif","png"  ],
-      "maxFileSize": 50000000
-    },
-    "ep_insert_media":{
-      "storage":{
-        "endPoint" : "${BUCKET_S3_SERVER}",
-        "useSSL" : true ,
-        "type": "s3",
-        "accessKeyId": "${ACCESS_KEY_ID:null}",
-        "secretAccessKey": "${ACCESS_KEY_SECRET:null}",
-        "region": "UK",
-        "bucket": "${MEDIA_BUCKET_NAME}",
-        "baseFolder": "${FOLDER_PATH:./}"
-      },
-      "fileTypes": ["jpeg", "jpg", "bmp", "gif","png","webm","mp4","m4v","mp3",
-        "ogg", "m4a","flac","wav","wma", "aac"  ],
-      "maxFileSize": 50000000
-    },
-    "ep_wrtc_heading": {
-      "video": {
-        "sizes": {
-          "small": 130,
-          "large": 260
-        }
-      },
-      "videoChatLimit": 7,
-      "iceServers": [
-        {
-          "urls": [ 
-            "stun:143.110.171.40"
-          ]
-        },
-        {
-          "urls": ["turn:143.110.171.40:3478"],
-          "credential": "docsplus",
-          "username": "strongdoc"
-        }
-      ]
-    },
 
   /* Override any strings found in locale directories */
   "customLocaleStrings": {}
