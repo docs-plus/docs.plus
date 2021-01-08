@@ -25,11 +25,9 @@ html.inner-editor {
 
 /* ACE-PAD Container (i.e. where the text is displayed) */
 #innerdocbody {
-  padding-left: 15px;
-  padding-right: 15px;
+  padding: 10px;
   overflow: hidden;
   background-color: white;
-  line-height: 1.6;
 
   /* Be careful editing following rules. Longs words should not overflow, ep_align justify should work,
      Test on chrome, firefox and safari... Copy / Paste a word inside a sentence should not add line-breaks
@@ -39,12 +37,9 @@ html.inner-editor {
   word-wrap: break-word;
   overflow-wrap: break-word;
 }
-
 #innerdocbody, #sidediv {
-  /* Both must have the same top padding to line up line numbers */
-  padding-top: 15px;
-  /* Some space when we scroll to the bottom */
-  padding-bottom: 15px;
+  padding-top: 10px; /* Both must have same top padding, so line number are aligned with the rows */
+  padding-bottom: 10px; /* some space when we scroll to the bottom */
 }
 
 #innerdocbody a {
@@ -59,6 +54,11 @@ html.inner-editor {
   padding-bottom: 4px;
 }
 
+#innerdocbody span {
+  line-height: 125%;
+  padding: 6px 0 !important;
+}
+
 option {
   text-transform: capitalize;
 }
@@ -67,7 +67,6 @@ option {
 #innerdocbody h2,
 #innerdocbody h3,
 #innerdocbody h4 {
-  line-height: 1.2;
   margin-bottom: .5em;
 }
 #innerdocbody h1 span,

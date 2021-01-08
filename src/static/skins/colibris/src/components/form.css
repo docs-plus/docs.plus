@@ -20,7 +20,7 @@ input[type="text"]::placeholder, textarea::placeholder {
 select, .nice-select {
   background-color: #f2f3f4;
   background-color: var(--bg-soft-color);
-  border: 1px solid var(--bg-soft-color);
+  border: none;
   padding: 4px 10px;
   padding-right: 25px;
   font-weight: bold;

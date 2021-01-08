@@ -4,6 +4,7 @@ const toolbar = require('ep_etherpad-lite/node/utils/toolbar');
 const hooks = require('ep_etherpad-lite/static/js/pluginfw/hooks');
 const settings = require('../../utils/Settings');
 const webaccess = require('./webaccess');
+var db = require("../../db/DB");  // @Samir
 
 exports.expressCreateServer = function (hook_name, args, cb) {
   // expose current stats
@@ -35,7 +36,7 @@ exports.expressCreateServer = function (hook_name, args, cb) {
   });
 
   // serve pad.html under /p
-  args.app.get('/p/:pad', (req, res, next) => {
+  args.app.get('/p/:pad', async (req, res, next) => {
     // The below might break for pads being rewritten
     const isReadOnly =
         req.url.indexOf('/p/r.') === 0 || !webaccess.userCanModify(req.params.pad, req);
@@ -45,7 +46,11 @@ exports.expressCreateServer = function (hook_name, args, cb) {
       isReadOnly,
     });
 
+    // @Samir Sayyad Added for social preview
+    const pad_title = await db.get("title:"+ req.params.pad) ;
+
     res.send(eejs.require('ep_etherpad-lite/templates/pad.html', {
+      meta : { title : (pad_title) ? pad_title :req.params.pad } , // @Samir 
       req,
       toolbar,
       isReadOnly,
