@@ -30,6 +30,12 @@
     "ep_insert_media": "git+https://github.com/samirsayyad/ep_insert_media#4425630",
     "ep_profile_modal": "https://github.com/samirsayyad/ep_profile_modal#230284e",
     "ep_comments_page": "git+https://github.com/ether/ep_comments_page",
-    "ep_wrtc_heading": "https://github.com/HMarzban/ep_wrtc_heading#b7b3cab"
+    "ep_wrtc_heading": "https://github.com/HMarzban/ep_wrtc_heading#b7b3cab",
+
+    "ep_docs_plus_customize": "git+https://github.com/samirsayyad/ep_docs_plus_customize",
+    "ep_loading_pad": "https://github.com/samirsayyad/ep_loading_pad#9146483",
+    "ep_set_title_on_pad": "git+https://github.com/samirsayyad/ep_set_title_on_pad"
+
+
   }
 }
