@@ -1,7 +1,6 @@
 {
   "dependencies": {
     "ep_adminpads2": "0.0.4",
-    "ep_hide_line_numbers": "0.0.1",
     "ep_monetization": "^1.0.0",
     "ep_remove_embed": "0.0.2",
     "ep_sticky_attributes": "^0.1.0"
