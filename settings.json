@@ -64,7 +64,7 @@
  *
  *    "defaultPadText" : "${DEFAULT_PAD_TEXT}Line 1\nLine 2"
  */
- {
+{
   /*
    * Name your instance!
    */
@@ -126,7 +126,7 @@
    *    "port" : "/somepath/etherpad.socket", // <-- path to a Unix socket
    */
   "ip": "0.0.0.0",
-  "port": 9005,
+  "port": 9001,
 
   /*
    * Option to hide/show the settings.json in admin page.
