@@ -27,10 +27,6 @@ for arg in "$@"; do
   a=$arg
 done
 
-#npm install --save --loglevel warn
-# yarn upgrade
-# yarn install
-
 # Does a $settings exist? if not copy the template
 if [ ! -f "$settings" ]; then
   log "Copy the settings template to $settings..."
@@ -44,7 +40,6 @@ log "Ensure that all dependencies are up to date...  If this is the first time y
   [ -e ep_etherpad-lite ] || ln -s ../src ep_etherpad-lite
   cd ep_etherpad-lite
   npm ci
-  # yarn
 ) || {
   rm -rf src/node_modules
   exit 1
