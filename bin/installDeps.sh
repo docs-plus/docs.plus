@@ -28,8 +28,8 @@ for arg in "$@"; do
 done
 
 #npm install --save --loglevel warn
-yarn upgrade
-yarn install
+# yarn upgrade
+# yarn install
 
 # Does a $settings exist? if not copy the template
 if [ ! -f "$settings" ]; then
