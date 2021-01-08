@@ -1,2 +1,3 @@
-function customStart() {
+function customStart()
+{
 }
