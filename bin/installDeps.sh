@@ -26,10 +26,6 @@ for arg in "$@"; do
   if [ "$a" = "--settings" ] || [ "$a" = "-s" ]; then settings=$arg; fi
   a=$arg
 done
-# @Hossein
-#npm install --save --loglevel warn
-yarn upgrade
-yarn install
 
 # Does a $settings exist? if not copy the template
 if [ ! -f "$settings" ]; then
@@ -43,9 +39,7 @@ log "Ensure that all dependencies are up to date...  If this is the first time y
   cd node_modules
   [ -e ep_etherpad-lite ] || ln -s ../src ep_etherpad-lite
   cd ep_etherpad-lite
-  # @Hossien
-  # npm ci
-  yarn install
+  npm ci
 ) || {
   rm -rf src/node_modules
   exit 1

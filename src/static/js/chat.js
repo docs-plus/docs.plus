@@ -106,10 +106,6 @@ exports.chat = (() => {
       $('#chatinput').val('');
     },
     addMessage(msg, increment, isHistoryAdd) {
-      // @Samir 
-      const chatTextType = (typeof msg.chatTextType !== undefined) ?  msg.chatTextType : null ;
-      const beforeText = (typeof msg.beforeText !== undefined) ?  msg.beforeText : "" ;
-
       // correct the time
       msg.time += this._pad.clientTimeOffset;
 
@@ -152,8 +148,6 @@ exports.chat = (() => {
         timestamp: msg.time,
         timeStr,
         duration: 4000,
-        chatTextType : chatTextType,  // @Samir
-        beforeText : beforeText       // @Samir
       };
 
       // is the users focus already in the chatbox?

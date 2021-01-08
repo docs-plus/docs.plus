@@ -340,14 +340,13 @@ exports.getChatHistory = async function (padID, start, end) {
 
 /**
 appendChatMessage(padID, text, authorID, time), creates a chat message for the pad id, time is a timestamp
-chatTextType added by @Samir
-beforeText added by @Samir
+
 Example returns:
 
 {code: 0, message:"ok", data: null}
 {code: 1, message:"padID does not exist", data: null}
 */
-exports.appendChatMessage = async function (padID, text, authorID, time, chatTextType, beforeText) {
+exports.appendChatMessage = async function (padID, text, authorID, time) {
   // text is required
   if (typeof text !== 'string') {
     throw new customError('text is not a string', 'apierror');
@@ -361,7 +360,7 @@ exports.appendChatMessage = async function (padID, text, authorID, time, chatTex
   // @TODO - missing getPadSafe() call ?
 
   // save chat message to database and send message to all connected clients
-  await padMessageHandler.sendChatMessageToPadClients(time, authorID, text, padID, chatTextType, beforeText);
+  await padMessageHandler.sendChatMessageToPadClients(time, authorID, text, padID);
 };
 
 /* ***************
