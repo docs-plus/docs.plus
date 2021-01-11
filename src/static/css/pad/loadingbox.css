@@ -10,8 +10,11 @@
   z-index: 100;
 }
 
-#editorloadingbox .passForm{
-  padding:10px;
+.editorloadingbox-message {
+  padding-top: 100px;
+  font-size: 2.5em;
+  color: #aaa;
+  text-align: center;
 }
 
 #editorloadingbox input{
@@ -22,6 +25,6 @@
   padding:10px;
 }
 
-#passwordRequired, #permissionDenied, #wrongPassword, #noCookie {
+#permissionDenied, #noCookie {
   display:none;
 }
