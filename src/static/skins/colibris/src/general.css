@@ -1,3 +1,7 @@
+html {
+  font-size: 15px;
+}
+
 body {
   color: #485365;
   color: var(--text-color);
@@ -6,6 +10,6 @@ body {
 }
 
 h1 {
-  color: #64d29b;
-  color: var(--primary-color);
+  color: #333;
+  /* color: var(--primary-color); */
 }

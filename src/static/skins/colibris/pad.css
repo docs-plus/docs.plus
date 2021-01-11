@@ -29,7 +29,10 @@
  * If you want to change main colors, please replace following CSS variables
  * -----------------------------------------------------------------
  */
-
+.logo {
+  width: 36px;
+  padding-top: 4px;
+}
 :root {
   --super-dark-color: #485365; /*#374256;*/
   --dark-color: #576273; /*#4d5d77*/
@@ -48,7 +51,8 @@
 
   --toolbar-border: none;
 
-  --main-font-family: Quicksand, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;
+  /* --main-font-family: Quicksand, Cantarell, "Open Sans", "Helvetica Neue", sans-serif; */
+  --main-font-family : Helvetica, Arial, sans-serif;
 
   /* Those padding like an external padding. Basic padding of 15px is always applied */
   --editor-horizontal-padding: 40px;
