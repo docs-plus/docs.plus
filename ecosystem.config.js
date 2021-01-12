@@ -94,7 +94,7 @@ module.exports = {
     
     {
       name: "test",
-      script: "./node_modules/ep_etherpad-lite/node/server.js",
+      script: "./node_modules/ep_etherpad-lite/node/server.js --experimental-worker",
       env: {
         NODE_ENV: "production",
         PORT:"9006",
