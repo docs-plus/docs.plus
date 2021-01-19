@@ -3942,6 +3942,7 @@ function Ace2Inner() {
           align-items: center;
           color: #333333;
           justify-content: center;
+          cursor: pointer;
         }
         .wrtcInlinIcon.active svg{
           color: #2678ff;
@@ -3950,11 +3951,14 @@ function Ace2Inner() {
           background-color: #2678ff;
           color: #fff;
         }
+        .wrtcInlinIcon:hover svg{
+          color: #fff;
+        }
         .wrtcInlinIcon svg {
           width: 16px;
           height: 16px;
         }
-        .wrtcInlinIcon.active .loader{
+        .wrtcInlinIcon.activeLoader .loader{
           display: block;
         }
         .wrtcInlinIcon .loader {
