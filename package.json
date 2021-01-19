@@ -13,7 +13,7 @@
     "ep_monetization": "^1.0.0",
     "ep_profile_modal": "https://github.com/samirsayyad/ep_profile_modal#9099f55",
     "ep_remove_embed": "0.0.2",
-    "ep_set_title_on_pad": "git+https://github.com/samirsayyad/ep_set_title_on_pad#7eb5cec",
+    "ep_set_title_on_pad": "git+https://github.com/samirsayyad/ep_set_title_on_pad#19b8efa",
     "ep_sticky_attributes": "https://github.com/ether/ep_sticky_attributes.git",
     "ep_wrtc_heading": "https://github.com/HMarzban/ep_wrtc_heading#70e646d"
   },
