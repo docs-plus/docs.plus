@@ -26,6 +26,7 @@ modify:     ~\src\static\js\chat.js                     # tag by @Samir
 replace:    ~\settings.json to                          #  "title": "${TITLE:docs.plus | Loading...}",
 modify      ~\bin\run.sh                                # tag by @Hossein
 modify      ~\bin\installDeps.sh                        # tag by @Hossein
+modify      ~\src\static\js\ace2_inner.js               # tag by @Hossein customElements
 ```
 
 >NOTE: In some cases the `modify` must be evaluated! Because in that case some cases may be broken!
