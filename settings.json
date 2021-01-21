@@ -539,7 +539,7 @@
     ],
     "right": [
       [ "timeslider", "savedrevision"], //"importexport",
-      ["settings" ] //"embed"
+      ["settings", "embed" ] //"embed"
       //["showusers"]
     ],
     "timeslider": [
