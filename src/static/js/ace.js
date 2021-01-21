@@ -272,7 +272,7 @@ plugins.ensure(function () {\n\
         iframeHTML,
       });
 
-      iframeHTML.push('</head><body id="innerdocbody" class="innerdocbody" role="application" class="syntax" spellcheck="false">&nbsp;</body></html>');
+      iframeHTML.push('</head><body><div id="innerdocbody" class="innerdocbody" role="application" class="syntax" spellcheck="false">&nbsp;</div></body></html>');
 
       // Expose myself to global for my child frame.
       const thisFunctionsName = 'ChildAccessibleAce2Editor';

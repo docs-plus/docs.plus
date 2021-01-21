@@ -174,7 +174,7 @@
   //    "filename": "var/dirty.db"
   //  },
 
-   "dbType": "${DB_TYPE:mongodb}",
+   "dbType": "${DB_TYPE:dirty}",
    "dbSettings": {
      "host":     "${DB_HOST}",
      "port":     "${DB_PORT}",
@@ -539,7 +539,7 @@
     ],
     "right": [
       [ "timeslider", "savedrevision"], //"importexport",
-      ["settings", "embed" ] //"embed"
+      ["settings", "embed" ]
       //["showusers"]
     ],
     "timeslider": [
