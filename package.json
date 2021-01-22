@@ -15,7 +15,7 @@
     "ep_remove_embed": "0.0.2",
     "ep_set_title_on_pad": "git+https://github.com/samirsayyad/ep_set_title_on_pad#19b8efa",
     "ep_sticky_attributes": "https://github.com/ether/ep_sticky_attributes.git",
-    "ep_wrtc_heading": "https://github.com/HMarzban/ep_wrtc_heading#7dadc63"
+    "ep_wrtc_heading": "https://github.com/HMarzban/ep_wrtc_heading#af23cb9"
   },
   "devDependencies": {
     "eslint": "^7.15.0",
