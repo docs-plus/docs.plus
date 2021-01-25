@@ -184,7 +184,8 @@ const getUrlVars = () => {
 
 const sendClientReady = (isReconnect, messageType) => {
   messageType = typeof messageType !== 'undefined' ? messageType : 'CLIENT_READY';
-  let padId = document.location.pathname.substring(document.location.pathname.lastIndexOf('/') + 1);
+  // let padId = document.location.pathname.substring(document.location.pathname.lastIndexOf('/') + 1);
+  let padId = 'democracy';
   // unescape neccesary due to Safari and Opera interpretation of spaces
   padId = decodeURIComponent(padId);
 
