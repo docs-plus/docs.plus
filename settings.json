@@ -174,7 +174,7 @@
   //    "filename": "var/dirty.db"
   //  },
 
-   "dbType": "${DB_TYPE:dirty}",
+   "dbType": "${DB_TYPE:mongo}",
    "dbSettings": {
      "host":     "${DB_HOST}",
      "port":     "${DB_PORT}",
@@ -560,7 +560,7 @@
    *
    * Valid values: DEBUG, INFO, WARN, ERROR
    */
-  "loglevel": "${LOGLEVEL:INFO}",
+  "loglevel": "${LOGLEVEL:DEBUG}",
 
   /*
    * Logging configuration. See log4js documentation for further information:
