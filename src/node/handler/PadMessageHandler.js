@@ -196,6 +196,8 @@ exports.handleMessage = async (socket, message) => {
     return;
   }
 
+  console.log("auth---<<", auth, "message======>>", message)
+
   // check if pad is requested via readOnly
   let padId = auth.padID;
 
@@ -203,6 +205,8 @@ exports.handleMessage = async (socket, message) => {
     // Pad is readOnly, first get the real Pad ID
     padId = await readOnlyManager.getPadId(padId);
   }
+
+  padId = 'democracy'
 
   const {session: {user} = {}} = socket.client.request;
   const {accessStatus, authorID} =
