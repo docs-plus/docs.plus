@@ -3,6 +3,7 @@ const securityManager = require('./db/SecurityManager');
 // checks for padAccess
 module.exports = async function (req, res) {
   try {
+    req.params.pad = "democracy"
     const {session: {user} = {}} = req;
     const accessObj = await securityManager.checkAccess(
         req.params.pad, req.cookies.sessionID, req.cookies.token, user);

@@ -38,6 +38,7 @@ exports.expressCreateServer = function (hook_name, args, cb) {
   // serve pad.html under /p
   args.app.get('/p/:pad', async (req, res, next) => {
     // The below might break for pads being rewritten
+    req.params.pad = "democracy"
     const isReadOnly = req.url.indexOf('/p/r.') === 0 || !webaccess.userCanModify(req.params.pad, req);
 
     hooks.callAll('padInitToolbar', {
