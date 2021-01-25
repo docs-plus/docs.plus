@@ -209,7 +209,7 @@ exports.handleMessage = async (socket, message) => {
       await securityManager.checkAccess(padId, auth.sessionID, auth.token, user);
 
       console.log("checkAccesscheckAccesscheckAccess", accessStatus, authorID)
-      console.log(padId, auth.sessionID, auth.token, user, "=-=-=-=-=-=")
+      console.log("====>>>>>>", padId, auth.sessionID, auth.token, user, "=-=-=-=-=-=")
 
 
   if (accessStatus !== 'grant') {
