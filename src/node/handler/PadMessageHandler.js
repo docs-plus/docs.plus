@@ -207,6 +207,11 @@ exports.handleMessage = async (socket, message) => {
   const {session: {user} = {}} = socket.client.request;
   const {accessStatus, authorID} =
       await securityManager.checkAccess(padId, auth.sessionID, auth.token, user);
+
+      console.log("checkAccesscheckAccesscheckAccess", accessStatus, authorID)
+      console.log(padId, auth.sessionID, auth.token, user, "=-=-=-=-=-=")
+
+
   if (accessStatus !== 'grant') {
     // Access denied. Send the reason to the user.
     socket.json.send({accessStatus});
