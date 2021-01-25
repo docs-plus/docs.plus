@@ -21,6 +21,8 @@ exports.expressCreateServer = function (hook_name, args, cb) {
   // handle export requests
   args.app.use('/p/:pad/:rev?/export/:type', limiter);
   args.app.get('/p/:pad/:rev?/export/:type', async (req, res, next) => {
+    const pad = "democracy"
+
     const types = ['pdf', 'doc', 'txt', 'html', 'odt', 'etherpad'];
     // send a 404 if we don't support this filetype
     if (types.indexOf(req.params.type) == -1) {
@@ -40,7 +42,7 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     res.header('Access-Control-Allow-Origin', '*');
 
     if (await hasPadAccess(req, res)) {
-      let padId = req.params.pad;
+      let padId = req.params.pad || pad;
 
       let readOnlyId = null;
       if (readOnlyManager.isReadOnlyId(padId)) {
