@@ -284,6 +284,7 @@ const handshake = () => {
   socket.on('message', (obj) => {
     // the access was not granted, give the user a message
     if (obj.accessStatus) {
+      console.log(obj, "=-=-=-=-=-=-")
       if (obj.accessStatus === 'deny') {
         $('#loading').hide();
         $('#permissionDenied').show();

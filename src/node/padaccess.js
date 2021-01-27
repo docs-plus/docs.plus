@@ -3,9 +3,10 @@ const securityManager = require('./db/SecurityManager');
 // checks for padAccess
 module.exports = async function (req, res) {
   try {
+
     const {session: {user} = {}} = req;
-    const accessObj = await securityManager.checkAccess(
-        req.params.pad, req.cookies.sessionID, req.cookies.token, user);
+    console.log("=-=33333", req.params.pad , req.cookies.sessionID, req.cookies.token, user)
+    const accessObj = await securityManager.checkAccess(req.params.pad , req.cookies.sessionID, req.cookies.token, user);
 
     if (accessObj.accessStatus === 'grant') {
       // there is access, continue

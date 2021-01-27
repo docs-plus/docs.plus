@@ -411,6 +411,7 @@ const padeditbar = (function () {
       padsavedrevs.saveNow();
     });
 
+    //@ Samir changed => document.location = `${document.location.pathname}/timeslider`;
     toolbar.registerCommand('showTimeSlider', () => {
       document.location = `/timeslider`;
     });
