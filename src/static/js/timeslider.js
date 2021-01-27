@@ -40,7 +40,6 @@ const init = () => {
 
     // get the padId out of the url
     const urlParts = document.location.pathname.split('/');
-    console.log(urlParts, urlParts[urlParts.length - 2])
     // padId = decodeURIComponent(urlParts[urlParts.length - 2]);
     padId = decodeURIComponent('democracy');
 

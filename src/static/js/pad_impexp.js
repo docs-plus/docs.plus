@@ -161,8 +161,6 @@ const padimpexp = (() => {
         $('#importsubmitinput').val(html10n.get('pad.impexp.importbutton'));
       });
 
-      console.log(padRootPath, "=-=-=-=-=-=-=-=-")
-
       // build the export links
       $('#exporthtmla').attr('href', `${padRootPath}/export/html`);
       $('#exportetherpada').attr('href', `${padRootPath}/export/etherpad`);
