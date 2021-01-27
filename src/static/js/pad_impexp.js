@@ -148,7 +148,9 @@ const padimpexp = (() => {
 
       // get /p/padname
       // if /p/ isn't available due to a rewrite we use the clientVars padId
-      const padRootPath = /.*\/p\/[^/]+/.exec(document.location.pathname) || clientVars.padId;
+      // const padRootPath = /.*\/p\/[^/]+/.exec(document.location.pathname) || clientVars.padId;
+      const padRootPath = '/p/democracy' || clientVars.padId;
+
       // get http://example.com/p/padname without Params
       const dl = document.location;
       const padRootUrl = `${dl.protocol}//${dl.host}${dl.pathname}`;
@@ -158,6 +160,8 @@ const padimpexp = (() => {
       html10n.bind('localized', () => {
         $('#importsubmitinput').val(html10n.get('pad.impexp.importbutton'));
       });
+
+      console.log(padRootPath, "=-=-=-=-=-=-=-=-")
 
       // build the export links
       $('#exporthtmla').attr('href', `${padRootPath}/export/html`);
