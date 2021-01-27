@@ -174,7 +174,7 @@
   //    "filename": "var/dirty.db"
   //  },
 
-   "dbType": "${DB_TYPE:mongo}",
+   "dbType": "${DB_TYPE:dirty}",
    "dbSettings": {
      "host":     "${DB_HOST}",
      "port":     "${DB_PORT}",
