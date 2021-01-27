@@ -411,8 +411,9 @@ const padeditbar = (function () {
       padsavedrevs.saveNow();
     });
 
+    //@ Samir changed => document.location = `${document.location.pathname}/timeslider`;
     toolbar.registerCommand('showTimeSlider', () => {
-      document.location = `${document.location.pathname}/timeslider`;
+      document.location = `p/democracy/timeslider`;
     });
 
     toolbar.registerAceCommand('bold', aceAttributeCommand);
