@@ -187,7 +187,7 @@ const sendClientReady = (isReconnect, messageType) => {
   // let padId = document.location.pathname.substring(document.location.pathname.lastIndexOf('/') + 1);
   let padId = 'democracy';
   // unescape neccesary due to Safari and Opera interpretation of spaces
-  padId = decodeURIComponent(padId);
+  // padId = decodeURIComponent(padId);
 
   if (!isReconnect) {
     const titleArray = document.title.split('|');
