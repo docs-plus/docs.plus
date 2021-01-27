@@ -412,7 +412,7 @@ const padeditbar = (function () {
     });
 
     toolbar.registerCommand('showTimeSlider', () => {
-      document.location = `${document.location.pathname}/timeslider`;
+      document.location = `/timeslider`;
     });
 
     toolbar.registerAceCommand('bold', aceAttributeCommand);
