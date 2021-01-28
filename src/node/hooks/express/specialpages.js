@@ -39,7 +39,7 @@ exports.expressCreateServer = function (hook_name, args, cb) {
   args.app.get('/p/:pad', async (req, res, next) => {
     // The below might break for pads being rewritten
     const pad = "democracy"
-    const isReadOnly = req.url.indexOf('/p/r.') === 0 || !webaccess.userCanModify(req.params.pad || pad, req);
+    const isReadOnly = req.url.indexOf('/p/r.') === 0 || !webaccess.userCanModify(pad, req);
 
     hooks.callAll('padInitToolbar', {
       toolbar,
@@ -47,10 +47,10 @@ exports.expressCreateServer = function (hook_name, args, cb) {
     });
 
     // @Samir Sayyad Added for social preview
-    const pad_title = await db.get("title:"+ req.params.pad || pad) ;
+    const pad_title = await db.get("title:"+ pad) ;
 
     res.send(eejs.require('ep_etherpad-lite/templates/pad.html', {
-      meta : { title : (pad_title) ? pad_title :req.params.pad || pad } ,
+      meta : { title : (pad_title) ? pad_title : pad } ,
       req,
       toolbar,
       isReadOnly,
