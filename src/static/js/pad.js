@@ -220,9 +220,14 @@ const sendClientReady = (isReconnect, messageType) => {
 
 const handshake = () => {
   socket = pad.socket = socketio.connect(exports.baseURL, '/', {
-    reconnectionAttempts: 5,
+    // reconnectionAttempts: 5,
+    // reconnection: true,
+    // reconnectionDelay: 1000,
+    // reconnectionDelayMax: 5000,
+    //@ Samir changed
+    reconnectionAttempts: 10,
     reconnection: true,
-    reconnectionDelay: 1000,
+    reconnectionDelay: 2000,
     reconnectionDelayMax: 5000,
   });
 
@@ -272,7 +277,13 @@ const handshake = () => {
       pad.collabClient.setStateIdle();
       pad.collabClient.setIsPendingRevision(true);
     }
-    throw new Error(`socket.io connection error: ${JSON.stringify(error)}`);
+    //@ Samir changed
+    socketReconnecting()
+    console.log(`socket.io connection error: ${JSON.stringify(error)}`)
+    //throw new Error(`socket.io connection error: ${JSON.stringify(error)}`);
+    
+    
+    
   });
 
   socket.on('message', (obj) => {
