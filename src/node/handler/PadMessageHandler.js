@@ -196,8 +196,6 @@ exports.handleMessage = async (socket, message) => {
     return;
   }
 
-  console.log("auth---<<", auth, "message======>>", message)
-
   // check if pad is requested via readOnly
   let padId = auth.padID;
 
@@ -211,9 +209,6 @@ exports.handleMessage = async (socket, message) => {
   const {session: {user} = {}} = socket.client.request;
   const {accessStatus, authorID} =
       await securityManager.checkAccess(padId, auth.sessionID, auth.token, user);
-
-      console.log("checkAccesscheckAccesscheckAccess", accessStatus, authorID)
-      console.log("====>>>>>>", padId, auth.sessionID, auth.token, user, "=-=-=-=-=-=")
 
 
   if (accessStatus !== 'grant') {
