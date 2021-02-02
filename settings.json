@@ -673,22 +673,16 @@
       },
       "videoChatLimit": 7,
       "iceServers": [
-          {"urls": "stun:stun.l.google.com:19302"},
-          {
-            "url": "turn:numb.viagenie.ca",
-            "credential": "muazkh",
-            "username": "webrtc@live.com"
-          }
-        // {
-        //   "urls": [ 
-        //     "stun:coturn.docs.plus:3478"
-        //   ]
-        // },
-        // {
-        //   "urls": ["turn:coturn.docs.plus:3478"],
-        //   "credential": "docsplus",
-        //   "username": "strongdocplus"
-        // }
+        {
+          "urls": [ 
+            "stun:coturn.docs.plus:443"
+          ]
+        },
+        {
+          "urls": ["turn:coturn.docs.plus:443"],
+          "credential": "1612281729",
+          "username": "CcWfb9uj8yjz4voMEnwBdi08Uh4="
+        }
       ]
     },
 
