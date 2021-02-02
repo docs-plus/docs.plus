@@ -680,8 +680,8 @@
         },
         {
           "urls": ["turn:coturn.docs.plus:443"],
-          "credential": "1612281729",
-          "username": "CcWfb9uj8yjz4voMEnwBdi08Uh4="
+          "credential": "CcWfb9uj8yjz4voMEnwBdi08Uh4= ",
+          "username": "1612281729"
         }
       ]
     },
