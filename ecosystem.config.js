@@ -118,6 +118,8 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT:"9101",
+        max_memory_restart: '400M',
+        watch: false,
         DB_USER : `${process.env.DB_USER}`,
         DB_PASS : `${process.env.DB_PASS}`,
         DB_HOST : `${process.env.DB_HOST}`,
