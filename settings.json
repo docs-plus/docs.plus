@@ -221,7 +221,7 @@
    * Change them if you want to override.
    */
   "padOptions": {
-    "noColors":         "${PAD_OPTIONS_NO_COLORS:true}",
+    "noColors":         "${PAD_OPTIONS_NO_COLORS:false}",
     "showControls":     "${PAD_OPTIONS_SHOW_CONTROLS:true}",
     "showChat":         "${PAD_OPTIONS_SHOW_CHAT:true}",
     "showLineNumbers":  "${PAD_OPTIONS_SHOW_LINE_NUMBERS:true}",
