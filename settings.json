@@ -675,13 +675,13 @@
       "iceServers": [
         {
           "urls": [ 
-            "stun:143.110.171.40"
+            "stun:coturn.docs.plus:443"
           ]
         },
         {
-          "urls": ["turn:143.110.171.40:3478"],
-          "credential": "docsplus",
-          "username": "strongdoc"
+          "urls": ["turn:coturn.docs.plus:443"],
+          "credential": "BgKvRyH00uVq7faAaRJKp7y8Hvk=",
+          "username": "1703144535"
         }
       ]
     },
