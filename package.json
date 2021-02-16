@@ -3,7 +3,6 @@
     "ep_adminpads2": "2.1.25",
     "ep_bottom_chat_bar": "git+https://github.com/samirsayyad/ep_bottom_chat_bar",
     "ep_comments_page": "git+https://github.com/ether/ep_comments_page",
-    "ep_custom_header_message": "git+https://github.com/samirsayyad/ep_custom_header_message",
     "ep_docs_plus_customize": "git+https://github.com/samirsayyad/ep_docs_plus_customize#fd5eab7",
     "ep_full_hyperlinks": "git+https://github.com/samirsayyad/ep_full_hyperlinks#6ae1062",
     "ep_headings2": "git+https://github.com/samirsayyad/ep_headings2#f88ac17",
