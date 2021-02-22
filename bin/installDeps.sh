@@ -71,8 +71,6 @@ if [ ! -f "ws.router" ]; then
   git clone https://github.com/HMarzban/wsgateway.git ws.router
   cd ws.router
   npm ci
-  log "Copy the settings template ..."
-  cp ../wsrouter.setting "settings.json" || exit 1
 else
   cd ws.router
   npm ci
