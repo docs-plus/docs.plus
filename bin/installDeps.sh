@@ -72,7 +72,7 @@ if [ ! -f "ws.router" ]; then
   cd ws.router
   npm ci
   log "Copy the settings template ..."
-  cp settings.json.template "settings.json" || exit 1
+  cp ../wsrouter.setting "settings.json" || exit 1
 else
   cd ws.router
   npm ci
