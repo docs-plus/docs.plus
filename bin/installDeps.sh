@@ -71,6 +71,8 @@ if [ ! -f "ws.router" ]; then
   git clone https://github.com/HMarzban/wsgateway.git ws.router
   cd ws.router
   npm ci
+  log "Copy the settings template ..."
+  cp settings.json.template "settings.json" || exit 1
 else
   cd ws.router
   npm ci
@@ -78,7 +80,7 @@ else
 fi
 
 # Move to the folder where ep-lite is installed
-cd "$(dirname "$0")"/..
+cd ..
 
 # Get the name of the settings file
 settings="settings.json"
