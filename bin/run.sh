@@ -34,5 +34,7 @@ bin/installDeps.sh "$@" || exit 1
 # Move to the node folder and start
 log "Starting Etherpad..."
 
+# TODO: run ws.router
+
 SCRIPTPATH=$(pwd -P)
 exec node $(compute_node_args) "$SCRIPTPATH/node_modules/ep_etherpad-lite/node/server.js" "$@"

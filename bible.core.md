@@ -23,9 +23,11 @@ modify:     ~\src\node\hooks\express\specialpages.js    # tag by @Samir
 modify:     ~\src\node\handler\PadMessageHandler.js     # tag by @Samir
 modify:     ~\src\node\db\API.js                        # tag by @Samir
 modify:     ~\src\static\js\chat.js                     # tag by @Samir
-replace:    ~\settings.json to                          #  "title": "${TITLE:docs.plus | Loading...}",
+replace:    ~\settings.json to                          # "title": "${TITLE:docs.plus | Loading...}",
+modify      ~\start.bat                                 # tag by @Hossein
 modify      ~\bin\run.sh                                # tag by @Hossein
 modify      ~\bin\installDeps.sh                        # tag by @Hossein
+modify      ~\bin\installOnWindows.bat                  # tag by @Hossein
 modify      ~\src\static\js\ace2_inner.js               # tag by @Hossein customElements
 ```
 

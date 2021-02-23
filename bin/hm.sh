@@ -65,6 +65,7 @@ NODE_VERSION_STRING=${NODE_VERSION_STRING#"v"}
 
 require_minimal_version "nodejs" "$NODE_VERSION_STRING" "$REQUIRED_NODE_MAJOR" "$REQUIRED_NODE_MINOR"
 
+pwd
 # By Hossein
 # Check ws.router
 if [ ! -d "ws.router" ]; then
@@ -72,13 +73,17 @@ if [ ! -d "ws.router" ]; then
   cd ws.router
   npm ci
   rm -rf .git .gitignore
+  pwd
 else
   cd ws.router
   npm ci
   git pull
   rm -rf .git .gitignore
+  pwd
 fi
+pwd
 cd ..
+pwd
 
 # Move to the folder where ep-lite is installed
 cd "$(dirname "$0")"/..
