@@ -67,15 +67,18 @@ require_minimal_version "nodejs" "$NODE_VERSION_STRING" "$REQUIRED_NODE_MAJOR" "
 
 # By Hossein
 # Check ws.router
+WSGATEWAT_GIT_URL="https://github.com/HMarzban/wsgateway.git"
 if [ ! -d "ws.router" ]; then
-  git clone https://github.com/HMarzban/wsgateway.git ws.router
+  git clone $WSGATEWAT_GIT_URL ws.router
   cd ws.router
   npm ci
   rm -rf .git .gitignore
 else
   cd ws.router
+  git init 
+  git remote add origin $WSGATEWAT_GIT_URL
+  git pull $WSGATEWAT_GIT_URL main
   npm ci
-  git pull
   rm -rf .git .gitignore
 fi
 cd ..
