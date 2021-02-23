@@ -79,6 +79,7 @@ else
   rm -rf .git .gitignore
 fi
 cd ..
+cp ws.router.json "./ws.router/settings.json" || exit 1
 
 # Move to the folder where ep-lite is installed
 cd "$(dirname "$0")"/..
