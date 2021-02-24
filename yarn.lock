@@ -1445,9 +1445,9 @@ ep_adminpads2@2.1.25:
   version "1.0.0"
   resolved "git+https://github.com/samirsayyad/ep_docs_plus_customize#fd5eab705fbdc093f95958d21f9d852e2ac37d2c"
 
-"ep_full_hyperlinks@git+https://github.com/samirsayyad/ep_full_hyperlinks#6ae1062":
-  version "1.0.7"
-  resolved "git+https://github.com/samirsayyad/ep_full_hyperlinks#6ae106287a90ccfd8622a80bd77ac3db3e362f98"
+"ep_full_hyperlinks@git+https://github.com/samirsayyad/ep_full_hyperlinks#33034ca":
+  version "1.0.9"
+  resolved "git+https://github.com/samirsayyad/ep_full_hyperlinks#33034cac8343afe11a3abf3773ea3c8159e80e23"
   dependencies:
     formidable "*"
     got "^11.8.1"
@@ -1491,9 +1491,9 @@ ep_monetization@^1.0.0:
   resolved "https://registry.yarnpkg.com/ep_monetization/-/ep_monetization-1.0.0.tgz#0f008b254bff9692bf2af05493c93e25a6a6590a"
   integrity sha512-tFSFQ9skkGwwaJ0SQ6sdsp+LXTL8wo3vE9tX2SOJQzkd56PqjaTkyhUnWWzPMlZZi2VKEZDatAr+AFR1u/JK6g==
 
-"ep_profile_modal@https://github.com/samirsayyad/ep_profile_modal#e2773c2":
-  version "1.0.18"
-  resolved "https://github.com/samirsayyad/ep_profile_modal#e2773c2b4bd9dbc85ac49f3ecc3213eb1d44059a"
+"ep_profile_modal@https://github.com/samirsayyad/ep_profile_modal#fe6b848":
+  version "1.0.22"
+  resolved "https://github.com/samirsayyad/ep_profile_modal#fe6b848fa7d750286f0fb85aab4716e64262e23a"
   dependencies:
     buffer-image-size "^0.6.4"
     gravatar "^1.8.0"
@@ -1516,6 +1516,10 @@ ep_remove_embed@0.0.2:
 "ep_sticky_attributes@https://github.com/ether/ep_sticky_attributes.git":
   version "0.1.4"
   resolved "https://github.com/ether/ep_sticky_attributes.git#93e6418ea4c106bd04ad3128f1ae23b26a7ac794"
+
+"ep_table_of_contents@https://github.com/samirsayyad/ep_table_of_contents":
+  version "0.3.17"
+  resolved "https://github.com/samirsayyad/ep_table_of_contents#a5f00360df51d9931eaea3f9343c72ac6474091c"
 
 "ep_wrtc_heading@https://github.com/HMarzban/ep_wrtc_heading#cd533b8":
   version "0.40.40"
