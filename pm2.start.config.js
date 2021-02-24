@@ -8,7 +8,7 @@ module.exports = {
     {
       name: "wsrouter",
       script: "ws.router/server/index.pm2.cluster.js",
-      instances: 4,
+      instances: 1,
       watch: false,
       restart_delay: 30000,
       exec_mode: "cluster",
