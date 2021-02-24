@@ -15,7 +15,7 @@ jobs:
     runs-on: stage.docs.plus
     strategy:
       matrix:
-        node-version: [10.x]
+        node-version: [14.x]
     steps:
     - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
@@ -23,7 +23,9 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
     - run: npm run build --if-present
+    - run: chmod 755 ./node_modules/ep_etherpad-lite/node/server.js
     - run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 start ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
+    - run: pm2 reload pm2.start.config.js --only wsrouter
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}
