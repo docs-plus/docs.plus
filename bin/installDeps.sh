@@ -84,9 +84,6 @@ fi
 cd ..
 cp ws.router.json "./ws.router/settings.json" || exit 1
 
-# Move to the folder where ep-lite is installed
-cd ..
-
 # Get the name of the settings file
 settings="settings.json"
 a='';
