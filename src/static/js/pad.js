@@ -282,6 +282,8 @@ const handshake = () => {
     console.log(`socket.io connection error: ${JSON.stringify(error)}`)
     //throw new Error(`socket.io connection error: ${JSON.stringify(error)}`);
     
+    
+    
   });
 
   socket.on('message', (obj) => {
