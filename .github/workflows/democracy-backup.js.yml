@@ -1,0 +1,30 @@
+name: Backup every hour
+
+on:
+    schedule:
+        - cron: "0 * * * *"
+jobs:
+  dump:
+    runs-on: backup-runner
+    steps:
+    - run: ( [ -d $(date +'%Y-%m-%d') ] || mkdir $(date +'%Y-%m-%d') ) &&  PGPASSWORD=$DB_PASS pg_dump -h $DB_HOST --dbname democracyhandbook -p $DB_PORT -U $DB_USER -Ft -f $(date +'%Y-%m-%d')/democracyhandbook-$(date +'%Y-%m-%d-%H').tar
+    env:
+      DB_USER : ${{secrets.PG_USER}}
+      DB_PASS : ${{secrets.PG_PASS}}
+      DB_HOST : ${{secrets.PG_HOST}}
+      DB_PORT : ${{secrets.PG_PORT}}
+  upload:
+    runs-on: backup-runner
+    needs: dump
+    steps:
+      - run: rclone sync . space:$BACKUP_BUCKET_NAME --s3-access-key-id=$ACCESS_KEY_ID --s3-secret-access-key=$ACCESS_KEY_SECRET --s3-endpoint=$BUCKET_S3_SERVER -vv
+    env:
+      BACKUP_BUCKET_NAME : ${{secrets.BACKUP_BUCKET_NAME}}
+      BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
+      ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
+      ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
+  deleteOldBackup:
+    runs-on: backup-runner
+    needs: upload
+    steps:
+      - run: del=$(date --date="6 days ago" +"%Y-%m-%d"); for i in `find . -type d -name "2*"`; do (($del < $(basename $i))) && rm -rf $i || echo "keep $i";  done
