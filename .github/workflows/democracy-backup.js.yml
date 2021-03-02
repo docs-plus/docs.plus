@@ -1,4 +1,4 @@
-name: Backup every hour
+name: Democracy Backup every hour 
 
 on:
     schedule:
