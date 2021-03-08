@@ -665,6 +665,7 @@
       "maxFileSize": 50000000
     },
     "ep_wrtc_heading": {
+      "socketAddress": "https://ws.docs.plus",
       "video": {
         "sizes": {
           "small": 130,
