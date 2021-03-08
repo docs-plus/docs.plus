@@ -1,0 +1,22 @@
+version: '3'
+services:
+  nginx:
+   build:
+    context: ./scripts
+    dockerfile: nginx.dockerfile
+   links:
+    - node-app
+   ports:
+    - "3000:80"
+    - "80:3000"
+
+  redis-server:
+    image: 'redis'
+
+  node-app:
+    build:
+      context: .
+      dockerfile: ./scripts/server.dockerfile
+    expose:
+      - "5000"
+    scale: 4
