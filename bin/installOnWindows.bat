@@ -7,20 +7,18 @@ cd /D "%~dp0\.."
 cmd /C node -e "" || ( echo "Please install node.js ( https://nodejs.org )" && exit /B 1 )
 
 :: By Hossein
-@REM echo _
-@REM echo Setting up wsgateway...
-@REM IF NOT EXIST ws.router (
-@REM   git clone https://github.com/HMarzban/wsgateway.git ws.router
-@REM   cd /D "ws.router"
-@REM   cmd /C npm ci || exit /B 1
-@REM ) ELSE (
-@REM   cd /D "ws.router"
-@REM   git init 
-@REM   git remote add origin https://github.com/HMarzban/wsgateway.git
-@REM   git pull https://github.com/HMarzban/wsgateway.git main
-@REM   cmd /C npm ci || exit /B 1
-@REM ) 
-@REM cd /D "%~dp0\.."54
+echo _
+echo Setting up wsgateway...
+IF NOT EXIST ws.router (
+  git clone https://github.com/HMarzban/wsgateway.git ws.router
+  cd /D "ws.router"
+  cmd /C npm ci || exit /B 1
+) ELSE (
+  cd /D "ws.router"
+  git pull
+  cmd /C npm ci || exit /B 1
+) 
+cd /D "%~dp0\.."54
 
 echo _
 echo Ensure that all dependencies are up to date...  If this is the first time you have run Etherpad please be patient.
@@ -38,13 +36,13 @@ echo _
 echo Clearing cache...
 del /S var\minified*
 
-@REM echo _
-@REM echo Setting up settings.json...
-@REM IF NOT EXIST settings.json (
-@REM   echo Can't find settings.json.
-@REM   echo Copying settings.json.template...
-@REM   cmd /C copy settings.json.template settings.json || exit /B 1
-@REM )
+echo _
+echo Setting up settings.json...
+IF NOT EXIST settings.json (
+  echo Can't find settings.json.
+  echo Copying settings.json.template...
+  cmd /C copy settings.json.template settings.json || exit /B 1
+)
 
-@REM echo _
-@REM echo Installed Etherpad! To run Etherpad type start.bat
+echo _
+echo Installed Etherpad! To run Etherpad type start.bat
