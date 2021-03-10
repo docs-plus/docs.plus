@@ -65,6 +65,28 @@ NODE_VERSION_STRING=${NODE_VERSION_STRING#"v"}
 
 require_minimal_version "nodejs" "$NODE_VERSION_STRING" "$REQUIRED_NODE_MAJOR" "$REQUIRED_NODE_MINOR"
 
+# By Hossein
+# Check ws.router
+WSGATEWAT_GIT_URL="https://github.com/HMarzban/wsgateway.git"
+if [ ! -d "ws.router" ]; then
+  git clone $WSGATEWAT_GIT_URL ws.router
+  cd ws.router
+  npm ci
+  rm -rf .git 
+else
+  cd ws.router
+  git init 
+  git remote add origin $WSGATEWAT_GIT_URL
+  git pull $WSGATEWAT_GIT_URL main
+  npm ci
+  rm -rf .git 
+fi
+cd ..
+cp ws.router.json "./ws.router/settings.json" || exit 1
+
+# Move to the folder where ep-lite is installed
+cd "$(dirname "$0")"/..
+
 # Get the name of the settings file
 settings="settings.json"
 a='';
@@ -99,5 +121,6 @@ log "Ensure that all dependencies are up to date...  If this is the first time y
 # Remove all minified data to force node creating it new
 log "Clearing minified cache..."
 rm -f var/minified*
+ 
 
 exit 0
