@@ -1,12 +1,6 @@
 'use strict';
 
 /**
- * This code is mostly from the old Etherpad. Please help us to comment this code.
- * This helps other people to understand this code better and helps them to improve it.
- * TL;DR COMMENTS ON THIS FILE ARE HIGHLY APPRECIATED
- */
-
-/**
  * Copyright 2009 Google Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,15 +18,14 @@
 
 const padutils = require('./pad_utils').padutils;
 const hooks = require('./pluginfw/hooks');
-const browser = require('./browser');
 
 let myUserInfo = {};
 
 let colorPickerOpen = false;
 let colorPickerSetup = false;
 
-const paduserlist = (function () {
-  const rowManager = (function () {
+const paduserlist = (() => {
+  const rowManager = (() => {
     // The row manager handles rendering rows of the user list and animating
     // their insertion, removal, and reordering.  It manipulates TD height
     // and TD opacity.
@@ -297,7 +290,7 @@ const paduserlist = (function () {
       updateRow,
     };
     return self;
-  }()); // //////// rowManager
+  })(); // //////// rowManager
   const otherUsersInfo = [];
   const otherUsersData = [];
 
@@ -353,7 +346,7 @@ const paduserlist = (function () {
 
   let pad = undefined;
   const self = {
-    init(myInitialUserInfo, _pad) {
+    init: (myInitialUserInfo, _pad) => {
       pad = _pad;
 
       self.setMyUserInfo(myInitialUserInfo);
@@ -546,12 +539,11 @@ const paduserlist = (function () {
       }
 
       $('#myswatch').css({'background-color': myUserInfo.colorId});
-
       $('li[data-key=showusers] > a').css({'box-shadow': `inset 0 0 30px ${myUserInfo.colorId}`});
     },
   };
   return self;
-}());
+})();
 
 const getColorPickerSwatchIndex = (jnode) => $('#colorpickerswatches li').index(jnode);
 

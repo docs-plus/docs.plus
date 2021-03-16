@@ -1,4 +1,4 @@
-/*
+/**
  * This file must be valid JSON. But comments are allowed
  *
  * Please edit settings.json, not settings.json.template
@@ -169,29 +169,29 @@
    * https://www.npmjs.com/package/ueberdb2
    */
 
-   "dbType": "dirty",
-   "dbSettings": {
-     "filename": "var/dirty.db"
-   },
-
-  //  "dbType": "${DB_TYPE:mongodb}",
+  //  "dbType": "dirty",
   //  "dbSettings": {
-  //    "host":     "${DB_HOST}",
-  //    "port":     "${DB_PORT}",
-  //    "dbname":   "${DB_NAME}",
-  //    "database": "${DB_NAME}",
-  //    "user":     "${DB_USER}",
-  //    "password": "${DB_PASS}",
-  //    "charset":  "${DB_CHARSET}",
-  //    "filename": "${DB_FILENAME:var/dirty.db}",
-  //    "ssl": {
-  //      "rejectUnauthorized" : false,
-  //      "ssl" : {
-  //                "key"  : "/etc/nginx/ssl/ssl-handbook-key.key",
-  //                "cert" : "/etc/nginx/ssl/ssl-handbook-crt.crt"
-  //              }
-  //    }
+  //    "filename": "var/dirty.db"
   //  },
+
+   "dbType": "${DB_TYPE:dirty}",
+   "dbSettings": {
+     "host":     "${DB_HOST}",
+     "port":     "${DB_PORT}",
+     "dbname":   "${DB_NAME}",
+     "database": "${DB_NAME}",
+     "user":     "${DB_USER}",
+     "password": "${DB_PASS}",
+     "charset":  "${DB_CHARSET}",
+    // "filename": "${DB_FILENAME:var/dirty.db}",
+     "ssl": {
+       "rejectUnauthorized" : false,
+       "ssl" : {
+                 "key"  : "/etc/nginx/ssl/ssl-handbook-key.key",
+                 "cert" : "/etc/nginx/ssl/ssl-handbook-crt.crt"
+               }
+     }
+   },
 
   /*
    * An Example of MySQL Configuration (commented out).
@@ -539,7 +539,7 @@
     ],
     "right": [
       [ "timeslider", "savedrevision"], //"importexport",
-      ["settings" ] //"embed"
+      ["settings", "embed" ]
       //["showusers"]
     ],
     "timeslider": [
@@ -665,6 +665,7 @@
       "maxFileSize": 50000000
     },
     "ep_wrtc_heading": {
+      "socketAddress": "https://ws.docs.plus",
       "video": {
         "sizes": {
           "small": 130,
@@ -675,13 +676,13 @@
       "iceServers": [
         {
           "urls": [ 
-            "stun:143.110.171.40"
+            "stun:coturn.docs.plus:443"
           ]
         },
         {
-          "urls": ["turn:143.110.171.40:3478"],
-          "credential": "docsplus",
-          "username": "strongdoc"
+          "urls": ["turn:coturn.docs.plus:443"],
+          "credential": "BgKvRyH00uVq7faAaRJKp7y8Hvk=",
+          "username": "1703144535"
         }
       ]
     },
