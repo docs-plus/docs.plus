@@ -7,7 +7,7 @@
 <!doctype html>
 
 <% e.begin_block("htmlHead"); %>
-<html class="<%=pluginUtils.clientPluginNames().join(' '); %> <%=settings.skinVariants%>">
+<html class="pad <%=pluginUtils.clientPluginNames().join(' '); %> <%=settings.skinVariants%>">
 <% e.end_block(); %>
 
   <title><%=meta.title%></title>
@@ -57,7 +57,7 @@
   <% e.end_block(); %>
 
   <link rel="localizations" type="application/l10n+json" href="../locales.json" />
-  <script type="text/javascript" src="../static/js/html10n.js?v=<%=settings.randomVersionString%>"></script>
+  <script type="text/javascript" src="../static/js/vendors/html10n.js?v=<%=settings.randomVersionString%>"></script>
   <script type="text/javascript" src="../static/js/l10n.js?v=<%=settings.randomVersionString%>"></script>
 
   <!-- head and body had been removed intentionally -->
@@ -119,6 +119,28 @@
 
       <div id="editorcontainer" class="editorcontainer"></div>
 
+      <!-- <div id="editorloadingbox">
+        <% e.begin_block("permissionDenied"); %>
+        <div id="permissionDenied">
+          <p data-l10n-id="pad.permissionDenied" class="editorloadingbox-message">
+            You do not have permission to access this pad
+          </p>
+        </div>
+        <% e.end_block(); %>
+        <% e.begin_block("loading"); %>
+        <p data-l10n-id="pad.loading" id="loading" class="editorloadingbox-message">
+          <img src='../static/img/brand.svg' class='etherpadBrand'><br/>
+          Loading...
+        </p>
+        <% e.end_block(); %>
+        <noscript>
+          <p class="editorloadingbox-message">
+            <strong>
+              Sorry, you have to enable Javascript in order to use this.
+            </strong>
+          </p>
+        </noscript>
+      </div> -->
 
       <!------------------------------------------------------------->
       <!-- SETTINGS POPUP (change font, language, chat parameters) -->
@@ -176,7 +198,7 @@
 
           <h2 data-l10n-id="pad.settings.about">About</h2>
           <span data-l10n-id="pad.settings.poweredBy">Powered by</span>
-          <a href="https://etherpad.org">Etherpad-lite</a>
+          <a href="https://etherpad.org">Etherpad</a>
           <% if (settings.exposeVersion) { %>(commit <%=settings.getGitCommit()%>)<% } %>
       </div></div>
 
@@ -244,7 +266,9 @@
           </div>
           <div class="reconnecting">
             <h1 data-l10n-id="pad.modals.reconnecting"></h1>
-            <i class='buttonicon buttonicon-spin5 icon-spin'></i>
+            <i class='buttonicon buttonicon-spin5 icon-spin'>
+              <img src='../static/img/brand.svg' class='etherpadBrand'><br/>
+            </i>
           </div>
           <div class="userdup">
             <h1 data-l10n-id="pad.modals.userdup"></h1>
