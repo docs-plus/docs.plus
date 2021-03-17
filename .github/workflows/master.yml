@@ -27,7 +27,7 @@ jobs:
     - run: npm run build --if-present
     - run: chmod 755 ./node_modules/ep_etherpad-lite/node/server.js
     - run: DB_NAME=handbook pm2 start ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
-    - run: pm2 reload pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
+    - run: DB_NAME=handbook pm2 reload pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}

@@ -110,7 +110,7 @@ exports.chat = (() => {
       // @Samir 
       const chatTextType = (typeof msg.chatTextType !== undefined) ?  msg.chatTextType : null ;
       const beforeText = (typeof msg.beforeText !== undefined) ?  msg.beforeText : "" ;
-
+      
       // correct the time
       msg.time += this._pad.clientTimeOffset;
 

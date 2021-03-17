@@ -16,6 +16,7 @@ Docs.plus roadmap for migrating and updating etherpad core,
 replace:    ~\src\templates\index.html                  # just for meta
 replace:    ~\src\templates\pad.html                    # just for meta
 replace:    ~\src\static\css
+copy:       ~\src\static\images
 replace:    ~\src\static\font
 replace:    ~\src\static\skins\colibris
 replace:    ~\src\static\favicon.ico
