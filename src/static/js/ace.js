@@ -183,8 +183,9 @@ const Ace2Editor = function () {
       iframeHTML,
     });
 
-    iframeHTML.push('</head><body id="innerdocbody" class="innerdocbody" role="application" ' +
-                    'spellcheck="false">&nbsp;</body></html>');
+    iframeHTML.push('</head><body>' +
+                    '<div id="innerdocbody" class="innerdocbody"'+
+                    'role="application spellcheck="false""></div>&nbsp;</body></html>');
 
     const outerScript = `(async () => {
       await new Promise((resolve) => { window.onload = () => resolve(); });
