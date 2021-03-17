@@ -43,15 +43,20 @@ jobs:
         https://github.com/samirsayyad/ep_table_of_contents#326ccfc
         https://github.com/samirsayyad/ep_docs_plus_customize#fd5eab7
         https://github.com/samirsayyad/ep_loading_pad#84a888f
+        https://github.com/HMarzban/ep_wrtc_heading#3b42f23
         # https://github.com/ether/ep_sticky_attributes
-        # https://github.com/HMarzban/ep_wrtc_heading#3b42f23
 
     - name: Install all dependencies and symlink for ep_etherpad-lite
       run: src/bin/installDeps.sh
 
 
     # - run: npm run build --if-present
+    - name: Run pm2 docsplus instance
     - run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 start ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
+
+    - name: Run pm2 ws.router instance
+    - run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 reload pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
+    
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}
