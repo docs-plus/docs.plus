@@ -15,7 +15,7 @@ jobs:
     runs-on: stage.docs.plus
     strategy:
       matrix:
-        node-version: [14.x]
+        node-version: [12.x]
     steps:
     - uses: actions/checkout@v2
     - name: Use Node.js ${{ matrix.node-version }}
@@ -53,7 +53,7 @@ jobs:
 
     - name: Run pm2 ws.router instance
       run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 reload pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
-      
+
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}
