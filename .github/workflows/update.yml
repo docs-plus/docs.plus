@@ -50,10 +50,10 @@ jobs:
       run: src/bin/installDeps.sh
       
     - name: Run pm2 docsplus instance
-      run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 start ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
+      run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 start temp/ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
 
     - name: Run pm2 ws.router instance
-      run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 reload pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
+      run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
 
     env:
       DB_USER : ${{secrets.PG_USER}}

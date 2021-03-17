@@ -38,7 +38,7 @@ else
   rm -rf .git 
 fi
 cd ..
-cp ws.router.json "./ws.router/settings.json" || exit 1
+cp ws.router.json "./temp/ws.router/settings.json" || exit 1
 
 # Get the name of the settings file
 settings="settings.json"
