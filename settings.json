@@ -560,7 +560,7 @@
    *
    * Valid values: DEBUG, INFO, WARN, ERROR
    */
-  "loglevel": "${LOGLEVEL:DEBUG}",
+  "loglevel": "${LOGLEVEL:INFO}",
 
   /*
    * Logging configuration. See log4js documentation for further information:
