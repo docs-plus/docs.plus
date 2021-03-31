@@ -30,7 +30,7 @@ It solves many common organising problems, and can be frictionlessly adopted by 
 
 **Docs.plus** is built on [Etherpad](https://github.com/ether/etherpad-lite) which is a real-time collaborative editor for the web, our team tweek a etherpad bases for the goal we persude, also we are using combanation of etherpad plugin and custom one to power up our goals.
 
-## Plugins
+### Plugins
 
 - [ep_wrtc_heading](https://github.com/HMarzban/ep_wrtc_heading)
 - [ep_insert_media](https://github.com/samirsayyad/ep_insert_media)
@@ -88,7 +88,7 @@ src/bin/run.sh
 # 🤝 Contributing
 Thank you for your interest in contributing! Please feel free to put up a PR for any issue or feature request.
 
-## ✨ Contributors 
+### ✨ Contributors 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
 |  |  |  |  |
