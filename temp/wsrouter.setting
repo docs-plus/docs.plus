@@ -1,0 +1,14 @@
+{
+	"components": [
+		{
+			"namespace": "/test",
+			"path": "./tests/components/test.js",
+			"exc": "init"
+		},
+		{
+			"namespace": "/heading_chat_room",
+			"path": "../node_modules/ep_wrtc_heading/server/ws.router",
+			"exc": "init"
+		}
+	]
+}
