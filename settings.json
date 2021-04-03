@@ -702,7 +702,7 @@
   },
   "ep_wrtc_heading": {
     "useEtherpadSocket": true,
-    "socketAddress": "https://ws-dev.docs.plus",
+    "socketAddress": "https://ws.docs.plus",
     "video": {
       "sizes": {
         "small": 130,
