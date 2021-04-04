@@ -69,21 +69,23 @@ npm install --no-save --legacy-peer-deps
         https://github.com/samirsayyad/ep_bottom_chat_bar
         https://github.com/ether/ep_comments_page
         https://github.com/ether/ep_cursortrace
-        https://github.com/samirsayyad/ep_docs_plus_customize
-        https://github.com/samirsayyad/ep_full_hyperlinks
-        https://github.com/samirsayyad/ep_headings2
-        https://github.com/samirsayyad/ep_insert_media
-        https://github.com/samirsayyad/ep_loading_pad
-        https://github.com/samirsayyad/ep_profile_modal
-        https://github.com/samirsayyad/ep_set_title_on_pad
-        https://github.com/samirsayyad/ep_table_of_contents
-        https://github.com/HMarzban/ep_wrtc_heading
+        https://github.com/samirsayyad/ep_docs_plus_customize#c68bc28
+        https://github.com/samirsayyad/ep_full_hyperlinks#ce24888
+        https://github.com/samirsayyad/ep_headings2#f88ac17
+        https://github.com/samirsayyad/ep_insert_media#35b26c5
+        https://github.com/samirsayyad/ep_loading_pad#84a888f
+        https://github.com/samirsayyad/ep_profile_modal#eb3bb71
+        https://github.com/samirsayyad/ep_set_title_on_pad#b1688b0
+        https://github.com/samirsayyad/ep_table_of_contents#326ccfc
+        https://github.com/HMarzban/ep_wrtc_heading#1fd4e08
         https://github.com/ether/ep_sticky_attributes.git
 
 # run the docsplus
 src/bin/run.sh
 ```
 > For mor info Take a look at [CI](https://github.com/nwspk/docs.plus/blob/master/.github/workflows/master.yml)
+
+> If you wanna have your Turn/Stun server for the video chat you can follow this installation for the [Coturn](https://github.com/coturn/coturn) server; [Link](https://dev.to/kevin_odongo35/how-to-configure-a-turn-server-3opd). <br>*By default, the video plugin uses a public Stun server [More info](https://github.com/HMarzban/ep_wrtc_heading)*
 
 # 🤝 Contributing
 Thank you for your interest in contributing! Please feel free to put up a PR for any issue or feature request.
@@ -97,15 +99,17 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 
 
 # 👋 Contact
-If you have any further questions, please don’t hesitate, you can reach me by the following:
-- Twitter: @docsplus
-- Github: @docsplus
-- Discord: @docsplus
-- Email: example@gmail.com
+If you have any further questions, please don’t hesitate, you can reach us by the following:
+- Twitter: [@docsdotplus](https://twitter.com/docsdotplus)
+- Github: [docs.plus](https://github.com/nwspk/docs.plus)
+- Slack: [docsplus](docsplus.slack.com)
+- Email: [contact@newspeak.house](mailto:contact@newspeak.house)
 
 # 📝 License
 This project is licensed under the [Apache License v2](http://www.apache.org/licenses/LICENSE-2.0.html) License
 
+# Support
+**Docs.plus** is free and open source, please help us stay online:
 
 <a href="https://patreon.com/docsplus"><img src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Ddocsplus%26type%3Dpatrons&style=for-the-badge" /> </a>
 
