@@ -1,4 +1,4 @@
-name: Backup every hour
+name: Backup every 8hours
 
 on:
     schedule:
