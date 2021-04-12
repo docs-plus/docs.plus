@@ -16,7 +16,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [14.x]
+        node-version: [12.x]
 
     steps:
     - uses: actions/checkout@v2
@@ -24,10 +24,35 @@ jobs:
       uses: actions/setup-node@v1
       with:
         node-version: ${{ matrix.node-version }}
-    - run: npm run build --if-present
-    - run: chmod 755 ./node_modules/ep_etherpad-lite/node/server.js
-    - run: DB_NAME=democracyhandbook pm2 start ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
-    - run: DB_NAME=democracyhandbook pm2 reload pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
+
+    - name: Install Etherpad plugins
+      run: >
+        npm install --no-save --legacy-peer-deps
+        ep_adminpads2
+        https://github.com/samirsayyad/ep_bottom_chat_bar.git
+        https://github.com/samirsayyad/ep_docs_plus_customize#c68bc28
+        https://github.com/samirsayyad/ep_headings2#f88ac17
+        ep_hide_line_numbers
+        https://github.com/samirsayyad/ep_insert_media#35b26c5
+        https://github.com/samirsayyad/ep_loading_pad#84a888f
+        ep_monetization
+        https://github.com/samirsayyad/ep_profile_modal#59b6716
+        https://github.com/samirsayyad/ep_set_title_on_pad#b1688b0
+        https://github.com/samirsayyad/ep_table_of_contents#326ccfc
+        https://github.com/HMarzban/ep_wrtc_heading#3b42f23
+        https://github.com/ether/ep_sticky_attributes.git
+        https://github.com/samirsayyad/ep_full_hyperlinks#ce24888
+        https://github.com/ether/ep_comments_page
+
+    - name: Install all dependencies and symlink for ep_etherpad-lite
+      run: src/bin/installDeps.sh
+
+    - name: Run pm2 docsplus instance
+      run: DB_NAME=handbook pm2 start temp/ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
+
+    - name: Run pm2 ws.router instance
+      run: DB_NAME=handbook pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
+
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}
