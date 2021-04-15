@@ -41,7 +41,7 @@ jobs:
         https://github.com/samirsayyad/ep_table_of_contents#326ccfc
         https://github.com/HMarzban/ep_wrtc_heading#3b42f23
         https://github.com/ether/ep_sticky_attributes.git
-        https://github.com/samirsayyad/ep_full_hyperlinks#ce24888
+        https://github.com/samirsayyad/ep_full_hyperlinks#18968f4
         https://github.com/ether/ep_comments_page
 
     - name: Install all dependencies and symlink for ep_etherpad-lite
