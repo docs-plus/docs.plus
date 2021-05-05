@@ -34,6 +34,7 @@ modify      ~\src\static\js\ace2_inner.js               # tag by @Hossein custom
 modify      ~\src\templates\pad.html                    # tag by @Samir change loading block - going to top after body
 modify      ~\src\static\js\pad.js                      # tag by @Samir - change error to reconnect and socket config
 add:        ~\src\templates\pad.html                    # GA code @Samir
+modify      ~\src\static\js\domline.js                  # @Samir - commented because want to process on copied external link
 ```
 
 >NOTE: In some cases the `modify` must be evaluated! Because in that case some cases may be broken!
