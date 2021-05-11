@@ -701,7 +701,7 @@
     "maxFileSize": 50000000
   },
   "ep_wrtc_heading": {
-    "useEtherpadSocket": true,
+    "useEtherpadSocket": false,
     "socketAddress": "https://ws.docs.plus",
     "video": {
       "sizes": {
