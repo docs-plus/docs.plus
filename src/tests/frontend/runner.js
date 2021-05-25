@@ -102,27 +102,9 @@ $(() => {
 
     const $console = $('#console');
     const append = (text) => {
-      const oldText = $console.text();
-
-      let space = '';
-      for (let i = 0; i < level * 2; i++) {
-        space += ' ';
-      }
-
-      let splitedText = '';
-      _(text.split('\n')).each((line) => {
-        while (line.length > 0) {
-          const split = line.substr(0, 100);
-          line = line.substr(100);
-          if (splitedText.length > 0) splitedText += '\n';
-          splitedText += split;
-        }
-      });
-
-      // indent all lines with the given amount of space
-      const newText = _(splitedText.split('\n')).map((line) => space + line).join('\\n');
-
-      $console.text(`${oldText + newText}\\n`);
+      // Indent each line.
+      const lines = text.split('\n').map((line) => ' '.repeat(level * 2) + line);
+      $console.append(document.createTextNode(`${lines.join('\n')}\n`));
     };
 
     const total = runner.total;
@@ -158,6 +140,11 @@ $(() => {
 
   // get the list of specs and filter it if requested
   const specs = specs_list.slice();
+
+  const absUrl = (url) => new URL(url, window.location.href).href;
+  require.setRootURI(absUrl('../../javascripts/src'));
+  require.setLibraryURI(absUrl('../../javascripts/lib'));
+  require.setGlobalKeyPath('require');
 
   // inject spec scripts into the dom
   const $body = $('body');

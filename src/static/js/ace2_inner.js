@@ -30,11 +30,10 @@ const htmlPrettyEscape = Ace2Common.htmlPrettyEscape;
 const noop = Ace2Common.noop;
 const hooks = require('./pluginfw/hooks');
 
-function Ace2Inner(editorInfo) {
+function Ace2Inner(editorInfo, cssManagers) {
   const makeChangesetTracker = require('./changesettracker').makeChangesetTracker;
   const colorutils = require('./colorutils').colorutils;
   const makeContentCollector = require('./contentcollector').makeContentCollector;
-  const makeCSSManager = require('./cssmanager').makeCSSManager;
   const domline = require('./domline').domline;
   const AttribPool = require('./AttributePool');
   const Changeset = require('./Changeset');
@@ -157,10 +156,6 @@ function Ace2Inner(editorInfo) {
 
   const scheduler = parent; // hack for opera required
 
-  let dynamicCSS = null;
-  let outerDynamicCSS = null;
-  let parentDynamicCSS = null;
-
   const performDocumentReplaceRange = (start, end, newText) => {
     if (start === undefined) start = rep.selStart;
     if (end === undefined) end = rep.selEnd;
@@ -179,12 +174,6 @@ function Ace2Inner(editorInfo) {
     const cs = builder.toString();
 
     performDocumentApplyChangeset(cs);
-  };
-
-  const initDynamicCSS = () => {
-    dynamicCSS = makeCSSManager('dynamicsyntax');
-    outerDynamicCSS = makeCSSManager('dynamicsyntax', 'outer');
-    parentDynamicCSS = makeCSSManager('dynamicsyntax', 'parent');
   };
 
   const changesetTracker = makeChangesetTracker(scheduler, rep.apool, {
@@ -214,15 +203,12 @@ function Ace2Inner(editorInfo) {
   editorInfo.ace_getAuthorInfos = getAuthorInfos;
 
   const setAuthorStyle = (author, info) => {
-    if (!dynamicCSS) {
-      return;
-    }
     const authorSelector = getAuthorColorClassSelector(getAuthorClassName(author));
 
     const authorStyleSet = hooks.callAll('aceSetAuthorStyle', {
-      dynamicCSS,
-      parentDynamicCSS,
-      outerDynamicCSS,
+      dynamicCSS: cssManagers.inner,
+      outerDynamicCSS: cssManagers.outer,
+      parentDynamicCSS: cssManagers.parent,
       info,
       author,
       authorSelector,
@@ -234,16 +220,16 @@ function Ace2Inner(editorInfo) {
     }
 
     if (!info) {
-      dynamicCSS.removeSelectorStyle(authorSelector);
-      parentDynamicCSS.removeSelectorStyle(authorSelector);
+      cssManagers.inner.removeSelectorStyle(authorSelector);
+      cssManagers.parent.removeSelectorStyle(authorSelector);
     } else if (info.bgcolor) {
       let bgcolor = info.bgcolor;
       if ((typeof info.fade) === 'number') {
         bgcolor = fadeColor(bgcolor, info.fade);
       }
 
-      const authorStyle = dynamicCSS.selectorStyle(authorSelector);
-      const parentAuthorStyle = parentDynamicCSS.selectorStyle(authorSelector);
+      const authorStyle = cssManagers.inner.selectorStyle(authorSelector);
+      const parentAuthorStyle = cssManagers.parent.selectorStyle(authorSelector);
 
       // author color
       authorStyle.backgroundColor = bgcolor;
@@ -3895,119 +3881,39 @@ function Ace2Inner(editorInfo) {
   editorInfo.ace_performDocumentApplyAttributesToRange =
       (...args) => documentAttributeManager.setAttributesOnRange(...args);
 
-  this.init = (cb) => {
-    $(document).ready(() => {
-      doc = document; // defined as a var in scope outside
-      inCallStack('setup', () => {
-        const body = doc.getElementById('innerdocbody');
-        root = body; // defined as a var in scope outside
-        if (browser.firefox) $(root).addClass('mozilla');
-        if (browser.safari) $(root).addClass('safari');
-        root.classList.toggle('authorColors', true);
-        root.classList.toggle('doesWrap', doesWrap);
+  this.init = async () => {
+    await $.ready;
+    doc = document; // defined as a var in scope outside
+    inCallStack('setup', () => {
+      const body = doc.getElementById('innerdocbody');
+      root = body; // defined as a var in scope outside
+      if (browser.firefox) $(root).addClass('mozilla');
+      if (browser.safari) $(root).addClass('safari');
+      root.classList.toggle('authorColors', true);
+      root.classList.toggle('doesWrap', doesWrap);
 
-        initDynamicCSS();
+      enforceEditability();
 
-        enforceEditability();
+      // set up dom and rep
+      while (root.firstChild) root.removeChild(root.firstChild);
+      const oneEntry = createDomLineEntry('');
+      doRepLineSplice(0, rep.lines.length(), [oneEntry]);
+      insertDomLines(null, [oneEntry.domInfo]);
+      rep.alines = Changeset.splitAttributionLines(
+          Changeset.makeAttribution('\n'), '\n');
 
-        // set up dom and rep
-        while (root.firstChild) root.removeChild(root.firstChild);
-        const oneEntry = createDomLineEntry('');
-        doRepLineSplice(0, rep.lines.length(), [oneEntry]);
-        insertDomLines(null, [oneEntry.domInfo]);
-        rep.alines = Changeset.splitAttributionLines(
-            Changeset.makeAttribution('\n'), '\n');
+      bindTheEventHandlers();
+    });
 
-        bindTheEventHandlers();
-      });
-
-      hooks.callAll('aceInitialized', {
-        editorInfo,
-        rep,
-        documentAttributeManager,
-      });
-
-      scheduler.setTimeout(cb, 0);
+    hooks.callAll('aceInitialized', {
+      editorInfo,
+      rep,
+      documentAttributeManager,
     });
   };
-
-    // by @Hossein
-  // TODO: find a way to move into the plugin
-  customElements.define('wrt-inline-icon', class  extends HTMLElement {
-			
-    connectedCallback() {
-      const shadow = this.attachShadow({mode: 'open'});
-      const headerId = this.getAttribute('headerId')
-      const style = `
-        .wrtcInlinIcon{
-          border: 1px solid #e6e8e9;
-          border-radius: 50%;
-          background: #fff;
-          box-shadow: 1px 1px 8px #e6e8e9;
-          outline: none;
-          width: 40px;
-          height: 40px;
-          transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-          display: flex;
-          align-items: center;
-          color: #333333;
-          justify-content: center;
-          cursor: pointer;
-        }
-        .wrtcInlinIcon.active svg{
-          color: #2678ff;
-        }
-        .wrtcInlinIcon:hover{
-          background-color: #2678ff;
-          color: #fff;
-        }
-        .wrtcInlinIcon:hover svg{
-          color: #fff;
-        }
-        .wrtcInlinIcon svg {
-          width: 16px;
-          height: 16px;
-        }
-        .wrtcInlinIcon.activeLoader .loader{
-          display: block;
-        }
-        .wrtcInlinIcon .loader {
-          border: 4px solid #f3f3f3;
-          border-top: 4px solid #3498db;
-          border-radius: 50%;
-          animation: spin 2s linear infinite;
-          padding: 16px;
-          position: absolute;
-          z-index: 2;
-          background: transparent;
-          left: -1px;
-          top: -1px;
-          display: none;
-        }
-  
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `
-  
-      const content = `
-        <button class="btn_roomHandler wrtcInlinIcon ${headerId}" data-action="JOIN" data-id="${headerId}"data-join="PLUS">
-          <span class="loader"></span>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="currentColor" d="M336.2 64H47.8C21.4 64 0 85.4 0 111.8v288.4C0 426.6 21.4 448 47.8 448h288.4c26.4 0 47.8-21.4 47.8-47.8V111.8c0-26.4-21.4-47.8-47.8-47.8zm189.4 37.7L416 177.3v157.4l109.6 75.5c21.2 14.6 50.4-.3 50.4-25.8V127.5c0-25.4-29.1-40.4-50.4-25.8z"></path></svg>
-        </button>
-      `
-  
-      shadow.innerHTML = `
-        <style>${style}</style>
-        ${content}
-      `;
-    }
-  
-  });
 }
 
-exports.init = (editorInfo, cb) => {
-  const editor = new Ace2Inner(editorInfo);
-  editor.init(cb);
+exports.init = async (editorInfo, cssManagers) => {
+  const editor = new Ace2Inner(editorInfo, cssManagers);
+  await editor.init();
 };
