@@ -69,13 +69,11 @@
    * Name your instance!
    */
   "title": "${TITLE:docs.plus | Loading...}",
-
   /*
    * favicon default name
    * alternatively, set up a fully specified Url to your own favicon
    */
   "favicon": "${FAVICON:favicon.ico}",
-
   /*
    * Skin name.
    *
@@ -88,7 +86,6 @@
    *               become the default in Etherpad 2.0
    */
   "skinName": "${SKIN_NAME:colibris}",
-
   /*
    * Skin Variants
    *
@@ -114,7 +111,6 @@
    * a max-width of 900px).
    */
   "skinVariants": "${SKIN_VARIANTS:super-light-toolbar super-light-editor light-background}",
-
   /*
    * IP and port which Etherpad should bind at.
    *
@@ -127,14 +123,12 @@
    */
   "ip": "${IP:0.0.0.0}",
   "port": "${PORT:9001}",
-
   /*
    * Option to hide/show the settings.json in admin page.
    *
    * Default option is set to true
    */
   "showSettingsInAdminPage": "${SHOW_SETTINGS_IN_ADMIN_PAGE:true}",
-
   /*
    * Node native SSL support
    *
@@ -142,7 +136,6 @@
    * Make sure to have the minimum and correct file access permissions set so
    * that the Etherpad server can access them
    */
-
   /*
   "ssl" : {
             "key"  : "/path-to-your/epl-server.key",
@@ -150,7 +143,6 @@
             "ca": ["/path-to-your/epl-intermediate-cert1.crt", "/path-to-your/epl-intermediate-cert2.crt"]
           },
   */
-
   /*
    * The type of the database.
    *
@@ -168,12 +160,10 @@
    * For a complete list of the supported drivers, please refer to:
    * https://www.npmjs.com/package/ueberdb2
    */
-
   //  "dbType": "dirty",
   //  "dbSettings": {
   //    "filename": "var/dirty.db"
   //  },
-
   "dbType": "${DB_TYPE:dirty}",
   "dbSettings": {
     "host": "${DB_HOST}",
@@ -192,13 +182,11 @@
       }
     }
   },
-
   /*
    * An Example of MySQL Configuration (commented out).
    *
    * See: https://github.com/ether/etherpad-lite/wiki/How-to-use-Etherpad-Lite-with-MySQL
    */
-
   /*
   "dbType" : "mysql",
   "dbSettings" : {
@@ -210,7 +198,6 @@
     "charset":  "utf8mb4"
   },
   */
-
   /*
    * The default text of a pad
    */
@@ -233,7 +220,6 @@
     "chatAndUsers": "${PAD_OPTIONS_CHAT_AND_USERS:false}",
     "lang": "${PAD_OPTIONS_LANG:en-gb}"
   },
-
   /*
    * Pad Shortcut Keys
    */
@@ -261,18 +247,15 @@
     "pageUp": true,
     "pageDown": true
   },
-
   /*
    * Should we suppress errors from being visible in the default Pad Text?
    */
   "suppressErrorsInPadText": false,
-
   /*
    * If this option is enabled, a user must have a session to access pads.
    * This effectively allows only group pads to be accessed.
    */
   "requireSession": false,
-
   /*
    * Users may edit pads but not create new ones.
    *
@@ -280,13 +263,11 @@
    * This applies both to group pads and regular pads.
    */
   "editOnly": false,
-
   /*
    * If set to true, those users who have a valid session will automatically be
    * granted access to password protected pads.
    */
   "sessionNoPassword": false,
-
   /*
    * If true, all css & js will be minified before sending to the client.
    *
@@ -294,7 +275,6 @@
    * to debug the javascript/css
    */
   "minify": true,
-
   /*
    * How long may clients use served javascript code (in seconds)?
    *
@@ -302,7 +282,6 @@
    * Set to 0 to disable caching.
    */
   "maxAge": 0, // 60 * 60 * 6 = 6 hours
-
   /*
    * Absolute path to the Abiword executable.
    *
@@ -311,7 +290,6 @@
    * import/exports.
    */
   "abiword": null,
-
   /*
    * This is the absolute path to the soffice executable.
    *
@@ -319,7 +297,6 @@
    * Setting it to null disables LibreOffice exporting.
    */
   "soffice": null,
-
   /*
    * Path to the Tidy executable.
    *
@@ -327,25 +304,21 @@
    * Setting it to null disables Tidy.
    */
   "tidyHtml": null,
-
   /*
    * Allow import of file types other than the supported ones:
    * txt, doc, docx, rtf, odt, html & htm
    */
   "allowUnknownFileEnds": true,
-
   /*
    * This setting is used if you require authentication of all users.
    *
    * Note: "/admin" always requires authentication.
    */
   "requireAuthentication": false,
-
   /*
    * Require authorization by a module, or a user with is_admin set, see below.
    */
   "requireAuthorization": false,
-
   /*
    * When you use NGINX or another proxy/load-balancer set this to true.
    *
@@ -356,7 +329,6 @@
    * instead of the reverse proxy's IP.
    */
   "trustProxy": "${TRUST_PROXY:true}",
-
   /*
    * Settings controlling the session cookie issued by Etherpad.
    */
@@ -374,12 +346,10 @@
      */
     "sameSite": "Lax"
   },
-
   /*
    * Privacy: disable IP logging
    */
   "disableIPlogging": false,
-
   /*
    * Time (in seconds) to automatically reconnect pad when a "Force reconnect"
    * message is shown to user.
@@ -387,7 +357,6 @@
    * Set to 0 to disable automatic reconnection.
    */
   "automaticReconnectionTimeout": 0,
-
   /*
    * By default, when caret is moved out of viewport, it scrolls the minimum
    * height needed to make this line visible.
@@ -406,19 +375,16 @@
       "editionAboveViewport": 0,
       "editionBelowViewport": 0
     },
-
     /*
      * Time (in milliseconds) used to animate the scroll transition.
      * Set to 0 to disable animation
      */
     "duration": 0,
-
     /*
      * Flag to control if it should scroll when user places the caret in the
      * last line of the viewport
      */
     "scrollWhenCaretIsInTheLastLineOfViewport": false,
-
     /*
      * Percentage of viewport height to be additionally scrolled when user
      * presses arrow up in the line of the top of the viewport.
@@ -427,7 +393,6 @@
      */
     "percentageToScrollWhenUserPressesArrowUp": 0
   },
-
   /*
    * Users for basic authentication.
    *
@@ -438,11 +403,9 @@
    *          If you want to mitigate this, please install ep_hash_auth and
    *          follow the section "secure your installation" in README.md
    */
-
   "ep_auth_author": {
     "prefix": "author/"
   },
-
   "users": {
     "admin": {
       // 1) "password" can be replaced with "hash" if you install ep_hash_auth
@@ -462,12 +425,14 @@
       "is_admin": false
     }
   },
-
   /*
    * Restrict socket.io transport methods
    */
-  "socketTransportProtocols": ["xhr-polling", "jsonp-polling", "htmlfile"],
-
+  "socketTransportProtocols": [
+    "xhr-polling",
+    "jsonp-polling",
+    "htmlfile"
+  ],
   "socketIo": {
     /*
      * Maximum permitted client message size (in bytes). All messages from
@@ -478,23 +443,19 @@
      */
     "maxHttpBufferSize": 100000
   },
-
   /*
    * Allow Load Testing tools to hit the Etherpad Instance.
    *
    * WARNING: this will disable security on the instance.
    */
   "loadTest": false,
-
   /*
    * Disable indentation on new line when previous line ends with some special
    * chars (':', '[', '(', '{')
    */
-
   /*
   "indentationOnNewLine": false,
   */
-
   /*
    * From Etherpad 1.8.3 onwards, import and export of pads is always rate
    * limited.
@@ -507,11 +468,9 @@
   "importExportRateLimiting": {
     // duration of the rate limit window (milliseconds)
     "windowMs": 1000,
-
     // maximum number of requests per IP to allow during the rate limit window
     "max": 20
   },
-
   /*
    * From Etherpad 1.8.3 onwards, the maximum allowed size for a single imported
    * file is always bounded.
@@ -519,7 +478,6 @@
    * File size is specified in bytes. Default is 50 MB.
    */
   "importMaxFileSize": 52428800, // 50 * 1024 * 1024
-
   /*
    * From Etherpad 1.8.3 onwards import was restricted to authors who had
    * content within the pad.
@@ -531,7 +489,6 @@
    * can already trust each user.
    */
   "allowAnyoneToImport": false,
-
   /*
    * From Etherpad 1.9.0 onwards, when Etherpad is in production mode commits from individual users are rate limited
    *
@@ -543,46 +500,58 @@
   "commitRateLimiting": {
     // duration of the rate limit window (seconds)
     "duration": 1,
-
     // maximum number of chanes per IP to allow during the rate limit window
     "points": 99999999999999999999
   },
-
   /*
    * Toolbar buttons configuration.
    *
    * Uncomment to customize.
    */
-
   "toolbar": {
     "left": [
-      ["bold", "italic", "underline"], //, "strikethrough"
-      ["orderedlist", "unorderedlist"] // "indent", "outdent"
+      [
+        "bold",
+        "italic",
+        "underline"
+      ], //, "strikethrough"
+      [
+        "orderedlist",
+        "unorderedlist"
+      ] // "indent", "outdent"
       // ["undo", "redo"]
       // ["clearauthorship"]
     ],
     "right": [
-      ["timeslider", "savedrevision"], //"importexport",
-      ["settings", "embed"]
+      [
+        "timeslider",
+        "savedrevision"
+      ], //"importexport",
+      [
+        "settings",
+        "embed"
+      ]
       //["showusers"]
     ],
-    "timeslider": [["timeslider_export", "timeslider_returnToPad"]]
+    "timeslider": [
+      [
+        "timeslider_export",
+        "timeslider_returnToPad"
+      ]
+    ]
   },
-
   /*
    * Expose Etherpad version in the web interface and in the Server http header.
    *
    * Do not enable on production machines.
    */
   "exposeVersion": "${EXPOSE_VERSION:false}",
-
   /*
    * The log level we are using.
    *
    * Valid values: DEBUG, INFO, WARN, ERROR
    */
   "loglevel": "${LOGLEVEL:INFO}",
-
   /*
    * Logging configuration. See log4js documentation for further information:
    * https://github.com/nomiddlename/log4js-node
@@ -595,7 +564,6 @@
         "type": "console"
         //, "category": "access"// only logs pad access
       }
-
       /*
       , { "type": "file"
       , "filename": "logs.log"
@@ -604,7 +572,6 @@
       //, "category": "test" // only log a specific category
         }
       */
-
       /*
       , { "type": "logLevelFilter"
         , "level": "warn" // filters out all log messages that have a lower level than "error"
@@ -612,7 +579,6 @@
           {  Use whatever appender you want here  }
         }
       */
-
       /*
       , { "type": "logLevelFilter"
         , "level": "error" // filters out all log messages that have a lower level than "error"
@@ -667,7 +633,13 @@
       "bucket": "${MEDIA_BUCKET_NAME}",
       "baseFolder": "${FOLDER_PATH:./}"
     },
-    "fileTypes": ["jpeg", "jpg", "bmp", "gif", "png"],
+    "fileTypes": [
+      "jpeg",
+      "jpg",
+      "bmp",
+      "gif",
+      "png"
+    ],
     "maxFileSize": 50000000
   },
   "ep_insert_media": {
@@ -700,29 +672,31 @@
     ],
     "maxFileSize": 50000000
   },
-    "ep_wrtc_heading": {
-      "socketAddress": "https://ws-democracy.docs.plus",
-      "video": {
-        "sizes": {
-          "small": 130,
-          "large": 260
-        }
-      },
-      "videoChatLimit": 20,
-      "iceServers": [
-        {
-          "urls": [ 
-            "stun:coturn.docs.plus:443"
-          ]
-        },
-        {
-          "urls": ["turn:coturn.docs.plus:443"],
-          "credential": "BgKvRyH00uVq7faAaRJKp7y8Hvk=",
-          "username": "1703144535"
-        }
-      ]
+  "ep_wrtc_heading": {
+    "useEtherpadSocket": false,
+    "socketAddress": "https://ws.docs.plus",
+    "video": {
+      "sizes": {
+        "small": 130,
+        "large": 260
+      }
     },
-
+    "videoChatLimit": 7,
+    "iceServers": [
+      {
+        "urls": [
+          "stun:coturn.docs.plus:443"
+        ]
+      },
+      {
+        "urls": [
+          "turn:coturn.docs.plus:443"
+        ],
+        "credential": "BgKvRyH00uVq7faAaRJKp7y8Hvk=",
+        "username": "1703144535"
+      }
+    ]
+  },
   /* Override any strings found in locale directories */
   "customLocaleStrings": {}
 }
