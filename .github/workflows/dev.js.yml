@@ -27,7 +27,7 @@ jobs:
       run: >
         npm install --no-save --legacy-peer-deps
         ep_adminpads2
-        https://github.com/samirsayyad/ep_bottom_chat_bar
+        https://github.com/samirsayyad/ep_rocketchat
         https://github.com/ether/ep_comments_page
         https://github.com/ether/ep_cursortrace
         https://github.com/samirsayyad/ep_custom_header_message
@@ -64,3 +64,6 @@ jobs:
       BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
+      ROCKET_CHAT_ADMIN_USERID : ${{secrets.ROCKET_CHAT_ADMIN_USERID}}
+      ROCKET_CHAT_ADMIN_TOKEN : ${{secrets.ROCKET_CHAT_ADMIN_TOKEN}}
+

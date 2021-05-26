@@ -723,5 +723,12 @@
   },
 
   /* Override any strings found in locale directories */
-  "customLocaleStrings": {}
+  "customLocaleStrings": {},
+  "ep_rocketchat": {
+    "protocol": "https",
+    "host" :  "chat.docs.plus",
+    "port" :443,
+    "userId" : "${ROCKET_CHAT_ADMIN_USERID:null}" ,
+    "token" : "${ROCKET_CHAT_ADMIN_TOKEN:null}"  
+  }
 }
