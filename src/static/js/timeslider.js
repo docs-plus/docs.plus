@@ -40,8 +40,8 @@ const init = () => {
 
     // get the padId out of the url
     const urlParts = document.location.pathname.split('/');
-    // padId = decodeURIComponent(urlParts[urlParts.length - 2]);
-    padId = decodeURIComponent('democracy');
+    padId = decodeURIComponent(urlParts[urlParts.length - 2]);
+    // padId = decodeURIComponent('democracy');
 
     // set the title
     document.title = `${padId.replace(/_+/g, ' ')} | ${document.title}`;

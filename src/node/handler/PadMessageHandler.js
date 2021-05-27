@@ -223,7 +223,7 @@ exports.handleMessage = async (socket, message) => {
     padId = await readOnlyManager.getPadId(padId);
   }
 
-  padId = 'democracy'
+  // padId = 'democracy'
 
   const {session: {user} = {}} = socket.client.request;
   const {accessStatus, authorID} =

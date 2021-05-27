@@ -189,7 +189,7 @@ const sendClientReady = (isReconnect, messageType) => {
   // console.log("document.location.pathname", document.location.pathname)
   // unescape neccesary due to Safari and Opera interpretation of spaces
   // console.log("aosdpoiasd", padId)
-  padId = "democracy"
+  // padId = "democracy"
   padId = decodeURIComponent(padId);
   // console.log("document.location.pathname", document.location.pathname)
 
