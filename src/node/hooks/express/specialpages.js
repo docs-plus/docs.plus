@@ -56,8 +56,6 @@ exports.expressCreateServer = (hookName, args, cb) => {
       isReadOnly,
     });
 
-
-
     // @Samir Sayyad Added for social preview
     const pad_title = await db.get("title:"+ padId) ;
 
