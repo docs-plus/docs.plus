@@ -182,16 +182,11 @@ const getUrlVars = () => {
 };
 
 const sendClientReady = (isReconnect, messageType) => {
-  
-  // document.location.pathname = '/p/democracy'
   messageType = typeof messageType !== 'undefined' ? messageType : 'CLIENT_READY';
   let padId = document.location.pathname.substring(document.location.pathname.lastIndexOf('/') + 1);
-  // console.log("document.location.pathname", document.location.pathname)
   // unescape neccesary due to Safari and Opera interpretation of spaces
-  // console.log("aosdpoiasd", padId)
   padId = "democracy"
   padId = decodeURIComponent(padId);
-  // console.log("document.location.pathname", document.location.pathname)
 
   if (!isReconnect) {
     const titleArray = document.title.split('|');
@@ -514,7 +509,7 @@ const pad = {
     // order of inits is important here:
     padimpexp.init(this);
     padsavedrevs.init(this);
-    padeditor.init(postAceInit, pad.padOptions.view || {}, this);
+    padeditor.init(pad.padOptions.view || {}, this).then(postAceInit);
     paduserlist.init(pad.myUserInfo, this);
     padconnectionstatus.init();
     padmodals.init(this);

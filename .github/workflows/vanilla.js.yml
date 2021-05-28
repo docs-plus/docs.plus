@@ -12,7 +12,7 @@ on:
     
 jobs:
   build:
-    runs-on: docs.plus
+    runs-on: vanilla.docs.plus
     strategy:
       matrix:
         node-version: [12.x]
