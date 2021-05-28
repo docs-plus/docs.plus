@@ -283,11 +283,13 @@ const Ace2Editor = function () {
     while (tmp.firstChild) innerDocument.head.appendChild(tmp.firstChild);
 
     // <body> tag
-    innerDocument.body.id = 'innerdocbody';
-    innerDocument.body.classList.add('innerdocbody');
-    innerDocument.body.setAttribute('role', 'application');
-    innerDocument.body.setAttribute('spellcheck', 'false');
-    innerDocument.body.appendChild(innerDocument.createTextNode('\u00A0')); // &nbsp;
+    const virInnerDocument = innerDocument.createElement("div")
+    virInnerDocument.setAttribute('id', 'innerdocbody')
+    virInnerDocument.classList.add('innerdocbody');
+    virInnerDocument.setAttribute('role', 'application');
+    virInnerDocument.setAttribute('spellcheck', 'false');
+    virInnerDocument.appendChild(innerDocument.createTextNode('\u00A0')); // &nbsp;
+    innerDocument.body.appendChild(virInnerDocument)
 
     debugLog('Ace2Editor.init() waiting for require kernel load');
     await eventFired(requireKernel, 'load');
