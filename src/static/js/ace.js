@@ -283,6 +283,7 @@ const Ace2Editor = function () {
     while (tmp.firstChild) innerDocument.head.appendChild(tmp.firstChild);
 
     // <body> tag
+    // @Hossein
     const virInnerDocument = innerDocument.createElement("div")
     virInnerDocument.setAttribute('id', 'innerdocbody')
     virInnerDocument.classList.add('innerdocbody');
