@@ -730,5 +730,7 @@
     "port" :443,
     "userId" : "${ROCKET_CHAT_ADMIN_USERID:null}" ,
     "token" : "${ROCKET_CHAT_ADMIN_TOKEN:null}"  
-  }
+  },
+  "baseUrl" : "https://stage.docs.plus"
+
 }
