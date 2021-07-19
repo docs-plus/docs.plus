@@ -34,7 +34,7 @@ body {
 }
 #editorcontainerbox #editorcontainer iframe {
   width: 100%;
-  height: 72%  !important;
+  height: 72% ;
 }
 #editorcontainerbox .sticky-container { /* container for #users, #chat, #toc (table of content) and so on... */
   display: flex;
