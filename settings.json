@@ -562,8 +562,7 @@
       // ["clearauthorship"]
     ],
     "right": [
-      ["timeslider", "savedrevision"], //"importexport",
-      ["settings", "embed"]
+      ["timeslider", "savedrevision","settings", "embed"] //"importexport",
       //["showusers"]
     ],
     "timeslider": [["timeslider_export", "timeslider_returnToPad"]]
