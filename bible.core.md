@@ -35,6 +35,8 @@ modify      ~\src\templates\pad.html                    # tag by @Samir change l
 modify      ~\src\static\js\pad.js                      # tag by @Samir - change error to reconnect and socket config
 add:        ~\src\templates\pad.html                    # GA code @Samir
 modify      ~\src\static\js\domline.js                  # @Samir - commented because want to process on copied external link
+modify      ~\src\node\utils\toolbar.js                 # @Samir - toolbar divider changes
+
 ```
 
 >NOTE: In some cases the `modify` must be evaluated! Because in that case some cases may be broken!

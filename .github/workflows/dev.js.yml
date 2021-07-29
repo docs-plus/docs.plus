@@ -27,21 +27,21 @@ jobs:
       run: >
         npm install --no-save --legacy-peer-deps
         ep_adminpads2
-        https://github.com/samirsayyad/ep_rocketchat#2b0150b
+        https://github.com/samirsayyad/ep_rocketchat#1e20de5
         https://github.com/ether/ep_comments_page
         https://github.com/ether/ep_cursortrace
         https://github.com/samirsayyad/ep_custom_header_message
         https://github.com/samirsayyad/ep_docs_plus_customize#c68bc28
-        https://github.com/samirsayyad/ep_full_hyperlinks#48e24d1
-        https://github.com/samirsayyad/ep_headings2#24494f2
+        https://github.com/samirsayyad/ep_full_hyperlinks#1eb4ecd
+        https://github.com/samirsayyad/ep_headings2#76e3f79
         ep_hide_line_numbers
-        https://github.com/samirsayyad/ep_insert_media#35b26c5
+        https://github.com/samirsayyad/ep_insert_media#eecbc98
         https://github.com/samirsayyad/ep_loading_pad#9ae42cd
         ep_monetization
         https://github.com/samirsayyad/ep_profile_modal#7222aac
         ep_remove_embed
         https://github.com/samirsayyad/ep_set_title_on_pad#b1688b0
-        https://github.com/samirsayyad/ep_table_of_contents#6c0a475
+        https://github.com/samirsayyad/ep_table_of_contents#8ec1454
         https://github.com/HMarzban/ep_wrtc_heading#ee3245e
         # https://github.com/ether/ep_sticky_attributes.git
 
