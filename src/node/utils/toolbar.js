@@ -152,7 +152,7 @@ _.extend(SelectButton.prototype, Button.prototype, {
 
 const Separator = function () {};
 Separator.prototype.render = function () {
-  return tag('li', {class: 'separator'});
+  return tag('li', {class: 'menuDivider'}); // @Samir changes for toolbar
 };
 
 module.exports = {

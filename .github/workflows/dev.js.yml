@@ -27,23 +27,23 @@ jobs:
       run: >
         npm install --no-save --legacy-peer-deps
         ep_adminpads2
-        https://github.com/samirsayyad/ep_bottom_chat_bar
+        https://github.com/samirsayyad/ep_rocketchat#83161a3
         https://github.com/ether/ep_comments_page
         https://github.com/ether/ep_cursortrace
         https://github.com/samirsayyad/ep_custom_header_message
         https://github.com/samirsayyad/ep_docs_plus_customize#c68bc28
-        https://github.com/samirsayyad/ep_full_hyperlinks#ce24888
-        https://github.com/samirsayyad/ep_headings2#f88ac17
+        https://github.com/samirsayyad/ep_full_hyperlinks#1eb4ecd
+        https://github.com/samirsayyad/ep_headings2#76e3f79
         ep_hide_line_numbers
-        https://github.com/samirsayyad/ep_insert_media#35b26c5
-        https://github.com/samirsayyad/ep_loading_pad#84a888f
+        https://github.com/samirsayyad/ep_insert_media#eecbc98
+        https://github.com/samirsayyad/ep_loading_pad#9ae42cd
         ep_monetization
-        https://github.com/samirsayyad/ep_profile_modal#d8d4112
+        https://github.com/samirsayyad/ep_profile_modal#7222aac
         ep_remove_embed
         https://github.com/samirsayyad/ep_set_title_on_pad#b1688b0
-        https://github.com/samirsayyad/ep_table_of_contents#326ccfc
+        https://github.com/samirsayyad/ep_table_of_contents#2e4b676
         https://github.com/HMarzban/ep_wrtc_heading#ee3245e
-        https://github.com/ether/ep_sticky_attributes.git
+        # https://github.com/ether/ep_sticky_attributes.git
 
     - name: Install all dependencies and symlink for ep_etherpad-lite
       run: src/bin/installDeps.sh
@@ -64,3 +64,6 @@ jobs:
       BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
+      ROCKET_CHAT_ADMIN_USERID : ${{secrets.ROCKET_CHAT_ADMIN_USERID}}
+      ROCKET_CHAT_ADMIN_TOKEN : ${{secrets.ROCKET_CHAT_ADMIN_TOKEN}}
+
