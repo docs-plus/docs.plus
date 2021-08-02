@@ -35,6 +35,9 @@ module.exports = {
       ACCESS_KEY_ID : `${process.env.ACCESS_KEY_ID}`,
       ACCESS_KEY_SECRET : `${process.env.ACCESS_KEY_SECRET}`,
       MEDIA_BUCKET_NAME : `${process.env.MEDIA_BUCKET_NAME}`,
+      ROCKET_CHAT_ADMIN_USERID : `${process.env.ROCKET_CHAT_ADMIN_USERID}`,
+      ROCKET_CHAT_ADMIN_TOKEN : `${process.env.ROCKET_CHAT_ADMIN_TOKEN}`,
+
     },
   },
   {

@@ -1305,9 +1305,39 @@ function Ace2Inner(editorInfo, cssManagers) {
   const isDefaultLineAttribute =
       (aname) => AttributeManager.DEFAULT_LINE_ATTRIBUTES.indexOf(aname) !== -1;
 
+  // heading hierarchy
+  // By @Hossein
+  let lastHtag;
+  let _nextHeaderId = 1;
+  const htags = ["H1", "H2", "H3", "H4", "H5", "H6"]
+  const uniqueHeaderId = () => _nextHeaderId++;
+  const walkToClosestNextHeader = (node, func) => {
+    if(node&&node.nextSibling) {
+      node = node.nextSibling;
+      if(htags.includes(node.firstChild.nodeName)) {
+        // top.console.log("add new classs")
+        node.classList.add("last")
+        return
+      };
+      func(node);
+      walkToClosestNextHeader(node, func);
+    }
+  }
+
+  let hParentIndex = 0;
+  let hSectionId = undefined;
+  let hTitleId = undefined;
+  let hTitleIndex = undefined;
+
+  let ltestHsId = {"0": "", "1": "", "2": "", "3": "", "4": "", "5": "", "preserve": ""}
+  let currentHIndex = undefined;
+
+  // By @Hossein    
   const insertDomLines = (nodeToAddAfter, infoStructs) => {
     let lastEntry;
     let lineStartOffset;
+    let initialInsert = false
+    infoStructs.length === 1 ? initialInsert = false : initialInsert = true;
     if (infoStructs.length < 1) return;
 
     infoStructs.forEach((info) => {
@@ -1337,10 +1367,94 @@ function Ace2Inner(editorInfo, cssManagers) {
       p2.mark('addLine');
       info.prepareForAdd();
       entry.lineMarker = info.lineMarker;
-      if (!nodeToAddAfter) {
-        root.insertBefore(node, root.firstChild);
-      } else {
-        root.insertBefore(node, nodeToAddAfter.nextSibling);
+      try {
+        //======================================//
+        //====== Header Categorizer v2.0 =======//
+        //======================================//
+
+        // top.console.log(node, nodeToAddAfter, hasHtagbefor , node.attributes,node.attributes.hasOwnProperty('tag'))
+        // by defualt assign first child nodeName as "tag" attribute
+        node.setAttribute("tag", node.firstChild.nodeName.toLowerCase());
+
+        if (initialInsert) {
+
+          if (htags.includes(node.firstChild.nodeName)) {
+            currentHIndex = htags.indexOf(node.firstChild.nodeName);
+            hSectionId = node.firstChild.getAttribute("data-id")
+            if(!hTitleId) hTitleId = hSectionId
+  
+            if(!ltestHsId.preserve) {
+              ltestHsId.preserve = currentHIndex
+              ltestHsId[currentHIndex] = hSectionId
+            }
+  
+            if(Math.abs(ltestHsId.preserve - currentHIndex) >= 0 || ltestHsId.preserve === currentHIndex ){
+              ltestHsId[currentHIndex] =  hSectionId
+              ltestHsId.preserve = currentHIndex
+            }
+            // set First H text as a title index
+            if(hTitleIndex == undefined) hTitleIndex = currentHIndex
+  
+            if(currentHIndex === hTitleIndex) {
+              hTitleId = hSectionId
+            }
+  
+            hParentIndex = currentHIndex;
+          }
+  
+          node.setAttribute("titleId", hTitleId)  
+          node.setAttribute("sectionId", hSectionId);
+          ltestHsId[0]&&node.setAttribute("lrh0", ltestHsId[0])    
+          ltestHsId[1]&&node.setAttribute("lrh1", ltestHsId[1])    
+          ltestHsId[2]&&node.setAttribute("lrh2", ltestHsId[2])    
+          ltestHsId[3]&&node.setAttribute("lrh3", ltestHsId[3])    
+          ltestHsId[4]&&node.setAttribute("lrh4", ltestHsId[4])    
+          ltestHsId[5]&&node.setAttribute("lrh5", ltestHsId[5])    
+          ltestHsId[6]&&node.setAttribute("lrh6", ltestHsId[6])   
+        } 
+
+        // If the node is H tags
+        // then assign uniqe header ID
+        if(htags.includes(node.firstChild.nodeName)) {
+          // if it's a h tags
+          // node.classList.add("first")
+          node.setAttribute("node", "first")
+          nodeToAddAfter&&nodeToAddAfter.setAttribute("node", "last")
+        } else {
+          // if it's the last child of secction and the next node is h tag
+          if(
+            nodeToAddAfter&&nodeToAddAfter.nextSibling&&htags.map(x=>x.toLowerCase()).includes(nodeToAddAfter.nextSibling.getAttribute('tag')) ||
+            (nodeToAddAfter&&nodeToAddAfter.nextSibling&&nodeToAddAfter.nextSibling.nextSibling&&htags.map(x=>x.toLowerCase()).includes(nodeToAddAfter.nextSibling.nextSibling.getAttribute('tag')))
+          ) {
+            // top.console.log("yup this is wrong!")
+            nodeToAddAfter.removeAttribute('node')
+            node.setAttribute("node", "last")
+          }
+        }
+
+
+        
+        if (!nodeToAddAfter) {
+          root.insertBefore(node, root.firstChild);
+        } else {
+          root.insertBefore(node, nodeToAddAfter.nextSibling);
+
+          if(!initialInsert){
+            node.setAttribute("sectionId", nodeToAddAfter.getAttribute('sectionId'));
+            node.setAttribute("titleId", nodeToAddAfter.getAttribute('titleId'));
+            node.setAttribute("lrh0", nodeToAddAfter.getAttribute('lrh0'));
+            node.setAttribute("lrh1", nodeToAddAfter.getAttribute('lrh1'));
+            node.setAttribute("lrh2", nodeToAddAfter.getAttribute('lrh2'));
+            node.setAttribute("lrh3", nodeToAddAfter.getAttribute('lrh3'));
+            node.setAttribute("lrh4", nodeToAddAfter.getAttribute('lrh4'));
+            node.setAttribute("lrh5", nodeToAddAfter.getAttribute('lrh5'));
+            node.setAttribute("lrh6", nodeToAddAfter.getAttribute('lrh6'));
+          }
+
+        }
+
+      } catch (error) {
+        top.console.error("[view]:Header Catagorizer, ", error)
       }
       nodeToAddAfter = node;
       info.notifyAdded();

@@ -1,8 +1,7 @@
 #toc {
-  padding: 20px 20px 10px 10px !important;
+  /* padding: 0px 20px 10px 15px !important; */
   min-width: 146px !important;
   background-color: transparent !important;
-  border: none !important;
   order: -2;
 }
 

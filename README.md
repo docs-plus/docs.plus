@@ -3,8 +3,6 @@
 [![Open Source? Yes!](https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github)](https://github.com/nwspk/docs.plus)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/nwspk/docs.plus/compare)
 [![All Contributors](https://img.shields.io/badge/all_contributors-4-blue.svg)](#contributors-)
-[![Slack Status](https://slack.babeljs.io/badge.svg)](docsplus.slack.com)
-
 
 
 # 📚 Docs.plus

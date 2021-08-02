@@ -133,8 +133,9 @@ domline.createDomLine = (nonEmpty, doesWrap, optBrowser, optDocument) => {
     let simpleTags = null;
     if (cls.indexOf('url') >= 0) {
       cls = cls.replace(/(^| )url:(\S+)/g, (x0, space, url) => {
-        href = url;
-        return `${space}url`;
+        //href = url; //@Samir - commented because want to process on copied external link
+        //return `${space}url`; //@Samir - commented because want to process on copied external link
+        return ``; //@Samir 
       });
     }
     if (cls.indexOf('tag') >= 0) {

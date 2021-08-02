@@ -523,14 +523,7 @@
       // ["clearauthorship"]
     ],
     "right": [
-      [
-        "timeslider",
-        "savedrevision"
-      ], //"importexport",
-      [
-        "settings",
-        "embed"
-      ]
+      ["timeslider", "savedrevision","settings", "embed"] //"importexport",
       //["showusers"]
     ],
     "timeslider": [
@@ -698,5 +691,15 @@
     ]
   },
   /* Override any strings found in locale directories */
-  "customLocaleStrings": {}
+  "customLocaleStrings": {},
+  "ep_rocketchat": {
+    "baseUrl" : "https://stage.docs.plus",
+    "protocol": "https",
+    "host" :  "chat.docs.plus",
+    "port" :443,
+    "userId" : "${ROCKET_CHAT_ADMIN_USERID:null}" ,
+    "token" : "${ROCKET_CHAT_ADMIN_TOKEN:null}"  
+  }
+
+
 }

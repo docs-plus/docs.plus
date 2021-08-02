@@ -38,3 +38,14 @@ jobs:
       BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
+  deleteOldBackupsOfBucket:
+    runs-on: backup-runner
+    needs: upload
+    steps:
+      - run: rclone delete --min-age 7d --dry-run space:$BACKUP_BUCKET_NAME --s3-access-key-id=$ACCESS_KEY_ID --s3-secret-access-key=$ACCESS_KEY_SECRET --s3-endpoint=$BUCKET_S3_SERVER -vv
+      - run: rclone rmdirs --min-age 7d --dry-run space:$BACKUP_BUCKET_NAME --s3-access-key-id=$ACCESS_KEY_ID --s3-secret-access-key=$ACCESS_KEY_SECRET --s3-endpoint=$BUCKET_S3_SERVER -vv
+    env:
+      BACKUP_BUCKET_NAME : ${{secrets.BACKUP_BUCKET_NAME}}
+      BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
+      ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
+      ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
