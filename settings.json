@@ -697,7 +697,7 @@
     "protocol": "https",
     "host" :  "chat.docs.plus",
     "port" :443,
-    "userId" : "${ROCKET_CHAT_ADMIN_USERID:null}" ,
+    "userId" : "${ROCKET_CHAT_ADMIN_USERID_DEMOCRACY:null}" ,
     "token" : "${ROCKET_CHAT_ADMIN_TOKEN_DEMOCRACY:null}"  
   }
 
