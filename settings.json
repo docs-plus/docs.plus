@@ -693,7 +693,7 @@
   /* Override any strings found in locale directories */
   "customLocaleStrings": {},
   "ep_rocketchat": {
-    "baseUrl" : "https://stage.docs.plus",
+    "baseUrl" : "https://democracyhandbook.org.uk",
     "protocol": "https",
     "host" :  "chat.docs.plus",
     "port" :443,
