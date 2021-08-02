@@ -29,7 +29,6 @@ jobs:
       run: >
         npm install --no-save --legacy-peer-deps
         ep_adminpads2
-         ep_adminpads2
         https://github.com/samirsayyad/ep_rocketchat#70ba8d0
         https://github.com/ether/ep_comments_page
         https://github.com/ether/ep_cursortrace
