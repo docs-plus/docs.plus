@@ -65,4 +65,6 @@ jobs:
       ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
       DB_TYPE : postgres
       DB_PORT : ${{secrets.PG_PORT}}
-      PORT : 9101,
+      PORT : 9101
+      ROCKET_CHAT_ADMIN_USERID : ${{secrets.ROCKET_CHAT_ADMIN_USERID}}
+      ROCKET_CHAT_ADMIN_TOKEN : ${{secrets.ROCKET_CHAT_ADMIN_TOKEN}}
