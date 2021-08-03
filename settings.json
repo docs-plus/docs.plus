@@ -695,7 +695,7 @@
   "ep_rocketchat": {
     "baseUrl" : "https://democracyhandbook.org.uk",
     "protocol": "https",
-    "host" :  "democracy-chat.docs.plus",
+    "host" :  "chat.democracyhandbook.org.uk",
     "port" :443,
     "userId" : "${ROCKET_CHAT_ADMIN_USERID_DEMOCRACY:null}" ,
     "token" : "${ROCKET_CHAT_ADMIN_TOKEN_DEMOCRACY:null}"  
