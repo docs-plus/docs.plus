@@ -39,8 +39,9 @@ const init = () => {
     if (typeof customStart === 'function') customStart(); // eslint-disable-line no-undef
 
     // get the padId out of the url
-    const urlParts = document.location.pathname.split('/');
-    padId = decodeURIComponent(urlParts[urlParts.length - 2]);
+    // const urlParts = document.location.pathname.split('/');
+    // padId = decodeURIComponent(urlParts[urlParts.length - 2]);
+    padId = clientVars.padId; // @Hossein
 
     // set the title
     document.title = `${padId.replace(/_+/g, ' ')} | ${document.title}`;
@@ -108,7 +109,8 @@ const fireWhenAllScriptsAreLoaded = [];
 
 const handleClientVars = (message) => {
   // save the client Vars
-  window.clientVars = message.data;
+  // window.clientVars = message.data;
+  clientVars = Object.assign(message.data, clientVars); //@Hossein
 
   // load all script that doesn't work without the clientVars
   BroadcastSlider = require('./broadcast_slider')

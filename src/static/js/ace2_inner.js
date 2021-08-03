@@ -1369,10 +1369,9 @@ function Ace2Inner(editorInfo, cssManagers) {
       entry.lineMarker = info.lineMarker;
       try {
         //======================================//
-        //====== Header Categorizer v2.0 =======//
+        //====== Header Categorizer v2.3 =======//
         //======================================//
 
-        // top.console.log(node, nodeToAddAfter, hasHtagbefor , node.attributes,node.attributes.hasOwnProperty('tag'))
         // by defualt assign first child nodeName as "tag" attribute
         node.setAttribute("tag", node.firstChild.nodeName.toLowerCase());
 
@@ -1383,15 +1382,26 @@ function Ace2Inner(editorInfo, cssManagers) {
             hSectionId = node.firstChild.getAttribute("data-id")
             if(!hTitleId) hTitleId = hSectionId
   
+            // if(!hPartId) hPartId = hSectionId;
+            // if(hPartIndex === undefined) hPartIndex = currentHIndex;
+  
             if(!ltestHsId.preserve) {
               ltestHsId.preserve = currentHIndex
               ltestHsId[currentHIndex] = hSectionId
             }
   
-            if(Math.abs(ltestHsId.preserve - currentHIndex) >= 0 || ltestHsId.preserve === currentHIndex ){
+            // top.console.log(
+            //   `${node.firstChild.nodeName}, ${ltestHsId.preserve} - ${currentHIndex} = ${Math.abs(ltestHsId.preserve - currentHIndex)}`,(Math.abs(ltestHsId.preserve - currentHIndex) > 0 ),
+            //   ltestHsId[currentHIndex],
+            //   ltestHsId,
+            //   {node}
+            // )
+  
+            if(Math.abs(ltestHsId.preserve - currentHIndex) > 0 || ltestHsId.preserve === currentHIndex ){
               ltestHsId[currentHIndex] =  hSectionId
               ltestHsId.preserve = currentHIndex
-            }
+            } 
+  
             // set First H text as a title index
             if(hTitleIndex == undefined) hTitleIndex = currentHIndex
   
@@ -1402,8 +1412,8 @@ function Ace2Inner(editorInfo, cssManagers) {
             hParentIndex = currentHIndex;
           }
   
-          node.setAttribute("titleId", hTitleId)  
           node.setAttribute("sectionId", hSectionId);
+          node.setAttribute("titleId", hTitleId)  
           ltestHsId[0]&&node.setAttribute("lrh0", ltestHsId[0])    
           ltestHsId[1]&&node.setAttribute("lrh1", ltestHsId[1])    
           ltestHsId[2]&&node.setAttribute("lrh2", ltestHsId[2])    
@@ -1417,7 +1427,6 @@ function Ace2Inner(editorInfo, cssManagers) {
         // then assign uniqe header ID
         if(htags.includes(node.firstChild.nodeName)) {
           // if it's a h tags
-          // node.classList.add("first")
           node.setAttribute("node", "first")
           nodeToAddAfter&&nodeToAddAfter.setAttribute("node", "last")
         } else {
@@ -1426,7 +1435,6 @@ function Ace2Inner(editorInfo, cssManagers) {
             nodeToAddAfter&&nodeToAddAfter.nextSibling&&htags.map(x=>x.toLowerCase()).includes(nodeToAddAfter.nextSibling.getAttribute('tag')) ||
             (nodeToAddAfter&&nodeToAddAfter.nextSibling&&nodeToAddAfter.nextSibling.nextSibling&&htags.map(x=>x.toLowerCase()).includes(nodeToAddAfter.nextSibling.nextSibling.getAttribute('tag')))
           ) {
-            // top.console.log("yup this is wrong!")
             nodeToAddAfter.removeAttribute('node')
             node.setAttribute("node", "last")
           }

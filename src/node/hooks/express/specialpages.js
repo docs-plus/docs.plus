@@ -6,12 +6,24 @@ const toolbar = require('../../utils/toolbar');
 const hooks = require('../../../static/js/pluginfw/hooks');
 const settings = require('../../utils/Settings');
 const webaccess = require('./webaccess');
+const padInfo = require('../../utils/nestedPad'); // @Hossein
 const db = require("../../db/DB");  // @Samir
+const minify = require('../../utils/Minify'); // @Hossein
 
 exports.expressCreateServer = (hookName, args, cb) => {
   // expose current stats
   args.app.get('/stats', (req, res) => {
     res.json(require('../../stats').toJSON());
+  });
+
+  // @Hossein
+  args.app.get(/(\/static\/plugins\/(.*))/ , function (req, res, next) 
+  {
+    const path = req.path.split("/");
+    const startPath = path.findIndex(path => path === "plugins");
+    const newPath = path.slice(startPath, path.length).join("/");
+    req.params.filename = newPath;
+    return minify.minify(req, res);
   });
 
   // serve index.html under /
@@ -44,12 +56,19 @@ exports.expressCreateServer = (hookName, args, cb) => {
     });
   });
 
+  // @Hossein
   // serve pad.html under /p
-  args.app.get('/p/:pad', async (req, res, next) => {
-    const padId = req.params.pad
+  args.app.get('/p/:pad*', async (req, res, next) => {
     // The below might break for pads being rewritten
-    const isReadOnly =
-        req.url.indexOf('/p/r.') === 0 || !webaccess.userCanModify(padId, req);
+    const isReadOnly = req.url.indexOf('/p/r.') === 0 || !webaccess.userCanModify(req.params.pad, req);
+
+    const {padId, padName, padView} = padInfo(req, isReadOnly);
+    req.params.pad = padId;
+
+    const staticRootAddress = req.path.split("/")
+      .filter(x=> x.length)
+      .map(path => "../")
+      .join("");
 
     hooks.callAll('padInitToolbar', {
       toolbar,
@@ -60,15 +79,26 @@ exports.expressCreateServer = (hookName, args, cb) => {
     const pad_title = await db.get("title:"+ padId) ;
 
     res.send(eejs.require('ep_etherpad-lite/templates/pad.html', {
-      meta : { title : (pad_title) ? pad_title :padId } ,
+      meta : { title : (pad_title) ? pad_title :req.params.pad } ,
+      padId,
+      padView,
+      padName,
+      staticRootAddress,
       req,
       toolbar,
       isReadOnly,
     }));
   });
 
+  // @Hossein
   // serve timeslider.html under /p/$padname/timeslider
-  args.app.get('/p/:pad/timeslider', (req, res, next) => {
+  args.app.get('/p/:pad*/timeslider', (req, res, next) => {
+    const {padId, padName} = padInfo(req, isReadOnly);
+    const staticRootAddress = req.path.split("/")
+    .filter(x=> x.length)
+    .map(path => "../")
+    .join("");
+
     hooks.callAll('padInitToolbar', {
       toolbar,
     });
@@ -76,6 +106,9 @@ exports.expressCreateServer = (hookName, args, cb) => {
     res.send(eejs.require('ep_etherpad-lite/templates/timeslider.html', {
       req,
       toolbar,
+      padId,
+      padName,
+      staticRootAddress
     }));
   });
 

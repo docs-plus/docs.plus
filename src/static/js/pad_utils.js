@@ -346,7 +346,7 @@ padutils.setupGlobalExceptionHandler = () => {
       }
 
       // send javascript errors to the server
-      $.post('../jserror', {
+      $.post(`${clientVars.staticRootAddress}jserror`, { //@Hossein
         errorInfo: JSON.stringify({
           errorId,
           type,
