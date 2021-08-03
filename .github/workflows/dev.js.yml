@@ -33,16 +33,17 @@ jobs:
         https://github.com/samirsayyad/ep_custom_header_message
         https://github.com/samirsayyad/ep_docs_plus_customize#c68bc28
         https://github.com/samirsayyad/ep_full_hyperlinks#1eb4ecd
-        https://github.com/samirsayyad/ep_headings2#76e3f79
+        https://github.com/samirsayyad/ep_headings2
         ep_hide_line_numbers
         https://github.com/samirsayyad/ep_insert_media#eecbc98
         https://github.com/samirsayyad/ep_loading_pad#9ae42cd
         ep_monetization
         https://github.com/samirsayyad/ep_profile_modal#7222aac
         ep_remove_embed
-        https://github.com/samirsayyad/ep_set_title_on_pad#b1688b0
+        https://github.com/samirsayyad/ep_set_title_on_pad#3d5340b
         https://github.com/samirsayyad/ep_table_of_contents#2a1f78b
-        https://github.com/HMarzban/ep_wrtc_heading#ee3245e
+        https://github.com/HMarzban/ep_headerview#6cdc089
+        https://github.com/HMarzban/ep_wrtc_heading#d7795e9
         # https://github.com/ether/ep_sticky_attributes.git
 
     - name: Install all dependencies and symlink for ep_etherpad-lite
