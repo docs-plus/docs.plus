@@ -1369,7 +1369,7 @@ function Ace2Inner(editorInfo, cssManagers) {
       entry.lineMarker = info.lineMarker;
       try {
         //======================================//
-        //====== Header Categorizer v2.3 =======//
+        //====== Header Categorizer v2.9 =======//
         //======================================//
 
         // by defualt assign first child nodeName as "tag" attribute
@@ -1414,13 +1414,13 @@ function Ace2Inner(editorInfo, cssManagers) {
   
           node.setAttribute("sectionId", hSectionId);
           node.setAttribute("titleId", hTitleId)  
-          ltestHsId[0]&&node.setAttribute("lrh0", ltestHsId[0])    
-          ltestHsId[1]&&node.setAttribute("lrh1", ltestHsId[1])    
-          ltestHsId[2]&&node.setAttribute("lrh2", ltestHsId[2])    
-          ltestHsId[3]&&node.setAttribute("lrh3", ltestHsId[3])    
-          ltestHsId[4]&&node.setAttribute("lrh4", ltestHsId[4])    
-          ltestHsId[5]&&node.setAttribute("lrh5", ltestHsId[5])    
-          ltestHsId[6]&&node.setAttribute("lrh6", ltestHsId[6])   
+          currentHIndex >= 0&&ltestHsId[0]&&node.setAttribute("lrh0", ltestHsId[0])    
+          currentHIndex >= 1&&ltestHsId[1]&&node.setAttribute("lrh1", ltestHsId[1])    
+          currentHIndex >= 2&&ltestHsId[2]&&node.setAttribute("lrh2", ltestHsId[2])    
+          currentHIndex >= 3&&ltestHsId[3]&&node.setAttribute("lrh3", ltestHsId[3])    
+          currentHIndex >= 4&&ltestHsId[4]&&node.setAttribute("lrh4", ltestHsId[4])    
+          currentHIndex >= 5&&ltestHsId[5]&&node.setAttribute("lrh5", ltestHsId[5])    
+          currentHIndex >= 6&&ltestHsId[6]&&node.setAttribute("lrh6", ltestHsId[6])    
         } 
 
         // If the node is H tags
@@ -1448,15 +1448,23 @@ function Ace2Inner(editorInfo, cssManagers) {
           root.insertBefore(node, nodeToAddAfter.nextSibling);
 
           if(!initialInsert){
+            const lrh0 = nodeToAddAfter.getAttribute('lrh0');
+            const lrh1 = nodeToAddAfter.getAttribute('lrh1');
+            const lrh2 = nodeToAddAfter.getAttribute('lrh2');
+            const lrh3 = nodeToAddAfter.getAttribute('lrh3');
+            const lrh4 = nodeToAddAfter.getAttribute('lrh4');
+            const lrh5 = nodeToAddAfter.getAttribute('lrh5');
+            const lrh6 = nodeToAddAfter.getAttribute('lrh6');
+  
             node.setAttribute("sectionId", nodeToAddAfter.getAttribute('sectionId'));
             node.setAttribute("titleId", nodeToAddAfter.getAttribute('titleId'));
-            node.setAttribute("lrh0", nodeToAddAfter.getAttribute('lrh0'));
-            node.setAttribute("lrh1", nodeToAddAfter.getAttribute('lrh1'));
-            node.setAttribute("lrh2", nodeToAddAfter.getAttribute('lrh2'));
-            node.setAttribute("lrh3", nodeToAddAfter.getAttribute('lrh3'));
-            node.setAttribute("lrh4", nodeToAddAfter.getAttribute('lrh4'));
-            node.setAttribute("lrh5", nodeToAddAfter.getAttribute('lrh5'));
-            node.setAttribute("lrh6", nodeToAddAfter.getAttribute('lrh6'));
+            lrh0&&node.setAttribute("lrh0", lrh0);
+            lrh1&&node.setAttribute("lrh1", lrh1);
+            lrh2&&node.setAttribute("lrh2", lrh2);
+            lrh3&&node.setAttribute("lrh3", lrh3);
+            lrh4&&node.setAttribute("lrh4", lrh4);
+            lrh5&&node.setAttribute("lrh5", lrh5);
+            lrh6&&node.setAttribute("lrh6", lrh6);
           }
 
         }
