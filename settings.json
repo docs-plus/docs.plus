@@ -695,7 +695,7 @@
   "ep_rocketchat": {
     "baseUrl" : "https://docs.plus",
     "protocol": "https",
-    "host" :  "chat.docs.plus",
+    "host" :  "ch.docs.plus",
     "port" :443,
     "userId" : "${ROCKET_CHAT_ADMIN_USERID:null}" ,
     "token" : "${ROCKET_CHAT_ADMIN_TOKEN:null}"  
