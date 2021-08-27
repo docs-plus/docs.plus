@@ -41,8 +41,8 @@ jobs:
         ep_remove_embed
         https://github.com/samirsayyad/ep_headings2#76e3f79
         https://github.com/samirsayyad/ep_table_of_contents#bbb6962
-        https://github.com/samirsayyad/ep_set_title_on_pad#3f61e83
-        https://github.com/HMarzban/ep_headerview#de42995
+        https://github.com/samirsayyad/ep_set_title_on_pad#9c1b5e1
+        https://github.com/HMarzban/ep_headerview#77c69a7
         # https://github.com/HMarzban/ep_wrtc_heading#d7f59c4
         # https://github.com/ether/ep_sticky_attributes.git
 
