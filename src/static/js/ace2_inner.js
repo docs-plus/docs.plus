@@ -1307,10 +1307,15 @@ function Ace2Inner(editorInfo, cssManagers) {
 
   // heading hierarchy
   // By @Hossein
-  let lastHtag;
-  let _nextHeaderId = 1;
   const htags = ["H1", "H2", "H3", "H4", "H5", "H6"]
-  const uniqueHeaderId = () => _nextHeaderId++;
+  let hSectionId = undefined;
+  let hTitleId = undefined;
+  let hTitleIndex = undefined;
+  let ltestHsId = {"0": "", "1": "", "2": "", "3": "", "4": "", "5": "", "preserve": ""}
+  let currentHIndex = undefined;
+  let initialInsert = false;
+  let hParentIndex = 0;
+  
   const walkToClosestNextHeader = (node, func) => {
     if(node&&node.nextSibling) {
       node = node.nextSibling;
@@ -1324,20 +1329,12 @@ function Ace2Inner(editorInfo, cssManagers) {
     }
   }
 
-  let hParentIndex = 0;
-  let hSectionId = undefined;
-  let hTitleId = undefined;
-  let hTitleIndex = undefined;
-
-  let ltestHsId = {"0": "", "1": "", "2": "", "3": "", "4": "", "5": "", "preserve": ""}
-  let currentHIndex = undefined;
-
   // By @Hossein    
   const insertDomLines = (nodeToAddAfter, infoStructs) => {
     let lastEntry;
     let lineStartOffset;
     let initialInsert = false
-    infoStructs.length === 1 ? initialInsert = false : initialInsert = true;
+    infoStructs.length >= 1 && infoStructs.length <= 2 ? initialInsert = false : initialInsert = true;
     if (infoStructs.length < 1) return;
 
     infoStructs.forEach((info) => {
@@ -1369,53 +1366,52 @@ function Ace2Inner(editorInfo, cssManagers) {
       entry.lineMarker = info.lineMarker;
       try {
         //======================================//
-        //====== Header Categorizer v2.0 =======//
+        //====== Header Categorizer v3.0 =======//
         //======================================//
 
-        // top.console.log(node, nodeToAddAfter, hasHtagbefor , node.attributes,node.attributes.hasOwnProperty('tag'))
         // by defualt assign first child nodeName as "tag" attribute
         node.setAttribute("tag", node.firstChild.nodeName.toLowerCase());
-
         if (initialInsert) {
 
           if (htags.includes(node.firstChild.nodeName)) {
             currentHIndex = htags.indexOf(node.firstChild.nodeName);
             hSectionId = node.firstChild.getAttribute("data-id")
             if(!hTitleId) hTitleId = hSectionId
-  
+
             if(!ltestHsId.preserve) {
               ltestHsId.preserve = currentHIndex
               ltestHsId[currentHIndex] = hSectionId
             }
-  
-            if(Math.abs(ltestHsId.preserve - currentHIndex) >= 0 || ltestHsId.preserve === currentHIndex ){
+
+            if(Math.abs(ltestHsId.preserve - currentHIndex) > 0 || ltestHsId.preserve === currentHIndex ){
               ltestHsId[currentHIndex] =  hSectionId
               ltestHsId.preserve = currentHIndex
-            }
+            } 
+
             // set First H text as a title index
             if(hTitleIndex == undefined) hTitleIndex = currentHIndex
-  
+
             if(currentHIndex === hTitleIndex) {
               hTitleId = hSectionId
             }
-  
+
             hParentIndex = currentHIndex;
           }
-  
-          node.setAttribute("titleId", hTitleId)  
+
           node.setAttribute("sectionId", hSectionId);
-          ltestHsId[0]&&node.setAttribute("lrh0", ltestHsId[0])    
-          ltestHsId[1]&&node.setAttribute("lrh1", ltestHsId[1])    
-          ltestHsId[2]&&node.setAttribute("lrh2", ltestHsId[2])    
-          ltestHsId[3]&&node.setAttribute("lrh3", ltestHsId[3])    
-          ltestHsId[4]&&node.setAttribute("lrh4", ltestHsId[4])    
-          ltestHsId[5]&&node.setAttribute("lrh5", ltestHsId[5])    
-          ltestHsId[6]&&node.setAttribute("lrh6", ltestHsId[6])   
+          node.setAttribute("titleId", hTitleId)  
+          currentHIndex >= 0&&ltestHsId[0]&&node.setAttribute("lrh0", ltestHsId[0])    
+          currentHIndex >= 1&&ltestHsId[1]&&node.setAttribute("lrh1", ltestHsId[1])    
+          currentHIndex >= 2&&ltestHsId[2]&&node.setAttribute("lrh2", ltestHsId[2])    
+          currentHIndex >= 3&&ltestHsId[3]&&node.setAttribute("lrh3", ltestHsId[3])    
+          currentHIndex >= 4&&ltestHsId[4]&&node.setAttribute("lrh4", ltestHsId[4])    
+          currentHIndex >= 5&&ltestHsId[5]&&node.setAttribute("lrh5", ltestHsId[5])    
+          currentHIndex >= 6&&ltestHsId[6]&&node.setAttribute("lrh6", ltestHsId[6])   
         } 
 
-        // If the node is H tags
-        // then assign uniqe header ID
-        if(htags.includes(node.firstChild.nodeName)) {
+      // If the node is H tags
+      // then assign uniqe header ID
+      if(htags.includes(node.firstChild.nodeName)) {
           // if it's a h tags
           // node.classList.add("first")
           node.setAttribute("node", "first")
@@ -1438,19 +1434,25 @@ function Ace2Inner(editorInfo, cssManagers) {
           root.insertBefore(node, root.firstChild);
         } else {
           root.insertBefore(node, nodeToAddAfter.nextSibling);
-
           if(!initialInsert){
+            const lrh0 = nodeToAddAfter.getAttribute('lrh0');
+            const lrh1 = nodeToAddAfter.getAttribute('lrh1');
+            const lrh2 = nodeToAddAfter.getAttribute('lrh2');
+            const lrh3 = nodeToAddAfter.getAttribute('lrh3');
+            const lrh4 = nodeToAddAfter.getAttribute('lrh4');
+            const lrh5 = nodeToAddAfter.getAttribute('lrh5');
+            const lrh6 = nodeToAddAfter.getAttribute('lrh6');
+  
             node.setAttribute("sectionId", nodeToAddAfter.getAttribute('sectionId'));
             node.setAttribute("titleId", nodeToAddAfter.getAttribute('titleId'));
-            node.setAttribute("lrh0", nodeToAddAfter.getAttribute('lrh0'));
-            node.setAttribute("lrh1", nodeToAddAfter.getAttribute('lrh1'));
-            node.setAttribute("lrh2", nodeToAddAfter.getAttribute('lrh2'));
-            node.setAttribute("lrh3", nodeToAddAfter.getAttribute('lrh3'));
-            node.setAttribute("lrh4", nodeToAddAfter.getAttribute('lrh4'));
-            node.setAttribute("lrh5", nodeToAddAfter.getAttribute('lrh5'));
-            node.setAttribute("lrh6", nodeToAddAfter.getAttribute('lrh6'));
+            lrh0&&node.setAttribute("lrh0", lrh0);
+            lrh1&&node.setAttribute("lrh1", lrh1);
+            lrh2&&node.setAttribute("lrh2", lrh2);
+            lrh3&&node.setAttribute("lrh3", lrh3);
+            lrh4&&node.setAttribute("lrh4", lrh4);
+            lrh5&&node.setAttribute("lrh5", lrh5);
+            lrh6&&node.setAttribute("lrh6", lrh6);
           }
-
         }
 
       } catch (error) {
@@ -4092,11 +4094,11 @@ function Ace2Inner(editorInfo, cssManagers) {
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="currentColor" d="M336.2 64H47.8C21.4 64 0 85.4 0 111.8v288.4C0 426.6 21.4 448 47.8 448h288.4c26.4 0 47.8-21.4 47.8-47.8V111.8c0-26.4-21.4-47.8-47.8-47.8zm189.4 37.7L416 177.3v157.4l109.6 75.5c21.2 14.6 50.4-.3 50.4-25.8V127.5c0-25.4-29.1-40.4-50.4-25.8z"></path></svg>
         </button>
       `
-  
-      shadow.innerHTML = `
-        <style>${style}</style>
-        ${content}
-      `;
+      // TODO: deactivated
+      // shadow.innerHTML = `
+      //   <style>${style}</style>
+      //   ${content}
+      // `;
     }
   
   });
