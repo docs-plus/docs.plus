@@ -1307,10 +1307,14 @@ function Ace2Inner(editorInfo, cssManagers) {
 
   // heading hierarchy
   // By @Hossein
-  let lastHtag;
-  let _nextHeaderId = 1;
   const htags = ["H1", "H2", "H3", "H4", "H5", "H6"]
-  const uniqueHeaderId = () => _nextHeaderId++;
+  let hSectionId = undefined;
+  let hTitleId = undefined;
+  let hTitleIndex = undefined;
+  let ltestHsId = {"0": "", "1": "", "2": "", "3": "", "4": "", "5": "", "preserve": ""}
+  let currentHIndex = undefined;
+  let initialInsert = false;
+  
   const walkToClosestNextHeader = (node, func) => {
     if(node&&node.nextSibling) {
       node = node.nextSibling;
@@ -1324,20 +1328,12 @@ function Ace2Inner(editorInfo, cssManagers) {
     }
   }
 
-  let hParentIndex = 0;
-  let hSectionId = undefined;
-  let hTitleId = undefined;
-  let hTitleIndex = undefined;
-
-  let ltestHsId = {"0": "", "1": "", "2": "", "3": "", "4": "", "5": "", "preserve": ""}
-  let currentHIndex = undefined;
-
   // By @Hossein    
   const insertDomLines = (nodeToAddAfter, infoStructs) => {
     let lastEntry;
     let lineStartOffset;
     let initialInsert = false
-    infoStructs.length === 1 ? initialInsert = false : initialInsert = true;
+    infoStructs.length >= 1 && infoStructs.length <= 2 ? initialInsert = false : initialInsert = true;
     if (infoStructs.length < 1) return;
 
     infoStructs.forEach((info) => {
@@ -1369,49 +1365,38 @@ function Ace2Inner(editorInfo, cssManagers) {
       entry.lineMarker = info.lineMarker;
       try {
         //======================================//
-        //====== Header Categorizer v2.9 =======//
+        //====== Header Categorizer v3.0 =======//
         //======================================//
 
         // by defualt assign first child nodeName as "tag" attribute
         node.setAttribute("tag", node.firstChild.nodeName.toLowerCase());
-
         if (initialInsert) {
 
           if (htags.includes(node.firstChild.nodeName)) {
             currentHIndex = htags.indexOf(node.firstChild.nodeName);
             hSectionId = node.firstChild.getAttribute("data-id")
             if(!hTitleId) hTitleId = hSectionId
-  
-            // if(!hPartId) hPartId = hSectionId;
-            // if(hPartIndex === undefined) hPartIndex = currentHIndex;
-  
+
             if(!ltestHsId.preserve) {
               ltestHsId.preserve = currentHIndex
               ltestHsId[currentHIndex] = hSectionId
             }
-  
-            // top.console.log(
-            //   `${node.firstChild.nodeName}, ${ltestHsId.preserve} - ${currentHIndex} = ${Math.abs(ltestHsId.preserve - currentHIndex)}`,(Math.abs(ltestHsId.preserve - currentHIndex) > 0 ),
-            //   ltestHsId[currentHIndex],
-            //   ltestHsId,
-            //   {node}
-            // )
-  
+
             if(Math.abs(ltestHsId.preserve - currentHIndex) > 0 || ltestHsId.preserve === currentHIndex ){
               ltestHsId[currentHIndex] =  hSectionId
               ltestHsId.preserve = currentHIndex
             } 
-  
+
             // set First H text as a title index
             if(hTitleIndex == undefined) hTitleIndex = currentHIndex
-  
+
             if(currentHIndex === hTitleIndex) {
               hTitleId = hSectionId
             }
-  
+
             hParentIndex = currentHIndex;
           }
-  
+
           node.setAttribute("sectionId", hSectionId);
           node.setAttribute("titleId", hTitleId)  
           currentHIndex >= 0&&ltestHsId[0]&&node.setAttribute("lrh0", ltestHsId[0])    
@@ -1420,13 +1405,14 @@ function Ace2Inner(editorInfo, cssManagers) {
           currentHIndex >= 3&&ltestHsId[3]&&node.setAttribute("lrh3", ltestHsId[3])    
           currentHIndex >= 4&&ltestHsId[4]&&node.setAttribute("lrh4", ltestHsId[4])    
           currentHIndex >= 5&&ltestHsId[5]&&node.setAttribute("lrh5", ltestHsId[5])    
-          currentHIndex >= 6&&ltestHsId[6]&&node.setAttribute("lrh6", ltestHsId[6])    
+          currentHIndex >= 6&&ltestHsId[6]&&node.setAttribute("lrh6", ltestHsId[6])   
         } 
 
-        // If the node is H tags
-        // then assign uniqe header ID
-        if(htags.includes(node.firstChild.nodeName)) {
+      // If the node is H tags
+      // then assign uniqe header ID
+      if(htags.includes(node.firstChild.nodeName)) {
           // if it's a h tags
+          // node.classList.add("first")
           node.setAttribute("node", "first")
           nodeToAddAfter&&nodeToAddAfter.setAttribute("node", "last")
         } else {
@@ -1435,6 +1421,7 @@ function Ace2Inner(editorInfo, cssManagers) {
             nodeToAddAfter&&nodeToAddAfter.nextSibling&&htags.map(x=>x.toLowerCase()).includes(nodeToAddAfter.nextSibling.getAttribute('tag')) ||
             (nodeToAddAfter&&nodeToAddAfter.nextSibling&&nodeToAddAfter.nextSibling.nextSibling&&htags.map(x=>x.toLowerCase()).includes(nodeToAddAfter.nextSibling.nextSibling.getAttribute('tag')))
           ) {
+            // top.console.log("yup this is wrong!")
             nodeToAddAfter.removeAttribute('node')
             node.setAttribute("node", "last")
           }
@@ -1446,7 +1433,6 @@ function Ace2Inner(editorInfo, cssManagers) {
           root.insertBefore(node, root.firstChild);
         } else {
           root.insertBefore(node, nodeToAddAfter.nextSibling);
-
           if(!initialInsert){
             const lrh0 = nodeToAddAfter.getAttribute('lrh0');
             const lrh1 = nodeToAddAfter.getAttribute('lrh1');
@@ -1466,7 +1452,6 @@ function Ace2Inner(editorInfo, cssManagers) {
             lrh5&&node.setAttribute("lrh5", lrh5);
             lrh6&&node.setAttribute("lrh6", lrh6);
           }
-
         }
 
       } catch (error) {
