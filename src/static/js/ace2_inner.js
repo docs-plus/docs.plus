@@ -1314,6 +1314,7 @@ function Ace2Inner(editorInfo, cssManagers) {
   let ltestHsId = {"0": "", "1": "", "2": "", "3": "", "4": "", "5": "", "preserve": ""}
   let currentHIndex = undefined;
   let initialInsert = false;
+  let hParentIndex = 0;
   
   const walkToClosestNextHeader = (node, func) => {
     if(node&&node.nextSibling) {
