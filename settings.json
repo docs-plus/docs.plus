@@ -523,7 +523,12 @@
       // ["clearauthorship"]
     ],
     "right": [
-      ["timeslider", "savedrevision","settings", "embed"] //"importexport",
+      [
+        "timeslider",
+        "savedrevision",
+        "settings",
+        "embed"
+      ] //"importexport",
       //["showusers"]
     ],
     "timeslider": [
@@ -693,13 +698,11 @@
   /* Override any strings found in locale directories */
   "customLocaleStrings": {},
   "ep_rocketchat": {
-    "baseUrl" : "https://docs.plus",
+    "baseUrl": "https://docs.plus",
     "protocol": "https",
-    "host" :  "ch.docs.plus",
-    "port" :443,
-    "userId" : "${ROCKET_CHAT_ADMIN_USERID:null}" ,
-    "token" : "${ROCKET_CHAT_ADMIN_TOKEN:null}"  
+    "host": "ch.docs.plus",
+    "port": 443,
+    "userId": "${ROCKET_CHAT_ADMIN_USERID:null}",
+    "token": "${ROCKET_CHAT_ADMIN_TOKEN:null}"
   }
-
-
 }
