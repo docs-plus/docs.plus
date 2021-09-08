@@ -825,6 +825,9 @@ exports.reloadSettings = () => {
    * TODO: remove the "?v=randomstring" parameter, and replace with hashed filenames instead
    */
   exports.randomVersionString = randomString(4);
+
+  exports.singlePad = settings.singlePad || false;
+  
   console.log(`Random string used for versioning assets: ${exports.randomVersionString}`);
 };
 

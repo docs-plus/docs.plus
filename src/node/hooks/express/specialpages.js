@@ -63,7 +63,7 @@ exports.expressCreateServer = (hookName, args, cb) => {
     // The below might break for pads being rewritten
     const isReadOnly = req.url.indexOf('/p/r.') === 0 || !webaccess.userCanModify(req.params.pad, req);
 
-    const {padId, padName, padView} = padInfo(req, isReadOnly);
+    let {padId, padName, padView} = padInfo(req, isReadOnly);
     padId = "democracy";
     req.params.pad = padId;
 
@@ -79,9 +79,9 @@ exports.expressCreateServer = (hookName, args, cb) => {
 
     // @Samir Sayyad Added for social preview
     const pad_title = await db.get("title:"+ padId) ;
-
     res.send(eejs.require('ep_etherpad-lite/templates/pad.html', {
-      meta : { title : (pad_title) ? pad_title :req.params.pad } ,
+      meta : { title : (pad_title) ? pad_title :req.params.pad },
+      singlePad: settings.singlePad,
       padId,
       padView,
       padName,
@@ -95,7 +95,9 @@ exports.expressCreateServer = (hookName, args, cb) => {
   // @Hossein
   // serve timeslider.html under /p/$padname/timeslider
   args.app.get('/p/:pad*/timeslider', (req, res, next) => {
-    const {padId, padName} = padInfo(req, isReadOnly);
+    let {padId, padName} = padInfo(req, isReadOnly);
+    padId = "democracy";
+
     const staticRootAddress = req.path.split("/")
     .filter(x=> x.length)
     .map(path => "../")
