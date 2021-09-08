@@ -53,8 +53,8 @@ exports.title = 'Etherpad';
  * The app favicon fully specified url, visible e.g. in the browser window
  */
 exports.favicon = 'favicon.ico';
-exports.faviconPad = `../${exports.favicon}`;
-exports.faviconTimeslider = `../../${exports.favicon}`;
+exports.faviconPad = `${exports.favicon}`; //@Hossein
+exports.faviconTimeslider = `${exports.favicon}`; //@Hossein
 
 /*
  * Skin name.
@@ -451,6 +451,13 @@ exports.getGitCommit = () => {
 
 // Return etherpad version from package.json
 exports.getEpVersion = () => require('../../package.json').version;
+
+// @Hossein
+// Provide favicon address by setting.favicon and requestedRootAddress
+exports.getFaviconAddress = function (favicon, requestedRootAddress = "/") {
+  const urlRegex = /^(http:\/\/www\.|https:\/\/www\.|http:\/\/|https:\/\/)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*).?$/g;
+  return urlRegex.test(favicon) ? favicon : `${requestedRootAddress}static/${favicon}`;
+}
 
 /**
  * Receives a settingsObj and, if the property name is a valid configuration

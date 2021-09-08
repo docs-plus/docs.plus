@@ -106,7 +106,7 @@ exports.expressCreateServer = (n, args, cb) => {
   const localeIndex = generateLocaleIndex(locales);
   exports.availableLangs = getAvailableLangs(locales);
 
-  args.app.get('/locales/:locale', (req, res) => {
+  args.app.get('/static/locales/:locale', (req, res) => { // @Hossein
     // works with /locale/en and /locale/en.json requests
     const locale = req.params.locale.split('.')[0];
     if (Object.prototype.hasOwnProperty.call(exports.availableLangs, locale)) {
@@ -118,7 +118,7 @@ exports.expressCreateServer = (n, args, cb) => {
     }
   });
 
-  args.app.get('/locales.json', (req, res) => {
+  args.app.get('/static/locales.json', (req, res) => { // @Hossein
     res.setHeader('Cache-Control', `public, max-age=${settings.maxAge}`);
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
     res.send(localeIndex);

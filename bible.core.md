@@ -14,7 +14,7 @@ Docs.plus roadmap for migrating and updating etherpad core,
 
 ``` bash
 replace:    ~\src\templates\index.html                  # just for meta
-replace:    ~\src\templates\pad.html                    # just for meta
+modify:    ~\src\templates\pad.html                     # just for meta & static root
 replace:    ~\src\static\css
 copy:       ~\src\static\images
 replace:    ~\src\static\font
@@ -36,7 +36,24 @@ modify      ~\src\static\js\pad.js                      # tag by @Samir - change
 add:        ~\src\templates\pad.html                    # GA code @Samir
 modify      ~\src\static\js\domline.js                  # @Samir - commented because want to process on copied external link
 modify      ~\src\node\utils\toolbar.js                 # @Samir - toolbar divider changes
+```
 
+## Custom Upgrade
+
+```bash
+modify ~\src\node\hooks\i18n.js                         # tag by @Hossein, change locale static routers
+modify ~\src\node\hooks\express\importexport.js         # tag by @Hossein, change import&export routers
+modify ~\src\node\hooks\express\specialpages.js         # tag by @Hossein, change serving pad routers
+modify ~\src\node\hooks\express\ExportHtml.js           # tag by @Hossein
+create ~\src\node\utils\nestedPad.js                    # tag by @Hossein, helper for generating padId, padName, padView
+modify ~\src\node\Settings.js                           # tag by @Hossein
+modify ~\src\static\js\ace.js                           # tag by @Hossein, absUrl fn
+modify ~\src\static\js\pad_impexp.js                    # tag by @Hossein, location.path replace
+modify ~\src\static\js\pad_utils.js                     # tag by @Hossein, static root
+modify ~\src\static\js\pad.js                           # tag by @Hossein, clientVars, padId
+modify ~\src\static\js\timeslider.js                    # tag by @Hossein, clientVars, padId
+modify ~\src\templates\export_html.html                 # tag by @Hossein, padId => padName
+modify ~\src\templates\pad.html                         # tag by @Hossein, put staticRoot, padId, padName, PadView to clientvars
 ```
 
 >NOTE: In some cases the `modify` must be evaluated! Because in that case some cases may be broken!

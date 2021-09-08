@@ -129,6 +129,7 @@ const padimpexp = (() => {
       // if /p/ isn't available due to a rewrite we use the clientVars padId
       // const padRootPath = /.*\/p\/[^/]+/.exec(document.location.pathname) || clientVars.padId;
       const padRootPath = '/p/democracy' || clientVars.padId;
+      // const padRootPath = clientVars.padId; //@Hossein
 
       // get http://example.com/p/padname without Params
       const dl = document.location;

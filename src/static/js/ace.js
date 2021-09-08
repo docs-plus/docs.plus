@@ -33,7 +33,10 @@ const debugLog = (...args) => {};
 // The inner and outer iframe's locations are about:blank, so relative URLs are relative to that.
 // Firefox and Chrome seem to do what the developer intends if given a relative URL, but Safari
 // errors out unless given an absolute URL for a JavaScript-created element.
-const absUrl = (url) => new URL(url, window.location.href).href;
+const absUrl = (url) => { //@Hossein
+  const staticRoot = clientVars.staticRootAddress;
+  return new URL(staticRoot+url, window.location.href).href
+};
 
 const eventFired = async (obj, event, cleanups = [], predicate = () => true) => {
   if (typeof cleanups === 'function') {
