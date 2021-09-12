@@ -27,7 +27,6 @@ exports.expressCreateServer = (hookName, args, cb) => {
       const types = ['pdf', 'doc', 'txt', 'html', 'odt', 'etherpad'];
 
       const {padId} = padInfo(req); // @Hossein
-      padId = "democracy";
 
       req.params.pad = padId; // @Hossein
 
@@ -78,7 +77,6 @@ exports.expressCreateServer = (hookName, args, cb) => {
     (async () => {
       
       const {padId} = padInfo(req); // @Hossein
-      padId = "democracy";
       req.params.pad = padId; // @Hossein
 
       const {session: {user} = {}} = req;

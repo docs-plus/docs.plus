@@ -705,5 +705,9 @@
     "userId": "${ROCKET_CHAT_ADMIN_USERID:null}",
     "token": "${ROCKET_CHAT_ADMIN_TOKEN:null}"
   },
-  "singlePad": true
+  "ep_singlePad":{
+    "active": true,
+    "padId": "democracy",
+    "padName": "democracy"
+  }
 }

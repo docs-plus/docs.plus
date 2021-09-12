@@ -223,7 +223,8 @@ exports.handleMessage = async (socket, message) => {
     padId = await readOnlyManager.getPadId(padId);
   }
 
-  padId = 'democracy'
+  if(settings.ep_singlePad.active)
+    padId = settings.ep_singlePad.padId
 
   const {session: {user} = {}} = socket.client.request;
   const {accessStatus, authorID} =
