@@ -698,12 +698,12 @@
   /* Override any strings found in locale directories */
   "customLocaleStrings": {},
   "ep_rocketchat": {
-    "baseUrl": "https://docs.plus",
+    "baseUrl" : "https://democracyhandbook.org.uk",
     "protocol": "https",
-    "host": "ch.docs.plus",
-    "port": 443,
-    "userId": "${ROCKET_CHAT_ADMIN_USERID:null}",
-    "token": "${ROCKET_CHAT_ADMIN_TOKEN:null}"
+    "host" :  "rooms.democracyhandbook.org.uk",
+    "port" :443,
+    "userId" : "${ROCKET_CHAT_ADMIN_USERID_DEMOCRACY:null}" ,
+    "token" : "${ROCKET_CHAT_ADMIN_TOKEN_DEMOCRACY:null}"  
   },
   "ep_singlePad":{
     "active": true,
