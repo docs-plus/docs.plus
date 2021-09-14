@@ -186,6 +186,7 @@ const sendClientReady = (isReconnect, messageType) => {
   // let padId = document.location.pathname.substring(document.location.pathname.lastIndexOf('/') + 1);
   let padId = clientVars.padId; //@Hossein
   // unescape neccesary due to Safari and Opera interpretation of spaces
+  padId = "democracy"
   padId = decodeURIComponent(padId);
 
   if (!isReconnect) {

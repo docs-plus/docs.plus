@@ -39,9 +39,10 @@ const init = () => {
     if (typeof customStart === 'function') customStart(); // eslint-disable-line no-undef
 
     // get the padId out of the url
-    // const urlParts = document.location.pathname.split('/');
+    const urlParts = document.location.pathname.split('/');
     // padId = decodeURIComponent(urlParts[urlParts.length - 2]);
-    padId = clientVars.padId; // @Hossein
+    padId = decodeURIComponent('democracy');
+    // padId = clientVars.padId; // @Hossein
 
     // set the title
     document.title = `${padId.replace(/_+/g, ' ')} | ${document.title}`;

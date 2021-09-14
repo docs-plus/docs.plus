@@ -27,6 +27,7 @@ exports.expressCreateServer = (hookName, args, cb) => {
       const types = ['pdf', 'doc', 'txt', 'html', 'odt', 'etherpad'];
 
       const {padId} = padInfo(req); // @Hossein
+
       req.params.pad = padId; // @Hossein
 
       // send a 404 if we don't support this filetype
