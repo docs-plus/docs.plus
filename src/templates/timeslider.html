@@ -33,12 +33,7 @@
   <meta name="robots" content="noindex, nofollow">
   <meta name="referrer" content="no-referrer">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0">
-  <meta property="og:title" content="<%=meta.title%>" />
-  <meta property="og:image" content="https://docs.plus/static/images/social-logo.png?v=<%=settings.randomVersionString%>" />
-  <link rel="shortcut icon" href="<%= settings.getFaviconAddress(settings.favicon)%>">
-  <meta property="og:title" content="<%=meta.title%>" />
-  <meta property="og:description" content="docs.plus" />
-  <meta property="og:image" content="https://docs.plus/static/images/social-logo.png?v=<%=settings.randomVersionString%>" />
+  <link rel="shortcut icon" href="<%=settings.faviconTimeslider%>">
   <% e.begin_block("timesliderStyles"); %>
   <link rel="stylesheet" href="<%= staticRootAddress %>static/css/pad.css?v=<%=settings.randomVersionString%>">
   <link rel="stylesheet" href="<%= staticRootAddress %>static/css/iframe_editor.css?v=<%=settings.randomVersionString%>">
@@ -48,7 +43,7 @@
   <style type="text/css" title="dynamicsyntax"></style>
   <% e.end_block(); %>
 
-  <link rel="localizations" type="application/l10n+json" href="<%= staticRootAddress %>locales.json" />
+  <link rel="localizations" type="application/l10n+json" href="<%= staticRootAddress %>static/locales.json" />
   <% e.begin_block("timesliderScripts"); %>
   <script type="text/javascript" src="<%= staticRootAddress %>static/js/vendors/html10n.js?v=<%=settings.randomVersionString%>"></script>
   <script type="text/javascript" src="<%= staticRootAddress %>static/js/l10n.js?v=<%=settings.randomVersionString%>"></script>
@@ -272,7 +267,6 @@
   };
   let BroadcastSlider;
   (function () {
-    var pathComponents = location.pathname.split('/');
     clientVars.padId = "<%= padId %>";
     clientVars.padName = "<%= padName %>";
     clientVars.staticRootAddress = "<%= staticRootAddress  %>";
@@ -282,7 +276,7 @@
     const pathComponents = location.pathname.split('/');
 
     // Strip 'p', the padname and 'timeslider' from the pathname and set as baseURL
-    const baseURL = pathComponents.slice(0,pathComponents.length-3).join('/') + '/';
+    const baseURL = pathComponents.slice(0,1).join('/') + '/';
 
 
     require.setRootURI(baseURL + "javascripts/src");

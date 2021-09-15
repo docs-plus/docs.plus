@@ -57,43 +57,9 @@ exports.expressCreateServer = (hookName, args, cb) => {
   });
 
   // @Hossein
-  // serve pad.html under /p
-  args.app.get('/p/:pad*', async (req, res, next) => {
-    // const padId = req.params.pad
-    // The below might break for pads being rewritten
-    const isReadOnly = req.url.indexOf('/p/r.') === 0 || !webaccess.userCanModify(req.params.pad, req);
-
-    let {padId, padName, padView} = padInfo(req, isReadOnly);
-
-    const staticRootAddress = req.path.split("/")
-      .filter(x=> x.length)
-      .map(path => "../")
-      .join("");
-
-    hooks.callAll('padInitToolbar', {
-      toolbar,
-      isReadOnly,
-    });
-
-    // @Samir Sayyad Added for social preview
-    const pad_title = await db.get("title:"+ padId) ;
-    res.send(eejs.require('ep_etherpad-lite/templates/pad.html', {
-      meta : { title : (pad_title) ? pad_title :req.params.pad },
-      padId,
-      padView,
-      padName,
-      staticRootAddress,
-      req,
-      toolbar,
-      isReadOnly,
-    }));
-  });
-
-  // @Hossein
   // serve timeslider.html under /p/$padname/timeslider
   args.app.get('/p/:pad*/timeslider', (req, res, next) => {
-    let {padId, padName, padView} = padInfo(req, isReadOnly);
-
+    const {padId, padName, padView} = padInfo(req);
     const staticRootAddress = req.path.split("/")
     .filter(x=> x.length)
     .map(path => "../")
@@ -104,13 +70,47 @@ exports.expressCreateServer = (hookName, args, cb) => {
     });
 
     res.send(eejs.require('ep_etherpad-lite/templates/timeslider.html', {
-      meta : { title : (pad_title) ? pad_title :req.params.pad },
+      req,
+      toolbar,
+      padId,
+      padView,
+      padName,
+      staticRootAddress,
+    }));
+  });
+
+  // @Hossein
+  // serve pad.html under /p
+  args.app.get('/p/:pad*', async (req, res, next) => {
+    // const padId = req.params.pad
+    // The below might break for pads being rewritten
+    let staticRootAddress = req.path.split("/");
+
+    const isReadOnly = req.url.indexOf('/p/r.') === 0 || !webaccess.userCanModify(req.params.pad, req);
+
+    let {padId, padName, padView} = padInfo(req, isReadOnly);
+
+    staticRootAddress = req.path.split("/")
+      .filter(x=> x.length)
+      .map(path => "../")
+      .join("");
+
+    hooks.callAll('padInitToolbar', {
+      toolbar,
+      isReadOnly,
+    });
+
+    // @Samir Sayyad Added for social preview
+    const pad_title = "dasdas";
+    res.send(eejs.require('ep_etherpad-lite/templates/pad.html', {
+      meta : { title : (pad_title) ? pad_title : req.params.pad },
       padId,
       padView,
       padName,
       staticRootAddress,
       req,
-      toolbar
+      toolbar,
+      isReadOnly,
     }));
   });
 
