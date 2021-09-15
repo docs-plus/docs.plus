@@ -2,7 +2,8 @@ const settings = require('./Settings');
 
 //@Hossein
 module.exports = (req, isReadOnly = false) => {
-    if(settings.ep_singlePad.active) req.params.pad = settings.ep_singlePad.padId
+    if(settings.ep_singlePad && settings.ep_singlePad.active) 
+      req.params.pad = settings.ep_singlePad.padId;
 
     let padId = req.params.pad;
     let padName = req.params.pad;

@@ -223,8 +223,8 @@ exports.handleMessage = async (socket, message) => {
     padId = await readOnlyManager.getPadId(padId);
   }
 
-  if(settings.ep_singlePad.active)
-    padId = settings.ep_singlePad.padId
+  if(settings.ep_singlePad && settings.ep_singlePad.active)
+    padId = settings.ep_singlePad.padId;
 
   const {session: {user} = {}} = socket.client.request;
   const {accessStatus, authorID} =
