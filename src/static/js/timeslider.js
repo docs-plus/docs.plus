@@ -39,8 +39,7 @@ const init = () => {
     if (typeof customStart === 'function') customStart(); // eslint-disable-line no-undef
 
     // get the padId out of the url
-    // const urlParts = document.location.pathname.split('/');
-    // padId = decodeURIComponent(urlParts[urlParts.length - 2]);
+    const urlParts = document.location.pathname.split('/');
     padId = clientVars.padId; // @Hossein
 
     // set the title
