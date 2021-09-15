@@ -92,7 +92,7 @@ exports.expressCreateServer = (hookName, args, cb) => {
   // @Hossein
   // serve timeslider.html under /p/$padname/timeslider
   args.app.get('/p/:pad*/timeslider', (req, res, next) => {
-    let {padId, padName} = padInfo(req, isReadOnly);
+    let {padId, padName, padView} = padInfo(req, isReadOnly);
 
     const staticRootAddress = req.path.split("/")
     .filter(x=> x.length)
@@ -104,11 +104,13 @@ exports.expressCreateServer = (hookName, args, cb) => {
     });
 
     res.send(eejs.require('ep_etherpad-lite/templates/timeslider.html', {
-      req,
-      toolbar,
+      meta : { title : (pad_title) ? pad_title :req.params.pad },
       padId,
+      padView,
       padName,
-      staticRootAddress
+      staticRootAddress,
+      req,
+      toolbar
     }));
   });
 
