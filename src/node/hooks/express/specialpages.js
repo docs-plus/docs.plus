@@ -136,7 +136,7 @@ exports.expressCreateServer = (hookName, args, cb) => {
         return;
       }
       next();
-    })().catch((err) => next(err || new Error(err)));
+    })().catch((err) => next(err || new Error(err))));
 
 
 
