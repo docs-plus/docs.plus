@@ -38,7 +38,6 @@ const padeditor = (() => {
       Ace2Editor = require('./ace').Ace2Editor;
       pad = _pad;
       settings = pad.settings;
-
       self.ace = new Ace2Editor();
       await self.ace.init('editorcontainer', '');
       $('#editorloadingbox').hide();

@@ -9,6 +9,9 @@ const webaccess = require('./webaccess');
 const padInfo = require('../../utils/nestedPad'); // @Hossein
 const db = require("../../db/DB");  // @Samir
 const minify = require('../../utils/Minify'); // @Hossein
+const util = require('util');
+const fs = require('fs');
+const fsp = fs.promises;
 
 exports.expressCreateServer = (hookName, args, cb) => {
   // expose current stats
@@ -17,8 +20,7 @@ exports.expressCreateServer = (hookName, args, cb) => {
   });
 
   // @Hossein
-  args.app.get(/(\/static\/plugins\/(.*))/ , function (req, res, next) 
-  {
+  args.app.get(/(\/static\/plugins\/(.*))/ , (req, res, next) => {
     const path = req.path.split("/");
     const startPath = path.findIndex(path => path === "plugins");
     const newPath = path.slice(startPath, path.length).join("/");
@@ -85,7 +87,7 @@ exports.expressCreateServer = (hookName, args, cb) => {
     // const padId = req.params.pad
     // The below might break for pads being rewritten
     let staticRootAddress = req.path.split("/");
-    const isReadOnly = req.url.indexOf('/p/r.') === 0 || !webaccess.userCanModify(req.params.pad, req);
+    const isReadOnly = !webaccess.userCanModify(req.params.pad, req);
     let {padId, padName, padView} = padInfo(req, isReadOnly);
 
     staticRootAddress = req.path.split("/")
@@ -99,6 +101,9 @@ exports.expressCreateServer = (hookName, args, cb) => {
     });
 
     // @Samir Sayyad Added for social preview
+    // can be removed when require-kernel is dropped
+    res.header('Feature-Policy', 'sync-xhr \'self\'');
+    //TODO: FIXME:
     const pad_title = "dasdas";
     res.send(eejs.require('ep_etherpad-lite/templates/pad.html', {
       meta : { title : (pad_title) ? pad_title : req.params.pad },
@@ -110,27 +115,31 @@ exports.expressCreateServer = (hookName, args, cb) => {
       toolbar,
       isReadOnly,
     }));
-  });
 
-  // serve favicon.ico from all path levels except as a pad name
-  args.app.get(/\/favicon.ico$/, (req, res) => {
-    let filePath = path.join(
-        settings.root,
-        'src',
-        'static',
-        'skins',
-        settings.skinName,
-        'favicon.ico'
-    );
-    res.setHeader('Cache-Control', `public, max-age=${settings.maxAge}`);
-    res.sendFile(filePath, (err) => {
-      // there is no custom favicon, send the default favicon
-      if (err) {
-        filePath = path.join(settings.root, 'src', 'static', 'favicon.ico');
-        res.sendFile(filePath);
-      }
-    });
   });
+    
+  args.app.get(/\/favicon.ico$/, (req, res, next) =>
+    (async () => {
+      const fns = [
+        ...(settings.favicon ? [path.resolve(settings.root, settings.favicon)] : []),
+        path.join(settings.root, 'src', 'static', 'skins', settings.skinName, 'favicon.ico'),
+        path.join(settings.root, 'src', 'static', 'favicon.ico'),
+      ];
+      for (const fn of fns) {
+        try {
+          await fsp.access(fn, fs.constants.R_OK);
+        } catch (err) {
+          continue;
+        }
+        res.setHeader('Cache-Control', `public, max-age=${settings.maxAge}`);
+        await util.promisify(res.sendFile.bind(res))(fn);
+        return;
+      }
+      next();
+    })().catch((err) => next(err || new Error(err)));
+
+
+
 
   return cb();
 };

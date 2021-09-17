@@ -49,8 +49,7 @@ exports.expressCreateServer = (hookName, args, cb) => {
 
       res.header('Access-Control-Allow-Origin', '*');
 
-    if (await hasPadAccess(req, res)) {
-      let padId = req.params.pad || pad;
+      if (await hasPadAccess(req, res)) {
 
         let readOnlyId = null;
         if (readOnlyManager.isReadOnlyId(padId)) {

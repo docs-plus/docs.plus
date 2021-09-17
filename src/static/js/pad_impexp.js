@@ -130,10 +130,6 @@ const padimpexp = (() => {
       // const padRootPath = /.*\/p\/[^/]+/.exec(document.location.pathname) || clientVars.padId;
       const padRootPath = clientVars.padId; // @Hossein
 
-      // get http://example.com/p/padname without Params
-      const dl = document.location;
-      const padRootUrl = `${dl.protocol}//${dl.host}${dl.pathname}`;
-
       // i10l buttom import
       $('#importsubmitinput').val(html10n.get('pad.impexp.importbutton'));
       html10n.bind('localized', () => {
