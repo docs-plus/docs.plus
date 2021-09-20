@@ -1,16 +1,20 @@
-## last commit ID
 
-> This commit ID is the latest changes we have from etherpad
+# What version of etherpad are we using?
 
-[020f5ff730bf1c9905ded4e6fde45c35d60cc63c](https://github.com/ether/etherpad-lite/commit/020f5ff730bf1c9905ded4e6fde45c35d60cc63c)
+This is the latest changes we have from etherpad (Etherpad 1.8.14)
 
-# Migration/Update Etherpad Core
+>Commit ID: 
+[571b37b772c324d6f5eddcd3aecf3e02ffcac1c3](https://github.com/ether/etherpad-lite/commit/571b37b772c324d6f5eddcd3aecf3e02ffcac1c3)
+
+
+# Which files and how to upgrade your Etherpad?
 
 Docs.plus roadmap for migrating and updating etherpad core,
 
 - Create a new branch from master, like `update`
-- Then clone new version of etherpad in there
-- After all, change and modify these files according to the instructions below.
+- Then `git merge --allow-unrelated-histories https://github.com/ether/etherpad-lite.git master`
+- Resolve the conflict, just note that the following files have been changed and tagged with the name
+- Finally, rebase your changes to the master branch
 
 ``` bash
 replace:    ~\src\templates\index.html                  # just for meta
@@ -30,15 +34,20 @@ modify      ~\bin\run.sh                                # tag by @Hossein
 modify      ~\bin\installDeps.sh                        # tag by @Hossein
 modify      ~\bin\installOnWindows.bat                  # tag by @Hossein
 modify      ~\src\static\js\ace2_inner.js               # tag by @Hossein customElements
-modify      ~\src\static\js\ace2_inner.js               # tag by @Hossein customElements
+modify      ~\src\static\js\ace2_inner.js               # tag by @Hossein heading hierarchy
 modify      ~\src\templates\pad.html                    # tag by @Samir change loading block - going to top after body
 modify      ~\src\static\js\pad.js                      # tag by @Samir - change error to reconnect and socket config
 add:        ~\src\templates\pad.html                    # GA code @Samir
 modify      ~\src\static\js\domline.js                  # @Samir - commented because want to process on copied external link
 modify      ~\src\node\utils\toolbar.js                 # @Samir - toolbar divider changes
+
+### Css File
+# List of css files that we have changed
 ```
 
+----
 ## Custom Upgrade
+These changes are related to the View feature!
 
 ```bash
 modify ~\src\node\hooks\i18n.js                         # tag by @Hossein, change locale static routers
@@ -56,4 +65,3 @@ modify ~\src\templates\export_html.html                 # tag by @Hossein, padId
 modify ~\src\templates\pad.html                         # tag by @Hossein, put staticRoot, padId, padName, PadView to clientvars
 ```
 
->NOTE: In some cases the `modify` must be evaluated! Because in that case some cases may be broken!
