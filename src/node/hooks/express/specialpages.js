@@ -60,7 +60,7 @@ exports.expressCreateServer = (hookName, args, cb) => {
 
   // @Hossein
   // serve timeslider.html under /p/$padname/timeslider
-  args.app.get('/p/:pad*/timeslider', (req, res, next) => {
+  args.app.get('/p/:pad*/timeslider', async (req, res, next) => {
     const {padId, padName, padView} = padInfo(req);
     const staticRootAddress = req.path.split("/")
     .filter(x=> x.length)
