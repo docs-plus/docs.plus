@@ -11,9 +11,9 @@ on:
 
     
 jobs:
-  needs: Analyze
   build:
     runs-on: docs.plus
+    needs: Analyze
     strategy:
       matrix:
         node-version: [12.x]
