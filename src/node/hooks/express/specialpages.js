@@ -70,8 +70,10 @@ exports.expressCreateServer = (hookName, args, cb) => {
     hooks.callAll('padInitToolbar', {
       toolbar,
     });
-
+    // @Samir Sayyad Added for social preview
+    const pad_title = await db.get("title:"+ padId);
     res.send(eejs.require('ep_etherpad-lite/templates/timeslider.html', {
+      meta : { title : (pad_title) ? pad_title : req.params.pad },
       req,
       toolbar,
       padId,
@@ -103,8 +105,8 @@ exports.expressCreateServer = (hookName, args, cb) => {
     // @Samir Sayyad Added for social preview
     // can be removed when require-kernel is dropped
     res.header('Feature-Policy', 'sync-xhr \'self\'');
-    //TODO: FIXME:
-    const pad_title = "dasdas";
+    // @Samir Sayyad Added for social preview
+    const pad_title = await db.get("title:"+ padId);
     res.send(eejs.require('ep_etherpad-lite/templates/pad.html', {
       meta : { title : (pad_title) ? pad_title : req.params.pad },
       padId,
