@@ -61,7 +61,7 @@ jobs:
 
   build:
     name: build docs.plus
-    # needs: analyze
+    needs: analyze
     runs-on: docs.plus
     strategy:
       matrix:
