@@ -11,6 +11,7 @@ on:
 
     
 jobs:
+  needs: Analyze
   build:
     runs-on: docs.plus
     strategy:
