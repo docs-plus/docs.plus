@@ -1,5 +1,10 @@
+const settings = require('./Settings');
+
 //@Hossein
 module.exports = (req, isReadOnly = false) => {
+    if(settings.ep_singlePad && settings.ep_singlePad.active) 
+      req.params.pad = settings.ep_singlePad.padId;
+
     let padId = req.params.pad;
     let padName = req.params.pad;
     let padView = req.params.pad;
@@ -19,7 +24,7 @@ module.exports = (req, isReadOnly = false) => {
       // The pad's name is always the last param of the query
       padName = req.params[0].split('/').pop();
     }
-  
+
     return {
       padId,
       padView,

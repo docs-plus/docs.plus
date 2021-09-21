@@ -39,8 +39,7 @@ const init = () => {
     if (typeof customStart === 'function') customStart(); // eslint-disable-line no-undef
 
     // get the padId out of the url
-    // const urlParts = document.location.pathname.split('/');
-    // padId = decodeURIComponent(urlParts[urlParts.length - 2]);
+    const urlParts = document.location.pathname.split('/');
     padId = clientVars.padId; // @Hossein
 
     // set the title
@@ -53,7 +52,7 @@ const init = () => {
       Cookies.set('token', token, {expires: 60});
     }
 
-    socket = socketio.connect(exports.baseURL);
+    socket = socketio.connect(exports.baseURL, '/', {query: {padId}});
 
     // send the ready message once we're connected
     socket.on('connect', () => {
@@ -110,7 +109,7 @@ const fireWhenAllScriptsAreLoaded = [];
 const handleClientVars = (message) => {
   // save the client Vars
   // window.clientVars = message.data;
-  clientVars = Object.assign(message.data, clientVars); //@Hossein
+  window.clientVars = Object.assign(message.data, clientVars); //@Hossein
 
   // load all script that doesn't work without the clientVars
   BroadcastSlider = require('./broadcast_slider')

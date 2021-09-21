@@ -513,6 +513,7 @@
         clientVars.padName = "<%= padName %>";
         clientVars.staticRootAddress = "<%= staticRootAddress  %>";
         clientVars.padView = "<%= padView  %>";
+        clientVars.ep_singlePad = <%- JSON.stringify(settings.ep_singlePad ||{active: false}) %>;
 
         // Strip 'p' and the padname from the pathname and set as baseURL
         var baseURL = pathComponents.slice(0,1).join('/') + '/';
@@ -558,6 +559,7 @@
     gtag('js', new Date());
     gtag('config', 'G-BW657D3QVX');
   </script>
+  
   <div style="display:none"><a href="/javascript" data-jslicense="1">JavaScript license information</a></div>
   <% e.end_block(); %>
 

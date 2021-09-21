@@ -475,7 +475,6 @@ exports.getPadHTMLDocument = async (padId, revNum) => {
 
   return eejs.require('ep_etherpad-lite/templates/export_html.html', {
     body: html,
-    padName: padId, //@Hossein
     padId: Security.escapeHTML(padId),
     extraCSS: stylesForExportCSS,
   });

@@ -6,19 +6,19 @@ cd /D "%~dp0\.."
 :: Is node installed?
 cmd /C node -e "" || ( echo "Please install node.js ( https://nodejs.org )" && exit /B 1 )
 
-:: By Hossein
-echo _
-echo Setting up wsgateway...
-IF NOT EXIST ws.router (
-  git clone https://github.com/HMarzban/wsgateway.git ws.router
-  cd /D "ws.router"
-  cmd /C npm ci || exit /B 1
-) ELSE (
-  cd /D "ws.router"
-  git pull
-  cmd /C npm ci || exit /B 1
-) 
-cd /D "%~dp0\.."54
+@REM :: By Hossein
+@REM echo _
+@REM echo Setting up wsgateway...
+@REM IF NOT EXIST ws.router (
+@REM   git clone https://github.com/HMarzban/wsgateway.git ws.router
+@REM   cd /D "ws.router"
+@REM   cmd /C npm ci || exit /B 1
+@REM ) ELSE (
+@REM   cd /D "ws.router"
+@REM   git pull
+@REM   cmd /C npm ci || exit /B 1
+@REM ) 
+@REM cd /D "%~dp0\.."54
 
 echo _
 echo Ensure that all dependencies are up to date...  If this is the first time you have run Etherpad please be patient.
@@ -45,4 +45,4 @@ IF NOT EXIST settings.json (
 )
 
 echo _
-echo Installed Etherpad! To run Etherpad type start.bat
+echo Installed Etherpad!  To run Etherpad type start.bat

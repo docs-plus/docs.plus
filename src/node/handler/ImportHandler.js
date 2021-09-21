@@ -65,7 +65,7 @@ if (settings.abiword != null && settings.soffice == null) {
 
 // load soffice only if it is enabled
 if (settings.soffice != null) {
-  convertor = require('../utils/LibreOffice');
+  converter = require('../utils/LibreOffice');
   exportExtension = 'html';
 }
 
@@ -80,7 +80,7 @@ const doImport = async (req, res, padId) => {
   // set html in the pad
   const randNum = Math.floor(Math.random() * 0xFFFFFFFF);
 
-  // setting flag for whether to use convertor or not
+  // setting flag for whether to use converter or not
   let useConverter = (converter != null);
 
   const form = new formidable.IncomingForm();
