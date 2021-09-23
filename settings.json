@@ -706,8 +706,8 @@
     "token" : "${ROCKET_CHAT_ADMIN_TOKEN_DEMOCRACY:null}"  
   },
   "ep_singlePad":{
-    "active": false,
-    "padId": "padName",
-    "padName": "padName"
+    "active": true,
+    "padId": "democracy",
+    "padName": "democracy"
   }
 }
