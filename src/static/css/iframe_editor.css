@@ -57,7 +57,6 @@ html.outer-editor, html.inner-editor {
 #innerdocbody a {
   color: #2e96f3;
 }
-
 #innerdocbody.authorColors [class^='author-'] a {
   color: inherit;
 }

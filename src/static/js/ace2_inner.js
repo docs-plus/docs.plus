@@ -86,14 +86,24 @@ function Ace2Inner(editorInfo, cssManagers) {
   let outsideKeyPress = (e) => true;
   let outsideNotifyDirty = noop;
 
-  // selFocusAtStart -- determines whether the selection extends "backwards", so that the focus
-  // point (controlled with the arrow keys) is at the beginning; not supported in IE, though
-  // native IE selections have that behavior (which we try not to interfere with).
-  // Must be false if selection is collapsed!
+  // Document representation.
   const rep = {
+    // Each entry in this skip list is an object created by createDomLineEntry(). The object
+    // represents a line (paragraph) of content.
     lines: new SkipList(),
+    // Points at the start of the selection. Represented as [zeroBasedLineNumber,
+    // zeroBasedColumnNumber].
+    // TODO: If the selection starts at the beginning of a line, I think this could be either
+    // [lineNumber, 0] or [previousLineNumber, previousLineLength]. Need to confirm.
     selStart: null,
+    // Points at the character just past the last selected character. Same representation as
+    // selStart.
+    // TODO: If the last selected character is the last character of a line, I think this could be
+    // either [lineNumber, lineLength] or [lineNumber+1, 0]. Need to confirm.
     selEnd: null,
+    // Whether the selection extends "backwards", so that the focus point (controlled with the arrow
+    // keys) is at the beginning. This is not supported in IE, though native IE selections have that
+    // behavior (which we try not to interfere with). Must be false if selection is collapsed!
     selFocusAtStart: false,
     alltext: '',
     alines: [],
@@ -134,17 +144,6 @@ function Ace2Inner(editorInfo, cssManagers) {
     ];
     console = {};
     for (let i = 0; i < names.length; ++i) console[names[i]] = noop;
-  }
-
-  let PROFILER = window.PROFILER;
-  if (!PROFILER) {
-    PROFILER = () => ({
-      start: noop,
-      mark: noop,
-      literal: noop,
-      end: noop,
-      cancel: noop,
-    });
   }
 
   // "dmesg" is for displaying messages in the in-page output pane
@@ -227,18 +226,18 @@ function Ace2Inner(editorInfo, cssManagers) {
       if ((typeof info.fade) === 'number') {
         bgcolor = fadeColor(bgcolor, info.fade);
       }
-
-      const authorStyle = cssManagers.inner.selectorStyle(authorSelector);
-      const parentAuthorStyle = cssManagers.parent.selectorStyle(authorSelector);
-
-      // author color
-      authorStyle.backgroundColor = bgcolor;
-      parentAuthorStyle.backgroundColor = bgcolor;
-
       const textColor =
           colorutils.textColorFromBackgroundColor(bgcolor, parent.parent.clientVars.skinName);
-      authorStyle.color = textColor;
-      parentAuthorStyle.color = textColor;
+      const styles = [
+        cssManagers.inner.selectorStyle(authorSelector),
+        cssManagers.parent.selectorStyle(authorSelector),
+      ];
+      for (const style of styles) {
+        style.backgroundColor = bgcolor;
+        style.color = textColor;
+        style['padding-top'] = '3px';
+        style['padding-bottom'] = '4px';
+      }
     }
   };
 
@@ -300,12 +299,6 @@ function Ace2Inner(editorInfo, cssManagers) {
 
   const inCallStack = (type, action) => {
     if (disposed) return;
-
-    if (currentCallStack) {
-      // Do not uncomment this in production.  It will break Etherpad being provided in iFrames.
-      // I am leaving this in for testing usefulness.
-      // top.console.error(`Can't enter callstack ${type}, already in ${currentCallStack.type}`);
-    }
 
     const newEditEvent = (eventType) => ({
       eventType,
@@ -388,11 +381,6 @@ function Ace2Inner(editorInfo, cssManagers) {
       if (cleanExit) {
         submitOldEvent(cs.editEvent);
         if (cs.domClean && cs.type !== 'setup') {
-          // if (cs.isUserChange)
-          // {
-          //  if (cs.repChanged) parenModule.notifyChange();
-          //  else parenModule.notifyTick();
-          // }
           if (cs.selectionAffected) {
             updateBrowserSelectionFromRep();
           }
@@ -668,9 +656,11 @@ function Ace2Inner(editorInfo, cssManagers) {
     }
   };
 
-  // This methed exposes a setter for some ace properties
-  // @param key the name of the parameter
-  // @param value the value to set to
+  /**
+   * This methed exposes a setter for some ace properties
+   * @param key the name of the parameter
+   * @param value the value to set to
+   */
   editorInfo.ace_setProperty = (key, value) => {
     // These properties are exposed
     const setters = {
@@ -753,7 +743,7 @@ function Ace2Inner(editorInfo, cssManagers) {
     let printedTrace = false;
     const isTimeUp = () => {
       if (exceededAlready) {
-        if ((!printedTrace)) { // && now() - startTime - ms > 300) {
+        if ((!printedTrace)) {
           printedTrace = true;
         }
         return true;
@@ -949,17 +939,12 @@ function Ace2Inner(editorInfo, cssManagers) {
   clearObservedChanges();
 
   const getCleanNodeByKey = (key) => {
-    const p = PROFILER('getCleanNodeByKey', false); // eslint-disable-line new-cap
-    p.extra = 0;
     let n = doc.getElementById(key);
     // copying and pasting can lead to duplicate ids
     while (n && isNodeDirty(n)) {
-      p.extra++;
       n.id = '';
       n = doc.getElementById(key);
     }
-    p.literal(p.extra, 'extra');
-    p.end();
     return n;
   };
 
@@ -1025,9 +1010,7 @@ function Ace2Inner(editorInfo, cssManagers) {
     if (currentCallStack.observedSelection) return;
     currentCallStack.observedSelection = true;
 
-    const p = PROFILER('getSelection', false); // eslint-disable-line new-cap
     const selection = getSelection();
-    p.end();
 
     if (selection) {
       const node1 = topLevel(selection.startPoint.node);
@@ -1060,17 +1043,13 @@ function Ace2Inner(editorInfo, cssManagers) {
 
     if (DEBUG && window.DONT_INCORP || window.DEBUG_DONT_INCORP) return false;
 
-    const p = PROFILER('incorp', false); // eslint-disable-line new-cap
-
     // returns true if dom changes were made
     if (!root.firstChild) {
       root.innerHTML = '<div><!-- --></div>';
     }
 
-    p.mark('obs');
     observeChangesAroundSelection();
     observeSuspiciousNodes();
-    p.mark('dirty');
     let dirtyRanges = getDirtyRanges();
     let dirtyRangesCheckOut = true;
     let j = 0;
@@ -1100,7 +1079,6 @@ function Ace2Inner(editorInfo, cssManagers) {
 
     clearObservedChanges();
 
-    p.mark('getsel');
     const selection = getSelection();
 
     let selStart, selEnd; // each one, if truthy, has [line,char] needed to set selection
@@ -1108,8 +1086,6 @@ function Ace2Inner(editorInfo, cssManagers) {
     const splicesToDo = [];
     let netNumLinesChangeSoFar = 0;
     const toDeleteAtEnd = [];
-    p.mark('ranges');
-    p.literal(dirtyRanges.length, 'numdirt');
     const domInsertsNeeded = []; // each entry is [nodeToInsertAfter, [info1, info2, ...]]
     while (i < dirtyRanges.length) {
       const range = dirtyRanges[i];
@@ -1176,7 +1152,6 @@ function Ace2Inner(editorInfo, cssManagers) {
           entries.push(newEntry);
           lineNodeInfos[k] = newEntry.domInfo;
         }
-        // var fragment = magicdom.wrapDom(document.createDocumentFragment());
         domInsertsNeeded.push([nodeToAddAfter, lineNodeInfos]);
         dirtyNodes.forEach((n) => {
           toDeleteAtEnd.push(n);
@@ -1198,25 +1173,19 @@ function Ace2Inner(editorInfo, cssManagers) {
     const domChanges = (splicesToDo.length > 0);
 
     // update the representation
-    p.mark('splice');
     splicesToDo.forEach((splice) => {
       doIncorpLineSplice(splice[0], splice[1], splice[2], splice[3], splice[4]);
     });
 
     // do DOM inserts
-    p.mark('insert');
     domInsertsNeeded.forEach((ins) => {
       insertDomLines(ins[0], ins[1]);
     });
 
-    p.mark('del');
     // delete old dom nodes
     toDeleteAtEnd.forEach((n) => {
-      // var id = n.uniqueId();
       // parent of n may not be "root" in IE due to non-tree-shaped DOM (wtf)
       if (n.parentNode) n.parentNode.removeChild(n);
-
-      // dmesg(htmlPrettyEscape(htmlForRemovedChild(n)));
     });
 
     // needed to stop chrome from breaking the ui when long strings without spaces are pasted
@@ -1224,11 +1193,9 @@ function Ace2Inner(editorInfo, cssManagers) {
       $('#innerdocbody').scrollLeft(0);
     }
 
-    p.mark('findsel');
     // if the nodes that define the selection weren't encountered during
     // content collection, figure out where those nodes are now.
     if (selection && !selStart) {
-      // if (domChanges) dmesg("selection not collected");
       const selStartFromHook = hooks.callAll('aceStartLineAndCharForPoint', {
         callstack: currentCallStack,
         editorInfo,
@@ -1266,14 +1233,12 @@ function Ace2Inner(editorInfo, cssManagers) {
       selEnd[1] = rep.lines.atIndex(selEnd[0]).text.length;
     }
 
-    p.mark('repsel');
     // update rep if we have a new selection
     // NOTE: IE loses the selection when you click stuff in e.g. the
     // editbar, so removing the selection when it's lost is not a good
     // idea.
     if (selection) repSelectionChange(selStart, selEnd, selection && selection.focusAtStart);
     // update browser selection
-    p.mark('browsel');
     if (selection && (domChanges || isCaret())) {
       // if no DOM changes (not this case), want to treat range selection delicately,
       // e.g. in IE not lose which end of the selection is the focus/anchor;
@@ -1283,11 +1248,7 @@ function Ace2Inner(editorInfo, cssManagers) {
 
     currentCallStack.domClean = true;
 
-    p.mark('fixview');
-
     fixView();
-
-    p.end('END');
 
     return domChanges;
   };
@@ -1306,14 +1267,13 @@ function Ace2Inner(editorInfo, cssManagers) {
       (aname) => AttributeManager.DEFAULT_LINE_ATTRIBUTES.indexOf(aname) !== -1;
 
   // heading hierarchy
-  // By @Hossein
-  const htags = ["H1", "H2", "H3", "H4", "H5", "H6"]
+  // @Hossein
+  const htags = ["H1", "H2", "H3", "H4", "H5", "H6"];
   let hSectionId = undefined;
   let hTitleId = undefined;
   let hTitleIndex = undefined;
-  let ltestHsId = {"0": "", "1": "", "2": "", "3": "", "4": "", "5": "", "preserve": ""}
+  let ltestHsId = {"0": "", "1": "", "2": "", "3": "", "4": "", "5": "", "preserve": ""};
   let currentHIndex = undefined;
-  let initialInsert = false;
   let hParentIndex = 0;
   
   const walkToClosestNextHeader = (node, func) => {
@@ -1329,7 +1289,7 @@ function Ace2Inner(editorInfo, cssManagers) {
     }
   }
 
-  // By @Hossein    
+  // @Hossein
   const insertDomLines = (nodeToAddAfter, infoStructs) => {
     let lastEntry;
     let lineStartOffset;
@@ -1338,11 +1298,9 @@ function Ace2Inner(editorInfo, cssManagers) {
     if (infoStructs.length < 1) return;
 
     infoStructs.forEach((info) => {
-      const p2 = PROFILER('insertLine', false); // eslint-disable-line new-cap
       const node = info.node;
       const key = uniqueId(node);
       let entry;
-      p2.mark('findEntry');
       if (lastEntry) {
         // optimization to avoid recalculation
         const next = rep.lines.next(lastEntry);
@@ -1352,16 +1310,13 @@ function Ace2Inner(editorInfo, cssManagers) {
         }
       }
       if (!entry) {
-        p2.literal(1, 'nonopt');
         entry = rep.lines.atKey(key);
         lineStartOffset = rep.lines.offsetOfKey(key);
-      } else { p2.literal(0, 'nonopt'); }
+      }
       lastEntry = entry;
-      p2.mark('spans');
       getSpansForLine(entry, (tokenText, tokenClass) => {
         info.appendSpan(tokenText, tokenClass);
       }, lineStartOffset);
-      p2.mark('addLine');
       info.prepareForAdd();
       entry.lineMarker = info.lineMarker;
       try {
@@ -1375,38 +1330,38 @@ function Ace2Inner(editorInfo, cssManagers) {
 
           if (htags.includes(node.firstChild.nodeName)) {
             currentHIndex = htags.indexOf(node.firstChild.nodeName);
-            hSectionId = node.firstChild.getAttribute("data-id")
-            if(!hTitleId) hTitleId = hSectionId
+            hSectionId = node.firstChild.getAttribute("data-id");
+            if(!hTitleId) hTitleId = hSectionId;
 
             if(!ltestHsId.preserve) {
-              ltestHsId.preserve = currentHIndex
-              ltestHsId[currentHIndex] = hSectionId
+              ltestHsId.preserve = currentHIndex;
+              ltestHsId[currentHIndex] = hSectionId;
             }
 
             if(Math.abs(ltestHsId.preserve - currentHIndex) > 0 || ltestHsId.preserve === currentHIndex ){
-              ltestHsId[currentHIndex] =  hSectionId
-              ltestHsId.preserve = currentHIndex
+              ltestHsId[currentHIndex] =  hSectionId;
+              ltestHsId.preserve = currentHIndex;
             } 
 
             // set First H text as a title index
-            if(hTitleIndex == undefined) hTitleIndex = currentHIndex
+            if(hTitleIndex == undefined) hTitleIndex = currentHIndex;
 
             if(currentHIndex === hTitleIndex) {
-              hTitleId = hSectionId
+              hTitleId = hSectionId;
             }
 
             hParentIndex = currentHIndex;
           }
 
           node.setAttribute("sectionId", hSectionId);
-          node.setAttribute("titleId", hTitleId)  
-          currentHIndex >= 0&&ltestHsId[0]&&node.setAttribute("lrh0", ltestHsId[0])    
-          currentHIndex >= 1&&ltestHsId[1]&&node.setAttribute("lrh1", ltestHsId[1])    
-          currentHIndex >= 2&&ltestHsId[2]&&node.setAttribute("lrh2", ltestHsId[2])    
-          currentHIndex >= 3&&ltestHsId[3]&&node.setAttribute("lrh3", ltestHsId[3])    
-          currentHIndex >= 4&&ltestHsId[4]&&node.setAttribute("lrh4", ltestHsId[4])    
-          currentHIndex >= 5&&ltestHsId[5]&&node.setAttribute("lrh5", ltestHsId[5])    
-          currentHIndex >= 6&&ltestHsId[6]&&node.setAttribute("lrh6", ltestHsId[6])   
+          node.setAttribute("titleId", hTitleId);
+          currentHIndex >= 0&&ltestHsId[0]&&node.setAttribute("lrh0", ltestHsId[0]);
+          currentHIndex >= 1&&ltestHsId[1]&&node.setAttribute("lrh1", ltestHsId[1]);
+          currentHIndex >= 2&&ltestHsId[2]&&node.setAttribute("lrh2", ltestHsId[2]);
+          currentHIndex >= 3&&ltestHsId[3]&&node.setAttribute("lrh3", ltestHsId[3]);
+          currentHIndex >= 4&&ltestHsId[4]&&node.setAttribute("lrh4", ltestHsId[4]);
+          currentHIndex >= 5&&ltestHsId[5]&&node.setAttribute("lrh5", ltestHsId[5]);
+          currentHIndex >= 6&&ltestHsId[6]&&node.setAttribute("lrh6", ltestHsId[6]);
         } 
 
       // If the node is H tags
@@ -1415,7 +1370,7 @@ function Ace2Inner(editorInfo, cssManagers) {
           // if it's a h tags
           // node.classList.add("first")
           node.setAttribute("node", "first")
-          nodeToAddAfter&&nodeToAddAfter.setAttribute("node", "last")
+          nodeToAddAfter&&nodeToAddAfter.setAttribute("node", "last");
         } else {
           // if it's the last child of secction and the next node is h tag
           if(
@@ -1423,8 +1378,8 @@ function Ace2Inner(editorInfo, cssManagers) {
             (nodeToAddAfter&&nodeToAddAfter.nextSibling&&nodeToAddAfter.nextSibling.nextSibling&&htags.map(x=>x.toLowerCase()).includes(nodeToAddAfter.nextSibling.nextSibling.getAttribute('tag')))
           ) {
             // top.console.log("yup this is wrong!")
-            nodeToAddAfter.removeAttribute('node')
-            node.setAttribute("node", "last")
+            nodeToAddAfter.removeAttribute('node');
+            node.setAttribute("node", "last");
           }
         }
 
@@ -1458,11 +1413,10 @@ function Ace2Inner(editorInfo, cssManagers) {
       } catch (error) {
         top.console.error("[view]:Header Catagorizer, ", error)
       }
+
       nodeToAddAfter = node;
       info.notifyAdded();
-      p2.mark('markClean');
       markNodeClean(node);
-      p2.end();
     });
   };
 
@@ -1475,8 +1429,6 @@ function Ace2Inner(editorInfo, cssManagers) {
   editorInfo.ace_isCaret = isCaret;
 
   // prereq: isCaret()
-
-
   const caretLine = () => rep.selStart[0];
 
   editorInfo.ace_caretLine = caretLine;
@@ -1514,9 +1466,6 @@ function Ace2Inner(editorInfo, cssManagers) {
   const getPointForLineAndChar = (lineAndChar) => {
     const line = lineAndChar[0];
     let charsLeft = lineAndChar[1];
-    // Do not uncomment this in production it will break iFrames.
-    // top.console.log("line: %d, key: %s, node: %o", line, rep.lines.atIndex(line).key,
-    // getCleanNodeByKey(rep.lines.atIndex(line).key));
     const lineEntry = rep.lines.atIndex(line);
     charsLeft -= lineEntry.lineMarker;
     if (charsLeft < 0) {
@@ -1690,7 +1639,6 @@ function Ace2Inner(editorInfo, cssManagers) {
       throw new Error(`doRepApplyChangeset length mismatch: ${errMsg}`);
     }
 
-    // (function doRecordUndoInformation(changes) {
     ((changes) => {
       const editEvent = currentCallStack.editEvent;
       if (editEvent.eventType === 'nonundoable') {
@@ -1713,7 +1661,6 @@ function Ace2Inner(editorInfo, cssManagers) {
       }
     })(changes);
 
-    // rep.alltext = Changeset.applyToText(changes, rep.alltext);
     Changeset.mutateAttributionLines(changes, rep.alines, rep.apool);
 
     if (changesetTracker.isTracking()) {
@@ -1721,9 +1668,9 @@ function Ace2Inner(editorInfo, cssManagers) {
     }
   };
 
-  /*
-    Converts the position of a char (index in String) into a [row, col] tuple
-  */
+  /**
+   * Converts the position of a char (index in String) into a [row, col] tuple
+   */
   const lineAndColumnFromChar = (x) => {
     const lineEntry = rep.lines.atOffset(x);
     const lineStart = rep.lines.offsetOfEntry(lineEntry);
@@ -2110,7 +2057,6 @@ function Ace2Inner(editorInfo, cssManagers) {
         theChangeset = builder.toString();
       }
 
-      // dmesg(htmlPrettyEscape(theChangeset));
       doRepApplyChangeset(theChangeset);
     }
 
@@ -2286,13 +2232,8 @@ function Ace2Inner(editorInfo, cssManagers) {
       }
 
       return true;
-      // Do not uncomment this in production it will break iFrames.
-      // top.console.log("selStart: %o, selEnd: %o, focusAtStart: %s", rep.selStart, rep.selEnd,
-      // String(!!rep.selFocusAtStart));
     }
     return false;
-  // Do not uncomment this in production it will break iFrames.
-  // top.console.log("%o %o %s", rep.selStart, rep.selEnd, rep.selFocusAtStart);
   };
 
   const isPadLoading = (eventType) => (
@@ -2344,10 +2285,6 @@ function Ace2Inner(editorInfo, cssManagers) {
     // indicating inserted content.  for example, [0,0] means content was inserted
     // at the top of the document, while [3,4] means line 3 was deleted, modified,
     // or replaced with one or more new lines of content. ranges do not touch.
-    const p = PROFILER('getDirtyRanges', false); // eslint-disable-line new-cap
-    p.forIndices = 0;
-    p.consecutives = 0;
-    p.corrections = 0;
 
     const cleanNodeForIndexCache = {};
     const N = rep.lines.length(); // old number of lines
@@ -2358,7 +2295,6 @@ function Ace2Inner(editorInfo, cssManagers) {
       // in the document, return that node.
       // if (i) is out of bounds, return true. else return false.
       if (cleanNodeForIndexCache[i] === undefined) {
-        p.forIndices++;
         let result;
         if (i < 0 || i >= N) {
           result = true; // truthy, but no actual node
@@ -2374,7 +2310,6 @@ function Ace2Inner(editorInfo, cssManagers) {
 
     const isConsecutive = (i) => {
       if (isConsecutiveCache[i] === undefined) {
-        p.consecutives++;
         isConsecutiveCache[i] = (() => {
           // returns whether line (i) and line (i-1), assumed to be map to clean DOM nodes,
           // or document boundaries, are consecutive in the changed DOM
@@ -2436,7 +2371,6 @@ function Ace2Inner(editorInfo, cssManagers) {
 
     const correctlyAssignLine = (line) => {
       if (correctedLines[line]) return true;
-      p.corrections++;
       correctedLines[line] = true;
       // "line" is an index of a line in the un-updated rep.
       // returns whether line was already correctly assigned (i.e. correctly
@@ -2500,16 +2434,13 @@ function Ace2Inner(editorInfo, cssManagers) {
     };
 
     if (N === 0) {
-      p.cancel();
       if (!isConsecutive(0)) {
         splitRange(0, 0);
       }
     } else {
-      p.mark('topbot');
       detectChangesAroundLine(0, 1);
       detectChangesAroundLine(N - 1, 1);
 
-      p.mark('obs');
       for (const k in observedChanges.cleanNodesNearChanges) {
         if (observedChanges.cleanNodesNearChanges[k]) {
           const key = k.substring(1);
@@ -2519,18 +2450,12 @@ function Ace2Inner(editorInfo, cssManagers) {
           }
         }
       }
-      p.mark('stats&calc');
-      p.literal(p.forIndices, 'byidx');
-      p.literal(p.consecutives, 'cons');
-      p.literal(p.corrections, 'corr');
     }
 
     const dirtyRanges = [];
     for (let r = 0; r < cleanRanges.length - 1; r++) {
       dirtyRanges.push([cleanRanges[r][1], cleanRanges[r + 1][0]]);
     }
-
-    p.end();
 
     return dirtyRanges;
   };
@@ -2544,13 +2469,11 @@ function Ace2Inner(editorInfo, cssManagers) {
   };
 
   const isNodeDirty = (n) => {
-    const p = PROFILER('cleanCheck', false); // eslint-disable-line new-cap
     if (n.parentNode !== root) return true;
     const data = getAssoc(n, 'dirtiness');
     if (!data) return true;
     if (n.id !== data.nodeId) return true;
     if (n.innerHTML !== data.knownHTML) return true;
-    p.end();
     return false;
   };
 
@@ -2757,7 +2680,6 @@ function Ace2Inner(editorInfo, cssManagers) {
           const tabSize = THE_TAB.length;
           const toDelete = ((col2 - 1) % tabSize) + 1;
           performDocumentReplaceRange([lineNum, col - toDelete], [lineNum, col], '');
-          // scrollSelectionIntoView();
           handled = true;
         }
       }
@@ -2846,7 +2768,6 @@ function Ace2Inner(editorInfo, cssManagers) {
     const altKey = evt.altKey;
     const shiftKey = evt.shiftKey;
 
-    // dmesg("keyevent type: "+type+", which: "+which);
     // Don't take action based on modifier keys going up and down.
     // Modifier keys do not generate "keypress" events.
     // 224 is the command-key under Mac Firefox.
@@ -3046,7 +2967,6 @@ function Ace2Inner(editorInfo, cssManagers) {
           fastIncorp(4);
           evt.preventDefault();
           doReturnKey();
-          // scrollSelectionIntoView();
           scheduler.setTimeout(() => {
             outerWin.scrollBy(-100, 0);
           }, 0);
@@ -3095,7 +3015,6 @@ function Ace2Inner(editorInfo, cssManagers) {
           fastIncorp(5);
           evt.preventDefault();
           doTabKey(evt.shiftKey);
-          // scrollSelectionIntoView();
           specialHandled = true;
         }
         if ((!specialHandled) &&
@@ -3389,7 +3308,6 @@ function Ace2Inner(editorInfo, cssManagers) {
       if (isCollapsed) {
         const diveDeep = () => {
           while (p.node.childNodes.length > 0) {
-            // && (p.node == root || p.node.parentNode == root)) {
             if (p.index === 0) {
               p.node = p.node.firstChild;
               p.maxIndex = nodeMaxIndex(p.node);
@@ -3620,16 +3538,7 @@ function Ace2Inner(editorInfo, cssManagers) {
 
   const teardown = () => _teardownActions.forEach((a) => a());
 
-  let inInternationalComposition = false;
-  const handleCompositionEvent = (evt) => {
-    // international input events, fired in FF3, at least;  allow e.g. Japanese input
-    if (evt.type === 'compositionstart') {
-      inInternationalComposition = true;
-    } else if (evt.type === 'compositionend') {
-      inInternationalComposition = false;
-    }
-  };
-
+  let inInternationalComposition = null;
   editorInfo.ace_getInInternationalComposition = () => inInternationalComposition;
 
   const bindTheEventHandlers = () => {
@@ -3639,9 +3548,6 @@ function Ace2Inner(editorInfo, cssManagers) {
     $(document).on('click', handleClick);
     // dropdowns on edit bar need to be closed on clicks on both pad inner and pad outer
     $(outerWin.document).on('click', hideEditBarDropdowns);
-    // Disabled: https://github.com/ether/etherpad-lite/issues/2546
-    // Will break OL re-numbering: https://github.com/ether/etherpad-lite/pull/2533
-    // $(document).on("cut", handleCut);
 
     // If non-nullish, pasting on a link should be suppressed.
     let suppressPasteOnLink = null;
@@ -3718,8 +3624,15 @@ function Ace2Inner(editorInfo, cssManagers) {
       });
     });
 
-    $(document.documentElement).on('compositionstart', handleCompositionEvent);
-    $(document.documentElement).on('compositionend', handleCompositionEvent);
+    $(document.documentElement).on('compositionstart', () => {
+      if (inInternationalComposition) return;
+      inInternationalComposition = new Promise((resolve) => {
+        $(document.documentElement).one('compositionend', () => {
+          inInternationalComposition = null;
+          resolve();
+        });
+      });
+    });
   };
 
   const topLevel = (n) => {
@@ -3833,7 +3746,6 @@ function Ace2Inner(editorInfo, cssManagers) {
 
     const mods = [];
     for (let n = firstLine; n <= lastLine; n++) {
-      // var t = '';
       let level = 0;
       let togglingOn = true;
       const listType = /([a-z]+)([0-9]+)/.exec(getLineListType(n));
@@ -3844,7 +3756,6 @@ function Ace2Inner(editorInfo, cssManagers) {
       }
 
       if (listType) {
-        // t = listType[1];
         level = Number(listType[2]);
       }
       const t = getLineListType(n);
@@ -4030,78 +3941,78 @@ function Ace2Inner(editorInfo, cssManagers) {
 
   // by @Hossein
   // TODO: find a way to move into the plugin
-  customElements.define('wrt-inline-icon', class  extends HTMLElement {
+  // customElements.define('wrt-inline-icon', class  extends HTMLElement {
 			
-    connectedCallback() {
-      const shadow = this.attachShadow({mode: 'open'});
-      const headerId = this.getAttribute('headerId')
-      const style = `
-        .wrtcInlinIcon{
-          border: 1px solid #e6e8e9;
-          border-radius: 50%;
-          background: #fff;
-          box-shadow: 1px 1px 8px #e6e8e9;
-          outline: none;
-          width: 40px;
-          height: 40px;
-          transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-          display: flex;
-          align-items: center;
-          color: #333333;
-          justify-content: center;
-          cursor: pointer;
-        }
-        .wrtcInlinIcon.active svg{
-          color: #2678ff;
-        }
-        .wrtcInlinIcon:hover{
-          background-color: #2678ff;
-          color: #fff;
-        }
-        .wrtcInlinIcon:hover svg{
-          color: #fff;
-        }
-        .wrtcInlinIcon svg {
-          width: 16px;
-          height: 16px;
-        }
-        .wrtcInlinIcon.activeLoader .loader{
-          display: block;
-        }
-        .wrtcInlinIcon .loader {
-          border: 4px solid #f3f3f3;
-          border-top: 4px solid #3498db;
-          border-radius: 50%;
-          animation: spin 2s linear infinite;
-          padding: 16px;
-          position: absolute;
-          z-index: 2;
-          background: transparent;
-          left: -1px;
-          top: -1px;
-          display: none;
-        }
+  //   connectedCallback() {
+  //     const shadow = this.attachShadow({mode: 'open'});
+  //     const headerId = this.getAttribute('headerId')
+  //     const style = `
+  //       .wrtcInlinIcon{
+  //         border: 1px solid #e6e8e9;
+  //         border-radius: 50%;
+  //         background: #fff;
+  //         box-shadow: 1px 1px 8px #e6e8e9;
+  //         outline: none;
+  //         width: 40px;
+  //         height: 40px;
+  //         transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+  //         display: flex;
+  //         align-items: center;
+  //         color: #333333;
+  //         justify-content: center;
+  //         cursor: pointer;
+  //       }
+  //       .wrtcInlinIcon.active svg{
+  //         color: #2678ff;
+  //       }
+  //       .wrtcInlinIcon:hover{
+  //         background-color: #2678ff;
+  //         color: #fff;
+  //       }
+  //       .wrtcInlinIcon:hover svg{
+  //         color: #fff;
+  //       }
+  //       .wrtcInlinIcon svg {
+  //         width: 16px;
+  //         height: 16px;
+  //       }
+  //       .wrtcInlinIcon.activeLoader .loader{
+  //         display: block;
+  //       }
+  //       .wrtcInlinIcon .loader {
+  //         border: 4px solid #f3f3f3;
+  //         border-top: 4px solid #3498db;
+  //         border-radius: 50%;
+  //         animation: spin 2s linear infinite;
+  //         padding: 16px;
+  //         position: absolute;
+  //         z-index: 2;
+  //         background: transparent;
+  //         left: -1px;
+  //         top: -1px;
+  //         display: none;
+  //       }
   
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `
+  //       @keyframes spin {
+  //         0% { transform: rotate(0deg); }
+  //         100% { transform: rotate(360deg); }
+  //       }
+  //     `
   
-      const content = `
-        <button class="btn_roomHandler wrtcInlinIcon ${headerId}" data-action="JOIN" data-id="${headerId}"data-join="PLUS">
-          <span class="loader"></span>
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="currentColor" d="M336.2 64H47.8C21.4 64 0 85.4 0 111.8v288.4C0 426.6 21.4 448 47.8 448h288.4c26.4 0 47.8-21.4 47.8-47.8V111.8c0-26.4-21.4-47.8-47.8-47.8zm189.4 37.7L416 177.3v157.4l109.6 75.5c21.2 14.6 50.4-.3 50.4-25.8V127.5c0-25.4-29.1-40.4-50.4-25.8z"></path></svg>
-        </button>
-      `
-      // TODO: deactivated
-      // shadow.innerHTML = `
-      //   <style>${style}</style>
-      //   ${content}
-      // `;
-    }
+  //     const content = `
+  //       <button class="btn_roomHandler wrtcInlinIcon ${headerId}" data-action="JOIN" data-id="${headerId}"data-join="PLUS">
+  //         <span class="loader"></span>
+  //           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="currentColor" d="M336.2 64H47.8C21.4 64 0 85.4 0 111.8v288.4C0 426.6 21.4 448 47.8 448h288.4c26.4 0 47.8-21.4 47.8-47.8V111.8c0-26.4-21.4-47.8-47.8-47.8zm189.4 37.7L416 177.3v157.4l109.6 75.5c21.2 14.6 50.4-.3 50.4-25.8V127.5c0-25.4-29.1-40.4-50.4-25.8z"></path></svg>
+  //       </button>
+  //     `
+  //     // TODO: deactivated
+  //     // shadow.innerHTML = `
+  //     //   <style>${style}</style>
+  //     //   ${content}
+  //     // `;
+  //   }
   
-  });
+  // });
 }
 
 exports.init = async (editorInfo, cssManagers) => {

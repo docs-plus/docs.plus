@@ -186,7 +186,6 @@ const sendClientReady = (isReconnect, messageType) => {
   // let padId = document.location.pathname.substring(document.location.pathname.lastIndexOf('/') + 1);
   let padId = clientVars.padId; //@Hossein
   // unescape neccesary due to Safari and Opera interpretation of spaces
-  padId = "democracy"
   padId = decodeURIComponent(padId);
 
   if (!isReconnect) {
@@ -220,15 +219,18 @@ const sendClientReady = (isReconnect, messageType) => {
 };
 
 const handshake = () => {
+  //FIXME: //TODO:
+  let padId = clientVars.padId;
+  // unescape neccesary due to Safari and Opera interpretation of spaces
+  padId = decodeURIComponent(padId);
+
+  // padId is used here for sharding / scaling.  We prefix the padId with padId: so it's clear
+  // to the proxy/gateway/whatever that this is a pad connection and should be treated as such
   socket = pad.socket = socketio.connect(exports.baseURL, '/', {
-    // reconnectionAttempts: 5,
-    // reconnection: true,
-    // reconnectionDelay: 1000,
-    // reconnectionDelayMax: 5000,
-    //@ Samir changed
-    reconnectionAttempts: 10,
+    query: {padId},
+    reconnectionAttempts: 5,
     reconnection: true,
-    reconnectionDelay: 2000,
+    reconnectionDelay: 1000,
     reconnectionDelayMax: 5000,
   });
 
@@ -279,15 +281,16 @@ const handshake = () => {
       pad.collabClient.setIsPendingRevision(true);
     }
     //@ Samir changed
-    socketReconnecting()
-    console.log(`socket.io connection error: ${JSON.stringify(error)}`)
-    //throw new Error(`socket.io connection error: ${JSON.stringify(error)}`);
+    socketReconnecting();
+    console.log(`socket.io connection error: ${JSON.stringify(error)}`);
+    // Don't throw an exception. Error events do not indicate problems that are not already
+    // addressed by reconnection logic, so throwing an exception each time there's a socket.io error
+    // just annoys users and fills logs.
   });
 
   socket.on('message', (obj) => {
     // the access was not granted, give the user a message
     if (obj.accessStatus) {
-      console.log(obj, "=-=-=-=-=-=-")
       if (obj.accessStatus === 'deny') {
         $('#loading').hide();
         $('#permissionDenied').show();

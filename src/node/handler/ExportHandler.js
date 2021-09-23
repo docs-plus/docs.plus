@@ -33,13 +33,12 @@ const util = require('util');
 const fsp_writeFile = util.promisify(fs.writeFile);
 const fsp_unlink = util.promisify(fs.unlink);
 
-
 const tempDirectory = os.tmpdir();
 
 /**
  * do a requested export
  */
- exports.doExport = async (req, res, padId, readOnlyId, type) => {
+exports.doExport = async (req, res, padId, readOnlyId, type) => {
   // avoid naming the read-only file as the original pad's id
   let fileName = readOnlyId ? readOnlyId : padId;
 
@@ -95,12 +94,11 @@ const tempDirectory = os.tmpdir();
     if (result.length > 0) {
       // console.log("export handled by plugin", destFile);
     } else {
-      // @TODO no Promise interface for convertors (yet)
       const converter =
-        settings.soffice != null ? require('../utils/LibreOffice')
-        : settings.abiword != null ? require('../utils/Abiword')
-        : null;
-      await converter.convertFile(srcFile, destFile, type)
+          settings.soffice != null ? require('../utils/LibreOffice')
+          : settings.abiword != null ? require('../utils/Abiword')
+          : null;
+      await converter.convertFile(srcFile, destFile, type);
     }
 
     // send the file
