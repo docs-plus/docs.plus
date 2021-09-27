@@ -109,9 +109,8 @@ jobs:
           node-version: 12
 
       - name: Install all dependencies and symlink for ep_etherpad-lite
-        run: |
-          cd src
-          npm ci --no-optional
+        run: src/bin/installOnWindows.bat
+        
       - name: Fix up the settings.json
         run: |
           powershell -Command "(gc settings.json.template) -replace '\"max\": 10', '\"max\": 10000' | Out-File -encoding ASCII settings.json.holder"
