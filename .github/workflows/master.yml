@@ -116,6 +116,10 @@ jobs:
         run: |
           powershell -Command "(gc settings.json.template) -replace '\"max\": 10', '\"max\": 10000' | Out-File -encoding ASCII settings.json.holder"
           powershell -Command "(gc settings.json.holder) -replace '\"points\": 10', '\"points\": 1000' | Out-File -encoding ASCII settings.json"
+      
+      - name: Start Etherpad server
+        run: node node_modules\ep_etherpad-lite\node\server.js
+
       - name: Run the backend tests
         run: cd src && npm test
 
