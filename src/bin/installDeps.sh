@@ -20,25 +20,25 @@ require_minimal_version "npm" $(get_program_version "npm") "$REQUIRED_NPM_MAJOR"
 # Check node version
 require_minimal_version "nodejs" $(get_program_version "node") "$REQUIRED_NODE_MAJOR" "$REQUIRED_NODE_MINOR"
 
-# # By Hossein
-# # Check ws.router
-# WSGATEWAT_GIT_URL="https://github.com/HMarzban/wsgateway.git"
-# if [ ! -d "ws.router" ]; then
-#   mkdir ws.router
-#   cd ws.router
-#   git clone $WSGATEWAT_GIT_URL .
-#   npm ci
-#   rm -rf .git 
-# else
-#   cd ws.router
-#   git init 
-#   git remote add origin $WSGATEWAT_GIT_URL
-#   git pull $WSGATEWAT_GIT_URL main
-#   npm ci
-#   rm -rf .git 
-# fi
-# cd ..
-# cp "./temp/ws.router.json" "ws.router/settings.json" || exit 1
+# By Hossein
+# Check ws.router
+WSGATEWAT_GIT_URL="https://github.com/HMarzban/wsgateway.git"
+if [ ! -d "ws.router" ]; then
+  mkdir ws.router
+  cd ws.router
+  git clone $WSGATEWAT_GIT_URL .
+  npm ci
+  rm -rf .git 
+else
+  cd ws.router
+  git init 
+  git remote add origin $WSGATEWAT_GIT_URL
+  git pull $WSGATEWAT_GIT_URL main
+  npm ci
+  rm -rf .git 
+fi
+cd ..
+cp "./temp/ws.router.json" "ws.router/settings.json" || exit 1
 
 # Get the name of the settings file
 settings="settings.json"
