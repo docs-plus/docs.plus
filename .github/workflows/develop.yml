@@ -1,0 +1,68 @@
+# This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
+# For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
+
+name: Develop.js CI
+
+on:
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
+
+jobs:
+  build:
+    runs-on: stage.docs.plus
+    strategy:
+      matrix:
+        node-version: [12.x]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install Etherpad plugins
+        run: >
+          npm install --no-save --legacy-peer-deps
+          ep_adminpads2
+          https://github.com/samirsayyad/ep_rocketchat#b4578af
+          https://github.com/ether/ep_comments_page
+          https://github.com/ether/ep_cursortrace
+          # https://github.com/samirsayyad/ep_custom_header_message
+          https://github.com/samirsayyad/ep_docs_plus_customize#c68bc28
+          https://github.com/samirsayyad/ep_full_hyperlinks#1eb4ecd
+          ep_hide_line_numbers
+          https://github.com/samirsayyad/ep_insert_media#eecbc98
+          https://github.com/samirsayyad/ep_loading_pad#9ae42cd
+          ep_monetization
+          https://github.com/samirsayyad/ep_profile_modal#10a1e17
+          ep_remove_embed
+          https://github.com/samirsayyad/ep_headings2#76e3f79
+          https://github.com/samirsayyad/ep_set_title_on_pad#81e1660
+          https://github.com/samirsayyad/ep_table_of_contents#5524194
+          https://github.com/HMarzban/ep_headerview#28cdaff 
+          https://github.com/HMarzban/ep_wrtc_heading#d326056
+          # https://github.com/ether/ep_sticky_attributes.git
+
+      - name: Install all dependencies and symlink for ep_etherpad-lite
+        run: src/bin/installDeps.sh
+
+      - name: Run pm2 docsplus instance
+        run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 start temp/ecosystem.config.js --only ${GITHUB_REF#refs/heads/}
+
+      - name: Run pm2 ws.router instance
+        run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
+
+    env:
+      DB_USER: ${{secrets.PG_USER}}
+      DB_PASS: ${{secrets.PG_PASS}}
+      DB_HOST: ${{secrets.PG_HOST}}
+      DB_TYPE: postgres
+      DB_PORT: ${{secrets.PG_PORT}}
+      MEDIA_BUCKET_NAME: ${{secrets.MEDIA_BUCKET_NAME}}
+      BUCKET_S3_SERVER: ${{secrets.BUCKET_S3_SERVER}}
+      ACCESS_KEY_SECRET: ${{secrets.ACCESS_KEY_SECRET}}
+      ACCESS_KEY_ID: ${{secrets.ACCESS_KEY_ID}}
+      ROCKET_CHAT_ADMIN_USERID: ${{secrets.ROCKET_CHAT_ADMIN_USERID}}
+      ROCKET_CHAT_ADMIN_TOKEN: ${{secrets.ROCKET_CHAT_ADMIN_TOKEN}}

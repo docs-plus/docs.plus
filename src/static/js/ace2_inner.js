@@ -1386,6 +1386,9 @@ function Ace2Inner(editorInfo, cssManagers) {
 
         
         if (!nodeToAddAfter) {
+          hSectionId = node.firstChild.getAttribute("data-id");
+          node.setAttribute("sectionId", hSectionId);
+          node.setAttribute("titleId", hTitleId);
           root.insertBefore(node, root.firstChild);
         } else {
           root.insertBefore(node, nodeToAddAfter.nextSibling);
