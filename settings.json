@@ -679,7 +679,7 @@
         "large": 260
       }
     },
-    "videoChatLimit": 7,
+    "videoChatLimit": 300,
     "iceServers": [
       {
         "urls": [
