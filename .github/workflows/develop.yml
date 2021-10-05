@@ -29,7 +29,7 @@ jobs:
           https://github.com/samirsayyad/ep_rocketchat#b4578af
           https://github.com/ether/ep_comments_page
           https://github.com/ether/ep_cursortrace
-          https://github.com/samirsayyad/ep_custom_header_message
+          # https://github.com/samirsayyad/ep_custom_header_message
           https://github.com/samirsayyad/ep_docs_plus_customize#c68bc28
           https://github.com/samirsayyad/ep_full_hyperlinks#1eb4ecd
           ep_hide_line_numbers
