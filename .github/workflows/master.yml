@@ -135,12 +135,11 @@ jobs:
 
       - name: Install Etherpad plugins
         run: >
-          npm install --no-save --legacy-peer-deps
+         npm install --no-save --legacy-peer-deps
           ep_adminpads2
           https://github.com/samirsayyad/ep_rocketchat#b4578af
           https://github.com/ether/ep_comments_page
           https://github.com/ether/ep_cursortrace
-          # https://github.com/samirsayyad/ep_custom_header_message
           https://github.com/samirsayyad/ep_docs_plus_customize#c68bc28
           https://github.com/samirsayyad/ep_full_hyperlinks#1eb4ecd
           ep_hide_line_numbers
@@ -154,6 +153,7 @@ jobs:
           https://github.com/samirsayyad/ep_table_of_contents#5524194
           https://github.com/HMarzban/ep_headerview#28cdaff 
           https://github.com/HMarzban/ep_wrtc_heading#d326056
+          # https://github.com/samirsayyad/ep_custom_header_message
           # https://github.com/ether/ep_sticky_attributes.git
 
       - name: Install all dependencies and symlink for ep_etherpad-lite
