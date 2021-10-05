@@ -1,7 +1,7 @@
 module.exports = {
   apps : [
     {
-      name: "master",
+      name: "main",
       script: "./node_modules/ep_etherpad-lite/node/server.js",
       env: {
         NODE_ENV: "production",
