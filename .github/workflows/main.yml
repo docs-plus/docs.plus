@@ -12,7 +12,7 @@ on:
 jobs:
   build:
     name: build docs.plus
-    needs: [analyze, backend-tests-withoutpluginsLinux, backend-tests-withoutpluginsWindows]
+
     runs-on: docs.plus
     strategy:
       matrix:
