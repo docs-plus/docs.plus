@@ -700,10 +700,10 @@
   "ep_rocketchat": {
     "baseUrl": "https://stage.docs.plus",
     "protocol": "https",
-    "host": "${ROCKET_CHAT_MAIN_HOST_DEV:null}",
+    "host": "${ROCKET_CHAT_MAIN_HOST:null}",
     "port": 443,
-    "userId": "${ROCKET_CHAT_ADMIN_USERID_DEV:null}",
-    "token": "${ROCKET_CHAT_ADMIN_TOKEN_DEV:null}"
+    "userId": "${ROCKET_CHAT_ADMIN_USERID:null}",
+    "token": "${ROCKET_CHAT_ADMIN_TOKEN:null}"
   },
   "ep_singlePad":{
     "active": false,
