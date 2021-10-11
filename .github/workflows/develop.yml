@@ -33,7 +33,7 @@ jobs:
           https://github.com/samirsayyad/ep_full_hyperlinks#1eb4ecd
           ep_hide_line_numbers
           https://github.com/samirsayyad/ep_insert_media#eecbc98
-          https://github.com/samirsayyad/ep_loading_pad#ff79fb3
+          https://github.com/samirsayyad/ep_loading_pad#7e0b83d
           ep_monetization
           https://github.com/samirsayyad/ep_profile_modal#10a1e17
           ep_remove_embed
@@ -64,6 +64,5 @@ jobs:
       BUCKET_S3_SERVER: ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET: ${{secrets.ACCESS_KEY_SECRET}}
       ACCESS_KEY_ID: ${{secrets.ACCESS_KEY_ID}}
-      ROCKET_CHAT_ADMIN_USERID: ${{secrets.ROCKET_CHAT_ADMIN_USERID_DEV}}
-      ROCKET_CHAT_ADMIN_TOKEN: ${{secrets.ROCKET_CHAT_ADMIN_TOKEN_DEV}}
-      ROCKET_CHAT_MAIN_HOST : ${{secrets.ROCKET_CHAT_MAIN_HOST_DEV}}
+      ROCKET_CHAT_ADMIN_USERID: ${{secrets.ROCKET_CHAT_ADMIN_USERID}}
+      ROCKET_CHAT_ADMIN_TOKEN: ${{secrets.ROCKET_CHAT_ADMIN_TOKEN}}
