@@ -63,30 +63,6 @@
   <!-- head and body had been removed intentionally -->
 
   <% e.begin_block("body"); %>
-  <!----------------------------->
-  <!---     PAD LADOING @SAMIR -->
-  <!----------------------------->
-  <div id="editorloadingbox">
-    <% e.begin_block("permissionDenied"); %>
-    <div id="permissionDenied">
-      <p data-l10n-id="pad.permissionDenied" class="editorloadingbox-message">
-        You do not have permission to access this pad
-      </p>
-    </div>
-    <% e.end_block(); %>
-    <% e.begin_block("loading"); %>
-    <p data-l10n-id="pad.loading" id="loading" class="editorloadingbox-message">
-      Loading...
-    </p>
-    <% e.end_block(); %>
-    <noscript>
-      <p class="editorloadingbox-message">
-        <strong>
-          Sorry, you have to enable Javascript in order to use this.
-        </strong>
-      </p>
-    </noscript>
-  </div>
 
   <!----------------------------->
   <!--------- TOOLBAR ----------->
@@ -119,7 +95,7 @@
 
       <div id="editorcontainer" class="editorcontainer"></div>
 
-      <!-- <div id="editorloadingbox">
+      <div id="editorloadingbox">
         <% e.begin_block("permissionDenied"); %>
         <div id="permissionDenied">
           <p data-l10n-id="pad.permissionDenied" class="editorloadingbox-message">
@@ -140,7 +116,8 @@
             </strong>
           </p>
         </noscript>
-      </div> -->
+      </div>
+
 
       <!------------------------------------------------------------->
       <!-- SETTINGS POPUP (change font, language, chat parameters) -->
@@ -266,6 +243,9 @@
           </div>
           <div class="reconnecting">
             <h1 data-l10n-id="pad.modals.reconnecting"></h1>
+            <i class='buttonicon buttonicon-spin5 icon-spin'>
+              <img src='../static/img/brand.svg' class='etherpadBrand'><br/>
+            </i>
           </div>
           <div class="userdup">
             <h1 data-l10n-id="pad.modals.userdup"></h1>
@@ -559,8 +539,7 @@
     gtag('js', new Date());
     gtag('config', 'G-BW657D3QVX');
   </script>
-  
+
   <div style="display:none"><a href="/javascript" data-jslicense="1">JavaScript license information</a></div>
   <% e.end_block(); %>
-
 </html>
