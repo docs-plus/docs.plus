@@ -26,21 +26,21 @@ jobs:
         run: >
           npm install --no-save --legacy-peer-deps
           ep_adminpads2
-          https://github.com/samirsayyad/ep_rocketchat#aed9029
+          https://github.com/samirsayyad/ep_rocketchat#9af8403
           https://github.com/ether/ep_comments_page
           https://github.com/ether/ep_cursortrace
           https://github.com/samirsayyad/ep_docs_plus_customize#c68bc28
           https://github.com/samirsayyad/ep_full_hyperlinks#1eb4ecd
           ep_hide_line_numbers
           https://github.com/samirsayyad/ep_insert_media#eecbc98
-          https://github.com/samirsayyad/ep_loading_pad#9ae42cd
+          https://github.com/samirsayyad/ep_loading_pad#7e0b83d
           ep_monetization
           https://github.com/samirsayyad/ep_profile_modal#10a1e17
           ep_remove_embed
           https://github.com/samirsayyad/ep_headings2#76e3f79
-          https://github.com/samirsayyad/ep_set_title_on_pad#7d70904
-          https://github.com/samirsayyad/ep_table_of_contents#72b1742
-          https://github.com/HMarzban/ep_headerview#28cdaff 
+          https://github.com/samirsayyad/ep_set_title_on_pad#142b8a7
+          https://github.com/samirsayyad/ep_table_of_contents#ee184e2
+          https://github.com/HMarzban/ep_headerview#7557947 
           https://github.com/HMarzban/ep_wrtc_heading#41055fb
           # https://github.com/ether/ep_sticky_attributes.git
           # https://github.com/samirsayyad/ep_custom_header_message
@@ -64,5 +64,7 @@ jobs:
       BUCKET_S3_SERVER: ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET: ${{secrets.ACCESS_KEY_SECRET}}
       ACCESS_KEY_ID: ${{secrets.ACCESS_KEY_ID}}
-      ROCKET_CHAT_ADMIN_USERID: ${{secrets.ROCKET_CHAT_ADMIN_USERID}}
-      ROCKET_CHAT_ADMIN_TOKEN: ${{secrets.ROCKET_CHAT_ADMIN_TOKEN}}
+      ROCKET_CHAT_ADMIN_USERID: ${{secrets.ROCKET_CHAT_ADMIN_USERID_DEV}}
+      ROCKET_CHAT_ADMIN_TOKEN: ${{secrets.ROCKET_CHAT_ADMIN_TOKEN_DEV}}
+      ROCKET_CHAT_MAIN_HOST : ${{secrets.ROCKET_CHAT_MAIN_HOST_DEV}}
+

@@ -698,9 +698,9 @@
   /* Override any strings found in locale directories */
   "customLocaleStrings": {},
   "ep_rocketchat": {
-    "baseUrl": "https://docs.plus",
+    "baseUrl": "https://stage.docs.plus",
     "protocol": "https",
-    "host": "ch.docs.plus",
+    "host": "${ROCKET_CHAT_MAIN_HOST:null}",
     "port": 443,
     "userId": "${ROCKET_CHAT_ADMIN_USERID:null}",
     "token": "${ROCKET_CHAT_ADMIN_TOKEN:null}"

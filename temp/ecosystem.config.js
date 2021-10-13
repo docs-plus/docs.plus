@@ -19,7 +19,8 @@ module.exports = {
         MEDIA_BUCKET_NAME : `${process.env.MEDIA_BUCKET_NAME}`,
         ROCKET_CHAT_ADMIN_USERID : `${process.env.ROCKET_CHAT_ADMIN_USERID}`,
         ROCKET_CHAT_ADMIN_TOKEN : `${process.env.ROCKET_CHAT_ADMIN_TOKEN}`,
-  
+        ROCKET_CHAT_MAIN_HOST : `${process.env.ROCKET_CHAT_MAIN_HOST}`,
+
       },
     },
     {
@@ -40,6 +41,7 @@ module.exports = {
       MEDIA_BUCKET_NAME : `${process.env.MEDIA_BUCKET_NAME}`,
       ROCKET_CHAT_ADMIN_USERID : `${process.env.ROCKET_CHAT_ADMIN_USERID}`,
       ROCKET_CHAT_ADMIN_TOKEN : `${process.env.ROCKET_CHAT_ADMIN_TOKEN}`,
+      ROCKET_CHAT_MAIN_HOST : `${process.env.ROCKET_CHAT_MAIN_HOST}`,
 
     },
   },
