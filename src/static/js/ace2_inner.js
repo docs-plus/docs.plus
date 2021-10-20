@@ -44,10 +44,10 @@ function Ace2Inner(editorInfo, cssManagers) {
   const AttributeManager = require('./AttributeManager');
   const Scroll = require('./scroll');
   const DEBUG = false;
-
+  
   const THE_TAB = '    '; // 4
   const MAX_LIST_LEVEL = 16;
-
+  
   const FORMATTING_STYLES = ['bold', 'italic', 'underline', 'strikethrough'];
   const SELECT_BUTTON_CLASS = 'selected';
 
@@ -4016,6 +4016,51 @@ function Ace2Inner(editorInfo, cssManagers) {
   //   }
   
   // });
+
+  top.softReloadLRHAttributes = function () {
+    top.console.info("[etherpad]: soft reload LRH Attributes");
+    const root = document.getElementById("innerdocbody").children;
+
+    [...root].forEach((node) => {
+      if (htags.includes(node.firstChild.nodeName)) {
+        currentHIndex = htags.indexOf(node.firstChild.nodeName);
+        hSectionId = node.firstChild.getAttribute("data-id");
+        if (!hTitleId) hTitleId = hSectionId;
+
+        if (!ltestHsId.preserve) {
+          ltestHsId.preserve = currentHIndex;
+          ltestHsId[currentHIndex] = hSectionId;
+        }
+
+        if (
+          Math.abs(ltestHsId.preserve - currentHIndex) > 0 ||
+          ltestHsId.preserve === currentHIndex
+        ) {
+          ltestHsId[currentHIndex] = hSectionId;
+          ltestHsId.preserve = currentHIndex;
+        }
+
+        // set First H text as a title index
+        if (hTitleIndex == undefined) hTitleIndex = currentHIndex;
+
+        if (currentHIndex === hTitleIndex) {
+          hTitleId = hSectionId;
+        }
+
+        hParentIndex = currentHIndex;
+      }
+
+      node.setAttribute("sectionId", hSectionId);
+      node.setAttribute("titleId", hTitleId);
+      currentHIndex >= 0 && ltestHsId[0] && node.setAttribute("lrh0", ltestHsId[0]);
+      currentHIndex >= 1 && ltestHsId[1] && node.setAttribute("lrh1", ltestHsId[1]);
+      currentHIndex >= 2 && ltestHsId[2] && node.setAttribute("lrh2", ltestHsId[2]);
+      currentHIndex >= 3 && ltestHsId[3] && node.setAttribute("lrh3", ltestHsId[3]);
+      currentHIndex >= 4 && ltestHsId[4] && node.setAttribute("lrh4", ltestHsId[4]);
+      currentHIndex >= 5 && ltestHsId[5] && node.setAttribute("lrh5", ltestHsId[5]);
+      currentHIndex >= 6 && ltestHsId[6] && node.setAttribute("lrh6", ltestHsId[6]);
+    });
+  };
 }
 
 exports.init = async (editorInfo, cssManagers) => {
