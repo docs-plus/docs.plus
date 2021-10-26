@@ -703,7 +703,8 @@
     "host": "${ROCKET_CHAT_MAIN_HOST:null}",
     "port": 443,
     "userId": "${ROCKET_CHAT_ADMIN_USERID:null}",
-    "token": "${ROCKET_CHAT_ADMIN_TOKEN:null}"
+    "token": "${ROCKET_CHAT_ADMIN_TOKEN:null}",
+    "dbRocketchatKey": "dbRocketchatKey1"
   },
   "ep_singlePad":{
     "active": false,
