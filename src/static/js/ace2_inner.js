@@ -4024,9 +4024,11 @@ function Ace2Inner(editorInfo, cssManagers) {
   // });
 
   // @Hossein
-  top.softReloadLRHAttributes = function () {
+  top.softReloadLRHAttributes = function (callback) {
     top.console.info("[etherpad]: soft reload LRH Attributes");
     const root = document.getElementById("innerdocbody").children;
+
+    top.console.time("softReloadLRHAttributes");
 
     [...root].forEach((node) => {
       if (htags.includes(node.firstChild.nodeName)) {
@@ -4059,14 +4061,17 @@ function Ace2Inner(editorInfo, cssManagers) {
 
       node.setAttribute("sectionId", hSectionId);
       node.setAttribute("titleId", hTitleId);
-      currentHIndex >= 0 && ltestHsId[0] && node.setAttribute("lrh0", ltestHsId[0]);
-      currentHIndex >= 1 && ltestHsId[1] && node.setAttribute("lrh1", ltestHsId[1]);
-      currentHIndex >= 2 && ltestHsId[2] && node.setAttribute("lrh2", ltestHsId[2]);
-      currentHIndex >= 3 && ltestHsId[3] && node.setAttribute("lrh3", ltestHsId[3]);
-      currentHIndex >= 4 && ltestHsId[4] && node.setAttribute("lrh4", ltestHsId[4]);
-      currentHIndex >= 5 && ltestHsId[5] && node.setAttribute("lrh5", ltestHsId[5]);
-      currentHIndex >= 6 && ltestHsId[6] && node.setAttribute("lrh6", ltestHsId[6]);
+
+      for(let i = 0; i <= currentHIndex; i++ ){
+        if(ltestHsId[i]) 
+          node.setAttribute(`lrh${i}`, ltestHsId[i]);
+      }
+
     });
+
+    top.console.timeEnd("softReloadLRHAttributes");
+
+    if(callback) callback()
   };
 }
 
