@@ -361,7 +361,7 @@ function Ace2Inner(editorInfo, cssManagers) {
       result = action();
 
       hooks.callAll('aceEditEvent', {
-        callstack: currentCallStack,
+        callstack: {...result, ...currentCallStack}, // @Hossein
         editorInfo,
         rep,
         documentAttributeManager,
@@ -3260,6 +3260,12 @@ function Ace2Inner(editorInfo, cssManagers) {
       if (type === 'keyup') {
         thisKeyDoesntTriggerNormalize = false;
       }
+
+      // @Hossein
+      return {
+        event: evt,
+        nodeSelected:document.getSelection().baseNode
+      }
     });
   };
 
@@ -4017,6 +4023,7 @@ function Ace2Inner(editorInfo, cssManagers) {
   
   // });
 
+  // @Hossein
   top.softReloadLRHAttributes = function () {
     top.console.info("[etherpad]: soft reload LRH Attributes");
     const root = document.getElementById("innerdocbody").children;
