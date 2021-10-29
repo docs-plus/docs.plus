@@ -250,7 +250,7 @@
   /*
    * Should we suppress errors from being visible in the default Pad Text?
    */
-  "suppressErrorsInPadText": false,
+  "suppressErrorsInPadText": true,
   /*
    * If this option is enabled, a user must have a session to access pads.
    * This effectively allows only group pads to be accessed.
@@ -679,7 +679,7 @@
         "large": 260
       }
     },
-    "videoChatLimit": 7,
+    "videoChatLimit": 300,
     "iceServers": [
       {
         "urls": [
@@ -700,10 +700,11 @@
   "ep_rocketchat": {
     "baseUrl" : "https://democracyhandbook.org.uk",
     "protocol": "https",
-    "host" :  "rooms.democracyhandbook.org.uk",
-    "port" :443,
-    "userId" : "${ROCKET_CHAT_ADMIN_USERID_DEMOCRACY:null}" ,
-    "token" : "${ROCKET_CHAT_ADMIN_TOKEN_DEMOCRACY:null}"  
+    "host": "${ROCKET_CHAT_MAIN_HOST:null}",
+    "port": 443,
+    "userId": "${ROCKET_CHAT_ADMIN_USERID:null}",
+    "token": "${ROCKET_CHAT_ADMIN_TOKEN:null}",
+    "dbRocketchatKey": "democracykey"
   },
   "ep_singlePad":{
     "active": true,

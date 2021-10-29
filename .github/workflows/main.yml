@@ -1,22 +1,22 @@
 # This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
-name: Democracy.js CI
+name: Main.js CI
 
 on:
   push:
-    branches: [democracy]
+    branches: [main]
   pull_request:
-    branches: [democracy]
+    branches: [main]
 
 jobs:
   build:
-    runs-on: democracyhandbook.org.uk
+    name: build docs.plus
 
+    runs-on: docs.plus
     strategy:
       matrix:
         node-version: [12.x]
-
     steps:
       - uses: actions/checkout@v2
       - name: Use Node.js ${{ matrix.node-version }}
@@ -51,21 +51,21 @@ jobs:
         run: src/bin/installDeps.sh
 
       - name: Run pm2 docsplus instance
-        run: DB_NAME=democracyhandbook pm2 start temp/ecosystem.config.js --only ${GITHUB_REF#refs/heads/}
+        run: DB_NAME=handbook pm2 start temp/ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
 
       - name: Run pm2 ws.router instance
-        run: DB_NAME=democracyhandbook pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
+        run: DB_NAME=handbook pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
 
     env:
       DB_USER: ${{secrets.PG_USER}}
       DB_PASS: ${{secrets.PG_PASS}}
       DB_HOST: ${{secrets.PG_HOST}}
+      DB_TYPE: postgres
+      DB_PORT: ${{secrets.PG_PORT}}
       MEDIA_BUCKET_NAME: ${{secrets.MEDIA_BUCKET_NAME}}
       BUCKET_S3_SERVER: ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET: ${{secrets.ACCESS_KEY_SECRET}}
       ACCESS_KEY_ID: ${{secrets.ACCESS_KEY_ID}}
-      DB_TYPE: postgres
-      DB_PORT: ${{secrets.PG_PORT}}
-      PORT: 9101,
-      ROCKET_CHAT_ADMIN_USERID_DEMOCRACY: ${{secrets.ROCKET_CHAT_ADMIN_USERID_DEMOCRACY}}
-      ROCKET_CHAT_ADMIN_TOKEN_DEMOCRACY: ${{secrets.ROCKET_CHAT_ADMIN_TOKEN_DEMOCRACY}}
+      ROCKET_CHAT_ADMIN_USERID: ${{secrets.ROCKET_CHAT_ADMIN_USERID}}
+      ROCKET_CHAT_ADMIN_TOKEN: ${{secrets.ROCKET_CHAT_ADMIN_TOKEN}}
+      ROCKET_CHAT_MAIN_HOST : ${{secrets.ROCKET_CHAT_MAIN_HOST}}

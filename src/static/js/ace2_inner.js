@@ -44,10 +44,10 @@ function Ace2Inner(editorInfo, cssManagers) {
   const AttributeManager = require('./AttributeManager');
   const Scroll = require('./scroll');
   const DEBUG = false;
-
+  
   const THE_TAB = '    '; // 4
   const MAX_LIST_LEVEL = 16;
-
+  
   const FORMATTING_STYLES = ['bold', 'italic', 'underline', 'strikethrough'];
   const SELECT_BUTTON_CLASS = 'selected';
 
@@ -361,7 +361,7 @@ function Ace2Inner(editorInfo, cssManagers) {
       result = action();
 
       hooks.callAll('aceEditEvent', {
-        callstack: currentCallStack,
+        callstack: {...result, ...currentCallStack}, // @Hossein
         editorInfo,
         rep,
         documentAttributeManager,
@@ -1386,6 +1386,9 @@ function Ace2Inner(editorInfo, cssManagers) {
 
         
         if (!nodeToAddAfter) {
+          hSectionId = node.firstChild.getAttribute("data-id");
+          node.setAttribute("sectionId", hSectionId);
+          node.setAttribute("titleId", hTitleId);
           root.insertBefore(node, root.firstChild);
         } else {
           root.insertBefore(node, nodeToAddAfter.nextSibling);
@@ -3257,6 +3260,12 @@ function Ace2Inner(editorInfo, cssManagers) {
       if (type === 'keyup') {
         thisKeyDoesntTriggerNormalize = false;
       }
+
+      // @Hossein
+      return {
+        event: evt,
+        nodeSelected:document.getSelection().baseNode
+      }
     });
   };
 
@@ -4013,6 +4022,57 @@ function Ace2Inner(editorInfo, cssManagers) {
   //   }
   
   // });
+
+  // @Hossein
+  top.softReloadLRHAttributes = function (callback) {
+    top.console.info("[etherpad]: soft reload LRH Attributes");
+    const root = document.getElementById("innerdocbody").children;
+
+    top.console.time("softReloadLRHAttributes");
+
+    [...root].forEach((node) => {
+      if (htags.includes(node.firstChild.nodeName)) {
+        currentHIndex = htags.indexOf(node.firstChild.nodeName);
+        hSectionId = node.firstChild.getAttribute("data-id");
+        if (!hTitleId) hTitleId = hSectionId;
+
+        if (!ltestHsId.preserve) {
+          ltestHsId.preserve = currentHIndex;
+          ltestHsId[currentHIndex] = hSectionId;
+        }
+
+        if (
+          Math.abs(ltestHsId.preserve - currentHIndex) > 0 ||
+          ltestHsId.preserve === currentHIndex
+        ) {
+          ltestHsId[currentHIndex] = hSectionId;
+          ltestHsId.preserve = currentHIndex;
+        }
+
+        // set First H text as a title index
+        if (hTitleIndex == undefined) hTitleIndex = currentHIndex;
+
+        if (currentHIndex === hTitleIndex) {
+          hTitleId = hSectionId;
+        }
+
+        hParentIndex = currentHIndex;
+      }
+
+      node.setAttribute("sectionId", hSectionId);
+      node.setAttribute("titleId", hTitleId);
+
+      for(let i = 0; i <= currentHIndex; i++ ){
+        if(ltestHsId[i]) 
+          node.setAttribute(`lrh${i}`, ltestHsId[i]);
+      }
+
+    });
+
+    top.console.timeEnd("softReloadLRHAttributes");
+
+    if(callback) callback()
+  };
 }
 
 exports.init = async (editorInfo, cssManagers) => {
