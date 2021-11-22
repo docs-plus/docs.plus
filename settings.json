@@ -64,7 +64,7 @@
  *
  *    "defaultPadText" : "${DEFAULT_PAD_TEXT}Line 1\nLine 2"
  */
-{
+ {
   /*
    * Name your instance!
    */
@@ -672,14 +672,14 @@
   },
   "ep_wrtc_heading": {
     "useEtherpadSocket": false,
-    "socketAddress": "https://ws-dev.docs.plus",
+    "socketAddress": "https://ws.docs.plus",
     "video": {
       "sizes": {
         "small": 130,
         "large": 260
       }
     },
-    "videoChatLimit": 7,
+    "videoChatLimit": 400,
     "iceServers": [
       {
         "urls": [
@@ -698,13 +698,13 @@
   /* Override any strings found in locale directories */
   "customLocaleStrings": {},
   "ep_rocketchat": {
-    "baseUrl": "https://stage.docs.plus",
+    "baseUrl": "https://docs.plus",
     "protocol": "https",
     "host": "${ROCKET_CHAT_MAIN_HOST:null}",
     "port": 443,
     "userId": "${ROCKET_CHAT_ADMIN_USERID:null}",
     "token": "${ROCKET_CHAT_ADMIN_TOKEN:null}",
-    "dbRocketchatKey": "stagekey"
+    "dbRocketchatKey": "mainkey"
   },
   "ep_singlePad":{
     "active": false,
