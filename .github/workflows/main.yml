@@ -27,22 +27,22 @@ jobs:
         run: >
           npm install --no-save --legacy-peer-deps
           ep_adminpads2
-          https://github.com/samirsayyad/ep_rocketchat#fe77190
+          https://github.com/samirsayyad/ep_rocketchat#576cc58
           https://github.com/ether/ep_comments_page
           https://github.com/ether/ep_cursortrace
           https://github.com/samirsayyad/ep_docs_plus_customize#c68bc28
           ep_hide_line_numbers
           https://github.com/samirsayyad/ep_insert_media#eecbc98
-          https://github.com/samirsayyad/ep_loading_pad#7e0b83d
           ep_monetization
-          https://github.com/samirsayyad/ep_profile_modal#65bc083
+          https://github.com/samirsayyad/ep_profile_modal#e2090e2
           ep_remove_embed
-          https://github.com/samirsayyad/ep_full_hyperlinks#7556230
+          https://github.com/samirsayyad/ep_loading_pad#90f43f9
+          https://github.com/samirsayyad/ep_full_hyperlinks#7ba9702
           https://github.com/samirsayyad/ep_headings2#76e3f79
-          https://github.com/samirsayyad/ep_set_title_on_pad#e165f71
-          https://github.com/samirsayyad/ep_table_of_contents#fd3e4ba 
-          https://github.com/HMarzban/ep_headerview#77e01cb 
-          https://github.com/HMarzban/ep_wrtc_heading#d22b49e
+          https://github.com/samirsayyad/ep_set_title_on_pad#7fd922f
+          https://github.com/samirsayyad/ep_table_of_contents#5187ec4 
+          https://github.com/HMarzban/ep_headerview#ad513f6 
+          https://github.com/HMarzban/ep_wrtc_heading#e404050
           # https://github.com/ether/ep_sticky_attributes.git
           # https://github.com/samirsayyad/ep_custom_header_message
 
