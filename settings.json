@@ -64,7 +64,7 @@
  *
  *    "defaultPadText" : "${DEFAULT_PAD_TEXT}Line 1\nLine 2"
  */
-{
+ {
   /*
    * Name your instance!
    */
@@ -679,7 +679,7 @@
         "large": 260
       }
     },
-    "videoChatLimit": 300,
+    "videoChatLimit": 400,
     "iceServers": [
       {
         "urls": [
