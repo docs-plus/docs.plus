@@ -356,8 +356,6 @@ Pad.prototype.init = async function (text) {
 
     await this.appendRevision(firstChangeset, '');
   }
-
-  hooks.callAll('padLoad', {pad: this});
 };
 
 Pad.prototype.copy = async function (destinationID, force) {
