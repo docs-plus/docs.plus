@@ -3264,7 +3264,7 @@ function Ace2Inner(editorInfo, cssManagers) {
       // @Hossein
       return {
         event: evt,
-        nodeSelected:document.getSelection().baseNode
+        nodeSelected: document.getSelection().focusNode.parentElement
       }
     });
   };
@@ -3950,78 +3950,76 @@ function Ace2Inner(editorInfo, cssManagers) {
 
   // by @Hossein
   // TODO: find a way to move into the plugin
-  // customElements.define('wrt-inline-icon', class  extends HTMLElement {
-			
-  //   connectedCallback() {
-  //     const shadow = this.attachShadow({mode: 'open'});
-  //     const headerId = this.getAttribute('headerId')
-  //     const style = `
-  //       .wrtcInlinIcon{
-  //         border: 1px solid #e6e8e9;
-  //         border-radius: 50%;
-  //         background: #fff;
-  //         box-shadow: 1px 1px 8px #e6e8e9;
-  //         outline: none;
-  //         width: 40px;
-  //         height: 40px;
-  //         transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-  //         display: flex;
-  //         align-items: center;
-  //         color: #333333;
-  //         justify-content: center;
-  //         cursor: pointer;
-  //       }
-  //       .wrtcInlinIcon.active svg{
-  //         color: #2678ff;
-  //       }
-  //       .wrtcInlinIcon:hover{
-  //         background-color: #2678ff;
-  //         color: #fff;
-  //       }
-  //       .wrtcInlinIcon:hover svg{
-  //         color: #fff;
-  //       }
-  //       .wrtcInlinIcon svg {
-  //         width: 16px;
-  //         height: 16px;
-  //       }
-  //       .wrtcInlinIcon.activeLoader .loader{
-  //         display: block;
-  //       }
-  //       .wrtcInlinIcon .loader {
-  //         border: 4px solid #f3f3f3;
-  //         border-top: 4px solid #3498db;
-  //         border-radius: 50%;
-  //         animation: spin 2s linear infinite;
-  //         padding: 16px;
-  //         position: absolute;
-  //         z-index: 2;
-  //         background: transparent;
-  //         left: -1px;
-  //         top: -1px;
-  //         display: none;
-  //       }
+  customElements.define('chat-inline-icon', class  extends HTMLElement {
+    connectedCallback() {
+      const shadow = this.attachShadow({mode: 'open'});
+      const headerId = this.getAttribute('headerId')
+      const style = `
+        .chatInlinIcon{
+          border: 1px solid #e6e8e9;
+          border-radius: 50%;
+          background: #fff;
+          box-shadow: 1px 1px 8px #e6e8e9;
+          outline: none;
+          width: 40px;
+          height: 40px;
+          transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+          display: flex;
+          align-items: center;
+          color: #333333;
+          justify-content: center;
+          cursor: pointer;
+        }
+        .chatInlinIcon.active svg{
+          color: #2678ff;
+        }
+        .chatInlinIcon:hover{
+          background-color: #2678ff;
+          color: #fff;
+        }
+        .chatInlinIcon:hover svg{
+          color: #fff;
+        }
+        .chatInlinIcon svg {
+          width: 16px;
+          height: 16px;
+        }
+        .chatInlinIcon.activeLoader .loader{
+          display: block;
+        }
+        .chatInlinIcon .loader {
+          border: 4px solid #f3f3f3;
+          border-top: 4px solid #3498db;
+          border-radius: 50%;
+          animation: spin 2s linear infinite;
+          padding: 16px;
+          position: absolute;
+          z-index: 2;
+          background: transparent;
+          left: -1px;
+          top: -1px;
+          display: none;
+        }
   
-  //       @keyframes spin {
-  //         0% { transform: rotate(0deg); }
-  //         100% { transform: rotate(360deg); }
-  //       }
-  //     `
+        @keyframes spin {
+          0% { transform: rotate(0deg); }
+          100% { transform: rotate(360deg); }
+        }
+      `
+      const content = `
+        <button class="chatInlinIcon ${headerId}" data-id="${headerId}" >
+          <span class="loader"></span>
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="currentColor" d="M416 224V64c0-35.3-28.7-64-64-64H64C28.7 0 0 28.7 0 64v160c0 35.3 28.7 64 64 64v54.2c0 8 9.1 12.6 15.5 7.8l82.8-62.1H352c35.3.1 64-28.6 64-63.9zm96-64h-64v64c0 52.9-43.1 96-96 96H192v64c0 35.3 28.7 64 64 64h125.7l82.8 62.1c6.4 4.8 15.5.2 15.5-7.8V448h32c35.3 0 64-28.7 64-64V224c0-35.3-28.7-64-64-64z" class=""></path></svg>
+          </button>
+      `
+      // TODO: deactivated
+      shadow.innerHTML = `
+        <style>${style}</style>
+        ${content}
+      `;
+    }
   
-  //     const content = `
-  //       <button class="btn_roomHandler wrtcInlinIcon ${headerId}" data-action="JOIN" data-id="${headerId}"data-join="PLUS">
-  //         <span class="loader"></span>
-  //           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="currentColor" d="M336.2 64H47.8C21.4 64 0 85.4 0 111.8v288.4C0 426.6 21.4 448 47.8 448h288.4c26.4 0 47.8-21.4 47.8-47.8V111.8c0-26.4-21.4-47.8-47.8-47.8zm189.4 37.7L416 177.3v157.4l109.6 75.5c21.2 14.6 50.4-.3 50.4-25.8V127.5c0-25.4-29.1-40.4-50.4-25.8z"></path></svg>
-  //       </button>
-  //     `
-  //     // TODO: deactivated
-  //     // shadow.innerHTML = `
-  //     //   <style>${style}</style>
-  //     //   ${content}
-  //     // `;
-  //   }
-  
-  // });
+  });
 
   // @Hossein
   top.softReloadLRHAttributes = function (callback) {
