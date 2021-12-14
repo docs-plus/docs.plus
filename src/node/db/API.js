@@ -20,6 +20,7 @@
  */
 
 const Changeset = require('../../static/js/Changeset');
+const ChatMessage = require('../../static/js/ChatMessage');
 const CustomError = require('../utils/customError');
 const padManager = require('./PadManager');
 const padMessageHandler = require('../handler/PadMessageHandler');
@@ -344,15 +345,13 @@ exports.getChatHistory = async (padID, start, end) => {
 /**
 appendChatMessage(padID, text, authorID, time), creates a chat message for the pad id,
 time is a timestamp
-chatTextType added by @Samir
-beforeText added by @Samir
 
 Example returns:
 
 {code: 0, message:"ok", data: null}
 {code: 1, message:"padID does not exist", data: null}
 */
-exports.appendChatMessage = async (padID, text, authorID, time, chatTextType, beforeText) => {
+exports.appendChatMessage = async (padID, text, authorID, time) => {
   // text is required
   if (typeof text !== 'string') {
     throw new CustomError('text is not a string', 'apierror');
@@ -366,7 +365,7 @@ exports.appendChatMessage = async (padID, text, authorID, time, chatTextType, be
   // @TODO - missing getPadSafe() call ?
 
   // save chat message to database and send message to all connected clients
-  await padMessageHandler.sendChatMessageToPadClients(time, authorID, text, padID, chatTextType, beforeText);
+  await padMessageHandler.sendChatMessageToPadClients(new ChatMessage(text, authorID, time), padID);
 };
 
 /* ***************
