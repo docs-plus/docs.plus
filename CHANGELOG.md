@@ -1,3 +1,140 @@
+# 1.8.16
+
+### Security fixes
+
+If you cannot upgrade to v1.8.16 for some reason, you are encouraged to try
+cherry-picking the fixes to the version you are running:
+
+```shell
+git cherry-pick b7065eb9a0ec..77bcb507b30e
+```
+
+* Maliciously crafted `.etherpad` files can no longer overwrite arbitrary
+  non-pad database records when imported.
+* Imported `.etherpad` files are now subject to numerous consistency checks
+  before any records are written to the database. This should help avoid
+  denial-of-service attacks via imports of malformed `.etherpad` files.
+
+### Notable enhancements and fixes
+
+* Fixed several `.etherpad` import bugs.
+* Improved support for large `.etherpad` imports.
+
+# 1.8.15
+
+### Security fixes
+
+* Fixed leak of the writable pad ID when exporting from the pad's read-only ID.
+  This only matters if you treat the writeable pad IDs as secret (e.g., you are
+  not using [ep_padlist2](https://www.npmjs.com/package/ep_padlist2)) and you
+  share the pad's read-only ID with untrusted users. Instead of treating
+  writeable pad IDs as secret, you are encouraged to take advantage of
+  Etherpad's authentication and authorization mechanisms (e.g., use
+  [ep_openid_connect](https://www.npmjs.com/package/ep_openid_connect) with
+  [ep_readonly_guest](https://www.npmjs.com/package/ep_readonly_guest), or write
+  your own
+  [authentication](https://etherpad.org/doc/v1.8.14/#index_authenticate) and
+  [authorization](https://etherpad.org/doc/v1.8.14/#index_authorize) plugins).
+* Updated dependencies.
+
+### Compatibility changes
+
+* The `logconfig` setting is deprecated.
+
+#### For plugin authors
+
+* Etherpad now uses [jsdom](https://github.com/jsdom/jsdom) instead of
+  [cheerio](https://cheerio.js.org/) for processing HTML imports. There are two
+  consequences of this change:
+  * `require('ep_etherpad-lite/node_modules/cheerio')` no longer works. To fix,
+    your plugin should directly depend on `cheerio` and do `require('cheerio')`.
+  * The `collectContentImage` hook's `node` context property is now an
+    [`HTMLImageElement`](https://developer.mozilla.org/en-US/docs/Web/API/HTMLImageElement)
+    object rather than a Cheerio Node-like object, so the API is slightly
+    different. See
+    [citizenos/ep_image_upload#49](https://github.com/citizenos/ep_image_upload/pull/49)
+    for an example fix.
+* The `clientReady` server-side hook is deprecated; use the new `userJoin` hook
+  instead.
+* The `init_<pluginName>` server-side hooks are now run every time Etherpad
+  starts up, not just the first time after the named plugin is installed.
+* The `userLeave` server-side hook's context properties have changed:
+  * `auth`: Deprecated.
+  * `author`: Deprecated; use the new `authorId` property instead.
+  * `readonly`: Deprecated; use the new `readOnly` property instead.
+  * `rev`: Deprecated.
+* Changes to the `src/static/js/Changeset.js` library:
+  * `opIterator()`: The unused start index parameter has been removed, as has
+    the unused `lastIndex()` method on the returned object.
+  * `smartOpAssembler()`: The returned object's `appendOpWithText()` method is
+    deprecated without a replacement available to plugins (if you need one, let
+    us know and we can make the private `opsFromText()` function public).
+  * Several functions that should have never been public are no longer exported:
+    `applyZip()`, `assert()`, `clearOp()`, `cloneOp()`, `copyOp()`, `error()`,
+    `followAttributes()`, `opString()`, `stringOp()`, `textLinesMutator()`,
+    `toBaseTen()`, `toSplices()`.
+
+### Notable enhancements and fixes
+
+* Accessibility fix for JAWS screen readers.
+* Fixed "clear authorship" error (see issue #5128).
+* Etherpad now considers square brackets to be valid URL characters.
+* The server no longer crashes if an exception is thrown while processing a
+  message from a client.
+* The `useMonospaceFontGlobal` setting now works (thanks @Lastpixl!).
+* Chat improvements:
+  * The message input field is now a text area, allowing multi-line messages
+    (use shift-enter to insert a newline).
+  * Whitespace in chat messages is now preserved.
+* Docker improvements:
+  * New `HEALTHCHECK` instruction (thanks @Gared!).
+  * New `settings.json` variables: `DB_COLLECTION`, `DB_URL`,
+    `SOCKETIO_MAX_HTTP_BUFFER_SIZE`, `DUMP_ON_UNCLEAN_EXIT` (thanks
+    @JustAnotherArchivist!).
+  * `.ep_initialized` files are no longer created.
+* Worked around a [Firefox Content Security Policy
+  bug](https://bugzilla.mozilla.org/show_bug.cgi?id=1721296) that caused CSP
+  failures when `'self'` was in the CSP header. See issue #4975 for details.
+* UeberDB upgraded from v1.4.10 to v1.4.18. For details, see the [ueberDB
+  changelog](https://github.com/ether/ueberDB/blob/master/CHANGELOG.md).
+  Highlights:
+  * The `postgrespool` driver was renamed to `postgres`, replacing the old
+    driver of that name. If you used the old `postgres` driver, you may see an
+    increase in the number of database connections.
+  * For `postgres`, you can now set the `dbSettings` value in `settings.json` to
+    a connection string (e.g., `"postgres://user:password@host/dbname"`) instead
+    of an object.
+  * For `mongodb`, the `dbName` setting was renamed to `database` (but `dbName`
+    still works for backwards compatibility) and is now optional (if unset, the
+    database name in `url` is used).
+* `/admin/settings` now honors the `--settings` command-line argument.
+* Fixed "Author *X* tried to submit changes as author *Y*" detection.
+* Error message display improvements.
+* Simplified pad reload after importing an `.etherpad` file.
+
+#### For plugin authors
+
+* `clientVars` was added to the context for the `postAceInit` client-side hook.
+  Plugins should use this instead of the `clientVars` global variable.
+* New `userJoin` server-side hook.
+* The `userLeave` server-side hook has a new `socket` context property.
+* The `helper.aNewPad()` function (accessible to client-side tests) now
+  accepts hook functions to inject when opening a pad. This can be used to
+  test any new client-side hooks your plugin provides.
+* Chat improvements:
+  * The `chatNewMessage` client-side hook context has new properties:
+    * `message`: Provides access to the raw message object so that plugins can
+      see the original unprocessed message text and any added metadata.
+    * `rendered`: Allows plugins to completely override how the message is
+      rendered in the UI.
+  * New `chatSendMessage` client-side hook that enables plugins to process the
+    text before sending it to the server or augment the message object with
+    custom metadata.
+  * New `chatNewMessage` server-side hook to process new chat messages before
+    they are saved to the database and relayed to users.
+* Readability improvements to browser-side error stack traces.
+* Added support for socket.io message acknowledgments.
+
 # 1.8.14
 
 ### Security fixes
@@ -54,8 +191,8 @@
 * Disabled wtfnode dump by default.
 * Send `USER_NEWINFO` messages on reconnect.
 * Fixed loading in a hidden iframe.
-* Fixed a race condition with composition. (Thanks @ingoncalves for an exceptionally
-  detailed analysis and @rhansen for the fix.)
+* Fixed a race condition with composition. (Thanks @ingoncalves for an
+  exceptionally detailed analysis and @rhansen for the fix.)
 
 # 1.8.13
 
@@ -82,11 +219,13 @@
 
 # 1.8.12
 
-Special mention: Thanks to Sauce Labs for additional testing tunnels to help us grow! :)
+Special mention: Thanks to Sauce Labs for additional testing tunnels to help us
+grow! :)
 
 ### Security patches
 
-* Fixed a regression in v1.8.11 which caused some pad names to cause Etherpad to restart.
+* Fixed a regression in v1.8.11 which caused some pad names to cause Etherpad to
+  restart.
 
 ### Notable fixes
 
@@ -95,8 +234,8 @@ Special mention: Thanks to Sauce Labs for additional testing tunnels to help us 
 * Fixed a regression in v1.8.8 that caused "Uncaught TypeError: Cannot read
   property '0' of undefined" with some plugins (#4885)
 * Less warnings in server console for supported element types on import.
-* Support Azure and other network share installations by using a 
-  more truthful relative path.
+* Support Azure and other network share installations by using a more truthful
+  relative path.
 
 ### Notable enhancements
 
