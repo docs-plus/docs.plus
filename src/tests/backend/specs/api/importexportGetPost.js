@@ -31,7 +31,6 @@ describe(__filename, function () {
 
   describe('Connectivity', function () {
     it('can connect', async function () {
-      this.timeout(250);
       await agent.get('/api/')
           .expect(200)
           .expect('Content-Type', /json/);
@@ -40,7 +39,6 @@ describe(__filename, function () {
 
   describe('API Versioning', function () {
     it('finds the version tag', async function () {
-      this.timeout(250);
       await agent.get('/api/')
           .expect(200)
           .expect((res) => assert(res.body.currentVersion));
@@ -96,7 +94,6 @@ describe(__filename, function () {
     });
 
     it('creates a new Pad, imports content to it, checks that content', async function () {
-      this.timeout(500);
       await agent.get(`${endPoint('createPad')}&padID=${testPadId}`)
           .expect(200)
           .expect('Content-Type', /json/)
@@ -109,28 +106,80 @@ describe(__filename, function () {
           .expect((res) => assert.equal(res.body.data.text, padText.toString()));
     });
 
-    for (const authn of [false, true]) {
-      it(`can export from read-only pad ID, authn ${authn}`, async function () {
-        this.timeout(250);
-        settings.requireAuthentication = authn;
-        const get = (ep) => {
-          let req = agent.get(ep);
-          if (authn) req = req.auth('user', 'user-password');
-          return req.expect(200);
-        };
-        const ro = await get(`${endPoint('getReadOnlyID')}&padID=${testPadId}`)
-            .expect((res) => assert.ok(JSON.parse(res.text).data.readOnlyID));
-        const readOnlyId = JSON.parse(ro.text).data.readOnlyID;
-        await get(`/p/${readOnlyId}/export/html`)
-            .expect((res) => assert(res.text.indexOf('This is the') !== -1));
-        await get(`/p/${readOnlyId}/export/txt`)
-            .expect((res) => assert(res.text.indexOf('This is the') !== -1));
+    describe('export from read-only pad ID', function () {
+      let readOnlyId;
+
+      // This ought to be before(), but it must run after the top-level beforeEach() above.
+      beforeEach(async function () {
+        if (readOnlyId != null) return;
+        await agent.post(`/p/${testPadId}/import`)
+            .attach('file', padText, {filename: '/test.txt', contentType: 'text/plain'})
+            .expect(200);
+        const res = await agent.get(`${endPoint('getReadOnlyID')}&padID=${testPadId}`)
+            .expect(200)
+            .expect('Content-Type', /json/)
+            .expect((res) => assert.equal(res.body.code, 0));
+        readOnlyId = res.body.data.readOnlyID;
       });
-    }
+
+      for (const authn of [false, true]) {
+        describe(`requireAuthentication = ${authn}`, function () {
+          // This ought to be before(), but it must run after the top-level beforeEach() above.
+          beforeEach(async function () {
+            settings.requireAuthentication = authn;
+          });
+
+          for (const exportType of ['html', 'txt', 'etherpad']) {
+            describe(`export to ${exportType}`, function () {
+              let text;
+
+              // This ought to be before(), but it must run after the top-level beforeEach() above.
+              beforeEach(async function () {
+                if (text != null) return;
+                let req = agent.get(`/p/${readOnlyId}/export/${exportType}`);
+                if (authn) req = req.auth('user', 'user-password');
+                const res = await req
+                    .expect(200)
+                    .buffer(true).parse(superagent.parse.text);
+                text = res.text;
+              });
+
+              it('export OK', async function () {
+                assert.match(text, /This is the/);
+              });
+
+              it('writable pad ID is not leaked', async function () {
+                assert(!text.includes(testPadId));
+              });
+
+              it('re-import to read-only pad ID gives 403 forbidden', async function () {
+                let req = agent.post(`/p/${readOnlyId}/import`)
+                    .attach('file', Buffer.from(text), {
+                      filename: `/test.${exportType}`,
+                      contentType: 'text/plain',
+                    });
+                if (authn) req = req.auth('user', 'user-password');
+                await req.expect(403);
+              });
+
+              it('re-import to read-write pad ID gives 200 OK', async function () {
+                // The new pad ID must differ from testPadId because Etherpad refuses to import
+                // .etherpad files on top of a pad that already has edits.
+                let req = agent.post(`/p/${testPadId}_import/import`)
+                    .attach('file', Buffer.from(text), {
+                      filename: `/test.${exportType}`,
+                      contentType: 'text/plain',
+                    });
+                if (authn) req = req.auth('user', 'user-password');
+                await req.expect(200);
+              });
+            });
+          }
+        });
+      }
+    });
 
     describe('Import/Export tests requiring AbiWord/LibreOffice', function () {
-      this.timeout(10000);
-
       before(async function () {
         if ((!settings.abiword || settings.abiword.indexOf('/') === -1) &&
             (!settings.soffice || settings.soffice.indexOf('/') === -1)) {
@@ -264,6 +313,118 @@ describe(__filename, function () {
             assert.equal(res.body.code, 1);
             assert.equal(res.body.message, 'uploadFailed');
           });
+    });
+
+    describe('malformed .etherpad files are rejected', function () {
+      const makeGoodExport = () => ({
+        'pad:testing': {
+          atext: {
+            text: 'foo\n',
+            attribs: '|1+4',
+          },
+          pool: {
+            numToAttrib: {
+              0: ['author', 'a.foo'],
+            },
+            nextNum: 1,
+          },
+          head: 0,
+          savedRevisions: [],
+        },
+        'globalAuthor:a.foo': {
+          colorId: '#000000',
+          name: 'author foo',
+          timestamp: 1598747784631,
+          padIDs: 'testing',
+        },
+        'pad:testing:revs:0': {
+          changeset: 'Z:1>3+3$foo',
+          meta: {
+            author: 'a.foo',
+            timestamp: 1597632398288,
+            pool: {
+              numToAttrib: {},
+              nextNum: 0,
+            },
+            atext: {
+              text: 'foo\n',
+              attribs: '|1+4',
+            },
+          },
+        },
+      });
+
+      const importEtherpad = (records) => agent.post(`/p/${testPadId}/import`)
+          .attach('file', Buffer.from(JSON.stringify(records), 'utf8'), {
+            filename: '/test.etherpad',
+            contentType: 'application/etherpad',
+          });
+
+      before(async function () {
+        // makeGoodExport() is assumed to produce good .etherpad records. Verify that assumption so
+        // that a buggy makeGoodExport() doesn't cause checks to accidentally pass.
+        const records = makeGoodExport();
+        await importEtherpad(records)
+            .expect(200)
+            .expect('Content-Type', /json/)
+            .expect((res) => assert.deepEqual(res.body, {
+              code: 0,
+              message: 'ok',
+              data: {directDatabaseAccess: true},
+            }));
+        await agent.get(`/p/${testPadId}/export/txt`)
+            .expect(200)
+            .buffer(true).parse(superagent.parse.text)
+            .expect((res) => assert.match(res.text, /foo/));
+      });
+
+      it('missing rev', async function () {
+        const records = makeGoodExport();
+        delete records['pad:testing:revs:0'];
+        await importEtherpad(records).expect(500);
+      });
+
+      it('bad changeset', async function () {
+        const records = makeGoodExport();
+        records['pad:testing:revs:0'].changeset = 'garbage';
+        await importEtherpad(records).expect(500);
+      });
+
+      it('missing attrib in pool', async function () {
+        const records = makeGoodExport();
+        records['pad:testing'].pool.nextNum++;
+        await importEtherpad(records).expect(500);
+      });
+
+      it('extra attrib in pool', async function () {
+        const records = makeGoodExport();
+        const pool = records['pad:testing'].pool;
+        pool.numToAttrib[pool.nextNum] = ['key', 'value'];
+        await importEtherpad(records).expect(500);
+      });
+
+      it('changeset refers to non-existent attrib', async function () {
+        const records = makeGoodExport();
+        records['pad:testing:revs:1'] = {
+          changeset: 'Z:4>4*1+4$asdf',
+          meta: {
+            author: 'a.foo',
+            timestamp: 1597632398288,
+          },
+        };
+        records['pad:testing'].head = 1;
+        records['pad:testing'].atext = {
+          text: 'asdffoo\n',
+          attribs: '*1+4|1+4',
+        };
+        await importEtherpad(records).expect(500);
+      });
+
+      it('pad atext does not match', async function () {
+        const records = makeGoodExport();
+        records['pad:testing'].atext.attribs = `*0${records['pad:testing'].atext.attribs}`;
+        await importEtherpad(records).expect(500);
+      });
     });
 
     describe('Import authorization checks', function () {

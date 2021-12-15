@@ -2,16 +2,16 @@
 
 const path = require('path');
 const eejs = require('../../eejs');
+const fs = require('fs');
+const fsp = fs.promises;
 const toolbar = require('../../utils/toolbar');
 const hooks = require('../../../static/js/pluginfw/hooks');
 const settings = require('../../utils/Settings');
+const util = require('util');
 const webaccess = require('./webaccess');
 const padInfo = require('../../utils/nestedPad'); // @Hossein
 const db = require("../../db/DB");  // @Samir
 const minify = require('../../utils/Minify'); // @Hossein
-const util = require('util');
-const fs = require('fs');
-const fsp = fs.promises;
 
 exports.expressCreateServer = (hookName, args, cb) => {
   // expose current stats
@@ -82,13 +82,11 @@ exports.expressCreateServer = (hookName, args, cb) => {
       staticRootAddress,
     }));
   });
-
   // @Hossein
   // serve pad.html under /p
   args.app.get('/p/:pad*', async (req, res, next) => {
-    // const padId = req.params.pad
-    // The below might break for pads being rewritten
     let staticRootAddress = req.path.split("/");
+    // The below might break for pads being rewritten
     const isReadOnly = !webaccess.userCanModify(req.params.pad, req);
     let {padId, padName, padView} = padInfo(req, isReadOnly);
 
@@ -107,6 +105,9 @@ exports.expressCreateServer = (hookName, args, cb) => {
     res.header('Feature-Policy', 'sync-xhr \'self\'');
     // @Samir Sayyad Added for social preview
     const pad_title = await db.get("title:"+ padId);
+
+    // can be removed when require-kernel is dropped
+    res.header('Feature-Policy', 'sync-xhr \'self\'');
     res.send(eejs.require('ep_etherpad-lite/templates/pad.html', {
       meta : { title : (pad_title) ? pad_title : req.params.pad },
       padId,
@@ -117,9 +118,8 @@ exports.expressCreateServer = (hookName, args, cb) => {
       toolbar,
       isReadOnly,
     }));
-
   });
-    
+
   args.app.get(/\/favicon.ico$/, (req, res, next) =>
     (async () => {
       const fns = [
@@ -139,8 +139,6 @@ exports.expressCreateServer = (hookName, args, cb) => {
       }
       next();
     })().catch((err) => next(err || new Error(err))));
-
-
 
 
   return cb();
