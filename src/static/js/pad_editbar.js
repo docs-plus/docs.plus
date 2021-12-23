@@ -411,9 +411,13 @@ const padeditbar = (function () {
       padsavedrevs.saveNow();
     });
 
-    //@ Samir changed => document.location = `${document.location.pathname}/timeslider`;
+    //@ Hossein;
     toolbar.registerCommand('showTimeSlider', () => {
-      document.location = `${document.location.pathname}/timeslider`;
+      const pathName = document.location.pathname
+      let path = `${pathName}/timeslider`;
+      if(pathName === '/' || clientVars.ep_singlePad.active)
+        path = `${pathName}timeslider`;
+      document.location = path;
     });
 
     toolbar.registerAceCommand('bold', aceAttributeCommand);
