@@ -7,12 +7,12 @@ jobs:
   deleteOldBackup:
     runs-on: backup-runner
     steps:
-      - run: del=$(date --date="7 days ago" +"%Y%m%d"); for i in `find . -type d -name "2*" |  sed 's/[^0-9]*//g'  `; do (($del < $(basename $i))) && rm -rf $i || echo "keep $i";  done
+      - run: cd /mnt/backup_01/database_backup ; del=$(date --date="7 days ago" +"%Y%m%d"); for i in `find . -type d -name "2*" |  sed 's/[^0-9]*//g'  `; do (($del < $(basename $i))) && rm -rf $i || echo "keep $i";  done
   dump_docsplus:
     needs: deleteOldBackup
     runs-on: backup-runner
     steps:
-    - run: ( [ -d $(date +'%Y%m%d') ] || mkdir $(date +'%Y%m%d') ) &&  PGPASSWORD=$DB_PASS pg_dump -h $DB_HOST --dbname handbook -p $DB_PORT -U $DB_USER -Ft -f $(date +'%Y%m%d')/handbook-$(date +'%Y%m%d%H').tar
+    - run: cd /mnt/backup_01/database_backup ; ( [ -d $(date +'%Y%m%d') ] || mkdir $(date +'%Y%m%d') ) &&  PGPASSWORD=$DB_PASS pg_dump -h $DB_HOST --dbname handbook -p $DB_PORT -U $DB_USER -Ft -f $(date +'%Y%m%d')/handbook-$(date +'%Y%m%d%H').tar
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}
@@ -22,30 +22,30 @@ jobs:
     needs: dump_docsplus
     runs-on: backup-runner
     steps:
-    - run: ( [ -d $(date +'%Y%m%d') ] || mkdir $(date +'%Y%m%d') ) &&  PGPASSWORD=$DB_PASS pg_dump -h $DB_HOST --dbname democracyhandbook -p $DB_PORT -U $DB_USER -Ft -f $(date +'%Y%m%d')/democracyhandbook-$(date +'%Y%m%d%H').tar
+    - run: cd /mnt/backup_01/database_backup ; ( [ -d $(date +'%Y%m%d') ] || mkdir $(date +'%Y%m%d') ) &&  PGPASSWORD=$DB_PASS pg_dump -h $DB_HOST --dbname democracyhandbook -p $DB_PORT -U $DB_USER -Ft -f $(date +'%Y%m%d')/democracyhandbook-$(date +'%Y%m%d%H').tar
     env:
       DB_USER : ${{secrets.PG_USER}}
       DB_PASS : ${{secrets.PG_PASS}}
       DB_HOST : ${{secrets.PG_HOST}}
       DB_PORT : ${{secrets.PG_PORT}}
-  upload:
-    runs-on: backup-runner
-    needs: dump_democracy
-    steps:
-      - run: rclone sync . space:$BACKUP_BUCKET_NAME --s3-access-key-id=$ACCESS_KEY_ID --s3-secret-access-key=$ACCESS_KEY_SECRET --s3-endpoint=$BUCKET_S3_SERVER -vv
-    env:
-      BACKUP_BUCKET_NAME : ${{secrets.BACKUP_BUCKET_NAME}}
-      BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
-      ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
-      ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
-  deleteOldBackupsOfBucket:
-    runs-on: backup-runner
-    needs: upload
-    steps:
-      - run: rclone delete --min-age 7d --dry-run space:$BACKUP_BUCKET_NAME --s3-access-key-id=$ACCESS_KEY_ID --s3-secret-access-key=$ACCESS_KEY_SECRET --s3-endpoint=$BUCKET_S3_SERVER -vv
-      - run: rclone rmdirs --min-age 7d --dry-run space:$BACKUP_BUCKET_NAME --s3-access-key-id=$ACCESS_KEY_ID --s3-secret-access-key=$ACCESS_KEY_SECRET --s3-endpoint=$BUCKET_S3_SERVER -vv
-    env:
-      BACKUP_BUCKET_NAME : ${{secrets.BACKUP_BUCKET_NAME}}
-      BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
-      ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
-      ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
+  # upload:
+  #   runs-on: backup-runner
+  #   needs: dump_democracy
+  #   steps:
+  #     - run: rclone sync . space:$BACKUP_BUCKET_NAME --s3-access-key-id=$ACCESS_KEY_ID --s3-secret-access-key=$ACCESS_KEY_SECRET --s3-endpoint=$BUCKET_S3_SERVER -vv
+  #   env:
+  #     BACKUP_BUCKET_NAME : ${{secrets.BACKUP_BUCKET_NAME}}
+  #     BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
+  #     ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
+  #     ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
+  # deleteOldBackupsOfBucket:
+  #   runs-on: backup-runner
+  #   needs: upload
+  #   steps:
+  #     - run: rclone delete --min-age 7d --dry-run space:$BACKUP_BUCKET_NAME --s3-access-key-id=$ACCESS_KEY_ID --s3-secret-access-key=$ACCESS_KEY_SECRET --s3-endpoint=$BUCKET_S3_SERVER -vv
+  #     - run: rclone rmdirs --min-age 7d --dry-run space:$BACKUP_BUCKET_NAME --s3-access-key-id=$ACCESS_KEY_ID --s3-secret-access-key=$ACCESS_KEY_SECRET --s3-endpoint=$BUCKET_S3_SERVER -vv
+  #   env:
+  #     BACKUP_BUCKET_NAME : ${{secrets.BACKUP_BUCKET_NAME}}
+  #     BUCKET_S3_SERVER : ${{secrets.BUCKET_S3_SERVER}}
+  #     ACCESS_KEY_SECRET : ${{secrets.ACCESS_KEY_SECRET}}
+  #     ACCESS_KEY_ID : ${{secrets.ACCESS_KEY_ID}}
