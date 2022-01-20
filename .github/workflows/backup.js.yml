@@ -7,7 +7,7 @@ jobs:
   deleteOldBackup:
     runs-on: backup-runner
     steps:
-      - run: cd /mnt/backup_01/database_backup ; del=$(date --date="7 days ago" +"%Y%m%d"); for i in `find . -type d -name "2*" |  sed 's/[^0-9]*//g'  `; do (($del < $(basename $i))) && rm -rf $i || echo "keep $i";  done
+      - run: cd /mnt/backup_01/database_backup ; del=$(date --date="7 days ago" +"%Y%m%d"); for i in `find . -type d -name "2*" |  sed 's/[^0-9]*//g'  `; do (($del > $(basename $i))) && rm -rf $i || echo "keep $i";  done
   dump_docsplus:
     needs: deleteOldBackup
     runs-on: backup-runner
