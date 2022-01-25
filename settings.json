@@ -525,9 +525,7 @@
     "right": [
       [
         "timeslider",
-        "savedrevision",
-        "settings",
-        "embed"
+        "settings"
       ] //"importexport",
       //["showusers"]
     ],

@@ -456,6 +456,7 @@ const loadBroadcastJS = (socket, sendSocketMsg, fireWhenAllScriptsAreLoaded, Bro
     }
   });
 
+  $('.ep_loading_pad_container').hide();
   // this is necessary to keep infinite loops of events firing,
   // since goToRevision changes the slider position
   const goToRevisionIfEnabled = (...args) => {

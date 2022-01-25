@@ -3264,7 +3264,7 @@ function Ace2Inner(editorInfo, cssManagers) {
       // @Hossein
       return {
         event: evt,
-        nodeSelected: document.getSelection().focusNode.parentElement
+        nodeSelected: document.getSelection().focusNode
       }
     });
   };
