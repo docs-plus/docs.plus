@@ -397,7 +397,7 @@ exports.padeditbar = new class {
     });
 
     //@ Hossein;
-    toolbar.registerCommand('showTimeSlider', () => {
+    this.registerCommand('showTimeSlider', () => {
       const pathName = document.location.pathname
       let path = `${pathName}/timeslider`;
       if(pathName === '/' || clientVars.ep_singlePad.active)
