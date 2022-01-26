@@ -5,7 +5,7 @@
 [![All Contributors](https://img.shields.io/badge/all_contributors-4-blue.svg)](#contributors-)
 
 
-# 📚 Docs.plus (1.8.14)
+# 📚 Docs.plus (1.8.16)
 
 **Docs.plus** is a real-time collaborative tools to help communites share knowledge
 
