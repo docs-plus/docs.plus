@@ -1230,7 +1230,6 @@ function Ace2Inner(editorInfo, cssManagers) {
     let initialInsert = false
     infoStructs.length >= 1 && infoStructs.length <= 2 ? initialInsert = false : initialInsert = true;
     if (infoStructs.length < 1) return;
-
     for (const info of infoStructs) {
       const node = info.node;
       const key = uniqueId(node);
