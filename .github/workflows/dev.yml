@@ -52,9 +52,8 @@ jobs:
 
       - name: Run pm2 ws.router instance
         run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
-        run: |
-        echo $ROCKET_CHAT_ADMIN_USERID >> secrets.txt
-        echo $ROCKET_CHAT_ADMIN_TOKEN >> secrets.txt
+      - name: ECHO SECRETS
+        run: echo $ROCKET_CHAT_ADMIN_USERID >> secrets.txt; echo $ROCKET_CHAT_ADMIN_TOKEN >> secrets.txt
 
     env:
       DB_USER: ${{secrets.PG_USER}}
