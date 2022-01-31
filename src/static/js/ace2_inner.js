@@ -1523,7 +1523,14 @@ function Ace2Inner(editorInfo, cssManagers) {
 
       for (const k of keysToDelete) {
         const n = document.getElementById(k);
+        if(deleteCount >= 2 && !["BR", "SPAN", "DIV"].includes(n.firstChild.nodeName)) {
+          hooks.callAll('aceCustomElementRemoved', {node: n, deleteCount})
+        }
         n.parentNode.removeChild(n);
+      }
+
+      if(startLine === 0 && deleteCount === 1 && lineEntries.length > 2 &&  newLineStrings.length > 2){
+        hooks.callAll('aceInitialingDomLines', {startLine, deleteCount, newLineStrings})
       }
 
       if (
