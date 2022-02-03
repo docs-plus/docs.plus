@@ -38,7 +38,7 @@ jobs:
           https://github.com/samirsayyad/ep_full_hyperlinks.git
           https://github.com/samirsayyad/ep_headings2.git
           https://github.com/samirsayyad/ep_table_of_contents.git#79f0c9f
-          https://github.com/HMarzban/ep_headerview.git 
+          https://github.com/HMarzban/ep_headerview.git#a026a7f
           https://github.com/samirsayyad/ep_rocketchat#88f793b
           https://github.com/HMarzban/ep_wrtc_heading#b081634
           # https://github.com/ether/ep_sticky_attributes.git
