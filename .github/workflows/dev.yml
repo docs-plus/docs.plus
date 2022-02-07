@@ -39,7 +39,7 @@ jobs:
           https://github.com/samirsayyad/ep_headings2.git
           https://github.com/samirsayyad/ep_table_of_contents.git#128c90a
           https://github.com/HMarzban/ep_headerview.git#280fff9
-          https://github.com/samirsayyad/ep_rocketchat#f0cc77c
+          https://github.com/samirsayyad/ep_rocketchat#76d5199
           https://github.com/HMarzban/ep_wrtc_heading#b081634
           # https://github.com/ether/ep_sticky_attributes.git
           # https://github.com/samirsayyad/ep_custom_header_message
