@@ -36,6 +36,8 @@ let token, padId, exportLinks, socket, changesetLoader, BroadcastSlider;
 
 const init = () => {
   padutils.setupGlobalExceptionHandler();
+  $('.ep_loading_pad_container').show();
+
   $(document).ready(() => {
     // start the custom js
     if (typeof customStart === 'function') customStart(); // eslint-disable-line no-undef

@@ -164,10 +164,16 @@ const loadBroadcastJS = (socket, sendSocketMsg, fireWhenAllScriptsAreLoaded, Bro
           return true; // break
         }
       });
-      // deal with someone is the author of a line and changes one character,
-      // so the alines won't change
+      // some chars are replaced (no attributes change and no length change)
+      // test if there are keep ops at the start of the cs
       if (lineChanged === undefined) {
-        lineChanged = Changeset.opIterator(Changeset.unpack(changeset).ops).next().lines;
+        lineChanged = 0;
+        const opIter = Changeset.opIterator(Changeset.unpack(changeset).ops);
+
+        if (opIter.hasNext()) {
+          const op = opIter.next();
+          if (op.opcode === '=') lineChanged += op.lines;
+        }
       }
 
       const goToLineNumber = (lineNumber) => {
@@ -456,6 +462,7 @@ const loadBroadcastJS = (socket, sendSocketMsg, fireWhenAllScriptsAreLoaded, Bro
     }
   });
 
+  $('.ep_loading_pad_container').hide();
   // this is necessary to keep infinite loops of events firing,
   // since goToRevision changes the slider position
   const goToRevisionIfEnabled = (...args) => {

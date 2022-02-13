@@ -112,6 +112,21 @@
     <!------- PAD CONTENT --------->
     <!----------------------------->
 
+    <style>
+      .ep_loading_pad_container{
+        position: absolute;
+        width: 100%;
+      }
+    </style>
+
+    <% e.begin_block("timesliderLoading"); %>
+    <p data-l10n-id="pad.loading" id="loading" class="editorloadingbox-message">
+      <img src='../../static/img/brand.svg' class='etherpadBrand'><br/>
+      Loading...
+    </p>
+    <% e.end_block(); %>
+
+
     <div id="outerdocbody">
       <div id="innerdocbody">
       </div>
@@ -278,7 +293,6 @@
 
     // Strip 'p', the padname and 'timeslider' from the pathname and set as baseURL
     const baseURL = pathComponents.slice(0,1).join('/') + '/';
-
 
     require.setRootURI(baseURL + "javascripts/src");
     require.setLibraryURI(baseURL + "javascripts/lib");

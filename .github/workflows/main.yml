@@ -27,25 +27,24 @@ jobs:
         run: >
           npm install --no-save --legacy-peer-deps
           ep_adminpads2
-          https://github.com/samirsayyad/ep_rocketchat#3abdabf
-          https://github.com/ether/ep_comments_page
-          https://github.com/ether/ep_cursortrace
-          https://github.com/samirsayyad/ep_docs_plus_customize#c68bc28
+          ep_comments_page
+          ep_cursortrace
           ep_hide_line_numbers
-          https://github.com/samirsayyad/ep_insert_media#eecbc98
           ep_monetization
-          https://github.com/samirsayyad/ep_profile_modal#e2090e2
           ep_remove_embed
-          https://github.com/samirsayyad/ep_loading_pad#90f43f9
-          https://github.com/samirsayyad/ep_full_hyperlinks#09a3821
-          https://github.com/samirsayyad/ep_headings2#2081555
-          https://github.com/samirsayyad/ep_set_title_on_pad#1085515
-          https://github.com/samirsayyad/ep_table_of_contents#0577dd9 
-          https://github.com/HMarzban/ep_headerview#15441c5 
-          https://github.com/HMarzban/ep_wrtc_heading#bb05321
+          https://github.com/samirsayyad/ep_loading_pad.git
+          https://github.com/samirsayyad/ep_docs_plus_customize.git
+          https://github.com/samirsayyad/ep_set_title_on_pad.git
+          https://github.com/samirsayyad/ep_insert_media.git
+          https://github.com/samirsayyad/ep_profile_modal.git#65839ae
+          https://github.com/samirsayyad/ep_full_hyperlinks.git
+          https://github.com/samirsayyad/ep_headings2.git
+          https://github.com/samirsayyad/ep_table_of_contents.git
+          https://github.com/HMarzban/ep_headerview.git
+          https://github.com/samirsayyad/ep_rocketchat#76d5199
+          https://github.com/HMarzban/ep_wrtc_heading#b081634
           # https://github.com/ether/ep_sticky_attributes.git
           # https://github.com/samirsayyad/ep_custom_header_message
-
       - name: Install all dependencies and symlink for ep_etherpad-lite
         run: src/bin/installDeps.sh
 
