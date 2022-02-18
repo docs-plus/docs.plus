@@ -36,13 +36,13 @@ jobs:
           https://github.com/samirsayyad/ep_docs_plus_customize.git
           https://github.com/samirsayyad/ep_set_title_on_pad.git
           https://github.com/samirsayyad/ep_insert_media.git
-          https://github.com/samirsayyad/ep_profile_modal.git#65839ae
-          https://github.com/samirsayyad/ep_full_hyperlinks.git
+          https://github.com/samirsayyad/ep_profile_modal.git#e1aea14
+          https://github.com/samirsayyad/ep_full_hyperlinks.git#3d0737f
           https://github.com/samirsayyad/ep_headings2.git
-          https://github.com/samirsayyad/ep_table_of_contents.git
+          https://github.com/samirsayyad/ep_table_of_contents.git#0b5bdc7
           https://github.com/HMarzban/ep_headerview.git
           https://github.com/samirsayyad/ep_rocketchat#76d5199
-          https://github.com/HMarzban/ep_wrtc_heading#b081634
+          https://github.com/HMarzban/ep_wrtc_heading#7dd47e7
           # https://github.com/ether/ep_sticky_attributes.git
           # https://github.com/samirsayyad/ep_custom_header_message
 
