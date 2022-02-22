@@ -27,7 +27,6 @@ html.outer-editor, html.inner-editor {
 #innerdocbody {
   padding: 10px;
   overflow: hidden;
-  background-color: white;
   line-height: 1.6;
   /* Be careful editing following rules. Longs words should not overflow, ep_align justify should work,
      Test on chrome, firefox and safari... Copy / Paste a word inside a sentence should not add line-breaks

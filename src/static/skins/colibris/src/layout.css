@@ -5,8 +5,7 @@
 }
 
 #editorcontainerbox {
-  background-color: #fff;
-  /* background-color: var(--bg-color); */
+  background-color: var(--bg-color);
   color: var(--text-color);
 }
 
