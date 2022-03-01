@@ -25,7 +25,7 @@ jobs:
         run: >
           npm install --no-save --legacy-peer-deps
           ep_adminpads2
-          ep_comments_page
+
           ep_cursortrace
           ep_hide_line_numbers
           ep_monetization
@@ -41,6 +41,7 @@ jobs:
           https://github.com/HMarzban/ep_headerview#da1d32f
           https://github.com/samirsayyad/ep_rocketchat#8e16950
           https://github.com/HMarzban/ep_wrtc_heading#681c57e 
+          # ep_comments_page
           # https://github.com/ether/ep_sticky_attributes.git
           # https://github.com/samirsayyad/ep_custom_header_message
 
