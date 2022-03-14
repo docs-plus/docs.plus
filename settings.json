@@ -639,10 +639,9 @@
     "maxFileSize": 50000000
   },
   "ep_insert_media": {
-    "storage": {
+    "s3Storage": {
       "endPoint": "${BUCKET_S3_SERVER}",
       "useSSL": true,
-      "type": "s3",
       "accessKeyId": "${ACCESS_KEY_ID:null}",
       "secretAccessKey": "${ACCESS_KEY_SECRET:null}",
       "region": "UK",
