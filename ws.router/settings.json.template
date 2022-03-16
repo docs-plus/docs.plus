@@ -1,9 +1,0 @@
-{
-	"components": [
-		{
-			"namespace": "/test",
-			"path": "./tests/components/test.js",
-			"exc": "init"
-		}
-	]
-}
