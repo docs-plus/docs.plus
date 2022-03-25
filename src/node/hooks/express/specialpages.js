@@ -12,8 +12,11 @@ const webaccess = require('./webaccess');
 const padInfo = require('../../utils/nestedPad'); // @Hossein
 const db = require('../../db/DB'); // @Samir
 const minify = require('../../utils/Minify'); // @Hossein
+const useragent = require('express-useragent'); // @Hossein
 
 exports.expressCreateServer = (hookName, args, cb) => {
+  args.app.use(useragent.express());
+
   // expose current stats
   args.app.get('/stats', (req, res) => {
     res.json(require('../../stats').toJSON());
@@ -117,6 +120,8 @@ exports.expressCreateServer = (hookName, args, cb) => {
       req,
       toolbar,
       isReadOnly,
+      useragent,
+
     }));
   });
 

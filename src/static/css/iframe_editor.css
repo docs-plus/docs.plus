@@ -5,7 +5,6 @@
 @import url('./lists_and_indents.css');
 
 html.outer-editor, html.inner-editor {
-  height: auto !important;
   background-color: transparent !important;
 }
 #outerdocbody {
@@ -25,9 +24,12 @@ html.outer-editor, html.inner-editor {
 
 /* ACE-PAD Container (i.e. where the text is displayed) */
 #innerdocbody {
-  padding: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
   overflow: hidden;
+  background-color: white;
   line-height: 1.6;
+
   /* Be careful editing following rules. Longs words should not overflow, ep_align justify should work,
      Test on chrome, firefox and safari... Copy / Paste a word inside a sentence should not add line-breaks
      and preserve the style */
@@ -35,12 +37,13 @@ html.outer-editor, html.inner-editor {
   white-space: normal;
   word-wrap: break-word;
   overflow-wrap: break-word;
-    /*
+  /*
    * Make the contenteditable area at least as big as the screen so that mobile
    * users can tap anywhere to bring up their device's keyboard.
    */
-   min-height: 100vh;
+  min-height: 100vh;
 }
+
 #innerdocbody, #sidediv {
   /* Both must have the same top padding to line up line numbers */
   padding-top: 10px;
@@ -48,21 +51,11 @@ html.outer-editor, html.inner-editor {
   padding-bottom: 10px;
 }
 
-#innerdocbody span {
-  line-height: 125%;
-  padding: 6px 0 !important;
-}
-
 #innerdocbody a {
   color: #2e96f3;
 }
 #innerdocbody.authorColors [class^='author-'] a {
   color: inherit;
-}
-
-#innerdocbody.authorColors span {
-  padding-top: 3px;
-  padding-bottom: 4px;
 }
 
 option {
@@ -73,6 +66,7 @@ option {
 #innerdocbody h2,
 #innerdocbody h3,
 #innerdocbody h4 {
+  line-height: 1.2;
   margin-bottom: .5em;
 }
 #innerdocbody h1 span,
@@ -155,7 +149,4 @@ body.mozilla, body.safari {
 }
 #innerdocbody a {
   cursor: pointer !important;
-}
-body.grayedout {
-  background-color: #eee !important
 }

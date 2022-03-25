@@ -474,6 +474,7 @@
         clientVars.staticRootAddress = "<%= staticRootAddress  %>";
         clientVars.padView = "<%= padView  %>";
         clientVars.ep_singlePad = <%- JSON.stringify(settings.ep_singlePad ||{active: false}) %>;
+        clientVars.useragent = "<%= useragent  %>";
 
         // Strip 'p' and the padname from the pathname and set as baseURL
         var baseURL = pathComponents.slice(0,1).join('/') + '/';
