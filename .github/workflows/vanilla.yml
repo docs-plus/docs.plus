@@ -1,17 +1,17 @@
 # This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
-name: stage.js CI
+name: vanilla.js CI
 
 on:
   push:
-    branches: [dev]
+    branches: [vanilla]
   pull_request:
-    branches: [dev]
+    branches: [vanilla]
 
 jobs:
   build:
-    runs-on: stage.docs.plus
+    runs-on: vanilla.docs.plus
     strategy:
       matrix:
         node-version: ['lts/*']
@@ -23,23 +23,23 @@ jobs:
 
       - name: Install Etherpad plugins
         run: >
-          npm install --no-save --legacy-peer-deps
-          ep_adminpads2
-          ep_cursortrace
-          ep_hide_line_numbers
-          ep_monetization
-          ep_remove_embed
-          https://github.com/samirsayyad/ep_loading_pad.git
-          https://github.com/samirsayyad/ep_docs_plus_customize.git
-          https://github.com/samirsayyad/ep_set_title_on_pad#c140109 
-          https://github.com/samirsayyad/ep_insert_media.git#eb8b53f
-          https://github.com/samirsayyad/ep_profile_modal#2923d3a
-          https://github.com/samirsayyad/ep_full_hyperlinks#af5cf63
-          https://github.com/samirsayyad/ep_headings2.git
-          https://github.com/samirsayyad/ep_table_of_contents#7668d59
-          https://github.com/HMarzban/ep_headerview#36b89c1
-          https://github.com/samirsayyad/ep_rocketchat#700845b
-          https://github.com/HMarzban/ep_wrtc_heading#ec4cbf7 
+          # npm install --no-save --legacy-peer-deps
+          # ep_adminpads2
+          # ep_cursortrace
+          # ep_hide_line_numbers
+          # ep_monetization
+          # ep_remove_embed
+          # https://github.com/samirsayyad/ep_loading_pad.git
+          # https://github.com/samirsayyad/ep_docs_plus_customize.git
+          # https://github.com/samirsayyad/ep_set_title_on_pad#c140109 
+          # https://github.com/samirsayyad/ep_insert_media.git#eb8b53f
+          # https://github.com/samirsayyad/ep_profile_modal#2923d3a
+          # https://github.com/samirsayyad/ep_full_hyperlinks#af5cf63
+          # https://github.com/samirsayyad/ep_headings2.git
+          # https://github.com/samirsayyad/ep_table_of_contents#7668d59
+          # https://github.com/HMarzban/ep_headerview#36b89c1
+          # https://github.com/samirsayyad/ep_rocketchat#700845b
+          # https://github.com/HMarzban/ep_wrtc_heading#ec4cbf7 
           # ep_comments_page
           # https://github.com/ether/ep_sticky_attributes.git
           # https://github.com/samirsayyad/ep_custom_header_message
