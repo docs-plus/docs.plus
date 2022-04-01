@@ -31,7 +31,7 @@ jobs:
           ep_remove_embed
           https://github.com/samirsayyad/ep_loading_pad.git
           https://github.com/samirsayyad/ep_docs_plus_customize.git
-          https://github.com/samirsayyad/ep_set_title_on_pad#7ab5f5a 
+          https://github.com/samirsayyad/ep_set_title_on_pad#6d9cc23 
           https://github.com/samirsayyad/ep_insert_media.git#eb8b53f
           https://github.com/samirsayyad/ep_profile_modal#2923d3a
           https://github.com/samirsayyad/ep_full_hyperlinks#7485e67
