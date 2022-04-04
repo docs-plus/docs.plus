@@ -54,14 +54,14 @@ It solves many common organising problems, and can be frictionlessly adopted by 
 - [ep_sticky_attributes](https://github.com/JohnMcLear/ep_sticky_attributes)
 
 # 🚀 Prerequisites & Installation
-Prerequisites and installation are the same as Etherpad flow, follow this [link](https://github.com/ether/etherpad-lite#installation), or you can follow short steps like the following:
+Prerequisites and installation are the same as Etherpad flow, follow this [link](https://github.com/ether/etherpad-lite#installation). The following commands will download the source code for docs.plus, install all prerequisites, and run the application:
 
 ```bash
 # clone the project
 git clone https://github.com/nwspk/docs.plus.git
 
 # move to the project folder
-cd docsplus
+cd docsplus/src
 
 # install pre requirement plugins
 npm install --no-save --legacy-peer-deps
@@ -87,13 +87,15 @@ npm install --no-save --legacy-peer-deps
         # https://github.com/ether/ep_sticky_attributes.git
 
 # run the docsplus
-src/bin/run.sh
+bin/run.sh
 ```
+Docs.plus should now be accessible from your web browser. To access it type 0.0.0.0:9001 into the address bar.
+
+![Landing page](browser.png) 
+
 > For mor info Take a look at [CI](https://github.com/nwspk/docs.plus/blob/master/.github/workflows/master.yml)
 
 > If you wanna have your Turn/Stun server for the video chat you can follow this installation for the [Coturn](https://github.com/coturn/coturn) server; [Link](https://dev.to/kevin_odongo35/how-to-configure-a-turn-server-3opd). <br>*By default, the video plugin uses a public Stun server [More info](https://github.com/HMarzban/ep_wrtc_heading)*
-
-> If you wanna rocketchat rocketchat .... (Need to check...)
 
 # New features as Integration
 Write about new featues more Which makes us more distinct from the Etherpad.
@@ -101,12 +103,7 @@ Write about new featues more Which makes us more distinct from the Etherpad.
 1. Single-pad
 2. Rocket chat 🚧
 3. Heading filter 🚧
-4. Video group 🚧
-
-----
-## Rocket Chat
-
-You can use rocket chat integration with ...
+4. Video group 🚧        
 
 ----
 ## Single-pad
