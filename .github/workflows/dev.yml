@@ -40,6 +40,7 @@ jobs:
           https://github.com/HMarzban/ep_headerview#36b89c1
           https://github.com/samirsayyad/ep_rocketchat#700845b
           https://github.com/HMarzban/ep_wrtc_heading#ec4cbf7 
+          https://github.com/samirsayyad/ep_push_notification
           # ep_comments_page
           # https://github.com/ether/ep_sticky_attributes.git
           # https://github.com/samirsayyad/ep_custom_header_message
@@ -66,4 +67,14 @@ jobs:
       ROCKET_CHAT_ADMIN_USERID: ${{secrets.ROCKET_CHAT_ADMIN_USERID_DEV}}
       ROCKET_CHAT_ADMIN_TOKEN: ${{secrets.ROCKET_CHAT_ADMIN_TOKEN_DEV}}
       ROCKET_CHAT_MAIN_HOST : ${{secrets.ROCKET_CHAT_MAIN_HOST_DEV}}
+      FIREBASE_APIKEY : ${{secrets.FIREBASE_APIKEY}}
+      FIREBASE_APPID : ${{secrets.FIREBASE_APPID}}
+      FIREBASE_AUTHDOMAIN : ${{secrets.FIREBASE_AUTHDOMAIN}}
+      FIREBASE_FCMSERVERKEY : ${{secrets.FIREBASE_FCMSERVERKEY}}
+      FIREBASE_MEASUREMENTID : ${{secrets.FIREBASE_MEASUREMENTID}}
+      FIREBASE_MESSAGINGSENDERID : ${{secrets.FIREBASE_MESSAGINGSENDERID}}
+      FIREBASE_PROJECTID : ${{secrets.FIREBASE_PROJECTID}}
+      FIREBASE_PUBLICVAPIDKEY : ${{secrets.FIREBASE_PUBLICVAPIDKEY}}
+      FIREBASE_STORAGEBUCKET : ${{secrets.FIREBASE_STORAGEBUCKET}}
+
 
