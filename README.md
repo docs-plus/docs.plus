@@ -30,7 +30,7 @@ It solves many common organising problems, and can be frictionlessly adopted by 
 
 **Docs.plus** is built on [Etherpad](https://github.com/ether/etherpad-lite) which is a real-time collaborative editor for the web, our team tweek a etherpad bases for the goal we persude, also we are using combanation of etherpad plugin and custom one to power up our goals.
 
-*Let's go ahead and look at our [Bible](https://github.com/nwspk/docs.plus/blob/master/bible.core.md) to see what changes we are making! [Link](https://github.com/nwspk/docs.plus/blob/master/bible.core.md)*
+*Let's go ahead and look at our [Bible](https://github.com/nwspk/docs.plus/blob/master/bible.core.md) to see what changes we are making!
 
 ### Plugins
 
@@ -54,7 +54,7 @@ It solves many common organising problems, and can be frictionlessly adopted by 
 - [ep_sticky_attributes](https://github.com/JohnMcLear/ep_sticky_attributes)
 
 # 🚀 Prerequisites & Installation
-Prerequisites and installation are the same as Etherpad flow, follow this [link](https://github.com/ether/etherpad-lite#installation). The following commands will download the source code for docs.plus, install all prerequisites, and run the application:
+Prerequisites and installation are the same as Etherpad flow, follow this [link](https://github.com/ether/etherpad-lite#installation). The following commands will download the source code for docs.plus, install all prerequisites, and run a local server from which Docs.plus can be accessed:
 
 ```bash
 # clone the project
@@ -83,15 +83,13 @@ npm install --no-save --legacy-peer-deps
         https://github.com/samirsayyad/ep_set_title_on_pad#e507359
         https://github.com/samirsayyad/ep_table_of_contents#b123e05
         https://github.com/HMarzban/ep_headerview#a4e93eb
-        # https://github.com/HMarzban/ep_wrtc_heading#ffb7911
-        # https://github.com/ether/ep_sticky_attributes.git
 
 # run the docsplus
 bin/run.sh
 ```
 Docs.plus should now be accessible from your web browser. To access it type 0.0.0.0:9001 into the address bar.
 
-![Landing page](browser.png) 
+![Landing page](browser.png)
 
 > For mor info Take a look at [CI](https://github.com/nwspk/docs.plus/blob/master/.github/workflows/master.yml)
 
@@ -166,6 +164,8 @@ location / {
 
 # 🤝 Contributing
 Thank you for your interest in contributing! Please feel free to put up a PR for any issue or feature request.
+
+The guidelines for contributing are available [here](https://github.com/nwspk/docs.plus/blob/main/CONTRIBUTING.md).
 
 ### ✨ Contributors 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
