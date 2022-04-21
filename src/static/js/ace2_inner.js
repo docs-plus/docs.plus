@@ -1202,32 +1202,32 @@ function Ace2Inner(editorInfo, cssManagers) {
 
   // heading hierarchy
   // @Hossein
-  const htags = ["H1", "H2", "H3", "H4", "H5", "H6"];
+  const htags = ['H1', 'H2', 'H3', 'H4', 'H5', 'H6'];
   let hSectionId = undefined;
   let hTitleId = undefined;
   let hTitleIndex = undefined;
-  let ltestHsId = {"0": "", "1": "", "2": "", "3": "", "4": "", "5": "", "preserve": ""};
+  const ltestHsId = {0: '', 1: '', 2: '', 3: '', 4: '', 5: '', preserve: ''};
   let currentHIndex = undefined;
   let hParentIndex = 0;
-  
+
   const walkToClosestNextHeader = (node, func) => {
-    if(node&&node.nextSibling) {
+    if (node && node.nextSibling) {
       node = node.nextSibling;
-      if(htags.includes(node.firstChild.nodeName)) {
+      if (htags.includes(node.firstChild.nodeName)) {
         // top.console.log("add new classs")
-        node.classList.add("last")
-        return
-      };
+        node.classList.add('last');
+        return;
+      }
       func(node);
       walkToClosestNextHeader(node, func);
     }
-  }
+  };
 
   // @Hossein
   const insertDomLines = (nodeToAddAfter, infoStructs) => {
     let lastEntry;
     let lineStartOffset;
-    let initialInsert = false
+    let initialInsert = false;
     infoStructs.length >= 1 && infoStructs.length <= 2 ? initialInsert = false : initialInsert = true;
     if (infoStructs.length < 1) return;
     for (const info of infoStructs) {
@@ -1253,79 +1253,77 @@ function Ace2Inner(editorInfo, cssManagers) {
       info.prepareForAdd();
       entry.lineMarker = info.lineMarker;
       try {
-        //======================================//
-        //====== Header Categorizer v3.0 =======//
-        //======================================//
+        // ======================================//
+        // ====== Header Categorizer v3.0 =======//
+        // ======================================//
 
         // by defualt assign first child nodeName as "tag" attribute
-        node.setAttribute("tag", node.firstChild.nodeName.toLowerCase());
+        node.setAttribute('tag', node.firstChild.nodeName.toLowerCase());
         if (initialInsert) {
-
           if (htags.includes(node.firstChild.nodeName)) {
             currentHIndex = htags.indexOf(node.firstChild.nodeName);
-            hSectionId = node.firstChild.getAttribute("data-id");
-            if(!hTitleId) hTitleId = hSectionId;
+            hSectionId = node.firstChild.getAttribute('data-id');
+            if (!hTitleId) hTitleId = hSectionId;
 
-            if(!ltestHsId.preserve) {
+            if (!ltestHsId.preserve) {
               ltestHsId.preserve = currentHIndex;
               ltestHsId[currentHIndex] = hSectionId;
             }
 
-            if(Math.abs(ltestHsId.preserve - currentHIndex) > 0 || ltestHsId.preserve === currentHIndex ){
-              ltestHsId[currentHIndex] =  hSectionId;
+            if (Math.abs(ltestHsId.preserve - currentHIndex) > 0 || ltestHsId.preserve === currentHIndex) {
+              ltestHsId[currentHIndex] = hSectionId;
               ltestHsId.preserve = currentHIndex;
-            } 
+            }
 
             // set First H text as a title index
-            if(hTitleIndex == undefined) hTitleIndex = currentHIndex;
+            if (hTitleIndex == undefined) hTitleIndex = currentHIndex;
 
-            if(currentHIndex === hTitleIndex) {
+            if (currentHIndex === hTitleIndex) {
               hTitleId = hSectionId;
             }
 
             hParentIndex = currentHIndex;
           }
 
-          node.setAttribute("sectionId", hSectionId);
-          node.setAttribute("titleId", hTitleId);
-          currentHIndex >= 0&&ltestHsId[0]&&node.setAttribute("lrh0", ltestHsId[0]);
-          currentHIndex >= 1&&ltestHsId[1]&&node.setAttribute("lrh1", ltestHsId[1]);
-          currentHIndex >= 2&&ltestHsId[2]&&node.setAttribute("lrh2", ltestHsId[2]);
-          currentHIndex >= 3&&ltestHsId[3]&&node.setAttribute("lrh3", ltestHsId[3]);
-          currentHIndex >= 4&&ltestHsId[4]&&node.setAttribute("lrh4", ltestHsId[4]);
-          currentHIndex >= 5&&ltestHsId[5]&&node.setAttribute("lrh5", ltestHsId[5]);
-          currentHIndex >= 6&&ltestHsId[6]&&node.setAttribute("lrh6", ltestHsId[6]);
-        } 
+          node.setAttribute('sectionId', hSectionId);
+          node.setAttribute('titleId', hTitleId);
+          currentHIndex >= 0 && ltestHsId[0] && node.setAttribute('lrh0', ltestHsId[0]);
+          currentHIndex >= 1 && ltestHsId[1] && node.setAttribute('lrh1', ltestHsId[1]);
+          currentHIndex >= 2 && ltestHsId[2] && node.setAttribute('lrh2', ltestHsId[2]);
+          currentHIndex >= 3 && ltestHsId[3] && node.setAttribute('lrh3', ltestHsId[3]);
+          currentHIndex >= 4 && ltestHsId[4] && node.setAttribute('lrh4', ltestHsId[4]);
+          currentHIndex >= 5 && ltestHsId[5] && node.setAttribute('lrh5', ltestHsId[5]);
+          currentHIndex >= 6 && ltestHsId[6] && node.setAttribute('lrh6', ltestHsId[6]);
+        }
 
-      // If the node is H tags
-      // then assign uniqe header ID
-      if(htags.includes(node.firstChild.nodeName)) {
+        // If the node is H tags
+        // then assign uniqe header ID
+        if (htags.includes(node.firstChild.nodeName)) {
           // if it's a h tags
           // node.classList.add("first")
-          node.setAttribute("node", "first")
-          nodeToAddAfter&&nodeToAddAfter.setAttribute("node", "last");
+          node.setAttribute('node', 'first');
+          nodeToAddAfter && nodeToAddAfter.setAttribute('node', 'last');
         } else {
           // if it's the last child of secction and the next node is h tag
-          if(
-            nodeToAddAfter&&nodeToAddAfter.nextSibling&&htags.map(x=>x.toLowerCase()).includes(nodeToAddAfter.nextSibling.getAttribute('tag')) ||
-            (nodeToAddAfter&&nodeToAddAfter.nextSibling&&nodeToAddAfter.nextSibling.nextSibling&&htags.map(x=>x.toLowerCase()).includes(nodeToAddAfter.nextSibling.nextSibling.getAttribute('tag')))
+          if (
+            nodeToAddAfter && nodeToAddAfter.nextSibling && htags.map((x) => x.toLowerCase()).includes(nodeToAddAfter.nextSibling.getAttribute('tag')) ||
+            (nodeToAddAfter && nodeToAddAfter.nextSibling && nodeToAddAfter.nextSibling.nextSibling && htags.map((x) => x.toLowerCase()).includes(nodeToAddAfter.nextSibling.nextSibling.getAttribute('tag')))
           ) {
             // top.console.log("yup this is wrong!")
             nodeToAddAfter.removeAttribute('node');
-            node.setAttribute("node", "last");
+            node.setAttribute('node', 'last');
           }
         }
 
 
-        
         if (!nodeToAddAfter) {
-          hSectionId = node.firstChild.getAttribute("data-id");
-          node.setAttribute("sectionId", hSectionId);
-          node.setAttribute("titleId", hTitleId);
+          hSectionId = node.firstChild.getAttribute('data-id');
+          node.setAttribute('sectionId', hSectionId);
+          node.setAttribute('titleId', hTitleId);
           document.body.insertBefore(node, document.body.firstChild);
         } else {
           document.body.insertBefore(node, nodeToAddAfter.nextSibling);
-          if(!initialInsert){
+          if (!initialInsert) {
             const lrh0 = nodeToAddAfter.getAttribute('lrh0');
             const lrh1 = nodeToAddAfter.getAttribute('lrh1');
             const lrh2 = nodeToAddAfter.getAttribute('lrh2');
@@ -1333,21 +1331,20 @@ function Ace2Inner(editorInfo, cssManagers) {
             const lrh4 = nodeToAddAfter.getAttribute('lrh4');
             const lrh5 = nodeToAddAfter.getAttribute('lrh5');
             const lrh6 = nodeToAddAfter.getAttribute('lrh6');
-  
-            node.setAttribute("sectionId", nodeToAddAfter.getAttribute('sectionId'));
-            node.setAttribute("titleId", nodeToAddAfter.getAttribute('titleId'));
-            lrh0&&node.setAttribute("lrh0", lrh0);
-            lrh1&&node.setAttribute("lrh1", lrh1);
-            lrh2&&node.setAttribute("lrh2", lrh2);
-            lrh3&&node.setAttribute("lrh3", lrh3);
-            lrh4&&node.setAttribute("lrh4", lrh4);
-            lrh5&&node.setAttribute("lrh5", lrh5);
-            lrh6&&node.setAttribute("lrh6", lrh6);
+
+            node.setAttribute('sectionId', nodeToAddAfter.getAttribute('sectionId'));
+            node.setAttribute('titleId', nodeToAddAfter.getAttribute('titleId'));
+            lrh0 && node.setAttribute('lrh0', lrh0);
+            lrh1 && node.setAttribute('lrh1', lrh1);
+            lrh2 && node.setAttribute('lrh2', lrh2);
+            lrh3 && node.setAttribute('lrh3', lrh3);
+            lrh4 && node.setAttribute('lrh4', lrh4);
+            lrh5 && node.setAttribute('lrh5', lrh5);
+            lrh6 && node.setAttribute('lrh6', lrh6);
           }
         }
-
       } catch (error) {
-        top.console.error("[view]:Header Catagorizer, ", error)
+        top.console.error('[view]:Header Catagorizer, ', error);
       }
 
       if (!nodeToAddAfter) {
@@ -1523,14 +1520,14 @@ function Ace2Inner(editorInfo, cssManagers) {
 
       for (const k of keysToDelete) {
         const n = document.getElementById(k);
-        if(deleteCount >= 2 && !["BR", "SPAN", "DIV"].includes(n.firstChild.nodeName)) {
-          hooks.callAll('aceCustomElementRemoved', {node: n, deleteCount})
+        if (deleteCount >= 2 && !['BR', 'SPAN', 'DIV'].includes(n.firstChild.nodeName)) {
+          hooks.callAll('aceCustomElementRemoved', {node: n, deleteCount});
         }
         n.parentNode.removeChild(n);
       }
 
-      if(startLine === 0 && deleteCount === 1 && lineEntries.length > 2 &&  newLineStrings.length > 2){
-        hooks.callAll('aceInitialingDomLines', {startLine, deleteCount, newLineStrings})
+      if (startLine === 0 && deleteCount === 1 && lineEntries.length > 2 && newLineStrings.length > 2) {
+        hooks.callAll('aceInitialingDomLines', {startLine, deleteCount, newLineStrings});
       }
 
       if (
@@ -3674,17 +3671,15 @@ function Ace2Inner(editorInfo, cssManagers) {
   // by @Hossein
   // TODO: find a way to move into the plugin
 
-
-
   // Create a class for the element
-class ChatInlineIcon extends HTMLElement {
-  constructor() {
+  class ChatInlineIcon extends HTMLElement {
+    constructor() {
     // Always call super first in constructor
-    super();
-    // Create a shadow root
-    const shadow = this.attachShadow({mode: 'open'});
-    const headerId = this.getAttribute('headerId')
-    const style = `
+      super();
+      // Create a shadow root
+      const shadow = this.attachShadow({mode: 'open'});
+      const headerId = this.getAttribute('headerId');
+      const style = `
       .chatInlinIcon{
         border: 1px solid #e6e8e9;
         border-radius: 50%;
@@ -3735,35 +3730,57 @@ class ChatInlineIcon extends HTMLElement {
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
       }
-    `
-    const content = `
+
+      :host([mobile]) .chatInlinIcon{
+        border-radius: 25px 0 0 25px;
+        background: #979797;
+        outline: none;
+        min-width: 35px;
+        max-width: 45px;
+        height: 25px;
+        display: flex;
+        align-items: center;
+        color: #fff;
+        justify-content: space-between;
+        border: none;
+        padding: 0 6px 0 10px;
+      }
+
+      .chatInlinIcon .counter {
+        padding-right: 4px
+      }
+
+
+    `;
+      const content = `
       <button class="chatInlinIcon ${headerId}" data-id="${headerId}" >
         <span class="loader"></span>
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="currentColor" d="M416 224V64c0-35.3-28.7-64-64-64H64C28.7 0 0 28.7 0 64v160c0 35.3 28.7 64 64 64v54.2c0 8 9.1 12.6 15.5 7.8l82.8-62.1H352c35.3.1 64-28.6 64-63.9zm96-64h-64v64c0 52.9-43.1 96-96 96H192v64c0 35.3 28.7 64 64 64h125.7l82.8 62.1c6.4 4.8 15.5.2 15.5-7.8V448h32c35.3 0 64-28.7 64-64V224c0-35.3-28.7-64-64-64z" class=""></path></svg>
-        </button>
-    `
-    // TODO: deactivated
-    shadow.innerHTML = `
+        <span class="counter"></span>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="currentColor" d="M416 224V64c0-35.3-28.7-64-64-64H64C28.7 0 0 28.7 0 64v160c0 35.3 28.7 64 64 64v54.2c0 8 9.1 12.6 15.5 7.8l82.8-62.1H352c35.3.1 64-28.6 64-63.9zm96-64h-64v64c0 52.9-43.1 96-96 96H192v64c0 35.3 28.7 64 64 64h125.7l82.8 62.1c6.4 4.8 15.5.2 15.5-7.8V448h32c35.3 0 64-28.7 64-64V224c0-35.3-28.7-64-64-64z" class=""></path></svg>
+      </button>
+    `;
+      // TODO: deactivated
+      shadow.innerHTML = `
       <style>${style}</style>
       ${content}
     `;
+    }
   }
-}
 
-// Define the new element
-customElements.define('chat-inline-icon', ChatInlineIcon);
+  // Define a new element
+  customElements.define('chat-inline-icon', ChatInlineIcon);
 
   // @Hossein
-  top.softReloadLRHAttributes = function (callback) {
-    top.console.info("[etherpad]: soft reload LRH Attributes");
-    const root = document.getElementById("innerdocbody").children;
+  top.softReloadLRHAttributes = (callback) => {
+    top.console.info('[etherpad]: soft reload LRH Attributes');
+    const root = document.getElementById('innerdocbody').children;
 
-    top.console.time("softReloadLRHAttributes");
+    top.console.time('softReloadLRHAttributes');
 
     [...root].forEach((node) => {
       if (htags.includes(node.firstChild.nodeName)) {
         currentHIndex = htags.indexOf(node.firstChild.nodeName);
-        hSectionId = node.firstChild.getAttribute("data-id");
+        hSectionId = node.firstChild.getAttribute('data-id');
         if (!hTitleId) hTitleId = hSectionId;
 
         if (!ltestHsId.preserve) {
@@ -3780,7 +3797,7 @@ customElements.define('chat-inline-icon', ChatInlineIcon);
         }
 
         // set First H text as a title index
-        if (hTitleIndex == undefined) hTitleIndex = currentHIndex;
+        if (hTitleIndex === undefined) hTitleIndex = currentHIndex;
 
         if (currentHIndex === hTitleIndex) {
           hTitleId = hSectionId;
@@ -3789,19 +3806,16 @@ customElements.define('chat-inline-icon', ChatInlineIcon);
         hParentIndex = currentHIndex;
       }
 
-      node.setAttribute("sectionId", hSectionId);
-      node.setAttribute("titleId", hTitleId);
+      node.setAttribute('sectionId', hSectionId);
+      node.setAttribute('titleId', hTitleId);
 
-      for(let i = 0; i <= currentHIndex; i++ ){
-        if(ltestHsId[i]) 
-          node.setAttribute(`lrh${i}`, ltestHsId[i]);
+      for (let i = 0; i <= currentHIndex; i++) {
+        if (ltestHsId[i]) { node.setAttribute(`lrh${i}`, ltestHsId[i]); }
       }
-
     });
 
-    top.console.timeEnd("softReloadLRHAttributes");
-
-    if(callback) callback()
+    top.console.timeEnd('softReloadLRHAttributes');
+    if (callback) callback();
   };
 }
 
