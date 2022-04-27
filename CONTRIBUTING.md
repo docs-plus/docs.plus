@@ -1,6 +1,3 @@
-# Contributor Guidelines
-(Please talk to people on the mailing list before you change this page, see our section on [how to get in touch](https://github.com/ether/etherpad-lite#get-in-touch))
-
 ## Pull requests
 
 * the commit series in the PR should be _linear_ (it **should not contain merge commits**). This is necessary because we want to be able to [bisect](https://en.wikipedia.org/wiki/Bisection_(software_engineering)) bugs easily. Rewrite history/perform a rebase if necessary
@@ -38,6 +35,7 @@
 * think of the PR not as something that __you wrote__, but as something that __someone else is going to read__. The commit series in the PR should tell a novice developer the story of your thoughts when developing it
 
 ## How to write a bug report
+Bugs and suggestions can be reported on our [GitHub](https://github.com/nwspk/docs.plus/issues) or [Trello](https://trello.com/b/RUlI6aWC/docsplus).
 
 * Please be polite, we all are humans and problems can occur.
 * Please add as much information as possible, for example
@@ -60,14 +58,6 @@ If you send logfiles, please set the loglevel switch DEBUG in your settings.json
 ```
 
 The logfile location is defined in startup script or the log is directly shown in the commandline after you have started etherpad.
-
-## General goals of Etherpad
-To make sure everybody is going in the same direction:
-* easy to install for admins and easy to use for people
-* easy to integrate into other apps, but also usable as standalone
-* lightweight and scalable
-* extensible, as much functionality should be extendable with plugins so changes don't have to be done in core.
-Also, keep it maintainable. We don't wanna end up as the monster Etherpad was!
 
 ## How to work with git?
 * Don't work in your master branch.
@@ -125,17 +115,4 @@ Front-end tests are found in the `tests/frontend/` folder in the repository. Run
 
 Back-end tests can be run from the `src` directory, via `npm test`.
 
-## Things you can help with
-Etherpad is much more than software.  So if you aren't a developer then worry not, there is still a LOT you can do!  A big part of what we do is community engagement.  You can help in the following ways
- * Triage bugs (applying labels) and confirming their existence
- * Testing fixes (simply applying them and seeing if it fixes your issue or not) - Some git experience required
- * Notifying large site admins of new releases
- * Writing Changelogs for releases
- * Creating Windows packages
- * Creating releases
- * Bumping dependencies periodically and checking they don't break anything
- * Write proposals for grants
- * Co-Author and Publish CVEs
- * Work with SFC to maintain legal side of project
- * Maintain TODO page - https://github.com/ether/etherpad-lite/wiki/TODO#IMPORTANT_TODOS
-
+Bugs and suggestions can be reported on our [GitHub](https://github.com/nwspk/docs.plus/issues) or [Trello](https://trello.com/b/RUlI6aWC/docsplus).
