@@ -61,7 +61,7 @@ Prerequisites and installation are the same as Etherpad flow, follow this [link]
 git clone https://github.com/nwspk/docs.plus.git
 
 # move to the project folder
-cd docsplus/src
+cd docs.plus
 
 # install pre requirement plugins
 npm install --no-save --legacy-peer-deps
@@ -85,7 +85,7 @@ npm install --no-save --legacy-peer-deps
         https://github.com/HMarzban/ep_headerview#a4e93eb
 
 # run the docsplus
-bin/run.sh
+src/bin/run.sh
 ```
 Docs.plus should now be accessible from your web browser. To access it type 0.0.0.0:9001 into the address bar.
 
