@@ -170,9 +170,9 @@ The guidelines for contributing are available [here](https://github.com/nwspk/do
 ### ✨ Contributors 
 Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
 
-|  |  |  |  |
-| --------- | ------ | ----------- | ------------- |
-| [<img src="https://avatars.githubusercontent.com/u/5703915?v=4?s=100" width="100"><br> 📆💼 edsaperia](https://github.com/edsaperia) | [<img src="https://avatars.githubusercontent.com/u/11405614?v=4?s=100" width="100"><br>💻🚇 samirsayyad](https://github.com/samirsayyad)  | [<img src="https://avatars.githubusercontent.com/u/20157508?v=4?s=100" width="100"><br>💻🚇Hossein](https://github.com/HMarzban)  | [<img src="https://avatars.githubusercontent.com/u/1060378?v=4?s=100" width="100"><br>🚇Josh Balfour](https://github.com/joshbalfour)  |
+|  |  |  |  |  |
+| --------- | ------ | ----------- | ------------- | ------------- |
+| [<img src="https://avatars.githubusercontent.com/u/5703915?v=4?s=100" width="100"><br> 📆💼 edsaperia](https://github.com/edsaperia) | [<img src="https://avatars.githubusercontent.com/u/11405614?v=4?s=100" width="100"><br>💻🚇 samirsayyad](https://github.com/samirsayyad)  | [<img src="https://avatars.githubusercontent.com/u/20157508?v=4?s=100" width="100"><br>💻🚇🧑‍🏫Hossein](https://github.com/HMarzban)  | [<img src="https://avatars.githubusercontent.com/u/1060378?v=4?s=100" width="100"><br>🚇Josh Balfour](https://github.com/joshbalfour)  | [<img src="https://avatars.githubusercontent.com/u/45007178?v=4?s=100" width="100"><br>🐛📖Patryk](https://github.com/pdobbek) |
 
 
 # 👋 Contact
