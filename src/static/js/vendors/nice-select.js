@@ -93,7 +93,8 @@
     $(document).off('.nice_select');
 
     // Open/close
-    $(document).on('click.nice_select', '.nice-select', function(event) {
+    // @Hossein
+    $(document).on('click.nice_select touchstart', '.nice-select', function(event) {
       var $dropdown = $(this);
 
       $('.nice-select').not($dropdown).removeClass('open');
@@ -123,7 +124,8 @@
         $dropdown.find('.list').css('max-height', $maxListHeight + 'px');
 
       } else {
-        $dropdown.focus();
+        // @Hossein
+        if(!$('body').hasClass("mobileView")) $dropdown.focus();
       }
     });
 
@@ -135,7 +137,8 @@
     });
 
     // Option click
-    $(document).on('click.nice_select', '.nice-select .option:not(.disabled)', function(event) {
+    // @Hossein
+    $(document).on('click.nice_select touchstart', '.nice-select .option:not(.disabled)', function(event) {
       var $option = $(this);
       var $dropdown = $option.closest('.nice-select');
 
