@@ -3332,6 +3332,7 @@ function Ace2Inner(editorInfo, cssManagers) {
     $(document).on('keypress', handleKeyEvent);
     $(document).on('keyup', handleKeyEvent);
     $(document).on('click', handleClick);
+    $(document).on('touchstart', handleClick);
     // dropdowns on edit bar need to be closed on clicks on both pad inner and pad outer
     $(outerDoc).on('click', hideEditBarDropdowns);
 
