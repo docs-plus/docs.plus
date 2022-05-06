@@ -29,6 +29,7 @@ jobs:
           ep_hide_line_numbers
           ep_monetization
           ep_remove_embed
+          https://github.com/HMarzban/ep_mobile_view#a73765e 
           https://github.com/samirsayyad/ep_loading_pad#2b3bc86
           https://github.com/samirsayyad/ep_docs_plus_customize.git
           https://github.com/samirsayyad/ep_set_title_on_pad#ea2b523 
@@ -38,12 +39,7 @@ jobs:
           https://github.com/samirsayyad/ep_headings2#e5cc3dd
           https://github.com/samirsayyad/ep_table_of_contents#b9f8586
           https://github.com/HMarzban/ep_headerview#275ac0b
-          https://github.com/HMarzban/ep_mobile_view#a73765e 
-          https://github.com/HMarzban/ep_wrtc_heading#4d8693c 
-          # https://github.com/samirsayyad/ep_rocketchat#700845b
-          # ep_comments_page
-          # https://github.com/ether/ep_sticky_attributes.git
-          # https://github.com/samirsayyad/ep_custom_header_message
+          https://github.com/HMarzban/ep_wrtc_heading#4d8693c
 
       - name: Install all dependencies and symlink for ep_etherpad-lite
         run: src/bin/installDeps.sh
