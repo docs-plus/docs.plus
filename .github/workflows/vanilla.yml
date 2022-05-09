@@ -24,7 +24,7 @@ jobs:
       - name: Install Etherpad plugins
         run: >
           npm install --no-save --legacy-peer-deps
-          https://github.com/HMarzban/ep_mobile_view#7f8a018 
+          https://github.com/HMarzban/ep_mobile_view#b282576 
           ep_adminpads2
           ep_cursortrace
           ep_hide_line_numbers
