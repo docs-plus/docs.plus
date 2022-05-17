@@ -1,17 +1,17 @@
 # This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
-name: vanilla.js CI
+name: stage.js CI
 
 on:
   push:
-    branches: [vanilla]
+    branches: [dev]
   pull_request:
-    branches: [vanilla]
+    branches: [dev]
 
 jobs:
   build:
-    runs-on: vanilla
+    runs-on: stage.docs.plus
     strategy:
       matrix:
         node-version: ['lts/*']
@@ -24,31 +24,36 @@ jobs:
       - name: Install Etherpad plugins
         run: >
           npm install --no-save --legacy-peer-deps
-          https://github.com/HMarzban/ep_mobile_view#cf3763e 
           ep_adminpads2
           ep_cursortrace
           ep_hide_line_numbers
           ep_monetization
           ep_remove_embed
-          https://github.com/samirsayyad/ep_loading_pad#1f42e55
+          https://github.com/HMarzban/ep_mobile_view#cf3763e 
+          https://github.com/samirsayyad/ep_loading_pad.git
           https://github.com/samirsayyad/ep_docs_plus_customize.git
           https://github.com/samirsayyad/ep_set_title_on_pad#ea2b523 
           https://github.com/samirsayyad/ep_insert_media.git#2be227f
-          https://github.com/samirsayyad/ep_profile_modal#c912aa2
+          https://github.com/samirsayyad/ep_profile_modal#93fa7f9
           https://github.com/samirsayyad/ep_full_hyperlinks#ecfbb8f
-          https://github.com/samirsayyad/ep_headings2#e5cc3dd
+          https://github.com/samirsayyad/ep_headings2.git
           https://github.com/samirsayyad/ep_table_of_contents#b9f8586
           https://github.com/HMarzban/ep_headerview#275ac0b
-          https://github.com/HMarzban/ep_wrtc_heading#4d8693c
+          https://github.com/samirsayyad/ep_rocketchat#b6cc93d
+          https://github.com/HMarzban/ep_wrtc_heading#4d8693c 
+          https://github.com/samirsayyad/ep_push_notification#499342a
+          # ep_comments_page
+          # https://github.com/ether/ep_sticky_attributes.git
+          # https://github.com/samirsayyad/ep_custom_header_message
 
       - name: Install all dependencies and symlink for ep_etherpad-lite
         run: src/bin/installDeps.sh
 
       - name: Run pm2 docsplus instance
-        run: DB_NAME=handbook pm2 start temp/ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
+        run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 start temp/ecosystem.config.js --only ${GITHUB_REF#refs/heads/}
 
       - name: Run pm2 ws.router instance
-        run: DB_NAME=handbook pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
+        run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
 
     env:
       DB_USER: ${{secrets.PG_USER}}
@@ -72,5 +77,4 @@ jobs:
       FIREBASE_PROJECTID : ${{secrets.FIREBASE_PROJECTID}}
       FIREBASE_PUBLICVAPIDKEY : ${{secrets.FIREBASE_PUBLICVAPIDKEY}}
       FIREBASE_STORAGEBUCKET : ${{secrets.FIREBASE_STORAGEBUCKET}}
-
 
