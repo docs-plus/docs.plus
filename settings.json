@@ -707,5 +707,16 @@
     "active": false,
     "padId": "padName",
     "padName": "padName"
+  },
+  "ep_push_notification":{
+    "publicVapidKey": "${FIREBASE_PUBLICVAPIDKEY:null}",
+    "fcmServerKey": "${FIREBASE_FCMSERVERKEY:null}",
+    "apiKey": "${FIREBASE_APIKEY:null}",
+    "authDomain": "${FIREBASE_AUTHDOMAIN:null}",
+    "projectId": "${FIREBASE_PROJECTID:null}",
+    "storageBucket": "${FIREBASE_STORAGEBUCKET:null}",
+    "messagingSenderId": "${FIREBASE_MESSAGINGSENDERID:null}",
+    "appId": "${FIREBASE_APPID:null}",
+    "measurementId": "${FIREBASE_MEASUREMENTID:null}"
   }
 }
