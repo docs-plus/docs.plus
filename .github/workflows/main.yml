@@ -1,17 +1,19 @@
 # This workflow will do a clean install of node dependencies, build the source code and run tests across different versions of node
 # For more information see: https://help.github.com/actions/language-and-framework-guides/using-nodejs-with-github-actions
 
-name: stage.js CI
+name: Main.js CI
 
 on:
   push:
-    branches: [dev]
+    branches: [main]
   pull_request:
-    branches: [dev]
+    branches: [main]
 
 jobs:
   build:
-    runs-on: stage.docs.plus
+    name: build docs.plus
+
+    runs-on: docs.plus
     strategy:
       matrix:
         node-version: ['lts/*']
@@ -45,15 +47,14 @@ jobs:
           # ep_comments_page
           # https://github.com/ether/ep_sticky_attributes.git
           # https://github.com/samirsayyad/ep_custom_header_message
-
       - name: Install all dependencies and symlink for ep_etherpad-lite
         run: src/bin/installDeps.sh
 
       - name: Run pm2 docsplus instance
-        run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 start temp/ecosystem.config.js --only ${GITHUB_REF#refs/heads/}
+        run: DB_NAME=handbook pm2 start temp/ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
 
       - name: Run pm2 ws.router instance
-        run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
+        run: DB_NAME=handbook pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
 
     env:
       DB_USER: ${{secrets.PG_USER}}
@@ -65,16 +66,6 @@ jobs:
       BUCKET_S3_SERVER: ${{secrets.BUCKET_S3_SERVER}}
       ACCESS_KEY_SECRET: ${{secrets.ACCESS_KEY_SECRET}}
       ACCESS_KEY_ID: ${{secrets.ACCESS_KEY_ID}}
-      ROCKET_CHAT_ADMIN_USERID: ${{secrets.ROCKET_CHAT_ADMIN_USERID_DEV}}
-      ROCKET_CHAT_ADMIN_TOKEN: ${{secrets.ROCKET_CHAT_ADMIN_TOKEN_DEV}}
-      ROCKET_CHAT_MAIN_HOST : ${{secrets.ROCKET_CHAT_MAIN_HOST_DEV}}
-      FIREBASE_APIKEY : ${{secrets.FIREBASE_APIKEY}}
-      FIREBASE_APPID : ${{secrets.FIREBASE_APPID}}
-      FIREBASE_AUTHDOMAIN : ${{secrets.FIREBASE_AUTHDOMAIN}}
-      FIREBASE_FCMSERVERKEY : ${{secrets.FIREBASE_FCMSERVERKEY}}
-      FIREBASE_MEASUREMENTID : ${{secrets.FIREBASE_MEASUREMENTID}}
-      FIREBASE_MESSAGINGSENDERID : ${{secrets.FIREBASE_MESSAGINGSENDERID}}
-      FIREBASE_PROJECTID : ${{secrets.FIREBASE_PROJECTID}}
-      FIREBASE_PUBLICVAPIDKEY : ${{secrets.FIREBASE_PUBLICVAPIDKEY}}
-      FIREBASE_STORAGEBUCKET : ${{secrets.FIREBASE_STORAGEBUCKET}}
-
+      ROCKET_CHAT_ADMIN_USERID: ${{secrets.ROCKET_CHAT_ADMIN_USERID}}
+      ROCKET_CHAT_ADMIN_TOKEN: ${{secrets.ROCKET_CHAT_ADMIN_TOKEN}}
+      ROCKET_CHAT_MAIN_HOST : ${{secrets.ROCKET_CHAT_MAIN_HOST}}
