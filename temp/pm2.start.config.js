@@ -6,7 +6,7 @@ module.exports = {
       watch: false,
     },
     {
-      name: "ws_master",
+      name: "ws_main",
       script: "ws.router/server/index.pm2.cluster.js",
       instances: 1,
       watch: false,
