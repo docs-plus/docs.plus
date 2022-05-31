@@ -26,7 +26,7 @@ jobs:
           npm install --no-save --legacy-peer-deps
           https://github.com/HMarzban/ep_mobile_view#69df160 
           ep_adminpads2
-          ep_cursortrace
+          https://github.com/HMarzban/ep_cursortrace#3702493
           ep_hide_line_numbers
           ep_monetization
           ep_remove_embed
