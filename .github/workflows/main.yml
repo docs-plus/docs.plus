@@ -26,9 +26,9 @@ jobs:
       - name: Install Etherpad plugins
         run: >
           npm install --no-save --legacy-peer-deps
-          https://github.com/HMarzban/ep_mobile_view#69df160 
+          https://github.com/HMarzban/ep_mobile_view#07c675f 
           ep_adminpads2
-          https://github.com/HMarzban/ep_cursortrace#3702493
+          https://github.com/HMarzban/ep_cursortrace#f3f4acc
           ep_hide_line_numbers
           ep_monetization
           ep_remove_embed
@@ -37,10 +37,10 @@ jobs:
           https://github.com/samirsayyad/ep_set_title_on_pad#cb16462 
           https://github.com/samirsayyad/ep_insert_media.git#2be227f
           https://github.com/samirsayyad/ep_profile_modal#69b3c50
-          https://github.com/samirsayyad/ep_full_hyperlinks#ecfbb8f
+          https://github.com/samirsayyad/ep_full_hyperlinks#909b6dd
           https://github.com/samirsayyad/ep_headings2#e5cc3dd
-          https://github.com/samirsayyad/ep_table_of_contents#cbd9f1a
-          https://github.com/HMarzban/ep_headerview#275ac0b
+          https://github.com/samirsayyad/ep_table_of_contents#968bdba
+          https://github.com/HMarzban/ep_headerview#d559463
           https://github.com/HMarzban/ep_wrtc_heading#4d8693c
           https://github.com/samirsayyad/ep_rocketchat#c1fc438
           https://github.com/samirsayyad/ep_push_notification#d4b484e
