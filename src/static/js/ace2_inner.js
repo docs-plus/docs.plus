@@ -3690,7 +3690,7 @@ function Ace2Inner(editorInfo, cssManagers) {
         width: 40px;
         height: 40px;
         transition: all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
-        display: flex;
+        /* display: flex; */
         align-items: center;
         color: #333333;
         justify-content: center;
@@ -3732,6 +3732,18 @@ function Ace2Inner(editorInfo, cssManagers) {
         100% { transform: rotate(360deg); }
       }
 
+      .chatInlinIcon:hover .bubbleNotify {
+        color: black;
+      }
+
+      .chatInlinIcon:hover .bubbleNotify::before {
+        background-color: #fff;
+      }
+
+      .chatInlinIcon:hover .bubbleNotify::after {
+        border-color: #fff transparent transparent #fff;
+      }
+
       :host([mobile]) .chatInlinIcon{
         border-radius: 25px 0 0 25px;
         background: #979797;
@@ -3747,17 +3759,83 @@ function Ace2Inner(editorInfo, cssManagers) {
         padding: 0 6px 0 10px;
       }
 
-      .chatInlinIcon .counter {
-        padding-right: 4px
+      .mobileIcon {
+        display: none;
       }
 
+      :host([mobile]) .mobileIcon {
+        display: flex;
+      }
+
+      :host([mobile]) .mobileIcon .counter {
+        padding-right: 4px;
+      }
+
+      :host([mobile]) .bubbleNotify {
+        display: none;
+      }
+
+      .bubbleNotify {
+        position: relative;
+        display: block;
+        width: 28px;
+        height: 29px;
+        overflow: hidden;
+        z-index: 1;
+        color: #fff;
+        line-height: 100px;
+        font-weight: bold;
+        text-align: center;
+      }
+
+      .bubbleNotify::first-line {
+        line-height:28px;
+      }
+
+      /*----------------------
+        Speech Bubble Shapes
+      ------------------------*/
+      .bubbleNotify::before,
+      .bubbleNotify::after {
+        content: "";
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        z-index: -1;
+        transition:none;
+      }
+
+      .bubbleNotify::before {
+        width: 21px;
+        height: 16px;
+        margin: -9px 0 0 -11px;
+        background-color: #5D5D5D;
+        border-radius: 3px;
+      }
+
+      .bubbleNotify::after {
+        height: 0;
+        margin: 7px 0 0 2px;
+        border-width: 2px;
+        border-style: solid;
+        border-color: #5D5D5D transparent transparent #5D5D5D;
+      }
+
+      .bubbleNotify .counter {
+        padding-right: 2px
+      }
 
     `;
       const content = `
       <button class="chatInlinIcon ${headerId}" data-id="${headerId}" >
         <span class="loader"></span>
-        <span class="counter"></span>
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="currentColor" d="M416 224V64c0-35.3-28.7-64-64-64H64C28.7 0 0 28.7 0 64v160c0 35.3 28.7 64 64 64v54.2c0 8 9.1 12.6 15.5 7.8l82.8-62.1H352c35.3.1 64-28.6 64-63.9zm96-64h-64v64c0 52.9-43.1 96-96 96H192v64c0 35.3 28.7 64 64 64h125.7l82.8 62.1c6.4 4.8 15.5.2 15.5-7.8V448h32c35.3 0 64-28.7 64-64V224c0-35.3-28.7-64-64-64z" class=""></path></svg>
+        <div class="bubbleNotify">
+          <span class="counter"></span>
+        </div>
+        <span class="mobileIcon">
+          <span class="counter"></span>
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 576 512"><path fill="currentColor" d="M416 224V64c0-35.3-28.7-64-64-64H64C28.7 0 0 28.7 0 64v160c0 35.3 28.7 64 64 64v54.2c0 8 9.1 12.6 15.5 7.8l82.8-62.1H352c35.3.1 64-28.6 64-63.9zm96-64h-64v64c0 52.9-43.1 96-96 96H192v64c0 35.3 28.7 64 64 64h125.7l82.8 62.1c6.4 4.8 15.5.2 15.5-7.8V448h32c35.3 0 64-28.7 64-64V224c0-35.3-28.7-64-64-64z" class=""></path></svg>
+        </span>
       </button>
     `;
       // TODO: deactivated
