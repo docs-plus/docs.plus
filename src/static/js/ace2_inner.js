@@ -3760,7 +3760,7 @@ function Ace2Inner(editorInfo, cssManagers) {
       }
 
       .mobileIcon {
-        display: none;
+        display: block;
       }
 
       :host([mobile]) .mobileIcon {
@@ -3771,13 +3771,21 @@ function Ace2Inner(editorInfo, cssManagers) {
         padding-right: 4px;
       }
 
+      :host([desktop]) .mobileIcon .counter {
+        display: none;
+      }
+
+      :host([desktop]) .mobileIcon {
+        margin-top: 5px;
+      }
+
       :host([mobile]) .bubbleNotify {
         display: none;
       }
 
       .bubbleNotify {
         position: relative;
-        display: block;
+        display: none;
         width: 28px;
         height: 29px;
         overflow: hidden;
