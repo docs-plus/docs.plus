@@ -701,7 +701,7 @@
     "port": 443,
     "userId": "${ROCKET_CHAT_ADMIN_USERID:null}",
     "token": "${ROCKET_CHAT_ADMIN_TOKEN:null}",
-    "dbRocketchatKey": "stagekey"
+    "dbRocketchatKey": "stagekey20220628"
   },
   "ep_singlePad":{
     "active": false,
