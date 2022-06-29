@@ -288,6 +288,7 @@
     clientVars.staticRootAddress = "<%= staticRootAddress  %>";
     clientVars.padView = "<%= padView  %>";
     clientVars.ep_singlePad = <%- JSON.stringify(settings.ep_singlePad ||{active: false}) %>;
+    clientVars.userAgent = "<%= userAgent  %>";
 
     const pathComponents = location.pathname.split('/');
 
@@ -304,7 +305,7 @@
     // Most of the plugins we use are using this plugin by default for templating,
     // so we decided to import this plugin by default and prevent overloading this plugin.
     require('ep_etherpad-lite/static/js/jquery.tmpl.min');
-    
+
     browser = require('ep_etherpad-lite/static/js/vendors/browser');
 
     const plugins = require('ep_etherpad-lite/static/js/pluginfw/client_plugins');
