@@ -14,8 +14,13 @@ const db = require('../../db/DB'); // @Samir
 const minify = require('../../utils/Minify'); // @Hossein
 const useragent = require('express-useragent'); // @Hossein
 
+let userAgent = {};
+
 exports.expressCreateServer = (hookName, args, cb) => {
-  args.app.use(useragent.express());
+  args.app.use(useragent.express(), (req, res, next) => {
+    userAgent = req.useragent;
+    return next();
+  });
 
   // expose current stats
   args.app.get('/stats', (req, res) => {
@@ -83,6 +88,8 @@ exports.expressCreateServer = (hookName, args, cb) => {
       padView,
       padName,
       staticRootAddress,
+      userAgent,
+
     }));
   });
   // @Hossein
@@ -120,7 +127,7 @@ exports.expressCreateServer = (hookName, args, cb) => {
       req,
       toolbar,
       isReadOnly,
-      useragent,
+      userAgent,
 
     }));
   });
