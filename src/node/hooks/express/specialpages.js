@@ -81,7 +81,7 @@ exports.expressCreateServer = (hookName, args, cb) => {
     // @Samir Sayyad Added for social preview
     const padTitle = await db.get(`title:${padId}`);
     res.send(eejs.require('ep_etherpad-lite/templates/timeslider.html', {
-      meta: {title: (padTitle) ? padTitle : req.params.pad},
+      meta: {title: (padTitle) ? padTitle.trim().replace(/(\r\n|\n|\r)/gm, '') : req.params.pad},
       req,
       toolbar,
       padId,
@@ -119,7 +119,7 @@ exports.expressCreateServer = (hookName, args, cb) => {
     // can be removed when require-kernel is dropped
     res.header('Feature-Policy', 'sync-xhr \'self\'');
     res.send(eejs.require('ep_etherpad-lite/templates/pad.html', {
-      meta: {title: (padTitle) ? padTitle : req.params.pad},
+      meta: {title: (padTitle) ? padTitle.trim().replace(/(\r\n|\n|\r)/gm, '') : req.params.pad},
       padId,
       padView,
       padName,
