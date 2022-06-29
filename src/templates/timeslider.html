@@ -299,6 +299,12 @@
     require.setGlobalKeyPath("require");
 
     $ = jQuery = require('ep_etherpad-lite/static/js/rjquery').jQuery; // Expose jQuery #HACK
+    // @Hossein
+    // Import jquery template, the most common plugin that plugins use by default.
+    // Most of the plugins we use are using this plugin by default for templating,
+    // so we decided to import this plugin by default and prevent overloading this plugin.
+    require('ep_etherpad-lite/static/js/jquery.tmpl.min');
+    
     browser = require('ep_etherpad-lite/static/js/vendors/browser');
 
     const plugins = require('ep_etherpad-lite/static/js/pluginfw/client_plugins');
