@@ -26,23 +26,23 @@ jobs:
       - name: Install Etherpad plugins
         run: >
           npm install --no-save --legacy-peer-deps
-          https://github.com/HMarzban/ep_mobile_view#69df160 
+          https://github.com/HMarzban/ep_mobile_view#923ba20  
           ep_adminpads2
-          https://github.com/HMarzban/ep_cursortrace#3702493
+          https://github.com/HMarzban/ep_cursortrace#cb27d15
           ep_hide_line_numbers
           ep_monetization
           ep_remove_embed
           https://github.com/samirsayyad/ep_loading_pad#1f42e55
           https://github.com/samirsayyad/ep_docs_plus_customize.git
-          https://github.com/samirsayyad/ep_set_title_on_pad#ea2b523 
+          https://github.com/samirsayyad/ep_set_title_on_pad#cb16462 
           https://github.com/samirsayyad/ep_insert_media.git#2be227f
           https://github.com/samirsayyad/ep_profile_modal#69b3c50
-          https://github.com/samirsayyad/ep_full_hyperlinks#ecfbb8f
+          https://github.com/samirsayyad/ep_full_hyperlinks#74832c1
           https://github.com/samirsayyad/ep_headings2#e5cc3dd
-          https://github.com/samirsayyad/ep_table_of_contents#cbd9f1a
-          https://github.com/HMarzban/ep_headerview#275ac0b
-          https://github.com/HMarzban/ep_wrtc_heading#4d8693c
-          https://github.com/samirsayyad/ep_rocketchat#c1fc438
+          https://github.com/samirsayyad/ep_table_of_contents#efd3597 
+          https://github.com/HMarzban/ep_headerview#d559463
+          https://github.com/HMarzban/ep_wrtc_heading#63d537d
+          https://github.com/samirsayyad/ep_rocketchat#c9f5986 
           https://github.com/samirsayyad/ep_push_notification#d4b484e
           # ep_comments_page
           # https://github.com/ether/ep_sticky_attributes.git
