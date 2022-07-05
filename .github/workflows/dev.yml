@@ -17,8 +17,6 @@ jobs:
         node-version: ['lts/*']
     steps:
       - uses: actions/checkout@v2
-        with:
-          clean: false
       - uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
@@ -49,7 +47,7 @@ jobs:
           # https://github.com/samirsayyad/ep_custom_header_message
 
       - name: Install all dependencies and symlink for ep_etherpad-lite
-        run: src/bin/fastRun.sh
+        run: src/bin/installDeps.sh
 
       - name: Run pm2 docsplus instance
         run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 start temp/ecosystem.config.js --only ${GITHUB_REF#refs/heads/} --cron-restart="0 0 * * 0"
