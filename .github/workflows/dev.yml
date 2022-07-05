@@ -34,7 +34,7 @@ jobs:
           https://github.com/samirsayyad/ep_docs_plus_customize.git
           https://github.com/samirsayyad/ep_set_title_on_pad#cb16462 
           https://github.com/samirsayyad/ep_insert_media.git#2be227f
-          https://github.com/samirsayyad/ep_profile_modal#69b3c50
+          https://github.com/samirsayyad/ep_profile_modal#ccf70a2
           https://github.com/samirsayyad/ep_full_hyperlinks#74832c1
           https://github.com/samirsayyad/ep_headings2#e5cc3dd
           https://github.com/samirsayyad/ep_table_of_contents#efd3597 
@@ -50,10 +50,10 @@ jobs:
         run: src/bin/installDeps.sh
 
       - name: Run pm2 docsplus instance
-        run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 start temp/ecosystem.config.js --only ${GITHUB_REF#refs/heads/}
+        run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 start temp/ecosystem.config.js --only ${GITHUB_REF#refs/heads/} --cron-restart="0 0 * * 0"
 
       - name: Run pm2 ws.router instance
-        run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
+        run: DB_NAME=${GITHUB_REF#refs/heads/} pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/} --cron-restart="0 0 * * 0"
 
     env:
       DB_USER: ${{secrets.PG_USER}}
