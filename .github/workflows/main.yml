@@ -39,7 +39,7 @@ jobs:
           https://github.com/samirsayyad/ep_profile_modal#ccf70a2
           https://github.com/samirsayyad/ep_full_hyperlinks#74832c1
           https://github.com/samirsayyad/ep_headings2#e5cc3dd
-          https://github.com/samirsayyad/ep_table_of_contents#46bce82 
+          https://github.com/samirsayyad/ep_table_of_contents#d44a089 
           https://github.com/HMarzban/ep_headerview#d559463
           https://github.com/HMarzban/ep_wrtc_heading#63d537d
           https://github.com/samirsayyad/ep_rocketchat#12f012d 
@@ -55,7 +55,7 @@ jobs:
 
       - name: Run pm2 ws.router instance
         run: DB_NAME=handbook pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
-        
+
     env:
       DB_USER: ${{secrets.PG_USER}}
       DB_PASS: ${{secrets.PG_PASS}}
