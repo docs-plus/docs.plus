@@ -3865,6 +3865,7 @@ function Ace2Inner(editorInfo, cssManagers) {
     top.console.time('softReloadLRHAttributes');
 
     [...root].forEach((node) => {
+      // select header tags
       if (htags.includes(node.firstChild.nodeName)) {
         currentHIndex = htags.indexOf(node.firstChild.nodeName);
         hSectionId = node.firstChild.getAttribute('data-id');
@@ -3897,6 +3898,10 @@ function Ace2Inner(editorInfo, cssManagers) {
       node.setAttribute('titleId', hTitleId);
 
       for (let i = 0; i <= currentHIndex; i++) {
+        if (i === 0) {
+          node.setAttribute('lrh0', hTitleId);
+          continue;
+        }
         if (ltestHsId[i]) { node.setAttribute(`lrh${i}`, ltestHsId[i]); }
       }
     });
