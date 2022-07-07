@@ -3861,13 +3861,18 @@ function Ace2Inner(editorInfo, cssManagers) {
   top.softReloadLRHAttributes = (callback) => {
     top.console.info('[etherpad]: soft reload LRH Attributes');
     const root = document.getElementById('innerdocbody').children;
-
+    let ltestHsId = {0: '', 1: '', 2: '', 3: '', 4: '', 5: '', preserve: ''};
     top.console.time('softReloadLRHAttributes');
 
     [...root].forEach((node) => {
       // select header tags
       if (htags.includes(node.firstChild.nodeName)) {
         currentHIndex = htags.indexOf(node.firstChild.nodeName);
+        if (currentHIndex === 0) {
+          ltestHsId = {
+            0: '', 1: '', 2: '', 3: '', 4: '', 5: '', preserve: '',
+          };
+        }
         hSectionId = node.firstChild.getAttribute('data-id');
         if (!hTitleId) hTitleId = hSectionId;
 
