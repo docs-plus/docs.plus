@@ -6,6 +6,7 @@ module.exports = {
       env: {
         NODE_ENV: "production",
         PORT:"9001",
+        cron_restart: "0 0 * * 0",
         DB_USER : `${process.env.DB_USER}`,
         DB_PASS : `${process.env.DB_PASS}`,
         DB_HOST : `${process.env.DB_HOST}`,
@@ -29,6 +30,7 @@ module.exports = {
     env: {
       NODE_ENV: "production",
       PORT:"9002",
+      cron_restart: "0 0 * * 0",
       DB_USER : `${process.env.DB_USER}`,
       DB_PASS : `${process.env.DB_PASS}`,
       DB_HOST : `${process.env.DB_HOST}`,
