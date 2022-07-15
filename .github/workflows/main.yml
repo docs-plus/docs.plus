@@ -26,7 +26,7 @@ jobs:
       - name: Install Etherpad plugins
         run: >
           npm install --no-save --legacy-peer-deps
-          https://github.com/HMarzban/ep_mobile_view#7e0207a  
+          https://github.com/HMarzban/ep_mobile_view#6809aea  
           ep_adminpads2
           https://github.com/HMarzban/ep_cursortrace#cb27d15
           ep_hide_line_numbers
@@ -39,7 +39,7 @@ jobs:
           https://github.com/samirsayyad/ep_profile_modal#ccf70a2
           https://github.com/samirsayyad/ep_full_hyperlinks#74832c1
           https://github.com/samirsayyad/ep_headings2#e5cc3dd
-          https://github.com/samirsayyad/ep_table_of_contents#757a597 
+          https://github.com/samirsayyad/ep_table_of_contents#cc35377 
           https://github.com/HMarzban/ep_headerview#d559463
           https://github.com/HMarzban/ep_wrtc_heading#2aab77a
           https://github.com/samirsayyad/ep_rocketchat#1ce88e4 
@@ -51,7 +51,7 @@ jobs:
         run: src/bin/installDeps.sh
 
       - name: Run pm2 docsplus instance
-        run: DB_NAME=handbook pm2 start temp/ecosystem.config.js --only  ${GITHUB_REF#refs/heads/}
+        run: DB_NAME=handbook pm2 start temp/ecosystem.config.js --only ${GITHUB_REF#refs/heads/}
 
       - name: Run pm2 ws.router instance
         run: DB_NAME=handbook pm2 reload temp/pm2.start.config.js --only ws_${GITHUB_REF#refs/heads/}
