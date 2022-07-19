@@ -1206,9 +1206,8 @@ function Ace2Inner(editorInfo, cssManagers) {
   let hSectionId = undefined;
   let hTitleId = undefined;
   let hTitleIndex = undefined;
-  const ltestHsId = {0: '', 1: '', 2: '', 3: '', 4: '', 5: '', preserve: ''};
+  let ltestHsId = {0: '', 1: '', 2: '', 3: '', 4: '', 5: '', preserve: ''};
   let currentHIndex = undefined;
-  let hParentIndex = 0;
 
   const walkToClosestNextHeader = (node, func) => {
     if (node && node.nextSibling) {
@@ -1265,6 +1264,14 @@ function Ace2Inner(editorInfo, cssManagers) {
             hSectionId = node.firstChild.getAttribute('data-id');
             if (!hTitleId) hTitleId = hSectionId;
 
+            // reset this var
+            if (currentHIndex === 0) {
+              ltestHsId = {
+                0: '', 1: '', 2: '', 3: '', 4: '', 5: '', preserve: 0,
+              };
+              ltestHsId[currentHIndex] = hSectionId;
+            }
+
             if (!ltestHsId.preserve) {
               ltestHsId.preserve = currentHIndex;
               ltestHsId[currentHIndex] = hSectionId;
@@ -1276,17 +1283,15 @@ function Ace2Inner(editorInfo, cssManagers) {
             }
 
             // set First H text as a title index
-            if (hTitleIndex == undefined) hTitleIndex = currentHIndex;
+            if (hTitleIndex === undefined) hTitleIndex = currentHIndex;
 
             if (currentHIndex === hTitleIndex) {
               hTitleId = hSectionId;
             }
-
-            hParentIndex = currentHIndex;
           }
 
           node.setAttribute('sectionId', hSectionId);
-          node.setAttribute('titleId', hTitleId);
+          node.setAttribute('titleId', ltestHsId[0]);
           currentHIndex >= 0 && ltestHsId[0] && node.setAttribute('lrh0', ltestHsId[0]);
           currentHIndex >= 1 && ltestHsId[1] && node.setAttribute('lrh1', ltestHsId[1]);
           currentHIndex >= 2 && ltestHsId[2] && node.setAttribute('lrh2', ltestHsId[2]);
@@ -3870,21 +3875,17 @@ function Ace2Inner(editorInfo, cssManagers) {
         currentHIndex = htags.indexOf(node.firstChild.nodeName);
         if (currentHIndex === 0) {
           ltestHsId = {
-            0: '', 1: '', 2: '', 3: '', 4: '', 5: '', preserve: '',
+            0: '', 1: '', 2: '', 3: '', 4: '', 5: '', preserve: 0,
           };
+          ltestHsId[currentHIndex] = hSectionId;
         }
         hSectionId = node.firstChild.getAttribute('data-id');
-        if (!hTitleId) hTitleId = hSectionId;
-
         if (!ltestHsId.preserve) {
           ltestHsId.preserve = currentHIndex;
           ltestHsId[currentHIndex] = hSectionId;
         }
 
-        if (
-          Math.abs(ltestHsId.preserve - currentHIndex) > 0 ||
-          ltestHsId.preserve === currentHIndex
-        ) {
+        if (Math.abs(ltestHsId.preserve - currentHIndex) > 0 || ltestHsId.preserve === currentHIndex) {
           ltestHsId[currentHIndex] = hSectionId;
           ltestHsId.preserve = currentHIndex;
         }
@@ -3895,18 +3896,12 @@ function Ace2Inner(editorInfo, cssManagers) {
         if (currentHIndex === hTitleIndex) {
           hTitleId = hSectionId;
         }
-
-        hParentIndex = currentHIndex;
       }
 
       node.setAttribute('sectionId', hSectionId);
-      node.setAttribute('titleId', hTitleId);
+      node.setAttribute('titleId', ltestHsId[0]);
 
       for (let i = 0; i <= currentHIndex; i++) {
-        if (i === 0) {
-          node.setAttribute('lrh0', hTitleId);
-          continue;
-        }
         if (ltestHsId[i]) { node.setAttribute(`lrh${i}`, ltestHsId[i]); }
       }
     });
