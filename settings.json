@@ -639,32 +639,15 @@
     "maxFileSize": 50000000
   },
   "ep_insert_media": {
+    "persistToLocal": false,
     "s3Storage": {
-      "endPoint": "${BUCKET_S3_SERVER}",
-      "useSSL": true,
-      "accessKeyId": "${ACCESS_KEY_ID:null}",
-      "secretAccessKey": "${ACCESS_KEY_SECRET:null}",
+      "endpoint": "${BUCKET_S3_SERVER}",
+      "accessKeyId": "${ACCESS_KEY_ID}",
+      "secretAccessKey": "${ACCESS_KEY_SECRET}",
       "region": "UK",
-      "bucket": "${MEDIA_BUCKET_NAME}",
-      "baseFolder": "${FOLDER_PATH:./}"
+      "bucket": "${MEDIA_BUCKET_NAME:docsplus}",
+      "branch": "dev"
     },
-    "fileTypes": [
-      "jpeg",
-      "jpg",
-      "bmp",
-      "gif",
-      "png",
-      "webm",
-      "mp4",
-      "m4v",
-      "mp3",
-      "ogg",
-      "m4a",
-      "flac",
-      "wav",
-      "wma",
-      "aac"
-    ],
     "maxFileSize": 50000000
   },
   "ep_wrtc_heading": {
