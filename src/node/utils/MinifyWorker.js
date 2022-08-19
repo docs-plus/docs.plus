@@ -9,7 +9,7 @@ const fsp = require('fs').promises;
 const path = require('path');
 const Threads = require('threads');
 
-const compressJS = (content) => Terser.minify(content);
+const compressJS = (content) => Terser.minify(content, {format: {comments: false}});
 
 const compressCSS = async (filename, ROOT_DIR) => {
   const absPath = path.resolve(ROOT_DIR, filename);
