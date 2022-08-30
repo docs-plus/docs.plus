@@ -36,6 +36,8 @@ if (settings.dumpOnUncleanExit) {
   wtfnode = require('wtfnode');
 }
 
+console.log(process.env)
+
 /*
  * early check for version compatibility before calling
  * any modules that require newer versions of NodeJS
