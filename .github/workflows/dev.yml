@@ -23,9 +23,9 @@ jobs:
 
       - name: env
         run: >
-          echo "$ROCKET_CHAT_MAIN_HOST"
-          echo "$ROCKET_CHAT_ADMIN_USERID"
-          echo "$ROCKET_CHAT_ADMIN_TOKEN"
+          echo $ROCKET_CHAT_MAIN_HOST
+          echo $ROCKET_CHAT_ADMIN_USERID
+          echo $ROCKET_CHAT_ADMIN_TOKEN
 
       - name: Install Etherpad plugins
         run: >
