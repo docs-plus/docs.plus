@@ -646,7 +646,7 @@
       "secretAccessKey": "${ACCESS_KEY_SECRET}",
       "region": "UK",
       "bucket": "${MEDIA_BUCKET_NAME:docsplus}",
-      "branch": "dev"
+      "branch": "main"
     },
     "maxFileSize": 50000000
   },
