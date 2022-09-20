@@ -1,0 +1,9 @@
+{
+  "editor.tabSize": 2,
+  "editor.formatOnPaste": true,
+  "editor.formatOnSave": true,
+  "diffEditor.codeLens": true,
+  "standard._legacyModuleResolve": false,
+  "standard.autoFixOnSave": true,
+  "standard.enableGlobally": true
+}

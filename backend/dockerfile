@@ -1,0 +1,24 @@
+FROM node
+
+WORKDIR /app
+
+# RUN apk add --update python3 make g++ && rm -rf /var/cache/apk/*
+# RUN apk add openssl
+
+# COPY package.json and package-lock.json files
+COPY package*.json ./
+
+# generated prisma files
+COPY prisma ./prisma/
+
+# COPY ENV variable
+COPY .env ./
+
+
+RUN npm install --production
+
+RUN npx prisma generate
+
+COPY . .
+
+CMD ["npm","start"]

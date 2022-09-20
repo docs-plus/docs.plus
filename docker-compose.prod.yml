@@ -1,0 +1,43 @@
+version: "3.8"
+
+services:
+ postgres:
+  image: postgres:14.5
+  environment:
+   POSTGRES_USER: postgres
+   POSTGRES_PASSWORD: postgres
+   POSTGRES_DB: docsplus
+  ports:
+   - '5432:5432'
+  volumes:
+   - ./volumes/db:/var/lib/postgresql/data
+  restart: unless-stopped
+
+ redis:
+  image: redis:alpine
+  ports:
+   - '6379:6379'
+
+ nginx:
+  image: nginx:1.23.1
+  ports:
+   - 8001:80
+  volumes:
+   - ./frontend/dist:/usr/share/nginx/html
+  environment:
+   - VITE_HOCUSPOCUS_PROVIDER_URL='ws://backend:2300/collaboration'
+  depends_on:
+   - backend
+
+ backend:
+  restart: always
+  build: ./backend
+  depends_on:
+   - postgres
+  environment:
+   HOCUSPOCUS_EXT_DB_TYPE: PostgreSQL
+   DATABASE_URL: postgresql://postgres:postgres@postgres/docsplus?schema=public
+   HOCUSPOCUS_EXT_REDIS_HOST: redis
+   APP_PORT: 2300
+  ports:
+   - 8002:2300
