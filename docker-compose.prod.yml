@@ -1,4 +1,4 @@
-version: "3.8"
+version: "3.3"
 
 services:
  postgres:
@@ -16,12 +16,12 @@ services:
  redis:
   image: redis:alpine
   ports:
-   - '6379:6379'
+   - '6389:6379'
 
  nginx:
   image: nginx:1.23.1
   ports:
-   - 8001:80
+   - 8021:80
   volumes:
    - ./frontend/dist:/usr/share/nginx/html
   environment:
@@ -34,10 +34,13 @@ services:
   build: ./backend
   depends_on:
    - postgres
+   - redis
   environment:
    HOCUSPOCUS_EXT_DB_TYPE: PostgreSQL
    DATABASE_URL: postgresql://postgres:postgres@postgres/docsplus?schema=public
-   HOCUSPOCUS_EXT_REDIS_HOST: redis
+   HOCUSPOCUS_EXT_REDIS_HOST: localhost
    APP_PORT: 2300
+   HOCUSPOCUS_EXT_REDIS: "false"
+   HOCUSPOCUS_EXT_REDIS_PORT: 6389
   ports:
    - 8002:2300

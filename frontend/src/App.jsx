@@ -4,11 +4,11 @@ import './App.css'
 import Tiptap from './components/Tiptap.jsx'
 
 
-function App() {
+function App({ padName }) {
   return (
     <div className="App">
       <h1>Docsy Editor:</h1>
-      <Tiptap/>
+      <Tiptap padName={padName} />
     </div>
   )
 }

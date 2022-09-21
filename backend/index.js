@@ -57,8 +57,10 @@ const {
   HOCUSPOCUS_EXT_DB_OPTIONS
 } = process.env
 
+const prisma = new PrismaClient()
+
 const Serverconfigure = {
-  name: `${APP_NAME}_${cryptoRandomString({ length: 4, type: 'alphanumeric' })}`,
+  name: `${ APP_NAME }_${ cryptoRandomString({ length: 4, type: 'alphanumeric' }) }`,
   extensions: []
 }
 
@@ -154,7 +156,7 @@ if (HOCUSPOCUS_EXT_DB_TYPE === 'PostgreSQL') {
   //   port: +HOCUSPOCUS_EXT_DB_PORT
   // })
 
-  const prisma = new PrismaClient()
+
 
   // let connectionString = `mongodb://${HOCUSPOCUS_EXT_DB_HOST}:${HOCUSPOCUS_EXT_DB_PORT}/${HOCUSPOCUS_EXT_DB_NAME}`
   // if (HOCUSPOCUS_EXT_DB_USER && HOCUSPOCUS_EXT_DB_PASS) {
@@ -227,7 +229,7 @@ app.ws('/echo', function (ws, _req) {
 // Note: make sure to include a parameter for the document name.
 // You can set any contextual data like in the onConnect hook
 // and pass it to the handleConnection method.
-app.ws('/collaboration/:document', (websocket, request) => {
+app.ws('/collaboration/:padName', (websocket, request) => {
   websocket.on('message', function (_msg) {
     // console.log("message", msg.toString());
   })
@@ -240,14 +242,14 @@ app.ws('/collaboration/:document', (websocket, request) => {
   }
   // console.log('socket', context);
 
-  server.handleConnection(websocket, request, request.params.document, context)
+  server.handleConnection(websocket, request, request.params.padName, context)
 })
 
 // Start the server
 
 app.listen(APP_PORT, () => {
   console.info(`
-    Server "${chalk.magentaBright(Serverconfigure.name)}" started. Port: ${chalk.blue.bold(APP_PORT)} , NODE_ENV: ${chalk.blue.bold(NODE_ENV)}, Database: ${chalk.blue.bold(HOCUSPOCUS_EXT_DB_TYPE)}
-    Open Project: ${chalk.bold.underline.yellow(`http://localhost:${APP_PORT}`)} (ctrl+click)
+    Server "${ chalk.magentaBright(Serverconfigure.name) }" started. Port: ${ chalk.blue.bold(APP_PORT) } , NODE_ENV: ${ chalk.blue.bold(NODE_ENV) }, Database: ${ chalk.blue.bold(HOCUSPOCUS_EXT_DB_TYPE) }
+    Open Project: ${ chalk.bold.underline.yellow(`http://localhost:${ APP_PORT }`) } (ctrl+click)
   `)
 })

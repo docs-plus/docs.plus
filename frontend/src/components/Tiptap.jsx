@@ -3,99 +3,16 @@ import React, { useEffect, useState, useCallback } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import Collaboration from '@tiptap/extension-collaboration'
 import StarterKit from '@tiptap/starter-kit'
-import * as Y from 'yjs'
-import { HocuspocusProvider } from '@hocuspocus/provider'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
-import { IndexeddbPersistence } from 'y-indexeddb'
 import TableOfContents from "./TableOfContents.jsx"
 import HeadingID from './TableOfContents.js'
 import Link from '@tiptap/extension-link'
 import Image from '@tiptap/extension-image'
 import TaskItem from '@tiptap/extension-task-item'
 import TaskList from '@tiptap/extension-task-list'
-const ydoc = new Y.Doc()
-
-const provider = new HocuspocusProvider({
-  url: import.meta.env.VITE_HOCUSPOCUS_PROVIDER_URL,
-  name: 'page.title.121',
-  document: ydoc,
-})
-console.log(provider)
-
-
-window.hossein = {
-  data: import.meta.env.VITE_HOCUSPOCUS_PROVIDER_URL,
-  name: "hossein",
-  provider
-}
-
-// provider.callbacks.status(function(data)  {
-//   console.log("aksjdlkjasldkjlkj")
-// })
-// provider.configuration.onConnect().then(()=>{
-//   console.log("onopen kajsdlkjasldkj");
-// })
-// provider.configuration.onDisconnect().then(()=>{
-//   console.log("onerror kajsdlkjasldkj");
-// })
-
-// const socket = provider.webSocket;
-// console.log("socket object", socket, )
-
-
-
-// socket.addEventListener('close', (event) => {
-//   console.log('WebSocket close: ', event);
-// });
-
-// socket.addEventListener('error', (event) => {
-//   console.log('WebSocket error: ', event);
-// });
-
-// socket.addEventListener('open', (event) => {
-//   console.log('WebSocket open: ', event);
-// });
-
-// socket.addEventListener('message', (event) => {
-//   // console.log('Message from server ', event.type);
-// });
-// socket.addEventListener('online', (event) => {
-//   console.log('WebSocket online: ', event);
-// });
-
-// setInterval(() => {
-//   // console.log(socket.OPEN ? true : false)
-//   // console.log(socket.readyState, socket.OPEN, provider.status)
-//   provider.checkConnection = (e) => {
-//     console.log("checkConnection object", socket, )
-
-//   }
-// }, 900);
-
-
-
-// provider.onClose(()=>{
-//     console.log("onopen kajsdlkjasldkj");
-//   })
-// provider.onOpen(()=>console.log("hahaha")).then((event) => {
-//   console.log("onOpen",event)
-//   // provider.webSocket.send("akljsdlkjaslkdjlkj222222222")
-// })
-
-// provider.configuration.WebSocketPolyfill.onclose(()=>{
-//   console.log("onClose")
-// })
-
-// provider.callbacks.connect(() => {
-//   console.log("onMessage socket")
-// })
-// provider.callbacks.open(() => {
-//   console.log("onMessage socket")
-// })
-// provider.disconnect(() => {
-//   console.log("onMessage socket")
-// })
-
+import Highlight from '@tiptap/extension-highlight'
+import Typography from '@tiptap/extension-typography'
+import randomColor from 'randomcolor'
 
 
 const MenuBar = ({ editor }) => {
@@ -308,15 +225,17 @@ const onUpdate = () => {
 }
 
 
-const Tiptap = () => {
+const Tiptap = ({ padName, provider, ydoc }) => {
   const [isloading, setIsloading] = useState(true)
 
 
-
-  // Store the Y document in the browser
-  new IndexeddbPersistence(provider.name, provider.document)
-
   const editor = useEditor({
+    onCreate: (editor) => {
+      console.log("onCreate", editor)
+    },
+    onUpdate: (editor) => {
+      console.log("onUpdate", editor)
+    },
     editorProps: {
       attributes: {
         spellcheck: 'false',
@@ -345,13 +264,15 @@ const Tiptap = () => {
         // The Collaboration extension comes with its own history handling
         history: false,
       }),
+      Highlight,
+      Typography,
       // Register the document with Tiptap
       Collaboration.configure({
         document: provider.document,
       }),
       CollaborationCursor.configure({
         provider: provider,
-        // user: { name: 'John Doe', color: '#ffcc00' },
+        user: { name: 'John Doe', color: randomColor() },
       }),
     ],
     content: '',
@@ -360,9 +281,11 @@ const Tiptap = () => {
   useEffect(() => {
     // console.log("useEffect", editor)
     if (!editor) setIsloading(false)
+    console.log("data loadedddd!!1")
     // console.log("useEffect", isloading)
+    document.title = `Pad: ${ padName }`;
     return () => {
-      // editor?.destroy()
+      editor?.destroy()
     }
   }, [editor])
 

@@ -11,10 +11,8 @@ export default ({ editor }) => {
 
 
   const handleUpdate = useCallback(() => {
-    console.log("handleUpdate upde")
     const headings = []
     const transaction = editor?.state?.tr
-    console.log("=>", editor?.state?.doc)
 
     // console.log(id.toString());
 
@@ -71,8 +69,8 @@ export default ({ editor }) => {
     <div className="toc">
       <ul className="toc__list">
         {items.map((item, index) => (
-          <li key={index} className={`toc__item toc__item--${item.level}`}>
-            <a href={`#${item.id}`}>{item.text}</a>
+          <li key={index} className={`toc__item toc__item--${ item.level }`}>
+            <a href={`#${ item.id }`}>{item.text}</a>
           </li>
         ))}
       </ul>
