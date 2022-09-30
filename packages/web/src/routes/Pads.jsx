@@ -19,40 +19,40 @@ export default function Root() {
   const newPadName = `pads.${ padName }`
 
   // run once
-  const [provider, ydoc] = useMemo(() => {
-    const ydoc = new Y.Doc()
-    const provider = new HocuspocusProvider({
-      url: import.meta.env.VITE_HOCUSPOCUS_PROVIDER_URL,
-      name: newPadName,
-      document: ydoc,
-      onStatus: (data) => {
-        // console.log("onOpen", data)
-      },
-      onSynced: (data) => {
-        // console.log("onSynced", data)
-        console.log(`content loaded from Server, pad name: ${ newPadName }`, provider.isSynced)
-        if (data?.state) setLoadedData(true)
-      },
-      onDisconnect: (data) => {
-        // console.log("onDisconnect", data)
-      }
-    })
+  // const [provider, ydoc] = useMemo(() => {
+  const ydoc = new Y.Doc()
+  const provider = new HocuspocusProvider({
+    url: import.meta.env.VITE_HOCUSPOCUS_PROVIDER_URL,
+    name: newPadName,
+    document: ydoc,
+    onStatus: (data) => {
+      // console.log("onOpen", data)
+    },
+    onSynced: (data) => {
+      // console.log("onSynced", data)
+      console.log(`content loaded from Server, pad name: ${ newPadName }`, provider.isSynced)
+      if (data?.state) setLoadedData(true)
+    },
+    onDisconnect: (data) => {
+      // console.log("onDisconnect", data)
+    }
+  })
 
 
-    // Store the Y document in the browser
-    // const newProvider = new IndexeddbPersistence(newPadName, provider.document)
+  // Store the Y document in the browser
+  // const newProvider = new IndexeddbPersistence(newPadName, provider.document)
 
-    // newProvider.on('synced', () => {
-    //   if (!loadedData) return
-    //   console.log(`content loaded from indexdb, pad name: ${ newPadName }`)
-    //   setLoadedData(true)
-    // })
+  // newProvider.on('synced', () => {
+  //   if (!loadedData) return
+  //   console.log(`content loaded from indexdb, pad name: ${ newPadName }`)
+  //   setLoadedData(true)
+  // })
 
-    console.log("once ha ha ha", provider.isSynced)
+  console.log("once ha ha ha", provider.isSynced)
 
-    return [provider, ydoc]
+  // return [provider, ydoc]
 
-  }, [loadedData])
+  // }, [loadedData])
 
   console.log("component load", provider)
 
