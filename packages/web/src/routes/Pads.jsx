@@ -30,7 +30,7 @@ export default function Root() {
       },
       onSynced: (data) => {
         // console.log("onSynced", data)
-        console.log(`content loaded from Server, pad name: ${ newPadName }`)
+        console.log(`content loaded from Server, pad name: ${ newPadName }`, provider.isSynced)
         if (data?.state) setLoadedData(true)
       },
       onDisconnect: (data) => {
@@ -52,9 +52,10 @@ export default function Root() {
 
     return [provider, ydoc]
 
-  }, [])
+  }, [loadedData])
 
-  console.log("component load")
+  console.log("component load", provider)
+
 
   return (
     <>

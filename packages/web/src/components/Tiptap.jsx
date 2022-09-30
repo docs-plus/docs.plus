@@ -255,8 +255,8 @@ const Tiptap = ({ padName, provider, ydoc }) => {
           class: 'image-class',
         },
       }),
-      Gapcursor,
-      Dropcursor,
+      // Gapcursor,
+      // Dropcursor,
       TaskList,
       TaskItem.configure({
         nested: true,
