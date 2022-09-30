@@ -13,9 +13,9 @@ import TaskList from '@tiptap/extension-task-list'
 import Highlight from '@tiptap/extension-highlight'
 import Typography from '@tiptap/extension-typography'
 import randomColor from 'randomcolor'
-import Placeholder from '@tiptap/extension-placeholder'
-import Gapcursor from '@tiptap/extension-gapcursor'
-import Dropcursor from '@tiptap/extension-dropcursor'
+// import Placeholder from '@tiptap/extension-placeholder'
+// import Gapcursor from '@tiptap/extension-gapcursor'
+// import Dropcursor from '@tiptap/extension-dropcursor'
 
 const MenuBar = ({ editor }) => {
   if (!editor) {
@@ -278,9 +278,9 @@ const Tiptap = ({ padName, provider, ydoc }) => {
         provider: provider,
         user: { name: 'John Doe', color: randomColor() },
       }),
-      Placeholder.configure({
-        placeholder: 'Write something …',
-      })
+      // Placeholder.configure({
+      //   placeholder: 'Write something …',
+      // })
     ],
     content: '',
   })

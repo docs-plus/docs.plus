@@ -25,6 +25,10 @@ const {
   REDIS
 } = process.env
 
+
+
+console.log(DATABASE_TYPE)
+
 const Serverconfigure = HocuspocusConfig()
 
 // Configure hocuspocus
@@ -34,7 +38,7 @@ const server = Server.configure(Serverconfigure)
 const { app } = expressWebsockets(express())
 
 // import morgan logger as  amiddlewares for rest api
-app.use(morgan(`${chalk.green(`[${Serverconfigure.name}]`)} :method :url :status - :response-time ms`))
+app.use(morgan(`${ chalk.green(`[${ Serverconfigure.name }]`) } :method :url :status - :response-time ms`))
 
 // A basic http route
 app.get('/', (_request, response) => {
@@ -68,12 +72,12 @@ app.ws('/collaboration/:padName', (websocket, request) => {
 // Start the server
 app.listen(APP_PORT, () => {
   console.info(`
-    Server "${chalk.magentaBright(Serverconfigure.name)}" started. Port: ${chalk.blue.bold(APP_PORT)} , NODE_ENV: ${chalk.blue.bold(NODE_ENV)}
-    Open Project: ${chalk.bold.underline.yellow(`http://localhost:${APP_PORT}`)} (ctrl+click)
+    Server "${ chalk.magentaBright(Serverconfigure.name) }" started. Port: ${ chalk.blue.bold(APP_PORT) } , NODE_ENV: ${ chalk.blue.bold(NODE_ENV) }
+    Open Project: ${ chalk.bold.underline.yellow(`http://localhost:${ APP_PORT }`) } (ctrl+click)
     Config:
-            REDIS: ${chalk.blue.bold(checkEnvBolean(REDIS))}
-            Database: ${chalk.blue.bold(DATABASE_TYPE)}
-            HOCUSPOCUS_LOGGER: ${chalk.blue.bold(checkEnvBolean(HOCUSPOCUS_LOGGER))}
-            HOCUSPOCUS_THROTTLE: ${chalk.blue.bold(checkEnvBolean(HOCUSPOCUS_THROTTLE))}
+            REDIS: ${ chalk.blue.bold(checkEnvBolean(REDIS)) }
+            Database: ${ chalk.blue.bold(DATABASE_TYPE) }
+            HOCUSPOCUS_LOGGER: ${ chalk.blue.bold(checkEnvBolean(HOCUSPOCUS_LOGGER)) }
+            HOCUSPOCUS_THROTTLE: ${ chalk.blue.bold(checkEnvBolean(HOCUSPOCUS_THROTTLE)) }
   `)
 })

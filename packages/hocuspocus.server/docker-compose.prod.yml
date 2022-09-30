@@ -10,8 +10,8 @@ services:
   ports:
    - '5432:5432'
   volumes:
-   - ./volumes/db:/var/lib/postgresql/data
-  restart: unless-stopped
+   - database-data:/var/lib/postgresql/data/
+  restart: always
 
  redis:
   image: redis:alpine
@@ -21,7 +21,7 @@ services:
 
  backend:
   restart: always
-  build: .
+  build: ./packages/hocuspocus.server
   depends_on:
    - postgres
    - redis
@@ -29,10 +29,13 @@ services:
    - redis
   environment:
    HOCUSPOCUS_EXT_DB_TYPE: PostgreSQL
-   DATABASE_URL: postgresql://postgres:postgres@postgres/docsplus?schema=public
+   DATABASE_URL: postgresql://postgres:postgres@postgres:5432/docsplus?schema=public
    APP_PORT: 2300
-   REDIS: "false"
+   REDIS: "true"
    REDIS_HOST: redis
    REDIS_PORT: 6379
   ports:
    - 8002:2300
+
+volumes:
+ database-data:

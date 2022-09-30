@@ -30,8 +30,8 @@ export default function Root() {
     },
     onSynced: (data) => {
       // console.log("onSynced", data)
-      console.log(`content loaded from Server, pad name: ${ newPadName }`, provider.isSynced)
-      if (data?.state) setLoadedData(true)
+      // console.log(`content loaded from Server, pad name: ${ newPadName }`, provider.isSynced)
+      // if (data?.state) setLoadedData(true)
     },
     onDisconnect: (data) => {
       // console.log("onDisconnect", data)
@@ -61,7 +61,7 @@ export default function Root() {
     <>
       <div className="App">
         <h1>Docsy Editor: {padName}</h1>
-        {loadedData ? <Tiptap padName={padName} provider={provider} ydoc={ydoc} /> : "loading..."}
+        <Tiptap padName={padName} provider={provider} ydoc={ydoc} />
       </div>
     </>
   );
