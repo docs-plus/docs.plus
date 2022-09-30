@@ -21,7 +21,7 @@ services:
 
  backend:
   restart: always
-  build: ./backend
+  build: .
   depends_on:
    - postgres
    - redis
