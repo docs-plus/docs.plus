@@ -40,13 +40,13 @@ export default function Root() {
 
 
     // Store the Y document in the browser
-    const newProvider = new IndexeddbPersistence(newPadName, provider.document)
+    // const newProvider = new IndexeddbPersistence(newPadName, provider.document)
 
-    newProvider.on('synced', () => {
-      if (!loadedData) return
-      console.log(`content loaded from indexdb, pad name: ${ newPadName }`)
-      setLoadedData(true)
-    })
+    // newProvider.on('synced', () => {
+    //   if (!loadedData) return
+    //   console.log(`content loaded from indexdb, pad name: ${ newPadName }`)
+    //   setLoadedData(true)
+    // })
 
     console.log("once ha ha ha", provider.isSynced)
 
