@@ -5,5 +5,13 @@
   "diffEditor.codeLens": true,
   "standard._legacyModuleResolve": false,
   "standard.autoFixOnSave": true,
-  "standard.enableGlobally": true
+  "standard.enableGlobally": true,
+  "tailwindCSS.includeLanguages": {
+    "html": "html",
+    "javascript": "javascript",
+    "css": "css"
+  },
+  "editor.quickSuggestions": {
+    "strings": true
+  }
 }

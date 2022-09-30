@@ -1,0 +1,7 @@
+{
+  "name": "docsplus",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ]
+}

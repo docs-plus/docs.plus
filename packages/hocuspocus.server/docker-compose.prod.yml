@@ -1,0 +1,38 @@
+version: "3.9"
+
+services:
+ postgres:
+  image: postgres:14.5
+  environment:
+   POSTGRES_USER: postgres
+   POSTGRES_PASSWORD: postgres
+   POSTGRES_DB: docsplus
+  ports:
+   - '5432:5432'
+  volumes:
+   - ./volumes/db:/var/lib/postgresql/data
+  restart: unless-stopped
+
+ redis:
+  image: redis:alpine
+  restart: unless-stopped
+  ports:
+   - '6389:6379'
+
+ backend:
+  restart: always
+  build: ./backend
+  depends_on:
+   - postgres
+   - redis
+  links:
+   - redis
+  environment:
+   HOCUSPOCUS_EXT_DB_TYPE: PostgreSQL
+   DATABASE_URL: postgresql://postgres:postgres@postgres/docsplus?schema=public
+   APP_PORT: 2300
+   REDIS: "false"
+   REDIS_HOST: redis
+   REDIS_PORT: 6379
+  ports:
+   - 8002:2300

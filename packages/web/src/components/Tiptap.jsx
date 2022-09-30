@@ -231,10 +231,10 @@ const Tiptap = ({ padName, provider, ydoc }) => {
 
   const editor = useEditor({
     onCreate: (editor) => {
-      console.log("onCreate", editor)
+      // console.log("onCreate", editor)
     },
     onUpdate: (editor) => {
-      console.log("onUpdate", editor)
+      // console.log("onUpdate", editor)
     },
     editorProps: {
       attributes: {
@@ -298,11 +298,11 @@ const Tiptap = ({ padName, provider, ydoc }) => {
 
     <div className='tiptap'>
       <div className='sidebar'>
-        {editor ? <TableOfContents editor={editor} /> : "loading----"}
+        {editor ? <TableOfContents editor={editor} /> : "Loading table of contents..."}
       </div>
       <div className='editor'>
-        {editor ? <MenuBar editor={editor} /> : "loading-----"}
-        {editor ? <EditorContent editor={editor} /> : "loading------"}
+        {editor ? <MenuBar editor={editor} /> : "Loading MenuBar..."}
+        {editor ? <EditorContent editor={editor} /> : "Loading Editor Content..."}
       </div>
     </div>
 

@@ -104,7 +104,10 @@ dist
 .tern-port
 
 uploads/
-# .env.*
 # ca-certificate.crt
 
 volumes
+
+packages/**/node_modules
+packages/**/volumes
+packages/**/.env.*

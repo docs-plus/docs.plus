@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { lazy } from 'react'
 import ReactDOM from 'react-dom/client'
 import {
   createBrowserRouter,
@@ -6,10 +6,17 @@ import {
   Route,
 } from "react-router-dom";
 
-import Pads from './routes/pads'
-import ErrorPage from "./error-page";
+const Pads = lazy(() => import('./routes/Pads'))
+const ErrorPage = lazy(() => import('./routes/ErrorPage'))
+const PageNotFound = lazy(() => import('./routes/PageNotFound'))
+const IntroPage = lazy(() => import('./routes/IntroPage'))
 
 const router = createBrowserRouter([
+  {
+    path: "/",
+    element: < IntroPage />,
+    errorElement: <ErrorPage />
+  },
   {
     path: "/:padName",
     element: <Pads />,
@@ -18,6 +25,10 @@ const router = createBrowserRouter([
       return params.padName
     }
   },
+  {
+    path: "*",
+    element: <PageNotFound />
+  }
 ]);
 
 import './index.css'
