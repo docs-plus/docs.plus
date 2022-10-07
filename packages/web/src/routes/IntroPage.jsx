@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { redirect } from "react-router-dom";
-
+import { Doc } from '../components/icons/Icons';
 
 const IntroPage = () => {
-  const [padName, setPadName] = useState("")
+  const padNameRef = useRef()
 
   const createARandomPad = () => {
     const randPadName = (Math.random() + 1).toString(36).substring(2);
@@ -12,22 +12,23 @@ const IntroPage = () => {
   }
 
   const enterToPad = () => {
+    const padName = padNameRef.current.value
     if (padName.length === 0) return
     window.location = `/${ padName }`
     return redirect(`/${ padName }`)
   }
 
   return (
-    <div className=''>
-      <div className=''>
-        <h1>Docs Plus</h1>
+    <div className='max-w-lg m-auto h-screen flex flex-col justify-center align-middle'>
+      <div className='h-fit'>
+        <h1 className='flex flex-row items-end'> <Doc size="58" className="mr-3" /> Docs Plus</h1>
         <h2>Get Everyone one the Same Page</h2>
-        <div className='flex m-auto flex-col h-32 w-96 align-middle justify-between mt-24 mb-28'>
-          <button onClick={createARandomPad}>New Pad</button>
-          <label className='text-center w-full mt-6 block mb-1'>or Create/open a Pad with the name:</label>
+        <div className='flex flex-col h-32 w-96 align-middle justify-between m-16'>
+          <button onClick={createARandomPad} className="px-3 py-2 border rounded">New Pad</button>
+          <label className='text-center w-full mt-6 block mb-1'>or Create/Open a Pad with the name:</label>
           <div className='flex flex-row'>
-            <input className='p-1 w-full rounded-l' onChange={e => setPadName(e.target.value)} value={padName} type="text" id="padName" />
-            <button className='rounded-l-none' onClick={enterToPad}>Enter</button>
+            <input className='p-1 w-full rounded-l border' ref={padNameRef} type="text" id="padName" />
+            <button className='border px-3 py-2 rounded border-l-0 rounded-l-none' onClick={enterToPad}>Enter</button>
           </div>
         </div>
         <div className=''>
@@ -40,7 +41,6 @@ const IntroPage = () => {
           <p><span>+</span> Kindly seed funded by <a href="https://www.grantfortheweb.org">Grant for Web</a> &amp; <a href="https://www.nesta.org.uk">Nesta</a></p>
         </div>
       </div>
-
     </div >
   );
 }

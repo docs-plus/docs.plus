@@ -6,6 +6,8 @@ import {
   Route,
 } from "react-router-dom";
 
+import './assets/global.css'
+
 const Pads = lazy(() => import('./routes/Pads'))
 const ErrorPage = lazy(() => import('./routes/ErrorPage'))
 const PageNotFound = lazy(() => import('./routes/PageNotFound'))
@@ -31,7 +33,7 @@ const router = createBrowserRouter([
   }
 ]);
 
-import './index.css'
+
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
