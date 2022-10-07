@@ -170,9 +170,9 @@ export const OfflineCloud = ({ size = 18, fill = 'black' }) => {
   )
 }
 
-export const Doc = ({ size = 18, fill = 'black' }) => {
+export const Doc = ({ size = 18, fill = 'black', className }) => {
   return (
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 36" width={size} >
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 36" width={size} className={className} >
       <path d="M2.5,0H17l9,9V33.5A2.5,2.5,0,0,1,23.5,36H2.5A2.5,2.5,0,0,1,0,33.5V2.5A2.5,2.5,0,0,1,2.5,0Z" fill="#4285f4" />
       <path d="M0,33a2.5,2.5,0,0,0,2.5,2.5h21A2.5,2.5,0,0,0,26,33v.5A2.5,2.5,0,0,1,23.5,36H2.5A2.5,2.5,0,0,1,0,33.5Z" fill='#1a237e' fill-opacity="0.20000000298023224" />
       <path d="M2.5,0H17V.5H2.5A2.5,2.5,0,0,0,0,3V2.5A2.5,2.5,0,0,1,2.5,0Z" fill='#fff' fill-opacity="0.20000000298023224" />

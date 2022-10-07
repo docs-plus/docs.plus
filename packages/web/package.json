@@ -6,7 +6,7 @@
   "scripts": {
     "start": "vite --host",
     "dev": "vite -m development",
-    "build": "vite build",
+    "build": "vite build ",
     "preview": "vite preview",
     "hocuspocus:server": "npx @hocuspocus/cli --sqlite",
     "update:packages": "ncu -u && npm update"
@@ -51,6 +51,7 @@
     "npm-check-updates": "^16.3.8",
     "postcss": "^8.4.17",
     "tailwindcss": "^3.1.8",
-    "vite": "^3.1.4"
+    "vite": "^3.1.4",
+    "vite-plugin-pwa": "^0.13.1"
   }
 }

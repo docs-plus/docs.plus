@@ -19,14 +19,14 @@ const IntroPage = () => {
   }
 
   return (
-    <div className='max-w-lg m-auto h-screen flex flex-col justify-center align-middle'>
+    <div className='max-w-lg mx-auto h-screen flex flex-col justify-center align-middle p-4'>
       <div className='h-fit'>
         <h1 className='flex flex-row items-end'> <Doc size="58" className="mr-3" /> Docs Plus</h1>
-        <h2>Get Everyone one the Same Page</h2>
-        <div className='flex flex-col h-32 w-96 align-middle justify-between m-16'>
-          <button onClick={createARandomPad} className="px-3 py-2 border rounded">New Pad</button>
+        <h2 className='mt-2 text-gray-500 font-semibold'>Get Everyone one the Same Page</h2>
+        <div className='flex flex-col h-32 w-3/4 items-center justify-center mx-auto my-11'>
+          <button onClick={createARandomPad} className="px-3 w-full py-2 border rounded">New Pad</button>
           <label className='text-center w-full mt-6 block mb-1'>or Create/Open a Pad with the name:</label>
-          <div className='flex flex-row'>
+          <div className='flex flex-row w-full'>
             <input className='p-1 w-full rounded-l border' ref={padNameRef} type="text" id="padName" />
             <button className='border px-3 py-2 rounded border-l-0 rounded-l-none' onClick={enterToPad}>Enter</button>
           </div>
