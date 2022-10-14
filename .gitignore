@@ -111,3 +111,6 @@ volumes
 packages/**/node_modules
 packages/**/volumes
 packages/**/.env.*
+
+
+.npmrc

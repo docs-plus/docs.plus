@@ -4,7 +4,6 @@ import { useEditor, EditorContent } from '@tiptap/react'
 import Collaboration from '@tiptap/extension-collaboration'
 import StarterKit from '@tiptap/starter-kit'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
-import HeadingID from './TableOfContents.jsx'
 import Link from '@tiptap/extension-link'
 import Image from '@tiptap/extension-image'
 import TaskItem from '@tiptap/extension-task-item'
@@ -12,15 +11,18 @@ import TaskList from '@tiptap/extension-task-list'
 import Highlight from '@tiptap/extension-highlight'
 import Typography from '@tiptap/extension-typography'
 import randomColor from 'randomcolor'
-// import Placeholder from '@tiptap/extension-placeholder'
-// import Gapcursor from '@tiptap/extension-gapcursor'
-// import Dropcursor from '@tiptap/extension-dropcursor'
-
 import Underline from '@tiptap/extension-underline'
+import UniqueID from '@tiptap-pro/extension-unique-id'
 
-const onUpdate = () => {
-  // The content has changed.
-}
+import Headings from './extentions/Headings'
+import HeadingsTitle from './extentions/HeadingsTitle'
+import HeadingsContent from './extentions/HeadingsContent'
+import Placeholder from '@tiptap/extension-placeholder'
+import { ObjectID } from 'bson';
+
+
+import { isChangeOrigin } from '@tiptap/extension-collaboration'
+
 
 
 const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = false, children }) => {
@@ -39,7 +41,15 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       },
     },
     extensions: [
-      HeadingID,
+      UniqueID.configure({
+        types: ['heading', 'paragraph', 'placeholder', 'headings', 'headingsTitle', 'headingsContent', 'details'],
+        filterTransaction: transaction => !isChangeOrigin(transaction),
+        // generateID: () => ObjectID()
+      }),
+      StarterKit.configure({
+        // The Collaboration extension comes with its own history handling
+        history: false,
+      }),
       Underline,
       Link.configure({
         protocols: ['ftp', 'mailto'],
@@ -51,8 +61,6 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
           class: 'image-class',
         },
       }),
-      // Gapcursor,
-      // Dropcursor,
       TaskList,
       TaskItem.configure({
         nested: true,
@@ -60,14 +68,9 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
           class: 'tasks-class',
         },
       }),
-      StarterKit.configure({
-        // The Collaboration extension comes with its own history handling
-        history: false,
-      }),
       Highlight,
       Typography,
-      Highlight,
-      // Register the document with Tiptap
+
       Collaboration.configure({
         document: provider.document,
       }),
@@ -75,9 +78,36 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
         provider: provider,
         user: { name: 'John Doe', color: randomColor() },
       }),
-      // Placeholder.configure({
-      //   placeholder: 'Write something …',
-      // })
+      //=======>>>
+
+      HeadingsTitle,
+      HeadingsContent,
+      Headings.configure({
+        persist: true,
+        open: true,
+        HTMLAttributes: {
+          class: 'headings drag_box',
+        },
+      }),
+      Placeholder.configure({
+        includeChildren: true,
+        placeholder: ({ node }) => {
+          const nodeType = node.type.name
+          if (nodeType === 'headingsTitle') {
+            const level = node.attrs.level
+            return level - 1 === 0 ? "Title" : `Heading ${ level - 1 }`
+          } else if (nodeType === 'heading') {
+            const level = node.attrs.level
+            return level - 1 === 0 ? "Title" : `Heading ${ level - 1 }`
+          }
+          else if (nodeType === 'paragraph') {
+            return 'Write something …';
+          }
+
+          return null
+
+        },
+      }),
     ],
     defualtContent: '',
   }, [])
@@ -92,9 +122,6 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       editor?.destroy()
     }
   }, [editor])
-
-
-
 
 
   // editor?.on('update', onUpdate)

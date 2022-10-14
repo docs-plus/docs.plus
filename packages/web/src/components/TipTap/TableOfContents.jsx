@@ -14,22 +14,23 @@ export default ({ editor, className }) => {
     // TODO: check the object id performance
     // TODO: heading must be url frindly, so I have to map id with SLUGs
     editor?.state?.doc?.descendants((node, pos) => {
-      // console.log(node.type.name)
-      if (node.type.name === 'heading') {
-        // console.log(node.content.toJSON())
+      if (node.type.name === 'heading' || node.type.name === 'headingsTitle') {
+        // console.log(node.content.toJSON());
         // const nodeContent = node.content.toJSON() ? node.content.toJSON()[0]?.text : "Heading"
-        const id = new ObjectID().toString()
-        if (node.attrs.id !== id) {
-          transaction.setNodeMarkup(pos, undefined, {
-            ...node.attrs,
-            id,
-          })
-        }
+        // const id = new ObjectID().toString()
+
+        // if (node.attrs.id !== id) {
+        //   transaction.setNodeMarkup(pos, undefined, {
+        //     ...node.attrs,
+        //     id,
+        //   })
+        // }
+
 
         headings.push({
           level: node.attrs.level,
           text: node.textContent,
-          id,
+          id: node.attrs.id
         })
       }
     })

@@ -113,53 +113,53 @@ const Toolbar = ({ editor }) => {
     else editor.chain().focus().toggleHeading({ level: +value }).run()
   }
 
-  const customStyles = {
-    menu: (provided, state) => ({
-      ...provided,
-      width: state.selectProps.width,
-      borderBottom: '1px dotted pink',
-      color: state.selectProps.menuColor,
-      padding: 20,
-      borderColor: "red"
-    }),
-    menuPortal: (provided, state) => ({
-      ...provided,
-      padding: 0
-    }),
-    singleValue: (provided, state) => {
-      const opacity = state.isDisabled ? 0.5 : 1;
-      const transition = 'opacity 300ms';
-      console.log(provided)
-      return { ...provided, opacity, transition };
-    },
-    control: (styles) => {
-      console.log(styles)
+  // const customStyles = {
+  //   menu: (provided, state) => ({
+  //     ...provided,
+  //     width: state.selectProps.width,
+  //     borderBottom: '1px dotted pink',
+  //     color: state.selectProps.menuColor,
+  //     padding: 20,
+  //     borderColor: "red"
+  //   }),
+  //   menuPortal: (provided, state) => ({
+  //     ...provided,
+  //     padding: 0
+  //   }),
+  //   singleValue: (provided, state) => {
+  //     const opacity = state.isDisabled ? 0.5 : 1;
+  //     const transition = 'opacity 300ms';
+  //     console.log(provided)
+  //     return { ...provided, opacity, transition };
+  //   },
+  //   control: (styles) => {
+  //     console.log(styles)
 
-      return { ...styles, backgroundColor: '#ddd', borderWidth: 0, minHeight: 28, height: 28 }
-    },
-    dropdownIndicator: (styles) => {
-      // console.log(styles)
-      return {
-        ...styles,
-        // padding: "0"
-      }
-    },
-    container: (styles) => {
-      return {
-        ...styles,
-        minHeight: 28, height: 28,
-        padding: 0
-      }
-    },
-    valueContainer: (styles) => {
-      return {
-        ...styles,
-        minHeight: 28, height: 28,
-        padding: "0"
-      }
-    },
+  //     return { ...styles, backgroundColor: '#ddd', borderWidth: 0, minHeight: 28, height: 28 }
+  //   },
+  //   dropdownIndicator: (styles) => {
+  //     // console.log(styles)
+  //     return {
+  //       ...styles,
+  //       // padding: "0"
+  //     }
+  //   },
+  //   container: (styles) => {
+  //     return {
+  //       ...styles,
+  //       minHeight: 28, height: 28,
+  //       padding: 0
+  //     }
+  //   },
+  //   valueContainer: (styles) => {
+  //     return {
+  //       ...styles,
+  //       minHeight: 28, height: 28,
+  //       padding: "0"
+  //     }
+  //   },
 
-  }
+  // }
 
 
   return (
@@ -304,7 +304,35 @@ const Toolbar = ({ editor }) => {
       </span>
 
 
+      {/* <button onClick={() => editor.chain().focus().setDetails().run()} disabled={!editor.can().setDetails()}>
+        S
+      </button>
+      <button onClick={() => editor.chain().focus().unsetHeadings().run()} disabled={!editor.can().unsetHeadings()}>
+        U
+      </button> */}
 
+
+      <div className='divided'></div>
+
+
+      <button onClick={() => editor.chain().focus().setHeadings({ level: 1 }).run()}>
+        Ti
+      </button>
+      <button onClick={() => editor.chain().focus().setHeadings({ level: 2 }).run()}>
+        H1
+      </button>
+      <button onClick={() => editor.chain().focus().setHeadings({ level: 3 }).run()}>
+        H2
+      </button>
+      <button onClick={() => editor.chain().focus().setHeadings({ level: 4 }).run()}>
+        H3
+      </button>
+      <button onClick={() => editor.chain().focus().setHeadings({ level: 5 }).run()}>
+        H4
+      </button>
+      <button onClick={() => editor.chain().focus().setHeadings({ level: 6 }).run()}>
+        H5
+      </button>
 
 
 

@@ -174,8 +174,8 @@ export const Doc = ({ size = 18, fill = 'black', className }) => {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 36" width={size} className={className} >
       <path d="M2.5,0H17l9,9V33.5A2.5,2.5,0,0,1,23.5,36H2.5A2.5,2.5,0,0,1,0,33.5V2.5A2.5,2.5,0,0,1,2.5,0Z" fill="#4285f4" />
-      <path d="M0,33a2.5,2.5,0,0,0,2.5,2.5h21A2.5,2.5,0,0,0,26,33v.5A2.5,2.5,0,0,1,23.5,36H2.5A2.5,2.5,0,0,1,0,33.5Z" fill='#1a237e' fill-opacity="0.20000000298023224" />
-      <path d="M2.5,0H17V.5H2.5A2.5,2.5,0,0,0,0,3V2.5A2.5,2.5,0,0,1,2.5,0Z" fill='#fff' fill-opacity="0.20000000298023224" />
+      <path d="M0,33a2.5,2.5,0,0,0,2.5,2.5h21A2.5,2.5,0,0,0,26,33v.5A2.5,2.5,0,0,1,23.5,36H2.5A2.5,2.5,0,0,1,0,33.5Z" fill='#1a237e' fillOpacity="0.20000000298023224" />
+      <path d="M2.5,0H17V.5H2.5A2.5,2.5,0,0,0,0,3V2.5A2.5,2.5,0,0,1,2.5,0Z" fill='#fff' fillOpacity="0.20000000298023224" />
       <path d="M17.5,8,26,16.5V9" fill='none' />
       <path d="M17,0l9,9H19.5A2.5,2.5,0,0,1,17,6.5Z" fill="#a1c2fa" />
       <path d="M6,16H20v2H6Zm0,4H20v2H6Zm0,4H20v2H6Zm0,4H16v2H6Z" fill='#f1f1f1' />
@@ -189,7 +189,7 @@ export const PrivateShare = ({ size = 18, fill = 'black' }) => {
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 21 21" width={size}>
       <path d="M13.83,11.83a2.58,2.58,0,1,0-2.58-2.58A2.59,2.59,0,0,0,13.83,11.83Zm0,1.29c-2.58,0-5.16.91-5.16,2.07V17H19V15.19C19,14,16.42,13.12,13.83,13.12Z" fill='fill:#fff' isolation="isolate" opacity="0.5" />
       <path d="M9,10A3,3,0,1,0,6,7,3,3,0,0,0,9,10Zm0,2c-2,0-6,1-6,3v2H15V15C15,13,11,12,9,12Z" fill="#fff" />
-      <rect width="21" height="21" fill="#4387fd" fill-opacity="0" />
+      <rect width="21" height="21" fill="#4387fd" fillOpacity="0" />
     </svg>
   )
 }

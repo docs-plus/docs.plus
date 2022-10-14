@@ -10,7 +10,7 @@ const PadTitle = ({ padName }) => {
         <Doc size="28" />
       </div>
       <div className='ml-3'>
-        <div type="text" className="border border-transparent px-2 py-0 rounded-sm text-lg font-medium min-w-[14rem] hover:border-slate-300" contentEditable>
+        <div type="text" className="border border-transparent px-2 py-0 rounded-sm text-lg font-medium min-w-[14rem] hover:border-slate-300" >
           {padName}
         </div>
       </div>

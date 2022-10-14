@@ -26,9 +26,6 @@ const {
 } = process.env
 
 
-
-console.log(DATABASE_TYPE)
-
 const Serverconfigure = HocuspocusConfig()
 
 // Configure hocuspocus

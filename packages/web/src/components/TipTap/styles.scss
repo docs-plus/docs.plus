@@ -4,6 +4,88 @@ $Pad_Header__height: 64px;
 $Pad_Toolbar__height: 38px;
 
 
+.headings {
+  display: flex;
+  margin: 1rem 0;
+  border: 1px solid black;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+
+
+  >button {
+    display: flex;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+    padding: 0;
+
+    &::before {
+      content: '\25B6';
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 1.5em;
+      height: 1.5em;
+    }
+  }
+
+  &.is-open>button::before {
+    content: '\25BC';
+  }
+
+  >div {
+    flex: 1 1 auto;
+  }
+
+  :last-child {
+    margin-bottom: 0;
+  }
+}
+
+
+.drag_box {
+  position: relative;
+
+  &:hover {
+    >#dragspan {
+      opacity: 1;
+    }
+  }
+
+
+  #dragspan {
+    display: block;
+    position: absolute;
+    left: -20px;
+    top: 0;
+    opacity: 0;
+    transition: all .1s cubic-bezier(0.39, 0.575, 0.565, 1);
+
+
+    &:hover {
+      opacity: 1;
+    }
+
+    &::after {
+      content: '';
+      display: block;
+      flex: 0 0 auto;
+      position: relative;
+      width: 1rem;
+      height: 1rem;
+      top: 0.3rem;
+      margin-right: 0.5rem;
+      cursor: grab;
+      background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 16"><path fill-opacity="0.2" d="M4 14c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zM2 6C.9 6 0 6.9 0 8s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6C.9 0 0 .9 0 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" /></svg>');
+      background-repeat: no-repeat;
+      background-size: contain;
+      background-position: center;
+    }
+  }
+
+
+}
+
 .pad {
   position: relative;
   @apply h-full;
@@ -209,6 +291,7 @@ $Pad_Toolbar__height: 38px;
   }
 }
 
+
 .ProseMirror {
   text-align: left;
   // border: 1px solid #616161;
@@ -264,31 +347,36 @@ $Pad_Toolbar__height: 38px;
   h5,
   h6 {
     font-weight: bold;
+    @apply font-medium mt-0 mb-2;
   }
 
+
+
   h1 {
-    @apply text-7xl;
+    @apply text-6xl;
   }
 
   h2 {
-    @apply text-6xl
+    @apply text-5xl;
   }
 
   h3 {
-    @apply text-5xl
+    @apply text-4xl;
   }
 
   h4 {
-    @apply text-4xl
+    @apply text-3xl;
   }
 
   h5 {
-    @apply text-3xl
+    @apply text-2xl;
   }
 
   h6 {
-    @apply text-2xl
+    @apply text-xl;
   }
+
+
 
   code {
     background-color: rgba(#616161, 0.1);
@@ -324,5 +412,13 @@ $Pad_Toolbar__height: 38px;
     border: none;
     border-top: 2px solid #fff;
     margin: 2rem 0;
+  }
+
+  .is-empty::before {
+    content: attr(data-placeholder);
+    float: left;
+    color: #adb5bd;
+    pointer-events: none;
+    height: 0;
   }
 }

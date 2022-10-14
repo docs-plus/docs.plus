@@ -1,7 +1,7 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 import { ReactNodeViewRenderer } from '@tiptap/react'
 
-import Component from './TableOfContents.jsx'
+import Component from './TipTap/TableOfContents'
 
 export default Node.create({
   name: 'tableOfContents',
@@ -32,7 +32,7 @@ export default Node.create({
         types: ['heading'],
         attributes: {
           id: {
-            default: null,
+            default: "545454",
           },
         },
       },
