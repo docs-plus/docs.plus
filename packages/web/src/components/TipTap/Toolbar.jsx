@@ -311,29 +311,105 @@ const Toolbar = ({ editor }) => {
         U
       </button> */}
 
+      <div className='divided'></div>
+      <button onClick={() => editor.chain().focus().setHardBreak().run()}>|</button>
+      <div className='divided'></div>
+
+      <button
+        onClick={() => editor.chain().focus().breakLine().run()}
+        className={editor.isActive('blockquote') ? 'is-active' : ''}
+      >
+        BL
+      </button>
+      <button
+        onClick={() => editor.chain().focus().liftBlock().run()}
+        className={editor.isActive('blockquote') ? 'is-active' : ''}
+      >
+        LB
+      </button>
+      <button
+        onClick={() => editor.chain().focus().wrapBlock({ level: 1 }).run()}
+        className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
+      >
+        W1
+      </button>
+      <button
+        onClick={() => editor.chain().focus().wrapBlock({ level: 2 }).run()}
+        className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
+      >
+        W2
+      </button>
+      <button
+        onClick={() => editor.chain().focus().wrapBlock({ level: 3 }).run()}
+        className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
+      >
+        W3
+      </button>
+      <button
+        onClick={() => editor.chain().focus().wrapBlock({ level: 4 }).run()}
+        className={editor.isActive('heading', { level: 4 }) ? 'is-active' : ''}
+      >
+        W4
+      </button>
+      <button
+        onClick={() => editor.chain().focus().wrapBlock({ level: 5 }).run()}
+        className={editor.isActive('heading', { level: 5 }) ? 'is-active' : ''}
+      >
+        W5
+      </button>
+      <button
+        onClick={() => editor.chain().focus().wrapBlock({ level: 6 }).run()}
+        className={editor.isActive('heading', { level: 6 }) ? 'is-active' : ''}
+      >
+        W6
+      </button>
+      <div className='divided'></div>
+
+      <button
+        onClick={() => editor.chain().focus().setBlockquote().run()}
+        disabled={!editor.can().setBlockquote()}
+      >
+        SB
+      </button>
+      <button
+        onClick={() => editor.chain().focus().unsetBlockquote().run()}
+        disabled={!editor.can().unsetBlockquote()}
+      >
+        UB
+      </button>
 
       <div className='divided'></div>
 
-
-      <button onClick={() => editor.chain().focus().setHeadings({ level: 1 }).run()}>
-        Ti
-      </button>
-      <button onClick={() => editor.chain().focus().setHeadings({ level: 2 }).run()}>
+      {/* <button
+        onClick={() => editor.chain().focus().setAHeading({ level: 1 }).run()}
+        className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
+      >
         H1
       </button>
-      <button onClick={() => editor.chain().focus().setHeadings({ level: 3 }).run()}>
+      <button
+        onClick={() => editor.chain().focus().setAHeading({ level: 2 }).run()}
+        className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
+      >
         H2
       </button>
-      <button onClick={() => editor.chain().focus().setHeadings({ level: 4 }).run()}>
+      <button
+        onClick={() => editor.chain().focus().setAHeading({ level: 3 }).run()}
+        className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
+      >
         H3
       </button>
-      <button onClick={() => editor.chain().focus().setHeadings({ level: 5 }).run()}>
+      <button
+        onClick={() => editor.chain().focus().setAHeading({ level: 4 }).run()}
+        className={editor.isActive('heading', { level: 4 }) ? 'is-active' : ''}
+      >
         H4
       </button>
-      <button onClick={() => editor.chain().focus().setHeadings({ level: 6 }).run()}>
+      <button
+        onClick={() => editor.chain().focus().setAHeading({ level: 5 }).run()}
+        className={editor.isActive('heading', { level: 5 }) ? 'is-active' : ''}
+      >
         H5
-      </button>
-
+      </button> */}
 
 
 

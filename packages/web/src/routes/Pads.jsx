@@ -51,7 +51,7 @@ export default function Root() {
       setLoadedData(true)
     })
 
-    console.log("once ha ha ha", provider.isSynced)
+    // console.log("once ha ha ha", provider.isSynced)
 
     return [provider, ydoc]
 
@@ -63,7 +63,7 @@ export default function Root() {
     <>
       <div className="pad tiptap flex flex-col border-solid border-2">
         <div className='header w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b'>
-          <PadTitle padName={padName} />
+          {/* <PadTitle padName={padName} /> */}
         </div>
         <div className='toolbars w-full bg-white h-auto z-10  sm:block fixed bottom-0 sm:relative'>
           {editor ? <Toolbar editor={editor} /> : "Loading..."}

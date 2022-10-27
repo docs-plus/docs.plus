@@ -10,11 +10,40 @@ export default ({ editor, className }) => {
     const transaction = editor?.state?.tr
 
     // console.log(id.toString());
+    let reserveHeadingId = ''
+    let reserveHeadingLevel = ''
 
     // TODO: check the object id performance
     // TODO: heading must be url frindly, so I have to map id with SLUGs
-    editor?.state?.doc?.descendants((node, pos) => {
-      if (node.type.name === 'heading' || node.type.name === 'headingsTitle') {
+    editor?.state?.doc?.descendants((node, pos, parent, index) => {
+
+
+      if (node.type.name === 'heading') {
+        reserveHeadingId = node.attrs.id
+        reserveHeadingLevel = node.attrs.level
+      } else {
+        // console.log(reserveHeadingId, reserveHeadingLevel)
+        // console.log({
+        //   node, parent,
+        //   currentNode: node?.type?.name,
+        //   nodeContent: node?.textContent,
+        //   pos,
+        //   parrentNode: parent?.type?.name,
+        //   index,
+        // })
+      }
+
+
+
+      // transaction.setNodeMarkup(pos, undefined, {
+      //   ...node.attrs,
+      //   parent: reserveHeadingId || "0",
+      //   level: "" + reserveHeadingLevel || "0"
+      // })
+
+
+
+      if (node.type.name === 'contentHeading') {
         // console.log(node.content.toJSON());
         // const nodeContent = node.content.toJSON() ? node.content.toJSON()[0]?.text : "Heading"
         // const id = new ObjectID().toString()
@@ -26,11 +55,12 @@ export default ({ editor, className }) => {
         //   })
         // }
 
+        // console.log(node.type)
 
         headings.push({
           level: node.attrs.level,
           text: node.textContent,
-          id: node.attrs.id
+          // id: node.attrs.id
         })
       }
     })

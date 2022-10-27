@@ -293,6 +293,15 @@ $Pad_Toolbar__height: 38px;
 
 
 .ProseMirror {
+  .headingWrapper {
+    border: 1px solid black;
+    padding: 4px;
+    border-radius: 6px;
+    margin: 6px 0;
+  }
+
+
+
   text-align: left;
   // border: 1px solid #616161;
   // border-radius: 6px;
@@ -303,6 +312,38 @@ $Pad_Toolbar__height: 38px;
   >*+* {
     margin-top: 0.75em;
   }
+
+  div.heading {
+    border-left: 3px solid rgba(#0d0d0d, 0.1);
+    padding-left: 1rem;
+    position: relative;
+    margin-top: 1rem;
+
+    [level]::before {
+      content: attr(level);
+      position: absolute;
+      background-color: tomato;
+      font-size: 12px;
+      height: 20px;
+      width: 20px;
+      top: -10px;
+      left: -11px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+    }
+
+    .contentWrapper {
+      // border-bottom: 3px solid rgba(#0d0d0d, 0.1);
+      padding-bottom: 1rem;
+
+    }
+
+  }
+
+
 
   ul[data-type="taskList"] {
     list-style: none;
@@ -401,11 +442,6 @@ $Pad_Toolbar__height: 38px;
   img {
     max-width: 100%;
     height: auto;
-  }
-
-  blockquote {
-    padding-left: 1rem;
-    border-left: 2px solid #fff;
   }
 
   hr {
