@@ -13,6 +13,7 @@ const ErrorPage = lazy(() => import('./routes/ErrorPage'))
 const PageNotFound = lazy(() => import('./routes/PageNotFound'))
 const IntroPage = lazy(() => import('./routes/IntroPage'))
 
+
 const router = createBrowserRouter([
   {
     path: "/",

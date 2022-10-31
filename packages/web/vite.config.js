@@ -4,6 +4,17 @@ import { VitePWA } from 'vite-plugin-pwa'
 import manifest from './src/manifest.json'
 
 
+// import { registerSW } from 'virtual:pwa-register'
+
+// const updateSW = registerSW({
+//   onNeedRefresh() {
+//     console.log("onNeedRefresh=??")
+//   },
+//   onOfflineReady() {
+//     console.log("onOfflineReady=??")
+//   }
+// })
+
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -14,6 +25,9 @@ export default defineConfig({
       registerType: 'autoUpdate',
       injectRegister: 'auto',
       manifest,
+      devOptions: {
+        enabled: true
+      }
     })
   ],
 })

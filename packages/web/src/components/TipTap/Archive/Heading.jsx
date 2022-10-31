@@ -415,7 +415,7 @@ const Heading = Node.create({
       },
       // The default gapcursor implementation can’t handle hidden content, so we need to fix this.
       ArrowDown: ({ editor }) => {
-        console.log("down")
+        // console.log("down")
         return setGapCursor(editor, 'down');
       },
     }

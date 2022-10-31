@@ -154,7 +154,7 @@ const Blockquote = Node.create({
     ];
   },
   renderHTML({ node, HTMLAttributes }) {
-    console.log(node, "coming render html")
+    // console.log(node, "coming render html")
     const hasLevel = this.options.levels.includes(node.attrs.level);
     const level = hasLevel
       ? node.attrs.level
@@ -294,23 +294,23 @@ const Blockquote = Node.create({
           start: $from.start(depth),
         }
 
-        console.log(blockPos)
 
 
         const commingLevel = attributes.level;
         const parentLevel = blockPos.edge.start !== -1 && doc?.nodeAt(blockPos.edge.start)?.content?.content[0]?.attrs.level
 
         console.log({
+          blockPos,
           doc,
           beforeLevel: blockPos.edge.start !== -1 && doc?.nodeAt(blockPos.edge.start)?.content?.content[0]?.attrs.level,
           afterLevel: blockPos.edge.start !== -1 && doc?.nodeAt(blockPos.edge.end),
           commingLevel, parentLevel
         })
 
-        if (commingLevel === 1 && commingLevel === parentLevel) {
-          console.log("in one big block just we can have one heading level 1")
-          return;
-        }
+        // if (commingLevel === 1 && commingLevel === parentLevel) {
+        //   console.log("in one big block just we can have one heading level 1")
+        //   return;
+        // }
 
 
         if (commingLevel === parentLevel) {
@@ -361,7 +361,6 @@ const Blockquote = Node.create({
           }
 
           const data = chain()
-
 
             .insertContentAt(block.ancesster.end, {
               type: this.name,
@@ -432,44 +431,76 @@ const Blockquote = Node.create({
       },
       // The default gapcursor implementation can’t handle hidden content, so we need to fix this.
       ArrowDown: ({ editor }) => {
-        console.log("down")
+        // console.log("down")
         return setGapCursor(editor, 'down');
+      },
+      Backspace: (data) => {
+        const { schema, selection } = this.editor.state;
+        const { empty, $anchor, $head, $from, $to } = selection;
+        // const { $from, $to, $anchor, $cursor } = selection;
+        const { start, end, depth } = $from.blockRange($to);
+
+        // if backspace hit in the node that is not have any content
+        if ($anchor.parentOffset !== 0) return false
+
+        // if Backspace is in the contentWrapper
+        if ($anchor.parent.type.name !== schema.nodes.contentHeading.name) {
+          const contentWrapper = $anchor.doc.nodeAt($from.before(depth))
+          if (contentWrapper.firstChild.content.size === 0) {
+            return this.editor.chain()
+              .deleteNode(start)
+              .insertContentAt($from.pos, "<p></p>")
+              .setTextSelection($from.pos - 3)
+              .run()
+          }
+        }
+
+        // if Backspace is in the contentHeading
+        if ($anchor.parent.type.name === schema.nodes.contentHeading.name) {
+          const heading = $head.path.filter(x => x?.type?.name)
+            .findLast(x => x.type.name === 'heading')
+
+          let contentWrapper = heading.lastChild
+
+          return this.editor.chain()
+            .insertContentAt({ from: $from.start(depth) - 1, to: $from.end(depth) }, contentWrapper.content.toJSON())
+            .setTextSelection(start)
+            .run()
+        }
       },
       Enter: ({ editor, chain }) => {
         const { state, view } = editor;
         const { schema, selection, doc, tr } = state;
         const { $head, $anchor } = selection;
-        // if ($head.parent.type !== schema.nodes.contentHeading) {
-        //   return false;
-        // }
 
-        if ($head.parent.type.name === schema.nodes.contentHeading.name) {
-          // const newSelection = Selection.near($head.pos, 1);
-          console.log("yes new", $head)
-          const parent = $head.path.filter(x => x?.type?.name)
-            .findLast(x => x.type.name === this.name)
-
-          const newSelection = new TextSelection(state.doc.resolve($anchor.pos + 1))
-          console.log(newSelection, $anchor, parent, parent?.content?.content.length)
-
-
-          tr.setSelection(newSelection);
-          if (parent?.content?.content.length === 1) {
-            console.log("yepyep", editor)
-            editor.commands
-              .insertContentAt($anchor.pos + 1, "<p></p>")
-            // .setTextSelection($anchor.pos + 2)
-            // .deleteRange({ from: $anchor.pos + 2, to: $anchor.pos + 2 })
-            // .run();
-            return true;
-          } else {
-            tr.replaceWith($anchor.pos, $anchor.pos + 2, [])
-          }
-
-          tr.scrollIntoView();
-          view.dispatch(tr);
-          return true
+        // TODO: limited just for contentHeading,contentWrapper
+        if ($head.parent.type.name !== schema.nodes.contentHeading.name) {
+          return false;
         }
+
+        // if a user Enter in the contentHeading block,
+        // should go to the next block, which is contentWrapper
+        const parent = $head.path.filter(x => x?.type?.name)
+          .findLast(x => x.type.name === this.name)
+
+        console.log("yes new", { $head, state, $anchor, parent })
+        const newSelection = new TextSelection(state.doc.resolve($anchor.pos + 1))
+
+        // FIXME: not working
+        // some times the contentWrapper cleaned up, so it should be create first
+        // otherwise just the cursour must move to contnetWrapper
+        if (parent?.content?.content.length === 1) {
+          editor.commands
+            .insertContentAt($anchor.pos + 1, "<p></p>")
+          return true;
+        }
+
+        tr.setSelection(newSelection)
+          .replaceWith($anchor.pos, $anchor.pos + 2, [])
+          .scrollIntoView();
+
+        view.dispatch(tr);
+        return true
 
 
 

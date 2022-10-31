@@ -327,6 +327,8 @@ const Toolbar = ({ editor }) => {
       >
         LB
       </button>
+      <div className='divided'></div>
+
       <button
         onClick={() => editor.chain().focus().wrapBlock({ level: 1 }).run()}
         className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}

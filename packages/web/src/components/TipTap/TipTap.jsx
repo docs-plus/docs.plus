@@ -183,7 +183,6 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
         includeChildren: true,
         placeholder: ({ node }) => {
           const nodeType = node.type.name
-          console.log(nodeType, nodeType === 'contentHeading', node.attrs)
           if (nodeType === 'contentHeading') {
             const level = node.attrs.level
             return level - 1 === 0 ? "Title" : `Heading ${ level - 1 }`
