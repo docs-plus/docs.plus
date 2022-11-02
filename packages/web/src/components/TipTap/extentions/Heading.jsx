@@ -324,12 +324,14 @@ const Blockquote = Node.create({
           console.log("same level just creat a heading")
 
           console.log({
-            main: doc.cut(start).nodeAt(depth - 1).content.toJSON(),
+            main: doc.cut(start, block.parent.end).content,
             dobo: doc.slice(start, block.parent.end),
             start,
             block,
-            copy: doc.slice(start, block.parent.end).toJSON(),
-            copy1: doc.cut($anchor.pos, block.parent.end).toJSON().content
+            copy: doc.cut(start).nodeAt(depth - 1),
+            copy1: doc.cut(start).nodeAt(depth - 1),
+            commingLevel,
+            parentLevel
           })
 
           return chain()
@@ -425,7 +427,7 @@ const Blockquote = Node.create({
             closestHeadingPos,
             lastChildHeadingPos,
             closestHeadingLevel,
-            row: doc.slice(start, block.edge.end)?.toJSON()?.content
+            // row: doc.slice(start, block.edge.end)?.toJSON()?.content
             // index: $from.posAtIndex(start, depth)
             // data
           })
@@ -502,11 +504,14 @@ const Blockquote = Node.create({
                     ]
                   },
                   // { type: "paragraph", content: [{ type: 'text', text: '' }] },
-                  ...doc.slice(start, closestHeadingPos)?.toJSON()?.content
+                  ...doc.slice(start, closestHeadingPos)?.toJSON()?.content,
+
                 ],
                 start,
-                closestHeadingPos
+                closestHeadingPos,
+                level: attributes.level
               })
+              const contents = doc.slice(start, closestHeadingPos)?.toJSON()?.content
               // copy from start to end of the current Heading
               return chain()
                 .insertContentAt($from.end(depth - 1), doc.cut(closestHeadingPos).nodeAt(depth - 1).content.toJSON())
@@ -522,15 +527,11 @@ const Blockquote = Node.create({
                     },
                     {
                       type: 'contentWrapper',
-                      content: [
-                        ...doc.slice(start, closestHeadingPos)?.toJSON()?.content
-                      ]
+                      content: contents
                     },
                   ],
                 })
                 .setTextSelection(start)
-
-
                 .run()
 
               return
@@ -620,6 +621,7 @@ const Blockquote = Node.create({
 
           // chain().insertContentAt(lastOnePos, "<p>New Dataa</p>")
           // return true;
+          const dataContent = doc.slice(start, lastChildHeadingPos)?.toJSON()?.content
           return chain()
             .deleteRange({ from: start, to: lastChildHeadingPos })
             .insertContentAt(start, {
@@ -633,11 +635,10 @@ const Blockquote = Node.create({
                 },
                 {
                   type: 'contentWrapper',
-                  content: content
+                  content: dataContent
                 },
               ],
             })
-            .insertContentAt(start + 4, doc.slice(start, lastChildHeadingPos)?.toJSON()?.content)
             .setTextSelection(start)
             .run();
 
@@ -713,6 +714,7 @@ const Blockquote = Node.create({
           insertAt = 4
 
           return chain()
+            .insertContentAt(start, "<p></p>", { updateSelection: false })
             .insertContentAt($from.end(depth - insertAt), {
               type: this.name,
               content: [
@@ -730,9 +732,8 @@ const Blockquote = Node.create({
             })
 
             .setTextSelection($from.end(depth - (insertAt)))
-            .insertContentAt(start, "<p></p>", { updateSelection: false })
             .deleteRange({
-              from: start, to: $from.end(depth - insertAt)
+              from: start + 1, to: $from.end(depth - insertAt)
             })
             .run();
 
@@ -819,6 +820,8 @@ const Blockquote = Node.create({
         const { schema, selection, doc, tr } = state;
         const { $head, $anchor, $from, $to } = selection;
         const { start, end, depth } = $from.blockRange($to);
+
+
 
 
         // TODO: limited just for contentHeading,contentWrapper

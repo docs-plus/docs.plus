@@ -6,7 +6,7 @@ const HeadingsContent = Node.create({
   content: '(heading|paragraph|block)+',
   defining: true,
   selectable: false,
-  isolating: false,
+  isolating: true,
   draggable: false,
   addOptions() {
     return {
