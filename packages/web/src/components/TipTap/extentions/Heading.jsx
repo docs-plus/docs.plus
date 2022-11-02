@@ -281,30 +281,36 @@ const Blockquote = Node.create({
 
         const content = ((_a = slice.toJSON()) === null || _a === void 0 ? void 0 : _a.content) || [];
 
-        const blockPos = {
+        const block = {
           parent: {
             end: $from.end(depth - 1),
             start: $from.start(depth - 1),
           },
           edge: {
-            start: $from.start(depth - 1) - 1,
             end: $from.end(depth - 1) + 1,
+            start: $from.start(depth - 1) - 1,
+          },
+          ancesster: {
+            start: $from.start(1),
+            end: $from.end(1)
           },
           end: $from.end(depth),
           start: $from.start(depth),
+          nextLevel: 0
         }
 
 
 
         const commingLevel = attributes.level;
-        const parentLevel = blockPos.edge.start !== -1 && doc?.nodeAt(blockPos.edge.start)?.content?.content[0]?.attrs.level
+        const parentLevel = block.edge.start !== -1 && doc?.nodeAt(block.edge.start)?.content?.content[0]?.attrs.level
 
         console.log({
-          blockPos,
+          block,
           doc,
-          beforeLevel: blockPos.edge.start !== -1 && doc?.nodeAt(blockPos.edge.start)?.content?.content[0]?.attrs.level,
-          afterLevel: blockPos.edge.start !== -1 && doc?.nodeAt(blockPos.edge.end),
-          commingLevel, parentLevel
+          beforeLevel: block.edge.start !== -1 && doc?.nodeAt(block.edge.start)?.content?.content[0]?.attrs.level,
+          afterLevel: block.edge.start !== -1 && doc?.nodeAt(block.edge.end),
+          commingLevel, parentLevel,
+          start, end, depth
         })
 
         // if (commingLevel === 1 && commingLevel === parentLevel) {
@@ -312,57 +318,22 @@ const Blockquote = Node.create({
         //   return;
         // }
 
-
+        // same level just creat a heading
+        // check if has children and then copy them as a new content
         if (commingLevel === parentLevel) {
           console.log("same level just creat a heading")
+
+          console.log({
+            main: doc.cut(start).nodeAt(depth - 1).content.toJSON(),
+            dobo: doc.slice(start, block.parent.end),
+            start,
+            block,
+            copy: doc.slice(start, block.parent.end).toJSON(),
+            copy1: doc.cut($anchor.pos, block.parent.end).toJSON().content
+          })
+
           return chain()
-            .insertContentAt(blockPos.edge.end, {
-              type: this.name,
-              content: [
-                {
-                  type: 'contentHeading',
-                  attrs: {
-                    level: attributes.level
-                  },
-                },
-                {
-                  type: 'contentWrapper',
-                  content,
-                },
-              ],
-            })
-            .setTextSelection(start + 2)
-            .run();
-        }
-
-        if (commingLevel > parentLevel) {
-          console.log("insert as a child of the current heading")
-          return insertHeading(this.name, chain, start, end, content, attributes)
-        }
-
-        if (commingLevel < parentLevel) {
-          console.log("break the chain")
-
-          const block = {
-            parent: {
-              end: $from.end(depth - 1),
-              start: $from.start(depth - 1),
-            },
-            edge: {
-              end: $from.end(depth - 1) + 1,
-              start: $from.start(depth - 1) - 1,
-            },
-            ancesster: {
-              start: $from.start(1),
-              end: $from.end(1)
-            },
-            end: $from.end(depth),
-            start: $from.start(depth),
-          }
-
-          const data = chain()
-
-            .insertContentAt(block.ancesster.end, {
+            .insertContentAt(block.edge.end, {
               type: this.name,
               content: [
                 {
@@ -377,36 +348,397 @@ const Blockquote = Node.create({
                 },
               ],
             })
-            .insertContentAt($from.pos, "<p><br></p>")
-            .setTextSelection(block.ancesster.end + 2)
+            // .insertContentAt($from.pos, "<p><br></p>")
+            // .insertContentAt(block.edge.end + 6, doc.slice($anchor.pos, block.parent.end).toJSON().content)
+            .setTextSelection(block.edge.end + 2)
             .deleteRange({ from: start + 1, to: block.edge.end })
+            .run();
+        }
+
+        // insert as a child of the current heading
+        if (commingLevel > parentLevel) {
+          console.log("insert as a child of the current heading")
+
+          const depthDiff = parentLevel - commingLevel
+          let nextLevel = 0
+
+          let closestHeadingPos = 0;
+          let closestHeadingLevel = 0;
+          let containHeading = false;
+          let lastChildHeadingPos = 0
+          let firstChildHeadingPos = 0
+
+
+          doc.nodesBetween(start, block.parent.end, function (node, pos, parent, index) {
+            // if (pos >= start) {
+            //   console.log("-======>>", node, pos)
+            //   data.push(node)
+            // }
+            if (node.type.name === "heading" && pos >= start) {
+              if (!containHeading) containHeading = true;
+              if (closestHeadingLevel === 0) {
+                closestHeadingPos = pos
+                closestHeadingLevel = node.firstChild.attrs.level
+              }
+
+              console.log({
+                node,
+                level: node.firstChild?.attrs?.level,
+                row: node.firstChild?.attrs?.level < commingLevel,
+                commingLevel,
+                g: node.firstChild?.attrs?.level > commingLevel,
+                e: commingLevel === node.firstChild?.attrs?.level
+              })
+
+              if (node.firstChild?.attrs?.level > commingLevel) {
+                lastChildHeadingPos = pos + node.content.size
+                firstChildHeadingPos = pos
+              }
+
+
+            }
+
+            if (node.type.name === "heading" && pos >= start) {
+              // console.log({ nodeName: node.type.name, pos, level: node.firstChild?.attrs?.level, posRO1: node.type.name === "heading", posRO2: pos >= start, posRO3: commingLevel >= node.firstChild.attrs.level })
+              if (nextLevel === 0 && commingLevel < node.firstChild.attrs.level) {
+                console.log("yess")
+                nextLevel = pos
+              }
+            }
+          })
+
+
+
+          console.log({
+            $anchor,
+            commingLevel,
+            parentLevel,
+            block,
+            depthDiff,
+            // data1: doc.slice(start, lastOnePos).toJSON(),
+            k: attributes.level,
+            nextLevel,
+            // lastOnePos,
+            // copy: doc.slice(start, lastOnePos)?.toJSON()?.content,
+            copy: doc.slice(start, lastChildHeadingPos)?.toJSON()?.content,
+            containHeading,
+            closestHeadingPos,
+            lastChildHeadingPos,
+            closestHeadingLevel,
+            row: doc.slice(start, block.edge.end)?.toJSON()?.content
+            // index: $from.posAtIndex(start, depth)
+            // data
+          })
+
+          if (nextLevel === 0) {
+
+            console.log("simple")
+
+            // if containHeading === true, mean copy the entire content
+            // from the selection start to end of the contentWrapper
+            // otherwise decide base on the closest Heading block
+
+            if (!containHeading) {
+              console.log("copy the entire content from the selection start pos")
+              return chain()
+                .insertContentAt({ from: start, to: block.parent.end }, {
+                  type: this.name,
+                  content: [
+                    {
+                      type: 'contentHeading',
+                      attrs: {
+                        level: attributes.level
+                      },
+                    },
+                    {
+                      type: 'contentWrapper',
+                      content: doc.slice(start, block.parent.end - 1)?.toJSON()?.content
+                    },
+                  ],
+                })
+                // .deleteRange({ from: start, to: block.parent.end })
+                .setTextSelection(start)
+                .run()
+            }
+
+            if (commingLevel === closestHeadingLevel) {
+              console.log("the selection block contain Heading block, so find the reletive Headings and copy them into the incoming new Heading")
+              return chain()
+                .deleteRange({ from: start, to: closestHeadingPos })
+
+                .insertContentAt(start, {
+                  type: this.name,
+                  content: [
+                    {
+                      type: 'contentHeading',
+                      attrs: {
+                        level: attributes.level
+                      },
+                    },
+                    {
+                      type: 'contentWrapper',
+                      content: doc.slice(start, closestHeadingPos)?.toJSON()?.content
+                    },
+                  ],
+                })
+                .setTextSelection(start)
+                .run()
+            }
+
+            // if comming level is grather than the closestHEadingLevel, break the heading chain
+            if (commingLevel > closestHeadingLevel) {
+              console.log("break the chain", "if comming level is grather than the closestHEadingLevel, break the heading chain")
+
+
+              console.log({
+                data: [
+                  {
+                    "type": "paragraph",
+                    "content": [
+                      {
+                        "type": "text",
+                        "text": ""
+                      }
+                    ]
+                  },
+                  // { type: "paragraph", content: [{ type: 'text', text: '' }] },
+                  ...doc.slice(start, closestHeadingPos)?.toJSON()?.content
+                ],
+                start,
+                closestHeadingPos
+              })
+              // copy from start to end of the current Heading
+              return chain()
+                .insertContentAt($from.end(depth - 1), doc.cut(closestHeadingPos).nodeAt(depth - 1).content.toJSON())
+                .deleteRange({ from: start, to: $from.end(depth - 1) })
+                .insertContentAt(start, {
+                  type: this.name,
+                  content: [
+                    {
+                      type: 'contentHeading',
+                      attrs: {
+                        level: attributes.level
+                      },
+                    },
+                    {
+                      type: 'contentWrapper',
+                      content: [
+                        ...doc.slice(start, closestHeadingPos)?.toJSON()?.content
+                      ]
+                    },
+                  ],
+                })
+                .setTextSelection(start)
+
+
+                .run()
+
+              return
+            }
+          }
+
+          // as a child, if the income level is the same level
+          if (commingLevel === closestHeadingLevel) {
+            console.log("the selection block contain Heading block, so find the reletive Headings and copy them into the incoming new Heading")
+            return chain()
+              .deleteRange({ from: start, to: closestHeadingPos })
+
+              .insertContentAt(start, {
+                type: this.name,
+                content: [
+                  {
+                    type: 'contentHeading',
+                    attrs: {
+                      level: attributes.level
+                    },
+                  },
+                  {
+                    type: 'contentWrapper',
+                    content: doc.slice(start, closestHeadingPos)?.toJSON()?.content
+                  },
+                ],
+              })
+              .setTextSelection(start)
+              .run()
+          }
+
+          // if comming level is grather than the closestHEadingLevel, break the heading chain
+          if (commingLevel > closestHeadingLevel) {
+            console.log("break the chain", "if comming level is grather than the closestHEadingLevel, break the heading chain")
+
+
+            console.log({
+              data: [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": ""
+                    }
+                  ]
+                },
+                // { type: "paragraph", content: [{ type: 'text', text: '' }] },
+                ...doc.slice(start, closestHeadingPos)?.toJSON()?.content
+              ],
+              start,
+              closestHeadingPos
+            })
+            // copy from start to end of the current Heading
+            return chain()
+              .insertContentAt($from.end(depth - 1), doc.cut(closestHeadingPos).nodeAt(depth - 1).content.toJSON())
+              .deleteRange({ from: start, to: $from.end(depth - 1) })
+              .insertContentAt(start, {
+                type: this.name,
+                content: [
+                  {
+                    type: 'contentHeading',
+                    attrs: {
+                      level: attributes.level
+                    },
+                  },
+                  {
+                    type: 'contentWrapper',
+                    content: [
+                      ...doc.slice(start, closestHeadingPos)?.toJSON()?.content
+                    ]
+                  },
+                ],
+              })
+              .setTextSelection(start)
+
+
+              .run()
+
+            return
+          }
+
+
+          console.log("not simple")
+
+          //TODO: the problame is find the last position of the heading for copy
+
+          // chain().insertContentAt(lastOnePos, "<p>New Dataa</p>")
+          // return true;
+          return chain()
+            .deleteRange({ from: start, to: lastChildHeadingPos })
+            .insertContentAt(start, {
+              type: this.name,
+              content: [
+                {
+                  type: 'contentHeading',
+                  attrs: {
+                    level: attributes.level
+                  },
+                },
+                {
+                  type: 'contentWrapper',
+                  content: content
+                },
+              ],
+            })
+            .insertContentAt(start + 4, doc.slice(start, lastChildHeadingPos)?.toJSON()?.content)
+            .setTextSelection(start)
+            .run();
+
+          return;
+
+
+
+          // return insertHeading(this.name, chain, start, end, content, attributes)
+        }
+
+
+
+        if (commingLevel < parentLevel) {
+          console.log("break the chain, cominglevel is grether than parentLevel")
+
+          const block = {
+            parent: {
+              start: $from.start(depth - 1),
+              end: $from.end(depth - 1),
+            },
+            edge: {
+              end: $from.end(depth - 1) + 1,
+              start: $from.start(depth - 1) - 1,
+            },
+            ancesster: {
+              start: $from.start(1),
+              end: $from.end(1)
+            },
+            end: $from.end(depth),
+            start: $from.start(depth),
+            depth,
+          }
+          // base on leve the heading chain must break
+          // if the pos is 4 and the income is 3, this three must be just go depth -1
+          // but if the pos is 4 and the income is 1, this 1 must be just inject in depth === 0
+
+          const depthDiff = Math.abs(parentLevel - commingLevel)
+
+
+
+          let insertAt = 3
+          switch (depthDiff) {
+            case 1:
+              insertAt = 3
+              break;
+            case 2:
+              insertAt = 5
+              break;
+            case 3:
+              insertAt = 7
+              break;
+            case 4:
+              insertAt = 9
+              break;
+            case 5:
+              insertAt = 11
+              break;
+
+            default:
+              break;
+          }
+
+
+          console.log({
+            commingLevel,
+            parentLevel,
+            block,
+            depthDiff,
+            depth,
+            end: $from.end(depth - insertAt)
+          })
+
+          insertAt = 4
+
+          return chain()
+            .insertContentAt($from.end(depth - insertAt), {
+              type: this.name,
+              content: [
+                {
+                  type: 'contentHeading',
+                  attrs: {
+                    level: attributes.level
+                  },
+                },
+                {
+                  type: 'contentWrapper',
+                  content: doc.cut(start).nodeAt(depth - 1).content.toJSON()
+                },
+              ],
+            })
+            .deleteRange({
+              from: start, to: $from.end(depth - insertAt)
+            })
+            .setTextSelection($from.end(depth - (insertAt)))
+            .insertContentAt(start, "<p></p>", { updateSelection: false })
             .run();
 
         }
 
 
 
-
-        // return chain().insertContentAt({ from: start, to: end }, {
-        //   type: this.name,
-        //   content: [
-        //     {
-        //       type: 'contentHeading',
-        //       attrs: {
-        //         level: attributes.level,
-        //         HTMLAttributes: {
-        //           class: "tilte"
-        //         }
-        //       },
-        //     },
-        //     {
-        //       type: 'contentWrapper',
-        //       content,
-        //     },
-        //   ],
-        // })
-        //   .setTextSelection(start + 2)
-        //   .run();
 
 
 
@@ -443,10 +775,14 @@ const Blockquote = Node.create({
         // if backspace hit in the node that is not have any content
         if ($anchor.parentOffset !== 0) return false
 
+
+        // if BackSpace in in the contentHeading, and depth is 0
+
+
         // if Backspace is in the contentWrapper
         if ($anchor.parent.type.name !== schema.nodes.contentHeading.name) {
-          const contentWrapper = $anchor.doc.nodeAt($from.before(depth))
-          if (contentWrapper.firstChild.content.size === 0) {
+          const contentWrapper = $anchor.doc?.nodeAt($from?.before(depth))
+          if (contentWrapper?.firstChild.content.size === 0) {
             return this.editor.chain()
               .deleteNode(start)
               .insertContentAt($from.pos, "<p></p>")
@@ -459,9 +795,18 @@ const Blockquote = Node.create({
         if ($anchor.parent.type.name === schema.nodes.contentHeading.name) {
           const heading = $head.path.filter(x => x?.type?.name)
             .findLast(x => x.type.name === 'heading')
-
           let contentWrapper = heading.lastChild
 
+          console.log({
+            $head,
+            $from,
+            heading,
+            start: $from.start(depth),
+            data: contentWrapper.content.toJSON()
+          })
+
+          // { from: $from.start(depth) - 1, to: $from.end(depth) }
+          // return false
           return this.editor.chain()
             .insertContentAt({ from: $from.start(depth) - 1, to: $from.end(depth) }, contentWrapper.content.toJSON())
             .setTextSelection(start)
@@ -471,7 +816,9 @@ const Blockquote = Node.create({
       Enter: ({ editor, chain }) => {
         const { state, view } = editor;
         const { schema, selection, doc, tr } = state;
-        const { $head, $anchor } = selection;
+        const { $head, $anchor, $from, $to } = selection;
+        const { start, end, depth } = $from.blockRange($to);
+
 
         // TODO: limited just for contentHeading,contentWrapper
         if ($head.parent.type.name !== schema.nodes.contentHeading.name) {
@@ -483,23 +830,45 @@ const Blockquote = Node.create({
         const parent = $head.path.filter(x => x?.type?.name)
           .findLast(x => x.type.name === this.name)
 
-        console.log("yes new", { $head, state, $anchor, parent })
-        const newSelection = new TextSelection(state.doc.resolve($anchor.pos + 1))
+
+
+
+        console.log("yes new", {
+          $head, state, $anchor, parent,
+          content: parent.lastChild.firstChild.type.name,
+          sd: Selection.near(state.doc.resolve($from.pos), 1),
+          // after: $head.start(depth + 1),
+          // newResolve: $head.node(depth + 1)
+        })
 
         // FIXME: not working
         // some times the contentWrapper cleaned up, so it should be create first
         // otherwise just the cursour must move to contnetWrapper
-        if (parent?.content?.content.length === 1) {
+        if (parent?.content?.content.length === 1 || parent.lastChild.firstChild.type.name === 'heading') {
+          console.log("yes iminininin")
           editor.commands
-            .insertContentAt($anchor.pos + 1, "<p></p>")
+            .insertContentAt($anchor.pos, {
+              type: 'contentWrapper',
+              content: [
+                {
+                  "type": "paragraph",
+                  "content": [
+                    {
+                      "type": "text",
+                      "text": " "
+                    }
+                  ]
+                },
+              ]
+
+            })
           return true;
         }
 
-        tr.setSelection(newSelection)
-          .replaceWith($anchor.pos, $anchor.pos + 2, [])
-          .scrollIntoView();
 
-        view.dispatch(tr);
+        return editor.chain()
+          .setTextSelection(end + parent.lastChild.firstChild.content.size + 2)
+          .run()
         return true
 
 

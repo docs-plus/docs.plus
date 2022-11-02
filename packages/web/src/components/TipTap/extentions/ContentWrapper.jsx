@@ -3,7 +3,7 @@ import { Selection } from 'prosemirror-state';
 
 const HeadingsContent = Node.create({
   name: 'contentWrapper',
-  content: '(contentWrapper|heading|paragraph|block)*',
+  content: '(heading|paragraph|block)+',
   defining: true,
   selectable: false,
   isolating: false,

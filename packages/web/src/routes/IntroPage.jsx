@@ -18,6 +18,12 @@ const IntroPage = () => {
     return redirect(`/${ padName }`)
   }
 
+  const handleKeyDown = event => {
+    if (event.key === 'Enter') {
+      enterToPad()
+    }
+  };
+
   return (
     <div className='max-w-lg mx-auto h-screen flex flex-col justify-center align-middle p-4'>
       <div className='h-fit'>
@@ -27,7 +33,7 @@ const IntroPage = () => {
           <button onClick={createARandomPad} className="px-3 w-full py-2 border rounded">New Pad</button>
           <label className='text-center w-full mt-6 block mb-1'>or Create/Open a Pad with the name:</label>
           <div className='flex flex-row w-full'>
-            <input className='p-1 w-full rounded-l border' ref={padNameRef} type="text" id="padName" />
+            <input className='p-1 w-full rounded-l border' ref={padNameRef} type="text" id="padName" onKeyDown={handleKeyDown} />
             <button className='border px-3 py-2 rounded border-l-0 rounded-l-none' onClick={enterToPad}>Enter</button>
           </div>
         </div>
