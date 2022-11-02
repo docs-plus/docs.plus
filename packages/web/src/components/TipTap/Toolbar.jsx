@@ -312,10 +312,10 @@ const Toolbar = ({ editor }) => {
       </button> */}
 
       <div className='divided'></div>
-      <button onClick={() => editor.chain().focus().setHardBreak().run()}>|</button>
-      <div className='divided'></div>
+      {/* <button onClick={() => editor.chain().focus().setHardBreak().run()}>|</button>
+      <div className='divided'></div> */}
 
-      <button
+      {/* <button
         onClick={() => editor.chain().focus().breakLine().run()}
         className={editor.isActive('blockquote') ? 'is-active' : ''}
       >
@@ -327,7 +327,8 @@ const Toolbar = ({ editor }) => {
       >
         LB
       </button>
-      <div className='divided'></div>
+      <div className='divided'></div> */}
+
 
       <button
         onClick={() => editor.chain().focus().wrapBlock({ level: 1 }).run()}
@@ -365,53 +366,11 @@ const Toolbar = ({ editor }) => {
       >
         W6
       </button>
-      <div className='divided'></div>
-
-      <button
-        onClick={() => editor.chain().focus().setBlockquote().run()}
-        disabled={!editor.can().setBlockquote()}
-      >
-        SB
-      </button>
-      <button
-        onClick={() => editor.chain().focus().unsetBlockquote().run()}
-        disabled={!editor.can().unsetBlockquote()}
-      >
-        UB
-      </button>
 
       <div className='divided'></div>
 
-      {/* <button
-        onClick={() => editor.chain().focus().setAHeading({ level: 1 }).run()}
-        className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
-      >
-        H1
-      </button>
-      <button
-        onClick={() => editor.chain().focus().setAHeading({ level: 2 }).run()}
-        className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
-      >
-        H2
-      </button>
-      <button
-        onClick={() => editor.chain().focus().setAHeading({ level: 3 }).run()}
-        className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
-      >
-        H3
-      </button>
-      <button
-        onClick={() => editor.chain().focus().setAHeading({ level: 4 }).run()}
-        className={editor.isActive('heading', { level: 4 }) ? 'is-active' : ''}
-      >
-        H4
-      </button>
-      <button
-        onClick={() => editor.chain().focus().setAHeading({ level: 5 }).run()}
-        className={editor.isActive('heading', { level: 5 }) ? 'is-active' : ''}
-      >
-        H5
-      </button> */}
+
+
 
 
 
