@@ -728,11 +728,12 @@ const Blockquote = Node.create({
                 },
               ],
             })
+
+            .setTextSelection($from.end(depth - (insertAt)))
+            .insertContentAt(start, "<p></p>", { updateSelection: false })
             .deleteRange({
               from: start, to: $from.end(depth - insertAt)
             })
-            .setTextSelection($from.end(depth - (insertAt)))
-            .insertContentAt(start, "<p></p>", { updateSelection: false })
             .run();
 
         }
