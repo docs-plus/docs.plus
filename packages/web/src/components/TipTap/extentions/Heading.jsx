@@ -711,10 +711,13 @@ const Blockquote = Node.create({
             end: $from.end(depth - insertAt)
           })
 
-          insertAt = 4
 
+          if (depth === 4) insertAt = 3
+          if (depth === 5) insertAt = 5
+          if (depth === 6) insertAt = 5
+
+          const contents = doc.cut(start).nodeAt(depth - 1).content.toJSON()
           return chain()
-            .insertContentAt(start, "<p></p>", { updateSelection: false })
             .insertContentAt($from.end(depth - insertAt), {
               type: this.name,
               content: [
@@ -726,14 +729,14 @@ const Blockquote = Node.create({
                 },
                 {
                   type: 'contentWrapper',
-                  content: doc.cut(start).nodeAt(depth - 1).content.toJSON()
+                  content: contents
                 },
               ],
             })
 
-            .setTextSelection($from.end(depth - (insertAt)))
+            .setTextSelection($from.end(depth - insertAt))
             .deleteRange({
-              from: start + 1, to: $from.end(depth - insertAt)
+              from: start, to: $from.end(depth - insertAt)
             })
             .run();
 
