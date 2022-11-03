@@ -36,6 +36,11 @@ import OrderedList from '@tiptap/extension-ordered-list'
 import HardBreak from '@tiptap/extension-hard-break'
 import Blockquote from './extentions/Heading'
 
+
+import Bold from '@tiptap/extension-bold'
+import Italic from '@tiptap/extension-italic'
+import BulletList from '@tiptap/extension-bullet-list'
+import Strike from '@tiptap/extension-strike'
 // the underlying ProseMirror schema
 // {
 //   nodes: {
@@ -106,6 +111,10 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       },
     },
     extensions: [
+      Bold,
+      Italic,
+      BulletList,
+      Strike,
       HardBreak,
       Gapcursor,
       Document,
@@ -140,26 +149,26 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       //     content: 'heading paragraph+'
       //   }
       // }),
-      // Underline,
-      // Link.configure({
-      //   protocols: ['ftp', 'mailto'],
-      // }),
-      // Image.configure({
-      //   inline: true,
-      //   allowBase64: true,
-      //   HTMLAttributes: {
-      //     class: 'image-class',
-      //   },
-      // }),
-      // TaskList,
-      // TaskItem.configure({
-      //   nested: true,
-      //   HTMLAttributes: {
-      //     class: 'tasks-class',
-      //   },
-      // }),
-      // Highlight,
-      // Typography,
+      Underline,
+      Link.configure({
+        protocols: ['ftp', 'mailto'],
+      }),
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+        HTMLAttributes: {
+          class: 'image-class',
+        },
+      }),
+      TaskList,
+      TaskItem.configure({
+        nested: true,
+        HTMLAttributes: {
+          class: 'tasks-class',
+        },
+      }),
+      Highlight,
+      Typography,
 
       Collaboration.configure({
         document: provider.document,
