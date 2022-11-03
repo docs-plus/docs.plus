@@ -296,7 +296,16 @@ const Blockquote = Node.create({
           },
           end: $from.end(depth),
           start: $from.start(depth),
-          nextLevel: 0
+          nextLevel: 0,
+          empty: {
+            "type": "paragraph",
+            "content": [
+              {
+                "type": "text",
+                "text": " "
+              }
+            ]
+          }
         }
 
 
@@ -511,12 +520,18 @@ const Blockquote = Node.create({
                 closestHeadingPos,
                 level: attributes.level
               })
-              const contents = doc.slice(start, closestHeadingPos)?.toJSON()?.content
+              const contents = [
+                ...doc.slice(start, closestHeadingPos)?.toJSON()?.content,
+
+                // { type: "paragraph", content: [{ type: 'text', text: '' }] },
+
+              ]
+              console.log(contents)
               // copy from start to end of the current Heading
               return chain()
+                // append to the end of current depth
                 .insertContentAt($from.end(depth - 1), doc.cut(closestHeadingPos).nodeAt(depth - 1).content.toJSON())
-                .deleteRange({ from: start, to: $from.end(depth - 1) })
-                .insertContentAt(start, {
+                .insertContentAt({ from: start, to: block.edge.end }, {
                   type: this.name,
                   content: [
                     {
@@ -716,8 +731,11 @@ const Blockquote = Node.create({
           if (depth === 5) insertAt = 5
           if (depth === 6) insertAt = 5
 
+          console.log("insertAt", insertAt)
+
           const contents = doc.cut(start).nodeAt(depth - 1).content.toJSON()
           return chain()
+
             .insertContentAt($from.end(depth - insertAt), {
               type: this.name,
               content: [
@@ -735,8 +753,9 @@ const Blockquote = Node.create({
             })
 
             .setTextSelection($from.end(depth - insertAt))
+            .insertContentAt(start, block.empty)
             .deleteRange({
-              from: start, to: $from.end(depth - insertAt)
+              from: start + 1, to: $from.end(depth - insertAt)
             })
             .run();
 
