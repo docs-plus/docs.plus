@@ -619,8 +619,7 @@ const Blockquote = Node.create({
             })
             // copy from start to end of the current Heading
             return chain()
-              .insertContentAt($from.end(depth - 1), doc.cut(closestHeadingPos).nodeAt(depth - 1).content.toJSON())
-              .deleteRange({ from: start, to: $from.end(depth - 1) })
+              .deleteRange({ from: start, to: closestHeadingPos })
               .insertContentAt(start, {
                 type: this.name,
                 content: [
@@ -632,14 +631,33 @@ const Blockquote = Node.create({
                   },
                   {
                     type: 'contentWrapper',
-                    content: [
-                      ...doc.slice(start, closestHeadingPos)?.toJSON()?.content
-                    ]
+                    content: doc.slice(start, closestHeadingPos)?.toJSON()?.content
                   },
                 ],
               })
               .setTextSelection(start)
               .run()
+            // return chain()
+            //   .insertContentAt($from.end(depth - 1), doc.cut(closestHeadingPos).nodeAt(depth - 1).content.toJSON())
+            //   .deleteRange({ from: start, to: $from.end(depth - 1) })
+            //   .insertContentAt(start, {
+            //     type: this.name,
+            //     content: [
+            //       {
+            //         type: 'contentHeading',
+            //         attrs: {
+            //           level: attributes.level
+            //         },
+            //       },
+            //       {
+            //         type: 'contentWrapper',
+            //         content: doc.slice(start, closestHeadingPos)?.toJSON()?.content
+
+            //       },
+            //     ],
+            //   })
+            //   .setTextSelection(start)
+            //   .run()
 
             return
           }
