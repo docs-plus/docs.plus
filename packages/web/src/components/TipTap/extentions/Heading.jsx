@@ -478,7 +478,6 @@ const Blockquote = Node.create({
               console.log("the selection block contain Heading block, so find the reletive Headings and copy them into the incoming new Heading")
               return chain()
                 .deleteRange({ from: start, to: closestHeadingPos })
-
                 .insertContentAt(start, {
                   type: this.name,
                   content: [
@@ -525,8 +524,8 @@ const Blockquote = Node.create({
               // copy from start to end of the current Heading
 
               return chain()
-                .deleteRange({ from: start, to: closestHeadingPos })
-
+                .insertContentAt($from.end(depth - 1), doc.cut(closestHeadingPos).nodeAt(depth - 1).content.toJSON())
+                .deleteRange({ from: start, to: $from.end(depth - 1) })
                 .insertContentAt(start, {
                   type: this.name,
                   content: [
@@ -538,7 +537,9 @@ const Blockquote = Node.create({
                     },
                     {
                       type: 'contentWrapper',
-                      content: doc.slice(start, closestHeadingPos)?.toJSON()?.content
+                      content: [
+                        ...doc.slice(start, closestHeadingPos)?.toJSON()?.content
+                      ]
                     },
                   ],
                 })
@@ -638,8 +639,6 @@ const Blockquote = Node.create({
                 ],
               })
               .setTextSelection(start)
-
-
               .run()
 
             return
@@ -652,10 +651,29 @@ const Blockquote = Node.create({
 
           // chain().insertContentAt(lastOnePos, "<p>New Dataa</p>")
           // return true;
-          const dataContent = doc.slice(start, lastChildHeadingPos)?.toJSON()?.content
+          // const dataContent = doc.slice(start, lastChildHeadingPos)?.toJSON()?.content
+          // return chain()
+          //   .deleteRange({ from: start, to: lastChildHeadingPos })
+          //   .insertContentAt(start, {
+          //     type: this.name,
+          //     content: [
+          //       {
+          //         type: 'contentHeading',
+          //         attrs: {
+          //           level: attributes.level
+          //         },
+          //       },
+          //       {
+          //         type: 'contentWrapper',
+          //         content: dataContent
+          //       },
+          //     ],
+          //   })
+          //   .setTextSelection(start)
+          //   .run();
+
           return chain()
-            .deleteRange({ from: start, to: lastChildHeadingPos })
-            .insertContentAt(start, {
+            .insertContentAt(block.edge.end, {
               type: this.name,
               content: [
                 {
@@ -666,11 +684,14 @@ const Blockquote = Node.create({
                 },
                 {
                   type: 'contentWrapper',
-                  content: dataContent
+                  content: doc.cut(start).nodeAt(depth - 1).content.toJSON()
                 },
               ],
             })
-            .setTextSelection(start)
+            // .insertContentAt($from.pos, "<p><br></p>")
+            // .insertContentAt(block.edge.end + 6, doc.slice($anchor.pos, block.parent.end).toJSON().content)
+            .setTextSelection(block.edge.end + 2)
+            .deleteRange({ from: start + 1, to: block.edge.end })
             .run();
 
           return;
@@ -781,11 +802,26 @@ const Blockquote = Node.create({
 
 
 
-          console.log("newDepth", newDepth)
+          console.log("newDepth", {
+            newDepth,
+            // d: $from.nodeAt($from.end(newDepth - 1)),
+            from: $from,
+            index: $from.index(newDepth),
+            after: $from.indexAfter(newDepth),
+            // posAt: $from.posAtIndex($from.indexAfter(newDepth), newDepth),
+            // posAt2: $from.posAtIndex(start, depth),
+            commingLevel,
+          })
+
+
+          let posAt = $from.posAtIndex($from.indexAfter(newDepth), newDepth)
+          if (commingLevel !== 1) {
+            posAt = $from.end(newDepth)
+          }
 
           const contents = doc.cut(start).nodeAt(depth - 1).content.toJSON()
           return chain()
-            .insertContentAt($from.end(newDepth), {
+            .insertContentAt(posAt, {
               type: this.name,
               content: [
                 {
@@ -800,11 +836,10 @@ const Blockquote = Node.create({
                 },
               ],
             })
-
-            .setTextSelection($from.end(newDepth))
+            .setTextSelection(posAt)
             .insertContentAt(start, block.empty)
             .deleteRange({
-              from: start + 1, to: $from.end(newDepth)
+              from: start, to: block.edge.end
             })
             .run();
 
