@@ -855,10 +855,10 @@ const Blockquote = Node.create({
               ],
             })
             .setTextSelection(posAt)
-            .insertContentAt(start, block.empty)
             .deleteRange({
-              from: start, to: block.edge.end
+              from: start + 1, to: block.edge.end
             })
+            // .insertContentAt(start, block.empty)
             .run();
 
         }
