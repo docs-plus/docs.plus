@@ -307,7 +307,8 @@ const Blockquote = Node.create({
                 "text": " "
               }
             ]
-          }
+          },
+          paragraph: { "type": "paragraph", }
         }
 
 
@@ -336,15 +337,18 @@ const Blockquote = Node.create({
 
           console.log({
             main: doc.cut(start, block.parent.end).content,
-            dobo: doc.slice(start, block.parent.end),
+            dobo: doc.slice($anchor.pos, block.parent.end).toJSON(),
             start,
             block,
             copy: doc.cut(start).nodeAt(depth - 1),
             copy1: doc.cut(start).nodeAt(depth - 1),
             commingLevel,
-            parentLevel
+            parentLevel,
+            test: doc.cut($anchor.pos, block.parent.end).content.toJSON(),
+            roborrr: doc.slice(start, block.parent.end)?.content.toJSON()[0].content,
+            content: doc.slice(start, block.parent.end).toJSON().content
           })
-
+          // const content = doc.slice(start, block.parent.end)?.content.toJSON()[0].content
           return chain()
             .insertContentAt(block.edge.end, {
               type: this.name,
@@ -357,12 +361,10 @@ const Blockquote = Node.create({
                 },
                 {
                   type: 'contentWrapper',
-                  content: doc.cut(start).nodeAt(depth - 1).content.toJSON()
+                  content: doc.slice(start, block.parent.end)?.content.toJSON()[0].content
                 },
               ],
             })
-            // .insertContentAt($from.pos, "<p><br></p>")
-            // .insertContentAt(block.edge.end + 6, doc.slice($anchor.pos, block.parent.end).toJSON().content)
             .setTextSelection(block.edge.end + 2)
             .deleteRange({ from: start + 1, to: block.edge.end })
             .run();
@@ -428,19 +430,13 @@ const Blockquote = Node.create({
             parentLevel,
             block,
             depthDiff,
-            // data1: doc.slice(start, lastOnePos).toJSON(),
             k: attributes.level,
             nextLevel,
-            // lastOnePos,
-            // copy: doc.slice(start, lastOnePos)?.toJSON()?.content,
             copy: doc.slice(start, lastChildHeadingPos)?.toJSON()?.content,
             containHeading,
             closestHeadingPos,
             lastChildHeadingPos,
             closestHeadingLevel,
-            // row: doc.slice(start, block.edge.end)?.toJSON()?.content
-            // index: $from.posAtIndex(start, depth)
-            // data
           })
 
           if (nextLevel === 0) {
@@ -598,8 +594,6 @@ const Blockquote = Node.create({
           // if comming level is grather than the closestHEadingLevel, break the heading chain
           if (commingLevel > closestHeadingLevel) {
             console.log("break the chain", "if comming level is grather than the closestHEadingLevel, break the heading chain")
-
-
             console.log({
               data: [
                 {
@@ -662,6 +656,34 @@ const Blockquote = Node.create({
             return
           }
 
+          if (commingLevel > parentLevel && commingLevel < closestHeadingLevel) {
+            console.log("commingLevel > parentLevel && commingLevel < closestHeadingLevel")
+            // copy entire data to the end and put them to comming level
+            console.log({
+              dat: doc.slice(start, block.parent.end)?.content.toJSON()[0].content
+            })
+            const dataContent = doc.slice(start, block.parent.end)?.content.toJSON()[0].content
+            return chain()
+              // .deleteRange({ from: start, to: block.parent.end })
+              .insertContentAt({ from: start, to: block.parent.end }, {
+                type: this.name,
+                content: [
+                  {
+                    type: 'contentHeading',
+                    attrs: {
+                      level: attributes.level
+                    },
+                  },
+                  {
+                    type: 'contentWrapper',
+                    content: dataContent
+                  },
+                ],
+              })
+              .setTextSelection(start)
+              .run();
+          }
+
 
           console.log("not simple")
 
@@ -706,9 +728,9 @@ const Blockquote = Node.create({
                 },
               ],
             })
-            // .insertContentAt($from.pos, "<p><br></p>")
             // .insertContentAt(block.edge.end + 6, doc.slice($anchor.pos, block.parent.end).toJSON().content)
             .setTextSelection(block.edge.end + 2)
+            .insertContentAt($from.pos, "<p></p>")
             .deleteRange({ from: start + 1, to: block.edge.end })
             .run();
 
@@ -746,10 +768,6 @@ const Blockquote = Node.create({
           // but if the pos is 4 and the income is 1, this 1 must be just inject in depth === 0
 
           const depthDiff = Math.abs(parentLevel - commingLevel)
-
-
-
-
 
           let insertAt = 3
           switch (depthDiff) {
@@ -823,6 +841,7 @@ const Blockquote = Node.create({
           console.log("newDepth", {
             newDepth,
             // d: $from.nodeAt($from.end(newDepth - 1)),
+            depth,
             from: $from,
             index: $from.index(newDepth),
             after: $from.indexAfter(newDepth),
@@ -941,6 +960,7 @@ const Blockquote = Node.create({
 
           // { from: $from.start(depth) - 1, to: $from.end(depth) }
           // return false
+          // TODO: use delete note is better, if there is no content in contetnWrapper block
           return this.editor.chain()
             .insertContentAt({ from: $from.start(depth) - 1, to: $from.end(depth) }, contentWrapper.content.toJSON())
             .setTextSelection(start)
@@ -951,13 +971,15 @@ const Blockquote = Node.create({
         const { state, view } = editor;
         const { schema, selection, doc, tr } = state;
         const { $head, $anchor, $from, $to } = selection;
-        const { start, end, depth } = $from.blockRange($to);
 
 
         // TODO: limited just for contentHeading,contentWrapper
         if ($head.parent.type.name !== schema.nodes.contentHeading.name) {
           return false;
         }
+
+        const { start, end, depth } = $from.blockRange($to);
+
 
         // if a user Enter in the contentHeading block,
         // should go to the next block, which is contentWrapper
@@ -967,7 +989,7 @@ const Blockquote = Node.create({
 
         console.log("yes new", {
           $head, state, $anchor, parent,
-          content: parent.lastChild.firstChild.type.name,
+          content: parent?.lastChild?.firstChild?.type.name,
           sd: Selection.near(state.doc.resolve($from.pos), 1),
           // after: $head.start(depth + 1),
           // newResolve: $head.node(depth + 1)
@@ -976,24 +998,25 @@ const Blockquote = Node.create({
         // FIXME: not working
         // some times the contentWrapper cleaned up, so it should be create first
         // otherwise just the cursour must move to contnetWrapper
+        // TODO: find better way for this 4
         if (parent?.content?.content.length === 1 || parent.lastChild.firstChild.type.name === 'heading') {
-          console.log("yes iminininin")
-          editor.commands
-            .insertContentAt($anchor.pos, {
+          console.log("yes iminininin", parent.lastChild.firstChild.contentsize === 0, parent.lastChild.firstChild)
+          //If there is not any contentWrapper
+          if (parent.lastChild.firstChild.content.size === 0) {
+            return editor.commands.insertContentAt($anchor.pos, {
               type: 'contentWrapper',
               content: [
                 {
-                  "type": "paragraph",
-                  "content": [
-                    {
-                      "type": "text",
-                      "text": " "
-                    }
-                  ]
+                  "type": "paragraph"
                 },
               ]
 
             })
+
+          }
+          // move to
+          editor.commands
+            .insertContentAt(start + 4, "<p></p>")
           return true;
         }
 
