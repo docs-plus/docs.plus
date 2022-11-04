@@ -1000,9 +1000,10 @@ const Blockquote = Node.create({
         // otherwise just the cursour must move to contnetWrapper
         // TODO: find better way for this 4
         if (parent?.content?.content.length === 1 || parent.lastChild.firstChild.type.name === 'heading') {
-          console.log("yes iminininin", parent.lastChild.firstChild.contentsize === 0, parent.lastChild.firstChild)
+          // console.log("yes iminininin", parent.lastChild.firstChild.contentsize === 0, parent.lastChild.firstChild)
           //If there is not any contentWrapper
-          if (parent.lastChild.firstChild.content.size === 0) {
+          console.log(parent.lastChild)
+          if (parent.lastChild.content.size === 0 || parent.lastChild?.firstChild?.content.size === 0) {
             return editor.commands.insertContentAt($anchor.pos, {
               type: 'contentWrapper',
               content: [
