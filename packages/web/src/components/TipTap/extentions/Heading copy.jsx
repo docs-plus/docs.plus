@@ -403,13 +403,11 @@ const Blockquote = Node.create({
             //   data.push(node)
             // }
             if (node.type.name === "heading" && pos >= start) {
-              console.log("==========>", { ss: (+commingLevel + node.firstChild.attrs.level), commingLevel, type: node.type.name, lvl: node.firstChild.attrs.level })
               if (!containHeading) containHeading = true;
               if (closestHeadingLevel === 0) {
                 closestHeadingPos = pos
                 closestHeadingLevel = node.firstChild.attrs.level
               }
-
 
               console.log({
                 node,
@@ -424,12 +422,8 @@ const Blockquote = Node.create({
                 lastChildHeadingPos = pos + node.content.size
                 firstChildHeadingPos = pos
               }
-              console.log({
-                level: node.firstChild.attrs.level,
-                commingLevel
-              })
 
-              if (rowr === 0 && node.firstChild.attrs.level >= commingLevel) {
+              if (rowr === 0 && node.firstChild.attrs.level <= commingLevel) {
                 console.log("rorororoororoo")
                 rowr = pos
               }
@@ -684,8 +678,8 @@ const Blockquote = Node.create({
             // copy entire data to the end and put them to comming level
             console.log({
               row: doc.cut(start, rowr)?.content.toJSON(),
-              // dat1: doc.cut(start, rowr)?.content.toJSON()[0].content[0].content,
-              // dat2: doc.slice(start, rowr)?.content.toJSON(),
+              dat1: doc.cut(start, rowr)?.content.toJSON()[0].content[0].content,
+              dat2: doc.slice(start, rowr)?.content.toJSON(),
               rowr
             })
             const dataContent = doc.slice(start, rowr)?.content.toJSON()
@@ -786,6 +780,8 @@ const Blockquote = Node.create({
 
           // return insertHeading(this.name, chain, start, end, content, attributes)
         }
+
+
 
         if (commingLevel < parentLevel) {
           console.log("break the chain, cominglevel is grether than parentLevel")
@@ -914,218 +910,61 @@ const Blockquote = Node.create({
           let flagOne = true
           let prevLevel = 0
 
+          doc.nodesBetween(start, posAt, function (node, pos, parent, index) {
 
+            if (node.type.name === "paragraph" && pos >= start && firstHEading) {
+              console.log({
+                // node,
+                name: node.type.name,
+                clevel: commingLevel,
+                // json: node.toJSON(),
+                depth,
+                index
+              })
+              data.push(node.toJSON())
+            }
+
+            if (node.type.name === "heading" && pos >= start) {
+
+              firstHEading = false
+              if (prevLevel === 0)
+                prevLevel = node.firstChild?.attrs?.level
+
+              console.log({
+                // node,
+                le: node.firstChild?.attrs?.level,
+                name: node.type.name,
+                PL: prevLevel,
+                // clevel: commingLevel,
+                // json: node.toJSON(),
+                // depth,
+                index
+              })
+
+
+              if (flagOne) {
+                if (index === 1) {
+                  flagOne = false
+                } else {
+                  if (prevLevel >= node.firstChild?.attrs?.level)
+                    data.push({ ...node.toJSON(), le: node.firstChild?.attrs?.level })
+                }
+              }
+
+              prevLevel = node.firstChild?.attrs?.level
+
+
+
+            }
+
+
+
+          })
+
+          console.log(data)
 
 
           if (commingLevel === 1) {
-
-            doc.nodesBetween(start, posAt, function (node, pos, parent, index) {
-
-              if (node.type.name === "paragraph" && pos >= start && firstHEading) {
-
-                data.push(node.toJSON())
-              }
-
-              if (node.type.name === "heading" && pos >= start) {
-
-                firstHEading = false
-                if (prevLevel === 0)
-                  prevLevel = node.firstChild?.attrs?.level
-
-                console.log({
-                  // node,
-                  le: node.firstChild?.attrs?.level,
-                  name: node.type.name,
-                  PL: prevLevel,
-                  // clevel: commingLevel,
-                  // json: node.toJSON(),
-                  // depth,
-                  index
-                })
-
-
-                if (flagOne) {
-                  // if (index === 1) {
-                  //   flagOne = false
-                  // } else {
-                  if (prevLevel >= node.firstChild?.attrs?.level)
-                    data.push({ ...node.toJSON(), le: node.firstChild?.attrs?.level })
-                  // }
-                }
-
-                prevLevel = node.firstChild?.attrs?.level
-              }
-
-
-
-            })
-
-            console.log(data)
-            console.log({
-              contents,
-              start, posAt,
-              $from,
-              index: $from.indexAfter(newDepth),
-              contents1: doc.cut(start).nodeAt(1),
-              contents2: doc.cut(start, block.ancesster.end).content.toJSON(),
-              t: schema.nodes.contentHeading,
-              dir: doc.copy(doc.cut(start).nodeAt(1).content)
-            })
-            return chain()
-
-              .insertContentAt(posAt, {
-                type: this.name,
-                content: [
-                  {
-                    type: 'contentHeading',
-                    attrs: {
-                      level: attributes.level
-                    },
-                  },
-                  {
-                    type: 'contentWrapper',
-                    content: data
-                  },
-                ],
-              })
-              .insertContentAt(start, "<p></p>")
-              .setTextSelection(posAt)
-              .deleteRange({
-                from: start + 1, to: posAt
-              })
-              .run()
-          }
-
-          if (commingLevel === 2) {
-            console.log("coming level 2")
-            doc.nodesBetween(start, posAt, function (node, pos, parent, index) {
-
-              if (node.type.name === "paragraph" && pos >= start && firstHEading) {
-
-                data.push(node.toJSON())
-              }
-
-              if (node.type.name === "heading" && pos >= start) {
-
-                firstHEading = false
-                if (prevLevel === 0)
-                  prevLevel = node.firstChild?.attrs?.level
-
-                console.log({
-                  // node,
-                  le: node.firstChild?.attrs?.level,
-                  name: node.type.name,
-                  PL: prevLevel,
-                  // clevel: commingLevel,
-                  // json: node.toJSON(),
-                  // depth,
-                  index
-                })
-
-
-                if (flagOne) {
-                  if (index === 1) {
-                    flagOne = false
-                  } else {
-                    if (prevLevel >= node.firstChild?.attrs?.level && node.firstChild?.attrs?.level !== commingLevel)
-                      data.push({ ...node.toJSON(), le: node.firstChild?.attrs?.level })
-                  }
-                }
-
-                prevLevel = node.firstChild?.attrs?.level
-
-
-
-              }
-
-
-
-            })
-            console.log(data)
-
-            console.log({
-              contents,
-              start, posAt,
-              $from,
-              index: $from.indexAfter(newDepth),
-              contents1: doc.cut(start).nodeAt(1),
-              contents2: doc.cut(start, block.ancesster.end).content.toJSON(),
-              t: schema.nodes.contentHeading,
-              dir: doc.copy(doc.cut(start).nodeAt(1).content)
-            })
-            return chain()
-
-              .insertContentAt($from.end(newDepth + 2) + 1, {
-                type: this.name,
-                content: [
-                  {
-                    type: 'contentHeading',
-                    attrs: {
-                      level: attributes.level
-                    },
-                  },
-                  {
-                    type: 'contentWrapper',
-                    content: data
-                  },
-                ],
-              })
-              .insertContentAt(start, "<p></p>")
-              .setTextSelection($from.end(newDepth + 2) + 1)
-              .deleteRange({
-                from: start + 1, to: $from.end(newDepth + 2) + 1
-              })
-              .run()
-          }
-
-
-          if (commingLevel === 3) {
-            console.log("coming level 3")
-            doc.nodesBetween(start, posAt, function (node, pos, parent, index) {
-
-              if (node.type.name === "paragraph" && pos >= start && firstHEading) {
-
-                data.push(node.toJSON())
-              }
-
-              if (node.type.name === "heading" && pos >= start) {
-
-                firstHEading = false
-                if (prevLevel === 0)
-                  prevLevel = node.firstChild?.attrs?.level
-
-                console.log({
-                  // node,
-                  le: node.firstChild?.attrs?.level,
-                  name: node.type.name,
-                  PL: prevLevel,
-                  // clevel: commingLevel,
-                  // json: node.toJSON(),
-                  // depth,
-                  index
-                })
-
-
-                if (flagOne) {
-                  if (index === 1) {
-                    flagOne = false
-                  } else {
-                    if (prevLevel >= node.firstChild?.attrs?.level && node.firstChild?.attrs?.level !== commingLevel)
-                      data.push({ ...node.toJSON(), le: node.firstChild?.attrs?.level })
-                  }
-                }
-
-                prevLevel = node.firstChild?.attrs?.level
-
-
-
-              }
-
-
-
-            })
-            console.log(data)
-
             console.log({
               contents,
               start, posAt,
@@ -1165,29 +1004,10 @@ const Blockquote = Node.create({
 
 
 
-          console.log("breack but how")
-          console.log({
-            $from,
-            start0: start,
-            index: $from.index(depth),
-            posAtIndex: $from.posAtIndex($from.index(depth), newDepth),
-            start: $from.start(depth - 3),
-            end: $from.end(newDepth + 2) + 1,
-            parentLevel,
-            commingLevel
-          })
-
-          // if (commingLevel < parentLevel) {
-          //   console.log("kjdkajskdjasd")
-          //   return
-          // }
-
-          // copy entire content to the end and pase right after start + 1
 
 
           return chain()
-
-            .insertContentAt($from.end(newDepth + 2) + 1, {
+            .insertContentAt(posAt, {
               type: this.name,
               content: [
                 {
@@ -1198,45 +1018,22 @@ const Blockquote = Node.create({
                 },
                 {
                   type: 'contentWrapper',
-                  content: data
+                  content: contents
                 },
               ],
             })
             .insertContentAt(start, block.paragraph, { updateSelection: false })
-
+            .setTextSelection(posAt)
             .deleteRange({
-              from: start + 1, to: $from.end(newDepth + 2) + 1
+              from: start + 1, to: block.edge.end
             })
-            .run()
-
-
-          // return chain().insertContentAt($from.end(newDepth + 2) + 1, "<p>==>sss<===</p>")
-
-          // return chain()
-          //   .insertContentAt(posAt, {
-          //     type: this.name,
-          //     content: [
-          //       {
-          //         type: 'contentHeading',
-          //         attrs: {
-          //           level: attributes.level
-          //         },
-          //       },
-          //       {
-          //         type: 'contentWrapper',
-          //         content: contents
-          //       },
-          //     ],
-          //   })
-          //   .insertContentAt(start, block.paragraph, { updateSelection: false })
-          //   .setTextSelection(posAt)
-          //   .deleteRange({
-          //     from: start + 1, to: block.edge.end
-          //   })
-          //   .insertContentAt(start, block.paragraph, { updateSelection: false })
-          //   .run();
+            .insertContentAt(start, block.paragraph, { updateSelection: false })
+            .run();
 
         }
+
+
+
 
 
 
@@ -1357,8 +1154,8 @@ const Blockquote = Node.create({
           //If there is not any contentWrapper
           console.log(parent.lastChild)
           // if first child of the heading is another heading
-          // console.log(parent.lastChild.type.name === "contentWrapper")
-          // console.log(parent.lastChild.content.lastChild.type.name === "heading")
+          console.log(parent.lastChild.type.name === "contentWrapper")
+          console.log(parent.lastChild.content.lastChild.type.name === "heading")
           // if the contentWrapper does not contain any content
           // or if
           if (parent.lastChild.content.size === 0 || parent.lastChild?.firstChild?.content.size === 0) {
