@@ -903,6 +903,66 @@ const Blockquote = Node.create({
 
           const contents = doc.cut(start).nodeAt(depth - 1).content.toJSON()
 
+          console.log("content =>", contents, "posAt=>", posAt)
+
+          const data = []
+          let firstHEading = true
+          let flagOne = true
+          let prevLevel = 0
+
+          doc.nodesBetween(start, posAt, function (node, pos, parent, index) {
+
+            if (node.type.name === "paragraph" && pos >= start && firstHEading) {
+              console.log({
+                // node,
+                name: node.type.name,
+                clevel: commingLevel,
+                // json: node.toJSON(),
+                depth,
+                index
+              })
+              data.push(node.toJSON())
+            }
+
+            if (node.type.name === "heading" && pos >= start) {
+
+              firstHEading = false
+              if (prevLevel === 0)
+                prevLevel = node.firstChild?.attrs?.level
+
+              console.log({
+                // node,
+                le: node.firstChild?.attrs?.level,
+                name: node.type.name,
+                PL: prevLevel,
+                // clevel: commingLevel,
+                // json: node.toJSON(),
+                // depth,
+                index
+              })
+
+
+              if (flagOne) {
+                if (index === 1) {
+                  flagOne = false
+                } else {
+                  if (prevLevel >= node.firstChild?.attrs?.level)
+                    data.push({ ...node.toJSON(), le: node.firstChild?.attrs?.level })
+                }
+              }
+
+              prevLevel = node.firstChild?.attrs?.level
+
+
+
+            }
+
+
+
+          })
+
+          console.log(data)
+
 
           if (commingLevel === 1) {
             console.log({
@@ -928,46 +988,21 @@ const Blockquote = Node.create({
                   },
                   {
                     type: 'contentWrapper',
-                    content: [
-                      ...doc.cut(start).nodeAt(1).content.toJSON()
-                    ]
+                    content: data
                   },
                 ],
               })
-              .insertContentAt(start, "<p>000</p>")
-              // .insertContentAt(posAt + 8, "<p>000222</p>")
+              .insertContentAt(start, "<p></p>")
+              .setTextSelection(posAt)
               .deleteRange({
                 from: start + 1, to: posAt
               })
-
-            return chain()
-              .insertContentAt(posAt, {
-                type: this.name,
-                content: [
-                  {
-                    type: 'contentHeading',
-                    attrs: {
-                      level: attributes.level
-                    },
-                  },
-                  {
-                    type: 'contentWrapper',
-                    content: contents
-                  },
-                ],
-              })
-              .insertContentAt(start, block.paragraph, { updateSelection: false })
-              .setTextSelection(posAt)
-              .deleteRange({
-                from: start + 1, to: block.edge.end
-              })
-              .insertContentAt(start, block.paragraph, { updateSelection: false })
-              .run();
+              .run()
           }
 
 
 
-          console.log("content =>", contents, "posAt=>", posAt)
+
 
 
 
