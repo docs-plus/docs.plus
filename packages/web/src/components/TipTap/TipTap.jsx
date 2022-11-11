@@ -34,7 +34,7 @@ import ListItem from '@tiptap/extension-list-item'
 import OrderedList from '@tiptap/extension-ordered-list'
 // import { findWrapping } from "prosemirror-transform"
 import HardBreak from '@tiptap/extension-hard-break'
-import Blockquote from './extentions/Heading'
+import Heading from './extentions/Heading'
 
 
 import Bold from '@tiptap/extension-bold'
@@ -89,6 +89,20 @@ const Paragraph = Node.create({
   },
 })
 
+const Button = Node.create({
+  name: 'button',
+  group: 'block',
+  content: 'inline*',
+  parseHTML() {
+    return [
+      { tag: 'button' },
+    ]
+  },
+  renderHTML({ HTMLAttributes }) {
+    return ['button', mergeAttributes(HTMLAttributes), 0]
+  },
+})
+
 const Text = Node.create({
   name: 'text',
   group: 'inline',
@@ -122,7 +136,11 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       Text,
       ListItem,
       OrderedList,
-      Blockquote,
+      Heading.configure({
+        persist: true,
+      }),
+      Button,
+
       // Note,
       // NoteGroup,
       ContentHeading,

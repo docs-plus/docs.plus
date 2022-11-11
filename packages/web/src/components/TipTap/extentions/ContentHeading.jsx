@@ -11,8 +11,8 @@ const HeadingsTitle = Node.create({
   group: 'block',
   defining: true,
   draggable: false,
-  selectable: true,
-  isolating: false,
+  selectable: false,
+  isolating: true,
   addOptions() {
     return {
       HTMLAttributes: {
@@ -53,7 +53,54 @@ const HeadingsTitle = Node.create({
     decorations: ({ doc, selection }) => {
       console.log("222221123123123")
     }
-  }
+  },
+  // addNodeView() {
+  //   return ({ editor, getPos, node, HTMLAttributes, }) => {
+  //     console.log({
+  //       HTMLAttributes,
+  //       node,
+  //       level: node.attrs.level
+  //     })
+  //     const level = node.attrs.level
+  //     const dom = document.createElement('div');
+  //     dom.classList.add('contentHeading')
+
+  //     const href = document.createElement('a')
+  //     href.classList.add('unselectable')
+  //     href.contentEditable = false
+  //     href.innerHTML = "#"
+  //     dom.append(href)
+  //     const content = document.createElement(`h${ level }`)
+  //     content.setAttribute('level', level)
+  //     dom.append(content)
+
+  //     href.addEventListener('click', () => {
+  //       alert("Hooray")
+  //       editor
+  //         .chain()
+  //         .focus()
+  //         .run()
+  //     })
+
+  //     return {
+  //       dom,
+  //       contentDOM: content,
+  //       ignoreMutation(mutation) {
+  //         if (mutation.type === 'selection') {
+  //           return false;
+  //         }
+  //         return !dom.contains(mutation.target) || dom === mutation.target;
+  //       },
+  //       update: updatedNode => {
+  //         if (updatedNode.type !== this.type) {
+  //           return false;
+  //         }
+  //         return true;
+  //       },
+  //     };
+  //   }
+  // }
+
 
 });
 

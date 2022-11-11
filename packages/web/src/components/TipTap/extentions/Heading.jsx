@@ -1,7 +1,13 @@
-import { Node, mergeAttributes, wrappingInputRule, findParentNode, findChildren } from '@tiptap/core';
+import { Node, mergeAttributes, wrappingInputRule, findParentNode, findChildren, isActive, textblockTypeInputRule } from '@tiptap/core';
 import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from "prosemirror-model"
 import { Selection, Plugin, PluginKey, TextSelection } from 'prosemirror-state';
 import { Transform } from 'prosemirror-transform'
+
+
+// !Three: Refactore, review the code and add more green do
+// !Four: the breaking chain function must be refactor from the beging,
+// this task must examin fir each depth, beacue each depth has their own conent and breaking chaine process.
+
 
 const isNodeVisible = (position, editor) => {
   const node = editor.view.domAtPos(position).node;
@@ -14,11 +20,66 @@ const setGapCursor = (editor, direction) => {
   const { schema, selection } = state;
   const { empty, $anchor } = selection;
   const hasGapCursorExtension = !!extensionManager.extensions.find(extension => extension.name === 'gapCursor');
+
+  // const headings = findParentNode(node => node.type === schema.nodes.contentHeading)(selection);
+
+  // const detailsSummaries = findChildren(details.node, node => node.type === newState.schema.nodes.contentHeading);
+
+
+  console.log({
+    name: $anchor.parent.type.name,
+    $anchor,
+    vewi: editor.view,
+    start: $anchor.start($anchor.depth),
+    end: $anchor.end($anchor.depth),
+    node: $anchor.node($anchor.depth),
+    after: $anchor.after($anchor.depth),
+    before: $anchor.after($anchor.depth),
+    index: $anchor.index($anchor.depth),
+    indexAfter: $anchor.indexAfter($anchor.depth),
+    max: $anchor.max(selection),
+    min: $anchor.min(selection),
+    // marksAcross: $anchor.marksAcross($anchor.end($anchor.depth)),
+    // empty,
+    // end: $anchor.before($anchor.depth - 1),
+    // rroo: $anchor.doc.nodeAt($anchor.index($anchor.depth)),
+    // typeName0: $anchor.doc.nodeAt($anchor.start($anchor.depth)),
+    // typeName1: $anchor.doc.nodeAt($anchor.start($anchor.depth) + 1),
+    // typeName2: $anchor.doc.nodeAt($anchor.start($anchor.depth) + 2),
+    // ro1: editor.view.domAtPos($anchor.end($anchor.depth) + 1),
+    // ro2: editor.view.domAtPos($anchor.end($anchor.depth) - 1),
+    nodeDOM1: editor.view.nodeDOM($anchor.start($anchor.depth) + 1),
+    nodeDOM2: editor.view.nodeDOM($anchor.start($anchor.depth) - 1),
+    // json: state,
+    // parent: $anchor.doc.nodeAt($anchor.end($anchor.depth) + 1).parent
+  })
+
+
+
+  if (direction === "up" && $anchor.parent.type.name === schema.nodes.contentHeading.name) {
+    const pos = $anchor.before($anchor.depth - 1) - 1
+    return editor.chain().setTextSelection(pos).run()
+  }
+
+  // if (direction === "down" && ($anchor.parent.type.name === "heading" || $anchor.parent.type.name === "contentWrapper" || ($anchor.parent.type.name === "paragraph" && !editor.view.nodeDOM($anchor.end($anchor.depth))))) {
+  //   const pos = $anchor.after($anchor.depth)
+  //   // let size = $anchor.doc.nodeAt($anchor.after($anchor.depth))?.firstChild.content.size
+  //   // if (!size) size = $anchor.doc.nodeAt($anchor.after($anchor.depth) + 2)?.firstChild.content.size
+  //   console.log("whjhakljshdkjhaskjh", pos)
+  //   return editor.chain().setTextSelection(pos + 2).run()
+  // }
+
+  if (direction === "up") {
+    return false
+  }
+
   if (!empty
     || $anchor.parent.type.name !== schema.nodes.contentHeading.name
+    || $anchor.textOffset === 0 && $anchor.doc.nodeAt($anchor.after($anchor.depth)).type.name === "heading"
     || !hasGapCursorExtension) {
     return false;
   }
+  console.log("im in", direction)
   if (direction === 'right'
     && $anchor.parentOffset !== ($anchor.parent.nodeSize - 2)) {
     return false;
@@ -32,6 +93,7 @@ const setGapCursor = (editor, direction) => {
     return false;
   }
   const isOpen = isNodeVisible(headings.start + headingsContent[0].pos + 1, editor);
+  console.log("===>>", direction, isOpen)
   if (isOpen) {
     return false;
   }
@@ -46,6 +108,22 @@ const setGapCursor = (editor, direction) => {
   tr.scrollIntoView();
   view.dispatch(tr);
   return true;
+};
+
+const findClosestVisibleNode = ($pos, predicate, editor) => {
+  for (let i = $pos.depth; i > 0; i -= 1) {
+    const node = $pos.node(i);
+    const match = predicate(node);
+    const isVisible = isNodeVisible($pos.start(i), editor);
+    if (match && isVisible) {
+      return {
+        pos: i > 0 ? $pos.before(i) : 0,
+        start: $pos.start(i),
+        depth: i,
+        node,
+      };
+    }
+  }
 };
 
 
@@ -93,7 +171,6 @@ const LiftBlock = (nodeName, tr, range, dispatch) => {
 const liftBlockRange = (nodeName, tr, range, dispatch) => {
 
 }
-
 const WrapBlock = (tr, range, target) => {
   let { $from, $to, depth } = range
 
@@ -127,9 +204,16 @@ const insertHeading = (name, chain, start, end, content, attributes) => {
 const inputRegex = /^\s*>\s$/;
 const Blockquote = Node.create({
   name: 'heading',
+  content: 'contentHeading contentWrapper*',
+  group: 'contentWrapper',
+  defining: true,
+  isolating: true,
+  allowGapCursor: false,
   addOptions() {
     return {
       levels: [1, 2, 3, 4, 5, 6],
+      persist: false,
+      openClassName: 'is-open',
       HTMLAttributes: {
         class: "heading",
         "data-depth": 0
@@ -137,17 +221,121 @@ const Blockquote = Node.create({
     };
   },
   addAttributes() {
+    if (!this.options.persist) {
+      return [];
+    }
     return {
+      open: {
+        default: false,
+        parseHTML: element => element.hasAttribute('open'),
+        renderHTML: ({ open }) => {
+          if (!open) {
+            return {};
+          }
+          return { open: '' };
+        },
+      },
       level: {
         default: 1,
         rendered: false,
       },
     };
   },
-  content: 'contentHeading contentWrapper*',
-  group: 'block',
-  defining: true,
-  isolating: true,
+  addNodeView() {
+    return ({ editor, getPos, node, HTMLAttributes, }) => {
+      const dom = document.createElement('div');
+
+      const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        'data-type': this.name,
+      });
+      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
+
+      const toggle = document.createElement('button')
+      toggle.contentEditable = false
+      toggle.innerHTML = "<span>toggle</span>"
+      toggle.classList.add('unselectable')
+      dom.append(toggle)
+
+
+      const href = document.createElement('a')
+      href.classList.add('unselectable')
+      href.contentEditable = false
+
+      href.innerHTML = "#"
+      dom.append(href)
+
+      const content = document.createElement('div')
+      content.classList.add('wrapBlock')
+      dom.append(content);
+
+      if (!node.attrs.open) {
+        dom.classList.add(this.options.openClassName);
+      } else {
+        dom.classList.remove(this.options.openClassName);
+      }
+
+      const toggleHeadingContent = () => {
+        console.log("what", node.attrs.open)
+        dom.classList.toggle(this.options.openClassName);
+        const event = new Event('toggleHeadingsContent');
+        const detailsContent = content.querySelector(':scope > div.contentWrapper');
+        detailsContent === null || detailsContent === void 0 ? void 0 : detailsContent.dispatchEvent(event);
+      };
+
+      href.addEventListener('click', () => {
+        alert("Hooray")
+        editor
+          .chain()
+          .focus()
+          .run()
+      })
+
+      // TODO: this migth face to problem in the slow processor
+      // TODO: saving open in here is not okay, because I save this open in contentWrapper also
+      toggle.addEventListener('click', () => {
+        toggleHeadingContent();
+        if (!this.options.persist) {
+          editor.commands.focus();
+          return;
+        }
+        if (editor.isEditable && typeof getPos === 'function') {
+          editor
+            .chain()
+            .focus()
+            .command(({ tr }) => {
+              const pos = getPos();
+              const currentNode = tr.doc.nodeAt(pos);
+              if ((currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type) {
+                return false;
+              }
+              tr.setNodeMarkup(pos, undefined, {
+                open: !currentNode.attrs.open,
+              });
+              return true;
+            })
+            .run();
+        }
+      });
+
+
+      return {
+        dom,
+        contentDOM: content,
+        ignoreMutation(mutation) {
+          if (mutation.type === 'selection') {
+            return false;
+          }
+          return !dom.contains(mutation.target) || dom === mutation.target;
+        },
+        update: updatedNode => {
+          if (updatedNode.type !== this.type) {
+            return false;
+          }
+          return true;
+        },
+      };
+    };
+  },
   parseHTML() {
     return [
       { tag: 'div' },
@@ -489,7 +677,8 @@ const Blockquote = Node.create({
                   ],
                 })
                 // .deleteRange({ from: start, to: block.parent.end })
-                .setTextSelection(start)
+                // this 1 mean skip the toggle button depth
+                .setTextSelection(start + 1)
                 .run()
             }
 
@@ -512,7 +701,8 @@ const Blockquote = Node.create({
                     },
                   ],
                 })
-                .setTextSelection(start)
+                // INFO: this 1 mean skip the toggle button and move to the next depth
+                .setTextSelection(start + 1)
                 .run()
             }
 
@@ -610,7 +800,8 @@ const Blockquote = Node.create({
                   },
                 ],
               })
-              .setTextSelection(start)
+              // INFO: this 1 mean skip the toggle button
+              .setTextSelection(start + 1)
               .run()
           }
 
@@ -652,7 +843,8 @@ const Blockquote = Node.create({
                   },
                 ],
               })
-              .setTextSelection(start)
+              // INFO: 1 mean skip the toggle button block
+              .setTextSelection(start + 1)
               .run()
             // return chain()
             //   .insertContentAt($from.end(depth - 1), doc.cut(closestHeadingPos).nodeAt(depth - 1).content.toJSON())
@@ -706,7 +898,8 @@ const Blockquote = Node.create({
                   },
                 ],
               })
-              .setTextSelection(start)
+              // Info: 1 mean skip the toggle button block
+              .setTextSelection(start + 1)
               .run();
             // const dataContent = doc.slice(start, block.parent.end)?.content.toJSON()[0].content
             // return chain()
@@ -1023,14 +1216,10 @@ const Blockquote = Node.create({
                 })
 
 
-                if (flagOne) {
-                  if (index === 1) {
-                    flagOne = false
-                  } else {
-                    if (prevLevel >= node.firstChild?.attrs?.level && node.firstChild?.attrs?.level !== commingLevel)
-                      data.push({ ...node.toJSON(), le: node.firstChild?.attrs?.level })
-                  }
-                }
+
+                if (prevLevel >= node.firstChild?.attrs?.level && node.firstChild?.attrs?.level !== commingLevel)
+                  data.push({ ...node.toJSON(), le: node.firstChild?.attrs?.level })
+
 
                 prevLevel = node.firstChild?.attrs?.level
 
@@ -1078,12 +1267,14 @@ const Blockquote = Node.create({
               .run()
           }
 
-
           if (commingLevel === 3) {
             console.log("coming level 3")
+
+            let lastPosOfData = 0
             doc.nodesBetween(start, posAt, function (node, pos, parent, index) {
 
               if (node.type.name === "paragraph" && pos >= start && firstHEading) {
+                lastPosOfData = pos + node.content.size
 
                 data.push(node.toJSON())
               }
@@ -1110,20 +1301,16 @@ const Blockquote = Node.create({
                   if (index === 1) {
                     flagOne = false
                   } else {
-                    if (prevLevel >= node.firstChild?.attrs?.level && node.firstChild?.attrs?.level !== commingLevel)
+                    if (prevLevel >= node.firstChild?.attrs?.level && node.firstChild?.attrs?.level !== commingLevel) {
                       data.push({ ...node.toJSON(), le: node.firstChild?.attrs?.level })
+                      lastPosOfData = pos + node.content.size
+                    }
                   }
                 }
 
-                prevLevel = node.firstChild?.attrs?.level
-
-
-
               }
-
-
-
             })
+
             console.log(data)
 
             console.log({
@@ -1134,11 +1321,13 @@ const Blockquote = Node.create({
               contents1: doc.cut(start).nodeAt(1),
               contents2: doc.cut(start, block.ancesster.end).content.toJSON(),
               t: schema.nodes.contentHeading,
-              dir: doc.copy(doc.cut(start).nodeAt(1).content)
+              dir: doc.copy(doc.cut(start).nodeAt(1).content),
+              lastPosOfData
             })
+            // TODO:
             return chain()
 
-              .insertContentAt(posAt, {
+              .insertContentAt($from.end(newDepth - 2), {
                 type: this.name,
                 content: [
                   {
@@ -1154,14 +1343,150 @@ const Blockquote = Node.create({
                 ],
               })
               .insertContentAt(start, "<p></p>")
-              .setTextSelection(posAt)
+              .setTextSelection($from.end(newDepth - 2))
               .deleteRange({
-                from: start + 1, to: posAt
+                from: start + 1, to: $from.end(newDepth - 2)
               })
               .run()
           }
 
+          if (commingLevel === 4) {
+            console.log("coming level 4")
+            doc.nodesBetween(start, posAt, function (node, pos, parent, index) {
 
+              if (node.type.name === "paragraph" && pos >= start && firstHEading) {
+
+                data.push(node.toJSON())
+              }
+
+              if (node.type.name === "heading" && pos >= start) {
+
+                firstHEading = false
+                if (prevLevel === 0)
+                  prevLevel = node.firstChild?.attrs?.level
+
+                console.log({
+                  // node,
+                  le: node.firstChild?.attrs?.level,
+                  name: node.type.name,
+                  PL: prevLevel,
+                  // clevel: commingLevel,
+                  // json: node.toJSON(),
+                  // depth,
+                  index
+                })
+
+                if (prevLevel >= node.firstChild?.attrs?.level && node.firstChild?.attrs?.level !== commingLevel)
+                  data.push({ ...node.toJSON(), le: node.firstChild?.attrs?.level })
+
+                prevLevel = node.firstChild?.attrs?.level
+              }
+            })
+            console.log(data)
+
+            console.log({
+              contents,
+              start, posAt,
+              $from,
+              index: $from.indexAfter(newDepth),
+              contents1: doc.cut(start).nodeAt(1),
+              contents2: doc.cut(start, block.ancesster.end).content.toJSON(),
+              t: schema.nodes.contentHeading,
+              dir: doc.copy(doc.cut(start).nodeAt(1).content)
+            })
+            return chain()
+
+              .insertContentAt($from.end(newDepth - 2), {
+                type: this.name,
+                content: [
+                  {
+                    type: 'contentHeading',
+                    attrs: {
+                      level: attributes.level
+                    },
+                  },
+                  {
+                    type: 'contentWrapper',
+                    content: data
+                  },
+                ],
+              })
+              .insertContentAt(start, "<p></p>")
+              .setTextSelection($from.end(newDepth - 2))
+              .deleteRange({
+                from: start + 1, to: $from.end(newDepth - 2)
+              })
+              .run()
+          }
+
+          if (commingLevel === 5) {
+            console.log("coming level 5")
+            doc.nodesBetween(start, posAt, function (node, pos, parent, index) {
+
+              if (node.type.name === "paragraph" && pos >= start && firstHEading) {
+
+                data.push(node.toJSON())
+              }
+
+              if (node.type.name === "heading" && pos >= start) {
+
+                firstHEading = false
+                if (prevLevel === 0)
+                  prevLevel = node.firstChild?.attrs?.level
+
+                console.log({
+                  // node,
+                  le: node.firstChild?.attrs?.level,
+                  name: node.type.name,
+                  PL: prevLevel,
+                  // clevel: commingLevel,
+                  // json: node.toJSON(),
+                  // depth,
+                  index
+                })
+
+                if (prevLevel >= node.firstChild?.attrs?.level && node.firstChild?.attrs?.level !== commingLevel)
+                  data.push({ ...node.toJSON(), le: node.firstChild?.attrs?.level })
+
+                prevLevel = node.firstChild?.attrs?.level
+              }
+            })
+            console.log(data)
+
+            console.log({
+              contents,
+              start, posAt,
+              $from,
+              index: $from.indexAfter(newDepth),
+              contents1: doc.cut(start).nodeAt(1),
+              contents2: doc.cut(start, block.ancesster.end).content.toJSON(),
+              t: schema.nodes.contentHeading,
+              dir: doc.copy(doc.cut(start).nodeAt(1).content)
+            })
+            return chain()
+
+              .insertContentAt($from.end(newDepth), {
+                type: this.name,
+                content: [
+                  {
+                    type: 'contentHeading',
+                    attrs: {
+                      level: attributes.level
+                    },
+                  },
+                  {
+                    type: 'contentWrapper',
+                    content: data
+                  },
+                ],
+              })
+              .insertContentAt(start, "<p></p>")
+              .setTextSelection($from.end(newDepth - 2))
+              .deleteRange({
+                from: start + 1, to: $from.end(newDepth - 2)
+              })
+              .run()
+          }
 
 
 
@@ -1255,15 +1580,19 @@ const Blockquote = Node.create({
   },
   addKeyboardShortcuts() {
     return {
-      // The default gapcursor implementation can’t handle hidden content, so we need to fix this.
-      ArrowRight: ({ editor }) => {
-        return setGapCursor(editor, 'right');
-      },
-      // The default gapcursor implementation can’t handle hidden content, so we need to fix this.
-      ArrowDown: ({ editor }) => {
-        // console.log("down")
-        return setGapCursor(editor, 'down');
-      },
+      // ArrowUp: ({ editor }) => {
+      //   console.log("up")
+      //   return setGapCursor(editor, 'up');
+      // },
+      // // The default gapcursor implementation can’t handle hidden content, so we need to fix this.
+      // ArrowRight: ({ editor }) => {
+      //   return setGapCursor(editor, 'right');
+      // },
+      // // The default gapcursor implementation can’t handle hidden content, so we need to fix this.
+      // ArrowDown: ({ editor }) => {
+      //   console.log("down")
+      //   return setGapCursor(editor, 'down');
+      // },
       Backspace: (data) => {
         const { schema, selection } = this.editor.state;
         const { empty, $anchor, $head, $from, $to } = selection;
@@ -1274,27 +1603,40 @@ const Blockquote = Node.create({
         // of the block with parentOffset
 
         // if ($anchor.parentOffset > 0)
-        console.log({
-          $anchor,
-          start,
-        })
+        // console.log({
+        //   $anchor,
+        //   start,
+        // })
 
         // if backspace hit in the node that is not have any content
         if ($anchor.parentOffset !== 0) return false
 
-
-
-
         // if Backspace is in the contentWrapper
         if ($anchor.parent.type.name !== schema.nodes.contentHeading.name) {
           const contentWrapper = $anchor.doc?.nodeAt($from?.before(depth))
-          if (contentWrapper?.firstChild.content.size === 0) {
-            return this.editor.chain()
-              .deleteNode(start)
-              .insertContentAt($from.pos, "<p></p>")
-              .setTextSelection($from.pos - 3)
-              .run()
-          }
+          console.log({ contentWrapper, count: contentWrapper.childCount, $anchor })
+          // INFO: if the contentWrapper block has one child just change textSelection
+          // Otherwise remove the current line and move the textSelection to the
+          // headingContent
+
+          // FIXME: this logic not working, find anotherway
+
+          // if (contentWrapper?.firstChild.content.size === 0) {
+          //   if (contentWrapper.childCount === 1) {
+          //     return this.editor.chain()
+          //       .setTextSelection(start - 2)
+          //       .scrollIntoView()
+          //       .run()
+          //   } else {
+          //     console.log("yep yep")
+          //     return this.editor.chain()
+          //       .deleteNode({ from: start, to: end })
+          //       // .setTextSelection($anchor.pos - 2)
+          //       .scrollIntoView()
+          //       .run()
+          //   }
+          // }
+
         }
 
         // if Backspace is in the contentHeading
@@ -1308,8 +1650,12 @@ const Blockquote = Node.create({
             $from,
             heading,
             start: $from.start(depth),
-            data: contentWrapper.content.toJSON()
+            data: contentWrapper.content.toJSON(),
+            isOpen: heading.lastChild.attrs.open
           })
+
+          // INFO: Prevent To Remove the Heading Block If its close.
+          if (!heading.lastChild.attrs.open) return false
 
           // { from: $from.start(depth) - 1, to: $from.end(depth) }
           // return false
@@ -1326,6 +1672,12 @@ const Blockquote = Node.create({
         const { $head, $anchor, $from, $to } = selection;
 
 
+        console.log("sss", {
+          name: $head.parent.type.name
+        })
+
+        // if ($head.parent.type.name !== schema.nodes.heading.name) return false;
+
         // TODO: limited just for contentHeading,contentWrapper
         if ($head.parent.type.name !== schema.nodes.contentHeading.name) {
           return false;
@@ -1339,6 +1691,9 @@ const Blockquote = Node.create({
         const parent = $head.path.filter(x => x?.type?.name)
           .findLast(x => x.type.name === this.name)
 
+        // INFO: if the content is hide, do not anything
+        // ! this open in the Heading block is wrong and Have to change, It's opposite
+        if (parent.attrs.open) return false
 
         console.log("yes new", {
           $head, state, $anchor, parent,
@@ -1346,6 +1701,7 @@ const Blockquote = Node.create({
           sd: Selection.near(state.doc.resolve($from.pos), 1),
           // after: $head.start(depth + 1),
           // newResolve: $head.node(depth + 1)
+          isHeading: parent.lastChild.firstChild.type.name === 'heading'
         })
 
         // FIXME: not working
@@ -1385,10 +1741,12 @@ const Blockquote = Node.create({
         }
 
 
+        // INFO: 1 mean start of the next line
+        const nextLine = end + 1
         return editor.chain()
-          .setTextSelection(end + parent.lastChild.firstChild.content.size + 2)
+          .insertContentAt(nextLine, "<p></p>")
+          .scrollIntoView()
           .run()
-        return true
 
 
 
@@ -1422,6 +1780,7 @@ const Blockquote = Node.create({
         // return true;
       },
     }
+
     // return this.options.levels.reduce((items, level) => ({
     //   ...items,
     //   ...{
@@ -1429,14 +1788,98 @@ const Blockquote = Node.create({
     //   },
     // }), {});
   },
-  addInputRules() {
+  // addPasteRules(data) {
+  //   console.log(data, "=-=-=--")
+
+  //   return [];
+  //   return this.options.levels.map(level => {
+  //     console.log(level, "=-=-=-")
+  //     return textblockTypeInputRule({
+  //       find: new RegExp(`^(#{1,${ level }})\\s$`),
+  //       type: this.type,
+  //       getAttributes: {
+  //         level,
+  //       },
+  //     });
+  //   });
+  // },
+  // addInputRules() {
+  //   return [
+  //     wrappingInputRule({
+  //       find: inputRegex,
+  //       type: this.type,
+  //     }),
+  //   ];
+  // },
+  addProseMirrorPlugins() {
     return [
-      wrappingInputRule({
-        find: inputRegex,
-        type: this.type,
+      // This plugin prevents text selections within the hidden content in `DetailsContent`.
+      // The cursor is moved to the next visible position.
+      new Plugin({
+        key: new PluginKey('detailsSelection'),
+        appendTransaction: (transactions, oldState, newState) => {
+          const { editor, type } = this;
+          const selectionSet = transactions.some(transaction => transaction.selectionSet);
+          if (!selectionSet
+            || !oldState.selection.empty
+            || !newState.selection.empty) {
+            return;
+          }
+          const detailsIsActive = isActive(newState, type.name);
+          if (!detailsIsActive) {
+            return;
+          }
+          const { $from } = newState.selection;
+          const isVisible = isNodeVisible($from.pos, editor);
+          if (isVisible) {
+            return;
+          }
+          const details = findClosestVisibleNode($from, node => node.type === type, editor);
+          if (!details) {
+            return;
+          }
+          const detailsSummaries = findChildren(details.node, node => node.type === newState.schema.nodes.contentHeading);
+          if (!detailsSummaries.length) {
+            return;
+          }
+          const detailsSummary = detailsSummaries[0];
+          const selectionDirection = oldState.selection.from < newState.selection.from
+            ? 'forward'
+            : 'backward';
+          const correctedPosition = selectionDirection === 'forward'
+            ? details.start + detailsSummary.pos
+            : details.pos + detailsSummary.pos + detailsSummary.node.nodeSize;
+          const selection = TextSelection.create(newState.doc, correctedPosition);
+          const transaction = newState.tr.setSelection(selection);
+          return transaction;
+        },
       }),
+      // https://github.com/pageboard/pagecut/blob/bd91a17986978d560cc78642e442655f4e09ce06/src/editor.js#L234-L241
+      new Plugin({
+        key: new PluginKey('copy&pasteHeading'),
+        props: {
+          clipboardTextParser: (str, $context) => {
+            console.log("clipboardTextParser", str, $context)
+          },
+          transformPasted: (pslice) => {
+            console.log("transformPasted", pslice, pslice.toJSON())
+          },
+          transformCopied: (slice, view) => {
+            const { schema, selection } = this.editor.state;
+            const { empty, $anchor, $head, $from, $to } = selection;
+            // const { $from, $to, $anchor, $cursor } = selection;
+            const { start, end, depth } = $from.blockRange($to);
+
+
+            console.log("transformCopied", slice.toJSON(), selection)
+            return slice
+          }
+        }
+      })
+
     ];
   },
+
 });
 
 export { Blockquote, Blockquote as default, inputRegex };

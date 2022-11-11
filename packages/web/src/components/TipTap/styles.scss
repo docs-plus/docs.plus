@@ -3,6 +3,19 @@
 $Pad_Header__height: 64px;
 $Pad_Toolbar__height: 38px;
 
+*.unselectable {
+  -moz-user-select: -moz-none;
+  -khtml-user-select: none;
+  -webkit-user-select: none;
+
+  /*
+     Introduced in IE 10.
+     See http://ie.microsoft.com/testdrive/HTML5/msUserSelect/
+   */
+  -ms-user-select: none;
+  user-select: none;
+}
+
 
 .headings {
   display: flex;
@@ -292,27 +305,8 @@ $Pad_Toolbar__height: 38px;
 }
 
 
-.ProseMirror {
-  .headingWrapper {
-    border: 1px solid black;
-    padding: 4px;
-    border-radius: 6px;
-    margin: 6px 0;
-  }
 
-
-
-  text-align: left;
-  // border: 1px solid #616161;
-  // border-radius: 6px;
-  // padding: 6px;
-  outline: none;
-  min-height: 800px;
-
-  >*+* {
-    margin-top: 0.75em;
-  }
-
+body.indentHeading {
   div.heading {
     border-left: 3px solid rgba(#0d0d0d, 0.1);
     padding-left: 1rem;
@@ -335,6 +329,7 @@ $Pad_Toolbar__height: 38px;
       border-radius: 50%;
     }
 
+
     .contentWrapper {
       // border-bottom: 3px solid rgba(#0d0d0d, 0.1);
       padding-bottom: 1rem;
@@ -342,6 +337,132 @@ $Pad_Toolbar__height: 38px;
     }
 
   }
+}
+
+
+.ProseMirror {
+
+  div.heading {
+    position: relative;
+    // display: flex;
+    // width: 100%;
+
+    .contentHeading {
+      display: flex;
+      align-items: center;
+    }
+
+    [hidden] {
+      background-color: red;
+      display: block !important;
+      height: 0;
+      // overflow: hidden;
+      padding: 0 !important;
+      margin: 0;
+      margin-bottom: 30px;
+
+      * {
+        display: none !important;
+      }
+
+
+
+      &::after {
+        content: '';
+        height: 26px;
+        display: block;
+        background-color: red;
+        background: 0 center repeat-x url('data:image/svg+xml;utf-8,<?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="9px" height="6px" viewBox="0 0 9 6" enable-background="new 0 0 9 6" xml:space="preserve"><polygon opacity="0.3" points="4.5,4.5 0,0 0,1.208 4.5,5.708 9,1.208 9,0 "/></svg>');
+        background-size: 14px;
+        width: calc(100% + 66px);
+        left: -33px;
+        position: relative;
+      }
+
+      &::before {
+        content: 'Hidden Contents';
+        text-align: center;
+        display: block;
+        position: absolute;
+        background: #ffff;
+        left: 50%;
+        transform: translateY(-50%);
+        bottom: -35px;
+        padding: 0 8px;
+        z-index: 1;
+      }
+    }
+
+    &:hover {
+      >a {
+        opacity: 1;
+      }
+    }
+
+    >a {
+      position: absolute;
+      left: -20px;
+      top: 0;
+      color: #ddd;
+      font-size: 20px;
+      opacity: 0;
+      cursor: pointer;
+
+      &:hover {
+        color: #616161
+      }
+    }
+
+    >button {
+      display: flex;
+      cursor: pointer;
+      background: transparent;
+      border: none;
+      padding: 0;
+      position: absolute;
+      left: -70px;
+      top: 0px;
+
+      span {
+        display: none;
+      }
+
+      &::before {
+        content: '\25B6';
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 1.5em;
+        height: 1.5em;
+      }
+    }
+
+    &.is-open>button::before {
+      content: '\25BC';
+    }
+  }
+
+  .headingWrapper {
+    border: 1px solid black;
+    padding: 4px;
+    border-radius: 6px;
+    margin: 6px 0;
+  }
+
+
+
+  text-align: left;
+  // border: 1px solid #616161;
+  // border-radius: 6px;
+  // padding: 6px;
+  outline: none;
+  min-height: 800px;
+
+  >*+* {
+    margin-top: 0.75em;
+  }
+
+
 
 
 

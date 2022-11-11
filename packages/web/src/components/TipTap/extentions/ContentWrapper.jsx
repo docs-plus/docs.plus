@@ -10,6 +10,8 @@ const HeadingsContent = Node.create({
   draggable: false,
   addOptions() {
     return {
+      persist: true,
+      open: true,
       HTMLAttributes: {},
     };
   },
@@ -19,6 +21,24 @@ const HeadingsContent = Node.create({
         tag: `div[data-type="${ this.name }"]`,
       },
     ];
+  },
+  addAttributes() {
+    if (!this.options.persist) {
+      return [];
+    }
+    return {
+      open: {
+        default: this.options.open,
+        parseHTML: element => element.hasAttribute('open'),
+        renderHTML: ({ open }) => {
+          if (!open) {
+            return {};
+          }
+          return { open: '' };
+        },
+      },
+
+    };
   },
   renderHTML({ HTMLAttributes }) {
     // console.log("renderHTML")
@@ -30,19 +50,42 @@ const HeadingsContent = Node.create({
     ];
   },
   addNodeView() {
-    return ({ HTMLAttributes }) => {
-      // console.log("rednder content")
+    return ({ editor, getPos, node, HTMLAttributes }) => {
 
       const dom = document.createElement('div');
       dom.setAttribute('class', 'contentWrapper')
-      // const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-      //   'data-type': this.name,
-      //   hidden: 'hidden',
-      // });
-      // Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
-      // dom.addEventListener('toggleHeadingsContent', () => {
-      //   dom.toggleAttribute('hidden');
-      // });
+      const attrs = {
+        'data-type': this.name,
+      }
+      if (!node.attrs.open) attrs.hidden = "hidden"
+
+      const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, attrs);
+      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
+      dom.addEventListener('toggleHeadingsContent', () => {
+        dom.toggleAttribute('hidden');
+        if (!this.options.persist) {
+          editor.commands.focus();
+          return;
+        }
+        if (editor.isEditable && typeof getPos === 'function') {
+          editor
+            .chain()
+            .focus()
+            .command(({ tr }) => {
+              const pos = getPos();
+              const currentNode = tr.doc.nodeAt(pos);
+              if ((currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type) {
+                return false;
+              }
+              console.log("yepyep", currentNode.attrs.open)
+              tr.setNodeMarkup(pos, undefined, {
+                open: !currentNode.attrs.open,
+              });
+              return true;
+            })
+            .run();
+        }
+      });
       return {
         dom,
         contentDOM: dom,
@@ -53,7 +96,6 @@ const HeadingsContent = Node.create({
           return !dom.contains(mutation.target) || dom === mutation.target;
         },
         update: updatedNode => {
-          // console.log("updateNode", updatedNode)
           if (updatedNode.type !== this.type) {
             return false;
           }
