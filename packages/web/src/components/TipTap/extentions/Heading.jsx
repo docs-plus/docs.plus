@@ -835,9 +835,11 @@ const Blockquote = Node.create({
                 ],
               })
               .insertContentAt(start, block.paragraph, { updateSelection: false })
+              .setTextSelection($from.end(insertAt) + 1)
               .deleteRange({
                 from: start + 1, to: $from.end(insertAt)
               })
+              .scrollIntoView()
               .run()
 
           } else {
@@ -848,6 +850,13 @@ const Blockquote = Node.create({
 
             doc.nodesBetween(currentAncessterPosStart, currentAncessterPosEnd, function (node, pos, parent, index) {
               if (node.type.name === "heading") {
+                if (currentDepthHeadings[currentDepthHeadings.length - 1]?.le > node.firstChild?.attrs?.level) {
+                  console.log("yeo yeo", {
+                    pos,
+                    le: node.firstChild?.attrs?.level,
+                  })
+                  currentDepthHeadings.shift()
+                }
                 currentDepthHeadings.push({
                   pos,
                   le: node.firstChild?.attrs?.level,
@@ -857,10 +866,11 @@ const Blockquote = Node.create({
 
             // remove the H1
             currentDepthHeadings.shift()
+            console.log(currentDepthHeadings)
             const targetHeadingPos = currentDepthHeadings.find(x => commingLevel <= x.le).pos
             // INFO: this 1 mean move to the contentWrapper
             insertAt = $from.sharedDepth(targetHeadingPos) + 1
-
+            if (commingLevel === 1) insertAt = 0
 
             const data = []
             let firstHEading = true
@@ -908,9 +918,12 @@ const Blockquote = Node.create({
                 ],
               })
               .insertContentAt(start, block.paragraph, { updateSelection: false })
+              .setTextSelection($from.end(insertAt) + 1)
+
               .deleteRange({
                 from: start + 1, to: $from.end(insertAt)
               })
+              .scrollIntoView()
               .run()
           }
 
