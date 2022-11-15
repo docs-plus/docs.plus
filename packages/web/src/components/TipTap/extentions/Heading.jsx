@@ -956,79 +956,7 @@ const Blockquote = Node.create({
       //   console.log("down")
       //   return setGapCursor(editor, 'down');
       // },
-      Backspace: (data) => {
-        const { schema, selection } = this.editor.state;
-        const { empty, $anchor, $head, $from, $to } = selection;
-        // const { $from, $to, $anchor, $cursor } = selection;
-        const { start, end, depth } = $from.blockRange($to);
-
-        // if Backspace is in the contentWrapper, and the cursour is in the first child
-        // of the block with parentOffset
-
-        // if ($anchor.parentOffset > 0)
-        // console.log({
-        //   $anchor,
-        //   start,
-        // })
-
-        // if backspace hit in the node that is not have any content
-        if ($anchor.parentOffset !== 0) return false
-
-        // if Backspace is in the contentWrapper
-        if ($anchor.parent.type.name !== schema.nodes.contentHeading.name) {
-          const contentWrapper = $anchor.doc?.nodeAt($from?.before(depth))
-          console.log({ contentWrapper, count: contentWrapper.childCount, $anchor })
-          // INFO: if the contentWrapper block has one child just change textSelection
-          // Otherwise remove the current line and move the textSelection to the
-          // headingContent
-
-          // FIXME: this logic not working, find anotherway
-
-          // if (contentWrapper?.firstChild.content.size === 0) {
-          //   if (contentWrapper.childCount === 1) {
-          //     return this.editor.chain()
-          //       .setTextSelection(start - 2)
-          //       .scrollIntoView()
-          //       .run()
-          //   } else {
-          //     console.log("yep yep")
-          //     return this.editor.chain()
-          //       .deleteNode({ from: start, to: end })
-          //       // .setTextSelection($anchor.pos - 2)
-          //       .scrollIntoView()
-          //       .run()
-          //   }
-          // }
-
-        }
-
-        // if Backspace is in the contentHeading
-        if ($anchor.parent.type.name === schema.nodes.contentHeading.name) {
-          const heading = $head.path.filter(x => x?.type?.name)
-            .findLast(x => x.type.name === 'heading')
-          let contentWrapper = heading.lastChild
-
-          console.log({
-            $head,
-            $from,
-            heading,
-            start: $from.start(depth),
-            data: contentWrapper.content.toJSON(),
-            isOpen: heading.lastChild.attrs.open
-          })
-
-          // INFO: Prevent To Remove the Heading Block If its close.
-          if (!heading.lastChild.attrs.open) return false
-
-          // { from: $from.start(depth) - 1, to: $from.end(depth) }
-          // return false
-          // TODO: use delete note is better, if there is no content in contetnWrapper block
-          return this.editor.chain()
-            .insertContentAt({ from: $from.start(depth) - 1, to: $from.end(depth) }, contentWrapper.content.toJSON())
-            .setTextSelection(start)
-            .run()
-        }
-      },
+      Backspace: (data) => { },
       Enter: ({ editor, chain }) => {
         const { state, view } = editor;
         const { schema, selection, doc, tr } = state;
@@ -1103,44 +1031,12 @@ const Blockquote = Node.create({
           return true;
         }
 
-
         // INFO: 1 mean start of the next line
         const nextLine = end + 1
         return editor.chain()
           .insertContentAt(nextLine, "<p></p>")
           .scrollIntoView()
           .run()
-
-
-
-        // const isVisible = isNodeVisible($head.after() + 1, editor);
-        // const above = isVisible
-        //   ? state.doc.nodeAt($head.after())
-        //   : $head.node(-2);
-        // if (!above) {
-        //   return false;
-        // }
-        // const after = isVisible
-        //   ? 0
-        //   : $head.indexAfter(-1);
-        // const type = defaultBlockAt(above.contentMatchAt(after));
-        // if (!type || !above.canReplaceWith(after, after, type)) {
-        //   return false;
-        // }
-        // const node = type.createAndFill();
-        // if (!node) {
-        //   return false;
-        // }
-        // const pos = isVisible
-        //   ? $head.after() + 1
-        //   : $head.after(-1);
-        // const tr = state.tr.replaceWith(pos, pos, node);
-        // const $pos = tr.doc.resolve(pos);
-        // const newSelection = Selection.near($pos, 1);
-        // tr.setSelection(newSelection);
-        // tr.scrollIntoView();
-        // view.dispatch(tr);
-        // return true;
       },
     }
 

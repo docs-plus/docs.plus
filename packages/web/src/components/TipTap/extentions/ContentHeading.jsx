@@ -51,9 +51,50 @@ const HeadingsTitle = Node.create({
   },
   props: {
     decorations: ({ doc, selection }) => {
-      console.log("222221123123123")
+      // console.log("222221123123123")
     }
   },
+  addKeyboardShortcuts() {
+    return {
+      Backspace: (data) => {
+        const { schema, selection } = this.editor.state;
+        const { empty, $anchor, $head, $from, $to } = selection;
+        const { depth } = $anchor;
+        // if backspace hit in the node that is not have any content
+        if ($anchor.parentOffset !== 0) return false
+
+        // TODO: if the backspace is in heading level 1
+
+        // if Backspace is in the contentHeading
+        if ($anchor.parent.type.name === schema.nodes.contentHeading.name) {
+          const heading = $head.path.filter(x => x?.type?.name)
+            .findLast(x => x.type.name === 'heading')
+          let contentWrapper = heading.lastChild
+
+          // INFO: Prevent To Remove the Heading Block If its close.
+          if (!heading.lastChild.attrs.open) return false
+
+          // INFO: CURRENT pos start, with size of first paragraph in the contentWrapper
+          const block = {
+            start: $from.start(depth - 1) - 1,
+            end: $from.end(depth - 1)
+          }
+
+          const selectionPos = block.start + 1 + heading.lastChild.firstChild.content.size
+          console.log(selectionPos)
+          return this.editor.chain()
+            .insertContentAt(
+              { from: block.start, to: block.end },
+              contentWrapper.content.toJSON()
+            )
+            .setTextSelection(selectionPos)
+            .scrollIntoView()
+            .run()
+        }
+
+      }
+    }
+  }
   // addNodeView() {
   //   return ({ editor, getPos, node, HTMLAttributes, }) => {
   //     console.log({

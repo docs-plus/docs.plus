@@ -106,6 +106,36 @@ const HeadingsContent = Node.create({
   },
   addKeyboardShortcuts() {
     return {
+      Backspace: (data) => {
+        const { schema, selection } = this.editor.state;
+        const { empty, $anchor, $head, $from, $to } = selection;
+        const { start, end, depth } = $from.blockRange($to);
+
+        // if backspace hit in the node that not have any content
+        if ($anchor.parentOffset !== 0) return false
+        const contentWrapper = $anchor.doc?.nodeAt($from?.before(depth))
+
+        // if Backspace is in the contentWrapper
+        if (contentWrapper.type.name !== schema.nodes.contentHeading.name) {
+          if (contentWrapper.type.name !== schema.nodes.contentWrapper.name) return
+          // INFO: if the contentWrapper block has one child just change textSelection
+          // Otherwise remove the current line and move the textSelection to the
+
+          if (contentWrapper.childCount === 1) {
+            return this.editor.chain()
+              .setTextSelection(start - 2)
+              .scrollIntoView()
+              .run()
+          } else {
+            return this.editor.chain()
+              .deleteRange({ from: start, to: end })
+              .setTextSelection(start - 2)
+              .scrollIntoView()
+              .run()
+          }
+
+        }
+      },
       // Escape node on double enter
       Enter: ({ editor }) => {
         // const { state, view } = editor;
