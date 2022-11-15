@@ -471,7 +471,7 @@ const Blockquote = Node.create({
         const commingLevel = attributes.level;
 
         // select the first paragraph for heading title
-        const headingContent = content[0].content[0]
+        const headingContent = content.length === 0 ? content[0].content[0] : { "type": "text", "text": " " }
 
         console.log({
           slice: slice,
@@ -481,6 +481,7 @@ const Blockquote = Node.create({
           string: selection.toString(),
           headingContent
         })
+        console.log("======----->>>")
 
         const block = {
           parent: {
@@ -673,7 +674,10 @@ const Blockquote = Node.create({
           if (containHeading && (commingLevel === closestHeadingLevel || commingLevel > closestHeadingLevel)) {
             console.info("[Heading]: the selection block contain Heading block, so find the reletive Headings and copy them into the incoming new Heading")
             const contents = doc.slice(end, closestHeadingPos)?.toJSON()?.content
-            const data = !contents ? [block.paragraph] : contents
+            const data = !contents.length ? [block.paragraph] : contents
+            console.log({
+              contents
+            })
             return chain()
               .deleteRange({ from: start, to: closestHeadingPos })
               .insertContentAt(start, {
