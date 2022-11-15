@@ -64,6 +64,7 @@ const HeadingsTitle = Node.create({
         if ($anchor.parentOffset !== 0) return false
 
         // TODO: if the backspace is in heading level 1
+        // TODO: what if there is not parent
 
         // if Backspace is in the contentHeading
         if ($anchor.parent.type.name === schema.nodes.contentHeading.name) {
@@ -81,8 +82,16 @@ const HeadingsTitle = Node.create({
           }
 
           const selectionPos = block.start + 1 + heading.lastChild.firstChild.content.size
-          console.log(selectionPos)
+          console.log({
+            selectionPos,
+            block,
+            contentWrapper,
+            parent: $from.doc.nodeAt($from.start(depth) - 3)
+          })
+
+
           return this.editor.chain()
+            // .deleteNode('heading')
             .insertContentAt(
               { from: block.start, to: block.end },
               contentWrapper.content.toJSON()

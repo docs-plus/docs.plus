@@ -466,8 +466,21 @@ const Blockquote = Node.create({
         const slice = state.doc.slice(start, end);
         let _a;
 
+
         const content = ((_a = slice.toJSON()) === null || _a === void 0 ? void 0 : _a.content) || [];
         const commingLevel = attributes.level;
+
+        // select the first paragraph for heading title
+        const headingContent = content[0].content[0]
+
+        console.log({
+          slice: slice,
+          selection,
+          content,
+          json: selection.toJSON(),
+          string: selection.toString(),
+          headingContent
+        })
 
         const block = {
           parent: {
@@ -486,6 +499,7 @@ const Blockquote = Node.create({
           start: $from.start(depth),
           nextLevel: 0,
           depth,
+          headingContent,
           lineContent: content,
           empty: {
             "type": "paragraph",
@@ -524,13 +538,14 @@ const Blockquote = Node.create({
         // And the depth should be the same as the sibling Heading
         if (commingLevel === parentLevel) {
           console.info("[Heading]: create a new heading with same level")
-          const contents = doc.slice(start, block.parent.end)?.content.toJSON()[0].content
+          const contents = doc.slice(end, block.parent.end)?.content.toJSON()[0].content
           return chain()
             .insertContentAt(block.edge.end, {
               type: this.name,
               content: [
                 {
                   type: 'contentHeading',
+                  content: [block.headingContent],
                   attrs: {
                     level: attributes.level
                   },
@@ -635,18 +650,19 @@ const Blockquote = Node.create({
                 content: [
                   {
                     type: 'contentHeading',
+                    content: [block.headingContent],
                     attrs: {
                       level: attributes.level
                     },
                   },
                   {
                     type: 'contentWrapper',
-                    content: doc.slice(start, block.parent.end - 1)?.toJSON()?.content
+                    content: doc.slice(end, block.parent.end - 1)?.toJSON()?.content
                   },
                 ],
               })
               // INFO: this 1 mean skip the toggle button depth
-              .setTextSelection(start + 1)
+              .setTextSelection(end)
               .scrollIntoView()
               .run()
           }
@@ -661,13 +677,14 @@ const Blockquote = Node.create({
                 content: [
                   {
                     type: 'contentHeading',
+                    content: [block.headingContent],
                     attrs: {
                       level: attributes.level
                     },
                   },
                   {
                     type: 'contentWrapper',
-                    content: doc.slice(start, closestHeadingPos)?.toJSON()?.content
+                    content: doc.slice(end, closestHeadingPos)?.toJSON()?.content
                   },
                 ],
               })
@@ -688,6 +705,7 @@ const Blockquote = Node.create({
                 content: [
                   {
                     type: 'contentHeading',
+                    content: [block.headingContent],
                     attrs: {
                       level: attributes.level
                     },
@@ -713,6 +731,7 @@ const Blockquote = Node.create({
               content: [
                 {
                   type: 'contentHeading',
+                  content: [block.headingContent],
                   attrs: {
                     level: attributes.level
                   },
@@ -797,7 +816,7 @@ const Blockquote = Node.create({
             let prevLevel = 0
 
 
-            doc.nodesBetween(start, $from.end(insertAt), function (node, pos, parent, index) {
+            doc.nodesBetween(end, $from.end(insertAt), function (node, pos, parent, index) {
               if (pos < start) return
 
               if (node.type.name === "paragraph" && firstHEading) {
@@ -824,6 +843,7 @@ const Blockquote = Node.create({
                 content: [
                   {
                     type: 'contentHeading',
+                    content: [block.headingContent],
                     attrs: {
                       level: attributes.level
                     },
@@ -878,7 +898,7 @@ const Blockquote = Node.create({
             let prevLevel = 0
 
 
-            doc.nodesBetween(start, $from.end(insertAt), function (node, pos, parent, index) {
+            doc.nodesBetween(end, $from.end(insertAt), function (node, pos, parent, index) {
 
               if (pos < start) return
 
@@ -907,6 +927,7 @@ const Blockquote = Node.create({
                 content: [
                   {
                     type: 'contentHeading',
+                    content: [block.headingContent],
                     attrs: {
                       level: attributes.level
                     },
