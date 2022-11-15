@@ -347,6 +347,8 @@ body.indentHeading {
     // display: flex;
     // width: 100%;
 
+
+
     .contentHeading {
       display: flex;
       align-items: center;
@@ -394,6 +396,9 @@ body.indentHeading {
     }
 
     &:hover {
+
+      border-color: rgb(181, 181, 181);
+
       >a {
         opacity: 1;
       }
