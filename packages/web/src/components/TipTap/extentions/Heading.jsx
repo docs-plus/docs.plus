@@ -539,6 +539,7 @@ const Blockquote = Node.create({
         if (commingLevel === parentLevel) {
           console.info("[Heading]: create a new heading with same level")
           const contents = doc.slice(end, block.parent.end)?.content.toJSON()[0].content
+          const data = !contents ? [block.paragraph] : contents
           return chain()
             .insertContentAt(block.edge.end, {
               type: this.name,
@@ -552,7 +553,7 @@ const Blockquote = Node.create({
                 },
                 {
                   type: 'contentWrapper',
-                  content: contents
+                  content: data
                 },
               ],
             })
@@ -644,6 +645,8 @@ const Blockquote = Node.create({
           // INFO: !if the current block contain other heading blocks
           if (!containHeading) {
             console.info("[heading]: Current block does not contain heading blocks, Copy the entire content from the start selection option ")
+            const contents = doc.slice(end, block.parent.end - 1)?.toJSON()?.content
+            const data = !contents ? [block.paragraph] : contents
             return chain()
               .insertContentAt({ from: start, to: block.parent.end }, {
                 type: this.name,
@@ -657,7 +660,7 @@ const Blockquote = Node.create({
                   },
                   {
                     type: 'contentWrapper',
-                    content: doc.slice(end, block.parent.end - 1)?.toJSON()?.content
+                    content: data
                   },
                 ],
               })
@@ -667,9 +670,10 @@ const Blockquote = Node.create({
               .run()
           }
 
-
           if (containHeading && (commingLevel === closestHeadingLevel || commingLevel > closestHeadingLevel)) {
             console.info("[Heading]: the selection block contain Heading block, so find the reletive Headings and copy them into the incoming new Heading")
+            const contents = doc.slice(end, closestHeadingPos)?.toJSON()?.content
+            const data = !contents ? [block.paragraph] : contents
             return chain()
               .deleteRange({ from: start, to: closestHeadingPos })
               .insertContentAt(start, {
@@ -684,7 +688,7 @@ const Blockquote = Node.create({
                   },
                   {
                     type: 'contentWrapper',
-                    content: doc.slice(end, closestHeadingPos)?.toJSON()?.content
+                    content: data
                   },
                 ],
               })
@@ -699,6 +703,7 @@ const Blockquote = Node.create({
           if (containHeading && commingLevel < closestHeadingLevel) {
             console.info("[Heading]: Current Block contain heading blocks, wrapp up the content from start to closestHeading level")
             const dataContent = doc.slice(start, lastChildHeadingPos)?.content.toJSON()
+            const data = !dataContent ? [block.paragraph] : dataContent
             return chain()
               .insertContentAt({ from: start, to: lastChildHeadingPos }, {
                 type: this.name,
@@ -712,7 +717,7 @@ const Blockquote = Node.create({
                   },
                   {
                     type: 'contentWrapper',
-                    content: dataContent
+                    content: data
                   },
                 ],
               })
@@ -850,7 +855,7 @@ const Blockquote = Node.create({
                   },
                   {
                     type: 'contentWrapper',
-                    content: data
+                    content: data.length === 0 ? [block.paragraph] : data
                   },
                 ],
               })
@@ -934,13 +939,12 @@ const Blockquote = Node.create({
                   },
                   {
                     type: 'contentWrapper',
-                    content: data
+                    content: data.length === 0 ? [block.paragraph] : data
                   },
                 ],
               })
-              .insertContentAt(start, block.paragraph, { updateSelection: false })
+              .insertContentAt(end, block.paragraph, { updateSelection: false })
               .setTextSelection($from.end(insertAt) + 1)
-
               .deleteRange({
                 from: start + 1, to: $from.end(insertAt)
               })
