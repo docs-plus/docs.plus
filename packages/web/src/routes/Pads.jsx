@@ -63,7 +63,6 @@ export default function Root() {
     <>
       <div className="pad tiptap flex flex-col border-solid border-2">
         <ReloadPrompt />
-        Hello Man new Content
         <div className='header w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b'>
           {/* <PadTitle padName={padName} /> */}
         </div>

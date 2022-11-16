@@ -32,6 +32,9 @@ const IntroPage = () => {
         <br />
         robob <ReloadPrompt />
         <br />
+        Hello Man new Content
+
+        <br />
         <hr />
         <h1 className='flex flex-row items-end'> <Doc size="58" className="mr-3" /> Docs Plus</h1>
         <h2 className='mt-2 text-gray-500 font-semibold'>Get Everyone one the Same Page</h2>
