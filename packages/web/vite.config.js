@@ -22,7 +22,7 @@ export default defineConfig({
     react(),
     splitVendorChunkPlugin(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       injectRegister: 'auto',
       workbox: {
         sourcemap: true,
