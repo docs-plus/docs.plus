@@ -193,7 +193,7 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       }),
       CollaborationCursor.configure({
         provider: provider,
-        user: { name: 'John Doe', color: randomColor() },
+        user: { name: 'Adam Doe', color: randomColor() },
       }),
       // //=======>>>
 
@@ -220,7 +220,6 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
           else if (nodeType === 'paragraph') {
             return 'Write something …';
           }
-
           return null
 
         },
