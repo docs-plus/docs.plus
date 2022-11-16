@@ -21,7 +21,7 @@ function ReloadPrompt() {
   } = useRegisterSW({
     onRegistered(r) {
       // eslint-disable-next-line prefer-template
-      console.log(updateServiceWorker)
+      // console.log(updateServiceWorker)
       console.log('SW Registered: ' + r)
     },
     onRegisterError(error) {
