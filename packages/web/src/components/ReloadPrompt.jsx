@@ -1,17 +1,10 @@
-import React from 'react'
+import React, { useEffect, useState, useRef } from 'react'
 import './ReloadPrompt.css'
 
 import { useRegisterSW } from 'virtual:pwa-register/react'
+import Counter from './Counter'
 
-
-// const updateServiceWorker = useRegisterSW({
-//   onRegistered(r) {
-//     r && setInterval(() => {
-//       r.update()
-//     }, intervalMS)
-//   }
-// })
-
+const intervalMS = 1000 * 60 // 1min
 
 function ReloadPrompt() {
   const {
@@ -21,19 +14,24 @@ function ReloadPrompt() {
   } = useRegisterSW({
     onRegistered(r) {
       // eslint-disable-next-line prefer-template
-      // console.log(updateServiceWorker)
-      console.log('SW Registered: ' + r)
+
+      r && setInterval(() => {
+        console.log("check for new update")
+        r.update()
+      }, intervalMS)
+
+      // setOfflineReady(false)
+      // setNeedRefresh(true)
+
     },
     onRegisterError(error) {
       console.log('SW registration error', error)
     },
     onNeedRefresh() {
-      console.log("onNeedRefresh")
-      alert("onNeedRefresh")
+      // console.log("onNeedRefresh")
     },
     onOfflineReady() {
-      console.log("onOfflineReady")
-      alert("onOfflineReady")
+      // console.log("onOfflineReady")
     }
   })
 
@@ -48,15 +46,24 @@ function ReloadPrompt() {
         && <div className="ReloadPrompt-toast">
           <div className="ReloadPrompt-message">
             {offlineReady
-              ? <span>App ready to work offline</span>
+              ? <span>App ready to work offline!</span>
               : <span>New content available, click on reload button to update.</span>
             }
           </div>
-          {needRefresh && <button className="ReloadPrompt-toast-button" onClick={() => updateServiceWorker(true)}>Reload</button>}
-          <button className="ReloadPrompt-toast-button" onClick={() => close()}>Close</button>
+          <div className='pt-2 flex'>
+            {needRefresh &&
+              <button className="ReloadPrompt-toast-button rounded-md bg-blue-500 text-white hover:bg-blue-600" onClick={() => updateServiceWorker(true)}>Reload</button>
+            }
+            <button className="ReloadPrompt-toast-button rounded-md hover:bg-slate-500  hover:text-white" onClick={() => { close(); }}>Close</button>
+            {needRefresh &&
+              <div className=' text-sm antialiased rounded-full  w-8 h-8 border-2 flex justify-center content-center items-center m-auto mr-0 border-sky-600'>
+                <Counter seconds="30" callback={() => updateServiceWorker(true)} />
+              </div>
+            }
+          </div>
         </div>
       }
-    </div>
+    </div >
   )
 }
 

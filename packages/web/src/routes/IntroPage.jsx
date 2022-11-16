@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import { redirect } from "react-router-dom";
 import { Doc } from '../components/icons/Icons';
-import ReloadPrompt from '../components/ReloadPrompt'
 
 const IntroPage = () => {
   const padNameRef = useRef()
@@ -28,14 +27,7 @@ const IntroPage = () => {
   return (
     <div className='max-w-lg mx-auto h-screen flex flex-col justify-center align-middle p-4'>
       <div className='h-fit'>
-        <hr />
-        <br />
-        robob <ReloadPrompt />
-        <br />
-        Hello Man new Content
 
-        <br />
-        <hr />
         <h1 className='flex flex-row items-end'> <Doc size="58" className="mr-3" /> Docs Plus</h1>
         <h2 className='mt-2 text-gray-500 font-semibold'>Get Everyone one the Same Page</h2>
         <div className='flex flex-col h-32 w-3/4 items-center justify-center mx-auto my-11'>

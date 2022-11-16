@@ -6,6 +6,7 @@ import {
   Route,
 } from "react-router-dom";
 import './assets/global.scss'
+import ReloadPrompt from './components/ReloadPrompt'
 
 
 const Pads = lazy(() => import('./routes/Pads'))
@@ -39,24 +40,11 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <RouterProvider router={router} />
-
+    <ReloadPrompt />
   </React.StrictMode>
 )
 
 
-import { registerSW } from 'virtual:pwa-register'
-
-const updateSW = registerSW({
-  onNeedRefresh() {
-    console.log("onNeedRefresh ===?>>>>??>?>?>?>")
-  },
-  onRegistered() {
-    console.log("onRegistered ===?>>>>??>?>?>?>")
-  },
-  onOfflineReady() {
-    console.log("onOfflineReady ===?>>>>??>?>?>?>")
-  },
-})
 
 // // On page load or when changing themes, best to add inline in `head` to avoid FOUC
 // if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
