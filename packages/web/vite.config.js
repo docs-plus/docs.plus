@@ -21,13 +21,17 @@ export default defineConfig({
   plugins: [
     react(),
     splitVendorChunkPlugin(),
-    // VitePWA({
-    //   registerType: 'autoUpdate',
-    //   injectRegister: 'auto',
-    //   manifest,
-    //   devOptions: {
-    //     enabled: true
-    //   }
-    // })
+    VitePWA({
+      registerType: 'autoUpdate',
+      injectRegister: 'auto',
+      workbox: {
+        sourcemap: true,
+        cleanupOutdatedCaches: true,
+      },
+      manifest,
+      devOptions: {
+        enabled: true
+      }
+    })
   ],
 })

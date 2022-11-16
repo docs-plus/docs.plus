@@ -191,10 +191,10 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       Collaboration.configure({
         document: provider.document,
       }),
-      // CollaborationCursor.configure({
-      //   provider: provider,
-      //   user: { name: 'John Doe', color: randomColor() },
-      // }),
+      CollaborationCursor.configure({
+        provider: provider,
+        user: { name: 'John Doe', color: randomColor() },
+      }),
       // //=======>>>
 
       // HeadingsTitle,
