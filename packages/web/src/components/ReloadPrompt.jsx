@@ -3,6 +3,16 @@ import './ReloadPrompt.css'
 
 import { useRegisterSW } from 'virtual:pwa-register/react'
 
+
+// const updateServiceWorker = useRegisterSW({
+//   onRegistered(r) {
+//     r && setInterval(() => {
+//       r.update()
+//     }, intervalMS)
+//   }
+// })
+
+
 function ReloadPrompt() {
   const {
     offlineReady: [offlineReady, setOfflineReady],
@@ -11,11 +21,20 @@ function ReloadPrompt() {
   } = useRegisterSW({
     onRegistered(r) {
       // eslint-disable-next-line prefer-template
+      console.log(updateServiceWorker)
       console.log('SW Registered: ' + r)
     },
     onRegisterError(error) {
       console.log('SW registration error', error)
     },
+    onNeedRefresh() {
+      console.log("onNeedRefresh")
+      alert("onNeedRefresh")
+    },
+    onOfflineReady() {
+      console.log("onOfflineReady")
+      alert("onOfflineReady")
+    }
   })
 
   const close = () => {

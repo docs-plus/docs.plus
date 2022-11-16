@@ -5,8 +5,8 @@ import {
   RouterProvider,
   Route,
 } from "react-router-dom";
-
 import './assets/global.scss'
+
 
 const Pads = lazy(() => import('./routes/Pads'))
 const ErrorPage = lazy(() => import('./routes/ErrorPage'))
@@ -39,6 +39,7 @@ const router = createBrowserRouter([
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <RouterProvider router={router} />
+
   </React.StrictMode>
 )
 
@@ -53,7 +54,6 @@ const updateSW = registerSW({
     console.log("onRegistered ===?>>>>??>?>?>?>")
   },
   onOfflineReady() {
-
     console.log("onOfflineReady ===?>>>>??>?>?>?>")
   },
 })
