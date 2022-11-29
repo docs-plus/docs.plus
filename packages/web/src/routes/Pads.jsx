@@ -71,7 +71,7 @@ export default function Root() {
         <div className='editor w-full h-full flex relative flex-row align-top '>
           {editor ? <TableOfContents editor={editor} className="tiptap__toc pl-2 pb-4 sm:py-4  max-w-xs w-3/12 hidden overflow-hidden scroll-smooth hover:overflow-auto hover:overscroll-contain sm:block" /> : "Loading..."}
           <div className='w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4'>
-            {editor ? <EditorContent editor={editor} className="tipta__editor  bg-white p-4 sm:p-8 sm:border sm:rounded-sm sm:shadow-sm" /> : "Loading..."}
+            {editor ? <EditorContent editor={editor} className="tipta__editor  bg-white p-4 mb-12 sm:mb-0 sm:p-8 sm:border sm:rounded-sm sm:shadow-sm" /> : "Loading..."}
           </div>
         </div>
       </div>

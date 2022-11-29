@@ -2,7 +2,7 @@ import { Node, mergeAttributes, wrappingInputRule, findParentNode, findChildren,
 import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from "prosemirror-model"
 import { Selection, Plugin, PluginKey, TextSelection } from 'prosemirror-state';
 import { Transform } from 'prosemirror-transform'
-
+import changeHeadingLevel from './changeHeadingLevel';
 
 // !Three: Refactore, review the code and add more green do
 // !Four: the breaking chain function must be refactor from the beging,
@@ -466,23 +466,22 @@ const Blockquote = Node.create({
         const slice = state.doc.slice(start, end);
         let _a;
 
-
         const content = ((_a = slice.toJSON()) === null || _a === void 0 ? void 0 : _a.content) || [];
         const commingLevel = attributes.level;
 
         // select the first paragraph for heading title
-        console.log(content, "=-=-=-=-=-=-")
-        const headingContent = content.length === 0 ? content[0].content[0] : { "type": "text", "text": " " }
+        const headingContent = content.length === 1 ? content[0].content[0] : { "type": "text", "text": " " }
 
-        console.log({
-          slice: slice,
-          selection,
-          content,
-          json: selection.toJSON(),
-          string: selection.toString(),
-          headingContent
-        })
-        console.log("======----->>>")
+
+        // TODO: change heading level
+        // First get the content of heading
+        // then copy the contentWrapper of the heading
+        if ($anchor.parent.type.name === schema.nodes.contentHeading.name) {
+          console.warn("[Heading]: change heading level")
+          changeHeadingLevel(arrg, attributes, dispatch)
+          return false;
+        }
+
 
         const block = {
           parent: {
@@ -513,11 +512,6 @@ const Blockquote = Node.create({
             ]
           },
           paragraph: { "type": "paragraph", }
-        }
-
-        if ($anchor.parent.type.name === schema.nodes.contentHeading.name) {
-          console.warn("[Heading]: Insert a new heading in contentHeading block it's not allowed.")
-          return false;
         }
 
         // TODO: check this statment for comment, (block.edge.start !== -1)
@@ -649,6 +643,7 @@ const Blockquote = Node.create({
             console.info("[heading]: Current block does not contain heading blocks, Copy the entire content from the start selection option ")
             const contents = doc.slice(end, block.parent.end - 1)?.toJSON()?.content
             const data = !contents ? [block.paragraph] : contents
+            console.log("===>", block.headingContent)
             return chain()
               .insertContentAt({ from: start, to: block.parent.end }, {
                 type: this.name,
@@ -760,8 +755,6 @@ const Blockquote = Node.create({
 
         }
 
-
-
         // break chain of heading blocs
         if (commingLevel < parentLevel) {
           console.info("[Heading]: break the current Heading chain, cominglevel is grether than parentLevel")
@@ -819,143 +812,149 @@ const Blockquote = Node.create({
               break;
           }
 
-          if (getDepthLevel(parentLevel) === $from.depth) {
-            const data = []
-            let firstHEading = true
-            let flagOne = true
-            let prevLevel = 0
+          // if (getDepthLevel(parentLevel) === $from.depth) {
+          //   const data = []
+          //   let firstHEading = true
+          //   let flagOne = true
+          //   let prevLevel = 0
 
 
-            doc.nodesBetween(end, $from.end(insertAt), function (node, pos, parent, index) {
-              if (pos < start) return
+          //   doc.nodesBetween(end, $from.end(insertAt), function (node, pos, parent, index) {
+          //     if (pos < start) return
 
-              if (node.type.name === "paragraph" && firstHEading) {
-                data.push(node.toJSON())
-              }
+          //     if (node.type.name === "paragraph" && firstHEading) {
+          //       data.push(node.toJSON())
+          //     }
 
-              if (node.type.name === "heading") {
-                firstHEading = false
-                const headingLevel = node.firstChild?.attrs?.level
-                if (prevLevel === 0)
-                  prevLevel = headingLevel
+          //     if (node.type.name === "heading") {
+          //       firstHEading = false
+          //       const headingLevel = node.firstChild?.attrs?.level
+          //       if (prevLevel === 0)
+          //         prevLevel = headingLevel
 
-                if (flagOne && prevLevel >= headingLevel) {
-                  data.push({ ...node.toJSON(), le: headingLevel })
-                }
+          //       if (flagOne && prevLevel >= headingLevel) {
+          //         data.push({ ...node.toJSON(), le: headingLevel })
+          //       }
 
-                prevLevel = headingLevel
-              }
-            })
+          //       prevLevel = headingLevel
+          //     }
+          //   })
 
-            return chain()
-              .insertContentAt($from.end(insertAt), {
-                type: this.name,
-                content: [
-                  {
-                    type: 'contentHeading',
-                    content: [block.headingContent],
-                    attrs: {
-                      level: attributes.level
-                    },
-                  },
-                  {
-                    type: 'contentWrapper',
-                    content: data.length === 0 ? [block.paragraph] : data
-                  },
-                ],
-              })
-              .insertContentAt(start, block.paragraph, { updateSelection: false })
-              .setTextSelection($from.end(insertAt) + 1)
-              .deleteRange({
-                from: start + 1, to: $from.end(insertAt)
-              })
-              .scrollIntoView()
-              .run()
+          //   return chain()
+          //     .insertContentAt($from.end(insertAt), {
+          //       type: this.name,
+          //       content: [
+          //         {
+          //           type: 'contentHeading',
+          //           content: [block.headingContent],
+          //           attrs: {
+          //             level: attributes.level
+          //           },
+          //         },
+          //         {
+          //           type: 'contentWrapper',
+          //           content: data.length === 0 ? [block.paragraph] : data
+          //         },
+          //       ],
+          //     })
+          //     .insertContentAt(start, block.paragraph, { updateSelection: false })
+          //     .setTextSelection($from.end(insertAt) + 1)
+          //     .deleteRange({
+          //       from: start + 1, to: $from.end(insertAt)
+          //     })
+          //     .scrollIntoView()
+          //     .run()
 
-          } else {
-            console.log("the hard path")
-            const currentAncessterPosStart = $from.start(1) - 1
-            const currentAncessterPosEnd = $from.end(1) - 1
-            let currentDepthHeadings = []
+          // } else {
+          console.log("the hard path")
 
-            doc.nodesBetween(currentAncessterPosStart, currentAncessterPosEnd, function (node, pos, parent, index) {
-              if (node.type.name === "heading") {
-                if (currentDepthHeadings[currentDepthHeadings.length - 1]?.le > node.firstChild?.attrs?.level) {
-                  console.log("yeo yeo", {
-                    pos,
-                    le: node.firstChild?.attrs?.level,
-                  })
-                  currentDepthHeadings.shift()
-                }
-                currentDepthHeadings.push({
+          const titleNode = $from.doc.nodeAt($from.start(1) - 1)
+          const titleStartPos = $from.start(1) - 1
+          const titleEndPos = titleStartPos + titleNode.content.size
+
+
+          const currentAncessterPosStart = $from.start(1) - 1
+          const currentAncessterPosEnd = titleStartPos + titleNode.content.size
+          let currentDepthHeadings = []
+
+          doc.nodesBetween(currentAncessterPosStart, currentAncessterPosEnd, function (node, pos, parent, index) {
+            if (node.type.name === "heading") {
+              if (currentDepthHeadings[currentDepthHeadings.length - 1]?.le > node.firstChild?.attrs?.level) {
+                console.log("yeo yeo", {
                   pos,
                   le: node.firstChild?.attrs?.level,
                 })
+                currentDepthHeadings.shift()
               }
-            })
+              currentDepthHeadings.push({
+                pos,
+                le: node.firstChild?.attrs?.level,
+              })
+            }
+          })
 
-            // remove the H1
-            currentDepthHeadings.shift()
-            console.log(currentDepthHeadings)
-            const targetHeadingPos = currentDepthHeadings.find(x => commingLevel <= x.le).pos
-            // INFO: this 1 mean move to the contentWrapper
-            insertAt = $from.sharedDepth(targetHeadingPos) + 1
-            if (commingLevel === 1) insertAt = 0
+          // remove the H1
+          currentDepthHeadings.shift()
+          console.log(currentDepthHeadings)
+          const targetHeadingPos = currentDepthHeadings.find(x => commingLevel <= x.le).pos
+          // INFO: this 1 mean move to the contentWrapper
+          insertAt = $from.sharedDepth(targetHeadingPos) + 1
+          if (commingLevel === 1) insertAt = 0
 
-            const data = []
-            let firstHEading = true
-            let flagOne = true
-            let prevLevel = 0
+          const data = []
+          let firstHEading = true
+          let flagOne = true
+          let prevLevel = 0
 
 
-            doc.nodesBetween(end, $from.end(insertAt), function (node, pos, parent, index) {
+          doc.nodesBetween(end, $from.end(insertAt), function (node, pos, parent, index) {
 
-              if (pos < start) return
+            if (pos < start) return
 
-              if (firstHEading && node.type.name === "paragraph") {
-                data.push(node.toJSON())
-              }
+            if (firstHEading && node.type.name === "paragraph") {
+              data.push(node.toJSON())
+            }
 
-              if (node.type.name === "heading") {
-                firstHEading = false
-                const headingLevel = node.firstChild?.attrs?.level
-                if (prevLevel === 0)
-                  prevLevel = headingLevel
-
-                if (flagOne && prevLevel >= headingLevel) {
-                  data.push({ ...node.toJSON(), le: headingLevel })
-                }
-
+            if (node.type.name === "heading") {
+              firstHEading = false
+              const headingLevel = node.firstChild?.attrs?.level
+              if (prevLevel === 0)
                 prevLevel = headingLevel
+
+              if (flagOne && prevLevel >= headingLevel) {
+                data.push({ ...node.toJSON(), le: headingLevel })
               }
 
-            })
+              prevLevel = headingLevel
+            }
 
-            return chain()
-              .insertContentAt($from.end(insertAt), {
-                type: this.name,
-                content: [
-                  {
-                    type: 'contentHeading',
-                    content: [block.headingContent],
-                    attrs: {
-                      level: attributes.level
-                    },
+          })
+
+          return chain()
+            .insertContentAt($from.end(insertAt), {
+              type: this.name,
+              content: [
+                {
+                  type: 'contentHeading',
+                  content: [block.headingContent],
+                  attrs: {
+                    level: attributes.level
                   },
-                  {
-                    type: 'contentWrapper',
-                    content: data.length === 0 ? [block.paragraph] : data
-                  },
-                ],
-              })
-              .insertContentAt(end, block.paragraph, { updateSelection: false })
-              .setTextSelection($from.end(insertAt) + 1)
-              .deleteRange({
-                from: start + 1, to: $from.end(insertAt)
-              })
-              .scrollIntoView()
-              .run()
-          }
+                },
+                {
+                  type: 'contentWrapper',
+                  content: data.length === 0 ? [block.paragraph] : data
+                },
+              ],
+            })
+            .insertContentAt(end, block.paragraph, { updateSelection: false })
+            .setTextSelection($from.end(insertAt) + 1)
+            .deleteRange({
+              from: start + 1, to: $from.end(insertAt)
+            })
+            .scrollIntoView()
+            .run()
+          // }
 
         }
 
@@ -992,17 +991,14 @@ const Blockquote = Node.create({
         const { schema, selection, doc, tr } = state;
         const { $head, $anchor, $from, $to } = selection;
 
-
-        console.log("sss", {
-          name: $head.parent.type.name
-        })
-
         // if ($head.parent.type.name !== schema.nodes.heading.name) return false;
 
-        // TODO: limited just for contentHeading,contentWrapper
+        // TODO: limited just for contentHeading, contentWrapper
         if ($head.parent.type.name !== schema.nodes.contentHeading.name) {
           return false;
         }
+
+
 
         const { start, end, depth } = $from.blockRange($to);
 
@@ -1011,6 +1007,11 @@ const Blockquote = Node.create({
         // should go to the next block, which is contentWrapper
         const parent = $head.path.filter(x => x?.type?.name)
           .findLast(x => x.type.name === this.name)
+
+        console.log({
+          s: $head.parent.type.name,
+          open: parent.attrs.open
+        })
 
         // INFO: if the content is hide, do not anything
         // ! this open in the Heading block is wrong and Have to change, It's opposite
