@@ -1,4 +1,5 @@
 import { Node, Fragment, Slice, DOMSerializer } from 'prosemirror-model';
+import { TextSelection } from 'prosemirror-state';
 
 export default (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
@@ -181,6 +182,11 @@ export default (arrg, attributes) => {
   // first create the current heading with new level
   const newTr = tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
 
+  const contentHeadingNodeSize = prevBlock.endBlockPos + block.headingContent.text.length + 2
+  const resolveContentHeadingPos = newTr.doc.resolve(contentHeadingNodeSize)
+  const newTextSelection = new TextSelection(resolveContentHeadingPos)
+  newTr.setSelection(newTextSelection)
+
   const getThePrevHeading = (start, from) => {
     const titleHMap = []
     newTr.doc.nodesBetween(start, from, function (node, pos, parent, index) {
@@ -247,6 +253,11 @@ export default (arrg, attributes) => {
     }
   }
 
-  return chain().deleteRange({ from: newTr.mapping.map(start - 1), to: newTr.mapping.map(block.end) }).run()
+  return chain()
+    .deleteRange({
+      from: newTr.mapping.map(start - 1),
+      to: newTr.mapping.map(block.end)
+    })
+    .run()
 
 }
