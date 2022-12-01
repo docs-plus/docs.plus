@@ -1,3 +1,5 @@
+import { TextSelection } from 'prosemirror-state';
+
 export default (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
   const { schema, selection, doc } = state;
@@ -94,25 +96,35 @@ export default (arrg, attributes) => {
     .filter(x => endSliceBlocPos <= x.endBlockPos)
     .find(x => x.le >= commingLevel)?.endBlockPos
 
+
+  const jsonNode = {
+    type: 'heading',
+    content: [
+      {
+        type: 'contentHeading',
+        content: [block.headingContent],
+        attrs: {
+          level: attributes.level
+        },
+      },
+      {
+        type: 'contentWrapper',
+        content: sliceTargetContent
+      },
+    ],
+  }
+
+  const node = state.schema.nodeFromJSON(jsonNode)
+  const newTr = tr.insert(insertPos, node)
+
+  const contentHeadingNodeSize = insertPos + block.headingContent.text.length + 2
+  const resolveContentHeadingPos = newTr.doc.resolve(contentHeadingNodeSize)
+  const newTextSelection = new TextSelection(resolveContentHeadingPos)
+  newTr.setSelection(newTextSelection)
+
+
   return chain()
-    .insertContentAt(insertPos, {
-      type: 'heading',
-      content: [
-        {
-          type: 'contentHeading',
-          content: [block.headingContent],
-          attrs: {
-            level: attributes.level
-          },
-        },
-        {
-          type: 'contentWrapper',
-          content: sliceTargetContent
-        },
-      ],
-    })
     .deleteRange({ from: start - 1, to: insertPos })
-    .setTextSelection(end - 1)
     .scrollIntoView()
     .run()
 }
