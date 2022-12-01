@@ -1,4 +1,5 @@
 import { Node, Fragment, Slice, DOMSerializer } from 'prosemirror-model';
+import { TextSelection } from 'prosemirror-state';
 
 export default (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
@@ -43,8 +44,6 @@ export default (arrg, attributes) => {
     },
     paragraph: { "type": "paragraph", }
   }
-
-
 
 
   const nextSiblingLevel = $from.doc.nodeAt(block.end + 1)?.firstChild.attrs.level
@@ -130,36 +129,7 @@ export default (arrg, attributes) => {
 
   let shouldNested = false
 
-  // let prevBlock = mapHPost.find(x => x.le >= commingLevel)
-  // let prevBlock = mapHPost.find(x => x.le >= commingLevel)
-
-  // const afterBlock = mapHPost.findLast(x => x.le >= commingLevel)
-
-  // console.log({
-  //   prevBlock,
-  //   afterBlock,
-  //   mapHPost, titleHMap
-  // })
-
-
-
-  // if (afterBlock && commingLevel >= currentHLevel) {
-  //   console.log("wroorwowro")
-  //   if (commingLevel !== afterBlock.le) shouldNested = true
-  //   prevBlock = afterBlock
-  // }
-
-  // // console.log({ prevBlock, afterBlock, currentHLevel, commingLevel, alevel: afterBlock.le })
-
-  // const sameLevelAtDepth = mapHPost.filter(x => x.le >= commingLevel && x.depth === prevBlock.depth)
-  // if (sameLevelAtDepth.length >= 3) prevBlock = sameLevelAtDepth[sameLevelAtDepth.length - 1]
-
-  // if (!prevBlock) {
-  //   console.log("no prevBlock")
-  //   shouldNested = true
-  //   prevBlock = mapHPost.findLast(x => x.le <= commingLevel)
-  // }
-
+  // FIXME: this is heavy! I need to find better solotion with less loop
   let prevBlockEqual = mapHPost.findLast(x => x.le === commingLevel)
   let prevBlockGratherFromFirst = mapHPost.find(x => x.le >= commingLevel)
   let prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= commingLevel)
@@ -171,8 +141,6 @@ export default (arrg, attributes) => {
   }
 
   console.log({
-    // prevBlockLastNode,
-    // prevBlock,
     lastbloc,
     prevBlock,
     prevBlockEqual,
@@ -189,10 +157,7 @@ export default (arrg, attributes) => {
     contentWrapperHeadings,
     contentWrapperParagraphs,
     schema: schema.nodes.heading
-
   })
-
-  // return
 
   const jsonNode = {
     type: 'heading',
@@ -214,29 +179,11 @@ export default (arrg, attributes) => {
   // first create the current heading with new level
   const newTr = tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
 
-  // console.log({ newTr })
 
-  let lastInsertPos = newTr.mapping.maps[newTr.mapping.maps.length - 1].ranges
-
-  lastInsertPos = lastInsertPos.reduce((accumulator, value) => {
-    return accumulator + value;
-  }, 0);
-
-
-
-  // // return
-  // mapHPost.push({
-  //   le: attributes.level,
-  //   startBlockPos: prevBlock.endBlockPos - (shouldNested ? 2 : 0),
-  //   endBlockPos: (prevBlock.endBlockPos - (shouldNested ? 2 : 0)) + node.nodeSize,
-  //   node: node
-  // })
-
-  console.log({
-    prevBlock: prevBlock.endBlockPos,
-    lastInsertPos: newTr.mapping.maps[newTr.mapping.maps.length - 1].ranges,
-    node
-  })
+  const contentHeadingNodeSize = prevBlock.endBlockPos + block.headingContent.text.length + 2
+  const resolveContentHeadingPos = newTr.doc.resolve(contentHeadingNodeSize)
+  const newTextSelection = new TextSelection(resolveContentHeadingPos)
+  newTr.setSelection(newTextSelection)
 
   const getThePrevHeading = (start, from) => {
     const titleHMap = []
@@ -250,19 +197,17 @@ export default (arrg, attributes) => {
     return titleHMap
   }
 
+  // FIXME: this loop so much heavy, I need to find better solotion!
   // then loop through the heading to append
   if (contentWrapperHeadings.length > 0 && contentWrapperHeadings[0].le !== currentHLevel) {
     for (let [index, heading] of contentWrapperHeadings.entries()) {
+
       mapHPost = getThePrevHeading(
         mapHPost[0].startBlockPos,
         mapHPost[0].startBlockPos + doc.nodeAt(mapHPost[0].startBlockPos).nodeSize + 2
       )
 
-      // console.log("nodeAt", mapHPost[0].startBlockPos + doc.nodeAt(mapHPost[0].startBlockPos).nodeSize)
-
-
       const node = state.schema.nodeFromJSON(heading)
-      // const lastNodeInserted = mapHPost[mapHPost.length - 1]
 
 
       let prevBlockEqual = mapHPost.findLast(x => x.le === heading.le)
@@ -277,33 +222,17 @@ export default (arrg, attributes) => {
         shouldNested = false
       }
 
-      // console.log("coming prevblock", { prevBlock, mapHPost })
 
       // let insertPos = newTr.mapping.map(prevBlock.endBlockPos)
       // let lastInsertPos = newTr.mapping.maps[newTr.mapping.maps.length - 1].ranges
 
       newTr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
-
-      // console.log("=>", {
-      //   heading,
-      //   yes: prevBlock.le < heading.le,
-      //   lastNodeInserted,
-      //   shouldNested,
-      //   insertPos,
-      //   ww: newTr.mapping.maps,
-      //   lastInsertPos,
-      //   node,
-      //   level: heading.le,
-      //   prevBlock,
-      //   mapHPost,
-      //   prevBlockEqual,
-      //   prevBlockGratherFromFirst,
-      //   prevBlockGratherFromLast,
-      // })
-
     }
   }
 
-  return chain().deleteRange({ from: newTr.mapping.map(start - 1), to: newTr.mapping.map(block.end) }).run()
+  return chain()
+    .deleteRange({ from: newTr.mapping.map(start - 1), to: newTr.mapping.map(block.end) })
+    .scrollIntoView()
+    .run()
 
 }
