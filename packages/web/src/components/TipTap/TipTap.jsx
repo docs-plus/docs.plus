@@ -110,6 +110,8 @@ const Text = Node.create({
 
 const scrollDown = () => {
   const url = new URL(window.location);
+  const id = url.searchParams.get('id')
+  if (!id) return
   setTimeout(() => {
     console.log({
       do: document.querySelector('.tipta__editor'),
@@ -117,7 +119,7 @@ const scrollDown = () => {
       id: url.searchParams.get('id'),
       nodeTarget: document.querySelector(`[data-id="${ url.searchParams.get('id') }"]`)
     })
-    document.querySelector(`[data-id="${ url.searchParams.get('id') }"]`).scrollIntoView()
+    document.querySelector(`[data-id="${ url.searchParams.get('id') }"]`)?.scrollIntoView()
   }, 200)
 }
 
