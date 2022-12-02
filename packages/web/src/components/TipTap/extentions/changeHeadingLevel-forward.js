@@ -112,51 +112,17 @@ export default (arrg, attributes) => {
   let shouldNested = false
 
   // let prevBlock = mapHPost.find(x => x.le >= commingLevel)
-  let prevBlock = mapHPost.find(x => x.le >= commingLevel)
-
-  const afterBlock = mapHPost.findLast(x => x.le <= commingLevel)
-
-  console.log({
-    prevBlock,
-    afterBlock,
-    mapHPost, titleHMap
-  })
-
-  if (afterBlock && commingLevel >= currentHLevel) {
-    console.log("wroorwowro")
-    if (commingLevel !== afterBlock.le) shouldNested = true
-    prevBlock = afterBlock
-  }
-
-  console.log({ prevBlock, afterBlock, currentHLevel, commingLevel, alevel: afterBlock?.le })
-
-  const sameLevelAtDepth = mapHPost.filter(x => x.le >= commingLevel && x.depth === prevBlock.depth)
-  if (sameLevelAtDepth.length >= 3) prevBlock = sameLevelAtDepth[sameLevelAtDepth.length - 1]
-
-  if (!prevBlock) {
+  // FIXME: this is heavy! I need to find better solotion with less loop
+  let prevBlockEqual = mapHPost.findLast(x => x.le === commingLevel)
+  let prevBlockGratherFromFirst = mapHPost.find(x => x.le >= commingLevel)
+  let prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= commingLevel)
+  const lastbloc = mapHPost[mapHPost.length - 1]
+  let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
+  if (lastbloc.le <= commingLevel) prevBlock = lastbloc
+  if (prevBlock.le < commingLevel) {
     shouldNested = true
-    prevBlock = mapHPost.findLast(x => x.le <= commingLevel)
   }
 
-  console.log({
-    prevBlock,
-    depth,
-    sameLevelAtDepth,
-    shouldNested,
-    commingLevel,
-    titleHMap,
-    start: start - 1,
-    nodeAt: doc.nodeAt(prevHStartPos),
-    mapHPost,
-    prevBlock,
-    prevHEndPos,
-    prevHStartPos,
-    contentWrapper,
-    contentWrapperHeadings,
-    contentWrapperParagraphs,
-    schema: schema.nodes.heading
-
-  })
 
   const jsonNode = {
     type: 'heading',
