@@ -46,7 +46,6 @@ export default (arrg, attributes) => {
   const currentHeading = $from.doc.nodeAt(block.start)
   const currentHLevel = $from.doc.nodeAt(block.start).attrs.level
 
-
   console.log("[Heading]: Forward process,  commingLevel < currentHLevel")
   console.log("the hard path")
 
@@ -96,7 +95,6 @@ export default (arrg, attributes) => {
     .filter(x => endSliceBlocPos <= x.endBlockPos)
     .find(x => x.le >= commingLevel)?.endBlockPos
 
-
   const jsonNode = {
     type: 'heading',
     content: [
@@ -121,7 +119,6 @@ export default (arrg, attributes) => {
   const resolveContentHeadingPos = newTr.doc.resolve(contentHeadingNodeSize)
   const newTextSelection = new TextSelection(resolveContentHeadingPos)
   newTr.setSelection(newTextSelection)
-
 
   return chain()
     .deleteRange({ from: start - 1, to: insertPos })

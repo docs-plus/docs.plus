@@ -108,13 +108,27 @@ const Text = Node.create({
   group: 'inline',
 })
 
+const scrollDown = () => {
+  const url = new URL(window.location);
+  setTimeout(() => {
+    console.log({
+      do: document.querySelector('.tipta__editor'),
+      param: url,
+      id: url.searchParams.get('id'),
+      nodeTarget: document.querySelector(`[data-id="${ url.searchParams.get('id') }"]`)
+    })
+    document.querySelector(`[data-id="${ url.searchParams.get('id') }"]`).scrollIntoView()
+  }, 200)
+}
+
 
 const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = false, children }) => {
   const [isloading, setIsloading] = useState(true)
 
   const editor = useEditor({
     onCreate: (editor) => {
-      // console.log("onCreate", editor)
+      console.log("onCreate", editor)
+      scrollDown()
     },
     onUpdate: (editor) => {
       // console.log("onUpdate", editor)
@@ -125,6 +139,11 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       },
     },
     extensions: [
+      UniqueID.configure({
+        types: ['heading', 'contentHeading', 'link'],
+        filterTransaction: transaction => !isChangeOrigin(transaction),
+        // generateID: () => ObjectID()
+      }),
       Bold,
       Italic,
       BulletList,
@@ -140,17 +159,9 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
         persist: true,
       }),
       Button,
-
-      // Note,
-      // NoteGroup,
       ContentHeading,
       ContentWrapper,
-      // Heading,
-      // UniqueID.configure({
-      //   types: ['heading', 'paragraph'],
-      //   filterTransaction: transaction => !isChangeOrigin(transaction),
-      //   // generateID: () => ObjectID()
-      // }),
+
 
       // Such expressions can be combined to create a sequence,
       // for example "heading paragraph+" means ‘first a heading,
@@ -187,7 +198,6 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       }),
       Highlight,
       Typography,
-
       Collaboration.configure({
         document: provider.document,
       }),
@@ -195,17 +205,6 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
         provider: provider,
         user: { name: 'Adam Doe', color: randomColor() },
       }),
-      // //=======>>>
-
-      // HeadingsTitle,
-      // HeadingsContent,
-      // Headings.configure({
-      //   persist: true,
-      //   open: true,
-      //   HTMLAttributes: {
-      //     class: 'headings drag_box',
-      //   },
-      // }),
       Placeholder.configure({
         includeChildren: true,
         placeholder: ({ node }) => {
@@ -221,11 +220,8 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
             return 'Write something …';
           }
           return null
-
         },
       }),
-      // headingAttrs,
-
     ],
     defualtContent: '',
   }, [])
@@ -233,7 +229,7 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
   useEffect(() => {
     // console.log("useEffect", editor)
     if (!editor) setIsloading(false)
-    // console.log("data loadedddd!!1")
+    console.log("data loadedddd!!1")
     // console.log("useEffect", isloading)
     document.title = `Pad: ${ padName }`;
     return () => {

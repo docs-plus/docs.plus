@@ -17,10 +17,16 @@ import TableOfContents from '../components/TipTap/TableOfContents';
 import { useEffect } from 'react';
 import PadTitle from '../components/PadTitle'
 
+
+
 export default function Root() {
-  const { padName } = useParams()
+  const { padName, } = useParams()
   const [loadedData, setLoadedData] = useState(false)
   const newPadName = `pads.${ padName }`
+
+
+
+
 
   // run once
   const [provider, ydoc] = useMemo(() => {
@@ -29,8 +35,9 @@ export default function Root() {
       url: import.meta.env.VITE_HOCUSPOCUS_PROVIDER_URL,
       name: newPadName,
       document: ydoc,
+
       onStatus: (data) => {
-        // console.log("onOpen", data)
+        // console.log("onStatus", data)
       },
       onSynced: (data) => {
         // console.log("onSynced", data)
@@ -47,7 +54,7 @@ export default function Root() {
 
     newProvider.on('synced', () => {
       if (!loadedData) return
-      console.log(`content loaded from indexdb, pad name: ${ newPadName }`)
+      // console.log(`content loaded from indexdb, pad name: ${ newPadName }`)
       setLoadedData(true)
     })
 
@@ -57,7 +64,9 @@ export default function Root() {
 
   }, [loadedData])
 
+
   const editor = TipTap({ padName, provider, ydoc })
+
 
   return (
     <>

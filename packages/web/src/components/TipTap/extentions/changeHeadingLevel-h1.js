@@ -1,5 +1,6 @@
 import { Node, Fragment, Slice, DOMSerializer } from 'prosemirror-model';
 import { TextSelection } from 'prosemirror-state';
+import { getPrevHeadingList } from './helper'
 
 export default (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
@@ -45,11 +46,9 @@ export default (arrg, attributes) => {
     paragraph: { "type": "paragraph", }
   }
 
-
   const nextSiblingLevel = $from.doc.nodeAt(block.end + 1)?.firstChild.attrs.level
   const currentHeading = $from.doc.nodeAt(block.start)
   const currentHLevel = $from.doc.nodeAt(block.start).attrs.level
-
 
   let titleStartPos = 0
   let titleEndPos = 0
@@ -65,12 +64,10 @@ export default (arrg, attributes) => {
     }
   })
 
-
   const contentWrapper = []
   const titleHMap = []
   let firstHEading = true
   let prevDepth = 0
-
 
   // return
 
@@ -104,10 +101,8 @@ export default (arrg, attributes) => {
   const contentWrapperParagraphs = contentWrapper.filter(x => x.type === "paragraph")
   const contentWrapperHeadings = contentWrapper.filter(x => x.type === "heading" && x.le >= currentHLevel)
 
-
   let prevHStartPos = 0
   let prevHEndPos = 0
-
 
   doc.nodesBetween(titleStartPos, start - 1, function (node, pos, parent, index) {
     if (node.type.name === "heading") {
@@ -179,36 +174,24 @@ export default (arrg, attributes) => {
   // first create the current heading with new level
   const newTr = tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
 
-
   const contentHeadingNodeSize = prevBlock.endBlockPos + block.headingContent.text.length + 2
   const resolveContentHeadingPos = newTr.doc.resolve(contentHeadingNodeSize)
   const newTextSelection = new TextSelection(resolveContentHeadingPos)
   newTr.setSelection(newTextSelection)
 
-  const getThePrevHeading = (start, from) => {
-    const titleHMap = []
-    newTr.doc.nodesBetween(start, from, function (node, pos, parent, index) {
-      if (node.type.name === "heading") {
-        const headingLevel = node.firstChild?.attrs?.level
-        const depth = doc.resolve(pos).depth
-        titleHMap.push({ le: headingLevel, node: node.toJSON(), depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, index })
-      }
-    })
-    return titleHMap
-  }
 
   // FIXME: this loop so much heavy, I need to find better solotion!
   // then loop through the heading to append
   if (contentWrapperHeadings.length > 0 && contentWrapperHeadings[0].le !== currentHLevel) {
     for (let [index, heading] of contentWrapperHeadings.entries()) {
 
-      mapHPost = getThePrevHeading(
+      mapHPost = getPrevHeadingList(
+        newTr,
         mapHPost[0].startBlockPos,
         mapHPost[0].startBlockPos + doc.nodeAt(mapHPost[0].startBlockPos).nodeSize + 2
       )
 
       const node = state.schema.nodeFromJSON(heading)
-
 
       let prevBlockEqual = mapHPost.findLast(x => x.le === heading.le)
       let prevBlockGratherFromFirst = mapHPost.find(x => x.le >= heading.le)
@@ -222,10 +205,6 @@ export default (arrg, attributes) => {
         shouldNested = false
       }
 
-
-      // let insertPos = newTr.mapping.map(prevBlock.endBlockPos)
-      // let lastInsertPos = newTr.mapping.maps[newTr.mapping.maps.length - 1].ranges
-
       newTr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
     }
   }
@@ -234,5 +213,4 @@ export default (arrg, attributes) => {
     .deleteRange({ from: newTr.mapping.map(start - 1), to: newTr.mapping.map(block.end) })
     .scrollIntoView()
     .run()
-
 }

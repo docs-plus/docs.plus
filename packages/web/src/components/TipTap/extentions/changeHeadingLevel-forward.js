@@ -1,4 +1,3 @@
-import { Node, Fragment, Slice, DOMSerializer } from 'prosemirror-model';
 import { TextSelection } from 'prosemirror-state';
 
 export default (arrg, attributes) => {
@@ -88,10 +87,8 @@ export default (arrg, attributes) => {
   const contentWrapperParagraphs = contentWrapper.filter(x => x.type === "paragraph")
   const contentWrapperHeadings = contentWrapper.filter(x => x.type === "heading" && x.le >= currentHLevel)
 
-
   let prevHStartPos = 0
   let prevHEndPos = 0
-
 
   doc.nodesBetween(titleStartPos, start - 1, function (node, pos, parent, index) {
     if (node.type.name === "heading") {
@@ -187,32 +184,16 @@ export default (arrg, attributes) => {
   const newTextSelection = new TextSelection(resolveContentHeadingPos)
   newTr.setSelection(newTextSelection)
 
-  const getThePrevHeading = (start, from) => {
-    const titleHMap = []
-    newTr.doc.nodesBetween(start, from, function (node, pos, parent, index) {
-      if (node.type.name === "heading") {
-        const headingLevel = node.firstChild?.attrs?.level
-        const depth = doc.resolve(pos).depth
-        titleHMap.push({ le: headingLevel, node: node.toJSON(), depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, index })
-      }
-    })
-    return titleHMap
-  }
-
   // then loop through the heading to append
   if (contentWrapperHeadings.length > 0 && contentWrapperHeadings[0].le !== currentHLevel) {
     for (let [index, heading] of contentWrapperHeadings.entries()) {
-      mapHPost = getThePrevHeading(
+      mapHPost = getPrevHeadingList(
+        newTr,
         mapHPost[0].startBlockPos,
         mapHPost[0].startBlockPos + doc.nodeAt(mapHPost[0].startBlockPos).nodeSize + 2
       )
 
-      // console.log("nodeAt", mapHPost[0].startBlockPos + doc.nodeAt(mapHPost[0].startBlockPos).nodeSize)
-
-
       const node = state.schema.nodeFromJSON(heading)
-      // const lastNodeInserted = mapHPost[mapHPost.length - 1]
-
 
       let prevBlockEqual = mapHPost.findLast(x => x.le === heading.le)
       let prevBlockGratherFromFirst = mapHPost.find(x => x.le >= heading.le)
@@ -226,30 +207,7 @@ export default (arrg, attributes) => {
         shouldNested = false
       }
 
-      // console.log("coming prevblock", { prevBlock, mapHPost })
-
-      // let insertPos = newTr.mapping.map(prevBlock.endBlockPos)
-      // let lastInsertPos = newTr.mapping.maps[newTr.mapping.maps.length - 1].ranges
-
       newTr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
-
-      // console.log("=>", {
-      //   heading,
-      //   yes: prevBlock.le < heading.le,
-      //   lastNodeInserted,
-      //   shouldNested,
-      //   insertPos,
-      //   ww: newTr.mapping.maps,
-      //   lastInsertPos,
-      //   node,
-      //   level: heading.le,
-      //   prevBlock,
-      //   mapHPost,
-      //   prevBlockEqual,
-      //   prevBlockGratherFromFirst,
-      //   prevBlockGratherFromLast,
-      // })
-
     }
   }
 
@@ -259,5 +217,4 @@ export default (arrg, attributes) => {
       to: newTr.mapping.map(block.end)
     })
     .run()
-
 }

@@ -313,31 +313,7 @@ const Toolbar = ({ editor }) => {
       </span>
 
 
-      {/* <button onClick={() => editor.chain().focus().setDetails().run()} disabled={!editor.can().setDetails()}>
-        S
-      </button>
-      <button onClick={() => editor.chain().focus().unsetHeadings().run()} disabled={!editor.can().unsetHeadings()}>
-        U
-      </button> */}
-
       <div className='divided'></div>
-      {/* <button onClick={() => editor.chain().focus().setHardBreak().run()}>|</button>
-      <div className='divided'></div> */}
-
-      {/* <button
-        onClick={() => editor.chain().focus().breakLine().run()}
-        className={editor.isActive('blockquote') ? 'is-active' : ''}
-      >
-        BL
-      </button>
-      <button
-        onClick={() => editor.chain().focus().liftBlock().run()}
-        className={editor.isActive('blockquote') ? 'is-active' : ''}
-      >
-        LB
-      </button>
-      <div className='divided'></div> */}
-
 
       <button
         onClick={() => editor.chain().focus().wrapBlock({ level: 1 }).run()}
@@ -375,6 +351,24 @@ const Toolbar = ({ editor }) => {
       >
         W6
       </button>
+      <button
+        onClick={() => editor.chain().focus().wrapBlock({ level: 7 }).run()}
+        className={editor.isActive('heading', { level: 7 }) ? 'is-active' : ''}
+      >
+        W7
+      </button>
+      <button
+        onClick={() => editor.chain().focus().wrapBlock({ level: 8 }).run()}
+        className={editor.isActive('heading', { level: 8 }) ? 'is-active' : ''}
+      >
+        W8
+      </button>
+      <button
+        onClick={() => editor.chain().focus().wrapBlock({ level: 9 }).run()}
+        className={editor.isActive('heading', { level: 9 }) ? 'is-active' : ''}
+      >
+        W9
+      </button>
 
       <div className='divided'></div>
 
@@ -386,11 +380,6 @@ const Toolbar = ({ editor }) => {
       </label >
 
       <div className='divided'></div>
-
-
-
-
-
     </div >
   );
 }

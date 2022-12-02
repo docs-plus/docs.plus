@@ -16,7 +16,8 @@ export default (arrg, attributes) => {
     return true
   }
 
-  if (currentHLevel === 1 && commingLevel > currentHLevel) {
+  // H1
+  if (currentHLevel === 1) {
     return changeHeadingLevelForwardH1(arrg, attributes)
   }
 
@@ -25,9 +26,12 @@ export default (arrg, attributes) => {
     return changeHeadingLevelForward(arrg, attributes)
   }
 
-  // H3 < H2
+  // H2 < H3 || H4 < H3
   if (commingLevel < currentHLevel) {
     return changeHeadingLevelBackward(arrg, attributes)
   }
+
+
+  return true
 
 }

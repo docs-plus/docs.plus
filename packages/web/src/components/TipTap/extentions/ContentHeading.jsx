@@ -17,9 +17,8 @@ const HeadingsTitle = Node.create({
     return {
       HTMLAttributes: {
         class: "title",
-        id: ''
       },
-      levels: [1, 2, 3, 4, 5, 6],
+      levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
     };
   },
   addAttributes() {
@@ -27,10 +26,6 @@ const HeadingsTitle = Node.create({
       level: {
         default: 1,
         rendered: false,
-      },
-      id: {
-        default: '',
-        rendered: false
       }
     };
   },
