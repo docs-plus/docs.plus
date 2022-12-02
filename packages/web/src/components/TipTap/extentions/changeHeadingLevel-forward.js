@@ -1,4 +1,5 @@
 import { TextSelection } from 'prosemirror-state';
+import { getPrevHeadingList } from './helper'
 
 export default (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
