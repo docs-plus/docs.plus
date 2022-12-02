@@ -57,7 +57,6 @@ export default (arrg, attributes) => {
   let firstHEading = true
   let prevDepth = 0
 
-
   doc.nodesBetween(titleStartPos, titleEndPos, function (node, pos, parent, index) {
     if (node.type.name === "heading") {
       const headingLevel = node.firstChild?.attrs?.level

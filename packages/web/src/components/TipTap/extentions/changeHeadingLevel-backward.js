@@ -47,7 +47,7 @@ export default (arrg, attributes) => {
   const currentHLevel = $from.doc.nodeAt(block.start).attrs.level
 
   console.log("[Heading]: Forward process,  commingLevel < currentHLevel")
-  console.log("the hard path")
+  // console.log("the hard path")
 
   const titleNode = $from.doc.nodeAt($from.start(1) - 1)
   const titleStartPos = $from.start(1) - 1
