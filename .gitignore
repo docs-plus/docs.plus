@@ -111,7 +111,7 @@ volumes
 packages/**/node_modules
 packages/**/volumes
 packages/**/.env.*
-packages/**/dev-dist
+packages/web/dev-dist
 
 
 .npmrc
