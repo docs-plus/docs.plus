@@ -7,7 +7,7 @@ export default (arrg, attributes) => {
   const { $from, $to, $anchor, $cursor } = selection;
   const { start, end, depth } = $from.blockRange($to);
 
-  console.log("[Heading]: forward process, commingLevel > currentHLevel")
+  console.log("[Heading]: change heading level forwarding")
 
   const commingLevel = attributes.level;
   const content = { "type": "text", "text": $anchor.nodeBefore.text }
@@ -122,6 +122,24 @@ export default (arrg, attributes) => {
     shouldNested = true
   }
 
+  console.log({
+    lastbloc,
+    prevBlock,
+    prevBlockEqual,
+    prevBlockGratherFromFirst,
+    prevBlockGratherFromLast,
+    depth,
+    shouldNested,
+    commingLevel,
+    titleHMap,
+    mapHPost,
+    prevHEndPos,
+    prevHStartPos,
+    contentWrapper,
+    contentWrapperHeadings,
+    contentWrapperParagraphs,
+    schema: schema.nodes.heading
+  }, "=>")
 
   const jsonNode = {
     type: 'heading',
@@ -145,6 +163,7 @@ export default (arrg, attributes) => {
   // first create the current heading with new level
   const newTr = tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
 
+
   const contentHeadingNodeSize = prevBlock.endBlockPos + block.headingContent.text.length + 2
   const resolveContentHeadingPos = newTr.doc.resolve(contentHeadingNodeSize)
   const newTextSelection = new TextSelection(resolveContentHeadingPos)
@@ -157,6 +176,11 @@ export default (arrg, attributes) => {
         newTr,
         mapHPost[0].startBlockPos,
         mapHPost[0].startBlockPos + doc.nodeAt(mapHPost[0].startBlockPos).nodeSize + 2
+      )
+
+      mapHPost = mapHPost.filter(x =>
+        x.startBlockPos < heading.startBlockPos &&
+        x.startBlockPos >= prevHStartPos
       )
 
       const node = state.schema.nodeFromJSON(heading)
@@ -173,13 +197,25 @@ export default (arrg, attributes) => {
         shouldNested = false
       }
 
+      console.log({
+        mapHPost,
+        prevBlockEqual,
+        prevBlockGratherFromFirst,
+        prevBlockGratherFromLast,
+        lastbloc,
+        prevBlock,
+      })
+
+      newTr.deleteRange(newTr.mapping.map(start - 1), newTr.mapping.map(block.end))
+      return
+
       newTr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
     }
   }
 
   return chain()
     .deleteRange({
-      from: newTr.mapping.map(start - 1),
+      from: newTr.mapping.map(start - 2),
       to: newTr.mapping.map(block.end)
     })
     .run()

@@ -113,16 +113,18 @@ $Pad_Toolbar__height: 38px;
 
   .editor {
     background-color: #f8f9fa;
-    // max-height: calc(100% - ($Pad_Header__height + $Pad_Toolbar__height));
-    // min-height: calc(100% - ($Pad_Header__height + $Pad_Toolbar__height));
     overflow: auto;
     // @apply absolute;
-    // top: calc(($Pad_Header__height + $Pad_Toolbar__height));
+
 
     .tipta__editor {
       @apply max-w-4xl w-full;
-      // height: calc(100% - ($Pad_Header__height + $Pad_Toolbar__height));
-      // overflow: auto;
+
+      .heading {
+        background-color: #fff;
+        // padding: 0 1rem;
+      }
+
     }
   }
 }
@@ -344,59 +346,122 @@ body.indentHeading {
 
   div.heading {
     position: relative;
-    // display: flex;
-    // width: 100%;
+    height: 100%;
 
+    &[level="1"] {
+      border: 1px solid #0D0D0D;
+      padding: 1rem;
+    }
 
+    .title {
+      // position: relative;
+      z-index: 9;
+      // background-color: rebeccapurple;
+      width: 100%;
+    }
+
+    &:not(.is-open) {
+      display: flex;
+      flex-direction: column-reverse;
+      // padding-bottom: 10px;
+
+      >.foldWrapper {
+        cursor: pointer;
+
+        &:hover .fold {
+          &::after {
+            height: 8px;
+          }
+
+          &::before {
+            height: 8px;
+          }
+        }
+
+        .fold {
+          width: calc(100% + 2rem + 6px);
+          position: relative;
+          z-index: 2;
+          left: -19px;
+          background-color: #f8f9fa;
+          padding-right: 4px;
+          transition: all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+          &::after {
+            content: "";
+            display: block;
+            height: 5px;
+            background-color: #fff;
+            width: 100%;
+            border: 1px solid black;
+            transform: skew(44deg);
+            border-bottom: none;
+            transition: all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          }
+
+          &::before {
+            content: "";
+            display: block;
+            height: 5px;
+            background-color: #cecece;
+            width: 100%;
+            border: 1px solid black;
+            transform: skew(-44deg);
+            border-bottom: none;
+            transition: all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+          }
+
+          &.l3::after {
+            border-bottom: 1px solid;
+          }
+        }
+      }
+    }
 
     .contentHeading {
       display: flex;
       align-items: center;
     }
 
-    [hidden] {
-      background-color: red;
-      display: block !important;
-      height: 0;
+    .wrapBlock {
       // overflow: hidden;
-      padding: 0 !important;
-      margin: 0;
-      margin-bottom: 30px;
-
-      * {
-        display: none !important;
-      }
+      transition: all .3s linear;
+      // overflow: hidden;
+      // height: auto;
+      height: 100%;
 
 
 
-      &::after {
-        content: '';
-        height: 26px;
-        display: block;
-        background-color: red;
-        background: 0 center repeat-x url('data:image/svg+xml;utf-8,<?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="9px" height="6px" viewBox="0 0 9 6" enable-background="new 0 0 9 6" xml:space="preserve"><polygon opacity="0.3" points="4.5,4.5 0,0 0,1.208 4.5,5.708 9,1.208 9,0 "/></svg>');
-        background-size: 14px;
-        width: calc(100% + 66px);
-        left: -33px;
-        position: relative;
-      }
+      .contentWrapper {
+        // background-color: red;
+        // height: 100%;
+        // overflow: hidden;
+        // position: relative;
+        // z-index: 0;
+        transition: all 0.5s ease-in-out;
+        // transform-origin: top left;
+        height: auto;
+        opacity: 1;
 
-      &::before {
-        content: 'Hidden Contents';
-        text-align: center;
-        display: block;
-        position: absolute;
-        background: #ffff;
-        left: 50%;
-        transform: translateY(-50%);
-        bottom: -35px;
-        padding: 0 8px;
-        z-index: 1;
+        &.collapsed {
+          height: 0;
+          opacity: 0;
+          overflow: hidden;
+          // transform: scaleY(0);
+        }
+
+        // &.open {
+        //   opacity: 1;
+        // }
+
+        // &:not(.open) {
+        //   opacity: 0;
+        // }
       }
     }
 
-    &:hover {
 
+    &:hover {
       border-color: rgb(181, 181, 181);
 
       >a {
@@ -512,7 +577,11 @@ body.indentHeading {
   h3,
   h4,
   h5,
-  h6 {
+  h6,
+  h7,
+  h8,
+  h9,
+  h10 {
     font-weight: bold;
     @apply font-medium mt-0 mb-2;
   }
@@ -539,7 +608,11 @@ body.indentHeading {
     @apply text-2xl;
   }
 
-  h6 {
+  h6,
+  h7,
+  h8,
+  h9,
+  h10 {
     @apply text-xl;
   }
 

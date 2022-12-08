@@ -7,11 +7,11 @@ export default (arrg, attributes) => {
   const slice = state.doc.slice(start, end);
   let _a;
 
-  const content = ((_a = slice.toJSON()) === null || _a === void 0 ? void 0 : _a.content) || [];
   const commingLevel = attributes.level;
 
+  const content = { "type": "text", "text": $anchor.nodeBefore?.text || " " }
   // select the first paragraph for heading title
-  const headingContent = content.length === 1 ? content[0].content[0] : { "type": "text", "text": " " }
+  const headingContent = content
 
   const block = {
     parent: {

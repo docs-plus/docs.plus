@@ -108,12 +108,10 @@ const UniqueID = Extension.create({
 
           // get changed ranges based on the old state
           const changes = getChangedRanges(transform);
-          // console.log("once update========>>>>", changes, tr)
           changes.forEach(({ newRange }) => {
             const newNodes = findChildrenInRange(newState.doc, newRange, node => {
               return types.includes(node.type.name);
             });
-            console.log(newNodes)
             const newIds = newNodes
               .map(({ node }) => node.attrs[attributeName])
               .filter(id => id !== null);

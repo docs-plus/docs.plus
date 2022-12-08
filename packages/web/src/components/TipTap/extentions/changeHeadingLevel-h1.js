@@ -8,7 +8,7 @@ export default (arrg, attributes) => {
   const { $from, $to, $anchor, $cursor } = selection;
   const { start, end, depth } = $from.blockRange($to);
 
-  console.log("[Heading]: forward process, commingLevel > currentHLevel")
+  console.log("[Heading]: change heading Level h1")
 
   const commingLevel = attributes.level;
   const content = { "type": "text", "text": $anchor.nodeBefore.text }
@@ -189,6 +189,11 @@ export default (arrg, attributes) => {
         newTr,
         mapHPost[0].startBlockPos,
         mapHPost[0].startBlockPos + doc.nodeAt(mapHPost[0].startBlockPos).nodeSize + 2
+      )
+
+      mapHPost = mapHPost.filter(x =>
+        x.startBlockPos < heading.startBlockPos &&
+        x.startBlockPos >= prevHStartPos
       )
 
       const node = state.schema.nodeFromJSON(heading)

@@ -12,62 +12,22 @@ import Highlight from '@tiptap/extension-highlight'
 import Typography from '@tiptap/extension-typography'
 import randomColor from 'randomcolor'
 import Underline from '@tiptap/extension-underline'
-// import UniqueID from '@tiptap-pro/extension-unique-id'
 import UniqueID from './extentions/UniqueId'
-
-// import Headings from './extentions/Headings'
-// import HeadingsTitle from './extentions/HeadingsTitle'
-// import HeadingsContent from './extentions/HeadingsContent'
 import Placeholder from '@tiptap/extension-placeholder'
-import { ObjectID } from 'bson';
-import headingAttrs from './TableOfContentss'
 import Gapcursor from '@tiptap/extension-gapcursor'
 import { isChangeOrigin } from '@tiptap/extension-collaboration'
-
 import { Node } from '@tiptap/core'
-
-// import Heading from '@tiptap/extension-heading'
-// import Heading from './extentions/Heading'
 import ContentWrapper from './extentions/ContentWrapper'
 import ContentHeading from './extentions/ContentHeading'
 import ListItem from '@tiptap/extension-list-item'
 import OrderedList from '@tiptap/extension-ordered-list'
-// import { findWrapping } from "prosemirror-transform"
 import HardBreak from '@tiptap/extension-hard-break'
 import Heading from './extentions/Heading'
-
 
 import Bold from '@tiptap/extension-bold'
 import Italic from '@tiptap/extension-italic'
 import BulletList from '@tiptap/extension-bullet-list'
 import Strike from '@tiptap/extension-strike'
-// the underlying ProseMirror schema
-// {
-//   nodes: {
-//     document: {
-//       content: 'block+',
-//     },
-//     paragraph: {
-//       content: 'inline*',
-//         group: 'block',
-//           parseDOM: [{ tag: 'p' }],
-//             toDOM: () => ['p', 0],
-//     },
-//     text: {
-//       group: 'inline',
-//     },
-//   },
-// }
-
-// const groupSchema = new Schema({
-//   nodes: {
-//     doc: { content: "block+" },
-//     paragraph: { group: "block", content: "text*" },
-//     blockquote: { group: "block", content: "block+" },
-//     text: {}
-//   }
-// })
-
 
 const Document = Node.create({
   name: 'doc',
@@ -123,13 +83,12 @@ const scrollDown = () => {
   }, 200)
 }
 
-
 const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = false, children }) => {
   const [isloading, setIsloading] = useState(true)
 
   const editor = useEditor({
     onCreate: (editor) => {
-      console.log("onCreate", editor)
+      // console.log("onCreate", editor)
       scrollDown()
     },
     onUpdate: (editor) => {
@@ -231,7 +190,7 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
   useEffect(() => {
     // console.log("useEffect", editor)
     if (!editor) setIsloading(false)
-    console.log("data loadedddd!!1")
+    // console.log("data loadedddd!!1")
     // console.log("useEffect", isloading)
     document.title = `Pad: ${ padName }`;
     return () => {

@@ -9,7 +9,6 @@ import { Navigate, useNavigate, useParams } from "react-router-dom";
 // !Four: the breaking chain function must be refactor from the beging,
 // this task must examin fir each depth, beacue each depth has their own conent and breaking chaine process.
 
-
 const isNodeVisible = (position, editor) => {
   const node = editor.view.domAtPos(position).node;
   const isOpen = node.offsetParent !== null;
@@ -155,7 +154,8 @@ const Blockquote = Node.create({
       openClassName: 'is-open',
       HTMLAttributes: {
         class: "heading",
-        "data-depth": 0
+        "data-depth": 0,
+        level: 1
       },
     };
   },
@@ -185,6 +185,7 @@ const Blockquote = Node.create({
       const dom = document.createElement('div');
       const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         'data-type': this.name,
+        'level': node.firstChild.attrs.level
       });
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
 
@@ -201,6 +202,19 @@ const Blockquote = Node.create({
       href.setAttribute('href', `#${ this.options['data-id'] }`)
       dom.append(href)
 
+
+      const foldEl = document.createElement('div')
+      foldEl.classList.add('foldWrapper')
+
+      for (let i = 0; i <= 3; i++) {
+        const line = document.createElement('div')
+        line.classList.add(`fold`)
+        line.classList.add(`l${ i }`)
+        foldEl.append(line)
+      }
+
+      dom.append(foldEl)
+
       const content = document.createElement('div')
       content.classList.add('wrapBlock')
       dom.append(content);
@@ -212,11 +226,11 @@ const Blockquote = Node.create({
         dom.classList.remove(this.options.openClassName);
       }
 
-      const toggleHeadingContent = () => {
-        console.log("what", node.attrs.open)
+      const toggleHeadingContent = (el) => {
+        // console.log("what", node.attrs.open)
         dom.classList.toggle(this.options.openClassName);
-        const event = new Event('toggleHeadingsContent');
         const detailsContent = content.querySelector(':scope > div.contentWrapper');
+        const event = new CustomEvent('toggleHeadingsContent', { detail: { open: node.attrs.open, dom, el: detailsContent } });
         detailsContent === null || detailsContent === void 0 ? void 0 : detailsContent.dispatchEvent(event);
       };
 
@@ -251,10 +265,9 @@ const Blockquote = Node.create({
           .run()
       })
 
-      // TODO: this migth face to problem in the slow processor
-      // TODO: saving open in here is not okay, because I save this open in contentWrapper also
-      toggle.addEventListener('click', () => {
-        toggleHeadingContent();
+      const foldAndUnfold = (e) => {
+        const el = e.target
+        toggleHeadingContent(el);
         if (!this.options.persist) {
           editor.commands.focus();
           return;
@@ -276,7 +289,12 @@ const Blockquote = Node.create({
             })
             .run();
         }
-      });
+      }
+
+      // TODO: this migth face to problem in the slow processor
+      // TODO: saving open in here is not okay, because I save this open in contentWrapper also
+      toggle.addEventListener('click', foldAndUnfold);
+      foldEl.addEventListener('click', foldAndUnfold);
 
 
       return {
@@ -533,10 +551,8 @@ const Blockquote = Node.create({
           }
         }
       })
-
     ];
   },
-
 });
 
 export { Blockquote, Blockquote as default, inputRegex };
