@@ -30,7 +30,7 @@ export default defineConfig({
       },
       manifest,
       devOptions: {
-        enabled: true
+        enabled: false
       }
     })
   ],

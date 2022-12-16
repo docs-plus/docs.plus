@@ -68,7 +68,7 @@ export default (arrg, attributes) => {
   doc.nodesBetween(start, titleEndPos, function (node, pos, parent, index) {
     if (pos < start) return
 
-    if (node.type.name === "paragraph" && firstHEading) {
+    if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
       const depth = $from.sharedDepth(pos)
       contentWrapper.push({ depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON(), })
     }
@@ -86,7 +86,7 @@ export default (arrg, attributes) => {
   })
 
   const sliceTargetContent = contentWrapper.filter(x => {
-    if (x.type === 'paragraph') return x
+    if (x.type !== 'heading') return x
     return x.le > commingLevel
   })
 

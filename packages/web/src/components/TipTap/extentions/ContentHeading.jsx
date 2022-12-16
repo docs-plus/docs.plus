@@ -4,15 +4,15 @@ import { ObjectID } from 'bson';
 
 import { Plugin } from 'prosemirror-state';
 
-
 const HeadingsTitle = Node.create({
   name: 'contentHeading',
-  content: 'inline*',
+  content: 'text*',
   group: 'block',
   defining: true,
   draggable: false,
   selectable: false,
   isolating: true,
+  allowGapCursor: false,
   addOptions() {
     return {
       HTMLAttributes: {
@@ -43,11 +43,6 @@ const HeadingsTitle = Node.create({
       ? node.attrs.level
       : this.options.levels[0];
     return [`h${ level }`, mergeAttributes(this.options.HTMLAttributes, { ...HTMLAttributes, level }), 0];
-  },
-  props: {
-    decorations: ({ doc, selection }) => {
-      // console.log("222221123123123")
-    }
   },
   addKeyboardShortcuts() {
     return {
@@ -86,7 +81,6 @@ const HeadingsTitle = Node.create({
 
 
           return this.editor.chain()
-            // .deleteNode('heading')
             .insertContentAt(
               { from: block.start, to: block.end },
               contentWrapper.content.toJSON()
@@ -99,54 +93,6 @@ const HeadingsTitle = Node.create({
       }
     }
   }
-  // addNodeView() {
-  //   return ({ editor, getPos, node, HTMLAttributes, }) => {
-  //     console.log({
-  //       HTMLAttributes,
-  //       node,
-  //       level: node.attrs.level
-  //     })
-  //     const level = node.attrs.level
-  //     const dom = document.createElement('div');
-  //     dom.classList.add('contentHeading')
-
-  //     const href = document.createElement('a')
-  //     href.classList.add('unselectable')
-  //     href.contentEditable = false
-  //     href.innerHTML = "#"
-  //     dom.append(href)
-  //     const content = document.createElement(`h${ level }`)
-  //     content.setAttribute('level', level)
-  //     dom.append(content)
-
-  //     href.addEventListener('click', () => {
-  //       alert("Hooray")
-  //       editor
-  //         .chain()
-  //         .focus()
-  //         .run()
-  //     })
-
-  //     return {
-  //       dom,
-  //       contentDOM: content,
-  //       ignoreMutation(mutation) {
-  //         if (mutation.type === 'selection') {
-  //           return false;
-  //         }
-  //         return !dom.contains(mutation.target) || dom === mutation.target;
-  //       },
-  //       update: updatedNode => {
-  //         if (updatedNode.type !== this.type) {
-  //           return false;
-  //         }
-  //         return true;
-  //       },
-  //     };
-  //   }
-  // }
-
-
 });
 
 export { HeadingsTitle, HeadingsTitle as default };

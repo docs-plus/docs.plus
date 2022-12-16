@@ -353,7 +353,7 @@ export default (arrg, attributes) => {
 
       if (pos < start) return
 
-      if (firstHEading && node.type.name === "paragraph") {
+      if (firstHEading && node.type.name !== "heading") {
         data.push(node.toJSON())
       }
 

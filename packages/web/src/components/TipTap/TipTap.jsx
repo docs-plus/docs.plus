@@ -29,6 +29,26 @@ import Italic from '@tiptap/extension-italic'
 import BulletList from '@tiptap/extension-bullet-list'
 import Strike from '@tiptap/extension-strike'
 
+import Superscript from '@tiptap/extension-superscript'
+import Subscript from '@tiptap/extension-subscript'
+import Blockquote from '@tiptap/extension-blockquote'
+import TextAlign from '@tiptap/extension-text-align'
+
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import CodeBlock from '@tiptap/extension-code-block'
+
+import css from 'highlight.js/lib/languages/css'
+import js from 'highlight.js/lib/languages/javascript'
+import ts from 'highlight.js/lib/languages/typescript'
+import html from 'highlight.js/lib/languages/xml'
+// load all highlight.js languages
+import { lowlight } from 'lowlight'
+
+lowlight.registerLanguage('html', html)
+lowlight.registerLanguage('css', css)
+lowlight.registerLanguage('js', js)
+lowlight.registerLanguage('ts', ts)
+
 const Document = Node.create({
   name: 'doc',
   topNode: true,
@@ -59,7 +79,7 @@ const Button = Node.create({
     ]
   },
   renderHTML({ HTMLAttributes }) {
-    return ['button', mergeAttributes(HTMLAttributes), 0]
+    return ['button', HTMLAttributes, 0]
   },
 })
 
@@ -105,13 +125,13 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
         filterTransaction: transaction => !isChangeOrigin(transaction),
         // generateID: () => ObjectID()
       }),
+      Document,
       Bold,
       Italic,
       BulletList,
       Strike,
       HardBreak,
       Gapcursor,
-      Document,
       Paragraph,
       Text,
       ListItem,
@@ -119,26 +139,17 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       Heading.configure({
         persist: true,
       }),
+      CodeBlockLowlight.configure({
+        lowlight,
+      }),
+
       Button,
       ContentHeading,
       ContentWrapper,
-
-
-      // Such expressions can be combined to create a sequence,
-      // for example "heading paragraph+" means ‘first a heading,
-      // then one or more paragraphs’.
-      // You can also use the pipe | operator to indicate a choice between two
-      // expressions, as in "(paragraph | blockquote)+".
-
-
-
-      // StarterKit.configure({
-      //   // The Collaboration extension comes with its own history handling
-      //   history: false,
-      //   paragraph: {
-      //     content: 'heading paragraph+'
-      //   }
-      // }),
+      Superscript,
+      Subscript,
+      Blockquote,
+      TextAlign,
       Underline,
       Link.configure({
         protocols: ['ftp', 'mailto'],

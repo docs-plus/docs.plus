@@ -1,13 +1,10 @@
 import { Node, mergeAttributes, wrappingInputRule, findParentNode, findChildren, isActive, textblockTypeInputRule } from '@tiptap/core';
-import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from "prosemirror-model"
+import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch, DOMSerializer } from "prosemirror-model"
 import { Selection, Plugin, PluginKey, TextSelection } from 'prosemirror-state';
 import { Transform } from 'prosemirror-transform'
 import changeHeadingLevel from './changeHeadingLevel';
 import wrapContenWithHeading from './wrapContenWithHeading';
-import { Navigate, useNavigate, useParams } from "react-router-dom";
-// !Three: Refactore, review the code and add more green do
-// !Four: the breaking chain function must be refactor from the beging,
-// this task must examin fir each depth, beacue each depth has their own conent and breaking chaine process.
+import clipboardPast from './clipboardPast';
 
 const isNodeVisible = (position, editor) => {
   const node = editor.view.domAtPos(position).node;
@@ -137,12 +134,10 @@ function copyToClipboard(text) {
   });
 }
 
-
-
-const inputRegex = /^\s*>\s$/;
+const inputRegex = /(?:^|\s)((?:~)((?:[^~]+))(?:~))/g;
 const Blockquote = Node.create({
   name: 'heading',
-  content: 'contentHeading contentWrapper*',
+  content: 'contentHeading+ contentWrapper*',
   group: 'contentWrapper',
   defining: true,
   isolating: true,
@@ -185,7 +180,7 @@ const Blockquote = Node.create({
       const dom = document.createElement('div');
       const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         'data-type': this.name,
-        'level': node.firstChild.attrs.level
+        'level': node.firstChild?.attrs.level
       });
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
 
@@ -533,21 +528,108 @@ const Blockquote = Node.create({
       new Plugin({
         key: new PluginKey('copy&pasteHeading'),
         props: {
-          clipboardTextParser: (str, $context) => {
-            console.log("clipboardTextParser", str, $context)
-          },
-          transformPasted: (pslice) => {
-            console.log("transformPasted", pslice, pslice.toJSON())
+          transformPasted: (slice) => {
+
+
+            // slice.content.descendants(function (node, pos, parent, index) {
+            //   console.log({
+            //     node, pos, parent, index
+            //   })
+            // })
+
+
+
+            return clipboardPast(slice, this.editor)
+
+
+
           },
           transformCopied: (slice, view) => {
-            const { schema, selection } = this.editor.state;
+            // Can be used to transform copied or cut content before it is serialized to the clipboard.
+            const { schema, selection, doc } = this.editor.state;
             const { empty, $anchor, $head, $from, $to } = selection;
-            // const { $from, $to, $anchor, $cursor } = selection;
             const { start, end, depth } = $from.blockRange($to);
+            console.log("transformCopied", { slice })
 
+            const contentWrapper = []
+            let firstHEading = true
+            let prevDepth = 0
+            doc.nodesBetween(start, end, function (node, pos, parent, index) {
+              if (pos < start) return
+              if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
+                const depth = doc.resolve(pos).depth
+                contentWrapper.push({ depth, startBlockPos: pos, parent, index, endBlockPos: pos + node.nodeSize, ...node.toJSON(), })
+              }
+              if (node.type.name === "heading") {
+                firstHEading = false
+                const headingLevel = node.firstChild?.attrs?.level
+                const depth = doc.resolve(pos).depth
+                if (prevDepth === 0) prevDepth = depth
 
-            console.log("transformCopied", slice.toJSON(), selection)
-            return slice
+                if (prevDepth >= depth) {
+                  contentWrapper.push({ le: headingLevel, depth, index, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON(), })
+                  prevDepth = depth
+                }
+              }
+            })
+
+            let mapHeadingIndex = []
+            let serializedSelection = [];
+
+            const departHeading = (headingBlock) => {
+              const newBlocks = []
+              const htag = headingBlock.content.find(x => x.type === 'contentHeading')
+              const restOfContnets = headingBlock.content.find(x => x.type === 'contentWrapper')
+              newBlocks.push(htag)
+              newBlocks.push(...restOfContnets.content)
+              return newBlocks
+            }
+
+            const createRemainHeadingMap = (contentWrapper) => {
+              const hMap = []
+              for (const [index, block] of contentWrapper.entries()) {
+                if (block.type === 'heading') {
+                  hMap.push({ index, block })
+                }
+              }
+              return hMap
+            }
+
+            const departContents = (contents) => {
+
+              mapHeadingIndex = createRemainHeadingMap(contents)
+
+              if (mapHeadingIndex.length < 0) return serializedSelection = contents
+
+              for (let blockHeading of mapHeadingIndex) {
+                const newContents = departHeading(blockHeading.block)
+                contents.splice(blockHeading.index, 1, newContents)
+              }
+
+              // flat the array
+              contents = [].concat(...contents)
+
+              // clreate the heading map
+              mapHeadingIndex = []
+
+              mapHeadingIndex = createRemainHeadingMap(contents)
+
+              // If the heading block is left, Re-serialize contents
+              if (mapHeadingIndex.length > 0) return departContents(contents)
+
+              return serializedSelection = contents
+            }
+
+            departContents(contentWrapper)
+
+            // convert Json Block to Node Block
+            serializedSelection = serializedSelection.map(x => this.editor.state.schema.nodeFromJSON(x))
+
+            // convert Node Block to Fragment
+            serializedSelection = Fragment.fromArray(serializedSelection)
+
+            // convert Fragment to Slice and save it to clipboard
+            return Slice.maxOpen(serializedSelection)
           }
         }
       })
@@ -555,5 +637,4 @@ const Blockquote = Node.create({
   },
 });
 
-export { Blockquote, Blockquote as default, inputRegex };
-//# sourceMappingURL=tiptap-extension-blockquote.esm.js.map
+export { Blockquote, Blockquote as default };

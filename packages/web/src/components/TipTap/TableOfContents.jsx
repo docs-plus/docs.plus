@@ -10,10 +10,10 @@ export default ({ editor, className }) => {
     editor?.state?.doc?.descendants((node, pos, parent, index) => {
       if (node.type.name === 'heading') {
         headings.push({
-          level: node.firstChild.attrs.level,
-          text: node.firstChild.textContent,
-          id: node.firstChild.attrs.id,
-          open: node.attrs.open
+          level: node.firstChild?.attrs?.level,
+          text: node.firstChild?.textContent,
+          id: node.firstChild?.attrs.id,
+          open: node?.attrs.open
         })
       }
     })

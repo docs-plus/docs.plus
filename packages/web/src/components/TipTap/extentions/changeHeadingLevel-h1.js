@@ -81,7 +81,7 @@ export default (arrg, attributes) => {
 
   doc.nodesBetween(start - 1, $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size, function (node, pos, parent, index) {
     if (pos < start) return
-    if (node.type.name === "paragraph" && firstHEading) {
+    if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
       const depth = doc.resolve(pos).depth
       contentWrapper.push({ depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON(), })
     }
@@ -98,7 +98,7 @@ export default (arrg, attributes) => {
     }
   })
 
-  const contentWrapperParagraphs = contentWrapper.filter(x => x.type === "paragraph")
+  const contentWrapperParagraphs = contentWrapper.filter(x => x.type !== "heading")
   const contentWrapperHeadings = contentWrapper.filter(x => x.type === "heading" && x.le >= currentHLevel)
 
   let prevHStartPos = 0
