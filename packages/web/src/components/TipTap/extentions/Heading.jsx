@@ -403,14 +403,14 @@ const Blockquote = Node.create({
           sd: Selection.near(state.doc.resolve($from.pos), 1),
           // after: $head.start(depth + 1),
           // newResolve: $head.node(depth + 1)
-          isHeading: parent.lastChild.firstChild.type.name === 'heading'
+          isHeading: parent
         })
 
         // FIXME: not working
         // some times the contentWrapper cleaned up, so it should be create first
         // otherwise just the cursour must move to contnetWrapper
         // TODO: find better way for this 4
-        if (parent?.content?.content.length === 1 || parent.lastChild.firstChild.type.name === 'heading') {
+        if (parent?.content?.content.length === 1 || parent.lastChild?.firstChild?.type.name === 'heading') {
           // console.log("yes iminininin", parent.lastChild.firstChild.contentsize === 0, parent.lastChild.firstChild)
           //If there is not any contentWrapper
           console.log(parent.lastChild)
@@ -528,21 +528,15 @@ const Blockquote = Node.create({
       new Plugin({
         key: new PluginKey('copy&pasteHeading'),
         props: {
+          transformPastedHTML: (html, event) => {
+            // INFO: Div turn confuses the schema service;
+            // INFO:if there is a div in the clipboard, the docsplus schema will not serialize as a must.
+            html = html.replace(/div/g, 'span')
+
+            return html
+          },
           transformPasted: (slice) => {
-
-
-            // slice.content.descendants(function (node, pos, parent, index) {
-            //   console.log({
-            //     node, pos, parent, index
-            //   })
-            // })
-
-
-
             return clipboardPast(slice, this.editor)
-
-
-
           },
           transformCopied: (slice, view) => {
             // Can be used to transform copied or cut content before it is serialized to the clipboard.

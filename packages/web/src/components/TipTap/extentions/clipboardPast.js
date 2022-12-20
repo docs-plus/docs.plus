@@ -1,44 +1,74 @@
 import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from "prosemirror-model"
 import { getPrevHeadingList } from './helper'
+import { TextSelection, Selection } from 'prosemirror-state';
 
 export default (slice, editor) => {
   const { state, view } = editor;
-  const { schema, selection, doc, tr } = state;
-  const { $head, $anchor, $from, $to } = selection;
-  const { start, end, depth } = $from.blockRange($to);
+  let { schema, selection, doc, tr } = state;
 
-  // console.log("transformPasted", slice, view, slice.toJSON())
-  const hasContentHeading = slice.toJSON()
+  const newTr = tr
+  let newPosResolver;
+  let $from = selection.$from
+  let start = $from.pos
 
-  const block = {
-    parent: {
-      end: $from.end(depth - 1),
-      start: $from.start(depth - 1),
-    },
-    edge: {
-      end: $from.end(depth - 1) + 1,
-      start: $from.start(depth - 1) - 1,
-    },
-    ancesster: {
-      start: $from.start(1),
-      end: $from.end(1)
-    },
-    end: $from.end(depth),
-    start: $from.start(depth),
-    nextLevel: 0,
-    depth,
-    empty: {
-      "type": "paragraph",
-      "content": [
-        {
-          "type": "text",
-          "text": " "
-        }
-      ]
-    },
-    paragraph: { "type": "paragraph", }
+
+  // if user cursor is in the heading,
+  // move the cursor to the contentWrapper and do the rest
+  if ($from.parent.type.name === "contentHeading") {
+    const firstLine = doc.nodeAt(start + 2)
+
+    let resolveNextBlock = newTr.doc.resolve(start + 2)
+    newPosResolver = resolveNextBlock
+
+    // if the heading block does not contain contentWrapper as a first child
+    // then create a contentWrapper block
+    if (firstLine.type.name === 'heading') {
+      const contentWrapperBlock = {
+        type: 'contentWrapper',
+        content: [
+          {
+            "type": "paragraph"
+          },
+        ]
+
+      }
+
+      const node = state.schema.nodeFromJSON(contentWrapperBlock)
+      newTr.insert(start, node)
+      resolveNextBlock = newTr.doc.resolve(start + 2)
+    }
+
+    // put the selection to the first line of contentWrapper block
+    if (resolveNextBlock.parent.type.name === 'contentWrapper') {
+      newTr.setSelection(TextSelection.near(resolveNextBlock))
+    }
   }
 
+  console.log({
+    newPosResolver
+  })
+
+  if (newPosResolver)
+    $from = (new Selection(
+      newPosResolver,
+      newPosResolver
+    )).$from;
+
+  start = $from.pos
+
+
+
+  console.log({
+    newTr,
+    start,
+    at: newTr.doc.nodeAt(start)
+  })
+
+  // return Slice.empty
+
+  const hasContentHeading = slice.toJSON()
+
+  console.log({ hasContentHeading, })
 
   const titleNode = $from.doc.nodeAt($from.start(1) - 1)
   const titleStartPos = $from.start(1) - 1
@@ -94,13 +124,12 @@ export default (slice, editor) => {
   let clipboardContents = slice.toJSON().content
 
   console.log(clipboardContents, "===b")
-  console.log(clipboardContents, "===a")
-
 
   let paragraphs = []
   let newContent = []
   let newHeading = {}
   let hasHeading = false
+
   clipboardContents.map((node, index) => {
 
     if (!hasHeading && node.type !== "contentHeading") {
@@ -148,8 +177,6 @@ export default (slice, editor) => {
 
   console.log("=>", {
     data: slice.toJSON(),
-    $anchor,
-    block,
     titleHMap,
     contentWrapper,
     mapHPost,
@@ -157,9 +184,9 @@ export default (slice, editor) => {
     slice
   })
 
-  const newTr = tr
+
   let shouldNested = false
-  let startPos = start - 1
+  let startPos = start
   let initPos = 0
   let prevHeadingListStartPos = mapHPost[0].startBlockPos
   let prevHeadingListEndtPos = newTr.mapping.map(titleEndPos)
@@ -196,11 +223,20 @@ export default (slice, editor) => {
         start, "doc.nodeSize": doc.nodeSize, "newTr.doc.nodeSize": newTr.doc.nodeSize, prevHeadingListStartPos, prevHeadingListEndtPos
       })
 
-      mapHPost = getPrevHeadingList(
-        newTr,
-        newTr.mapping.map(prevHeadingListStartPos),
-        newTr.mapping.map(prevHeadingListEndtPos - 5)
-      )
+      if (index === 0) {
+        mapHPost = getPrevHeadingList(
+          newTr,
+          newTr.mapping.map(prevHeadingListStartPos),
+          newTr.mapping.map(prevHeadingListEndtPos - 5)
+        )
+      } else {
+        mapHPost = getPrevHeadingList(
+          newTr,
+          (prevHeadingListStartPos),
+          (prevHeadingListEndtPos - 5)
+        )
+      }
+
 
       // console.log("b", mapHPost, { prevHeadingListStartPos, prevHeadingListEndtPos })
 
@@ -287,9 +323,13 @@ export default (slice, editor) => {
         // editor.chain().insertContentAt(prevBlock.endBlockPos, "<p>asdalskdjalksjdlakjsd</p>").run()
       }
 
-
+      // if (index == 1)
+      // return Slice.empty
     }
   }
+
+  // return Slice.empty
+
 
   const headingContent = contentWrapper.filter(x => x.type === "heading")
   const topSliceOfHeadings = contentWrapper.filter(x => x.type !== "heading")

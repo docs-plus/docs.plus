@@ -25,7 +25,7 @@ export const getPrevHeadingList = (tr, start, from) => {
       }
     })
   } catch (error) {
-    console.error("[Heading]: getPrevHeadingList")
+    console.error("[Heading]: getPrevHeadingList", error, { tr, start, from })
     // return Slice.empty
   } finally {
     return titleHMap

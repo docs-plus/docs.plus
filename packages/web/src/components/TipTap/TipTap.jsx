@@ -44,6 +44,12 @@ import html from 'highlight.js/lib/languages/xml'
 // load all highlight.js languages
 import { lowlight } from 'lowlight'
 
+
+import Table from '@tiptap/extension-table'
+import TableCell from '@tiptap/extension-table-cell'
+import TableHeader from '@tiptap/extension-table-header'
+import TableRow from '@tiptap/extension-table-row'
+
 lowlight.registerLanguage('html', html)
 lowlight.registerLanguage('css', css)
 lowlight.registerLanguage('js', js)
@@ -170,6 +176,12 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       }),
       Highlight,
       Typography,
+      Table.configure({
+        resizable: true,
+      }),
+      TableRow,
+      TableHeader,
+      TableCell,
       Collaboration.configure({
         document: provider.document,
       }),

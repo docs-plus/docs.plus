@@ -3,6 +3,7 @@ import { Decoration, DecorationSet, EditorView } from 'prosemirror-view'
 import { ObjectID } from 'bson';
 
 import { Plugin } from 'prosemirror-state';
+import joinH1ToPrevHeading from './joinH1ToPrevHeading';
 
 const HeadingsTitle = Node.create({
   name: 'contentHeading',
@@ -47,7 +48,7 @@ const HeadingsTitle = Node.create({
   addKeyboardShortcuts() {
     return {
       Backspace: (data) => {
-        const { schema, selection } = this.editor.state;
+        const { schema, selection, doc } = this.editor.state;
         const { empty, $anchor, $head, $from, $to } = selection;
         const { depth } = $anchor;
         // if backspace hit in the node that is not have any content
@@ -56,14 +57,38 @@ const HeadingsTitle = Node.create({
         // TODO: if the backspace is in heading level 1
         // TODO: what if there is not parent
 
+
         // if Backspace is in the contentHeading
         if ($anchor.parent.type.name === schema.nodes.contentHeading.name) {
           const heading = $head.path.filter(x => x?.type?.name)
             .findLast(x => x.type.name === 'heading')
           let contentWrapper = heading.lastChild
 
+          console.log({
+            $anchor,
+            contentWrapper,
+            heading,
+            parent: !$from.doc.nodeAt($from.pos - 2).attrs.open,
+            r: heading.lastChild?.attrs,
+            re: Object.hasOwn(heading.lastChild?.attrs, 'open'),
+            w: !$from.doc.nodeAt($from.pos - 2).attrs.open
+          })
+
+          // check if the current heading has level 1
+          // then if has h1 sebling as prev block
+          if ($anchor.parent.type.name === 'contentHeading' && $anchor.parent.attrs.level === 1) {
+            return joinH1ToPrevHeading(this.editor)
+          }
+
+
           // INFO: Prevent To Remove the Heading Block If its close.
-          if (!heading.lastChild.attrs.open) return false
+          if (Object.hasOwn(heading.lastChild?.attrs, 'open') && !heading.lastChild?.attrs?.open) return false
+
+
+
+          // if (heading.lastChild.type.name === heading.firstChild.type.name) {
+
+          // }
 
           // INFO: CURRENT pos start, with size of first paragraph in the contentWrapper
           const block = {
@@ -71,7 +96,11 @@ const HeadingsTitle = Node.create({
             end: $from.end(depth - 1)
           }
 
-          const selectionPos = block.start + 1 + heading.lastChild.firstChild.content.size
+          // console.log({
+          //   heading
+          // })
+
+          const selectionPos = block.start + 1 + (heading.lastChild?.firstChild?.content?.size || -1)
           console.log({
             selectionPos,
             block,
