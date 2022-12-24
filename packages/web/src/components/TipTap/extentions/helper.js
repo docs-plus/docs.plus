@@ -31,3 +31,64 @@ export const getPrevHeadingList = (tr, start, from) => {
     return titleHMap
   }
 }
+
+/**
+ *
+ * @param {Object} doc prosemirror doc
+ * @param {Number} start start pos
+ * @param {Number} end end pos
+ * @returns Array of Selection Block
+ */
+export const getSelectionBlocks = (doc, start, end) => {
+  let firstHEading = true
+  let prevDepth = 0
+  const selectedContents = []
+  doc.nodesBetween(start, end, function (node, pos, parent, index) {
+    if (pos < start) return
+
+    if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
+      const depth = doc.resolve(pos).depth
+      selectedContents.push({ depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON(), })
+    }
+
+    if (node.type.name === 'contentHeading') {
+      const depth = doc.resolve(pos).depth
+      selectedContents.push({ depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, type: 'paragraph', content: node.toJSON().content })
+    }
+
+  })
+  return selectedContents
+}
+
+/**
+ *
+ * @param {Object} doc prosemirror doc
+ * @param {Number} start start pos
+ * @param {Number} end end pos
+ * @returns Array of Selection Block
+ */
+export const getRangeBlocks = (doc, start, end) => {
+  let firstHEading = true
+  let prevDepth = 0
+  const selectedContents = []
+  doc.nodesBetween(start, end, function (node, pos, parent, index) {
+    if (pos < start) return
+
+    if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
+      const depth = doc.resolve(pos).depth
+      selectedContents.push({ depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON(), })
+    }
+    if (node.type.name === "heading") {
+      firstHEading = false
+      const headingLevel = node.firstChild?.attrs?.level
+      const depth = doc.resolve(pos).depth
+      if (prevDepth === 0) prevDepth = depth
+
+      if (prevDepth >= depth) {
+        selectedContents.push({ le: headingLevel, depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON(), })
+        prevDepth = depth
+      }
+    }
+  })
+  return selectedContents
+}

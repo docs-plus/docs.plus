@@ -5,6 +5,7 @@ import { Transform } from 'prosemirror-transform'
 import changeHeadingLevel from './changeHeadingLevel';
 import wrapContenWithHeading from './wrapContenWithHeading';
 import clipboardPast from './clipboardPast';
+import changeHeading2paragraphs from './changeHeading2paragraphs';
 
 const isNodeVisible = (position, editor) => {
   const node = editor.view.domAtPos(position).node;
@@ -325,6 +326,9 @@ const Blockquote = Node.create({
   },
   addCommands() {
     return {
+      normalText: () => (arrg) => {
+        return changeHeading2paragraphs(arrg)
+      },
       wrapBlock: (attributes) => (arrg) => {
         const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
         const { schema, selection, doc } = state;

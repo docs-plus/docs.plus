@@ -93,8 +93,6 @@ const Toolbar = ({ editor }) => {
     else if (editor.isActive('heading', { level: 5 })) setSelectValue(options[5])
     else if (editor.isActive('heading', { level: 6 })) setSelectValue(options[6])
     else setSelectValue(options[0])
-
-
   }, [
     editor.isActive('heading', { level: 1 }),
     editor.isActive('heading', { level: 2 }),
@@ -161,14 +159,42 @@ const Toolbar = ({ editor }) => {
 
   // }
 
-  const [indented, setIndented] = React.useState(true);
+  let indentSetting = localStorage.getItem('setting.indentHeading')
+
+  if (indentSetting === undefined) {
+    localStorage.setItem('setting.indentHeading', '')
+    indentSetting = false
+
+  } else {
+    // console.log('=new', indentSetting)
+    // setIndented(indentSetting)
+  }
+
+  // console.log("indentSetting", indentSetting, Boolean(indentSetting))
+
+  const [indented, setIndented] = React.useState(Boolean(indentSetting));
 
 
+  const toggleHeadingIndent = (e) => {
+    setIndented(preState => {
+      const newState = !preState
+
+      if (newState)
+        document.body.classList.add("indentHeading")
+      else
+        document.body.classList.remove("indentHeading")
+
+      localStorage.setItem('setting.indentHeading', newState ? 'yes' : '')
+
+      return newState
+    })
+  }
 
   useEffect(() => {
-    if (indented) return document.body.classList.add("indentHeading")
+    const newIndent = localStorage.getItem('setting.indentHeading')
+    if (Boolean(newIndent)) return document.body.classList.add("indentHeading")
     document.body.classList.remove("indentHeading")
-  }, [indented])
+  }, [])
 
 
   return (
@@ -316,6 +342,13 @@ const Toolbar = ({ editor }) => {
       <div className='divided'></div>
 
       <button
+        onClick={() => editor.chain().focus().normalText().run()}
+      // className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
+      >
+        P
+      </button>
+
+      <button
         onClick={() => editor.chain().focus().wrapBlock({ level: 1 }).run()}
         className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
       >
@@ -374,7 +407,7 @@ const Toolbar = ({ editor }) => {
 
       <label htmlFor="default-toggle" className="inline-flex relative items-center cursor-pointer">
         <input type="checkbox" checked={indented}
-          onChange={() => setIndented(!indented)} value="" id="default-toggle" className="sr-only peer" />
+          onChange={(e) => toggleHeadingIndent(e.target)} value="" id="default-toggle" className="sr-only peer" />
         <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
         <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300" > Toggle heading indent</span >
       </label >
