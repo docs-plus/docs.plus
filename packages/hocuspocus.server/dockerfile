@@ -17,7 +17,7 @@ COPY .env ./
 
 RUN npm install --production
 
-RUN npx prisma generate
+RUN npx prisma migrate deploy
 
 COPY . .
 

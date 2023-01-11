@@ -29,7 +29,6 @@ services:
    - redis
   environment:
    HOCUSPOCUS_EXT_DB_TYPE: PostgreSQL
-   DATABASE_URL: postgresql://postgres:postgres@postgres:5432/docsplus?schema=public
    APP_PORT: 2300
    REDIS: "true"
    REDIS_HOST: redis
