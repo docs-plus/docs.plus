@@ -4,11 +4,11 @@ services:
  postgres:
   image: postgres:14.5
   environment:
-   POSTGRES_USER: postgres
-   POSTGRES_PASSWORD: postgres
-   POSTGRES_DB: docsplus
+   POSTGRES_USER: ${PG_USER}
+   POSTGRES_PASSWORD: ${PG_PASSWORD}
+   POSTGRES_DB: ${PG_DB}
   ports:
-   - '5432:5432'
+   - '${PG_PORT}:${PG_PORT}'
   volumes:
    - database-data:/var/lib/postgresql/data/
   restart: always

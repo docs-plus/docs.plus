@@ -6,6 +6,10 @@ export default (slice, editor) => {
   const { state, view } = editor;
   let { schema, selection, doc, tr } = state;
 
+
+  // normilize the slice content
+
+
   const newTr = tr
   let newPosResolver;
   let $from = selection.$from
@@ -108,6 +112,7 @@ export default (slice, editor) => {
 
   let prevHStartPos = 0
   let prevHEndPos = 0
+
 
   doc.nodesBetween(titleStartPos, start - 1, function (node, pos, parent, index) {
     if (node.type.name === "heading") {

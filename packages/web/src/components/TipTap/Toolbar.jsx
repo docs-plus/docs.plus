@@ -213,9 +213,6 @@ const Toolbar = ({ editor }) => {
         <div className='divided'></div>
       </div>
 
-
-
-
       <Select
         // styles={customStyles}
         defaultValue={options[0]}

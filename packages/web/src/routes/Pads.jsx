@@ -25,9 +25,6 @@ export default function Root() {
   const newPadName = `pads.${ padName }`
 
 
-
-
-
   // run once
   const [provider, ydoc] = useMemo(() => {
     const ydoc = new Y.Doc()

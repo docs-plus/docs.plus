@@ -22,6 +22,7 @@ const {
   HOCUSPOCUS_LOGGER,
   HOCUSPOCUS_THROTTLE,
   DATABASE_TYPE,
+  DATABASE_URL,
   REDIS
 } = process.env
 
@@ -74,6 +75,7 @@ app.listen(APP_PORT, () => {
     Config:
             REDIS: ${ chalk.blue.bold(checkEnvBolean(REDIS)) }
             Database: ${ chalk.blue.bold(DATABASE_TYPE) }
+            DATABASE_URL: ${ chalk.blue.bold(DATABASE_URL) }
             HOCUSPOCUS_LOGGER: ${ chalk.blue.bold(checkEnvBolean(HOCUSPOCUS_LOGGER)) }
             HOCUSPOCUS_THROTTLE: ${ chalk.blue.bold(checkEnvBolean(HOCUSPOCUS_THROTTLE)) }
   `)
