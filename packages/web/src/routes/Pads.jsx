@@ -61,6 +61,38 @@ export default function Root() {
 
   }, [loadedData])
 
+  const scrollHeadingSelection = (event) => {
+    const scrollTop = event.currentTarget.scrollTop;
+    const toc = document.querySelector('.tiptap__toc')
+    console.log(scrollTop)
+    const tocLis = [...toc.querySelectorAll('li')]
+    const closest = tocLis
+      .map(li => {
+        li.classList.remove('active')
+        return li
+      })
+      .filter(li => {
+        const thisOffsetTop = +li.getAttribute('data-offsettop') - 220
+        const nextSiblingOffsetTop = +li.nextElementSibling?.getAttribute('data-offsettop') - 220
+
+        if (thisOffsetTop <= scrollTop && nextSiblingOffsetTop >= scrollTop)
+          console.log(thisOffsetTop, scrollTop, nextSiblingOffsetTop)
+
+        return thisOffsetTop <= scrollTop && nextSiblingOffsetTop >= scrollTop
+      })
+
+    if (closest.length === 0) {
+      tocLis.pop().classList.add('active')
+      tocLis.pop().scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
+      return
+    }
+
+    // console.log(closest)
+    closest[0]?.classList.add('active')
+    closest[0]?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
+
+  };
+
 
   const editor = TipTap({ padName, provider, ydoc })
 
@@ -75,9 +107,9 @@ export default function Root() {
           {editor ? <Toolbar editor={editor} /> : "Loading..."}
         </div>
         <div className='editor w-full h-full flex relative flex-row align-top '>
-          {editor ? <TableOfContents editor={editor} className="tiptap__toc pl-2 pb-4 sm:py-4  max-w-xs w-3/12 hidden overflow-hidden scroll-smooth hover:overflow-auto hover:overscroll-contain sm:block" /> : "Loading..."}
-          <div className='w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4'>
-            {editor ? <EditorContent editor={editor} className="tipta__editor mb-12 sm:mb-0 sm:p-8  sm:rounded-sm sm:shadow-sm" /> : "Loading..."}
+          {editor ? <TableOfContents editor={editor} className="tiptap__toc pl-2 pb-4 sm:py-4 sm:pb-14  max-w-xs w-3/12 hidden overflow-hidden scroll-smooth hover:overflow-auto hover:overscroll-contain sm:block" /> : "Loading..."}
+          <div onScroll={scrollHeadingSelection} className='editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4'>
+            {editor ? <EditorContent editor={editor} className="tipta__editor mb-12 sm:mb-0 sm:p-8  " /> : "Loading..."}
           </div>
         </div>
       </div>

@@ -91,7 +91,7 @@ export default () => {
     const database = new Database({
       // Return a Promise to retrieve data …
       fetch: async ({ documentName }) => {
-        console.log("")
+        console.log("documentName", documentName)
         const doc = await prisma.documents.findMany({
           take: 1,
           where: {
@@ -105,10 +105,7 @@ export default () => {
           await prisma.$disconnect()
           // process.exit(1)
         })
-
         console.log(doc, "documentName")
-
-
         return doc[0]?.data
       },
       // … and a Promise to store data:

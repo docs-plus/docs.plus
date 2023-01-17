@@ -170,6 +170,16 @@ export const OfflineCloud = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+export const ArrowLeft = ({ size = 18, fill = 'black' }) => {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 14" width={size}>
+      <g>
+        <polygon fillRule="evenodd" clipRule="evenodd" fill={fill} points="15,6.1 4.4,6.1 9.2,1.2 8,0 1,7 8,14 9.2,12.8 4.4,7.9 15,7.9 	" />
+      </g>
+    </svg>
+  )
+}
+
 export const Doc = ({ size = 18, fill = 'black', className }) => {
   return (
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 26 36" width={size} className={className} >

@@ -22,6 +22,7 @@ import {
   Undo,
   Redo,
   Printer,
+
 } from '../../components/icons/Icons'
 import Select from 'react-select';
 // import {
@@ -31,6 +32,14 @@ import Select from 'react-select';
 import Button from '../ui/Button'
 
 // import { ReactComponent as Logo } from '../../assets/icons/Bold.svg'
+
+const GearModal = (props) => {
+  return (
+    <div className='gearModal nd_modal'>
+      {props.children}
+    </div>
+  );
+}
 
 const Toolbar = ({ editor }) => {
 
@@ -79,6 +88,9 @@ const Toolbar = ({ editor }) => {
     { value: 4, label: 'Heading 3' },
     { value: 5, label: 'Heading 4' },
     { value: 6, label: 'Heading 5' },
+    { value: 7, label: 'Heading 5' },
+    { value: 8, label: 'Heading 5' },
+    { value: 9, label: 'Heading 5' },
   ];
 
   const [selectedOption, setSelectedOption] = useState(options[0]);
@@ -107,57 +119,9 @@ const Toolbar = ({ editor }) => {
   const onchangeValue = (e) => {
     setSelectedOption(e)
     const value = e.value
-    if (value === 0) editor.chain().focus().setParagraph().run()
-    else editor.chain().focus().toggleHeading({ level: +value }).run()
+    if (value === 0) editor.chain().focus().normalText().run()
+    else editor.chain().focus().wrapBlock({ level: +value }).run()
   }
-
-  // const customStyles = {
-  //   menu: (provided, state) => ({
-  //     ...provided,
-  //     width: state.selectProps.width,
-  //     borderBottom: '1px dotted pink',
-  //     color: state.selectProps.menuColor,
-  //     padding: 20,
-  //     borderColor: "red"
-  //   }),
-  //   menuPortal: (provided, state) => ({
-  //     ...provided,
-  //     padding: 0
-  //   }),
-  //   singleValue: (provided, state) => {
-  //     const opacity = state.isDisabled ? 0.5 : 1;
-  //     const transition = 'opacity 300ms';
-  //     console.log(provided)
-  //     return { ...provided, opacity, transition };
-  //   },
-  //   control: (styles) => {
-  //     console.log(styles)
-
-  //     return { ...styles, backgroundColor: '#ddd', borderWidth: 0, minHeight: 28, height: 28 }
-  //   },
-  //   dropdownIndicator: (styles) => {
-  //     // console.log(styles)
-  //     return {
-  //       ...styles,
-  //       // padding: "0"
-  //     }
-  //   },
-  //   container: (styles) => {
-  //     return {
-  //       ...styles,
-  //       minHeight: 28, height: 28,
-  //       padding: 0
-  //     }
-  //   },
-  //   valueContainer: (styles) => {
-  //     return {
-  //       ...styles,
-  //       minHeight: 28, height: 28,
-  //       padding: "0"
-  //     }
-  //   },
-
-  // }
 
   let indentSetting = localStorage.getItem('setting.indentHeading')
 
@@ -190,6 +154,17 @@ const Toolbar = ({ editor }) => {
     })
   }
 
+  const toggleSettingModal = () => {
+    console.log('toggleSettingModal')
+    document.querySelector('.gearModal').classList.toggle('active')
+  }
+
+  const hideModals = (e) => {
+    console.log()
+    if (e.target.closest('.btn_modal') || e.target.closest('.nd_modal')) return
+    document.querySelector('.gearModal').classList.remove('active')
+  }
+
   useEffect(() => {
     const newIndent = localStorage.getItem('setting.indentHeading')
     if (Boolean(newIndent)) return document.body.classList.add("indentHeading")
@@ -198,7 +173,7 @@ const Toolbar = ({ editor }) => {
 
 
   return (
-    <div className='tiptap__toolbar editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-3'>
+    <div onClick={hideModals} className='tiptap__toolbar editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-4'>
 
       <div className=' hidden sm:contents'>
         <button onClick={() => editor.chain().focus().undo().run()}>
@@ -336,82 +311,33 @@ const Toolbar = ({ editor }) => {
       </span>
 
 
-      <div className='divided'></div>
+
 
       <button
-        onClick={() => editor.chain().focus().normalText().run()}
-      // className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
+        onClick={toggleSettingModal}
+        className='btn_settingModal btn_modal'
       >
-        P
+        <Gear size="16" fill="rgba(0,0,0,.7)" />
       </button>
 
-      <button
-        onClick={() => editor.chain().focus().wrapBlock({ level: 1 }).run()}
-        className={editor.isActive('heading', { level: 1 }) ? 'is-active' : ''}
-      >
-        W1
-      </button>
-      <button
-        onClick={() => editor.chain().focus().wrapBlock({ level: 2 }).run()}
-        className={editor.isActive('heading', { level: 2 }) ? 'is-active' : ''}
-      >
-        W2
-      </button>
-      <button
-        onClick={() => editor.chain().focus().wrapBlock({ level: 3 }).run()}
-        className={editor.isActive('heading', { level: 3 }) ? 'is-active' : ''}
-      >
-        W3
-      </button>
-      <button
-        onClick={() => editor.chain().focus().wrapBlock({ level: 4 }).run()}
-        className={editor.isActive('heading', { level: 4 }) ? 'is-active' : ''}
-      >
-        W4
-      </button>
-      <button
-        onClick={() => editor.chain().focus().wrapBlock({ level: 5 }).run()}
-        className={editor.isActive('heading', { level: 5 }) ? 'is-active' : ''}
-      >
-        W5
-      </button>
-      <button
-        onClick={() => editor.chain().focus().wrapBlock({ level: 6 }).run()}
-        className={editor.isActive('heading', { level: 6 }) ? 'is-active' : ''}
-      >
-        W6
-      </button>
-      <button
-        onClick={() => editor.chain().focus().wrapBlock({ level: 7 }).run()}
-        className={editor.isActive('heading', { level: 7 }) ? 'is-active' : ''}
-      >
-        W7
-      </button>
-      <button
-        onClick={() => editor.chain().focus().wrapBlock({ level: 8 }).run()}
-        className={editor.isActive('heading', { level: 8 }) ? 'is-active' : ''}
-      >
-        W8
-      </button>
-      <button
-        onClick={() => editor.chain().focus().wrapBlock({ level: 9 }).run()}
-        className={editor.isActive('heading', { level: 9 }) ? 'is-active' : ''}
-      >
-        W9
-      </button>
+      <GearModal>
+        <p className='font-medium text-base text-gray-400 pb-1'>Settings:</p>
+        <hr />
+        <div className='content pt-5 '>
+          <label htmlFor="default-toggle" className="inline-flex relative items-center cursor-pointer">
+            <input type="checkbox" checked={indented}
+              onChange={(e) => toggleHeadingIndent(e.target)} value="" id="default-toggle" className="sr-only peer" />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300" > Toggle heading indent</span >
+          </label >
+        </div>
+      </GearModal>
 
-      <div className='divided'></div>
 
-      <label htmlFor="default-toggle" className="inline-flex relative items-center cursor-pointer">
-        <input type="checkbox" checked={indented}
-          onChange={(e) => toggleHeadingIndent(e.target)} value="" id="default-toggle" className="sr-only peer" />
-        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-        <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300" > Toggle heading indent</span >
-      </label >
-
-      <div className='divided'></div>
     </div >
   );
 }
+
+
 
 export default Toolbar;

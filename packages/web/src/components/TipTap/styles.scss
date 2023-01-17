@@ -99,6 +99,33 @@ $Pad_Toolbar__height: 38px;
 
 }
 
+
+.tiptap__toolbar {
+  .gearModal {
+    width: 300px;
+    padding: 8px;
+    border: 1px solid #ddd;
+    position: absolute;
+    right: 14px;
+    background: #fff;
+    border-radius: 4px;
+    position: absolute;
+    display: none;
+    top: 38px;
+
+    &.active {
+      display: block;
+    }
+
+    .content {
+      display: flex;
+      align-items: center;
+    }
+  }
+}
+
+
+
 .pad {
   position: relative;
   @apply h-full;
@@ -193,28 +220,105 @@ $Pad_Toolbar__height: 38px;
       letter-spacing: 0.025rem;
       opacity: 0.5;
       text-transform: uppercase;
+      padding-bottom: 20px;
     }
   }
 
+
+
   &__item {
+    padding-bottom: 6px;
+
+
+    &.active {
+      a {
+        color: #4285f4;
+      }
+
+      a::after {
+
+        opacity: 1;
+      }
+    }
+
+    a {
+      font-weight: normal;
+      position: relative;
+
+      &::after {
+        content: "";
+        display: block;
+        width: 100%;
+        border: 1px solid #4285f4;
+        position: absolute;
+        opacity: 0;
+        transition: all 0.1s cubic-bezier(0.39, 0.575, 0.565, 1);
+      }
+    }
+
     a:hover {
       opacity: 0.5;
+      color: #0D0D0D
+    }
+
+    &--1 {
+      a {
+        @apply font-medium;
+      }
+    }
+
+    &--2 {
+      padding-left: .5rem;
+
+
     }
 
     &--3 {
       padding-left: 1rem;
+
+      a {
+        @apply text-sm text-gray-400;
+      }
     }
 
     &--4 {
-      padding-left: 2rem;
+      padding-left: 1.5rem;
+
+      a {
+        @apply text-sm text-gray-400;
+      }
     }
 
     &--5 {
-      padding-left: 3rem;
+      padding-left: 2rem;
+
+      a {
+        @apply text-sm text-gray-400;
+      }
     }
 
     &--6 {
-      padding-left: 4rem;
+      padding-left: 2.5rem;
+
+      a {
+        @apply text-sm text-gray-400;
+      }
+    }
+
+    &--7 {
+      padding-left: 3rem;
+
+      a {
+        @apply text-sm text-gray-400;
+      }
+    }
+
+    &--8 {
+      padding-left: 3.5rem;
+
+      a {
+        @apply text-sm text-gray-400;
+      }
     }
   }
 }
@@ -264,7 +368,6 @@ $Pad_Toolbar__height: 38px;
     height: 20px;
     @apply border-l mx-[10px] my-[6px];
     // float: left;
-
   }
 
 
@@ -279,6 +382,9 @@ $Pad_Toolbar__height: 38px;
     width: 28px;
     @apply flex rounded items-center justify-center relative;
 
+    &.btn_settingModal {
+      @apply ml-auto
+    }
 
     svg {}
 
@@ -297,8 +403,6 @@ $Pad_Toolbar__height: 38px;
       }
     }
 
-
-
     &[disabled]:hover {
       color: #aaa;
       background-color: transparent;
@@ -314,6 +418,10 @@ body.indentHeading {
     padding-left: 1rem;
     position: relative;
     margin-top: 1rem;
+
+    &[level="1"] {
+      box-shadow: 8px 0 34px 0 rgb(60 64 67 / 10%);
+    }
 
     [level]::before {
       content: attr(level);
@@ -349,8 +457,18 @@ body.indentHeading {
     height: 100%;
 
     &[level="1"] {
-      border: 1px solid #0D0D0D;
+      // border: 1px solid #0D0D0D;
+      box-shadow: 0 1px 3px 1px rgb(60 64 67 / 15%);
       padding: 1rem;
+
+      // min-height: 400px;
+      >button {
+        left: -56px;
+      }
+
+      >a {
+        left: -26px;
+      }
     }
 
     .title {
@@ -393,7 +511,7 @@ body.indentHeading {
             height: 5px;
             background-color: #fff;
             width: 100%;
-            border: 1px solid black;
+            border: 1px solid #ccc;
             transform: skew(44deg);
             border-bottom: none;
             transition: all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -403,16 +521,16 @@ body.indentHeading {
             content: "";
             display: block;
             height: 5px;
-            background-color: #cecece;
+            background-color: #efefef;
             width: 100%;
-            border: 1px solid black;
+            border: 1px solid #ccc;
             transform: skew(-44deg);
             border-bottom: none;
             transition: all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
           }
 
           &.l3::after {
-            border-bottom: 1px solid;
+            border-bottom: 1px solid #ccc;
           }
         }
       }
@@ -471,7 +589,7 @@ body.indentHeading {
 
     >a {
       position: absolute;
-      left: -20px;
+      left: -40px;
       top: 0;
       color: #ddd;
       font-size: 20px;
