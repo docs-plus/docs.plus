@@ -29,7 +29,7 @@ const SignUp = () => {
     }
 
     const { data, error } = await signInWithOtp({
-      email: 'marzban98@gmail.com',
+      email: emailRef,
       options: {
         emailRedirectTo: `${ window.location.origin }/dashboard`
       }
