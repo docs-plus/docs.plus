@@ -35,19 +35,14 @@ const RequireAuth = ({ children, value, redirectPath = "/auth/login" }) => {
   const navigate = useNavigate()
   useEffect(() => {
 
-    (async () => {
 
-    })()
-
-    console.log(profile, profile.doc_namespace, profile.doc_namespace.length <= 0)
-
-    if (!profile.doc_namespace || profile.doc_namespace.length <= 0) {
+    if (!profile?.doc_namespace || profile?.doc_namespace.length <= 0) {
       navigate("/auth/username_needed")
     } else if (!user) {
       navigate(redirectPath)
 
     } else if (user && user?.id && user?.email) {
-
+      navigate("/")
     }
 
 
