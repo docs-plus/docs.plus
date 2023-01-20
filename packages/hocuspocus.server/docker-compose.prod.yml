@@ -12,6 +12,7 @@ services:
   volumes:
    - database-data:/var/lib/postgresql/data/
   restart: always
+
  redis:
   image: redis:alpine
   restart: unless-stopped
@@ -28,6 +29,7 @@ services:
    - redis
   environment:
    HOCUSPOCUS_EXT_DB_TYPE: PostgreSQL
+   #   DATABASE_URL: postgresql://postgres:postgres@localhost:5436/docsplus?connect_timeout=300&schema=public
    APP_PORT: 2300
    REDIS: "true"
    REDIS_HOST: redis
