@@ -15,33 +15,48 @@ import './assets/global.scss'
 import ReloadPrompt from './components/ReloadPrompt'
 import { AuthProvider, useAuth } from './contexts/Auth'
 
+import { supabase } from './supabase'
 
 const Pads = lazy(() => import('./routes/Pads'))
 const ErrorPage = lazy(() => import('./routes/ErrorPage'))
 const PageNotFound = lazy(() => import('./routes/PageNotFound'))
 const IntroPage = lazy(() => import('./routes/IntroPage'))
-const SignupPage = lazy(() => import('./routes/Signup'))
-const LoginPage = lazy(() => import('./routes/Login'))
+const AuthPage = lazy(() => import('./routes/auth/Auth'))
+const SignupPage = lazy(() => import('./routes/auth/Signup'))
+const LoginPage = lazy(() => import('./routes/auth/Login'))
+const CheckYourEmailPage = lazy(() => import('./routes/auth/CheckYourEmail'))
 const DashboardPage = lazy(() => import('./routes/Dashboard'))
-const CheckYourEmailPage = lazy(() => import('./routes/CheckYourEmail'))
-
+const DashboardProfile = lazy(() => import('./routes/dashboard/Profile'))
+const DashboardHomePage = lazy(() => import('./routes/dashboard/Home'))
+const AskForUsernamePage = lazy(() => import('./routes/auth/AskForUsername'))
 
 const RequireAuth = ({ children, value, redirectPath = "/auth/login" }) => {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const navigate = useNavigate()
-
   useEffect(() => {
-    console.log("coming user", user)
-    if (!user) {
+
+    (async () => {
+
+    })()
+
+    console.log(profile, profile.doc_namespace, profile.doc_namespace.length <= 0)
+
+    if (!profile.doc_namespace || profile.doc_namespace.length <= 0) {
+      navigate("/auth/username_needed")
+    } else if (!user) {
       navigate(redirectPath)
+
     } else if (user && user?.id && user?.email) {
-      navigate("/dashboard")
+
     }
+
+
+
+
   }, [user])
 
   return children ? children : <Outlet />;
 }
-
 
 // https://blog.netcetera.com/how-to-create-guarded-routes-for-your-react-app-d2fe7c7b6122
 
@@ -53,29 +68,31 @@ const router = createBrowserRouter([
     errorElement: <ErrorPage />
   },
   {
-    path: "/auth/signup",
-    index: true,
-    element:
-      <RequireAuth>
-        < SignupPage />
-      </RequireAuth>,
-    errorElement: <ErrorPage />
-  },
-  {
-    path: "/auth/login",
-    element:
-      <RequireAuth>
-        < LoginPage />
-      </RequireAuth>,
-    errorElement: <ErrorPage />
-  },
-  {
-    path: "/auth/checkEmail",
-    element:
-      <RequireAuth>
-        < CheckYourEmailPage />
-      </RequireAuth>,
-    errorElement: <ErrorPage />
+    path: "/auth",
+    element: < AuthPage />,
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: "signup",
+        element: < SignupPage />,
+        errorElement: <ErrorPage />
+      },
+      {
+        path: "login",
+        element: < LoginPage />,
+        errorElement: <ErrorPage />
+      },
+      {
+        path: "checkemail",
+        element: < CheckYourEmailPage />,
+        errorElement: <ErrorPage />
+      },
+      {
+        path: "username_needed",
+        element: < AskForUsernamePage />,
+        errorElement: <ErrorPage />
+      },
+    ]
   },
   {
     path: "/dashboard",
@@ -84,10 +101,30 @@ const router = createBrowserRouter([
         < DashboardPage />
       </RequireAuth>
     ,
-    errorElement: <ErrorPage />
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: "profile",
+        element: < DashboardProfile />,
+        errorElement: <ErrorPage />
+      },
+      {
+        path: "",
+        element: < DashboardHomePage />,
+        errorElement: <ErrorPage />
+      },
+    ]
   },
   {
-    path: "/:padName",
+    path: "/g/:padName",
+    element: <Pads />,
+    errorElement: <ErrorPage />,
+    loader: async ({ request, params }) => {
+      return params.padName
+    }
+  },
+  {
+    path: "/:namespace/:padName",
     element: <Pads />,
     errorElement: <ErrorPage />,
     loader: async ({ request, params }) => {

@@ -4,10 +4,8 @@ import {
   useLoaderData,
   useParams
 } from "react-router-dom";
-
 import React, { useState, useMemo } from 'react'
 import { EditorContent } from '@tiptap/react'
-
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
@@ -16,13 +14,17 @@ import Toolbar from '../components/TipTap/Toolbar'
 import TableOfContents from '../components/TipTap/TableOfContents';
 import { useEffect } from 'react';
 import PadTitle from '../components/PadTitle'
+import { useAuth } from '../contexts/Auth'
 
 
 
 export default function Root() {
+  const { signInWithOtp, signIn, signOut, user } = useAuth()
+
   const { padName, } = useParams()
   const [loadedData, setLoadedData] = useState(false)
   const newPadName = `pads.${ padName }`
+
 
 
   // run once
