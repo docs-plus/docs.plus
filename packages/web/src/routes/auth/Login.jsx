@@ -30,7 +30,7 @@ const Login = () => {
     }
 
     const { data, error } = await signInWithOtp({
-      email: emailRef,
+      email: emailRef.current.value,
       options: {
         emailRedirectTo: `${ window.location.origin }/dashboard`
       }
