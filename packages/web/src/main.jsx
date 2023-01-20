@@ -40,9 +40,8 @@ const RequireAuth = ({ children, value, redirectPath = "/auth/login" }) => {
       navigate("/auth/username_needed")
     } else if (!user) {
       navigate(redirectPath)
-
     } else if (user && user?.id && user?.email) {
-      navigate("/")
+      // navigate("/")
     }
 
 
