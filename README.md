@@ -16,3 +16,24 @@ yarn
 # 2. run front-end and back-end for development
 make local
 ```
+
+# Contact
+
+If you have any further questions, please don’t hesitate, you can reach us by the following:
+
+> Join our [Discussions](https://github.com/docs-plus/docs.plus/discussions) and help make Docsplus even better.
+
+- Twitter: [@docsdotplus](https://twitter.com/docsdotplus)
+- Github: [docs.plus](https://github.com/nwspk/docs.plus)
+- Slack: [docsplus](docsplus.slack.com)
+- Email: [contact@newspeak.house](mailto:contact@newspeak.house)
+
+# License
+
+This project is licensed under the [Apache License v2](http://www.apache.org/licenses/LICENSE-2.0.html) License
+
+# Support
+
+**Docs.plus** is free and open source, please help us stay online:
+
+<a href="https://patreon.com/docsplus"><img src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Ddocsplus%26type%3Dpatrons&style=for-the-badge" /> </a>
