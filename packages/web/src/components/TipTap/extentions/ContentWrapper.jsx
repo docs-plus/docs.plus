@@ -220,7 +220,7 @@ const HeadingsContent = Node.create({
       const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, attrs);
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
       dom.addEventListener('toggleHeadingsContent', ({ detail }) => {
-
+        console.log("toggleHeadingsContent", detail)
         const section = detail.el;
 
         // dom.toggleAttribute('hidden');

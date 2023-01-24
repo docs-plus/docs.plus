@@ -66,7 +66,6 @@ export default function Root() {
   const scrollHeadingSelection = (event) => {
     const scrollTop = event.currentTarget.scrollTop;
     const toc = document.querySelector('.tiptap__toc')
-    console.log(scrollTop)
     const tocLis = [...toc.querySelectorAll('li')]
     const closest = tocLis
       .map(li => {
@@ -76,9 +75,6 @@ export default function Root() {
       .filter(li => {
         const thisOffsetTop = +li.getAttribute('data-offsettop') - 220
         const nextSiblingOffsetTop = +li.nextElementSibling?.getAttribute('data-offsettop') - 220
-
-        if (thisOffsetTop <= scrollTop && nextSiblingOffsetTop >= scrollTop)
-          console.log(thisOffsetTop, scrollTop, nextSiblingOffsetTop)
 
         return thisOffsetTop <= scrollTop && nextSiblingOffsetTop >= scrollTop
       })
