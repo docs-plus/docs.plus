@@ -24,28 +24,6 @@ $Pad_Toolbar__height: 38px;
   border-radius: 0.5rem;
   padding: 0.5rem;
 
-
-  >button {
-    display: flex;
-    cursor: pointer;
-    background: transparent;
-    border: none;
-    padding: 0;
-
-    &::before {
-      content: '\25B6';
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      width: 1.5em;
-      height: 1.5em;
-    }
-  }
-
-  &.is-open>button::before {
-    content: '\25BC';
-  }
-
   >div {
     flex: 1 1 auto;
   }
@@ -124,8 +102,6 @@ $Pad_Toolbar__height: 38px;
   }
 }
 
-
-
 .pad {
   position: relative;
   @apply h-full;
@@ -155,9 +131,6 @@ $Pad_Toolbar__height: 38px;
     }
   }
 }
-
-
-
 
 
 .nodeStyle__control,
@@ -196,7 +169,6 @@ $Pad_Toolbar__height: 38px;
   padding: 0 !important;
   margin: 0 !important;
 }
-
 
 
 .toc {
@@ -359,7 +331,6 @@ $Pad_Toolbar__height: 38px;
   white-space: nowrap;
 }
 
-
 .editorButtons {
   @apply border-t border-b;
 
@@ -410,8 +381,6 @@ $Pad_Toolbar__height: 38px;
   }
 }
 
-
-
 body.indentHeading {
   div.heading {
     border-left: 3px solid rgba(#0d0d0d, 0.1);
@@ -449,8 +418,10 @@ body.indentHeading {
   }
 }
 
-
 .ProseMirror {
+  text-align: left;
+  outline: none;
+  min-height: 800px;
 
   div.heading {
     position: relative;
@@ -472,69 +443,79 @@ body.indentHeading {
     }
 
     .title {
-      // position: relative;
       z-index: 9;
-      // background-color: rebeccapurple;
       width: 100%;
-    }
-
-    &:not(.is-open) {
       display: flex;
-      flex-direction: column-reverse;
-      // padding-bottom: 10px;
+      flex-direction: row;
+      align-items: center;
+      padding-left: 70px;
+      margin-left: -70px;
 
-      >.foldWrapper {
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      h7,
+      h8,
+      h9,
+      h10 {
+        margin-left: -33px;
+      }
+
+      >a {
+        position: relative;
+        left: -60px;
+        visibility: hidden;
+      }
+
+      >.btn_openChatBox {
+        position: absolute;
+        right: 0;
+      }
+
+      button.btnFold {
+        display: flex;
         cursor: pointer;
+        background: transparent;
+        border: none;
+        padding: 0;
+        position: relative;
+        left: -70px;
+        visibility: hidden;
 
-        &:hover .fold {
-          &::after {
-            height: 8px;
-          }
-
-          &::before {
-            height: 8px;
-          }
+        span {
+          display: none;
         }
 
-        .fold {
-          width: calc(100% + 2rem + 6px);
-          position: relative;
-          z-index: 2;
-          left: -19px;
-          background-color: #f8f9fa;
-          padding-right: 4px;
-          transition: all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-
-          &::after {
-            content: "";
-            display: block;
-            height: 5px;
-            background-color: #fff;
-            width: 100%;
-            border: 1px solid #ccc;
-            transform: skew(44deg);
-            border-bottom: none;
-            transition: all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          }
-
-          &::before {
-            content: "";
-            display: block;
-            height: 5px;
-            background-color: #efefef;
-            width: 100%;
-            border: 1px solid #ccc;
-            transform: skew(-44deg);
-            border-bottom: none;
-            transition: all .3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          }
-
-          &.l3::after {
-            border-bottom: 1px solid #ccc;
-          }
+        &::before {
+          content: '\25BC';
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          width: 1.5em;
+          height: 1.5em;
         }
       }
+
+      &.is-open button.btnFold::before {
+        content: '\25B6';
+      }
+
+      &:hover {
+        >a {
+          visibility: visible;
+        }
+
+        button.btnFold {
+          visibility: visible;
+        }
+      }
+
     }
+
+
 
     .contentHeading {
       display: flex;
@@ -601,33 +582,15 @@ body.indentHeading {
       }
     }
 
-    >button {
-      display: flex;
-      cursor: pointer;
-      background: transparent;
-      border: none;
-      padding: 0;
-      position: absolute;
-      left: -70px;
-      top: 0px;
 
-      span {
-        display: none;
-      }
 
-      &::before {
-        content: '\25B6';
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        width: 1.5em;
-        height: 1.5em;
-      }
-    }
+    // &:not(.is-open) button.btnFold::before{
 
-    &.is-open>button::before {
-      content: '\25BC';
-    }
+    // }
+
+    // &:not(.is-open) button.btnFold::before {
+    //   content: '\25BC';
+    // }
   }
 
   .headingWrapper {
@@ -637,22 +600,9 @@ body.indentHeading {
     margin: 6px 0;
   }
 
-
-
-  text-align: left;
-  // border: 1px solid #616161;
-  // border-radius: 6px;
-  // padding: 6px;
-  outline: none;
-  min-height: 800px;
-
   >*+* {
     margin-top: 0.75em;
   }
-
-
-
-
 
   ul[data-type="taskList"] {
     list-style: none;
@@ -703,8 +653,6 @@ body.indentHeading {
     font-weight: bold;
     @apply font-medium mt-0 mb-2;
   }
-
-
 
   h1 {
     @apply text-6xl;
@@ -775,13 +723,6 @@ body.indentHeading {
     height: 0;
   }
 
-
-}
-
-
-.ProseMirror {
-
-
   pre {
     background: #0d0d0d;
     border-radius: 0.5rem;
@@ -848,10 +789,7 @@ body.indentHeading {
       font-weight: 700;
     }
   }
-}
 
-
-.ProseMirror {
   table {
     border-collapse: collapse;
     margin: 0;
@@ -905,7 +843,10 @@ body.indentHeading {
       margin: 0;
     }
   }
+
+
 }
+
 
 .tableWrapper {
   padding: 1rem 0;

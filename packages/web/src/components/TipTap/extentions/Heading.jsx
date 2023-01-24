@@ -124,16 +124,7 @@ const findClosestVisibleNode = ($pos, predicate, editor) => {
   }
 };
 
-function copyToClipboard(text) {
-  // const content = document.createElement("<div/>")
-  // content.innerHTML = text
-  // const copyText = document.getElementById("content").value;
-  navigator.clipboard.writeText(text).then(() => {
-    // Alert the user that the action took place.
-    // Nobody likes hidden stuff being done under the hood!
-    alert("Copied to clipboard");
-  });
-}
+
 
 const inputRegex = /(?:^|\s)((?:~)((?:[^~]+))(?:~))/g;
 const Blockquote = Node.create({
@@ -185,20 +176,6 @@ const Blockquote = Node.create({
       });
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
 
-      const toggle = document.createElement('button')
-      toggle.contentEditable = false
-      toggle.classList.add('unselectable')
-      dom.append(toggle)
-
-      const href = document.createElement('a')
-      href.classList.add('unselectable')
-      href.contentEditable = false
-
-      href.innerHTML = "#"
-      href.setAttribute('href', `#${ this.options['data-id'] }`)
-      dom.append(href)
-
-
       const foldEl = document.createElement('div')
       foldEl.classList.add('foldWrapper')
 
@@ -215,83 +192,11 @@ const Blockquote = Node.create({
       content.classList.add('wrapBlock')
       dom.append(content);
 
-      dom.classList.add(this.options.openClassName);
+      // dom.classList.add(this.options.openClassName);
 
-
-      if (node.attrs.open) {
-        dom.classList.remove(this.options.openClassName);
-      }
-
-      const toggleHeadingContent = (el) => {
-        // console.log("what", node.attrs.open)
-        dom.classList.toggle(this.options.openClassName);
-        const detailsContent = content.querySelector(':scope > div.contentWrapper');
-        const event = new CustomEvent('toggleHeadingsContent', { detail: { open: node.attrs.open, dom, el: detailsContent } });
-        detailsContent === null || detailsContent === void 0 ? void 0 : detailsContent.dispatchEvent(event);
-      };
-
-      href.addEventListener('click', (e) => {
-        // alert("Hooray")
-        e.preventDefault()
-
-        const url = new URL(window.location);
-        url.searchParams.set('id', e.target.parentNode.getAttribute('data-id'));
-        window.history.pushState({}, '', url);
-
-
-        copyToClipboard(url)
-
-        console.log({
-          e: e.target,
-          parent: e.target.parentNode,
-          id: e.target.parentNode.getAttribute('data-id'),
-          // padName
-          location,
-          url
-        })
-
-
-        // useNavigate('/')
-
-
-
-        editor
-          .chain()
-          .focus()
-          .run()
-      })
-
-      const foldAndUnfold = (e) => {
-        const el = e.target
-        toggleHeadingContent(el);
-        if (!this.options.persist) {
-          editor.commands.focus();
-          return;
-        }
-        if (editor.isEditable && typeof getPos === 'function') {
-          editor
-            .chain()
-            .focus()
-            .command(({ tr }) => {
-              const pos = getPos();
-              const currentNode = tr.doc.nodeAt(pos);
-              if ((currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type) {
-                return false;
-              }
-              tr.setNodeMarkup(pos, undefined, {
-                open: !currentNode.attrs.open,
-              });
-              return true;
-            })
-            .run();
-        }
-      }
-
-      // TODO: this migth face to problem in the slow processor
-      // TODO: saving open in here is not okay, because I save this open in contentWrapper also
-      toggle.addEventListener('click', foldAndUnfold);
-      foldEl.addEventListener('click', foldAndUnfold);
-
+      // if (node.attrs.open) {
+      //   dom.classList.remove(this.options.openClassName);
+      // }
 
       return {
         dom,
