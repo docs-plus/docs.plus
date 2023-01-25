@@ -26,36 +26,35 @@ export function AuthProvider({ children }) {
   const [profile, setProfile] = useState()
   const [loading, setLoading] = useState(false)
 
-  // usememo hook to get GetUser
-  // const getUser = useCallback(() => {
+  const getUser = useCallback(() => {
 
-  //   (async () => {
-  //     const { data, error } = await supabase.auth.getUser()
-  //     let { data: profile, error: profileError } = await supabase
-  //       .from('users')
-  //       .select()
-  //       .eq('id', data?.user?.id)
-  //       .single()
+    (async () => {
+      const { data, error } = await supabase.auth.getUser()
+      let { data: profile, error: profileError } = await supabase
+        .from('users')
+        .select()
+        .eq('id', data?.user?.id)
+        .single()
 
-  //     setProfile(profile)
-  //     setUser(data?.user ?? null)
-  //     setLoading(false)
-  //   })()
+      setProfile(profile)
+      setUser(data?.user ?? null)
+      setLoading(false)
+    })()
 
-  // }, [])
+  }, [])
 
 
   useEffect(() => {
-    // getUser()
+    getUser()
     // Listen for changes on auth state (logged in, signed out, etc.)
-    // const listener = supabase.auth.onAuthStateChange(async (event, session) => {
-    //   setUser(session?.user ?? null)
-    //   setLoading(false)
-    // })
+    const listener = supabase.auth.onAuthStateChange(async (event, session) => {
+      setUser(session?.user ?? null)
+      setLoading(false)
+    })
 
-    // return () => {
-    //   listener?.subscription?.unsubscribe()
-    // }
+    return () => {
+      listener?.subscription?.unsubscribe()
+    }
   }, [])
 
   // Will be passed down to Signup, Login and Dashboard components
