@@ -451,6 +451,69 @@ body.indentHeading {
       padding-left: 70px;
       margin-left: -70px;
 
+
+
+
+      &[level="1"].is-empty::before {
+        font-size: 3.75rem;
+        line-height: 0;
+        position: absolute;
+      }
+
+      &[level="2"].is-empty::before {
+        font-size: 3rem;
+        line-height: 0;
+        position: absolute;
+      }
+
+      &[level="3"].is-empty::before {
+        font-size: 2.25rem;
+        line-height: 0;
+        position: absolute;
+      }
+
+      &[level="4"].is-empty::before {
+        font-size: 1.875rem;
+        line-height: 0;
+        position: absolute;
+      }
+
+      &[level="5"].is-empty::before {
+        font-size: 1.5rem;
+        line-height: 0;
+        position: absolute;
+      }
+
+      &[level="6"].is-empty::before {
+        font-size: 1.25rem;
+        line-height: 0;
+        position: absolute;
+      }
+
+      &[level="7"].is-empty::before {
+        font-size: 1.125rem;
+        line-height: 0;
+        position: absolute;
+      }
+
+      &[level="8"].is-empty::before {
+        font-size: 1.125rem;
+        line-height: 0;
+        position: absolute;
+      }
+
+      &[level="9"].is-empty::before {
+        font-size: 1.125rem;
+        line-height: 0;
+        position: absolute;
+      }
+
+      &[level="10"].is-empty::before {
+        font-size: 1.125rem;
+        line-height: 0;
+        position: absolute;
+      }
+
       h1,
       h2,
       h3,
@@ -514,8 +577,6 @@ body.indentHeading {
       }
 
     }
-
-
 
     .contentHeading {
       display: flex;

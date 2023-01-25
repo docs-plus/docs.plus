@@ -59,7 +59,7 @@ const HeadingsTitle = Node.create({
       const dom = document.createElement('div');
       const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         // 'data-type': this.name,
-        // 'level': node.firstChild?.attrs.level,
+        'level': node.attrs.level,
         // open: node.attrs.open,
       });
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
