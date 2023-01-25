@@ -87,10 +87,11 @@ const Toolbar = ({ editor }) => {
     { value: 3, label: 'Heading 2' },
     { value: 4, label: 'Heading 3' },
     { value: 5, label: 'Heading 4' },
-    { value: 6, label: 'Heading 5' },
-    { value: 7, label: 'Heading 5' },
-    { value: 8, label: 'Heading 5' },
-    { value: 9, label: 'Heading 5' },
+    { value: 6, label: 'Heading 6' },
+    { value: 7, label: 'Heading 7' },
+    { value: 8, label: 'Heading 8' },
+    { value: 9, label: 'Heading 9' },
+    { value: 10, label: 'Heading 10' },
   ];
 
   const [selectedOption, setSelectedOption] = useState(options[0]);
@@ -195,7 +196,7 @@ const Toolbar = ({ editor }) => {
         options={options}
         value={selectValue}
         menuColor='red'
-        className="w-28 text-sm"
+        className="w-32 text-sm"
         classNamePrefix="nodeStyle"
         menuPlacement="top"
       />
