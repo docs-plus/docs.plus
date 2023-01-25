@@ -444,7 +444,7 @@ body.indentHeading {
 
     .title {
       z-index: 9;
-      width: 100%;
+      width: calc(100% + 70px);
       display: flex;
       flex-direction: row;
       align-items: center;
@@ -525,6 +525,7 @@ body.indentHeading {
       h9,
       h10 {
         margin-left: -33px;
+        width: 100%;
       }
 
       >a {

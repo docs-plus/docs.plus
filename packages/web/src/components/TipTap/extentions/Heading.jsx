@@ -196,7 +196,7 @@ const Blockquote = Node.create({
       dom.append(foldEl)
 
       foldEl.addEventListener('click', () => {
-        document.querySelector(`.title[data-id="${ headingId }"] .btnFold`).click()
+        document.querySelector(`.title[data-id="${ headingId }"] .btnFold`)?.click()
       });
 
       const content = document.createElement('div')
@@ -299,10 +299,7 @@ const Blockquote = Node.create({
           return false;
         }
 
-
-
         const { start, end, depth } = $from.blockRange($to);
-
 
         // if a user Enter in the contentHeading block,
         // should go to the next block, which is contentWrapper
@@ -316,7 +313,7 @@ const Blockquote = Node.create({
 
         // INFO: if the content is hide, do not anything
         // ! this open in the Heading block is wrong and Have to change, It's opposite
-        if (parent.attrs.open) return false
+        if (!parent.attrs.open) return false
 
         console.log("yes new", {
           $head, state, $anchor, parent,
