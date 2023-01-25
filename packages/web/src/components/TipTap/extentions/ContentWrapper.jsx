@@ -115,7 +115,7 @@ function slideToggle(el) {
 
 }
 
-function expandElement(elem, collapseClass) {
+function expandElement(elem, collapseClass, headingId) {
   // debugger;
   elem.style.height = '';
   elem.style.transition = 'none';
@@ -158,7 +158,6 @@ const HeadingsContent = Node.create({
   isolating: true,
   draggable: false,
   allowGapCursor: false,
-
   addOptions() {
     return {
       persist: true,
@@ -235,30 +234,23 @@ const HeadingsContent = Node.create({
             .command(({ tr }) => {
               const pos = getPos();
               const currentNode = tr.doc.nodeAt(pos);
+
               if ((currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type) {
                 return false;
               }
-
-              console.log({
-                isOpen: section.classList.contains('open'),
-                attr: currentNode.attrs.open,
-                scrollHeight: section.scrollHeight
-              })
-
 
               section.classList.toggle('open');
 
               if (node.attrs.open) {
                 section.classList.add('overflow-hidden');
-
               }
 
-              expandElement(section, 'collapsed')
-
+              expandElement(section, 'collapsed', detail.headingId)
 
               tr.setNodeMarkup(pos, undefined, {
                 open: !currentNode.attrs.open,
               });
+
               return true;
             })
             .run();

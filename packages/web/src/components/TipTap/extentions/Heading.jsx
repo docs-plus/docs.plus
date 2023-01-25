@@ -141,7 +141,6 @@ const Blockquote = Node.create({
       openClassName: 'is-open',
       HTMLAttributes: {
         class: "heading",
-        "data-depth": 0,
         level: 1
       },
     };
@@ -152,7 +151,7 @@ const Blockquote = Node.create({
     }
     return {
       open: {
-        default: false,
+        default: true,
         parseHTML: element => element.hasAttribute('open'),
         renderHTML: ({ open }) => {
           if (!open) {
@@ -176,6 +175,14 @@ const Blockquote = Node.create({
       });
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
 
+      const headingId = HTMLAttributes['data-id']
+
+      if (node.attrs.open) {
+        dom.classList.add(this.options.openClassName)
+      } else {
+        dom.classList.remove(this.options.openClassName)
+      }
+
       const foldEl = document.createElement('div')
       foldEl.classList.add('foldWrapper')
 
@@ -188,15 +195,15 @@ const Blockquote = Node.create({
 
       dom.append(foldEl)
 
+      foldEl.addEventListener('click', () => {
+        document.querySelector(`.title[data-id="${ headingId }"] .btnFold`).click()
+      });
+
       const content = document.createElement('div')
       content.classList.add('wrapBlock')
+      content.setAttribute('data-id', headingId)
       dom.append(content);
 
-      // dom.classList.add(this.options.openClassName);
-
-      // if (node.attrs.open) {
-      //   dom.classList.remove(this.options.openClassName);
-      // }
 
       return {
         dom,
@@ -208,6 +215,11 @@ const Blockquote = Node.create({
           return !dom.contains(mutation.target) || dom === mutation.target;
         },
         update: updatedNode => {
+          if (updatedNode.attrs?.open) {
+            dom.classList.add(this.options.openClassName)
+          } else {
+            dom.classList.remove(this.options.openClassName)
+          }
           if (updatedNode.type !== this.type) {
             return false;
           }

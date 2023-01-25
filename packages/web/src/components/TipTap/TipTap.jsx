@@ -127,7 +127,7 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
     },
     extensions: [
       UniqueID.configure({
-        types: ['heading', 'contentHeading', 'link'],
+        types: ['heading', 'link'],
         filterTransaction: transaction => !isChangeOrigin(transaction),
         // generateID: () => ObjectID()
       }),

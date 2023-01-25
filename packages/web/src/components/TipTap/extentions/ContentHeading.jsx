@@ -64,7 +64,13 @@ const HeadingsTitle = Node.create({
       });
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
 
-      if (!node.attrs.open) {
+      // get parrent elemen data-id
+      const parent = editor.view.state.doc.nodeAt(getPos() - 1);
+      const headingId = parent.attrs.id
+
+      dom.setAttribute('data-id', headingId)
+
+      if (node.attrs.open) {
         dom.classList.add('is-open')
       } else {
         dom.classList.remove('is-open')
@@ -88,8 +94,8 @@ const HeadingsTitle = Node.create({
       const toggleHeadingContent = (el) => {
         console.log("what", node.attrs.open)
         dom.classList.toggle(this.options.openClassName);
-        const detailsContent = document.querySelector(`.title[data-id="${ HTMLAttributes['data-id'] }"] ~ div.contentWrapper`);
-        const event = new CustomEvent('toggleHeadingsContent', { detail: { open: node.attrs.open, dom, el: detailsContent } });
+        const detailsContent = document.querySelector(`.title[data-id="${ headingId }"] ~ div.contentWrapper`);
+        const event = new CustomEvent('toggleHeadingsContent', { detail: { headingId, open: node.attrs.open, dom, el: detailsContent } });
         console.log(detailsContent)
         detailsContent === null || detailsContent === void 0 ? void 0 : detailsContent.dispatchEvent(event);
       };
@@ -100,7 +106,7 @@ const HeadingsTitle = Node.create({
         if (editor.isEditable && typeof getPos === 'function') {
           editor
             .chain()
-            .focus()
+            .focus(getPos() + node.nodeSize - 1)
             .command(({ tr }) => {
               const pos = getPos();
               const currentNode = tr.doc.nodeAt(pos);
@@ -111,13 +117,15 @@ const HeadingsTitle = Node.create({
               tr.setNodeMarkup(pos, undefined, {
                 open: !currentNode.attrs.open,
                 level: currentNode.attrs.level,
+              }).setNodeMarkup(pos - 1, undefined, {
+                open: !currentNode.attrs.open,
+                level: currentNode.attrs.level,
               });
-              // console.log(tr)
               return true;
             })
             .run();
-          toggleHeadingContent(el);
 
+          toggleHeadingContent(el);
         }
       }
 
