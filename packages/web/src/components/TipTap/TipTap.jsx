@@ -43,6 +43,7 @@ import ts from 'highlight.js/lib/languages/typescript'
 import html from 'highlight.js/lib/languages/xml'
 // load all highlight.js languages
 import { lowlight } from 'lowlight'
+import ShortUniqueId from 'short-unique-id'
 
 
 import Table from '@tiptap/extension-table'
@@ -129,7 +130,10 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       UniqueID.configure({
         types: ['heading', 'link'],
         filterTransaction: transaction => !isChangeOrigin(transaction),
-        // generateID: () => ObjectID()
+        generateID: () => {
+          const uid = new ShortUniqueId();
+          return uid.stamp(16)
+        }
       }),
       Document,
       Bold,

@@ -65,6 +65,7 @@
     "react-router-dom": "^6.6.2",
     "react-select": "^5.7.0",
     "sass": "^1.57.1",
+    "short-unique-id": "^4.4.4",
     "slugify": "^1.6.5",
     "sort-by": "^1.2.0",
     "tippy.js": "^6.3.7",
