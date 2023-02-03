@@ -1,4 +1,4 @@
-import './styles.scss'
+import './styles/styles.scss'
 import React, { useEffect, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import Collaboration from '@tiptap/extension-collaboration'

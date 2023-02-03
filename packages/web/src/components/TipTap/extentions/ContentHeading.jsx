@@ -70,26 +70,24 @@ const HeadingsTitle = Node.create({
 
       dom.setAttribute('data-id', headingId)
 
-      if (node.attrs.open) {
-        dom.classList.add('is-open')
-      } else {
-        dom.classList.remove('is-open')
-      }
 
-      console.log("what is node.attrs.open", { 1: node.attrs.open, 2: node })
+      const buttonWrapper = document.createElement('div')
+      buttonWrapper.classList.add('buttonWrapper')
 
       // create a button
       const button = document.createElement('button');
       button.setAttribute('class', 'btn_openChatBox');
       button.setAttribute('type', 'button');
-      dom.append(button);
+      button.contenteditable = false
+      buttonWrapper.append(button);
 
       // fold and unfold the heading
       const toggleHeading = document.createElement('button')
       toggleHeading.contentEditable = false
       toggleHeading.classList.add('unselectable')
       toggleHeading.classList.add('btnFold')
-      dom.append(toggleHeading)
+      toggleHeading.contenteditable = false
+      buttonWrapper.append(toggleHeading)
 
       const toggleHeadingContent = (el) => {
         console.log("what", node.attrs.open)
@@ -148,7 +146,9 @@ const HeadingsTitle = Node.create({
           .focus(getPos() + node.nodeSize - 1)
           .run()
       })
-      dom.append(href)
+      href.contenteditable = false
+      buttonWrapper.append(href)
+      dom.append(buttonWrapper)
 
       // heaidng contnet
       const content = document.createElement(`h${ node.attrs.level }`)
@@ -185,7 +185,6 @@ const HeadingsTitle = Node.create({
     const level = hasLevel
       ? node.attrs.level
       : this.options.levels[0];
-    console.log("renderHTML", this.options)
     return [`h${ level }`, mergeAttributes(this.options.HTMLAttributes, { ...HTMLAttributes, level }), 0];
   },
   addKeyboardShortcuts() {

@@ -138,7 +138,7 @@ const Blockquote = Node.create({
     return {
       levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       persist: false,
-      openClassName: 'is-open',
+      openClassName: 'opend',
       HTMLAttributes: {
         class: "heading",
         level: 1
@@ -178,26 +178,10 @@ const Blockquote = Node.create({
       const headingId = HTMLAttributes['data-id']
 
       if (node.attrs.open) {
-        dom.classList.add(this.options.openClassName)
+        dom.classList.add('opend')
       } else {
-        dom.classList.remove(this.options.openClassName)
+        dom.classList.add('closed')
       }
-
-      const foldEl = document.createElement('div')
-      foldEl.classList.add('foldWrapper')
-
-      for (let i = 0; i <= 3; i++) {
-        const line = document.createElement('div')
-        line.classList.add(`fold`)
-        line.classList.add(`l${ i }`)
-        foldEl.append(line)
-      }
-
-      dom.append(foldEl)
-
-      foldEl.addEventListener('click', () => {
-        document.querySelector(`.title[data-id="${ headingId }"] .btnFold`)?.click()
-      });
 
       const content = document.createElement('div')
       content.classList.add('wrapBlock')
@@ -215,11 +199,6 @@ const Blockquote = Node.create({
           return !dom.contains(mutation.target) || dom === mutation.target;
         },
         update: updatedNode => {
-          if (updatedNode.attrs?.open) {
-            dom.classList.add(this.options.openClassName)
-          } else {
-            dom.classList.remove(this.options.openClassName)
-          }
           if (updatedNode.type !== this.type) {
             return false;
           }

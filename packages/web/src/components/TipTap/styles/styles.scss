@@ -1,0 +1,378 @@
+/* Basic editor styles */
+
+@use './blocks';
+@use './headings';
+
+$Pad_Header__height: 64px;
+$Pad_Toolbar__height: 38px;
+$foldAndUnfold_crinkle_time: 1.4s;
+$transition-timing-function: ease-in-out;
+$crinkle_fold_bg: #bbb;
+$crinkle_unfold_bg: #efefef;
+
+.foldWrapper {
+  background-color: #f8f9fa;
+  cursor: pointer;
+  height: 100%;
+  position: absolute;
+  width: 100%;
+  bottom: 0;
+  height: calc(100% - 90px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  transition: all $foldAndUnfold_crinkle_time $transition-timing-function;
+
+  .fold {
+    width: calc(100% + 2rem + 6px);
+    position: relative;
+    z-index: 2;
+    left: -19px;
+    background-color: #f8f9fa;
+    padding-right: 4px;
+    height: 100%;
+    margin-top: -2px;
+    transition: all $foldAndUnfold_crinkle_time $transition-timing-function;
+
+    &::after {
+      content: "";
+      display: block;
+      max-height: 50%;
+      height: 100%;
+      min-height: 5px;
+      background-color: #fff;
+      width: 100%;
+      // border: 1px solid #ccc;
+      transform: skew(44deg);
+      // border-bottom: none;
+      transition: all $foldAndUnfold_crinkle_time $transition-timing-function;
+      // box-shadow: 0 1px 5px 1px rgb(0 64 67 / 15%);
+      border-right: 0;
+      border-left: 0;
+    }
+
+    &::before {
+      content: "";
+      display: block;
+      max-height: 50%;
+      height: 100%;
+      min-height: 5px;
+      background-color: $crinkle_fold_bg;
+      width: 100%;
+      // border: 1px solid #ccc;
+      transform: skew(-44deg);
+      border-bottom: none;
+      transition: all $foldAndUnfold_crinkle_time $transition-timing-function;
+      box-shadow: 0 1px 5px 1px rgb(0 64 67 / 15%);
+      border-right: 0;
+      border-left: 0;
+    }
+
+    &:last-of-type {
+
+      // border-bottom: 4px solid red;
+      &::after {
+        border: 1px solid #e1e6e7;
+        // box-shadow: 0 1px 5px 1px rgb(0 64 67 / 60%);
+        box-shadow: none;
+      }
+    }
+  }
+}
+
+.ProseMirror {
+
+  // buttons in heading
+  div.heading {
+    padding-bottom: 1rem;
+
+    .title {
+      .buttonWrapper {
+        display: flex;
+        align-items: center;
+
+        >a {
+          position: relative;
+          left: -60px;
+          visibility: hidden;
+        }
+
+        >.btn_openChatBox {
+          position: absolute;
+          right: 0;
+        }
+
+        button.btnFold {
+          display: flex;
+          cursor: pointer;
+          background: transparent;
+          border: none;
+          padding: 0;
+          position: relative;
+          left: -70px;
+          // visibility: hidden;
+
+          span {
+            display: none;
+          }
+
+          &::before {
+            content: '\25B6';
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 1.5em;
+            height: 1.5em;
+          }
+        }
+      }
+
+      &:hover {
+        .buttonWrapper>a {
+          visibility: visible;
+        }
+
+        .buttonWrapper>button.btnFold {
+          visibility: visible;
+        }
+      }
+    }
+
+    &.opend,
+    &.opening {
+      .buttonWrapper {
+        button.btnFold::before {
+          content: '\25BC';
+        }
+      }
+    }
+
+    &.closed,
+    &.closing {
+      .buttonWrapper {
+        button.btnFold::before {
+          content: '\25B6';
+        }
+      }
+    }
+  }
+
+  div.heading {
+    position: relative;
+    height: 100%;
+
+    &[level="1"] {
+      >.wrapBlock>.foldWrapper .fold {
+        width: calc(100% + 6px);
+      }
+    }
+
+    &[level="2"] {
+      >.wrapBlock>.foldWrapper {
+        height: calc(100% - 60px);
+      }
+    }
+
+    &[level="3"] {
+      >.wrapBlock>.foldWrapper {
+        height: calc(100% - 50px);
+      }
+    }
+
+    &[level="4"] {
+      >.wrapBlock>.foldWrapper {
+        height: calc(100% - 40px);
+      }
+    }
+
+    &[level="5"] {
+      >.wrapBlock>.foldWrapper {
+        height: calc(100% - 40px);
+      }
+    }
+
+    &:is([level="6"], [level="7"], [level="8"], [level="9"], [level="10"]) {
+      >.wrapBlock>.foldWrapper {
+        height: calc(100% - 40px);
+      }
+    }
+
+    @keyframes foldCrinkle_after {
+      0% {
+        transform: skew(0deg);
+      }
+
+      100% {
+        transform: skew(44deg);
+      }
+    }
+
+    @keyframes foldCrinkle_before {
+      0% {
+        transform: skew(0deg);
+        background-color: $crinkle_unfold_bg;
+      }
+
+      100% {
+        transform: skew(-44deg);
+        background-color: $crinkle_fold_bg;
+      }
+    }
+
+    @keyframes unfoldCrinkle_after {
+      0% {
+        transform: skew(44deg);
+      }
+
+      // 60%,
+      100% {
+        transform: skew(0deg);
+        // opacity: 0;
+      }
+    }
+
+    @keyframes unfoldCrinkle_before {
+      0% {
+        transform: skew(-44deg);
+        background-color: $crinkle_fold_bg;
+      }
+
+      // 60%,
+      100% {
+        transform: skew(0deg);
+        background-color: $crinkle_unfold_bg;
+        // opacity: 0;
+      }
+    }
+
+    @keyframes unfoldWrapper {
+      0% {
+        background-color: inherit;
+      }
+
+      100% {
+        background-color: transparent;
+      }
+    }
+
+    &.closed {
+      >.wrapBlock>.foldWrapper {
+        z-index: 2;
+      }
+
+      &:hover {
+
+        >.wrapBlock>.foldWrapper~.contentWrapper {
+          height: 70px !important;
+        }
+
+        height: calc(100% - 70px);
+        // border: 1px solid red;
+
+        >.wrapBlock>.foldWrapper {
+          // padding-bottom: 10px;
+          // overflow: hidden;
+        }
+
+        >.wrapBlock>.foldWrapper .fold::after {
+          // height: 8px;
+        }
+
+        >.wrapBlock>.foldWrapper .fold::before {
+          // height: 8px;
+          background-color: #ccc;
+        }
+      }
+
+    }
+
+    &.closing {
+      >.wrapBlock>.foldWrapper {
+        z-index: 4;
+      }
+    }
+
+    &.closed,
+    &.closing {
+      >.wrapBlock>.foldWrapper {
+        display: flex;
+        z-index: 4;
+
+        .fold::after {
+          animation: foldCrinkle_after $foldAndUnfold_crinkle_time $transition-timing-function;
+          // animation-fill-mode: forwards;
+        }
+
+        .fold::before {
+          animation: foldCrinkle_before $foldAndUnfold_crinkle_time $transition-timing-function;
+          // animation-fill-mode: forwards;
+        }
+      }
+    }
+
+    &.opening {
+      >.wrapBlock>.foldWrapper {
+        // opacity: 1;
+        // animation: unfoldWrapper $foldAndUnfold_crinkle_time $transition-timing-function;
+
+        .fold {
+          // animation: unfoldWrapper $foldAndUnfold_crinkle_time $transition-timing-function;
+        }
+
+        // animation-fill-mode: forwards;
+      }
+    }
+
+    &.opend,
+    &.opening {
+      >.wrapBlock>.foldWrapper {
+        .fold::after {
+          animation: unfoldCrinkle_after $foldAndUnfold_crinkle_time $transition-timing-function;
+          // animation-fill-mode: forwards;
+        }
+
+        .fold::before {
+          animation: unfoldCrinkle_before $foldAndUnfold_crinkle_time $transition-timing-function;
+          // animation-fill-mode: forwards;
+        }
+      }
+    }
+
+    &.opend {
+      >.wrapBlock>.foldWrapper {
+        display: none;
+        // opacity: 0;
+      }
+    }
+  }
+
+  .wrapBlock {
+    height: 100%;
+
+    .contentWrapper {
+      height: auto;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      min-height: 40px;
+      z-index: 0;
+      padding-bottom: 10px;
+      // NOTE: only transition duration is work here! other property are in the js file
+      transition: all $foldAndUnfold_crinkle_time $transition-timing-function;
+
+      .foldWrapper {
+        transition: all $foldAndUnfold_crinkle_time $transition-timing-function;
+
+        .fold {
+          transition: height $foldAndUnfold_crinkle_time $transition-timing-function;
+        }
+      }
+
+      &.collapsed {
+        height: 0;
+        padding: 0;
+        overflow: hidden;
+      }
+    }
+  }
+}

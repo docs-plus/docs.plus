@@ -80,8 +80,8 @@ export default function Root() {
       })
 
     if (closest.length === 0) {
-      tocLis.pop().classList.add('active')
-      tocLis.pop().scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
+      tocLis.pop()?.classList.add('active')
+      tocLis.pop()?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
       return
     }
 

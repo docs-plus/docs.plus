@@ -1,126 +1,87 @@
 
 import { Node, mergeAttributes, findParentNode, defaultBlockAt } from '@tiptap/core';
 import { Selection } from 'prosemirror-state';
+import { Decoration, DecorationSet } from "prosemirror-view"
+import { Plugin, TextSelection, PluginKey } from "prosemirror-state"
 
-
-
-
-function collapseSection(element) {
-  // get the height of the element's inner content, regardless of its actual size
-  var sectionHeight = element.scrollHeight;
-
-  // temporarily disable all css transitions
-  var elementTransition = element.style.transition;
-  element.style.transition = '';
-
-  // on the next frame (as soon as the previous style change has taken effect),
-  // explicitly set the element's height to its current pixel height, so we
-  // aren't transitioning out of 'auto'
-  requestAnimationFrame(function () {
-    element.style.height = sectionHeight + 'px';
-    element.style.transition = elementTransition;
-
-    // on the next frame (as soon as the previous style change has taken effect),
-    // have the element transition to height: 0
-    requestAnimationFrame(function () {
-      element.style.height = 0 + 'px';
-    });
-  });
-
-  // mark the section as "currently collapsed"
-  element.setAttribute('data-collapsed', 'true');
-}
-
-function expandSection(element) {
-
-  // get the height of the element's inner content, regardless of its actual size
-  var sectionHeight = element.scrollHeight;
-
-  // have the element transition to the height of its inner content
-  element.style.height = sectionHeight + 'px';
-
-  // when the next css transition finishes (which should be the one we just triggered)
-  element.addEventListener('transitionend', function (e) {
-    // remove this event listener so it only gets triggered once
-    console.log(this.callee)
-    element.removeEventListener('transitionend', expandSection);
-
-    // remove "height" from the element's inline styles, so it can return to its initial value
-    element.style.height = null;
-    console.log(";l;l;;;l;l;l;l", element)
-  });
-
-  // mark the section as "currently not collapsed"
-  element.setAttribute('data-collapsed', 'false');
-}
-
-
-function getTransitionEndEventName() {
-  var transitions = {
-    "transition": "transitionend",
-    "OTransition": "oTransitionEnd",
-    "MozTransition": "transitionend",
-    "WebkitTransition": "webkitTransitionEnd"
+function extractContentWrapperBlocks(doc) {
+  let result = []
+  const record = (from, to, nodeSize, childCount, headingId) => {
+    result.push({ from, to, nodeSize, childCount, headingId })
   }
-  let bodyStyle = document.body.style;
-  for (let transition in transitions) {
-    if (bodyStyle[transition] != undefined) {
-      return transitions[transition];
+  let lastHeadingId;
+  // For each node in the document
+  doc.descendants((node, pos) => {
+    if (node.type.name === 'heading') {
+      lastHeadingId = node.attrs.id
     }
-  }
-}
-
-// using above code we can get Transition end event name
-let transitionEndEventName = getTransitionEndEventName();
-
-
-
-function slideToggle(el) {
-  // The following 2 lines are ONLY needed if you ever want to start in a 'open' state. Due to the way browsers
-  // work it needs a double of this (or something like console.log(el.scrollHeight);) to prevent the render skipping
-  // el.style.height = el.scrollHeight + 'px';
-  // el.scrollHeight = el.scrollHeight; // Something like console.log(el.scrollHeight); also works, just something to prevent render skipping
-
-
-
-
-  // if (!el.classList.contains('open')) {
-  //   el.classList.add('overflow-hidden');
-  //   el.classList.add('opacity-0');
-  // } else {
-  //   setTimeout(() => {
-  //     el.classList.remove('overflow-hidden');
-  //     el.classList.remove('opacity-0');
-  //     el.style.height = '100%'
-  //   }, 350)
-  // }
-
-  el.classList.toggle('open');
-  el.style.height = el.classList.contains('open') ? el.scrollHeight + 'px' : 0;
-
-  function callback() {
-    el.removeEventListener(transitionEndEventName, callback);
-    console.log("Transition finished, is open:", el.classList.contains('open'));
-    if (el.classList.contains('open')) {
-      el.style.height = '100%';
-      // el.classList.remove('overflow-hidden')
-      // el.classList.remove('invisible')
-
+    if (node.type.name === 'contentWrapper') {
+      const nodeSize = node.content.size
+      const childCount = node.childCount
+      record(pos, pos + nodeSize, nodeSize, childCount, lastHeadingId)
     }
-    else
-      el.style.height = 0;
-  }
-
-  el.addEventListener(transitionEndEventName, callback);
-
+  })
+  return result
 }
 
-function expandElement(elem, collapseClass, headingId) {
+function crinkleNode(prob) {
+  const foldEl = document.createElement("div")
+  foldEl.classList.add('foldWrapper')
+  const step = 1000;
+  const lines = 3 + Math.floor(prob.nodeSize / step);
+  const clampedLines = Math.min(Math.max(lines, 3), 10);
+  for (let i = 0; i <= clampedLines; i++) {
+    const line = document.createElement('div')
+    line.classList.add(`fold`)
+    line.classList.add(`l${ i }`)
+    foldEl.append(line)
+  }
+  foldEl.setAttribute('data-clampedLines', clampedLines + 1)
+  foldEl.addEventListener('click', (e) => {
+    e.target.parentElement.parentElement.querySelector(`.btnFold`)?.click()
+  });
+  return foldEl
+}
+
+function lintDeco(doc) {
+  const decos = []
+  const contentWrappers = extractContentWrapperBlocks(doc)
+  contentWrappers.forEach(prob => {
+    const decorationWidget = Decoration.widget(prob.from, crinkleNode(prob), {
+      side: -1,
+      key: prob.headingId
+    })
+    decos.push(decorationWidget)
+  })
+  return DecorationSet.create(doc, decos)
+}
+
+
+
+
+
+function expandElement(elem, collapseClass, headingId, open) {
   // debugger;
   elem.style.height = '';
   elem.style.transition = 'none';
-
+  elem.style.transitionTimingFunction = 'ease-in-out';
   const startHeight = window.getComputedStyle(elem).height;
+  const contentWrapper = document.querySelector(`.heading[data-id="${ headingId }"]`)
+
+
+  contentWrapper.classList.remove('opend')
+  contentWrapper.classList.remove('closed')
+  contentWrapper.classList.remove('closing')
+  contentWrapper.classList.remove('opening')
+  elem.classList.add('overflow-hidden')
+
+
+  if (open) {
+    contentWrapper.classList.add('closing')
+  } else {
+    contentWrapper.classList.add('opening')
+
+  }
 
   // Remove the collapse class, and force a layout calculation to get the final height
   elem.classList.toggle(collapseClass);
@@ -140,15 +101,24 @@ function expandElement(elem, collapseClass, headingId) {
 
   function callback() {
     elem.style.height = '';
-    elem.classList.remove('overflow-hidden')
+    if (open) {
+      elem.classList.add('overflow-hidden')
+      contentWrapper.classList.add('closed')
+      contentWrapper.classList.remove('opend')
+      contentWrapper.classList.remove('closing')
+    } else {
+      contentWrapper.classList.remove('closed')
+      contentWrapper.classList.remove('opening')
+      contentWrapper.classList.add('opend')
+      elem.classList.remove('overflow-hidden')
+    }
+
     elem.removeEventListener('transitionend', callback);
   }
 
   // Clear the saved height values after the transition
   elem.addEventListener('transitionend', callback);
 }
-
-
 
 const HeadingsContent = Node.create({
   name: 'contentWrapper',
@@ -191,8 +161,6 @@ const HeadingsContent = Node.create({
     };
   },
   renderHTML({ HTMLAttributes }) {
-    // console.log("renderHTML")
-
     return [
       'div',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { 'data-type': this.name }),
@@ -210,11 +178,18 @@ const HeadingsContent = Node.create({
 
       if (!node.attrs.open) {
         dom.classList.add('collapsed')
+        dom.classList.add('closed')
         dom.classList.add('overflow-hidden')
       } else {
         dom.classList.remove('collapsed')
+        dom.classList.remove('closed')
+        dom.classList.add('opend')
         dom.classList.remove('overflow-hidden')
       }
+
+      const content = document.createElement('div')
+      content.classList.add('contents')
+      dom.append(content)
 
       const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, attrs);
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
@@ -239,18 +214,16 @@ const HeadingsContent = Node.create({
                 return false;
               }
 
-              section.classList.toggle('open');
 
               if (node.attrs.open) {
                 section.classList.add('overflow-hidden');
               }
 
-              expandElement(section, 'collapsed', detail.headingId)
-
               tr.setNodeMarkup(pos, undefined, {
                 open: !currentNode.attrs.open,
               });
 
+              expandElement(section, 'collapsed', detail.headingId, currentNode.attrs.open)
               return true;
             })
             .run();
@@ -303,12 +276,31 @@ const HeadingsContent = Node.create({
               .scrollIntoView()
               .run()
           }
-
         }
       },
       // Escape node on double enter
       Enter: ({ editor }) => { },
     };
+  },
+  addProseMirrorPlugins() {
+    return [
+      new Plugin({
+        key: new PluginKey('crinkle'),
+        state: {
+          init(_, { doc }) {
+            return lintDeco(doc)
+          },
+          apply(tr, old) {
+            return tr.docChanged ? lintDeco(tr.doc) : old
+          }
+        },
+        props: {
+          decorations(state) {
+            return this.getState(state)
+          },
+        },
+      })
+    ]
   }
 });
 
