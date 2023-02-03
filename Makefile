@@ -14,7 +14,7 @@ dev_editor_hocuspocus:
 	cd packages/web && npm run hocuspocus:server
 
 editor:
-	make -j 2 dev_editor dev_editor_hocuspocus
+	make -j 2 dev_editor_hocuspocus dev_editor
 
 build:
 	cd packages/web && rm -rf dist && npm run build

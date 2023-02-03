@@ -8,10 +8,11 @@
     "dev": "vite -m development",
     "build": "vite build ",
     "preview": "vite preview",
-    "hocuspocus:server": "npx @hocuspocus/cli --sqlite",
+    "hocuspocus:server": " hocuspocus --sqlite --port 1234",
     "update:packages": "ncu -u"
   },
   "dependencies": {
+    "@hocuspocus/cli": "^1.0.1",
     "@hocuspocus/provider": "^1.0.0-beta.6",
     "@supabase/supabase-js": "^2.4.0",
     "@tiptap/extension-blockquote": "^2.0.0-beta.209",
