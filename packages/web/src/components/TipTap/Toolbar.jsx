@@ -87,11 +87,11 @@ const Toolbar = ({ editor }) => {
     { value: 3, label: 'Heading 2' },
     { value: 4, label: 'Heading 3' },
     { value: 5, label: 'Heading 4' },
-    { value: 6, label: 'Heading 6' },
-    { value: 7, label: 'Heading 7' },
-    { value: 8, label: 'Heading 8' },
-    { value: 9, label: 'Heading 9' },
-    { value: 10, label: 'Heading 10' },
+    { value: 6, label: 'Heading 5' },
+    { value: 7, label: 'Heading 6' },
+    { value: 8, label: 'Heading 7' },
+    { value: 9, label: 'Heading 8' },
+    { value: 10, label: 'Heading 9' },
   ];
 
   const [selectedOption, setSelectedOption] = useState(options[0]);
@@ -105,6 +105,10 @@ const Toolbar = ({ editor }) => {
     else if (editor.isActive('heading', { level: 4 })) setSelectValue(options[4])
     else if (editor.isActive('heading', { level: 5 })) setSelectValue(options[5])
     else if (editor.isActive('heading', { level: 6 })) setSelectValue(options[6])
+    else if (editor.isActive('heading', { level: 7 })) setSelectValue(options[7])
+    else if (editor.isActive('heading', { level: 8 })) setSelectValue(options[8])
+    else if (editor.isActive('heading', { level: 9 })) setSelectValue(options[9])
+    else if (editor.isActive('heading', { level: 10 })) setSelectValue(options[10])
     else setSelectValue(options[0])
   }, [
     editor.isActive('heading', { level: 1 }),
@@ -113,6 +117,10 @@ const Toolbar = ({ editor }) => {
     editor.isActive('heading', { level: 4 }),
     editor.isActive('heading', { level: 5 }),
     editor.isActive('heading', { level: 6 }),
+    editor.isActive('heading', { level: 7 }),
+    editor.isActive('heading', { level: 8 }),
+    editor.isActive('heading', { level: 9 }),
+    editor.isActive('heading', { level: 10 }),
     editor.isActive('paragraph')
   ])
 
