@@ -13,7 +13,7 @@ body.indentHeading {
       content: attr(level);
       position: absolute;
       background-color: tomato;
-      font-size: 12px;
+      font-size: 12px !important;
       height: 20px;
       width: 20px;
       top: -10px;
