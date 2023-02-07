@@ -86,6 +86,7 @@ export default (arrg, attributes) => {
       })
       .setTextSelection(block.edge.end + 2)
       .deleteRange({ from: start + 1, to: block.edge.end })
+      .focus(block.edge.end)
       .scrollIntoView()
       .run();
   }
@@ -188,6 +189,7 @@ export default (arrg, attributes) => {
         })
         // INFO: this 1 mean skip the toggle button depth
         .setTextSelection(end)
+        .focus(start + block.headingContent.text.length + 2)
         .scrollIntoView()
         .run()
     }
