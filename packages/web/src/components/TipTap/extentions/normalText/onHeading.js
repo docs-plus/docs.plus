@@ -1,4 +1,5 @@
 import { getSelectionBlocks, getRangeBlocks, getPrevHeadingList } from '../helper'
+import { TextSelection } from "prosemirror-state";
 
 export default (arrg) => {
 
@@ -6,8 +7,6 @@ export default (arrg) => {
   const { schema, selection, doc } = state;
   const { $from, $to, $anchor, $cursor, $head } = selection;
   const { start, end, depth } = $from.blockRange($to);
-
-
 
   let selectedContents = getSelectionBlocks(doc, start, $head.pos)
   let contentWrapper = getRangeBlocks(doc, start - 1, $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size)
@@ -127,6 +126,10 @@ export default (arrg) => {
 
   newTr.delete(start - 1, selectionEndPos)
   newTr.insert(insertPosition, normalContents)
+
+  const caretPosition = insertPosition + normalContents[0].text.length + 1
+  const focusSelection = new TextSelection(newTr.doc.resolve(caretPosition));
+  newTr.setSelection(focusSelection);
 
   // return
 
