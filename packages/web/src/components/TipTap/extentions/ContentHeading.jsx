@@ -39,14 +39,6 @@ const HeadingsTitle = Node.create({
     return {
       open: {
         default: true,
-        // parseHTML: element => element.hasAttribute('open'),
-        // renderHTML: ({ open }) => {
-        //   console.log("open====>?>", open)
-        //   if (!open) {
-        //     return {};
-        //   }
-        //   return { open: '' };
-        // },
       },
       level: {
         default: 1,
@@ -66,10 +58,8 @@ const HeadingsTitle = Node.create({
 
       // get parrent elemen data-id
       const parent = editor.view.state.doc.nodeAt(getPos() - 1);
-      const headingId = parent.attrs.id
-
+      const headingId = parent.attrs.id || 1
       dom.setAttribute('data-id', headingId)
-
 
       const buttonWrapper = document.createElement('div')
       buttonWrapper.classList.add('buttonWrapper')
@@ -134,11 +124,11 @@ const HeadingsTitle = Node.create({
       href.classList.add('unselectable')
       href.contentEditable = false
       href.innerHTML = "#"
-      href.setAttribute('href', `#${ this.options['data-id'] }`)
+      href.setAttribute('href', `#${ headingId }`)
       href.addEventListener('click', (e) => {
         e.preventDefault()
         const url = new URL(window.location);
-        url.searchParams.set('id', e.target.parentNode.getAttribute('data-id'));
+        url.searchParams.set('id', headingId);
         window.history.pushState({}, '', url);
         copyToClipboard(url)
         editor

@@ -139,6 +139,8 @@ const Blockquote = Node.create({
       levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       persist: false,
       openClassName: 'opend',
+      open: true,
+      id: 1,
       HTMLAttributes: {
         class: "heading",
         level: 1
@@ -146,9 +148,6 @@ const Blockquote = Node.create({
     };
   },
   addAttributes() {
-    if (!this.options.persist) {
-      return [];
-    }
     return {
       open: {
         default: true,
@@ -163,7 +162,7 @@ const Blockquote = Node.create({
       level: {
         default: 1,
         rendered: false,
-      },
+      }
     };
   },
   addNodeView() {
@@ -171,11 +170,14 @@ const Blockquote = Node.create({
       const dom = document.createElement('div');
       const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         'data-type': this.name,
-        'level': node.firstChild?.attrs.level
+        'level': node.firstChild?.attrs.level,
+        "data-id": HTMLAttributes['data-id'] || this.options.id,
+        'open': node.firstChild.attrs.open
       });
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
 
-      const headingId = HTMLAttributes['data-id']
+      let headingId = HTMLAttributes['data-id']
+      if (!node.attrs.id) headingId = 1
 
       if (node.attrs.open) {
         dom.classList.add('opend')
@@ -188,19 +190,22 @@ const Blockquote = Node.create({
       content.setAttribute('data-id', headingId)
       dom.append(content);
 
+      let inition = false
 
       return {
         dom,
         contentDOM: content,
-        ignoreMutation(mutation) {
-          if (mutation.type === 'selection') {
-            return false;
-          }
+        ignoreMutation: mutation => {
+          if (mutation.type === 'selection') return false;
           return !dom.contains(mutation.target) || dom === mutation.target;
         },
         update: updatedNode => {
-          if (updatedNode.type !== this.type) {
-            return false;
+          if (updatedNode.type.name !== this.name) return false;
+          // trick
+          if (!inition && updatedNode.firstChild.attrs.open === false) {
+            dom.classList.add('closed')
+            dom.classList.remove('opend')
+            inition = true
           }
           return true;
         },
