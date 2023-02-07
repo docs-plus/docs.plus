@@ -9,7 +9,9 @@ export default (arrg, attributes) => {
 
   const commingLevel = attributes.level;
 
-  const content = { "type": "text", "text": $anchor.nodeBefore?.text || " " }
+  const HeadingText = doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || " "
+  const content = { "type": "text", "text": HeadingText }
+
   // select the first paragraph for heading title
   const headingContent = content
 
