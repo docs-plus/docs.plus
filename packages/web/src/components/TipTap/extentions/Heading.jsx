@@ -190,7 +190,7 @@ const Blockquote = Node.create({
       content.setAttribute('data-id', headingId)
       dom.append(content);
 
-      let inition = false
+      let initiation = false
 
       return {
         dom,
@@ -202,10 +202,10 @@ const Blockquote = Node.create({
         update: updatedNode => {
           if (updatedNode.type.name !== this.name) return false;
           // trick
-          if (updatedNode.attrs.level === 1 && !inition && updatedNode.firstChild.attrs.open === false) {
+          if (updatedNode.attrs.level === 1 && !initiation && updatedNode.firstChild.attrs.open === false) {
             dom.classList.add('closed')
             dom.classList.remove('opend')
-            inition = true
+            initiation = true
           }
           return true;
         },
