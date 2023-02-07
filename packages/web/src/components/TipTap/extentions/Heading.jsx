@@ -202,7 +202,7 @@ const Blockquote = Node.create({
         update: updatedNode => {
           if (updatedNode.type.name !== this.name) return false;
           // trick
-          if (!inition && updatedNode.firstChild.attrs.open === false) {
+          if (updatedNode.attrs.level === 1 && !inition && updatedNode.firstChild.attrs.open === false) {
             dom.classList.add('closed')
             dom.classList.remove('opend')
             inition = true
