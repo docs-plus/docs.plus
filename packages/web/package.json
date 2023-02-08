@@ -9,7 +9,9 @@
     "build": "vite build ",
     "preview": "vite preview",
     "hocuspocus:server": " hocuspocus --sqlite --port 1234",
-    "update:packages": "ncu -u"
+    "update:packages": "ncu -u",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix --ext .js,.jsx,.ts,.tsx"
   },
   "dependencies": {
     "@hocuspocus/cli": "^1.0.1",
@@ -84,7 +86,18 @@
     "@types/react-dom": "^18.0.10",
     "@vitejs/plugin-react": "^3.0.1",
     "autoprefixer": "^10.4.13",
+    "eslint": "^8.0.1",
+    "eslint-config-standard": "^17.0.0",
+    "eslint-plugin-html": "^7.1.0",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-n": "^15.0.0",
+    "eslint-plugin-promise": "^6.0.0",
+    "eslint-plugin-react": "^7.32.2",
+    "lint-staged": "^13.1.1",
     "postcss": "^8.4.21",
+    "stylelint": "^14.16.1",
+    "stylelint-config-prettier": "^9.0.4",
+    "stylelint-config-standard": "^29.0.0",
     "tailwindcss": "^3.2.4",
     "vite": "^4.0.4",
     "vite-plugin-pwa": "^0.14.1"
