@@ -41,6 +41,11 @@ import css from 'highlight.js/lib/languages/css'
 import js from 'highlight.js/lib/languages/javascript'
 import ts from 'highlight.js/lib/languages/typescript'
 import html from 'highlight.js/lib/languages/xml'
+import md from 'highlight.js/lib/languages/markdown'
+import yaml from 'highlight.js/lib/languages/yaml'
+import python from 'highlight.js/lib/languages/python'
+import json from 'highlight.js/lib/languages/json'
+import bash from 'highlight.js/lib/languages/bash'
 // load all highlight.js languages
 import { lowlight } from 'lowlight'
 import ShortUniqueId from 'short-unique-id'
@@ -55,6 +60,11 @@ lowlight.registerLanguage('html', html)
 lowlight.registerLanguage('css', css)
 lowlight.registerLanguage('js', js)
 lowlight.registerLanguage('ts', ts)
+lowlight.registerLanguage('markdown', md)
+lowlight.registerLanguage('python', python)
+lowlight.registerLanguage('yaml', yaml)
+lowlight.registerLanguage('json', json)
+lowlight.registerLanguage('bash', bash)
 
 const Document = Node.create({
   name: 'doc',
