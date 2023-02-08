@@ -2,7 +2,6 @@ import './styles/styles.scss'
 import React, { useEffect, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
 import Collaboration from '@tiptap/extension-collaboration'
-import StarterKit from '@tiptap/starter-kit'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
 import Link from '@tiptap/extension-link'
 import Image from '@tiptap/extension-image'
@@ -23,20 +22,15 @@ import ListItem from '@tiptap/extension-list-item'
 import OrderedList from '@tiptap/extension-ordered-list'
 import HardBreak from '@tiptap/extension-hard-break'
 import Heading from './extentions/Heading'
-
 import Bold from '@tiptap/extension-bold'
 import Italic from '@tiptap/extension-italic'
 import BulletList from '@tiptap/extension-bullet-list'
 import Strike from '@tiptap/extension-strike'
-
 import Superscript from '@tiptap/extension-superscript'
 import Subscript from '@tiptap/extension-subscript'
 import Blockquote from '@tiptap/extension-blockquote'
 import TextAlign from '@tiptap/extension-text-align'
-
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-import CodeBlock from '@tiptap/extension-code-block'
-
 import css from 'highlight.js/lib/languages/css'
 import js from 'highlight.js/lib/languages/javascript'
 import ts from 'highlight.js/lib/languages/typescript'
@@ -49,8 +43,7 @@ import bash from 'highlight.js/lib/languages/bash'
 // load all highlight.js languages
 import { lowlight } from 'lowlight'
 import ShortUniqueId from 'short-unique-id'
-
-
+// Table Node Block
 import Table from '@tiptap/extension-table'
 import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
@@ -156,13 +149,10 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       Text,
       ListItem,
       OrderedList,
-      Heading.configure({
-        persist: true,
-      }),
+      Heading.configure(),
       CodeBlockLowlight.configure({
         lowlight,
       }),
-
       Button,
       ContentHeading,
       ContentWrapper,
@@ -225,18 +215,11 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
   }, [])
 
   useEffect(() => {
-    // console.log("useEffect", editor)
-    if (!editor) setIsloading(false)
-    // console.log("data loadedddd!!1")
-    // console.log("useEffect", isloading)
     document.title = `Pad: ${ padName }`;
     return () => {
       editor?.destroy()
     }
   }, [editor])
-
-
-  // editor?.on('update', onUpdate)
 
   return editor
 }
