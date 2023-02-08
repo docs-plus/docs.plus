@@ -1,25 +1,23 @@
 import { getSelectionBlocks, getRangeBlocks, getPrevHeadingList } from '../helper'
 
 export default (arrg) => {
-
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
-  const { schema, selection, doc } = state;
-  const { $from, $to, $anchor, $cursor, $head } = selection;
-  const { start, end, depth } = $from.blockRange($to);
+  const { schema, selection, doc } = state
+  const { $from, $to, $anchor, $cursor, $head } = selection
+  const { start, end, depth } = $from.blockRange($to)
 
-
-
-  let selectedContents = getSelectionBlocks(doc, start, end)
-  let contentWrapper = getRangeBlocks(doc, start - 1, $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size)
+  const selectedContents = getSelectionBlocks(doc, start, end)
+  const contentWrapper = getRangeBlocks(doc, start - 1, $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size)
   const restContent = getRangeBlocks(doc, end, $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size)
 
-
   console.log({
-    start1: $from.pos, end1: $head.pos,
-    start, end,
+    start1: $from.pos,
+    end1: $head.pos,
+    start,
+    end,
     selectedContents,
     contentWrapper,
-    restContent,
+    restContent
   })
 
   // return
@@ -30,14 +28,14 @@ export default (arrg) => {
   let titleStartPos = 0
   let titleEndPos = 0
   const titleHMap = []
-  let prevHStartPos = 0
-  let prevHEndPos = 0
-
+  const prevHStartPos = 0
+  const prevHEndPos = 0
 
   doc.nodesBetween($from.start(0), start - 1, function (node, pos, parent, index) {
-    if (node.type.name === "heading") {
+    if (node.type.name === 'heading') {
       const headingLevel = node.firstChild?.attrs?.level
       const depth = doc.resolve(pos).depth
+
       titleHMap.push({ le: headingLevel, node: node.toJSON(), depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, index })
 
       if (headingLevel === currentHLevel) {
@@ -48,23 +46,18 @@ export default (arrg) => {
     }
   })
 
-
   const lastBlock = titleHMap[titleHMap.length - 1]
 
   // return
 
-
   console.log(restContent, [...selectedContents])
-
 
   const newContent = selectedContents.map(x => editor.schema.nodeFromJSON(x))
 
-
-
   newTr.delete(start - 1, $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size)
 
-
   let insertPosition = start - 1
+
   if (currentHLevel < lastBlock.le) {
     // selectionEndPos = firstHeadingPicked.endBlockPos - 2
     insertPosition = lastBlock.endBlockPos - 2
@@ -75,26 +68,23 @@ export default (arrg) => {
 
   console.log(doc.nodeAt(insertPosition))
 
-
   if (newTr.doc.nodeAt(insertPosition) === null && doc.nodeAt(insertPosition)?.type.name === 'contentWrapper') {
-    console.log("im in")
+    console.log('im in')
     const contentWrapperNode = state.schema.nodeFromJSON({
       type: 'contentWrapper',
       content: [
         {
-          "type": "paragraph"
-        },
+          type: 'paragraph'
+        }
       ]
 
     })
+
     newTr.insert(newTr.mapping.map(insertPosition), contentWrapperNode)
       .insert(newTr.mapping.map(insertPosition) - 3, newContent)
-
   } else {
-
     newTr.insert(newTr.mapping.map(insertPosition), newContent)
   }
-
 
   console.log({
     restContent,
@@ -109,10 +99,7 @@ export default (arrg) => {
 
   if (contentWrapper.length > 0) {
     for (let [index, heading] of restContent.entries()) {
-
       if (!heading.le) heading = { ...heading, le: heading.content[0].attrs.level, startBlockPos: 0 }
-
-
 
       if (index == 0) {
         const startBlock = newTr.mapping.map(mapHPost[0].startBlockPos)
@@ -130,10 +117,10 @@ export default (arrg) => {
           startBlock,
           endBlock
         )
-
       } else {
         const startBlock = newTr.mapping.map(mapHPost[0].startBlockPos)
         const endBlock = (startBlock + newTr.doc.nodeAt(startBlock).nodeSize)
+
         // console.log({
         //   startBlock,
         //   endBlock,
@@ -152,7 +139,6 @@ export default (arrg) => {
         )
       })
 
-
       // const narrowDownSearch = mapHPost.filter(x =>
       //   // x.startBlockPos < heading.startBlockPos &&
       //   x.startBlockPos <= prevHStartPos
@@ -166,21 +152,21 @@ export default (arrg) => {
         prevHStartPos,
         at: newTr.doc.nodeAt(newTr.mapping.map(prevHStartPos)),
         mapHPost,
-        narrowDownSearch,
+        narrowDownSearch
       })
 
       // return
 
       if (narrowDownSearch.length > 0) mapHPost = narrowDownSearch
 
-
       const node = state.schema.nodeFromJSON(heading)
 
-      let prevBlockEqual = mapHPost.findLast(x => x.le === heading.le)
-      let prevBlockGratherFromFirst = mapHPost.find(x => x.le >= heading.le)
-      let prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= heading.le)
+      const prevBlockEqual = mapHPost.findLast(x => x.le === heading.le)
+      const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= heading.le)
+      const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= heading.le)
       const lastbloc = mapHPost[mapHPost.length - 1]
       let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
+
       // console.log({ lastbloc, prevBlock, mapHPost })
       // if (!lastbloc) =
       if (lastbloc.le <= heading.le) prevBlock = lastbloc
@@ -205,21 +191,14 @@ export default (arrg) => {
     }
   }
 
-
-
-
   return
 
   // newTr.insert(start, newContent)
-
-
-
 
   newTr.insert(newTr.mapping.map(start - 1), paragraphNode)
 
   const paragraphs = selectedContents.filter(x => x.type !== 'heading')
   const headings = selectedContents.filter(x => x.type === 'heading')
-
 
   const lolo = []
 
@@ -227,10 +206,10 @@ export default (arrg) => {
     const headingText = heading.content[0].content
     const wrapperContent = heading.content[1].content
     const mergeContent = [...headingText, ...wrapperContent]
+
     console.log(mergeContent)
 
-
-    for (let [index, block] of mergeContent.entries()) {
+    for (const [index, block] of mergeContent.entries()) {
       if (block.type === 'heading') headingsMap.push({ block, index })
     }
 
@@ -240,29 +219,24 @@ export default (arrg) => {
 
   flatHeading(headings[0])
 
-
-  console.log("=",)
+  console.log('=')
   let newSelection = [].concat(...selectedContents)
 
-  let headingsMap = []
-  for (let [index, block] of newSelection.entries()) {
+  const headingsMap = []
+
+  for (const [index, block] of newSelection.entries()) {
     if (block.type === 'heading') headingsMap.push({ block, index })
   }
 
-  for (let [index, heading] of headingsMap.entries()) {
+  for (const [index, heading] of headingsMap.entries()) {
     const headingText = heading.block.content[0].content
     const wrapperContent = heading.block.content[1].content
     const mergeContent = [...headingText, ...wrapperContent]
+
     // mergeContent.push(headingText)
     // mergeContent.push(wrapperContent)
     // console.log(mergeContent)
     newSelection.splice(heading.index, 0, mergeContent)
     newSelection = [].concat(...newSelection)
   }
-
-
-
-
-
-
 }

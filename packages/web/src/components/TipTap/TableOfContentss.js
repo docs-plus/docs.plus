@@ -1,5 +1,4 @@
 import { mergeAttributes, Node } from '@tiptap/core'
-import { ReactNodeViewRenderer } from '@tiptap/react'
 
 // import Component from './TableOfContents'
 
@@ -13,8 +12,8 @@ export default Node.create({
   parseHTML() {
     return [
       {
-        tag: 'toc',
-      },
+        tag: 'toc'
+      }
     ]
   },
 
@@ -24,19 +23,19 @@ export default Node.create({
 
   onCreate() {
     onBeforeCreate
-    const { view, state } = this.editor;
-    const { tr, doc } = state;
-    const { types, attributeName, generateID } = this.options;
+    const { view, state } = this.editor
+    const { tr, doc } = state
+    const { types, attributeName, generateID } = this.options
 
     if (this.editor.extensionManager.extensions.find(extension => extension.name === 'collaboration')) {
-      return;
+      return
     }
     console.log({ view, state, tr, doc, types, attributeName, generateID })
   },
 
   addNodeView() {
     return ''
-  },
+  }
   // addGlobalAttributes() {
   //   return [
   //     {

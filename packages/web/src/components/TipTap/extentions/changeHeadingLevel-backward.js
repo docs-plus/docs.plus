@@ -1,24 +1,24 @@
-import { TextSelection } from 'prosemirror-state';
+import { TextSelection } from 'prosemirror-state'
 
 export default (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
-  const { schema, selection, doc } = state;
-  const { $from, $to, $anchor, $cursor } = selection;
-  const { start, end, depth } = $from.blockRange($to);
+  const { schema, selection, doc } = state
+  const { $from, $to, $anchor, $cursor } = selection
+  const { start, end, depth } = $from.blockRange($to)
 
-  const commingLevel = attributes.level;
-  const content = { "type": "text", "text": $anchor.nodeBefore.text }
+  const commingLevel = attributes.level
+  const content = { type: 'text', text: $anchor.nodeBefore.text }
   // select the first paragraph for heading title
   const headingContent = content
 
   const block = {
     parent: {
       end: $from.end(depth - 1),
-      start: $from.start(depth - 1),
+      start: $from.start(depth - 1)
     },
     edge: {
       end: $from.end(depth - 1) + 1,
-      start: $from.start(depth - 1) - 1,
+      start: $from.start(depth - 1) - 1
     },
     ancesster: {
       start: $from.start(1),
@@ -31,22 +31,22 @@ export default (arrg, attributes) => {
     headingContent,
     lineContent: content,
     empty: {
-      "type": "paragraph",
-      "content": [
+      type: 'paragraph',
+      content: [
         {
-          "type": "text",
-          "text": " "
+          type: 'text',
+          text: ' '
         }
       ]
     },
-    paragraph: { "type": "paragraph", }
+    paragraph: { type: 'paragraph' }
   }
 
   const nextSiblingLevel = $from.doc.nodeAt(block.end + 1)?.firstChild.attrs.level
   const currentHeading = $from.doc.nodeAt(block.start)
   const currentHLevel = $from.doc.nodeAt(block.start).attrs.level
 
-  console.log("[Heading]: Forward process,  commingLevel < currentHLevel")
+  console.log('[Heading]: Forward process,  commingLevel < currentHLevel')
   // console.log("the hard path")
 
   const titleNode = $from.doc.nodeAt($from.start(1) - 1)
@@ -58,9 +58,10 @@ export default (arrg, attributes) => {
   let prevDepth = 0
 
   doc.nodesBetween(start, titleEndPos, function (node, pos, parent, index) {
-    if (node.type.name === "heading") {
+    if (node.type.name === 'heading') {
       const headingLevel = node.firstChild?.attrs?.level
       const depth = doc.resolve(pos).depth
+
       titleHMap.push({ le: headingLevel, depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, index })
     }
   })
@@ -70,16 +71,18 @@ export default (arrg, attributes) => {
 
     if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
       const depth = $from.sharedDepth(pos)
-      contentWrapper.push({ depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON(), })
+
+      contentWrapper.push({ depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON() })
     }
-    if (node.type.name === "heading") {
+    if (node.type.name === 'heading') {
       firstHEading = false
       const headingLevel = node.firstChild?.attrs?.level
       const depth = doc.resolve(pos).depth
+
       if (prevDepth === 0) prevDepth = depth
 
       if (prevDepth >= depth) {
-        contentWrapper.push({ le: headingLevel, depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON(), })
+        contentWrapper.push({ le: headingLevel, depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON() })
         prevDepth = depth
       }
     }
@@ -87,6 +90,7 @@ export default (arrg, attributes) => {
 
   const sliceTargetContent = contentWrapper.filter(x => {
     if (x.type !== 'heading') return x
+
     return x.le > commingLevel
   })
 
@@ -103,13 +107,13 @@ export default (arrg, attributes) => {
         content: [block.headingContent],
         attrs: {
           level: attributes.level
-        },
+        }
       },
       {
         type: 'contentWrapper',
         content: sliceTargetContent
-      },
-    ],
+      }
+    ]
   }
 
   const node = state.schema.nodeFromJSON(jsonNode)
@@ -118,6 +122,7 @@ export default (arrg, attributes) => {
   const contentHeadingNodeSize = insertPos + block.headingContent.text.length + 2
   const resolveContentHeadingPos = newTr.doc.resolve(contentHeadingNodeSize)
   const newTextSelection = new TextSelection(resolveContentHeadingPos)
+
   newTr.setSelection(newTextSelection)
 
   return chain()

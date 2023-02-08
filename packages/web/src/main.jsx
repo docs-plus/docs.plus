@@ -1,5 +1,4 @@
-import React, { lazy, Suspense } from 'react'
-import { useEffect } from 'react';
+import React, { lazy, Suspense, useEffect } from 'react'
 import ReactDOM from 'react-dom/client'
 import {
   createBrowserRouter,
@@ -10,7 +9,8 @@ import {
   Navigate,
   Outlet,
   BrowserRouter
-} from "react-router-dom";
+} from 'react-router-dom'
+
 import './assets/global.scss'
 import ReloadPrompt from './components/ReloadPrompt'
 import { AuthProvider, useAuth } from './contexts/Auth'
@@ -30,87 +30,80 @@ const DashboardProfile = lazy(() => import('./routes/dashboard/Profile'))
 const DashboardHomePage = lazy(() => import('./routes/dashboard/Home'))
 const AskForUsernamePage = lazy(() => import('./routes/auth/AskForUsername'))
 
-const RequireAuth = ({ children, value, redirectPath = "/auth/login" }) => {
+const RequireAuth = ({ children, value, redirectPath = '/auth/login' }) => {
   const { user, profile } = useAuth()
   const navigate = useNavigate()
+
   useEffect(() => {
-
-
     if (!profile?.doc_namespace || profile?.doc_namespace.length <= 0) {
-      navigate("/auth/username_needed")
+      navigate('/auth/username_needed')
     } else if (!user) {
       navigate(redirectPath)
     } else if (user && user?.id && user?.email) {
       // navigate("/")
     }
-
-
-
-
   }, [user])
 
-  return children ? children : <Outlet />;
+  return children || <Outlet />
 }
 
 // https://blog.netcetera.com/how-to-create-guarded-routes-for-your-react-app-d2fe7c7b6122
 
-
 const router = createBrowserRouter([
   {
-    path: "/",
+    path: '/',
     element: < IntroPage />,
     errorElement: <ErrorPage />
   },
   {
-    path: "/auth",
+    path: '/auth',
     element: < AuthPage />,
     errorElement: <ErrorPage />,
     children: [
       {
-        path: "signup",
+        path: 'signup',
         element: < SignupPage />,
         errorElement: <ErrorPage />
       },
       {
-        path: "login",
+        path: 'login',
         element: < LoginPage />,
         errorElement: <ErrorPage />
       },
       {
-        path: "checkemail",
+        path: 'checkemail',
         element: < CheckYourEmailPage />,
         errorElement: <ErrorPage />
       },
       {
-        path: "username_needed",
+        path: 'username_needed',
         element: < AskForUsernamePage />,
         errorElement: <ErrorPage />
-      },
+      }
     ]
   },
   {
-    path: "/dashboard",
+    path: '/dashboard',
     element:
       <RequireAuth>
         < DashboardPage />
-      </RequireAuth>
-    ,
+      </RequireAuth>,
     errorElement: <ErrorPage />,
     children: [
       {
-        path: "profile",
+        path: 'profile',
         element: < DashboardProfile />,
         errorElement: <ErrorPage />
       },
       {
-        path: "",
+        path: '',
         element: < DashboardHomePage />,
         errorElement: <ErrorPage />
-      },
+      }
     ]
   },
   {
-    path: "/g/:padName",
+    path: '/g/:padName',
     element: <Pads />,
     errorElement: <ErrorPage />,
     loader: async ({ request, params }) => {
@@ -118,7 +111,7 @@ const router = createBrowserRouter([
     }
   },
   {
-    path: "/:namespace/:padName",
+    path: '/:namespace/:padName',
     element: <Pads />,
     errorElement: <ErrorPage />,
     loader: async ({ request, params }) => {
@@ -126,11 +119,10 @@ const router = createBrowserRouter([
     }
   },
   {
-    path: "*",
+    path: '*',
     element: <PageNotFound />
   }
-]);
-
+])
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>

@@ -1,25 +1,27 @@
+import { TextSelection } from 'prosemirror-state'
+
 import { getSelectionBlocks, getRangeBlocks, getPrevHeadingList } from '../helper'
-import { TextSelection } from "prosemirror-state";
 
 export default (arrg) => {
-
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
-  const { schema, selection, doc } = state;
-  const { $from, $to, $anchor, $cursor, $head } = selection;
-  const { start, end, depth } = $from.blockRange($to);
+  const { schema, selection, doc } = state
+  const { $from, $to, $anchor, $cursor, $head } = selection
+  const { start, end, depth } = $from.blockRange($to)
 
-  let selectedContents = getSelectionBlocks(doc, start, $head.pos)
+  const selectedContents = getSelectionBlocks(doc, start, $head.pos)
   let contentWrapper = getRangeBlocks(doc, start - 1, $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size)
 
-  console.log("1=>", {
+  console.log('1=>', {
     selection,
     $from,
-    start, end, depth,
+    start,
+    end,
+    depth,
     contentWrapper,
     selectedContents
   })
 
-  const paragraphNode = state.schema.nodeFromJSON({ "type": "paragraph" })
+  const paragraphNode = state.schema.nodeFromJSON({ type: 'paragraph' })
 
   const newTr = tr
 
@@ -33,11 +35,11 @@ export default (arrg) => {
   let prevHStartPos = 0
   let prevHEndPos = 0
 
-
   doc.nodesBetween($from.start(0), start - 1, function (node, pos, parent, index) {
-    if (node.type.name === "heading") {
+    if (node.type.name === 'heading') {
       const headingLevel = node.firstChild?.attrs?.level
       const depth = doc.resolve(pos).depth
+
       titleHMap.push({ le: headingLevel, node: node.toJSON(), depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, index })
 
       if (headingLevel === currentHLevel) {
@@ -49,8 +51,9 @@ export default (arrg) => {
   })
 
   doc.nodesBetween(titleStartPos, start - 1, function (node, pos, parent, index) {
-    if (node.type.name === "heading") {
+    if (node.type.name === 'heading') {
       const depth = doc.resolve(pos).depth
+
       // INFO: this the trick I've looking for
       if (depth === 2) {
         // console.log()
@@ -66,7 +69,7 @@ export default (arrg) => {
 
   const firstHeadingPicked = contentWrapper.shift()
 
-  const newSlice = [...headText, ...paragraphs,]
+  const newSlice = [...headText, ...paragraphs]
   const lastBlock = titleHMap[titleHMap.length - 1]
 
   // I have to remove the hadingslice and append it to wrapper
@@ -88,17 +91,15 @@ export default (arrg) => {
   console.log(contentWrapper)
 
   // if (firstHeadingPicked.depth === 2)
-  selectionEndPos = contentWrapper.length > 0 ?
-    contentWrapper[contentWrapper.length - 1].endBlockPos :
-    lastBlock.endBlockPos
-
+  selectionEndPos = contentWrapper.length > 0
+    ? contentWrapper[contentWrapper.length - 1].endBlockPos
+    : lastBlock.endBlockPos
 
   // if (firstHeadingPicked.depth !== 2) selectionEndPos = selectionEndPos - 2
 
-
   contentWrapper = [...headingslice, ...contentWrapper]
 
-  console.log("2=>", {
+  console.log('2=>', {
     contentWrapper,
     headText,
     paragraphs,
@@ -115,10 +116,10 @@ export default (arrg) => {
     ga: newSlice.map(x => editor.schema.nodeFromJSON(x))
   })
 
-
   const normalContents = newSlice.map(x => editor.schema.nodeFromJSON(x))
 
   let insertPosition = start - 1
+
   if (currentHLevel < lastBlock.le) {
     selectionEndPos = firstHeadingPicked.endBlockPos - 2
     insertPosition = lastBlock.endBlockPos - 2
@@ -128,8 +129,9 @@ export default (arrg) => {
   newTr.insert(insertPosition, normalContents)
 
   const caretPosition = insertPosition + normalContents[0].text.length + 1
-  const focusSelection = new TextSelection(newTr.doc.resolve(caretPosition));
-  newTr.setSelection(focusSelection);
+  const focusSelection = new TextSelection(newTr.doc.resolve(caretPosition))
+
+  newTr.setSelection(focusSelection)
 
   // return
 
@@ -137,13 +139,11 @@ export default (arrg) => {
 
   let mapHPost = titleHMap
   let shouldNested = false
-  console.log("before LOOOP: ==>>", contentWrapper)
+
+  console.log('before LOOOP: ==>>', contentWrapper)
   if (contentWrapper.length > 0) {
     for (let [index, heading] of contentWrapper.entries()) {
-
       if (!heading.le) heading = { ...heading, le: heading.content[0].attrs.level, startBlockPos: 0 }
-
-
 
       if (index == 0) {
         const startBlock = newTr.mapping.map(mapHPost[0].startBlockPos)
@@ -161,10 +161,10 @@ export default (arrg) => {
           startBlock,
           endBlock
         )
-
       } else {
         const startBlock = newTr.mapping.map(mapHPost[0].startBlockPos)
         const endBlock = (startBlock + newTr.doc.nodeAt(startBlock).nodeSize)
+
         // console.log({
         //   startBlock,
         //   endBlock,
@@ -183,7 +183,6 @@ export default (arrg) => {
         )
       })
 
-
       // const narrowDownSearch = mapHPost.filter(x =>
       //   // x.startBlockPos < heading.startBlockPos &&
       //   x.startBlockPos <= prevHStartPos
@@ -197,21 +196,21 @@ export default (arrg) => {
         prevHStartPos,
         at: newTr.doc.nodeAt(newTr.mapping.map(prevHStartPos)),
         mapHPost,
-        narrowDownSearch,
+        narrowDownSearch
       })
 
       // return
 
       if (narrowDownSearch.length > 0) mapHPost = narrowDownSearch
 
-
       const node = state.schema.nodeFromJSON(heading)
 
-      let prevBlockEqual = mapHPost.findLast(x => x.le === heading.le)
-      let prevBlockGratherFromFirst = mapHPost.find(x => x.le >= heading.le)
-      let prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= heading.le)
+      const prevBlockEqual = mapHPost.findLast(x => x.le === heading.le)
+      const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= heading.le)
+      const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= heading.le)
       const lastbloc = mapHPost[mapHPost.length - 1]
       let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
+
       // console.log({ lastbloc, prevBlock, mapHPost })
       // if (!lastbloc) =
       if (lastbloc.le <= heading.le) prevBlock = lastbloc
@@ -235,6 +234,4 @@ export default (arrg) => {
       // return
     }
   }
-
-
 }

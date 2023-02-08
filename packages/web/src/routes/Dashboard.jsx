@@ -1,9 +1,8 @@
-import { redirect, Link, useNavigate } from "react-router-dom";
-import { useAuth } from '../contexts/Auth'
-import { Outlet } from "react-router-dom"
-import { Doc } from '../components/icons/Icons';
-const Profile = () => {
+import { redirect, Link, useNavigate, Outlet } from 'react-router-dom'
 
+import { useAuth } from '../contexts/Auth'
+import { Doc } from '../components/icons/Icons'
+const Profile = () => {
   const { signInWithOtp, signIn, signOut, signInWithOAuth, user } = useAuth()
 
   const btn_displayProfileModal = () => {
@@ -21,8 +20,8 @@ const Profile = () => {
       <div className=' container   border-1 shadow-sm bg-white p-3 flex-1 flex flex-col space-y-5 lg:space-y-0 lg:flex-row lg:space-x-10 max-w-6xl sm:p-6  sm:rounded-md m-auto'>
         <div className="border shadow-inner px-2 lg:px-4 py-2 lg:py-6 sm:rounded-md flex lg:flex-col justify-between">
           <nav className="flex items-center flex-row space-x-2 lg:space-x-0 lg:flex-col lg:space-y-2">
-            <Link to="/" className="text-indigo-900  shadow-md border-indigo-600 border-2 p-4 inline-flex justify-center rounded-md hover:shadow-inner  hover:text-Indigo-800 smooth-hover" href="#">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" viewBox="0 0 20 20" fill="currentColor">
+            <Link className="text-indigo-900  shadow-md border-indigo-600 border-2 p-4 inline-flex justify-center rounded-md hover:shadow-inner  hover:text-Indigo-800 smooth-hover" href="#" to="/">
+              <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                 <path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z"></path>
               </svg>
             </Link>
@@ -32,14 +31,14 @@ const Profile = () => {
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" viewBox="0 0 20 20" fill="currentColor">
                 <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd"></path>
               </svg>
-            </a>*/}
-            <button onClick={signOut} className="text-black p-4 inline-flex justify-center rounded-md hover:border-gray-400 border border-white hover:text-Indigo-800 smooth-hover" href="#">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 sm:h-6 sm:w-6" viewBox="0 0 20 20" fill="currentColor">
-                <path fillRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" clipRule="evenodd"></path>
+            </a> */}
+            <button className="text-black p-4 inline-flex justify-center rounded-md hover:border-gray-400 border border-white hover:text-Indigo-800 smooth-hover" href="#" onClick={signOut}>
+              <svg className="h-5 w-5 sm:h-6 sm:w-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                <path clipRule="evenodd" d="M3 3a1 1 0 011 1v12a1 1 0 11-2 0V4a1 1 0 011-1zm7.707 3.293a1 1 0 010 1.414L9.414 9H17a1 1 0 110 2H9.414l1.293 1.293a1 1 0 01-1.414 1.414l-3-3a1 1 0 010-1.414l3-3a1 1 0 011.414 0z" fillRule="evenodd"></path>
               </svg>
             </button>
-            <Link to="/dashboard/profile" className="text-black rounded-full shadow-md  inline-flex justify-center  hover:border-indigo-600 border-2 border-white  hover:shadow-inner smooth-hover">
-              <img className="w-14 h-14 object-cover object-center rounded-full" referrerPolicy="no-referrer" src={user?.user_metadata?.avatar_url ? user.user_metadata.avatar_url : "https://api.dicebear.com/5.x/micah/svg?seed=Zoey"} alt="avatar" />
+            <Link className="text-black rounded-full shadow-md  inline-flex justify-center  hover:border-indigo-600 border-2 border-white  hover:shadow-inner smooth-hover" to="/dashboard/profile">
+              <img alt="avatar" className="w-14 h-14 object-cover object-center rounded-full" referrerPolicy="no-referrer" src={user?.user_metadata?.avatar_url ? user.user_metadata.avatar_url : 'https://api.dicebear.com/5.x/micah/svg?seed=Zoey'} />
             </Link>
           </div>
         </div>
@@ -117,15 +116,9 @@ const Profile = () => {
           </div> */}
         </div>
 
-
-
-
       </div>
 
-
-
-    </div >);
+    </div >)
 }
 
-export default Profile;
-
+export default Profile

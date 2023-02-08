@@ -1,4 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react'
+
+import Select from 'react-select'
+
 import {
   Bold,
   Italic,
@@ -21,10 +24,9 @@ import {
   HighlightMarker,
   Undo,
   Redo,
-  Printer,
+  Printer
 
 } from '../../components/icons/Icons'
-import Select from 'react-select';
 // import {
 //   Bold
 //  } from "../icons/icons";
@@ -38,11 +40,10 @@ const GearModal = (props) => {
     <div className='gearModal nd_modal'>
       {props.children}
     </div>
-  );
+  )
 }
 
 const Toolbar = ({ editor }) => {
-
   if (!editor) {
     return null
   }
@@ -69,7 +70,6 @@ const Toolbar = ({ editor }) => {
 
     // update link
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
-
   }, [editor])
 
   const addImage = useCallback(() => {
@@ -91,12 +91,11 @@ const Toolbar = ({ editor }) => {
     { value: 7, label: 'Heading 6' },
     { value: 8, label: 'Heading 7' },
     { value: 9, label: 'Heading 8' },
-    { value: 10, label: 'Heading 9' },
-  ];
+    { value: 10, label: 'Heading 9' }
+  ]
 
-  const [selectedOption, setSelectedOption] = useState(options[0]);
+  const [selectedOption, setSelectedOption] = useState(options[0])
   const [selectValue, setSelectValue] = useState(options[0])
-
 
   useEffect(() => {
     if (editor.isActive('heading', { level: 1 })) setSelectValue(options[1])
@@ -124,10 +123,10 @@ const Toolbar = ({ editor }) => {
     editor.isActive('paragraph')
   ])
 
-
   const onchangeValue = (e) => {
     setSelectedOption(e)
     const value = e.value
+
     if (value === 0) editor.chain().focus().normalText().run()
     else editor.chain().focus().wrapBlock({ level: +value }).run()
   }
@@ -137,7 +136,6 @@ const Toolbar = ({ editor }) => {
   if (indentSetting === undefined) {
     localStorage.setItem('setting.indentHeading', '')
     indentSetting = false
-
   } else {
     // console.log('=new', indentSetting)
     // setIndented(indentSetting)
@@ -145,17 +143,13 @@ const Toolbar = ({ editor }) => {
 
   // console.log("indentSetting", indentSetting, Boolean(indentSetting))
 
-  const [indented, setIndented] = React.useState(Boolean(indentSetting));
-
+  const [indented, setIndented] = React.useState(Boolean(indentSetting))
 
   const toggleHeadingIndent = (e) => {
     setIndented(preState => {
       const newState = !preState
 
-      if (newState)
-        document.body.classList.add("indentHeading")
-      else
-        document.body.classList.remove("indentHeading")
+      if (newState) { document.body.classList.add('indentHeading') } else { document.body.classList.remove('indentHeading') }
 
       localStorage.setItem('setting.indentHeading', newState ? 'yes' : '')
 
@@ -176,104 +170,98 @@ const Toolbar = ({ editor }) => {
 
   useEffect(() => {
     const newIndent = localStorage.getItem('setting.indentHeading')
-    if (Boolean(newIndent)) return document.body.classList.add("indentHeading")
-    document.body.classList.remove("indentHeading")
+
+    if (newIndent) return document.body.classList.add('indentHeading')
+    document.body.classList.remove('indentHeading')
   }, [])
 
-
   return (
-    <div onClick={hideModals} className='tiptap__toolbar editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-4'>
+    <div className='tiptap__toolbar editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-4' onClick={hideModals}>
 
       <div className=' hidden sm:contents'>
         <button onClick={() => editor.chain().focus().undo().run()}>
-          <Undo size="16" fill="rgba(0,0,0,.7)" />
+          <Undo fill="rgba(0,0,0,.7)" size="16" />
         </button>
         <button onClick={() => editor.chain().focus().redo().run()}>
-          <Redo size="16" fill="rgba(0,0,0,.7)" />
+          <Redo fill="rgba(0,0,0,.7)" size="16" />
         </button>
         <button onClick={() => window.print()}>
-          <Printer size="16" fill="rgba(0,0,0,.7)" />
+          <Printer fill="rgba(0,0,0,.7)" size="16" />
         </button>
         <div className='divided'></div>
       </div>
 
       <Select
         // styles={customStyles}
-        defaultValue={options[0]}
-        onChange={onchangeValue}
-        options={options}
-        value={selectValue}
-        menuColor='red'
         className="w-32 text-sm"
         classNamePrefix="nodeStyle"
+        defaultValue={options[0]}
+        menuColor='red'
         menuPlacement="top"
+        options={options}
+        value={selectValue}
+        onChange={onchangeValue}
       />
 
       <div className='divided'></div>
 
-
       <button
-        onClick={() => editor.chain().focus().toggleBold().run()}
         className={editor.isActive('bold') ? 'is-active' : ''}
+        onClick={() => editor.chain().focus().toggleBold().run()}
       >
-        <Bold size="10" fill="rgba(0,0,0,.7)" />
+        <Bold fill="rgba(0,0,0,.7)" size="10" />
       </button>
 
       <button
-        onClick={() => editor.chain().focus().toggleItalic().run()}
         className={editor.isActive('italic') ? 'is-active' : ''}
+        onClick={() => editor.chain().focus().toggleItalic().run()}
       >
-        <Italic size="10" fill="rgba(0,0,0,.7)" />
+        <Italic fill="rgba(0,0,0,.7)" size="10" />
       </button>
 
       <button
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
         className={editor.isActive('underline') ? 'is-active' : ''}
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
       >
-        <Underline size="10" fill="rgba(0,0,0,.7)" />
+        <Underline fill="rgba(0,0,0,.7)" size="10" />
       </button>
 
       <span className='hidden sm:contents'>
         <button
-          onClick={() => editor.chain().focus().toggleStrike().run()}
           className={editor.isActive('strike') ? 'is-active' : ''}
+          onClick={() => editor.chain().focus().toggleStrike().run()}
         >
-          <Stric size="14" fill="rgba(0,0,0,.7)" />
+          <Stric fill="rgba(0,0,0,.7)" size="14" />
 
         </button>
 
       </span>
 
-
-
       <div className='divided'></div>
 
-
-
       <button
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
         className={editor.isActive('orderedList') ? 'is-active' : ''}
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
       >
-        <OrderList size="16" fill="rgba(0,0,0,.7)" />
+        <OrderList fill="rgba(0,0,0,.7)" size="16" />
 
       </button>
 
       <button
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
         className={editor.isActive('bulletList') ? 'is-active' : ''}
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
       >
-        <BulletList size="16" fill="rgba(0,0,0,.7)" />
+        <BulletList fill="rgba(0,0,0,.7)" size="16" />
 
       </button>
 
       <span className='hidden sm:contents'>
 
-
         <button
-          onClick={() => editor.chain().focus().toggleTaskList().run()}
           className={editor.isActive('taskList') ? 'is-active' : ''}
+          onClick={() => editor.chain().focus().toggleTaskList().run()}
         >
-          <CheckList size="16" fill="rgba(0,0,0,.7)" />
+          <CheckList fill="rgba(0,0,0,.7)" size="16" />
         </button>
 
       </span>
@@ -283,70 +271,64 @@ const Toolbar = ({ editor }) => {
       <span className='hidden sm:contents'>
 
         <button onClick={addImage}>
-          <Image size="14" fill="rgba(0,0,0,.5)" />
+          <Image fill="rgba(0,0,0,.5)" size="14" />
         </button>
 
       </span>
 
-      <button onClick={setLink} className={editor.isActive('link') ? 'is-active' : ''}>
-        <Link size="18" fill="rgba(0,0,0,.7)" />
+      <button className={editor.isActive('link') ? 'is-active' : ''} onClick={setLink}>
+        <Link fill="rgba(0,0,0,.7)" size="18" />
       </button>
 
       <span className='hidden sm:contents'>
         <button
-          onClick={() => editor.chain().focus().toggleHighlight().run()}
           className={editor.isActive('highlight') ? 'is-active' : ''}
+          onClick={() => editor.chain().focus().toggleHighlight().run()}
         >
-          <HighlightMarker size="14" fill="rgba(0,0,0,.7)" />
+          <HighlightMarker fill="rgba(0,0,0,.7)" size="14" />
         </button>
       </span>
 
       <span className='hidden sm:contents'>
-
 
         <div className='divided'></div>
 
         <button onClick={() => {
           const range = editor.view.state.selection.ranges[0]
+
           if (range.$from === range.$to) {
             editor.chain().focus().clearNodes().run()
           } else {
             editor.chain().focus().unsetAllMarks().run()
           }
         }}>
-          <ClearMark size="14" fill="rgba(0,0,0,.7)" />
+          <ClearMark fill="rgba(0,0,0,.7)" size="14" />
         </button>
 
       </span>
 
-
-
-
       <button
-        onClick={toggleSettingModal}
         className='btn_settingModal btn_modal'
+        onClick={toggleSettingModal}
       >
-        <Gear size="16" fill="rgba(0,0,0,.7)" />
+        <Gear fill="rgba(0,0,0,.7)" size="16" />
       </button>
 
       <GearModal>
         <p className='font-medium text-base text-gray-400 pb-1'>Settings:</p>
         <hr />
         <div className='content pt-5 '>
-          <label htmlFor="default-toggle" className="inline-flex relative items-center cursor-pointer">
-            <input type="checkbox" checked={indented}
-              onChange={(e) => toggleHeadingIndent(e.target)} value="" id="default-toggle" className="sr-only peer" />
+          <label className="inline-flex relative items-center cursor-pointer" htmlFor="default-toggle">
+            <input checked={indented} className="sr-only peer"
+              id="default-toggle" type="checkbox" value="" onChange={(e) => toggleHeadingIndent(e.target)} />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
             <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300" > Toggle heading indent</span >
           </label >
         </div>
       </GearModal>
 
-
     </div >
-  );
+  )
 }
 
-
-
-export default Toolbar;
+export default Toolbar

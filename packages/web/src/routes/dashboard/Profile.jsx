@@ -1,8 +1,9 @@
-import { redirect, Link, useNavigate } from "react-router-dom";
+import { Link } from 'react-router-dom'
+
 import { useAuth } from '../../contexts/Auth'
 
 const Profile = () => {
-  const { signInWithOtp, signIn, signOut, signInWithOAuth, user, profile } = useAuth()
+  const { user, profile } = useAuth()
 
   console.log(profile)
 
@@ -16,8 +17,8 @@ const Profile = () => {
         <div className='px-2 py-4'>
           <p className='font-bold text-base'>Profile Picture</p>
           <p className='text-gray-500'>Upload a picture to make your profile stand out and let people <br /> recognize your comments and contributions easily!</p>
-          <Link to="/dashboard/profile" className="mt-4 text-black rounded-2xl shadow-md  inline-flex justify-center  hover:border-indigo-600 border-2 border-white  hover:shadow-inner smooth-hover">
-            <img className="w-20 h-20 object-cover object-center " src={user?.user_metadata?.avatar_url ? user.user_metadata.avatar_url : "https://api.dicebear.com/5.x/micah/svg?seed=Zoey"} alt="avatar" />
+          <Link className="mt-4 text-black rounded-2xl shadow-md  inline-flex justify-center  hover:border-indigo-600 border-2 border-white  hover:shadow-inner smooth-hover" to="/dashboard/profile">
+            <img alt="avatar" className="w-20 h-20 object-cover object-center " src={user?.user_metadata?.avatar_url ? user.user_metadata.avatar_url : 'https://api.dicebear.com/5.x/micah/svg?seed=Zoey'} />
           </Link>
         </div>
 
@@ -27,7 +28,7 @@ const Profile = () => {
             <div className='mr-2'>U</div>
             <div className='flex flex-col w-full'>
               <label className='text-sm font-bold text-gray-500'>Full Name</label>
-              <input type="text" className='text-sm outline-none' placeholder='Type your name...' />
+              <input className='text-sm outline-none' placeholder='Type your name...' type="text" />
             </div>
           </div>
 
@@ -35,7 +36,7 @@ const Profile = () => {
             <div className='mr-2'>@</div>
             <div className='flex flex-col w-full'>
               <label className='text-sm font-bold text-gray-500'>Username</label>
-              <input type="text" className='text-sm outline-none' placeholder='Type your username...' />
+              <input className='text-sm outline-none' placeholder='Type your username...' type="text" />
             </div>
           </div>
 
@@ -43,18 +44,17 @@ const Profile = () => {
             <div className='mr-2'>N</div>
             <div className='flex flex-col w-full'>
               <label className='text-sm font-bold text-gray-500'>Namespace</label>
-              <input type="text" className='text-sm outline-none font-mono' placeholder='Type your username...' value={"docs.plus/" + profile?.doc_namespace} disabled />
+              <input disabled className='text-sm outline-none font-mono' placeholder='Type your username...' type="text" value={'docs.plus/' + profile?.doc_namespace} />
             </div>
           </div>
         </div>
-
 
         <div className='px-2 py-4'>
           <p className='font-bold text-base'>About</p>
           <div className='mt-2 rounded border w-80 px-4 pr-2 py-1 '>
             <div className='flex flex-col w-full'>
               <label className='text-sm font-bold text-gray-500'>Bio</label>
-              <textarea type="text" rows={6} className='text-sm outline-none' placeholder="Let us know a little about yourself..." ></textarea>
+              <textarea className='text-sm outline-none' placeholder="Let us know a little about yourself..." rows={6} type="text" ></textarea>
             </div>
           </div>
         </div>
@@ -67,7 +67,7 @@ const Profile = () => {
             <div className='mr-2'>T</div>
             <div className='flex flex-col w-full'>
               <label className='text-sm font-bold text-gray-500'>Twitter</label>
-              <input type="text" className='text-sm outline-none' placeholder='Enter Twitter Account...' />
+              <input className='text-sm outline-none' placeholder='Enter Twitter Account...' type="text" />
             </div>
           </div>
 
@@ -75,7 +75,7 @@ const Profile = () => {
             <div className='mr-2'>G</div>
             <div className='flex flex-col w-full'>
               <label className='text-sm font-bold text-gray-500'>Github</label>
-              <input type="text" className='text-sm outline-none' placeholder='Enter Github Account...' />
+              <input className='text-sm outline-none' placeholder='Enter Github Account...' type="text" />
             </div>
           </div>
 
@@ -83,20 +83,19 @@ const Profile = () => {
             <div className='mr-2'>W</div>
             <div className='flex flex-col w-full'>
               <label className='text-sm font-bold text-gray-500'>Website</label>
-              <input type="text" className='text-sm outline-none' placeholder='www.example.com' />
+              <input className='text-sm outline-none' placeholder='www.example.com' type="text" />
             </div>
           </div>
         </div>
 
       </div>
 
-
       <div className='border-t px-2 py-4 flex flex-row-reverse'>
         <button className='bg-indigo-600 text-white rounded-md px-4 py-2 hover:bg-indigo-700'>Save Changes</button>
       </div>
 
     </div >
-  );
+  )
 }
 
-export default Profile;
+export default Profile

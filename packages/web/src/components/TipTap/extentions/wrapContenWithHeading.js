@@ -1,16 +1,16 @@
 // TODO: need refactor like changeing heading section
 export default (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
-  const { schema, selection, doc } = state;
-  const { $from, $to, $anchor, $cursor } = selection;
-  const { start, end, depth } = $from.blockRange($to);
-  const slice = state.doc.slice(start, end);
-  let _a;
+  const { schema, selection, doc } = state
+  const { $from, $to, $anchor, $cursor } = selection
+  const { start, end, depth } = $from.blockRange($to)
+  const slice = state.doc.slice(start, end)
+  let _a
 
-  const commingLevel = attributes.level;
+  const commingLevel = attributes.level
 
-  const HeadingText = doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || " "
-  const content = { "type": "text", "text": HeadingText }
+  const HeadingText = doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' '
+  const content = { type: 'text', text: HeadingText }
 
   // select the first paragraph for heading title
   const headingContent = content
@@ -18,11 +18,11 @@ export default (arrg, attributes) => {
   const block = {
     parent: {
       end: $from.end(depth - 1),
-      start: $from.start(depth - 1),
+      start: $from.start(depth - 1)
     },
     edge: {
       end: $from.end(depth - 1) + 1,
-      start: $from.start(depth - 1) - 1,
+      start: $from.start(depth - 1) - 1
     },
     ancesster: {
       start: $from.start(1),
@@ -35,15 +35,15 @@ export default (arrg, attributes) => {
     headingContent,
     lineContent: content,
     empty: {
-      "type": "paragraph",
-      "content": [
+      type: 'paragraph',
+      content: [
         {
-          "type": "text",
-          "text": " "
+          type: 'text',
+          text: ' '
         }
       ]
     },
-    paragraph: { "type": "paragraph", }
+    paragraph: { type: 'paragraph' }
   }
 
   // TODO: check this statment for comment, (block.edge.start !== -1)
@@ -55,8 +55,11 @@ export default (arrg, attributes) => {
     doc,
     beforeLevel: block.edge.start !== -1 && doc?.nodeAt(block.edge.start)?.content?.content[0]?.attrs.level,
     afterLevel: block.edge.start !== -1 && doc?.nodeAt(block.edge.end),
-    commingLevel, parentLevel,
-    start, end, depth,
+    commingLevel,
+    parentLevel,
+    start,
+    end,
+    depth,
     $anchor
   })
 
@@ -64,9 +67,10 @@ export default (arrg, attributes) => {
   // in this case all content below must cut and wrapp with the new heading
   // And the depth should be the same as the sibling Heading
   if (commingLevel === parentLevel) {
-    console.info("[Heading]: create a new heading with same level")
+    console.info('[Heading]: create a new heading with same level')
     const contents = doc.slice(end, block.parent.end)?.content.toJSON()[0].content
     const data = !contents ? [block.paragraph] : contents
+
     return chain()
       .insertContentAt(block.edge.end, {
         type: 'heading',
@@ -76,42 +80,41 @@ export default (arrg, attributes) => {
             content: [block.headingContent],
             attrs: {
               level: attributes.level
-            },
+            }
           },
           {
             type: 'contentWrapper',
             content: data
-          },
-        ],
+          }
+        ]
       })
       .setTextSelection(block.edge.end + 2)
       .deleteRange({ from: start + 1, to: block.edge.end })
       .focus(block.edge.end)
       .scrollIntoView()
-      .run();
+      .run()
   }
 
   // Create a new Heading block as a child of the current Heading block
   if (commingLevel > parentLevel) {
-    console.info("[Heading]: Create a new Heading block as a child of the current Heading block")
+    console.info('[Heading]: Create a new Heading block as a child of the current Heading block')
 
     const depthDiff = parentLevel - commingLevel
     let nextLevel = 0
 
-    let closestHeadingPos = 0;
-    let closestHeadingLevel = 0;
-    let containHeading = false;
+    let closestHeadingPos = 0
+    let closestHeadingLevel = 0
+    let containHeading = false
     let lastChildHeadingPos = 0
     let firstChildHeadingPos = 0
     let rowr = 0
 
     // search between the current line till to the end of this block
     doc.nodesBetween(start, block.parent.end, function (node, pos, parent, index) {
-
-      if (node.type.name === "heading" && pos >= start) {
+      if (node.type.name === 'heading' && pos >= start) {
         // console.log("==========>", { ss: (+commingLevel + node.firstChild.attrs.level), commingLevel, type: node.type.name, lvl: node.firstChild.attrs.level })
         // INFO: node.firstChild?.attrs?.level !== parentLevel, do not count the current heading
-        if (!containHeading && node.firstChild?.attrs?.level !== parentLevel) containHeading = true;
+        if (!containHeading && node.firstChild?.attrs?.level !== parentLevel) containHeading = true
 
         if (closestHeadingLevel === 0) {
           closestHeadingPos = pos
@@ -126,7 +129,7 @@ export default (arrg, attributes) => {
           console.log({
             node,
             commingLevel,
-            level: node.firstChild?.attrs?.level,
+            level: node.firstChild?.attrs?.level
           })
         }
 
@@ -145,7 +148,6 @@ export default (arrg, attributes) => {
         if (commingLevel < node.firstChild?.attrs?.level) {
           // console.log("whhhhh", node)
         }
-
       }
     })
 
@@ -161,15 +163,17 @@ export default (arrg, attributes) => {
       containHeading,
       closestHeadingPos,
       lastChildHeadingPos,
-      closestHeadingLevel,
+      closestHeadingLevel
     })
 
     // INFO: !if the current block contain other heading blocks
     if (!containHeading) {
-      console.info("[heading]: Current block does not contain heading blocks, Copy the entire content from the start selection option ")
+      console.info('[heading]: Current block does not contain heading blocks, Copy the entire content from the start selection option ')
       const contents = doc.slice(end, block.parent.end - 1)?.toJSON()?.content
       const data = !contents ? [block.paragraph] : contents
-      console.log("===>", block.headingContent)
+
+      console.log('===>', block.headingContent)
+
       return chain()
         .insertContentAt({ from: start, to: block.parent.end }, {
           type: 'heading',
@@ -179,13 +183,13 @@ export default (arrg, attributes) => {
               content: [block.headingContent],
               attrs: {
                 level: attributes.level
-              },
+              }
             },
             {
               type: 'contentWrapper',
               content: data
-            },
-          ],
+            }
+          ]
         })
         // INFO: this 1 mean skip the toggle button depth
         .setTextSelection(end)
@@ -195,12 +199,14 @@ export default (arrg, attributes) => {
     }
 
     if (containHeading && (commingLevel === closestHeadingLevel || commingLevel > closestHeadingLevel)) {
-      console.info("[Heading]: the selection block contain Heading block, so find the reletive Headings and copy them into the incoming new Heading")
+      console.info('[Heading]: the selection block contain Heading block, so find the reletive Headings and copy them into the incoming new Heading')
       const contents = doc.slice(end, closestHeadingPos)?.toJSON()?.content
       const data = !contents?.length ? [block.paragraph] : contents
+
       console.log({
         contents
       })
+
       return chain()
         .deleteRange({ from: start, to: closestHeadingPos })
         .insertContentAt(start, {
@@ -211,13 +217,13 @@ export default (arrg, attributes) => {
               content: [block.headingContent],
               attrs: {
                 level: attributes.level
-              },
+              }
             },
             {
               type: 'contentWrapper',
               content: data
-            },
-          ],
+            }
+          ]
         })
         // INFO: this 1 mean skip the toggle button and move to the next depth
         .setTextSelection(start + 1)
@@ -228,9 +234,10 @@ export default (arrg, attributes) => {
     // if coming level is grather than parent level and the coming level is less than closing level
     // copy entire data to the end and put them to comming level
     if (containHeading && commingLevel < closestHeadingLevel) {
-      console.info("[Heading]: Current Block contain heading blocks, wrapp up the content from start to closestHeading level")
+      console.info('[Heading]: Current Block contain heading blocks, wrapp up the content from start to closestHeading level')
       const dataContent = doc.slice(start, lastChildHeadingPos)?.content.toJSON()
       const data = !dataContent ? [block.paragraph] : dataContent
+
       return chain()
         .insertContentAt({ from: start, to: lastChildHeadingPos }, {
           type: 'heading',
@@ -240,23 +247,23 @@ export default (arrg, attributes) => {
               content: [block.headingContent],
               attrs: {
                 level: attributes.level
-              },
+              }
             },
             {
               type: 'contentWrapper',
               content: data
-            },
-          ],
+            }
+          ]
         })
         // Info: 1 mean skip the toggle button block
         .setTextSelection(start + 1)
-        .run();
+        .run()
     }
 
     // TODO: check if this happening or not
-    console.log("not simple")
+    console.log('not simple')
 
-    //TODO: the problame is find the last position of the heading for copy
+    // TODO: the problame is find the last position of the heading for copy
     return chain()
       .insertContentAt(block.edge.end, {
         type: 'heading',
@@ -266,75 +273,73 @@ export default (arrg, attributes) => {
             content: [block.headingContent],
             attrs: {
               level: attributes.level
-            },
+            }
           },
           {
             type: 'contentWrapper',
             content: doc.cut(start).nodeAt(depth - 1).content.toJSON()
-          },
-        ],
+          }
+        ]
       })
       // .insertContentAt(block.edge.end + 6, doc.slice($anchor.pos, block.parent.end).toJSON().content)
       .setTextSelection(block.edge.end + 2)
-      .insertContentAt($from.pos, "<p></p>")
+      .insertContentAt($from.pos, '<p></p>')
       .deleteRange({ from: start + 1, to: block.edge.end })
-      .run();
-
+      .run()
   }
 
   // break chain of heading blocs
   if (commingLevel < parentLevel) {
-    console.info("[Heading]: break the current Heading chain, cominglevel is grether than parentLevel")
+    console.info('[Heading]: break the current Heading chain, cominglevel is grether than parentLevel')
 
     let insertAt = 0
+
     switch (commingLevel) {
       case 1:
         insertAt = 0
-        break;
+        break
       case 2:
         insertAt = 3
-        break;
+        break
       case 3:
         insertAt = 5
-        break;
+        break
       case 4:
         insertAt = 7
-        break;
+        break
       case 5:
         insertAt = 9
-        break;
+        break
       case 6:
         insertAt = 11
-        break;
+        break
 
       default:
-        break;
+        break
     }
 
-
-    console.log("the hard path")
+    console.log('the hard path')
 
     const titleNode = $from.doc.nodeAt($from.start(1) - 1)
     const titleStartPos = $from.start(1) - 1
     const titleEndPos = titleStartPos + titleNode.content.size
 
-
     const currentAncessterPosStart = $from.start(1) - 1
     const currentAncessterPosEnd = titleStartPos + titleNode.content.size
-    let currentDepthHeadings = []
+    const currentDepthHeadings = []
 
     doc.nodesBetween(currentAncessterPosStart, currentAncessterPosEnd, function (node, pos, parent, index) {
-      if (node.type.name === "heading") {
+      if (node.type.name === 'heading') {
         if (currentDepthHeadings[currentDepthHeadings.length - 1]?.le > node.firstChild?.attrs?.level) {
-          console.log("yeo yeo", {
+          console.log('yeo yeo', {
             pos,
-            le: node.firstChild?.attrs?.level,
+            le: node.firstChild?.attrs?.level
           })
           currentDepthHeadings.shift()
         }
         currentDepthHeadings.push({
           pos,
-          le: node.firstChild?.attrs?.level,
+          le: node.firstChild?.attrs?.level
         })
       }
     })
@@ -343,29 +348,28 @@ export default (arrg, attributes) => {
     currentDepthHeadings.shift()
     console.log(currentDepthHeadings)
     const targetHeadingPos = currentDepthHeadings.find(x => commingLevel <= x.le).pos
+
     // INFO: this 1 mean move to the contentWrapper
     insertAt = $from.sharedDepth(targetHeadingPos) + 1
     if (commingLevel === 1) insertAt = 0
 
     const data = []
     let firstHEading = true
-    let flagOne = true
+    const flagOne = true
     let prevLevel = 0
 
-
     doc.nodesBetween(end, $from.end(insertAt), function (node, pos, parent, index) {
-
       if (pos < start) return
 
-      if (firstHEading && node.type.name !== "heading") {
+      if (firstHEading && node.type.name !== 'heading') {
         data.push(node.toJSON())
       }
 
-      if (node.type.name === "heading") {
+      if (node.type.name === 'heading') {
         firstHEading = false
         const headingLevel = node.firstChild?.attrs?.level
-        if (prevLevel === 0)
-          prevLevel = headingLevel
+
+        if (prevLevel === 0) { prevLevel = headingLevel }
 
         if (flagOne && prevLevel >= headingLevel) {
           data.push({ ...node.toJSON(), le: headingLevel })
@@ -373,7 +377,6 @@ export default (arrg, attributes) => {
 
         prevLevel = headingLevel
       }
-
     })
 
     return chain()
@@ -385,13 +388,13 @@ export default (arrg, attributes) => {
             content: [block.headingContent],
             attrs: {
               level: attributes.level
-            },
+            }
           },
           {
             type: 'contentWrapper',
             content: data.length === 0 ? [block.paragraph] : data
-          },
-        ],
+          }
+        ]
       })
       .insertContentAt(end, block.paragraph, { updateSelection: false })
       .setTextSelection($from.end(insertAt) + 1)
@@ -401,6 +404,5 @@ export default (arrg, attributes) => {
       .scrollIntoView()
       .run()
     // }
-
   }
 }

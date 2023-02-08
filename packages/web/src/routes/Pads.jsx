@@ -3,29 +3,25 @@ import {
   RouterProvider,
   useLoaderData,
   useParams
-} from "react-router-dom";
-import React, { useState, useMemo } from 'react'
+} from 'react-router-dom'
+import React, { useState, useMemo, useEffect } from 'react'
 import { EditorContent } from '@tiptap/react'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
+
 import TipTap from '../components/TipTap/TipTap'
 import Toolbar from '../components/TipTap/Toolbar'
-import TableOfContents from '../components/TipTap/TableOfContents';
-import { useEffect } from 'react';
+import TableOfContents from '../components/TipTap/TableOfContents'
 import PadTitle from '../components/PadTitle'
 import { useAuth } from '../contexts/Auth'
 
-
-
-export default function Root() {
+export default function Root () {
   const { signInWithOtp, signIn, signOut, user } = useAuth()
 
-  const { padName, } = useParams()
+  const { padName } = useParams()
   const [loadedData, setLoadedData] = useState(false)
-  const newPadName = `pads.${ padName }`
-
-
+  const newPadName = `pads.${padName}`
 
   // run once
   const [provider, ydoc] = useMemo(() => {
@@ -60,16 +56,16 @@ export default function Root() {
     // console.log("once ha ha ha", provider.isSynced)
 
     return [provider, ydoc]
-
   }, [loadedData])
 
   const scrollHeadingSelection = (event) => {
-    const scrollTop = event.currentTarget.scrollTop;
+    const scrollTop = event.currentTarget.scrollTop
     const toc = document.querySelector('.tiptap__toc')
     const tocLis = [...toc.querySelectorAll('li')]
     const closest = tocLis
       .map(li => {
         li.classList.remove('active')
+
         return li
       })
       .filter(li => {
@@ -81,19 +77,17 @@ export default function Root() {
 
     if (closest.length === 0) {
       tocLis.pop()?.classList.add('active')
-      tocLis.pop()?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
+      tocLis.pop()?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
+
       return
     }
 
     // console.log(closest)
     closest[0]?.classList.add('active')
-    closest[0]?.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" })
-
-  };
-
+    closest[0]?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
+  }
 
   const editor = TipTap({ padName, provider, ydoc })
-
 
   return (
     <>
@@ -102,15 +96,15 @@ export default function Root() {
           <PadTitle padName={padName} />
         </div>
         <div className='toolbars w-full bg-white h-auto z-10  sm:block fixed bottom-0 sm:relative'>
-          {editor ? <Toolbar editor={editor} /> : "Loading..."}
+          {editor ? <Toolbar editor={editor} /> : 'Loading...'}
         </div>
         <div className='editor w-full h-full flex relative flex-row align-top '>
-          {editor ? <TableOfContents editor={editor} className="tiptap__toc pl-2 pb-4 sm:py-4 sm:pb-14  max-w-xs w-3/12 hidden overflow-hidden scroll-smooth hover:overflow-auto hover:overscroll-contain sm:block" /> : "Loading..."}
-          <div onScroll={scrollHeadingSelection} className='editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4'>
-            {editor ? <EditorContent editor={editor} className="tipta__editor mb-12 sm:mb-0 sm:p-8  " /> : "Loading..."}
+          {editor ? <TableOfContents className="tiptap__toc pl-2 pb-4 sm:py-4 sm:pb-14  max-w-xs w-3/12 hidden overflow-hidden scroll-smooth hover:overflow-auto hover:overscroll-contain sm:block" editor={editor} /> : 'Loading...'}
+          <div className='editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4' onScroll={scrollHeadingSelection}>
+            {editor ? <EditorContent className="tipta__editor mb-12 sm:mb-0 sm:p-8  " editor={editor} /> : 'Loading...'}
           </div>
         </div>
       </div>
     </>
-  );
+  )
 }

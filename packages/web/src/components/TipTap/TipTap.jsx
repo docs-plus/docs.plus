@@ -1,7 +1,7 @@
 import './styles/styles.scss'
 import React, { useEffect, useState } from 'react'
 import { useEditor, EditorContent } from '@tiptap/react'
-import Collaboration from '@tiptap/extension-collaboration'
+import Collaboration, { isChangeOrigin } from '@tiptap/extension-collaboration'
 import CollaborationCursor from '@tiptap/extension-collaboration-cursor'
 import Link from '@tiptap/extension-link'
 import Image from '@tiptap/extension-image'
@@ -11,17 +11,15 @@ import Highlight from '@tiptap/extension-highlight'
 import Typography from '@tiptap/extension-typography'
 import randomColor from 'randomcolor'
 import Underline from '@tiptap/extension-underline'
-import UniqueID from './extentions/UniqueId'
+
 import Placeholder from '@tiptap/extension-placeholder'
 import Gapcursor from '@tiptap/extension-gapcursor'
-import { isChangeOrigin } from '@tiptap/extension-collaboration'
 import { Node } from '@tiptap/core'
-import ContentWrapper from './extentions/ContentWrapper'
-import ContentHeading from './extentions/ContentHeading'
+
 import ListItem from '@tiptap/extension-list-item'
 import OrderedList from '@tiptap/extension-ordered-list'
 import HardBreak from '@tiptap/extension-hard-break'
-import Heading from './extentions/Heading'
+
 import Bold from '@tiptap/extension-bold'
 import Italic from '@tiptap/extension-italic'
 import BulletList from '@tiptap/extension-bullet-list'
@@ -49,6 +47,11 @@ import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import TableRow from '@tiptap/extension-table-row'
 
+import Heading from './extentions/Heading'
+import ContentHeading from './extentions/ContentHeading'
+import UniqueID from './extentions/UniqueId'
+import ContentWrapper from './extentions/ContentWrapper'
+
 lowlight.registerLanguage('html', html)
 lowlight.registerLanguage('css', css)
 lowlight.registerLanguage('js', js)
@@ -62,54 +65,55 @@ lowlight.registerLanguage('bash', bash)
 const Document = Node.create({
   name: 'doc',
   topNode: true,
-  content: 'heading+',
+  content: 'heading+'
 })
 
 const Paragraph = Node.create({
   name: 'paragraph',
   group: 'block',
   content: 'inline*',
-  parseHTML() {
+  parseHTML () {
     return [
-      { tag: 'p' },
+      { tag: 'p' }
     ]
   },
-  renderHTML({ HTMLAttributes }) {
+  renderHTML ({ HTMLAttributes }) {
     return ['p', HTMLAttributes, 0]
-  },
+  }
 })
 
 const Button = Node.create({
   name: 'button',
   group: 'block',
   content: 'inline*',
-  parseHTML() {
+  parseHTML () {
     return [
-      { tag: 'button' },
+      { tag: 'button' }
     ]
   },
-  renderHTML({ HTMLAttributes }) {
+  renderHTML ({ HTMLAttributes }) {
     return ['button', HTMLAttributes, 0]
-  },
+  }
 })
 
 const Text = Node.create({
   name: 'text',
-  group: 'inline',
+  group: 'inline'
 })
 
 const scrollDown = () => {
-  const url = new URL(window.location);
+  const url = new URL(window.location)
   const id = url.searchParams.get('id')
+
   if (!id) return
   setTimeout(() => {
     console.log({
       do: document.querySelector('.tipta__editor'),
       param: url,
       id: url.searchParams.get('id'),
-      nodeTarget: document.querySelector(`[data-id="${ url.searchParams.get('id') }"]`)
+      nodeTarget: document.querySelector(`[data-id="${url.searchParams.get('id')}"]`)
     })
-    document.querySelector(`[data-id="${ url.searchParams.get('id') }"]`)?.scrollIntoView()
+    document.querySelector(`[data-id="${url.searchParams.get('id')}"]`)?.scrollIntoView()
   }, 200)
 }
 
@@ -126,15 +130,16 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
     },
     editorProps: {
       attributes: {
-        spellcheck,
-      },
+        spellcheck
+      }
     },
     extensions: [
       UniqueID.configure({
         types: ['heading', 'link'],
         filterTransaction: transaction => !isChangeOrigin(transaction),
         generateID: () => {
-          const uid = new ShortUniqueId();
+          const uid = new ShortUniqueId()
+
           return uid.stamp(16)
         }
       }),
@@ -151,7 +156,7 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       OrderedList,
       Heading.configure(),
       CodeBlockLowlight.configure({
-        lowlight,
+        lowlight
       }),
       Button,
       ContentHeading,
@@ -162,60 +167,64 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       TextAlign,
       Underline,
       Link.configure({
-        protocols: ['ftp', 'mailto'],
+        protocols: ['ftp', 'mailto']
       }),
       Image.configure({
         inline: true,
         allowBase64: true,
         HTMLAttributes: {
-          class: 'image-class',
-        },
+          class: 'image-class'
+        }
       }),
       TaskList,
       TaskItem.configure({
         nested: true,
         HTMLAttributes: {
-          class: 'tasks-class',
-        },
+          class: 'tasks-class'
+        }
       }),
       Highlight,
       Typography,
       Table.configure({
-        resizable: true,
+        resizable: true
       }),
       TableRow,
       TableHeader,
       TableCell,
       Collaboration.configure({
-        document: provider.document,
+        document: provider.document
       }),
       CollaborationCursor.configure({
-        provider: provider,
-        user: { name: 'Adam Doe', color: randomColor() },
+        provider,
+        user: { name: 'Adam Doe', color: randomColor() }
       }),
       Placeholder.configure({
         includeChildren: true,
         placeholder: ({ node }) => {
           const nodeType = node.type.name
+
           if (nodeType === 'contentHeading') {
             const level = node.attrs.level
-            return level - 1 === 0 ? "Title" : `Heading ${ level - 1 }`
+
+            return level - 1 === 0 ? 'Title' : `Heading ${level - 1}`
           } else if (nodeType === 'heading') {
             const level = node.attrs.level
-            return level - 1 === 0 ? "Title" : `Heading ${ level - 1 }`
+
+            return level - 1 === 0 ? 'Title' : `Heading ${level - 1}`
+          } else if (nodeType === 'paragraph') {
+            return 'Write something …'
           }
-          else if (nodeType === 'paragraph') {
-            return 'Write something …';
-          }
+
           return null
-        },
-      }),
+        }
+      })
     ],
-    defualtContent: '',
+    defualtContent: ''
   }, [])
 
   useEffect(() => {
-    document.title = `Pad: ${ padName }`;
+    document.title = `Pad: ${padName}`
+
     return () => {
       editor?.destroy()
     }

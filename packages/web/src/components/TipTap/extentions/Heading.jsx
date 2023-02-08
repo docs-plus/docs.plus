@@ -1,28 +1,29 @@
-import { Node, mergeAttributes, wrappingInputRule, findParentNode, findChildren, isActive, textblockTypeInputRule } from '@tiptap/core';
-import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch, DOMSerializer } from "prosemirror-model"
-import { Selection, Plugin, PluginKey, TextSelection } from 'prosemirror-state';
+import { Node, mergeAttributes, wrappingInputRule, findParentNode, findChildren, isActive, textblockTypeInputRule } from '@tiptap/core'
+import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch, DOMSerializer } from 'prosemirror-model'
+import { Selection, Plugin, PluginKey, TextSelection } from 'prosemirror-state'
 import { Transform } from 'prosemirror-transform'
-import changeHeadingLevel from './changeHeadingLevel';
-import wrapContenWithHeading from './wrapContenWithHeading';
-import clipboardPast from './clipboardPast';
-import changeHeading2paragraphs from './changeHeading2paragraphs';
+
+import changeHeadingLevel from './changeHeadingLevel'
+import wrapContenWithHeading from './wrapContenWithHeading'
+import clipboardPast from './clipboardPast'
+import changeHeading2paragraphs from './changeHeading2paragraphs'
 
 const isNodeVisible = (position, editor) => {
-  const node = editor.view.domAtPos(position).node;
-  const isOpen = node.offsetParent !== null;
-  return isOpen;
-};
+  const node = editor.view.domAtPos(position).node
+  const isOpen = node.offsetParent !== null
+
+  return isOpen
+}
 
 const setGapCursor = (editor, direction) => {
-  const { state, view, extensionManager } = editor;
-  const { schema, selection } = state;
-  const { empty, $anchor } = selection;
-  const hasGapCursorExtension = !!extensionManager.extensions.find(extension => extension.name === 'gapCursor');
+  const { state, view, extensionManager } = editor
+  const { schema, selection } = state
+  const { empty, $anchor } = selection
+  const hasGapCursorExtension = !!extensionManager.extensions.find(extension => extension.name === 'gapCursor')
 
   // const headings = findParentNode(node => node.type === schema.nodes.contentHeading)(selection);
 
   // const detailsSummaries = findChildren(details.node, node => node.type === newState.schema.nodes.contentHeading);
-
 
   console.log({
     name: $anchor.parent.type.name,
@@ -47,15 +48,14 @@ const setGapCursor = (editor, direction) => {
     // ro1: editor.view.domAtPos($anchor.end($anchor.depth) + 1),
     // ro2: editor.view.domAtPos($anchor.end($anchor.depth) - 1),
     nodeDOM1: editor.view.nodeDOM($anchor.start($anchor.depth) + 1),
-    nodeDOM2: editor.view.nodeDOM($anchor.start($anchor.depth) - 1),
+    nodeDOM2: editor.view.nodeDOM($anchor.start($anchor.depth) - 1)
     // json: state,
     // parent: $anchor.doc.nodeAt($anchor.end($anchor.depth) + 1).parent
   })
 
-
-
-  if (direction === "up" && $anchor.parent.type.name === schema.nodes.contentHeading.name) {
+  if (direction === 'up' && $anchor.parent.type.name === schema.nodes.contentHeading.name) {
     const pos = $anchor.before($anchor.depth - 1) - 1
+
     return editor.chain().setTextSelection(pos).run()
   }
 
@@ -67,66 +67,71 @@ const setGapCursor = (editor, direction) => {
   //   return editor.chain().setTextSelection(pos + 2).run()
   // }
 
-  if (direction === "up") {
+  if (direction === 'up') {
     return false
   }
 
-  if (!empty
-    || $anchor.parent.type.name !== schema.nodes.contentHeading.name
-    || $anchor.textOffset === 0 && $anchor.doc.nodeAt($anchor.after($anchor.depth)).type.name === "heading"
-    || !hasGapCursorExtension) {
-    return false;
+  if (!empty ||
+    $anchor.parent.type.name !== schema.nodes.contentHeading.name ||
+    $anchor.textOffset === 0 && $anchor.doc.nodeAt($anchor.after($anchor.depth)).type.name === 'heading' ||
+    !hasGapCursorExtension) {
+    return false
   }
-  console.log("im in", direction)
-  if (direction === 'right'
-    && $anchor.parentOffset !== ($anchor.parent.nodeSize - 2)) {
-    return false;
+  console.log('im in', direction)
+  if (direction === 'right' &&
+    $anchor.parentOffset !== ($anchor.parent.nodeSize - 2)) {
+    return false
   }
-  const headings = findParentNode(node => node.type === schema.nodes.contentHeading)(selection);
+  const headings = findParentNode(node => node.type === schema.nodes.contentHeading)(selection)
+
   if (!headings) {
-    return false;
+    return false
   }
-  const headingsContent = findChildren(headings.node, node => node.type === schema.nodes.contentWrapper);
+  const headingsContent = findChildren(headings.node, node => node.type === schema.nodes.contentWrapper)
+
   if (!headingsContent.length) {
-    return false;
+    return false
   }
-  const isOpen = isNodeVisible(headings.start + headingsContent[0].pos + 1, editor);
-  console.log("===>>", direction, isOpen)
+  const isOpen = isNodeVisible(headings.start + headingsContent[0].pos + 1, editor)
+
+  console.log('===>>', direction, isOpen)
   if (isOpen) {
-    return false;
+    return false
   }
-  const $position = state.doc.resolve(headings.pos + headings.node.nodeSize);
-  const $validPosition = GapCursor.findFrom($position, 1, false);
+  const $position = state.doc.resolve(headings.pos + headings.node.nodeSize)
+  const $validPosition = GapCursor.findFrom($position, 1, false)
+
   if (!$validPosition) {
-    return false;
+    return false
   }
-  const { tr } = state;
-  const gapCursorSelection = new GapCursor($validPosition, $validPosition);
-  tr.setSelection(gapCursorSelection);
-  tr.scrollIntoView();
-  view.dispatch(tr);
-  return true;
-};
+  const { tr } = state
+  const gapCursorSelection = new GapCursor($validPosition, $validPosition)
+
+  tr.setSelection(gapCursorSelection)
+  tr.scrollIntoView()
+  view.dispatch(tr)
+
+  return true
+}
 
 const findClosestVisibleNode = ($pos, predicate, editor) => {
   for (let i = $pos.depth; i > 0; i -= 1) {
-    const node = $pos.node(i);
-    const match = predicate(node);
-    const isVisible = isNodeVisible($pos.start(i), editor);
+    const node = $pos.node(i)
+    const match = predicate(node)
+    const isVisible = isNodeVisible($pos.start(i), editor)
+
     if (match && isVisible) {
       return {
         pos: i > 0 ? $pos.before(i) : 0,
         start: $pos.start(i),
         depth: i,
-        node,
-      };
+        node
+      }
     }
   }
-};
+}
 
-
-
-const inputRegex = /(?:^|\s)((?:~)((?:[^~]+))(?:~))/g;
+const inputRegex = /(?:^|\s)((?:~)((?:[^~]+))(?:~))/g
 const Blockquote = Node.create({
   name: 'heading',
   content: 'contentHeading+ contentWrapper*',
@@ -134,7 +139,7 @@ const Blockquote = Node.create({
   defining: true,
   isolating: true,
   allowGapCursor: false,
-  addOptions() {
+  addOptions () {
     return {
       levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       persist: false,
@@ -142,41 +147,44 @@ const Blockquote = Node.create({
       open: true,
       id: 1,
       HTMLAttributes: {
-        class: "heading",
+        class: 'heading',
         level: 1
-      },
-    };
+      }
+    }
   },
-  addAttributes() {
+  addAttributes () {
     return {
       open: {
         default: true,
         parseHTML: element => element.hasAttribute('open'),
         renderHTML: ({ open }) => {
           if (!open) {
-            return {};
+            return {}
           }
-          return { open: '' };
-        },
+
+          return { open: '' }
+        }
       },
       level: {
         default: 1,
-        rendered: false,
+        rendered: false
       }
-    };
+    }
   },
-  addNodeView() {
-    return ({ editor, getPos, node, HTMLAttributes, }) => {
-      const dom = document.createElement('div');
+  addNodeView () {
+    return ({ editor, getPos, node, HTMLAttributes }) => {
+      const dom = document.createElement('div')
       const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         'data-type': this.name,
-        'level': node.firstChild?.attrs.level,
-        "data-id": HTMLAttributes['data-id'] || this.options.id,
-        'open': node.firstChild.attrs.open
-      });
-      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value));
+        level: node.firstChild?.attrs.level,
+        'data-id': HTMLAttributes['data-id'] || this.options.id,
+        open: node.firstChild.attrs.open
+      })
+
+      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value))
 
       let headingId = HTMLAttributes['data-id']
+
       if (!node.attrs.id) headingId = 1
 
       if (node.attrs.open) {
@@ -186,9 +194,10 @@ const Blockquote = Node.create({
       }
 
       const content = document.createElement('div')
+
       content.classList.add('wrapBlock')
       content.setAttribute('data-id', headingId)
-      dom.append(content);
+      dom.append(content)
 
       let initiation = false
 
@@ -196,44 +205,47 @@ const Blockquote = Node.create({
         dom,
         contentDOM: content,
         ignoreMutation: mutation => {
-          if (mutation.type === 'selection') return false;
-          return !dom.contains(mutation.target) || dom === mutation.target;
+          if (mutation.type === 'selection') return false
+
+          return !dom.contains(mutation.target) || dom === mutation.target
         },
         update: updatedNode => {
-          if (updatedNode.type.name !== this.name) return false;
+          if (updatedNode.type.name !== this.name) return false
           // trick
           if (updatedNode.attrs.level === 1 && !initiation && updatedNode.firstChild.attrs.open === false) {
             dom.classList.add('closed')
             dom.classList.remove('opend')
             initiation = true
           }
-          return true;
-        },
-      };
-    };
+
+          return true
+        }
+      }
+    }
   },
-  parseHTML() {
+  parseHTML () {
     return [
-      { tag: 'div' },
-    ];
+      { tag: 'div' }
+    ]
   },
-  renderHTML({ node, HTMLAttributes }) {
+  renderHTML ({ node, HTMLAttributes }) {
     // console.log(node, "coming render html")
-    const hasLevel = this.options.levels.includes(node.attrs.level);
+    const hasLevel = this.options.levels.includes(node.attrs.level)
     const level = hasLevel
       ? node.attrs.level
-      : this.options.levels[0];
-    return ['div', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+      : this.options.levels[0]
+
+    return ['div', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0]
   },
-  addCommands() {
+  addCommands () {
     return {
       normalText: () => (arrg) => {
         return changeHeading2paragraphs(arrg)
       },
       wrapBlock: (attributes) => (arrg) => {
         const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
-        const { schema, selection, doc } = state;
-        const { $from, $to, $anchor, $cursor } = selection;
+        const { schema, selection, doc } = state
+        const { $from, $to, $anchor, $cursor } = selection
 
         // TODO: change heading level
         // First get the content of heading
@@ -245,17 +257,17 @@ const Blockquote = Node.create({
         return wrapContenWithHeading(arrg, attributes, dispatch)
       },
       setBlockquote: () => ({ commands }) => {
-        return commands.wrapIn(this.name);
+        return commands.wrapIn(this.name)
       },
       toggleBlockquote: () => ({ commands }) => {
-        return commands.toggleWrap(this.name);
+        return commands.toggleWrap(this.name)
       },
       unsetBlockquote: () => ({ commands }) => {
-        return commands.lift(this.name);
-      },
-    };
+        return commands.lift(this.name)
+      }
+    }
   },
-  addKeyboardShortcuts() {
+  addKeyboardShortcuts () {
     return {
       // ArrowUp: ({ editor }) => {
       //   console.log("up")
@@ -272,18 +284,18 @@ const Blockquote = Node.create({
       // },
       Backspace: (data) => { },
       Enter: ({ editor, chain }) => {
-        const { state, view } = editor;
-        const { schema, selection, doc, tr } = state;
-        const { $head, $anchor, $from, $to } = selection;
+        const { state, view } = editor
+        const { schema, selection, doc, tr } = state
+        const { $head, $anchor, $from, $to } = selection
 
         // if ($head.parent.type.name !== schema.nodes.heading.name) return false;
 
         // TODO: limited just for contentHeading, contentWrapper
         if ($head.parent.type.name !== schema.nodes.contentHeading.name) {
-          return false;
+          return false
         }
 
-        const { start, end, depth } = $from.blockRange($to);
+        const { start, end, depth } = $from.blockRange($to)
 
         // if a user Enter in the contentHeading block,
         // should go to the next block, which is contentWrapper
@@ -299,8 +311,11 @@ const Blockquote = Node.create({
         // ! this open in the Heading block is wrong and Have to change, It's opposite
         if (!parent.attrs.open) return false
 
-        console.log("yes new", {
-          $head, state, $anchor, parent,
+        console.log('yes new', {
+          $head,
+          state,
+          $anchor,
+          parent,
           content: parent?.lastChild?.firstChild?.type.name,
           sd: Selection.near(state.doc.resolve($from.pos), 1),
           // after: $head.start(depth + 1),
@@ -314,7 +329,7 @@ const Blockquote = Node.create({
         // TODO: find better way for this 4
         if (parent?.content?.content.length === 1 || parent.lastChild?.firstChild?.type.name === 'heading') {
           // console.log("yes iminininin", parent.lastChild.firstChild.contentsize === 0, parent.lastChild.firstChild)
-          //If there is not any contentWrapper
+          // If there is not any contentWrapper
           console.log(parent.lastChild)
           // if first child of the heading is another heading
           // console.log(parent.lastChild.type.name === "contentWrapper")
@@ -326,31 +341,32 @@ const Blockquote = Node.create({
               type: 'contentWrapper',
               content: [
                 {
-                  "type": "paragraph"
-                },
+                  type: 'paragraph'
+                }
               ]
 
             })
-
           }
-          console.log("move to contetnWrapper", {
+          console.log('move to contetnWrapper', {
             after: $anchor.after(depth + 1),
             start,
             start1: $anchor.start(depth + 2) + 1
           })
           // move to contentWrapper
           editor.commands
-            .insertContentAt($anchor.start(depth + 2) + 1, "<p></p>")
-          return true;
+            .insertContentAt($anchor.start(depth + 2) + 1, '<p></p>')
+
+          return true
         }
 
         // INFO: 1 mean start of the next line
         const nextLine = end + 1
+
         return editor.chain()
-          .insertContentAt(nextLine, "<p></p>")
+          .insertContentAt(nextLine, '<p></p>')
           .scrollIntoView()
           .run()
-      },
+      }
     }
 
     // return this.options.levels.reduce((items, level) => ({
@@ -383,48 +399,54 @@ const Blockquote = Node.create({
   //     }),
   //   ];
   // },
-  addProseMirrorPlugins() {
+  addProseMirrorPlugins () {
     return [
       // This plugin prevents text selections within the hidden content in `DetailsContent`.
       // The cursor is moved to the next visible position.
       new Plugin({
         key: new PluginKey('detailsSelection'),
         appendTransaction: (transactions, oldState, newState) => {
-          const { editor, type } = this;
-          const selectionSet = transactions.some(transaction => transaction.selectionSet);
-          if (!selectionSet
-            || !oldState.selection.empty
-            || !newState.selection.empty) {
-            return;
+          const { editor, type } = this
+          const selectionSet = transactions.some(transaction => transaction.selectionSet)
+
+          if (!selectionSet ||
+            !oldState.selection.empty ||
+            !newState.selection.empty) {
+            return
           }
-          const detailsIsActive = isActive(newState, type.name);
+          const detailsIsActive = isActive(newState, type.name)
+
           if (!detailsIsActive) {
-            return;
+            return
           }
-          const { $from } = newState.selection;
-          const isVisible = isNodeVisible($from.pos, editor);
+          const { $from } = newState.selection
+          const isVisible = isNodeVisible($from.pos, editor)
+
           if (isVisible) {
-            return;
+            return
           }
-          const details = findClosestVisibleNode($from, node => node.type === type, editor);
+          const details = findClosestVisibleNode($from, node => node.type === type, editor)
+
           if (!details) {
-            return;
+            return
           }
-          const detailsSummaries = findChildren(details.node, node => node.type === newState.schema.nodes.contentHeading);
+          const detailsSummaries = findChildren(details.node, node => node.type === newState.schema.nodes.contentHeading)
+
           if (!detailsSummaries.length) {
-            return;
+            return
           }
-          const detailsSummary = detailsSummaries[0];
+          const detailsSummary = detailsSummaries[0]
           const selectionDirection = oldState.selection.from < newState.selection.from
             ? 'forward'
-            : 'backward';
+            : 'backward'
           const correctedPosition = selectionDirection === 'forward'
             ? details.start + detailsSummary.pos
-            : details.pos + detailsSummary.pos + detailsSummary.node.nodeSize;
-          const selection = TextSelection.create(newState.doc, correctedPosition);
-          const transaction = newState.tr.setSelection(selection);
-          return transaction;
-        },
+            : details.pos + detailsSummary.pos + detailsSummary.node.nodeSize
+          const selection = TextSelection.create(newState.doc, correctedPosition)
+          const transaction = newState.tr.setSelection(selection)
+
+          return transaction
+        }
       }),
       // https://github.com/pageboard/pagecut/blob/bd91a17986978d560cc78642e442655f4e09ce06/src/editor.js#L234-L241
       new Plugin({
@@ -442,63 +464,71 @@ const Blockquote = Node.create({
           },
           transformCopied: (slice, view) => {
             // Can be used to transform copied or cut content before it is serialized to the clipboard.
-            const { schema, selection, doc } = this.editor.state;
-            const { empty, $anchor, $head, $from, $to } = selection;
-            const { start, end, depth } = $from.blockRange($to);
-            console.log("transformCopied", { slice })
+            const { schema, selection, doc } = this.editor.state
+            const { empty, $anchor, $head, $from, $to } = selection
+            const { start, end, depth } = $from.blockRange($to)
+
+            console.log('transformCopied', { slice })
 
             const contentWrapper = []
             let firstHEading = true
             let prevDepth = 0
+
             doc.nodesBetween(start, end, function (node, pos, parent, index) {
               if (pos < start) return
               if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
                 const depth = doc.resolve(pos).depth
-                contentWrapper.push({ depth, startBlockPos: pos, parent, index, endBlockPos: pos + node.nodeSize, ...node.toJSON(), })
+
+                contentWrapper.push({ depth, startBlockPos: pos, parent, index, endBlockPos: pos + node.nodeSize, ...node.toJSON() })
               }
-              if (node.type.name === "heading") {
+              if (node.type.name === 'heading') {
                 firstHEading = false
                 const headingLevel = node.firstChild?.attrs?.level
                 const depth = doc.resolve(pos).depth
+
                 if (prevDepth === 0) prevDepth = depth
 
                 if (prevDepth >= depth) {
-                  contentWrapper.push({ le: headingLevel, depth, index, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON(), })
+                  contentWrapper.push({ le: headingLevel, depth, index, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON() })
                   prevDepth = depth
                 }
               }
             })
 
             let mapHeadingIndex = []
-            let serializedSelection = [];
+            let serializedSelection = []
 
             const departHeading = (headingBlock) => {
               const newBlocks = []
               const htag = headingBlock.content.find(x => x.type === 'contentHeading')
               const restOfContnets = headingBlock.content.find(x => x.type === 'contentWrapper')
+
               newBlocks.push(htag)
               newBlocks.push(...restOfContnets.content)
+
               return newBlocks
             }
 
             const createRemainHeadingMap = (contentWrapper) => {
               const hMap = []
+
               for (const [index, block] of contentWrapper.entries()) {
                 if (block.type === 'heading') {
                   hMap.push({ index, block })
                 }
               }
+
               return hMap
             }
 
             const departContents = (contents) => {
-
               mapHeadingIndex = createRemainHeadingMap(contents)
 
               if (mapHeadingIndex.length < 0) return serializedSelection = contents
 
-              for (let blockHeading of mapHeadingIndex) {
+              for (const blockHeading of mapHeadingIndex) {
                 const newContents = departHeading(blockHeading.block)
+
                 contents.splice(blockHeading.index, 1, newContents)
               }
 
@@ -529,8 +559,8 @@ const Blockquote = Node.create({
           }
         }
       })
-    ];
-  },
-});
+    ]
+  }
+})
 
-export { Blockquote, Blockquote as default };
+export { Blockquote, Blockquote as default }

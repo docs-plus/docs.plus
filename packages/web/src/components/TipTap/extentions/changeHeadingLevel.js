@@ -4,15 +4,16 @@ import changeHeadingLevelForwardH1 from './changeHeadingLevel-h1'
 
 export default (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
-  const { schema, selection, doc } = state;
-  const { $from, $to, $anchor, $cursor } = selection;
-  const { start, end, depth } = $from.blockRange($to);
+  const { schema, selection, doc } = state
+  const { $from, $to, $anchor, $cursor } = selection
+  const { start, end, depth } = $from.blockRange($to)
 
-  const commingLevel = attributes.level;
+  const commingLevel = attributes.level
   const currentHLevel = $from.doc.nodeAt(start).attrs.level
 
   if (commingLevel === currentHLevel) {
-    console.log("[heading]: commingLevel === nextSiblingLevel")
+    console.log('[heading]: commingLevel === nextSiblingLevel')
+
     return true
   }
 
@@ -31,7 +32,5 @@ export default (arrg, attributes) => {
     return changeHeadingLevelBackward(arrg, attributes)
   }
 
-
   return true
-
 }

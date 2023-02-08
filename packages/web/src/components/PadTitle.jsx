@@ -1,8 +1,9 @@
 
+import { Link } from 'react-router-dom'
+
 import {
   Doc
 } from './icons/Icons'
-import { Link } from "react-router-dom";
 
 const PadTitle = ({ padName }) => {
   return (
@@ -13,12 +14,12 @@ const PadTitle = ({ padName }) => {
         </Link>
       </div>
       <div className='ml-3'>
-        <div type="text" className="border border-transparent px-2 py-0 rounded-sm text-lg font-medium min-w-[14rem] hover:border-slate-300" >
+        <div className="border border-transparent px-2 py-0 rounded-sm text-lg font-medium min-w-[14rem] hover:border-slate-300" type="text" >
           {padName}
         </div>
       </div>
     </div>
-  );
+  )
 }
 
-export default PadTitle;
+export default PadTitle
