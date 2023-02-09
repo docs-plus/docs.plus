@@ -27,7 +27,13 @@ export default (arrg, attributes, asWrapper = false) => {
   })
 
   // remove the first paragraph, if the request is to wrap the content
-  if (asWrapper) sliceTargetContent.shift()
+  if (asWrapper) {
+    const pickedNode = sliceTargetContent.shift()
+
+    if (sliceTargetContent.length === 0) {
+      sliceTargetContent.push({ ...pickedNode, content: [block.paragraph] })
+    }
+  }
 
   const endSliceBlocPos = sliceTargetContent[sliceTargetContent.length - 1].endBlockPos
   const insertPos = titleHMap
