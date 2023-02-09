@@ -12,7 +12,7 @@ export default (arrg, attributes) => {
   console.log('[Heading]: change heading Level h1')
 
   const commingLevel = attributes.level
-  const content = { type: 'text', text: $anchor.nodeBefore.text }
+  const content = { type: 'text', text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' ' }
   // select the first paragraph for heading title
   const headingContent = content
 
