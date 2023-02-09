@@ -1,11 +1,11 @@
+import changeHeadingLevelBackward from './changeHeadingLevel-backward'
+
 // TODO: need refactor like changeing heading section
 export default (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
   const { schema, selection, doc } = state
   const { $from, $to, $anchor, $cursor } = selection
   const { start, end, depth } = $from.blockRange($to)
-  const slice = state.doc.slice(start, end)
-  let _a
 
   const commingLevel = attributes.level
 
@@ -288,121 +288,9 @@ export default (arrg, attributes) => {
       .run()
   }
 
-  // break chain of heading blocs
   if (commingLevel < parentLevel) {
     console.info('[Heading]: break the current Heading chain, cominglevel is grether than parentLevel')
 
-    let insertAt = 0
-
-    switch (commingLevel) {
-      case 1:
-        insertAt = 0
-        break
-      case 2:
-        insertAt = 3
-        break
-      case 3:
-        insertAt = 5
-        break
-      case 4:
-        insertAt = 7
-        break
-      case 5:
-        insertAt = 9
-        break
-      case 6:
-        insertAt = 11
-        break
-
-      default:
-        break
-    }
-
-    console.log('the hard path')
-
-    const titleNode = $from.doc.nodeAt($from.start(1) - 1)
-    const titleStartPos = $from.start(1) - 1
-    const titleEndPos = titleStartPos + titleNode.content.size
-
-    const currentAncessterPosStart = $from.start(1) - 1
-    const currentAncessterPosEnd = titleStartPos + titleNode.content.size
-    const currentDepthHeadings = []
-
-    doc.nodesBetween(currentAncessterPosStart, currentAncessterPosEnd, function (node, pos, parent, index) {
-      if (node.type.name === 'heading') {
-        if (currentDepthHeadings[currentDepthHeadings.length - 1]?.le > node.firstChild?.attrs?.level) {
-          console.log('yeo yeo', {
-            pos,
-            le: node.firstChild?.attrs?.level
-          })
-          currentDepthHeadings.shift()
-        }
-        currentDepthHeadings.push({
-          pos,
-          le: node.firstChild?.attrs?.level
-        })
-      }
-    })
-
-    // remove the H1
-    currentDepthHeadings.shift()
-    console.log(currentDepthHeadings)
-    const targetHeadingPos = currentDepthHeadings.find(x => commingLevel <= x.le).pos
-
-    // INFO: this 1 mean move to the contentWrapper
-    insertAt = $from.sharedDepth(targetHeadingPos) + 1
-    if (commingLevel === 1) insertAt = 0
-
-    const data = []
-    let firstHEading = true
-    const flagOne = true
-    let prevLevel = 0
-
-    doc.nodesBetween(end, $from.end(insertAt), function (node, pos, parent, index) {
-      if (pos < start) return
-
-      if (firstHEading && node.type.name !== 'heading') {
-        data.push(node.toJSON())
-      }
-
-      if (node.type.name === 'heading') {
-        firstHEading = false
-        const headingLevel = node.firstChild?.attrs?.level
-
-        if (prevLevel === 0) { prevLevel = headingLevel }
-
-        if (flagOne && prevLevel >= headingLevel) {
-          data.push({ ...node.toJSON(), le: headingLevel })
-        }
-
-        prevLevel = headingLevel
-      }
-    })
-
-    return chain()
-      .insertContentAt($from.end(insertAt), {
-        type: 'heading',
-        content: [
-          {
-            type: 'contentHeading',
-            content: [block.headingContent],
-            attrs: {
-              level: attributes.level
-            }
-          },
-          {
-            type: 'contentWrapper',
-            content: data.length === 0 ? [block.paragraph] : data
-          }
-        ]
-      })
-      .insertContentAt(end, block.paragraph, { updateSelection: false })
-      .setTextSelection($from.end(insertAt) + 1)
-      .deleteRange({
-        from: start + 1, to: $from.end(insertAt)
-      })
-      .scrollIntoView()
-      .run()
-    // }
+    return changeHeadingLevelBackward(arrg, attributes, true)
   }
 }

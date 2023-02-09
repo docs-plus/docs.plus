@@ -1,13 +1,13 @@
 import { TextSelection } from 'prosemirror-state'
 
-export default (arrg, attributes) => {
+export default (arrg, attributes, asWrapper = false) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
   const { schema, selection, doc } = state
   const { $from, $to, $anchor, $cursor } = selection
   const { start, end, depth } = $from.blockRange($to)
 
   const commingLevel = attributes.level
-  const content = { type: 'text', text: $anchor.nodeBefore.text }
+  const content = { type: 'text', text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' ' }
   // select the first paragraph for heading title
   const headingContent = content
 
@@ -93,6 +93,9 @@ export default (arrg, attributes) => {
 
     return x.le > commingLevel
   })
+
+  // remove the first paragraph, if the request is to wrap the content
+  if (asWrapper) sliceTargetContent.shift()
 
   const endSliceBlocPos = sliceTargetContent[sliceTargetContent.length - 1].endBlockPos
   const insertPos = titleHMap
