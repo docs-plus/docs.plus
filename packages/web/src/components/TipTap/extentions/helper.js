@@ -101,3 +101,66 @@ export const getRangeBlocks = (doc, start, end) => {
 
   return selectedContents
 }
+
+/**
+ * Returns a map of headings and the blocks that fall under them
+ *
+ * @param {Object} doc
+ * @param {number} start
+ * @param {number} end
+ * @returns {Map<string, Object>}
+ */
+export const getHeadingsBlocksMap = (doc, start, end) => {
+  const titleHMap = []
+
+  doc.nodesBetween(start, end, function (node, pos, parent, index) {
+    if (node.type.name === 'heading') {
+      const headingLevel = node.firstChild?.attrs?.level
+      const depth = doc.resolve(pos).depth
+
+      titleHMap.push({ le: headingLevel, depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, index })
+    }
+  })
+
+  return titleHMap
+}
+
+/**
+ * Creates a block map of the editor state.
+ * @param {Object} $from - The current selection's start position in the editor state.
+ * @param {number} depth - The current selection's depth.
+ * @param {Object} caretSelectionTextBlock - The current selection's text block.
+ * @returns {Object} blockMap - The current selection's block map.
+ */
+
+export const createThisBlockMap = ($from, depth, caretSelectionTextBlock) => {
+  return {
+    parent: {
+      end: $from.end(depth - 1),
+      start: $from.start(depth - 1)
+    },
+    edge: {
+      end: $from.end(depth - 1) + 1,
+      start: $from.start(depth - 1) - 1
+    },
+    ancesster: {
+      start: $from.start(1),
+      end: $from.end(1)
+    },
+    end: $from.end(depth),
+    start: $from.start(depth),
+    nextLevel: 0,
+    depth,
+    headingContent: caretSelectionTextBlock,
+    empty: {
+      type: 'paragraph',
+      content: [
+        {
+          type: 'text',
+          text: ' '
+        }
+      ]
+    },
+    paragraph: { type: 'paragraph' }
+  }
+}
