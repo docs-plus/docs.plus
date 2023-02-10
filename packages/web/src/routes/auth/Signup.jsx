@@ -80,7 +80,7 @@ const SignUp = () => {
             </Link>
           </div>
         </div>
-        <p className='text-center leading-8	 text-lg w-full font-bold block text-gray-900'>Sign up and owned the docs</p>
+        <p className='text-center leading-8	 text-lg w-full font-bold block text-gray-900'>Register for private docs</p>
       </div>
 
       <div className="flex flex-row w-full">
