@@ -92,7 +92,7 @@ const IntroPage = () => {
                   <p className='ml-2 font-bold text-blue-600'>{profile?.display_name || user?.email}</p>
                 </div>}
               <button className="px-3 w-full py-2 border rounded" onClick={() => enterToPad('random')}>Create a new public doc</button>
-              <label className='text-center w-full mt-6 text-gray-500 block mb-1'>or open a doc:</label>
+              <label className='text-center w-full mt-6 text-gray-500 block mb-1'>or</label>
 
               <div className='flex flex-col  w-full'>
                 <div className='flex flex-row w-full font-mono text-sm align-middle'>
@@ -100,7 +100,7 @@ const IntroPage = () => {
                   <input ref={docNameRef} className='p-1 w-full rounded-l-none border font-mono' id="padName" type="text" onKeyDown={handleKeyDown} />
                 </div>
                 {error && <p className='text-red-700 text-sm mt-2'>*Only lowercase letters, numbers and dashes are allowed</p>}
-                <Button className='border ml-auto mt-2 w-full px-3 py-2 rounded text-black' loading={loadingDoc} onClick={enterToPad}>Enter</Button>
+                <Button className='border ml-auto mt-2 w-full px-3 py-2 rounded text-black' loading={loadingDoc} onClick={enterToPad}>Open public doc</Button>
               </div>
 
             </div>
