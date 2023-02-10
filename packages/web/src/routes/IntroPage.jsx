@@ -68,15 +68,13 @@ const IntroPage = () => {
       <div className="bg-white flex flex-wrap sm:justify-center max-w-5xl sm:m-auto p-6 py-10 pb-2 rounded-md shadow">
         <div className="sm:w-1/2 sm:mx-auto ">
           <div className='p-4'>
-            <h1 className='flex flex-row items-end'> <Doc className="mr-3" size="58" /> Docs Plus</h1>
-            <h2 className='mt-3 text-gray-500 font-semibold'>Get Everyone one the Same Page</h2>
+            <h1 className='flex flex-row items-end'> <Doc className="mr-3" size="58" /> docs plus</h1>
+            <h2 className='mt-3 text-gray-500 font-semibold'>Get everyone on the same page</h2>
             <div className='mt-5'>
-              <p><span>+</span> A <a href="https://github.com/nwspk/docs.plus">free &amp; open source</a> project by <a href="https://newspeak.house">Newspeak House</a></p>
-              <p><span>+</span> Check out our <a href="demo">demo page</a>!</p>
+              <p><span>+</span> A <a href="https://github.com/docs-plus">free &amp; open source</a> project by <a href="https://newspeak.house">Newspeak House</a></p>
               <p><span>+</span> Enquiries to <a href="https://www.twitter.com/docsdotplus">@docsdotplus</a> or <a href="mailto:ed@newspeak.house">ed@newspeak.house</a></p>
+              <p><span>+</span> Found a bug? Help us out by <a href="https://github.com/docs-plus/docs.plus/issues">reporting it</a>. </p>          
               <p><span>+</span> <a href="https://www.patreon.com/docsplus">Back us on Patreon</a> to help us pay for hosting &amp; development</p>
-              <p><span>+</span> See our progress &amp; roadmap on <a href="https://trello.com/b/RUlI6aWC/docsplus">Trello</a> </p>
-              <p><span>+</span> Want to report a bug? Interested in contributing? Have a look at our <a href="https://github.com/nwspk/docs.plus/blob/main/CONTRIBUTING.md">contributing guidelines</a>. </p>
               <p><span>+</span> Kindly seed funded by <a href="https://www.grantfortheweb.org">Grant for Web</a> &amp; <a href="https://www.nesta.org.uk">Nesta</a></p>
             </div>
           </div>
@@ -93,8 +91,8 @@ const IntroPage = () => {
                   <p className=''>Continue As:  </p>
                   <p className='ml-2 font-bold text-blue-600'>{profile?.display_name || user?.email}</p>
                 </div>}
-              <button className="px-3 w-full py-2 border rounded" onClick={() => enterToPad('random')}>New Doc</button>
-              <label className='text-center w-full mt-6 text-gray-500 block mb-1'>or Create/Open a Doc with the name:</label>
+              <button className="px-3 w-full py-2 border rounded" onClick={() => enterToPad('random')}>Create a new public doc</button>
+              <label className='text-center w-full mt-6 text-gray-500 block mb-1'>or open a doc:</label>
 
               <div className='flex flex-col  w-full'>
                 <div className='flex flex-row w-full font-mono text-sm align-middle'>
@@ -113,11 +111,11 @@ const IntroPage = () => {
                 <div className="w-full bg-gray-200 h-1"></div>
               </div>
               <div className='flex flex-col  items-center justify-center mt-6 '>
-                <label className='text-center w-full mb-4 font-bold block text-gray-900'>Sign up and owned the docs</label>
-                <button className="px-3 w-full py-2 border rounded" onClick={() => navigate('/auth/signup')}>Signup</button>
+                <label className='text-center w-full mb-4 font-bold block text-gray-900'>Sign up for private docs</label>
+                <button className="px-3 w-full py-2 border rounded" onClick={() => navigate('/auth/signup')}>Sign up</button>
               </div>
               <p className='mt-4 font-medium text-sm'>
-                Already have an account? <Link to="/auth/login">Log In</Link>
+                Already have an account? <Link to="/auth/login">Log in</Link>
               </p>
             </div>}
           </div>
@@ -126,7 +124,7 @@ const IntroPage = () => {
         <div className="flex w-full flex-wrap md:flex-no-wrap border-t mt-8">
           <div className="w-full md:w-3/4 p-2 ">
             <p className=' font-normal text-sm text-gray-700 leading-8 text-center sm:text-left'>
-              Start exploring our open-source project on <a href='https://github.com/docs-plus/docs.plus' rel='_blanck'> GitHub</a>, Join our <a href='https://github.com/docs-plus/docs.plus/discussions' rel='_blanck'>Discussions</a> and help make it even better.
+              Start exploring our open-source project on <a href='https://github.com/docs-plus/docs.plus' rel='_blanck'> GitHub</a>, Join our <a href='https://github.com/docs-plus/docs.plus/discussions' rel='_blanck'>discussions</a> and help make it even better!
             </p>
           </div>
           <div className="w-full md:w-1/4 p-2">
