@@ -43,9 +43,15 @@ const buttonWrapper = (editor, { headingId, open, from, node }) => {
   buttonWrapper.append(btnChatBox)
 
   const toggleHeadingContent = (el) => {
-    const detailsContent = document.querySelector(`.heading[data-id="${headingId}"] div.contentWrapper`)
-    const event = new CustomEvent('toggleHeadingsContent', { detail: { headingId, open, el: detailsContent } })
+    let detailsContent = document.querySelector(`.heading[data-id="${headingId}"] div.contentWrapper`)
 
+    // FIXME: this is a temporary solution
+    if (!detailsContent) {
+      headingId = 1
+      detailsContent = document.querySelector(`.heading[data-id="${ headingId }"] div.contentWrapper`)
+    }
+
+    const event = new CustomEvent('toggleHeadingsContent', { detail: { headingId, open, el: detailsContent } })
     detailsContent === null || detailsContent === void 0 ? void 0 : detailsContent.dispatchEvent(event)
   }
 
