@@ -269,6 +269,7 @@ $crinkle-unfold-bg: #efefef;
       margin-left: -100px;
       position: relative;
       z-index: 1;
+      min-width: 100%;
 
       &:hover ~ .buttonWrapper {
         visibility: visible;
