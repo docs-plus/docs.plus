@@ -24,11 +24,7 @@
   "stylelint.enable": true,
   "css.validate": false,
   "less.validate": false,
-  "scss.validate": false,
-  "[css][scss]": {
-    "editor.defaultFormatter": "stylelint.vscode-stylelint",
-    "editor.codeActionsOnSave": [
-      "source.fixAll.stylelint"
-    ],
-  }
+  "scss.validate": true,
+  "scss.format.spaceAroundSelectorSeparator": true,
+  "eslint.codeActionsOnSave.mode": "all"
 }
