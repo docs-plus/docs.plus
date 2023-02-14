@@ -164,3 +164,15 @@ export const createThisBlockMap = ($from, depth, caretSelectionTextBlock) => {
     paragraph: { type: 'paragraph' }
   }
 }
+
+/**
+ * This method copies a text to clipboard
+ * @param {string} text - the text to copy
+ * @param {function} callback - a callback to execute after the text is copied
+ */
+export const copyToClipboard = (text, callback) => {
+  navigator.clipboard.writeText(text).then(() => {
+    alert('Copied to clipboard')
+    if (callback) callback()
+  })
+}

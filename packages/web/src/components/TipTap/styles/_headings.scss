@@ -39,12 +39,10 @@ body.indentHeading {
 
   .title {
     z-index: 9;
-    width: calc(100% + 70px);
+    width: 100%;
     display: flex;
     flex-direction: row;
     align-items: center;
-    padding-left: 70px;
-    margin-left: -70px;
 
     &.is-empty::before {
       position: absolute;
