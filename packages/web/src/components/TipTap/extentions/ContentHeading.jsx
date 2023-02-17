@@ -48,10 +48,11 @@ const buttonWrapper = (editor, { headingId, open, from, node }) => {
     // FIXME: this is a temporary solution
     if (!detailsContent) {
       headingId = 1
-      detailsContent = document.querySelector(`.heading[data-id="${ headingId }"] div.contentWrapper`)
+      detailsContent = document.querySelector(`.heading[data-id="${headingId}"] div.contentWrapper`)
     }
 
     const event = new CustomEvent('toggleHeadingsContent', { detail: { headingId, open, el: detailsContent } })
+
     detailsContent === null || detailsContent === void 0 ? void 0 : detailsContent.dispatchEvent(event)
   }
 
@@ -132,12 +133,12 @@ const appendButtonsDec = (doc, editor) => {
 
 const HeadingsTitle = Node.create({
   name: 'contentHeading',
-  content: 'text*',
+  content: 'inline*',
   group: 'block',
   defining: true,
-  draggable: false,
-  selectable: false,
-  isolating: true,
+  // draggable: false,
+  // selectable: false,
+  // isolating: true,
   allowGapCursor: false,
   addOptions () {
     return {
@@ -160,11 +161,11 @@ const HeadingsTitle = Node.create({
     }
   },
   parseHTML () {
-    return [
-      {
-        tag: `div[data-type="${this.name}"]`
-      }
-    ]
+    return this.options.levels
+      .map((level) => ({
+        tag: `h${level}`,
+        attrs: { level }
+      }))
   },
   renderHTML (state) {
     const { node, HTMLAttributes } = state
