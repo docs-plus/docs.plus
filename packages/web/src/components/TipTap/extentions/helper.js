@@ -41,7 +41,7 @@ export const getPrevHeadingList = (tr, start, from) => {
  * @param {Number} end end pos
  * @returns Array of Selection Block
  */
-export const getSelectionBlocks = (doc, start, end) => {
+export const getSelectionBlocks = (doc, start, end, includeContentHeading = false) => {
   const firstHEading = true
   const prevDepth = 0
   const selectedContents = []
@@ -58,7 +58,14 @@ export const getSelectionBlocks = (doc, start, end) => {
     if (node.type.name === 'contentHeading') {
       const depth = doc.resolve(pos).depth
 
-      selectedContents.push({ depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, type: 'paragraph', content: node.toJSON().content })
+      selectedContents.push({
+        depth,
+        attrs: includeContentHeading ? node.attrs : {},
+        startBlockPos: pos,
+        endBlockPos: pos + node.nodeSize,
+        type: includeContentHeading ? node.type.name : 'paragraph',
+        content: node.toJSON().content
+      })
     }
   })
 
