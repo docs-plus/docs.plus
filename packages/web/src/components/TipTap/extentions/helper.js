@@ -140,7 +140,7 @@ export const getHeadingsBlocksMap = (doc, start, end) => {
  * @returns {Object} blockMap - The current selection's block map.
  */
 
-export const createThisBlockMap = ($from, depth, caretSelectionTextBlock) => {
+export const createThisBlockMap = ($from, depth, caretSelectionTextBlock = ' ') => {
   return {
     parent: {
       end: $from.end(depth - 1),
