@@ -82,19 +82,6 @@ const Paragraph = Node.create({
   }
 })
 
-const Button = Node.create({
-  name: 'button',
-  group: 'block',
-  content: 'inline*',
-  parseHTML () {
-    return [
-      { tag: 'button' }
-    ]
-  },
-  renderHTML ({ HTMLAttributes }) {
-    return ['button', HTMLAttributes, 0]
-  }
-})
 
 const Text = Node.create({
   name: 'text',
@@ -158,7 +145,6 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       CodeBlockLowlight.configure({
         lowlight
       }),
-      Button,
       ContentHeading,
       ContentWrapper,
       Superscript,
