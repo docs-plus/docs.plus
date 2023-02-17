@@ -1,7 +1,9 @@
 import { Node, mergeAttributes, wrappingInputRule, findParentNode, findChildren, isActive, textblockTypeInputRule } from '@tiptap/core'
-import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch, DOMSerializer } from 'prosemirror-model'
+import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch, DOMSerializer, DOMParser } from 'prosemirror-model'
 import { Selection, Plugin, PluginKey, TextSelection } from 'prosemirror-state'
 import { Transform } from 'prosemirror-transform'
+
+import { getRangeBlocks, getSelectionBlocks } from './helper'
 
 import changeHeadingLevel from './changeHeadingLevel'
 import wrapContenWithHeading from './wrapContenWithHeading'
@@ -178,7 +180,7 @@ const Blockquote = Node.create({
         'data-type': this.name,
         level: node.firstChild?.attrs.level,
         'data-id': HTMLAttributes['data-id'] || this.options.id,
-        open: node.firstChild.attrs.open
+        open: node.firstChild?.attrs.open
       })
 
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value))
@@ -452,110 +454,28 @@ const Blockquote = Node.create({
       new Plugin({
         key: new PluginKey('copy&pasteHeading'),
         props: {
-          transformPastedHTML: (html, event) => {
-            // INFO: Div turn confuses the schema service;
-            // INFO:if there is a div in the clipboard, the docsplus schema will not serialize as a must.
-            html = html.replace(/div/g, 'span')
-
-            return html
-          },
-          transformPasted: (slice) => {
-            return clipboardPast(slice, this.editor)
-          },
+          // INFO: Div turn confuses the schema service;
+          // INFO:if there is a div in the clipboard, the docsplus schema will not serialize as a must.
+          transformPastedHTML: (html, event) => html.replace(/div/g, 'span'),
+          transformPasted: (slice) => clipboardPast(slice, this.editor),
           transformCopied: (slice, view) => {
             // Can be used to transform copied or cut content before it is serialized to the clipboard.
             const { schema, selection, doc } = this.editor.state
-            const { empty, $anchor, $head, $from, $to } = selection
-            const { start, end, depth } = $from.blockRange($to)
+            const { empty, $anchor, $head, $from, $to, from, to } = selection
+            const { start, end, depth } = $from.blockRange($from)
 
-            console.log('transformCopied', { slice })
-
-            const contentWrapper = []
-            let firstHEading = true
-            let prevDepth = 0
-
-            doc.nodesBetween(start, end, function (node, pos, parent, index) {
-              if (pos < start) return
-              if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
-                const depth = doc.resolve(pos).depth
-
-                contentWrapper.push({ depth, startBlockPos: pos, parent, index, endBlockPos: pos + node.nodeSize, ...node.toJSON() })
-              }
-              if (node.type.name === 'heading') {
-                firstHEading = false
-                const headingLevel = node.firstChild?.attrs?.level
-                const depth = doc.resolve(pos).depth
-
-                if (prevDepth === 0) prevDepth = depth
-
-                if (prevDepth >= depth) {
-                  contentWrapper.push({ le: headingLevel, depth, index, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON() })
-                  prevDepth = depth
-                }
-              }
-            })
-
-            let mapHeadingIndex = []
-            let serializedSelection = []
-
-            const departHeading = (headingBlock) => {
-              const newBlocks = []
-              const htag = headingBlock.content.find(x => x.type === 'contentHeading')
-              const restOfContnets = headingBlock.content.find(x => x.type === 'contentWrapper')
-
-              newBlocks.push(htag)
-              newBlocks.push(...restOfContnets.content)
-
-              return newBlocks
-            }
-
-            const createRemainHeadingMap = (contentWrapper) => {
-              const hMap = []
-
-              for (const [index, block] of contentWrapper.entries()) {
-                if (block.type === 'heading') {
-                  hMap.push({ index, block })
-                }
-              }
-
-              return hMap
-            }
-
-            const departContents = (contents) => {
-              mapHeadingIndex = createRemainHeadingMap(contents)
-
-              if (mapHeadingIndex.length < 0) return serializedSelection = contents
-
-              for (const blockHeading of mapHeadingIndex) {
-                const newContents = departHeading(blockHeading.block)
-
-                contents.splice(blockHeading.index, 1, newContents)
-              }
-
-              // flat the array
-              contents = [].concat(...contents)
-
-              // clreate the heading map
-              mapHeadingIndex = []
-
-              mapHeadingIndex = createRemainHeadingMap(contents)
-
-              // If the heading block is left, Re-serialize contents
-              if (mapHeadingIndex.length > 0) return departContents(contents)
-
-              return serializedSelection = contents
-            }
-
-            departContents(contentWrapper)
+            // TODO: this function retrive blocks level from the selection, I need to block characters level from the selection
+            const contentWrapper = getSelectionBlocks(doc, start - 1, to, true)
 
             // convert Json Block to Node Block
-            serializedSelection = serializedSelection.map(x => this.editor.state.schema.nodeFromJSON(x))
+            let serializeSelection = contentWrapper
+              .map(x => this.editor.state.schema.nodeFromJSON(x))
 
             // convert Node Block to Fragment
-            serializedSelection = Fragment.fromArray(serializedSelection)
+            serializeSelection = Fragment.fromArray(serializeSelection)
 
             // convert Fragment to Slice and save it to clipboard
-            return Slice.maxOpen(serializedSelection)
+            return Slice.maxOpen(serializeSelection)
           }
         }
       })
