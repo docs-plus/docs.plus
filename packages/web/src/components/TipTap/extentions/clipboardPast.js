@@ -1,7 +1,7 @@
 import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from 'prosemirror-model'
 import { TextSelection, Selection } from 'prosemirror-state'
 
-import { getPrevHeadingList } from './helper'
+import { getRangeBlocks, getPrevHeadingList } from './helper'
 
 export default (slice, editor) => {
   const { state, view } = editor
@@ -48,10 +48,7 @@ export default (slice, editor) => {
     }
   }
 
-  console.log({
-    newPosResolver
-  })
-
+  // If caret selection move to contentWrapper, create a new selection
   if (newPosResolver) {
     $from = (new Selection(
       newPosResolver,
@@ -61,56 +58,14 @@ export default (slice, editor) => {
 
   start = $from.pos
 
-  console.log({
-    newTr,
-    start,
-    at: newTr.doc.nodeAt(start)
-  })
-
   // return Slice.empty
-
   const hasContentHeading = slice.toJSON()
-
-  console.log({ hasContentHeading })
 
   const titleNode = $from.doc.nodeAt($from.start(1) - 1)
   const titleStartPos = $from.start(1) - 1
   const titleEndPos = titleStartPos + titleNode.content.size
-  const contentWrapper = []
-  const titleHMap = []
-  let firstHEading = true
-  let prevDepth = 0
-
-  doc.nodesBetween(start, titleEndPos, function (node, pos, parent, index) {
-    if (node.type.name === 'heading') {
-      const headingLevel = node.firstChild?.attrs?.level
-      const depth = doc.resolve(pos).depth
-
-      titleHMap.push({ le: headingLevel, depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, index })
-    }
-  })
-
-  doc.nodesBetween(start, titleEndPos, function (node, pos, parent, index) {
-    if (pos < start) return
-
-    if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
-      const depth = $from.sharedDepth(pos)
-
-      contentWrapper.push({ depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON() })
-    }
-    if (node.type.name === 'heading') {
-      firstHEading = false
-      const headingLevel = node.firstChild?.attrs?.level
-      const depth = doc.resolve(pos).depth
-
-      if (prevDepth === 0) prevDepth = depth
-
-      if (prevDepth >= depth) {
-        contentWrapper.push({ le: headingLevel, depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON() })
-        prevDepth = depth
-      }
-    }
-  })
+  const contentWrapper = getRangeBlocks(doc, start, titleEndPos)
+  const titleHMap = getPrevHeadingList(tr, start, titleEndPos)
 
   let prevHStartPos = 0
   let prevHEndPos = 0
@@ -129,63 +84,57 @@ export default (slice, editor) => {
 
   const clipboardContents = slice.toJSON().content
 
-  console.log(clipboardContents, '===b')
+  function normalizeClipboardContents(clipboardContents, editor) {
+    const paragraphs = []
+    const headings = []
+    let heading = null
 
-  const paragraphs = []
-  const newContent = []
-  let newHeading = {}
-  let hasHeading = false
-
-  clipboardContents.map((node, index) => {
-    if (!hasHeading && node.type !== 'contentHeading') {
-      return paragraphs.push(editor.schema.nodeFromJSON(node))
-    }
-
-    if (node.type === 'contentHeading') {
-      hasHeading = true
-      if (newHeading?.type) {
-        newContent.push(editor.schema.nodeFromJSON(newHeading))
-        newHeading = {}
+    for (const node of clipboardContents) {
+      if (!heading && node.type !== 'contentHeading') {
+        paragraphs.push(editor.schema.nodeFromJSON(node))
       }
-      newHeading = {
-        type: 'heading',
-        level: node?.attrs.level,
-        content: [
-          node,
-          {
-            type: 'contentWrapper',
-            content: []
-          }
-        ]
+
+      if (node.type === 'contentHeading') {
+        // if new heading is found, push the previous heading into the heading list
+        // and reset the heading
+        if (heading) {
+          headings.push(editor.schema.nodeFromJSON(heading))
+          heading = null
+        }
+        heading = {
+          type: 'heading',
+          attrs: { level: node?.attrs.level },
+          content: [
+            node,
+            {
+              type: 'contentWrapper',
+              content: []
+            }
+          ]
+        }
+      } else {
+        heading?.content.at(1).content.push(node)
       }
-    } else {
-      // console.log(newHeading)
-      newHeading?.content[1].content.push(node)
     }
 
-    if (index === clipboardContents.length - 1) {
-      newContent?.push(editor.schema.nodeFromJSON(newHeading))
+    if (heading) {
+      headings.push(editor.schema.nodeFromJSON(heading))
     }
-  })
+
+    return [paragraphs, headings]
+  }
+
+  // return Slice.empty
+
+  const [paragraphs, headings] = normalizeClipboardContents(clipboardContents, state)
 
   const higherarchy = [
-    ...newContent
+    ...headings
   ]
-
-  // console.log(higherarchy, paragraphs)
 
   // return Slice.empty
 
   let mapHPost = titleHMap
-
-  console.log('=>', {
-    data: slice.toJSON(),
-    titleHMap,
-    contentWrapper,
-    mapHPost,
-    higherarchy,
-    slice
-  })
 
   let shouldNested = false
   let startPos = start
@@ -193,189 +142,119 @@ export default (slice, editor) => {
   let prevHeadingListStartPos = mapHPost[0].startBlockPos
   let prevHeadingListEndtPos = newTr.mapping.map(titleEndPos)
 
-  // first append paragraphs
-  // then insert heading
-
-  // if there is a paragraphs that not belong to any heading, append them into the current heading
-  // if (paragraphs.length > 0) {
-  //   for (let paragraph of paragraphs) {
-  //     // startPos += paragraph.nodeSize
-  //   }
-  // }
-
+  // first append the paragraphs in the current selection
   newTr.insert(startPos, paragraphs)
 
-  // newTr.insertText("Hello", newTr.mapping.map(titleEndPos))
-  if (higherarchy.length > 0) { newTr.delete(newTr.mapping.map(start), newTr.mapping.map(titleEndPos)) } else {
+  // if higherarchy is empty, then just return
+  if (higherarchy.length <= 0) {
     newTr.setMeta('paste', true)
     view.dispatch(newTr)
 
     return Slice.empty
   }
 
+  newTr.delete(newTr.mapping.map(start), newTr.mapping.map(titleEndPos))
+
   // return Slice.empty
+
   // paste the headings
-  if (higherarchy.length > 0) {
-    for (const [index, heading] of higherarchy.entries()) {
-      console.log('=========== append clipboard Heading', {
-        start, 'doc.nodeSize': doc.nodeSize, 'newTr.doc.nodeSize': newTr.doc.nodeSize, prevHeadingListStartPos, prevHeadingListEndtPos
-      })
+  for (const [index, heading] of higherarchy.entries()) {
+    const commingLevel = heading.firstChild.attrs.level
+    let prevBlock
 
-      if (index === 0) {
-        mapHPost = getPrevHeadingList(
-          newTr,
-          newTr.mapping.map(prevHeadingListStartPos),
-          newTr.mapping.map(prevHeadingListEndtPos - 5)
-        )
-      } else {
-        mapHPost = getPrevHeadingList(
-          newTr,
-          (prevHeadingListStartPos),
-          (prevHeadingListEndtPos - 5)
-        )
-      }
-
-      // console.log("b", mapHPost, { prevHeadingListStartPos, prevHeadingListEndtPos })
-
-      const commingLevel = heading.firstChild.attrs.level
-
-      let prevBlock
-
-      if (commingLevel !== 1) {
-        mapHPost = mapHPost.filter(x =>
-          x.startBlockPos < startPos &&
-          x.startBlockPos >= prevHStartPos
-        )
-        // console.log("a", mapHPost)
-
-        const prevBlockEqual = mapHPost.findLast(x => x.le === commingLevel)
-        const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= commingLevel)
-        const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= commingLevel)
-        const lastbloc = mapHPost[mapHPost.length - 1]
-
-        prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
-        if (lastbloc.le <= commingLevel) prevBlock = lastbloc
-        if (prevBlock.le < commingLevel) {
-          shouldNested = true
-        } else {
-          shouldNested = false
-        }
-
-        if (index === 0) {
-          startPos = prevBlock.endBlockPos + heading.nodeSize
-          initPos = prevBlock.endBlockPos
-        } else {
-          startPos += heading.nodeSize
-          prevHeadingListEndtPos += heading.nodeSize
-        }
-      } else {
-        prevBlock = mapHPost[0]
-        shouldNested = false
-
-        startPos = prevBlock.endBlockPos + heading.nodeSize
-        prevHeadingListStartPos = prevBlock.endBlockPos + 4
-        prevHeadingListEndtPos = prevBlock.endBlockPos + heading.nodeSize + 4
-      }
-
-      console.log({
-        commingLevel,
-        shouldNested,
-        prevBlock,
-        mapHPost,
-        initPos
-      })
-
-      newTr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), heading)
-
-      if (higherarchy.length === index + 1) {
-        const topSliceOfHeadings = contentWrapper.filter(x => x.type !== 'heading')
-        // console.log("last Item", index, higherarchy.length, higherarchy, topSliceOfHeadings)
-        // console.log("insertAt:", prevBlock.endBlockPos - (shouldNested ? 2 : 0), "size:", heading.content.size, newTr.doc.nodeSize)
-
-        const newParagraphs = topSliceOfHeadings.map(x => editor.schema.nodeFromJSON(x))
-
-        // if (newParagraphs.length > 0) {
-        // for (let paragraph of newParagraphs) {
-        // startPos += paragraph.nodeSize
-        // console.log(newParagraphs, "=-=-=-")
-        newTr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0) + heading.content.size, newParagraphs)
-        // }
-        // }
-
-        // console.log("heading", heading.content.addToEnd(newParagraphs[0]), newParagraphs)
-        // newTr.insert(prevBlock.endBlockPos, topSliceOfHeadings)
-
-        // heading.content.content.push(newParagraphs)
-
-        // editor.chain().insertContentAt(prevBlock.endBlockPos, "<p>asdalskdjalksjdlakjsd</p>").run()
-      }
-
-      // if (index == 1)
-      // return Slice.empty
-    }
-  }
-
-  // return Slice.empty
-
-  const headingContent = contentWrapper.filter(x => x.type === 'heading')
-  const topSliceOfHeadings = contentWrapper.filter(x => x.type !== 'heading')
-
-  // after past the heading, past the rest of paragraphs
-
-  if (headingContent.length > 0) {
-    for (const [index, heading] of headingContent.entries()) {
-      console.log('=========== append deleted parts')
-
+    if (index === 0) {
       mapHPost = getPrevHeadingList(
         newTr,
-        newTr.mapping.map(mapHPost[0].startBlockPos),
-        newTr.mapping.map(mapHPost[0].startBlockPos + newTr.doc.nodeAt(mapHPost[0].startBlockPos).nodeSize)
+        newTr.mapping.map(prevHeadingListStartPos),
+        newTr.mapping.map(prevHeadingListEndtPos - 5)
       )
+    } else {
+      mapHPost = getPrevHeadingList(
+        newTr,
+        (prevHeadingListStartPos),
+        (prevHeadingListEndtPos - 5)
+      )
+    }
 
-      console.log({
-        mapHPost,
-        startPos
-      })
+    if (commingLevel === 1) {
+      prevBlock = mapHPost[0]
+      shouldNested = false
 
+      startPos = prevBlock.endBlockPos + heading.nodeSize
+      prevHeadingListStartPos = prevBlock.endBlockPos + 4
+      prevHeadingListEndtPos = prevBlock.endBlockPos + heading.nodeSize + 4
+    } else {
       mapHPost = mapHPost.filter(x =>
         x.startBlockPos < startPos &&
         x.startBlockPos >= prevHStartPos
       )
 
-      const node = state.schema.nodeFromJSON(heading)
+      const prevBlockEqual = mapHPost.findLast(x => x.le === commingLevel)
+      const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= commingLevel)
+      const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= commingLevel)
+      const lastBlock = mapHPost.at(-1)
 
-      console.log({
-        mapHPost,
-        startPos,
-        heading,
-        node,
-        size: heading.nodeSize
-      })
-
-      const prevBlockEqual = mapHPost.findLast(x => x.le === heading.le)
-      const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= heading.le)
-      const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= heading.le)
-      const lastbloc = mapHPost[mapHPost.length - 1]
-      let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
-
-      if (lastbloc.le <= heading.le) prevBlock = lastbloc
-      if (prevBlock.le < heading.le) {
+      prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
+      if (lastBlock.le <= commingLevel) prevBlock = lastBlock
+      if (prevBlock.le < commingLevel) {
         shouldNested = true
       } else {
         shouldNested = false
       }
 
-      startPos += node.nodeSize
-
-      console.log({
-        prevBlockEqual,
-        prevBlockGratherFromFirst,
-        prevBlockGratherFromLast,
-        mapHPost
-      })
-
-      newTr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
+      if (index === 0) {
+        startPos = prevBlock.endBlockPos + heading.nodeSize
+        initPos = prevBlock.endBlockPos
+      } else {
+        startPos += heading.nodeSize
+        prevHeadingListEndtPos += heading.nodeSize
+      }
     }
+
+    newTr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), heading)
+
+    if (higherarchy.length === index + 1) {
+      const topSliceOfHeadings = contentWrapper.filter(x => x.type !== 'heading')
+      const newParagraphs = topSliceOfHeadings.map(x => editor.schema.nodeFromJSON(x))
+
+      newTr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0) + heading.content.size, newParagraphs)
+    }
+
+    // if (index === 2) return Slice.empty
+  }
+
+  // return Slice.empty
+  const headingContent = contentWrapper.filter(x => x.type === 'heading')
+
+  // after past the clipboard contents, past the rest of paragraphs if it's not empty
+  for (const [index, heading] of headingContent.entries()) {
+    mapHPost = getPrevHeadingList(
+      newTr,
+      prevHeadingListStartPos,
+      prevHeadingListEndtPos
+    )
+
+    mapHPost = mapHPost.filter(x =>
+      x.startBlockPos < startPos &&
+      x.startBlockPos >= prevHStartPos
+    )
+
+    const node = state.schema.nodeFromJSON(heading)
+
+    const prevBlockEqual = mapHPost.findLast(x => x.le === heading.le)
+    const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= heading.le)
+    const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= heading.le)
+    const lastbloc = mapHPost.at(-1)
+    let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
+
+    if (lastbloc.le <= heading.le) prevBlock = lastbloc
+
+    // eslint-disable-next-line
+    shouldNested = prevBlock.le < heading.le ? true : false
+
+    startPos += node.nodeSize
+
+    newTr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
   }
 
   newTr.setMeta('paste', true)
