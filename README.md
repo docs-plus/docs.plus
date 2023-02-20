@@ -1,6 +1,6 @@
-# Docsplus
+# docs.plus
 
-Docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge in a hierarchical manner. By leveraging the power of open-source technologies, Docs.plus makes it easy for communities to collaborate on documents and share knowledge in a structured, logical way.
+docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge in a hierarchical manner. By leveraging the power of open-source technologies, docs.plus makes it easy for communities to collaborate on documents and share knowledge in a structured, logical way.
 
 # 🚀 Prerequisites & Installation
 
@@ -21,7 +21,7 @@ make local
 
 If you have any further questions, please don’t hesitate, you can reach us by the following:
 
-> Join our [Discussions](https://github.com/docs-plus/docs.plus/discussions) and help make Docsplus even better.
+> Join our [Discussions](https://github.com/docs-plus/docs.plus/discussions) and help make docs.plus even better.
 
 - Twitter: [@docsdotplus](https://twitter.com/docsdotplus)
 - Github: [docs.plus](https://github.com/nwspk/docs.plus)
@@ -34,6 +34,6 @@ This project is licensed under the [Apache License v2](http://www.apache.org/lic
 
 # Support
 
-**Docs.plus** is free and open source, please help us stay online:
+**docs.plus** is free and open source, please help us stay online:
 
 <a href="https://patreon.com/docsplus"><img src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Ddocsplus%26type%3Dpatrons&style=for-the-badge" /> </a>
