@@ -5,8 +5,12 @@ import { getRangeBlocks, getPrevHeadingList } from '../helper'
 export default (arrg) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
   const { schema, selection, doc } = state
-  const { $from, $to, $anchor, $cursor, $head } = selection
+  const { $from, $to, $anchor, $cursor, $head, from } = selection
   const { start, end, depth } = $from.blockRange($to)
+
+  if (doc?.nodeAt(start).type.name !== 'contentHeading') {
+    return console.info('[Heading]: not heading')
+  }
 
   const headingText = { type: 'text', text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' ' }
 
@@ -76,8 +80,7 @@ export default (arrg) => {
 
   tr.insert(tr.mapping.map(insertPos), normalContents)
 
-  const caretPosition = insertPos + normalContents[0].text.length + 1
-  const focusSelection = new TextSelection(tr.doc.resolve(caretPosition))
+  const focusSelection = new TextSelection(tr.doc.resolve(from))
 
   tr.setSelection(focusSelection)
 
