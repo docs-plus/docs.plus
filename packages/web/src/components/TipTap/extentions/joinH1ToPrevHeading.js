@@ -5,7 +5,7 @@ import { getPrevHeadingList, createThisBlockMap, getHeadingsBlocksMap, getRangeB
 export default (arrg) => {
   const { can, chain, commands, dispatch, editor, state, view } = arrg
   const { schema, selection, doc, tr } = state
-  const { $from, $to, $anchor, $cursor } = selection
+  const { $from, $to, $anchor, $cursor, from } = selection
   const { start, end, depth } = $from.blockRange($to)
 
   const block = createThisBlockMap($from, depth)
@@ -61,7 +61,7 @@ export default (arrg) => {
   // first create the current heading with new level
   tr.insert(prevBlock.endBlockPos - 2, paragraphs)
 
-  const newTextSelection = new TextSelection(tr.doc.resolve((prevBlock.endBlockPos - 2) + paragraphs.at(0).nodeSize - 1))
+  const newTextSelection = new TextSelection(tr.doc.resolve(from))
 
   tr.setSelection(newTextSelection)
 

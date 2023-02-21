@@ -5,7 +5,7 @@ import { getRangeBlocks, getHeadingsBlocksMap, createThisBlockMap } from './help
 export default (arrg, attributes, asWrapper = false) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
   const { schema, selection, doc } = state
-  const { $from, $to, $anchor, $cursor } = selection
+  const { $from, $to, $anchor, $cursor, from } = selection
   const { start, end, depth } = $from.blockRange($to)
 
   console.log('[Heading]: Backward process,  comingLevel < currentHLevel')
@@ -61,9 +61,7 @@ export default (arrg, attributes, asWrapper = false) => {
 
   const newTr = tr.insert(insertPos, node)
 
-  const contentHeadingNodeSize = insertPos + block.headingContent.text.length + 2
-  const resolveContentHeadingPos = newTr.doc.resolve(contentHeadingNodeSize)
-  const newTextSelection = new TextSelection(resolveContentHeadingPos)
+  const newTextSelection = new TextSelection(newTr.doc.resolve(from))
 
   newTr.setSelection(newTextSelection)
   newTr.deleteRange(start - 1, insertPos)
