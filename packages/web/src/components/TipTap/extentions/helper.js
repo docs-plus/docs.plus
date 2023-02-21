@@ -60,6 +60,7 @@ export const getSelectionBlocks = (doc, start, end, includeContentHeading = fals
 
       selectedContents.push({
         depth,
+        level: node.attrs?.level,
         attrs: includeContentHeading ? node.attrs : {},
         startBlockPos: pos,
         endBlockPos: pos + node.nodeSize,
