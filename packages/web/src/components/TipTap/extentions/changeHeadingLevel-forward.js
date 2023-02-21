@@ -5,7 +5,7 @@ import { getRangeBlocks, getHeadingsBlocksMap, createThisBlockMap, getPrevHeadin
 export default (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
   const { schema, selection, doc } = state
-  const { $from, $to, $anchor, $cursor, $head } = selection
+  const { $from, $to, $anchor, $cursor, $head, from } = selection
   const { start, end, depth } = $from.blockRange($to)
 
   console.log('[Heading]: change heading level forwarding')
@@ -84,7 +84,7 @@ export default (arrg, attributes) => {
   tr.insert(tr.mapping.map(insertPos), node)
 
   // set the cursor to the end of the heading
-  const newSelection = new TextSelection(tr.doc.resolve(insertPos + block.headingContent.text.length + (shouldNested ? 3 : 2)))
+  const newSelection = new TextSelection(tr.doc.resolve(from))
 
   tr.setSelection(newSelection)
 
