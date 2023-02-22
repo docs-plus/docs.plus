@@ -1,5 +1,4 @@
 import React, { useEffect, useState, useCallback } from 'react'
-
 import Select from 'react-select'
 
 import {
@@ -9,31 +8,16 @@ import {
   OrderList,
   BulletList,
   Link,
-  UnLink,
   CheckList,
-  Plus,
-  AddComment,
-  Video,
   Image,
   Gear,
-  OfflineCloud,
-  Doc,
-  PrivateShare,
   ClearMark,
   Stric,
   HighlightMarker,
   Undo,
   Redo,
   Printer
-
 } from '../../components/icons/Icons'
-// import {
-//   Bold
-//  } from "../icons/icons";
-
-import Button from '../ui/Button'
-
-// import { ReactComponent as Logo } from '../../assets/icons/Bold.svg'
 
 const GearModal = (props) => {
   return (
@@ -82,16 +66,16 @@ const Toolbar = ({ editor }) => {
 
   const options = [
     { value: 0, label: 'Normal Text' },
-    { value: 1, label: 'Title' },
-    { value: 2, label: 'Heading 1' },
-    { value: 3, label: 'Heading 2' },
-    { value: 4, label: 'Heading 3' },
-    { value: 5, label: 'Heading 4' },
-    { value: 6, label: 'Heading 5' },
-    { value: 7, label: 'Heading 6' },
-    { value: 8, label: 'Heading 7' },
-    { value: 9, label: 'Heading 8' },
-    { value: 10, label: 'Heading 9' }
+    { value: 1, label: 'Heading 1' },
+    { value: 2, label: 'Heading 2' },
+    { value: 3, label: 'Heading 3' },
+    { value: 4, label: 'Heading 4' },
+    { value: 5, label: 'Heading 5' },
+    { value: 6, label: 'Heading 6' },
+    { value: 7, label: 'Heading 7' },
+    { value: 8, label: 'Heading 8' },
+    { value: 9, label: 'Heading 9' },
+    { value: 10, label: 'Heading 10' }
   ]
 
   const [selectedOption, setSelectedOption] = useState(options[0])
@@ -136,12 +120,7 @@ const Toolbar = ({ editor }) => {
   if (indentSetting === undefined) {
     localStorage.setItem('setting.indentHeading', '')
     indentSetting = false
-  } else {
-    // console.log('=new', indentSetting)
-    // setIndented(indentSetting)
   }
-
-  // console.log("indentSetting", indentSetting, Boolean(indentSetting))
 
   const [indented, setIndented] = React.useState(Boolean(indentSetting))
 
@@ -192,7 +171,6 @@ const Toolbar = ({ editor }) => {
       </div>
 
       <Select
-        // styles={customStyles}
         className="w-32 text-sm"
         classNamePrefix="nodeStyle"
         defaultValue={options[0]}
