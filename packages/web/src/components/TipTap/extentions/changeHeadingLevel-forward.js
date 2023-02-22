@@ -50,12 +50,14 @@ export default (arrg, attributes) => {
   const prevBlockEqual = mapHPost.findLast(x => x.le === commingLevel)
   const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= commingLevel)
   const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= commingLevel)
-  const lastbloc = mapHPost.at(-1)
+  const lastBlock = mapHPost.at(-1)
   let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
 
-  if (lastbloc?.le <= commingLevel) prevBlock = lastbloc
-  if (!prevBlock) prevBlock = lastbloc
+  if (lastBlock?.le <= commingLevel) prevBlock = lastBlock
+  if (!prevBlock) prevBlock = lastBlock
   shouldNested = prevBlock.le < commingLevel
+
+  if (prevBlock.le === 1) shouldNested = false
 
   const jsonNode = {
     type: 'heading',
@@ -79,7 +81,7 @@ export default (arrg, attributes) => {
   // remove content from the current positon to the end of the heading
   tr.delete(start - 1, titleEndPos)
   // then add the new heading with the content
-  const insertPos = (contentWrapperHeadings.length === 0 ? prevBlock.endBlockPos : start) - (shouldNested ? 2 : 0)
+  const insertPos = (contentWrapperHeadings.length === 0 ? prevBlock.endBlockPos : start - 1) - (shouldNested ? 2 : 0)
 
   tr.insert(tr.mapping.map(insertPos), node)
 
@@ -116,4 +118,6 @@ export default (arrg, attributes) => {
 
     tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
   }
+
+  return true
 }
