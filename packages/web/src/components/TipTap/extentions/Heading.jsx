@@ -465,7 +465,7 @@ const Blockquote = Node.create({
             const { start, end, depth } = $from.blockRange($from)
 
             // TODO: this function retrive blocks level from the selection, I need to block characters level from the selection
-            const contentWrapper = getSelectionBlocks(doc, start - 1, to, true)
+            const contentWrapper = getSelectionBlocks(doc.cut(from, to), null, null, true, true)
 
             // convert Json Block to Node Block
             let serializeSelection = contentWrapper
