@@ -23,7 +23,9 @@ export default (arrg) => {
   let prevHStartPos = 0
   let prevHEndPos = 0
 
-  tr.delete(start - 1, titleEndPos)
+  const backspaceAction = doc.nodeAt(from) === null && $anchor.parentOffset === 0
+
+  tr.delete(backspaceAction ? start - 1 : start - 1, titleEndPos)
 
   // if the current heading is not H1, otherwise we need to find the previous H1
   if (currentHLevel !== 1) {
@@ -56,7 +58,10 @@ export default (arrg) => {
   const normalContents = [headingText, ...contentWrapperParagraphs]
     .map(x => editor.schema.nodeFromJSON(x))
 
-  const titleHMap = getPrevHeadingList(tr, titleStartPos, titleEndPos)
+  // this is for backspace, if the node is empty remove the TextNode
+  if (backspaceAction) normalContents.shift()
+
+  const titleHMap = getPrevHeadingList(tr, titleStartPos, tr.mapping.map(titleEndPos))
 
   let mapHPost = titleHMap.filter(x =>
     x.startBlockPos < start - 1 &&
@@ -80,7 +85,7 @@ export default (arrg) => {
 
   tr.insert(tr.mapping.map(insertPos), normalContents)
 
-  const focusSelection = new TextSelection(tr.doc.resolve(from))
+  const focusSelection = new TextSelection(tr.doc.resolve(insertPos + 1))
 
   tr.setSelection(focusSelection)
 
@@ -105,4 +110,6 @@ export default (arrg) => {
 
     tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
   }
+
+  return (backspaceAction) ? view.dispatch(tr) : true
 }

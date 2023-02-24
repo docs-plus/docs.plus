@@ -2,8 +2,8 @@ import { Selection, Plugin, TextSelection, PluginKey } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import { Node, mergeAttributes } from '@tiptap/core'
 
-import joinH1ToPrevHeading from './joinH1ToPrevHeading'
 import { copyToClipboard } from './helper'
+import onHeading from './normalText/onHeading'
 
 function extractContentHeadingBlocks (doc) {
   const result = []
@@ -178,74 +178,32 @@ const HeadingsTitle = Node.create({
   },
   addKeyboardShortcuts () {
     return {
-      Backspace: (data) => {
+      Backspace: ({ editor }) => {
         const { schema, selection, doc } = this.editor.state
-        const { empty, $anchor, $head, $from, $to } = selection
-        const { depth } = $anchor
+        const { empty, $anchor, $head, $from, $to, from, to } = selection
+        const { start, end, depth } = $from.blockRange($to)
 
-        // if backspace hit in the node that is not have any content
-        if ($anchor.parentOffset !== 0) return false
+        // current node
+        const node = doc.nodeAt(from)
+        // parent node
+        const parent = $anchor.parent
 
-        // TODO: if the backspace is in heading level 1
-        // TODO: what if there is not parent
+        // if the current node is empty(means there is not content) and the parent is contentHeading
+        if (
+          (node !== null || $anchor.parentOffset !== 0) || // this node block contains content
+          parent.type.name !== schema.nodes.contentHeading.name ||
+          $anchor.pos === 2 || // if the caret is in the first heading
+          parent.attrs.open === false // if the heading is closed
+        ) return false
 
-        // if Backspace is in the contentHeading
-        if ($anchor.parent.type.name === schema.nodes.contentHeading.name) {
-          const heading = $head.path.filter(x => x?.type?.name)
-            .findLast(x => x.type.name === 'heading')
-          const contentWrapper = heading.lastChild
+        console.info('[Heading]: remove the heading node')
 
-          console.log({
-            $anchor,
-            contentWrapper,
-            heading,
-            parent: !$from.doc.nodeAt($from.pos - 2).attrs.open,
-            r: heading.lastChild?.attrs,
-            re: Object.hasOwn(heading.lastChild?.attrs, 'open'),
-            w: !$from.doc.nodeAt($from.pos - 2).attrs.open
-          })
-
-          // check if the current heading has level 1
-          // then if has h1 sebling as prev block
-          if ($anchor.parent.type.name === 'contentHeading' && $anchor.parent.attrs.level === 1) {
-            return joinH1ToPrevHeading(this.editor)
-          }
-
-          // INFO: Prevent To Remove the Heading Block If its close.
-          if (Object.hasOwn(heading.lastChild?.attrs, 'open') && !heading.lastChild?.attrs?.open) return false
-
-          // if (heading.lastChild.type.name === heading.firstChild.type.name) {
-
-          // }
-
-          // INFO: CURRENT pos start, with size of first paragraph in the contentWrapper
-          const block = {
-            start: $from.start(depth - 1) - 1,
-            end: $from.end(depth - 1)
-          }
-
-          // console.log({
-          //   heading
-          // })
-
-          const selectionPos = block.start + 1 + (heading.lastChild?.firstChild?.content?.size || -1)
-
-          console.log({
-            selectionPos,
-            block,
-            contentWrapper,
-            parent: $from.doc.nodeAt($from.start(depth) - 3)
-          })
-
-          return this.editor.chain()
-            .insertContentAt(
-              { from: block.start, to: block.end },
-              contentWrapper.content.toJSON()
-            )
-            .setTextSelection(selectionPos)
-            .scrollIntoView()
-            .run()
-        }
+        return onHeading({
+          editor,
+          state: editor.state,
+          tr: editor.state.tr,
+          view: editor.view
+        })
       }
     }
   },
