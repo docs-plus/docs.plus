@@ -78,7 +78,7 @@ const Login = () => {
             </div>
           </Link>
         </div>
-        <p className='text-center leading-8	 text-lg w-full font-bold block text-gray-900'>Log In and owned the pads</p>
+        <p className='text-center leading-8 text-lg w-full font-bold block text-gray-900'>Log in for private docs</p>
       </div>
 
       <div className="flex flex-row w-full">
