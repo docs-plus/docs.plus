@@ -41,10 +41,37 @@ export const getPrevHeadingList = (tr, start, from) => {
  * @param {Number} end end pos
  * @returns Array of Selection Block
  */
-export const getSelectionBlocks = (doc, start, end, includeContentHeading = false) => {
+export const getSelectionBlocks = (doc, start, end, includeContentHeading = false, range = false) => {
   const firstHEading = true
   const prevDepth = 0
   const selectedContents = []
+
+  if (range) {
+    console.log(doc)
+    doc.descendants(function (node, pos, parent) {
+      if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
+        const depth = doc.resolve(pos).depth
+
+        selectedContents.push({ depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON() })
+      }
+
+      if (node.type.name === 'contentHeading') {
+        const depth = doc.resolve(pos).depth
+
+        selectedContents.push({
+          depth,
+          level: node.attrs?.level,
+          attrs: includeContentHeading ? node.attrs : {},
+          startBlockPos: pos,
+          endBlockPos: pos + node.nodeSize,
+          type: includeContentHeading ? node.type.name : 'paragraph',
+          content: node.toJSON().content
+        })
+      }
+    })
+
+    return selectedContents
+  }
 
   doc.nodesBetween(start, end, function (node, pos, parent, index) {
     if (pos < start) return
