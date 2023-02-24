@@ -5,7 +5,7 @@ import GitHubButton from 'react-github-btn'
 
 import slugify from 'slugify'
 
-import { Doc } from '../components/icons/Icons'
+import { DocsPlus } from '../components/icons/Icons'
 import { useAuth, AuthContext } from '../contexts/Auth'
 import Button from '../components/Button'
 
@@ -68,12 +68,12 @@ const IntroPage = () => {
       <div className="bg-white flex flex-wrap sm:justify-center max-w-5xl sm:m-auto p-6 py-10 pb-2 rounded-md shadow">
         <div className="sm:w-1/2 sm:mx-auto ">
           <div className='p-4'>
-            <h1 className='flex flex-row items-end'> <Doc className="mr-3" size="58" /> docs plus</h1>
+            <h1 className='flex flex-row items-end'> <DocsPlus className="mr-3" size="58" /> docs plus</h1>
             <h2 className='mt-3 text-gray-500 font-semibold'>Get everyone on the same page</h2>
             <div className='mt-5'>
               <p><span>+</span> A <a href="https://github.com/docs-plus">free &amp; open source</a> project by <a href="https://newspeak.house">Newspeak House</a></p>
               <p><span>+</span> Enquiries to <a href="https://www.twitter.com/docsdotplus">@docsdotplus</a> or <a href="mailto:ed@newspeak.house">ed@newspeak.house</a></p>
-              <p><span>+</span> Found a bug? Help us out by <a href="https://github.com/docs-plus/docs.plus/issues">reporting it</a>. </p>          
+              <p><span>+</span> Found a bug? Help us out by <a href="https://github.com/docs-plus/docs.plus/issues">reporting it</a>. </p>
               <p><span>+</span> <a href="https://www.patreon.com/docsplus">Back us on Patreon</a> to help us pay for hosting &amp; development</p>
               <p><span>+</span> Kindly seed funded by <a href="https://www.grantfortheweb.org">Grant for Web</a> &amp; <a href="https://www.nesta.org.uk">Nesta</a></p>
             </div>

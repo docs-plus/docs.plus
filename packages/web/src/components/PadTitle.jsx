@@ -2,7 +2,7 @@
 import { Link } from 'react-router-dom'
 
 import {
-  Doc
+  DocsPlus
 } from './icons/Icons'
 
 const PadTitle = ({ padName }) => {
@@ -10,7 +10,7 @@ const PadTitle = ({ padName }) => {
     <div className='flex flex-row items-center'>
       <div className='padLog'>
         <Link to="/">
-          <Doc size="28" />
+          <DocsPlus size="34" />
         </Link>
       </div>
       <div className='ml-3'>
