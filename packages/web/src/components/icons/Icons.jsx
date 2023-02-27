@@ -216,6 +216,14 @@ export const DocsPlus = ({ size = 18, fill = 'black', className }) => {
   )
 }
 
+/**
+ * Renders an SVG icon "PrivateShare".
+ *
+ * @param {object} props - The component props.
+ * @param {number} [props.size=18] - The width and height of the SVG icon.
+ * @param {string} [props.fill='black'] - The color of the SVG icon.
+ * @returns {JSX.Element} The rendered SVG icon.
+ */
 export const PrivateShare = ({ size = 18, fill = 'black' }) => {
   return (
     <svg viewBox="0 0 21 21" width={size} xmlns="http://www.w3.org/2000/svg">
