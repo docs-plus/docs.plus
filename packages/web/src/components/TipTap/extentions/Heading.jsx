@@ -304,10 +304,10 @@ const Blockquote = Node.create({
         const parent = $head.path.filter(x => x?.type?.name)
           .findLast(x => x.type.name === this.name)
 
-        console.log({
-          s: $head.parent.type.name,
-          open: parent.attrs.open
-        })
+        // console.log({
+        //   s: $head.parent.type.name,
+        //   open: parent.attrs.open
+        // })
 
         // INFO: if the content is hide, do not anything
         // ! this open in the Heading block is wrong and Have to change, It's opposite
