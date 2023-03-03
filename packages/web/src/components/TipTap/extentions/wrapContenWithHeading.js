@@ -172,8 +172,6 @@ export default (arrg, attributes) => {
       const contents = doc.slice(end, block.parent.end - 1)?.toJSON()?.content
       const data = !contents ? [block.paragraph] : contents
 
-      console.log('===>', block.headingContent)
-
       return chain()
         .insertContentAt({ from: start, to: block.parent.end }, {
           type: 'heading',
