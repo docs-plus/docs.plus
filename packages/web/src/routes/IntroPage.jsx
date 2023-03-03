@@ -47,7 +47,7 @@ const IntroPage = () => {
       return
     }
 
-    if (!user) return navigate(`/g/${slug}`)
+    if (!user) return navigate(`/open/${slug}`)
 
     // check if profile has a namespace
     if (!profile?.doc_namespace) {
@@ -96,7 +96,7 @@ const IntroPage = () => {
 
               <div className='flex flex-col  w-full'>
                 <div className='flex flex-row w-full font-mono text-sm align-middle'>
-                  <p className='px-2 py-2 leading-6 rounded-l border border-r-0  rounded-r-none'>docs.plus/{profile?.doc_namespace ? profile?.doc_namespace : 'g'}/</p>
+                  <p className='px-2 py-2 leading-6 rounded-l border border-r-0  rounded-r-none'>docs.plus/{profile?.doc_namespace ? profile?.doc_namespace : 'open'}/</p>
                   <input ref={docNameRef} className='p-1 w-full rounded-l-none border font-mono' id="padName" type="text" onKeyDown={handleKeyDown} />
                 </div>
                 {error && <p className='text-red-700 text-sm mt-2'>*Only lowercase letters, numbers and dashes are allowed</p>}
@@ -104,7 +104,7 @@ const IntroPage = () => {
               </div>
 
             </div>
-            {!user && !user?.id && !user?.email && <div>
+            {/* {!user && !user?.id && !user?.email && <div>
               <div className="flex items-center justify-center mt-8 ">
                 <div className="w-full bg-gray-200 h-1"></div>
                 <div className="text-center px-2 font-medium text-gray-400">OR</div>
@@ -117,7 +117,7 @@ const IntroPage = () => {
               <p className='mt-4 font-medium text-sm'>
                 Already have an account? <Link to="/auth/login">Log in</Link>
               </p>
-            </div>}
+            </div>} */}
           </div>
         </div>
 
