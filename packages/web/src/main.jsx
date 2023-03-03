@@ -105,7 +105,7 @@ const router = createBrowserRouter([
     ]
   },
   {
-    path: '/g/:padName',
+    path: '/open/:padName',
     element: <Pads />,
     errorElement: <ErrorPage />,
     loader: async ({ request, params }) => {
