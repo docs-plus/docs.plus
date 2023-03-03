@@ -17,7 +17,7 @@ const IntroPage = () => {
 
   const { signInWithOtp, signIn, signOut, user, profile } = useAuth()
 
-  console.log(user, profile)
+  window.document.title = 'Docs Plus'
 
   // slugify the docNameRef
   const validateDocName = (docSlug) => {
