@@ -82,7 +82,6 @@ const Paragraph = Node.create({
   }
 })
 
-
 const Text = Node.create({
   name: 'text',
   group: 'inline'
@@ -105,9 +104,28 @@ const scrollDown = () => {
 }
 
 const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = false, children }) => {
-  const [isloading, setIsloading] = useState(true)
+  if (!provider) {
+    return {
+      extensions: [
+        Document,
+        Bold,
+        Italic,
+        BulletList,
+        Strike,
+        HardBreak,
+        Gapcursor,
+        Paragraph,
+        Text,
+        ListItem,
+        OrderedList,
+        Heading.configure(),
+        ContentHeading,
+        ContentWrapper
+      ]
+    }
+  }
 
-  const editor = useEditor({
+  return {
     onCreate: (editor) => {
       // console.log("onCreate", editor)
       scrollDown()
@@ -206,17 +224,7 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       })
     ],
     defualtContent: ''
-  }, [])
-
-  useEffect(() => {
-    document.title = `Pad: ${padName}`
-
-    return () => {
-      editor?.destroy()
-    }
-  }, [editor])
-
-  return editor
+  }
 }
 
 export default Editor

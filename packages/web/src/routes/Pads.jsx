@@ -1,62 +1,95 @@
 import {
-  createBrowserRouter,
-  RouterProvider,
-  useLoaderData,
   useParams
 } from 'react-router-dom'
 import React, { useState, useMemo, useEffect } from 'react'
-import { EditorContent } from '@tiptap/react'
+import { EditorContent, useEditor } from '@tiptap/react'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
 
-import TipTap from '../components/TipTap/TipTap'
+import { useQuery } from '@tanstack/react-query'
+
+import editorConfig from '../components/TipTap/TipTap'
 import Toolbar from '../components/TipTap/Toolbar'
 import TableOfContents from '../components/TipTap/TableOfContents'
 import PadTitle from '../components/PadTitle'
 import { useAuth } from '../contexts/Auth'
 
+const useCustomeHook = (padName) => {
+  const { isLoading, error, data, isSuccess } = useQuery({
+    queryKey: ['getDocumentMetadataByDocName'],
+    queryFn: () => {
+      return fetch(`${import.meta.env.VITE_RESTAPI_URL}/documents/${padName}`)
+        .then(res => res.json())
+    }
+  })
+
+  return { isLoading, error, data, isSuccess }
+}
+
 export default function Root () {
   const { signInWithOtp, signIn, signOut, user } = useAuth()
-
   const { padName } = useParams()
   const [loadedData, setLoadedData] = useState(false)
-  const newPadName = `pads.${padName}`
+  const [newPadName, setNewPadName] = useState(null)
+  const [ydoc, setYdoc] = useState(null)
+  const [provider, setProvider] = useState(null)
+  const [socket, setSocket] = useState(null)
+  const [documentTitle, setDocumentTitle] = useState(padName)
+
+  const { isLoading, error, data, isSuccess } = useCustomeHook(padName)
+
+  useEffect(() => {
+    // Use the data returned by useCustomHook in useEffect
+    if (data?.data.documentId) {
+      const { documentId, isPrivate } = data?.data
+
+      window.document.title = data?.data.title
+
+      setDocumentTitle(data?.data.title)
+      setNewPadName(`${isPrivate ? 'private' : 'public'}.${documentId}`)
+    }
+  }, [data])
 
   // run once
-  const [provider, ydoc] = useMemo(() => {
-    const ydoc = new Y.Doc()
-    const provider = new HocuspocusProvider({
-      url: import.meta.env.VITE_HOCUSPOCUS_PROVIDER_URL,
-      name: newPadName,
-      document: ydoc,
+  useEffect(() => {
+    if (newPadName) {
+      const ydoc = new Y.Doc()
 
-      onStatus: (data) => {
+      setYdoc(ydoc)
+
+      const provider = new HocuspocusProvider({
+        url: `${import.meta.env.VITE_HOCUSPOCUS_PROVIDER_URL}/public`,
+        name: newPadName,
+        document: ydoc,
+
+        onStatus: (data) => {
         // console.log("onStatus", data)
-      },
-      onSynced: (data) => {
+        },
+        onSynced: (data) => {
         // console.log("onSynced", data)
         // console.log(`content loaded from Server, pad name: ${ newPadName }`, provider.isSynced)
         // if (data?.state) setLoadedData(true)
-      },
-      onDisconnect: (data) => {
+        },
+        onDisconnect: (data) => {
         // console.log("onDisconnect", data)
-      }
-    })
+        }
+      })
 
-    // Store the Y document in the browser
-    const newProvider = new IndexeddbPersistence(newPadName, provider.document)
+      setProvider(provider)
 
-    newProvider.on('synced', () => {
-      if (!loadedData) return
-      // console.log(`content loaded from indexdb, pad name: ${ newPadName }`)
-      setLoadedData(true)
-    })
+      // Store the Y document in the browser
+      const indexDbProvider = new IndexeddbPersistence(newPadName, provider.document)
 
-    // console.log("once ha ha ha", provider.isSynced)
+      indexDbProvider.on('synced', () => {
+        if (!loadedData) return
+        // console.log(`content loaded from indexdb, pad name: ${ newPadName }`)
+        setLoadedData(true)
+      })
+    }
+  }, [newPadName])
 
-    return [provider, ydoc]
-  }, [loadedData])
+  const editor = useEditor(editorConfig({ padName: newPadName, provider, ydoc }), [provider])
 
   const scrollHeadingSelection = (event) => {
     const scrollTop = event.currentTarget.scrollTop
@@ -87,13 +120,11 @@ export default function Root () {
     closest[0]?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
   }
 
-  const editor = TipTap({ padName, provider, ydoc })
-
   return (
     <>
       <div className="pad tiptap flex flex-col border-solid border-2">
         <div className='header w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b'>
-          <PadTitle padName={padName} />
+          {documentTitle && <PadTitle docId={newPadName} docTitle={documentTitle} provider={provider} />}
         </div>
         <div className='toolbars w-full bg-white h-auto z-10  sm:block fixed bottom-0 sm:relative'>
           {editor ? <Toolbar editor={editor} /> : 'Loading...'}
