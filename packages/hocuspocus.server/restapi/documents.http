@@ -1,0 +1,23 @@
+GET http://localhost:2300/api/documents
+
+###
+GET http://localhost:2300/api/documents/dr3f3d33
+
+###
+POST http://localhost:2300/api/documents
+content-type: application/json
+
+{
+  "title": "My new document",
+  "content": "This is the content of my new document",
+  "slug": "dr3f3d33"
+}
+
+###
+PUT http://localhost:2300/api/documents/qAE6401c20ba1s9Lry3
+content-type: application/json
+
+{
+  "title": "My new document11",
+  "description": "new Demo"
+}

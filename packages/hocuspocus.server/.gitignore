@@ -1,3 +1,4 @@
 db.sqlite
 node_modules
+volumes
 .env

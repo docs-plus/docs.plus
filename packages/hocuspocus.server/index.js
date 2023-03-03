@@ -4,8 +4,10 @@ import chalk from 'chalk'
 import expressWebsockets from 'express-ws'
 import { Server } from '@hocuspocus/server'
 import HocuspocusConfig from './hocuspocus.config.mjs'
-import { checkEnvBolean } from './utils.mjs'
+import { checkEnvBolean } from './utils/index.mjs'
 import morgan from 'morgan'
+import routers from './routers/router.mjs'
+import middlewares from "./middlewares/index.mjs"
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 
@@ -26,7 +28,6 @@ const {
   REDIS
 } = process.env
 
-
 const Serverconfigure = HocuspocusConfig()
 
 // Configure hocuspocus
@@ -43,6 +44,9 @@ app.get('/', (_request, response) => {
   response.send({ message: 'Hello World!' })
 })
 
+app.use(middlewares)
+app.use('/api', routers)
+
 app.ws('/echo', function (ws, _req) {
   ws.on('message', (msg) => ws.send(msg))
 })
@@ -51,12 +55,13 @@ app.ws('/echo', function (ws, _req) {
 // Note: make sure to include a parameter for the document name.
 // You can set any contextual data like in the onConnect hook
 // and pass it to the handleConnection method.
-app.ws('/collaboration/:padName', (websocket, request) => {
+app.ws('/collaboration/public/:documentId', (websocket, req) => {
   websocket.on('message', function (_msg) {
-    // console.log("message", msg.toString());
+    // console.log("message", _msg.toString());
   })
 
   const context = {
+    params: req.query,
     user: {
       id: 1234,
       name: 'Jane'
@@ -64,7 +69,9 @@ app.ws('/collaboration/:padName', (websocket, request) => {
   }
   // console.log('socket', context);
 
-  server.handleConnection(websocket, request, request.params.padName, context)
+  console.log({ context, params: req.params })
+
+  server.handleConnection(websocket, req, req.params.documentId, context)
 })
 
 // Start the server
