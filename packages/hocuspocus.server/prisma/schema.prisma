@@ -11,10 +11,23 @@ datasource db {
 }
 
 model Documents {
-  id        Int      @id @default(autoincrement())
-  name      String
-  data      Bytes
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  // @@unique([id, name])
+  id         Int      @id @default(autoincrement())
+  data       Bytes
+  documentId String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  // metadata  DocumentMetadata?
+}
+
+// create a new model that has relation to Documents and name it documentInfo which is want to store document slug, title and description, and also slug is unique
+model DocumentMetadata {
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
+  title       String
+  description String
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  documentId  String?  @unique
+  // document    Documents? @relation(fields: [documentId], references: [id])
 }

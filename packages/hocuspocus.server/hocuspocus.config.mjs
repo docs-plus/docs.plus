@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client'
-import { checkEnvBolean } from './utils.mjs'
+import { checkEnvBolean } from './utils/index.mjs'
 import cryptoRandomString from 'crypto-random-string'
 import { Database } from '@hocuspocus/extension-database'
 import { SQLite } from '@hocuspocus/extension-sqlite'
@@ -8,9 +8,7 @@ import { Throttle } from '@hocuspocus/extension-throttle'
 import { Redis } from '@hocuspocus/extension-redis'
 import { Logger } from '@hocuspocus/extension-logger'
 
-
 export default () => {
-
   const {
     APP_NAME,
     HOCUSPOCUS_LOGGER,
@@ -39,8 +37,6 @@ export default () => {
     name: `${ APP_NAME }_${ cryptoRandomString({ length: 4, type: 'alphanumeric' }) }`,
     extensions: []
   }
-
-  console.log(DATABASE_TYPE)
 
 
   if (checkEnvBolean(HOCUSPOCUS_THROTTLE)) {
@@ -90,12 +86,11 @@ export default () => {
   if (DATABASE_TYPE === 'PostgreSQL') {
     const database = new Database({
       // Return a Promise to retrieve data …
-      fetch: async ({ documentName }) => {
-        console.log("documentName", documentName)
+      fetch: async ({ documentName, context }) => {
         const doc = await prisma.documents.findMany({
           take: 1,
           where: {
-            name: documentName
+            documentId: documentName
           },
           orderBy: {
             id: 'desc'
@@ -105,14 +100,13 @@ export default () => {
           await prisma.$disconnect()
           // process.exit(1)
         })
-        console.log(doc, "documentName")
         return doc[0]?.data
       },
       // … and a Promise to store data:
-      store: async ({ documentName, state }) => {
-        prisma.documents.create({
+      store: async ({ documentName, state, context }) => {
+        return prisma.documents.create({
           data: {
-            name: documentName,
+            documentId: documentName,
             data: state
           }
         }).catch(async _err => {
