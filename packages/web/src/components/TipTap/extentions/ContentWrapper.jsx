@@ -228,7 +228,7 @@ const HeadingsContent = Node.create({
 
               tr.setNodeMarkup(pos, undefined, {
                 open: !currentNode.attrs.open
-              })
+              }).setMeta('addToHistory', false)
 
               expandElement(section, 'collapsed', detail.headingId, currentNode.attrs.open)
 
