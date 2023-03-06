@@ -306,7 +306,7 @@ const Blockquote = Node.create({
 
         // INFO: if the content is hide, do not anything
         // ! this open in the Heading block is wrong and Have to change, It's opposite
-        if (!parent.attrs.open) return false
+        if (!parent.attrs.open) return true
 
         console.log('yes new', {
           $head,
