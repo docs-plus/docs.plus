@@ -43,6 +43,7 @@ function crinkleNode (prob) {
   }
   foldEl.setAttribute('data-clampedLines', clampedLines + 1)
   foldEl.addEventListener('click', (e) => {
+    if (!e.target.closest('.heading').classList.contains('closed')) return
     e.target.parentElement.parentElement.querySelector('.btnFold')?.click()
   })
 
