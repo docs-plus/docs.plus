@@ -66,22 +66,22 @@ const buttonWrapper = (editor, { headingId, open, from, node }) => {
       const currentNode = tr.doc.nodeAt(pos)
       const headingNode = tr.doc.nodeAt(pos - 1)
 
-      // if (currentNode.type.name !== 'contentHeading') {
-      //   return false
-      // }
-
       tr.setNodeMarkup(pos, undefined, {
         ...currentNode.attrs,
         open: !currentNode.attrs.open,
         level: currentNode.attrs.level
-      }).setNodeMarkup(pos - 1, undefined, {
-        ...headingNode.attrs,
-        open: !currentNode.attrs.open,
-        level: currentNode.attrs.level
       })
+      if (headingNode) {
+        tr.setNodeMarkup(pos - 1, undefined, {
+          ...headingNode.attrs,
+          open: !currentNode.attrs.open,
+          level: currentNode.attrs.level
+        })
+      }
 
       tr.setMeta('addToHistory', false)
 
+      editor.view.dispatch(tr)
       toggleHeadingContent(el)
     }
   }
