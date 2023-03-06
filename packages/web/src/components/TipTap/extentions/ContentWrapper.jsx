@@ -204,37 +204,31 @@ const HeadingsContent = Node.create({
         // console.log("toggleHeadingsContent", detail)
         const section = detail.el
 
+        editor.commands.focus()
+
         // dom.toggleAttribute('hidden');
-        if (!this.options.persist) {
-          editor.commands.focus()
-
-          return
-        }
+        if (!this.options.persist) return
         if (editor.isEditable && typeof getPos === 'function') {
-          editor
-            .chain()
-            .focus()
-            .command(({ tr }) => {
-              const pos = getPos()
-              const currentNode = tr.doc.nodeAt(pos)
+          const { tr } = editor.state
 
-              if ((currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type) {
-                return false
-              }
+          const pos = getPos()
+          const currentNode = tr.doc.nodeAt(pos)
 
-              if (node.attrs.open) {
-                section.classList.add('overflow-hidden')
-              }
+          if ((currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type) {
+            return false
+          }
 
-              tr.setNodeMarkup(pos, undefined, {
-                open: !currentNode.attrs.open
-              }).setMeta('addToHistory', false)
+          if (node.attrs.open) {
+            section.classList.add('overflow-hidden')
+          }
 
-              expandElement(section, 'collapsed', detail.headingId, currentNode.attrs.open)
+          tr.setNodeMarkup(pos, undefined, {
+            open: !currentNode.attrs.open
+          }).setMeta('addToHistory', false)
 
-              return true
-            })
-            .run()
+          expandElement(section, 'collapsed', detail.headingId, currentNode.attrs.open)
+
+          editor.view.dispatch(tr)
         }
       })
 
