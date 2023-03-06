@@ -1,119 +1,18 @@
-import { Node, mergeAttributes, wrappingInputRule, findParentNode, findChildren, isActive, textblockTypeInputRule } from '@tiptap/core'
-import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch, DOMSerializer, DOMParser } from 'prosemirror-model'
+import { Node, mergeAttributes, findChildren, isActive } from '@tiptap/core'
+import { Slice, Fragment } from 'prosemirror-model'
 import { Selection, Plugin, PluginKey, TextSelection } from 'prosemirror-state'
-import { Transform } from 'prosemirror-transform'
-
-import { getRangeBlocks, getSelectionBlocks } from './helper'
 
 import changeHeadingLevel from './changeHeadingLevel'
 import wrapContenWithHeading from './wrapContenWithHeading'
 import clipboardPast from './clipboardPast'
 import changeHeading2paragraphs from './changeHeading2paragraphs'
+import { getSelectionBlocks } from './helper'
 
 const isNodeVisible = (position, editor) => {
   const node = editor.view.domAtPos(position).node
   const isOpen = node.offsetParent !== null
 
   return isOpen
-}
-
-const setGapCursor = (editor, direction) => {
-  const { state, view, extensionManager } = editor
-  const { schema, selection } = state
-  const { empty, $anchor } = selection
-  const hasGapCursorExtension = !!extensionManager.extensions.find(extension => extension.name === 'gapCursor')
-
-  // const headings = findParentNode(node => node.type === schema.nodes.contentHeading)(selection);
-
-  // const detailsSummaries = findChildren(details.node, node => node.type === newState.schema.nodes.contentHeading);
-
-  console.log({
-    name: $anchor.parent.type.name,
-    $anchor,
-    vewi: editor.view,
-    start: $anchor.start($anchor.depth),
-    end: $anchor.end($anchor.depth),
-    node: $anchor.node($anchor.depth),
-    after: $anchor.after($anchor.depth),
-    before: $anchor.after($anchor.depth),
-    index: $anchor.index($anchor.depth),
-    indexAfter: $anchor.indexAfter($anchor.depth),
-    max: $anchor.max(selection),
-    min: $anchor.min(selection),
-    // marksAcross: $anchor.marksAcross($anchor.end($anchor.depth)),
-    // empty,
-    // end: $anchor.before($anchor.depth - 1),
-    // rroo: $anchor.doc.nodeAt($anchor.index($anchor.depth)),
-    // typeName0: $anchor.doc.nodeAt($anchor.start($anchor.depth)),
-    // typeName1: $anchor.doc.nodeAt($anchor.start($anchor.depth) + 1),
-    // typeName2: $anchor.doc.nodeAt($anchor.start($anchor.depth) + 2),
-    // ro1: editor.view.domAtPos($anchor.end($anchor.depth) + 1),
-    // ro2: editor.view.domAtPos($anchor.end($anchor.depth) - 1),
-    nodeDOM1: editor.view.nodeDOM($anchor.start($anchor.depth) + 1),
-    nodeDOM2: editor.view.nodeDOM($anchor.start($anchor.depth) - 1)
-    // json: state,
-    // parent: $anchor.doc.nodeAt($anchor.end($anchor.depth) + 1).parent
-  })
-
-  if (direction === 'up' && $anchor.parent.type.name === schema.nodes.contentHeading.name) {
-    const pos = $anchor.before($anchor.depth - 1) - 1
-
-    return editor.chain().setTextSelection(pos).run()
-  }
-
-  // if (direction === "down" && ($anchor.parent.type.name === "heading" || $anchor.parent.type.name === "contentWrapper" || ($anchor.parent.type.name === "paragraph" && !editor.view.nodeDOM($anchor.end($anchor.depth))))) {
-  //   const pos = $anchor.after($anchor.depth)
-  //   // let size = $anchor.doc.nodeAt($anchor.after($anchor.depth))?.firstChild.content.size
-  //   // if (!size) size = $anchor.doc.nodeAt($anchor.after($anchor.depth) + 2)?.firstChild.content.size
-  //   console.log("whjhakljshdkjhaskjh", pos)
-  //   return editor.chain().setTextSelection(pos + 2).run()
-  // }
-
-  if (direction === 'up') {
-    return false
-  }
-
-  if (!empty ||
-    $anchor.parent.type.name !== schema.nodes.contentHeading.name ||
-    $anchor.textOffset === 0 && $anchor.doc.nodeAt($anchor.after($anchor.depth)).type.name === 'heading' ||
-    !hasGapCursorExtension) {
-    return false
-  }
-  console.log('im in', direction)
-  if (direction === 'right' &&
-    $anchor.parentOffset !== ($anchor.parent.nodeSize - 2)) {
-    return false
-  }
-  const headings = findParentNode(node => node.type === schema.nodes.contentHeading)(selection)
-
-  if (!headings) {
-    return false
-  }
-  const headingsContent = findChildren(headings.node, node => node.type === schema.nodes.contentWrapper)
-
-  if (!headingsContent.length) {
-    return false
-  }
-  const isOpen = isNodeVisible(headings.start + headingsContent[0].pos + 1, editor)
-
-  console.log('===>>', direction, isOpen)
-  if (isOpen) {
-    return false
-  }
-  const $position = state.doc.resolve(headings.pos + headings.node.nodeSize)
-  const $validPosition = GapCursor.findFrom($position, 1, false)
-
-  if (!$validPosition) {
-    return false
-  }
-  const { tr } = state
-  const gapCursorSelection = new GapCursor($validPosition, $validPosition)
-
-  tr.setSelection(gapCursorSelection)
-  tr.scrollIntoView()
-  view.dispatch(tr)
-
-  return true
 }
 
 const findClosestVisibleNode = ($pos, predicate, editor) => {
@@ -133,7 +32,6 @@ const findClosestVisibleNode = ($pos, predicate, editor) => {
   }
 }
 
-const inputRegex = /(?:^|\s)((?:~)((?:[^~]+))(?:~))/g
 const Blockquote = Node.create({
   name: 'heading',
   content: 'contentHeading+ contentWrapper*',
@@ -257,40 +155,16 @@ const Blockquote = Node.create({
         }
 
         return wrapContenWithHeading(arrg, attributes, dispatch)
-      },
-      setBlockquote: () => ({ commands }) => {
-        return commands.wrapIn(this.name)
-      },
-      toggleBlockquote: () => ({ commands }) => {
-        return commands.toggleWrap(this.name)
-      },
-      unsetBlockquote: () => ({ commands }) => {
-        return commands.lift(this.name)
       }
     }
   },
   addKeyboardShortcuts () {
     return {
-      // ArrowUp: ({ editor }) => {
-      //   console.log("up")
-      //   return setGapCursor(editor, 'up');
-      // },
-      // // The default gapcursor implementation can’t handle hidden content, so we need to fix this.
-      // ArrowRight: ({ editor }) => {
-      //   return setGapCursor(editor, 'right');
-      // },
-      // // The default gapcursor implementation can’t handle hidden content, so we need to fix this.
-      // ArrowDown: ({ editor }) => {
-      //   console.log("down")
-      //   return setGapCursor(editor, 'down');
-      // },
       Backspace: (data) => { },
       Enter: ({ editor, chain }) => {
         const { state, view } = editor
         const { schema, selection, doc, tr } = state
         const { $head, $anchor, $from, $to } = selection
-
-        // if ($head.parent.type.name !== schema.nodes.heading.name) return false;
 
         // TODO: limited just for contentHeading, contentWrapper
         if ($head.parent.type.name !== schema.nodes.contentHeading.name) {
@@ -332,7 +206,6 @@ const Blockquote = Node.create({
           // console.log(parent.lastChild.type.name === "contentWrapper")
           // console.log(parent.lastChild.content.lastChild.type.name === "heading")
           // if the contentWrapper does not contain any content
-          // or if
           if (parent.lastChild.content.size === 0 || parent.lastChild?.firstChild?.content.size === 0) {
             return editor.commands.insertContentAt($anchor.pos, {
               type: 'contentWrapper',
@@ -365,40 +238,10 @@ const Blockquote = Node.create({
           .run()
       }
     }
-
-    // return this.options.levels.reduce((items, level) => ({
-    //   ...items,
-    //   ...{
-    //     [`Mod-Alt-${ level }`]: () => this.editor.commands.toggleHeading({ level }),
-    //   },
-    // }), {});
   },
-  // addPasteRules(data) {
-  //   console.log(data, "=-=-=--")
-
-  //   return [];
-  //   return this.options.levels.map(level => {
-  //     console.log(level, "=-=-=-")
-  //     return textblockTypeInputRule({
-  //       find: new RegExp(`^(#{1,${ level }})\\s$`),
-  //       type: this.type,
-  //       getAttributes: {
-  //         level,
-  //       },
-  //     });
-  //   });
-  // },
-  // addInputRules() {
-  //   return [
-  //     wrappingInputRule({
-  //       find: inputRegex,
-  //       type: this.type,
-  //     }),
-  //   ];
-  // },
   addProseMirrorPlugins () {
     return [
-      // This plugin prevents text selections within the hidden content in `DetailsContent`.
+      // This plugin prevents text selections within the hidden content in `ContentWrapper`.
       // The cursor is moved to the next visible position.
       new Plugin({
         key: new PluginKey('detailsSelection'),
@@ -455,9 +298,8 @@ const Blockquote = Node.create({
           transformPasted: (slice) => clipboardPast(slice, this.editor),
           transformCopied: (slice, view) => {
             // Can be used to transform copied or cut content before it is serialized to the clipboard.
-            const { schema, selection, doc } = this.editor.state
-            const { empty, $anchor, $head, $from, $to, from, to } = selection
-            const { start, end, depth } = $from.blockRange($from)
+            const { selection, doc } = this.editor.state
+            const { from, to } = selection
 
             // TODO: this function retrive blocks level from the selection, I need to block characters level from the selection
             const contentWrapper = getSelectionBlocks(doc.cut(from, to), null, null, true, true)
