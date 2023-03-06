@@ -61,30 +61,26 @@ const buttonWrapper = (editor, { headingId, open, from, node }) => {
 
     editor.commands.focus(from + node.nodeSize - 1)
     if (editor.isEditable) {
-      editor
-        .chain()
-        .command(({ tr }) => {
-          const pos = from
-          const currentNode = tr.doc.nodeAt(pos)
-          const headingNode = tr.doc.nodeAt(pos - 1)
+      const { tr } = editor.state
+      const pos = from
+      const currentNode = tr.doc.nodeAt(pos)
+      const headingNode = tr.doc.nodeAt(pos - 1)
 
-          // if (currentNode.type.name !== 'contentHeading') {
-          //   return false
-          // }
+      // if (currentNode.type.name !== 'contentHeading') {
+      //   return false
+      // }
 
-          tr.setNodeMarkup(pos, undefined, {
-            ...currentNode.attrs,
-            open: !currentNode.attrs.open,
-            level: currentNode.attrs.level
-          }).setNodeMarkup(pos - 1, undefined, {
-            ...headingNode.attrs,
-            open: !currentNode.attrs.open,
-            level: currentNode.attrs.level
-          })
+      tr.setNodeMarkup(pos, undefined, {
+        ...currentNode.attrs,
+        open: !currentNode.attrs.open,
+        level: currentNode.attrs.level
+      }).setNodeMarkup(pos - 1, undefined, {
+        ...headingNode.attrs,
+        open: !currentNode.attrs.open,
+        level: currentNode.attrs.level
+      })
 
-          return true
-        })
-        .run()
+      tr.setMeta('addToHistory', false)
 
       toggleHeadingContent(el)
     }
