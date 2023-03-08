@@ -7,7 +7,7 @@ services:
 
  backend:
   env_file: .env
-  image: prod.docs.plus
+  image: stage.docs.plus
   restart: always
   build: .
   depends_on:
