@@ -1,41 +1,23 @@
 version: "3.9"
 
 services:
- postgres:
-  image: postgres:14.5
-  environment:
-   POSTGRES_USER: ${PG_USER}
-   POSTGRES_PASSWORD: ${PG_PASSWORD}
-   POSTGRES_DB: ${PG_DB}
-  ports:
-   - '${PG_PORT}:5432'
-  volumes:
-   - database-data:/var/lib/postgresql/data/
-  restart: always
-
- redis:
+ redis-server:
   image: redis:alpine
   restart: unless-stopped
-  ports:
-   - '6389:6379'
 
  backend:
+  env_file: .env
   restart: always
   build: .
   depends_on:
-   - postgres
-   - redis
+   - redis-server
   links:
-   - redis
+   - redis-server
   environment:
-   HOCUSPOCUS_EXT_DB_TYPE: PostgreSQL
-   #   DATABASE_URL: postgresql://postgres:postgres@localhost:5436/docsplus?connect_timeout=300&schema=public
-   APP_PORT: 2300
-   REDIS: "true"
-   REDIS_HOST: redis
-   REDIS_PORT: 6379
+   DATABASE_TYPE: ${DATABASE_TYPE:-SQLite}
+   REDIS_HOST: redis-server
   ports:
-   - 8002:2300
+   - '${EXPOSE_APP_PORT:-8002}:${APP_PORT}'
 
 volumes:
  database-data:

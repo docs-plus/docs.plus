@@ -14,11 +14,10 @@ COPY prisma ./prisma/
 # COPY ENV variable
 COPY .env ./
 
-
 RUN npm install --production
 
-RUN npx prisma migrate deploy
+RUN npx prisma generate
 
 COPY . .
 
-CMD ["npm","start"]
+CMD ["npm", "run","start:production"]

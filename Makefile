@@ -28,3 +28,6 @@ fastRun:
 
 build_front:
 		cd packages/web && rm -rf dist && npm run build
+
+build_hocuspocus.server:
+	cd packages/hocuspocus.server && docker-compose -f docker-compose.prod.yml up
