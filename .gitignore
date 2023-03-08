@@ -110,8 +110,5 @@ volumes
 
 packages/**/node_modules
 packages/**/volumes
-packages/**/.env
-packages/**/.env.*
 packages/web/dev-dist
-
 .npmrc

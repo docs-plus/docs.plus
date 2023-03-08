@@ -1,6 +1,9 @@
-db.sqlite
-node_modules
-volumes
+dev-dist
+dist
+
 .env
+.env.local
 .env.development
 .env.production
+
+.npmrc
