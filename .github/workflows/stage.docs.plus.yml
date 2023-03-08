@@ -21,7 +21,7 @@ jobs:
    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
    - uses: actions/checkout@v3
    - uses: actions/setup-node@v3
-   - uses: borales/actions-yarn@v4
+     # - uses: borales/actions-yarn@v4
      with:
       node-version: ${{ matrix.node-version }}
 
