@@ -33,7 +33,7 @@ jobs:
      run: yarn
 
    - name: Build Front-end
-     run: make build_front
+     run: \cp -r ../../../.env packages/web && make build_front
 
    - name: Build Back-end
      run: \cp -r ../../../.env packages/hocuspocus.server && make down_stage && make build_hocuspocus.server_stage
