@@ -36,7 +36,7 @@ jobs:
      run: make build_front
 
    - name: Build Back-end
-     run: \cp -r ../../../.env packages/hocuspocus.server && make down && make build_hocuspocus.server
+     run: \cp -r ../../../.env packages/hocuspocus.server && make down && make build_hocuspocus.server -d
 
   env:
    DATABASE_URL: ${{secrets.STAGE_DATABASE_URL}}
