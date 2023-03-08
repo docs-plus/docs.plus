@@ -21,7 +21,7 @@ build:
 	cd packages/hocuspocus.server && docker-compose -f docker-compose.prod.yml up
 
 down:
-	cd packages/hocuspocus.server && docker-compose -f docker-compose.prod.yml down
+	cd packages/hocuspocus.server && docker-compose -f docker-compose.prod.yml down down --rmi all -v --remove-orphans
 
 fastRun:
 	docker-compose -f docker-compose.prod.yml up
@@ -30,4 +30,4 @@ build_front:
 		cd packages/web && rm -rf dist && npm run build
 
 build_hocuspocus.server:
-		cd packages/hocuspocus.server && docker rmi hocuspocusserver-backend && docker-compose -f docker-compose.prod.yml up -d
+		cd packages/hocuspocus.server && docker-compose -f docker-compose.prod.yml up -d
