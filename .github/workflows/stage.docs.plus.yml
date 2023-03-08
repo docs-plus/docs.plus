@@ -13,14 +13,24 @@ jobs:
  build:
   # The type of runner that the job will run on
   runs-on: stage.docs.plus
+   strategy:
+   matrix:
+     node-version: ['lts/*']
 
   steps:
    # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
    - uses: actions/checkout@v3
+   - uses: actions/setup-node@v3
+   - uses: borales/actions-yarn@v4
+     with:
+      node-version: ${{ matrix.node-version }}
 
    # Runs a single command using the runners shell
-   - name: Run a one-line script
+   - name: Install Yarn
      run: echo Hello, world!
+
+   - name: Install dependencies
+     run: yarn
 
    - name: Build Front-end
      run: make build_front
