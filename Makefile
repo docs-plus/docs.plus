@@ -30,11 +30,11 @@ build_hocuspocus.server_stage:
 		cd packages/hocuspocus.server && docker-compose -f docker-compose.stage.yml up -d
 
 down_stage:
-	cd packages/hocuspocus.server && docker-compose -f docker-compose.stage.yml down down --rmi all -v --remove-orphans
+	cd packages/hocuspocus.server && docker-compose -f docker-compose.stage.yml down --rmi all -v --remove-orphans
 
 
 build_hocuspocus.server_prod:
 		cd packages/hocuspocus.server && docker-compose -f docker-compose.prod.yml up -d
 
 down_prod:
-	cd packages/hocuspocus.server && docker-compose -f docker-compose.prod.yml down down --rmi all -v --remove-orphans
+	cd packages/hocuspocus.server && docker-compose -f docker-compose.prod.yml down --rmi all -v --remove-orphans
