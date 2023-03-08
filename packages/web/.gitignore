@@ -7,3 +7,5 @@ dist
 .env.production
 
 .npmrc
+
+yarn-error.log
