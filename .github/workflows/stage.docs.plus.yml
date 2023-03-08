@@ -1,0 +1,32 @@
+name: CI-Stage
+
+# Controls when the workflow will run
+on:
+ push:
+  branches: [dev]
+ pull_request:
+  branches: [dev]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+ # This workflow contains a single job called "build"
+ build:
+  # The type of runner that the job will run on
+  runs-on: stage.docs.plus
+
+  steps:
+   # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+   - uses: actions/checkout@v3
+
+   # Runs a single command using the runners shell
+   - name: Run a one-line script
+     run: echo Hello, world!
+
+   - name: Build Front-end
+     run: make build_front
+
+   - name: Build Back-end
+     run: make down && make build_hocuspocus.server
+
+  env:
+   DATABASE_URL: ${{secrets.STAGE_DATABASE_URL}}
