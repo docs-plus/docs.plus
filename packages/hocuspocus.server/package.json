@@ -6,9 +6,11 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "NODE_ENV=production node index.js",
+    "start:production": "NODE_ENV=production npm run prisma:migration && node index.js",
     "dev": "NODE_ENV=development DATABASE_TYPE=SQLite nodemon index.js",
     "dev:pg": "NODE_ENV=development DATABASE_TYPE=PostgreSQL nodemon index.js",
     "lint:fix": "standard *.mjs *.js --fix | snazzy",
+    "prisma:migration": "prisma migrate deploy",
     "update:packages": "ncu -u"
   },
   "keywords": [],
