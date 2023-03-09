@@ -1,12 +1,12 @@
 version: "3.9"
 
 services:
- redis-server:
+ redis-server-stage:
   image: redis:alpine
   container_name: stage-redis-docsplus
   restart: unless-stopped
 
- backend:
+ backend-stage:
   env_file: .env
   image: stage.docs.plus
   container_name: stage-back-docsplus
