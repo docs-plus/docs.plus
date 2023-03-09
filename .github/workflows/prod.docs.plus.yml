@@ -3,16 +3,14 @@ name: CI-Stage
 # Controls when the workflow will run
 on:
  push:
-  branches: [dev]
- pull_request:
-  branches: [dev]
+  branches: [main]
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
  # This workflow contains a single job called "build"
  build:
   # The type of runner that the job will run on
-  runs-on: stage.docs.plus
+  runs-on: prod.docs.plus
   strategy:
    matrix:
     node-version: ["lts/*"]
@@ -23,6 +21,7 @@ jobs:
    - uses: actions/setup-node@v3
      with:
       node-version: ${{ matrix.node-version }}
+      clean: "false"
 
    # Runs a single command using the runners shell
    - name: Install Yarn
@@ -35,7 +34,7 @@ jobs:
      run: \cp -r ../../../.env packages/web && make build_front
 
    - name: Build Back-end
-     run: \cp -r ../../../.env packages/hocuspocus.server && make down_stage && make build_hocuspocus.server_stage
+     run: \cp -r ../../../.env packages/hocuspocus.server && make down_prod && make build_hocuspocus.server_prod
 
   env:
-   DATABASE_URL: ${{secrets.STAGE_DATABASE_URL}}
+   DATABASE_URL: ${{secrets.PROD_DATABASE_URL}}
