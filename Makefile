@@ -27,13 +27,13 @@ build_front:
 		cd packages/web && rm -rf dist && npm run build
 
 build_hocuspocus.server_stage:
-		cd packages/hocuspocus.server && docker-compose -f docker-compose.stage.yml up -d
+		cd packages/hocuspocus.server && docker-compose -p stage-docsplus -f docker-compose.stage.yml up -d
 
 down_stage:
-	cd packages/hocuspocus.server && docker-compose -f docker-compose.stage.yml down --rmi local
+	cd packages/hocuspocus.server && docker-compose -p stage-docsplus -f docker-compose.stage.yml down --rmi local
 
 build_hocuspocus.server_prod:
-		cd packages/hocuspocus.server && docker-compose -f docker-compose.prod.yml up -d
+		cd packages/hocuspocus.server && docker-compose -p prod-docsplus -f docker-compose.prod.yml up -d
 
 down_prod:
-	cd packages/hocuspocus.server && docker-compose -f docker-compose.prod.yml down --rmi local
+	cd packages/hocuspocus.server && docker-compose -p prod-docsplus -f docker-compose.prod.yml down --rmi local
