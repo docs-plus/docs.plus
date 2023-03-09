@@ -3,6 +3,7 @@ version: "3.9"
 services:
  redis-server:
   image: redis:alpine
+  container_name: prod-redis-docsplus
   restart: unless-stopped
 
  backend:
@@ -18,7 +19,7 @@ services:
    DATABASE_TYPE: ${DATABASE_TYPE:-SQLite}
    REDIS_HOST: redis-server
   ports:
-   - '${EXPOSE_APP_PORT:-8002}:${APP_PORT}'
+   - '${EXPOSE_APP_PORT:-8003}:${APP_PORT}'
 
 volumes:
  database-data:

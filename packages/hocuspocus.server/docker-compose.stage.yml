@@ -3,6 +3,7 @@ version: "3.9"
 services:
  redis-server:
   image: redis:alpine
+  container_name: stage-redis-docsplus
   restart: unless-stopped
 
  backend:
