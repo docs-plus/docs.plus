@@ -9,6 +9,7 @@ services:
  backend:
   env_file: .env
   image: stage.docs.plus
+  container_name: stage-back-docsplus
   restart: always
   build: .
   depends_on:
