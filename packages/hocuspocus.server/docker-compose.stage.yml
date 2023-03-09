@@ -1,26 +1,23 @@
 version: "3.9"
 
 services:
- redis-stage-docsplus:
+ redis:
   image: redis:alpine
   container_name: stage-redis-docsplus
   restart: unless-stopped
 
- backend-stage:
+ backend:
   env_file: .env
   image: stage.docs.plus
   container_name: stage-back-docsplus
   restart: always
   build: .
   depends_on:
-   - redis-stage-docsplus
+   - redis
   links:
-   - redis-stage-docsplus
+   - redis
   environment:
    DATABASE_TYPE: ${DATABASE_TYPE:-SQLite}
-   REDIS_HOST: redis-stage-docsplus
+   REDIS_HOST: redis
   ports:
    - '${EXPOSE_APP_PORT:-8002}:${APP_PORT}'
-
-volumes:
- database-data:
