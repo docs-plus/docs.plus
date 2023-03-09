@@ -9,6 +9,7 @@ services:
  backend:
   env_file: .env
   image: prod.docs.plus
+  container_name: prod-back-docsplus
   restart: always
   build: .
   depends_on:
