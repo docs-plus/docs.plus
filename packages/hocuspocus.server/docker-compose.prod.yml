@@ -1,26 +1,23 @@
 version: "3.9"
 
 services:
- redis-prod-docsplus:
+ redis:
   image: redis:alpine
   container_name: prod-redis-docsplus
   restart: unless-stopped
 
- backend-prod-docsplus:
+ backend:
   env_file: .env
   image: prod.docs.plus
   container_name: prod-back-docsplus
   restart: always
   build: .
   depends_on:
-   - redis-prod-docsplus
+   - redis
   links:
-   - redis-prod-docsplus
+   - redis
   environment:
    DATABASE_TYPE: ${DATABASE_TYPE:-SQLite}
-   REDIS_HOST: redis-prod-docsplus
+   REDIS_HOST: redis
   ports:
    - '${EXPOSE_APP_PORT:-8003}:${APP_PORT}'
-
-volumes:
- database-data:
