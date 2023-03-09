@@ -1,12 +1,12 @@
 version: "3.9"
 
 services:
- redis-server:
+ redis-server-prod-docsplus:
   image: redis:alpine
   container_name: prod-redis-docsplus
   restart: unless-stopped
 
- backend:
+ backend-prod-docsplus:
   env_file: .env
   image: prod.docs.plus
   container_name: prod-back-docsplus
