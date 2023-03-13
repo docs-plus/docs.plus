@@ -96,7 +96,7 @@ const IntroPage = () => {
 
               <div className='flex flex-col  w-full'>
                 <div className='flex flex-row w-full font-mono text-sm align-middle'>
-                  <p className='px-2 py-2 leading-6 rounded-l border border-r-0  rounded-r-none'>docs.plus/{profile?.doc_namespace ? profile?.doc_namespace : 'open'}/</p>
+                  <p className='px-2 py-2 leading-6 rounded-l border border-r-0  rounded-r-none'>{location.host}/{profile?.doc_namespace ? profile?.doc_namespace : 'open'}/</p>
                   <input ref={docNameRef} className='p-1 w-full rounded-l-none border font-mono' id="padName" type="text" onKeyDown={handleKeyDown} />
                 </div>
                 {error && <p className='text-red-700 text-sm mt-2'>*Only lowercase letters, numbers and dashes are allowed</p>}
