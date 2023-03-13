@@ -99,8 +99,8 @@ export default (slice, editor) => {
   // return Slice.empty
 
   const titleNode = $from.doc.nodeAt($from.start(1) - 1)
-  const titleStartPos = $from.start(1) - 1
-  const titleEndPos = titleStartPos + titleNode.content.size
+  let titleStartPos = $from.start(1) - 1
+  let titleEndPos = titleStartPos + titleNode.content.size
   const contentWrapper = getRangeBlocks(doc, start, titleEndPos)
 
   let prevHStartPos = 0
@@ -130,14 +130,16 @@ export default (slice, editor) => {
 
   tr.delete(to, titleEndPos)
 
-  // first append the paragraphs in the current selection
-  tr.replaceWith(tr.mapping.map(from), tr.mapping.map(from), paragraphs)
+  if (paragraphs.length !== 0) {
+    // first append the paragraphs in the current selection
+    tr.replaceWith(tr.mapping.map(from), tr.mapping.map(from), paragraphs)
 
-  const newSelection = new TextSelection(tr.doc.resolve(selection.from))
+    const newSelection = new TextSelection(tr.doc.resolve(selection.from))
 
-  tr.setSelection(newSelection)
+    tr.setSelection(newSelection)
+  }
 
-  let lastBlockPos = tr.mapping.map(start)
+  let lastBlockPos = paragraphs.length === 0 ? start : tr.mapping.map(start)
 
   const headingContent = contentWrapper.filter(x => x.type === 'heading')
 
@@ -148,29 +150,41 @@ export default (slice, editor) => {
   let mapHPost = {}
   // return Slice.empty
 
+  const lastH1Inserted = {
+    startBlockPos: 0,
+    endBlockPos: 0,
+  }
+
   // paste the headings
   for (const heading of headings) {
-    const commingLevel = heading.content.firstChild.attrs.level
+    const comingLevel = heading.content.firstChild.attrs.level
 
-    const startBlock = tr.mapping.map(start)
-    const endBlock = tr.mapping.map(titleEndPos)
+    const startBlock = lastH1Inserted.startBlockPos === 0 ? tr.mapping.map(start) : lastH1Inserted.startBlockPos
+    const endBlock = lastH1Inserted.endBlockPos === 0 ? tr.mapping.map(titleEndPos) : tr.doc.nodeAt(lastH1Inserted.startBlockPos).content.size + lastH1Inserted.startBlockPos
+
+    if (lastH1Inserted.startBlockPos !== 0) {
+      lastH1Inserted.startBlockPos = 0
+      lastH1Inserted.endBlockPos = 0
+    }
 
     mapHPost = getHeadingsBlocksMap(tr.doc, startBlock, endBlock)
 
     mapHPost = mapHPost.filter(x =>
-      x.startBlockPos >= prevHStartPos
+      x.startBlockPos >= (comingLevel === 1 ? titleStartPos : prevHStartPos)
     )
 
-    const prevBlockEqual = mapHPost.findLast(x => x.le === commingLevel)
-    const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= commingLevel)
-    const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= commingLevel)
+    const prevBlockEqual = mapHPost.findLast(x => x.le === comingLevel)
+    const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= comingLevel)
+    const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= comingLevel)
 
     const lastBlock = mapHPost.at(-1)
     let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
 
-    if (lastBlock.le <= commingLevel) prevBlock = lastBlock
+    if (!prevBlock) prevBlock = lastBlock
 
-    shouldNested = prevBlock.le < commingLevel
+    if (lastBlock.le <= comingLevel) prevBlock = lastBlock
+
+    shouldNested = prevBlock.le < comingLevel
 
     // find prevBlock.le in mapHPost
     const robob = mapHPost.filter(x => prevBlock.le === x.le)
@@ -186,6 +200,11 @@ export default (slice, editor) => {
     }
 
     tr.insert(lastBlockPos - (shouldNested ? 2 : 0), heading)
+
+    if (comingLevel === 1) {
+      lastH1Inserted.startBlockPos = lastBlockPos
+      lastH1Inserted.endBlockPos = tr.mapping.map(lastBlockPos + heading.content.size)
+    }
   }
   tr.setMeta('paste', true)
   view.dispatch(tr)
