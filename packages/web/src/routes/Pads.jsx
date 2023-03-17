@@ -15,7 +15,7 @@ import editorConfig from '../components/TipTap/TipTap'
 import Toolbar from '../components/TipTap/Toolbar'
 import TableOfContents from '../components/TipTap/TableOfContents'
 import PadTitle from '../components/PadTitle'
-import { useAuth } from '../contexts/Auth'
+// import { useAuth } from '../contexts/Auth'
 
 const useCustomeHook = (padName) => {
   const { isLoading, error, data, isSuccess } = useQuery({
