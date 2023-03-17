@@ -1,7 +1,8 @@
-
 import { Node, mergeAttributes, findParentNode, defaultBlockAt } from '@tiptap/core'
 import { Selection, Plugin, TextSelection, PluginKey } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
+
+import { getNodeState } from './helper'
 
 function extractContentWrapperBlocks (doc) {
   const result = []
@@ -80,11 +81,7 @@ function expandElement (elem, collapseClass, headingId, open) {
   contentWrapper.classList.remove('opening')
   elem.classList.add('overflow-hidden')
 
-  if (open) {
-    contentWrapper.classList.add('closing')
-  } else {
-    contentWrapper.classList.add('opening')
-  }
+  contentWrapper.classList.add(open ? 'opening' : 'closing')
 
   // Remove the collapse class, and force a layout calculation to get the final height
   elem.classList.toggle(collapseClass)
@@ -105,15 +102,15 @@ function expandElement (elem, collapseClass, headingId, open) {
   function callback () {
     elem.style.height = ''
     if (open) {
-      elem.classList.add('overflow-hidden')
-      contentWrapper.classList.add('closed')
-      contentWrapper.classList.remove('opend')
-      contentWrapper.classList.remove('closing')
-    } else {
       contentWrapper.classList.remove('closed')
-      contentWrapper.classList.remove('opening')
+      contentWrapper.classList.remove('closing')
       contentWrapper.classList.add('opend')
       elem.classList.remove('overflow-hidden')
+    } else {
+      contentWrapper.classList.remove('opening')
+      contentWrapper.classList.remove('opend')
+      contentWrapper.classList.add('closed')
+      elem.classList.add('overflow-hidden')
     }
 
     elem.removeEventListener('transitionend', callback)
@@ -134,7 +131,7 @@ const HeadingsContent = Node.create({
   addOptions () {
     return {
       persist: true,
-      open: true,
+      id: null,
       HTMLAttributes: {}
     }
   },
@@ -146,23 +143,11 @@ const HeadingsContent = Node.create({
     ]
   },
   addAttributes () {
-    if (!this.options.persist) {
-      return []
-    }
-
     return {
-      open: {
-        default: this.options.open,
-        parseHTML: element => element.hasAttribute('open'),
-        renderHTML: ({ open }) => {
-          if (!open) {
-            return {}
-          }
-
-          return { open: '' }
-        }
+      id: {
+        default: null,
+        rendered: false
       }
-
     }
   },
   renderHTML ({ HTMLAttributes }) {
@@ -176,20 +161,34 @@ const HeadingsContent = Node.create({
     return ({ editor, getPos, node, HTMLAttributes }) => {
       const dom = document.createElement('div')
 
+      // get parent node
+      const upperNode = editor.state.doc.nodeAt(getPos() - 2)
+      const parentNode = editor.state.doc.nodeAt(getPos() - upperNode.nodeSize - 2)
+      let headingId = parentNode?.attrs.id
+
+      // if wrapper belong to first heading
+      if ((getPos() - upperNode.nodeSize - 2) === 1) {
+        headingId = '1'
+      }
+
+      const nodeState = getNodeState(headingId)
+
       dom.setAttribute('class', 'contentWrapper')
+
       const attrs = {
         'data-type': this.name
       }
+      const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, attrs)
 
-      if (!node.attrs.open) {
+      if (!nodeState.crinkleOpen) {
+        dom.classList.add('overflow-hidden')
         dom.classList.add('collapsed')
         dom.classList.add('closed')
-        dom.classList.add('overflow-hidden')
       } else {
+        dom.classList.remove('overflow-hidden')
         dom.classList.remove('collapsed')
         dom.classList.remove('closed')
         dom.classList.add('opend')
-        dom.classList.remove('overflow-hidden')
       }
 
       const content = document.createElement('div')
@@ -197,17 +196,14 @@ const HeadingsContent = Node.create({
       content.classList.add('contents')
       dom.append(content)
 
-      const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, attrs)
-
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value))
       dom.addEventListener('toggleHeadingsContent', ({ detail }) => {
-        // console.log("toggleHeadingsContent", detail)
         const section = detail.el
+        const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
+        const nodeState = headingMap.find(h => h.headingId === detail.headingId) || { crinkleOpen: true }
 
         editor.commands.focus()
 
-        // dom.toggleAttribute('hidden');
-        if (!this.options.persist) return
         if (editor.isEditable && typeof getPos === 'function') {
           const { tr } = editor.state
 
@@ -218,17 +214,11 @@ const HeadingsContent = Node.create({
             return false
           }
 
-          if (node.attrs.open) {
+          if (nodeState.crinkleOpen) {
             section.classList.add('overflow-hidden')
           }
 
-          tr.setNodeMarkup(pos, undefined, {
-            open: !currentNode.attrs.open
-          }).setMeta('addToHistory', false)
-
-          expandElement(section, 'collapsed', detail.headingId, currentNode.attrs.open)
-
-          editor.view.dispatch(tr)
+          expandElement(section, 'collapsed', detail.headingId, !nodeState.crinkleOpen)
         }
       })
 

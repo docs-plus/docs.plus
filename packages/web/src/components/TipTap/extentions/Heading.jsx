@@ -2,11 +2,13 @@ import { Node, mergeAttributes, findChildren, isActive } from '@tiptap/core'
 import { Slice, Fragment } from 'prosemirror-model'
 import { Selection, Plugin, PluginKey, TextSelection } from 'prosemirror-state'
 
+import PadTitle from '../../PadTitle'
+
 import changeHeadingLevel from './changeHeadingLevel'
 import wrapContenWithHeading from './wrapContenWithHeading'
 import clipboardPast from './clipboardPast'
 import changeHeading2paragraphs from './changeHeading2paragraphs'
-import { getSelectionBlocks } from './helper'
+import { getSelectionBlocks, getNodeState } from './helper'
 
 const isNodeVisible = (position, editor) => {
   const node = editor.view.domAtPos(position).node
@@ -44,7 +46,6 @@ const Blockquote = Node.create({
       levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       persist: false,
       openClassName: 'opend',
-      open: true,
       id: 1,
       HTMLAttributes: {
         class: 'heading',
@@ -54,17 +55,6 @@ const Blockquote = Node.create({
   },
   addAttributes () {
     return {
-      open: {
-        default: true,
-        parseHTML: element => element.hasAttribute('open'),
-        renderHTML: ({ open }) => {
-          if (!open) {
-            return {}
-          }
-
-          return { open: '' }
-        }
-      },
       level: {
         default: 1,
         rendered: false
@@ -77,29 +67,22 @@ const Blockquote = Node.create({
       const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         'data-type': this.name,
         level: node.firstChild?.attrs.level,
-        'data-id': HTMLAttributes['data-id'] || this.options.id,
-        open: node.firstChild?.attrs.open
+        'data-id': HTMLAttributes['data-id'] || this.options.id
       })
+
+      const headingId = !node.attrs.id ? '1' : HTMLAttributes['data-id']
+
+      const nodeState = getNodeState(headingId)
 
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value))
 
-      let headingId = HTMLAttributes['data-id']
-
-      if (!node.attrs.id) headingId = 1
-
-      if (node.attrs.open) {
-        dom.classList.add('opend')
-      } else {
-        dom.classList.add('closed')
-      }
+      dom.classList.add(nodeState.crinkleOpen ? 'opend' : 'closed')
 
       const content = document.createElement('div')
 
       content.classList.add('wrapBlock')
       content.setAttribute('data-id', headingId)
       dom.append(content)
-
-      let initiation = false
 
       return {
         dom,
@@ -111,12 +94,6 @@ const Blockquote = Node.create({
         },
         update: updatedNode => {
           if (updatedNode.type.name !== this.name) return false
-          // trick
-          if (updatedNode.attrs.level === 1 && !initiation && updatedNode.firstChild.attrs.open === false) {
-            dom.classList.add('closed')
-            dom.classList.remove('opend')
-            initiation = true
-          }
 
           return true
         }
@@ -180,7 +157,10 @@ const Blockquote = Node.create({
 
         // INFO: if the content is hide, do not anything
         // ! this open in the Heading block is wrong and Have to change, It's opposite
-        if (!parent.attrs.open) return true
+        const headingId = parent.attrs.id
+        const nodeState = getNodeState(headingId)
+
+        if (!nodeState.crinkleOpen) return true
 
         console.log('yes new', {
           $head,
