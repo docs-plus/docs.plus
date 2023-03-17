@@ -82,28 +82,30 @@ const Toolbar = ({ editor }) => {
   const [selectValue, setSelectValue] = useState(options[0])
 
   useEffect(() => {
-    if (editor.isActive('heading', { level: 1 })) setSelectValue(options[1])
-    else if (editor.isActive('heading', { level: 2 })) setSelectValue(options[2])
-    else if (editor.isActive('heading', { level: 3 })) setSelectValue(options[3])
-    else if (editor.isActive('heading', { level: 4 })) setSelectValue(options[4])
-    else if (editor.isActive('heading', { level: 5 })) setSelectValue(options[5])
-    else if (editor.isActive('heading', { level: 6 })) setSelectValue(options[6])
-    else if (editor.isActive('heading', { level: 7 })) setSelectValue(options[7])
-    else if (editor.isActive('heading', { level: 8 })) setSelectValue(options[8])
-    else if (editor.isActive('heading', { level: 9 })) setSelectValue(options[9])
-    else if (editor.isActive('heading', { level: 10 })) setSelectValue(options[10])
+    if (editor.isActive('contentHeading', { level: 1 })) setSelectValue(options[1])
+    else if (editor.isActive('contentHeading', { level: 2 })) setSelectValue(options[2])
+    else if (editor.isActive('contentHeading', { level: 3 })) setSelectValue(options[3])
+    else if (editor.isActive('contentHeading', { level: 4 })) setSelectValue(options[4])
+    else if (editor.isActive('contentHeading', { level: 5 })) setSelectValue(options[5])
+    else if (editor.isActive('contentHeading', { level: 6 })) setSelectValue(options[6])
+    else if (editor.isActive('contentHeading', { level: 7 })) setSelectValue(options[7])
+    else if (editor.isActive('contentHeading', { level: 8 })) setSelectValue(options[8])
+    else if (editor.isActive('contentHeading', { level: 9 })) setSelectValue(options[9])
+    else if (editor.isActive('contentHeading', { level: 10 })) setSelectValue(options[10])
     else setSelectValue(options[0])
+
+    console.log(editor.isActive('contentHeading', { level: 1 }))
   }, [
-    editor.isActive('heading', { level: 1 }),
-    editor.isActive('heading', { level: 2 }),
-    editor.isActive('heading', { level: 3 }),
-    editor.isActive('heading', { level: 4 }),
-    editor.isActive('heading', { level: 5 }),
-    editor.isActive('heading', { level: 6 }),
-    editor.isActive('heading', { level: 7 }),
-    editor.isActive('heading', { level: 8 }),
-    editor.isActive('heading', { level: 9 }),
-    editor.isActive('heading', { level: 10 }),
+    editor.isActive('contentHeading', { level: 1 }),
+    editor.isActive('contentHeading', { level: 2 }),
+    editor.isActive('contentHeading', { level: 3 }),
+    editor.isActive('contentHeading', { level: 4 }),
+    editor.isActive('contentHeading', { level: 5 }),
+    editor.isActive('contentHeading', { level: 6 }),
+    editor.isActive('contentHeading', { level: 7 }),
+    editor.isActive('contentHeading', { level: 8 }),
+    editor.isActive('contentHeading', { level: 9 }),
+    editor.isActive('contentHeading', { level: 10 }),
     editor.isActive('paragraph')
   ])
 
