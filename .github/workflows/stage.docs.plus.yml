@@ -33,13 +33,16 @@ jobs:
    - name: Install dependencies
      run: yarn
 
+   - name: copy .env
+     run: yes | \cp -r ../../../.env packages/web && yes | \cp -r ../../../.env packages/hocuspocus.server
+
    - name: Build Front-end
      if: contains(github.event.head_commit.message, 'front')
      run: make build_front
 
    - name: Build Back-end
      if: contains(github.event.head_commit.message, 'back')
-     run: yes | \cp -r ../../../.env packages/hocuspocus.server && make down_stage && make build_hocuspocus.server_stage
+     run: make down_stage && make build_hocuspocus.server_stage
 
   env:
    DATABASE_URL: ${{secrets.STAGE_DATABASE_URL}}

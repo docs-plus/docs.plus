@@ -24,7 +24,7 @@ fastRun:
 	docker-compose -f docker-compose.prod.yml up
 
 build_front:
-		yes | \cp -r ../../../.env packages/web && make build_front
+		cd packages/web && rm -rf dist && npm run build
 
 build_hocuspocus.server_stage:
 		cd packages/hocuspocus.server && docker-compose -p stage-docsplus -f docker-compose.stage.yml up -d
