@@ -6,7 +6,7 @@ import GitHubButton from 'react-github-btn'
 import slugify from 'slugify'
 
 import { DocsPlus } from '../components/icons/Icons'
-import { useAuth, AuthContext } from '../contexts/Auth'
+// import { useAuth, AuthContext } from '../contexts/Auth'
 import Button from '../components/Button'
 
 const IntroPage = () => {
@@ -15,7 +15,9 @@ const IntroPage = () => {
   const [loadingDoc, setLoadingDoc] = useState(false)
   const [error, setError] = useState(null)
 
-  const { signInWithOtp, signIn, signOut, user, profile } = useAuth()
+  // const { signInWithOtp, signIn, signOut, user, profile } = useAuth()
+  const user = null
+  const profile = null
 
   window.document.title = 'Docs Plus'
 
