@@ -5,6 +5,8 @@ import {
   DocsPlus
 } from './icons/Icons'
 
+import OnlineIndicator from './OnlineIndicator'
+
 const PadTitle = ({ docTitle, docId, provider }) => {
   const queryClient = useQueryClient()
 
@@ -61,6 +63,7 @@ const PadTitle = ({ docTitle, docId, provider }) => {
          >
         </div>}
       </div>
+        <OnlineIndicator/>
     </div>
   )
 }
