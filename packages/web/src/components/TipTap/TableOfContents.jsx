@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 
-export default ({ editor, className }) => {
+const TableOfcontent = ({ editor, className }) => {
   const [items, setItems] = useState([])
 
   const handleUpdate = useCallback(() => {
@@ -8,19 +8,21 @@ export default ({ editor, className }) => {
 
     // TODO: check the object id performance
     // TODO: heading must be url frindly, so I have to map id with SLUGs
-    editor?.state?.doc?.descendants((node, pos, parent, index) => {
-      if (node.type.name === 'heading') {
+    editor?.state?.doc?.descendants((node, _pos, _parent, _index) => {
+      if (node.type.name === 'contentHeading') {
         // https://stackoverflow.com/questions/59829232/offsettop-return-0
         function getOffsetTop (element) {
           return element ? (element.offsetTop + getOffsetTop(element.offsetParent)) : 0
         }
 
+        const headingId = _parent.attrs?.id || node?.attrs.id || '1'
+
         headings.push({
-          level: node.firstChild?.attrs?.level,
-          text: node.firstChild?.textContent,
-          id: node.firstChild?.attrs.id,
-          open: node?.attrs.open,
-          offsetTop: getOffsetTop(document.querySelector(`.tipta__editor [data-id="${node.firstChild?.attrs.id}"]`))
+          level: node.attrs?.level,
+          text: node?.textContent,
+          id: headingId,
+          open: node?.attrs?.open,
+          offsetTop: getOffsetTop(document.querySelector(`.tipta__editor [data-id="${headingId}"]`))
         })
       }
     })
@@ -48,9 +50,12 @@ export default ({ editor, className }) => {
     e.preventDefault()
     // e closest li add class active
     // e.target.closest('.toc__item').classList.add('active')
-    const id = e.target.getAttribute('data-id')
+    let id = e.target.getAttribute('data-id')
+    const offsetParent = e.target.closest('.toc__item').getAttribute('data-offsettop')
 
-    document.querySelector(`.title[data-id="${id}"]`)?.scrollIntoView()
+    if (offsetParent === '0') id = '1'
+
+    document.querySelector(`.heading[data-id="${id}"]`)?.scrollIntoView()
   }
 
   return (
@@ -65,3 +70,5 @@ export default ({ editor, className }) => {
     </div>
   )
 }
+
+export default TableOfcontent
