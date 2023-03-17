@@ -45,6 +45,9 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
   buttonWrapper.append(btnChatBox)
 
   const toggleHeadingContent = (el) => {
+    console.log('coming heaidng', {
+      el
+    })
     const headingId = el.getAttribute('data-id')
     const detailsContent = el.querySelector('div.contentWrapper')
     const event = new CustomEvent('toggleHeadingsContent', { detail: { headingId, el: detailsContent } })
@@ -54,7 +57,8 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
 
   const foldAndUnfold = (e) => {
     const el = e.target
-    const headingId = el.closest('.heading').getAttribute('data-id')
+    const headingNodeEl = el.closest('.heading')
+    const headingId = headingNodeEl.getAttribute('data-id')
 
     editor.commands.focus(from + node.nodeSize - 1)
     if (editor.isEditable) {
@@ -92,7 +96,7 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
         })
 
       editor.view.dispatch(tr)
-      toggleHeadingContent(el.closest('.heading'))
+      toggleHeadingContent(headingNodeEl)
     }
   }
 
