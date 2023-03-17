@@ -67,11 +67,13 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
       const currentNode = tr.doc.nodeAt(pos)
       const headingNode = tr.doc.nodeAt(pos - 1)
 
-      tr.setNodeMarkup(pos, undefined, {
-        ...currentNode.attrs,
-        level: currentNode.attrs.level,
-        id: headingNode.attrs.id
-      })
+      if (currentNode) {
+        tr.setNodeMarkup(pos, undefined, {
+          ...currentNode.attrs,
+          level: currentNode.attrs.level,
+          id: headingNode.attrs.id
+        })
+      }
 
       if (headingNode) {
         tr.setNodeMarkup(pos - 1, undefined, {
