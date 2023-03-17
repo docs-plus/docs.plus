@@ -15,9 +15,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import './assets/global.scss'
 import ReloadPrompt from './components/ReloadPrompt'
-import { AuthProvider, useAuth } from './contexts/Auth'
+// import { AuthProvider, useAuth } from './contexts/Auth'
 
-import { supabase } from './supabase'
+// import { supabase } from './supabase'
 
 const Pads = lazy(() => import('./routes/Pads'))
 const ErrorPage = lazy(() => import('./routes/ErrorPage'))
@@ -32,22 +32,22 @@ const DashboardProfile = lazy(() => import('./routes/dashboard/Profile'))
 const DashboardHomePage = lazy(() => import('./routes/dashboard/Home'))
 const AskForUsernamePage = lazy(() => import('./routes/auth/AskForUsername'))
 
-const RequireAuth = ({ children, value, redirectPath = '/auth/login' }) => {
-  const { user, profile } = useAuth()
-  const navigate = useNavigate()
+// const RequireAuth = ({ children, value, redirectPath = '/auth/login' }) => {
+//   const { user, profile } = useAuth()
+//   const navigate = useNavigate()
 
-  useEffect(() => {
-    if (!profile?.doc_namespace || profile?.doc_namespace.length <= 0) {
-      navigate('/auth/username_needed')
-    } else if (!user) {
-      navigate(redirectPath)
-    } else if (user && user?.id && user?.email) {
-      // navigate("/")
-    }
-  }, [user])
+//   useEffect(() => {
+//     if (!profile?.doc_namespace || profile?.doc_namespace.length <= 0) {
+//       navigate('/auth/username_needed')
+//     } else if (!user) {
+//       navigate(redirectPath)
+//     } else if (user && user?.id && user?.email) {
+//       // navigate("/")
+//     }
+//   }, [user])
 
-  return children || <Outlet />
-}
+//   return children || <Outlet />
+// }
 
 // https://blog.netcetera.com/how-to-create-guarded-routes-for-your-react-app-d2fe7c7b6122
 
@@ -57,53 +57,53 @@ const router = createBrowserRouter([
     element: < IntroPage />,
     errorElement: <ErrorPage />
   },
-  {
-    path: '/auth',
-    element: < AuthPage />,
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        path: 'signup',
-        element: < SignupPage />,
-        errorElement: <ErrorPage />
-      },
-      {
-        path: 'login',
-        element: < LoginPage />,
-        errorElement: <ErrorPage />
-      },
-      {
-        path: 'checkemail',
-        element: < CheckYourEmailPage />,
-        errorElement: <ErrorPage />
-      },
-      {
-        path: 'username_needed',
-        element: < AskForUsernamePage />,
-        errorElement: <ErrorPage />
-      }
-    ]
-  },
-  {
-    path: '/dashboard',
-    element:
-      <RequireAuth>
-        < DashboardPage />
-      </RequireAuth>,
-    errorElement: <ErrorPage />,
-    children: [
-      {
-        path: 'profile',
-        element: < DashboardProfile />,
-        errorElement: <ErrorPage />
-      },
-      {
-        path: '',
-        element: < DashboardHomePage />,
-        errorElement: <ErrorPage />
-      }
-    ]
-  },
+  // {
+  //   path: '/auth',
+  //   element: < AuthPage />,
+  //   errorElement: <ErrorPage />,
+  //   children: [
+  //     {
+  //       path: 'signup',
+  //       element: < SignupPage />,
+  //       errorElement: <ErrorPage />
+  //     },
+  //     {
+  //       path: 'login',
+  //       element: < LoginPage />,
+  //       errorElement: <ErrorPage />
+  //     },
+  //     {
+  //       path: 'checkemail',
+  //       element: < CheckYourEmailPage />,
+  //       errorElement: <ErrorPage />
+  //     },
+  //     {
+  //       path: 'username_needed',
+  //       element: < AskForUsernamePage />,
+  //       errorElement: <ErrorPage />
+  //     }
+  //   ]
+  // },
+  // {
+  //   path: '/dashboard',
+  //   element:
+  //   // <RequireAuth>
+  //       < DashboardPage />, // </RequireAuth>,,
+
+  //   errorElement: <ErrorPage />,
+  //   children: [
+  //     {
+  //       path: 'profile',
+  //       element: < DashboardProfile />,
+  //       errorElement: <ErrorPage />
+  //     },
+  //     {
+  //       path: '',
+  //       element: < DashboardHomePage />,
+  //       errorElement: <ErrorPage />
+  //     }
+  //   ]
+  // },
   {
     path: '/open/:padName',
     element: <Pads />,
@@ -131,11 +131,11 @@ const queryClient = new QueryClient()
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <Suspense fallback="loading...">
-      <AuthProvider>
+      {/* <AuthProvider> */}
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />
         </QueryClientProvider>
-      </AuthProvider>
+      {/* </AuthProvider> */}
     </Suspense>
     <ReloadPrompt />
   </React.StrictMode>

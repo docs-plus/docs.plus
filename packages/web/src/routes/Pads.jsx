@@ -30,7 +30,7 @@ const useCustomeHook = (padName) => {
 }
 
 export default function Root () {
-  const { signInWithOtp, signIn, signOut, user } = useAuth()
+  // const { signInWithOtp, signIn, signOut, user } = useAuth()
   const { padName } = useParams()
   const [loadedData, setLoadedData] = useState(false)
   const [newPadName, setNewPadName] = useState(null)
