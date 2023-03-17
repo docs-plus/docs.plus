@@ -9,6 +9,8 @@ import * as Y from 'yjs'
 
 import { useQuery } from '@tanstack/react-query'
 
+import { db } from '../db'
+
 import editorConfig from '../components/TipTap/TipTap'
 import Toolbar from '../components/TipTap/Toolbar'
 import TableOfContents from '../components/TipTap/TableOfContents'
@@ -48,6 +50,13 @@ export default function Root () {
 
       setDocumentTitle(data?.data.title)
       setNewPadName(`${isPrivate ? 'private' : 'public'}.${documentId}`)
+      localStorage.setItem('docId', documentId)
+      localStorage.setItem('padName', `${isPrivate ? 'private' : 'public'}.${documentId}`)
+      localStorage.setItem('slug', padName)
+      localStorage.setItem('title', data?.data.title)
+      db.documents.where({ docId: documentId }).toArray().then((data) => {
+        localStorage.setItem('headingMap', JSON.stringify(data))
+      })
     }
   }, [data])
 
@@ -132,7 +141,7 @@ export default function Root () {
         <div className='editor w-full h-full flex relative flex-row align-top '>
           {editor ? <TableOfContents className="tiptap__toc pl-2 pb-4 sm:py-4 sm:pb-14  max-w-xs w-3/12 hidden overflow-hidden scroll-smooth hover:overflow-auto hover:overscroll-contain sm:block" editor={editor} /> : 'Loading...'}
           <div className='editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4' onScroll={scrollHeadingSelection}>
-            {editor ? <EditorContent className="tipta__editor mb-12 sm:mb-0 sm:p-8  " editor={editor} /> : 'Loading...'}
+            {editor ? <EditorContent className="tipta__editor mb-12 sm:mb-0 sm:p-8  " documentid={newPadName} editor={editor} /> : 'Loading...'}
           </div>
         </div>
       </div>

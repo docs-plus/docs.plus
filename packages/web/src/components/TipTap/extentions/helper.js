@@ -211,3 +211,10 @@ export const copyToClipboard = (text, callback) => {
     if (callback) callback()
   })
 }
+
+export const getNodeState = (headingId) => {
+  const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
+  const nodeState = headingMap.find(h => h.headingId === headingId) || { crinkleOpen: true }
+
+  return nodeState
+}

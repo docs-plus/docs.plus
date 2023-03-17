@@ -2,13 +2,15 @@ import { Selection, Plugin, TextSelection, PluginKey } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
 import { Node, mergeAttributes } from '@tiptap/core'
 
+import { db } from '../../../db'
+
 import { copyToClipboard } from './helper'
 import onHeading from './normalText/onHeading'
 
 function extractContentHeadingBlocks (doc) {
   const result = []
-  const record = (from, to, open, headingId, node) => {
-    result.push({ from, to, open, headingId, node })
+  const record = (from, to, headingId, node) => {
+    result.push({ from, to, headingId, node })
   }
   let lastHeadingId
 
@@ -20,14 +22,14 @@ function extractContentHeadingBlocks (doc) {
     if (node.type.name === 'contentHeading') {
       const nodeSize = node.nodeSize
 
-      record(pos, pos + nodeSize, node.attrs.open, lastHeadingId, node)
+      record(pos, pos + nodeSize, lastHeadingId, node)
     }
   })
 
   return result
 }
 
-const buttonWrapper = (editor, { headingId, open, from, node }) => {
+const buttonWrapper = (editor, { headingId, from, node }) => {
   const buttonWrapper = document.createElement('div')
   const btnToggleHeading = document.createElement('button')
   const btnChatBox = document.createElement('button')
@@ -43,21 +45,16 @@ const buttonWrapper = (editor, { headingId, open, from, node }) => {
   buttonWrapper.append(btnChatBox)
 
   const toggleHeadingContent = (el) => {
-    let detailsContent = document.querySelector(`.heading[data-id="${headingId}"] div.contentWrapper`)
-
-    // FIXME: this is a temporary solution
-    if (!detailsContent) {
-      headingId = 1
-      detailsContent = document.querySelector(`.heading[data-id="${headingId}"] div.contentWrapper`)
-    }
-
-    const event = new CustomEvent('toggleHeadingsContent', { detail: { headingId, open, el: detailsContent } })
+    const headingId = el.getAttribute('data-id')
+    const detailsContent = el.querySelector('div.contentWrapper')
+    const event = new CustomEvent('toggleHeadingsContent', { detail: { headingId, el: detailsContent } })
 
     detailsContent === null || detailsContent === void 0 ? void 0 : detailsContent.dispatchEvent(event)
   }
 
   const foldAndUnfold = (e) => {
     const el = e.target
+    const headingId = el.closest('.heading').getAttribute('data-id')
 
     editor.commands.focus(from + node.nodeSize - 1)
     if (editor.isEditable) {
@@ -68,21 +65,34 @@ const buttonWrapper = (editor, { headingId, open, from, node }) => {
 
       tr.setNodeMarkup(pos, undefined, {
         ...currentNode.attrs,
-        open: !currentNode.attrs.open,
-        level: currentNode.attrs.level
+        level: currentNode.attrs.level,
+        id: headingNode.attrs.id
       })
+
       if (headingNode) {
         tr.setNodeMarkup(pos - 1, undefined, {
           ...headingNode.attrs,
-          open: !currentNode.attrs.open,
-          level: currentNode.attrs.level
+          level: currentNode.attrs.level,
+          id: headingNode.attrs.id
         })
       }
 
       tr.setMeta('addToHistory', false)
 
+      const documentId = localStorage.getItem('docId')
+      const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
+      const nodeState = headingMap.find(h => h.headingId === headingId) || { crinkleOpen: true }
+
+      db.documents
+        .put({ docId: documentId, headingId, crinkleOpen: !nodeState.crinkleOpen, level: currentNode.attrs.level })
+        .then((data, ddd) => {
+          db.documents.where({ docId: documentId }).toArray().then((data) => {
+            localStorage.setItem('headingMap', JSON.stringify(data))
+          })
+        })
+
       editor.view.dispatch(tr)
-      toggleHeadingContent(el)
+      toggleHeadingContent(el.closest('.heading'))
     }
   }
 
@@ -138,20 +148,21 @@ const HeadingsTitle = Node.create({
   allowGapCursor: false,
   addOptions () {
     return {
-      open: true,
       HTMLAttributes: {
         class: 'title'
       },
-      levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+      levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+      id: null
     }
   },
   addAttributes () {
     return {
-      open: {
-        default: true
-      },
       level: {
         default: 1,
+        rendered: false
+      },
+      id: {
+        default: null,
         rendered: false
       }
     }
@@ -188,8 +199,8 @@ const HeadingsTitle = Node.create({
         if (
           (node !== null || $anchor.parentOffset !== 0) || // this node block contains content
           parent.type.name !== schema.nodes.contentHeading.name ||
-          $anchor.pos === 2 || // if the caret is in the first heading
-          parent.attrs.open === false // if the heading is closed
+          $anchor.pos === 2 // || // if the caret is in the first heading
+          // parent.attrs.open === false // if the heading is closed
         ) return false
 
         console.info('[Heading]: remove the heading node')
