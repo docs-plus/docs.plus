@@ -26,36 +26,36 @@ export function AuthProvider ({ children }) {
   const [loading, setLoading] = useState(false)
 
   // Get the user session when in production
-  if (import.meta.env.PROD) {
-    // usememo hook to get GetUser
-    const getUser = useCallback(() => {
-      (async () => {
-        const { data, error } = await supabase.auth.getUser()
-        const { data: profile, error: profileError } = await supabase
-          .from('users')
-          .select()
-          .eq('id', data?.user?.id)
-          .single()
+  // if (import.meta.env.PROD) {
+  //   // usememo hook to get GetUser
+  //   const getUser = useCallback(() => {
+  //     (async () => {
+  //       const { data, error } = await supabase.auth.getUser()
+  //       const { data: profile, error: profileError } = await supabase
+  //         .from('users')
+  //         .select()
+  //         .eq('id', data?.user?.id)
+  //         .single()
 
-        setProfile(profile)
-        setUser(data?.user ?? null)
-        setLoading(false)
-      })()
-    }, [])
+  //       setProfile(profile)
+  //       setUser(data?.user ?? null)
+  //       setLoading(false)
+  //     })()
+  //   }, [])
 
-    useEffect(() => {
-      getUser()
-      // Listen for changes on auth state (logged in, signed out, etc.)
-      const listener = supabase.auth.onAuthStateChange(async (event, session) => {
-        setUser(session?.user ?? null)
-        setLoading(false)
-      })
+  //   useEffect(() => {
+  //     getUser()
+  //     // Listen for changes on auth state (logged in, signed out, etc.)
+  //     const listener = supabase.auth.onAuthStateChange(async (event, session) => {
+  //       setUser(session?.user ?? null)
+  //       setLoading(false)
+  //     })
 
-      return () => {
-        listener?.subscription?.unsubscribe()
-      }
-    }, [])
-  }
+  //     return () => {
+  //       listener?.subscription?.unsubscribe()
+  //     }
+  //   }, [])
+  // }
 
   // Will be passed down to Signup, Login and Dashboard components
   const value = {
