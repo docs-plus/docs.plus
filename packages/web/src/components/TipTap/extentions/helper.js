@@ -218,3 +218,22 @@ export const getNodeState = (headingId) => {
 
   return nodeState
 }
+
+export const getPrevHeadingPos = (doc, startPos, endPos) => {
+  let prevHStartPos = 0
+  let prevHEndPos = 0
+
+  doc.nodesBetween(startPos, endPos, function (node, pos, parent, index) {
+    if (node.type.name === 'heading') {
+      const depth = doc.resolve(pos).depth
+
+      // INFO: this the trick I've looking for
+      if (depth === 2) {
+        prevHStartPos = pos
+        prevHEndPos = pos + node.content.size
+      }
+    }
+  })
+
+  return { prevHStartPos, prevHEndPos }
+}
