@@ -93,8 +93,6 @@ const Toolbar = ({ editor }) => {
     else if (editor.isActive('contentHeading', { level: 9 })) setSelectValue(options[9])
     else if (editor.isActive('contentHeading', { level: 10 })) setSelectValue(options[10])
     else setSelectValue(options[0])
-
-    console.log(editor.isActive('contentHeading', { level: 1 }))
   }, [
     editor.isActive('contentHeading', { level: 1 }),
     editor.isActive('contentHeading', { level: 2 }),
