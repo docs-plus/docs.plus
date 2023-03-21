@@ -38,6 +38,7 @@ export default function Root () {
   const [provider, setProvider] = useState(null)
   const [socket, setSocket] = useState(null)
   const [documentTitle, setDocumentTitle] = useState(padName)
+  const [loading, setLoading] = useState(true)
 
   const { isLoading, error, data, isSuccess } = useCustomeHook(padName)
 
@@ -71,17 +72,22 @@ export default function Root () {
         url: `${import.meta.env.VITE_HOCUSPOCUS_PROVIDER_URL}/public`,
         name: newPadName,
         document: ydoc,
-
         onStatus: (data) => {
-        // console.log("onStatus", data)
+          // console.log('onStatus', data)
         },
         onSynced: (data) => {
-        // console.log("onSynced", data)
-        // console.log(`content loaded from Server, pad name: ${ newPadName }`, provider.isSynced)
-        // if (data?.state) setLoadedData(true)
+          console.log('onSynced', data)
+          // console.log(`content loaded from Server, pad name: ${ newPadName }`, provider.isSynced)
+          if (data?.state) setLoading(false)
+        },
+        documentUpdateHandler: (update) => {
+          console.log('documentUpdateHandler', update)
         },
         onDisconnect: (data) => {
         // console.log("onDisconnect", data)
+        },
+        onMessage: (data) => {
+          // console.log('onMessage', data)
         }
       })
 
@@ -99,6 +105,22 @@ export default function Root () {
   }, [newPadName])
 
   const editor = useEditor(editorConfig({ padName: newPadName, provider, ydoc }), [provider])
+
+  useEffect(() => {
+    if (!loading && editor?.isEmpty) {
+      console.log('editor is empty', editor?.isEmpty)
+
+      editor?.chain().focus().insertContentAt(2, '' +
+         '<h1>&shy;</h1>' +
+         '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
+         '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
+         '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
+         '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>',
+      {
+        updateSelection: false
+      }).setTextSelection(0).run()
+    }
+  }, [loading, editor])
 
   const scrollHeadingSelection = (event) => {
     const scrollTop = event.currentTarget.scrollTop
@@ -136,12 +158,12 @@ export default function Root () {
           {documentTitle && <PadTitle docId={newPadName} docTitle={documentTitle} provider={provider} />}
         </div>
         <div className='toolbars w-full bg-white h-auto z-10  sm:block fixed bottom-0 sm:relative'>
-          {editor ? <Toolbar editor={editor} /> : 'Loading...'}
+          { editor ? <Toolbar editor={editor} /> : 'Loading...'}
         </div>
         <div className='editor w-full h-full flex relative flex-row align-top '>
-          {editor ? <TableOfContents className="tiptap__toc pl-2 pb-4 sm:py-4 sm:pb-14  max-w-xs w-3/12 hidden overflow-hidden scroll-smooth hover:overflow-auto hover:overscroll-contain sm:block" editor={editor} /> : 'Loading...'}
+          {loading ? 'loading...' : editor ? <TableOfContents className="tiptap__toc pl-2 pb-4 sm:py-4 sm:pb-14  max-w-xs w-3/12 hidden overflow-hidden scroll-smooth hover:overflow-auto hover:overscroll-contain sm:block" editor={editor} /> : 'Loading...'}
           <div className='editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4' onScroll={scrollHeadingSelection}>
-            {editor ? <EditorContent className="tipta__editor mb-12 sm:mb-0 sm:p-8  " documentid={newPadName} editor={editor} /> : 'Loading...'}
+            {loading ? 'loading...' : editor ? <EditorContent className="tipta__editor mb-12 sm:mb-0 sm:p-8  " documentid={newPadName} editor={editor} /> : 'Loading...'}
           </div>
         </div>
       </div>
