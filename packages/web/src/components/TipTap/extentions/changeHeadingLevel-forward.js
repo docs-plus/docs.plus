@@ -1,6 +1,6 @@
 import { TextSelection } from 'prosemirror-state'
 
-import { getRangeBlocks, getHeadingsBlocksMap, createThisBlockMap, getPrevHeadingList } from './helper'
+import { getRangeBlocks, getHeadingsBlocksMap, createThisBlockMap, getPrevHeadingList, getPrevHeadingPos } from './helper'
 
 export default (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
@@ -23,20 +23,7 @@ export default (arrg, attributes) => {
   const contentWrapperParagraphs = contentWrapper.filter(x => x.type !== 'heading')
   const contentWrapperHeadings = contentWrapper.filter(x => x.type === 'heading')
 
-  let prevHStartPos = 0
-  let prevHEndPos = 0
-
-  doc.nodesBetween(titleStartPos, start - 1, function (node, pos, parent, index) {
-    if (node.type.name === 'heading') {
-      const depth = doc.resolve(pos).depth
-
-      // INFO: this the trick I've looking for
-      if (depth === 2) {
-        prevHStartPos = pos
-        prevHEndPos = pos + node.content.size
-      }
-    }
-  })
+  const { prevHStartPos, prevHEndPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
 
   let mapHPost = titleHMap.filter(x =>
     x.startBlockPos < start - 1 &&
