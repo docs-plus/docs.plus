@@ -1,6 +1,6 @@
 import { TextSelection } from 'prosemirror-state'
 
-import { getPrevHeadingList, createThisBlockMap, getHeadingsBlocksMap, getRangeBlocks } from './helper'
+import { getPrevHeadingList, createThisBlockMap, getHeadingsBlocksMap, getRangeBlocks, getPrevHeadingPos } from './helper'
 
 export default (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
@@ -37,20 +37,8 @@ export default (arrg, attributes) => {
   const contentWrapperParagraphs = contentWrapper.filter(x => x.type !== 'heading')
   const contentWrapperHeadings = contentWrapper.filter(x => x.type === 'heading')
 
-  let prevHStartPos = 0
-  let prevHEndPos = 0
+  const { prevHStartPos, prevHEndPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
 
-  doc.nodesBetween(titleStartPos, start - 1, function (node, pos, parent, index) {
-    if (node.type.name === 'heading') {
-      const depth = doc.resolve(pos).depth
-
-      // INFO: this the trick I've looking for
-      if (depth === 2) {
-        prevHStartPos = pos
-        prevHEndPos = pos + node.content.size
-      }
-    }
-  })
 
   let mapHPost = titleHMap.filter(x =>
     x.startBlockPos < start - 1 &&
@@ -105,8 +93,8 @@ export default (arrg, attributes) => {
   for (const heading of contentWrapperHeadings) {
     mapHPost = getPrevHeadingList(
       tr,
-      mapHPost[0].startBlockPos,
-      mapHPost[0].startBlockPos + doc.nodeAt(mapHPost[0].startBlockPos).nodeSize + 2
+      mapHPost.at(0).startBlockPos,
+      mapHPost.at(0).startBlockPos + doc.nodeAt(mapHPost.at(0).startBlockPos).nodeSize + 2
     )
 
     mapHPost = mapHPost.filter(x =>
