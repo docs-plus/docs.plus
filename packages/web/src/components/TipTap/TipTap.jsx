@@ -216,7 +216,61 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
 
             return level - 1 === 0 ? 'Title' : `Heading ${level - 1}`
           } else if (nodeType === 'paragraph') {
-            return 'Write something …'
+            const msg = [
+              'Type your thoughts here ...',
+              'Start your writing here ...',
+              "What's on your mind? ...",
+              'Let your words flow ...',
+              'Unleash your creativity ...',
+              'Your text here ...',
+              'Express yourself ...',
+              'Write your ideas down ...',
+              'Share your thoughts ...',
+              'Start typing ...',
+              'Begin typing here ...',
+              'Jot down your ideas here ...',
+              'Let your imagination run wild ...',
+              'Capture your thoughts ...',
+              'Brainstorm your next masterpiece ...',
+              'Put your ideas into words ...',
+              'Express your creativity ...',
+              'Create something amazing ...',
+              'Write down your musings ...',
+              'Craft your unique story ...',
+              'Unleash your inner writer ...',
+              'Share your innovative ideas ...',
+              'Pen your next big idea ...',
+              'Write from the heart ...',
+              'Manifest your creativity here ...',
+              'Share your brilliant insights ...',
+              'Craft your vision ...',
+              'Distill your thoughts into words ...',
+              'Let your inspiration flow ...',
+              'Pen your creative masterpiece ...',
+              'Draft your imaginative ideas here ...',
+              'Bring your imagination to life ...',
+              'Write your way to clarity ...',
+              'Craft your next big breakthrough ...',
+              'Let your ideas take shape ...',
+              'Create your own narrative ...',
+              'Put your originality on paper ...',
+              'Express your unique perspective ...',
+              'Inscribe your original thoughts ...',
+              'Unfold your creative potential ...',
+              'Give voice to your ideas ...',
+              'Paint a picture with your words ...',
+              'Sculpt your ideas into sentences ...',
+              'Design your masterpiece with words ...',
+              'Shape your vision with language ...',
+              'Craft your story with care ...',
+              'Compose your narrative with passion ...',
+              'Build your message from scratch ...',
+              'Develop your concepts with clarity ...',
+              'Forge your ideas into a cohesive whole ...',
+              'Carve out your ideas with precision ...'
+            ]
+
+            return msg[Math.floor(Math.random() * msg.length + 1)]
           }
 
           return null
