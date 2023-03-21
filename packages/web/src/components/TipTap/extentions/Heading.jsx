@@ -2,37 +2,11 @@ import { Node, mergeAttributes, findChildren, isActive } from '@tiptap/core'
 import { Slice, Fragment } from 'prosemirror-model'
 import { Selection, Plugin, PluginKey, TextSelection } from 'prosemirror-state'
 
-import PadTitle from '../../PadTitle'
-
 import changeHeadingLevel from './changeHeadingLevel'
 import wrapContenWithHeading from './wrapContenWithHeading'
 import clipboardPast from './clipboardPast'
 import changeHeading2paragraphs from './changeHeading2paragraphs'
 import { getSelectionBlocks, getNodeState } from './helper'
-
-const isNodeVisible = (position, editor) => {
-  const node = editor.view.domAtPos(position).node
-  const isOpen = node.offsetParent !== null
-
-  return isOpen
-}
-
-const findClosestVisibleNode = ($pos, predicate, editor) => {
-  for (let i = $pos.depth; i > 0; i -= 1) {
-    const node = $pos.node(i)
-    const match = predicate(node)
-    const isVisible = isNodeVisible($pos.start(i), editor)
-
-    if (match && isVisible) {
-      return {
-        pos: i > 0 ? $pos.before(i) : 0,
-        start: $pos.start(i),
-        depth: i,
-        node
-      }
-    }
-  }
-}
 
 const Blockquote = Node.create({
   name: 'heading',
@@ -221,53 +195,6 @@ const Blockquote = Node.create({
   },
   addProseMirrorPlugins () {
     return [
-      // This plugin prevents text selections within the hidden content in `ContentWrapper`.
-      // The cursor is moved to the next visible position.
-      new Plugin({
-        key: new PluginKey('detailsSelection'),
-        appendTransaction: (transactions, oldState, newState) => {
-          const { editor, type } = this
-          const selectionSet = transactions.some(transaction => transaction.selectionSet)
-
-          if (!selectionSet ||
-            !oldState.selection.empty ||
-            !newState.selection.empty) {
-            return
-          }
-          const detailsIsActive = isActive(newState, type.name)
-
-          if (!detailsIsActive) {
-            return
-          }
-          const { $from } = newState.selection
-          const isVisible = isNodeVisible($from.pos, editor)
-
-          if (isVisible) {
-            return
-          }
-          const details = findClosestVisibleNode($from, node => node.type === type, editor)
-
-          if (!details) {
-            return
-          }
-          const detailsSummaries = findChildren(details.node, node => node.type === newState.schema.nodes.contentHeading)
-
-          if (!detailsSummaries.length) {
-            return
-          }
-          const detailsSummary = detailsSummaries[0]
-          const selectionDirection = oldState.selection.from < newState.selection.from
-            ? 'forward'
-            : 'backward'
-          const correctedPosition = selectionDirection === 'forward'
-            ? details.start + detailsSummary.pos
-            : details.pos + detailsSummary.pos + detailsSummary.node.nodeSize
-          const selection = TextSelection.create(newState.doc, correctedPosition)
-          const transaction = newState.tr.setSelection(selection)
-
-          return transaction
-        }
-      }),
       // https://github.com/pageboard/pagecut/blob/bd91a17986978d560cc78642e442655f4e09ce06/src/editor.js#L234-L241
       new Plugin({
         key: new PluginKey('copy&pasteHeading'),
