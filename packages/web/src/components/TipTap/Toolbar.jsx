@@ -116,13 +116,21 @@ const Toolbar = ({ editor }) => {
   }
 
   let indentSetting = localStorage.getItem('setting.indentHeading')
+  let h1SectionBreakSetting = localStorage.getItem('setting.h1SectionBreakSetting')
 
   if (indentSetting === undefined) {
     localStorage.setItem('setting.indentHeading', '')
     indentSetting = false
   }
 
+  if (!indentSetting) {
+    localStorage.setItem('setting.h1SectionBreakSetting', 'true')
+    h1SectionBreakSetting = true
+    document.body.classList.add('h1SectionBreak')
+  }
+
   const [indented, setIndented] = React.useState(Boolean(indentSetting))
+  const [h1SectionBreak, setH1SectionBreak] = React.useState(Boolean(h1SectionBreakSetting))
 
   const toggleHeadingIndent = (e) => {
     setIndented(preState => {
@@ -131,6 +139,18 @@ const Toolbar = ({ editor }) => {
       if (newState) { document.body.classList.add('indentHeading') } else { document.body.classList.remove('indentHeading') }
 
       localStorage.setItem('setting.indentHeading', newState ? 'yes' : '')
+
+      return newState
+    })
+  }
+
+  const toggleH1SectionBreak = (e) => {
+    setH1SectionBreak(preState => {
+      const newState = !preState
+
+      if (newState) { document.body.classList.add('h1SectionBreak') } else { document.body.classList.remove('h1SectionBreak') }
+
+      localStorage.setItem('setting.h1SectionBreakSetting', newState ? 'yes' : '')
 
       return newState
     })
@@ -296,11 +316,19 @@ const Toolbar = ({ editor }) => {
         <p className='font-medium text-base text-gray-400 pb-1'>Settings:</p>
         <hr />
         <div className='content pt-5 '>
-          <label className="inline-flex relative items-center cursor-pointer" htmlFor="default-toggle">
+          <label className="inline-flex relative items-center cursor-pointer" htmlFor="headingIndent-toggle">
             <input checked={indented} className="sr-only peer"
-              id="default-toggle" type="checkbox" value="" onChange={(e) => toggleHeadingIndent(e.target)} />
+              id="headingIndent-toggle" type="checkbox" value="" onChange={(e) => toggleHeadingIndent(e.target)} />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
             <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300" > Toggle heading indent</span >
+          </label >
+        </div>
+        <div className='content pt-5 '>
+          <label className="inline-flex relative items-center cursor-pointer" htmlFor="h1sectionbreak-toggle">
+            <input checked={h1SectionBreak} className="sr-only peer"
+              id="h1sectionbreak-toggle" type="checkbox" value="" onChange={(e) => toggleH1SectionBreak(e.target)} />
+            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+            <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300" > Toggle H1 section break</span >
           </label >
         </div>
       </GearModal>
