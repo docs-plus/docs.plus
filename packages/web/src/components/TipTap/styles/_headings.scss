@@ -27,13 +27,38 @@ body.indentHeading {
   }
 }
 
-.ProseMirror {
+body.h1SectionBreak{
+  .ProseMirror {
+    background-color: transparent;
 
+    .heading {
+      margin-bottom: 1rem;
+      &[level="1"] {
+        box-shadow: 0 1px 3px 1px rgb(00 64 67 / 15%);
+        padding: 1rem;
+        padding-bottom: 0;
+      }
+    }
+  }
+}
+
+.ProseMirror {
   .heading {
     &[level="1"] {
-      box-shadow: 0 1px 3px 1px rgb(00 64 67 / 15%);
       padding: 1rem;
       padding-bottom: 0;
+      margin-top: 0;
+      border: 1px solid #e1e6e7;
+      border-bottom: none;
+      border-top:none;
+
+      &:first-of-type{
+        border-top: 1px solid #e1e6e7;
+      }
+
+      &:last-of-type{
+        border-bottom: 1px solid #e1e6e7;
+      }
     }
   }
 
