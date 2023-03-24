@@ -1,6 +1,7 @@
 import { Node, mergeAttributes, findParentNode, defaultBlockAt } from '@tiptap/core'
 import { Selection, Plugin, TextSelection, PluginKey } from 'prosemirror-state'
 import { Decoration, DecorationSet } from 'prosemirror-view'
+import PubSub from 'pubsub-js'
 
 import { getNodeState } from './helper'
 
@@ -218,6 +219,12 @@ const HeadingsContent = Node.create({
             section.classList.add('overflow-hidden')
           }
 
+          tr.setMeta('addToHistory', false)
+          // for trigger table of contents
+          tr.setMeta('fold&unfold', true)
+          editor.view.dispatch(tr)
+
+          PubSub.publish('toggleHeadingsContent', { headingId: detail.headingId, crinkleOpen: !nodeState.crinkleOpen })
           expandElement(section, 'collapsed', detail.headingId, !nodeState.crinkleOpen)
         }
       })
