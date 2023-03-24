@@ -53,9 +53,9 @@
   }
 
   &__item {
-    padding-bottom: 6px;
+      padding-left: 1.5rem;
 
-    &.active {
+    &.active > span {
       a {
         color: #4285f4;
       }
@@ -69,6 +69,7 @@
     a {
       font-weight: normal;
       position: relative;
+      @apply text-sm text-gray-400;
 
       &::after {
         content: "";
@@ -87,62 +88,12 @@
     }
 
     &--1 {
-      a {
-        @apply font-medium;
+      padding-left: 0!important;
+      > span > a {
+        @apply text-base font-medium text-black;
       }
     }
 
-    &--2 {
-      padding-left: .5rem;
-    }
-
-    &--3 {
-      padding-left: 1rem;
-
-      a {
-        @apply text-sm text-gray-400;
-      }
-    }
-
-    &--4 {
-      padding-left: 1.5rem;
-
-      a {
-        @apply text-sm text-gray-400;
-      }
-    }
-
-    &--5 {
-      padding-left: 2rem;
-
-      a {
-        @apply text-sm text-gray-400;
-      }
-    }
-
-    &--6 {
-      padding-left: 2.5rem;
-
-      a {
-        @apply text-sm text-gray-400;
-      }
-    }
-
-    &--7 {
-      padding-left: 3rem;
-
-      a {
-        @apply text-sm text-gray-400;
-      }
-    }
-
-    &--8 {
-      padding-left: 3.5rem;
-
-      a {
-        @apply text-sm text-gray-400;
-      }
-    }
   }
 }
 

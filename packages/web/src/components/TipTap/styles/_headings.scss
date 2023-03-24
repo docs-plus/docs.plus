@@ -1,13 +1,16 @@
 body.indentHeading {
+  &.h1SectionBreak{
+    div.heading {
+      &[level="1"] {
+        box-shadow: 8px 0 34px 0 rgb(60 64 67 / 10%);
+      }
+    }
+  }
   div.heading {
     border-left: 3px solid rgba(#0d0d0d, 0.1);
     padding-left: 1rem;
     position: relative;
     margin-top: 1rem;
-
-    &[level="1"] {
-      box-shadow: 8px 0 34px 0 rgb(60 64 67 / 10%);
-    }
 
     .title::before {
       content: attr(level);
@@ -37,6 +40,8 @@ body.h1SectionBreak{
         box-shadow: 0 1px 3px 1px rgb(00 64 67 / 15%);
         padding: 1rem;
         padding-bottom: 0;
+        border-bottom: 1px solid #e1e6e7;
+
       }
     }
   }
@@ -46,7 +51,6 @@ body.h1SectionBreak{
   .heading {
     &[level="1"] {
       padding: 1rem;
-      padding-bottom: 0;
       margin-top: 0;
       border: 1px solid #e1e6e7;
       border-bottom: none;
