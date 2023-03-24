@@ -76,7 +76,7 @@ export default function Root () {
           // console.log('onStatus', data)
         },
         onSynced: (data) => {
-          console.log('onSynced', data)
+          // console.log('onSynced', data)
           // console.log(`content loaded from Server, pad name: ${ newPadName }`, provider.isSynced)
           if (data?.state) setLoading(false)
         },
