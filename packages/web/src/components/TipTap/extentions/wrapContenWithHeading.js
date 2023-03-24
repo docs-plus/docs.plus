@@ -86,10 +86,10 @@ export default (arrg, attributes) => {
     }
     const newHeadingNode = state.schema.nodeFromJSON(jsonNode)
 
-    tr.delete(start + 1, block.parent.end)
-    tr.insert(tr.mapping.map(start + 1), newHeadingNode)
+    tr.delete(start, block.parent.end)
+    tr.insert(tr.mapping.map(start), newHeadingNode)
 
-    const newSelection = new TextSelection(tr.doc.resolve(start + 1))
+    const newSelection = new TextSelection(tr.doc.resolve(end))
 
     tr.setSelection(newSelection)
 
