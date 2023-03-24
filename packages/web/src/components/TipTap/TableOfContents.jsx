@@ -1,9 +1,10 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import PubSub from 'pubsub-js'
 
 const TableOfcontent = ({ editor, className }) => {
   const [items, setItems] = useState([])
 
-  const handleUpdate = useCallback(() => {
+  const handleUpdate = useCallback((data) => {
     const headings = []
 
     // TODO: check the object id performance
@@ -16,13 +17,14 @@ const TableOfcontent = ({ editor, className }) => {
         }
 
         const headingId = _parent.attrs?.id || node?.attrs.id || '1'
+        const headingSection = document.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
 
         headings.push({
           level: node.attrs?.level,
           text: node?.textContent,
           id: headingId,
-          open: node?.attrs?.open,
-          offsetTop: getOffsetTop(document.querySelector(`.tipta__editor [data-id="${headingId}"]`))
+          open: data && headingId === data.headingId ? data.crinkleOpen : headingSection?.classList.contains('opend'),
+          offsetTop: getOffsetTop(headingSection)
         })
       }
     })
@@ -43,13 +45,15 @@ const TableOfcontent = ({ editor, className }) => {
   }, [editor])
 
   useEffect(() => {
-    // console.log("updat")
-  }, [items])
+    PubSub.subscribe('toggleHeadingsContent', function (messag, data) {
+      handleUpdate(data)
+    })
+
+    return () => PubSub.unsubscribe('toggleHeadingsContent')
+  }, [])
 
   const scroll2Header = (e) => {
     e.preventDefault()
-    // e closest li add class active
-    // e.target.closest('.toc__item').classList.add('active')
     let id = e.target.getAttribute('data-id')
     const offsetParent = e.target.closest('.toc__item').getAttribute('data-offsettop')
 
@@ -58,17 +62,65 @@ const TableOfcontent = ({ editor, className }) => {
     document.querySelector(`.heading[data-id="${id}"]`)?.scrollIntoView()
   }
 
-  return (
-    <div className={`${className}`}>
-      <ul className="toc__list ">
-        {items.map((item, index) => (
-          <li key={index} className={`toc__item toc__item--${item.level} text-ellipsis overflow-hidden`} data-offsettop={item.offsetTop}>
-            <a className="text-black text-ellipsis overflow-hidden" data-id={item.id} href={`?${item.id}`} onClick={scroll2Header}>{item.text}</a>
-          </li>
-        ))}
-      </ul>
-    </div>
-  )
+  // console.log(newItems)
+
+  const toggleSection = (item) => {
+    document
+      .querySelector(`.ProseMirror .heading[data-id="${item.id}"] .buttonWrapper .btnFold`)?.click()
+
+    setItems(x => items.map((i) => {
+      if (i.id === item.id) {
+        return {
+          ...i,
+          open: !i.open
+        }
+      }
+
+      return i
+    }))
+  }
+
+  function renderToc (items) {
+    const renderedItems = []
+    let i = 0
+
+    while (i < items.length) {
+      const item = items[i]
+      const children = []
+      let j = i + 1
+
+      while (j < items.length && items[j].level > item.level) {
+        children.push(items[j])
+        j++
+      }
+      renderedItems.push(
+      <div
+        key={item.id}
+        className={`toc__item toc__item--${item.level} text-ellipsis overflow-hidden ${item.open ? '' : 'closed'}`}
+        data-id={item.id}
+        data-offsettop={item.offsetTop}
+      >
+        <span>
+          <span className='btnFold' onClick={() => toggleSection(item)}></span>
+          <a className="text-black text-ellipsis overflow-hidden" data-id={item.id} href={`?${item.id}`} onClick={scroll2Header}>
+            {item.text}
+          </a>
+        </span>
+
+        {children.length > 0 && <div className={`${item.open ? '' : '!hidden'}`}>{renderToc(children)}</div>}
+      </div>
+      )
+      i = j
+    }
+
+    return renderedItems
+  }
+
+  return (<div className={`${className}`}>
+  <div className="toc__list ">
+    {renderToc(items)}
+  </div>
+</div>)
 }
 
 export default TableOfcontent

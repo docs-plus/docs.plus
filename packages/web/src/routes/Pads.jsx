@@ -124,8 +124,8 @@ export default function Root () {
 
   const scrollHeadingSelection = (event) => {
     const scrollTop = event.currentTarget.scrollTop
-    const toc = document.querySelector('.tiptap__toc')
-    const tocLis = [...toc.querySelectorAll('li')]
+    const toc = document.querySelector('.toc__list')
+    const tocLis = [...toc.querySelectorAll('.toc__item')]
     const closest = tocLis
       .map(li => {
         li.classList.remove('active')
@@ -134,21 +134,21 @@ export default function Root () {
       })
       .filter(li => {
         const thisOffsetTop = +li.getAttribute('data-offsettop') - 220
-        const nextSiblingOffsetTop = +li.nextElementSibling?.getAttribute('data-offsettop') - 220
+        // const nextSiblingOffsetTop = +li.querySelector('div > .toc__item')?.getAttribute('data-offsettop') - 220
 
-        return thisOffsetTop <= scrollTop && nextSiblingOffsetTop >= scrollTop
+        return thisOffsetTop <= scrollTop // && nextSiblingOffsetTop >= scrollTop
       })
 
-    if (closest.length === 0) {
-      tocLis.pop()?.classList.add('active')
-      tocLis.pop()?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
+    // if (event.target.offsetHeight === (event.target.scrollHeight - scrollTop) - 0.5) {
+    //   tocLis.at(-1)?.classList.add('active')
+    //   tocLis.at(-1)?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
 
-      return
-    }
+    //   return
+    // }
 
     // console.log(closest)
-    closest[0]?.classList.add('active')
-    closest[0]?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
+    closest.at(-1)?.classList.add('active')
+    closest.at(-1)?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
   }
 
   return (

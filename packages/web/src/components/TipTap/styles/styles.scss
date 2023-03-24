@@ -332,3 +332,43 @@ $crinkle-unfold-bg: #efefef;
     }
   }
 }
+
+
+
+.tiptap__toc{
+  .toc__item{
+    position: relative;
+    width: 100%;
+    margin: 6px 0;
+    > span{
+      display: flex;
+      align-items: center;
+    }
+
+    &.closed{
+      > span .btnFold{
+        &::before{
+          content: '\25B6';
+        }
+      }
+    }
+    > span .btnFold{
+      &::before{
+        content: '\25BC';
+        display: block;
+        margin-right: 6px;
+        width: 16px;
+        height: 16px;
+        // border: 2px solid red;
+        font-size: 0.7rem;
+        text-align: center;
+        opacity: 0;
+        cursor: pointer;
+      }
+    }
+
+    &:hover > span > .btnFold::before{
+        opacity: 1;
+    }
+  }
+}
