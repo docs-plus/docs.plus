@@ -165,12 +165,7 @@ const HeadingsContent = Node.create({
       // get parent node
       const upperNode = editor.state.doc.nodeAt(getPos() - 2)
       const parentNode = editor.state.doc.nodeAt(getPos() - upperNode.nodeSize - 2)
-      let headingId = parentNode?.attrs.id
-
-      // if wrapper belong to first heading
-      if ((getPos() - upperNode.nodeSize - 2) === 1) {
-        headingId = '1'
-      }
+      const headingId = parentNode?.attrs.id
 
       const nodeState = getNodeState(headingId)
 
