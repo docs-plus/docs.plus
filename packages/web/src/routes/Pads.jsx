@@ -25,7 +25,7 @@ const useCustomeHook = (padName) => {
     queryFn: () => {
       return axios.get(`${import.meta.env.VITE_RESTAPI_URL}/documents/${padName}`)
         .then(res => {
-          console.log(res)
+          console.log({ res, url: `${import.meta.env.VITE_RESTAPI_URL}/documents/${padName}` })
 
           return res.data
         })
