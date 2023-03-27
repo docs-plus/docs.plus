@@ -115,22 +115,23 @@ const Toolbar = ({ editor }) => {
     else editor.chain().focus().wrapBlock({ level: +value }).run()
   }
 
-  let indentSetting = localStorage.getItem('setting.indentHeading')
-  let h1SectionBreakSetting = localStorage.getItem('setting.h1SectionBreakSetting')
+  let indentSetting = Boolean(localStorage.getItem('setting.indentHeading') || false)
+  let h1SectionBreakSetting = Boolean(localStorage.getItem('setting.h1SectionBreakSetting') || false)
 
-  if (indentSetting === undefined) {
+  if (!indentSetting) {
     localStorage.setItem('setting.indentHeading', '')
     indentSetting = false
   }
 
-  if (!indentSetting) {
+  if (!h1SectionBreakSetting) {
+    console.log('indentSetting', indentSetting)
     localStorage.setItem('setting.h1SectionBreakSetting', 'true')
     h1SectionBreakSetting = true
     document.body.classList.add('h1SectionBreak')
   }
 
-  const [indented, setIndented] = React.useState(Boolean(indentSetting))
-  const [h1SectionBreak, setH1SectionBreak] = React.useState(Boolean(h1SectionBreakSetting))
+  const [indented, setIndented] = React.useState(indentSetting)
+  const [h1SectionBreak, setH1SectionBreak] = React.useState(h1SectionBreakSetting)
 
   const toggleHeadingIndent = (e) => {
     setIndented(preState => {
@@ -168,10 +169,14 @@ const Toolbar = ({ editor }) => {
   }
 
   useEffect(() => {
-    const newIndent = localStorage.getItem('setting.indentHeading')
+    const newIndent = Boolean(localStorage.getItem('setting.indentHeading'))
+    const newHsectionBreak = Boolean(localStorage.getItem('setting.indentHeading'))
 
-    if (newIndent) return document.body.classList.add('indentHeading')
-    document.body.classList.remove('indentHeading')
+    if (newIndent) document.body.classList.add('indentHeading')
+    else document.body.classList.remove('indentHeading')
+
+    if (newHsectionBreak) document.body.classList.add('h1SectionBreak')
+    else document.body.classList.remove('h1SectionBreak')
   }, [])
 
   return (
