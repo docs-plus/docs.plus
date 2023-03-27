@@ -21,11 +21,6 @@ const useCustomeHook = (padName) => {
   // NOTE: This is a hack to get the correct URL in the build time
   const url = (`${import.meta.env.VITE_RESTAPI_URL}/documents/${padName}`).replace(/'/g, '')
 
-  console.log({
-    d1: `${import.meta.env.VITE_RESTAPI_URL}/documents/${padName}`,
-    d2: String(import.meta.env.VITE_RESTAPI_URL) + `/documents/${padName}`,
-    d3: url
-  })
   const { isLoading, error, data, isSuccess } = useQuery({
     queryKey: ['getDocumentMetadataByDocName'],
     queryFn: () => {
