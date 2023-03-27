@@ -20,12 +20,13 @@ import PadTitle from '../components/PadTitle'
 // import { useAuth } from '../contexts/Auth'
 
 const useCustomeHook = (padName) => {
+  const url = (`${import.meta.env.VITE_RESTAPI_URL}/documents/${padName}`).replace(/'/g, '')
   const { isLoading, error, data, isSuccess } = useQuery({
     queryKey: ['getDocumentMetadataByDocName'],
     queryFn: () => {
-      return axios.get(`${import.meta.env.VITE_RESTAPI_URL}/documents/${padName}`)
+      return axios.get(url)
         .then(res => {
-          console.log({ res, url: `${import.meta.env.VITE_RESTAPI_URL}/documents/${padName}` })
+          console.log({ res, url })
 
           return res.data
         })
