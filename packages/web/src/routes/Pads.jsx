@@ -9,6 +9,8 @@ import * as Y from 'yjs'
 
 import { useQuery } from '@tanstack/react-query'
 
+import axios from 'axios'
+
 import { db, initDB } from '../db'
 
 import editorConfig from '../components/TipTap/TipTap'
@@ -21,15 +23,21 @@ const useCustomeHook = (padName) => {
   const { isLoading, error, data, isSuccess } = useQuery({
     queryKey: ['getDocumentMetadataByDocName'],
     queryFn: () => {
-      return fetch(`${import.meta.env.VITE_RESTAPI_URL}/documents/${padName}`, {
-        credentials: 'include'
-      })
+      return axios.get(`${import.meta.env.VITE_RESTAPI_URL}/documents/${padName}`)
         .then(res => {
           console.log(res)
 
-          return res
+          return res.data
         })
-        .then(res => res.json())
+      // return fetch(, {
+      //   credentials: 'include'
+      // })
+      //   .then(res => {
+      //     console.log(res)
+
+      //     return res
+      //   })
+      //   .then(res => res.json())
     }
   })
 
