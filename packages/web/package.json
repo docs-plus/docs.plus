@@ -87,9 +87,9 @@
     "yjs": "^13.5.44"
   },
   "devDependencies": {
-    "@types/react": "^18.0.26",
-    "@types/react-dom": "^18.0.10",
-    "@vitejs/plugin-react": "^3.0.1",
+    "@types/react": "^18.0.30",
+    "@types/react-dom": "^18.0.11",
+    "@vitejs/plugin-react": "^3.1.0",
     "autoprefixer": "^10.4.13",
     "eslint": "^8.0.1",
     "eslint-config-standard": "^17.0.0",
@@ -104,7 +104,7 @@
     "stylelint-config-prettier": "^9.0.4",
     "stylelint-config-standard": "^29.0.0",
     "tailwindcss": "^3.2.4",
-    "vite": "^4.0.4",
-    "vite-plugin-pwa": "^0.14.1"
+    "vite": "^4.2.1",
+    "vite-plugin-pwa": "^0.14.6"
   }
 }
