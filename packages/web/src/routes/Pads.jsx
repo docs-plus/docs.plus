@@ -9,7 +9,7 @@ import * as Y from 'yjs'
 
 import { useQuery } from '@tanstack/react-query'
 
-import { db } from '../db'
+import { db, initDB } from '../db'
 
 import editorConfig from '../components/TipTap/TipTap'
 import Toolbar from '../components/TipTap/Toolbar'
@@ -55,7 +55,10 @@ export default function Root () {
       localStorage.setItem('padName', `${isPrivate ? 'private' : 'public'}.${documentId}`)
       localStorage.setItem('slug', padName)
       localStorage.setItem('title', data?.data.title)
-      db.documents.where({ docId: documentId }).toArray().then((data) => {
+
+      initDB(`meta.${documentId}`, `${isPrivate ? 'private' : 'public'}.${documentId}`)
+
+      db.meta.where({ docId: documentId }).toArray().then((data) => {
         localStorage.setItem('headingMap', JSON.stringify(data))
       })
     }
