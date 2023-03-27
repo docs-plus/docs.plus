@@ -15,7 +15,9 @@ const PadTitle = ({ docTitle, docId, provider }) => {
     mutationFn: ({ title, docId }) => {
       console.log({ title, docId }, '939393939')
 
-      return fetch(import.meta.env.VITE_RESTAPI_URL + `/documents/${docId}`, {
+      const url = (import.meta.env.VITE_RESTAPI_URL + `/documents/${docId}`).replace(/'/g, '')
+
+      return fetch(url, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json'
