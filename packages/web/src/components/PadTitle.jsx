@@ -22,6 +22,11 @@ const PadTitle = ({ docTitle, docId, provider }) => {
         },
         body: JSON.stringify({ title })
       })
+        .then(res => {
+          console.log(res)
+
+          return res
+        })
         .then(res => res.json())
     },
     onSuccess: (data) => {
