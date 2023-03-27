@@ -9,36 +9,30 @@ import * as Y from 'yjs'
 
 import { useQuery } from '@tanstack/react-query'
 
-import axios from 'axios'
-
-import { db, initDB } from '../db'
-
 import editorConfig from '../components/TipTap/TipTap'
 import Toolbar from '../components/TipTap/Toolbar'
 import TableOfContents from '../components/TipTap/TableOfContents'
 import PadTitle from '../components/PadTitle'
+import { db, initDB } from '../db'
+
 // import { useAuth } from '../contexts/Auth'
 
 const useCustomeHook = (padName) => {
+  // NOTE: This is a hack to get the correct URL in the build time
   const url = (`${import.meta.env.VITE_RESTAPI_URL}/documents/${padName}`).replace(/'/g, '')
+
+  console.log({
+    d1: `${import.meta.env.VITE_RESTAPI_URL}/documents/${padName}`,
+    d2: import.meta.env.VITE_RESTAPI_URL + `/documents/${padName}`,
+    d3: url
+  })
   const { isLoading, error, data, isSuccess } = useQuery({
     queryKey: ['getDocumentMetadataByDocName'],
     queryFn: () => {
-      return axios.get(url)
-        .then(res => {
-          console.log({ res, url })
-
-          return res.data
-        })
-      // return fetch(, {
-      //   credentials: 'include'
-      // })
-      //   .then(res => {
-      //     console.log(res)
-
-      //     return res
-      //   })
-      //   .then(res => res.json())
+      return fetch(url, {
+        credentials: 'include'
+      })
+        .then(res => res.json())
     }
   })
 

@@ -13,8 +13,7 @@ const PadTitle = ({ docTitle, docId, provider }) => {
   const { isLoading, isSuccess, mutate } = useMutation({
     mutationKey: ['updateDocumentMetadata'],
     mutationFn: ({ title, docId }) => {
-      console.log({ title, docId }, '939393939')
-
+      // NOTE: This is a hack to get the correct URL in the build time
       const url = (import.meta.env.VITE_RESTAPI_URL + `/documents/${docId}`).replace(/'/g, '')
 
       return fetch(url, {
@@ -24,11 +23,6 @@ const PadTitle = ({ docTitle, docId, provider }) => {
         },
         body: JSON.stringify({ title })
       })
-        .then(res => {
-          console.log(res)
-
-          return res
-        })
         .then(res => res.json())
     },
     onSuccess: (data) => {
