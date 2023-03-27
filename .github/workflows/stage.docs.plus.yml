@@ -31,7 +31,7 @@ jobs:
      run: echo Hello, world!
 
    - name: Install dependencies
-     run: yarn install --no-lockfile --force
+     run: yarn
 
    - name: copy .env
      run: yes | \cp -r ../../../.env packages/web && yes | \cp -r ../../../.env packages/hocuspocus.server
