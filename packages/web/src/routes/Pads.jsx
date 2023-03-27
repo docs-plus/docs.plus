@@ -88,7 +88,7 @@ export default function Root () {
       setYdoc(ydoc)
 
       const provider = new HocuspocusProvider({
-        url: `${import.meta.env.VITE_HOCUSPOCUS_PROVIDER_URL}/public`,
+        url: (`${import.meta.env.VITE_HOCUSPOCUS_PROVIDER_URL}/public`).replace(/'/g, ''),
         name: newPadName,
         document: ydoc,
         onStatus: (data) => {
