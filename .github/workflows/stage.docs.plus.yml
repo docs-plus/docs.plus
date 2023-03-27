@@ -36,12 +36,6 @@ jobs:
    - name: copy .env
      run: yes | \cp -r ../../../.env packages/web && yes | \cp -r ../../../.env packages/hocuspocus.server
 
-   - name: chekc .env
-     run: (ls .env && echo yes) || echo no
-
-   - name: chekc .env2
-     run: (ls ../../../.env && echo yes) || echo no
-
    - name: Build Front-end
      if: contains(github.event.head_commit.message, 'front')
      run: make build_front
