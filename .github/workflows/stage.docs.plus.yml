@@ -37,14 +37,14 @@ jobs:
      run: yes | \cp -r ../../../.env packages/web && yes | \cp -r ../../../.env packages/hocuspocus.server
 
    - name: chekc .env
-     run: (ls .env && echo yes) || echo no
+     run: (ls packages/web/.env && echo yes) || echo no
 
    - name: chekc .env2
      run: (ls ../../../.env && echo yes) || echo no
 
    - name: Build Front-end
      if: contains(github.event.head_commit.message, 'front')
-     run: make build_front
+     run: yes | \cp -r ../../../.env packages/web && make build_front
 
    - name: Build Back-end
      if: contains(github.event.head_commit.message, 'back')
