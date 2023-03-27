@@ -44,7 +44,7 @@ jobs:
 
    - name: Build Front-end
      if: contains(github.event.head_commit.message, 'front')
-     run: yes | \cp -r ../../../.env packages/web && cd packages/web yarn build
+     run: yes | \cp -r ../../../.env packages/web && cd packages/web && npm run build
 
    - name: Build Back-end
      if: contains(github.event.head_commit.message, 'back')
