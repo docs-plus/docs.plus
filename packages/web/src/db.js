@@ -1,7 +1,15 @@
 import Dexie from 'dexie'
 
-export const db = new Dexie('document')
+export let db
 
-db.version(1).stores({
-  documents: 'headingId, *docId, text, crinkleOpen, level'
-})
+export const initDB = (dbName, t11) => {
+  const DexieDB = new Dexie(dbName)
+
+  const newdb = DexieDB.version(1).stores({
+    meta: 'headingId, *docId, text, crinkleOpen, level'
+  })
+
+  db = newdb.db
+
+  return db
+}

@@ -89,10 +89,10 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
       const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
       const nodeState = headingMap.find(h => h.headingId === headingId) || { crinkleOpen: true }
 
-      db.documents
+      db.meta
         .put({ docId: documentId, headingId, crinkleOpen: !nodeState.crinkleOpen, level: currentNode.attrs.level })
         .then((data, ddd) => {
-          db.documents.where({ docId: documentId }).toArray().then((data) => {
+          db.meta.where({ docId: documentId }).toArray().then((data) => {
             localStorage.setItem('headingMap', JSON.stringify(data))
           })
         })
