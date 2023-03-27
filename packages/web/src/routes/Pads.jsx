@@ -21,7 +21,9 @@ const useCustomeHook = (padName) => {
   const { isLoading, error, data, isSuccess } = useQuery({
     queryKey: ['getDocumentMetadataByDocName'],
     queryFn: () => {
-      return fetch(import.meta.env.VITE_RESTAPI_URL + `/documents/${padName}`)
+      return fetch(`${import.meta.env.VITE_RESTAPI_URL}/documents/${padName}`, {
+        credentials: 'include'
+      })
         .then(res => {
           console.log(res)
 
