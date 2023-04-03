@@ -24,7 +24,7 @@ fastRun:
 	docker-compose -f docker-compose.prod.yml up
 
 build_front:
-		cd packages/nextjs && npm build && npm start
+		cd packages/nextjs && npm run build && npm start
 
 build_hocuspocus.server_stage:
 		cd packages/hocuspocus.server && docker-compose -p stage-docsplus -f docker-compose.stage.yml up -d
