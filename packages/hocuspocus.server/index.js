@@ -2,7 +2,7 @@ import * as dotenvFlow from 'dotenv-flow'
 import express from 'express'
 import chalk from 'chalk'
 import expressWebsockets from 'express-ws'
-import { Server } from '@hocuspocus/server'
+import { Server, Hocuspocus } from '@hocuspocus/server'
 import HocuspocusConfig from './hocuspocus.config.mjs'
 import { checkEnvBolean } from './utils/index.mjs'
 import morgan from 'morgan'
@@ -31,7 +31,13 @@ const {
 const Serverconfigure = HocuspocusConfig()
 
 // Configure hocuspocus
-const server = Server.configure(Serverconfigure)
+// const server = Server.configure(Serverconfigure)
+
+// Configure the server …
+const server = new Hocuspocus(Serverconfigure);
+
+// … and run it!
+server.listen();
 
 // Setup your express instance using the express-ws extension
 const { app } = expressWebsockets(express())

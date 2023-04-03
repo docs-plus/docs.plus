@@ -27,12 +27,12 @@
     "node": "^16.0.0 || >=18.9.0"
   },
   "dependencies": {
-    "@hocuspocus/extension-database": "^1.1.0",
-    "@hocuspocus/extension-logger": "^1.1.0",
-    "@hocuspocus/extension-redis": "^1.1.0",
-    "@hocuspocus/extension-sqlite": "^1.1.0",
-    "@hocuspocus/extension-throttle": "^1.1.0",
-    "@hocuspocus/server": "^1.1.0",
+    "@hocuspocus/extension-database": "^2.0.1",
+    "@hocuspocus/extension-logger": "^2.0.1",
+    "@hocuspocus/extension-redis": "^2.0.1",
+    "@hocuspocus/extension-sqlite": "^2.0.1",
+    "@hocuspocus/extension-throttle": "^2.0.1",
+    "@hocuspocus/server": "^2.0.1",
     "@prisma/client": "^4.8.1",
     "ajv": "^6.12.5",
     "body-parser": "^1.20.2",
