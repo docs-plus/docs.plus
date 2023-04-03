@@ -50,21 +50,21 @@ const OpenDocuments = ({ docTitle, docSlug}) => {
         localStorage.setItem('padName', `${isPrivate ? 'private' : 'public'}.${documentId}`)
         localStorage.setItem('slug', docSlug)
         localStorage.setItem('title', data?.data.title)
-  
+
         initDB(`meta.${documentId}`, `${isPrivate ? 'private' : 'public'}.${documentId}`)
-  
+
         db.meta.where({ docId: documentId }).toArray().then((data) => {
           localStorage.setItem('headingMap', JSON.stringify(data))
         })
       }
     }, [data])
-    
+
     useEffect(() => {
       if (docId) {
         const ydoc = new Y.Doc()
-  
+
         setYdoc(ydoc)
-  
+
         const colabProvider = new HocuspocusProvider({
           url: `${process.env.NEXT_PUBLIC_PROVIDER_URL}`,
           name: docId,
@@ -87,14 +87,14 @@ const OpenDocuments = ({ docTitle, docSlug}) => {
             // console.log('onMessage', data)
           }
         })
-  
+
         setProvider(colabProvider)
 
         console.log(colabProvider)
-  
+
         // Store the Y document in the browser
         const indexDbProvider = new IndexeddbPersistence(docId, colabProvider.document)
-  
+
         indexDbProvider.on('synced', () => {
           if (!loadedData) return
           // console.log(`content loaded from indexdb, pad name: ${ docId }`)
@@ -108,7 +108,7 @@ const OpenDocuments = ({ docTitle, docSlug}) => {
     // useEffect(() => {
     //   if (!loading && editor?.isEmpty) {
     //     console.log('editor is empty', editor?.isEmpty)
-  
+
     //     editor?.chain().focus().insertContentAt(2, '' +
     //        '<h1>&shy;</h1>' +
     //        '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
@@ -128,23 +128,23 @@ const OpenDocuments = ({ docTitle, docSlug}) => {
       const closest = tocLis
         .map(li => {
           li.classList.remove('active')
-  
+
           return li
         })
         .filter(li => {
           const thisOffsetTop = +li.getAttribute('data-offsettop') - 220
           // const nextSiblingOffsetTop = +li.querySelector('div > .toc__item')?.getAttribute('data-offsettop') - 220
-  
+
           return thisOffsetTop <= scrollTop // && nextSiblingOffsetTop >= scrollTop
         })
-  
+
       // if (event.target.offsetHeight === (event.target.scrollHeight - scrollTop) - 0.5) {
       //   tocLis.at(-1)?.classList.add('active')
       //   tocLis.at(-1)?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
-  
+
       //   return
       // }
-  
+
       // console.log(closest)
       closest.at(-1)?.classList.add('active')
       closest.at(-1)?.scrollIntoView({ behavior: 'smooth', block: 'start', inline: 'nearest' })
@@ -153,7 +153,7 @@ const OpenDocuments = ({ docTitle, docSlug}) => {
     return (
         <>
           <Head>
-            <title>{documentTitle}</title>
+            <meta property="og:title" content={documentTitle} key="title" />
             <meta content="another open docs plus document" name="description" />
           </Head>
           <div className="pad tiptap flex flex-col border-solid border-2">
