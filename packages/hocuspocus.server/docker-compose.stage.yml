@@ -21,4 +21,4 @@ services:
    REDIS_HOST: redis
   ports:
    - '${EXPOSE_APP_PORT:-8002}:${APP_PORT}'
-   - '127.0.0.1:${HOCUSPOCUS_PORT:-1234}:0.0.0.0:${HOCUSPOCUS_PORT:-1234}'
+   - 'localhost:${HOCUSPOCUS_PORT:-1234}:0.0.0.0:${HOCUSPOCUS_PORT:-1234}'
