@@ -22,4 +22,4 @@ services:
   ports:
    - '${EXPOSE_APP_PORT:-8002}:${APP_PORT}'
   expose:
-   - '${HOCUSPOCUS_PORT:-1234}'
+   - 'localhost:${${HOCUSPOCUS_PORT:-1234}}:0.0.0.0:${HOCUSPOCUS_PORT:-1234}'
