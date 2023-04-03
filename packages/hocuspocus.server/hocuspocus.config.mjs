@@ -27,7 +27,8 @@ export default () => {
     DATABASE_TYPE,
     REDIS,
     REDIS_HOST,
-    REDIS_PORT
+    REDIS_PORT,
+    HOCUSPOCUS_PORT,
 
   } = process.env
 
@@ -35,6 +36,7 @@ export default () => {
 
   const Serverconfigure = {
     name: `${ APP_NAME }_${ cryptoRandomString({ length: 4, type: 'alphanumeric' }) }`,
+    port: HOCUSPOCUS_PORT,
     extensions: []
   }
 
