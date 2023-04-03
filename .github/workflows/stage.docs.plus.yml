@@ -34,7 +34,7 @@ jobs:
      run: yarn
 
    - name: copy .env
-     run: yes | \cp -r ../../../.env packages/packages/nextjs && yes | \cp -r ../../../.env packages/hocuspocus.server
+     run: yes | \cp -r ../../../.env packages/nextjs && yes | \cp -r ../../../.env packages/hocuspocus.server
 
    - name: Build Front-end
      if: contains(github.event.head_commit.message, 'front')
