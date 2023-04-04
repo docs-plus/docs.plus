@@ -1,6 +1,6 @@
 import { Extension, findChildren, combineTransactionSteps, getChangedRanges, findChildrenInRange } from '@tiptap/core'
-import { Plugin, PluginKey } from 'prosemirror-state'
-import { Slice, Fragment } from 'prosemirror-model'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { Slice, Fragment } from '@tiptap/pm/model'
 import { v4 } from 'uuid'
 
 /**

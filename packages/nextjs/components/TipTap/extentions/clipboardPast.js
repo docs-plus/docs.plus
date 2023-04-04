@@ -1,5 +1,5 @@
-import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from 'prosemirror-model'
-import { TextSelection, Selection } from 'prosemirror-state'
+import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from '@tiptap/pm/model'
+import { TextSelection, Selection } from '@tiptap/pm/state'
 
 import { getRangeBlocks, getHeadingsBlocksMap } from './helper'
 
