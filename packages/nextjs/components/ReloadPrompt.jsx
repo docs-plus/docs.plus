@@ -20,18 +20,18 @@ const PwaUpdater = () => {
               console.log(`Event ${event.type} is triggered.`)
               console.log(event)
             })
-      
+
             wb.addEventListener('controlling', event => {
               console.log(`Event ${event.type} is triggered.`)
               console.log(event)
               window.location.reload();
             })
-      
+
             wb.addEventListener('activated', event => {
               console.log(`Event ${event.type} is triggered.`)
               console.log(event)
             })
-      
+
             // A common UX pattern for progressive web apps is to show a banner when a service worker has updated and waiting to install.
             // NOTE: MUST set skipWaiting to false in next.config.js pwa object
             // https://developers.google.com/web/tools/workbox/guides/advanced-recipes#offer_a_page_reload_for_users
@@ -45,7 +45,7 @@ const PwaUpdater = () => {
                 //   window.location.reload()
                     console.log("new version is available")
                 })
-      
+
                 // Send a message to the waiting service worker, instructing it to activate.
                 // wb.messageSkipWaiting()
               } else {
@@ -54,7 +54,7 @@ const PwaUpdater = () => {
                 )
               }
             }
-      
+
             // wb.addEventListener('waiting', promptNewVersionAvailable)
             wb.addEventListener('waiting', () => setIsOpen(true));
             wb.register();
@@ -70,7 +70,7 @@ const PwaUpdater = () => {
 
   }
 
-  
+
     return (
         <div className={`${isOpen? 'visible': 'hidden'} fixed bottom-2 left-2 p-3 z-50 rounded-md shadow bg-white`}>
         <p>
@@ -83,7 +83,7 @@ const PwaUpdater = () => {
             >
                 Reload and update
             </button>
-            <button 
+            <button
                 className="border outline mr-2 px-3 py-1 outline-none rounded-md hover:bg-slate-500  hover:text-white"
                 onClick={() => setIsOpen(false)}
             >
@@ -94,5 +94,5 @@ const PwaUpdater = () => {
       </div>
     );
   }
-  
+
   export default PwaUpdater;
