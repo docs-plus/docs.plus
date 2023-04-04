@@ -215,11 +215,11 @@ const HeadingsContent = Node.create({
 
           tr.setMeta('addToHistory', false)
           // for trigger table of contents
-          tr.setMeta('fold&unfold', true)
+          tr.setMeta('foldAndunfold', true)
           editor.view.dispatch(tr)
 
-          PubSub.publish('toggleHeadingsContent', { headingId: detail.headingId, crinkleOpen: !nodeState.crinkleOpen })
           expandElement(section, 'collapsed', detail.headingId, !nodeState.crinkleOpen)
+          PubSub.publish('toggleHeadingsContent', { headingId: detail.headingId, crinkleOpen: !nodeState.crinkleOpen })
         }
       })
 

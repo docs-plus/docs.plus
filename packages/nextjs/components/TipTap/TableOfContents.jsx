@@ -1,37 +1,45 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import PubSub from 'pubsub-js'
 
+
 const TableOfcontent = ({ editor, className }) => {
   const [items, setItems] = useState([])
 
-  const handleUpdate = useCallback((data) => {
+  const handleUpdate = useCallback((doc) => {
     const headings = []
-
+    const editorDoc = doc.editor.state?.doc
     // TODO: check the object id performance
     // TODO: heading must be url frindly, so I have to map id with SLUGs
-    editor?.state?.doc?.descendants((node, _pos, _parent, _index) => {
+    editorDoc?.descendants((node, _pos, _parent, _index) => {
       if (node.type.name === 'contentHeading') {
         // https://stackoverflow.com/questions/59829232/offsettop-return-0
         function getOffsetTop (element) {
           return element ? (element.offsetTop + getOffsetTop(element.offsetParent)) : 0
         }
 
-        const headingId = _parent.attrs?.id || node?.attrs.id || '1'
-        const headingSection = document.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
+        let headingId = _parent.attrs?.id || node?.attrs.id || '1'
+        let headingSection = document.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
+        let offsetTop = getOffsetTop(headingSection)
+
+
+        if(offsetTop === 0) {
+          headingId = '1'
+          headingSection = document.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
+          offsetTop = getOffsetTop(headingSection)
+        }
 
         headings.push({
           level: node.attrs?.level,
           text: node?.textContent,
           id: headingId,
-          open: data && headingId === data.headingId ? data.crinkleOpen : headingSection?.classList.contains('opend'),
-          offsetTop: getOffsetTop(headingSection)
+          open: headingSection?.classList.contains('opend'),
+          offsetTop: offsetTop
         })
       }
     })
     setItems(headings)
-  }, [editor])
+  }, [])
 
-  useEffect(handleUpdate, [])
 
   useEffect(() => {
     if (!editor) {
@@ -39,18 +47,30 @@ const TableOfcontent = ({ editor, className }) => {
     }
     editor?.on('update', handleUpdate)
 
+    editor?.on('transaction', (tr, state) => {
+      if(tr.transaction.meta?.foldAndunfold){
+        // TODO: not good solotion, but it works
+        // console.log("transaction", {tr, meta: tr.transaction.meta?.foldAndunfold})
+        setTimeout(() => {
+         handleUpdate(tr)
+        },1000)
+      }
+    })
+
     return () => {
+      editor?.off('update', handleUpdate)
       editor?.off('update', handleUpdate)
     }
   }, [editor])
 
-  useEffect(() => {
-    PubSub.subscribe('toggleHeadingsContent', function (messag, data) {
-      handleUpdate(data)
-    })
+  // useEffect(() => {
+  //   PubSub.subscribe('toggleHeadingsContent', function (msg, data) {
+  //     // handleUpdate(editor, data)
+  //   })
 
-    return () => PubSub.unsubscribe('toggleHeadingsContent')
-  }, [])
+  //   return () => PubSub.unsubscribe('toggleHeadingsContent')
+  // }, [])
+
 
   const scroll2Header = (e) => {
     e.preventDefault()
@@ -61,8 +81,6 @@ const TableOfcontent = ({ editor, className }) => {
 
     document.querySelector(`.heading[data-id="${id}"]`)?.scrollIntoView()
   }
-
-  // console.log(newItems)
 
   const toggleSection = (item) => {
     document
