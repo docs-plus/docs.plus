@@ -90,8 +90,6 @@ const OpenDocuments = ({ docTitle, docSlug}) => {
 
         setProvider(colabProvider)
 
-        console.log(colabProvider)
-
         // Store the Y document in the browser
         const indexDbProvider = new IndexeddbPersistence(docId, colabProvider.document)
 
