@@ -2,13 +2,13 @@ back_dev:
 	cd packages/hocuspocus.server && npm run dev:pg
 
 front_dev:
-	cd packages/next.js && npm run dev
+	cd packages/nextjs && npm run dev
 
 local:
 	make -j 2 back_dev front_dev
 
 dev_editor:
-	cd packages/next.js && npm run dev
+	cd packages/nextjs && npm run dev
 
 dev_editor_hocuspocus:
 	cd packages/web && npm run hocuspocus:server
