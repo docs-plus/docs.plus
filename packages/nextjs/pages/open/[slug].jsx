@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/router'
-import Head from 'next/head'
+import HeadSeo from '../../components/HeadSeo'
 
 import { useEditor, EditorContent } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
@@ -152,10 +152,10 @@ const OpenDocuments = ({ docTitle, docSlug}) => {
 
     return (
         <>
-          <Head>
-            <meta property="og:title" content={documentTitle} key="title" />
-            <meta content="another open docs plus document" name="description" />
-          </Head>
+          <HeadSeo
+            title={documentTitle}
+            description="another open docs plus document"
+          />
           <div className="pad tiptap flex flex-col border-solid border-2">
             <div className='header w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b'>
               {docSlug && <PadTitle docSlug={docSlug} docId={docId} docTitle={documentTitle} provider={provider} />}
