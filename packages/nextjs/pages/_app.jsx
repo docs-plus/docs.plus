@@ -47,34 +47,20 @@ export default function MyApp({ Component, pageProps }) {
 
         <link id="apple-touch-icon" rel="apple-touch-icon" href="/icons/android-chrome-512x512.png" />
 
-        {/* 
+        {/*
           Disables automatic detection of possible phone numbers in a webpage in Safari on iOS.
           See: https://developer.apple.com/library/safari/documentation/AppleApplications/Reference/SafariHTMLRef/Articles/MetaTags.html#//apple_ref/doc/uid/TP40008193-SW5
           See: https://developer.apple.com/library/safari/documentation/AppleApplications/Reference/SafariHTMLRef/Articles/MetaTags.html#//apple_ref/html/const/format-detection
         */}
-        <meta name="format-detection" content="telephone=no" /> 
+        <meta name="format-detection" content="telephone=no" />
         <meta name="format-detection" content="address=no" />
-        <meta content="docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge in a hierarchical manner. Collaborate on documents and share knowledge in a structured, logical way." name="description" />
         <meta name="keywords" content="docs.plus, real-time, collaborative, open-source, communities, knowledge sharing, Microsoft Word alternative" />
         <link rel="manifest" href="/manifest.json" />
-        <title>Docs Plus</title>
 
         <meta name="application-name" content="Docs Plus" />
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <meta name="apple-mobile-web-app-title" content="Docs Plus" />
 
-
-        <meta name="twitter:card" content="Docs Plus" />
-        <meta name="twitter:url" content="http://docs.plus" />
-        <meta name="twitter:title" content="Docs Plus" />
-        <meta name="twitter:description" content="docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge in a hierarchical manner. Collaborate on documents and share knowledge in a structured, logical way." />
-        <meta name="twitter:image" content="/icons/maskable_icon_x512.png" />
-        <meta property="og:type" content="website" />
-        <meta property="og:title" content="Docs Plus" />
-        <meta property="og:description" content="docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge in a hierarchical manner. Collaborate on documents and share knowledge in a structured, logical way." />
-        <meta property="og:site_name" content="Docs Plus" />
-        <meta property="og:url" content="http://docs.plus" />
-        <meta property="og:image" content="/icons/maskable_icon_x512.png" />
 
 
       </Head>
