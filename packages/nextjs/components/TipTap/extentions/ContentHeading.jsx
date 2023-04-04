@@ -97,8 +97,8 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
           })
         })
 
-      editor.view.dispatch(tr)
-      toggleHeadingContent(headingNodeEl)
+        editor.view.dispatch(tr)
+        toggleHeadingContent(headingNodeEl)
     }
   }
 
