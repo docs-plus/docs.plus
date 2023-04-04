@@ -112,3 +112,5 @@ packages/**/node_modules
 packages/**/volumes
 packages/web/dev-dist
 .npmrc
+
+.DS_Store
