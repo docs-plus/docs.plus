@@ -163,9 +163,8 @@ const HeadingsContent = Node.create({
       const dom = document.createElement('div')
 
       // get parent node
-      const upperNode = editor.state.doc.nodeAt(getPos() - 2)
-      const parentNode = editor.state.doc.nodeAt(getPos() - upperNode.nodeSize - 2)
-      const headingId = parentNode?.attrs.id
+      const parentNode = editor.state.doc?.resolve(getPos())
+      const headingId = getPos() - parentNode.nodeBefore.nodeSize === 1 ? "1" : parentNode.parent?.attrs.id
 
       const nodeState = getNodeState(headingId)
 
