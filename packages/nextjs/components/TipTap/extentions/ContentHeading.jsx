@@ -1,5 +1,5 @@
-import { Selection, Plugin, TextSelection, PluginKey } from 'prosemirror-state'
-import { Decoration, DecorationSet } from 'prosemirror-view'
+import { Selection, Plugin, TextSelection, PluginKey } from '@tiptap/pm/state'
+import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { Node, mergeAttributes } from '@tiptap/core'
 
 import { db } from '../../../db'

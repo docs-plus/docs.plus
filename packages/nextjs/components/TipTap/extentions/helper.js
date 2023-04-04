@@ -1,4 +1,4 @@
-import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from 'prosemirror-model'
+import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from '@tiptap/pm/model'
 
 /**
  *

@@ -1,6 +1,6 @@
 import { Node, mergeAttributes, findChildren, isActive } from '@tiptap/core'
-import { Slice, Fragment } from 'prosemirror-model'
-import { Selection, Plugin, PluginKey, TextSelection } from 'prosemirror-state'
+import { Slice, Fragment } from '@tiptap/pm/model'
+import { Selection, Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
 
 import changeHeadingLevel from './changeHeadingLevel'
 import wrapContenWithHeading from './wrapContenWithHeading'

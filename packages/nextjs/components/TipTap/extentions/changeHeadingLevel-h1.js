@@ -1,4 +1,4 @@
-import { TextSelection } from 'prosemirror-state'
+import { TextSelection } from '@tiptap/pm/state'
 
 import { getPrevHeadingList, createThisBlockMap, getHeadingsBlocksMap, getRangeBlocks, getPrevHeadingPos } from './helper'
 
