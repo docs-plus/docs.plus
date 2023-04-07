@@ -84,8 +84,8 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
   }, [])
 
   useEffect(() => {
-    console.log({ rendering, loading, applyingFilters })
-  }, [rendering, loading, applyingFilters])
+    console.log({ rendering, loading, applyingFilters, provider, docId })
+  }, [rendering, loading, applyingFilters, provider])
 
   useEffect(() => {
     // Use the data returned by useCustomHook in useEffect
@@ -131,7 +131,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
         name: docId,
         document: ydoc,
         onStatus: (data) => {
-          // console.log('onStatus', data)
+          console.log('onStatus', data)
         },
         onSynced: (data) => {
           // console.log('onSynced', data)
@@ -172,6 +172,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
 
   // listen to the editor transaction state change, in order to update rendering state
   useEffect(() => {
+    console.log('Transition editor', editor)
     editor?.on('transaction', ({ editor, transaction }) => {
       // The editor state has changed.
       console.log({
