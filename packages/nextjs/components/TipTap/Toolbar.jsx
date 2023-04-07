@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import Select from 'react-select'
-
+import { useRouter } from 'next/router'
 import {
   Bold,
   Italic,
@@ -17,13 +17,19 @@ import {
   Undo,
   Redo,
   Printer,
+  SearchDoc,
 } from '../../components/icons/Icons'
 
 const GearModal = (props) => {
   return <div className="gearModal nd_modal">{props.children}</div>
 }
+const FilterModal = (props) => {
+  return <div className="filterModal nd_modal">{props.children}</div>
+}
 
 const Toolbar = ({ editor }) => {
+  const router = useRouter()
+
   if (!editor) {
     return null
   }
@@ -76,6 +82,9 @@ const Toolbar = ({ editor }) => {
 
   const [selectedOption, setSelectedOption] = useState(options[0])
   const [selectValue, setSelectValue] = useState(options[0])
+  const [totalHeading, setTotalHeading] = useState(0)
+  const [totalSearch, setTotalSearch] = useState(0)
+  const filterSearchRef = useRef(null)
 
   useEffect(() => {
     if (editor.isActive('contentHeading', { level: 1 }))
@@ -174,13 +183,63 @@ const Toolbar = ({ editor }) => {
     setH1SectionBreakSetting(!h1SectionBreakSetting)
   }
 
-  const toggleSettingModal = () => {
+  const toggleSettingModal = (e) => {
+    hideAllModals()
+
     document.querySelector('.gearModal').classList.toggle('active')
+  }
+  const toggleFilterModal = (e) => {
+    hideAllModals()
+    const headings = document.querySelectorAll('.title')
+    // console.log(search, headings)
+    setTotalHeading(headings.length)
+    document.querySelector('.filterModal').classList.toggle('active')
+    filterSearchRef.current.focus()
+  }
+
+  const hideAllModals = () => {
+    document.querySelector('.gearModal').classList.remove('active')
+    document.querySelector('.filterModal').classList.remove('active')
   }
 
   const hideModals = (e) => {
     if (e.target.closest('.btn_modal') || e.target.closest('.nd_modal')) return
     document.querySelector('.gearModal').classList.remove('active')
+    document.querySelector('.filterModal').classList.remove('active')
+  }
+
+  const searchThroughHeading = (e) => {
+    const search = e.target.value
+    const headings = document.querySelectorAll('.title')
+    // console.log(search, headings)
+    setTotalHeading(headings.length)
+
+    const filteredHeadings = Array.from(headings).filter((heading) => {
+      const key = search
+
+      const regex = new RegExp(key, 'i')
+      if (regex.test(heading.textContent)) {
+        return { node: heading, text: heading.textContent }
+      }
+    })
+
+    setTotalSearch(filteredHeadings.length)
+
+    if (e.key === 'Enter') {
+      // TODO: fix this hack
+      // router.push(`/open/${router.query.slugs.at(0)}/${search}`, undefined, {
+      //   shallow: false,
+      // })
+      const mainDoc = router.query.slugs.at(0)
+      window.location.href = `/open/${mainDoc}/${encodeURIComponent(search)}`
+    }
+  }
+
+  const applySerchThroughHeading = () => {
+    console.log(document.querySelector('#searchThroughHeading'))
+    const search = filterSearchRef.current.value
+    const mainDoc = router.query.slugs.at(0)
+    window.location.href = `/open/${mainDoc}/${encodeURIComponent(search)}`
   }
 
   return (
@@ -311,6 +370,10 @@ const Toolbar = ({ editor }) => {
         </button>
       </span>
 
+      <button className="btn_filterModal btn_modal" onClick={toggleFilterModal}>
+        <SearchDoc fill="rgba(0,0,0,.7)" size="16" />
+      </button>
+
       <button
         className="btn_settingModal btn_modal"
         onClick={toggleSettingModal}
@@ -362,6 +425,30 @@ const Toolbar = ({ editor }) => {
           </label>
         </div>
       </GearModal>
+      <FilterModal>
+        <p className="font-medium text-base text-gray-400 pb-1">Filter:</p>
+        <hr />
+        <div className="content pt-2 flex align-middle justify-between">
+          <input
+            // checked={searchSetting}
+            id="filterSearchBox"
+            className="p-1 px-2 rounded bg-slate-200 text-black"
+            type="text"
+            placeholder="Find"
+            onKeyDown={searchThroughHeading}
+            ref={filterSearchRef}
+          />
+          <p className="ml-2 text-sm">
+            {totalSearch} of {totalHeading}
+          </p>
+          <button
+            onClick={applySerchThroughHeading}
+            className="!p-3 !w-16  border"
+          >
+            Apply
+          </button>
+        </div>
+      </FilterModal>
     </div>
   )
 }

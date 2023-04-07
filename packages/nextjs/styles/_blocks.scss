@@ -158,7 +158,7 @@
     width: 28px;
     @apply flex rounded items-center justify-center relative;
 
-    &.btn_settingModal {
+    &.btn_filterModal {
       @apply ml-auto
     }
 
@@ -184,7 +184,11 @@
     }
   }
 
-  .gearModal {
+  .filterModal{
+    width: 350px!important;
+  }
+
+  .gearModal, .filterModal {
     width: 300px;
     padding: 8px;
     border: 1px solid #ddd;
@@ -206,6 +210,8 @@
     }
   }
 }
+
+
 
 .nodeStyle__control,
 .nodeStyle__value-container {
