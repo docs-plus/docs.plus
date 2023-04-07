@@ -74,6 +74,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     setLoading,
     applyingFilters,
     setApplyingFilters,
+    isEmpty,
   } = useEditorStateContext()
 
   // check if the document is in the filter mode
@@ -105,7 +106,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
 
       // get the heading map from indexdb, when the document is not in the filter mode
       if (slugs.length === 1) {
-        console.log('get db.meta data from indexdb')
+        // console.log('get db.meta data from indexdb')
         db.meta
           .where({ docId: documentId })
           .toArray()
@@ -120,8 +121,6 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     if (docId) {
       const ydoc = new Y.Doc()
 
-      console.log('getting provider', docId)
-
       setYdoc(ydoc)
 
       const colabProvider = new HocuspocusProvider({
@@ -129,7 +128,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
         name: docId,
         document: ydoc,
         onStatus: (data) => {
-          console.log('onStatus', data)
+          // console.log('onStatus', data)
         },
         onSynced: (data) => {
           // console.log('onSynced', data)
@@ -137,7 +136,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
           if (data?.state) setLoading(false)
         },
         documentUpdateHandler: (update) => {
-          console.log('documentUpdateHandler', update)
+          // console.log('documentUpdateHandler', update)
         },
         onDisconnect: (data) => {
           // console.log("onDisconnect", data)
@@ -164,13 +163,20 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
   }, [docId])
 
   const editor = useEditor(editorConfig({ padName: docId, provider, ydoc }), [
-    provider,
-    applyingFilters,
+    // provider,
+    loading,
+    // applyingFilters,
   ])
 
   // listen to the editor transaction state change, in order to update rendering state
   useEffect(() => {
-    console.log('Transition editor', editor)
+    // console.log('Transition editor', editor)
+
+    if (!editor) return
+    if (loading) return
+
+    setRendering(false)
+
     editor?.on('transaction', ({ editor, transaction }) => {
       // The editor state has changed.
       console.log({
@@ -185,8 +191,32 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
       }
     })
 
+    // editor?.callbacks?.beforeCreate(() => {
+    //   console.log('beforeCreate')
+    // })
+
+    // console.log('isiisisis emooototoot', isEmpty)
+
+    // editor?.on('beforeCreate', () => {
+    //   console.log(' beforeCreate')
+    // })
+    // editor?.on('update', () => {
+    //   // console.log(' update')
+    // })
+    // editor?.on('create', () => {
+    //   console.log(' create')
+    // })
+
+    // editor?.on('create', ({ editor }) => {
+    //   console.log('on create', editor.isEmpty)
+    //   if (editor.isEmpty) {
+    //     setRendering(false)
+    //   }
+    // })
+
     return () => {
       editor?.off('transaction')
+      // editor?.off('create')
     }
   }, [editor])
 
@@ -279,18 +309,6 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     // });
   }, [rendering, router])
 
-  useEffect(() => {
-    console.log({
-      rendering,
-      loading,
-      applyingFilters,
-      provider,
-      docId,
-      documentTitle,
-      editor,
-    })
-  }, [rendering, loading, applyingFilters, provider, docId, editor])
-
   const scrollHeadingSelection = (event) => {
     const scrollTop = event.currentTarget.scrollTop
     const toc = document.querySelector('.toc__list')
@@ -364,29 +382,29 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
             onScroll={scrollHeadingSelection}
           >
             {loading ? (
-              <div>Loading Data...</div>
+              'Loading Data...'
             ) : !editor ? (
-              <div>Loading Editor...</div>
+              'Loading Editor...'
             ) : (
-              <div>
-                <div
-                  data-rendering={rendering}
-                  className={rendering ? 'hidden' : 'block'}
+              <>
+                <span
+                  className={`${
+                    applyingFilters || rendering ? 'block' : 'hidden'
+                  }`}
                 >
-                  <div className={`${applyingFilters ? 'block' : 'hidden'}`}>
-                    Applying Filters...
-                  </div>
-                  <div className={`${!applyingFilters ? 'block' : 'hidden'}`}>
-                    <EditorContent
-                      className="tipta__editor mb-12 sm:mb-0 sm:p-8"
-                      editor={editor}
-                    />
-                  </div>
-                </div>
-                <div className={!rendering ? 'hidden' : 'block'}>
-                  Rendering Data...
-                </div>
-              </div>
+                  {applyingFilters
+                    ? 'Applying Filters...'
+                    : rendering
+                    ? 'Rendering Data...'
+                    : ''}
+                </span>
+                <EditorContent
+                  className={`tipta__editor mb-12 sm:mb-0 sm:p-8 ${
+                    !applyingFilters ? 'block' : 'hidden'
+                  }`}
+                  editor={editor}
+                />
+              </>
             )}
           </div>
         </div>
@@ -403,11 +421,6 @@ export async function getServerSideProps(context) {
     `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentSlug}`
   )
   const data = await res.json()
-  console.log({
-    documentSlug,
-    slugs: context.query.slugs,
-    data,
-  })
   return {
     props: { docTitle: data.data.title, docSlug: documentSlug }, // will be passed to the page component as props
   }

@@ -4,8 +4,9 @@ const Context = createContext()
 
 export const EditorStateProvider = ({ children }) => {
   const [rendering, setRendering] = useState(true)
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(true)
   const [applyingFilters, setApplyingFilters] = useState(false)
+  const [isEmpty, setIsEmpty] = useState(true)
 
   return (
     <Context.Provider
@@ -16,6 +17,8 @@ export const EditorStateProvider = ({ children }) => {
         setLoading,
         applyingFilters,
         setApplyingFilters,
+        isEmpty,
+        setIsEmpty,
       }}
     >
       {children}
