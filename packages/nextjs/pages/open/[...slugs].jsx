@@ -84,8 +84,16 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
   }, [])
 
   useEffect(() => {
-    console.log({ rendering, loading, applyingFilters, provider, docId })
-  }, [rendering, loading, applyingFilters, provider])
+    console.log({
+      rendering,
+      loading,
+      applyingFilters,
+      provider,
+      docId,
+      documentTitle,
+      editor,
+    })
+  }, [rendering, loading, applyingFilters, provider, docId, editor])
 
   useEffect(() => {
     // Use the data returned by useCustomHook in useEffect
@@ -123,6 +131,8 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
   useEffect(() => {
     if (docId) {
       const ydoc = new Y.Doc()
+
+      console.log('getting provider', docId)
 
       setYdoc(ydoc)
 
@@ -393,7 +403,12 @@ export async function getServerSideProps(context) {
     `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentSlug}`
   )
   const data = await res.json()
+  console.log({
+    documentSlug,
+    slugs: context.query.slugs,
+    data,
+  })
   return {
-    props: { name: 'hassan', docTitle: data.data.title, docSlug: documentSlug }, // will be passed to the page component as props
+    props: { docTitle: data.data.title, docSlug: documentSlug }, // will be passed to the page component as props
   }
 }
