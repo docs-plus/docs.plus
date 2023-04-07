@@ -174,6 +174,10 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
   useEffect(() => {
     editor?.on('transaction', ({ editor, transaction }) => {
       // The editor state has changed.
+      console.log({
+        tr: transaction.meta['y-sync$'],
+        meta: transaction.meta,
+      })
       if (
         transaction.meta['y-sync$']?.isChangeOrigin === true &&
         transaction.meta['y-sync$']?.isUndoRedoOperation === false
