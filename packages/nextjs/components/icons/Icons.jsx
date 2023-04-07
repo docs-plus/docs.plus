@@ -224,6 +224,22 @@ export const Doc = ({ size = 18, fill = 'black', className }) => {
 }
 
 // prettier-ignore
+export const SearchDoc = ({ size = 18, fill = 'black', className }) => {
+  return (
+    <svg className={className} viewBox="0 0 16 20" width={size} xmlns="http://www.w3.org/2000/svg" >
+    <g>
+      <g>
+        <path fill="none" d="M-4-2h24v24H-4V-2z"/>
+        <path fill={fill} d="M16,17.6l-3.8-3.8C12.7,13,13,12,13,11c0-2.8-2.2-5-5-5s-5,2.2-5,5s2.2,5,5,5c1,0,2-0.3,2.8-0.8l4.4,4.4
+          C14.9,19.8,14.5,20,14,20H2c-1.1,0-2-0.9-2-2L0,2c0-1.1,0.9-2,2-2h8l6,6V17.6z M5,11c0-1.7,1.3-3,3-3s3,1.3,3,3s-1.3,3-3,3
+          S5,12.7,5,11z"/>
+      </g>
+    </g>
+    </svg>
+  )
+}
+
+// prettier-ignore
 export const DocsPlus = ({ size = 18, fill = 'black', className }) => {
   return (
     <svg className={className} viewBox="0 0 1954.69 2508.26" width={size} xmlns="http://www.w3.org/2000/svg">
