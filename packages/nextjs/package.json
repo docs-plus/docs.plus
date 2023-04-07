@@ -7,7 +7,8 @@
     "build": "NODE_ENV=production next build",
     "start": "next start",
     "start:pm2": "pm2 reload pm2.config.js --env production",
-    "update:packages": "ncu -u"
+    "update:packages": "ncu -u",
+    "lint:fix": "next lint --fix"
   },
   "dependencies": {
     "@hocuspocus/provider": "^2.0.1",
@@ -71,7 +72,10 @@
     "@types/node": "18.15.11",
     "@types/react": "18.0.33",
     "autoprefixer": "^10.4.14",
+    "eslint-config-next": "13.2.4",
+    "eslint-config-prettier": "^8.8.0",
     "postcss": "^8.4.21",
+    "prettier": "2.8.7",
     "sass": "^1.60.0",
     "tailwindcss": "^3.3.1",
     "typescript": "5.0.3"
