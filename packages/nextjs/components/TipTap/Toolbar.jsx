@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Select from 'react-select'
 
 import {
@@ -16,15 +16,11 @@ import {
   HighlightMarker,
   Undo,
   Redo,
-  Printer
+  Printer,
 } from '../../components/icons/Icons'
 
 const GearModal = (props) => {
-  return (
-    <div className='gearModal nd_modal'>
-      {props.children}
-    </div>
-  )
+  return <div className="gearModal nd_modal">{props.children}</div>
 }
 
 const Toolbar = ({ editor }) => {
@@ -75,23 +71,33 @@ const Toolbar = ({ editor }) => {
     { value: 7, label: 'Heading 7' },
     { value: 8, label: 'Heading 8' },
     { value: 9, label: 'Heading 9' },
-    { value: 10, label: 'Heading 10' }
+    { value: 10, label: 'Heading 10' },
   ]
 
   const [selectedOption, setSelectedOption] = useState(options[0])
   const [selectValue, setSelectValue] = useState(options[0])
 
   useEffect(() => {
-    if (editor.isActive('contentHeading', { level: 1 })) setSelectValue(options[1])
-    else if (editor.isActive('contentHeading', { level: 2 })) setSelectValue(options[2])
-    else if (editor.isActive('contentHeading', { level: 3 })) setSelectValue(options[3])
-    else if (editor.isActive('contentHeading', { level: 4 })) setSelectValue(options[4])
-    else if (editor.isActive('contentHeading', { level: 5 })) setSelectValue(options[5])
-    else if (editor.isActive('contentHeading', { level: 6 })) setSelectValue(options[6])
-    else if (editor.isActive('contentHeading', { level: 7 })) setSelectValue(options[7])
-    else if (editor.isActive('contentHeading', { level: 8 })) setSelectValue(options[8])
-    else if (editor.isActive('contentHeading', { level: 9 })) setSelectValue(options[9])
-    else if (editor.isActive('contentHeading', { level: 10 })) setSelectValue(options[10])
+    if (editor.isActive('contentHeading', { level: 1 }))
+      setSelectValue(options[1])
+    else if (editor.isActive('contentHeading', { level: 2 }))
+      setSelectValue(options[2])
+    else if (editor.isActive('contentHeading', { level: 3 }))
+      setSelectValue(options[3])
+    else if (editor.isActive('contentHeading', { level: 4 }))
+      setSelectValue(options[4])
+    else if (editor.isActive('contentHeading', { level: 5 }))
+      setSelectValue(options[5])
+    else if (editor.isActive('contentHeading', { level: 6 }))
+      setSelectValue(options[6])
+    else if (editor.isActive('contentHeading', { level: 7 }))
+      setSelectValue(options[7])
+    else if (editor.isActive('contentHeading', { level: 8 }))
+      setSelectValue(options[8])
+    else if (editor.isActive('contentHeading', { level: 9 }))
+      setSelectValue(options[9])
+    else if (editor.isActive('contentHeading', { level: 10 }))
+      setSelectValue(options[10])
     else setSelectValue(options[0])
   }, [
     editor.isActive('contentHeading', { level: 1 }),
@@ -104,7 +110,7 @@ const Toolbar = ({ editor }) => {
     editor.isActive('contentHeading', { level: 8 }),
     editor.isActive('contentHeading', { level: 9 }),
     editor.isActive('contentHeading', { level: 10 }),
-    editor.isActive('paragraph')
+    editor.isActive('paragraph'),
   ])
 
   const onchangeValue = (e) => {
@@ -115,74 +121,74 @@ const Toolbar = ({ editor }) => {
     else editor.chain().focus().wrapBlock({ level: +value }).run()
   }
 
-  let indentSetting = Boolean(localStorage.getItem('setting.indentHeading') || false)
-  let h1SectionBreakSetting = Boolean(localStorage.getItem('setting.h1SectionBreakSetting') || false)
-
-  if (!indentSetting) {
-    localStorage.setItem('setting.indentHeading', '')
-    indentSetting = false
+  const getLocalStorageBoolean = (key, defaultValue) => {
+    const value = localStorage.getItem(key)
+    return value !== null ? value === 'true' : defaultValue
   }
 
-  if (!h1SectionBreakSetting) {
-    console.log('indentSetting', indentSetting)
-    localStorage.setItem('setting.h1SectionBreakSetting', 'true')
-    h1SectionBreakSetting = true
-    document.body.classList.add('h1SectionBreak')
+  const setLocalStorageBoolean = (key, value) => {
+    localStorage.setItem(key, value.toString())
   }
 
-  const [indented, setIndented] = React.useState(indentSetting)
-  const [h1SectionBreak, setH1SectionBreak] = React.useState(h1SectionBreakSetting)
+  const useBooleanLocalStorageState = (key, defaultValue) => {
+    const [state, setState] = useState(() =>
+      getLocalStorageBoolean(key, defaultValue)
+    )
 
-  const toggleHeadingIndent = (e) => {
-    setIndented(preState => {
-      const newState = !preState
+    const updateState = (newValue) => {
+      setState(newValue)
+      setLocalStorageBoolean(key, newValue)
+    }
 
-      if (newState) { document.body.classList.add('indentHeading') } else { document.body.classList.remove('indentHeading') }
-
-      localStorage.setItem('setting.indentHeading', newState ? 'yes' : '')
-
-      return newState
-    })
+    return [state, updateState]
   }
 
-  const toggleH1SectionBreak = (e) => {
-    setH1SectionBreak(preState => {
-      const newState = !preState
+  const [indentSetting, setIndentSetting] = useBooleanLocalStorageState(
+    'setting.indentHeading',
+    false
+  )
+  const [h1SectionBreakSetting, setH1SectionBreakSetting] =
+    useBooleanLocalStorageState('setting.h1SectionBreakSetting', true)
 
-      if (newState) { document.body.classList.add('h1SectionBreak') } else { document.body.classList.remove('h1SectionBreak') }
+  useEffect(() => {
+    if (h1SectionBreakSetting) {
+      document.body.classList.add('h1SectionBreak')
+    } else {
+      document.body.classList.remove('h1SectionBreak')
+    }
+  }, [h1SectionBreakSetting])
 
-      localStorage.setItem('setting.h1SectionBreakSetting', newState ? 'yes' : '')
+  useEffect(() => {
+    if (indentSetting) {
+      document.body.classList.add('indentHeading')
+    } else {
+      document.body.classList.remove('indentHeading')
+    }
+  }, [indentSetting])
 
-      return newState
-    })
+  const toggleIndentSetting = () => {
+    setIndentSetting(!indentSetting)
+  }
+
+  const toggleH1SectionBreakSetting = () => {
+    setH1SectionBreakSetting(!h1SectionBreakSetting)
   }
 
   const toggleSettingModal = () => {
-    console.log('toggleSettingModal')
     document.querySelector('.gearModal').classList.toggle('active')
   }
 
   const hideModals = (e) => {
-    console.log()
     if (e.target.closest('.btn_modal') || e.target.closest('.nd_modal')) return
     document.querySelector('.gearModal').classList.remove('active')
   }
 
-  useEffect(() => {
-    const newIndent = Boolean(localStorage.getItem('setting.indentHeading'))
-    const newHsectionBreak = Boolean(localStorage.getItem('setting.indentHeading'))
-
-    if (newIndent) document.body.classList.add('indentHeading')
-    else document.body.classList.remove('indentHeading')
-
-    if (newHsectionBreak) document.body.classList.add('h1SectionBreak')
-    else document.body.classList.remove('h1SectionBreak')
-  }, [])
-
   return (
-    <div className='tiptap__toolbar editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-4' onClick={hideModals}>
-
-      <div className=' hidden sm:contents'>
+    <div
+      className="tiptap__toolbar editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-4"
+      onClick={hideModals}
+    >
+      <div className="hidden sm:contents">
         <button onClick={() => editor.chain().focus().undo().run()}>
           <Undo fill="rgba(0,0,0,.7)" size="16" />
         </button>
@@ -192,21 +198,21 @@ const Toolbar = ({ editor }) => {
         <button onClick={() => window.print()}>
           <Printer fill="rgba(0,0,0,.7)" size="16" />
         </button>
-        <div className='divided'></div>
+        <div className="divided"></div>
       </div>
 
       <Select
         className="w-32 text-sm"
         classNamePrefix="nodeStyle"
         defaultValue={options[0]}
-        menuColor='red'
+        menuColor="red"
         menuPlacement="top"
         options={options}
         value={selectValue}
         onChange={onchangeValue}
       />
 
-      <div className='divided'></div>
+      <div className="divided"></div>
 
       <button
         className={editor.isActive('bold') ? 'is-active' : ''}
@@ -229,25 +235,22 @@ const Toolbar = ({ editor }) => {
         <Underline fill="rgba(0,0,0,.7)" size="10" />
       </button>
 
-      <span className='hidden sm:contents'>
+      <span className="hidden sm:contents">
         <button
           className={editor.isActive('strike') ? 'is-active' : ''}
           onClick={() => editor.chain().focus().toggleStrike().run()}
         >
           <Stric fill="rgba(0,0,0,.7)" size="14" />
-
         </button>
-
       </span>
 
-      <div className='divided'></div>
+      <div className="divided"></div>
 
       <button
         className={editor.isActive('orderedList') ? 'is-active' : ''}
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
       >
         <OrderList fill="rgba(0,0,0,.7)" size="16" />
-
       </button>
 
       <button
@@ -255,35 +258,33 @@ const Toolbar = ({ editor }) => {
         onClick={() => editor.chain().focus().toggleBulletList().run()}
       >
         <BulletList fill="rgba(0,0,0,.7)" size="16" />
-
       </button>
 
-      <span className='hidden sm:contents'>
-
+      <span className="hidden sm:contents">
         <button
           className={editor.isActive('taskList') ? 'is-active' : ''}
           onClick={() => editor.chain().focus().toggleTaskList().run()}
         >
           <CheckList fill="rgba(0,0,0,.7)" size="16" />
         </button>
-
       </span>
 
-      <div className='divided'></div>
+      <div className="divided"></div>
 
-      <span className='hidden sm:contents'>
-
+      <span className="hidden sm:contents">
         <button onClick={addImage}>
           <Image fill="rgba(0,0,0,.5)" size="14" />
         </button>
-
       </span>
 
-      <button className={editor.isActive('link') ? 'is-active' : ''} onClick={setLink}>
+      <button
+        className={editor.isActive('link') ? 'is-active' : ''}
+        onClick={setLink}
+      >
         <Link fill="rgba(0,0,0,.7)" size="18" />
       </button>
 
-      <span className='hidden sm:contents'>
+      <span className="hidden sm:contents">
         <button
           className={editor.isActive('highlight') ? 'is-active' : ''}
           onClick={() => editor.chain().focus().toggleHighlight().run()}
@@ -292,53 +293,76 @@ const Toolbar = ({ editor }) => {
         </button>
       </span>
 
-      <span className='hidden sm:contents'>
+      <span className="hidden sm:contents">
+        <div className="divided"></div>
 
-        <div className='divided'></div>
+        <button
+          onClick={() => {
+            const range = editor.view.state.selection.ranges[0]
 
-        <button onClick={() => {
-          const range = editor.view.state.selection.ranges[0]
-
-          if (range.$from === range.$to) {
-            editor.chain().focus().clearNodes().run()
-          } else {
-            editor.chain().focus().unsetAllMarks().run()
-          }
-        }}>
+            if (range.$from === range.$to) {
+              editor.chain().focus().clearNodes().run()
+            } else {
+              editor.chain().focus().unsetAllMarks().run()
+            }
+          }}
+        >
           <ClearMark fill="rgba(0,0,0,.7)" size="14" />
         </button>
-
       </span>
 
       <button
-        className='btn_settingModal btn_modal'
+        className="btn_settingModal btn_modal"
         onClick={toggleSettingModal}
       >
         <Gear fill="rgba(0,0,0,.7)" size="16" />
       </button>
 
       <GearModal>
-        <p className='font-medium text-base text-gray-400 pb-1'>Settings:</p>
+        <p className="font-medium text-base text-gray-400 pb-1">Settings:</p>
         <hr />
-        <div className='content pt-5 '>
-          <label className="inline-flex relative items-center cursor-pointer" htmlFor="headingIndent-toggle">
-            <input checked={indented} className="sr-only peer"
-              id="headingIndent-toggle" type="checkbox" value="" onChange={(e) => toggleHeadingIndent(e.target)} />
+        <div className="content pt-5 ">
+          <label
+            className="inline-flex relative items-center cursor-pointer"
+            htmlFor="headingIndent-toggle"
+          >
+            <input
+              checked={indentSetting}
+              className="sr-only peer"
+              id="headingIndent-toggle"
+              type="checkbox"
+              value=""
+              onChange={(e) => toggleIndentSetting(e.target)}
+            />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-            <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300" > Toggle heading indent</span >
-          </label >
+            <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+              {' '}
+              Toggle heading indent
+            </span>
+          </label>
         </div>
-        <div className='content pt-5 '>
-          <label className="inline-flex relative items-center cursor-pointer" htmlFor="h1sectionbreak-toggle">
-            <input checked={h1SectionBreak} className="sr-only peer"
-              id="h1sectionbreak-toggle" type="checkbox" value="" onChange={(e) => toggleH1SectionBreak(e.target)} />
+        <div className="content pt-5 ">
+          <label
+            className="inline-flex relative items-center cursor-pointer"
+            htmlFor="h1sectionbreak-toggle"
+          >
+            <input
+              checked={h1SectionBreakSetting}
+              className="sr-only peer"
+              id="h1sectionbreak-toggle"
+              type="checkbox"
+              value=""
+              onChange={(e) => toggleH1SectionBreakSetting(e.target)}
+            />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-            <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300" > Toggle H1 section break</span >
-          </label >
+            <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
+              {' '}
+              Toggle H1 section break
+            </span>
+          </label>
         </div>
       </GearModal>
-
-    </div >
+    </div>
   )
 }
 
