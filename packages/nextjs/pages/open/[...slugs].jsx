@@ -165,7 +165,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
   const editor = useEditor(editorConfig({ padName: docId, provider, ydoc }), [
     // provider,
     loading,
-    // applyingFilters,
+    applyingFilters,
   ])
 
   // listen to the editor transaction state change, in order to update rendering state
@@ -179,16 +179,16 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
 
     editor?.on('transaction', ({ editor, transaction }) => {
       // The editor state has changed.
-      console.log({
-        tr: transaction.meta['y-sync$'],
-        meta: transaction.meta,
-      })
-      if (
-        transaction.meta['y-sync$']?.isChangeOrigin === true &&
-        transaction.meta['y-sync$']?.isUndoRedoOperation === false
-      ) {
-        setRendering(false)
-      }
+      // console.log({
+      //   tr: transaction.meta['y-sync$'],
+      //   meta: transaction.meta,
+      // })
+      // if (
+      //   transaction.meta['y-sync$']?.isChangeOrigin === true &&
+      //   transaction.meta['y-sync$']?.isUndoRedoOperation === false
+      // ) {
+      //   setRendering(false)
+      // }
     })
 
     // editor?.callbacks?.beforeCreate(() => {
@@ -215,7 +215,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     // })
 
     return () => {
-      editor?.off('transaction')
+      // editor?.off('transaction')
       // editor?.off('create')
     }
   }, [editor])
@@ -294,10 +294,11 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
         })
       }
     })
-    localStorage.setItem('headingMap', JSON.stringify(dbMap))
-    console.log(dbMap, '=-==-=-=-dbMap')
 
-    console.log('appling filter render again')
+    localStorage.setItem('headingMap', JSON.stringify(dbMap))
+    // console.log(dbMap, '=-==-=-=-dbMap')
+
+    // console.log('appling filter render again')
     setApplyingFilters(false)
 
     // console.log({
@@ -306,8 +307,8 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     //   headings,
     //   headingIds,
     //   filteredHeadings,
-    // });
-  }, [rendering, router])
+    // })
+  }, [rendering, editor])
 
   const scrollHeadingSelection = (event) => {
     const scrollTop = event.currentTarget.scrollTop
