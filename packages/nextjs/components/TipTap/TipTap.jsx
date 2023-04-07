@@ -64,26 +64,24 @@ lowlight.registerLanguage('bash', bash)
 const Document = Node.create({
   name: 'doc',
   topNode: true,
-  content: 'heading+'
+  content: 'heading+',
 })
 
 const Paragraph = Node.create({
   name: 'paragraph',
   group: 'block',
   content: 'inline*',
-  parseHTML () {
-    return [
-      { tag: 'p' }
-    ]
+  parseHTML() {
+    return [{ tag: 'p' }]
   },
-  renderHTML ({ HTMLAttributes }) {
+  renderHTML({ HTMLAttributes }) {
     return ['p', HTMLAttributes, 0]
-  }
+  },
 })
 
 const Text = Node.create({
   name: 'text',
-  group: 'inline'
+  group: 'inline',
 })
 
 const scrollDown = () => {
@@ -96,13 +94,24 @@ const scrollDown = () => {
       do: document.querySelector('.tipta__editor'),
       param: url,
       id: url.searchParams.get('id'),
-      nodeTarget: document.querySelector(`[data-id="${url.searchParams.get('id')}"]`)
+      nodeTarget: document.querySelector(
+        `[data-id="${url.searchParams.get('id')}"]`
+      ),
     })
-    document.querySelector(`[data-id="${url.searchParams.get('id')}"]`)?.scrollIntoView()
+    document
+      .querySelector(`[data-id="${url.searchParams.get('id')}"]`)
+      ?.scrollIntoView()
   }, 200)
 }
 
-const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = false, children }) => {
+const Editor = ({
+  padName,
+  provider,
+  ydoc,
+  defualtContent = '',
+  spellcheck = false,
+  children,
+}) => {
   if (!provider) {
     return {
       extensions: [
@@ -119,8 +128,8 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
         OrderedList,
         Heading.configure(),
         ContentHeading,
-        ContentWrapper
-      ]
+        ContentWrapper,
+      ],
     }
   }
 
@@ -132,20 +141,44 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
     onUpdate: (editor) => {
       // console.log("onUpdate", editor)
     },
+    // onTransaction({ editor, transaction }) {
+    //   // The editor state has changed.
+    //   console.log("onTransaction",{
+    //     ...transaction.meta['y-sync$']
+    //   })
+    //   if(transaction.meta['y-sync$']?.isChangeOrigin === true && transaction.meta['y-sync$']?.isUndoRedoOperation === false){
+    //     console.log({
+    //       state: editor.state.doc,
+    //       doc: document?.querySelectorAll(".heading")
+    //     })
+    //   }
+    // },
+    // onBeforeCreate({ editor }) {
+    //   // Before the view is created.
+    //   console.log('onBeforeCreate',{ editor, doc: document?.querySelectorAll(".heading")})
+    // },
+    // onCreate({ editor }) {
+    //   // The editor is ready.
+    //   console.log('onCreate', { editor, state: editor.state.doc, doc: document?.querySelectorAll(".heading")})
+    // },
+    onUpdate({ editor }) {
+      // The content has changed.
+      // console.log('onUpdate', editor)
+    },
     editorProps: {
       attributes: {
-        spellcheck
-      }
+        spellcheck,
+      },
     },
     extensions: [
       UniqueID.configure({
         types: ['heading', 'link'],
-        filterTransaction: transaction => !isChangeOrigin(transaction),
+        filterTransaction: (transaction) => !isChangeOrigin(transaction),
         generateID: () => {
           const uid = new ShortUniqueId()
 
           return uid.stamp(16)
-        }
+        },
       }),
       Document,
       Bold,
@@ -160,7 +193,7 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       OrderedList,
       Heading.configure(),
       CodeBlockLowlight.configure({
-        lowlight
+        lowlight,
       }),
       ContentHeading,
       ContentWrapper,
@@ -170,36 +203,36 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       TextAlign,
       Underline,
       Link.configure({
-        protocols: ['ftp', 'mailto']
+        protocols: ['ftp', 'mailto'],
       }),
       Image.configure({
         inline: true,
         allowBase64: true,
         HTMLAttributes: {
-          class: 'image-class'
-        }
+          class: 'image-class',
+        },
       }),
       TaskList,
       TaskItem.configure({
         nested: true,
         HTMLAttributes: {
-          class: 'tasks-class'
-        }
+          class: 'tasks-class',
+        },
       }),
       Highlight,
       Typography,
       Table.configure({
-        resizable: true
+        resizable: true,
       }),
       TableRow,
       TableHeader,
       TableCell,
       Collaboration.configure({
-        document: provider.document
+        document: provider.document,
       }),
       CollaborationCursor.configure({
         provider,
-        user: { name: 'Adam Doe', color: randomColor() }
+        user: { name: 'Adam Doe', color: randomColor() },
       }),
       Placeholder.configure({
         includeChildren: true,
@@ -266,17 +299,17 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
               'Build your message from scratch ...',
               'Develop your concepts with clarity ...',
               'Forge your ideas into a cohesive whole ...',
-              'Carve out your ideas with precision ...'
+              'Carve out your ideas with precision ...',
             ]
 
             return msg[Math.floor(Math.random() * msg.length + 1)]
           }
 
           return null
-        }
-      })
+        },
+      }),
     ],
-    defualtContent: ''
+    defualtContent: '',
   }
 }
 

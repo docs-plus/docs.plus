@@ -7,7 +7,7 @@ import { db } from '../../../db'
 import { copyToClipboard } from './helper'
 import onHeading from './normalText/onHeading'
 
-function extractContentHeadingBlocks (doc) {
+function extractContentHeadingBlocks(doc) {
   const result = []
   const record = (from, to, headingId, node) => {
     result.push({ from, to, headingId, node })
@@ -46,13 +46,17 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
 
   const toggleHeadingContent = (el) => {
     console.log('coming heaidng', {
-      el
+      el,
     })
     const headingId = el.getAttribute('data-id')
     const detailsContent = el.querySelector('div.contentWrapper')
-    const event = new CustomEvent('toggleHeadingsContent', { detail: { headingId, el: detailsContent } })
+    const event = new CustomEvent('toggleHeadingsContent', {
+      detail: { headingId, el: detailsContent },
+    })
 
-    detailsContent === null || detailsContent === void 0 ? void 0 : detailsContent.dispatchEvent(event)
+    detailsContent === null || detailsContent === void 0
+      ? void 0
+      : detailsContent.dispatchEvent(event)
   }
 
   const foldAndUnfold = (e) => {
@@ -71,7 +75,7 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
         tr.setNodeMarkup(pos, undefined, {
           ...currentNode.attrs,
           level: currentNode.attrs.level,
-          id: headingNode.attrs.id
+          id: headingNode.attrs.id,
         })
       }
 
@@ -79,7 +83,7 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
         tr.setNodeMarkup(pos - 1, undefined, {
           ...headingNode.attrs,
           level: currentNode.attrs.level,
-          id: headingNode.attrs.id
+          id: headingNode.attrs.id,
         })
       }
 
@@ -87,18 +91,35 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
 
       const documentId = localStorage.getItem('docId')
       const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
-      const nodeState = headingMap.find(h => h.headingId === headingId) || { crinkleOpen: true }
+      const nodeState = headingMap.find((h) => h.headingId === headingId) || {
+        crinkleOpen: true,
+      }
 
-      db.meta
-        .put({ docId: documentId, headingId, crinkleOpen: !nodeState.crinkleOpen, level: currentNode.attrs.level })
-        .then((data, ddd) => {
-          db.meta.where({ docId: documentId }).toArray().then((data) => {
-            localStorage.setItem('headingMap', JSON.stringify(data))
+      console.log('geting headheadingMap, =????>>>>>', headingMap)
+
+      const filterMode = document.body.classList.contains('filter-mode')
+      console.log(currentNode, 'currentNode===>', filterMode)
+      if (!filterMode) {
+        console.log('must save data to db')
+        db.meta
+          .put({
+            docId: documentId,
+            headingId,
+            crinkleOpen: !nodeState.crinkleOpen,
+            level: currentNode.attrs.level,
           })
-        })
+          .then((data, ddd) => {
+            db.meta
+              .where({ docId: documentId })
+              .toArray()
+              .then((data) => {
+                localStorage.setItem('headingMap', JSON.stringify(data))
+              })
+          })
+      }
 
-        editor.view.dispatch(tr)
-        toggleHeadingContent(headingNodeEl)
+      editor.view.dispatch(tr)
+      toggleHeadingContent(headingNodeEl)
     }
   }
 
@@ -131,11 +152,15 @@ const appendButtonsDec = (doc, editor) => {
   const decos = []
   const contentWrappers = extractContentHeadingBlocks(doc)
 
-  contentWrappers.forEach(prob => {
-    const decorationWidget = Decoration.widget(prob.to, buttonWrapper(editor, prob), {
-      side: -1,
-      key: prob.headingId
-    })
+  contentWrappers.forEach((prob) => {
+    const decorationWidget = Decoration.widget(
+      prob.to,
+      buttonWrapper(editor, prob),
+      {
+        side: -1,
+        key: prob.headingId,
+      }
+    )
 
     decos.push(decorationWidget)
   })
@@ -152,44 +177,48 @@ const HeadingsTitle = Node.create({
   // selectable: false,
   // isolating: true,
   allowGapCursor: false,
-  addOptions () {
+  addOptions() {
     return {
       HTMLAttributes: {
-        class: 'title'
+        class: 'title',
       },
       levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-      id: null
+      id: null,
     }
   },
-  addAttributes () {
+  addAttributes() {
     return {
       level: {
         default: 1,
-        rendered: false
+        rendered: false,
       },
       id: {
         default: null,
-        rendered: false
-      }
+        rendered: false,
+      },
     }
   },
-  parseHTML () {
-    return this.options.levels
-      .map((level) => ({
-        tag: `h${level}`,
-        attrs: { level }
-      }))
+  parseHTML() {
+    return this.options.levels.map((level) => ({
+      tag: `h${level}`,
+      attrs: { level },
+    }))
   },
-  renderHTML (state) {
+  renderHTML(state) {
     const { node, HTMLAttributes } = state
     const hasLevel = this.options.levels.includes(node.attrs.level)
-    const level = hasLevel
-      ? node.attrs.level
-      : this.options.levels[0]
+    const level = hasLevel ? node.attrs.level : this.options.levels[0]
 
-    return [`h${level}`, mergeAttributes(this.options.HTMLAttributes, { ...HTMLAttributes, level }), 0]
+    return [
+      `h${level}`,
+      mergeAttributes(this.options.HTMLAttributes, {
+        ...HTMLAttributes,
+        level,
+      }),
+      0,
+    ]
   },
-  addKeyboardShortcuts () {
+  addKeyboardShortcuts() {
     return {
       Backspace: ({ editor }) => {
         const { schema, selection, doc } = this.editor.state
@@ -203,11 +232,13 @@ const HeadingsTitle = Node.create({
 
         // if the current node is empty(means there is not content) and the parent is contentHeading
         if (
-          (node !== null || $anchor.parentOffset !== 0) || // this node block contains content
+          node !== null ||
+          $anchor.parentOffset !== 0 || // this node block contains content
           parent.type.name !== schema.nodes.contentHeading.name ||
           $anchor.pos === 2 // || // if the caret is in the first heading
           // parent.attrs.open === false // if the heading is closed
-        ) return false
+        )
+          return false
 
         console.info('[Heading]: remove the heading node')
 
@@ -215,27 +246,28 @@ const HeadingsTitle = Node.create({
           editor,
           state: editor.state,
           tr: editor.state.tr,
-          view: editor.view
+          view: editor.view,
         })
-      }
+      },
     }
   },
-  addProseMirrorPlugins () {
+  addProseMirrorPlugins() {
     return [
       new Plugin({
         key: new PluginKey('HeadingButtons'),
         state: {
           init: (_, { doc }) => appendButtonsDec(doc, this.editor),
-          apply: (tr, old) => tr.docChanged ? appendButtonsDec(tr.doc, this.editor) : old
+          apply: (tr, old) =>
+            tr.docChanged ? appendButtonsDec(tr.doc, this.editor) : old,
         },
         props: {
-          decorations (state) {
+          decorations(state) {
             return this.getState(state)
-          }
-        }
-      })
+          },
+        },
+      }),
     ]
-  }
+  },
 })
 
 export { HeadingsTitle, HeadingsTitle as default }
