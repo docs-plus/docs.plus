@@ -84,18 +84,6 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
   }, [])
 
   useEffect(() => {
-    console.log({
-      rendering,
-      loading,
-      applyingFilters,
-      provider,
-      docId,
-      documentTitle,
-      editor,
-    })
-  }, [rendering, loading, applyingFilters, provider, docId, editor])
-
-  useEffect(() => {
     // Use the data returned by useCustomHook in useEffect
     if (data?.data?.documentId) {
       const { documentId, isPrivate } = data?.data
@@ -290,6 +278,18 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     //   filteredHeadings,
     // });
   }, [rendering, router])
+
+  useEffect(() => {
+    console.log({
+      rendering,
+      loading,
+      applyingFilters,
+      provider,
+      docId,
+      documentTitle,
+      editor,
+    })
+  }, [rendering, loading, applyingFilters, provider, docId, editor])
 
   const scrollHeadingSelection = (event) => {
     const scrollTop = event.currentTarget.scrollTop
