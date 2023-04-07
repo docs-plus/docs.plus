@@ -62,7 +62,7 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
   const foldAndUnfold = (e) => {
     const el = e.target
     const headingNodeEl = el.closest('.heading')
-    const headingId = headingNodeEl.getAttribute('data-id')
+    let headingId = headingNodeEl.getAttribute('data-id')
 
     editor.commands.focus(from + node.nodeSize - 1)
     if (editor.isEditable) {
@@ -70,6 +70,9 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
       const pos = from
       const currentNode = tr.doc.nodeAt(pos)
       const headingNode = tr.doc.nodeAt(pos - 1)
+
+      // TODO: this is not good way
+      headingId = pos === 1 ? '1' : headingId
 
       if (currentNode && currentNode.type.name === 'contentHeading') {
         tr.setNodeMarkup(pos, undefined, {
@@ -98,9 +101,12 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
       console.log('geting headheadingMap, =????>>>>>', headingMap)
 
       const filterMode = document.body.classList.contains('filter-mode')
-      console.log(currentNode, 'currentNode===>', filterMode)
+      // console.log(currentNode, 'currentNode===>', filterMode, {
+      //   pos,
+      //   // currentNode: currentNode?.resolve(pos),
+      // })
       if (!filterMode) {
-        console.log('must save data to db')
+        // console.log('must save data to db')
         db.meta
           .put({
             docId: documentId,
