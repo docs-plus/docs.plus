@@ -1,7 +1,6 @@
 // Source: google Icons for G Suits https://ssl.gstatic.com/docs/common/material_common_sprite413_blue.svg
 // https://ssl.gstatic.com/docs/documents/share/images/sprite-24.svg
-import React from 'react'
-
+// prettier-ignore
 export const Bold = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 9.5 12" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -10,6 +9,7 @@ export const Bold = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const Italic = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 10 12" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -18,6 +18,7 @@ export const Italic = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const Stric = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 14 12.49" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -26,6 +27,7 @@ export const Stric = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const HighlightMarker = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 14.58 12.59" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -34,6 +36,7 @@ export const HighlightMarker = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const ClearMark = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 13.73 13" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -42,6 +45,7 @@ export const ClearMark = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const Underline = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 10 14" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -50,6 +54,7 @@ export const Underline = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const CheckList = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 16 12.2" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -58,6 +63,7 @@ export const CheckList = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const OrderList = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 18 16" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -66,6 +72,7 @@ export const OrderList = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const BulletList = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 18 15" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -74,6 +81,7 @@ export const BulletList = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const Link = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 20 10" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -82,6 +90,7 @@ export const Link = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const UnLink = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 20 18.15" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -90,6 +99,7 @@ export const UnLink = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const CheckBox = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 14 14" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -98,6 +108,7 @@ export const CheckBox = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const Undo = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 16 7" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -106,6 +117,7 @@ export const Undo = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const Redo = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 16 7" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -114,6 +126,7 @@ export const Redo = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const Printer = ({ size = 18, fill = 'black' }) => {
   return (
     <svg fill={fill} viewBox="0 0 16 14" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -122,6 +135,7 @@ export const Printer = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const Plus = ({ size = 18, fill = 'black' }) => {
   return (
     <svg viewBox="0 0 16 16" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -130,6 +144,7 @@ export const Plus = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const AddComment = ({ size = 18, fill = 'black' }) => {
   return (
     <svg viewBox="0 0 20 20" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -138,6 +153,7 @@ export const AddComment = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const Video = ({ size = 18, fill = 'black' }) => {
   return (
     <svg viewBox="0 0 20 16" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -145,6 +161,7 @@ export const Video = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const Image = ({ size = 18, fill = 'black' }) => {
   return (
     <svg viewBox="0 0 18 18" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -153,6 +170,7 @@ export const Image = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const Gear = ({ size = 18, fill = 'black' }) => {
   return (
     <svg viewBox="0 0 18 18" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -161,6 +179,7 @@ export const Gear = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const OfflineCloud = ({ size = 18, fill = 'black', className }) => {
   return (
     <svg className={className} viewBox="0 0 18 15.19" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -169,6 +188,7 @@ export const OfflineCloud = ({ size = 18, fill = 'black', className }) => {
   )
 }
 
+// prettier-ignore
 export const OnlineCloud = ({ size = 18, fill = 'black', className }) => {
   return (
     <svg className={className} viewBox="0 0 20 14" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -177,6 +197,7 @@ export const OnlineCloud = ({ size = 18, fill = 'black', className }) => {
   )
 }
 
+// prettier-ignore
 export const ArrowLeft = ({ size = 18, fill = 'black' }) => {
   return (
     <svg viewBox="0 0 16 14" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -187,6 +208,7 @@ export const ArrowLeft = ({ size = 18, fill = 'black' }) => {
   )
 }
 
+// prettier-ignore
 export const Doc = ({ size = 18, fill = 'black', className }) => {
   return (
     <svg className={className} viewBox="0 0 26 36" width={size} xmlns="http://www.w3.org/2000/svg" >
@@ -201,6 +223,7 @@ export const Doc = ({ size = 18, fill = 'black', className }) => {
   )
 }
 
+// prettier-ignore
 export const DocsPlus = ({ size = 18, fill = 'black', className }) => {
   return (
     <svg className={className} viewBox="0 0 1954.69 2508.26" width={size} xmlns="http://www.w3.org/2000/svg">
@@ -232,6 +255,7 @@ export const DocsPlus = ({ size = 18, fill = 'black', className }) => {
  * @param {string} [props.fill='black'] - The color of the SVG icon.
  * @returns {JSX.Element} The rendered SVG icon.
  */
+// prettier-ignore
 export const PrivateShare = ({ size = 18, fill = 'black' }) => {
   return (
     <svg viewBox="0 0 21 21" width={size} xmlns="http://www.w3.org/2000/svg">
