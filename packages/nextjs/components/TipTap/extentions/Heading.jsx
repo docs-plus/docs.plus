@@ -38,17 +38,19 @@ const Blockquote = Node.create({
   addNodeView() {
     return ({ editor, getPos, node, HTMLAttributes }) => {
       const dom = document.createElement('div')
+
+      const headingId =
+        getPos() === 0 ? '1' : !node.attrs.id ? '1' : HTMLAttributes['data-id']
+
       const attributes = mergeAttributes(
         this.options.HTMLAttributes,
         HTMLAttributes,
         {
           'data-type': this.name,
           level: node.firstChild?.attrs.level,
-          'data-id': HTMLAttributes['data-id'] || this.options.id,
+          'data-id': headingId,
         }
       )
-
-      const headingId = !node.attrs.id ? '1' : HTMLAttributes['data-id']
 
       const nodeState = getNodeState(headingId)
 
