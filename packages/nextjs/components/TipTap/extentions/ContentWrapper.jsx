@@ -1,11 +1,16 @@
-import { Node, mergeAttributes, findParentNode, defaultBlockAt } from '@tiptap/core'
+import {
+  Node,
+  mergeAttributes,
+  findParentNode,
+  defaultBlockAt,
+} from '@tiptap/core'
 import { Selection, Plugin, TextSelection, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import PubSub from 'pubsub-js'
 
 import { getNodeState } from './helper'
 
-function extractContentWrapperBlocks (doc) {
+function extractContentWrapperBlocks(doc) {
   const result = []
   const record = (from, to, nodeSize, childCount, headingId) => {
     result.push({ from, to, nodeSize, childCount, headingId })
@@ -28,7 +33,7 @@ function extractContentWrapperBlocks (doc) {
   return result
 }
 
-function crinkleNode (prob) {
+function crinkleNode(prob) {
   const foldEl = document.createElement('div')
 
   foldEl.classList.add('foldWrapper')
@@ -52,14 +57,14 @@ function crinkleNode (prob) {
   return foldEl
 }
 
-function lintDeco (doc) {
+function lintDeco(doc) {
   const decos = []
   const contentWrappers = extractContentWrapperBlocks(doc)
 
-  contentWrappers.forEach(prob => {
+  contentWrappers.forEach((prob) => {
     const decorationWidget = Decoration.widget(prob.from, crinkleNode(prob), {
       side: -1,
-      key: prob.headingId
+      key: prob.headingId,
     })
 
     decos.push(decorationWidget)
@@ -68,13 +73,15 @@ function lintDeco (doc) {
   return DecorationSet.create(doc, decos)
 }
 
-function expandElement (elem, collapseClass, headingId, open) {
+function expandElement(elem, collapseClass, headingId, open) {
   // debugger;
   elem.style.height = ''
   elem.style.transition = 'none'
   elem.style.transitionTimingFunction = 'ease-in-out'
   const startHeight = window.getComputedStyle(elem).height
-  const contentWrapper = document.querySelector(`.heading[data-id="${headingId}"]`)
+  const contentWrapper = document.querySelector(
+    `.heading[data-id="${headingId}"]`
+  )
 
   contentWrapper.classList.remove('opend')
   contentWrapper.classList.remove('closed')
@@ -100,7 +107,7 @@ function expandElement (elem, collapseClass, headingId, open) {
     })
   })
 
-  function callback () {
+  function callback() {
     elem.style.height = ''
     if (open) {
       contentWrapper.classList.remove('closed')
@@ -129,51 +136,60 @@ const HeadingsContent = Node.create({
   isolating: true,
   draggable: false,
   allowGapCursor: false,
-  addOptions () {
+  addOptions() {
     return {
       persist: true,
       id: null,
-      HTMLAttributes: {}
+      HTMLAttributes: {},
     }
   },
-  parseHTML () {
+  parseHTML() {
     return [
       {
-        tag: `div[data-type="${this.name}"]`
-      }
+        tag: `div[data-type="${this.name}"]`,
+      },
     ]
   },
-  addAttributes () {
+  addAttributes() {
     return {
       id: {
         default: null,
-        rendered: false
-      }
+        rendered: false,
+      },
     }
   },
-  renderHTML ({ HTMLAttributes }) {
+  renderHTML({ HTMLAttributes }) {
     return [
       'div',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { 'data-type': this.name }),
-      0
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        'data-type': this.name,
+      }),
+      0,
     ]
   },
-  addNodeView () {
+  addNodeView() {
     return ({ editor, getPos, node, HTMLAttributes }) => {
       const dom = document.createElement('div')
 
       // get parent node
       const parentNode = editor.state.doc?.resolve(getPos())
-      const headingId = getPos() - parentNode.nodeBefore.nodeSize === 1 ? "1" : parentNode.parent?.attrs.id
+      const headingId =
+        getPos() - parentNode.nodeBefore.nodeSize === 1
+          ? '1'
+          : parentNode.parent?.attrs.id
 
       const nodeState = getNodeState(headingId)
 
-      dom.setAttribute('class', 'contentWrapper')
+      dom.setAttribute('class', 'contentWrapper', nodeState)
 
       const attrs = {
-        'data-type': this.name
+        'data-type': this.name,
       }
-      const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, attrs)
+      const attributes = mergeAttributes(
+        this.options.HTMLAttributes,
+        HTMLAttributes,
+        attrs
+      )
 
       if (!nodeState.crinkleOpen) {
         dom.classList.add('overflow-hidden')
@@ -191,11 +207,17 @@ const HeadingsContent = Node.create({
       content.classList.add('contents')
       dom.append(content)
 
-      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value))
+      Object.entries(attributes).forEach(([key, value]) =>
+        dom.setAttribute(key, value)
+      )
       dom.addEventListener('toggleHeadingsContent', ({ detail }) => {
         const section = detail.el
         const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
-        const nodeState = headingMap.find(h => h.headingId === detail.headingId) || { crinkleOpen: true }
+        const nodeState = headingMap.find(
+          (h) => h.headingId === detail.headingId
+        ) || { crinkleOpen: true }
+
+        console.log('geting headheadingMap, =????>>>>>', headingMap)
 
         editor.commands.focus()
 
@@ -205,7 +227,11 @@ const HeadingsContent = Node.create({
           const pos = getPos()
           const currentNode = tr.doc.nodeAt(pos)
 
-          if ((currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type) {
+          if (
+            (currentNode === null || currentNode === void 0
+              ? void 0
+              : currentNode.type) !== this.type
+          ) {
             return false
           }
 
@@ -218,32 +244,40 @@ const HeadingsContent = Node.create({
           tr.setMeta('foldAndunfold', true)
           editor.view.dispatch(tr)
 
-          expandElement(section, 'collapsed', detail.headingId, !nodeState.crinkleOpen)
-          PubSub.publish('toggleHeadingsContent', { headingId: detail.headingId, crinkleOpen: !nodeState.crinkleOpen })
+          expandElement(
+            section,
+            'collapsed',
+            detail.headingId,
+            !nodeState.crinkleOpen
+          )
+          PubSub.publish('toggleHeadingsContent', {
+            headingId: detail.headingId,
+            crinkleOpen: !nodeState.crinkleOpen,
+          })
         }
       })
 
       return {
         dom,
         contentDOM: dom,
-        ignoreMutation (mutation) {
+        ignoreMutation(mutation) {
           if (mutation.type === 'selection') {
             return false
           }
 
           return !dom.contains(mutation.target) || dom === mutation.target
         },
-        update: updatedNode => {
+        update: (updatedNode) => {
           if (updatedNode.type !== this.type) {
             return false
           }
 
           return true
-        }
+        },
       }
     }
   },
-  addKeyboardShortcuts () {
+  addKeyboardShortcuts() {
     return {
       Backspace: (data) => {
         const { schema, selection } = this.editor.state
@@ -256,17 +290,20 @@ const HeadingsContent = Node.create({
 
         // if Backspace is in the contentWrapper
         if (contentWrapper.type.name !== schema.nodes.contentHeading.name) {
-          if (contentWrapper.type.name !== schema.nodes.contentWrapper.name) return
+          if (contentWrapper.type.name !== schema.nodes.contentWrapper.name)
+            return
           // INFO: if the contentWrapper block has one child just change textSelection
           // Otherwise remove the current line and move the textSelection to the
 
           if (contentWrapper.childCount === 1) {
-            return this.editor.chain()
+            return this.editor
+              .chain()
               .setTextSelection(start - 2)
               .scrollIntoView()
               .run()
           } else {
-            return this.editor.chain()
+            return this.editor
+              .chain()
               .deleteRange({ from: start, to: end })
               .setTextSelection(start - 2)
               .scrollIntoView()
@@ -275,29 +312,29 @@ const HeadingsContent = Node.create({
         }
       },
       // Escape node on double enter
-      Enter: ({ editor }) => { }
+      Enter: ({ editor }) => {},
     }
   },
-  addProseMirrorPlugins () {
+  addProseMirrorPlugins() {
     return [
       new Plugin({
         key: new PluginKey('crinkle'),
         state: {
-          init (_, { doc }) {
+          init(_, { doc }) {
             return lintDeco(doc)
           },
-          apply (tr, old) {
+          apply(tr, old) {
             return tr.docChanged ? lintDeco(tr.doc) : old
-          }
+          },
         },
         props: {
-          decorations (state) {
+          decorations(state) {
             return this.getState(state)
-          }
-        }
-      })
+          },
+        },
+      }),
     ]
-  }
+  },
 })
 
 export { HeadingsContent, HeadingsContent as default }
