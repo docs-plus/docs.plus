@@ -3,7 +3,6 @@ import { useRouter } from 'next/router'
 import HeadSeo from '../../components/HeadSeo'
 
 import { useEditor, EditorContent } from '@tiptap/react'
-import StarterKit from '@tiptap/starter-kit'
 import * as Y from 'yjs'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import { HocuspocusProvider } from '@hocuspocus/provider'
@@ -16,6 +15,10 @@ import TableOfContents from '../../components/TipTap/TableOfContents'
 import { db, initDB } from '../../db'
 
 import { useEditorStateContext } from '../../context/EditorContext'
+
+import DocumentSimpleLoader from '../../components/DocumentSimpleLoader'
+import DocumentWithPuctureLoader from '../../components/DocumentWithPictureLoader'
+import TableOfcontentLoader from '../../components/TableOfContentsLoader'
 
 const getHeaderParents = (heading) => {
   if (!heading) return
@@ -351,61 +354,37 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
         <div className="toolbars w-full bg-white h-auto z-10  sm:block fixed bottom-0 sm:relative">
           {editor ? <Toolbar editor={editor} /> : 'Loading...'}
         </div>
-        <div className="editor w-full h-full flex relative flex-row align-top ">
-          {loading ? (
-            <div>Loading Data...</div>
-          ) : !editor ? (
-            <div>Loading Editor...</div>
-          ) : (
-            <div className="max-w-xs w-3/12 overflow-hidden hidden pb-4 sm:py-4 sm:pb-14 scroll-smooth hover:overflow-auto hover:overscroll-contain sm:block">
-              <div
-                data-rendering={rendering}
-                className={rendering ? 'hidden' : 'block'}
-              >
-                {rendering ? (
-                  'Loading...'
-                ) : applyingFilters ? (
-                  'Loading TOC...'
-                ) : (
-                  <TableOfContents
-                    className="tiptap__toc pl-2"
-                    editor={editor}
-                  />
-                )}
-              </div>
-              <div className={!rendering ? 'hidden' : 'block'}>
-                Rendering Data...
-              </div>
-            </div>
-          )}
+        <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
           <div
             className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
             onScroll={scrollHeadingSelection}
           >
-            {loading ? (
-              'Loading Data...'
-            ) : !editor ? (
-              'Loading Editor...'
-            ) : (
-              <>
-                <span
-                  className={`${
-                    applyingFilters || rendering ? 'block' : 'hidden'
-                  }`}
-                >
-                  {applyingFilters
-                    ? 'Applying Filters...'
-                    : rendering
-                    ? 'Rendering Data...'
-                    : ''}
-                </span>
-                <EditorContent
-                  className={`tipta__editor mb-12 sm:mb-0 sm:p-8 ${
-                    !applyingFilters ? 'block' : 'hidden'
-                  }`}
-                  editor={editor}
+            {loading || applyingFilters || !editor ? (
+              <div
+                className={`ProseMirror tipta__editor mb-12 pt-8  sm:mb-0 sm:p-8 px-6`}
+              >
+                <DocumentSimpleLoader className="!h-auto heading" level="1" />
+                <DocumentWithPuctureLoader
+                  className="!h-auto heading"
+                  level="1"
                 />
-              </>
+              </div>
+            ) : (
+              <EditorContent
+                className={`tipta__editor mb-12 sm:mb-0 sm:p-8 ${
+                  !applyingFilters ? 'block' : 'hidden'
+                }`}
+                editor={editor}
+              />
+            )}
+          </div>
+          <div className="max-w-xs w-3/12 overflow-hidden hidden pb-4 sm:py-4 sm:pb-14 scroll-smooth hover:overflow-auto hover:overscroll-contain sm:block">
+            {loading || applyingFilters || !editor ? (
+              <div>
+                <TableOfcontentLoader className="mt-6" />
+              </div>
+            ) : (
+              <TableOfContents className="tiptap__toc pl-2" editor={editor} />
             )}
           </div>
         </div>
