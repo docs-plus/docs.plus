@@ -60,6 +60,7 @@ const TableOfcontent = ({ editor, className }) => {
       return null
     }
     editor?.on('update', handleUpdate)
+    let trTimer
 
     editor?.on('transaction', (tr, state) => {
       if (
@@ -68,15 +69,21 @@ const TableOfcontent = ({ editor, className }) => {
       ) {
         // TODO: not good solotion, but it works
         // console.log("transaction", {tr, meta: tr.transaction.meta?.foldAndunfold})
-        setTimeout(() => {
+        trTimer = setTimeout(() => {
           handleUpdate(tr)
-        }, 600)
+        }, 200)
       }
     })
+
+    const timer = setTimeout(() => {
+      handleUpdate(editor)
+    }, 200)
 
     return () => {
       editor?.off('transaction')
       editor?.off('update')
+      clearTimeout(timer)
+      clearTimeout(trTimer)
     }
   }, [editor])
 
@@ -84,11 +91,10 @@ const TableOfcontent = ({ editor, className }) => {
     const transaction = editor.state.tr
     transaction.setMeta('renderTOC', true)
     editor.view.dispatch(transaction)
-    console.log(editor.state.doc)
 
     const timer = setTimeout(() => {
       handleUpdate(editor)
-    }, 400)
+    }, 200)
     return () => clearTimeout(timer)
   }, [applyingFilters])
 
