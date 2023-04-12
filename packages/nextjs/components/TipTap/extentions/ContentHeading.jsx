@@ -132,17 +132,20 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
   btnToggleHeading.addEventListener('click', foldAndUnfold)
 
   // copy the link to clipboard
-  const href = document.createElement('a')
+  const href = document.createElement('span')
 
   href.innerHTML = '#'
-  href.setAttribute('href', `#${headingId}`)
+  href.setAttribute('href', `?id=${headingId}`)
+  href.setAttribute('target', `_tab`)
+  href.setAttribute('rel', `noreferrer`)
+  href.classList.add('btn_copyLink')
   href.addEventListener('click', (e) => {
     e.preventDefault()
     const url = new URL(window.location)
 
     url.searchParams.set('id', headingId)
     window.history.pushState({}, '', url)
-    copyToClipboard(url)
+    copyToClipboard(url.href)
     editor
       .chain()
       .focus(from + node.nodeSize - 1)
