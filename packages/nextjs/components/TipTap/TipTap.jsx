@@ -141,7 +141,7 @@ const Editor = ({
   return {
     onCreate: (editor) => {
       console.log('onCreate', editor)
-      // scrollDown()
+      scrollDown()
     },
     onUpdate: (editor) => {
       console.log('onUpdate', editor)
@@ -162,16 +162,16 @@ const Editor = ({
     //   // Before the view is created.
     //   console.log('onBeforeCreate',{ editor, doc: document?.querySelectorAll(".heading")})
     // },
-    onCreate({ editor }) {
-      //   // The editor is ready.
-      // console.log('onCreate', {
-      //   editor,
-      //   state: editor.state.doc,
-      //   isEmpty: editor.isEmpty,
-      //   dobo: { rendering, loading, applyingFilters },
-      //   //     // doc: document?.querySelectorAll('.heading'),
-      // })
-    },
+    // onCreate({ editor }) {
+    //   // The editor is ready.
+    // console.log('onCreate', {
+    //   editor,
+    //   state: editor.state.doc,
+    //   isEmpty: editor.isEmpty,
+    //   dobo: { rendering, loading, applyingFilters },
+    //   //     // doc: document?.querySelectorAll('.heading'),
+    // })
+    // },
     // onBeforeCreate({ editor }) {
     //   // Before the view is created.
     //   console.log('onBeforeCreate', {

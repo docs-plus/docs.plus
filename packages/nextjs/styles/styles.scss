@@ -294,9 +294,10 @@ $crinkle-unfold-bg: #efefef;
         visibility: visible;
       }
 
-      > a {
+      > .btn_copyLink {
         margin-left: 14px;
         color: #ccc;
+        cursor: pointer;
 
         &:hover {
           color: #646cff
