@@ -37,9 +37,9 @@ function crinkleNode(prob) {
   const foldEl = document.createElement('div')
 
   foldEl.classList.add('foldWrapper')
-  const step = 1000
-  const lines = 3 + Math.floor(prob.nodeSize / step)
-  const clampedLines = Math.min(Math.max(lines, 3), 10)
+  const step = 2400
+  const lines = 2 + Math.floor(prob.nodeSize / step)
+  const clampedLines = Math.min(Math.max(lines, 2), 6)
 
   for (let i = 0; i <= clampedLines; i++) {
     const line = document.createElement('div')
@@ -50,8 +50,56 @@ function crinkleNode(prob) {
   }
   foldEl.setAttribute('data-clampedLines', clampedLines + 1)
   foldEl.addEventListener('click', (e) => {
-    if (!e.target.closest('.heading').classList.contains('closed')) return
-    e.target.parentElement.parentElement.querySelector('.btnFold')?.click()
+    const heading = e.target.closest('.heading')
+    if (!heading.classList.contains('closed')) return
+
+    return e.target.parentElement.parentElement
+      .querySelector('.btnFold')
+      ?.click()
+  })
+
+  foldEl.addEventListener('mouseenter', (e) => {
+    const heading = e.target.closest('.heading')
+    const level = heading.getAttribute('level')
+    if (level !== '1') return
+
+    const classList = heading.classList
+    if (classList.contains('opening') || classList.contains('closing')) return
+
+    const elem = e.target.closest('.foldWrapper')
+    elem.style.height = '20px'
+    elem.style.transition = 'none'
+    elem.style.transitionTimingFunction = 'ease-in-out'
+
+    requestAnimationFrame(() => {
+      elem.style.transition = ''
+
+      requestAnimationFrame(() => {
+        elem.style.height = '70px'
+      })
+    })
+  })
+
+  foldEl.addEventListener('mouseleave', (e) => {
+    const heading = e.target.closest('.heading')
+    const level = heading.getAttribute('level')
+    if (level !== '1') return
+
+    const classList = heading.classList
+    if (classList.contains('opening') || classList.contains('closing')) return
+
+    const elem = e.target.closest('.foldWrapper')
+    elem.style.height = '70px'
+    elem.style.transition = 'none'
+    elem.style.transitionTimingFunction = 'ease-in-out'
+
+    requestAnimationFrame(() => {
+      elem.style.transition = ''
+
+      requestAnimationFrame(() => {
+        elem.style.height = '20px'
+      })
+    })
   })
 
   return foldEl
@@ -74,26 +122,36 @@ function lintDeco(doc) {
 }
 
 function expandElement(elem, collapseClass, headingId, open) {
-  // debugger;
   elem.style.height = ''
   elem.style.transition = 'none'
   elem.style.transitionTimingFunction = 'ease-in-out'
   const startHeight = window.getComputedStyle(elem).height
-  const contentWrapper = document.querySelector(
+  const headingSection = document.querySelector(
     `.heading[data-id="${headingId}"]`
   )
+  const headingLevel = headingSection.getAttribute('level')
+  const wrapperBlock = headingSection.querySelector('.foldWrapper')
 
-  contentWrapper.classList.remove('opend')
-  contentWrapper.classList.remove('closed')
-  contentWrapper.classList.remove('closing')
-  contentWrapper.classList.remove('opening')
+  wrapperBlock.style.transitionTimingFunction = 'ease-in-out'
+  wrapperBlock.style.height = ''
+  wrapperBlock.style.transition = 'none'
+
   elem.classList.add('overflow-hidden')
 
-  contentWrapper.classList.add(open ? 'opening' : 'closing')
+  headingSection.classList.remove('opend')
+  headingSection.classList.remove('closed')
+  headingSection.classList.remove('closing')
+  headingSection.classList.remove('opening')
+  headingSection.classList.add(open ? 'opening' : 'closing')
 
   // Remove the collapse class, and force a layout calculation to get the final height
   elem.classList.toggle(collapseClass)
   const height = window.getComputedStyle(elem).height
+
+  if (headingLevel === '1') {
+    wrapperBlock.style.height = startHeight
+    wrapperBlock.style.position = 'absolute'
+  }
 
   // Set the start height to begin the transition
   elem.style.height = startHeight
@@ -101,23 +159,34 @@ function expandElement(elem, collapseClass, headingId, open) {
   // wait until the next frame so that everything has time to update before starting the transition
   requestAnimationFrame(() => {
     elem.style.transition = ''
+    if (headingLevel === '1') {
+      wrapperBlock.style.transition = ''
+    }
 
     requestAnimationFrame(() => {
+      if (headingLevel === '1') {
+        wrapperBlock.style.height = height
+      }
       elem.style.height = height
     })
   })
 
   function callback() {
     elem.style.height = ''
+    if (headingLevel === '1') {
+      wrapperBlock.style.height = ''
+      wrapperBlock.style.position = 'relative'
+    }
     if (open) {
-      contentWrapper.classList.remove('closed')
-      contentWrapper.classList.remove('closing')
-      contentWrapper.classList.add('opend')
+      headingSection.classList.remove('closed')
+      headingSection.classList.remove('closing')
+      headingSection.classList.add('opend')
       elem.classList.remove('overflow-hidden')
     } else {
-      contentWrapper.classList.remove('opening')
-      contentWrapper.classList.remove('opend')
-      contentWrapper.classList.add('closed')
+      headingSection.classList.remove('opening')
+      headingSection.classList.remove('opend')
+      headingSection.classList.remove('closing')
+      headingSection.classList.add('closed')
       elem.classList.add('overflow-hidden')
     }
 
@@ -216,8 +285,6 @@ const HeadingsContent = Node.create({
         const nodeState = headingMap.find(
           (h) => h.headingId === detail.headingId
         ) || { crinkleOpen: true }
-
-        console.log('geting headheadingMap, =????>>>>>', headingMap)
 
         editor.commands.focus()
 

@@ -5,21 +5,19 @@ $pad-header-height: 64px;
 $pad-toolbar-height: 38px;
 $crinkle-time: 0.9s;
 $crinkle-transition: ease-out;
-$crinkle-fold-bg: #bbb;
+$crinkle-fold-bg: #ccc;
 $crinkle-unfold-bg: #efefef;
 
 .foldWrapper {
   background-color: #f8f9fa;
   cursor: pointer;
-  height: 100%;
-  position: absolute;
   width: 100%;
   bottom: 0;
-  height: calc(100% - 90px);
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   transition: all $crinkle-time $crinkle-transition;
+  order: 2;
 
   .fold {
     width: calc(100% + 2rem + 6px);
@@ -76,7 +74,6 @@ $crinkle-unfold-bg: #efefef;
 
   // buttons in heading
   div.heading {
-    padding-bottom: 1rem;
     position: relative;
     height: 100%;
 
@@ -94,6 +91,24 @@ $crinkle-unfold-bg: #efefef;
       .buttonWrapper {
         button.btnFold::before {
           content: '\25B6';
+        }
+      }
+    }
+
+    &.closed {
+      &[level="1"] {
+        > .wrapBlock > .foldWrapper .fold {
+          transition: none;
+          width: calc(100% + 2rem + 6px);
+          left: -19px;
+        }
+      }
+    }
+
+    &.opening {
+      &[level="1"] {
+        > .wrapBlock > .foldWrapper .fold {
+          transition: none;
         }
       }
     }
@@ -196,14 +211,16 @@ $crinkle-unfold-bg: #efefef;
 
       &:hover {
 
-        > .wrapBlock > .foldWrapper ~ .contentWrapper {
-          height: 70px !important;
-        }
+        &:not([level="1"]) {
+          > .wrapBlock > .foldWrapper ~ .contentWrapper {
+            height: 70px !important;
+          }
 
-        height: calc(100% - 70px);
+          height: calc(100% - 70px);
 
-        > .wrapBlock > .foldWrapper .fold::before {
-          background-color: #ccc;
+          > .wrapBlock > .foldWrapper .fold::before {
+            background-color: #ccc;
+          }
         }
       }
 
@@ -211,7 +228,7 @@ $crinkle-unfold-bg: #efefef;
 
     &.closing {
       > .wrapBlock > .foldWrapper {
-        z-index: 4;
+        z-index: 10;
       }
     }
 
@@ -219,7 +236,7 @@ $crinkle-unfold-bg: #efefef;
     &.closing {
       > .wrapBlock > .foldWrapper {
         display: flex;
-        z-index: 4;
+        z-index: 10;
 
         .fold::after {
           animation: foldCrinkle_after $crinkle-time $crinkle-transition;
@@ -232,13 +249,25 @@ $crinkle-unfold-bg: #efefef;
     }
 
     &.opening {
+      > .wrapBlock {
+        height: 100%;
+      }
+
       > .wrapBlock > .foldWrapper {
         .fold {}
+      }
+
+      > .wrapBlock > .contentWrapper {
+        opacity: 0;
       }
     }
 
     &.opend,
     &.opening {
+      > .wrapBlock {
+        height: 100%;
+      }
+
       > .wrapBlock > .foldWrapper {
         .fold::after {
           animation: unfoldCrinkle_after $crinkle-time $crinkle-transition;
@@ -253,6 +282,10 @@ $crinkle-unfold-bg: #efefef;
     &.opend {
       > .wrapBlock > .foldWrapper {
         display: none;
+      }
+
+      > .wrapBlock > .contentWrapper {
+        opacity: 1;
       }
     }
   }
@@ -289,6 +322,7 @@ $crinkle-unfold-bg: #efefef;
       left: -60px;
       z-index: 2;
       visibility: hidden;
+      order: 1;
 
       &:hover {
         visibility: visible;
@@ -311,11 +345,11 @@ $crinkle-unfold-bg: #efefef;
       position: relative;
       display: flex;
       flex-direction: column;
-      min-height: 40px;
+      min-height: 10px;
       z-index: 0;
-      padding-bottom: 10px;
       // NOTE: only transition duration is work here! other property are in the js file
       transition: all $crinkle-time $crinkle-transition;
+      order: 3;
 
       .foldWrapper {
         transition: all $crinkle-time $crinkle-transition;
@@ -328,6 +362,7 @@ $crinkle-unfold-bg: #efefef;
       &.collapsed {
         height: 0;
         padding: 0;
+        opacity: 0;
         overflow: hidden;
       }
     }
@@ -336,25 +371,27 @@ $crinkle-unfold-bg: #efefef;
 
 
 
-.tiptap__toc{
-  .toc__item{
+.tiptap__toc {
+  .toc__item {
     position: relative;
     width: 100%;
     margin: 6px 0;
-    > span{
+
+    > span {
       display: flex;
       align-items: center;
     }
 
-    &.closed{
-      > span .btnFold{
-        &::before{
+    &.closed {
+      > span .btnFold {
+        &::before {
           content: '\25B6';
         }
       }
     }
-    > span .btnFold{
-      &::before{
+
+    > span .btnFold {
+      &::before {
         content: '\25BC';
         display: block;
         margin-right: 6px;
@@ -368,8 +405,8 @@ $crinkle-unfold-bg: #efefef;
       }
     }
 
-    &:hover > span > .btnFold::before{
-        opacity: 1;
+    &:hover > span > .btnFold::before {
+      opacity: 1;
     }
   }
 }
