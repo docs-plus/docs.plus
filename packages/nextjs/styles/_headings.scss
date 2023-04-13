@@ -36,6 +36,11 @@ body.h1SectionBreak{
 
     .heading {
       margin-bottom: 1rem;
+
+      .heading .heading:last-of-type {
+        margin-bottom: 0!important;
+      }
+
       &[level="1"] {
         box-shadow: 0 1px 3px 1px rgb(00 64 67 / 15%);
         padding: 1rem;
