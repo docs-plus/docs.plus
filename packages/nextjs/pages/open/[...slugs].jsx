@@ -27,7 +27,7 @@ const getHeaderParents = (heading) => {
   // console.log("heading", heading, hLevel)
   // loop through the headings to find the parent heading untile the level is 1
   for (let i = +hLevel; i >= 1; i--) {
-    const pHeading = heading.closest(`[level="${i}"]`)?.querySelector('.title')
+    const pHeading = heading.closest(`[level="${ i }"]`)?.querySelector('.title')
     if (pHeading)
       parents.push({
         node: pHeading,
@@ -42,7 +42,7 @@ const getHeaderParents = (heading) => {
 
 const useCustomeHook = (documentSlug) => {
   // NOTE: This is a hack to get the correct URL in the build time
-  const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentSlug}`
+  const url = `${ process.env.NEXT_PUBLIC_RESTAPI_URL }/documents/${ documentSlug }`
 
   const { isLoading, error, data, isSuccess } = useQuery({
     queryKey: ['getDocumentMetadataByDocName'],
@@ -93,18 +93,18 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
       const { documentId, isPrivate } = data?.data
 
       setDocumentTitle(data?.data.title)
-      setDocId(`${isPrivate ? 'private' : 'public'}.${documentId}`)
+      setDocId(`${ isPrivate ? 'private' : 'public' }.${ documentId }`)
       localStorage.setItem('docId', documentId)
       localStorage.setItem(
         'padName',
-        `${isPrivate ? 'private' : 'public'}.${documentId}`
+        `${ isPrivate ? 'private' : 'public' }.${ documentId }`
       )
       localStorage.setItem('slug', docSlug)
       localStorage.setItem('title', data?.data.title)
 
       initDB(
-        `meta.${documentId}`,
-        `${isPrivate ? 'private' : 'public'}.${documentId}`
+        `meta.${ documentId }`,
+        `${ isPrivate ? 'private' : 'public' }.${ documentId }`
       )
 
       // get the heading map from indexdb, when the document is not in the filter mode
@@ -127,7 +127,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
       setYdoc(ydoc)
 
       const colabProvider = new HocuspocusProvider({
-        url: `${process.env.NEXT_PUBLIC_PROVIDER_URL}`,
+        url: `${ process.env.NEXT_PUBLIC_PROVIDER_URL }`,
         name: docId,
         document: ydoc,
         onStatus: (data) => {
@@ -341,7 +341,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
         description="another open docs plus document"
       />
       <div className="pad tiptap flex flex-col border-solid border-2">
-        <div className="header w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
+        <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
           {docSlug && (
             <PadTitle
               docSlug={docSlug}
@@ -361,19 +361,19 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
           >
             {loading || applyingFilters || !editor ? (
               <div
-                className={`ProseMirror tipta__editor mb-12 pt-8  sm:mb-0 sm:p-8 px-6`}
+                className={`ProseMirror tipta__editor loading mb-12 pt-8  sm:mb-0 sm:p-8 px-6`}
               >
                 <DocumentSimpleLoader className="!h-auto heading" level="1" />
                 <DocumentWithPuctureLoader
                   className="!h-auto heading"
                   level="1"
                 />
+                <DocumentSimpleLoader className="!h-auto heading" level="1" />
               </div>
             ) : (
               <EditorContent
-                className={`tipta__editor mb-12 sm:mb-0 sm:p-8 ${
-                  !applyingFilters ? 'block' : 'hidden'
-                }`}
+                className={`tipta__editor mb-12 sm:mb-0 sm:p-8 ${ !applyingFilters ? 'block' : 'hidden'
+                  }`}
                 editor={editor}
               />
             )}
@@ -398,7 +398,7 @@ export default OpenDocuments
 export async function getServerSideProps(context) {
   const documentSlug = context.query.slugs.at(0)
   const res = await fetch(
-    `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentSlug}`
+    `${ process.env.NEXT_PUBLIC_RESTAPI_URL }/documents/${ documentSlug }`
   )
   const data = await res.json()
   return {

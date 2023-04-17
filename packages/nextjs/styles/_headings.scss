@@ -1,11 +1,12 @@
 body.indentHeading {
-  &.h1SectionBreak{
+  &.h1SectionBreak {
     div.heading {
       &[level="1"] {
         box-shadow: 8px 0 34px 0 rgb(60 64 67 / 10%);
       }
     }
   }
+
   div.heading {
     border-left: 3px solid rgba(#0d0d0d, 0.1);
     padding-left: 1rem;
@@ -30,7 +31,7 @@ body.indentHeading {
   }
 }
 
-body.h1SectionBreak{
+body.h1SectionBreak {
   .ProseMirror {
     background-color: transparent;
 
@@ -38,7 +39,7 @@ body.h1SectionBreak{
       margin-bottom: 1rem;
 
       .heading .heading:last-of-type {
-        margin-bottom: 0!important;
+        margin-bottom: 0 !important;
       }
 
       &[level="1"] {
@@ -52,6 +53,24 @@ body.h1SectionBreak{
   }
 }
 
+@media (max-width: 640px) {
+  .ProseMirror {
+    &.loading {
+      padding: 0 !important;
+    }
+
+    .heading {
+      margin: 0 !important;
+
+      &[level="1"] {
+        margin-bottom: 0 !important;
+        border: none !important;
+        box-shadow: none !important;
+      }
+    }
+  }
+}
+
 .ProseMirror {
   .heading {
     &[level="1"] {
@@ -59,13 +78,13 @@ body.h1SectionBreak{
       margin-top: 0;
       border: 1px solid #e1e6e7;
       border-bottom: none;
-      border-top:none;
+      border-top: none;
 
-      &:first-of-type{
+      &:first-of-type {
         border-top: 1px solid #e1e6e7;
       }
 
-      &:last-of-type{
+      &:last-of-type {
         border-bottom: 1px solid #e1e6e7;
       }
     }
