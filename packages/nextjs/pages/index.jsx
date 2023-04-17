@@ -10,7 +10,7 @@ import slugify from 'slugify'
 
 import { useRouter } from 'next/router'
 
-export default function Home({hostname}) {
+export default function Home({ hostname }) {
   // const { signInWithOtp, signIn, signOut, user, profile } = useAuth()
   const user = null
   const profile = null
@@ -19,7 +19,7 @@ export default function Home({hostname}) {
   const docNameRef = useRef()
   const [loadingDoc, setLoadingDoc] = useState(false)
   const [error, setError] = useState(null)
-  const [namespace, setNamespace] = useState(`${hostname}/${profile?.doc_namespace ? profile?.doc_namespace : 'open'}`)
+  const [namespace, setNamespace] = useState(`${ hostname }/${ profile?.doc_namespace ? profile?.doc_namespace : 'open' }`)
 
   // slugify the docNameRef
   const validateDocName = (docSlug) => {
@@ -49,14 +49,14 @@ export default function Home({hostname}) {
       return
     }
 
-    if (!user) return router.push(`/open/${slug}`)
+    if (!user) return router.push(`/open/${ slug }`)
 
     // check if profile has a namespace
     if (!profile?.doc_namespace) {
       return router.push('/auth/username_needed')
     }
 
-    router.push(`/${profile?.doc_namespace}/${slug}`)
+    router.push(`/${ profile?.doc_namespace }/${ slug }`)
   }
 
   const handleKeyDown = event => {
@@ -66,7 +66,7 @@ export default function Home({hostname}) {
   }
 
   useEffect(() => {
-    setNamespace(`${location.host}/${profile?.doc_namespace ? profile?.doc_namespace : 'open'}`)
+    setNamespace(`${ location.host }/${ profile?.doc_namespace ? profile?.doc_namespace : 'open' }`)
   }, [])
 
   return (
@@ -81,7 +81,7 @@ export default function Home({hostname}) {
             <div className='p-4'>
               <h1 className='flex flex-row items-end'> <DocsPlus className="mr-3" size="58" /> docs plus</h1>
               <h2 className='mt-3 text-gray-500 font-semibold'>Get everyone on the same page</h2>
-              <div className='mt-5'>
+              <div className='mt-5 leading-7 '>
                 <p><span>+</span> A <a href="https://github.com/docs-plus">free &amp; open source</a> project by <a href="https://newspeak.house">Newspeak House</a></p>
                 <p><span>+</span> Enquiries to <a href="https://www.twitter.com/docsdotplus">@docsdotplus</a> or <a href="mailto:ed@newspeak.house">ed@newspeak.house</a></p>
                 <p><span>+</span> Found a bug? Help us out by <a href="https://github.com/docs-plus/docs.plus/issues">reporting it</a>. </p>
@@ -105,10 +105,10 @@ export default function Home({hostname}) {
                 <button className="px-3 w-full py-2 border rounded" onClick={() => enterToPad('random')}>Create a new public doc</button>
                 <label className='text-center w-full mt-6 text-gray-500 block mb-1'>or</label>
 
-                <div className='flex flex-col  w-full'>
-                  <div className='flex flex-row w-full font-mono text-sm align-middle'>
-                    <p className='px-2 py-2 leading-6 rounded-l border border-r-0  rounded-r-none'>{namespace}/</p>
-                    <input ref={docNameRef} className='p-1 w-full rounded-l-none border font-mono' id="padName" type="text" onKeyDown={handleKeyDown} />
+                <div className='flex flex-col w-full'>
+                  <div className='flex flex-col sm:flex-row w-full font-mono text-sm align-middle'>
+                    <p className='sm:px-2 py-2 leading-6 rounded sm:rounded-l sm:border sm:border-r-0  sm:rounded-r-none'>{namespace}/</p>
+                    <input ref={docNameRef} placeholder='Document Name' className='p-2 sm:p-1 w-full rounded sm:rounded-l-none border font-mono' id="padName" type="text" onKeyDown={handleKeyDown} />
                   </div>
                   {error && <p className='text-red-700 text-sm mt-2'>*Only lowercase letters, numbers and dashes are allowed</p>}
                   <Button className=' text-black border ml-auto mt-2 w-full px-3 py-2 rounded' loading={loadingDoc} onClick={enterToPad}>Open public doc</Button>
@@ -157,8 +157,8 @@ export default function Home({hostname}) {
 }
 
 
-export async function getServerSideProps({req, res}) {
+export async function getServerSideProps({ req, res }) {
   return {
-      props: {name: "hassan", hostname: req?.headers?.host }, // will be passed to the page component as props
+    props: { name: "hassan", hostname: req?.headers?.host }, // will be passed to the page component as props
   }
 }
