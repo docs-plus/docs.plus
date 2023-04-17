@@ -38,35 +38,70 @@ export default (arrg) => {
     ...contentWrapperParagraphs
   ]
 
-  doc.nodesBetween(titleStartPos, start - 1, function (node, pos, parent, index) {
-    if (node.type.name === 'heading') {
-      const headingLevel = node.firstChild?.attrs?.level
-
-      if (headingLevel === currentHLevel) {
-        titleStartPos = pos
-        // INFO: I need the pos of last content in contentWrapper
-        titleEndPos = pos + node.content.size
-      }
-    }
-  })
+  const containLevelOneHeading = selectedContents.find(x => x.level === 1)
 
   const normalizeSelectedContentsBlocks = normalizeSelectedContents.map(node => state.schema.nodeFromJSON(node))
 
-  tr.delete(selectionFirstLinePos, titleEndPos)
+  if (!containLevelOneHeading) {
+    doc.nodesBetween(titleStartPos, start - 1, function (node, pos, parent, index) {
+      if (node.type.name === 'heading') {
+        const headingLevel = node.firstChild?.attrs?.level
 
-  tr.insert(tr.mapping.map(selectionFirstLinePos) - 1, normalizeSelectedContentsBlocks)
+        if (headingLevel === currentHLevel) {
+          titleStartPos = pos
+          // INFO: I need the pos of last content in contentWrapper
+          titleEndPos = pos + node.content.size
+        }
+      }
+    })
 
-  const focusSelection = new TextSelection(tr.doc.resolve(from))
+  } else {
+    const backspaceAction = doc.nodeAt(from) === null && $anchor.parentOffset === 0
+    tr.delete(backspaceAction ? start - 1 : start - 1, titleEndPos)
 
-  tr.setSelection(focusSelection)
+    doc.nodesBetween($from.start(0), start - 1, function (node, pos, parent, index) {
+      if (node.type.name === 'heading') {
+        const headingLevel = node.firstChild?.attrs?.level
 
-  const titleHMap = getPrevHeadingList(tr, tr.mapping.map(titleStartPos), tr.mapping.map(titleEndPos))
-  let shouldNested = false
+        if (headingLevel === currentHLevel) {
+          titleStartPos = pos
+          titleEndPos = pos + node.content.size
+        }
+      }
+    })
+  }
 
+  const titleHMap = getPrevHeadingList(tr, titleStartPos, tr.mapping.map(titleEndPos));
   let mapHPost = titleHMap.filter(x =>
     x.startBlockPos < start - 1 &&
     x.startBlockPos >= prevHStartPos
-  )
+  );
+  let shouldNested = false;
+
+  // insert normalizeSelectedContentsBlocks
+  if (!containLevelOneHeading) {
+    tr.delete(selectionFirstLinePos, titleEndPos)
+    tr.insert(tr.mapping.map(selectionFirstLinePos) - 1, normalizeSelectedContentsBlocks)
+  } else {
+    const comingLevel = mapHPost.at(-1).le + 1
+
+    const prevBlockEqual = mapHPost.findLast(x => x.le === comingLevel)
+    const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= comingLevel)
+    const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= comingLevel)
+    const lastbloc = mapHPost.at(-1)
+    let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
+
+    if (lastbloc.le <= comingLevel) prevBlock = lastbloc
+    shouldNested = prevBlock.le < comingLevel
+
+    const insertPos = prevBlock.endBlockPos - (shouldNested ? 2 : 0)
+
+    tr.insert(tr.mapping.map(insertPos), normalizeSelectedContentsBlocks)
+  }
+
+  // update selection position
+  const focusSelection = new TextSelection(tr.doc.resolve(from))
+  tr.setSelection(focusSelection)
 
   if (!mapHPost.length) mapHPost = titleHMap
 
