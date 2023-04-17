@@ -2,51 +2,51 @@ import React, { useState, useEffect } from 'react'
 
 import { OfflineCloud, OnlineCloud } from '../icons/Icons'
 
-const OnlineIndicator = () => {
+const OnlineIndicator = ({ className }) => {
   const [isOnline, setIsOnline] = useState(false)
   const [showStatus, setShowStatus] = useState(true)
 
 
-    useEffect(() => {
-      const handleOnlineStatus = () => {
-        setIsOnline(true)
-        setShowStatus(true)
-      }
-      const handleOfflineStatus = () => {
-        setIsOnline(false)
-        setShowStatus(true)
-      }
+  useEffect(() => {
+    const handleOnlineStatus = () => {
+      setIsOnline(true)
+      setShowStatus(true)
+    }
+    const handleOfflineStatus = () => {
+      setIsOnline(false)
+      setShowStatus(true)
+    }
 
-      window.addEventListener('online', handleOnlineStatus)
-      window.addEventListener('offline', handleOfflineStatus)
+    window.addEventListener('online', handleOnlineStatus)
+    window.addEventListener('offline', handleOfflineStatus)
 
-      return () => {
-        window.removeEventListener('online', handleOnlineStatus)
-        window.removeEventListener('offline', handleOfflineStatus)
-      }
-    }, [])
+    return () => {
+      window.removeEventListener('online', handleOnlineStatus)
+      window.removeEventListener('offline', handleOfflineStatus)
+    }
+  }, [])
 
-    useEffect(() => {
-      if (showStatus) {
-        const timer = setTimeout(() => {
-          setShowStatus(false)
-        }, 5000)
+  useEffect(() => {
+    if (showStatus) {
+      const timer = setTimeout(() => {
+        setShowStatus(false)
+      }, 5000)
 
-        return () => clearTimeout(timer)
-      }
-    }, [showStatus])
+      return () => clearTimeout(timer)
+    }
+  }, [showStatus])
 
   return (
-    <div className=''>
+    <div className={className}>
       {showStatus && (
-        <div className={` flex align-baseline justify-center status ${isOnline ? 'online' : 'offline'}`}>
+        <div className={` flex align-baseline justify-center status ${ isOnline ? 'online' : 'offline' }`}>
           {isOnline
             ? <span className='flex align-baseline justify-center text-xs font-medium text-gray-500'>
-            <OnlineCloud className="mr-2" /> Saved to docsplus
+              <OnlineCloud className="mr-2" /> Saved to docsplus
             </span>
             : <span className='flex align-baseline justify-center text-xs font-medium text-gray-500'>
-              <OfflineCloud className="mr-2"/>Working offline
-              </span>}
+              <OfflineCloud className="mr-2" />Working offline
+            </span>}
         </div>
       )}
     </div>
