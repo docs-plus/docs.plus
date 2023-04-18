@@ -1,9 +1,26 @@
 import { TextSelection } from '@tiptap/pm/state'
+import { getRangeBlocks, getPrevHeadingList, findPrevBlock } from '../helper'
 
-import { getRangeBlocks, getPrevHeadingList } from '../helper'
+const processHeadings = (state, tr, mapHPost, contentWrapperHeadings) => {
+  for (let heading of contentWrapperHeadings) {
+    if (!heading.le)
+      heading = { ...heading, le: heading.content[0].attrs.level, startBlockPos: 0 }
 
-export default (arrg) => {
-  const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
+    const startBlock = mapHPost[0].startBlockPos
+    const endBlock = tr.mapping.map(mapHPost.at(0).endBlockPos)
+
+    mapHPost = getPrevHeadingList(tr, startBlock, endBlock)
+
+    const node = state.schema.nodeFromJSON(heading)
+
+    let { prevBlock, shouldNested } = findPrevBlock(mapHPost, heading.le)
+
+    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
+  }
+}
+
+export default (args) => {
+  const { can, chain, commands, dispatch, editor, state, tr, view } = args
   const { schema, selection, doc } = state
   const { $from, $to, $anchor, $cursor, $head, from } = selection
   const { start, end, depth } = $from.blockRange($to)
@@ -12,7 +29,10 @@ export default (arrg) => {
     return console.info('[Heading]: not heading')
   }
 
-  const headingText = { type: 'text', text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' ' }
+  const headingText = {
+    type: 'text',
+    text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' ',
+  }
 
   const titleNode = $from.doc.nodeAt($from.start(1) - 1)
   let titleStartPos = $from.start(1) - 1
@@ -23,7 +43,8 @@ export default (arrg) => {
   let prevHStartPos = 0
   let prevHEndPos = 0
 
-  const backspaceAction = doc.nodeAt(from) === null && $anchor.parentOffset === 0
+  const backspaceAction =
+    doc.nodeAt(from) === null && $anchor.parentOffset === 0
 
   tr.delete(backspaceAction ? start - 1 : start - 1, titleEndPos)
 
@@ -53,33 +74,19 @@ export default (arrg) => {
     })
   }
 
-  const contentWrapperParagraphs = contentWrapper.filter(x => x.type !== 'heading')
-  const contentWrapperHeadings = contentWrapper.filter(x => x.type === 'heading')
-  const normalContents = [headingText, ...contentWrapperParagraphs]
-    .map(x => editor.schema.nodeFromJSON(x))
+  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== 'heading')
+  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === 'heading')
 
-  // this is for backspace, if the node is empty remove the TextNode
+  const normalContents = [headingText, ...contentWrapperParagraphs]
+    .map((x) => editor.schema.nodeFromJSON(x))
+
   if (backspaceAction) normalContents.shift()
 
   const titleHMap = getPrevHeadingList(tr, titleStartPos, tr.mapping.map(titleEndPos))
-
-  let mapHPost = titleHMap.filter(x =>
-    x.startBlockPos < start - 1 &&
-    x.startBlockPos >= prevHStartPos
-  )
-
-  let shouldNested = false
+  let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
 
   const comingLevel = mapHPost.at(-1).le + 1
-
-  const prevBlockEqual = mapHPost.findLast(x => x.le === comingLevel)
-  const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= comingLevel)
-  const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= comingLevel)
-  const lastbloc = mapHPost.at(-1)
-  let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
-
-  if (lastbloc.le <= comingLevel) prevBlock = lastbloc
-  shouldNested = prevBlock.le < comingLevel
+  let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
 
   const insertPos = prevBlock.endBlockPos - (shouldNested ? 2 : 0)
 
@@ -89,27 +96,7 @@ export default (arrg) => {
 
   tr.setSelection(focusSelection)
 
-  for (let heading of contentWrapperHeadings) {
-    if (!heading.le) heading = { ...heading, le: heading.content[0].attrs.level, startBlockPos: 0 }
+  processHeadings(state, tr, mapHPost, contentWrapperHeadings)
 
-    const startBlock = mapHPost[0].startBlockPos
-    const endBlock = tr.mapping.map(mapHPost.at(0).endBlockPos)
-
-    mapHPost = getPrevHeadingList(tr, startBlock, endBlock)
-
-    const node = state.schema.nodeFromJSON(heading)
-
-    const prevBlockEqual = mapHPost.findLast(x => x.le === heading.le)
-    const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= heading.le)
-    const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= heading.le)
-    const lastbloc = mapHPost[mapHPost.length - 1]
-    let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
-
-    if (lastbloc.le <= heading.le) prevBlock = lastbloc
-    shouldNested = prevBlock.le < heading.le
-
-    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
-  }
-
-  return (backspaceAction) ? view.dispatch(tr) : true
+  return backspaceAction ? view.dispatch(tr) : true
 }
