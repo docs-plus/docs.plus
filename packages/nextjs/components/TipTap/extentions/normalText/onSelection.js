@@ -1,6 +1,24 @@
 import { TextSelection } from '@tiptap/pm/state'
+import { getSelectionBlocks, getRangeBlocks, getPrevHeadingList, findPrevBlock } from '../helper'
 
-import { getSelectionBlocks, getRangeBlocks, getPrevHeadingList } from '../helper'
+const processHeadings = (state, tr, mapHPost, contentWrapperHeadings) => {
+  for (let heading of contentWrapperHeadings) {
+    if (!heading.le)
+      heading = { ...heading, le: heading.content[0].attrs.level, startBlockPos: 0 }
+
+    const startBlock = mapHPost[0].startBlockPos
+    const endBlock = tr.mapping.map(mapHPost.at(0).endBlockPos)
+
+    mapHPost = getPrevHeadingList(tr, startBlock, endBlock)
+
+    const node = state.schema.nodeFromJSON(heading)
+
+    let { prevBlock, shouldNested } = findPrevBlock(mapHPost, heading.le)
+
+    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
+  }
+}
+
 
 export default (arrg) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
@@ -76,7 +94,6 @@ export default (arrg) => {
     x.startBlockPos < start - 1 &&
     x.startBlockPos >= prevHStartPos
   );
-  let shouldNested = false;
 
   // insert normalizeSelectedContentsBlocks
   if (!containLevelOneHeading) {
@@ -84,15 +101,7 @@ export default (arrg) => {
     tr.insert(tr.mapping.map(selectionFirstLinePos) - 1, normalizeSelectedContentsBlocks)
   } else {
     const comingLevel = mapHPost.at(-1).le + 1
-
-    const prevBlockEqual = mapHPost.findLast(x => x.le === comingLevel)
-    const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= comingLevel)
-    const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= comingLevel)
-    const lastbloc = mapHPost.at(-1)
-    let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
-
-    if (lastbloc.le <= comingLevel) prevBlock = lastbloc
-    shouldNested = prevBlock.le < comingLevel
+    let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
 
     const insertPos = prevBlock.endBlockPos - (shouldNested ? 2 : 0)
 
@@ -105,25 +114,8 @@ export default (arrg) => {
 
   if (!mapHPost.length) mapHPost = titleHMap
 
-  for (const heading of contentWrapperHeadings) {
-    const startBlock = mapHPost[0].startBlockPos
-    const endBlock = tr.mapping.map(mapHPost.at(0).endBlockPos)
 
-    mapHPost = getPrevHeadingList(tr, startBlock, endBlock)
-
-    const node = state.schema.nodeFromJSON(heading)
-
-    const prevBlockEqual = mapHPost.findLast(x => x.le === heading.le)
-    const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= heading.le)
-    const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= heading.le)
-    const lastbloc = mapHPost[mapHPost.length - 1]
-    let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
-
-    if (lastbloc.le <= heading.le) prevBlock = lastbloc
-    shouldNested = prevBlock.le < heading.le
-
-    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
-  }
+  processHeadings(state, tr, mapHPost, contentWrapperHeadings)
 
   return true
 }

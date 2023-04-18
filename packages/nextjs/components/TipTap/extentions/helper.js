@@ -237,3 +237,29 @@ export const getPrevHeadingPos = (doc, startPos, endPos) => {
 
   return { prevHStartPos, prevHEndPos }
 }
+
+/**
+ * Finds the previous block based on the heading level and determines whether it should be nested.
+ *
+ * @param {Array} mapHPost - An array-like structure containing objects with 'le' property representing heading levels.
+ * @param {number} headingLevel - A numeric value representing the level of the heading to find the previous block for.
+ * @returns {Object} An object containing two properties:
+ *   - prevBlock: The previous block found based on the conditions.
+ *   - shouldNested: A boolean value indicating whether the block should be nested or not.
+ */
+export const findPrevBlock = (mapHPost, headingLevel) => {
+  const prevBlockEqual = mapHPost.findLast(x => x.le === headingLevel);
+  const prevBlockGreaterFromFirst = mapHPost.find(x => x.le >= headingLevel);
+  const prevBlockGreaterFromLast = mapHPost.findLast(x => x.le <= headingLevel);
+  const lastBlock = mapHPost.at(-1);
+
+  let prevBlock = prevBlockEqual || prevBlockGreaterFromLast || prevBlockGreaterFromFirst;
+
+  if (lastBlock.le <= headingLevel) {
+    prevBlock = lastBlock;
+  }
+
+  const shouldNested = prevBlock.le < headingLevel;
+
+  return { prevBlock, shouldNested };
+};
