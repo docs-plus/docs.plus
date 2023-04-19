@@ -1,6 +1,6 @@
 import React from 'react'
 import { useEditorStateContext } from '../../../context/EditorContext'
-import DocTitle from '../../../components/TipTap/docTitle'
+import DocTitle from '../../../components/TipTap/DocTitle'
 import { Filter } from '../../../components/icons/Icons'
 import TOC from './Toc'
 
