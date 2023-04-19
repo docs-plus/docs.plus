@@ -53,7 +53,7 @@ const FilterModal = () => {
   }
 
   return (
-    <div>
+    <div className='h-full'>
       <div onTouchStart={closeFilterModal} onClick={closeFilterModal} className='modalBg h-full w-full bg-black opacity-40 absolute top-0 left-0 z-0'></div>
       <div className='modalWrapper h-3/6 w-full p-4  bg-white rounded-tr-2xl rounded-tl-2xl z-10 fixed bottom-0'>
         <div className='text-blue-600 py-2 mb-3 flex w-full  bg-white'>
