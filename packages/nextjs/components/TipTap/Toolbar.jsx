@@ -18,6 +18,7 @@ import {
   Redo,
   Printer,
   SearchDoc,
+  Filter
 } from '../../components/icons/Icons'
 
 const GearModal = (props) => {
@@ -231,7 +232,7 @@ const Toolbar = ({ editor }) => {
       //   shallow: false,
       // })
       const mainDoc = router.query.slugs.at(0)
-      window.location.href = `/open/${mainDoc}/${encodeURIComponent(search)}`
+      window.location.href = `/open/${ mainDoc }/${ encodeURIComponent(search) }`
     }
   }
 
@@ -239,7 +240,7 @@ const Toolbar = ({ editor }) => {
     console.log(document.querySelector('#searchThroughHeading'))
     const search = filterSearchRef.current.value
     const mainDoc = router.query.slugs.at(0)
-    window.location.href = `/open/${mainDoc}/${encodeURIComponent(search)}`
+    window.location.href = `/open/${ mainDoc }/${ encodeURIComponent(search) }`
   }
 
   return (
@@ -371,7 +372,7 @@ const Toolbar = ({ editor }) => {
       </span>
 
       <button className="btn_filterModal btn_modal" onClick={toggleFilterModal}>
-        <SearchDoc fill="rgba(0,0,0,.7)" size="16" />
+        <Filter fill="rgba(0,0,0,.7)" size="20" />
       </button>
 
       <button

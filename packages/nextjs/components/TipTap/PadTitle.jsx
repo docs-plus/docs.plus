@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-
+import DocTitle from './docTitle'
 import {
   DocsPlus,
   Hamburger
@@ -41,6 +41,19 @@ const PadTitle = ({ docTitle, docId, docSlug, provider }) => {
     })
   }
 
+  const btn_leftOpenModal = (e) => {
+    if (!e.target.closest('button').classList.contains('btn_modal')) return
+
+    const leftModal = document.querySelector('.nd_modal.left')
+    leftModal.classList.remove('hidden')
+
+    const modalBg = leftModal.querySelector('.modalBg')
+    modalBg.classList.add('active')
+
+    setTimeout(() => {
+      leftModal.querySelector('.modalWrapper').classList.add('active')
+    }, 200)
+  }
 
   return (
     <div className='flex flex-row items-center w-full sm:w-auto justify-center sm:justify-normal'>
@@ -50,26 +63,11 @@ const PadTitle = ({ docTitle, docId, docSlug, provider }) => {
         </Link>
       </div>
       <div className='sm:hidden'>
-        <button className="w-10 h-10 flex align-middle justify-center items-center " type="button">
+        <button onClick={btn_leftOpenModal} className=" btn_modal w-10 h-10 flex align-middle justify-center items-center " type="button">
           <Hamburger size="30" />
         </button>
       </div>
-      <div className='sm:ml-3 ml-2 '>
-        {isLoading
-          ? 'Loading...'
-          : <div dangerouslySetInnerHTML={{ __html: docTitle }}
-            contentEditable
-            className="border border-transparent px-2 py-0 rounded-sm text-lg font-medium min-w-[14rem] hover:border-slate-300" type="text"
-            onBlur={saveData}
-            onKeyDown={(e) => {
-              if (event.key === 'Enter') {
-                e.preventDefault()
-                e.target.blur()
-              }
-            }}
-          >
-          </div>}
-      </div>
+      <DocTitle docId={docId} docTitle={docTitle} />
       <div className='w-10 h-10 border rounded-full bg-gray-400 ml-auto sm:hidden'></div>
       <OnlineIndicator className="hidden sm:block " />
     </div>
