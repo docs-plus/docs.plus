@@ -37,7 +37,7 @@ const TocModal = ({ editor, docId, docTitle }) => {
   }
 
   return (
-    <div>
+    <div className='h-full'>
       <div onTouchStart={closeLeftSideModal} onClick={closeLeftSideModal} className='modalBg h-full w-full bg-black opacity-40 absolute top-0 left-0 z-0'></div>
       <div className='modalWrapper relative h-full z-10 bg-white w-10/12 overflow-hidden '>
         <div className='text-blue-600 py-3 flex fixed top-0 w-full border-b-2 bg-white '>
