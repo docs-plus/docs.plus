@@ -282,7 +282,6 @@ export const PrivateShare = ({ size = 18, fill = 'black' }) => {
   )
 }
 
-
 // prettier-ignore
 export const Hamburger = ({ size = 24, fill = 'black', className }) => {
   return (
@@ -293,6 +292,15 @@ export const Hamburger = ({ size = 24, fill = 'black', className }) => {
       <path d="M9.75 6H18.25" stroke="#141414" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M9.75 12H18.25" stroke="#141414" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M9.75 18H18.25" stroke="#141414" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
+// prettier-ignore
+export const Filter = ({ size = 24, fill = 'black', className }) => {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
+      <path fill={fill} d="M17.9502 6.3747C18.4741 5.71993 18.0079 4.75 17.1694 4.75H6.83062C5.99212 4.75 5.52595 5.71993 6.04976 6.3747L9.31174 10.4522C9.59544 10.8068 9.75 11.2474 9.75 11.7016V18.25C9.75 18.8023 10.1977 19.25 10.75 19.25H13.25C13.8023 19.25 14.25 18.8023 14.25 18.25V11.7016C14.25 11.2474 14.4046 10.8068 14.6883 10.4522L17.9502 6.3747Z" />
     </svg>
   )
 }

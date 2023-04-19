@@ -369,8 +369,6 @@ $crinkle-unfold-bg: #efefef;
   }
 }
 
-
-
 .tiptap__toc {
   .toc__item {
     position: relative;
@@ -409,4 +407,49 @@ $crinkle-unfold-bg: #efefef;
       opacity: 1;
     }
   }
+}
+
+.nd_modal {
+  &.left {
+    .modalBg {
+      opacity: 0;
+      transition: all .2s;
+      transition-timing-function: linear;
+
+      &.active {
+        opacity: .4;
+      }
+    }
+
+    .modalWrapper {
+      transform: translateX(-100%);
+      transition: all .2s linear;
+
+      &.active {
+        transform: translateX(0);
+      }
+    }
+  }
+
+  &.bottom {
+    .modalBg {
+      opacity: 0;
+      transition: all .2s;
+      transition-timing-function: linear;
+
+      &.active {
+        opacity: .4;
+      }
+    }
+
+    .modalWrapper {
+      transform: translateY(100%);
+      transition: all .2s linear;
+
+      &.active {
+        transform: translateY(0);
+      }
+    }
+  }
+
 }

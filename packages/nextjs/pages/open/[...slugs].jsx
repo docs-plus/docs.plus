@@ -1,24 +1,20 @@
-import React, { useState, useMemo, useEffect } from 'react'
+import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import HeadSeo from '../../components/HeadSeo'
-
-import { useEditor, EditorContent } from '@tiptap/react'
+import { useEditor } from '@tiptap/react'
 import * as Y from 'yjs'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import editorConfig from '../../components/TipTap/TipTap'
 import { useQuery } from '@tanstack/react-query'
-
 import Toolbar from '../../components/TipTap/Toolbar'
 import PadTitle from '../../components/TipTap/PadTitle'
-import TableOfContents from '../../components/TipTap/TableOfContents'
 import { db, initDB } from '../../db'
-
 import { useEditorStateContext } from '../../context/EditorContext'
-
-import DocumentSimpleLoader from '../../components/DocumentSimpleLoader'
-import DocumentWithPuctureLoader from '../../components/DocumentWithPictureLoader'
-import TableOfcontentLoader from '../../components/TableOfContentsLoader'
+import FilterModal from './components/FilterModal'
+import TocModal from './components/TocModal'
+import TOC from './components/Toc'
+import Editor from './components/Editor'
 
 const getHeaderParents = (heading) => {
   if (!heading) return
@@ -70,6 +66,8 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
   const { isLoading, error, data, isSuccess } = useCustomeHook(docSlug)
   const [documentTitle, setDocumentTitle] = useState(docTitle)
   const [docId, setDocId] = useState(null)
+  const [isMobile, setIsMobile] = useState(0);
+
   const {
     rendering,
     setRendering,
@@ -86,6 +84,19 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
       setApplyingFilters(true)
     }
   }, [])
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth <= 640);
+
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 640);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   useEffect(() => {
     // Use the data returned by useCustomHook in useEffect
@@ -334,63 +345,87 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     })
   }
 
-  return (
-    <>
-      <HeadSeo
-        title={documentTitle}
-        description="another open docs plus document"
-      />
-      <div className="pad tiptap flex flex-col border-solid border-2">
-        <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
-          {docSlug && (
-            <PadTitle
-              docSlug={docSlug}
-              docId={docId}
-              docTitle={documentTitle}
-              provider={provider}
-            />
-          )}
-        </div>
-        <div className="toolbars w-full bg-white h-auto z-10  sm:block fixed bottom-0 sm:relative">
-          {editor ? <Toolbar editor={editor} /> : 'Loading...'}
-        </div>
-        <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
-          <div
-            className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
-            onScroll={scrollHeadingSelection}
-          >
-            {loading || applyingFilters || !editor ? (
-              <div
-                className={`ProseMirror tipta__editor loading mb-12 pt-8  sm:mb-0 sm:p-8 px-6`}
-              >
-                <DocumentSimpleLoader className="!h-auto heading" level="1" />
-                <DocumentWithPuctureLoader
-                  className="!h-auto heading"
-                  level="1"
-                />
-                <DocumentSimpleLoader className="!h-auto heading" level="1" />
-              </div>
-            ) : (
-              <EditorContent
-                className={`tipta__editor mb-12 sm:mb-0 sm:p-8 ${ !applyingFilters ? 'block' : 'hidden'
-                  }`}
-                editor={editor}
+  const MobileLayout = (props) => {
+    return (
+      <>
+        <HeadSeo title={documentTitle} description="another open docs plus document" />
+        <div className="pad tiptap flex flex-col border-solid">
+          <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
+            {docSlug && (
+              <PadTitle
+                docSlug={docSlug}
+                docId={docId}
+                docTitle={documentTitle}
+                provider={provider}
               />
             )}
           </div>
-          <div className="max-w-xs w-3/12 overflow-hidden hidden pb-4 sm:py-4 sm:pb-14 scroll-smooth hover:overflow-auto hover:overscroll-contain sm:block">
-            {loading || applyingFilters || !editor ? (
-              <div>
-                <TableOfcontentLoader className="mt-6" />
-              </div>
-            ) : (
-              <TableOfContents className="tiptap__toc pl-2" editor={editor} />
-            )}
+          <div className="toolbars w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative">
+            {editor ? <Toolbar editor={editor} /> : 'Loading...'}
+          </div>
+          <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
+            <div
+              className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
+            >
+              <Editor editor={editor} />
+            </div>
+          </div>
+          <div className='nd_modal hidden left w-full h-full fixed z-20 overflow-hidden'>
+            <TocModal docId={docId} docTitle={docTitle} editor={editor} />
+          </div>
+          <div className='nd_modal hidden bottom nd_filterModal w-full h-full  fixed top-0 z-30 '>
+            <FilterModal />
           </div>
         </div>
-      </div>
+      </>
+    );
+  };
+
+  const DesktopLayout = (props) => {
+    return (
+      <>
+        <HeadSeo title={documentTitle} description="another open docs plus document" />
+        <div className="pad tiptap flex flex-col border-solid ">
+          <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
+            {docSlug && (
+              <PadTitle
+                docSlug={docSlug}
+                docId={docId}
+                docTitle={documentTitle}
+                provider={provider}
+              />
+            )}
+          </div>
+          <div className="toolbars w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative">
+            {editor ? <Toolbar editor={editor} /> : 'Loading...'}
+          </div>
+          <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
+            <div
+              className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
+              onScroll={scrollHeadingSelection}
+            >
+              <Editor editor={editor} />
+            </div>
+            <div className="max-w-xs w-3/12 overflow-hidden pb-4 sm:py-4 sm:pb-14 scroll-smooth hover:overflow-auto hover:overscroll-contain">
+              <TOC editor={editor} />
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  };
+
+  return (
+    <>
+      {isMobile ? (
+        <MobileLayout />
+      ) : (
+        <DesktopLayout />
+      )}
     </>
-  )
+  );
+
+
 }
 
 export default OpenDocuments
