@@ -1,7 +1,7 @@
 import Link from 'next/link'
 
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import DocTitle from './docTitle'
+import DocTitle from './DocTitle'
 import {
   DocsPlus,
   Hamburger
