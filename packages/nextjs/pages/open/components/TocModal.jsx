@@ -54,7 +54,7 @@ const TocModal = ({ editor, docId, docTitle }) => {
             <button onTouchStart={closeLeftSideModal} onClick={closeLeftSideModal} className='w-6 h-6 ml-2 rounded-full bg-slate-200 text-black outline-0'>X</button>
           </div>
         </div>
-        <div className='h-full mt-16 pb-16 overflow-hidden scroll-smooth hover:overflow-auto hover:overscroll-contain'>
+        <div className='h-full mt-16 pb-16 overflow-hidden hover:overflow-auto'>
           <TOC editor={editor} />
         </div>
       </div>
