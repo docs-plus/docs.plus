@@ -59,7 +59,7 @@ const FilterModal = () => {
         <div className='text-blue-600 py-2 mb-3 flex w-full  bg-white'>
           <p className="w-2/3">Filters</p>
           <div className='w-1/3 flex justify-items-end items-center justify-end flex-row'>
-            <button onTouchStart={closeFilterModal} onClick={closeFilterModal} className='w-6 h-6 rounded-full bg-slate-200 text-black'>X</button>
+            <button onTouchStart={closeFilterModal} onClick={closeFilterModal} className='w-6 h-6 rounded-full bg-slate-200 text-black outline-0'>X</button>
           </div>
         </div>
         <div className='flex w-full justify-center align-middle'>
@@ -76,7 +76,7 @@ const FilterModal = () => {
           </p>
         </div>
 
-        <button onTouchStart={applySearch} onClick={applySearch} className='w-full p-2 border rounded mt-10'>Filter Contents</button>
+        <button onTouchStart={applySearch} onClick={applySearch} className='w-full p-2 border rounded mt-10 outline-0'>Filter Contents</button>
 
       </div>
     </div>
