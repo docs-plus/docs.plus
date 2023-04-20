@@ -1,20 +1,16 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
-import HeadSeo from '../../components/HeadSeo'
 import { useEditor } from '@tiptap/react'
 import * as Y from 'yjs'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import editorConfig from '../../components/TipTap/TipTap'
 import { useQuery } from '@tanstack/react-query'
-import Toolbar from '../../components/TipTap/Toolbar'
-import PadTitle from '../../components/TipTap/PadTitle'
 import { db, initDB } from '../../db'
 import { useEditorStateContext } from '../../context/EditorContext'
-import FilterModal from './components/FilterModal'
-import TocModal from './components/TocModal'
-import TOC from './components/Toc'
-import Editor from './components/Editor'
+
+import MobileLayout from './layouts/MobileLayout'
+import DesktopLayout from './layouts/DesktopLayout'
 
 const getHeaderParents = (heading) => {
   if (!heading) return
@@ -66,7 +62,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
   const { isLoading, error, data, isSuccess } = useCustomeHook(docSlug)
   const [documentTitle, setDocumentTitle] = useState(docTitle)
   const [docId, setDocId] = useState(null)
-  const [isMobile, setIsMobile] = useState(0);
+  const [isMobile, setIsMobile] = useState(true);
 
   const {
     rendering,
@@ -77,13 +73,6 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     setApplyingFilters,
     isEmpty,
   } = useEditorStateContext()
-
-  // check if the document is in the filter mode
-  useMemo(() => {
-    if (slugs.length > 1) {
-      setApplyingFilters(true)
-    }
-  }, [])
 
   useEffect(() => {
     setIsMobile(window.innerWidth <= 640);
@@ -97,6 +86,13 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
       window.removeEventListener("resize", handleResize);
     };
   }, []);
+
+  // check if the document is in the filter mode
+  useMemo(() => {
+    if (slugs.length > 1) {
+      setApplyingFilters(true)
+    }
+  }, [])
 
   useEffect(() => {
     // Use the data returned by useCustomHook in useEffect
@@ -324,108 +320,15 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     // })
   }, [rendering, editor])
 
-  const scrollHeadingSelection = (event) => {
-    const scrollTop = event.currentTarget.scrollTop
-    const toc = document.querySelector('.toc__list')
-    const tocLis = [...toc.querySelectorAll('.toc__item')]
-    const closest = tocLis
-      .map((li) => {
-        li.classList.remove('active')
-        return li
-      })
-      .filter((li) => {
-        const thisOffsetTop = +li.getAttribute('data-offsettop') - 220
-        return thisOffsetTop <= scrollTop // && nextSiblingOffsetTop >= scrollTop
-      })
-    closest.at(-1)?.classList.add('active')
-    closest.at(-1)?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start',
-      inline: 'nearest',
-    })
-  }
-
-  const MobileLayout = (props) => {
-    return (
-      <>
-        <HeadSeo title={documentTitle} description="another open docs plus document" />
-        <div className="pad tiptap flex flex-col border-solid">
-          <div className="docTitle w-full min-h-14 p-2 flex flex-row items-center sm:border-b-0 border-b">
-            {docSlug && (
-              <PadTitle
-                docSlug={docSlug}
-                docId={docId}
-                docTitle={documentTitle}
-                provider={provider}
-              />
-            )}
-          </div>
-          <div className="toolbars w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative">
-            {editor ? <Toolbar editor={editor} /> : 'Loading...'}
-          </div>
-          <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
-            <div
-              className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
-            >
-              <Editor editor={editor} />
-            </div>
-          </div>
-          <div className='nd_modal hidden left w-full h-full fixed z-20 overflow-hidden'>
-            <TocModal docId={docId} docTitle={docTitle} editor={editor} />
-          </div>
-          <div className='nd_modal hidden bottom nd_filterModal w-full h-full fixed top-0 z-30 '>
-            <FilterModal />
-          </div>
-        </div>
-      </>
-    );
-  };
-
-  const DesktopLayout = (props) => {
-    return (
-      <>
-        <HeadSeo title={documentTitle} description="another open docs plus document" />
-        <div className="pad tiptap flex flex-col border-solid ">
-          <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
-            {docSlug && (
-              <PadTitle
-                docSlug={docSlug}
-                docId={docId}
-                docTitle={documentTitle}
-                provider={provider}
-              />
-            )}
-          </div>
-          <div className="toolbars w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative">
-            {editor ? <Toolbar editor={editor} /> : 'Loading...'}
-          </div>
-          <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
-            <div
-              className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
-              onScroll={scrollHeadingSelection}
-            >
-              <Editor editor={editor} />
-            </div>
-            <div className="max-w-xs w-3/12 overflow-hidden pb-4 sm:py-4 sm:pb-14 scroll-smooth hover:overflow-auto hover:overscroll-contain">
-              <TOC editor={editor} />
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  };
-
   return (
     <>
       {isMobile ? (
-        <MobileLayout />
+        <MobileLayout documentTitle={documentTitle} docSlug={docSlug} docId={docId} provider={provider} editor={editor} />
       ) : (
-        <DesktopLayout />
+        <DesktopLayout documentTitle={documentTitle} docSlug={docSlug} docId={docId} provider={provider} editor={editor} />
       )}
     </>
   );
-
-
 }
 
 export default OpenDocuments
@@ -437,6 +340,6 @@ export async function getServerSideProps(context) {
   )
   const data = await res.json()
   return {
-    props: { docTitle: data.data.title, docSlug: documentSlug }, // will be passed to the page component as props
+    props: { docTitle: data.data.title, docSlug: documentSlug },
   }
 }
