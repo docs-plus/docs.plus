@@ -350,7 +350,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
       <>
         <HeadSeo title={documentTitle} description="another open docs plus document" />
         <div className="pad tiptap flex flex-col border-solid">
-          <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
+          <div className="docTitle w-full min-h-14 p-2 flex flex-row items-center sm:border-b-0 border-b">
             {docSlug && (
               <PadTitle
                 docSlug={docSlug}
@@ -373,7 +373,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
           <div className='nd_modal hidden left w-full h-full fixed z-20 overflow-hidden'>
             <TocModal docId={docId} docTitle={docTitle} editor={editor} />
           </div>
-          <div className='nd_modal hidden bottom nd_filterModal w-full h-full  fixed top-0 z-30 '>
+          <div className='nd_modal hidden bottom nd_filterModal w-full h-full fixed top-0 z-30 '>
             <FilterModal />
           </div>
         </div>
