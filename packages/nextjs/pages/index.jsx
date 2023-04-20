@@ -76,7 +76,7 @@ export default function Home({ hostname }) {
         description='Docs Plus application'
       />
       <div className=' w-full bg-slate-100 sm:h-screen h-full flex flex-col sm:justify-center sm:align-middle p-4'>
-        <div className="bg-white flex flex-wrap sm:justify-center max-w-5xl sm:m-auto p-4 sm:p-6 sm:py-10 pb-2 rounded-md shadow">
+        <div className="bg-white flex flex-wrap sm:justify-center max-w-5xl sm:m-auto p-2 sm:p-6 sm:py-10 pb-2 rounded-md shadow">
           <div className="sm:w-1/2 sm:mx-auto ">
             <div className='p-4'>
               <h1 className='flex flex-row items-end'> <DocsPlus className="mr-3" size="58" /> docs plus</h1>
@@ -159,6 +159,6 @@ export default function Home({ hostname }) {
 
 export async function getServerSideProps({ req, res }) {
   return {
-    props: { name: "hassan", hostname: req?.headers?.host }, // will be passed to the page component as props
+    props: { hostname: req?.headers?.host },
   }
 }
