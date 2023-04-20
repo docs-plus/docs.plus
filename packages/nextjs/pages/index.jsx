@@ -79,7 +79,7 @@ export default function Home({ hostname }) {
         <div className="bg-white flex flex-wrap sm:justify-center max-w-5xl sm:m-auto p-2 sm:p-6 sm:py-10 pb-2 rounded-md shadow">
           <div className="sm:w-1/2 sm:mx-auto ">
             <div className='p-4'>
-              <h1 className='flex flex-row items-end'> <DocsPlus className="mr-3" size="58" /> docs plus</h1>
+              <div className='flex flex-row items-end'> <DocsPlus className="mr-3" size="58" /> <span className='text-5xl'>docs plus</span></div>
               <h2 className='mt-3 text-gray-500 font-semibold'>Get everyone on the same page</h2>
               <div className='mt-5 leading-7 '>
                 <p><span>+</span> A <a href="https://github.com/docs-plus">free &amp; open source</a> project by <a href="https://newspeak.house">Newspeak House</a></p>
