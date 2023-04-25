@@ -62,7 +62,6 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
   const { isLoading, error, data, isSuccess } = useCustomeHook(docSlug)
   const [documentTitle, setDocumentTitle] = useState(docTitle)
   const [docId, setDocId] = useState(null)
-  const [isMobile, setIsMobile] = useState(true);
 
   const {
     rendering,
@@ -71,21 +70,8 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     setLoading,
     applyingFilters,
     setApplyingFilters,
-    isEmpty,
+    isMobile
   } = useEditorStateContext()
-
-  useEffect(() => {
-    setIsMobile(window.innerWidth <= 640);
-
-    const handleResize = () => {
-      setIsMobile(window.innerWidth <= 640);
-    };
-
-    window.addEventListener("resize", handleResize);
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
 
   // check if the document is in the filter mode
   useMemo(() => {
@@ -180,54 +166,11 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
 
   // listen to the editor transaction state change, in order to update rendering state
   useEffect(() => {
-    // console.log('Transition editor', editor)
-
     if (!editor) return
     if (loading) return
 
     setRendering(false)
 
-    editor?.on('transaction', ({ editor, transaction }) => {
-      // The editor state has changed.
-      // console.log({
-      //   tr: transaction.meta['y-sync$'],
-      //   meta: transaction.meta,
-      // })
-      // if (
-      //   transaction.meta['y-sync$']?.isChangeOrigin === true &&
-      //   transaction.meta['y-sync$']?.isUndoRedoOperation === false
-      // ) {
-      //   setRendering(false)
-      // }
-    })
-
-    // editor?.callbacks?.beforeCreate(() => {
-    //   console.log('beforeCreate')
-    // })
-
-    // console.log('isiisisis emooototoot', isEmpty)
-
-    // editor?.on('beforeCreate', () => {
-    //   console.log(' beforeCreate')
-    // })
-    // editor?.on('update', () => {
-    //   // console.log(' update')
-    // })
-    // editor?.on('create', () => {
-    //   console.log(' create')
-    // })
-
-    // editor?.on('create', ({ editor }) => {
-    //   console.log('on create', editor.isEmpty)
-    //   if (editor.isEmpty) {
-    //     setRendering(false)
-    //   }
-    // })
-
-    return () => {
-      // editor?.off('transaction')
-      // editor?.off('create')
-    }
   }, [editor])
 
   // useEffect(() => {

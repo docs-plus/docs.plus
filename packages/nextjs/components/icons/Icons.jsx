@@ -305,3 +305,13 @@ export const Filter = ({ size = 24, fill = 'black', className }) => {
   )
 }
 
+// prettier-ignore
+export const Pencil = ({ size = 24, fill = 'black', className }) => {
+  return (
+    <svg className={className} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
+      <path d="M4.75 19.2498L9 18.2498L18.9491 8.3007C19.3397 7.91018 19.3397 7.27702 18.9491 6.88649L17.1134 5.05071C16.7228 4.66018 16.0897 4.66018 15.6991 5.05071L5.75 14.9998L4.75 19.2498Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M14.0234 7.03906L17.0234 10.0391" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+

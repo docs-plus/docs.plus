@@ -7,6 +7,21 @@ export const EditorStateProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [applyingFilters, setApplyingFilters] = useState(false)
   const [isEmpty, setIsEmpty] = useState(true)
+  const [isMobile, setIsMobile] = useState(true);
+  const [selectionPos, setSelectionPos] = useState(0)
+
+  useEffect(() => {
+    setIsMobile(window.innerWidth <= 640);
+
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 640);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
 
   return (
     <Context.Provider
@@ -19,6 +34,8 @@ export const EditorStateProvider = ({ children }) => {
         setApplyingFilters,
         isEmpty,
         setIsEmpty,
+        isMobile, setIsMobile,
+        selectionPos, setSelectionPos
       }}
     >
       {children}
