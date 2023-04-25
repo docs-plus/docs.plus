@@ -53,20 +53,39 @@ body.h1SectionBreak {
   }
 }
 
+// if it is mobile
 @media (max-width: 640px) {
   .ProseMirror {
+    background-color: #f8f9fa;
+    padding: 12px;
+
+
     &.loading {
       padding: 0 !important;
     }
 
     .heading {
       margin: 0 !important;
+      padding: 8px !important;
 
       &[level="1"] {
         margin-bottom: 0 !important;
-        border: none !important;
+        // border: none !important;
         box-shadow: none !important;
+        // border-radius: 6px;
+        border-bottom: none !important;
+
+        &:first-of-type {
+          border-radius: 4px 4px 0 0 !important;
+        }
+
+        &:last-of-type {
+          border-bottom: 1px solid #e1e6e7 !important;
+          border-radius: 0 0 4px 4px !important;
+        }
       }
+
+
     }
   }
 }

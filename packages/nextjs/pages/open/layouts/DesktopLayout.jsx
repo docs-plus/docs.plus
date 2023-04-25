@@ -1,3 +1,4 @@
+import { useEditorStateContext } from '../../../context/EditorContext'
 import PadTitle from '../../../components/TipTap/PadTitle'
 import Toolbar from '../../../components/TipTap/Toolbar'
 import HeadSeo from '../../../components/HeadSeo'
@@ -26,10 +27,12 @@ const scrollHeadingSelection = (event) => {
 }
 
 const DesktopLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
+  const { isMobile } = useEditorStateContext()
+
   return (
     <>
       <HeadSeo title={documentTitle} description="another open docs plus document" />
-      <div className="pad tiptap flex flex-col border-solid ">
+      <div className={`pad tiptap flex flex-col border-solid ${ isMobile ? " m_mobile" : "m_desktop" }`}>
         <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
           {docSlug && (
             <PadTitle

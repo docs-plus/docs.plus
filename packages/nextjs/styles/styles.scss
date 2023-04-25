@@ -409,6 +409,27 @@ $crinkle-unfold-bg: #efefef;
   }
 }
 
+.m_mobile {
+  .ProseMirror {
+    div.heading {
+      .foldWrapper .fold {
+        width: calc(100% + 3rem + 6px);
+        left: -28px;
+      }
+
+      &.closed {
+        &[level="1"] {
+          > .wrapBlock > .foldWrapper .fold {
+            transition: none;
+            width: calc(100% + 1rem + 6px);
+            left: -11px;
+          }
+        }
+      }
+    }
+  }
+}
+
 .nd_modal {
   &.left {
     .modalBg {
