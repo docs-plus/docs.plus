@@ -4,13 +4,20 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import DocTitle from './DocTitle'
 import {
   DocsPlus,
-  Hamburger
+  Hamburger,
+  Check
 } from '../icons/Icons'
 
 import OnlineIndicator from './OnlineIndicator'
 
-const PadTitle = ({ docTitle, docId, docSlug, provider }) => {
+import useDetectKeyboardOpen from "use-detect-keyboard-open";
+
+
+const PadTitle = ({ docTitle, docId, docSlug, provider, editor }) => {
   const queryClient = useQueryClient()
+
+  const isKeyboardOpen = useDetectKeyboardOpen();
+
 
   const { isLoading, isSuccess, mutate } = useMutation({
     mutationKey: ['updateDocumentMetadata'],
@@ -55,6 +62,12 @@ const PadTitle = ({ docTitle, docId, docSlug, provider }) => {
     }, 200)
   }
 
+  const btn_blurEditor = () => {
+    console.log("Remove the focus from the editor")
+    // Remove the focus from the editor
+    editor?.commands.blur()
+  }
+
   return (
     <div className='flex flex-row items-center w-full sm:w-auto justify-center sm:justify-normal'>
       <div className='padLog hidden sm:block'>
@@ -63,9 +76,12 @@ const PadTitle = ({ docTitle, docId, docSlug, provider }) => {
         </Link>
       </div>
       <div className='sm:hidden'>
-        <button onClick={btn_leftOpenModal} className=" btn_modal w-10 h-10 flex align-middle justify-center items-center " type="button">
+        {isKeyboardOpen ? <button onTouchStart={btn_blurEditor} className="w-10 h-10 flex align-middle justify-center items-center">
+          <Check size="30" />
+        </button> : <button onTouchStart={btn_leftOpenModal} className="btn_modal w-10 h-10 flex align-middle justify-center items-center" type="button">
           <Hamburger size="30" />
         </button>
+        }
       </div>
       <DocTitle docId={docId} docTitle={docTitle} />
       <div className='w-10 h-10 border rounded-full bg-gray-400 ml-auto sm:hidden'></div>

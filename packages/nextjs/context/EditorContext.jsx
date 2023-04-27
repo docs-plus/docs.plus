@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useState } from 'react'
+import MobileDetect from 'mobile-detect'
 
 const Context = createContext()
 
@@ -9,6 +10,7 @@ export const EditorStateProvider = ({ children }) => {
   const [isEmpty, setIsEmpty] = useState(true)
   const [isMobile, setIsMobile] = useState(true);
   const [selectionPos, setSelectionPos] = useState(0)
+  const [deviceDetect, setDeviceDetect] = useState(null)
 
   useEffect(() => {
     setIsMobile(window.innerWidth <= 640);
@@ -18,6 +20,9 @@ export const EditorStateProvider = ({ children }) => {
     };
 
     window.addEventListener("resize", handleResize);
+
+    setDeviceDetect(new MobileDetect(navigator.userAgent))
+
     return () => {
       window.removeEventListener("resize", handleResize);
     };
@@ -35,7 +40,8 @@ export const EditorStateProvider = ({ children }) => {
         isEmpty,
         setIsEmpty,
         isMobile, setIsMobile,
-        selectionPos, setSelectionPos
+        selectionPos, setSelectionPos,
+        deviceDetect
       }}
     >
       {children}
