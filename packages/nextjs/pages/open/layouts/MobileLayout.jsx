@@ -9,12 +9,9 @@ import Editor from './../components/Editor'
 import { Pencil } from '../../../components/icons/Icons'
 import useDetectKeyboardOpen from "use-detect-keyboard-open";
 
-import MobileDetect from 'mobile-detect'
-
 const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
-  const { isMobile, selectionPos, setSelectionPos, rendering, loading } = useEditorStateContext()
+  const { isMobile, selectionPos, setSelectionPos, rendering, loading, deviceDetect } = useEditorStateContext()
   const [showToolbar, setShowToolbar] = useState(false);
-
 
   // check if keyboard is open
   const isKeyboardOpen = useDetectKeyboardOpen();
@@ -23,13 +20,19 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
     if (!isKeyboardOpen) {
       editor?.setEditable(true)
     }
-    editor.commands.focus(selectionPos === 0 ? 'start' : selectionPos)
+    editor.chain()
+      .focus(selectionPos === 0 ? 'start' : selectionPos)
+      .setTextSelection(selectionPos)
+      .scrollIntoView()
+
     setShowToolbar(!showToolbar);
   }
 
   editor?.on('focus', ({ editor, event }) => {
     // The editor is focused.
-    // setSelectionPos(editor.state.selection.$anchor.pos)
+    // if (deviceDetect.is('iPhone')) {
+    //   setSelectionPos(editor.state.selection.$anchor.pos)
+    // }
   })
 
   editor?.on('selectionUpdate', ({ editor }) => {
@@ -55,7 +58,6 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
   useEffect(() => {
     if (!editor || loading) return
 
-    const deviceDetect = new MobileDetect(navigator.userAgent);
     document.querySelector("html").classList.add('m_mobile')
 
     // Make the editor read-only
@@ -70,39 +72,22 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
       const viewport = event.target;
       const viewportHeight = Math.trunc(viewport.height - viewport.pageTop);
 
-      // setShowToolbar(isKeyboardOpen);
       document.body.style.height = `${ viewportHeight }px`
       document.querySelector('html').style.height = `${ viewportHeight }px`
 
       document.querySelector('.toolbars').style.top = `${ Math.trunc(viewport.height) - 36 }px`
 
-      console.log("type:<=", event.type, "=>", {
-        viewportHeight,
-        viewport,
-        event,
-        isKeyboardOpen
-      })
-
       const selection = window?.getSelection()?.anchorNode?.parentElement
-
       if (!selection) return
-
-      // if (deviceDetect.is('iPhone')) {
-      //   if (event.type !== "scroll") {
-      //     selection?.scrollIntoView({
-      //       behavior: 'instant', block: 'start'
-      //     })
-      //   }
-      // } else {
-      //   if (event.type !== "scroll") {
-      //     selection?.scrollIntoView({
-      //       behavior: 'instant', block: 'start'
-      //     })
-      //   }
-      // }
+      if (deviceDetect.is('iPhone')) {
+        if (event.type !== "scroll") {
+          selection?.scrollIntoView({
+            behavior: 'instant', block: 'start'
+          })
+        }
+      }
 
     }
-
 
     window.visualViewport.addEventListener('resize', viewportHandler);
     window.visualViewport.addEventListener('scroll', viewportHandler);
@@ -112,7 +97,6 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
       window.visualViewport.removeEventListener('scroll', viewportHandler);
     };
   }, [rendering, editor])
-
 
   return (
     <>
