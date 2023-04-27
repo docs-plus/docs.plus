@@ -64,11 +64,10 @@
 }
 
 
-html {
-
+html:not(.m_mobile) {
   @apply p-0 m-0 max-h-full min-h-full h-full;
 
-  body:not(.m_mobile) {
+  body {
     @apply p-0 m-0 max-h-full min-h-full h-full
   }
 }

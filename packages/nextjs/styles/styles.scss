@@ -472,5 +472,13 @@ $crinkle-unfold-bg: #efefef;
       }
     }
   }
+}
 
+.btn_bigBluePencil {
+  transition: all .3s linear 2s;
+  transform: translateY(200%);
+
+  &.active {
+    transform: translateY(0);
+  }
 }

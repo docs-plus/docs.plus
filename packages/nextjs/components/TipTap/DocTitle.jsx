@@ -37,7 +37,7 @@ const DocTitle = ({ docTitle, docId, docSlug, provider, className }) => {
         ? 'Loading...'
         : <div dangerouslySetInnerHTML={{ __html: docTitle }}
           contentEditable
-          className="border border-transparent px-2 py-0 rounded-sm text-lg font-medium w-full hover:border-slate-300" type="text"
+          className="border border-transparent px-2 py-0 rounded-sm text-lg font-medium w-full hover:border-slate-300 truncate" type="text"
           onBlur={saveData}
           onKeyDown={(e) => {
             if (event.key === 'Enter') {
