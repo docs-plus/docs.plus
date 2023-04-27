@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-
 import { useEditorStateContext } from '../../../context/EditorContext'
 import PadTitle from '../../../components/TipTap/PadTitle'
 import Toolbar from '../../../components/TipTap/Toolbar'
@@ -10,22 +9,28 @@ import Editor from './../components/Editor'
 import { Pencil } from '../../../components/icons/Icons'
 import useDetectKeyboardOpen from "use-detect-keyboard-open";
 
+import MobileDetect from 'mobile-detect'
+
 const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
-  const { isMobile, selectionPos, setSelectionPos } = useEditorStateContext()
+  const { isMobile, selectionPos, setSelectionPos, rendering, loading } = useEditorStateContext()
   const [showToolbar, setShowToolbar] = useState(false);
-  const [toolbarPosition, setToolbarPosition] = useState('100%');
+
 
   // check if keyboard is open
   const isKeyboardOpen = useDetectKeyboardOpen();
 
   function toggleToolbar() {
-    editor.commands.focus(selectionPos)
+    if (!isKeyboardOpen) {
+      editor?.setEditable(true)
+    }
+    editor.commands.focus(selectionPos === 0 ? 'start' : selectionPos)
     setShowToolbar(!showToolbar);
+
   }
 
   editor?.on('focus', ({ editor, event }) => {
     // The editor is focused.
-    setSelectionPos(editor.state.selection.$anchor.pos)
+    // setSelectionPos(editor.state.selection.$anchor.pos)
   })
 
   editor?.on('selectionUpdate', ({ editor }) => {
@@ -33,100 +38,97 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
     setSelectionPos(editor.state.selection.$anchor.pos)
   })
 
-
   useEffect(() => {
     setShowToolbar(isKeyboardOpen);
-    document.body.scrollTop = 0;
-    window.scrollTo(0, 0);
+
+    if (isKeyboardOpen) {
+      console.log("keyboard is open")
+      // editor?.setEditable(true)
+    } else {
+      // Make the editor read-only
+      editor?.setEditable(false)
+      console.log("keyboard is closed")
+
+    }
   }, [isKeyboardOpen])
 
   useEffect(() => {
+    if (!editor || loading) return
 
+    const deviceDetect = new MobileDetect(navigator.userAgent);
+    document.querySelector("html").classList.add('m_mobile')
+
+    // Make the editor read-only
+    editor.setEditable(false)
 
     const viewportHandler = (event) => {
       event.preventDefault();
       // need these two lines, in order to prevent to change viewport in IOS
+      window.scrollTo({ top: 0 });
       document.body.scrollTop = 0;
-      window.scrollTo({
-        top: 0,
-        left: 0,
-      });
+
 
       const viewport = event.target;
-      const isKeyboardOpen = viewport.height < window.innerHeight;
+      const viewportHeight = Math.trunc(viewport.height - viewport.pageTop);
+
       // setShowToolbar(isKeyboardOpen);
-      const viewportHeight = Math.trunc(viewport.height + viewport.pageTop);
-      if (isKeyboardOpen) {
-        const toolbar = document.querySelector('.toolbars')
-        document.querySelector('.toolbars').style.top = `${ Math.trunc(viewport.height) - 36 }px`
-      }
+      document.body.style.height = `${ viewportHeight }px`
+      document.querySelector('html').style.height = `${ viewportHeight }px`
+
+      document.querySelector('.toolbars').style.top = `${ Math.trunc(viewport.height) - 36 }px`
+
+      console.log("type:<=", event.type, "=>", {
+        viewportHeight,
+        viewport,
+        event,
+        // w, h,
+        isKeyboardOpen
+      })
+
 
       const selection = window?.getSelection()?.anchorNode?.parentElement
-      // document.querySelector('#root').style.height = `${ Math.trunc(viewport.height) }px`
-      // const scrollTop = selection.offsetTop + 60 //.offsetTop - 38 - 40
-      // console.log("viewportHandler log", {
-      //   event,
-      //   // viewport,
-      //   isKeyboardOpen,
-      //   viewportHeight: Math.trunc(viewport.height),
-      //   viewportPageTop: viewport.pageTop,
-      //   targetHight: viewportHeight,
-      //   // selection: scrollTop,
-      //   // robo: selection.offsetTop
-      // })
 
       if (!selection) return
-      // setTimeout(() => {
-      if (event.type !== "scroll") {
-        selection?.scrollIntoView({
-          behavior: 'instant', block: 'start'
-        })
+
+      if (deviceDetect.is('iPhone')) {
+        if (event.type !== "scroll") {
+          selection?.scrollIntoView({
+            behavior: 'instant', block: 'start'
+          })
+        }
+      } else {
+        if (event.type !== "resize") {
+          selection?.scrollIntoView({
+            behavior: 'instant', block: 'start'
+          })
+        }
       }
 
+    }
 
-      // }, 4000)
-      // document.querySelector('.editorWrapper').scrollTo({
-      //   top: scrollTop,
-      //   left: 0,
-      // });
 
-      // document.querySelector('.docTitle').style.top = `${ viewport.pageTop }px`
 
-      // if (viewport.height - window.innerHeight )
 
-      // if (viewport.height < window.innerHeight) {
-      // console.log("keyboard open", isKeyboardOpen)
-      // onKeyboardOnOff(true, viewport.height, viewport.pageTop);
-      // scrollToFixViewPort(viewport);
-      // } else {
-      // console.log("keyboard closed", isKeyboardOpen)
-      // onKeyboardOnOff(false, viewport.height, viewport.pageTop);
-      // }
-    };
 
     window.visualViewport.addEventListener('resize', viewportHandler);
     window.visualViewport.addEventListener('scroll', viewportHandler);
 
 
-    // window.addEventListener('resize', handleResize);
     return () => {
-      // window.removeEventListener('resize', handleResize);
       window.visualViewport.removeEventListener('resize', viewportHandler);
       window.visualViewport.removeEventListener('scroll', viewportHandler);
     };
-  }, []);
+  }, [rendering, editor])
 
-  const toolbarStyle = {
-    transform: `translateY(${ toolbarPosition })`
-  };
+
 
 
 
   return (
     <>
       <HeadSeo title={documentTitle} description="another open docs plus document" />
-      <div className={`pad tiptap flex flex-col border-solid ${ isMobile ? "m_mobile" : "m_desktop" }`}>
-        <div className="docTitle bg-white w-full min-h-14 p-2 flex flex-row items-center sm:border-b-0 border-b">
+      <div className={`pad tiptap relative flex  flex-col border-solid ${ isMobile ? "m_mobile" : "m_desktop" }`}>
+        <div className="docTitle  z-50 top-0 bg-white w-full min-h-14 p-2 flex flex-row items-center sm:border-b-0 border-b">
           {docSlug && (
             <PadTitle
               docSlug={docSlug}
