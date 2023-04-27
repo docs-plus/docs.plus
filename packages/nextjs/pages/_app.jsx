@@ -31,7 +31,7 @@ export default function MyApp({ Component, pageProps }) {
         <meta name="referrer" content="no-referrer" />
         <meta
           name="viewport"
-          content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no, user-scalable=no, viewport-fit=cover"
+          content="minimum-scale=1, initial-scale=1, height=device-height, maximum-scale=1.0, width=device-width, shrink-to-fit=no, user-scalable=no, viewport-fit=cover"
         />
         {/* Chrome, Firefox OS and Opera  */}
         <meta name="theme-color" content="#3367D6" />

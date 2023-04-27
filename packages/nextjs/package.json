@@ -51,6 +51,7 @@
     "@tiptap/starter-kit": "^2.0.2",
     "dexie": "^3.2.3",
     "lowlight": "^2.8.1",
+    "mobile-detect": "^1.4.5",
     "next": "latest",
     "next-pwa": "^5.6.0",
     "pubsub-js": "^1.9.4",
