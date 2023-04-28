@@ -4,6 +4,7 @@ import Toolbar from '../../../components/TipTap/Toolbar'
 import HeadSeo from '../../../components/HeadSeo'
 import Editor from './../components/Editor'
 import TOC from './../components/Toc'
+import { useEffect } from 'react'
 
 const scrollHeadingSelection = (event) => {
   const scrollTop = event.currentTarget.scrollTop
@@ -28,6 +29,10 @@ const scrollHeadingSelection = (event) => {
 
 const DesktopLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
   const { isMobile } = useEditorStateContext()
+
+  useEffect(() => {
+    document.querySelector("html").classList.remove('m_mobile')
+  }, [])
 
   return (
     <>
