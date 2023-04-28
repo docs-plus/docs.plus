@@ -278,9 +278,8 @@ export default OpenDocuments
 
 export async function getServerSideProps(context) {
   const documentSlug = context.query.slugs.at(0)
-  const res = await fetch(
-    `${ process.env.NEXT_PUBLIC_RESTAPI_URL }/documents/${ documentSlug }`
-  )
+  const url = `${ process.env.NEXT_PUBLIC_RESTAPI_URL }/documents/${ documentSlug }`
+  const res = await fetch(url)
   const data = await res.json()
   return {
     props: { docTitle: data.data.title, docSlug: documentSlug },

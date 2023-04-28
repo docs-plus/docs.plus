@@ -45,9 +45,6 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
   buttonWrapper.append(btnChatBox)
 
   const toggleHeadingContent = (el) => {
-    console.log('coming heaidng', {
-      el,
-    })
     const headingId = el.getAttribute('data-id')
     const detailsContent = el.querySelector('div.contentWrapper')
     const event = new CustomEvent('toggleHeadingsContent', {
@@ -97,8 +94,6 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
       const nodeState = headingMap.find((h) => h.headingId === headingId) || {
         crinkleOpen: true,
       }
-
-      console.log('geting headheadingMap, =????>>>>>', headingMap)
 
       const filterMode = document.body.classList.contains('filter-mode')
       // console.log(currentNode, 'currentNode===>', filterMode, {
