@@ -75,7 +75,7 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
       document.body.style.height = `${ viewportHeight }px`
       document.querySelector('html').style.height = `${ viewportHeight }px`
 
-      document.querySelector('.toolbars').style.top = `${ Math.trunc(viewport.height) - 36 }px`
+      document.querySelector('.toolbars').style.top = `${ Math.trunc(viewport.height) - 44 }px`
 
       const selection = window?.getSelection()?.anchorNode?.parentElement
       if (!selection) return
