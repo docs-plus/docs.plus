@@ -51,6 +51,8 @@ import ContentHeading from './extentions/ContentHeading'
 import UniqueID from './extentions/UniqueId'
 import ContentWrapper from './extentions/ContentWrapper'
 
+import { useEditorStateContext } from '../../context/EditorContext'
+
 lowlight.registerLanguage('html', html)
 lowlight.registerLanguage('css', css)
 lowlight.registerLanguage('js', js)
@@ -61,7 +63,6 @@ lowlight.registerLanguage('yaml', yaml)
 lowlight.registerLanguage('json', json)
 lowlight.registerLanguage('bash', bash)
 
-import { useEditorStateContext } from '../../context/EditorContext'
 
 const Document = Node.create({
   name: 'doc',
@@ -97,11 +98,11 @@ const scrollDown = () => {
       param: url,
       id: url.searchParams.get('id'),
       nodeTarget: document.querySelector(
-        `[data-id="${url.searchParams.get('id')}"]`
+        `[data-id="${ url.searchParams.get('id') }"]`
       ),
     })
     document
-      .querySelector(`[data-id="${url.searchParams.get('id')}"]`)
+      .querySelector(`[data-id="${ url.searchParams.get('id') }"]`)
       ?.scrollIntoView()
   }, 200)
 }
@@ -264,11 +265,11 @@ const Editor = ({
           if (nodeType === 'contentHeading') {
             const level = node.attrs.level
 
-            return level - 1 === 0 ? 'Title' : `Heading ${level - 1}`
+            return level - 1 === 0 ? 'Title' : `Heading ${ level - 1 }`
           } else if (nodeType === 'heading') {
             const level = node.attrs.level
 
-            return level - 1 === 0 ? 'Title' : `Heading ${level - 1}`
+            return level - 1 === 0 ? 'Title' : `Heading ${ level - 1 }`
           } else if (nodeType === 'paragraph') {
             const msg = [
               'Type your thoughts here ...',

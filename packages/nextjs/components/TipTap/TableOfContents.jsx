@@ -1,13 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react'
-// import PubSub from 'pubsub-js'
 import { useEditorStateContext } from '../../context/EditorContext'
-
 
 function getOffsetTop(element) {
   return element ? element.offsetTop + getOffsetTop(element.offsetParent) : 0
 }
 
-const TableOfcontent = ({ editor, className }) => {
+const TableOfContent = ({ editor, className }) => {
   const [items, setItems] = useState([])
   const {
     rendering,
@@ -21,19 +19,14 @@ const TableOfcontent = ({ editor, className }) => {
   const handleUpdate = useCallback((doc, data) => {
     const headings = []
     const editorDoc = doc.editor?.state?.doc || doc.state.doc
-    // TODO: check the object id performance
-    // TODO: heading must be url frindly, so I have to map id with SLUGs
+
     editorDoc?.descendants((node, _pos, _parent, _index) => {
       if (node.type.name === 'contentHeading') {
-        // https://stackoverflow.com/questions/59829232/offsettop-return-0
-
         let headingId = _parent.attrs?.id || node?.attrs.id || '1'
         let headingSection = document.querySelector(
           `.ProseMirror .heading[data-id="${ headingId }"]`
         )
         let offsetTop = getOffsetTop(headingSection)
-
-        // console.log({headingSection, offsetTop})
 
         if (offsetTop === 0) {
           headingId = '1'
@@ -52,23 +45,21 @@ const TableOfcontent = ({ editor, className }) => {
         })
       }
     })
+
     setItems(headings)
   }, [])
 
   useEffect(() => {
-    if (!editor) {
-      return null
-    }
-    editor?.on('update', handleUpdate)
+    if (!editor) return null
+
+    editor.on('update', handleUpdate)
     let trTimer
 
-    editor?.on('transaction', (tr, state) => {
+    editor.on('transaction', (tr, state) => {
       if (
         tr.transaction.meta?.foldAndunfold ||
         tr.transaction.meta?.renderTOC
       ) {
-        // TODO: not good solotion, but it works
-        // console.log("transaction", {tr, meta: tr.transaction.meta?.foldAndunfold})
         trTimer = setTimeout(() => {
           handleUpdate(tr)
         }, 1000)
@@ -80,8 +71,8 @@ const TableOfcontent = ({ editor, className }) => {
     }, 200)
 
     return () => {
-      editor?.off('transaction')
-      editor?.off('update')
+      editor.off('transaction')
+      editor.off('update')
       clearTimeout(timer)
       clearTimeout(trTimer)
     }
@@ -95,16 +86,9 @@ const TableOfcontent = ({ editor, className }) => {
     const timer = setTimeout(() => {
       handleUpdate(editor)
     }, 200)
+
     return () => clearTimeout(timer)
   }, [applyingFilters])
-
-  // useEffect(() => {
-  //   PubSub.subscribe('toggleHeadingsContent', function (msg, data) {
-  //     // handleUpdate(editor, data)
-  //   })
-
-  //   return () => PubSub.unsubscribe('toggleHeadingsContent')
-  // }, [])
 
   const scroll2Header = (e) => {
     e.preventDefault()
@@ -142,7 +126,6 @@ const TableOfcontent = ({ editor, className }) => {
   function renderToc(items) {
     const renderedItems = []
     let i = 0
-
     while (i < items.length) {
       const item = items[i]
       const children = []
@@ -156,22 +139,20 @@ const TableOfcontent = ({ editor, className }) => {
         <div
           key={item.id}
           className={`
-            toc__item toc__item--${ item.level } text-ellipsis overflow-hidden ${ item.open ? '' : 'closed' }
+            toc__item toc__item--${ item.level } text-ellipsis overflow-hidden ${ item.open ? '' : 'closed'
+            }
           `}
           data-id={item.id}
-          data-offsettop={item.offsetTop}
-        >
+          data-offsettop={item.offsetTop}>
           <span>
             <span
               className="btnFold"
-              onClick={() => toggleSection(item)}
-            ></span>
+              onClick={() => toggleSection(item)}></span>
             <a
               className="text-black text-ellipsis overflow-hidden"
               data-id={item.id}
               href={`?${ item.id }`}
-              onClick={scroll2Header}
-            >
+              onClick={scroll2Header}>
               {item.text}
             </a>
           </span>
@@ -196,4 +177,4 @@ const TableOfcontent = ({ editor, className }) => {
   )
 }
 
-export default TableOfcontent
+export default TableOfContent
