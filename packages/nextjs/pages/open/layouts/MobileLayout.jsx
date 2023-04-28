@@ -119,7 +119,7 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
           <div
             className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
           >
-            <Editor editor={editor} />
+            {editor ? <Editor editor={editor} /> : 'Loading...'}
           </div>
         </div>
         <div className='nd_modal hidden left w-full h-full fixed z-20 overflow-hidden'>
@@ -128,7 +128,7 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
         <div className='nd_modal hidden bottom nd_filterModal w-full h-full fixed top-0 z-30 '>
           <FilterModal />
         </div>
-        <button onClick={toggleToolbar} className={`btn_bigBluePencil ${ !isKeyboardOpen ? 'block active' : 'hidden' } w-14 h-14 z-50 outline-none fixed bottom-12 right-12 rounded-full drop-shadow-md bg-blue-600 flex align-middle items-center justify-center`}>
+        <button onClick={toggleToolbar} className={`btn_bigBluePencil ${ !isKeyboardOpen ? 'block active' : 'hidden' } w-14 h-14 z-50 outline-none fixed bottom-12 right-8 rounded-full drop-shadow-md bg-blue-600 flex align-middle items-center justify-center`}>
           <Pencil />
         </button>
       </div>
