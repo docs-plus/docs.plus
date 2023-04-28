@@ -483,3 +483,13 @@ $crinkle-unfold-bg: #efefef;
     transform: translateY(0);
   }
 }
+
+.m_mobile {
+  .buttonWrapper {
+    display: none;
+  }
+
+  .tiptap__toc .toc__item > span .btnFold::before {
+    opacity: 1;
+  }
+}
