@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react'
 import { useEditorStateContext } from '../../../context/EditorContext'
 import PadTitle from '../../../components/TipTap/PadTitle'
-import Toolbar from '../../../components/TipTap/Toolbar'
 import FilterModal from './../components/FilterModal'
 import HeadSeo from '../../../components/HeadSeo'
 import TocModal from './../components/TocModal'
 import Editor from './../components/Editor'
 import { Pencil } from '../../../components/icons/Icons'
 import useDetectKeyboardOpen from "use-detect-keyboard-open";
+import ToolbarMobile from './../components/ToolbarMobile'
 
 const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
   const { isMobile, selectionPos, setSelectionPos, rendering, loading, deviceDetect } = useEditorStateContext()
@@ -112,8 +112,8 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
             />
           )}
         </div>
-        <div className={`toolbars ${ isKeyboardOpen ? 'block' : 'hidden' }  w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative`}>
-          {editor ? <Toolbar editor={editor} /> : 'Loading...'}
+        <div className={`${ isKeyboardOpen ? 'block' : 'hidden' } toolbars  w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative`}>
+          {editor ? <ToolbarMobile editor={editor} /> : 'Loading...'}
         </div>
         <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
           <div
