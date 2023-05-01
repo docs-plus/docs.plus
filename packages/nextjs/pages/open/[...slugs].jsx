@@ -53,17 +53,17 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
 
   function setDefaultContent(editor) {
     const contentLength = editor?.getHTML().trim().length
-    console.log("contentLength", contentLength)
+    console.log("contentLength", contentLength, editor)
     if (contentLength === 70 || contentLength === 97) {
-      editor?.chain().focus('start').insertContentAt(2, '' +
-        '<h1>&shy;</h1>' +
-        '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
-        '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
-        '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
-        '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>',
-        {
-          updateSelection: false
-        }).setTextSelection(0).run()
+      // editor?.chain().focus('start').insertContentAt(2, '' +
+      //   '<h1>&shy;</h1>' +
+      //   '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
+      //   '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
+      //   '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
+      //   '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>',
+      //   {
+      //     updateSelection: false
+      //   }).setTextSelection(0).run()
     } else {
       // editor.editor?.chain().focus('start').setTextSelection(0).run()
     }
