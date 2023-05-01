@@ -28,13 +28,13 @@ const useYdocAndProvider = (docId, setLoading) => {
             if (data?.state) setLoading(false)
           },
           documentUpdateHandler: (update) => {
-            // console.log('documentUpdateHandler', update)
+            console.log('documentUpdateHandler', update)
           },
           onDisconnect: (data) => {
-            // console.log("onDisconnect", data)
+            console.log("onDisconnect", data)
           },
           onMessage: (data) => {
-            // console.log('onMessage', data)
+            console.log('onMessage', data)
           },
         })
 
