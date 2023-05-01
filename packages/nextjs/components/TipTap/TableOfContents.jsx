@@ -8,12 +8,7 @@ function getOffsetTop(element) {
 const TableOfContent = ({ editor, className }) => {
   const [items, setItems] = useState([])
   const {
-    rendering,
-    setRendering,
-    loading,
-    setLoading,
     applyingFilters,
-    setApplyingFilters,
   } = useEditorStateContext()
 
   const handleUpdate = useCallback((doc, data) => {

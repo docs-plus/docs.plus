@@ -20,6 +20,8 @@ const TocModal = ({ editor, docId, docTitle }) => {
     modalWrapper.classList.remove('active')
     modalBg.classList.remove('active')
 
+    editor?.setEditable(false)
+
     modalBg.ontransitionend = () => {
       leftSideModal.classList.add('hidden')
     };

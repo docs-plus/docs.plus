@@ -28,18 +28,6 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
     setShowToolbar(!showToolbar);
   }
 
-  editor?.on('focus', ({ editor, event }) => {
-    // The editor is focused.
-    // if (deviceDetect.is('iPhone')) {
-    //   setSelectionPos(editor.state.selection.$anchor.pos)
-    // }
-  })
-
-  editor?.on('selectionUpdate', ({ editor }) => {
-    // The selection has changed.
-    setSelectionPos(editor.state.selection.$anchor.pos)
-  })
-
   useEffect(() => {
     setShowToolbar(isKeyboardOpen);
 
@@ -59,6 +47,19 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
     if (!editor || loading) return
 
     document.querySelector("html").classList.add('m_mobile')
+
+    editor?.on('focus', ({ editor, event }) => {
+      // The editor is focused.
+      // if (deviceDetect.is('iPhone')) {
+      //   setSelectionPos(editor.state.selection.$anchor.pos)
+      // }
+    })
+
+    editor?.on('selectionUpdate', ({ editor }) => {
+      // The selection has changed.
+      setSelectionPos(editor.state.selection.$anchor.pos)
+    })
+
 
     // Make the editor read-only
     editor.setEditable(false)
@@ -109,6 +110,7 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
               docId={docId}
               docTitle={documentTitle}
               provider={provider}
+              editor={editor}
             />
           )}
         </div>
@@ -128,8 +130,8 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
         <div className='nd_modal hidden bottom nd_filterModal w-full h-full fixed top-0 z-30 '>
           <FilterModal />
         </div>
-        <button onClick={toggleToolbar} className={`btn_bigBluePencil ${ !isKeyboardOpen ? 'block active' : 'hidden' } w-14 h-14 z-50 outline-none fixed bottom-12 right-8 rounded-full drop-shadow-md bg-blue-600 flex align-middle items-center justify-center`}>
-          <Pencil />
+        <button onClick={toggleToolbar} className={`btn_bigBluePencil ${ !isKeyboardOpen ? 'block active' : 'hidden' } w-14 h-14 z-50 outline-none fixed bottom-12 right-8 rounded-full drop-shadow-md flex align-middle items-center justify-center`}>
+          <Pencil size={25} />
         </button>
       </div>
     </>

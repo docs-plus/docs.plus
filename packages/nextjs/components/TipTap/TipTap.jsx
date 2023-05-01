@@ -51,8 +51,6 @@ import ContentHeading from './extentions/ContentHeading'
 import UniqueID from './extentions/UniqueId'
 import ContentWrapper from './extentions/ContentWrapper'
 
-import { useEditorStateContext } from '../../context/EditorContext'
-
 lowlight.registerLanguage('html', html)
 lowlight.registerLanguage('css', css)
 lowlight.registerLanguage('js', js)
@@ -115,10 +113,8 @@ const Editor = ({
   spellcheck = false,
   children,
 }) => {
-  const { isEmpty, setIsEmpty, rendering, loading, applyingFilters } =
-    useEditorStateContext()
 
-  if (!provider || loading) {
+  if (!provider) {
     return {
       extensions: [
         Document,
@@ -141,11 +137,9 @@ const Editor = ({
 
   return {
     onCreate: (editor) => {
-      console.log('onCreate', editor)
       scrollDown()
     },
     onUpdate: (editor) => {
-      console.log('onUpdate', editor)
     },
     onTransaction({ editor, transaction }) {
       //   // The editor state has changed.
@@ -179,15 +173,6 @@ const Editor = ({
     //     editor,
     //   })
     // },
-    onUpdate({ editor }) {
-      // The content has changed.
-      // console.log('onUpdate', {
-      //   editor,
-      //   isEmpty: editor.isEmpty,
-      //   dobo: { rendering, loading, applyingFilters },
-      // })
-      // setIsEmpty(editor.isEmpty)
-    },
     editorProps: {
       attributes: {
         spellcheck,

@@ -1,16 +1,13 @@
 import Head from 'next/head'
-import { AppProps } from 'next/app'
 import dynamic from 'next/dynamic'
-import '../styles/styles.scss'
-import '../styles/globals.scss'
 
 import {
-  useQuery,
-  useMutation,
-  useQueryClient,
   QueryClient,
   QueryClientProvider,
 } from '@tanstack/react-query'
+
+import '../styles/styles.scss'
+import '../styles/globals.scss'
 
 const RelpadPrompt = dynamic(() => import(`../components/ReloadPrompt`), {
   ssr: false,

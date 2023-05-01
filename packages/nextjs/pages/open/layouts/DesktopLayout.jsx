@@ -31,6 +31,8 @@ const DesktopLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
   const { isMobile } = useEditorStateContext()
 
   useEffect(() => {
+    // when layout change set editor editable again
+    editor?.setEditable(true)
     document.querySelector("html").classList.remove('m_mobile')
   }, [])
 

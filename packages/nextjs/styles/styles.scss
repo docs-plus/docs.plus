@@ -410,11 +410,21 @@ $crinkle-unfold-bg: #efefef;
 }
 
 .m_mobile {
+  .tiptap__toc .toc__item > span .btnFold::before {
+    opacity: 1;
+  }
+
   .ProseMirror {
+    .wrapBlock {
+      .buttonWrapper {
+        visibility: hidden;
+      }
+    }
+
     div.heading {
       .foldWrapper .fold {
-        width: calc(100% + 3rem + 6px);
-        left: -28px;
+        width: calc(100% + 1rem + 6px);
+        left: -12px;
       }
 
       &.closed {
@@ -478,18 +488,9 @@ $crinkle-unfold-bg: #efefef;
   transition: all .3s linear 2s;
   transform: translateY(200%);
   box-shadow: 0px 4px 5px rgba(0, 0, 0, 0.14), 0px 1px 10px rgba(0, 0, 0, 0.12), 0px 2px 4px rgba(0, 0, 0, 0.2);
+  background-color: #007AFF;
 
   &.active {
     transform: translateY(0);
-  }
-}
-
-.m_mobile {
-  .buttonWrapper {
-    display: none;
-  }
-
-  .tiptap__toc .toc__item > span .btnFold::before {
-    opacity: 1;
   }
 }

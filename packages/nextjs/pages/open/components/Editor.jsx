@@ -9,7 +9,7 @@ const Editor = ({ editor }) => {
     applyingFilters,
   } = useEditorStateContext()
 
-  if (loading || applyingFilters || !editor) {
+  if (loading || !editor) {
     return (
       <div
         className={`ProseMirror tipta__editor loading mb-12 border-t-0 pt-8 sm:mb-0 sm:p-8 px-6 `}
