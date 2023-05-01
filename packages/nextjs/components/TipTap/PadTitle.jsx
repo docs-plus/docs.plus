@@ -1,5 +1,4 @@
 import Link from 'next/link'
-
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import DocTitle from './DocTitle'
 import {
@@ -9,7 +8,6 @@ import {
 } from '../icons/Icons'
 
 import OnlineIndicator from './OnlineIndicator'
-
 import useDetectKeyboardOpen from "use-detect-keyboard-open";
 
 
@@ -57,6 +55,8 @@ const PadTitle = ({ docTitle, docId, docSlug, provider, editor }) => {
     const modalBg = leftModal.querySelector('.modalBg')
     modalBg.classList.add('active')
 
+    editor?.setEditable(true)
+
     setTimeout(() => {
       leftModal.querySelector('.modalWrapper').classList.add('active')
     }, 200)
@@ -85,7 +85,7 @@ const PadTitle = ({ docTitle, docId, docSlug, provider, editor }) => {
       </div>
       <DocTitle docId={docId} docTitle={docTitle} />
       <div className='w-10 h-10 border rounded-full bg-gray-400 ml-auto sm:hidden'></div>
-      <OnlineIndicator className="hidden sm:block " />
+      {/* <OnlineIndicator className="hidden sm:block " /> */}
     </div>
   )
 }

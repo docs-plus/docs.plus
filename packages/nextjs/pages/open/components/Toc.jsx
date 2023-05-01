@@ -8,7 +8,7 @@ const TOC = ({ className = "", editor }) => {
     applyingFilters,
   } = useEditorStateContext()
 
-  if (loading || applyingFilters || !editor) {
+  if (loading || !editor) {
     return (
       <div>
         <TableOfcontentLoader className="mt-6" />
