@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { db, initDB } from '../../../db';
+import { db, initDB } from '../db';
 
 const useCustomHook = (docSlug) => {
   // NOTE: This is a hack to get the correct URL in the build time
