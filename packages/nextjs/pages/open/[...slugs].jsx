@@ -4,9 +4,9 @@ import { useEditor } from '@tiptap/react'
 import editorConfig from '../../components/TipTap/TipTap'
 import { useEditorStateContext } from '../../context/EditorContext'
 
-import useYdocAndProvider from "./hooks/useYdocAndProvider"
-import useApplyFilters from './hooks/useApplyFilters'
-import useDocumentMetadata from './hooks/useDocumentMetadata'
+import useYdocAndProvider from "../../hooks/useYdocAndProvider"
+import useApplyFilters from '../../hooks/useApplyFilters'
+import useDocumentMetadata from '../../hooks/useDocumentMetadata'
 
 import MobileLayout from './layouts/MobileLayout'
 import DesktopLayout from './layouts/DesktopLayout'
