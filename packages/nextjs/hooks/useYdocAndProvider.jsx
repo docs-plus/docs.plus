@@ -11,9 +11,7 @@ const useYdocAndProvider = (docId, setLoading) => {
   useEffect(() => {
     if (docId) {
       if (docId) {
-        const ydoc = new Y.Doc()
-
-        setYdoc(ydoc)
+        const ydoc = new Y.Doc();
 
         const colabProvider = new HocuspocusProvider({
           url: `${ process.env.NEXT_PUBLIC_PROVIDER_URL }`,
@@ -34,24 +32,25 @@ const useYdocAndProvider = (docId, setLoading) => {
             console.log("onDisconnect", data)
           },
           onMessage: (data) => {
-            console.log('onMessage', data)
+            // console.log('onMessage', data)
           },
         })
 
         setProvider(colabProvider)
+        setYdoc(ydoc)
 
         // NOTE: This is not working yet, I need reconsider for offline mode
         // Store the Y document in the browser
-        // const indexDbProvider = new IndexeddbPersistence(
-        //   docId,
-        //   colabProvider.document
-        // )
+        const indexDbProvider = new IndexeddbPersistence(
+          docId,
+          colabProvider.document
+        )
 
-        // indexDbProvider.on('synced', () => {
-        //   console.log(`content loaded from indexdb, pad name: ${ docId }`)
-        //   if (!loadedData) return
-        //   setLoadedData(true)
-        // })
+        indexDbProvider.on('synced', () => {
+          console.log(`content loaded from indexdb, pad name: ${ docId }`)
+          if (!loadedData) return
+          setLoadedData(true)
+        })
       }
     }
   }, [docId]);
