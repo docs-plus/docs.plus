@@ -53,6 +53,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
 
   function setDefaultContent(editor) {
     const contentLength = editor?.getHTML().trim().length
+    console.log("contentLength", contentLength)
     if (contentLength === 70 || contentLength === 97) {
       editor?.chain().focus('start').insertContentAt(2, '' +
         '<h1>&shy;</h1>' +
