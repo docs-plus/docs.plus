@@ -23,9 +23,6 @@
     "snazzy": "^9.0.0",
     "standard": "^17.0.0"
   },
-  "engines": {
-    "node": "^16.0.0 || >=18.9.0"
-  },
   "dependencies": {
     "@hocuspocus/extension-database": "^2.0.1",
     "@hocuspocus/extension-logger": "^2.0.1",
