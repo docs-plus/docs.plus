@@ -20,11 +20,11 @@ const useYdocAndProvider = (docId, setLoading) => {
           name: docId,
           document: ydoc,
           onStatus: (data) => {
-            // console.log('onStatus', data)
+            console.log('onStatus', data)
           },
           onSynced: (data) => {
-            // console.log('++onSynced', data)
-            // console.log(`++content loaded from Server, pad name: ${ docId }`, provider?.isSynced)
+            console.log('++onSynced', data)
+            console.log(`++content loaded from Server, pad name: ${ docId }`, provider?.isSynced)
             if (data?.state) setLoading(false)
           },
           documentUpdateHandler: (update) => {
