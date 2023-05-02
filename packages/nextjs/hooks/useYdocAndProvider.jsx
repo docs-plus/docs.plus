@@ -12,8 +12,6 @@ const useYdocAndProvider = (docId, setLoading) => {
     if (docId) {
       const ydoc = new Y.Doc();
 
-      console.log("docID+++++++", docId)
-
       const colabProvider = new HocuspocusProvider({
         url: `${ process.env.NEXT_PUBLIC_PROVIDER_URL }`,
         name: docId,
@@ -39,8 +37,6 @@ const useYdocAndProvider = (docId, setLoading) => {
 
       setProvider(colabProvider)
       setYdoc(ydoc)
-
-      console.log({ colabProvider })
 
       // NOTE: This is not working yet, I need reconsider for offline mode
       // Store the Y document in the browser

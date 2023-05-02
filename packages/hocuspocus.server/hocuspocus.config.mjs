@@ -89,7 +89,6 @@ export default () => {
     const database = new Database({
       // Return a Promise to retrieve data …
       fetch: async ({ documentName, context }) => {
-        console.log("fetch Data", documentName, context)
         const doc = await prisma.documents.findMany({
           take: 1,
           where: {
@@ -107,8 +106,6 @@ export default () => {
       },
       // … and a Promise to store data:
       store: async ({ documentName, state, context }) => {
-        console.log("store Data", documentName, state, context)
-
         return prisma.documents.create({
           data: {
             documentId: documentName,

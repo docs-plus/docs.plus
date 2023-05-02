@@ -55,15 +55,15 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     const contentLength = editor?.getHTML().trim().length
     console.log("contentLength", contentLength, editor)
     if (contentLength === 70 || contentLength === 97) {
-      // editor?.chain().focus('start').insertContentAt(2, '' +
-      //   '<h1>&shy;</h1>' +
-      //   '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
-      //   '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
-      //   '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
-      //   '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>',
-      //   {
-      //     updateSelection: false
-      //   }).setTextSelection(0).run()
+      editor?.chain().focus('start').insertContentAt(2, '' +
+        '<h1>&shy;</h1>' +
+        '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
+        '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
+        '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
+        '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>',
+        {
+          updateSelection: false
+        }).setTextSelection(0).run()
     } else {
       // editor.editor?.chain().focus('start').setTextSelection(0).run()
     }
@@ -71,7 +71,6 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
 
   useEffect(() => {
     if (!editor || loading) return
-    console.log("we have editor", editor)
     setDefaultContent(editor)
     setRendering(false)
   }, [editor])
