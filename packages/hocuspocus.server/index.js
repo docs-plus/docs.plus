@@ -35,10 +35,6 @@ app.get('/', (_request, response) => {
 app.use(middlewares)
 app.use('/api', routers)
 
-app.ws('/echo', function (ws, _req) {
-  ws.on('message', (msg) => ws.send(msg))
-})
-
 // Start the server
 app.listen(APP_PORT, () => {
   console.info(`
