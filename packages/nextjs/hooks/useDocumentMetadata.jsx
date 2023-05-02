@@ -53,6 +53,11 @@ const useDocumentMetadata = (docSlug, docTitle, slugs) => {
     }
   }, [data]);
 
+  console.log(documentTitle,
+    docId,
+    isLoading, error,
+    isSuccess)
+
   return {
     documentTitle,
     docId,
