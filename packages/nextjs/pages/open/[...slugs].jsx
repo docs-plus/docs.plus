@@ -71,6 +71,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
 
   useEffect(() => {
     if (!editor || loading) return
+    console.log("we have editor", editor)
     setDefaultContent(editor)
     setRendering(false)
   }, [editor])
