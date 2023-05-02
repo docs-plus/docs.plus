@@ -29,6 +29,7 @@ export default () => {
     REDIS_HOST,
     REDIS_PORT,
     HOCUSPOCUS_PORT,
+    NODE_ENV
 
   } = process.env
 
@@ -85,7 +86,7 @@ export default () => {
     Serverconfigure.extensions.push(database)
   }
 
-  if (DATABASE_TYPE === 'PostgreSQL') {
+  if (NODE_ENV === 'production') {
     const database = new Database({
       // Return a Promise to retrieve data …
       fetch: async ({ documentName, context }) => {
