@@ -40,6 +40,8 @@ const useYdocAndProvider = (docId, setLoading) => {
       setProvider(colabProvider)
       setYdoc(ydoc)
 
+      console.log({ colabProvider })
+
       // NOTE: This is not working yet, I need reconsider for offline mode
       // Store the Y document in the browser
       // const indexDbProvider = new IndexeddbPersistence(
