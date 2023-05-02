@@ -7,7 +7,7 @@ import { v4 } from 'uuid'
  * Removes duplicated values within an array.
  * Supports numbers, strings and objects.
  */
-function removeDuplicates (array, by = JSON.stringify) {
+function removeDuplicates(array, by = JSON.stringify) {
   const seen = {}
 
   return array.filter(item => {
@@ -22,7 +22,7 @@ function removeDuplicates (array, by = JSON.stringify) {
 /**
  * Returns a list of duplicated items within an array.
  */
-function findDuplicates (items) {
+function findDuplicates(items) {
   const filtered = items.filter((el, index) => items.indexOf(el) !== index)
   const duplicates = removeDuplicates(filtered)
 
@@ -34,7 +34,7 @@ const UniqueID = Extension.create({
   // we’ll set a very high priority to make sure this runs first
   // and is compatible with `appendTransaction` hooks of other extensions
   priority: 10000,
-  addOptions () {
+  addOptions() {
     return {
       attributeName: 'id',
       types: [],
@@ -42,21 +42,21 @@ const UniqueID = Extension.create({
       filterTransaction: null
     }
   },
-  addGlobalAttributes () {
+  addGlobalAttributes() {
     return [
       {
         types: this.options.types,
         attributes: {
           [this.options.attributeName]: {
             default: null,
-            parseHTML: element => element.getAttribute(`data-${this.options.attributeName}`),
+            parseHTML: element => element.getAttribute(`data-${ this.options.attributeName }`),
             renderHTML: attributes => {
               if (!attributes[this.options.attributeName]) {
                 return {}
               }
 
               return {
-                [`data-${this.options.attributeName}`]: attributes[this.options.attributeName]
+                [`data-${ this.options.attributeName }`]: attributes[this.options.attributeName]
               }
             }
           }
@@ -65,7 +65,7 @@ const UniqueID = Extension.create({
     ]
   },
   // check initial content for missing ids
-  onCreate () {
+  onCreate() {
     // Don’t do this when the collaboration extension is active
     // because this may update the content, so Y.js tries to merge these changes.
     // This leads to empty block nodes.
@@ -74,7 +74,6 @@ const UniqueID = Extension.create({
     if (this.editor.extensionManager.extensions.find(extension => extension.name === 'collaboration')) {
       return
     }
-    console.log('once update========>>>>')
     const { view, state } = this.editor
     const { tr, doc } = state
     const { types, attributeName, generateID } = this.options
@@ -92,7 +91,7 @@ const UniqueID = Extension.create({
     tr.setMeta('addToHistory', false)
     view.dispatch(tr)
   },
-  addProseMirrorPlugins () {
+  addProseMirrorPlugins() {
     let dragSourceElement = null
     let transformPasted = false
 
@@ -164,7 +163,7 @@ const UniqueID = Extension.create({
           return tr
         },
         // we register a global drag handler to track the current drag source element
-        view (view) {
+        view(view) {
           const handleDragstart = (event) => {
             let _a
 
@@ -176,7 +175,7 @@ const UniqueID = Extension.create({
           window.addEventListener('dragstart', handleDragstart)
 
           return {
-            destroy () {
+            destroy() {
               window.removeEventListener('dragstart', handleDragstart)
             }
           }

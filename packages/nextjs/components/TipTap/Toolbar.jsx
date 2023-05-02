@@ -237,7 +237,6 @@ const Toolbar = ({ editor }) => {
   }
 
   const applySerchThroughHeading = () => {
-    console.log(document.querySelector('#searchThroughHeading'))
     const search = filterSearchRef.current.value
     const mainDoc = router.query.slugs.at(0)
     window.location.href = `/open/${ mainDoc }/${ encodeURIComponent(search) }`

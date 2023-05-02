@@ -1,9 +1,7 @@
 import * as dotenvFlow from 'dotenv-flow'
 import express from 'express'
 import chalk from 'chalk'
-import expressWebsockets from 'express-ws'
 import { checkEnvBolean } from './utils/index.mjs'
-import morgan from 'morgan'
 import routers from './routers/router.mjs'
 import middlewares from "./middlewares/index.mjs"
 
@@ -26,22 +24,8 @@ const {
   REDIS
 } = process.env
 
-// const Serverconfigure = HocuspocusConfig()
 
-// Configure hocuspocus
-// const server = Server.configure(Serverconfigure)
-
-// Configure the server …
-// const server = new Hocuspocus(Serverconfigure);
-
-// … and run it!
-// server.listen();
-
-// Setup your express instance using the express-ws extension
-const { app } = expressWebsockets(express())
-
-// import morgan logger as  amiddlewares for rest api
-// app.use(morgan(`${ chalk.green(`[${ Serverconfigure.name }]`) } :method :url :status - :response-time ms`))
+const app = express()
 
 // A basic http route
 app.get('/', (_request, response) => {
@@ -54,30 +38,6 @@ app.use('/api', routers)
 app.ws('/echo', function (ws, _req) {
   ws.on('message', (msg) => ws.send(msg))
 })
-
-// Add a websocket route for hocuspocus
-// Note: make sure to include a parameter for the document name.
-// You can set any contextual data like in the onConnect hook
-// and pass it to the handleConnection method.
-// app.ws('/collaboration/public/:documentId', (websocket, req) => {
-//   websocket.on('message', function (_msg) {
-//     // console.log("message", _msg.toString());
-//   })
-
-//   const context = {
-//     params: req.query,
-//     user: {
-//       id: 1234,
-//       name: 'Jane'
-//     }
-//   }
-//   // console.log('socket', context);
-
-//   console.log({ context, params: req.params })
-
-//   server.handleConnection(websocket, req, req.params.documentId, context)
-// })
-// ${ chalk.magentaBright(Serverconfigure.name) }
 
 // Start the server
 app.listen(APP_PORT, () => {

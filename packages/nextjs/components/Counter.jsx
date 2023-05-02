@@ -11,7 +11,6 @@ const Counter = ({ seconds, callback, stopTimer }) => {
     }, 1000)
 
     return () => {
-      console.log('aklsdlaks;dlk close')
       clearInterval(intervalRef.current)
     }
   }, [])
