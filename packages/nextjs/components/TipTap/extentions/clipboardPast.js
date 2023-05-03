@@ -62,46 +62,47 @@ export default (slice, editor) => {
   // if user cursor is in the heading,
   // move the cursor to the contentWrapper and do the rest
   if ($from.parent.type.name === CONTENT_HEADING_TYPE) {
-    const firstLine = doc.nodeAt(start + 2)
+    const nextPos = $from.after();
+    const $nextPos = tr.doc.resolve(nextPos);
 
-    let resolveNextBlock = tr.doc.resolve(start + 2)
+    // Check if the next node is a contentWrapper
+    if ($nextPos.nodeAfter && $nextPos.nodeAfter.type.name === CONTENT_WRAPPER_TYPE) {
+      const contentWrapperStart = nextPos + 1; // +1 to move inside the contentWrapper
 
-    newPosResolver = resolveNextBlock
+      // Find the first paragraph or any other block inside the contentWrapper
+      let firstBlockInsideContentWrapper = $nextPos.nodeAfter.firstChild;
 
-    // if the heading block does not contain contentWrapper as a first child
-    // then create a contentWrapper block
-    if (firstLine.type.name === HEADING_TYPE) {
-      const contentWrapperBlock = {
-        type: CONTENT_WRAPPER_TYPE,
-        content: [
-          {
-            type: PARAGRAPH_TYPE
-          }
-        ]
+      // if the heading block does not contain contentWrapper as a first child
+      // then create a contentWrapper block
+      if (!firstBlockInsideContentWrapper || firstBlockInsideContentWrapper.type.name === HEADING_TYPE) {
+        const contentWrapperBlock = {
+          type: CONTENT_WRAPPER_TYPE,
+          content: [
+            {
+              type: PARAGRAPH_TYPE
+            }
+          ]
+        };
 
+        const node = createNodeFromJSON(contentWrapperBlock, state.schema);
+        tr.insert(contentWrapperStart, node);
+        firstBlockInsideContentWrapper = node.firstChild;
       }
 
-      const node = createNodeFromJSON(contentWrapperBlock, state.schema)
+      if (firstBlockInsideContentWrapper) {
+        const firstBlockStart = contentWrapperStart + 1; // +1 to move inside the first block
 
-      tr.insert(start, node)
-      resolveNextBlock = tr.doc.resolve(start + 2)
-    }
+        // Move the cursor to the first line of the contentWrapper
+        const newSelection = new TextSelection(tr.doc.resolve(firstBlockStart));
+        tr.setSelection(newSelection);
 
-    // put the selection to the first line of contentWrapper block
-    if (resolveNextBlock.parent.type.name === CONTENT_WRAPPER_TYPE) {
-      tr.setSelection(TextSelection.near(resolveNextBlock))
+        // Update the variables accordingly
+        newPosResolver = $nextPos;
+        $from = newSelection.$from;
+        start = $from.pos;
+      }
     }
   }
-
-  // If caret selection move to contentWrapper, create a new selection
-  if (newPosResolver) {
-    $from = (new Selection(
-      newPosResolver,
-      newPosResolver
-    )).$from
-  }
-
-  start = $from.pos
 
   // return Slice.empty
 
@@ -118,9 +119,6 @@ export default (slice, editor) => {
 
   // if there is no heading block, then just return
   if (headings.length <= 0) return slice
-
-  // return Slice.empty
-  let shouldNested = false
 
   tr.delete(to, titleEndPos)
 
