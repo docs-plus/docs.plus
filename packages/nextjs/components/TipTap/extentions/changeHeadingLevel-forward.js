@@ -1,6 +1,6 @@
 import { TextSelection } from '@tiptap/pm/state'
 
-import { getRangeBlocks, getHeadingsBlocksMap, createThisBlockMap, getPrevHeadingList, getPrevHeadingPos } from './helper'
+import { getRangeBlocks, getHeadingsBlocksMap, createThisBlockMap, getPrevHeadingList, getPrevHeadingPos, findPrevBlock } from './helper'
 
 export default (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
@@ -30,19 +30,7 @@ export default (arrg, attributes) => {
     x.startBlockPos >= prevHStartPos
   )
 
-  let shouldNested = false
-
-  // let prevBlock = mapHPost.find(x => x.le >= commingLevel)
-  // FIXME: this is heavy! I need to find better solotion with less loop
-  const prevBlockEqual = mapHPost.findLast(x => x.le === commingLevel)
-  const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= commingLevel)
-  const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= commingLevel)
-  const lastBlock = mapHPost.at(-1)
-  let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
-
-  if (lastBlock?.le <= commingLevel) prevBlock = lastBlock
-  if (!prevBlock) prevBlock = lastBlock
-  shouldNested = prevBlock.le < commingLevel
+  let { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
 
   if (prevBlock.le === 1) shouldNested = false
 
@@ -92,14 +80,7 @@ export default (arrg, attributes) => {
       x.startBlockPos >= prevHStartPos
     )
 
-    const prevBlockEqual = mapHPost.findLast(x => x.le === commingLevel)
-    const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= commingLevel)
-    const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= commingLevel)
-    const lastBlock = mapHPost.at(-1)
-
-    prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
-    if (lastBlock.le <= commingLevel) prevBlock = lastBlock
-    shouldNested = prevBlock.le < commingLevel
+    const { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
 
     const node = state.schema.nodeFromJSON(heading)
 
