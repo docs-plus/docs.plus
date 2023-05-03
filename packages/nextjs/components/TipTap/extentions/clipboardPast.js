@@ -147,55 +147,59 @@ export default (slice, editor) => {
     endBlockPos: 0,
   }
 
-  // paste the headings
-  for (let heading of headings) {
-    const comingLevel = heading.content.firstChild.attrs.level
+  try {
+    // paste the headings
+    for (let heading of headings) {
+      const comingLevel = heading.content.firstChild.attrs.level
 
-    const startBlock = lastH1Inserted.startBlockPos === 0 ? tr.mapping.map(start) : lastH1Inserted.startBlockPos
-    const endBlock = lastH1Inserted.endBlockPos === 0 ? tr.mapping.map(titleEndPos) : tr.doc.nodeAt(lastH1Inserted.startBlockPos).content.size + lastH1Inserted.startBlockPos
+      const startBlock = lastH1Inserted.startBlockPos === 0 ? tr.mapping.map(start) : lastH1Inserted.startBlockPos
+      const endBlock = lastH1Inserted.endBlockPos === 0 ? tr.mapping.map(titleEndPos) : tr.doc.nodeAt(lastH1Inserted.startBlockPos).content.size + lastH1Inserted.startBlockPos
 
-    if (lastH1Inserted.startBlockPos !== 0) {
-      lastH1Inserted.startBlockPos = 0
-      lastH1Inserted.endBlockPos = 0
+      if (lastH1Inserted.startBlockPos !== 0) {
+        lastH1Inserted.startBlockPos = 0
+        lastH1Inserted.endBlockPos = 0
+      }
+
+      mapHPost = getHeadingsBlocksMap(tr.doc, startBlock, endBlock)
+
+      mapHPost = mapHPost.filter(x =>
+        x.startBlockPos >= (comingLevel === 1 ? titleStartPos : prevHStartPos)
+      )
+
+      let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
+
+      // find prevBlock.le in mapHPost
+      const robob = mapHPost.filter(x => prevBlock?.le === x.le)
+
+      if (robob.length > 1) {
+        prevBlock = robob.at(-1)
+      }
+
+      lastBlockPos = prevBlock?.endBlockPos
+
+      if (prevBlock && prevBlock.depth === 2) {
+        prevHStartPos = prevBlock.startBlockPos
+      }
+
+      tr.insert(lastBlockPos - (shouldNested ? 2 : 0), heading)
+
+      if (comingLevel === 1) {
+        lastH1Inserted.startBlockPos = lastBlockPos
+        lastH1Inserted.endBlockPos = tr.mapping.map(lastBlockPos + heading.content.size)
+      }
     }
 
-    mapHPost = getHeadingsBlocksMap(tr.doc, startBlock, endBlock)
+    if (contentWrapper.length) {
+      let contentWrapperParagraphs = contentWrapper
+        .filter(x => x.type !== HEADING_TYPE)
+        .map(paragraph => createNodeFromJSON(paragraph, state.schema))
 
-    mapHPost = mapHPost.filter(x =>
-      x.startBlockPos >= (comingLevel === 1 ? titleStartPos : prevHStartPos)
-    )
-
-    let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
-
-    // find prevBlock.le in mapHPost
-    const robob = mapHPost.filter(x => prevBlock.le === x.le)
-
-    if (robob.length > 1) {
-      prevBlock = robob.at(-1)
+      // first append the paragraphs in the current selection
+      tr.insert(lastBlockPos + headings.at(-1).content.size - 2, contentWrapperParagraphs)
     }
-
-    lastBlockPos = prevBlock.endBlockPos
-
-    if (prevBlock && prevBlock.depth === 2) {
-      prevHStartPos = prevBlock.startBlockPos
-    }
-
-    tr.insert(lastBlockPos - (shouldNested ? 2 : 0), heading)
-
-    if (comingLevel === 1) {
-      lastH1Inserted.startBlockPos = lastBlockPos
-      lastH1Inserted.endBlockPos = tr.mapping.map(lastBlockPos + heading.content.size)
-    }
-  }
-
-  if (contentWrapper.length) {
-    let contentWrapperParagraphs = contentWrapper
-      .filter(x => x.type !== HEADING_TYPE)
-      .map(paragraph => createNodeFromJSON(paragraph, state.schema))
-
-    console.log(contentWrapperParagraphs)
-    // first append the paragraphs in the current selection
-    tr.insert(lastBlockPos + headings.at(-1).content.size - 2, contentWrapperParagraphs)
+  } catch (error) {
+    console.error("[heading]:", error)
+    return Slice.empty
   }
 
   tr.setMeta('paste', true)
