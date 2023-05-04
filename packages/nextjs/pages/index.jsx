@@ -75,7 +75,7 @@ export default function Home({ hostname }) {
         title='Docs Plus'
         description='Docs Plus application'
       />
-      <div className=' w-full bg-slate-100 sm:h-screen h-full flex flex-col sm:justify-center sm:align-middle p-4'>
+      <div className='grid h-screen place-items-center w-full bg-slate-100 p-4'>
         <div className="bg-white flex flex-wrap sm:justify-center max-w-5xl sm:m-auto p-2 sm:p-6 sm:py-10 pb-2 rounded-md shadow">
           <div className="sm:w-1/2 sm:mx-auto ">
             <div className='p-4'>
