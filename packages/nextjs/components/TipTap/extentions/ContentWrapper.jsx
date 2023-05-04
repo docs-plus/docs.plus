@@ -7,7 +7,6 @@ import {
 import { Selection, Plugin, TextSelection, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import PubSub from 'pubsub-js'
-
 import { getNodeState } from './helper'
 
 function extractContentWrapperBlocks(doc) {
@@ -33,7 +32,7 @@ function extractContentWrapperBlocks(doc) {
   return result
 }
 
-function crinkleNode(prob) {
+function createCrinkleNode(prob) {
   const foldEl = document.createElement('div')
 
   foldEl.classList.add('foldWrapper')
@@ -45,7 +44,7 @@ function crinkleNode(prob) {
     const line = document.createElement('div')
 
     line.classList.add('fold')
-    line.classList.add(`l${i}`)
+    line.classList.add(`l${ i }`)
     foldEl.append(line)
   }
   foldEl.setAttribute('data-clampedLines', clampedLines + 1)
@@ -105,96 +104,86 @@ function crinkleNode(prob) {
   return foldEl
 }
 
-function lintDeco(doc) {
-  const decos = []
-  const contentWrappers = extractContentWrapperBlocks(doc)
+function buildDecorations(doc) {
+  const decos = [];
+  const contentWrappers = extractContentWrapperBlocks(doc);
 
   contentWrappers.forEach((prob) => {
-    const decorationWidget = Decoration.widget(prob.from, crinkleNode(prob), {
+    const decorationWidget = Decoration.widget(prob.from, createCrinkleNode(prob), {
       side: -1,
       key: prob.headingId,
-    })
+    });
 
-    decos.push(decorationWidget)
-  })
+    decos.push(decorationWidget);
+  });
 
-  return DecorationSet.create(doc, decos)
+  return DecorationSet.create(doc, decos);
 }
 
 function expandElement(elem, collapseClass, headingId, open) {
-  elem.style.height = ''
-  elem.style.transition = 'none'
-  elem.style.transitionTimingFunction = 'ease-in-out'
-  const startHeight = window.getComputedStyle(elem).height
-  const headingSection = document.querySelector(
-    `.heading[data-id="${headingId}"]`
-  )
-  const headingLevel = headingSection.getAttribute('level')
-  const wrapperBlock = headingSection.querySelector('.foldWrapper')
+  const startHeight = window.getComputedStyle(elem).height;
+  const headingSection = document.querySelector(`.heading[data-id="${ headingId }"]`);
+  const headingLevel = headingSection.getAttribute('level');
+  const wrapperBlock = headingSection.querySelector('.foldWrapper');
 
-  wrapperBlock.style.transitionTimingFunction = 'ease-in-out'
-  wrapperBlock.style.height = ''
-  wrapperBlock.style.transition = 'none'
-
-  elem.classList.add('overflow-hidden')
-
-  headingSection.classList.remove('opend')
-  headingSection.classList.remove('closed')
-  headingSection.classList.remove('closing')
-  headingSection.classList.remove('opening')
-  headingSection.classList.add(open ? 'opening' : 'closing')
-
-  // Remove the collapse class, and force a layout calculation to get the final height
-  elem.classList.toggle(collapseClass)
-  const height = window.getComputedStyle(elem).height
+  elem.style.height = '';
+  elem.style.transition = 'none';
+  elem.style.transitionTimingFunction = 'ease-in-out';
 
   if (headingLevel === '1') {
-    wrapperBlock.style.height = startHeight
-    wrapperBlock.style.position = 'absolute'
+    wrapperBlock.style.height = startHeight;
+    wrapperBlock.style.position = 'absolute';
+    wrapperBlock.style.transitionTimingFunction = 'ease-in-out';
+    wrapperBlock.style.transition = 'none';
   }
 
-  // Set the start height to begin the transition
-  elem.style.height = startHeight
+  elem.classList.add('overflow-hidden');
+  headingSection.classList.remove('opend', 'closed', 'closing', 'opening');
+  headingSection.classList.add(open ? 'opening' : 'closing');
 
-  // wait until the next frame so that everything has time to update before starting the transition
+  elem.classList.toggle(collapseClass);
+  const height = window.getComputedStyle(elem).height;
+
+  elem.style.height = startHeight;
+
   requestAnimationFrame(() => {
-    elem.style.transition = ''
+    elem.style.transition = '';
+
     if (headingLevel === '1') {
-      wrapperBlock.style.transition = ''
+      wrapperBlock.style.transition = '';
     }
 
     requestAnimationFrame(() => {
+      elem.style.height = height;
+
       if (headingLevel === '1') {
-        wrapperBlock.style.height = height
+        wrapperBlock.style.height = height;
       }
-      elem.style.height = height
-    })
-  })
+    });
+  });
 
   function callback() {
-    elem.style.height = ''
+    elem.style.height = '';
+
     if (headingLevel === '1') {
-      wrapperBlock.style.height = ''
-      wrapperBlock.style.position = 'relative'
-    }
-    if (open) {
-      headingSection.classList.remove('closed')
-      headingSection.classList.remove('closing')
-      headingSection.classList.add('opend')
-      elem.classList.remove('overflow-hidden')
-    } else {
-      headingSection.classList.remove('opening')
-      headingSection.classList.remove('opend')
-      headingSection.classList.remove('closing')
-      headingSection.classList.add('closed')
-      elem.classList.add('overflow-hidden')
+      wrapperBlock.style.height = '';
+      wrapperBlock.style.position = 'relative';
     }
 
-    elem.removeEventListener('transitionend', callback)
+    if (open) {
+      headingSection.classList.remove('closed', 'closing', 'opening');
+      headingSection.classList.add('opend');
+      elem.classList.remove('overflow-hidden');
+    } else {
+      headingSection.classList.remove('opening', 'opend', 'closing');
+      headingSection.classList.add('closed');
+      elem.classList.add('overflow-hidden');
+    }
+
+    elem.removeEventListener('transitionend', callback);
   }
 
-  // Clear the saved height values after the transition
-  elem.addEventListener('transitionend', callback)
+  elem.addEventListener('transitionend', callback);
 }
 
 const HeadingsContent = Node.create({
@@ -215,7 +204,7 @@ const HeadingsContent = Node.create({
   parseHTML() {
     return [
       {
-        tag: `div[data-type="${this.name}"]`,
+        tag: `div[data-type="${ this.name }"]`,
       },
     ]
   },
@@ -261,14 +250,10 @@ const HeadingsContent = Node.create({
       )
 
       if (!nodeState.crinkleOpen) {
-        dom.classList.add('overflow-hidden')
-        dom.classList.add('collapsed')
-        dom.classList.add('closed')
+        dom.classList.add('overflow-hidden', 'collapsed', 'closed');
       } else {
-        dom.classList.remove('overflow-hidden')
-        dom.classList.remove('collapsed')
-        dom.classList.remove('closed')
-        dom.classList.add('opend')
+        dom.classList.remove('overflow-hidden', 'collapsed', 'closed');
+        dom.classList.add('opend');
       }
 
       const content = document.createElement('div')
@@ -279,6 +264,8 @@ const HeadingsContent = Node.create({
       Object.entries(attributes).forEach(([key, value]) =>
         dom.setAttribute(key, value)
       )
+
+
       dom.addEventListener('toggleHeadingsContent', ({ detail }) => {
         const section = detail.el
         const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
@@ -331,14 +318,12 @@ const HeadingsContent = Node.create({
           if (mutation.type === 'selection') {
             return false
           }
-
           return !dom.contains(mutation.target) || dom === mutation.target
         },
         update: (updatedNode) => {
           if (updatedNode.type !== this.type) {
             return false
           }
-
           return true
         },
       }
@@ -379,7 +364,7 @@ const HeadingsContent = Node.create({
         }
       },
       // Escape node on double enter
-      Enter: ({ editor }) => {},
+      Enter: ({ editor }) => { },
     }
   },
   addProseMirrorPlugins() {
@@ -388,10 +373,10 @@ const HeadingsContent = Node.create({
         key: new PluginKey('crinkle'),
         state: {
           init(_, { doc }) {
-            return lintDeco(doc)
+            return buildDecorations(doc);
           },
           apply(tr, old) {
-            return tr.docChanged ? lintDeco(tr.doc) : old
+            return tr.docChanged ? buildDecorations(tr.doc) : old;
           },
         },
         props: {

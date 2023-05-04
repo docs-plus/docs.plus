@@ -5,7 +5,8 @@ import {
   getPrevHeadingList,
   createThisBlockMap,
   getHeadingsBlocksMap,
-  getRangeBlocks
+  getRangeBlocks,
+  findPrevBlock
 } from './helper'
 
 export default (arrg, attributes) => {
@@ -109,16 +110,7 @@ export default (arrg, attributes) => {
         x.startBlockPos >= block.parent.start
       )
 
-      const prevBlockEqual = mapHPost.findLast(x => x.le === cominglevel)
-      const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= cominglevel)
-      const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= cominglevel)
-      const lastBlock = mapHPost.at(-1)
-
-      let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
-
-      if (lastBlock.le <= cominglevel) prevBlock = lastBlock
-
-      const shouldNested = prevBlock.le < cominglevel
+      let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
 
       const node = state.schema.nodeFromJSON(heading)
 
