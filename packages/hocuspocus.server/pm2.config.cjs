@@ -5,9 +5,6 @@ module.exports = {
     env_production: {
       NODE_ENV: "production",
       DATABASE_TYPE: "PostgreSQL"
-    },
-    env_development: {
-      NODE_ENV: "development"
     }
   },
   {
@@ -16,9 +13,6 @@ module.exports = {
     env_production: {
       NODE_ENV: "production",
       DATABASE_TYPE: "PostgreSQL"
-    },
-    env_development: {
-      NODE_ENV: "development"
     }
   },
   {
