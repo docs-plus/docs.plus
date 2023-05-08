@@ -10,8 +10,8 @@ module.exports = {
     {
       name: 'nextjs_production',
       script: 'npm run start:prod',
-      instances: 2,
-      exec_mode: 'cluster',
+      // instances: 2,
+      // exec_mode: 'cluster',
       env_production: {
         NODE_ENV: 'production',
       },
