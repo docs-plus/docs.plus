@@ -18,8 +18,8 @@ module.exports = {
   {
     name: "prod_rest",
     script: "npm run start:production:rest",
-    instances: 2,
-    exec_mode: 'cluster',
+    // instances: 2,
+    // exec_mode: 'cluster',
     env_production: {
       NODE_ENV: "production",
       DATABASE_TYPE: "PostgreSQL"
