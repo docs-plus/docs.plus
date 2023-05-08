@@ -7,14 +7,15 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "NODE_ENV=production node index.js",
     "start:production:rest": "NODE_ENV=production npm run prisma:migration && node index.js",
-    "start:production:ws": "NODE_ENV=production node hocuspocus.server.js",
+    "start:production:ws": "NODE_ENV=production node -r dotenv/config hocuspocus.server.js",
     "dev": "NODE_ENV=development DATABASE_TYPE=SQLite nodemon index.js",
     "dev:pg": "NODE_ENV=production DATABASE_TYPE=PostgreSQL nodemon index.js",
     "dev:ws": "NODE_ENV=development DATABASE_TYPE=PostgreSQL nodemon -r dotenv/config hocuspocus.server.js",
     "lint:fix": "standard *.mjs *.js --fix | snazzy",
     "prisma:migration": "prisma migrate deploy",
     "update:packages": "ncu -u",
-    "start:pm2": "pm2 reload pm2.config.cjs --env production"
+    "start:pm2:stage": "pm2 reload pm2.config.cjs --env production --only stage_rest,stage_ws",
+    "start:pm2:prod": "pm2 reload pm2.config.cjs --env production --only production_rest,production_ws"
   },
   "keywords": [],
   "author": "Hossein Marzban",

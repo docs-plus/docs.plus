@@ -1,0 +1,28 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:alpine
+    container_name: ${ENVIRONMENT}-redis-docsplus
+    restart: unless-stopped
+
+  backend:
+    env_file: .env
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        ENVIRONMENT: ${ENVIRONMENT}
+    image: ${ENVIRONMENT}.docs.plus
+    container_name: ${ENVIRONMENT}-back-docsplus
+    restart: always
+    depends_on:
+      - redis
+    links:
+      - redis
+    environment:
+      DATABASE_TYPE: ${DATABASE_TYPE:-SQLite}
+      REDIS_HOST: redis
+    ports:
+      - '${EXPOSE_APP_PORT}:${APP_PORT}'
+      - '${HOCUSPOCUS_PORT}:${HOCUSPOCUS_PORT}'

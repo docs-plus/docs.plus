@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "NODE_ENV=production next build",
     "start": "next start",
-    "start:pm2": "pm2 reload pm2.config.js --env production",
+    "pm2:start:stage": "pm2 reload pm2.config.js --env production --only nextjs_stage",
+    "pm2:start:prod": "pm2 reload pm2.config.js --env production --only nextjs_production",
     "update:packages": "ncu -u",
     "lint:fix": "next lint --fix"
   },
