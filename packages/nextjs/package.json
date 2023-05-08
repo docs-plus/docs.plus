@@ -6,6 +6,8 @@
     "dev": "next dev",
     "build": "NODE_ENV=production next build",
     "start": "next start",
+    "start:prod": "next start -p 3001",
+    "start:stage": "next start -p 3000",
     "pm2:start:stage": "pm2 reload pm2.config.js --env production --only nextjs_stage",
     "pm2:start:prod": "pm2 reload pm2.config.js --env production --only nextjs_production",
     "update:packages": "ncu -u",
