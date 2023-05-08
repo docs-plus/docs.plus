@@ -23,6 +23,8 @@ services:
     environment:
       DATABASE_TYPE: ${DATABASE_TYPE:-SQLite}
       REDIS_HOST: redis
+      ENVIRONMENT: ${ENVIRONMENT}
+
     ports:
       - '${EXPOSE_APP_PORT}:${APP_PORT}'
       - '${HOCUSPOCUS_PORT}:${HOCUSPOCUS_PORT}'

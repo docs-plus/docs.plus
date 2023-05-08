@@ -6,6 +6,9 @@ ARG ENVIRONMENT
 
 WORKDIR /app
 
+# Print the value of the ENVIRONMENT variable
+RUN echo "Environment is set to: ${ENVIRONMENT}"
+
 COPY package*.json ./
 COPY prisma ./prisma/
 COPY .env ./
@@ -16,4 +19,5 @@ RUN npx prisma generate
 
 COPY . .
 
-CMD ["pm2-runtime", "pm2.config.cjs", "--only", "${ENVIRONMENT}_rest,${ENVIRONMENT}_ws"]
+CMD pm2-runtime pm2.config.cjs --only ${ENVIRONMENT}_rest,${ENVIRONMENT}_ws
+
