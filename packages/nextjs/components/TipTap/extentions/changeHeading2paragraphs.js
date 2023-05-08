@@ -1,7 +1,7 @@
 import onHeading from './normalText/onHeading'
 import onSelection from './normalText/onSelection'
 
-export default (arrg) => {
+const changeHeading2Paragrapht = (arrg) => {
   const { state } = arrg
   const { selection } = state
   const { $anchor, $head } = selection
@@ -16,3 +16,5 @@ export default (arrg) => {
     return onSelection(arrg)
   }
 }
+
+export default changeHeading2Paragrapht

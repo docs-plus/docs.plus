@@ -6,21 +6,26 @@ import {
   createThisBlockMap,
   getHeadingsBlocksMap,
   getRangeBlocks,
-  findPrevBlock
+  findPrevBlock,
 } from './helper'
 
-export default (arrg, attributes) => {
+const constWrapContentWithHeading = (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
   const { schema, selection, doc } = state
   const { $from, $to, $anchor, $cursor, to } = selection
   const { start, end, depth } = $from.blockRange($to)
 
   const cominglevel = attributes.level
-  const caretSelectionTextBlock = { type: 'text', text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' ' }
+  const caretSelectionTextBlock = {
+    type: 'text',
+    text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' ',
+  }
   const block = createThisBlockMap($from, depth, caretSelectionTextBlock)
 
   // TODO: check this statment for comment, (block.edge.start !== -1)
-  const parentLevel = block.edge.start !== -1 && doc?.nodeAt(block.edge.start)?.content?.content[0]?.attrs.level
+  const parentLevel =
+    block.edge.start !== -1 &&
+    doc?.nodeAt(block.edge.start)?.content?.content[0]?.attrs.level
 
   // Create a new heading with the same level
   // in this case all content below must cut and wrapp with the new heading
@@ -37,14 +42,14 @@ export default (arrg, attributes) => {
           type: 'contentHeading',
           content: [block.headingContent],
           attrs: {
-            level: attributes.level
-          }
+            level: attributes.level,
+          },
         },
         {
           type: 'contentWrapper',
-          content: contentWrapper
-        }
-      ]
+          content: contentWrapper,
+        },
+      ],
     }
 
     const headingNode = state.schema.nodeFromJSON(jsonNode)
@@ -62,12 +67,18 @@ export default (arrg, attributes) => {
 
   // Create a new Heading block as a child of the current Heading block
   if (cominglevel > parentLevel) {
-    console.info('[Heading]: Create a new Heading block as a child of the current Heading block')
+    console.info(
+      '[Heading]: Create a new Heading block as a child of the current Heading block'
+    )
 
     const titleHMap = getHeadingsBlocksMap(doc, block.start, block.parent.end)
     const contentWrapper = getRangeBlocks(doc, end, block.parent.end)
-    const contentWrapperParagraphs = contentWrapper.filter(x => x.type !== 'heading')
-    const contentWrapperHeadings = contentWrapper.filter(x => x.type === 'heading')
+    const contentWrapperParagraphs = contentWrapper.filter(
+      (x) => x.type !== 'heading'
+    )
+    const contentWrapperHeadings = contentWrapper.filter(
+      (x) => x.type === 'heading'
+    )
 
     const jsonNode = {
       type: 'heading',
@@ -76,14 +87,14 @@ export default (arrg, attributes) => {
           type: 'contentHeading',
           content: [block.headingContent],
           attrs: {
-            level: cominglevel
-          }
+            level: cominglevel,
+          },
         },
         {
           type: 'contentWrapper',
-          content: contentWrapperParagraphs
-        }
-      ]
+          content: contentWrapperParagraphs,
+        },
+      ],
     }
     const newHeadingNode = state.schema.nodeFromJSON(jsonNode)
 
@@ -97,7 +108,6 @@ export default (arrg, attributes) => {
     let mapHPost = titleHMap
 
     for (const heading of contentWrapperHeadings) {
-      const cominglevel = heading.le
 
       mapHPost = getPrevHeadingList(
         tr,
@@ -105,12 +115,13 @@ export default (arrg, attributes) => {
         tr.mapping.map(mapHPost.at(0).endBlockPos)
       )
 
-      mapHPost = mapHPost.filter(x =>
-        x.startBlockPos < heading.startBlockPos &&
-        x.startBlockPos >= block.parent.start
+      mapHPost = mapHPost.filter(
+        (x) =>
+          x.startBlockPos < heading.startBlockPos &&
+          x.startBlockPos >= block.parent.start
       )
 
-      let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
+      let { prevBlock, shouldNested } = findPrevBlock(mapHPost, heading.le)
 
       const node = state.schema.nodeFromJSON(heading)
 
@@ -121,8 +132,12 @@ export default (arrg, attributes) => {
   }
 
   if (cominglevel < parentLevel) {
-    console.info('[Heading]: break the current Heading chain, cominglevel is grether than parentLevel')
+    console.info(
+      '[Heading]: break the current Heading chain, cominglevel is grether than parentLevel'
+    )
 
     return changeHeadingLevelBackward(arrg, attributes, true)
   }
 }
+
+export default constWrapContentWithHeading

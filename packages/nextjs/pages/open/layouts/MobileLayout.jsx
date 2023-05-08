@@ -6,47 +6,55 @@ import HeadSeo from '../../../components/HeadSeo'
 import TocModal from './../components/TocModal'
 import Editor from './../components/Editor'
 import { Pencil } from '../../../components/icons/Icons'
-import useDetectKeyboardOpen from "use-detect-keyboard-open";
+import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import ToolbarMobile from './../components/ToolbarMobile'
 
 const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
-  const { isMobile, selectionPos, setSelectionPos, rendering, loading, deviceDetect } = useEditorStateContext()
-  const [showToolbar, setShowToolbar] = useState(false);
+  const {
+    isMobile,
+    selectionPos,
+    setSelectionPos,
+    rendering,
+    loading,
+    deviceDetect,
+  } = useEditorStateContext()
+  const [showToolbar, setShowToolbar] = useState(false)
 
   // check if keyboard is open
-  const isKeyboardOpen = useDetectKeyboardOpen();
+  const isKeyboardOpen = useDetectKeyboardOpen()
 
   function toggleToolbar() {
     if (!isKeyboardOpen) {
       editor?.setEditable(true)
     }
-    editor.chain()
+    editor
+      .chain()
       .focus(selectionPos === 0 ? 'start' : selectionPos)
       .setTextSelection(selectionPos)
       .scrollIntoView()
 
-    setShowToolbar(!showToolbar);
+    setShowToolbar(!showToolbar)
   }
 
   useEffect(() => {
-    setShowToolbar(isKeyboardOpen);
+    setShowToolbar(isKeyboardOpen)
 
     if (isKeyboardOpen) {
-      console.log("keyboard is open")
+      console.info('keyboard is open')
       // editor?.setEditable(true)
-      setShowToolbar(true);
+      setShowToolbar(true)
     } else {
       // Make the editor read-only
       editor?.setEditable(false)
-      console.log("keyboard is closed")
-      setShowToolbar(false);
+      console.info('keyboard is closed')
+      setShowToolbar(false)
     }
-  }, [isKeyboardOpen])
+  }, [isKeyboardOpen, editor])
 
   useEffect(() => {
     if (!editor || loading) return
 
-    document.querySelector("html").classList.add('m_mobile')
+    document.querySelector('html').classList.add('m_mobile')
 
     editor?.on('focus', ({ editor, event }) => {
       // The editor is focused.
@@ -60,49 +68,56 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
       setSelectionPos(editor.state.selection.$anchor.pos)
     })
 
-
     // Make the editor read-only
     editor.setEditable(false)
 
     const viewportHandler = (event) => {
-      event.preventDefault();
+      event.preventDefault()
       // need these two lines, in order to prevent to change viewport in IOS
-      window.scrollTo({ top: 0 });
-      document.body.scrollTop = 0;
+      window.scrollTo({ top: 0 })
+      document.body.scrollTop = 0
 
-      const viewport = event.target;
-      const viewportHeight = Math.trunc(viewport.height - viewport.pageTop);
+      const viewport = event.target
+      const viewportHeight = Math.trunc(viewport.height - viewport.pageTop)
 
-      document.body.style.height = `${ viewportHeight }px`
-      document.querySelector('html').style.height = `${ viewportHeight }px`
+      document.body.style.height = `${viewportHeight}px`
+      document.querySelector('html').style.height = `${viewportHeight}px`
 
-      document.querySelector('.toolbars').style.top = `${ Math.trunc(viewport.height) - 44 }px`
+      document.querySelector('.toolbars').style.top = `${
+        Math.trunc(viewport.height) - 44
+      }px`
 
       const selection = window?.getSelection()?.anchorNode?.parentElement
       if (!selection) return
       if (deviceDetect.is('iPhone')) {
-        if (event.type !== "scroll") {
+        if (event.type !== 'scroll') {
           selection?.scrollIntoView({
-            behavior: 'instant', block: 'start'
+            behavior: 'instant',
+            block: 'start',
           })
         }
       }
-
     }
 
-    window.visualViewport.addEventListener('resize', viewportHandler);
-    window.visualViewport.addEventListener('scroll', viewportHandler);
+    window.visualViewport.addEventListener('resize', viewportHandler)
+    window.visualViewport.addEventListener('scroll', viewportHandler)
 
     return () => {
-      window.visualViewport.removeEventListener('resize', viewportHandler);
-      window.visualViewport.removeEventListener('scroll', viewportHandler);
-    };
-  }, [rendering, editor])
+      window.visualViewport.removeEventListener('resize', viewportHandler)
+      window.visualViewport.removeEventListener('scroll', viewportHandler)
+    }
+  }, [rendering, editor, deviceDetect, loading, setSelectionPos])
 
   return (
     <>
-      <HeadSeo title={documentTitle} description="another open docs plus document" />
-      <div className={`pad tiptap relative flex  flex-col border-solid ${ isMobile ? "m_mobile" : "m_desktop" }`}>
+      <HeadSeo
+        title={documentTitle}
+        description="another open docs plus document"
+      />
+      <div
+        className={`pad tiptap relative flex  flex-col border-solid ${
+          isMobile ? 'm_mobile' : 'm_desktop'
+        }`}>
         <div className="docTitle top-0 bg-white w-full min-h-14 p-2 flex flex-row items-center sm:border-b-0 border-b">
           {docSlug && (
             <PadTitle
@@ -114,28 +129,33 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
             />
           )}
         </div>
-        <div className={`${ isKeyboardOpen ? 'block' : 'hidden' } toolbars  w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative`}>
+        <div
+          className={`${
+            isKeyboardOpen ? 'block' : 'hidden'
+          } toolbars  w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative`}>
           {editor ? <ToolbarMobile editor={editor} /> : 'Loading...'}
         </div>
         <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
-          <div
-            className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
-          >
+          <div className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4">
             {editor ? <Editor editor={editor} /> : 'Loading...'}
           </div>
         </div>
-        <div className='nd_modal hidden left w-full h-full fixed z-20 overflow-hidden'>
+        <div className="nd_modal hidden left w-full h-full fixed z-20 overflow-hidden">
           <TocModal docId={docId} docTitle={documentTitle} editor={editor} />
         </div>
-        <div className='nd_modal hidden bottom nd_filterModal w-full h-full fixed top-0 z-30 '>
+        <div className="nd_modal hidden bottom nd_filterModal w-full h-full fixed top-0 z-30 ">
           <FilterModal />
         </div>
-        <button onClick={toggleToolbar} className={`btn_bigBluePencil ${ !isKeyboardOpen ? 'block active' : 'hidden' } w-14 h-14 z-50 outline-none fixed bottom-12 right-8 rounded-full drop-shadow-md flex align-middle items-center justify-center`}>
+        <button
+          onClick={toggleToolbar}
+          className={`btn_bigBluePencil ${
+            !isKeyboardOpen ? 'block active' : 'hidden'
+          } w-14 h-14 z-50 outline-none fixed bottom-12 right-8 rounded-full drop-shadow-md flex align-middle items-center justify-center`}>
           <Pencil size={25} />
         </button>
       </div>
     </>
-  );
+  )
 }
 
-export default MobileLayout;
+export default MobileLayout

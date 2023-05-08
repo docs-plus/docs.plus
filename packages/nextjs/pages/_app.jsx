@@ -1,10 +1,7 @@
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
 
-import {
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 
 import '../styles/styles.scss'
 import '../styles/globals.scss'

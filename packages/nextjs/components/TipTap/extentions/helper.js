@@ -1,4 +1,11 @@
-import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from '@tiptap/pm/model'
+import {
+  Slice,
+  Fragment,
+  NodeRange,
+  NodeType,
+  Mark,
+  ContentMatch,
+} from '@tiptap/pm/model'
 
 /**
  *
@@ -10,7 +17,8 @@ import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from '@tipta
 export const getPrevHeadingList = (tr, start, from) => {
   const titleHMap = []
 
-  if (from < start) throw new Error("[Heading]: position is invalid 'from < start'")
+  if (from < start)
+    throw new Error("[Heading]: position is invalid 'from < start'")
   try {
     tr.doc.nodesBetween(start, from, function (node, pos, parent, index) {
       if (node.type.name === 'heading') {
@@ -22,7 +30,7 @@ export const getPrevHeadingList = (tr, start, from) => {
           node: node.toJSON(),
           depth,
           startBlockPos: pos,
-          endBlockPos: pos + node.nodeSize
+          endBlockPos: pos + node.nodeSize,
         })
       }
     })
@@ -41,18 +49,32 @@ export const getPrevHeadingList = (tr, start, from) => {
  * @param {Number} end end pos
  * @returns Array of Selection Block
  */
-export const getSelectionBlocks = (doc, start, end, includeContentHeading = false, range = false) => {
+export const getSelectionBlocks = (
+  doc,
+  start,
+  end,
+  includeContentHeading = false,
+  range = false
+) => {
   const firstHEading = true
   const prevDepth = 0
   const selectedContents = []
 
   if (range) {
-    console.log(doc)
     doc.descendants(function (node, pos, parent) {
-      if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
+      if (
+        firstHEading &&
+        node.type.name !== 'heading' &&
+        parent.type.name === 'contentWrapper'
+      ) {
         const depth = doc.resolve(pos).depth
 
-        selectedContents.push({ depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON() })
+        selectedContents.push({
+          depth,
+          startBlockPos: pos,
+          endBlockPos: pos + node.nodeSize,
+          ...node.toJSON(),
+        })
       }
 
       if (node.type.name === 'contentHeading') {
@@ -65,7 +87,7 @@ export const getSelectionBlocks = (doc, start, end, includeContentHeading = fals
           startBlockPos: pos,
           endBlockPos: pos + node.nodeSize,
           type: includeContentHeading ? node.type.name : 'paragraph',
-          content: node.toJSON().content
+          content: node.toJSON().content,
         })
       }
     })
@@ -76,10 +98,19 @@ export const getSelectionBlocks = (doc, start, end, includeContentHeading = fals
   doc.nodesBetween(start, end, function (node, pos, parent, index) {
     if (pos < start) return
 
-    if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
+    if (
+      firstHEading &&
+      node.type.name !== 'heading' &&
+      parent.type.name === 'contentWrapper'
+    ) {
       const depth = doc.resolve(pos).depth
 
-      selectedContents.push({ depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON() })
+      selectedContents.push({
+        depth,
+        startBlockPos: pos,
+        endBlockPos: pos + node.nodeSize,
+        ...node.toJSON(),
+      })
     }
 
     if (node.type.name === 'contentHeading') {
@@ -92,7 +123,7 @@ export const getSelectionBlocks = (doc, start, end, includeContentHeading = fals
         startBlockPos: pos,
         endBlockPos: pos + node.nodeSize,
         type: includeContentHeading ? node.type.name : 'paragraph',
-        content: node.toJSON().content
+        content: node.toJSON().content,
       })
     }
   })
@@ -115,10 +146,19 @@ export const getRangeBlocks = (doc, start, end) => {
   doc.nodesBetween(start, end, function (node, pos, parent, index) {
     if (pos < start) return
 
-    if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
+    if (
+      firstHEading &&
+      node.type.name !== 'heading' &&
+      parent.type.name === 'contentWrapper'
+    ) {
       const depth = doc.resolve(pos).depth
 
-      selectedContents.push({ depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON() })
+      selectedContents.push({
+        depth,
+        startBlockPos: pos,
+        endBlockPos: pos + node.nodeSize,
+        ...node.toJSON(),
+      })
     }
     if (node.type.name === 'heading') {
       firstHEading = false
@@ -128,7 +168,13 @@ export const getRangeBlocks = (doc, start, end) => {
       if (prevDepth === 0) prevDepth = depth
 
       if (prevDepth >= depth) {
-        selectedContents.push({ le: headingLevel, depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, ...node.toJSON() })
+        selectedContents.push({
+          le: headingLevel,
+          depth,
+          startBlockPos: pos,
+          endBlockPos: pos + node.nodeSize,
+          ...node.toJSON(),
+        })
         prevDepth = depth
       }
     }
@@ -153,7 +199,13 @@ export const getHeadingsBlocksMap = (doc, start, end) => {
       const headingLevel = node.firstChild?.attrs?.level
       const depth = doc.resolve(pos).depth
 
-      titleHMap.push({ le: headingLevel, depth, startBlockPos: pos, endBlockPos: pos + node.nodeSize, index })
+      titleHMap.push({
+        le: headingLevel,
+        depth,
+        startBlockPos: pos,
+        endBlockPos: pos + node.nodeSize,
+        index,
+      })
     }
   })
 
@@ -168,19 +220,23 @@ export const getHeadingsBlocksMap = (doc, start, end) => {
  * @returns {Object} blockMap - The current selection's block map.
  */
 
-export const createThisBlockMap = ($from, depth, caretSelectionTextBlock = ' ') => {
+export const createThisBlockMap = (
+  $from,
+  depth,
+  caretSelectionTextBlock = ' '
+) => {
   return {
     parent: {
       end: $from.end(depth - 1),
-      start: $from.start(depth - 1)
+      start: $from.start(depth - 1),
     },
     edge: {
       end: $from.end(depth - 1) + 1,
-      start: $from.start(depth - 1) - 1
+      start: $from.start(depth - 1) - 1,
     },
     ancesster: {
       start: $from.start(1),
-      end: $from.end(1)
+      end: $from.end(1),
     },
     end: $from.end(depth),
     start: $from.start(depth),
@@ -192,11 +248,11 @@ export const createThisBlockMap = ($from, depth, caretSelectionTextBlock = ' ') 
       content: [
         {
           type: 'text',
-          text: ' '
-        }
-      ]
+          text: ' ',
+        },
+      ],
     },
-    paragraph: { type: 'paragraph' }
+    paragraph: { type: 'paragraph' },
   }
 }
 
@@ -214,7 +270,9 @@ export const copyToClipboard = (text, callback) => {
 
 export const getNodeState = (headingId) => {
   const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
-  const nodeState = headingMap.find(h => h.headingId === headingId) || { crinkleOpen: true }
+  const nodeState = headingMap.find((h) => h.headingId === headingId) || {
+    crinkleOpen: true,
+  }
 
   return nodeState
 }
@@ -248,18 +306,21 @@ export const getPrevHeadingPos = (doc, startPos, endPos) => {
  *   - shouldNested: A boolean value indicating whether the block should be nested or not.
  */
 export const findPrevBlock = (mapHPost, headingLevel) => {
-  const prevBlockEqual = mapHPost.findLast(x => x.le === headingLevel);
-  const prevBlockGreaterFromFirst = mapHPost.find(x => x.le >= headingLevel);
-  const prevBlockGreaterFromLast = mapHPost.findLast(x => x.le <= headingLevel);
-  const lastBlock = mapHPost.at(-1);
+  const prevBlockEqual = mapHPost.findLast((x) => x.le === headingLevel)
+  const prevBlockGreaterFromFirst = mapHPost.find((x) => x.le >= headingLevel)
+  const prevBlockGreaterFromLast = mapHPost.findLast(
+    (x) => x.le <= headingLevel
+  )
+  const lastBlock = mapHPost.at(-1)
 
-  let prevBlock = prevBlockEqual || prevBlockGreaterFromLast || prevBlockGreaterFromFirst;
+  let prevBlock =
+    prevBlockEqual || prevBlockGreaterFromLast || prevBlockGreaterFromFirst
 
   if (lastBlock.le <= headingLevel) {
-    prevBlock = lastBlock;
+    prevBlock = lastBlock
   }
 
-  const shouldNested = prevBlock.le < headingLevel;
+  const shouldNested = prevBlock.le < headingLevel
 
-  return { prevBlock, shouldNested };
-};
+  return { prevBlock, shouldNested }
+}

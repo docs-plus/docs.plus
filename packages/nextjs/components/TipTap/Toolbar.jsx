@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import Select from 'react-select'
 import { useRouter } from 'next/router'
 import {
@@ -9,7 +9,7 @@ import {
   BulletList,
   Link,
   CheckList,
-  Image,
+  ImageBox,
   Gear,
   ClearMark,
   Stric,
@@ -17,8 +17,7 @@ import {
   Undo,
   Redo,
   Printer,
-  SearchDoc,
-  Filter
+  Filter,
 } from '../../components/icons/Icons'
 
 const GearModal = (props) => {
@@ -30,10 +29,6 @@ const FilterModal = (props) => {
 
 const Toolbar = ({ editor }) => {
   const router = useRouter()
-
-  if (!editor) {
-    return null
-  }
 
   const setLink = useCallback(() => {
     const previousUrl = editor.getAttributes('link').href
@@ -88,40 +83,13 @@ const Toolbar = ({ editor }) => {
   const filterSearchRef = useRef(null)
 
   useEffect(() => {
-    if (editor.isActive('contentHeading', { level: 1 }))
-      setSelectValue(options[1])
-    else if (editor.isActive('contentHeading', { level: 2 }))
-      setSelectValue(options[2])
-    else if (editor.isActive('contentHeading', { level: 3 }))
-      setSelectValue(options[3])
-    else if (editor.isActive('contentHeading', { level: 4 }))
-      setSelectValue(options[4])
-    else if (editor.isActive('contentHeading', { level: 5 }))
-      setSelectValue(options[5])
-    else if (editor.isActive('contentHeading', { level: 6 }))
-      setSelectValue(options[6])
-    else if (editor.isActive('contentHeading', { level: 7 }))
-      setSelectValue(options[7])
-    else if (editor.isActive('contentHeading', { level: 8 }))
-      setSelectValue(options[8])
-    else if (editor.isActive('contentHeading', { level: 9 }))
-      setSelectValue(options[9])
-    else if (editor.isActive('contentHeading', { level: 10 }))
-      setSelectValue(options[10])
-    else setSelectValue(options[0])
-  }, [
-    editor.isActive('contentHeading', { level: 1 }),
-    editor.isActive('contentHeading', { level: 2 }),
-    editor.isActive('contentHeading', { level: 3 }),
-    editor.isActive('contentHeading', { level: 4 }),
-    editor.isActive('contentHeading', { level: 5 }),
-    editor.isActive('contentHeading', { level: 6 }),
-    editor.isActive('contentHeading', { level: 7 }),
-    editor.isActive('contentHeading', { level: 8 }),
-    editor.isActive('contentHeading', { level: 9 }),
-    editor.isActive('contentHeading', { level: 10 }),
-    editor.isActive('paragraph'),
-  ])
+    const selectedHeadingOption = options.find((option) =>
+      editor.isActive('contentHeading', { level: option.value })
+    )
+
+    setSelectValue(selectedHeadingOption || options.at(0))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editor.isActive('contentHeading')])
 
   const onchangeValue = (e) => {
     setSelectedOption(e)
@@ -232,21 +200,20 @@ const Toolbar = ({ editor }) => {
       //   shallow: false,
       // })
       const mainDoc = router.query.slugs.at(0)
-      window.location.href = `/open/${ mainDoc }/${ encodeURIComponent(search) }`
+      window.location.href = `/open/${mainDoc}/${encodeURIComponent(search)}`
     }
   }
 
   const applySerchThroughHeading = () => {
     const search = filterSearchRef.current.value
     const mainDoc = router.query.slugs.at(0)
-    window.location.href = `/open/${ mainDoc }/${ encodeURIComponent(search) }`
+    window.location.href = `/open/${mainDoc}/${encodeURIComponent(search)}`
   }
 
   return (
     <div
       className="tiptap__toolbar editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-4"
-      onClick={hideModals}
-    >
+      onClick={hideModals}>
       <div className="hidden sm:contents">
         <button onClick={() => editor.chain().focus().undo().run()}>
           <Undo fill="rgba(0,0,0,.7)" size="16" />
@@ -275,30 +242,26 @@ const Toolbar = ({ editor }) => {
 
       <button
         className={editor.isActive('bold') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleBold().run()}
-      >
+        onClick={() => editor.chain().focus().toggleBold().run()}>
         <Bold fill="rgba(0,0,0,.7)" size="10" />
       </button>
 
       <button
         className={editor.isActive('italic') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleItalic().run()}
-      >
+        onClick={() => editor.chain().focus().toggleItalic().run()}>
         <Italic fill="rgba(0,0,0,.7)" size="10" />
       </button>
 
       <button
         className={editor.isActive('underline') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleUnderline().run()}
-      >
+        onClick={() => editor.chain().focus().toggleUnderline().run()}>
         <Underline fill="rgba(0,0,0,.7)" size="10" />
       </button>
 
       <span className="hidden sm:contents">
         <button
           className={editor.isActive('strike') ? 'is-active' : ''}
-          onClick={() => editor.chain().focus().toggleStrike().run()}
-        >
+          onClick={() => editor.chain().focus().toggleStrike().run()}>
           <Stric fill="rgba(0,0,0,.7)" size="14" />
         </button>
       </span>
@@ -307,23 +270,20 @@ const Toolbar = ({ editor }) => {
 
       <button
         className={editor.isActive('orderedList') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}
-      >
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}>
         <OrderList fill="rgba(0,0,0,.7)" size="16" />
       </button>
 
       <button
         className={editor.isActive('bulletList') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleBulletList().run()}
-      >
+        onClick={() => editor.chain().focus().toggleBulletList().run()}>
         <BulletList fill="rgba(0,0,0,.7)" size="16" />
       </button>
 
       <span className="hidden sm:contents">
         <button
           className={editor.isActive('taskList') ? 'is-active' : ''}
-          onClick={() => editor.chain().focus().toggleTaskList().run()}
-        >
+          onClick={() => editor.chain().focus().toggleTaskList().run()}>
           <CheckList fill="rgba(0,0,0,.7)" size="16" />
         </button>
       </span>
@@ -332,22 +292,20 @@ const Toolbar = ({ editor }) => {
 
       <span className="hidden sm:contents">
         <button onClick={addImage}>
-          <Image fill="rgba(0,0,0,.5)" size="14" />
+          <ImageBox fill="rgba(0,0,0,.5)" size="14" />
         </button>
       </span>
 
       <button
         className={editor.isActive('link') ? 'is-active' : ''}
-        onClick={setLink}
-      >
+        onClick={setLink}>
         <Link fill="rgba(0,0,0,.7)" size="18" />
       </button>
 
       <span className="hidden sm:contents">
         <button
           className={editor.isActive('highlight') ? 'is-active' : ''}
-          onClick={() => editor.chain().focus().toggleHighlight().run()}
-        >
+          onClick={() => editor.chain().focus().toggleHighlight().run()}>
           <HighlightMarker fill="rgba(0,0,0,.7)" size="14" />
         </button>
       </span>
@@ -364,8 +322,7 @@ const Toolbar = ({ editor }) => {
             } else {
               editor.chain().focus().unsetAllMarks().run()
             }
-          }}
-        >
+          }}>
           <ClearMark fill="rgba(0,0,0,.7)" size="14" />
         </button>
       </span>
@@ -376,8 +333,7 @@ const Toolbar = ({ editor }) => {
 
       <button
         className="btn_settingModal btn_modal"
-        onClick={toggleSettingModal}
-      >
+        onClick={toggleSettingModal}>
         <Gear fill="rgba(0,0,0,.7)" size="16" />
       </button>
 
@@ -387,8 +343,7 @@ const Toolbar = ({ editor }) => {
         <div className="content pt-5 ">
           <label
             className="inline-flex relative items-center cursor-pointer"
-            htmlFor="headingIndent-toggle"
-          >
+            htmlFor="headingIndent-toggle">
             <input
               checked={indentSetting}
               className="sr-only peer"
@@ -407,8 +362,7 @@ const Toolbar = ({ editor }) => {
         <div className="content pt-5 ">
           <label
             className="inline-flex relative items-center cursor-pointer"
-            htmlFor="h1sectionbreak-toggle"
-          >
+            htmlFor="h1sectionbreak-toggle">
             <input
               checked={h1SectionBreakSetting}
               className="sr-only peer"
@@ -443,8 +397,7 @@ const Toolbar = ({ editor }) => {
           </p>
           <button
             onClick={applySerchThroughHeading}
-            className="!p-3 !w-16  border"
-          >
+            className="!p-3 !w-16  border">
             Apply
           </button>
         </div>

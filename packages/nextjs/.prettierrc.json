@@ -1,5 +1,13 @@
 {
   "singleQuote": true,
   "tabWidth": 2,
-  "semi": false
+  "semi": false,
+  "bracketSameLine": true,
+  "arrowParens": "always",
+  "endOfLine": "lf",
+  "htmlWhitespaceSensitivity": "ignore",
+  "bracketSpacing": true,
+  "printWidth": 80,
+  "proseWrap": "preserve",
+  "quoteProps": "as-needed"
 }

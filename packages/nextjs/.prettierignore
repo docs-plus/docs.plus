@@ -1,0 +1,11 @@
+./components/icons/icons.jsx
+node_modules
+build
+dist
+.next
+.cache
+package-lock.json
+public
+next-env.d.ts
+next.config.ts
+yarn.lock

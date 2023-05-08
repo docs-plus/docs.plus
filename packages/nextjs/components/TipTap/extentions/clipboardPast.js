@@ -1,14 +1,26 @@
-import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from '@tiptap/pm/model'
+import {
+  Slice,
+  Fragment,
+  NodeRange,
+  NodeType,
+  Mark,
+  ContentMatch,
+} from '@tiptap/pm/model'
 import { TextSelection, Selection } from '@tiptap/pm/state'
 
-import { getRangeBlocks, getHeadingsBlocksMap, findPrevBlock, getPrevHeadingPos } from './helper'
+import {
+  getRangeBlocks,
+  getHeadingsBlocksMap,
+  findPrevBlock,
+  getPrevHeadingPos,
+} from './helper'
 
-const CONTENT_HEADING_TYPE = 'contentHeading';
-const HEADING_TYPE = 'heading';
-const CONTENT_WRAPPER_TYPE = 'contentWrapper';
-const PARAGRAPH_TYPE = 'paragraph';
+const CONTENT_HEADING_TYPE = 'contentHeading'
+const HEADING_TYPE = 'heading'
+const CONTENT_WRAPPER_TYPE = 'contentWrapper'
+const PARAGRAPH_TYPE = 'paragraph'
 
-const createNodeFromJSON = (node, schema) => schema.nodeFromJSON(node);
+const createNodeFromJSON = (node, schema) => schema.nodeFromJSON(node)
 
 const extractParagraphsAndHeadings = (clipboardContents, { schema }) => {
   const paragraphs = []
@@ -34,9 +46,9 @@ const extractParagraphsAndHeadings = (clipboardContents, { schema }) => {
           node,
           {
             type: CONTENT_WRAPPER_TYPE,
-            content: []
-          }
-        ]
+            content: [],
+          },
+        ],
       }
     } else {
       heading?.content.at(1).content.push(node)
@@ -50,7 +62,7 @@ const extractParagraphsAndHeadings = (clipboardContents, { schema }) => {
   return [paragraphs, headings]
 }
 
-export default (slice, editor) => {
+const clipboardPast = (slice, editor) => {
   const { state, view } = editor
   const { schema, selection, doc, tr } = state
   const { from, to, $anchor } = selection
@@ -62,44 +74,50 @@ export default (slice, editor) => {
   // if user cursor is in the heading,
   // move the cursor to the contentWrapper and do the rest
   if ($from.parent.type.name === CONTENT_HEADING_TYPE) {
-    const nextPos = $from.after();
-    const $nextPos = tr.doc.resolve(nextPos);
+    const nextPos = $from.after()
+    const $nextPos = tr.doc.resolve(nextPos)
 
     // Check if the next node is a contentWrapper
-    if ($nextPos.nodeAfter && $nextPos.nodeAfter.type.name === CONTENT_WRAPPER_TYPE) {
-      const contentWrapperStart = nextPos + 1; // +1 to move inside the contentWrapper
+    if (
+      $nextPos.nodeAfter &&
+      $nextPos.nodeAfter.type.name === CONTENT_WRAPPER_TYPE
+    ) {
+      const contentWrapperStart = nextPos + 1 // +1 to move inside the contentWrapper
 
       // Find the first paragraph or any other block inside the contentWrapper
-      let firstBlockInsideContentWrapper = $nextPos.nodeAfter.firstChild;
+      let firstBlockInsideContentWrapper = $nextPos.nodeAfter.firstChild
 
       // if the heading block does not contain contentWrapper as a first child
       // then create a contentWrapper block
-      if (!firstBlockInsideContentWrapper || firstBlockInsideContentWrapper.type.name === HEADING_TYPE) {
+      if (
+        !firstBlockInsideContentWrapper ||
+        firstBlockInsideContentWrapper.type.name === HEADING_TYPE
+      ) {
         const contentWrapperBlock = {
           type: CONTENT_WRAPPER_TYPE,
           content: [
             {
-              type: PARAGRAPH_TYPE
-            }
-          ]
-        };
+              type: PARAGRAPH_TYPE,
+            },
+          ],
+        }
 
-        const node = createNodeFromJSON(contentWrapperBlock, state.schema);
-        tr.insert(contentWrapperStart, node);
-        firstBlockInsideContentWrapper = node.firstChild;
+        const node = createNodeFromJSON(contentWrapperBlock, state.schema)
+        tr.insert(contentWrapperStart, node)
+        firstBlockInsideContentWrapper = node.firstChild
       }
 
       if (firstBlockInsideContentWrapper) {
-        const firstBlockStart = contentWrapperStart + 1; // +1 to move inside the first block
+        const firstBlockStart = contentWrapperStart + 1 // +1 to move inside the first block
 
         // Move the cursor to the first line of the contentWrapper
-        const newSelection = new TextSelection(tr.doc.resolve(firstBlockStart));
-        tr.setSelection(newSelection);
+        const newSelection = new TextSelection(tr.doc.resolve(firstBlockStart))
+        tr.setSelection(newSelection)
 
         // Update the variables accordingly
-        newPosResolver = $nextPos;
-        $from = newSelection.$from;
-        start = $from.pos;
+        newPosResolver = $nextPos
+        $from = newSelection.$from
+        start = $from.pos
       }
     }
   }
@@ -111,11 +129,18 @@ export default (slice, editor) => {
   let titleEndPos = titleStartPos + titleNode.content.size
   const contentWrapper = getRangeBlocks(doc, start, titleEndPos)
 
-  let { prevHStartPos, prevHEndPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
+  let { prevHStartPos, prevHEndPos } = getPrevHeadingPos(
+    doc,
+    titleStartPos,
+    start - 1
+  )
 
   const clipboardContentJson = slice.toJSON().content
 
-  const [paragraphs, headings] = extractParagraphsAndHeadings(clipboardContentJson, state)
+  const [paragraphs, headings] = extractParagraphsAndHeadings(
+    clipboardContentJson,
+    state
+  )
 
   // if there is no heading block, then just return
   if (headings.length <= 0) return slice
@@ -133,10 +158,12 @@ export default (slice, editor) => {
 
   let lastBlockPos = paragraphs.length === 0 ? start : tr.mapping.map(start)
 
-  const headingContent = contentWrapper.filter(x => x.type === HEADING_TYPE)
+  const headingContent = contentWrapper.filter((x) => x.type === HEADING_TYPE)
 
   if (headingContent.length > 0) {
-    headingContent.forEach(heading => headings.push(createNodeFromJSON(heading, state.schema)))
+    headingContent.forEach((heading) =>
+      headings.push(createNodeFromJSON(heading, state.schema))
+    )
   }
 
   let mapHPost = {}
@@ -152,8 +179,15 @@ export default (slice, editor) => {
     for (let heading of headings) {
       const comingLevel = heading.content.firstChild.attrs.level
 
-      const startBlock = lastH1Inserted.startBlockPos === 0 ? tr.mapping.map(start) : lastH1Inserted.startBlockPos
-      const endBlock = lastH1Inserted.endBlockPos === 0 ? tr.mapping.map(titleEndPos) : tr.doc.nodeAt(lastH1Inserted.startBlockPos).content.size + lastH1Inserted.startBlockPos
+      const startBlock =
+        lastH1Inserted.startBlockPos === 0
+          ? tr.mapping.map(start)
+          : lastH1Inserted.startBlockPos
+      const endBlock =
+        lastH1Inserted.endBlockPos === 0
+          ? tr.mapping.map(titleEndPos)
+          : tr.doc.nodeAt(lastH1Inserted.startBlockPos).content.size +
+            lastH1Inserted.startBlockPos
 
       if (lastH1Inserted.startBlockPos !== 0) {
         lastH1Inserted.startBlockPos = 0
@@ -162,14 +196,15 @@ export default (slice, editor) => {
 
       mapHPost = getHeadingsBlocksMap(tr.doc, startBlock, endBlock)
 
-      mapHPost = mapHPost.filter(x =>
-        x.startBlockPos >= (comingLevel === 1 ? titleStartPos : prevHStartPos)
+      mapHPost = mapHPost.filter(
+        (x) =>
+          x.startBlockPos >= (comingLevel === 1 ? titleStartPos : prevHStartPos)
       )
 
       let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
 
       // find prevBlock.le in mapHPost
-      const robob = mapHPost.filter(x => prevBlock?.le === x.le)
+      const robob = mapHPost.filter((x) => prevBlock?.le === x.le)
 
       if (robob.length > 1) {
         prevBlock = robob.at(-1)
@@ -185,20 +220,25 @@ export default (slice, editor) => {
 
       if (comingLevel === 1) {
         lastH1Inserted.startBlockPos = lastBlockPos
-        lastH1Inserted.endBlockPos = tr.mapping.map(lastBlockPos + heading.content.size)
+        lastH1Inserted.endBlockPos = tr.mapping.map(
+          lastBlockPos + heading.content.size
+        )
       }
     }
 
     if (contentWrapper.length) {
       let contentWrapperParagraphs = contentWrapper
-        .filter(x => x.type !== HEADING_TYPE)
-        .map(paragraph => createNodeFromJSON(paragraph, state.schema))
+        .filter((x) => x.type !== HEADING_TYPE)
+        .map((paragraph) => createNodeFromJSON(paragraph, state.schema))
 
       // first append the paragraphs in the current selection
-      tr.insert(lastBlockPos + headings.at(-1).content.size - 2, contentWrapperParagraphs)
+      tr.insert(
+        lastBlockPos + headings.at(-1).content.size - 2,
+        contentWrapperParagraphs
+      )
     }
   } catch (error) {
-    console.error("[heading]:", error)
+    console.error('[heading]:', error)
     return Slice.empty
   }
 
@@ -207,3 +247,5 @@ export default (slice, editor) => {
 
   return Slice.empty
 }
+
+export default clipboardPast

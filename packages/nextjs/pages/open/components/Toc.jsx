@@ -2,11 +2,8 @@ import TableOfContents from '../../../components/TipTap/TableOfContents'
 import TableOfcontentLoader from '../../../components/TableOfContentsLoader'
 import { useEditorStateContext } from '../../../context/EditorContext'
 
-const TOC = ({ className = "", editor }) => {
-  const {
-    loading,
-    applyingFilters,
-  } = useEditorStateContext()
+const TOC = ({ className = '', editor }) => {
+  const { loading, applyingFilters } = useEditorStateContext()
 
   if (loading || !editor) {
     return (
@@ -16,7 +13,12 @@ const TOC = ({ className = "", editor }) => {
     )
   }
 
-  return <TableOfContents className={`${ className } tiptap__toc pl-2`} editor={editor} />
+  return (
+    <TableOfContents
+      className={`${className} tiptap__toc pl-2`}
+      editor={editor}
+    />
+  )
 }
 
-export default TOC;
+export default TOC

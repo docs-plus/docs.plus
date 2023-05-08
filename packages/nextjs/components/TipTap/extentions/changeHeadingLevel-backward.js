@@ -1,17 +1,24 @@
 import { TextSelection } from '@tiptap/pm/state'
 
-import { getRangeBlocks, getHeadingsBlocksMap, createThisBlockMap } from './helper'
+import {
+  getRangeBlocks,
+  getHeadingsBlocksMap,
+  createThisBlockMap,
+} from './helper'
 
-export default (arrg, attributes, asWrapper = false) => {
+const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
   const { schema, selection, doc } = state
   const { $from, $to, $anchor, $cursor, from } = selection
   const { start, end, depth } = $from.blockRange($to)
 
-  console.log('[Heading]: Backward process,  comingLevel < currentHLevel')
+  console.info('[Heading]: Backward process,  comingLevel < currentHLevel')
 
   const comingLevel = attributes.level
-  const caretSelectionTextBlock = { type: 'text', text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' ' }
+  const caretSelectionTextBlock = {
+    type: 'text',
+    text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' ',
+  }
 
   const block = createThisBlockMap($from, depth, caretSelectionTextBlock)
   const titleNode = $from.doc.nodeAt($from.start(1) - 1)
@@ -20,7 +27,7 @@ export default (arrg, attributes, asWrapper = false) => {
   const contentWrapper = getRangeBlocks(doc, start, titleEndPos)
   const titleHMap = getHeadingsBlocksMap(doc, start, titleEndPos)
 
-  const sliceTargetContent = contentWrapper.filter(x => {
+  const sliceTargetContent = contentWrapper.filter((x) => {
     if (x.type !== 'heading') return x
 
     return x.le > comingLevel
@@ -35,10 +42,11 @@ export default (arrg, attributes, asWrapper = false) => {
     }
   }
 
-  const endSliceBlocPos = sliceTargetContent[sliceTargetContent.length - 1].endBlockPos
+  const endSliceBlocPos =
+    sliceTargetContent[sliceTargetContent.length - 1].endBlockPos
   const insertPos = titleHMap
-    .filter(x => endSliceBlocPos <= x.endBlockPos)
-    .find(x => x.le >= comingLevel)?.endBlockPos
+    .filter((x) => endSliceBlocPos <= x.endBlockPos)
+    .find((x) => x.le >= comingLevel)?.endBlockPos
 
   const jsonNewBlock = {
     type: 'heading',
@@ -47,14 +55,14 @@ export default (arrg, attributes, asWrapper = false) => {
         type: 'contentHeading',
         content: [block.headingContent],
         attrs: {
-          level: attributes.level
-        }
+          level: attributes.level,
+        },
       },
       {
         type: 'contentWrapper',
-        content: sliceTargetContent
-      }
-    ]
+        content: sliceTargetContent,
+      },
+    ],
   }
 
   const node = state.schema.nodeFromJSON(jsonNewBlock)
@@ -68,3 +76,5 @@ export default (arrg, attributes, asWrapper = false) => {
 
   return true
 }
+
+export default changeHeadingLevelBackward

@@ -145,18 +145,6 @@ const Blockquote = Node.create({
 
         if (!nodeState.crinkleOpen) return true
 
-        console.log('yes new', {
-          $head,
-          state,
-          $anchor,
-          parent,
-          content: parent?.lastChild?.firstChild?.type.name,
-          sd: Selection.near(state.doc.resolve($from.pos), 1),
-          // after: $head.start(depth + 1),
-          // newResolve: $head.node(depth + 1)
-          isHeading: parent,
-        })
-
         // FIXME: not working
         // some times the contentWrapper cleaned up, so it should be create first
         // otherwise just the cursour must move to contnetWrapper
@@ -167,7 +155,6 @@ const Blockquote = Node.create({
         ) {
           // console.log("yes iminininin", parent.lastChild.firstChild.contentsize === 0, parent.lastChild.firstChild)
           // If there is not any contentWrapper
-          console.log(parent.lastChild)
           // if first child of the heading is another heading
           // console.log(parent.lastChild.type.name === "contentWrapper")
           // console.log(parent.lastChild.content.lastChild.type.name === "heading")
@@ -185,11 +172,7 @@ const Blockquote = Node.create({
               ],
             })
           }
-          console.log('move to contetnWrapper', {
-            after: $anchor.after(depth + 1),
-            start,
-            start1: $anchor.start(depth + 2) + 1,
-          })
+
           // move to contentWrapper
           editor.commands.insertContentAt(
             $anchor.start(depth + 2) + 1,

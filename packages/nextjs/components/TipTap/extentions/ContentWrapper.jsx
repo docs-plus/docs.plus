@@ -44,7 +44,7 @@ function createCrinkleNode(prob) {
     const line = document.createElement('div')
 
     line.classList.add('fold')
-    line.classList.add(`l${ i }`)
+    line.classList.add(`l${i}`)
     foldEl.append(line)
   }
   foldEl.setAttribute('data-clampedLines', clampedLines + 1)
@@ -105,85 +105,91 @@ function createCrinkleNode(prob) {
 }
 
 function buildDecorations(doc) {
-  const decos = [];
-  const contentWrappers = extractContentWrapperBlocks(doc);
+  const decos = []
+  const contentWrappers = extractContentWrapperBlocks(doc)
 
   contentWrappers.forEach((prob) => {
-    const decorationWidget = Decoration.widget(prob.from, createCrinkleNode(prob), {
-      side: -1,
-      key: prob.headingId,
-    });
+    const decorationWidget = Decoration.widget(
+      prob.from,
+      createCrinkleNode(prob),
+      {
+        side: -1,
+        key: prob.headingId,
+      }
+    )
 
-    decos.push(decorationWidget);
-  });
+    decos.push(decorationWidget)
+  })
 
-  return DecorationSet.create(doc, decos);
+  return DecorationSet.create(doc, decos)
 }
 
 function expandElement(elem, collapseClass, headingId, open) {
-  const startHeight = window.getComputedStyle(elem).height;
-  const headingSection = document.querySelector(`.heading[data-id="${ headingId }"]`);
-  const headingLevel = headingSection.getAttribute('level');
-  const wrapperBlock = headingSection.querySelector('.foldWrapper');
+  const startHeight = window.getComputedStyle(elem).height
+  const headingSection = document.querySelector(
+    `.heading[data-id="${headingId}"]`
+  )
+  const headingLevel = headingSection.getAttribute('level')
+  const wrapperBlock = headingSection.querySelector('.foldWrapper')
 
-  elem.style.height = '';
-  elem.style.transition = 'none';
-  elem.style.transitionTimingFunction = 'ease-in-out';
+  elem.style.height = ''
+  elem.style.transition = 'none'
+  elem.style.transitionTimingFunction = 'ease-in-out'
 
   if (headingLevel === '1') {
-    wrapperBlock.style.height = startHeight;
-    wrapperBlock.style.position = 'absolute';
-    wrapperBlock.style.transitionTimingFunction = 'ease-in-out';
-    wrapperBlock.style.transition = 'none';
+    wrapperBlock.style.height = startHeight
+    wrapperBlock.style.position = 'absolute'
+    wrapperBlock.style.transitionTimingFunction = 'ease-in-out'
+    wrapperBlock.style.transition = 'none'
   }
 
-  elem.classList.add('overflow-hidden');
-  headingSection.classList.remove('opend', 'closed', 'closing', 'opening');
-  headingSection.classList.add(open ? 'opening' : 'closing');
+  elem.classList.add('overflow-hidden')
+  headingSection.classList.remove('opend', 'closed', 'closing', 'opening')
+  headingSection.classList.add(open ? 'opening' : 'closing')
 
-  elem.classList.toggle(collapseClass);
-  const height = window.getComputedStyle(elem).height;
+  elem.classList.toggle(collapseClass)
+  const height = window.getComputedStyle(elem).height
 
-  elem.style.height = startHeight;
+  elem.style.height = startHeight
 
   requestAnimationFrame(() => {
-    elem.style.transition = '';
+    elem.style.transition = ''
 
     if (headingLevel === '1') {
-      wrapperBlock.style.transition = '';
+      wrapperBlock.style.transition = ''
     }
 
     requestAnimationFrame(() => {
-      elem.style.height = height;
+      elem.style.height = height
 
       if (headingLevel === '1') {
-        wrapperBlock.style.height = height;
+        wrapperBlock.style.height = height
       }
-    });
-  });
+    })
+  })
 
   function callback() {
-    elem.style.height = '';
+    elem.style.height = ''
 
     if (headingLevel === '1') {
-      wrapperBlock.style.height = '';
-      wrapperBlock.style.position = 'relative';
+      wrapperBlock.style.height = ''
+      wrapperBlock.style.position = 'relative'
     }
 
     if (open) {
-      headingSection.classList.remove('closed', 'closing', 'opening');
-      headingSection.classList.add('opend');
-      elem.classList.remove('overflow-hidden');
+      headingSection.classList.remove('closed', 'closing', 'opening')
+      headingSection.classList.add('opend')
+      elem.classList.remove('overflow-hidden')
     } else {
-      headingSection.classList.remove('opening', 'opend', 'closing');
-      headingSection.classList.add('closed');
-      elem.classList.add('overflow-hidden');
+      headingSection.classList.remove('opening', 'opend', 'closing')
+      headingSection.classList.add('closed')
+      elem.classList.add('overflow-hidden')
     }
 
-    elem.removeEventListener('transitionend', callback);
+    elem.removeEventListener('transitionend', callback)
   }
 
-  elem.addEventListener('transitionend', callback);
+  elem.addEventListener('transitionend', callback)
 }
 
 const HeadingsContent = Node.create({
@@ -204,7 +210,7 @@ const HeadingsContent = Node.create({
   parseHTML() {
     return [
       {
-        tag: `div[data-type="${ this.name }"]`,
+        tag: `div[data-type="${this.name}"]`,
       },
     ]
   },
@@ -250,10 +256,10 @@ const HeadingsContent = Node.create({
       )
 
       if (!nodeState.crinkleOpen) {
-        dom.classList.add('overflow-hidden', 'collapsed', 'closed');
+        dom.classList.add('overflow-hidden', 'collapsed', 'closed')
       } else {
-        dom.classList.remove('overflow-hidden', 'collapsed', 'closed');
-        dom.classList.add('opend');
+        dom.classList.remove('overflow-hidden', 'collapsed', 'closed')
+        dom.classList.add('opend')
       }
 
       const content = document.createElement('div')
@@ -264,7 +270,6 @@ const HeadingsContent = Node.create({
       Object.entries(attributes).forEach(([key, value]) =>
         dom.setAttribute(key, value)
       )
-
 
       dom.addEventListener('toggleHeadingsContent', ({ detail }) => {
         const section = detail.el
@@ -364,7 +369,7 @@ const HeadingsContent = Node.create({
         }
       },
       // Escape node on double enter
-      Enter: ({ editor }) => { },
+      Enter: ({ editor }) => {},
     }
   },
   addProseMirrorPlugins() {
@@ -373,10 +378,10 @@ const HeadingsContent = Node.create({
         key: new PluginKey('crinkle'),
         state: {
           init(_, { doc }) {
-            return buildDecorations(doc);
+            return buildDecorations(doc)
           },
           apply(tr, old) {
-            return tr.docChanged ? buildDecorations(tr.doc) : old;
+            return tr.docChanged ? buildDecorations(tr.doc) : old
           },
         },
         props: {
