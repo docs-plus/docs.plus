@@ -6,7 +6,6 @@ const OnlineIndicator = ({ className }) => {
   const [isOnline, setIsOnline] = useState(false)
   const [showStatus, setShowStatus] = useState(true)
 
-
   useEffect(() => {
     const handleOnlineStatus = () => {
       setIsOnline(true)
@@ -39,14 +38,20 @@ const OnlineIndicator = ({ className }) => {
   return (
     <div className={className}>
       {showStatus && (
-        <div className={` flex align-baseline justify-center status ${ isOnline ? 'online' : 'offline' }`}>
-          {isOnline
-            ? <span className='flex align-baseline justify-center text-xs font-medium text-gray-500'>
+        <div
+          className={` flex align-baseline justify-center status ${
+            isOnline ? 'online' : 'offline'
+          }`}>
+          {isOnline ? (
+            <span className="flex align-baseline justify-center text-xs font-medium text-gray-500">
               <OnlineCloud className="mr-2" /> Saved to docsplus
             </span>
-            : <span className='flex align-baseline justify-center text-xs font-medium text-gray-500'>
-              <OfflineCloud className="mr-2" />Working offline
-            </span>}
+          ) : (
+            <span className="flex align-baseline justify-center text-xs font-medium text-gray-500">
+              <OfflineCloud className="mr-2" />
+              Working offline
+            </span>
+          )}
         </div>
       )}
     </div>

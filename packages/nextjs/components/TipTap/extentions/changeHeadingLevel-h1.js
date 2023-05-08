@@ -1,17 +1,26 @@
 import { TextSelection } from '@tiptap/pm/state'
 
-import { getPrevHeadingList, createThisBlockMap, getHeadingsBlocksMap, getRangeBlocks, getPrevHeadingPos } from './helper'
+import {
+  getPrevHeadingList,
+  createThisBlockMap,
+  getHeadingsBlocksMap,
+  getRangeBlocks,
+  getPrevHeadingPos,
+} from './helper'
 
-export default (arrg, attributes) => {
+const changeHeadingLevelH1 = (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
   const { schema, selection, doc } = state
   const { $from, $to, $anchor, $cursor, from } = selection
   const { start, end, depth } = $from.blockRange($to)
 
-  console.log('[Heading]: change heading Level h1')
+  console.info('[Heading]: change heading Level h1')
 
   const commingLevel = attributes.level
-  const caretSelectionTextBlock = { type: 'text', text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' ' }
+  const caretSelectionTextBlock = {
+    type: 'text',
+    text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' ',
+  }
 
   const block = createThisBlockMap($from, depth, caretSelectionTextBlock)
   const currentHLevel = $from.doc.nodeAt(block.start).attrs.level
@@ -19,40 +28,57 @@ export default (arrg, attributes) => {
   let titleStartPos = 0
   let titleEndPos = 0
 
-  doc.nodesBetween($from.start(0), start - 1, function (node, pos, parent, index) {
-    if (node.type.name === 'heading') {
-      const headingLevel = node.firstChild?.attrs?.level
+  doc.nodesBetween(
+    $from.start(0),
+    start - 1,
+    function (node, pos, parent, index) {
+      if (node.type.name === 'heading') {
+        const headingLevel = node.firstChild?.attrs?.level
 
-      if (headingLevel === currentHLevel) {
-        titleStartPos = pos
-        // INFO: I need the pos of last content in contentWrapper
-        titleEndPos = pos + node.content.size
+        if (headingLevel === currentHLevel) {
+          titleStartPos = pos
+          // INFO: I need the pos of last content in contentWrapper
+          titleEndPos = pos + node.content.size
+        }
       }
     }
-  })
+  )
 
-  const contentWrapper = getRangeBlocks(doc, start, $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size)
+  const contentWrapper = getRangeBlocks(
+    doc,
+    start,
+    $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size
+  )
   const titleHMap = getHeadingsBlocksMap(doc, titleStartPos, titleEndPos)
 
-  const contentWrapperParagraphs = contentWrapper.filter(x => x.type !== 'heading')
-  const contentWrapperHeadings = contentWrapper.filter(x => x.type === 'heading')
+  const contentWrapperParagraphs = contentWrapper.filter(
+    (x) => x.type !== 'heading'
+  )
+  const contentWrapperHeadings = contentWrapper.filter(
+    (x) => x.type === 'heading'
+  )
 
-  const { prevHStartPos, prevHEndPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
+  const { prevHStartPos, prevHEndPos } = getPrevHeadingPos(
+    doc,
+    titleStartPos,
+    start - 1
+  )
 
-
-  let mapHPost = titleHMap.filter(x =>
-    x.startBlockPos < start - 1 &&
-    x.startBlockPos >= prevHStartPos
+  let mapHPost = titleHMap.filter(
+    (x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos
   )
 
   let shouldNested = false
 
   // FIXME: this is heavy! I need to find better solotion with less loop
-  const prevBlockEqual = mapHPost.findLast(x => x.le === commingLevel)
-  const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= commingLevel)
-  const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= commingLevel)
+  const prevBlockEqual = mapHPost.findLast((x) => x.le === commingLevel)
+  const prevBlockGratherFromFirst = mapHPost.find((x) => x.le >= commingLevel)
+  const prevBlockGratherFromLast = mapHPost.findLast(
+    (x) => x.le <= commingLevel
+  )
   const lastbloc = mapHPost.at(-1)
-  let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
+  let prevBlock =
+    prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
 
   if (lastbloc.le <= commingLevel) prevBlock = lastbloc
   shouldNested = prevBlock.le < commingLevel
@@ -64,19 +90,22 @@ export default (arrg, attributes) => {
         type: 'contentHeading',
         content: [block.headingContent],
         attrs: {
-          level: attributes.level
-        }
+          level: attributes.level,
+        },
       },
       {
         type: 'contentWrapper',
-        content: contentWrapperParagraphs
-      }
-    ]
+        content: contentWrapperParagraphs,
+      },
+    ],
   }
   const node = state.schema.nodeFromJSON(jsonNode)
 
   // remove content from the current positon to the end of the heading
-  tr.delete(start - 1, $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size)
+  tr.delete(
+    start - 1,
+    $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size
+  )
 
   // then add the new heading with the content
   const insertPos = prevBlock.endBlockPos - (shouldNested ? 2 : 0)
@@ -94,21 +123,27 @@ export default (arrg, attributes) => {
     mapHPost = getPrevHeadingList(
       tr,
       mapHPost.at(0).startBlockPos,
-      mapHPost.at(0).startBlockPos + doc.nodeAt(mapHPost.at(0).startBlockPos).nodeSize + 2
+      mapHPost.at(0).startBlockPos +
+        doc.nodeAt(mapHPost.at(0).startBlockPos).nodeSize +
+        2
     )
 
-    mapHPost = mapHPost.filter(x =>
-      x.startBlockPos < heading.startBlockPos &&
-      x.startBlockPos >= prevHStartPos
+    mapHPost = mapHPost.filter(
+      (x) =>
+        x.startBlockPos < heading.startBlockPos &&
+        x.startBlockPos >= prevHStartPos
     )
 
     const node = state.schema.nodeFromJSON(heading)
 
-    const prevBlockEqual = mapHPost.findLast(x => x.le === heading.le)
-    const prevBlockGratherFromFirst = mapHPost.find(x => x.le >= heading.le)
-    const prevBlockGratherFromLast = mapHPost.findLast(x => x.le <= heading.le)
+    const prevBlockEqual = mapHPost.findLast((x) => x.le === heading.le)
+    const prevBlockGratherFromFirst = mapHPost.find((x) => x.le >= heading.le)
+    const prevBlockGratherFromLast = mapHPost.findLast(
+      (x) => x.le <= heading.le
+    )
     const lastbloc = mapHPost.at(-1)
-    let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
+    let prevBlock =
+      prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
 
     if (lastbloc.le <= heading.le) prevBlock = lastbloc
     shouldNested = prevBlock.le < heading.le
@@ -116,3 +151,5 @@ export default (arrg, attributes) => {
     tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
   }
 }
+
+export default changeHeadingLevelH1

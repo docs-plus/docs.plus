@@ -7,9 +7,7 @@ function getOffsetTop(element) {
 
 const TableOfContent = ({ editor, className }) => {
   const [items, setItems] = useState([])
-  const {
-    applyingFilters,
-  } = useEditorStateContext()
+  const { applyingFilters } = useEditorStateContext()
 
   const handleUpdate = useCallback((doc, data) => {
     const headings = []
@@ -19,14 +17,14 @@ const TableOfContent = ({ editor, className }) => {
       if (node.type.name === 'contentHeading') {
         let headingId = _parent.attrs?.id || node?.attrs.id || '1'
         let headingSection = document.querySelector(
-          `.ProseMirror .heading[data-id="${ headingId }"]`
+          `.ProseMirror .heading[data-id="${headingId}"]`
         )
         let offsetTop = getOffsetTop(headingSection)
 
         if (offsetTop === 0) {
           headingId = '1'
           headingSection = document.querySelector(
-            `.ProseMirror .heading[data-id="${ headingId }"]`
+            `.ProseMirror .heading[data-id="${headingId}"]`
           )
           offsetTop = getOffsetTop(headingSection)
         }
@@ -71,7 +69,7 @@ const TableOfContent = ({ editor, className }) => {
       clearTimeout(timer)
       clearTimeout(trTimer)
     }
-  }, [editor])
+  }, [editor, handleUpdate])
 
   useEffect(() => {
     const transaction = editor.state.tr
@@ -83,7 +81,7 @@ const TableOfContent = ({ editor, className }) => {
     }, 200)
 
     return () => clearTimeout(timer)
-  }, [applyingFilters])
+  }, [applyingFilters, editor, handleUpdate])
 
   const scroll2Header = (e) => {
     e.preventDefault()
@@ -94,13 +92,13 @@ const TableOfContent = ({ editor, className }) => {
 
     if (offsetParent === '0') id = '1'
 
-    document.querySelector(`.heading[data-id="${ id }"]`)?.scrollIntoView()
+    document.querySelector(`.heading[data-id="${id}"]`)?.scrollIntoView()
   }
 
   const toggleSection = (item) => {
     document
       .querySelector(
-        `.ProseMirror .heading[data-id="${ item.id }"] .buttonWrapper .btnFold`
+        `.ProseMirror .heading[data-id="${item.id}"] .buttonWrapper .btnFold`
       )
       ?.click()
 
@@ -134,8 +132,9 @@ const TableOfContent = ({ editor, className }) => {
         <div
           key={item.id}
           className={`
-            toc__item toc__item--${ item.level } text-ellipsis overflow-hidden ${ item.open ? '' : 'closed'
-            }
+            toc__item toc__item--${item.level} text-ellipsis overflow-hidden ${
+            item.open ? '' : 'closed'
+          }
           `}
           data-id={item.id}
           data-offsettop={item.offsetTop}>
@@ -146,14 +145,14 @@ const TableOfContent = ({ editor, className }) => {
             <a
               className="text-black text-ellipsis overflow-hidden"
               data-id={item.id}
-              href={`?${ item.id }`}
+              href={`?${item.id}`}
               onClick={scroll2Header}>
               {item.text}
             </a>
           </span>
 
           {children.length > 0 && (
-            <div className={`${ item.open ? '' : '!hidden' }`}>
+            <div className={`${item.open ? '' : '!hidden'}`}>
               {renderToc(children)}
             </div>
           )}
@@ -166,7 +165,7 @@ const TableOfContent = ({ editor, className }) => {
   }
 
   return (
-    <div className={`${ className }`}>
+    <div className={`${className}`}>
       <div className="toc__list ">{renderToc(items)}</div>
     </div>
   )

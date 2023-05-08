@@ -8,8 +8,7 @@ const TableOfcontentLoader = (props) => {
         height={700}
         backgroundColor="#ccc"
         foregroundColor="#ebebeb"
-        uniqueKey="TableOfcontentLoader"
-      >
+        uniqueKey="TableOfcontentLoader">
         <rect x="22" y="20" rx="3" ry="3" width="129" height="23" />
         <rect x="20" y="80" rx="3" ry="3" width="148" height="14" />
         <rect x="64" y="108" rx="3" ry="3" width="148" height="14" />

@@ -130,7 +130,7 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
   const href = document.createElement('span')
 
   href.innerHTML = '#'
-  href.setAttribute('href', `?id=${ headingId }`)
+  href.setAttribute('href', `?id=${headingId}`)
   href.setAttribute('target', `_tab`)
   href.setAttribute('rel', `noreferrer`)
   href.classList.add('btn_copyLink')
@@ -204,7 +204,7 @@ const HeadingsTitle = Node.create({
   },
   parseHTML() {
     return this.options.levels.map((level) => ({
-      tag: `h${ level }`,
+      tag: `h${level}`,
       attrs: { level },
     }))
   },
@@ -214,7 +214,7 @@ const HeadingsTitle = Node.create({
     const level = hasLevel ? node.attrs.level : this.options.levels[0]
 
     return [
-      `h${ level }`,
+      `h${level}`,
       mergeAttributes(this.options.HTMLAttributes, {
         ...HTMLAttributes,
         level,

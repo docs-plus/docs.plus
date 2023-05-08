@@ -1,10 +1,17 @@
 import Head from 'next/head'
 
-const TITLE = "Docs Plus"
-const DESCRIPTION = "docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge in a hierarchical manner. Collaborate on documents and share knowledge in a structured, logical way."
+const TITLE = 'Docs Plus'
+const DESCRIPTION =
+  'docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge in a hierarchical manner. Collaborate on documents and share knowledge in a structured, logical way.'
 const URL = 'http://docs.plus'
 
-const HeadSeo = ({title, description, url} = {title: TITLE, description: DESCRIPTION, url: URL}) => {
+const HeadSeo = (
+  { title, description, url } = {
+    title: TITLE,
+    description: DESCRIPTION,
+    url: URL,
+  }
+) => {
   return (
     <Head>
       <title>{title}</title>
@@ -22,9 +29,8 @@ const HeadSeo = ({title, description, url} = {title: TITLE, description: DESCRIP
       <meta property="og:site_name" content="Docs Plus" />
       <meta property="og:url" content={url} />
       <meta property="og:image" content="/icons/maskable_icon_x512.png" />
-
     </Head>
-   );
+  )
 }
 
-export default HeadSeo;
+export default HeadSeo

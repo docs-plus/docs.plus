@@ -162,7 +162,7 @@ export const Video = ({ size = 18, fill = 'black' }) => {
 }
 
 // prettier-ignore
-export const Image = ({ size = 18, fill = 'black' }) => {
+export const ImageBox = ({ size = 18, fill = 'black' }) => {
   return (
     <svg viewBox="0 0 18 18" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M16,0H2A2,2,0,0,0,0,2V16a2,2,0,0,0,2,2H16a2,2,0,0,0,2-2V2A2,2,0,0,0,16,0Zm0,16H2V2H16ZM11,9,8,12.72,6,10,3,14H15Z" />
@@ -368,5 +368,3 @@ export const InsertLinkMobile = ({ size = 24, fill = 'black', className }) => {
     </svg>
   )
 }
-
-

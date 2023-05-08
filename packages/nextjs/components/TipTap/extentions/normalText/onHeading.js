@@ -4,7 +4,11 @@ import { getRangeBlocks, getPrevHeadingList, findPrevBlock } from '../helper'
 const processHeadings = (state, tr, mapHPost, contentWrapperHeadings) => {
   for (let heading of contentWrapperHeadings) {
     if (!heading.le)
-      heading = { ...heading, le: heading.content[0].attrs.level, startBlockPos: 0 }
+      heading = {
+        ...heading,
+        le: heading.content[0].attrs.level,
+        startBlockPos: 0,
+      }
 
     const startBlock = mapHPost[0].startBlockPos
     const endBlock = tr.mapping.map(mapHPost.at(0).endBlockPos)
@@ -19,7 +23,7 @@ const processHeadings = (state, tr, mapHPost, contentWrapperHeadings) => {
   }
 }
 
-export default (args) => {
+const onHeading = (args) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = args
   const { schema, selection, doc } = state
   const { $from, $to, $anchor, $cursor, $head, from } = selection
@@ -50,40 +54,59 @@ export default (args) => {
 
   // if the current heading is not H1, otherwise we need to find the previous H1
   if (currentHLevel !== 1) {
-    doc.nodesBetween(titleStartPos, start - 1, function (node, pos, parent, index) {
-      if (node.type.name === 'heading') {
-        const depth = doc.resolve(pos).depth
+    doc.nodesBetween(
+      titleStartPos,
+      start - 1,
+      function (node, pos, parent, index) {
+        if (node.type.name === 'heading') {
+          const depth = doc.resolve(pos).depth
 
-        // INFO: this the trick I've looking for
-        if (depth === 2) {
-          prevHStartPos = pos
-          prevHEndPos = pos + node.content.size
+          // INFO: this the trick I've looking for
+          if (depth === 2) {
+            prevHStartPos = pos
+            prevHEndPos = pos + node.content.size
+          }
         }
       }
-    })
+    )
   } else {
-    doc.nodesBetween($from.start(0), start - 1, function (node, pos, parent, index) {
-      if (node.type.name === 'heading') {
-        const headingLevel = node.firstChild?.attrs?.level
+    doc.nodesBetween(
+      $from.start(0),
+      start - 1,
+      function (node, pos, parent, index) {
+        if (node.type.name === 'heading') {
+          const headingLevel = node.firstChild?.attrs?.level
 
-        if (headingLevel === currentHLevel) {
-          titleStartPos = pos
-          titleEndPos = pos + node.content.size
+          if (headingLevel === currentHLevel) {
+            titleStartPos = pos
+            titleEndPos = pos + node.content.size
+          }
         }
       }
-    })
+    )
   }
 
-  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== 'heading')
-  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === 'heading')
+  const contentWrapperParagraphs = contentWrapper.filter(
+    (x) => x.type !== 'heading'
+  )
+  const contentWrapperHeadings = contentWrapper.filter(
+    (x) => x.type === 'heading'
+  )
 
-  const normalContents = [headingText, ...contentWrapperParagraphs]
-    .map((x) => editor.schema.nodeFromJSON(x))
+  const normalContents = [headingText, ...contentWrapperParagraphs].map((x) =>
+    editor.schema.nodeFromJSON(x)
+  )
 
   if (backspaceAction) normalContents.shift()
 
-  const titleHMap = getPrevHeadingList(tr, titleStartPos, tr.mapping.map(titleEndPos))
-  let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
+  const titleHMap = getPrevHeadingList(
+    tr,
+    titleStartPos,
+    tr.mapping.map(titleEndPos)
+  )
+  let mapHPost = titleHMap.filter(
+    (x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos
+  )
 
   const comingLevel = mapHPost.at(-1).le + 1
   let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
@@ -100,3 +123,5 @@ export default (args) => {
 
   return backspaceAction ? view.dispatch(tr) : true
 }
+
+export default onHeading

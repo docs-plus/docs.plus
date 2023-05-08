@@ -33,13 +33,19 @@ const DesktopLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
   useEffect(() => {
     // when layout change set editor editable again
     editor?.setEditable(true)
-    document.querySelector("html").classList.remove('m_mobile')
-  }, [])
+    document.querySelector('html').classList.remove('m_mobile')
+  })
 
   return (
     <>
-      <HeadSeo title={documentTitle} description="another open docs plus document" />
-      <div className={`pad tiptap flex flex-col border-solid ${ isMobile ? " m_mobile" : "m_desktop" }`}>
+      <HeadSeo
+        title={documentTitle}
+        description="another open docs plus document"
+      />
+      <div
+        className={`pad tiptap flex flex-col border-solid ${
+          isMobile ? ' m_mobile' : 'm_desktop'
+        }`}>
         <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
           {docSlug && (
             <PadTitle
@@ -56,8 +62,7 @@ const DesktopLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
         <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
           <div
             className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
-            onScroll={scrollHeadingSelection}
-          >
+            onScroll={scrollHeadingSelection}>
             <Editor editor={editor} />
           </div>
           <div className="max-w-xs w-3/12 overflow-hidden pb-4 sm:py-4 sm:pb-14 scroll-smooth hover:overflow-auto hover:overscroll-contain">
@@ -66,7 +71,7 @@ const DesktopLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
         </div>
       </div>
     </>
-  );
+  )
 }
 
-export default DesktopLayout;
+export default DesktopLayout

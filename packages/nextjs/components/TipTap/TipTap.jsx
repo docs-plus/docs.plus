@@ -71,7 +71,6 @@ lowlight.registerLanguage('yaml', yaml)
 lowlight.registerLanguage('json', json)
 lowlight.registerLanguage('bash', bash)
 
-
 const Document = Node.create({
   name: 'doc',
   topNode: true,
@@ -101,26 +100,18 @@ const scrollDown = () => {
 
   if (!id) return
   setTimeout(() => {
-    console.log({
-      do: document.querySelector('.tipta__editor'),
-      param: url,
-      id: url.searchParams.get('id'),
-      nodeTarget: document.querySelector(
-        `[data-id="${ url.searchParams.get('id') }"]`
-      ),
-    })
     document
-      .querySelector(`[data-id="${ url.searchParams.get('id') }"]`)
+      .querySelector(`[data-id="${url.searchParams.get('id')}"]`)
       ?.scrollIntoView()
   }, 200)
 }
 
 const generatePlaceholderText = ({ node }) => {
-  const nodeType = node.type.name;
+  const nodeType = node.type.name
 
   if (nodeType === 'contentHeading' || nodeType === 'heading') {
-    const level = node.attrs.level;
-    return level - 1 === 0 ? 'Title' : `Heading ${ level - 1 }`;
+    const level = node.attrs.level
+    return level - 1 === 0 ? 'Title' : `Heading ${level - 1}`
   } else if (nodeType === 'paragraph') {
     const msg = [
       'Type your thoughts here ...',
@@ -174,13 +165,13 @@ const generatePlaceholderText = ({ node }) => {
       'Develop your concepts with clarity ...',
       'Forge your ideas into a cohesive whole ...',
       'Carve out your ideas with precision ...',
-    ];
+    ]
 
-    return msg[Math.floor(Math.random() * msg.length + 1)];
+    return msg[Math.floor(Math.random() * msg.length + 1)]
   }
 
-  return null;
-};
+  return null
+}
 
 const Editor = ({
   padName,
@@ -190,7 +181,6 @@ const Editor = ({
   spellcheck = false,
   children,
 }) => {
-
   if (!provider) {
     return {
       extensions: [
@@ -216,8 +206,7 @@ const Editor = ({
     onCreate: (editor) => {
       scrollDown()
     },
-    onUpdate: (editor) => {
-    },
+    onUpdate: (editor) => {},
     onTransaction({ editor, transaction }) {
       //   // The editor state has changed.
       // console.log('onTransaction', {
@@ -321,7 +310,7 @@ const Editor = ({
       }),
       Placeholder.configure({
         includeChildren: true,
-        placeholder: generatePlaceholderText
+        placeholder: generatePlaceholderText,
       }),
     ],
     defualtContent: '',

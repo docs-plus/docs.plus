@@ -4,22 +4,23 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
 const Placeholder = Extension.create({
   name: 'placeholder',
-  addOptions () {
+  addOptions() {
     return {
       emptyEditorClass: 'is-editor-empty',
       emptyNodeClass: 'is-empty',
       placeholder: 'Write something …',
       showOnlyWhenEditable: true,
       showOnlyCurrent: true,
-      includeChildren: false
+      includeChildren: false,
     }
   },
-  addProseMirrorPlugins () {
+  addProseMirrorPlugins() {
     return [
       new Plugin({
         props: {
           decorations: ({ doc, selection }) => {
-            const active = this.editor.isEditable || !this.options.showOnlyWhenEditable
+            const active =
+              this.editor.isEditable || !this.options.showOnlyWhenEditable
             const { anchor } = selection
             const decorations = []
 
@@ -27,7 +28,7 @@ const Placeholder = Extension.create({
               return null
             }
             doc.descendants((node, pos) => {
-              const hasAnchor = anchor >= pos && anchor <= (pos + node.nodeSize)
+              const hasAnchor = anchor >= pos && anchor <= pos + node.nodeSize
               const isEmpty = !node.isLeaf && !node.childCount
 
               if ((hasAnchor || !this.options.showOnlyCurrent) && isEmpty) {
@@ -38,14 +39,15 @@ const Placeholder = Extension.create({
                 }
                 const decoration = Decoration.node(pos, pos + node.nodeSize, {
                   class: classes.join(' '),
-                  'data-placeholder': typeof this.options.placeholder === 'function'
-                    ? this.options.placeholder({
-                      editor: this.editor,
-                      node,
-                      pos,
-                      hasAnchor
-                    })
-                    : this.options.placeholder
+                  'data-placeholder':
+                    typeof this.options.placeholder === 'function'
+                      ? this.options.placeholder({
+                          editor: this.editor,
+                          node,
+                          pos,
+                          hasAnchor,
+                        })
+                      : this.options.placeholder,
                 })
 
                 decorations.push(decoration)
@@ -55,11 +57,11 @@ const Placeholder = Extension.create({
             })
 
             return DecorationSet.create(doc, decorations)
-          }
-        }
-      })
+          },
+        },
+      }),
     ]
-  }
+  },
 })
 
 export { Placeholder, Placeholder as default }
