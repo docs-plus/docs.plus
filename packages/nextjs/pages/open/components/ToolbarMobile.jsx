@@ -7,8 +7,8 @@ import {
   InsertLinkMobile,
 } from '../../../components/icons/Icons'
 
-const Toolbar = ({ editor }) => {
-  const setLink = useCallback(() => {
+const setLink = (editor) => {
+  return () => {
     const previousUrl = editor.getAttributes('link').href
     const url = window.prompt('URL', previousUrl)
 
@@ -30,7 +30,13 @@ const Toolbar = ({ editor }) => {
 
     // update link
     editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
-  }, [editor])
+  }
+}
+
+const Toolbar = ({ editor }) => {
+  if (!editor) {
+    return null
+  }
 
   return (
     <div className="tiptap__toolbar text-blue-700 editorButtons justify-evenly flex flex-row items-center py-1 px-4">
