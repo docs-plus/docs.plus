@@ -41,7 +41,6 @@ export default () => {
     extensions: []
   }
 
-
   if (checkEnvBolean(HOCUSPOCUS_THROTTLE)) {
     const throttle = new Throttle({
       // [optional] allows up to 15 connection attempts per ip address per minute.
@@ -86,7 +85,7 @@ export default () => {
     Serverconfigure.extensions.push(database)
   }
 
-  if (NODE_ENV === 'production') {
+  if (true) {
     const database = new Database({
       // Return a Promise to retrieve data …
       fetch: async ({ documentName, context }) => {
