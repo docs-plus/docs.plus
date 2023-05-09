@@ -191,6 +191,18 @@ const Blockquote = Node.create({
           .scrollIntoView()
           .run()
       },
+      ...this.options.levels.reduce(
+        (items, level) => ({
+          ...items,
+          ...{
+            [`Mod-Alt-${level}`]: () =>
+              this.editor.commands.wrapBlock({
+                level: level,
+              }),
+          },
+        }),
+        {}
+      ),
     }
   },
   addProseMirrorPlugins() {
