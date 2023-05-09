@@ -4,6 +4,8 @@ FROM node:alpine3.10
 
 ARG ENVIRONMENT
 
+ENV NODE_ENV=production
+
 WORKDIR /app
 
 # Print the value of the ENVIRONMENT variable
