@@ -150,7 +150,7 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
           onClick={toggleToolbar}
           className={`btn_bigBluePencil ${
             !isKeyboardOpen ? 'block active' : 'hidden'
-          } w-14 h-14 z-50 outline-none fixed bottom-12 right-8 rounded-full drop-shadow-md flex align-middle items-center justify-center`}>
+          } w-14 h-14 z-10 outline-none fixed bottom-12 right-8 rounded-full drop-shadow-md flex align-middle items-center justify-center`}>
           <Pencil size={25} />
         </button>
       </div>
