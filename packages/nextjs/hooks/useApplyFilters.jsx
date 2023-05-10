@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect } from 'react'
 
 const getHeaderParents = (heading) => {
   if (!heading) return
@@ -6,7 +6,7 @@ const getHeaderParents = (heading) => {
   const parents = []
   // loop through the headings to find the parent heading untile the level is 1
   for (let i = +hLevel; i >= 1; i--) {
-    const pHeading = heading.closest(`[level="${ i }"]`)?.querySelector('.title')
+    const pHeading = heading.closest(`[level="${i}"]`)?.querySelector('.title')
     if (pHeading)
       parents.push({
         node: pHeading,
@@ -19,9 +19,15 @@ const getHeaderParents = (heading) => {
   return parents
 }
 
-const useApplyFilters = (editor, slugs, applyingFilters, setApplyingFilters, router, rendering) => {
+const useApplyFilters = (
+  editor,
+  slugs,
+  setApplyingFilters,
+  router,
+  rendering
+) => {
   useEffect(() => {
-    if (!editor || rendering || slugs.length === 1) return;
+    if (!editor || rendering || slugs.length === 1) return
 
     const headings = document.querySelectorAll('.heading .title')
 
@@ -81,8 +87,7 @@ const useApplyFilters = (editor, slugs, applyingFilters, setApplyingFilters, rou
     localStorage.setItem('headingMap', JSON.stringify(dbMap))
 
     setApplyingFilters(false)
-  }, [editor, rendering]);
-};
-
+  }, [rendering])
+}
 
 export default useApplyFilters

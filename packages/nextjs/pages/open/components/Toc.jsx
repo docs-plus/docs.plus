@@ -3,9 +3,9 @@ import TableOfcontentLoader from '../../../components/TableOfContentsLoader'
 import { useEditorStateContext } from '../../../context/EditorContext'
 
 const TOC = ({ className = '', editor }) => {
-  const { loading, applyingFilters } = useEditorStateContext()
+  const { loading, applyingFilters, rendering } = useEditorStateContext()
 
-  if (loading || !editor) {
+  if (loading || !editor || applyingFilters || rendering) {
     return (
       <div>
         <TableOfcontentLoader className="mt-6" />

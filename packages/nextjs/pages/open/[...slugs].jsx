@@ -36,7 +36,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     if (slugs.length > 1) {
       setApplyingFilters(true)
     }
-  })
+  }, [slugs, setApplyingFilters])
 
   const { documentTitle, docId, isLoading, error, isSuccess } =
     useDocumentMetadata(docSlug, docTitle, slugs)
