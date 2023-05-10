@@ -1,126 +1,115 @@
-import { PrismaClient } from '@prisma/client'
-import { checkEnvBolean } from './utils/index.mjs'
+import * as Y from 'yjs'
 import cryptoRandomString from 'crypto-random-string'
+
+import { PrismaClient } from '@prisma/client'
+import { generateJSON } from '@tiptap/html'
+import Document from '@tiptap/extension-document'
+import Paragraph from '@tiptap/extension-paragraph'
+import Text from '@tiptap/extension-text'
+import Bold from '@tiptap/extension-bold'
+import { TiptapTransformer } from "@hocuspocus/transformer"
 import { Database } from '@hocuspocus/extension-database'
 import { SQLite } from '@hocuspocus/extension-sqlite'
-
 import { Throttle } from '@hocuspocus/extension-throttle'
 import { Redis } from '@hocuspocus/extension-redis'
 import { Logger } from '@hocuspocus/extension-logger'
 
-export default () => {
-  const {
-    APP_NAME,
-    HOCUSPOCUS_LOGGER,
-    HOCUSPOCUS_THROTTLE,
-    HOCUSPOCUS_THROTTLE_ATTEMPTS,
-    HOCUSPOCUS_THROTTLE_BANTIME,
-    HOCUSPOCUS_LOGGER_ON_LOAD_DOCUMENT,
-    HOCUSPOCUS_LOGGER_ON_CHANGE,
-    HOCUSPOCUS_LOGGER_ON_CONNECT,
-    HOCUSPOCUS_LOGGER_ON_DISCONNECT,
-    HOCUSPOCUS_LOGGER_ON_UPGRADE,
-    HOCUSPOCUS_LOGGER_ON_REQUEST,
-    HOCUSPOCUS_LOGGER_ON_LISTEN,
-    HOCUSPOCUS_LOGGER_ON_DESTROY,
-    HOCUSPOCUS_LOGGER_ON_CONFIGURE,
-    DATABASE_TYPE,
-    REDIS,
-    REDIS_HOST,
-    REDIS_PORT,
-    HOCUSPOCUS_PORT,
-    NODE_ENV
+import { checkEnvBolean } from './utils/index.mjs'
+const prisma = new PrismaClient()
 
-  } = process.env
+const getServerName = () => `${ process.env.APP_NAME }_${ cryptoRandomString({ length: 4, type: 'alphanumeric' }) }`;
 
-  const prisma = new PrismaClient()
+const generateDefaultState = () => {
+  const html = `<h1>&shy;</h1>
+  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>
+  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>
+  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>
+  `;
 
-  const Serverconfigure = {
-    name: `${ APP_NAME }_${ cryptoRandomString({ length: 4, type: 'alphanumeric' }) }`,
-    port: HOCUSPOCUS_PORT,
-    extensions: []
+  const json = generateJSON(html, [Document, Paragraph, Text, Bold]);
+
+  const defaultDoc = TiptapTransformer.toYdoc(json);
+
+  return Y.encodeStateAsUpdate(defaultDoc);
+};
+
+const configureExtensions = () => {
+  const extensions = [];
+
+  if (checkEnvBolean(process.env.HOCUSPOCUS_THROTTLE)) {
+    extensions.push(new Throttle({
+      throttle: +process.env.HOCUSPOCUS_THROTTLE_ATTEMPTS,
+      banTime: +process.env.HOCUSPOCUS_THROTTLE_BANTIME
+    }));
   }
 
-  if (checkEnvBolean(HOCUSPOCUS_THROTTLE)) {
-    const throttle = new Throttle({
-      // [optional] allows up to 15 connection attempts per ip address per minute.
-      // set to null or false to disable throttling, defaults to 15
-      throttle: +HOCUSPOCUS_THROTTLE_ATTEMPTS,
+  if (checkEnvBolean(process.env.HOCUSPOCUS_LOGGER)) {
+    extensions.push(new Logger({
+      onLoadDocument: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_LOAD_DOCUMENT),
+      onChange: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_CHANGE),
+      onConnect: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_CONNECT),
+      onDisconnect: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_DISCONNECT),
+      onUpgrade: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_UPGRADE),
+      onRequest: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_REQUEST),
+      onListen: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_LISTEN),
+      onDestroy: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_DESTROY),
+      onConfigure: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_CONFIGURE)
 
-      // [optional] bans ip addresses for 5 minutes after reaching the threshold
-      // defaults to 5
-      banTime: +HOCUSPOCUS_THROTTLE_BANTIME
-    })
-    Serverconfigure.extensions.push(throttle)
+    }));
   }
 
-  if (checkEnvBolean(HOCUSPOCUS_LOGGER)) {
-    const logger = new Logger({
-      onLoadDocument: checkEnvBolean(HOCUSPOCUS_LOGGER_ON_LOAD_DOCUMENT),
-      onChange: checkEnvBolean(HOCUSPOCUS_LOGGER_ON_CHANGE),
-      onConnect: checkEnvBolean(HOCUSPOCUS_LOGGER_ON_CONNECT),
-      onDisconnect: checkEnvBolean(HOCUSPOCUS_LOGGER_ON_DISCONNECT),
-      onUpgrade: checkEnvBolean(HOCUSPOCUS_LOGGER_ON_UPGRADE),
-      onRequest: checkEnvBolean(HOCUSPOCUS_LOGGER_ON_REQUEST),
-      onListen: checkEnvBolean(HOCUSPOCUS_LOGGER_ON_LISTEN),
-      onDestroy: checkEnvBolean(HOCUSPOCUS_LOGGER_ON_DESTROY),
-      onConfigure: checkEnvBolean(HOCUSPOCUS_LOGGER_ON_CONFIGURE)
-    })
-    Serverconfigure.extensions.push(logger)
+  if (checkEnvBolean(process.env.REDIS)) {
+    extensions.push(new Redis({
+      host: process.env.REDIS_HOST,
+      port: +process.env.REDIS_PORT
+    }));
   }
 
-  if (checkEnvBolean(REDIS)) {
-    const redis = new Redis({
-      // [required] Hostname of your Redis instance
-      host: REDIS_HOST,
-
-      // [required] Port of your Redis instance
-      port: +REDIS_PORT
-    })
-    Serverconfigure.extensions.push(redis)
+  if (process.env.DATABASE_TYPE === 'SQLite') {
+    extensions.push(new SQLite({ database: 'db.sqlite' }));
   }
 
-  if (DATABASE_TYPE === 'SQLite') {
-    const database = new SQLite({ database: 'db.sqlite' })
-    Serverconfigure.extensions.push(database)
-  }
-
-  if (true) {
-    const database = new Database({
-      // Return a Promise to retrieve data …
+  if (process.env.NODE_ENV === "production") {
+    extensions.push(new Database({
       fetch: async ({ documentName, context }) => {
-        const doc = await prisma.documents.findMany({
-          take: 1,
-          where: {
-            documentId: documentName
-          },
-          orderBy: {
-            id: 'desc'
-          }
-        }).catch(async err => {
-          console.log('eeroroor', err)
-          await prisma.$disconnect()
-          // process.exit(1)
-        })
-        return doc[0]?.data
-      },
-      // … and a Promise to store data:
-      store: async ({ documentName, state, context }) => {
-        return prisma.documents.create({
-          data: {
-            documentId: documentName,
-            data: state
-          }
-        }).catch(async _err => {
-          console.log('eeroroor', _err)
-          await prisma.$disconnect()
-          // process.exit(1)
-        })
-      }
-    })
+        try {
+          const doc = await prisma.documents.findMany({
+            take: 1,
+            where: { documentId: documentName },
+            orderBy: { id: 'desc' }
+          });
 
-    Serverconfigure.extensions.push(database)
+          return doc[0]?.data || generateDefaultState();
+        } catch (err) {
+          console.error('Error fetching data:', err);
+          await prisma.$disconnect();
+          throw err;
+        }
+      },
+      store: async ({ documentName, state, context }) => {
+        try {
+          return await prisma.documents.create({
+            data: {
+              documentId: documentName,
+              data: state
+            }
+          });
+        } catch (err) {
+          console.error('Error storing data:', err);
+          await prisma.$disconnect();
+          throw err;
+        }
+      }
+    }));
   }
 
-  return Serverconfigure
-}
+  return extensions;
+};
+
+export default () => {
+  return {
+    name: getServerName(),
+    port: process.env.HOCUSPOCUS_PORT,
+    extensions: configureExtensions()
+  }
+};

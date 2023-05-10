@@ -59,34 +59,8 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     rendering
   )
 
-  function setDefaultContent(editor) {
-    const contentLength = editor?.getHTML().trim().length
-    if (contentLength === 70 || contentLength === 97) {
-      editor
-        ?.chain()
-        .focus('start')
-        .insertContentAt(
-          2,
-          '' +
-            '<h1>&shy;</h1>' +
-            '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
-            '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
-            '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>' +
-            '<p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>',
-          {
-            updateSelection: false,
-          }
-        )
-        .setTextSelection(0)
-        .run()
-    } else {
-      // editor.editor?.chain().focus('start').setTextSelection(0).run()
-    }
-  }
-
   useEffect(() => {
     if (!editor || loading) return
-    setDefaultContent(editor)
     setRendering(false)
   }, [editor, loading, setRendering])
 
