@@ -34,6 +34,7 @@
     "@hocuspocus/extension-sqlite": "^2.0.1",
     "@hocuspocus/extension-throttle": "^2.0.1",
     "@hocuspocus/server": "^2.0.1",
+    "@hocuspocus/transformer": "^2.0.6",
     "@prisma/client": "^4.8.1",
     "@tiptap/extension-document": "^2.0.3",
     "@tiptap/extension-paragraph": "^2.0.3",
