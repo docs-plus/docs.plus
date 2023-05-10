@@ -22,6 +22,7 @@ const getHeaderParents = (heading) => {
 const useApplyFilters = (
   editor,
   slugs,
+  applyingFilters,
   setApplyingFilters,
   router,
   rendering
@@ -86,7 +87,11 @@ const useApplyFilters = (
 
     localStorage.setItem('headingMap', JSON.stringify(dbMap))
 
-    setApplyingFilters(false)
+    const timer = setTimeout(() => {
+      setApplyingFilters(false)
+    }, 300)
+
+    return () => clearTimeout(timer)
   }, [rendering])
 }
 
