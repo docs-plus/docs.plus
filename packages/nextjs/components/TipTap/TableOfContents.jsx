@@ -69,7 +69,7 @@ const TableOfContent = ({ editor, className }) => {
       clearTimeout(timer)
       clearTimeout(trTimer)
     }
-  }, [editor, handleUpdate])
+  }, [editor, applyingFilters])
 
   useEffect(() => {
     const transaction = editor.state.tr
@@ -81,7 +81,7 @@ const TableOfContent = ({ editor, className }) => {
     }, 200)
 
     return () => clearTimeout(timer)
-  }, [applyingFilters, editor, handleUpdate])
+  }, [])
 
   const scroll2Header = (e) => {
     e.preventDefault()
@@ -162,6 +162,11 @@ const TableOfContent = ({ editor, className }) => {
     }
 
     return renderedItems
+  }
+
+  if (items.length) {
+    const { id, offsetTop } = items.at(-1)
+    if (id === '1' && offsetTop === 0) return null
   }
 
   return (
