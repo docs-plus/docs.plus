@@ -6,7 +6,6 @@ import { generateJSON } from '@tiptap/html'
 import Document from '@tiptap/extension-document'
 import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
-import Bold from '@tiptap/extension-bold'
 import { TiptapTransformer } from "@hocuspocus/transformer"
 import { Database } from '@hocuspocus/extension-database'
 import { SQLite } from '@hocuspocus/extension-sqlite'
@@ -26,7 +25,7 @@ const generateDefaultState = () => {
   <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>
   `;
 
-  const json = generateJSON(html, [Document, Paragraph, Text, Bold]);
+  const json = generateJSON(html, [Document, Paragraph, Text]);
 
   const defaultDoc = TiptapTransformer.toYdoc(json);
 
