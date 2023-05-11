@@ -5,7 +5,7 @@ import {
   ItalicMobile,
   UnderlineMobile,
   InsertLinkMobile,
-} from '../../../components/icons/Icons'
+} from '../../components/icons/Icons'
 
 const setLink = (editor) => {
   return () => {

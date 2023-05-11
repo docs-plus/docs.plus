@@ -1,9 +1,9 @@
 import React from 'react'
 import Link from 'next/link'
 
-import { useEditorStateContext } from '../../../context/EditorContext'
-import DocTitle from '../../../components/TipTap/DocTitle'
-import { Filter, DocsPlus } from '../../../components/icons/Icons'
+import { useEditorStateContext } from '../../context/EditorContext'
+import DocTitle from '../../components/TipTap/DocTitle'
+import { Filter, DocsPlus } from '../../components/icons/Icons'
 import TOC from './Toc'
 
 const TocModal = ({ editor, docId, docTitle }) => {

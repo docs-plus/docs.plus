@@ -1,6 +1,6 @@
-import TableOfContents from '../../../components/TipTap/TableOfContents'
-import TableOfcontentLoader from '../../../components/TableOfContentsLoader'
-import { useEditorStateContext } from '../../../context/EditorContext'
+import TableOfContents from '../../components/TipTap/TableOfContents'
+import TableOfcontentLoader from '../../components/TableOfContentsLoader'
+import { useEditorStateContext } from '../../context/EditorContext'
 
 const TOC = ({ className = '', editor }) => {
   const { loading, applyingFilters, rendering } = useEditorStateContext()
