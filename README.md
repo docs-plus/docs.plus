@@ -1,39 +1,48 @@
-# docs.plus
+[![Generic badge](https://img.shields.io/badge/version-2.0.0-green.svg)](https://docs.plus)
+[![MIT license](https://img.shields.io/badge/License-Apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
 
-docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge in a hierarchical manner. By leveraging the power of open-source technologies, docs.plus makes it easy for communities to collaborate on documents and share knowledge in a structured, logical way.
+# 📚Docs.plus
 
-# 🚀 Prerequisites & Installation
+Docs.plus is a free, real-time collaboration tool. It helps communities share and organize information logically and hierarchically. Simply put, it uses open-source technologies to make teamwork on documents and knowledge sharing straightforward and effective.
 
-Local Develop:
-This project is monorepo, to reach this aim we used the Yarn [Workspaces].(<https://yarnpkg.com/features/workspaces/#gatsby-focus-wrapper>)
 
-## Develop the Editor
+# 🚀 Getting Started
 
-``` bash
-# 1. install dependencies
-yarn
+Docs.plus is organized as a monorepo and relies on Yarn [Workspaces](<https://yarnpkg.com/features/workspaces/#gatsby-focus-wrapper>) to manage dependencies and synchronize versions across different packages.
 
-# 2. run front-end and back-end for development
-make local
+## Setting Up Your Development Environment
+To get started with Docs.plus, follow these steps:
+
+```bash
+# Clone the repository
+$ git clone https://github.com/docs-plus/docs.plus.git
+
+# Install dependencies
+$ yarn
+
+# Start the front-end and back-end development servers
+$ make local
 ```
 
-# Contact
+# 📫 Connect With Us
 
-If you have any further questions, please don’t hesitate, you can reach us by the following:
+We're always excited to hear from our users! If you have questions, suggestions, or just want to chat, reach out to us through:
 
 > Join our [Discussions](https://github.com/docs-plus/docs.plus/discussions) and help make docs.plus even better.
+
 
 - Twitter: [@docsdotplus](https://twitter.com/docsdotplus)
 - Github: [docs.plus](https://github.com/nwspk/docs.plus)
 - Slack: [docsplus](docsplus.slack.com)
 - Email: [contact@newspeak.house](mailto:contact@newspeak.house)
 
-# License
+# 📜 License
+Docs.plus is licensed under the [Apache License v2](http://www.apache.org/licenses/LICENSE-2.0.html). This permissive license grants you the freedom to use, modify, distribute, and even sell your modifications under the same terms.
 
-This project is licensed under the [Apache License v2](http://www.apache.org/licenses/LICENSE-2.0.html) License
-
-# Support
-
-**docs.plus** is free and open source, please help us stay online:
+# Support Our Project
+Docs.plus is a free and open-source project. Keeping it running and constantly improving it requires resources. If you find our project valuable and are in a position to support us, we'd be extremely grateful:
 
 <a href="https://patreon.com/docsplus"><img src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Ddocsplus%26type%3Dpatrons&style=for-the-badge" /> </a>
+
+Your support enables us to maintain our servers and continue enhancing this platform for the benefit of all. Thank you in advance for your generosity.
