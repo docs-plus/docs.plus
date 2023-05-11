@@ -8,7 +8,7 @@
     "update:packages": "ncu -u"
   },
   "engines": {
-    "node": ">=18.16.0",
+    "node": ">=18.15.0",
     "npm": "please-use-yarn"
   },
   "dependencies": {
