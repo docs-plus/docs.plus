@@ -7,11 +7,15 @@
   "scripts": {
     "update:packages": "ncu -u"
   },
+  "engines": {
+    "node": ">=18.16.0",
+    "npm": "please-use-yarn"
+  },
   "dependencies": {
     "uuid": "^9.0.0",
-    "bson": "^4.7.1"
+    "bson": "^5.3.0"
   },
   "devDependencies": {
-    "npm-check-updates": "^16.6.2"
+    "npm-check-updates": "^16.10.12"
   }
 }
