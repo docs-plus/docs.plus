@@ -68,17 +68,24 @@
     {
       "name": "Demo page",
       "url": "/demo",
-      "description": "Navigate to the demo page to see Docs.plus in action."
-    },
-    {
-      "name": "About Docs.plus",
-      "url": "/about",
-      "description": "Learn more about Docs.plus and its mission."
+      "description": "Navigate to the demo page to see Docs.plus in action.",
+      "icons": [
+        {
+          "src": "icons/android-chrome-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
     },
     {
       "name": "Docs.plus on GitHub",
       "url": "http://github.com/docs-plus/docs.plus",
-      "description": "Visit our GitHub repository to view the source code, contribute, or report issues."
+      "description": "Visit our GitHub repository to view the source code, contribute, or report issues.",
+      "icons": [
+        {
+          "src": "icons/github-mark-white.png",
+          "sizes": "230×225"
+        }
+      ]
     }
   ],
   "splash_pages": null
