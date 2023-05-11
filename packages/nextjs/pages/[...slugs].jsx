@@ -8,8 +8,8 @@ import useYdocAndProvider from '../hooks/useYdocAndProvider'
 import useApplyFilters from '../hooks/useApplyFilters'
 import useDocumentMetadata from '../hooks/useDocumentMetadata'
 
-import MobileLayout from './open/layouts/MobileLayout'
-import DesktopLayout from './open/layouts/DesktopLayout'
+import MobileLayout from './layouts/MobileLayout'
+import DesktopLayout from './layouts/DesktopLayout'
 
 const OpenDocuments = ({ docTitle, docSlug }) => {
   const router = useRouter()

@@ -1,7 +1,7 @@
 import { EditorContent } from '@tiptap/react'
-import DocumentWithPuctureLoader from '../../../components/DocumentWithPictureLoader'
-import DocumentSimpleLoader from '../../../components/DocumentSimpleLoader'
-import { useEditorStateContext } from '../../../context/EditorContext'
+import DocumentWithPuctureLoader from '../../components/DocumentWithPictureLoader'
+import DocumentSimpleLoader from '../../components/DocumentSimpleLoader'
+import { useEditorStateContext } from '../../context/EditorContext'
 
 const Editor = ({ editor }) => {
   const { loading, applyingFilters } = useEditorStateContext()
