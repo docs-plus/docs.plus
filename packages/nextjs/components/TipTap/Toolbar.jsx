@@ -196,18 +196,18 @@ const Toolbar = ({ editor }) => {
 
     if (e.key === 'Enter') {
       // TODO: fix this hack
-      // router.push(`/open/${router.query.slugs.at(0)}/${search}`, undefined, {
+      // router.push(`/${router.query.slugs.at(0)}/${search}`, undefined, {
       //   shallow: false,
       // })
       const mainDoc = router.query.slugs.at(0)
-      window.location.href = `/open/${mainDoc}/${encodeURIComponent(search)}`
+      window.location.href = `/${mainDoc}/${encodeURIComponent(search)}`
     }
   }
 
   const applySerchThroughHeading = () => {
     const search = filterSearchRef.current.value
     const mainDoc = router.query.slugs.at(0)
-    window.location.href = `/open/${mainDoc}/${encodeURIComponent(search)}`
+    window.location.href = `/${mainDoc}/${encodeURIComponent(search)}`
   }
 
   return (

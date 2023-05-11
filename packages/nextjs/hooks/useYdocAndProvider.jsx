@@ -1,19 +1,19 @@
-import { useState, useEffect } from 'react';
-import * as Y from 'yjs';
-import { IndexeddbPersistence } from 'y-indexeddb';
-import { HocuspocusProvider } from '@hocuspocus/provider';
+import { useState, useEffect } from 'react'
+import * as Y from 'yjs'
+import { IndexeddbPersistence } from 'y-indexeddb'
+import { HocuspocusProvider } from '@hocuspocus/provider'
 
 const useYdocAndProvider = (docId, setLoading) => {
-  const [ydoc, setYdoc] = useState(null);
-  const [provider, setProvider] = useState(null);
-  const [loadedData, setLoadedData] = useState(false);
+  const [ydoc, setYdoc] = useState(null)
+  const [provider, setProvider] = useState(null)
+  const [loadedData, setLoadedData] = useState(false)
 
   useEffect(() => {
     if (docId) {
-      const ydoc = new Y.Doc();
+      const ydoc = new Y.Doc()
 
       const colabProvider = new HocuspocusProvider({
-        url: `${ process.env.NEXT_PUBLIC_PROVIDER_URL }`,
+        url: `${process.env.NEXT_PUBLIC_PROVIDER_URL}`,
         name: docId,
         document: ydoc,
         onStatus: (data) => {
@@ -46,14 +46,14 @@ const useYdocAndProvider = (docId, setLoading) => {
       // )
 
       // indexDbProvider.on('synced', () => {
-      //   console.log(`content loaded from indexdb, pad name: ${ docId }`)
+      //   console.log(`content loaded from indexdb, pad name: ${docId}`)
       //   if (!loadedData) return
       //   setLoadedData(true)
       // })
     }
-  }, [docId]);
+  }, [docId])
 
-  return { ydoc, provider, loadedData, setLoadedData };
-};
+  return { ydoc, provider, loadedData, setLoadedData }
+}
 
 export default useYdocAndProvider
