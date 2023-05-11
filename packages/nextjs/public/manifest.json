@@ -1,10 +1,10 @@
 {
   "name": "Docs.plus",
   "short_name": "Docs.plus",
+  "description": "Docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge efficiently. It leverages open-source technologies to make document collaboration and knowledge sharing straightforward and effective.",
   "background_color": "#3367D6",
-  "display": "standalone",
   "theme_color": "#3367D6",
-  "description": "A real-time collaborative",
+  "display": "standalone",
   "start_url": "/",
   "scope": "/",
   "icons": [
@@ -49,9 +49,36 @@
   ],
   "screenshots": [
     {
-      "src": "icons/screenshot1.png",
+      "src": "icons/screenshot1.jpg",
       "type": "image/png",
       "sizes": "1244x1370"
+    },
+    {
+      "src": "icons/screenshot2.jpg",
+      "type": "image/png",
+      "sizes": "1244x1370"
+    },
+    {
+      "src": "icons/screenshot3.jpg",
+      "type": "image/png",
+      "sizes": "1244x1370"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Demo page",
+      "url": "/demo",
+      "description": "Navigate to the demo page to see Docs.plus in action."
+    },
+    {
+      "name": "About Docs.plus",
+      "url": "/about",
+      "description": "Learn more about Docs.plus and its mission."
+    },
+    {
+      "name": "Docs.plus on GitHub",
+      "url": "http://github.com/docs-plus/docs.plus",
+      "description": "Visit our GitHub repository to view the source code, contribute, or report issues."
     }
   ],
   "splash_pages": null
