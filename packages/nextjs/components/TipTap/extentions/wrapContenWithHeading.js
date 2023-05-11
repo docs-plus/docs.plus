@@ -108,7 +108,6 @@ const constWrapContentWithHeading = (arrg, attributes) => {
     let mapHPost = titleHMap
 
     for (const heading of contentWrapperHeadings) {
-
       mapHPost = getPrevHeadingList(
         tr,
         mapHPost.at(0).startBlockPos,

@@ -39,7 +39,7 @@ const FilterModal = () => {
   const applySearch = () => {
     const search = filterSearchRef.current.value
     const mainDoc = router.query.slugs.at(0)
-    window.location.href = `/open/${mainDoc}/${encodeURIComponent(search)}`
+    window.location.href = `/${mainDoc}/${encodeURIComponent(search)}`
   }
 
   const closeFilterModal = () => {

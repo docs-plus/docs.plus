@@ -1,15 +1,15 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react'
 import { useRouter } from 'next/router'
 import { useEditor } from '@tiptap/react'
-import editorConfig from '../../components/TipTap/TipTap'
-import { useEditorStateContext } from '../../context/EditorContext'
+import editorConfig from '../components/TipTap/TipTap'
+import { useEditorStateContext } from '../context/EditorContext'
 
-import useYdocAndProvider from '../../hooks/useYdocAndProvider'
-import useApplyFilters from '../../hooks/useApplyFilters'
-import useDocumentMetadata from '../../hooks/useDocumentMetadata'
+import useYdocAndProvider from '../hooks/useYdocAndProvider'
+import useApplyFilters from '../hooks/useApplyFilters'
+import useDocumentMetadata from '../hooks/useDocumentMetadata'
 
-import MobileLayout from './layouts/MobileLayout'
-import DesktopLayout from './layouts/DesktopLayout'
+import MobileLayout from './open/layouts/MobileLayout'
+import DesktopLayout from './open/layouts/DesktopLayout'
 
 const OpenDocuments = ({ docTitle, docSlug }) => {
   const router = useRouter()

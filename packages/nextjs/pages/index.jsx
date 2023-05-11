@@ -19,9 +19,7 @@ export default function Home({ hostname }) {
   const docNameRef = useRef()
   const [loadingDoc, setLoadingDoc] = useState(false)
   const [error, setError] = useState(null)
-  const [namespace, setNamespace] = useState(
-    `${hostname}/${profile?.doc_namespace ? profile?.doc_namespace : 'open'}`
-  )
+  const [namespace, setNamespace] = useState(`${hostname}/`)
 
   // slugify the docNameRef
   const validateDocName = (docSlug) => {
@@ -47,18 +45,17 @@ export default function Home({ hostname }) {
 
     if (!error) {
       setLoadingDoc(false)
-
       return
     }
 
-    if (!user) return router.push(`/open/${slug}`)
+    // if (!user) return router.push(`/${slug}`, undefined, { shallow: true })
 
     // check if profile has a namespace
-    if (!profile?.doc_namespace) {
-      return router.push('/auth/username_needed')
-    }
-
-    router.push(`/${profile?.doc_namespace}/${slug}`)
+    // if (!profile?.doc_namespace) {
+    //   return router.push('/auth/username_needed')
+    // }
+    window.location = `/${slug}`
+    // router.push(`/${slug}`, null, { shallow: true })
   }
 
   const handleKeyDown = (event) => {
@@ -68,11 +65,7 @@ export default function Home({ hostname }) {
   }
 
   useEffect(() => {
-    setNamespace(
-      `${location.host}/${
-        profile?.doc_namespace ? profile?.doc_namespace : 'open'
-      }`
-    )
+    setNamespace(`${location.host}/`)
   }, [])
 
   return (
@@ -162,7 +155,7 @@ export default function Home({ hostname }) {
                 <div className="flex flex-col w-full">
                   <div className="flex flex-col sm:flex-row w-full font-mono text-sm align-middle">
                     <p className="sm:px-2 py-2 leading-6 rounded sm:rounded-l sm:border sm:border-r-0  sm:rounded-r-none">
-                      {namespace}/
+                      {namespace}
                     </p>
                     <input
                       ref={docNameRef}
