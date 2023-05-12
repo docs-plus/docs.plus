@@ -78,8 +78,8 @@
     },
     {
       "name": "Docs.plus on GitHub",
-      "url": "http://github.com/docs-plus/docs.plus",
-      "description": "Visit our GitHub repository to view the source code, contribute, or report issues.",
+      "url": "/github",
+      "description": "Visit our GitHub document to view the source code, contribute, or report issues.",
       "icons": [
         {
           "src": "icons/github-mark-white.png",
