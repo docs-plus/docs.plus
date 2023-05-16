@@ -6,17 +6,27 @@
 
 Docs.plus is a free, real-time collaboration tool. It helps communities share and organize information logically and hierarchically. Simply put, it uses open-source technologies to make teamwork on documents and knowledge sharing straightforward and effective.
 
-
 # 🚀 Getting Started
 
 Docs.plus is organized as a monorepo and relies on Yarn [Workspaces](<https://yarnpkg.com/features/workspaces/#gatsby-focus-wrapper>) to manage dependencies and synchronize versions across different packages.
 
+## Prerequisites
+
+Before you begin, ensure you have met the following requirements:
+
+* Node.js version ">=18.15.0"
+* Yarn - If you don't have Yarn installed, you can follow the [official installation guide](https://yarnpkg.com/getting-started/install).
+
 ## Setting Up Your Development Environment
+
 To get started with Docs.plus, follow these steps:
 
 ```bash
 # Clone the repository
 $ git clone https://github.com/docs-plus/docs.plus.git
+
+# Navigate to the project directory
+$ cd docs.plus
 
 # Install dependencies
 $ yarn
