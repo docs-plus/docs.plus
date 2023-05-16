@@ -15,11 +15,6 @@ Docs.plus is organized as a monorepo and relies on Yarn [Workspaces](<https://ya
 To get started with Docs.plus, follow these steps:
 
 ```bash
-## Setting Up Your Development Environment
-
-To get started with Docs.plus, follow these steps:
-
-```bash
 # Clone the repository
 $ git clone https://github.com/docs-plus/docs.plus.git
 
