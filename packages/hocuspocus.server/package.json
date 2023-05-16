@@ -4,8 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "NODE_ENV=production node index.js",
     "start:production:rest": "NODE_ENV=production npm run prisma:migration && node index.js",
     "start:production:ws": "NODE_ENV=production node -r dotenv/config hocuspocus.server.js",
     "dev": "NODE_ENV=development DATABASE_TYPE=SQLite nodemon index.js",

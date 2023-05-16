@@ -15,16 +15,49 @@ Docs.plus is organized as a monorepo and relies on Yarn [Workspaces](<https://ya
 To get started with Docs.plus, follow these steps:
 
 ```bash
+## Setting Up Your Development Environment
+
+To get started with Docs.plus, follow these steps:
+
+```bash
 # Clone the repository
 $ git clone https://github.com/docs-plus/docs.plus.git
 
 # Install dependencies
 $ yarn
+```
 
+### For Unix-based systems (macOS, Linux)
+
+```bash
 # Start the front-end and back-end development servers
 $ make local
 ```
 
+### For Windows systems
+First, ensure you have PowerShell installed.
+
+To start the development servers, open three separate PowerShell windows and run the following commands in each:
+
+In the first PowerShell window:
+
+```bash
+cd .\packages\hocuspocus.server\
+npm run dev:pg
+```
+In the second PowerShell window:
+
+```bash
+cd .\packages\hocuspocus.server\
+npm run dev:ws
+```
+In the third PowerShell window:
+
+```bash
+cd .\packages\nextjs\
+npm run dev
+```
+These commands start the SQLite database, WebSocket server, and the Next.js server respectively. Now you are ready to develop on Windows!
 # 📫 Connect With Us
 
 We're always excited to hear from our users! If you have questions, suggestions, or just want to chat, reach out to us through:
