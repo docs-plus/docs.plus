@@ -57,7 +57,9 @@ const configureExtensions = () => {
     }));
   }
 
-  if (checkEnvBolean(process.env.REDIS)) {
+  console.log(process.env.NODE_ENV)
+
+  if (process.env.NODE_ENV === "production" && checkEnvBolean(process.env.REDIS)) {
     extensions.push(new Redis({
       host: process.env.REDIS_HOST,
       port: +process.env.REDIS_PORT
