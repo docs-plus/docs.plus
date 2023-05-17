@@ -32,7 +32,9 @@ const DesktopLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
 
   useEffect(() => {
     // when layout change set editor editable again
-    editor?.setEditable(true)
+    // editor?.setEditable(true)
+    const divProseMirror = document.querySelector('.ProseMirror')
+    divProseMirror?.setAttribute('contenteditable', 'true')
     document.querySelector('html').classList.remove('m_mobile')
   })
 

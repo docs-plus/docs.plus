@@ -25,7 +25,9 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
 
   function toggleToolbar() {
     if (!isKeyboardOpen) {
-      editor?.setEditable(true)
+      // editor?.setEditable(true)
+      const divProseMirror = document.querySelector('.ProseMirror')
+      divProseMirror.setAttribute('contenteditable', 'true')
     }
     editor
       .chain()
@@ -45,7 +47,9 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
       setShowToolbar(true)
     } else {
       // Make the editor read-only
-      editor?.setEditable(false)
+      // editor?.setEditable(false)
+      const divProseMirror = document.querySelector('.ProseMirror')
+      divProseMirror?.setAttribute('contenteditable', 'false')
       console.info('keyboard is closed')
       setShowToolbar(false)
     }
@@ -69,7 +73,9 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
     })
 
     // Make the editor read-only
-    editor.setEditable(false)
+    // editor.setEditable(false)
+    const divProseMirror = document.querySelector('.ProseMirror')
+    divProseMirror?.setAttribute('contenteditable', 'false')
 
     const viewportHandler = (event) => {
       event.preventDefault()

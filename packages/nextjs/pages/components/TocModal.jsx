@@ -17,7 +17,9 @@ const TocModal = ({ editor, docId, docTitle }) => {
     modalWrapper.classList.remove('active')
     modalBg.classList.remove('active')
 
-    editor?.setEditable(false)
+    // editor?.setEditable(false)
+    const divProseMirror = document.querySelector('.ProseMirror')
+    divProseMirror.setAttribute('contenteditable', 'false')
 
     modalBg.ontransitionend = () => {
       leftSideModal.classList.add('hidden')
