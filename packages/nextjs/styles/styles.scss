@@ -319,7 +319,7 @@ $crinkle-unfold-bg: #efefef;
       width: 40px;
       align-items: center;
       position: relative;
-      left: -60px;
+      left: -40px;
       z-index: 2;
       visibility: hidden;
       order: 1;
@@ -332,6 +332,7 @@ $crinkle-unfold-bg: #efefef;
         margin-left: 14px;
         color: #ccc;
         cursor: pointer;
+        display: none;
 
         &:hover {
           color: #646cff

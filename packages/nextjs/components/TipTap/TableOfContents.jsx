@@ -92,6 +92,10 @@ const TableOfContent = ({ editor, className }) => {
 
     if (offsetParent === '0') id = '1'
 
+    const url = new URL(window.location.href)
+    url.searchParams.set('id', id)
+    window.history.replaceState({}, '', url)
+
     document.querySelector(`.heading[data-id="${id}"]`)?.scrollIntoView()
   }
 
