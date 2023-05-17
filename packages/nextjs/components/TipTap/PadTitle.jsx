@@ -49,7 +49,10 @@ const PadTitle = ({ docTitle, docId, docSlug, provider, editor }) => {
     const modalBg = leftModal.querySelector('.modalBg')
     modalBg.classList.add('active')
 
-    editor?.setEditable(true)
+    // editor?.setEditable(true)
+    // find div.ProseMirror and add attribute contenteditable=true
+    const divProseMirror = document.querySelector('.ProseMirror')
+    divProseMirror.setAttribute('contenteditable', 'true')
 
     setTimeout(() => {
       leftModal.querySelector('.modalWrapper').classList.add('active')
