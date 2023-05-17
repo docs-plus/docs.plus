@@ -65,10 +65,14 @@ const configureExtensions = () => {
   }
 
   if (process.env.DATABASE_TYPE === 'SQLite') {
-    extensions.push(new SQLite({ database: 'db.sqlite' }));
+    extensions.push(
+      new SQLite({
+        database: 'db.sqlite',
+      })
+    );
   }
 
-  if (process.env.NODE_ENV === "production") {
+  if (process.env.DATABASE_TYPE === "PostgreSQL") {
     extensions.push(new Database({
       fetch: async ({ documentName, context }) => {
         try {
