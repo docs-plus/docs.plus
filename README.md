@@ -1,25 +1,24 @@
-[![Generic badge](https://img.shields.io/badge/version-2.0.0-green.svg)](https://docs.plus)
-[![MIT license](https://img.shields.io/badge/License-Apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
-
 # 📚Docs.plus
 
-Docs.plus is a free, real-time collaboration tool. It helps communities share and organize information logically and hierarchically. Simply put, it uses open-source technologies to make teamwork on documents and knowledge sharing straightforward and effective.
+[![Generic badge](https://img.shields.io/badge/version-2.0.0-green.svg)](https://docs.plus)
+[![Apache License](https://img.shields.io/badge/License-Apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
 
-# 🚀 Getting Started
+Docs.plus is a free, real-time collaboration tool built on open-source technologies. It empowers communities to share and organize information logically and hierarchically, making teamwork and knowledge sharing straightforward and effective.
 
-Docs.plus is organized as a monorepo and relies on Yarn [Workspaces](<https://yarnpkg.com/features/workspaces/#gatsby-focus-wrapper>) to manage dependencies and synchronize versions across different packages.
+## 🚀 Quick Start
 
-## Prerequisites
+**Prerequisites:**
 
-Before you begin, ensure you have met the following requirements:
+- Node.js (version ">=18.15.0")
+- [Yarn](https://yarnpkg.com/getting-started/install)
+- PostgreSQL (downloadable from the [official PostgreSQL website](https://www.postgresql.org/download/)) or Docker for running a PostgreSQL container.
 
-* Node.js version ">=18.15.0"
-* Yarn - If you don't have Yarn installed, you can follow the [official installation guide](https://yarnpkg.com/getting-started/install).
+Docs.plus is organized as a monorepo and uses Yarn [Workspaces](<https://yarnpkg.com/features/workspaces/#gatsby-focus-wrapper>) for managing dependencies and synchronizing versions across different packages.
 
-## Setting Up Your Development Environment
+## 🛠 Setting Up Your Development Environment
 
-To get started with Docs.plus, follow these steps:
+Follow these steps to get started with Docs.plus:
 
 ```bash
 # Clone the repository
@@ -32,55 +31,62 @@ $ cd docs.plus
 $ yarn
 ```
 
-### For Unix-based systems (macOS, Linux)
+### PostgreSQL Database Setup
+
+Set up a PostgreSQL database accessible to your development environment. If using Docker, here's a basic command to start a PostgreSQL container:
 
 ```bash
-# Start the front-end and back-end development servers
-$ make local
+docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgres
 ```
 
-### For Windows systems
-First, ensure you have PowerShell installed.
+More details on the PostgreSQL Docker image are available in the [official Docker documentation](https://docs.docker.com/samples/postgres/).
 
-To start the development servers, open three separate PowerShell windows and run the following commands in each:
+### Running the Project
 
-In the first PowerShell window:
+**Unix-based systems (macOS, Linux):**
 
 ```bash
+./run_dev.sh
+```
+
+**Windows systems:**
+Ensure PowerShell is installed. Then, to start the development servers, open three separate PowerShell windows and run the following commands:
+
+```bash
+# PowerShell Window 1
 cd .\packages\hocuspocus.server\
-npm run dev:pg
-```
-In the second PowerShell window:
+npm run dev
 
-```bash
+# PowerShell Window 2
 cd .\packages\hocuspocus.server\
 npm run dev:ws
-```
-In the third PowerShell window:
 
-```bash
+# PowerShell Window 3
 cd .\packages\nextjs\
 npm run dev
 ```
-These commands start the SQLite database, WebSocket server, and the Next.js server respectively. Now you are ready to develop on Windows!
-# 📫 Connect With Us
 
-We're always excited to hear from our users! If you have questions, suggestions, or just want to chat, reach out to us through:
+💡 We're actively seeking contributors to improve our Windows setup instructions. If you can assist, we'd be thrilled! Your contribution will enhance the accessibility of Docs.plus for Windows users and foster our community's growth. All collaboration is warmly welcomed!
 
-> Join our [Discussions](https://github.com/docs-plus/docs.plus/discussions) and help make docs.plus even better.
+## 📫 Connect With Us
 
+We'd love to hear from you! Join our [Discussions](https://github.com/docs-plus/docs.plus/discussions), or reach out through:
 
 - Twitter: [@docsdotplus](https://twitter.com/docsdotplus)
 - Github: [docs.plus](https://github.com/nwspk/docs.plus)
 - Slack: [docsplus](docsplus.slack.com)
 - Email: [contact@newspeak.house](mailto:contact@newspeak.house)
 
-# 📜 License
-Docs.plus is licensed under the [Apache License v2](http://www.apache.org/licenses/LICENSE-2.0.html). This permissive license grants you the freedom to use, modify, distribute, and even sell your modifications under the same terms.
+## 📜 License
 
-# Support Our Project
-Docs.plus is a free and open-source project. Keeping it running and constantly improving it requires resources. If you find our project valuable and are in a position to support us, we'd be extremely grateful:
+Docs.plus is under the [Apache License v2](http://www.apache.org/licenses/LICENSE-2.0.html), granting you freedom to use, modify, distribute, and even sell your modifications under the same terms.
+
+## 🙏 Support Our Project
+
+Docs.plus is free and open-source. Keeping it running and
+
+ continuously improving requires resources. If you're able to support us, we'd greatly appreciate it:
 
 <a href="https://patreon.com/docsplus"><img src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Ddocsplus%26type%3Dpatrons&style=for-the-badge" /> </a>
 
-Your support enables us to maintain our servers and continue enhancing this platform for the benefit of all. Thank you in advance for your generosity.
+Your support maintains our servers and enhances this platform for everyone's benefit. Thank you for your generosity!
