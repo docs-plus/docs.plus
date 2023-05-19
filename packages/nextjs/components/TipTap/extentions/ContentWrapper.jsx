@@ -336,35 +336,56 @@ const HeadingsContent = Node.create({
   },
   addKeyboardShortcuts() {
     return {
-      Backspace: (data) => {
+      Backspace: ({ editor }) => {
         const { schema, selection } = this.editor.state
-        const { empty, $anchor, $head, $from, $to } = selection
-        const { start, end, depth } = $from.blockRange($to)
+        const { $anchor, $from } = selection
+        const blockRange = $from.blockRange($from)
 
-        // if backspace hit in the node that not have any content
+        // If backspace hit not at the start of the node, do nothing
         if ($anchor.parentOffset !== 0) return false
-        const contentWrapper = $anchor.doc?.nodeAt($from?.before(depth))
 
-        // if Backspace is in the contentWrapper
-        if (contentWrapper.type.name !== schema.nodes.contentHeading.name) {
-          if (contentWrapper.type.name !== schema.nodes.contentWrapper.name)
-            return
-          // INFO: if the contentWrapper block has one child just change textSelection
-          // Otherwise remove the current line and move the textSelection to the
+        const contentWrapper = $anchor.doc?.nodeAt(
+          $from?.before(blockRange.depth)
+        )
 
-          if (contentWrapper.childCount === 1) {
-            return this.editor
-              .chain()
-              .setTextSelection(start - 2)
-              .scrollIntoView()
-              .run()
-          } else {
-            return this.editor
-              .chain()
-              .deleteRange({ from: start, to: end })
-              .setTextSelection(start - 2)
-              .scrollIntoView()
-              .run()
+        // If the Backspace is not in the contentWrapper, do nothing
+        if (
+          contentWrapper.type.name === schema.nodes.contentHeading.name ||
+          contentWrapper.type.name !== schema.nodes.contentWrapper.name
+        )
+          return
+
+        // Get the contentWrapper node pos
+        const contentWrapperPos = $from.before(2)
+
+        // When cursor is in the first line of contentWrapper
+        if (blockRange.start - 1 === contentWrapperPos) {
+          // If there is no previous node in the selection (i.e., current node is the first node of the contentWrapper)
+          if ($anchor.nodeBefore === null) {
+            // If there's a text node following the current node
+            if ($anchor.nodeAfter?.type.name === 'text') {
+              const clonedTextNode = $anchor.nodeAfter.copy(
+                $anchor.nodeAfter.content
+              )
+
+              // Delete the current node, move the cursor to the end of the previous node (the heading),
+              // insert the cloned text node there, and focus the cursor there
+              return this.editor
+                .chain()
+                .deleteRange({ from: blockRange.start, to: blockRange.end })
+                .setTextSelection(blockRange.start - 2)
+                .insertContent(clonedTextNode.toJSON())
+                .scrollIntoView()
+                .run()
+            } else {
+              // If no text node is following, just delete the current node and move the cursor to the end of the heading
+              return this.editor
+                .chain()
+                .deleteRange({ from: blockRange.start, to: blockRange.end })
+                .setTextSelection(blockRange.start - 2)
+                .scrollIntoView()
+                .run()
+            }
           }
         }
       },
