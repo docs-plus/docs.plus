@@ -8,6 +8,7 @@ import slugify from 'slugify'
 
 import { useState, useRef, useContext, useEffect, useCallback } from 'react'
 import { TabsContext } from '../../../components/Tabs/Tabs'
+import { useEditorStateContext } from '../../../context/EditorContext'
 
 const DeckPanel = ({ hostname }) => {
   const docNameRef = useRef()
@@ -15,6 +16,7 @@ const DeckPanel = ({ hostname }) => {
   const [error, setError] = useState(null)
   const [namespace, setNamespace] = useState(`${hostname}/`)
   const { setActiveTab } = useContext(TabsContext)
+  const { isAuthServiceAvailable } = useEditorStateContext()
 
   // slugify the docNameRef
   const validateDocName = (docSlug) => {
@@ -150,16 +152,18 @@ const DeckPanel = ({ hostname }) => {
                 Open public doc
               </Button>
             </div>
-            <div>
-              <p className="text-gray-400 text-sm mt-4">
-                Don't have an account yet?{' '}
-                <button
-                  className="font-bold text-indigo-600 antialiased"
-                  onClick={moveToSignInPanel}>
-                  Sign in
-                </button>
-              </p>
-            </div>
+            {isAuthServiceAvailable && (
+              <div>
+                <p className="text-gray-400 text-sm mt-4">
+                  Don't have an account yet?{' '}
+                  <button
+                    className="font-bold text-indigo-600 antialiased"
+                    onClick={moveToSignInPanel}>
+                    Sign in
+                  </button>
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

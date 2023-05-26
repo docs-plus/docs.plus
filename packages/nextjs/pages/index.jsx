@@ -10,6 +10,7 @@ import {
   TabPanel,
 } from '../components/Tabs/Tabs'
 import DeckPanel from './components/panels/DeckPanel'
+import { useEditorStateContext } from '../context/EditorContext'
 
 const DashboardLayout = dynamic(() => import('./layouts/DashboardLayout'))
 const SignInPanel = dynamic(() => import('./components/panels/SignInPanel'), {
@@ -30,21 +31,27 @@ function TabLayout({ children }) {
 
 export default function Home() {
   const user = useUser()
+  const { isAuthServiceAvailable } = useEditorStateContext()
 
   return (
     <div>
       <HeadSeo title="Docs Plus" description="Docs Plus application" />
       <div className="grid h-screen place-items-center w-full bg-slate-100 p-4">
         <Tabs defaultActiveTab="deck" className="max-w-5xl rounded-md relative">
-          <TabList className="bg-slate-200 rounded-t-md flex relative drop-shadow-md z-0 -bottom-1 ">
+          <TabList
+            className={`${
+              isAuthServiceAvailable ? 'flex' : 'hidden'
+            } bg-slate-200 rounded-t-md relative drop-shadow-md z-0 -bottom-1 `}>
             <Tab name="deck">Docs.plus Deck</Tab>
-            {user && <Tab name="documents">Documents</Tab>}
-            {!user && (
+            {isAuthServiceAvailable && user && (
+              <Tab name="documents">Documents</Tab>
+            )}
+            {isAuthServiceAvailable && !user && (
               <Tab name="sign-in" className="ml-auto">
                 Sign in
               </Tab>
             )}
-            {user && (
+            {isAuthServiceAvailable && user && (
               <Tab name="profile" className="ml-auto py-2">
                 <Image
                   className="rounded-full drop-shadow border w-10 h-10"
@@ -60,15 +67,17 @@ export default function Home() {
             <TabLayout name="deck">
               <DeckPanel />
             </TabLayout>
-            {user && (
+            {isAuthServiceAvailable && user && (
               <TabLayout name="documents">
                 <DocumentsPanel />
               </TabLayout>
             )}
-            <TabLayout name="sign-in">
-              <SignInPanel />
-            </TabLayout>
-            {user && (
+            {isAuthServiceAvailable && (
+              <TabLayout name="sign-in">
+                <SignInPanel />
+              </TabLayout>
+            )}
+            {isAuthServiceAvailable && user && (
               <TabLayout name="profile">
                 <ProfilePanel />
               </TabLayout>
