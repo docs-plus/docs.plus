@@ -11,11 +11,18 @@ const RelpadPrompt = dynamic(() => import(`../components/ReloadPrompt`), {
 })
 
 import { EditorStateProvider } from '../context/EditorContext'
+import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs'
+import { SessionContextProvider } from '@supabase/auth-helpers-react'
+
+import { useState } from 'react'
 
 // Create a client
 const queryClient = new QueryClient()
 
-export default function MyApp({ Component, pageProps }) {
+export default function MyApp({ Component, pageProps, initialSession }) {
+  // Create a new supabase browser client on every first render.
+  const [supabaseClient] = useState(() => createBrowserSupabaseClient())
+
   return (
     <div id="root">
       <Head>
@@ -74,7 +81,11 @@ export default function MyApp({ Component, pageProps }) {
       </Head>
       <QueryClientProvider client={queryClient}>
         <EditorStateProvider>
-          <Component {...pageProps} />
+          <SessionContextProvider
+            supabaseClient={supabaseClient}
+            initialSession={initialSession}>
+            <Component {...pageProps} />
+          </SessionContextProvider>
         </EditorStateProvider>
       </QueryClientProvider>
       <RelpadPrompt />

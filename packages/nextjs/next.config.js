@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 
 const runtimeCaching = require('next-pwa/cache')
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = process.env.NODE_ENV === 'production'
 
 const withPWA = require('next-pwa')({
   dest: 'public',
@@ -10,13 +10,19 @@ const withPWA = require('next-pwa')({
   runtimeCaching,
   // disable: process.env.NODE_ENV === 'development',
   // disableDevLogs: true,
-
 })
 
-
 module.exports = withPWA({
-  // config
-
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '*.googleusercontent.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
   eslint: {
     ignoreDuringBuilds: true,
   },

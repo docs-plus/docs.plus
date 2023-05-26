@@ -1,9 +1,10 @@
 {
-  "name": "@tiptap/extension-link",
-  "description": "link extension for tiptap",
+  "name": "@docsplus/extension-hyperlink",
+  "description": "hyperlink extension for docsplus",
   "version": "2.0.3",
-  "homepage": "https://tiptap.dev",
+  "homepage": "https://docs.plus",
   "keywords": [
+    "docsplus",
     "tiptap",
     "tiptap extension"
   ],
@@ -15,7 +16,7 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/packages/extension-link/src/index.d.ts",
+      "types": "./dist/packages/extension-hyperlink/src/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
@@ -23,7 +24,7 @@
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "umd": "dist/index.umd.js",
-  "types": "dist/packages/extension-link/src/index.d.ts",
+  "types": "dist/packages/extension-hyperlink/src/index.d.ts",
   "files": [
     "src",
     "dist"
@@ -42,7 +43,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/ueberdosis/tiptap",
-    "directory": "packages/extension-link"
+    "directory": "packages/extension-hyperlink"
   },
   "scripts": {
     "clean": "rm -rf dist",

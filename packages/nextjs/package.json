@@ -14,7 +14,11 @@
     "lint:fix": "next lint --fix"
   },
   "dependencies": {
+    "@faker-js/faker": "^8.0.1",
     "@hocuspocus/provider": "^2.0.6",
+    "@supabase/auth-helpers-nextjs": "^0.6.1",
+    "@supabase/auth-helpers-react": "^0.3.1",
+    "@supabase/supabase-js": "^2.22.0",
     "@tanstack/react-query": "^4.29.5",
     "@tiptap/core": "^2.0.3",
     "@tiptap/extension-blockquote": "^2.0.3",
@@ -52,7 +56,9 @@
     "@tiptap/prosemirror-tables": "^1.1.4",
     "@tiptap/react": "^2.0.3",
     "@tiptap/starter-kit": "^2.0.3",
+    "axios": "^1.4.0",
     "dexie": "^3.2.3",
+    "faker": "^6.6.6",
     "lowlight": "^2.9.0",
     "mobile-detect": "^1.4.5",
     "next": "latest",
