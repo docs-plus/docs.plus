@@ -25,7 +25,7 @@ const SingInForm = ({ children, ...props }) => {
     setGoogleLoading(true)
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
-      // redirectTo: '/#deck',
+      redirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT,
     })
     if (error) console.error(error)
     // setGoogleLoading(false)
