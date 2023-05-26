@@ -75,7 +75,7 @@ const SingInForm = ({ children, ...props }) => {
     const { data, error } = await supabaseClient.auth.signInWithOtp({
       email: magicLinkEmail,
       options: {
-        emailRedirectTo: 'http://localhost:3000/',
+        emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT,
       },
     })
 
