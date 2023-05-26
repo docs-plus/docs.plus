@@ -1,4 +1,6 @@
 /** @type {import('tailwindcss').Config} */
+import colors from 'tailwindcss/colors'
+
 module.exports = {
   content: [
     './app/**/*.{js,ts,jsx,tsx}',
@@ -13,6 +15,10 @@ module.exports = {
   theme: {
     fontFamily: {
       sans: 'Helvetica, Arial, sans-serif',
+    },
+    colors: {
+      docsy: '#2778ff',
+      ...colors,
     },
     extend: {
       spacing: {},

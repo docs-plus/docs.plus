@@ -101,7 +101,7 @@ function TabList({ children, ...props }) {
       className={`relative flex border-b border-gray-200 ${styles.tabList}`}
       {...props}>
       <div
-        className={`absolute bottom-1 rounded-md bg-indigo-500 h-1 transition-all duration-300 ${styles.highlight}`}
+        className={`absolute bottom-1 rounded-md bg-docsy h-1 transition-all duration-300 ${styles.highlight}`}
         style={highlightStyle}
       />
       {children}
@@ -121,7 +121,7 @@ function Tab({ children, name, ...props }) {
   }
 
   const defaultClassName = `p-4 px-6 hover:text-indigo-700 focus:outline-none ${
-    isActive ? 'text-indigo-600' : 'text-gray-500'
+    isActive ? 'text-docsy' : 'text-gray-500'
   }`
 
   // Append defaultClassName to existing className or assign it if not present.

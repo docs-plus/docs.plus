@@ -158,7 +158,7 @@ const DeckPanel = ({ hostname }) => {
                 <p className="text-gray-400 text-sm mt-4">
                   Don't have an account yet?{' '}
                   <button
-                    className="font-bold text-indigo-600 antialiased"
+                    className="font-bold text-docsy antialiased"
                     onClick={moveToSignInPanel}>
                     Sign in
                   </button>
