@@ -72,7 +72,7 @@ export default function Home() {
                 <DocumentsPanel />
               </TabLayout>
             )}
-            {isAuthServiceAvailable && (
+            {isAuthServiceAvailable && !user && (
               <TabLayout name="sign-in">
                 <SignInPanel />
               </TabLayout>
