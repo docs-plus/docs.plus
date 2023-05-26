@@ -6,7 +6,7 @@ const SignInPanel = () => {
       <div className="sm:w-1/2 p-2 w-full  mt-2 sm:mt-0  ">
         <h4 className="font-bold text-3xl  antialiased">
           Embrace the Power of Collaboration with{' '}
-          <span className="text-indigo-700">Docs.plus!</span>
+          <span className="text-docsy">Docs.plus!</span>
         </h4>
         <p></p>
 
@@ -15,11 +15,11 @@ const SignInPanel = () => {
         </p>
         <p></p>
         <p className="text-base mt-4 antialiased">
-          <span className="text-indigo-700 font-bold">– </span>
+          <span className="text-docsy font-bold">– </span>
           Empower your team with real-time knowledge sharing.
         </p>
         <p className="text-base  antialiased">
-          <span className="text-indigo-700 font-bold">– </span>
+          <span className="text-docsy font-bold">– </span>
           Unleash the potential of teamwork and knowledge sharing.
         </p>
       </div>
