@@ -5,12 +5,13 @@ import {
 } from '../../../components/icons/Icons'
 import Button from '../../../components/Button'
 import slugify from 'slugify'
-
+import { useUser } from '@supabase/auth-helpers-react'
 import { useState, useRef, useContext, useEffect, useCallback } from 'react'
 import { TabsContext } from '../../../components/Tabs/Tabs'
 import { useEditorStateContext } from '../../../context/EditorContext'
 
 const DeckPanel = ({ hostname }) => {
+  const user = useUser()
   const docNameRef = useRef()
   const [loadingDoc, setLoadingDoc] = useState(false)
   const [error, setError] = useState(null)
@@ -152,7 +153,7 @@ const DeckPanel = ({ hostname }) => {
                 Open public doc
               </Button>
             </div>
-            {isAuthServiceAvailable && (
+            {isAuthServiceAvailable && !user && (
               <div>
                 <p className="text-gray-400 text-sm mt-4">
                   Don't have an account yet?{' '}
