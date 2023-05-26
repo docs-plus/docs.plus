@@ -8,25 +8,28 @@ export const EditorStateProvider = ({ children }) => {
   const [loading, setLoading] = useState(true)
   const [applyingFilters, setApplyingFilters] = useState(false)
   const [isEmpty, setIsEmpty] = useState(true)
-  const [isMobile, setIsMobile] = useState(true);
+  const [isMobile, setIsMobile] = useState(true)
   const [selectionPos, setSelectionPos] = useState(0)
   const [deviceDetect, setDeviceDetect] = useState(null)
+  const [isAuthServiceAvailable, SetIsAuthServiceAvailable] = useState(
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? true : false
+  )
 
   useEffect(() => {
-    setIsMobile(window.innerWidth <= 640);
+    setIsMobile(window.innerWidth <= 640)
 
     const handleResize = () => {
-      setIsMobile(window.innerWidth <= 640);
-    };
+      setIsMobile(window.innerWidth <= 640)
+    }
 
-    window.addEventListener("resize", handleResize);
+    window.addEventListener('resize', handleResize)
 
     setDeviceDetect(new MobileDetect(navigator.userAgent))
 
     return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
 
   return (
     <Context.Provider
@@ -39,11 +42,13 @@ export const EditorStateProvider = ({ children }) => {
         setApplyingFilters,
         isEmpty,
         setIsEmpty,
-        isMobile, setIsMobile,
-        selectionPos, setSelectionPos,
-        deviceDetect
-      }}
-    >
+        isMobile,
+        setIsMobile,
+        selectionPos,
+        setSelectionPos,
+        deviceDetect,
+        isAuthServiceAvailable,
+      }}>
       {children}
     </Context.Provider>
   )
