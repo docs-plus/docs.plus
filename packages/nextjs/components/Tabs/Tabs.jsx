@@ -17,7 +17,7 @@ function Tabs({ children, defaultActiveTab = null, ...props }) {
   // Initialize the active tab state with defaultActiveTab
   const [activeTab, setActiveTab] = useState(defaultActiveTab)
 
-  const value = { activeTab, setActiveTab }
+  const value = { activeTab, setActiveTab, defaultActiveTab }
 
   // Provide tab states and setter function to child components.
   return (
@@ -34,7 +34,7 @@ function TabList({ children, ...props }) {
   const tabsElement = useRef(null)
   const [highlightStyle, setHighlightStyle] = useState({})
   const router = useRouter()
-  const { activeTab, setActiveTab } = useContext(TabsContext)
+  const { activeTab, setActiveTab, defaultActiveTab } = useContext(TabsContext)
 
   // On component mount and update, update the active tab based on the URL hash.
   useEffect(() => {
@@ -43,7 +43,7 @@ function TabList({ children, ...props }) {
       window.location.hash.replace('#', '')
     ).get('panel')
 
-    if (!panel) return
+    if (!panel) return setActiveTab(defaultActiveTab)
 
     // Collect all the panel names from the children (tab buttons).
     const panelNames = React.Children.toArray(children).map(
@@ -53,6 +53,8 @@ function TabList({ children, ...props }) {
     // If the panel name exists in the child panel names, update the active tab.
     if (panelNames.includes(panel)) {
       setActiveTab(panel)
+    } else {
+      setActiveTab(defaultActiveTab)
     }
   }, [router.asPath, children])
 
