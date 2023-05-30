@@ -24,7 +24,7 @@
   "license": "ISC",
   "devDependencies": {
     "eslint-plugin-markdown": "^3.0.0",
-    "prisma": "^4.14.0",
+    "prisma": "^4.14.1",
     "snazzy": "^9.0.0",
     "standard": "^17.0.0"
   },
@@ -36,7 +36,7 @@
     "@hocuspocus/extension-throttle": "^2.0.6",
     "@hocuspocus/server": "^2.0.6",
     "@hocuspocus/transformer": "^2.0.6",
-    "@prisma/client": "4.14.0",
+    "@prisma/client": "^4.14.1",
     "@tiptap/extension-document": "^2.0.3",
     "@tiptap/extension-paragraph": "^2.0.3",
     "@tiptap/extension-text": "^2.0.3",
