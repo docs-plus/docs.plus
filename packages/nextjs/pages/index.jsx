@@ -9,19 +9,22 @@ import {
   TabPanels,
   TabPanel,
 } from '../components/Tabs/Tabs'
-import DeckPanel from './components/panels/DeckPanel'
+import DeckPanel from '../components/pages/panels/DeckPanel'
 import { useEditorStateContext } from '../context/EditorContext'
 import { Avatar } from '../components/Avatar'
 
 const DashboardLayout = dynamic(() => import('./layouts/DashboardLayout'))
-const SignInPanel = dynamic(() => import('./components/panels/SignInPanel'), {
-  loading: () => <div>Loading...</div>,
-})
+const SignInPanel = dynamic(
+  () => import('../components/pages/panels/SignInPanel'),
+  {
+    loading: () => <div>Loading...</div>,
+  }
+)
 const DocumentsPanel = dynamic(() =>
-  import('./components/panels/DocumentsPanel')
+  import('../components/pages/panels/DocumentsPanel')
 )
 const ProfilePanel = dynamic(() =>
-  import('./components/panels/profile/ProfilePanel')
+  import('../components/pages/panels/profile/ProfilePanel')
 )
 
 function TabLayout({ children }) {
