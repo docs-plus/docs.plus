@@ -9,6 +9,7 @@ import { useUser } from '@supabase/auth-helpers-react'
 import { useState, useRef, useContext, useEffect, useCallback } from 'react'
 import { TabsContext } from '../../../components/Tabs/Tabs'
 import { useEditorStateContext } from '../../../context/EditorContext'
+import InputOverlapLabel from '../../../components/InputOverlapLabel'
 
 const DeckPanel = ({ hostname }) => {
   const user = useUser()
@@ -132,10 +133,11 @@ const DeckPanel = ({ hostname }) => {
                 <p className="sm:px-2 py-2 leading-6 rounded sm:rounded-l sm:border sm:border-r-0 sm:rounded-r-none">
                   {namespace}
                 </p>
-                <input
+
+                <InputOverlapLabel
+                  className=" w-full sm:rounded-l-none  font-mono"
                   ref={docNameRef}
-                  placeholder="Document Name"
-                  className="p-2 sm:p-1 w-full rounded sm:rounded-l-none border font-mono"
+                  label="Document Name"
                   id="padName"
                   type="text"
                   onKeyDown={handleKeyDown}

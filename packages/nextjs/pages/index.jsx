@@ -11,6 +11,7 @@ import {
 } from '../components/Tabs/Tabs'
 import DeckPanel from './components/panels/DeckPanel'
 import { useEditorStateContext } from '../context/EditorContext'
+import { Avatar } from '../components/Avatar'
 
 const DashboardLayout = dynamic(() => import('./layouts/DashboardLayout'))
 const SignInPanel = dynamic(() => import('./components/panels/SignInPanel'), {
@@ -19,7 +20,9 @@ const SignInPanel = dynamic(() => import('./components/panels/SignInPanel'), {
 const DocumentsPanel = dynamic(() =>
   import('./components/panels/DocumentsPanel')
 )
-const ProfilePanel = dynamic(() => import('./components/panels/ProfilePanel'))
+const ProfilePanel = dynamic(() =>
+  import('./components/panels/profile/ProfilePanel')
+)
 
 function TabLayout({ children }) {
   return (
@@ -53,12 +56,11 @@ export default function Home() {
             )}
             {isAuthServiceAvailable && user && (
               <Tab name="profile" className="ml-auto py-2">
-                <Image
+                <Avatar
+                  defaultURI={user?.user_metadata?.avatar_url}
+                  width={22}
+                  height={22}
                   className="rounded-full drop-shadow border w-10 h-10"
-                  src={user?.user_metadata?.avatar_url}
-                  alt="Profile Picture"
-                  width={40}
-                  height={40}
                 />
               </Tab>
             )}
