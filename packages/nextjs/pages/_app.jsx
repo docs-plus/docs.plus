@@ -1,8 +1,7 @@
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
-
+import toast, { Toaster } from 'react-hot-toast'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-
 import '../styles/styles.scss'
 import '../styles/globals.scss'
 
@@ -91,6 +90,7 @@ export default function MyApp({ Component, pageProps, initialSession }) {
           </EditorStateProvider>
         </QueryClientProvider>
         <RelpadPrompt />
+        <Toaster />
       </div>
     )
   } else {
@@ -103,6 +103,7 @@ export default function MyApp({ Component, pageProps, initialSession }) {
           </EditorStateProvider>
         </QueryClientProvider>
         <RelpadPrompt />
+        <Toaster />
       </div>
     )
   }
