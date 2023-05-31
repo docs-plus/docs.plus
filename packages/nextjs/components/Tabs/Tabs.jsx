@@ -13,11 +13,29 @@ import styles from './Tabs.module.css'
 const TabsContext = createContext()
 
 // The Tabs component acts as the container for all tab-related components.
-function Tabs({ children, defaultActiveTab = null, ...props }) {
+function Tabs({
+  children,
+  defaultActiveTab = null,
+  putNameAsHashToURI = true,
+  ...props
+}) {
   // Initialize the active tab state with defaultActiveTab
   const [activeTab, setActiveTab] = useState(defaultActiveTab)
+  const router = useRouter()
 
-  const value = { activeTab, setActiveTab, defaultActiveTab }
+  // Function to change the active tab
+  const changeTab = (tabName) => {
+    setActiveTab(tabName)
+    if (putNameAsHashToURI) router.replace(`#panel=${tabName}`)
+  }
+
+  const value = {
+    activeTab,
+    setActiveTab,
+    defaultActiveTab,
+    putNameAsHashToURI,
+    changeTab,
+  }
 
   // Provide tab states and setter function to child components.
   return (
@@ -34,10 +52,12 @@ function TabList({ children, ...props }) {
   const tabsElement = useRef(null)
   const [highlightStyle, setHighlightStyle] = useState({})
   const router = useRouter()
-  const { activeTab, setActiveTab, defaultActiveTab } = useContext(TabsContext)
+  const { activeTab, setActiveTab, defaultActiveTab, putNameAsHashToURI } =
+    useContext(TabsContext)
 
   // On component mount and update, update the active tab based on the URL hash.
   useEffect(() => {
+    if (!putNameAsHashToURI) return setActiveTab(defaultActiveTab)
     // Get the panel name from the URL hash.
     const panel = new URLSearchParams(
       window.location.hash.replace('#', '')
@@ -112,12 +132,13 @@ function TabList({ children, ...props }) {
 // The Tab component represents an individual tab button.
 function Tab({ children, name, ...props }) {
   const router = useRouter()
-  const { activeTab, setActiveTab } = useContext(TabsContext)
+  const { activeTab, setActiveTab, putNameAsHashToURI } =
+    useContext(TabsContext)
   const isActive = activeTab === name
 
   const onClick = () => {
     setActiveTab(name)
-    router.replace(`#panel=${name}`)
+    if (putNameAsHashToURI) router.replace(`#panel=${name}`)
   }
 
   const defaultClassName = `p-4 px-6 hover:text-indigo-700 focus:outline-none ${
@@ -130,7 +151,12 @@ function Tab({ children, name, ...props }) {
     : defaultClassName
 
   return (
-    <button data-active={isActive} onClick={onClick} {...props}>
+    <button
+      data-active={isActive}
+      id={`btnTab_${name}`}
+      onClick={onClick}
+      name={name}
+      {...props}>
       {children}
     </button>
   )

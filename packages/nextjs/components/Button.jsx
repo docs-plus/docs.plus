@@ -1,10 +1,15 @@
-const Button = ({ children, style, onClick: click, loading, className }) => {
+const Button = ({
+  children,
+  style,
+  onClick: click,
+  loading,
+  className,
+  Icon,
+  iconSize,
+}) => {
   return (
     <button
-      className={
-        'w-full text-center flex justify-center items-center px-4 py-2 leading-6 border rounded-md transition ease-in-out duration-150' +
-        className
-      }
+      className={`w-full text-center flex justify-center items-center px-4 py-2 leading-6 border rounded-md transition ease-in-out duration-150 ${className}`}
       disabled={loading}
       style={style}
       type="button"
@@ -12,7 +17,7 @@ const Button = ({ children, style, onClick: click, loading, className }) => {
       {loading ? (
         <>
           <svg
-            className="animate-spin -ml-1 mr-3 h-5 w-5 "
+            className="animate-spin -ml-1 mr-3 h-5 w-5"
             fill="none"
             viewBox="0 0 24 24"
             xmlns="http://www.w3.org/2000/svg">
@@ -31,7 +36,14 @@ const Button = ({ children, style, onClick: click, loading, className }) => {
           Processing...
         </>
       ) : (
-        children
+        <>
+          {Icon && (
+            <span className="w-1/12">
+              <Icon size={iconSize} />
+            </span>
+          )}
+          <span className="w-11/12">{children}</span>
+        </>
       )}
     </button>
   )
