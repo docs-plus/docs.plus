@@ -9,8 +9,12 @@ import {
 } from '../../../../components/icons/Icons'
 
 import { Avatar } from '../../../../components/Avatar'
+import dynamic from 'next/dynamic'
 
-import ProfileTab from './ProfileTab'
+const ProfileTab = dynamic(() => import('./ProfileTab'), {
+  loading: () => <div>Loading...</div>,
+})
+
 import SecurityTab from './SecurityTab'
 import NotificationsTab from './NotificationsTab'
 
