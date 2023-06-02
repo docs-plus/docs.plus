@@ -5,6 +5,9 @@ import { debounce } from 'lodash'
 import toast from 'react-hot-toast'
 import { At, CircleUser } from '../../../../icons/Icons'
 
+// Defined constants
+const PROFILES = 'profiles'
+
 const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, profileData }) => {
   const supabaseClient = useSupabaseClient()
   const [errorBorderClass, setErrorBorderClass] = useState('')
@@ -55,7 +58,7 @@ const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, prof
       650,
       { leading: false, trailing: true }
     ),
-    [supabaseClient] // dependencies
+    [supabaseClient, profileData]
   )
 
   const handleUserNameChange = e => {
