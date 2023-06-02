@@ -1,14 +1,8 @@
-const InputOverlapLabel = ({
-  label,
-  value = null,
-  onChange,
-  id = new Date().getTime().toString(),
-  Icon,
-  fill = 'rgb(104, 81, 255)',
-  size = 18,
-  className = '',
-  ...props
-}) => {
+import { forwardRef } from 'react'
+
+const InputOverlapLabel = forwardRef(({ label, value = '', id = new Date()
+    .getTime()
+    .toString(), Icon, fill = 'rgb(104, 81, 255)', size = 18, className = '', onChange = () => {}, ...props }) => {
   const containerClasses = `relative border subpixel-antialiased rounded-md flex align-middle justify-start ${className} ${
     !Icon ? 'pl-2' : ''
   }`
@@ -41,6 +35,8 @@ const InputOverlapLabel = ({
       </label>
     </div>
   )
-}
+})
+
+InputOverlapLabel.displayName = 'InputOverlapLabel'
 
 export default InputOverlapLabel
