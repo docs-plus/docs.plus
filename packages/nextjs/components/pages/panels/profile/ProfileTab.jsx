@@ -59,49 +59,38 @@ const ProfileTab = () => {
     fetchProfile()
   }, [])
 
-  const checkUserName = useCallback(
-    debounce(
-      async userName => {
-        if (userName.length < 4) {
-          return false
-        }
+  const checkUserName = useCallback(async userName => {
+    if (userName && userName.length < 4 && userName.indexOf(' ') >= 0) {
+      toast.error('Username must be at least 3 characters long and must not contain spaces.')
+      return false
+    }
 
-        // check usename must not contain spaces
-        if (userName.indexOf(' ') >= 0) {
-          return false
-        }
+    const { data, error } = await supabaseClient
+      .from(PROFILES)
+      .select('username')
+      .eq('username', userName)
 
-        const { data, error } = await supabaseClient
-          .from(PROFILES)
-          .select('username')
-          .eq('username', userName)
+    if (error) {
+      console.error(error)
+      toast.error('Error fetching user profile')
+      return false
+    }
 
-        if (error) {
-          console.error(error)
-          toast.error('Error fetching user profile')
-          return false
-        }
-
-        if (data.length > 0) {
-          toast.error('Username already taken')
-          return false
-        }
-        return true
-      },
-      650,
-      { leading: false, trailing: true }
-    ),
-    [supabaseClient] // dependencies
-  )
+    if (data.length > 0) {
+      toast.error('Username already taken=?', data.length)
+      return false
+    }
+    return true
+  }, [])
 
   const handleSave = async () => {
     setLoading(true)
     const updatedUser = {}
 
-    if (userName && userName !== profileData.username) {
+    if (userName && userName !== profileData?.username) {
       const isUsernameValid = await checkUserName(userName)
       if (isUsernameValid) {
-        updatedUser.userName = userName
+        updatedUser.username = userName
       } else {
         setLoading(false)
         toast.error('Username already taken')
@@ -118,7 +107,8 @@ const ProfileTab = () => {
         job_title: jobTitle,
         twitter,
         facebook,
-        website
+        website,
+        ...updatedUser
       })
       .eq('id', user.id)
 
