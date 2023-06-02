@@ -61,7 +61,7 @@ const ProfileTab = () => {
 
   const checkUserName = useCallback(
     debounce(
-      async (userName) => {
+      async userName => {
         if (userName.length < 4) {
           return false
         }
@@ -118,7 +118,7 @@ const ProfileTab = () => {
         job_title: jobTitle,
         twitter,
         facebook,
-        website,
+        website
       })
       .eq('id', user.id)
 
@@ -158,6 +158,7 @@ const ProfileTab = () => {
         </TabSection>
         <TabSection name="About">
           <AboutSection
+            profileData={profileData}
             bio={bio}
             setBio={setBio}
             company={company}
@@ -180,10 +181,7 @@ const ProfileTab = () => {
         </TabSection>
       </div>
       <div className="sticky bottom-0 flex flex-row-reverse border-t pt-4 bg-white z-10">
-        <Button
-          className="!w-32 mr-8 text-sm !p-2"
-          loading={loading}
-          onClick={handleSave}>
+        <Button className="!w-32 mr-8 text-sm !p-2" loading={loading} onClick={handleSave}>
           Save Changes
         </Button>
       </div>
