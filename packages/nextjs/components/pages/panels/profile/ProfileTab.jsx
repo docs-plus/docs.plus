@@ -140,6 +140,7 @@ const ProfileTab = () => {
           name="Profile Picture"
           description="Upload a picture to make your profile stand out and let people recognize your comments and contributions easily!">
           <AvatarSection
+            profileData={profileData}
             fullName={fullName}
             setFullName={setFullName}
             userName={userName}
