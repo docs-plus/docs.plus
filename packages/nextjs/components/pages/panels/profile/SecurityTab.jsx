@@ -45,7 +45,7 @@ const SecurityTab = ({ profileData }) => {
             label="Email"
             className={`mt-4 ${emailError ? ' border-red-500' : ''}`}
             value={email}
-            onChange={handleEmailChange}
+            // onChange={handleEmailChange}
             readonly={true}
             disabled={true}
           />
