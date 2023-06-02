@@ -171,6 +171,7 @@ const ProfileTab = () => {
           name="Profile Social Links"
           description="Add your social media profiles so others can connect with you and you can grow your network!">
           <SocialLinksSection
+            profileData={profileData}
             twitter={twitter}
             setTwitter={setTwitter}
             facebook={facebook}
