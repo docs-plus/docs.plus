@@ -5,20 +5,14 @@ import { debounce } from 'lodash'
 import toast from 'react-hot-toast'
 import { At, CircleUser } from '../../../../icons/Icons'
 
-const AccountInfoSection = ({
-  fullName,
-  setFullName,
-  userName,
-  setUserName,
-  profileData,
-}) => {
+const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, profileData }) => {
   const supabaseClient = useSupabaseClient()
   const [errorBorderClass, setErrorBorderClass] = useState('')
 
   const checkUserName = useCallback(
     debounce(
-      async (userName) => {
-        if (userName === profileData.username) {
+      async userName => {
+        if (userName === profileData?.username) {
           setErrorBorderClass('border-green-500')
           return true
         }
@@ -64,7 +58,7 @@ const AccountInfoSection = ({
     [supabaseClient] // dependencies
   )
 
-  const handleUserNameChange = (e) => {
+  const handleUserNameChange = e => {
     const userName = e.target.value
     setUserName(userName)
     checkUserName(userName)
@@ -78,7 +72,7 @@ const AccountInfoSection = ({
         label="Full Name"
         className={`mt-4`}
         value={fullName}
-        onChange={(e) => setFullName(e.target.value)}
+        onChange={e => setFullName(e.target.value)}
       />
       <InputOverlapLabel
         Icon={CircleUser}
