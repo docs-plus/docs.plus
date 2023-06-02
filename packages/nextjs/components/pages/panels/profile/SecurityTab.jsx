@@ -46,7 +46,6 @@ const SecurityTab = ({ profileData }) => {
             className={`mt-4 ${emailError ? ' border-red-500' : ''}`}
             value={email}
             // onChange={handleEmailChange}
-            readonly={true}
             disabled={true}
           />
           {emailError && <p className="text-red-500 text-xs mt-2 font-semibold">{emailError}</p>}
