@@ -63,6 +63,10 @@ const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, prof
 
   const handleUserNameChange = e => {
     const userName = e.target.value
+    if (userName === '') {
+      setErrorBorderClass('')
+      return
+    }
     setUserName(userName)
     checkUserName(userName)
   }

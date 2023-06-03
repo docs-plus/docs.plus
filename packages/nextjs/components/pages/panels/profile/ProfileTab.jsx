@@ -1,6 +1,5 @@
-import React, { useRef, useState, useEffect, useCallback, use } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
-import { debounce } from 'lodash'
 import Button from '../../../../components/Button'
 import TabTitle from './components/TabTitle'
 import TabSection from './components/TabSection'
@@ -33,7 +32,10 @@ const ProfileTab = () => {
   const [loading, setLoading] = useState(false)
   const [profileData, setProfileData] = useState(null)
 
+  const [loadingProfileData, setLoadingProfileData] = useState(true)
+
   useEffect(() => {
+    setLoadingProfileData(true)
     const fetchProfile = async () => {
       const { data, error } = await supabaseClient
         .from('profiles')
@@ -54,6 +56,7 @@ const ProfileTab = () => {
         setTwitter(data.twitter || '')
         setFacebook(data.facebook || '')
         setWebsite(data.website || '')
+        setLoadingProfileData(false)
       }
     }
     fetchProfile()
@@ -125,57 +128,63 @@ const ProfileTab = () => {
   return (
     <div className="border-l h-full relative  ">
       <TabTitle className="">Profile</TabTitle>
-      <div className="h-[30rem] overflow-y-auto relative">
-        <TabSection
-          name="Profile Picture"
-          description="Upload a picture to make your profile stand out and let people recognize your comments and contributions easily!">
-          <AvatarSection
-            profileData={profileData}
-            fullName={fullName}
-            setFullName={setFullName}
-            userName={userName}
-            setUserName={setUserName}
-          />
-        </TabSection>
-        <TabSection name="Account Information">
-          <AccountInfoSection
-            profileData={profileData}
-            fullName={fullName}
-            setFullName={setFullName}
-            userName={userName}
-            setUserName={setUserName}
-          />
-        </TabSection>
-        <TabSection name="About">
-          <AboutSection
-            profileData={profileData}
-            bio={bio}
-            setBio={setBio}
-            company={company}
-            setCompany={setCompany}
-            jobTitle={jobTitle}
-            setJobTitle={setJobTitle}
-          />
-        </TabSection>
-        <TabSection
-          name="Profile Social Links"
-          description="Add your social media profiles so others can connect with you and you can grow your network!">
-          <SocialLinksSection
-            profileData={profileData}
-            twitter={twitter}
-            setTwitter={setTwitter}
-            facebook={facebook}
-            setFacebook={setFacebook}
-            website={website}
-            setWebsite={setWebsite}
-          />
-        </TabSection>
-      </div>
-      <div className="sticky bottom-0 flex flex-row-reverse border-t pt-4 bg-white z-10">
-        <Button className="!w-32 mr-8 text-sm !p-2" loading={loading} onClick={handleSave}>
-          Save Changes
-        </Button>
-      </div>
+      {loadingProfileData ? (
+        <div className="p-4">Loading...</div>
+      ) : (
+        <>
+          <div className="h-[30rem] overflow-y-auto relative">
+            <TabSection
+              name="Profile Picture"
+              description="Upload a picture to make your profile stand out and let people recognize your comments and contributions easily!">
+              <AvatarSection
+                profileData={profileData}
+                fullName={fullName}
+                setFullName={setFullName}
+                userName={userName}
+                setUserName={setUserName}
+              />
+            </TabSection>
+            <TabSection name="Account Information">
+              <AccountInfoSection
+                profileData={profileData}
+                fullName={fullName}
+                setFullName={setFullName}
+                userName={userName}
+                setUserName={setUserName}
+              />
+            </TabSection>
+            <TabSection name="About">
+              <AboutSection
+                profileData={profileData}
+                bio={bio}
+                setBio={setBio}
+                company={company}
+                setCompany={setCompany}
+                jobTitle={jobTitle}
+                setJobTitle={setJobTitle}
+              />
+            </TabSection>
+            <TabSection
+              name="Profile Social Links"
+              description="Add your social media profiles so others can connect with you and you can grow your network!">
+              <SocialLinksSection
+                profileData={profileData}
+                twitter={twitter}
+                setTwitter={setTwitter}
+                facebook={facebook}
+                setFacebook={setFacebook}
+                website={website}
+                setWebsite={setWebsite}
+              />
+            </TabSection>
+          </div>
+          <div className="sticky bottom-0 flex flex-row-reverse border-t pt-4 bg-white z-10">
+            <Button className="!w-32 mr-8 text-sm !p-2" loading={loading} onClick={handleSave}>
+              Save Changes
+            </Button>
+          </div>
+        </>
+      )}
     </div>
   )
 }
