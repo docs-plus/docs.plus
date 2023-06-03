@@ -8,15 +8,15 @@ const SocialLinksSection = ({
   facebook,
   setFacebook,
   website,
-  setWebsite,
+  setWebsite
 }) => {
   const [twitterError, setTwitterError] = useState('')
   const [facebookError, setFacebookError] = useState('')
   const [websiteError, setWebsiteError] = useState('')
 
-  const validateWebsite = (url) => {
-    const urlRegex =
-      /^((http|https):\/\/)?(www.)?[a-z0-9]+\.[a-z]+(\/[a-zA-Z0-9#]+\/?)*$/
+  const validateWebsite = url => {
+    if (url === '') return setWebsiteError('') // If empty, don't show error
+    const urlRegex = /^((http|https):\/\/)?(www.)?[a-z0-9]+\.[a-z]+(\/[a-zA-Z0-9#]+\/?)*$/
     if (!urlRegex.test(url)) {
       setWebsiteError('Invalid URL format!')
     } else {
@@ -24,7 +24,8 @@ const SocialLinksSection = ({
     }
   }
 
-  const validateTwitter = (username) => {
+  const validateTwitter = username => {
+    if (username === '') return setTwitterError('') // If empty, don't show error
     const usernameRegex = /^@?(\w){1,15}$/
     if (!usernameRegex.test(username)) {
       setTwitterError(
@@ -35,7 +36,8 @@ const SocialLinksSection = ({
     }
   }
 
-  const validateFacebook = (username) => {
+  const validateFacebook = username => {
+    if (username === '') return setFacebookError('') // If empty, don't show error
     const usernameRegex = /^[a-z\d.]{5,}$/i
     if (!usernameRegex.test(username)) {
       setFacebookError(
@@ -46,19 +48,19 @@ const SocialLinksSection = ({
     }
   }
 
-  const handleTwitterChange = (e) => {
+  const handleTwitterChange = e => {
     const username = e.target.value
     setTwitter(username)
     validateTwitter(username)
   }
 
-  const handleFacebookChange = (e) => {
+  const handleFacebookChange = e => {
     const username = e.target.value
     setFacebook(username)
     validateFacebook(username)
   }
 
-  const handleWebsiteChange = (e) => {
+  const handleWebsiteChange = e => {
     const url = e.target.value
     setWebsite(url)
     validateWebsite(url)
@@ -73,11 +75,7 @@ const SocialLinksSection = ({
         value={twitter}
         onChange={handleTwitterChange}
       />
-      {twitterError && (
-        <p className="text-red-500 text-xs mt-2 font-semibold">
-          {twitterError}
-        </p>
-      )}
+      {twitterError && <p className="text-red-500 text-xs mt-2 font-semibold">{twitterError}</p>}
       <InputOverlapLabel
         Icon={Facebook}
         label="Facebook"
@@ -85,11 +83,7 @@ const SocialLinksSection = ({
         value={facebook}
         onChange={handleFacebookChange}
       />
-      {facebookError && (
-        <p className="text-red-500 text-xs mt-2 font-semibold">
-          {facebookError}
-        </p>
-      )}
+      {facebookError && <p className="text-red-500 text-xs mt-2 font-semibold">{facebookError}</p>}
       <InputOverlapLabel
         Icon={LinkAlt}
         label="Website"
@@ -97,11 +91,7 @@ const SocialLinksSection = ({
         value={website}
         onChange={handleWebsiteChange}
       />
-      {websiteError && (
-        <p className="text-red-500 text-xs mt-2 font-semibold">
-          {websiteError}
-        </p>
-      )}
+      {websiteError && <p className="text-red-500 text-xs mt-2 font-semibold">{websiteError}</p>}
     </div>
   )
 }
