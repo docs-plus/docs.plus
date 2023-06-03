@@ -15,6 +15,7 @@ const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, prof
   const checkUserName = useCallback(
     debounce(
       async userName => {
+        if (!userName) return
         if (userName === profileData?.username) {
           setErrorBorderClass('border-green-500')
           return true
@@ -23,7 +24,6 @@ const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, prof
         if (userName.length < 4) {
           toast.error('Username must be at least 3 characters long.')
           setErrorBorderClass('border-red-500')
-
           return
         }
 
@@ -31,7 +31,6 @@ const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, prof
         if (userName.indexOf(' ') >= 0) {
           toast.error('Username must not contain spaces.')
           setErrorBorderClass('border-red-500')
-
           return
         }
 
@@ -63,11 +62,11 @@ const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, prof
 
   const handleUserNameChange = e => {
     const userName = e.target.value
+    setUserName(userName)
     if (userName === '') {
       setErrorBorderClass('')
       return
     }
-    setUserName(userName)
     checkUserName(userName)
   }
 
