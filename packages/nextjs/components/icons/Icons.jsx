@@ -452,9 +452,16 @@ export const Bell = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
 export const AngleSmallRight = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
-      <g id="_01_align_center">
         <path d="M15.4,9.88,10.81,5.29a1,1,0,0,0-1.41,0,1,1,0,0,0,0,1.42L14,11.29a1,1,0,0,1,0,1.42L9.4,17.29a1,1,0,0,0,1.41,1.42l4.59-4.59A3,3,0,0,0,15.4,9.88Z"/>
-      </g>
+    </svg>
+  )
+}
+
+// prettier-ignore
+export const AngleSmallLeft = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+  return (
+    <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
+      <path d="M10.6,12.71a1,1,0,0,1,0-1.42l4.59-4.58a1,1,0,0,0,0-1.42,1,1,0,0,0-1.41,0L9.19,9.88a3,3,0,0,0,0,4.24l4.59,4.59a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.42Z"/>
     </svg>
   )
 }
@@ -467,6 +474,16 @@ export const signOutAlt = ({ size = 24, fill = 'rgb(104, 81, 255)', className })
         <path d="M11.476,15a1,1,0,0,0-1,1v3a3,3,0,0,1-3,3H5a3,3,0,0,1-3-3V5A3,3,0,0,1,5,2H7.476a3,3,0,0,1,3,3V8a1,1,0,0,0,2,0V5a5.006,5.006,0,0,0-5-5H5A5.006,5.006,0,0,0,0,5V19a5.006,5.006,0,0,0,5,5H7.476a5.006,5.006,0,0,0,5-5V16A1,1,0,0,0,11.476,15Z"/>
         <path d="M22.867,9.879,18.281,5.293a1,1,0,1,0-1.414,1.414l4.262,4.263L6,11a1,1,0,0,0,0,2H6l15.188-.031-4.323,4.324a1,1,0,1,0,1.414,1.414l4.586-4.586A3,3,0,0,0,22.867,9.879Z"/>
       </g>
+    </svg>
+  )
+}
+
+// prettier-ignore
+export const Exit = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+  return (
+    <svg className={className}  fill={fill} viewBox="0 0 24 24" x="0px" y="0px" width={size} xmlns="http://www.w3.org/2000/svg">
+        <path d="M3,3H8V0H3A3,3,0,0,0,0,3V21a3,3,0,0,0,3,3H8V21H3Z"/>
+        <path d="M22.948,9.525,18.362,4.939,16.241,7.061l3.413,3.412L5,10.5,5,13.5l14.7-.027-3.466,3.466,2.121,2.122,4.587-4.586A3.506,3.506,0,0,0,22.948,9.525Z"/>
     </svg>
   )
 }
