@@ -1,6 +1,8 @@
-const TabSection = ({ name, description, children }) => {
+import { twMerge } from 'tailwind-merge'
+
+const TabSection = ({ name, description, children, className }) => {
   return (
-    <div className="flex flex-col p-4 antialiased">
+    <div className={twMerge(`flex flex-col p-4 antialiased`, className)}>
       <p className="text-lg font-bold">{name}</p>
       <p className="text-gray-400 text-sm">{description}</p>
       {children}
