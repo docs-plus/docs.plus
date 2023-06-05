@@ -1,9 +1,4 @@
-import {
-  DocsPlus,
-  GoogleGIcon,
-  Sparkles,
-  OpenEnvelope,
-} from '../../../components/icons/Icons'
+import { DocsPlus, GoogleGIcon, Sparkles, OpenEnvelope } from '../../../components/icons/Icons'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import { useState, useRef, useContext, useEffect, useCallback } from 'react'
 import Button from '../../../components/Button'
@@ -26,7 +21,7 @@ const SingInForm = ({ children, ...props }) => {
     setGoogleLoading(true)
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
-      redirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT,
+      redirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT
     })
     if (error) console.error(error)
     // setGoogleLoading(false)
@@ -37,9 +32,9 @@ const SingInForm = ({ children, ...props }) => {
       fetch('/api/validate-email', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ email }),
+        body: JSON.stringify({ email })
       }).then(async (res) => {
         if (!res.ok) {
           setHighlightEmailInput(true)
@@ -56,7 +51,7 @@ const SingInForm = ({ children, ...props }) => {
       onSuccess: () => {
         setEmailError('')
         setHighlightEmailInput(false)
-      },
+      }
     }
   )
 
@@ -76,8 +71,8 @@ const SingInForm = ({ children, ...props }) => {
     const { data, error } = await supabaseClient.auth.signInWithOtp({
       email: magicLinkEmail,
       options: {
-        emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT,
-      },
+        emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT
+      }
     })
 
     setLoading(false)
@@ -89,9 +84,7 @@ const SingInForm = ({ children, ...props }) => {
     <div {...props}>
       <div className={`${!emailSent && 'border  p-5'} rounded-md`}>
         <div className={`${emailSent ? 'hidden' : 'block '}`}>
-          <p className="text-base antialiased text-center font-bold">
-            Your journey with Docs.plus begins now!
-          </p>
+          <p className="text-base antialiased text-center font-bold">Your journey with Docs.plus begins now!</p>
           <div className="flex flex-col items-center justify-center mt-6 ">
             <Button
               className="px-3 flex align-baseline justify-center w-full py-2 border rounded"
@@ -103,9 +96,7 @@ const SingInForm = ({ children, ...props }) => {
           </div>
           <div className="flex items-center justify-center mt-8 ">
             <div className="w-full bg-gray-200 h-0 border"></div>
-            <div className="text-center px-2 font-medium text-gray-400 antialiased">
-              OR
-            </div>
+            <div className="text-center px-2 font-medium text-gray-400 antialiased">OR</div>
             <div className="w-full bg-gray-200 h-0 border"></div>
           </div>
           <div className="flex flex-col w-full  items-center justify-center mt-6 ">
@@ -147,9 +138,7 @@ const SingInForm = ({ children, ...props }) => {
             We emailed a magic link to <br />
             <b className="text-blue-500">{magicLinkEmail}</b>
           </p>
-          <p className="font-normal text-sm">
-            Click the Link to log in or Sign up.
-          </p>
+          <p className="font-normal text-sm">Click the Link to log in or Sign up.</p>
         </div>
       </div>
     </div>

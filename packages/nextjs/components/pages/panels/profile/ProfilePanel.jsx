@@ -1,18 +1,13 @@
 import { useState } from 'react'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import Button from '../../../../components/Button'
-import {
-  ShieldCheck,
-  Bell,
-  AngleSmallRight,
-  signOutAlt,
-} from '../../../../components/icons/Icons'
+import { ShieldCheck, Bell, AngleSmallRight, signOutAlt, Exit } from '../../../../components/icons/Icons'
 
 import { Avatar } from '../../../../components/Avatar'
 import dynamic from 'next/dynamic'
 
 const ProfileTab = dynamic(() => import('./ProfileTab'), {
-  loading: () => <div>Loading...</div>,
+  loading: () => <div>Loading...</div>
 })
 
 import SecurityTab from './SecurityTab'
@@ -94,12 +89,7 @@ const ProfilePanel = () => {
             Terms of service
           </a>
         </div>
-        <Button
-          onClick={signOut}
-          className="mt-40"
-          Icon={signOutAlt}
-          iconSize={18}
-          loading={loadSignOut}>
+        <Button onClick={signOut} className="mt-40" Icon={Exit} iconSize={18} loading={loadSignOut}>
           Sign-out
         </Button>
       </div>

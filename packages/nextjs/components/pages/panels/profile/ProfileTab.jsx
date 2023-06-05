@@ -31,17 +31,12 @@ const ProfileTab = () => {
 
   const [loading, setLoading] = useState(false)
   const [profileData, setProfileData] = useState(null)
-
   const [loadingProfileData, setLoadingProfileData] = useState(true)
 
   useEffect(() => {
     setLoadingProfileData(true)
     const fetchProfile = async () => {
-      const { data, error } = await supabaseClient
-        .from('profiles')
-        .select()
-        .eq('id', user.id)
-        .single()
+      const { data, error } = await supabaseClient.from('profiles').select().eq('id', user.id).single()
 
       if (error) {
         console.error(error)
@@ -62,16 +57,13 @@ const ProfileTab = () => {
     fetchProfile()
   }, [])
 
-  const checkUserName = useCallback(async userName => {
+  const checkUserName = useCallback(async (userName) => {
     if (userName && userName.length < 4 && userName.indexOf(' ') >= 0) {
       toast.error('Username must be at least 3 characters long and must not contain spaces.')
       return false
     }
 
-    const { data, error } = await supabaseClient
-      .from(PROFILES)
-      .select('username')
-      .eq('username', userName)
+    const { data, error } = await supabaseClient.from(PROFILES).select('username').eq('username', userName)
 
     if (error) {
       console.error(error)
