@@ -1,11 +1,8 @@
 import React from 'react'
+import { randstr } from '@utils/index'
 
 const Toggle = ({ id, checked = false, value = '', onChange = () => {} }) => {
-  const generateId = () => {
-    return Math.random().toString(36).replace('0.', 'toggle_')
-  }
-
-  const toggleId = id || generateId()
+  const toggleId = id || randstr('toggle_')
 
   return (
     <label className="relative inline-flex items-center cursor-pointer" htmlFor={toggleId}>
