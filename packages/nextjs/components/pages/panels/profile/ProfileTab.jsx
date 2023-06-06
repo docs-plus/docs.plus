@@ -10,6 +10,7 @@ import AvatarSection from './sections/AvatarSection'
 import AccountInfoSection from './sections/AccountInfoSection'
 import AboutSection from './sections/AboutSection'
 import SocialLinksSection from './sections/SocialLinksSection'
+import useProfileData from '@hooks/useProfileData'
 
 // Defined constants
 const PROFILES = 'profiles'
@@ -30,32 +31,25 @@ const ProfileTab = () => {
   const [website, setWebsite] = useState('')
 
   const [loading, setLoading] = useState(false)
-  const [profileData, setProfileData] = useState(null)
-  const [loadingProfileData, setLoadingProfileData] = useState(true)
+
+  const { loadingProfileData, profileData, profileFetchingError } = useProfileData()
 
   useEffect(() => {
-    setLoadingProfileData(true)
-    const fetchProfile = async () => {
-      const { data, error } = await supabaseClient.from('profiles').select().eq('id', user.id).single()
-
-      if (error) {
-        console.error(error)
-        toast.error('Error fetching your profile' + error.message)
-      } else {
-        setProfileData(data)
-        setFullName(data.full_name || '')
-        setUserName(data.username || '')
-        setBio(data.about || '')
-        setCompany(data.company || '')
-        setJobTitle(data.job_title || '')
-        setTwitter(data.twitter || '')
-        setFacebook(data.facebook || '')
-        setWebsite(data.website || '')
-        setLoadingProfileData(false)
-      }
+    if (profileFetchingError) {
+      console.error(profileFetchingError)
+      toast.error('Error fetching your profile' + profileFetchingError.message)
     }
-    fetchProfile()
-  }, [])
+    if (profileData) {
+      setFullName(profileData.full_name || '')
+      setUserName(profileData.username || '')
+      setBio(profileData.about || '')
+      setCompany(profileData.company || '')
+      setJobTitle(profileData.job_title || '')
+      setTwitter(profileData.twitter || '')
+      setFacebook(profileData.facebook || '')
+      setWebsite(profileData.website || '')
+    }
+  }, [loadingProfileData, profileData, profileFetchingError])
 
   const checkUserName = useCallback(async (userName) => {
     if (userName && userName.length < 4 && userName.indexOf(' ') >= 0) {
