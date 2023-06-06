@@ -1,31 +1,18 @@
 import HeadSeo from '../components/HeadSeo'
-import Image from 'next/image'
 import { useUser } from '@supabase/auth-helpers-react'
 import dynamic from 'next/dynamic'
-import {
-  Tabs,
-  TabList,
-  Tab,
-  TabPanels,
-  TabPanel,
-} from '../components/Tabs/Tabs'
+import { Tabs, TabList, Tab, TabPanels, TabPanel } from '../components/Tabs/Tabs'
 import DeckPanel from '../components/pages/panels/DeckPanel'
 import { useEditorStateContext } from '../context/EditorContext'
 import { Avatar } from '../components/Avatar'
+import { DocsPlus } from '@components/icons/Icons'
 
 const DashboardLayout = dynamic(() => import('./layouts/DashboardLayout'))
-const SignInPanel = dynamic(
-  () => import('../components/pages/panels/SignInPanel'),
-  {
-    loading: () => <div>Loading...</div>,
-  }
-)
-const DocumentsPanel = dynamic(() =>
-  import('../components/pages/panels/DocumentsPanel')
-)
-const ProfilePanel = dynamic(() =>
-  import('../components/pages/panels/profile/ProfilePanel')
-)
+const SignInPanel = dynamic(() => import('../components/pages/panels/SignInPanel'), {
+  loading: () => <div>Loading...</div>
+})
+const DocumentsPanel = dynamic(() => import('../components/pages/panels/DocumentsPanel'))
+const ProfilePanel = dynamic(() => import('../components/pages/panels/profile/ProfilePanel'))
 
 function TabLayout({ children }) {
   return (
@@ -48,10 +35,10 @@ export default function Home() {
             className={`${
               isAuthServiceAvailable ? 'flex' : 'hidden'
             } bg-slate-200 rounded-t-md relative drop-shadow-md z-0 -bottom-1 `}>
-            <Tab name="deck">Docs.plus Deck</Tab>
-            {isAuthServiceAvailable && user && (
-              <Tab name="documents">Documents</Tab>
-            )}
+            <Tab name="deck" className="flex items-center ">
+              <DocsPlus size={26} />
+            </Tab>
+            {isAuthServiceAvailable && user && <Tab name="documents">Documents</Tab>}
             {isAuthServiceAvailable && !user && (
               <Tab name="sign-in" className="ml-auto">
                 Sign in
