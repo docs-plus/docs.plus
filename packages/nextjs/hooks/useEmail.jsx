@@ -20,7 +20,7 @@ const useEmail = (initialEmail = '') => {
     validateEmail(email)
   }, [email, validateEmail])
 
-  return { email, setEmail, error }
+  return { email, setEmail, error, setError }
 }
 
 export default useEmail
