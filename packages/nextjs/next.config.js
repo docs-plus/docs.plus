@@ -7,7 +7,7 @@ const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
   skipWaiting: false,
-  runtimeCaching,
+  runtimeCaching
   // disable: process.env.NODE_ENV === 'development',
   // disableDevLogs: true,
 })
@@ -19,17 +19,20 @@ module.exports = withPWA({
         protocol: 'https',
         hostname: '*.googleusercontent.com',
         port: '',
-        pathname: '/**',
+        pathname: '/**'
       },
       {
         protocol: 'https',
         hostname: '*.supabase.co',
         port: '',
-        pathname: '/**',
-      },
-    ],
+        pathname: '/**'
+      }
+    ]
   },
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: true
   },
+  compiler: {
+    removeConsole: isProduction
+  }
 })
