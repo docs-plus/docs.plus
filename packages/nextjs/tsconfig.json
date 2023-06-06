@@ -1,11 +1,22 @@
 {
   "compilerOptions": {
     "target": "es5",
+    "baseUrl": ".",
     "lib": [
       "dom",
       "dom.iterable",
       "esnext"
     ],
+     "paths": {
+      "@utils/*": ["utils/*"],
+      "@components/*": ["components/*"],
+      "@pages/*": ["components/pages/*"],
+      "@icons/*": ["components/icons/*"],
+      "@tiptap/*": ["components/TipTap/*"],
+      "@hooks/*": ["hooks/*"],
+      "@context/*": ["context/*"],
+      "@public/*": ["public/*"]
+     },
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
