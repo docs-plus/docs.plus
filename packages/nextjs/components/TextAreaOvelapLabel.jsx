@@ -1,14 +1,11 @@
-const TextAreaOvelapLabel = ({
-  label,
-  value = null,
-  onChange,
-  id,
-  ...props
-}) => {
+import { randstr } from '@utils/index'
+
+const TextAreaOvelapLabel = ({ label, value = null, onChange, id, ...props }) => {
+  id = id || randstr('textarea_')
   return (
-    <div
-      className={`relative border rounded-md subpixel-antialiased ${props.className}`}>
+    <div className={`relative border rounded-md subpixel-antialiased ${props.className}`}>
       <textarea
+        id={id}
         value={value}
         onChange={onChange}
         placeholder=" "
