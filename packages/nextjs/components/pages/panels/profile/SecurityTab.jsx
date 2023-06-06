@@ -7,7 +7,8 @@ import TabSection from './components/TabSection'
 import InputOverlapLabel from '../../../InputOverlapLabel'
 import Button from '../../../Button'
 import toast from 'react-hot-toast'
-import useEmail from '../../../../hooks/useEmail'
+import useEmail from '@hooks/useEmail'
+import useProfileData from '@hooks/useProfileData'
 
 const ChangeEmailSection = ({ email, emailError, handleEmailChange, saveNewEmail, loading, setLoading }) => (
   <div className="border-l h-full">
@@ -43,16 +44,9 @@ const SecuritySection = ({ email, profileData, loading, setLoading }) => (
     <TabTitle>Security</TabTitle>
     <TabSection name="Account email" description="The email address associated with your docs.plus account">
       <div className="flex flex-col">
-        <InputOverlapLabel
-          Icon={Envelope}
-          size={18}
-          label="Email"
-          className="mt-4"
-          value={email || profileData?.email}
-          disabled={true}
-        />
+        <InputOverlapLabel Icon={Envelope} size={18} label="Email" className="mt-4" value={email} disabled={true} />
       </div>
-      <Button className="mt-6 w-40" onClick={() => setLoading(true)}>
+      <Button className="mt-6 w-40" loading={loading} onClick={() => setLoading(true)}>
         Change Email
       </Button>
     </TabSection>
@@ -62,28 +56,23 @@ const SecuritySection = ({ email, profileData, loading, setLoading }) => (
 const SecurityTab = () => {
   const user = useUser()
   const supabaseClient = useSupabaseClient()
+  const { profileData, loadingProfileData, profileFetchingError } = useProfileData()
 
   const { email, setEmail, error: emailError } = useEmail(user.email)
   const [displayChangeEmailSection, setDisplayChangeEmailSection] = useState(false)
   const [loading, setLoading] = useState(false)
-  const [profileData, setProfileData] = useState(null)
-  const [loadingProfileData, setLoadingProfileData] = useState(true)
 
   useEffect(() => {
-    setLoadingProfileData(true)
-    const fetchProfile = async () => {
-      const { data, error } = await supabaseClient.from('profiles').select().eq('id', user.id).single()
-      if (error) {
-        console.error(error)
-        toast.error('Error fetching your profile: ' + error.message)
-      } else {
-        setProfileData(data)
-        setEmail(data.email || user.email)
-        setLoadingProfileData(false)
-      }
+    if (profileFetchingError) {
+      console.error(profileFetchingError)
+      toast.error('Error fetching your profile: ' + profileFetchingError.message)
     }
-    fetchProfile()
-  }, [user.id, supabaseClient, setEmail])
+  }, [loadingProfileData, profileData, profileFetchingError])
+
+  if (profileFetchingError) {
+    console.error(profileFetchingError)
+    toast.error('Error fetching your profile: ' + profileFetchingError.message)
+  }
 
   const validateEmailMutation = useMutation(
     (email) =>
@@ -119,22 +108,33 @@ const SecurityTab = () => {
     if (emailError) return
     if (email.length === 0) return
 
+    setLoading(true)
+
     try {
       const { isValid } = await validateEmailMutation.mutateAsync(email)
       if (!isValid) return
 
-      const { error } = await supabaseClient.from('profiles').update({ email }).eq('id', user.id)
+      // const { error } = await supabaseClient.from('profiles').update({ email }).eq('id', user.id)
+      const { user, error } = await supabaseClient.auth.updateUser({
+        email,
+        options: {
+          emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT
+        }
+      })
+
       if (error) {
         console.error(error)
         toast.error('Error updating your email: ' + error.message)
       } else {
-        toast.success('Email updated successfully')
+        toast.success('Email update initiated! Please check your new email address for a confirmation link.')
+
         setDisplayChangeEmailSection(false)
       }
     } catch (error) {
       console.error(error)
     } finally {
       setLoading(false)
+      setEmail(user.email)
     }
   }
 

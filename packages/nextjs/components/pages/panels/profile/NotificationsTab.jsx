@@ -5,6 +5,7 @@ import Checkbox from '../../../../components/Checkbox'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
+import useProfileData from '@hooks/useProfileData'
 
 const ToggleSection = ({ name, description, value, checked, onChange, children }) => {
   return (
@@ -23,38 +24,70 @@ const ToggleSection = ({ name, description, value, checked, onChange, children }
 const NotificationsTab = () => {
   const user = useUser()
   const supabaseClient = useSupabaseClient()
+  const { profileData, profileFetchingError, loadingProfileData } = useProfileData()
 
   const [pushNotifications, setPushNotifications] = useState(false)
   const [emailNotifications, setEmailNotifications] = useState(false)
-  const [loadingProfileData, setLoadingProfileData] = useState(false)
-  const [profileData, setProfileData] = useState(null)
+  const [notificationNewActivity, setNotificationNewActivity] = useState(false)
 
   useEffect(() => {
-    setLoadingProfileData(true)
-    const fetchProfile = async () => {
-      const { data, error } = await supabaseClient.from('profiles').select().eq('id', user.id).single()
-
-      if (error) {
-        console.error(error)
-        toast.error('Error fetching your profile' + error.message)
-      } else {
-        setProfileData(data)
-        setLoadingProfileData(false)
-      }
+    if (profileFetchingError) {
+      console.error(profileFetchingError)
+      toast.error('Error fetching your profile' + profileFetchingError.message)
     }
-    fetchProfile()
-  }, [])
+    if (!loadingProfileData && profileData) {
+      setPushNotifications(profileData.push_notifications)
+      setEmailNotifications(profileData.email_notifications)
+      setNotificationNewActivity(profileData.email_notification_new_activity)
+    }
+  }, [loadingProfileData, profileData, profileFetchingError])
 
-  const changePushNotifications = (e) => {
-    console.log(e.target.checked)
+  const changePushNotifications = async (e) => {
     setPushNotifications(e.target.checked)
+
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .update({ push_notifications: e.target.checked })
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      console.error(error)
+      toast.error('Error updating your profile' + error.message)
+    }
+    toast.success('Profile updated')
   }
-  const changeEmailNotifications = (e) => {
-    console.log(e.target.checked)
+  const changeEmailNotifications = async (e) => {
     setEmailNotifications(e.target.checked)
+
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .update({ email_notifications: e.target.checked })
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      console.error(error)
+      toast.error('Error updating your profile' + error.message)
+    }
+    toast.success('Profile updated')
   }
 
-  if (loadingProfileData) return <div className="p-4">Loading...</div>
+  const changeNotificationNewActivity = async (e) => {
+    setNotificationNewActivity(e.target.checked)
+
+    const { data, error } = await supabaseClient
+      .from('profiles')
+      .update({ email_notification_new_activity: e.target.checked })
+      .eq('id', user.id)
+      .single()
+
+    if (error) {
+      console.error(error)
+      toast.error('Error updating your profile' + error.message)
+    }
+    toast.success('Profile updated')
+  }
 
   return (
     <div className="border-l h-full">
@@ -80,7 +113,12 @@ const NotificationsTab = () => {
           />
 
           <TabSection name="Send me emails for:" className={`${emailNotifications ? 'flex' : 'hidden'}`}>
-            <Checkbox className="mt-2" label="New activity notifications (mentions, replies, etc.)" />
+            <Checkbox
+              className="mt-2"
+              label="New activity notifications (mentions, replies, etc.)"
+              onChange={changeNotificationNewActivity}
+              checked={notificationNewActivity}
+            />
             <Checkbox
               className="mt-2"
               label="Email me System notifications (security related, always on)"
