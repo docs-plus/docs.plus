@@ -22,7 +22,7 @@ function TabLayout({ children }) {
   )
 }
 
-export default function Home() {
+function Home({ hostname }) {
   const user = useUser()
   const { isAuthServiceAvailable } = useEditorStateContext()
 
@@ -57,7 +57,7 @@ export default function Home() {
           </TabList>
           <TabPanels className="bg-white rounded-md shadow max-w-5xl relative z-10">
             <TabLayout name="deck">
-              <DeckPanel />
+              <DeckPanel hostname={hostname} />
             </TabLayout>
             {isAuthServiceAvailable && user && (
               <TabLayout name="documents">
@@ -79,4 +79,12 @@ export default function Home() {
       </div>
     </div>
   )
+}
+
+export default Home
+
+export async function getServerSideProps({ req, res }) {
+  return {
+    props: { hostname: req?.headers?.host }
+  }
 }
