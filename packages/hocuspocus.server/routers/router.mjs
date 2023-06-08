@@ -20,16 +20,7 @@ const createNewDocument = async (slug, title, description = '', keywords = '') =
     documentId,
     keywords: keywords && keywords?.join(', ')
   }
-  const metadata = await prisma.documentMetadata.create({ data: newDocumentMeta })
-
-  await prisma.documents.create({
-    data: {
-      documentId,
-      data: Buffer.from([])
-    }
-  })
-
-  return metadata
+  return prisma.documentMetadata.create({ data: newDocumentMeta })
 }
 
 router.get('/documents/:docName', async (req, res) => {
