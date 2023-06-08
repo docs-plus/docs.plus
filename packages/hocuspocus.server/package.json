@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "generate:dev": "cp ./prisma/schema-dev.prisma ./prisma/schema.prisma && prisma migrate dev --name init",
-    "generate:prod": "cp ./prisma/schema-prod.prisma ./prisma/schema.prisma && prisma migrate deploy",
+    "generate:dev": "prisma migrate dev --name init",
+    "generate:prod": "prisma migrate deploy",
     "start:production:rest": "npm run generate:prod && NODE_ENV=production npx prisma migrate deploy && node index.js",
     "start:production:ws": "NODE_ENV=production node -r dotenv/config hocuspocus.server.js",
     "dev": "NODE_ENV=development nodemon index.js",
