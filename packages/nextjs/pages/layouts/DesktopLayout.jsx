@@ -23,7 +23,7 @@ const scrollHeadingSelection = (event) => {
   closest.at(-1)?.scrollIntoView({
     behavior: 'smooth',
     block: 'start',
-    inline: 'nearest',
+    inline: 'nearest'
   })
 }
 
@@ -36,27 +36,14 @@ const DesktopLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
     const divProseMirror = document.querySelector('.ProseMirror')
     divProseMirror?.setAttribute('contenteditable', 'true')
     document.querySelector('html').classList.remove('m_mobile')
-  })
+  }, [])
 
   return (
     <>
-      <HeadSeo
-        title={documentTitle}
-        description="another open docs plus document"
-      />
-      <div
-        className={`pad tiptap flex flex-col border-solid ${
-          isMobile ? ' m_mobile' : 'm_desktop'
-        }`}>
+      <HeadSeo title={documentTitle} description="another open docs plus document" />
+      <div className={`pad tiptap flex flex-col border-solid ${isMobile ? ' m_mobile' : 'm_desktop'}`}>
         <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
-          {docSlug && (
-            <PadTitle
-              docSlug={docSlug}
-              docId={docId}
-              docTitle={documentTitle}
-              provider={provider}
-            />
-          )}
+          {docSlug && <PadTitle docSlug={docSlug} docId={docId} docTitle={documentTitle} provider={provider} />}
         </div>
         <div className="toolbars w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative">
           {editor ? <Toolbar editor={editor} /> : 'Loading...'}

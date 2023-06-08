@@ -21,15 +21,8 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     document.body.classList.add('filter-mode')
   }
 
-  const {
-    rendering,
-    setRendering,
-    loading,
-    setLoading,
-    applyingFilters,
-    setApplyingFilters,
-    isMobile,
-  } = useEditorStateContext()
+  const { rendering, setRendering, loading, setLoading, applyingFilters, setApplyingFilters, isMobile } =
+    useEditorStateContext()
 
   // check if the document is in the filter mode
   useEffect(() => {
@@ -38,26 +31,16 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     }
   }, [slugs, setApplyingFilters])
 
-  const { documentTitle, docId, isLoading, error, isSuccess } =
-    useDocumentMetadata(docSlug, docTitle, slugs)
-  const { ydoc, provider, loadedData, setLoadedData } = useYdocAndProvider(
-    docId,
-    setLoading
+  const { documentTitle, docId, isLoading, error, isSuccess, documentId } = useDocumentMetadata(
+    docSlug,
+    docTitle,
+    slugs
   )
+  const { ydoc, provider, loadedData, setLoadedData } = useYdocAndProvider(documentId, setLoading)
 
-  const editor = useEditor(editorConfig({ padName: docId, provider, ydoc }), [
-    loading,
-    applyingFilters,
-  ])
+  const editor = useEditor(editorConfig({ padName: docId, provider, ydoc }), [loading, applyingFilters])
 
-  useApplyFilters(
-    editor,
-    slugs,
-    applyingFilters,
-    setApplyingFilters,
-    router,
-    rendering
-  )
+  useApplyFilters(editor, slugs, applyingFilters, setApplyingFilters, router, rendering)
 
   useEffect(() => {
     if (!editor || loading) return
@@ -95,6 +78,6 @@ export async function getServerSideProps(context) {
   const res = await fetch(url)
   const data = await res.json()
   return {
-    props: { docTitle: data.data.title, docSlug: documentSlug },
+    props: { docTitle: data.data.title, docSlug: documentSlug }
   }
 }
