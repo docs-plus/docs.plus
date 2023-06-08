@@ -15,28 +15,26 @@ const PadTitle = ({ docTitle, docId, docSlug, provider, editor }) => {
     mutationKey: ['updateDocumentMetadata'],
     mutationFn: ({ title, docId }) => {
       // NOTE: This is a hack to get the correct URL in the build time
-      const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${docId
-        .split('.')
-        .at(-1)}`
+      const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${docId.split('.').at(-1)}`
 
       return fetch(url, {
         method: 'PUT',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ title }),
+        body: JSON.stringify({ title })
       }).then((res) => res.json())
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['getDocumentMetadataByDocName'], data)
-    },
+    }
   })
 
   const saveData = (e) => {
     if (e.target.innerText === docTitle) return
     mutate({
       title: e.target.innerText,
-      docId: docId.split('.').at(-1),
+      docId: docId.split('.').at(-1)
     })
   }
 
@@ -74,9 +72,7 @@ const PadTitle = ({ docTitle, docId, docSlug, provider, editor }) => {
       </div>
       <div className="sm:hidden">
         {isKeyboardOpen ? (
-          <button
-            onTouchStart={btn_blurEditor}
-            className="w-10 h-10 flex align-middle justify-center items-center">
+          <button onTouchStart={btn_blurEditor} className="w-10 h-10 flex align-middle justify-center items-center">
             <Check size="30" />
           </button>
         ) : (
