@@ -9,26 +9,26 @@ const HeadSeo = (
   { title, description, url } = {
     title: TITLE,
     description: DESCRIPTION,
-    url: URL,
+    url: URL
   }
 ) => {
   return (
     <Head>
       <title>{title}</title>
-      <meta content={description} name="description" />
+      <meta name="description" content={description} />
 
-      <meta name="twitter:card" content="Docs Plus" />
+      <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:url" content={url} />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content="/icons/maskable_icon_x512.png" />
+      <meta name="twitter:image" content="/icons/logo.svg" />
 
       <meta property="og:type" content="website" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:site_name" content="Docs Plus" />
       <meta property="og:url" content={url} />
-      <meta property="og:image" content="/icons/maskable_icon_x512.png" />
+      <meta property="og:image" content="/icons/logo.svg" />
     </Head>
   )
 }
