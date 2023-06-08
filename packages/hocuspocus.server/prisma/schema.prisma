@@ -7,22 +7,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Document {
-  id        Int               @id @default(autoincrement())
-  data      Bytes
-  createdAt DateTime          @default(now())
-  updatedAt DateTime          @updatedAt
-  metadata  DocumentMetadata?
+model Documents {
+  id         Int              @id @default(autoincrement())
+  documentId String
+  data       Bytes
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  metadata   DocumentMetadata @relation(fields: [documentId], references: [documentId])
 }
 
 model DocumentMetadata {
-  id          Int      @id @default(autoincrement())
-  slug        String   @unique
+  id          Int         @id @default(autoincrement())
+  slug        String      @unique
   title       String
   description String
-  isPrivate   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-  documentId  Int      @unique
-  document    Document @relation(fields: [documentId], references: [id])
+  isPrivate   Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  documentId  String      @unique
+  documents   Documents[]
 }
