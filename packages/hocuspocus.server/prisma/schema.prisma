@@ -21,6 +21,7 @@ model DocumentMetadata {
   slug        String      @unique
   title       String
   description String
+  keywords    String
   isPrivate   Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
