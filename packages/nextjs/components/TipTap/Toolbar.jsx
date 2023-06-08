@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { useEffect, useState, useCallback, useRef, useMemo, use } from 'react'
 import Select from 'react-select'
 import { useRouter } from 'next/router'
 import {
@@ -17,8 +17,14 @@ import {
   Undo,
   Redo,
   Printer,
-  Filter,
+  Filter
 } from '../../components/icons/Icons'
+import toast from 'react-hot-toast'
+
+import TextAreaOvelapLabel from '../../components/TextAreaOvelapLabel'
+import Button from '../../components/Button'
+
+import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
 
 const GearModal = (props) => {
   return <div className="gearModal nd_modal">{props.children}</div>
@@ -27,8 +33,25 @@ const FilterModal = (props) => {
   return <div className="filterModal nd_modal">{props.children}</div>
 }
 
-const Toolbar = ({ editor }) => {
+const Toolbar = ({ editor, docId, documentDescription = '' }) => {
+  console.log(documentDescription, '=documentDescription')
   const router = useRouter()
+  const [docDescription, setDocDescription] = useState(documentDescription)
+
+  const { isLoading, isSuccess, mutate } = useUpdateDocMetadata()
+
+  const saveDocDescriptionHandler = (e) => {
+    mutate({
+      description: docDescription,
+      docId: docId.split('.').at(-1)
+    })
+  }
+
+  useEffect(() => {
+    if (isSuccess) {
+      toast.success('Description updated')
+    }
+  }, [isLoading, isSuccess])
 
   const setLink = useCallback(() => {
     const previousUrl = editor.getAttributes('link').href
@@ -73,7 +96,7 @@ const Toolbar = ({ editor }) => {
     { value: 7, label: 'Heading 7' },
     { value: 8, label: 'Heading 8' },
     { value: 9, label: 'Heading 9' },
-    { value: 10, label: 'Heading 10' },
+    { value: 10, label: 'Heading 10' }
   ]
 
   const [selectedOption, setSelectedOption] = useState(options[0])
@@ -83,9 +106,7 @@ const Toolbar = ({ editor }) => {
   const filterSearchRef = useRef(null)
 
   useEffect(() => {
-    const selectedHeadingOption = options.find((option) =>
-      editor.isActive('contentHeading', { level: option.value })
-    )
+    const selectedHeadingOption = options.find((option) => editor.isActive('contentHeading', { level: option.value }))
 
     setSelectValue(selectedHeadingOption || options.at(0))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -109,9 +130,7 @@ const Toolbar = ({ editor }) => {
   }
 
   const useBooleanLocalStorageState = (key, defaultValue) => {
-    const [state, setState] = useState(() =>
-      getLocalStorageBoolean(key, defaultValue)
-    )
+    const [state, setState] = useState(() => getLocalStorageBoolean(key, defaultValue))
 
     const updateState = (newValue) => {
       setState(newValue)
@@ -121,12 +140,11 @@ const Toolbar = ({ editor }) => {
     return [state, updateState]
   }
 
-  const [indentSetting, setIndentSetting] = useBooleanLocalStorageState(
-    'setting.indentHeading',
-    false
+  const [indentSetting, setIndentSetting] = useBooleanLocalStorageState('setting.indentHeading', false)
+  const [h1SectionBreakSetting, setH1SectionBreakSetting] = useBooleanLocalStorageState(
+    'setting.h1SectionBreakSetting',
+    true
   )
-  const [h1SectionBreakSetting, setH1SectionBreakSetting] =
-    useBooleanLocalStorageState('setting.h1SectionBreakSetting', true)
 
   useEffect(() => {
     if (h1SectionBreakSetting) {
@@ -296,9 +314,7 @@ const Toolbar = ({ editor }) => {
         </button>
       </span>
 
-      <button
-        className={editor.isActive('link') ? 'is-active' : ''}
-        onClick={setLink}>
+      <button className={editor.isActive('link') ? 'is-active' : ''} onClick={setLink}>
         <Link fill="rgba(0,0,0,.7)" size="18" />
       </button>
 
@@ -331,19 +347,27 @@ const Toolbar = ({ editor }) => {
         <Filter fill="rgba(0,0,0,.7)" size="20" />
       </button>
 
-      <button
-        className="btn_settingModal btn_modal"
-        onClick={toggleSettingModal}>
+      <button className="btn_settingModal btn_modal" onClick={toggleSettingModal}>
         <Gear fill="rgba(0,0,0,.7)" size="16" />
       </button>
 
       <GearModal>
         <p className="font-medium text-base text-gray-400 pb-1">Settings:</p>
         <hr />
+        <div className="content pt-5 flex flex-col !items-end">
+          <TextAreaOvelapLabel
+            label="Document Description"
+            value={docDescription}
+            onChange={(e) => setDocDescription(e.target.value)}
+            className="w-full h-20"
+          />
+          <Button loading={isLoading} className="!w-20 mt-2" onClick={saveDocDescriptionHandler}>
+            Save
+          </Button>
+        </div>
+        <hr className="my-2" />
         <div className="content pt-5 ">
-          <label
-            className="inline-flex relative items-center cursor-pointer"
-            htmlFor="headingIndent-toggle">
+          <label className="inline-flex relative items-center cursor-pointer" htmlFor="headingIndent-toggle">
             <input
               checked={indentSetting}
               className="sr-only peer"
@@ -353,16 +377,11 @@ const Toolbar = ({ editor }) => {
               onChange={(e) => toggleIndentSetting(e.target)}
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-            <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-              {' '}
-              Toggle heading indent
-            </span>
+            <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300"> Toggle heading indent</span>
           </label>
         </div>
         <div className="content pt-5 ">
-          <label
-            className="inline-flex relative items-center cursor-pointer"
-            htmlFor="h1sectionbreak-toggle">
+          <label className="inline-flex relative items-center cursor-pointer" htmlFor="h1sectionbreak-toggle">
             <input
               checked={h1SectionBreakSetting}
               className="sr-only peer"
@@ -372,10 +391,7 @@ const Toolbar = ({ editor }) => {
               onChange={(e) => toggleH1SectionBreakSetting(e.target)}
             />
             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-            <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">
-              {' '}
-              Toggle H1 section break
-            </span>
+            <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300"> Toggle H1 section break</span>
           </label>
         </div>
       </GearModal>
@@ -395,9 +411,7 @@ const Toolbar = ({ editor }) => {
           <p className="ml-2 text-sm">
             {totalSearch} of {totalHeading}
           </p>
-          <button
-            onClick={applySerchThroughHeading}
-            className="!p-3 !w-16  border">
+          <button onClick={applySerchThroughHeading} className="!p-3 !w-16  border">
             Apply
           </button>
         </div>

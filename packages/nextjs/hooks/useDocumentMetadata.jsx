@@ -21,13 +21,15 @@ const useDocumentMetadata = (docSlug, docTitle, slugs) => {
   const [documentTitle, setDocumentTitle] = useState(docTitle)
   const [docId, setDocId] = useState(null)
   const [documentId, setDocumentId] = useState(null)
+  const [documentDescription, setDocumentDescription] = useState(null)
 
   useEffect(() => {
     if (data?.data?.documentId) {
-      const { documentId, isPrivate } = data?.data
+      const { documentId, description, isPrivate } = data?.data
       setDocumentId(documentId)
 
       setDocumentTitle(data?.data.title)
+      setDocumentDescription(description)
       setDocId(`${isPrivate ? 'private' : 'public'}.${documentId}`)
       localStorage.setItem('docId', documentId)
       localStorage.setItem('padName', `${isPrivate ? 'private' : 'public'}.${documentId}`)
@@ -55,7 +57,8 @@ const useDocumentMetadata = (docSlug, docTitle, slugs) => {
     isLoading,
     error,
     isSuccess,
-    documentId
+    documentId,
+    documentDescription
   }
 }
 

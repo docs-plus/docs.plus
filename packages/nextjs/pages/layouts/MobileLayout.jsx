@@ -9,15 +9,8 @@ import { Pencil } from '../../components/icons/Icons'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import ToolbarMobile from './../components/ToolbarMobile'
 
-const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
-  const {
-    isMobile,
-    selectionPos,
-    setSelectionPos,
-    rendering,
-    loading,
-    deviceDetect,
-  } = useEditorStateContext()
+const MobileLayout = ({ documentTitle, documentDescription, docSlug, docId, provider, editor }) => {
+  const { isMobile, selectionPos, setSelectionPos, rendering, loading, deviceDetect } = useEditorStateContext()
   const [showToolbar, setShowToolbar] = useState(false)
 
   // check if keyboard is open
@@ -89,9 +82,7 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
       document.body.style.height = `${viewportHeight}px`
       document.querySelector('html').style.height = `${viewportHeight}px`
 
-      document.querySelector('.toolbars').style.top = `${
-        Math.trunc(viewport.height) - 44
-      }px`
+      document.querySelector('.toolbars').style.top = `${Math.trunc(viewport.height) - 44}px`
 
       const selection = window?.getSelection()?.anchorNode?.parentElement
       if (!selection) return
@@ -99,7 +90,7 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
         if (event.type !== 'scroll') {
           selection?.scrollIntoView({
             behavior: 'instant',
-            block: 'start',
+            block: 'start'
           })
         }
       }
@@ -116,30 +107,22 @@ const MobileLayout = ({ documentTitle, docSlug, docId, provider, editor }) => {
 
   return (
     <>
-      <HeadSeo
-        title={documentTitle}
-        description="another open docs plus document"
-      />
-      <div
-        className={`pad tiptap relative flex  flex-col border-solid ${
-          isMobile ? 'm_mobile' : 'm_desktop'
-        }`}>
+      <HeadSeo title={documentTitle} description="another open docs plus document" />
+      <div className={`pad tiptap relative flex  flex-col border-solid ${isMobile ? 'm_mobile' : 'm_desktop'}`}>
         <div className="docTitle top-0 bg-white w-full min-h-14 p-2 flex flex-row items-center sm:border-b-0 border-b">
           {docSlug && (
-            <PadTitle
-              docSlug={docSlug}
-              docId={docId}
-              docTitle={documentTitle}
-              provider={provider}
-              editor={editor}
-            />
+            <PadTitle docSlug={docSlug} docId={docId} docTitle={documentTitle} provider={provider} editor={editor} />
           )}
         </div>
         <div
           className={`${
             isKeyboardOpen ? 'block' : 'hidden'
           } toolbars  w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative`}>
-          {editor ? <ToolbarMobile editor={editor} /> : 'Loading...'}
+          {editor ? (
+            <ToolbarMobile editor={editor} documentDescription={documentDescription} docId={docId} />
+          ) : (
+            'Loading...'
+          )}
         </div>
         <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
           <div className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4">

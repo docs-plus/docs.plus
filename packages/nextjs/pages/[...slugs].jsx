@@ -31,11 +31,17 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     }
   }, [slugs, setApplyingFilters])
 
-  const { documentTitle, docId, isLoading, error, isSuccess, documentId } = useDocumentMetadata(
+  const { documentTitle, documentDescription, docId, isLoading, error, isSuccess, documentId } = useDocumentMetadata(
     docSlug,
     docTitle,
     slugs
   )
+
+  console.log({
+    documentTitle,
+    documentDescription
+  })
+
   const { ydoc, provider, loadedData, setLoadedData } = useYdocAndProvider(documentId, setLoading)
 
   const editor = useEditor(editorConfig({ padName: docId, provider, ydoc }), [loading, applyingFilters])
@@ -52,6 +58,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
       {isMobile ? (
         <MobileLayout
           documentTitle={documentTitle}
+          documentDescription={documentDescription}
           docSlug={docSlug}
           docId={docId}
           provider={provider}
@@ -60,6 +67,7 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
       ) : (
         <DesktopLayout
           documentTitle={documentTitle}
+          documentDescription={documentDescription}
           docSlug={docSlug}
           docId={docId}
           provider={provider}
