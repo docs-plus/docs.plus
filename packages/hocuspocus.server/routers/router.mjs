@@ -8,10 +8,19 @@ import ShortUniqueId from 'short-unique-id'
 const prisma = new PrismaClient()
 const router = expressRouter()
 
-const createNewDocument = (slug, title, description) => {
+const createNewDocument = async (slug, title, description) => {
   const newSlug = slugify(slug, { lower: true, strict: true })
   const uid = new ShortUniqueId()
   const documentId = uid.stamp(19)
+
+  // First, create a new Document
+  await prisma.document.create({
+    data: {
+      documentId,
+      // Add any other necessary fields for Document
+      data: Buffer.from([]) // for example
+    }
+  })
 
   const newDocumentMeta = {
     slug: newSlug,
