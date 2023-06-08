@@ -9,7 +9,14 @@ import { Pencil } from '../../components/icons/Icons'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import ToolbarMobile from './../components/ToolbarMobile'
 
-const MobileLayout = ({ documentTitle, documentDescription, docSlug, docId, provider, editor }) => {
+const MobileLayout = ({
+  documentTitle,
+  documentDescription = 'another open docs plus document',
+  docSlug,
+  docId,
+  provider,
+  editor
+}) => {
   const { isMobile, selectionPos, setSelectionPos, rendering, loading, deviceDetect } = useEditorStateContext()
   const [showToolbar, setShowToolbar] = useState(false)
 
@@ -107,7 +114,7 @@ const MobileLayout = ({ documentTitle, documentDescription, docSlug, docId, prov
 
   return (
     <>
-      <HeadSeo title={documentTitle} description="another open docs plus document" />
+      <HeadSeo title={documentTitle} description={documentDescription} />
       <div className={`pad tiptap relative flex  flex-col border-solid ${isMobile ? 'm_mobile' : 'm_desktop'}`}>
         <div className="docTitle top-0 bg-white w-full min-h-14 p-2 flex flex-row items-center sm:border-b-0 border-b">
           {docSlug && (

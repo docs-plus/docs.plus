@@ -11,7 +11,7 @@ import useDocumentMetadata from '../hooks/useDocumentMetadata'
 import MobileLayout from './layouts/MobileLayout'
 import DesktopLayout from './layouts/DesktopLayout'
 
-const OpenDocuments = ({ docTitle, docSlug }) => {
+const OpenDocuments = ({ docTitle, docSlug, documentDescription }) => {
   const router = useRouter()
   const { slugs } = router?.query
 
@@ -31,16 +31,11 @@ const OpenDocuments = ({ docTitle, docSlug }) => {
     }
   }, [slugs, setApplyingFilters])
 
-  const { documentTitle, documentDescription, docId, isLoading, error, isSuccess, documentId } = useDocumentMetadata(
+  const { documentTitle, docId, isLoading, error, isSuccess, documentId } = useDocumentMetadata(
     docSlug,
     docTitle,
     slugs
   )
-
-  console.log({
-    documentTitle,
-    documentDescription
-  })
 
   const { ydoc, provider, loadedData, setLoadedData } = useYdocAndProvider(documentId, setLoading)
 
@@ -86,6 +81,6 @@ export async function getServerSideProps(context) {
   const res = await fetch(url)
   const data = await res.json()
   return {
-    props: { docTitle: data.data.title, docSlug: documentSlug }
+    props: { docTitle: data.data.title, documentDescription: data.data.description, docSlug: documentSlug }
   }
 }
