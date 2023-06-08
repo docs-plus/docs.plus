@@ -8,27 +8,28 @@ import ShortUniqueId from 'short-unique-id'
 const prisma = new PrismaClient()
 const router = expressRouter()
 
-const createNewDocument = async (slug, title, description) => {
+const createNewDocument = async (slug, title, description = '', keywords = '') => {
   const newSlug = slugify(slug, { lower: true, strict: true })
   const uid = new ShortUniqueId()
   const documentId = uid.stamp(19)
-
-  // First, create a new Document
-  await prisma.document.create({
-    data: {
-      documentId,
-      // Add any other necessary fields for Document
-      data: Buffer.from([]) // for example
-    }
-  })
 
   const newDocumentMeta = {
     slug: newSlug,
     title: title || newSlug,
     description: description || newSlug,
-    documentId
+    documentId,
+    keywords: keywords && keywords?.join(', ')
   }
-  return prisma.documentMetadata.create({ data: newDocumentMeta })
+  const metadata = await prisma.documentMetadata.create({ data: newDocumentMeta })
+
+  await prisma.documents.create({
+    data: {
+      documentId,
+      data: Buffer.from([])
+    }
+  })
+
+  return metadata
 }
 
 router.get('/documents/:docName', async (req, res) => {
@@ -40,22 +41,28 @@ router.get('/documents/:docName', async (req, res) => {
   })
 
   if (doc === null) return createNewDocument(docName)
+  doc.keywords = doc.keywords.split(',').map((k) => k.trim())
 
   return doc
 })
 
-router.get('/documents', (req, res) => {
-  return prisma.documentMetadata.findMany()
+router.get('/documents', async (req, res) => {
+  const doclist = await prisma.documentMetadata.findMany()
+  doclist.forEach((doc) => {
+    doc.keywords = doc.keywords.split(',').map((k) => k.trim())
+  })
+  return doclist
 })
 
 router.post('/documents', validator.body(CREATE_DOCUMENT), async (req, res) => {
-  const { title, slug, description } = req.body
-  return createNewDocument(title, slug, description)
+  const { title, slug, description, keywords } = req.body
+
+  return createNewDocument(slug, title, description, keywords)
 })
 
 router.put('/documents/:docId', validator.body(UPDATE_DOCUMENT_METADATA), async (req, res) => {
   const { docId } = req.params
-  const { title, description } = req.body
+  const { title, description, keywords } = req.body
   const newMetaData = {
     where: {
       documentId: docId
@@ -64,8 +71,12 @@ router.put('/documents/:docId', validator.body(UPDATE_DOCUMENT_METADATA), async 
   }
   if (description) newMetaData.data.description = description
   if (title) newMetaData.data.title = title
+  if (keywords) newMetaData.data.keywords = keywords.join(',')
 
-  return prisma.documentMetadata.update(newMetaData)
+  const updatedDoc = await prisma.documentMetadata.update(newMetaData)
+  updatedDoc.keywords = updatedDoc.keywords.split(',').map((k) => k.trim())
+
+  return updatedDoc
 })
 
 export default router.expressRouter

@@ -1,7 +1,7 @@
 GET http://localhost:2300/api/documents
 
 ###
-GET http://localhost:2300/api/documents/dr3f3d33
+GET http://localhost:2300/api/documents/test
 
 ###
 POST http://localhost:2300/api/documents
@@ -13,11 +13,25 @@ content-type: application/json
   "slug": "dr3f3d33"
 }
 
+
 ###
-PUT http://localhost:2300/api/documents/qAE6401c20ba1s9Lry3
+POST http://localhost:2300/api/documents
+
+{
+  "title": "My new document sdsasd",
+  "content": "This is the content of my new document",
+  "slug": "demopage",
+  "description": "new Demo",
+  "keywords": ["test", "demo231"]
+}
+
+
+###
+PUT http://localhost:2300/api/documents/yg64821524HTbijsCX2
 content-type: application/json
 
 {
-  "title": "My new document11",
-  "description": "new Demo"
+  "title": "My new s",
+  "description": "new Demo hjhjh",
+  "keywords": ["test", "cats" ,"dogs3", "demo"]
 }
