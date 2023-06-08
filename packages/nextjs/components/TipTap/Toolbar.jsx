@@ -171,22 +171,25 @@ const Toolbar = ({ editor, docId, documentDescription = '' }) => {
   }
 
   const toggleSettingModal = (e) => {
-    hideAllModals()
+    hideAllModals('gearModal')
 
-    document.querySelector('.gearModal').classList.toggle('active')
+    const gearModal = document.querySelector('.gearModal')
+    gearModal.classList.toggle('active')
   }
   const toggleFilterModal = (e) => {
-    hideAllModals()
+    hideAllModals('filterModal')
+
+    const filterModal = document.querySelector('.filterModal')
     const headings = document.querySelectorAll('.title')
-    // console.log(search, headings)
+
     setTotalHeading(headings.length)
-    document.querySelector('.filterModal').classList.toggle('active')
+    filterModal.classList.toggle('active')
     filterSearchRef.current.focus()
   }
 
-  const hideAllModals = () => {
-    document.querySelector('.gearModal').classList.remove('active')
-    document.querySelector('.filterModal').classList.remove('active')
+  const hideAllModals = (target) => {
+    if (target === 'gearModal') document.querySelector('.filterModal').classList.remove('active')
+    if (target === 'filterModal') document.querySelector('.gearModal').classList.remove('active')
   }
 
   const hideModals = (e) => {
@@ -359,9 +362,9 @@ const Toolbar = ({ editor, docId, documentDescription = '' }) => {
             label="Document Description"
             value={docDescription}
             onChange={(e) => setDocDescription(e.target.value)}
-            className="w-full h-20"
+            className="w-full "
           />
-          <Button loading={isLoading} className="!w-20 mt-2" onClick={saveDocDescriptionHandler}>
+          <Button loading={isLoading} className="!w-32 !mt-3" onClick={saveDocDescriptionHandler}>
             Save
           </Button>
         </div>
