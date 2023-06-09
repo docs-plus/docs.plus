@@ -115,7 +115,7 @@ const MobileLayout = ({
 
   return (
     <>
-      <HeadSeo title={documentTitle} description={documentDescription} keywords={keywords?.join(',')} />
+      <HeadSeo title={documentTitle} description={documentDescription} keywords={keywords && keywords?.join(',')} />
       <div className={`pad tiptap relative flex  flex-col border-solid ${isMobile ? 'm_mobile' : 'm_desktop'}`}>
         <div className="docTitle top-0 bg-white w-full min-h-14 p-2 flex flex-row items-center sm:border-b-0 border-b">
           {docSlug && <PadTitle docId={docId} docTitle={documentTitle} editor={editor} />}
