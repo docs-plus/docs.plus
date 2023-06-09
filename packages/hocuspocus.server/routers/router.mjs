@@ -32,7 +32,7 @@ router.get('/documents/:docName', async (req, res) => {
   })
 
   if (doc === null) return createNewDocument(docName)
-  doc.keywords = doc.keywords.length === 0 ? [] : doc.keywords.split(',').map((k) => k.trim())
+  if (doc.keywords) doc.keywords = doc.keywords.length === 0 ? [] : doc.keywords.split(',').map((k) => k.trim())
 
   return doc
 })
