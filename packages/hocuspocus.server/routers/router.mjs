@@ -32,7 +32,7 @@ router.get('/documents/:docName', async (req, res) => {
   })
 
   if (doc === null) return createNewDocument(docName)
-  doc.keywords = doc.keywords.split(',').map((k) => k.trim())
+  doc.keywords = doc.keywords.length === 0 ? [] : doc.keywords.split(',').map((k) => k.trim())
 
   return doc
 })
@@ -40,7 +40,7 @@ router.get('/documents/:docName', async (req, res) => {
 router.get('/documents', async (req, res) => {
   const doclist = await prisma.documentMetadata.findMany()
   doclist.forEach((doc) => {
-    doc.keywords = doc.keywords.split(',').map((k) => k.trim())
+    doc.keywords = doc.keywords.length === 0 ? [] : doc.keywords.split(',').map((k) => k.trim())
   })
   return doclist
 })
@@ -65,7 +65,7 @@ router.put('/documents/:docId', validator.body(UPDATE_DOCUMENT_METADATA), async 
   if (keywords) newMetaData.data.keywords = keywords.join(',')
 
   const updatedDoc = await prisma.documentMetadata.update(newMetaData)
-  updatedDoc.keywords = updatedDoc.keywords.split(',').map((k) => k.trim())
+  updatedDoc.keywords = updatedDoc.keywords.length === 0 ? [] : updatedDoc.keywords.split(',').map((k) => k.trim())
 
   return updatedDoc
 })
