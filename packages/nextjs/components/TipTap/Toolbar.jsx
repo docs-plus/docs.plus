@@ -21,6 +21,8 @@ import {
 } from '../../components/icons/Icons'
 import toast from 'react-hot-toast'
 
+import InputTags from '../../components/InputTags'
+
 import TextAreaOvelapLabel from '../../components/TextAreaOvelapLabel'
 import Button from '../../components/Button'
 
@@ -33,17 +35,23 @@ const FilterModal = (props) => {
   return <div className="filterModal nd_modal">{props.children}</div>
 }
 
-const Toolbar = ({ editor, docId, documentDescription = '' }) => {
-  console.log(documentDescription, '=documentDescription')
+const Toolbar = ({ editor, docId, documentDescription = '', keywords = [] }) => {
   const router = useRouter()
   const [docDescription, setDocDescription] = useState(documentDescription)
 
   const { isLoading, isSuccess, mutate } = useUpdateDocMetadata()
 
+  const [tags, setTags] = useState(keywords)
+
+  const handleTagsChange = (newTags) => {
+    setTags(newTags)
+  }
+
   const saveDocDescriptionHandler = (e) => {
     mutate({
+      docId: docId.split('.').at(-1),
       description: docDescription,
-      docId: docId.split('.').at(-1)
+      keywords: tags
     })
   }
 
@@ -364,6 +372,13 @@ const Toolbar = ({ editor, docId, documentDescription = '' }) => {
             onChange={(e) => setDocDescription(e.target.value)}
             className="w-full "
           />
+          <div className=" w-full mt-4">
+            <InputTags
+              label="Document Keywords"
+              placeholder="Type keyword..."
+              onChangeTags={handleTagsChange}
+              defaultTags={tags}></InputTags>
+          </div>
           <Button loading={isLoading} className="!w-32 !mt-3" onClick={saveDocDescriptionHandler}>
             Save
           </Button>

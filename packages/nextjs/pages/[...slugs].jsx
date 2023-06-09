@@ -11,7 +11,7 @@ import useDocumentMetadata from '../hooks/useDocumentMetadata'
 import MobileLayout from './layouts/MobileLayout'
 import DesktopLayout from './layouts/DesktopLayout'
 
-const OpenDocuments = ({ docTitle, docSlug, documentDescription }) => {
+const OpenDocuments = ({ docTitle, docSlug, documentDescription, keywords }) => {
   const router = useRouter()
   const { slugs } = router?.query
 
@@ -53,6 +53,7 @@ const OpenDocuments = ({ docTitle, docSlug, documentDescription }) => {
       {isMobile ? (
         <MobileLayout
           documentTitle={documentTitle}
+          keywords={keywords}
           documentDescription={documentDescription}
           docSlug={docSlug}
           docId={docId}
@@ -62,6 +63,7 @@ const OpenDocuments = ({ docTitle, docSlug, documentDescription }) => {
       ) : (
         <DesktopLayout
           documentTitle={documentTitle}
+          keywords={keywords}
           documentDescription={documentDescription}
           docSlug={docSlug}
           docId={docId}
@@ -79,8 +81,13 @@ export async function getServerSideProps(context) {
   const documentSlug = context.query.slugs.at(0)
   const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentSlug}`
   const res = await fetch(url)
-  const data = await res.json()
+  const { data } = await res.json()
   return {
-    props: { docTitle: data.data.title, documentDescription: data.data.description, docSlug: documentSlug }
+    props: {
+      docTitle: data.title,
+      documentDescription: data.description,
+      keywords: data.keywords,
+      docSlug: documentSlug
+    }
   }
 }

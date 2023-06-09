@@ -15,7 +15,8 @@ const MobileLayout = ({
   docSlug,
   docId,
   provider,
-  editor
+  editor,
+  keywords
 }) => {
   const { isMobile, selectionPos, setSelectionPos, rendering, loading, deviceDetect } = useEditorStateContext()
   const [showToolbar, setShowToolbar] = useState(false)
@@ -114,7 +115,7 @@ const MobileLayout = ({
 
   return (
     <>
-      <HeadSeo title={documentTitle} description={documentDescription} />
+      <HeadSeo title={documentTitle} description={documentDescription} keywords={keywords?.join(',')} />
       <div className={`pad tiptap relative flex  flex-col border-solid ${isMobile ? 'm_mobile' : 'm_desktop'}`}>
         <div className="docTitle top-0 bg-white w-full min-h-14 p-2 flex flex-row items-center sm:border-b-0 border-b">
           {docSlug && (
@@ -126,7 +127,12 @@ const MobileLayout = ({
             isKeyboardOpen ? 'block' : 'hidden'
           } toolbars  w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative`}>
           {editor ? (
-            <ToolbarMobile editor={editor} documentDescription={documentDescription} docId={docId} />
+            <ToolbarMobile
+              editor={editor}
+              documentDescription={documentDescription}
+              keywords={keywords}
+              docId={docId}
+            />
           ) : (
             'Loading...'
           )}
