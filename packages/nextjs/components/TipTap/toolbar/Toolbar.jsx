@@ -1,25 +1,10 @@
 import { useEffect, useState, useCallback } from 'react'
 import Select from 'react-select'
-import { useRouter } from 'next/router'
 
-import {
-  Bold,
-  Italic,
-  Underline,
-  OrderList,
-  BulletList,
-  Link,
-  CheckList,
-  ImageBox,
-  Gear,
-  ClearMark,
-  Stric,
-  HighlightMarker,
-  Undo,
-  Redo,
-  Printer,
-  Filter
-} from '../../icons/Icons'
+import { Link, ImageBox, Gear, ClearMark, Filter } from '../../icons/Icons'
+
+import ToolbarButton from './ToolbarButton'
+import Icon from './Icon'
 
 import FilterModal from './FilterModal'
 import GearModal from './GearModal'
@@ -122,18 +107,19 @@ const Toolbar = ({ editor, docId, documentDescription = '', keywords = [] }) => 
     <div
       className="tiptap__toolbar editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-4"
       onClick={hideModals}>
-      <div className="hidden sm:contents">
-        <button onClick={() => editor.chain().focus().undo().run()}>
-          <Undo fill="rgba(0,0,0,.7)" size="16" />
-        </button>
-        <button onClick={() => editor.chain().focus().redo().run()}>
-          <Redo fill="rgba(0,0,0,.7)" size="16" />
-        </button>
-        <button onClick={() => window.print()}>
-          <Printer fill="rgba(0,0,0,.7)" size="16" />
-        </button>
-        <div className="divided"></div>
-      </div>
+      <ToolbarButton onClick={() => editor.chain().focus().undo().run()} editor={editor} type="undo">
+        <Icon type="Undo" size="16" />
+      </ToolbarButton>
+
+      <ToolbarButton onClick={() => editor.chain().focus().redo().run()} editor={editor} type="redo">
+        <Icon type="Redo" size="16" />
+      </ToolbarButton>
+
+      <ToolbarButton onClick={() => window.print()}>
+        <Icon type="Printer" size="16" />
+      </ToolbarButton>
+
+      <div className="divided"></div>
 
       <Select
         className="w-32 text-sm"
@@ -148,90 +134,67 @@ const Toolbar = ({ editor, docId, documentDescription = '', keywords = [] }) => 
 
       <div className="divided"></div>
 
-      <button
-        className={editor.isActive('bold') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleBold().run()}>
-        <Bold fill="rgba(0,0,0,.7)" size="10" />
-      </button>
+      <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} editor={editor} type="bold">
+        <Icon type="Bold" size="10" />
+      </ToolbarButton>
 
-      <button
-        className={editor.isActive('italic') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleItalic().run()}>
-        <Italic fill="rgba(0,0,0,.7)" size="10" />
-      </button>
+      <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} editor={editor} type="italic">
+        <Icon type="Italic" size="10" />
+      </ToolbarButton>
 
-      <button
-        className={editor.isActive('underline') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleUnderline().run()}>
-        <Underline fill="rgba(0,0,0,.7)" size="10" />
-      </button>
+      <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} editor={editor} type="underline">
+        <Icon type="Underline" size="10" />
+      </ToolbarButton>
 
-      <span className="hidden sm:contents">
-        <button
-          className={editor.isActive('strike') ? 'is-active' : ''}
-          onClick={() => editor.chain().focus().toggleStrike().run()}>
-          <Stric fill="rgba(0,0,0,.7)" size="14" />
-        </button>
-      </span>
+      <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} editor={editor} type="strike">
+        <Icon type="Stric" size="14" />
+      </ToolbarButton>
 
       <div className="divided"></div>
 
-      <button
-        className={editor.isActive('orderedList') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}>
-        <OrderList fill="rgba(0,0,0,.7)" size="16" />
-      </button>
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleOrderedList().run()}
+        editor={editor}
+        type="orderedList">
+        <Icon type="OrderList" size="16" />
+      </ToolbarButton>
 
-      <button
-        className={editor.isActive('bulletList') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleBulletList().run()}>
-        <BulletList fill="rgba(0,0,0,.7)" size="16" />
-      </button>
+      <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} editor={editor} type="bulletList">
+        <Icon type="BulletList" size="16" />
+      </ToolbarButton>
 
-      <span className="hidden sm:contents">
-        <button
-          className={editor.isActive('taskList') ? 'is-active' : ''}
-          onClick={() => editor.chain().focus().toggleTaskList().run()}>
-          <CheckList fill="rgba(0,0,0,.7)" size="16" />
-        </button>
-      </span>
+      <ToolbarButton onClick={() => editor.chain().focus().toggleTaskList().run()} editor={editor} type="taskList">
+        <Icon type="CheckList" size="16" />
+      </ToolbarButton>
 
       <div className="divided"></div>
 
-      <span className="hidden sm:contents">
-        <button onClick={addImage}>
-          <ImageBox fill="rgba(0,0,0,.5)" size="14" />
-        </button>
-      </span>
+      <button onClick={addImage}>
+        <ImageBox fill="rgba(0,0,0,.5)" size="14" />
+      </button>
 
       <button className={editor.isActive('link') ? 'is-active' : ''} onClick={setLink}>
         <Link fill="rgba(0,0,0,.7)" size="18" />
       </button>
 
-      <span className="hidden sm:contents">
-        <button
-          className={editor.isActive('highlight') ? 'is-active' : ''}
-          onClick={() => editor.chain().focus().toggleHighlight().run()}>
-          <HighlightMarker fill="rgba(0,0,0,.7)" size="14" />
-        </button>
-      </span>
+      <ToolbarButton onClick={() => editor.chain().focus().toggleHighlight().run()} editor={editor} type="highlight">
+        <Icon type="HighlightMarker" size="14" />
+      </ToolbarButton>
 
-      <span className="hidden sm:contents">
-        <div className="divided"></div>
+      <div className="divided"></div>
 
-        <button
-          onClick={() => {
-            const range = editor.view.state.selection.ranges[0]
+      <button
+        onClick={() => {
+          const range = editor.view.state.selection.ranges[0]
 
-            if (range.$from === range.$to) {
-              editor.chain().focus().clearNodes().run()
-            } else {
-              editor.chain().focus().unsetAllMarks().run()
-            }
-          }}>
-          <ClearMark fill="rgba(0,0,0,.7)" size="14" />
-        </button>
-      </span>
+          if (range.$from === range.$to) {
+            editor.chain().focus().clearNodes().run()
+          } else {
+            editor.chain().focus().unsetAllMarks().run()
+          }
+        }}>
+        <ClearMark fill="rgba(0,0,0,.7)" size="14" />
+      </button>
 
       <button className="btn_filterModal btn_modal" onClick={toggleFilterModal}>
         <Filter fill="rgba(0,0,0,.7)" size="20" />
