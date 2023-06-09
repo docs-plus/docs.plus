@@ -18,7 +18,7 @@ const createNewDocument = async (slug, title, description = '', keywords = '') =
     title: title || newSlug,
     description: description || newSlug,
     documentId,
-    keywords: keywords && keywords?.join(', ')
+    keywords: keywords ? keywords?.join(', ') : ''
   }
   return prisma.documentMetadata.create({ data: newDocumentMeta })
 }

@@ -19,9 +19,9 @@ model Documents {
 model DocumentMetadata {
   id          Int         @id @default(autoincrement())
   slug        String      @unique
-  title       String
-  description String
-  keywords    String
+  title       String?
+  description String?
+  keywords    String?
   isPrivate   Boolean     @default(false)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
