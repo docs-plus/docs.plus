@@ -84,9 +84,9 @@ export async function getServerSideProps(context) {
   const { data } = await res.json()
   return {
     props: {
-      docTitle: data.title,
-      documentDescription: data.description,
-      keywords: data.keywords,
+      docTitle: data?.title,
+      documentDescription: data?.description,
+      keywords: data?.keywords,
       docSlug: documentSlug
     }
   }
