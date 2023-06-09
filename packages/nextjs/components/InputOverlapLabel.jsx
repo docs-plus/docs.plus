@@ -1,12 +1,13 @@
 import { forwardRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { randstr } from '@utils/index'
+import { useEffect, useState } from 'react'
 
 const InputOverlapLabel = forwardRef(
   ({
     label,
     value = '',
-    id,
+    id: _id = '',
     Icon,
     fill = 'rgb(104, 81, 255)',
     size = 18,
@@ -14,7 +15,11 @@ const InputOverlapLabel = forwardRef(
     onChange = () => {},
     ...props
   }) => {
-    if (!id) id = randstr('input-')
+    const [id, setId] = useState(_id)
+
+    useEffect(() => {
+      if (!_id) setId(randstr('input-'))
+    }, [])
 
     const containerClasses = twMerge(
       `relative border subpixel-antialiased rounded-md flex align-middle justify-start ${!Icon ? 'pl-2' : ''}`,
