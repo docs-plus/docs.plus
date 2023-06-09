@@ -1,6 +1,6 @@
 import { useEditorStateContext } from '../../context/EditorContext'
 import PadTitle from '../../components/TipTap/PadTitle'
-import Toolbar from '../../components/TipTap/Toolbar'
+import Toolbar from '../../components/TipTap/toolbar/Toolbar'
 import HeadSeo from '../../components/HeadSeo'
 import Editor from '../components/Editor'
 import TOC from '../components/Toc'
