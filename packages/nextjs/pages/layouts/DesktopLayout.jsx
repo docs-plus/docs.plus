@@ -51,7 +51,7 @@ const DesktopLayout = ({
       <HeadSeo title={documentTitle} description={documentDescription} keywords={keywords?.join(',')} />
       <div className={`pad tiptap flex flex-col border-solid ${isMobile ? ' m_mobile' : 'm_desktop'}`}>
         <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
-          {docSlug && <PadTitle docSlug={docSlug} docId={docId} docTitle={documentTitle} provider={provider} />}
+          {docSlug && <PadTitle docId={docId} docTitle={documentTitle} editor={editor} />}
         </div>
         <div className="toolbars w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative">
           {editor ? (
