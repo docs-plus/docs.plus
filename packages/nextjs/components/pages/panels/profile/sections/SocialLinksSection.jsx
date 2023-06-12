@@ -1,20 +1,13 @@
 import InputOverlapLabel from '../../../../InputOverlapLabel'
 import React, { useState } from 'react'
-import { LinkAlt, Facebook, Twitter } from '../../../../icons/Icons'
+import { LinkAlt, Facebook, Twitter } from '@icons'
 
-const SocialLinksSection = ({
-  twitter,
-  setTwitter,
-  facebook,
-  setFacebook,
-  website,
-  setWebsite
-}) => {
+const SocialLinksSection = ({ twitter, setTwitter, facebook, setFacebook, website, setWebsite }) => {
   const [twitterError, setTwitterError] = useState('')
   const [facebookError, setFacebookError] = useState('')
   const [websiteError, setWebsiteError] = useState('')
 
-  const validateWebsite = url => {
+  const validateWebsite = (url) => {
     if (url === '') return setWebsiteError('') // If empty, don't show error
     const urlRegex = /^((http|https):\/\/)?(www.)?[a-z0-9]+\.[a-z]+(\/[a-zA-Z0-9#]+\/?)*$/
     if (!urlRegex.test(url)) {
@@ -24,7 +17,7 @@ const SocialLinksSection = ({
     }
   }
 
-  const validateTwitter = username => {
+  const validateTwitter = (username) => {
     if (username === '') return setTwitterError('') // If empty, don't show error
     const usernameRegex = /^@?(\w){1,15}$/
     if (!usernameRegex.test(username)) {
@@ -36,7 +29,7 @@ const SocialLinksSection = ({
     }
   }
 
-  const validateFacebook = username => {
+  const validateFacebook = (username) => {
     if (username === '') return setFacebookError('') // If empty, don't show error
     const usernameRegex = /^[a-z\d.]{5,}$/i
     if (!usernameRegex.test(username)) {
@@ -48,19 +41,19 @@ const SocialLinksSection = ({
     }
   }
 
-  const handleTwitterChange = e => {
+  const handleTwitterChange = (e) => {
     const username = e.target.value
     setTwitter(username)
     validateTwitter(username)
   }
 
-  const handleFacebookChange = e => {
+  const handleFacebookChange = (e) => {
     const username = e.target.value
     setFacebook(username)
     validateFacebook(username)
   }
 
-  const handleWebsiteChange = e => {
+  const handleWebsiteChange = (e) => {
     const url = e.target.value
     setWebsite(url)
     validateWebsite(url)

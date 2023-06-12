@@ -1,15 +1,11 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import { Avatar, AVATAR_URL_CHANNEL_NAME } from '../../../../Avatar'
-import { Camera, Spinner, GoogleGIcon, CircleUser } from '../../../../icons/Icons'
+import { Camera, Spinner, GoogleGIcon, CircleUser } from '@icons'
 import { toast } from 'react-hot-toast'
 import PubSub from 'pubsub-js'
 
-import {
-  uploadAvatarToStorage,
-  updateAvatarInDB,
-  removeAvatarFromStorage
-} from './avatarUpload.service'
+import { uploadAvatarToStorage, updateAvatarInDB, removeAvatarFromStorage } from './avatarUpload.service'
 
 const AVATARS = 'avatars'
 const PROFILES = 'profiles'
@@ -27,7 +23,7 @@ const AvatarSection = ({ profileData }) => {
     setIsProfileAvatar(profileAvatart ? true : false)
   }, [profileData])
 
-  const handleClick = useCallback(e => {
+  const handleClick = useCallback((e) => {
     if (e.target.parentElement.classList.contains('changeAvatarToDefault')) return
     if (['input', 'div', 'svg'].includes(e.target.localName)) {
       fileInputRef.current.click()
@@ -35,7 +31,7 @@ const AvatarSection = ({ profileData }) => {
   }, [])
 
   const handleFileChange = useCallback(
-    async event => {
+    async (event) => {
       const avatarFile = event.target.files[0]
 
       if (event.target?.files[0]?.size > 256000) {
@@ -89,9 +85,7 @@ const AvatarSection = ({ profileData }) => {
   }, [supabaseClient, user])
 
   return (
-    <div
-      className="avatar-uploader mt-4 w-32 h-32 relative rounded-xl border drop-shadow-sm "
-      onClick={handleClick}>
+    <div className="avatar-uploader mt-4 w-32 h-32 relative rounded-xl border drop-shadow-sm " onClick={handleClick}>
       <div
         className={` ${
           !uploading ? 'hover:opacity-50 opacity-0' : 'opacity-80 bg-white'
@@ -99,12 +93,7 @@ const AvatarSection = ({ profileData }) => {
         {!uploading ? <Camera size={24} fill="#fff" /> : <Spinner />}
       </div>
       <Avatar height={32} width={32} className="w-32 h-32 rounded-xl" />
-      <input
-        ref={fileInputRef}
-        type="file"
-        onChange={handleFileChange}
-        style={{ display: 'none' }}
-      />
+      <input ref={fileInputRef} type="file" onChange={handleFileChange} style={{ display: 'none' }} />
       {isProfileAvatar && (
         <button
           className="changeAvatarToDefault -right-1 absolute flex items-center justify-around  -bottom-1 w-5 h-5 bg-white rounded-full drop-shadow-lg"

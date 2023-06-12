@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import { useMutation } from '@tanstack/react-query'
-import { Envelope, AngleSmallLeft, Sparkles } from '@icons/Icons'
+import { Envelope, AngleSmallLeft, Sparkles } from '@icons'
 import TabTitle from './components/TabTitle'
 import TabSection from './components/TabSection'
 import InputOverlapLabel from '../../../InputOverlapLabel'

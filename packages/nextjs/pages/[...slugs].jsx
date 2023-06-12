@@ -1,17 +1,18 @@
 import React, { useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { useEditor } from '@tiptap/react'
-import editorConfig from '../components/TipTap/TipTap'
-import { useEditorStateContext } from '../context/EditorContext'
-
-import useYdocAndProvider from '../hooks/useYdocAndProvider'
-import useApplyFilters from '../hooks/useApplyFilters'
-import useDocumentMetadata from '../hooks/useDocumentMetadata'
-
-import MobileLayout from './layouts/MobileLayout'
-import DesktopLayout from './layouts/DesktopLayout'
-
 import MobileDetect from 'mobile-detect'
+
+import { useEditorStateContext } from '@context/EditorContext'
+
+import useYdocAndProvider from '@hooks/useYdocAndProvider'
+import useApplyFilters from '@hooks/useApplyFilters'
+import useDocumentMetadata from '@hooks/useDocumentMetadata'
+
+import editorConfig from '@tiptap/TipTap'
+
+import MobileLayout from '@components/pages/document/layouts/MobileLayout'
+import DesktopLayout from '@components/pages/document/layouts/DesktopLayout'
 
 const OpenDocuments = ({ docTitle, docSlug, documentDescription, keywords, isMobile: isMobileServerDetection }) => {
   const router = useRouter()
@@ -53,6 +54,8 @@ const OpenDocuments = ({ docTitle, docSlug, documentDescription, keywords, isMob
     if (!editor || loading) return
     setRendering(false)
   }, [editor, loading, setRendering])
+
+  console.log('New Rerender!')
 
   return (
     <>

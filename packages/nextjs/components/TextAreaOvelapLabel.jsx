@@ -1,6 +1,6 @@
 import { randstr } from '@utils/index'
 
-const TextAreaOvelapLabel = ({ label, value = null, onChange, id, ...props }) => {
+const TextAreaOvelapLabel = ({ label, value = null, onChange, id, rows = '1', cols = '1', ...props }) => {
   id = id || randstr('textarea_')
   return (
     <div className={`relative border rounded-md subpixel-antialiased ${props.className}`}>

@@ -6,14 +6,14 @@ import '../styles/styles.scss'
 import '../styles/globals.scss'
 
 const RelpadPrompt = dynamic(() => import(`../components/ReloadPrompt`), {
-  ssr: false,
+  ssr: false
 })
 
 import { EditorStateProvider } from '../context/EditorContext'
 import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs'
 import { SessionContextProvider } from '@supabase/auth-helpers-react'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 // Create a client
 const queryClient = new QueryClient()
@@ -41,17 +41,9 @@ const Header = () => {
       {/* Sets whether a web application runs in full-screen mode. See: https://developer.apple.com/library/safari/documentation/AppleApplications/Reference/SafariHTMLRef/Articles/MetaTags.html#//apple_ref/doc/uid/TP40008193-SW3 */}
       <meta name="apple-mobile-web-app-capable" content="yes" />
       {/* Web clip icon for Android homescreen shortcuts. Available since Chrome 31+ for Android.See: https://developers.google.com/chrome/mobile/docs/installtohomescreen */}
-      <link
-        rel="shortcut icon"
-        sizes="192x192"
-        href="/icons/android-chrome-192x192.png"
-      />
+      <link rel="shortcut icon" sizes="192x192" href="/icons/android-chrome-192x192.png" />
 
-      <link
-        id="apple-touch-icon"
-        rel="apple-touch-icon"
-        href="/icons/android-chrome-512x512.png"
-      />
+      <link id="apple-touch-icon" rel="apple-touch-icon" href="/icons/android-chrome-512x512.png" />
 
       {/*
           Disables automatic detection of possible phone numbers in a webpage in Safari on iOS.
@@ -82,9 +74,7 @@ export default function MyApp({ Component, pageProps, initialSession }) {
         <Header />
         <QueryClientProvider client={queryClient}>
           <EditorStateProvider>
-            <SessionContextProvider
-              supabaseClient={supabaseClient}
-              initialSession={initialSession}>
+            <SessionContextProvider supabaseClient={supabaseClient} initialSession={initialSession}>
               <Component {...pageProps} />
             </SessionContextProvider>
           </EditorStateProvider>

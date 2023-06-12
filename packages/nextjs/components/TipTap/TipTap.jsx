@@ -74,7 +74,7 @@ lowlight.registerLanguage('bash', bash)
 const Document = Node.create({
   name: 'doc',
   topNode: true,
-  content: 'heading+',
+  content: 'heading+'
 })
 
 const Paragraph = Node.create({
@@ -86,12 +86,12 @@ const Paragraph = Node.create({
   },
   renderHTML({ HTMLAttributes }) {
     return ['p', HTMLAttributes, 0]
-  },
+  }
 })
 
 const Text = Node.create({
   name: 'text',
-  group: 'inline',
+  group: 'inline'
 })
 
 const scrollDown = () => {
@@ -100,9 +100,7 @@ const scrollDown = () => {
 
   if (!id) return
   setTimeout(() => {
-    document
-      .querySelector(`[data-id="${url.searchParams.get('id')}"]`)
-      ?.scrollIntoView()
+    document.querySelector(`[data-id="${url.searchParams.get('id')}"]`)?.scrollIntoView()
   }, 200)
 }
 
@@ -164,7 +162,7 @@ const generatePlaceholderText = ({ node }) => {
       'Build your message from scratch ...',
       'Develop your concepts with clarity ...',
       'Forge your ideas into a cohesive whole ...',
-      'Carve out your ideas with precision ...',
+      'Carve out your ideas with precision ...'
     ]
 
     return msg[Math.floor(Math.random() * msg.length + 1)]
@@ -173,14 +171,7 @@ const generatePlaceholderText = ({ node }) => {
   return null
 }
 
-const Editor = ({
-  padName,
-  provider,
-  ydoc,
-  defualtContent = '',
-  spellcheck = false,
-  children,
-}) => {
+const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = false, children }) => {
   if (!provider) {
     return {
       extensions: [
@@ -197,8 +188,8 @@ const Editor = ({
         OrderedList,
         Heading.configure(),
         ContentHeading,
-        ContentWrapper,
-      ],
+        ContentWrapper
+      ]
     }
   }
 
@@ -241,8 +232,8 @@ const Editor = ({
     // },
     editorProps: {
       attributes: {
-        spellcheck,
-      },
+        spellcheck
+      }
     },
     extensions: [
       UniqueID.configure({
@@ -252,7 +243,7 @@ const Editor = ({
           const uid = new ShortUniqueId()
 
           return uid.stamp(16)
-        },
+        }
       }),
       Document,
       Bold,
@@ -267,7 +258,7 @@ const Editor = ({
       OrderedList,
       Heading.configure(),
       CodeBlockLowlight.configure({
-        lowlight,
+        lowlight
       }),
       ContentHeading,
       ContentWrapper,
@@ -277,43 +268,43 @@ const Editor = ({
       TextAlign,
       Underline,
       Link.configure({
-        protocols: ['ftp', 'mailto'],
+        protocols: ['ftp', 'mailto']
       }),
       Image.configure({
         inline: true,
         allowBase64: true,
         HTMLAttributes: {
-          class: 'image-class',
-        },
+          class: 'image-class'
+        }
       }),
       TaskList,
       TaskItem.configure({
         nested: true,
         HTMLAttributes: {
-          class: 'tasks-class',
-        },
+          class: 'tasks-class'
+        }
       }),
       Highlight,
       Typography,
       Table.configure({
-        resizable: true,
+        resizable: true
       }),
       TableRow,
       TableHeader,
       TableCell,
       Collaboration.configure({
-        document: provider.document,
+        document: provider.document
       }),
       CollaborationCursor.configure({
         provider,
-        user: { name: 'Adam Doe', color: randomColor() },
+        user: { name: 'Adam Doe', color: randomColor() }
       }),
       Placeholder.configure({
         includeChildren: true,
-        placeholder: generatePlaceholderText,
-      }),
+        placeholder: generatePlaceholderText
+      })
     ],
-    defualtContent: '',
+    defualtContent: ''
   }
 }
 

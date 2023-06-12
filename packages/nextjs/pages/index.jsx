@@ -5,7 +5,7 @@ import { Tabs, TabList, Tab, TabPanels, TabPanel } from '../components/Tabs/Tabs
 import DeckPanel from '../components/pages/panels/DeckPanel'
 import { useEditorStateContext } from '../context/EditorContext'
 import { Avatar } from '../components/Avatar'
-import { DocsPlus } from '@components/icons/Icons'
+import { DocsPlus } from '@icons'
 
 const DashboardLayout = dynamic(() => import('./layouts/DashboardLayout'))
 const SignInPanel = dynamic(() => import('../components/pages/panels/SignInPanel'), {

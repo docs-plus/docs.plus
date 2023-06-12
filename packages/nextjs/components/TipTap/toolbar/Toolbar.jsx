@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import Select from 'react-select'
 
-import { Link, ImageBox, Gear, ClearMark, Filter } from '../../icons/Icons'
+import { Link, ImageBox, Gear, ClearMark, Filter } from '@icons'
 
 import ToolbarButton from './ToolbarButton'
 import Icon from './Icon'

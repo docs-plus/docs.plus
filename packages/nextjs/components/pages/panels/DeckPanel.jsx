@@ -1,4 +1,4 @@
-import { DocsPlus, GoogleGIcon, Sparkles } from '@icons/Icons'
+import { DocsPlus, GoogleGIcon, Sparkles } from '@icons'
 import Button from '../../../components/Button'
 import slugify from 'slugify'
 import { useUser } from '@supabase/auth-helpers-react'

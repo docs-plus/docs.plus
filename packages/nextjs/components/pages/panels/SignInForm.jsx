@@ -1,4 +1,4 @@
-import { DocsPlus, GoogleGIcon, Sparkles, OpenEnvelope } from '../../../components/icons/Icons'
+import { DocsPlus, GoogleGIcon, Sparkles, OpenEnvelope } from '@icons'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import { useState, useRef, useContext, useEffect, useCallback } from 'react'
 import Button from '../../../components/Button'

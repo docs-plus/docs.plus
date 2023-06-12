@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import Button from '../../../../components/Button'
-import { ShieldCheck, Bell, AngleSmallRight, signOutAlt, Exit } from '../../../../components/icons/Icons'
+import { ShieldCheck, Bell, AngleSmallRight, signOutAlt, Exit } from '@icons'
 
 import { Avatar } from '../../../../components/Avatar'
 import dynamic from 'next/dynamic'
