@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import TextAreaOvelapLabel from '../../InputOverlapLabel'
+import TextAreaOvelapLabel from '../../TextAreaOvelapLabel'
 import InputTags from '../../InputTags'
 import Button from '../../Button'
 import useUpdateDocMetadata from '../../../hooks/useUpdateDocMetadata'
@@ -81,7 +81,7 @@ const GearModal = ({ documentDescription, keywords, docId }) => {
           label="Document Description"
           value={docDescription}
           onChange={(e) => setDocDescription(e.target.value)}
-          className="w-full "
+          className="w-full"
         />
         <div className=" w-full mt-4">
           <InputTags

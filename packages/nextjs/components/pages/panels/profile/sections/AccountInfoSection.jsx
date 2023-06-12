@@ -3,7 +3,7 @@ import { useSupabaseClient } from '@supabase/auth-helpers-react'
 import React, { useState, useCallback } from 'react'
 import { debounce } from 'lodash'
 import toast from 'react-hot-toast'
-import { At, CircleUser } from '../../../../icons/Icons'
+import { At, CircleUser } from '@icons'
 
 // Defined constants
 const PROFILES = 'profiles'
@@ -14,7 +14,7 @@ const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, prof
 
   const checkUserName = useCallback(
     debounce(
-      async userName => {
+      async (userName) => {
         if (!userName) return
         if (userName === profileData?.username) {
           setErrorBorderClass('border-green-500')
@@ -34,10 +34,7 @@ const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, prof
           return
         }
 
-        const { data, error } = await supabaseClient
-          .from(PROFILES)
-          .select('username')
-          .eq('username', userName)
+        const { data, error } = await supabaseClient.from(PROFILES).select('username').eq('username', userName)
 
         if (error) {
           console.error(error)
@@ -60,7 +57,7 @@ const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, prof
     [supabaseClient, profileData]
   )
 
-  const handleUserNameChange = e => {
+  const handleUserNameChange = (e) => {
     const userName = e.target.value
     setUserName(userName)
     if (userName === '') {
@@ -78,7 +75,7 @@ const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, prof
         label="Full Name"
         className={`mt-4`}
         value={fullName}
-        onChange={e => setFullName(e.target.value)}
+        onChange={(e) => setFullName(e.target.value)}
       />
       <InputOverlapLabel
         Icon={CircleUser}

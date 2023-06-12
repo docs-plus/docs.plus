@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react'
-import { useEditorStateContext } from '../../context/EditorContext'
-import PadTitle from '../../components/TipTap/PadTitle'
-import FilterModal from '../components/FilterModal'
-import HeadSeo from '../../components/HeadSeo'
-import TocModal from '../components/TocModal'
-import Editor from './../components/Editor'
-import { Pencil } from '../../components/icons/Icons'
+import { useEditorStateContext } from '@context/EditorContext'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
-import ToolbarMobile from './../components/ToolbarMobile'
+import PadTitle from '@tiptap/PadTitle'
+import FilterModal from '../components/FilterModal'
+import HeadSeo from '@components/HeadSeo'
+import TocModal from '../components/TocModal'
+import Editor from '../components/Editor'
+import { Pencil } from '@icons'
+import ToolbarMobile from '../components/ToolbarMobile'
 
 const MobileLayout = ({
   documentTitle,

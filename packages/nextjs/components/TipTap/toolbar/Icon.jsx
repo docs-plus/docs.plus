@@ -16,7 +16,7 @@ import {
   Redo,
   Printer,
   Filter
-} from '../../icons/Icons'
+} from '@icons'
 
 const icons = {
   Bold,

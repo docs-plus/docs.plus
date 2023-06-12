@@ -13,6 +13,8 @@ const InputOverlapLabel = forwardRef(
     size = 18,
     className = '',
     onChange = () => {},
+    rows = '1',
+    cols = '1',
     ...props
   }) => {
     const [id, setId] = useState(_id)
