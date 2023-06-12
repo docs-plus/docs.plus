@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react'
+import React, { useEffect } from 'react'
 import { useRouter } from 'next/router'
 import { useEditor } from '@tiptap/react'
 import editorConfig from '../components/TipTap/TipTap'
@@ -11,7 +11,9 @@ import useDocumentMetadata from '../hooks/useDocumentMetadata'
 import MobileLayout from './layouts/MobileLayout'
 import DesktopLayout from './layouts/DesktopLayout'
 
-const OpenDocuments = ({ docTitle, docSlug, documentDescription, keywords }) => {
+import MobileDetect from 'mobile-detect'
+
+const OpenDocuments = ({ docTitle, docSlug, documentDescription, keywords, isMobile: isMobileServerDetection }) => {
   const router = useRouter()
   const { slugs } = router?.query
 
@@ -21,8 +23,12 @@ const OpenDocuments = ({ docTitle, docSlug, documentDescription, keywords }) => 
     document.body.classList.add('filter-mode')
   }
 
-  const { rendering, setRendering, loading, setLoading, applyingFilters, setApplyingFilters, isMobile } =
+  const { rendering, setRendering, loading, setIsMobile, isMobile, setLoading, applyingFilters, setApplyingFilters } =
     useEditorStateContext()
+
+  useEffect(() => {
+    setIsMobile(isMobileServerDetection)
+  }, [])
 
   // check if the document is in the filter mode
   useEffect(() => {
@@ -82,8 +88,13 @@ export async function getServerSideProps(context) {
   const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentSlug}`
   const res = await fetch(url)
   const { data } = await res.json()
+
+  const userAgent = context.req.headers['user-agent']
+  const device = new MobileDetect(userAgent)
+
   return {
     props: {
+      isMobile: device.mobile() ? true : false,
       docTitle: data?.title,
       documentDescription: data?.description,
       keywords: data?.keywords,
