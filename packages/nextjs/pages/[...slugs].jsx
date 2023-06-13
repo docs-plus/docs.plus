@@ -19,8 +19,9 @@ const Document = ({ slugs, docMetadata }) => {
 
   const { isMobile } = useEditorStateContext()
 
-  if (isMobile) return <MobileLayout docMetadata={docMetadata} />
-  else return <DesktopLayout docMetadata={docMetadata} />
+  // if (isMobile) return <MobileLayout docMetadata={docMetadata} />
+
+  return <DesktopLayout docMetadata={docMetadata} />
 }
 
 export default Document
