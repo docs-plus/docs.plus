@@ -1,6 +1,6 @@
 import Head from 'next/head'
 import dynamic from 'next/dynamic'
-import toast, { Toaster } from 'react-hot-toast'
+import { Toaster } from 'react-hot-toast'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import '../styles/styles.scss'
 import '../styles/globals.scss'
@@ -66,14 +66,16 @@ const Header = () => {
 }
 
 export default function MyApp({ Component, pageProps, initialSession }) {
+  const isMobileInitial = pageProps.isMobile || false
+  const [supabaseClient] = useState(() => createBrowserSupabaseClient())
+
   // Create a new supabase browser client on every first render.
   if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    const [supabaseClient] = useState(() => createBrowserSupabaseClient())
     return (
       <div id="root">
         <Header />
         <QueryClientProvider client={queryClient}>
-          <EditorStateProvider>
+          <EditorStateProvider isMobileInitial={isMobileInitial}>
             <SessionContextProvider supabaseClient={supabaseClient} initialSession={initialSession}>
               <Component {...pageProps} />
             </SessionContextProvider>
@@ -88,7 +90,7 @@ export default function MyApp({ Component, pageProps, initialSession }) {
       <div id="root">
         <Header />
         <QueryClientProvider client={queryClient}>
-          <EditorStateProvider>
+          <EditorStateProvider isMobileInitial={isMobileInitial}>
             <Component {...pageProps} />
           </EditorStateProvider>
         </QueryClientProvider>

@@ -171,7 +171,7 @@ const generatePlaceholderText = ({ node }) => {
   return null
 }
 
-const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = false, children }) => {
+const Editor = ({ provider, spellcheck = false }) => {
   if (!provider) {
     return {
       extensions: [
@@ -198,37 +198,12 @@ const Editor = ({ padName, provider, ydoc, defualtContent = '', spellcheck = fal
       scrollDown()
     },
     onUpdate: (editor) => {},
-    onTransaction({ editor, transaction }) {
-      //   // The editor state has changed.
-      // console.log('onTransaction', {
-      //   ...transaction.meta['y-sync$'],
-      // })
-      //   if(transaction.meta['y-sync$']?.isChangeOrigin === true && transaction.meta['y-sync$']?.isUndoRedoOperation === false){
-      //     console.log({
-      //       state: editor.state.doc,
-      //       doc: document?.querySelectorAll(".heading")
-      //     })
-      //   }
-    },
+    onTransaction({ editor, transaction }) {},
     // onBeforeCreate({ editor }) {
-    //   // Before the view is created.
-    //   console.log('onBeforeCreate',{ editor, doc: document?.querySelectorAll(".heading")})
     // },
     // onCreate({ editor }) {
-    //   // The editor is ready.
-    // console.log('onCreate', {
-    //   editor,
-    //   state: editor.state.doc,
-    //   isEmpty: editor.isEmpty,
-    //   dobo: { rendering, loading, applyingFilters },
-    //   //     // doc: document?.querySelectorAll('.heading'),
-    // })
     // },
     // onBeforeCreate({ editor }) {
-    //   // Before the view is created.
-    //   console.log('onBeforeCreate', {
-    //     editor,
-    //   })
     // },
     editorProps: {
       attributes: {

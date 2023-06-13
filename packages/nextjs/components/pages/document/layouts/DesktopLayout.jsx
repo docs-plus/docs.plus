@@ -1,42 +1,37 @@
 import { useEditorStateContext } from '@context/EditorContext'
-import PadTitle from '@tiptap/PadTitle'
-import Toolbar from '@tiptap/toolbar/Toolbar'
+import PadTitle from '@tiptap/pad-title-section/PadTitle'
 import HeadSeo from '@components/HeadSeo'
-import Editor from '../components/Editor'
-import TOC from '../components/Toc'
 import { useEffect } from 'react'
+import DesktopEditor from '../components/DesktopEditor'
+import { useState } from 'react'
+import PubSub from 'pubsub-js'
 
-const scrollHeadingSelection = (event) => {
-  const scrollTop = event.currentTarget.scrollTop
-  const toc = document.querySelector('.toc__list')
-  const tocLis = [...toc.querySelectorAll('.toc__item')]
-  const closest = tocLis
-    .map((li) => {
-      li.classList.remove('active')
-      return li
-    })
-    .filter((li) => {
-      const thisOffsetTop = +li.getAttribute('data-offsettop') - 220
-      return thisOffsetTop <= scrollTop // && nextSiblingOffsetTop >= scrollTop
-    })
-  closest.at(-1)?.classList.add('active')
-  closest.at(-1)?.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start',
-    inline: 'nearest'
-  })
-}
+import dynamic from 'next/dynamic'
 
-const DesktopLayout = ({
-  documentTitle,
-  documentDescription = 'another open docs plus document',
-  docSlug,
-  docId,
-  provider,
-  editor,
-  keywords
-}) => {
+const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
+  loading: () => <div>Loading...</div>
+})
+
+const DesktopLayout = ({ docMetadata }) => {
   const { isMobile } = useEditorStateContext()
+  const { title, documentId, description, keywords } = docMetadata
+
+  const [displayControlCenter, setDisplayControlCenter] = useState(false)
+
+  const closeControlCenter = (e) => {
+    if (e.target.id === 'controlCenterBlur') {
+      setDisplayControlCenter(false)
+    }
+  }
+
+  useEffect(() => {
+    PubSub.subscribe('toggleControlCenter', (msg, data) => {
+      // setAvatarUrl(newURL)
+      setDisplayControlCenter(!displayControlCenter)
+    })
+
+    return () => PubSub.unsubscribe('toggleControlCenter')
+  }, [])
 
   useEffect(() => {
     // when layout change set editor editable again
@@ -48,28 +43,20 @@ const DesktopLayout = ({
 
   return (
     <>
-      <HeadSeo title={documentTitle} description={documentDescription} keywords={keywords && keywords?.join(',')} />
+      <HeadSeo title={title} description={description} keywords={keywords && keywords?.join(',')} />
       <div className={`pad tiptap flex flex-col border-solid ${isMobile ? ' m_mobile' : 'm_desktop'}`}>
         <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
-          {docSlug && <PadTitle docId={docId} docTitle={documentTitle} editor={editor} />}
+          <PadTitle docId={documentId} docTitle={title} />
         </div>
-        <div className="toolbars w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative">
-          {editor ? (
-            <Toolbar editor={editor} docId={docId} documentDescription={documentDescription} keywords={keywords} />
-          ) : (
-            'Loading...'
-          )}
-        </div>
-        <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
+        <DesktopEditor docMetadata={docMetadata} />
+        {displayControlCenter && (
           <div
-            className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
-            onScroll={scrollHeadingSelection}>
-            <Editor editor={editor} />
+            onClick={closeControlCenter}
+            id="controlCenterBlur"
+            className="w-full h-full flex align-middle items-center justify-center absolute z-50 backdrop-blur-sm bg-slate-300/20 ">
+            <ControlCenter />
           </div>
-          <div className="max-w-xs w-3/12 overflow-hidden pb-4 sm:py-4 sm:pb-14 scroll-smooth hover:overflow-auto hover:overscroll-contain">
-            <TOC editor={editor} />
-          </div>
-        </div>
+        )}
       </div>
     </>
   )
