@@ -1,107 +1,50 @@
 import React, { useEffect } from 'react'
-import { useRouter } from 'next/router'
-import { useEditor } from '@tiptap/react'
 import MobileDetect from 'mobile-detect'
 
 import { useEditorStateContext } from '@context/EditorContext'
-
-import useYdocAndProvider from '@hooks/useYdocAndProvider'
-import useApplyFilters from '@hooks/useApplyFilters'
 import useDocumentMetadata from '@hooks/useDocumentMetadata'
-
-import editorConfig from '@tiptap/TipTap'
 
 import MobileLayout from '@components/pages/document/layouts/MobileLayout'
 import DesktopLayout from '@components/pages/document/layouts/DesktopLayout'
 
-const OpenDocuments = ({ docTitle, docSlug, documentDescription, keywords, isMobile: isMobileServerDetection }) => {
-  const router = useRouter()
-  const { slugs } = router?.query
-
-  // if editor is in the filter mode
-  if (typeof window !== 'undefined' && slugs.length > 1) {
-    // localStorage.removeItem('headingMap');
-    document.body.classList.add('filter-mode')
-  }
-
-  const { rendering, setRendering, loading, setIsMobile, isMobile, setLoading, applyingFilters, setApplyingFilters } =
-    useEditorStateContext()
+const Document = ({ slugs, docMetadata }) => {
+  useDocumentMetadata(slugs, docMetadata)
 
   useEffect(() => {
-    setIsMobile(isMobileServerDetection)
-  }, [])
-
-  // check if the document is in the filter mode
-  useEffect(() => {
+    // if editor is in the filter mode
     if (slugs.length > 1) {
-      setApplyingFilters(true)
+      document.body.classList.add('filter-mode')
     }
-  }, [slugs, setApplyingFilters])
+  }, [slugs])
 
-  const { documentTitle, docId, isLoading, error, isSuccess, documentId } = useDocumentMetadata(
-    docSlug,
-    docTitle,
-    slugs
-  )
+  const { isMobile } = useEditorStateContext()
 
-  const { ydoc, provider, loadedData, setLoadedData } = useYdocAndProvider(documentId, setLoading)
-
-  const editor = useEditor(editorConfig({ padName: docId, provider, ydoc }), [loading, applyingFilters])
-
-  useApplyFilters(editor, slugs, applyingFilters, setApplyingFilters, router, rendering)
-
-  useEffect(() => {
-    if (!editor || loading) return
-    setRendering(false)
-  }, [editor, loading, setRendering])
-
-  console.log('New Rerender!')
-
-  return (
-    <>
-      {isMobile ? (
-        <MobileLayout
-          documentTitle={documentTitle}
-          keywords={keywords}
-          documentDescription={documentDescription}
-          docSlug={docSlug}
-          docId={docId}
-          provider={provider}
-          editor={editor}
-        />
-      ) : (
-        <DesktopLayout
-          documentTitle={documentTitle}
-          keywords={keywords}
-          documentDescription={documentDescription}
-          docSlug={docSlug}
-          docId={docId}
-          provider={provider}
-          editor={editor}
-        />
-      )}
-    </>
-  )
+  if (isMobile) return <MobileLayout docMetadata={docMetadata} />
+  else return <DesktopLayout docMetadata={docMetadata} />
 }
 
-export default OpenDocuments
+export default Document
 
 export async function getServerSideProps(context) {
-  const documentSlug = context.query.slugs.at(0)
-  const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentSlug}`
+  const slug = context.query.slugs.at(0)
+  const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${slug}`
   const res = await fetch(url)
   const { data } = await res.json()
 
   const userAgent = context.req.headers['user-agent']
   const device = new MobileDetect(userAgent)
+  const docClientId = `${data.isPrivate ? 'private' : 'public'}.${data.documentId}`
+
+  const docMetadata = {
+    ...data,
+    docClientId
+  }
 
   return {
     props: {
+      docMetadata,
       isMobile: device.mobile() ? true : false,
-      docTitle: data?.title,
-      documentDescription: data?.description,
-      keywords: data?.keywords,
-      docSlug: documentSlug
+      slugs: context.query.slugs
     }
   }
 }

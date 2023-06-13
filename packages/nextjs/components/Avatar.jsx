@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useUser } from '@supabase/auth-helpers-react'
 import Image from 'next/image'
 
@@ -20,9 +20,14 @@ const Avatar = ({ defaultURI, height = 40, width = 40, ...props }) => {
   const { avatarUrl, setAvatarUrl } = useAvatar()
   const { id: userId, user_metadata } = useUser()
 
-  PubSub.subscribe(AVATAR_URL_CHANNEL_NAME, (msg, newURL) => {
-    setAvatarUrl(newURL)
-  })
+  useEffect(() => {
+    PubSub.subscribe(AVATAR_URL_CHANNEL_NAME, (msg, newURL) => {
+      setAvatarUrl(newURL)
+    })
+    return () => {
+      PubSub.unsubscribe(AVATAR_URL_CHANNEL_NAME)
+    }
+  }, [])
 
   return (
     <Image

@@ -1,20 +1,19 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import * as Y from 'yjs'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 
 const useYdocAndProvider = (documentId, setLoading) => {
-  const [ydoc, setYdoc] = useState(null)
-  const [provider, setProvider] = useState(null)
   const [loadedData, setLoadedData] = useState(false)
+  const ydocRef = useRef(new Y.Doc())
+  const providerRef = useRef(null)
 
   useEffect(() => {
-    if (documentId) {
-      const ydoc = new Y.Doc()
-      const colabProvider = new HocuspocusProvider({
+    if (typeof window !== 'undefined') {
+      providerRef.current = new HocuspocusProvider({
         url: `${process.env.NEXT_PUBLIC_PROVIDER_URL}`,
         name: documentId,
-        document: ydoc,
+        document: ydocRef.current,
         onStatus: (data) => {
           // console.log('onStatus', data)
         },
@@ -42,26 +41,22 @@ const useYdocAndProvider = (documentId, setLoading) => {
           // console.log('onAwarenessUpdate', { added, updated, removed })
         }
       })
-
-      setProvider(colabProvider)
-      setYdoc(ydoc)
-
-      // NOTE: This is not working yet, I need reconsider for offline mode
-      // Store the Y document in the browser
-      // const indexDbProvider = new IndexeddbPersistence(
-      //   documentId,
-      //   colabProvider.document
-      // )
-
-      // indexDbProvider.on('synced', () => {
-      //   console.log(`content loaded from indexdb, pad name: ${documentId}`)
-      //   if (!loadedData) return
-      //   setLoadedData(true)
-      // })
     }
-  }, [documentId])
+  }, [])
 
-  return { ydoc, provider, loadedData, setLoadedData }
+  // NOTE: This is not working yet, I need reconsider for offline mode
+  // Store the Y document in the browser
+  // const indexDbProvider = new IndexeddbPersistence(
+  //   documentId,
+  //   colabProvider.document
+  // )
+
+  // indexDbProvider.on('synced', () => {
+  //   console.log(`content loaded from indexdb, pad name: ${documentId}`)
+  //   if (!loadedData) return
+  //   setLoadedData(true)
+  // })
+  return { ydoc: ydocRef.current, provider: providerRef.current, loadedData, setLoadedData }
 }
 
 export default useYdocAndProvider
