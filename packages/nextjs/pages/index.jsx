@@ -1,18 +1,18 @@
-import HeadSeo from '../components/HeadSeo'
+import HeadSeo from '@components/HeadSeo'
 import { useUser } from '@supabase/auth-helpers-react'
 import dynamic from 'next/dynamic'
-import { Tabs, TabList, Tab, TabPanels, TabPanel } from '../components/Tabs/Tabs'
-import DeckPanel from '../components/pages/panels/DeckPanel'
-import { useEditorStateContext } from '../context/EditorContext'
-import { Avatar } from '../components/Avatar'
+import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@components/Tabs/Tabs'
+import DeckPanel from '@pages/panels/DeckPanel'
+import { useEditorStateContext } from '@context/EditorContext'
+import { Avatar } from '@components/Avatar'
 import { DocsPlus } from '@icons'
 
-const DashboardLayout = dynamic(() => import('./layouts/DashboardLayout'))
-const SignInPanel = dynamic(() => import('../components/pages/panels/SignInPanel'), {
+const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
+const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
   loading: () => <div>Loading...</div>
 })
-const DocumentsPanel = dynamic(() => import('../components/pages/panels/DocumentsPanel'))
-const ProfilePanel = dynamic(() => import('../components/pages/panels/profile/ProfilePanel'))
+const DocumentsPanel = dynamic(() => import('@pages/panels/DocumentsPanel'))
+const ProfilePanel = dynamic(() => import('@pages/panels/profile/ProfilePanel'))
 
 function TabLayout({ children }) {
   return (

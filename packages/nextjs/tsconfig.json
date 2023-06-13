@@ -18,6 +18,7 @@
       "@public/*": ["public/*"],
       "@icons": ["components/icons/Icons.jsx"],
       "@tiptap": ["components/tiptap/*"],
+      "@pages": ["components/pages/*"],
      },
     "allowJs": true,
     "skipLibCheck": true,
