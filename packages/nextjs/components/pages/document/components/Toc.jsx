@@ -1,4 +1,4 @@
-import TableOfContents from '@tiptap/TableOfContents'
+import TableOfContents from '@tiptapEditor/TableOfContents'
 import TableOfcontentLoader from '@components/TableOfContentsLoader'
 import { useEditorStateContext } from '@context/EditorContext'
 
