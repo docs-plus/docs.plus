@@ -2,7 +2,7 @@ import React from 'react'
 import Link from 'next/link'
 
 import { useEditorStateContext } from '@context/EditorContext'
-import DocTitle from '@tiptap/DocTitle'
+import DocTitle from '@tiptapEditor/DocTitle'
 import { Filter, DocsPlus } from '@icons'
 import TOC from './Toc'
 
