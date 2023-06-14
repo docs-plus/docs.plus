@@ -4,6 +4,7 @@ import { useState, useRef, useContext, useEffect, useCallback } from 'react'
 import Button from '../../../components/Button'
 import { useMutation } from '@tanstack/react-query'
 import InputOverlapLabel from '../../../components/InputOverlapLabel'
+import { toast } from 'react-hot-toast'
 
 const SingInForm = ({ children, ...props }) => {
   const supabaseClient = useSupabaseClient()
@@ -18,12 +19,21 @@ const SingInForm = ({ children, ...props }) => {
   const [emailSent, setEmailSent] = useState(false)
 
   const signInWithGoogle = async () => {
+    const pathname = window.location.pathname.split('/')
+    pathname.shift()
+    const redirectPathname = pathname.join('/')
+
     setGoogleLoading(true)
     const { data, error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
-      redirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT
+      options: {
+        redirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT + redirectPathname
+      }
     })
-    if (error) console.error(error)
+    if (error) {
+      toast.error('Error signin SSO: ' + error.message)
+      console.error(error)
+    }
     // setGoogleLoading(false)
   }
 
@@ -68,12 +78,22 @@ const SingInForm = ({ children, ...props }) => {
 
     setLoading(true)
     setBtnSubmitText('Sending magic link')
+
+    const pathname = window.location.pathname.split('/')
+    pathname.shift()
+    const redirectPathname = pathname.join('/')
+
     const { data, error } = await supabaseClient.auth.signInWithOtp({
       email: magicLinkEmail,
       options: {
-        emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT
+        emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT + redirectPathname
       }
     })
+
+    if (error) {
+      toast.error('Error signin with email: ' + error.message)
+      console.error(error)
+    }
 
     setLoading(false)
     setBtnSubmitText('Magic link sent!')

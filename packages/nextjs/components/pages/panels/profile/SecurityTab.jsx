@@ -135,11 +135,15 @@ const SecurityTab = () => {
       const { isValid } = await validateEmailMutation.mutateAsync(email)
       if (!isValid) return toast.error('Invalid email provider or domain!')
 
+      const pathname = window.location.pathname.split('/')
+      pathname.shift()
+      const redirectPathname = pathname.join('/')
+
       // const { error } = await supabaseClient.from('profiles').update({ email }).eq('id', user.id)
       const { user, error } = await supabaseClient.auth.updateUser({
         email,
         options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT
+          emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT + redirectPathname
         }
       })
 
