@@ -1,5 +1,5 @@
 import { useEditorStateContext } from '@context/EditorContext'
-import PadTitle from '@tiptap/pad-title-section/PadTitle'
+import PadTitle from '@components/TipTap/pad-title-section/PadTitle'
 import HeadSeo from '@components/HeadSeo'
 import { useEffect } from 'react'
 import DesktopEditor from '../components/DesktopEditor'

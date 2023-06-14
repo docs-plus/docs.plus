@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useEditorStateContext } from '@context/EditorContext'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
-import PadTitle from '@tiptap/pad-title-section/PadTitle'
+import PadTitle from '@components/TipTap/pad-title-section/PadTitle'
 import FilterModal from '../components/FilterModal'
 import HeadSeo from '@components/HeadSeo'
 import TocModal from '../components/TocModal'
