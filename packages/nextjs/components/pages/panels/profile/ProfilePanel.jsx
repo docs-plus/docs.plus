@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import Button from '../../../../components/Button'
 import { ShieldCheck, Bell, AngleSmallRight, signOutAlt, Exit } from '@icons'
-
+import { useRouter } from 'next/router'
 import { Avatar } from '../../../../components/Avatar'
 import dynamic from 'next/dynamic'
 
@@ -12,8 +12,10 @@ const ProfileTab = dynamic(() => import('./ProfileTab'), {
 
 import SecurityTab from './SecurityTab'
 import NotificationsTab from './NotificationsTab'
+import { toast } from 'react-hot-toast'
 
 const ProfilePanel = () => {
+  const router = useRouter()
   const user = useUser()
   const supabaseClient = useSupabaseClient()
   const [loadSignOut, setLoadSignOut] = useState(false)
@@ -22,7 +24,10 @@ const ProfilePanel = () => {
   const signOut = async () => {
     setLoadSignOut(true)
     const { error } = await supabaseClient.auth.signOut()
-    window.location = '/'
+    if (error) {
+      toast.error('Error signOut:' + error.message)
+    }
+    window.location = window.location.pathname
   }
 
   const changeTab = (tab) => {
