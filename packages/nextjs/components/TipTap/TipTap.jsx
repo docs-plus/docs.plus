@@ -210,7 +210,10 @@ const Editor = ({ provider, spellcheck = false }) => {
       // create a dive to display user avatar
       const avatar = document.createElement('div')
       avatar.classList.add('collaboration-cursor__avatar')
-      avatar.setAttribute('style', `background-image: url(${user.avatar}); border-color: ${user.color};`)
+      avatar.setAttribute(
+        'style',
+        `background-image: url(${user.avatar}); background-color:#ddd; border-color: ${user.color};`
+      )
 
       const label = document.createElement('div')
       label.classList.add('collaboration-cursor__label')

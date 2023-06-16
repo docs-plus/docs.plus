@@ -59,11 +59,15 @@ const DesktopEditor = ({ docMetadata }) => {
 
       if (profileData) {
         const lastUpdate = Date.now().toString()
-        const bucketAddress = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${user.id}.png?${lastUpdate}`
+        let bucketAddress = user?.user_metadata?.avatar_url || '/assets/avatar.svg'
+        if (profileData?.avatar_url) {
+          bucketAddress = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${user.id}.png?${lastUpdate}`
+        }
+
         provider.setAwarenessField('user', {
           name: profileData?.full_name || user.user_metadata.full_name,
           username: profileData?.username || user.user_metadata.user_name,
-          avatar: bucketAddress || user?.user_metadata?.avatar_url,
+          avatar: bucketAddress,
           color: randomColor()
         })
       }
