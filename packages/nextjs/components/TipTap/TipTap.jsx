@@ -193,6 +193,35 @@ const Editor = ({ provider, spellcheck = false }) => {
     }
   }
 
+  const CollaborationCursorConfig = {
+    provider,
+    user: {
+      name: 'Adam Doe',
+      color: randomColor()
+    }
+  }
+  if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    CollaborationCursorConfig.user.name = 'Unknown User'
+    CollaborationCursorConfig.render = (user) => {
+      const cursor = document.createElement('span')
+      cursor.classList.add('collaboration-cursor__caret')
+      cursor.setAttribute('style', `border-color: ${user.color};`)
+
+      // create a dive to display user avatar
+      const avatar = document.createElement('div')
+      avatar.classList.add('collaboration-cursor__avatar')
+      avatar.setAttribute('style', `background-image: url(${user.avatar}); border-color: ${user.color};`)
+
+      const label = document.createElement('div')
+      label.classList.add('collaboration-cursor__label')
+      label.setAttribute('style', `background-color: ${user.color}`)
+      label.insertBefore(document.createTextNode(user.name), null)
+      cursor.insertBefore(label, null)
+      if (user.avatar) cursor.insertBefore(avatar, null)
+      return cursor
+    }
+  }
+
   return {
     onCreate: (editor) => {
       scrollDown()
@@ -270,10 +299,7 @@ const Editor = ({ provider, spellcheck = false }) => {
       Collaboration.configure({
         document: provider.document
       }),
-      CollaborationCursor.configure({
-        provider,
-        user: { name: 'Adam Doe', color: randomColor() }
-      }),
+      CollaborationCursor.configure(CollaborationCursorConfig),
       Placeholder.configure({
         includeChildren: true,
         placeholder: generatePlaceholderText
