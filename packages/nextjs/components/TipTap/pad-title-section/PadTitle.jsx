@@ -1,18 +1,22 @@
 import Link from 'next/link'
 import DocTitle from '../DocTitle'
-import { DocsPlus, Hamburger, Check } from '@icons'
+import { DocsPlus, Hamburger, Check, PrivateShare } from '@icons'
 import { useEditorStateContext } from '@context/EditorContext'
 import { useUser } from '@supabase/auth-helpers-react'
 import { Avatar } from '@components/Avatar'
 import PubSub from 'pubsub-js'
 import Button from '@components/Button'
+import ShareModal from './ShareModal'
+import { useState } from 'react'
 
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 
-const PadTitle = ({ docTitle, docId, editor }) => {
+const PadTitle = ({ docMetadata }) => {
   const isKeyboardOpen = useDetectKeyboardOpen()
   const user = useUser()
   const { isAuthServiceAvailable } = useEditorStateContext()
+
+  const [displayShareModal, setDisplayShareModal] = useState(false)
 
   const btn_leftOpenModal = (e) => {
     if (!e.target.closest('button').classList.contains('btn_modal')) return
@@ -39,9 +43,19 @@ const PadTitle = ({ docTitle, docId, editor }) => {
     PubSub.publish('toggleControlCenter', true)
   }
 
+  const openShareModal = () => {
+    setDisplayShareModal(true)
+  }
+
+  const closeShareModal = (e) => {
+    if (e.target.id === 'ShareModalBlur') {
+      setDisplayShareModal(false)
+    }
+  }
+
   const ProfileSection = ({ user }) => {
     return (
-      <div className="ml-auto mr-2 flex">
+      <div className="mr-2 ml-5 flex">
         {user && (
           <button onClick={openControlCenter}>
             <Avatar width={24} height={24} className="rounded-full shadow-md border w-11 h-11" />
@@ -73,9 +87,23 @@ const PadTitle = ({ docTitle, docId, editor }) => {
           </button>
         )}
       </div> */}
-      <DocTitle docId={docId} docTitle={docTitle} />
+      <DocTitle documentId={docMetadata.documentId} docTitle={docMetadata.title} />
+      <Button
+        onClick={openShareModal}
+        Icon={PrivateShare}
+        className="bg-indigo-500 mt-2 drop-shadow-sm font-light ml-auto text-white h-9 w-28">
+        Share
+      </Button>
       <ProfileSection user={user} />
       <div className="w-10 h-10 border rounded-full bg-gray-400 ml-auto sm:hidden"></div>
+      {displayShareModal && (
+        <div
+          onClick={closeShareModal}
+          id="ShareModalBlur"
+          className="w-full h-full top-0 left-0 flex align-middle items-center justify-center absolute z-50 backdrop-blur-sm bg-slate-300/20 ">
+          <ShareModal docMetadata={docMetadata} />
+        </div>
+      )}
     </div>
   )
 }
