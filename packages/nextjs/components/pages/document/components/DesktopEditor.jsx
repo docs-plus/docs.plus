@@ -3,11 +3,14 @@ import Editor from '../components/Editor'
 import TOC from '../components/Toc'
 import editorConfig from '@components/TipTap/TipTap'
 import useApplyFilters from '@hooks/useApplyFilters'
-import { useEffect, useState } from 'react'
+import { use, useEffect, useState } from 'react'
 import { useEditor } from '@tiptap/react'
 import useYdocAndProvider from '@hooks/useYdocAndProvider'
 import { useEditorStateContext } from '@context/EditorContext'
 import { useRouter } from 'next/router'
+import { useUser } from '@supabase/auth-helpers-react'
+import useProfileData from '@hooks/useProfileData'
+import randomColor from 'randomcolor'
 
 const scrollHeadingSelection = (event) => {
   const scrollTop = event.currentTarget.scrollTop
@@ -32,6 +35,8 @@ const scrollHeadingSelection = (event) => {
 
 const DesktopEditor = ({ docMetadata }) => {
   const router = useRouter()
+  const { loadingProfileData, profileData, profileFetchingError } = useProfileData()
+  const user = useUser()
   const { slugs } = router.query
   const { rendering, setRendering, loading, setIsMobile, isMobile, setLoading, applyingFilters, setApplyingFilters } =
     useEditorStateContext()
@@ -46,11 +51,30 @@ const DesktopEditor = ({ docMetadata }) => {
   // TODO: this cuase rerending 3 times
   const { ydoc, provider, loadedData, setLoadedData } = useYdocAndProvider(docMetadata.documentId, setLoading)
 
+  useEffect(() => {
+    if (provider) {
+      provider.on('awarenessUpdate', ({ states }) => {
+        // console.log(states)
+      })
+
+      if (profileData) {
+        const lastUpdate = Date.now().toString()
+        const bucketAddress = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${user.id}.png?${lastUpdate}`
+        provider.setAwarenessField('user', {
+          name: profileData?.full_name || user.user_metadata.full_name,
+          username: profileData?.username || user.user_metadata.user_name,
+          avatar: bucketAddress || user?.user_metadata?.avatar_url,
+          color: randomColor()
+        })
+      }
+    }
+  }, [provider, user, profileData])
+
   // TODO: this cuase rerending 1 times
   const editor = useEditor(editorConfig({ provider }), [loading, applyingFilters])
 
   useEffect(() => {
-    console.log({ editor, loading }, '=-=-=')
+    // console.log({ editor, loading }, '=-=-=')
   }, [loading])
 
   useApplyFilters(editor, slugs, applyingFilters, setApplyingFilters, router, rendering)
