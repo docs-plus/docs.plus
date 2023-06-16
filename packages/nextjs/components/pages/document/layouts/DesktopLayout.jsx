@@ -46,7 +46,7 @@ const DesktopLayout = ({ docMetadata }) => {
       <HeadSeo title={title} description={description} keywords={keywords && keywords?.join(',')} />
       <div className={`pad tiptap flex flex-col border-solid ${isMobile ? ' m_mobile' : 'm_desktop'}`}>
         <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
-          <PadTitle docId={documentId} docTitle={title} />
+          <PadTitle docMetadata={docMetadata} />
         </div>
         <DesktopEditor docMetadata={docMetadata} />
         {displayControlCenter && (

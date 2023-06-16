@@ -3,11 +3,11 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 const useUpdateDocMetadata = () => {
   const queryClient = useQueryClient()
 
-  const { isLoading, isSuccess, mutate } = useMutation({
+  const { isLoading, isSuccess, mutate, data } = useMutation({
     mutationKey: ['updateDocumentMetadata'],
-    mutationFn: ({ title, description, keywords, docId }) => {
+    mutationFn: ({ title, description, keywords, documentId }) => {
       // NOTE: This is a hack to get the correct URL in the build time
-      const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${docId.split('.').at(-1)}`
+      const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentId}`
 
       const body = {}
       if (title) body.title = title
@@ -30,7 +30,8 @@ const useUpdateDocMetadata = () => {
   return {
     isLoading,
     isSuccess,
-    mutate
+    mutate,
+    data
   }
 }
 
