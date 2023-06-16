@@ -48,8 +48,6 @@ const ShareModal = ({ docMetadata }) => {
     }
   }
 
-  webShareAPI()
-
   return (
     <div className="modal flex flex-col antialiased p-4 w-[32rem] rounded-md border shadow-md z-50 bg-white">
       <div className="flex">
