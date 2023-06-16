@@ -33,6 +33,20 @@ const scrollHeadingSelection = (event) => {
   })
 }
 
+const getCursorUser = (user, profileData) => {
+  const lastUpdate = Date.now().toString()
+  let bucketAddress = user?.user_metadata?.avatar_url || '/assets/avatar.svg'
+  if (profileData?.avatar_url) {
+    bucketAddress = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${user.id}.png?${lastUpdate}`
+  }
+  return {
+    name: profileData?.full_name || user.user_metadata.full_name,
+    username: profileData?.username || user.user_metadata.user_name,
+    avatar: bucketAddress,
+    color: randomColor()
+  }
+}
+
 const DesktopEditor = ({ docMetadata }) => {
   const router = useRouter()
   const { loadingProfileData, profileData, profileFetchingError } = useProfileData()
@@ -57,19 +71,8 @@ const DesktopEditor = ({ docMetadata }) => {
         // console.log(states)
       })
 
-      if (profileData) {
-        const lastUpdate = Date.now().toString()
-        let bucketAddress = user?.user_metadata?.avatar_url || '/assets/avatar.svg'
-        if (profileData?.avatar_url) {
-          bucketAddress = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${user.id}.png?${lastUpdate}`
-        }
-
-        provider.setAwarenessField('user', {
-          name: profileData?.full_name || user.user_metadata.full_name,
-          username: profileData?.username || user.user_metadata.user_name,
-          avatar: bucketAddress,
-          color: randomColor()
-        })
+      if (profileData && !loading) {
+        provider.setAwarenessField('user', getCursorUser(user, profileData))
       }
     }
   }, [provider, user, profileData])
@@ -78,8 +81,11 @@ const DesktopEditor = ({ docMetadata }) => {
   const editor = useEditor(editorConfig({ provider }), [loading, applyingFilters])
 
   useEffect(() => {
-    // console.log({ editor, loading }, '=-=-=')
-  }, [loading])
+    if (loading) return
+    if (editor?.commands?.updateUser && user) {
+      editor.commands.updateUser(getCursorUser(user, profileData))
+    }
+  }, [editor, loading, user, profileData])
 
   useApplyFilters(editor, slugs, applyingFilters, setApplyingFilters, router, rendering)
 
