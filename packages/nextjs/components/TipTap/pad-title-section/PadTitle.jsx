@@ -9,7 +9,7 @@ import Button from '@components/Button'
 import ShareModal from './ShareModal'
 import { useState } from 'react'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
-import PresentUsers from './presentUsers'
+import PresentUsers from './PresentUsers'
 
 const PadTitle = ({ docMetadata }) => {
   const isKeyboardOpen = useDetectKeyboardOpen()
