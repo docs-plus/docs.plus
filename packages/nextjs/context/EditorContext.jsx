@@ -13,6 +13,7 @@ export const EditorStateProvider = ({ children, isMobileInitial }) => {
   const [deviceDetect, setDeviceDetect] = useState(() =>
     typeof window !== 'undefined' ? new MobileDetect(window.navigator.userAgent) : null
   )
+  const [EditorProvider, setEditorProvider] = useState(null)
 
   const [isAuthServiceAvailable, setIsAuthServiceAvailable] = useState(
     Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
@@ -45,9 +46,22 @@ export const EditorStateProvider = ({ children, isMobileInitial }) => {
       setApplyingFilters,
       setIsEmpty,
       setSelectionPos,
-      setIsMobile
+      setIsMobile,
+      EditorProvider,
+      setEditorProvider
     }),
-    [rendering, loading, applyingFilters, isEmpty, isMobile, selectionPos, deviceDetect, isAuthServiceAvailable]
+    [
+      rendering,
+      loading,
+      applyingFilters,
+      EditorProvider,
+      setEditorProvider,
+      isEmpty,
+      isMobile,
+      selectionPos,
+      deviceDetect,
+      isAuthServiceAvailable
+    ]
   )
 
   return <EditorStateContext.Provider value={contextValue}>{children}</EditorStateContext.Provider>
