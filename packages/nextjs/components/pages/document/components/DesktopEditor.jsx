@@ -52,8 +52,7 @@ const DesktopEditor = ({ docMetadata }) => {
   const { loadingProfileData, profileData, profileFetchingError } = useProfileData()
   const user = useUser()
   const { slugs } = router.query
-  const { rendering, setRendering, loading, setIsMobile, isMobile, setLoading, applyingFilters, setApplyingFilters } =
-    useEditorStateContext()
+  const { rendering, setRendering, loading, setLoading, applyingFilters, setApplyingFilters } = useEditorStateContext()
 
   // check if the document is in the filter mode
   useEffect(() => {

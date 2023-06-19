@@ -8,13 +8,12 @@ import PubSub from 'pubsub-js'
 import Button from '@components/Button'
 import ShareModal from './ShareModal'
 import { useState } from 'react'
-
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
+import PresentUsers from './presentUsers'
 
 const PadTitle = ({ docMetadata }) => {
   const isKeyboardOpen = useDetectKeyboardOpen()
   const user = useUser()
-  const { isAuthServiceAvailable } = useEditorStateContext()
 
   const [displayShareModal, setDisplayShareModal] = useState(false)
 
@@ -88,10 +87,11 @@ const PadTitle = ({ docMetadata }) => {
         )}
       </div> */}
       <DocTitle documentId={docMetadata.documentId} docTitle={docMetadata.title} />
+      <PresentUsers className="ml-auto mt-2" />
       <Button
         onClick={openShareModal}
         Icon={PrivateShare}
-        className="bg-indigo-500 mt-2 drop-shadow-sm font-light ml-auto text-white h-9 w-28">
+        className="bg-indigo-500 mt-2 drop-shadow-sm font-light ml-6 text-white h-9 w-28">
         Share
       </Button>
       <ProfileSection user={user} />

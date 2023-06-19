@@ -2,11 +2,13 @@ import { useState, useEffect, useRef } from 'react'
 import * as Y from 'yjs'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import { HocuspocusProvider } from '@hocuspocus/provider'
+import { useEditorStateContext } from '@context/EditorContext'
 
 const useYdocAndProvider = (documentId, setLoading) => {
   const [loadedData, setLoadedData] = useState(false)
   const ydocRef = useRef(new Y.Doc())
   const providerRef = useRef(null)
+  const { EditorProvider, setEditorProvider } = useEditorStateContext()
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -43,6 +45,12 @@ const useYdocAndProvider = (documentId, setLoading) => {
       })
     }
   }, [])
+
+  useEffect(() => {
+    if (!EditorProvider && providerRef.current) {
+      setEditorProvider(providerRef.current)
+    }
+  }, [providerRef.current])
 
   // NOTE: This is not working yet, I need reconsider for offline mode
   // Store the Y document in the browser
