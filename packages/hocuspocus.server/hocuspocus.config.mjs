@@ -19,6 +19,10 @@ import { checkEnvBolean } from './utils/index.mjs'
 import Queue from 'bull'
 
 const StoreDocument = new Queue('store documents changes', {
+  redis: {
+    host: process.env.REDIS_HOST,
+    port: process.env.REDIS_PORT
+  },
   limiter: {
     max: 300,
     duration: 1000
