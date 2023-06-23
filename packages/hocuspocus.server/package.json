@@ -37,6 +37,7 @@
     "@hocuspocus/server": "^2.1.0",
     "@hocuspocus/transformer": "^2.1.0",
     "@prisma/client": "^4.15.0",
+    "@supabase/supabase-js": "^2.26.0",
     "@tiptap/extension-document": "^2.0.3",
     "@tiptap/extension-paragraph": "^2.0.3",
     "@tiptap/extension-text": "^2.0.3",
