@@ -7,11 +7,11 @@ import { CREATE_DOCUMENT, UPDATE_DOCUMENT_METADATA } from './schema/documents.mj
 import { createClient } from '@supabase/supabase-js'
 import jwt_decode from 'jwt-decode'
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
 const prisma = new PrismaClient()
 const router = expressRouter()
 
 const getOwnerProfile = async (userId) => {
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
   const { data } = await supabase.from('profiles').select('*').eq('id', userId)
   return data[0]
 }
