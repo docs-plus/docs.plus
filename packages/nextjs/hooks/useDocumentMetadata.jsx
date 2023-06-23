@@ -1,8 +1,11 @@
 import { useState, useEffect, useLayoutEffect } from 'react'
 import { db, initDB } from '../db'
 
+const canUseDOM = typeof window !== 'undefined'
+const useIsomorphicLayoutEffect = canUseDOM ? useLayoutEffect : useEffect
+
 const useDocumentMetadata = (slugs, docMetadata) => {
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (docMetadata) {
       localStorage.setItem('docId', docMetadata.documentId)
       localStorage.setItem('padName', `${docMetadata.isPrivate ? 'private' : 'public'}.${docMetadata.documentId}`)

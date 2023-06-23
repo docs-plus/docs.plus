@@ -87,7 +87,7 @@ const PadTitle = ({ docMetadata }) => {
         )}
       </div> */}
       <DocTitle documentId={docMetadata.documentId} docTitle={docMetadata.title} />
-      <PresentUsers className="ml-auto mt-2" />
+      <PresentUsers user={user} className="ml-auto mt-2" />
       <Button
         onClick={openShareModal}
         Icon={PrivateShare}

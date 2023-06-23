@@ -16,9 +16,8 @@
   "dependencies": {
     "@faker-js/faker": "^8.0.1",
     "@hocuspocus/provider": "^2.1.0",
-    "@supabase/auth-helpers-nextjs": "^0.6.1",
+    "@supabase/auth-helpers-nextjs": "^0.7.2",
     "@supabase/auth-helpers-react": "^0.3.1",
-    "@supabase/supabase-js": "^2.22.0",
     "@tanstack/react-query": "^4.29.5",
     "@tiptap/core": "^2.0.3",
     "@tiptap/extension-blockquote": "^2.0.3",
