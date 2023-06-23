@@ -43,6 +43,7 @@ const getCursorUser = (user, profileData) => {
     name: profileData?.full_name || user.user_metadata.full_name,
     username: profileData?.username || user.user_metadata.user_name,
     avatar: bucketAddress,
+    id: user.id,
     color: randomColor()
   }
 }
@@ -96,16 +97,7 @@ const DesktopEditor = ({ docMetadata }) => {
   return (
     <>
       <div className="toolbars w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative">
-        {editor ? (
-          <Toolbar
-            editor={editor}
-            docId={docMetadata.documentId}
-            documentDescription={docMetadata.description}
-            keywords={docMetadata.keywords}
-          />
-        ) : (
-          'Loading...'
-        )}
+        {editor ? <Toolbar editor={editor} docMetadata={docMetadata} /> : 'Loading...'}
       </div>
       <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
         <div

@@ -7,24 +7,47 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum Role {
+  owner
+  collaborator
+}
+
 model Documents {
-  id         Int              @id @default(autoincrement())
-  documentId String
-  data       Bytes
-  createdAt  DateTime         @default(now())
-  updatedAt  DateTime         @updatedAt
-  metadata   DocumentMetadata @relation(fields: [documentId], references: [documentId])
+  id            Int              @id @default(autoincrement())
+  documentId    String
+  data          Bytes
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  metadata      DocumentMetadata @relation(fields: [documentId], references: [documentId])
+  collaborators DocumentUsers[]
 }
 
 model DocumentMetadata {
-  id          Int         @id @default(autoincrement())
-  slug        String      @unique
+  id          Int      @id @default(autoincrement())
+  slug        String   @unique
   title       String?
   description String?
   keywords    String?
-  isPrivate   Boolean     @default(false)
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
-  documentId  String      @unique
-  documents   Documents[]
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  documentId  String   @unique
+
+  // This field stores the user ID from the 'user' table in Supabase auth
+  ownerId String?
+
+  // This field stores the user's email as a backup. It ensures data mapping to the user even if we lose the 'user' table in Supabase.
+  email String?
+
+  documents Documents[]
+}
+
+model DocumentUsers {
+  documentId Int
+  userId     String
+  role       Role?     @default(collaborator)
+  email      String?
+  document   Documents @relation(fields: [documentId], references: [id])
+
+  @@id([documentId, userId])
 }

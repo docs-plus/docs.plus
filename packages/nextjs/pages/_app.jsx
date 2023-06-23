@@ -10,7 +10,7 @@ const RelpadPrompt = dynamic(() => import(`../components/ReloadPrompt`), {
 })
 
 import { EditorStateProvider } from '../context/EditorContext'
-import { createBrowserSupabaseClient } from '@supabase/auth-helpers-nextjs'
+import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs'
 import { SessionContextProvider } from '@supabase/auth-helpers-react'
 
 import { useState, useEffect } from 'react'
@@ -67,7 +67,7 @@ const Header = () => {
 
 export default function MyApp({ Component, pageProps, initialSession }) {
   const isMobileInitial = pageProps.isMobile || false
-  const [supabaseClient] = useState(() => createBrowserSupabaseClient())
+  const [supabaseClient] = useState(() => createPagesBrowserClient())
 
   // Create a new supabase browser client on every first render.
   if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {

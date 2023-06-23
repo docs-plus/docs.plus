@@ -12,8 +12,46 @@ import { SQLite } from '@hocuspocus/extension-sqlite'
 import { Throttle } from '@hocuspocus/extension-throttle'
 import { Redis } from '@hocuspocus/extension-redis'
 import { Logger } from '@hocuspocus/extension-logger'
+import jwt_decode from 'jwt-decode'
 
 import { checkEnvBolean } from './utils/index.mjs'
+
+import Queue from 'bull'
+
+const StoreDocument = new Queue('store documents changes', {
+  limiter: {
+    max: 300,
+    duration: 1000
+  }
+})
+
+StoreDocument.process(async function (job, done) {
+  const { data } = job
+  try {
+    const { documentName, state, context, jwt } = data
+    console.time(`Store Data, jobId:${job.id}`)
+    const { id, email } = jwt ? jwt_decode(jwt) : { id: null, email: null }
+
+    return await prisma.documents.create({
+      data: {
+        documentId: data.documentName,
+        data: Buffer.from(data.state, 'base64')
+        // collaborators: {
+        //   create: {
+        //     userId: id,
+        //     email: email
+        //   }
+        // }
+      }
+    })
+  } catch (err) {
+    console.error('Error storing data:', err)
+  } finally {
+    console.timeEnd(`Store Data, jobId:${job.id}`)
+    done()
+  }
+})
+
 const prisma = new PrismaClient()
 
 const getServerName = () =>
@@ -99,19 +137,17 @@ const configureExtensions = () => {
             throw err
           }
         },
-        store: async ({ documentName, state, context }) => {
-          try {
-            return await prisma.documents.create({
-              data: {
-                documentId: documentName,
-                data: state
-              }
-            })
-          } catch (err) {
-            console.error('Error storing data:', err)
-            await prisma.$disconnect()
-            throw err
-          }
+        store: async (data) => {
+          const { documentName, state, context } = data
+          // console.log(data.requestHeaders.cookie.split(';')[0].split('=')[1])
+          StoreDocument.add({
+            documentName,
+            state: state.toString('base64'),
+            context,
+            email: data.requestParameters.get('email'),
+            userId: data.requestParameters.get('userId'),
+            jwt: data.requestHeaders.cookie?.split(';')[0].split('=')[1]
+          })
         }
       })
     )
@@ -124,6 +160,11 @@ export default () => {
   return {
     name: getServerName(),
     port: process.env.HOCUSPOCUS_PORT,
-    extensions: configureExtensions()
+    extensions: configureExtensions(),
+    debounce: 1000
+    // async onChange(data) {
+    //   console.log(data)
+    //   console.log(`Document ${data.documentName} changed by ${data.context?.user?.name}`)
+    // }
   }
 }

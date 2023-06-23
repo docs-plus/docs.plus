@@ -9,7 +9,7 @@ import Icon from './Icon'
 import FilterModal from './FilterModal'
 import GearModal from './GearModal'
 
-const Toolbar = ({ editor, docId, documentDescription = '', keywords = [] }) => {
+const Toolbar = ({ editor, docMetadata }) => {
   const setLink = useCallback(() => {
     const previousUrl = editor.getAttributes('link').href
     const url = window.prompt('URL', previousUrl)
@@ -204,7 +204,7 @@ const Toolbar = ({ editor, docId, documentDescription = '', keywords = [] }) => 
         <Gear fill="rgba(0,0,0,.7)" size="16" />
       </button>
       <FilterModal totalHeading={totalHeading} />
-      <GearModal documentDescription={documentDescription} keywords={keywords} docId={docId} />
+      <GearModal docMetadata={docMetadata} />
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react'
 import MobileDetect from 'mobile-detect'
+import { createPagesServerClient } from '@supabase/auth-helpers-nextjs'
 
 import { useEditorStateContext } from '@context/EditorContext'
 import useDocumentMetadata from '@hooks/useDocumentMetadata'
@@ -28,24 +29,38 @@ export default Document
 
 export async function getServerSideProps(context) {
   const slug = context.query.slugs.at(0)
-  const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${slug}`
-  const res = await fetch(url)
-  const { data } = await res.json()
+  const supabase = createPagesServerClient(context)
 
-  const userAgent = context.req.headers['user-agent']
-  const device = new MobileDetect(userAgent)
-  const docClientId = `${data.isPrivate ? 'private' : 'public'}.${data.documentId}`
+  try {
+    const {
+      data: { session }
+    } = await supabase.auth.getSession()
 
-  const docMetadata = {
-    ...data,
-    docClientId
-  }
+    let baseAPIUrl = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${slug}`
+    const url = session ? `${baseAPIUrl}?userId=${session.user.id}` : baseAPIUrl
+    const fetchOptions = session ? { headers: { token: session.access_token || '' } } : {}
 
-  return {
-    props: {
-      docMetadata,
-      isMobile: device.mobile() ? true : false,
-      slugs: context.query.slugs
+    const documentMetadata = await fetch(url, fetchOptions)
+    const { data } = await documentMetadata.json()
+
+    const userAgent = context.req.headers['user-agent']
+    const device = new MobileDetect(userAgent)
+    const docClientId = `${data.isPrivate ? 'private' : 'public'}.${data.documentId}`
+
+    const docMetadata = {
+      ...data,
+      docClientId
     }
+
+    return {
+      props: {
+        docMetadata,
+        isMobile: device.mobile() ? true : false,
+        slugs: context.query.slugs
+      }
+    }
+  } catch (error) {
+    console.error('getServerSideProps error:', error)
   }
+  return { props: {} }
 }

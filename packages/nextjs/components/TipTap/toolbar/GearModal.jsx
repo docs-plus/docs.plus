@@ -5,8 +5,8 @@ import Button from '../../Button'
 import useUpdateDocMetadata from '../../../hooks/useUpdateDocMetadata'
 import toast from 'react-hot-toast'
 import { useBooleanLocalStorageState, saveDocDescriptionHandler } from './toolbarUtils'
-
 import Toggle from '../../Toggle'
+import Image from 'next/image'
 
 const ToggleSection = ({ name, description, value, checked, onChange }) => {
   return (
@@ -22,20 +22,20 @@ const ToggleSection = ({ name, description, value, checked, onChange }) => {
   )
 }
 
-const GearModal = ({ documentDescription, keywords, docId }) => {
+const GearModal = ({ docMetadata }) => {
   const [indentSetting, setIndentSetting] = useBooleanLocalStorageState('setting.indentHeading', false)
   const [h1SectionBreakSetting, setH1SectionBreakSetting] = useBooleanLocalStorageState(
     'setting.h1SectionBreakSetting',
     true
   )
-  const [docDescription, setDocDescription] = useState(documentDescription)
+  const [docDescription, setDocDescription] = useState(docMetadata.description)
 
   const { isLoading, isSuccess, mutate } = useUpdateDocMetadata()
-  const [tags, setTags] = useState(keywords)
+  const [tags, setTags] = useState(docMetadata.keywords)
 
   // Save document description
   const saveDescriptionHandler = (e) => {
-    saveDocDescriptionHandler(mutate, docId, docDescription, tags)
+    saveDocDescriptionHandler(mutate, docMetadata.documentId, docDescription, tags)
   }
 
   const handleTagsChange = (newTags) => {
@@ -72,10 +72,53 @@ const GearModal = ({ documentDescription, keywords, docId }) => {
     setH1SectionBreakSetting(!h1SectionBreakSetting)
   }
 
+  const OwnerProfile = () => {
+    const user = docMetadata.ownerProfile
+    const lastUpdate = Date.now().toString()
+
+    let avatar = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${user.id}.png?${lastUpdate}`
+    if (user.avatar_url) avatar = user.avatar_url
+
+    return (
+      <div className="antialiased  mt-2 border p-2 rounded-md">
+        <p className="font-bold">Document Owner: </p>
+        <div className="flex align-baseline justify-between">
+          <div className="mt-1 ml-2">
+            <p className="text-sm">
+              <b>Name: </b>
+              {user.full_name}
+            </p>
+            <p className="text-xs text-gray-500">
+              <b>Username: </b>
+              {user.username}
+            </p>
+          </div>
+          <p className="font-semibold text-gray-400 underline underline-offset-1"> Public document</p>
+        </div>
+
+        {/*
+        <Image
+          className="w-8 h-9 border-2 rounded-full"
+          src={avatar}
+          width={32}
+          height={32}
+          alt={user.full_name}
+          // fill={true}
+          title={user.full_name}
+        /> */}
+      </div>
+    )
+  }
+
   return (
     <div className="gearModal nd_modal">
       <p className="font-medium text-base text-gray-400 pb-1">Settings:</p>
       <hr />
+      {docMetadata.ownerProfile && (
+        <div>
+          <OwnerProfile />
+        </div>
+      )}
       <div className="content pt-5 flex flex-col !items-end">
         <TextAreaOvelapLabel
           label="Document Description"
