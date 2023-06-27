@@ -14,19 +14,19 @@ const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
 
 const DesktopLayout = ({ docMetadata }) => {
   const { isMobile } = useEditorStateContext()
-  const { title, documentId, description, keywords } = docMetadata
+  const { title, documentId, description, keywords, slug } = docMetadata
 
   const [displayControlCenter, setDisplayControlCenter] = useState(false)
 
   const closeControlCenter = (e) => {
     if (e.target.id === 'controlCenterBlur') {
+      window.history.pushState({}, '', `/${slug}`)
       setDisplayControlCenter(false)
     }
   }
 
   useEffect(() => {
     PubSub.subscribe('toggleControlCenter', (msg, data) => {
-      // setAvatarUrl(newURL)
       setDisplayControlCenter(!displayControlCenter)
     })
 
