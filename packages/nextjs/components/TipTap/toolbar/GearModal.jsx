@@ -44,7 +44,7 @@ const GearModal = ({ docMetadata }) => {
 
   useEffect(() => {
     if (isSuccess) {
-      toast.success('Description updated')
+      toast.success('Description and keywords updated')
     }
   }, [isSuccess])
 
