@@ -35,3 +35,6 @@ content-type: application/json
   "description": "new Demo hjhjh",
   "keywords": ["test", "cats" ,"dogs3", "demo"]
 }
+
+###
+GET http://localhost:2300/api/documents?title=cats

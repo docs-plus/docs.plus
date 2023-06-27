@@ -16,6 +16,12 @@ const getOwnerProfile = async (userId) => {
   return data[0]
 }
 
+const getOwnerProfiles = async (userIds) => {
+  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
+  const { data } = await supabase.from('profiles').select('*').in('id', userIds)
+  return data
+}
+
 const createNewDocument = async (slug, title, description = '', keywords = '', user) => {
   const newSlug = slugify(slug, { lower: true, strict: true })
   const uid = new ShortUniqueId()
@@ -59,11 +65,86 @@ router.get('/documents/:docName', async (req, res) => {
 })
 
 router.get('/documents', async (req, res) => {
-  const doclist = await prisma.documentMetadata.findMany()
-  doclist.forEach((doc) => {
+  const { title, keywords: reqKeywords, description, limit: reqLimit, offset: reqOffset } = req.query
+
+  const limit = parseInt(reqLimit, 10) || 10 // Default limit is 10
+  const offset = parseInt(reqOffset, 10) || 0 // Default offset is 0
+
+  let documents
+  let total
+
+  if (title || reqKeywords || description) {
+    let search = decodeURIComponent(title)
+    let keywords = decodeURIComponent(reqKeywords)
+    let desc = decodeURIComponent(description)
+
+    // Tokenize each string
+    let searchTokens = search.split(' ')
+    let keywordTokens = keywords.split(' ')
+    let descTokens = desc.split(' ')
+
+    // Combine all tokens
+    let allTokens = [...searchTokens, ...keywordTokens, ...descTokens]
+
+    // Remove any empty tokens
+    allTokens = allTokens.filter((x) => x && x !== 'undefined')
+
+    // Join all tokens with ' & '
+    let searchQuery = allTokens.join(' & ')
+
+    let [docs, count] = await Promise.all([
+      prisma.documentMetadata.findMany({
+        skip: offset,
+        take: limit,
+        where: {
+          OR: [
+            { title: { search: searchQuery } },
+            { keywords: { search: searchQuery } },
+            { description: { search: searchQuery } }
+          ]
+        }
+      }),
+      prisma.documentMetadata.count({
+        where: {
+          OR: [
+            { title: { search: searchQuery } },
+            { keywords: { search: searchQuery } },
+            { description: { search: searchQuery } }
+          ]
+        }
+      })
+    ])
+    documents = docs
+    total = count
+  } else {
+    // Document retrieval logic
+    let [doclist, count] = await Promise.all([
+      prisma.documentMetadata.findMany({
+        skip: offset,
+        take: limit
+      }),
+      prisma.documentMetadata.count()
+    ])
+    documents = doclist
+    total = count
+  }
+
+  documents.forEach((doc) => {
     doc.keywords = doc.keywords.length === 0 ? [] : doc.keywords.split(',').map((k) => k.trim())
   })
-  return doclist
+
+  const userIds = documents.filter((doc) => doc.ownerId && doc.ownerId).map((doc) => doc.ownerId)
+  const ownerProfiles = await getOwnerProfiles(userIds)
+
+  // I need to check if has cookie token
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+    documents = documents.map((doc) => {
+      const user = ownerProfiles.find((profile) => profile.id === doc.ownerId)
+      return { ...doc, user }
+    })
+  }
+
+  return { docs: documents, total }
 })
 
 router.post('/documents', validator.body(CREATE_DOCUMENT), async (req, res) => {
