@@ -5,6 +5,7 @@ create table profiles (
   username text unique,
   full_name text,
   avatar_url text,
+  default_avatar_url text,
   website text,
   twitter text,
   facebook text,
@@ -35,7 +36,7 @@ create policy "Users can update own profile." on profiles
 create function public.handle_new_user()
 returns trigger as $$
 begin
-  insert into public.profiles (id, full_name, email, avatar_url)
+  insert into public.profiles (id, full_name, email, default_avatar_url)
   values (new.id, new.raw_user_meta_data->>'full_name', new.email, new.raw_user_meta_data->>'avatar_url');
   return new;
 end;
