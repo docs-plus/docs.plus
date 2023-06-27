@@ -1,15 +1,18 @@
 import { useEffect, useState, useCallback } from 'react'
 import Select from 'react-select'
 
-import { Link, ImageBox, Gear, ClearMark, Filter } from '@icons'
+import { Link, ImageBox, Gear, ClearMark, Filter, Folder } from '@icons'
+import PubSub from 'pubsub-js'
 
 import ToolbarButton from './ToolbarButton'
 import Icon from './Icon'
 
 import FilterModal from './FilterModal'
 import GearModal from './GearModal'
+import { useRouter } from 'next/router'
 
 const Toolbar = ({ editor, docMetadata }) => {
+  const router = useRouter()
   const setLink = useCallback(() => {
     const previousUrl = editor.getAttributes('link').href
     const url = window.prompt('URL', previousUrl)
@@ -101,6 +104,11 @@ const Toolbar = ({ editor, docMetadata }) => {
     if (e.target.closest('.btn_modal') || e.target.closest('.nd_modal')) return
     document.querySelector('.gearModal').classList.remove('active')
     document.querySelector('.filterModal').classList.remove('active')
+  }
+
+  const openControlCenter = () => {
+    router.replace(`#panel=documents`)
+    PubSub.publish('toggleControlCenter', true)
   }
 
   return (
@@ -196,13 +204,22 @@ const Toolbar = ({ editor, docMetadata }) => {
         <ClearMark fill="rgba(0,0,0,.7)" size="14" />
       </button>
 
-      <button className="btn_filterModal btn_modal" onClick={toggleFilterModal}>
-        <Filter fill="rgba(0,0,0,.7)" size="20" />
-      </button>
+      <div className="ml-auto flex align-baseline items-center">
+        <button onClick={openControlCenter}>
+          <Folder fill="rgba(0,0,0,.7)" size="18" />
+        </button>
 
-      <button className="btn_settingModal btn_modal" onClick={toggleSettingModal}>
-        <Gear fill="rgba(0,0,0,.7)" size="16" />
-      </button>
+        <div className="divided"></div>
+
+        <button className="btn_filterModal btn_modal" onClick={toggleFilterModal}>
+          <Filter fill="rgba(0,0,0,.7)" size="20" />
+        </button>
+
+        <button className="btn_settingModal btn_modal" onClick={toggleSettingModal}>
+          <Gear fill="rgba(0,0,0,.7)" size="16" />
+        </button>
+      </div>
+
       <FilterModal totalHeading={totalHeading} />
       <GearModal docMetadata={docMetadata} />
     </div>

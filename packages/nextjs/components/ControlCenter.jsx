@@ -1,11 +1,11 @@
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@components/Tabs/Tabs'
-import Avatar from '@components/Avatar'
 import dynamic from 'next/dynamic'
 import { useUser } from '@supabase/auth-helpers-react'
 import SignInPanel from '@pages/panels/SignInPanel'
 import ProfilePanel from '@pages/panels/profile/ProfilePanel'
 
 const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
+const DocumentsPanel = dynamic(() => import('@pages/panels/DocumentsPanel'))
 
 function TabLayout({ children }) {
   return (
@@ -32,6 +32,7 @@ const ControlCenter = () => {
               Profile
             </Tab>
           )}
+          {user && <Tab name="documents">Documents</Tab>}
         </TabList>
         <TabPanels className="bg-white rounded-md  max-w-5xl -top-1 relative z-10">
           {!user && (
@@ -42,6 +43,11 @@ const ControlCenter = () => {
           {user && (
             <TabLayout name="profile">
               <ProfilePanel />
+            </TabLayout>
+          )}
+          {user && (
+            <TabLayout name="documents">
+              <DocumentsPanel />
             </TabLayout>
           )}
         </TabPanels>
