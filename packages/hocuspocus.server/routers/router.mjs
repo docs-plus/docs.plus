@@ -99,6 +99,7 @@ router.get('/documents', async (req, res) => {
         where: {
           OR: [
             { title: { search: searchQuery } },
+            { title: { contains: searchQuery } }, // I'll need to check if this is needed
             { keywords: { search: searchQuery } },
             { description: { search: searchQuery } }
           ]
@@ -108,6 +109,7 @@ router.get('/documents', async (req, res) => {
         where: {
           OR: [
             { title: { search: searchQuery } },
+            { title: { contains: searchQuery } }, // I'll need to check if this is needed
             { keywords: { search: searchQuery } },
             { description: { search: searchQuery } }
           ]
