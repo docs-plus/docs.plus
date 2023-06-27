@@ -44,7 +44,7 @@ export const applySerchThroughHeading = (searchInput, router) => {
 
 export const saveDocDescriptionHandler = (mutate, docId, docDescription, tags) => {
   mutate({
-    docId: docId.split('.').at(-1),
+    documentId: docId,
     description: docDescription,
     keywords: tags
   })
