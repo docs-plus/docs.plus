@@ -18,7 +18,7 @@ const AvatarStack = ({ users }) => {
             className="relative border-gray-200  dark:border-gray-800 bg-white rounded-full w-9 h-9">
             {userAvatar ? (
               <Image
-                className="w-8 h-9 border-2 rounded-full"
+                className="w-9 h-9 border-2 rounded-full"
                 src={userAvatar}
                 alt={`Avatar of ${userName}`}
                 fill={true}

@@ -165,10 +165,9 @@ export default () => {
     name: getServerName(),
     port: process.env.HOCUSPOCUS_PORT,
     extensions: configureExtensions(),
-    debounce: 1000
-    // async onChange(data) {
-    //   console.log(data)
-    //   console.log(`Document ${data.documentName} changed by ${data.context?.user?.name}`)
-    // }
+    debounce: 1000,
+    async onStateless({ payload, document, connection }) {
+      document.broadcastStateless(payload)
+    }
   }
 }

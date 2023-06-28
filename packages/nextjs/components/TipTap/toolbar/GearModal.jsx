@@ -4,17 +4,22 @@ import InputTags from '../../InputTags'
 import Button from '../../Button'
 import useUpdateDocMetadata from '../../../hooks/useUpdateDocMetadata'
 import toast from 'react-hot-toast'
-import { useBooleanLocalStorageState, saveDocDescriptionHandler } from './toolbarUtils'
+import { useBooleanLocalStorageState, saveDocDescriptionHandler, saveDocReadOnlyPage } from './toolbarUtils'
 import Toggle from '../../Toggle'
 import Image from 'next/image'
+import { twMerge } from 'tailwind-merge'
+import { useEditorStateContext } from '@context/EditorContext'
+import { useUser } from '@supabase/auth-helpers-react'
 
-const ToggleSection = ({ name, description, value, checked, onChange }) => {
+const ToggleSection = ({ name, className, description, value, checked, onChange }) => {
+  const containerClasses = twMerge(`flex flex-col p-2 antialiased `, className)
+
   return (
-    <div className="flex flex-col p-2 antialiased ">
+    <div className={containerClasses}>
       <p className="text-base font-bold">{name}</p>
       <div className="flex w-full flex-row align-middle justify-between items-center">
         <p className="text-gray-500 text-sm">{description}</p>
-        <div className="border-l flex-col h-full py-4 px-4 ml-2 mr-6">
+        <div className="border-l flex-col h-full py-2 px-3 ml-2 mr-6">
           <Toggle id={value} checked={checked} onChange={onChange} />
         </div>
       </div>
@@ -23,6 +28,8 @@ const ToggleSection = ({ name, description, value, checked, onChange }) => {
 }
 
 const GearModal = ({ docMetadata }) => {
+  const user = useUser()
+
   const [indentSetting, setIndentSetting] = useBooleanLocalStorageState('setting.indentHeading', false)
   const [h1SectionBreakSetting, setH1SectionBreakSetting] = useBooleanLocalStorageState(
     'setting.h1SectionBreakSetting',
@@ -32,10 +39,23 @@ const GearModal = ({ docMetadata }) => {
 
   const { isLoading, isSuccess, mutate } = useUpdateDocMetadata()
   const [tags, setTags] = useState(docMetadata.keywords)
+  const [readOnly, setreadOnly] = useState(docMetadata.readOnly || false)
+  const [formTargetHandler, setFormTargetHndler] = useState('description')
+
+  const { EditorProvider } = useEditorStateContext()
 
   // Save document description
   const saveDescriptionHandler = (e) => {
     saveDocDescriptionHandler(mutate, docMetadata.documentId, docDescription, tags)
+  }
+
+  const saveDocreadOnlyHandler = () => {
+    setreadOnly(() => {
+      setFormTargetHndler('readOnly')
+      EditorProvider.sendStateless(JSON.stringify({ type: 'readOnly', state: !readOnly }))
+      saveDocReadOnlyPage(mutate, docMetadata.documentId, !readOnly)
+      return !readOnly
+    })
   }
 
   const handleTagsChange = (newTags) => {
@@ -44,7 +64,8 @@ const GearModal = ({ docMetadata }) => {
 
   useEffect(() => {
     if (isSuccess) {
-      toast.success('Description and keywords updated')
+      if (formTargetHandler === 'readOnly') toast.success('Read-only status updated')
+      else toast.success('Description and keywords updated')
     }
   }, [isSuccess])
 
@@ -73,39 +94,47 @@ const GearModal = ({ docMetadata }) => {
   }
 
   const OwnerProfile = () => {
-    const user = docMetadata.ownerProfile
+    const { avatar_url, full_name, username, id: userId } = docMetadata.ownerProfile
     const lastUpdate = Date.now().toString()
 
-    let avatar = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${user.id}.png?${lastUpdate}`
-    if (user.avatar_url) avatar = user.avatar_url
+    let avatar = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${userId}.png?${lastUpdate}`
+    if (avatar_url) avatar = avatar_url
 
     return (
       <div className="antialiased  mt-2 border p-2 rounded-md">
         <p className="font-bold">Document Owner: </p>
-        <div className="flex align-baseline justify-between">
+        <div className="flex align-baseline items-center justify-between">
           <div className="mt-1 ml-2">
             <p className="text-sm">
               <b>Name: </b>
-              {user.full_name}
+              {full_name}
             </p>
             <p className="text-xs text-gray-500">
               <b>Username: </b>
-              {user.username}
+              {username}
             </p>
           </div>
-          <p className="font-semibold text-gray-400 underline underline-offset-1"> Public document</p>
-        </div>
+          {/* <p className="font-semibold text-gray-400 underline underline-offset-1"> Public document</p> */}
 
-        {/*
-        <Image
-          className="w-8 h-9 border-2 rounded-full"
-          src={avatar}
-          width={32}
-          height={32}
-          alt={user.full_name}
-          // fill={true}
-          title={user.full_name}
-        /> */}
+          <Image
+            className="w-9 h-9 border-2 rounded-full"
+            src={docMetadata?.ownerProfile?.avatar_url || docMetadata?.ownerProfile?.default_avatar_url}
+            height={32}
+            width={32}
+            alt={full_name}
+            title={full_name}
+          />
+        </div>
+        {user?.id === docMetadata?.ownerId && (
+          <div className="border-t mt-4 ">
+            <ToggleSection
+              name="Read-only"
+              description="Enable to make document read-only"
+              checked={readOnly}
+              onChange={saveDocreadOnlyHandler}
+            />
+          </div>
+        )}
       </div>
     )
   }
@@ -133,7 +162,10 @@ const GearModal = ({ docMetadata }) => {
             onChangeTags={handleTagsChange}
             defaultTags={tags}></InputTags>
         </div>
-        <Button loading={isLoading} className="!w-32 !mt-3" onClick={saveDescriptionHandler}>
+        <Button
+          loading={formTargetHandler === 'description' && isLoading}
+          className="!w-32 !mt-3"
+          onClick={saveDescriptionHandler}>
           Save
         </Button>
       </div>

@@ -50,4 +50,9 @@ export const saveDocDescriptionHandler = (mutate, docId, docDescription, tags) =
   })
 }
 
-// More functions...
+export const saveDocReadOnlyPage = (mutate, documentId, readOnly) => {
+  mutate({
+    documentId,
+    readOnly
+  })
+}

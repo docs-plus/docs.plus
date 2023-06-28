@@ -33,12 +33,11 @@ model DocumentMetadata {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
   documentId  String   @unique
-
+  readOnly    Boolean  @default(false)
   // This field stores the user ID from the 'user' table in Supabase auth
-  ownerId String?
-
+  ownerId     String?
   // This field stores the user's email as a backup. It ensures data mapping to the user even if we lose the 'user' table in Supabase.
-  email String?
+  email       String?
 
   documents Documents[]
 }

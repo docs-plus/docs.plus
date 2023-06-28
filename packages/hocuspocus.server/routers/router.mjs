@@ -141,7 +141,7 @@ router.get('/documents', async (req, res) => {
   // I need to check if has cookie token
   if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
     documents = documents.map((doc) => {
-      const user = ownerProfiles.find((profile) => profile.id === doc.ownerId)
+      const user = ownerProfiles?.find((profile) => profile.id === doc.ownerId)
       return { ...doc, user }
     })
   }
@@ -157,7 +157,7 @@ router.post('/documents', validator.body(CREATE_DOCUMENT), async (req, res) => {
 
 router.put('/documents/:docId', validator.body(UPDATE_DOCUMENT_METADATA), async (req, res) => {
   const { docId } = req.params
-  const { title, description, keywords } = req.body
+  const { title, description, keywords, readOnly } = req.body
   const newMetaData = {
     where: {
       documentId: docId
@@ -167,6 +167,7 @@ router.put('/documents/:docId', validator.body(UPDATE_DOCUMENT_METADATA), async 
   if (description) newMetaData.data.description = description
   if (title) newMetaData.data.title = title
   if (keywords) newMetaData.data.keywords = keywords.join(',')
+  newMetaData.data.readOnly = readOnly
 
   const updatedDoc = await prisma.documentMetadata.update(newMetaData)
   updatedDoc.keywords = updatedDoc.keywords.length === 0 ? [] : updatedDoc.keywords.split(',').map((k) => k.trim())
