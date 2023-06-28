@@ -120,35 +120,35 @@ $crinkle-unfold-bg: #efefef;
       }
     }
 
-    &[level="2"] {
-      > .wrapBlock > .foldWrapper {
-        height: calc(100% - 60px);
-      }
-    }
+    // &[level="2"] {
+    //   > .wrapBlock > .foldWrapper {
+    //     height: calc(100% - 60px);
+    //   }
+    // }
 
-    &[level="3"] {
-      > .wrapBlock > .foldWrapper {
-        height: calc(100% - 50px);
-      }
-    }
+    // &[level="3"] {
+    //   > .wrapBlock > .foldWrapper {
+    //     height: calc(100% - 50px);
+    //   }
+    // }
 
-    &[level="4"] {
-      > .wrapBlock > .foldWrapper {
-        height: calc(100% - 40px);
-      }
-    }
+    // &[level="4"] {
+    //   > .wrapBlock > .foldWrapper {
+    //     height: calc(100% - 40px);
+    //   }
+    // }
 
-    &[level="5"] {
-      > .wrapBlock > .foldWrapper {
-        height: calc(100% - 40px);
-      }
-    }
+    // &[level="5"] {
+    //   > .wrapBlock > .foldWrapper {
+    //     height: calc(100% - 40px);
+    //   }
+    // }
 
-    &:is([level="6"], [level="7"], [level="8"], [level="9"], [level="10"]) {
-      > .wrapBlock > .foldWrapper {
-        height: calc(100% - 40px);
-      }
-    }
+    // &:is([level="6"], [level="7"], [level="8"], [level="9"], [level="10"]) {
+    //   > .wrapBlock > .foldWrapper {
+    //     height: calc(100% - 40px);
+    //   }
+    // }
 
     @keyframes foldCrinkle_after {
       0% {
@@ -209,20 +209,20 @@ $crinkle-unfold-bg: #efefef;
         z-index: 2;
       }
 
-      &:hover {
+      // &:hover {
 
-        &:not([level="1"]) {
-          > .wrapBlock > .foldWrapper ~ .contentWrapper {
-            height: 70px !important;
-          }
+      //   &:not([level="1"]) {
+      //     > .wrapBlock > .foldWrapper ~ .contentWrapper {
+      //       height: 70px !important;
+      //     }
 
-          height: calc(100% - 70px);
+      //     height: calc(100% - 70px);
 
-          > .wrapBlock > .foldWrapper .fold::before {
-            background-color: #ccc;
-          }
-        }
-      }
+      //     > .wrapBlock > .foldWrapper .fold::before {
+      //       background-color: #ccc;
+      //     }
+      //   }
+      // }
 
     }
 
@@ -295,6 +295,7 @@ $crinkle-unfold-bg: #efefef;
     display: flex;
     flex-wrap: wrap;
     flex-direction: row-reverse;
+    align-items: stretch;
 
     .title {
       flex: 1;
