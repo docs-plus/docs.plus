@@ -34,7 +34,7 @@ StoreDocument.process(async function (job, done) {
   try {
     const { documentName, state, context, jwt } = data
     console.time(`Store Data, jobId:${job.id}`)
-    const { id, email } = jwt ? jwt_decode(jwt) : { id: null, email: null }
+    // const { id, email } = jwt ? jwt_decode(jwt) : { id: null, email: null }
 
     return await prisma.documents.create({
       data: {
