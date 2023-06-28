@@ -98,8 +98,8 @@ router.get('/documents', async (req, res) => {
         take: limit,
         where: {
           OR: [
-            { title: { search: searchQuery } },
             { title: { contains: searchQuery } }, // I'll need to check if this is needed
+            { title: { search: searchQuery } },
             { keywords: { search: searchQuery } },
             { description: { search: searchQuery } }
           ]
@@ -108,8 +108,8 @@ router.get('/documents', async (req, res) => {
       prisma.documentMetadata.count({
         where: {
           OR: [
-            { title: { search: searchQuery } },
             { title: { contains: searchQuery } }, // I'll need to check if this is needed
+            { title: { search: searchQuery } },
             { keywords: { search: searchQuery } },
             { description: { search: searchQuery } }
           ]
