@@ -1,9 +1,4 @@
-import {
-  Node,
-  mergeAttributes,
-  findParentNode,
-  defaultBlockAt,
-} from '@tiptap/core'
+import { Node, mergeAttributes, findParentNode, defaultBlockAt } from '@tiptap/core'
 import { Selection, Plugin, TextSelection, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import PubSub from 'pubsub-js'
@@ -52,15 +47,13 @@ function createCrinkleNode(prob) {
     const heading = e.target.closest('.heading')
     if (!heading.classList.contains('closed')) return
 
-    return e.target.parentElement.parentElement
-      .querySelector('.btnFold')
-      ?.click()
+    return e.target.parentElement.parentElement.querySelector('.btnFold')?.click()
   })
 
   foldEl.addEventListener('mouseenter', (e) => {
     const heading = e.target.closest('.heading')
     const level = heading.getAttribute('level')
-    if (level !== '1') return
+    // if (level !== '1') return
 
     const classList = heading.classList
     if (classList.contains('opening') || classList.contains('closing')) return
@@ -82,7 +75,6 @@ function createCrinkleNode(prob) {
   foldEl.addEventListener('mouseleave', (e) => {
     const heading = e.target.closest('.heading')
     const level = heading.getAttribute('level')
-    if (level !== '1') return
 
     const classList = heading.classList
     if (classList.contains('opening') || classList.contains('closing')) return
@@ -109,14 +101,10 @@ function buildDecorations(doc) {
   const contentWrappers = extractContentWrapperBlocks(doc)
 
   contentWrappers.forEach((prob) => {
-    const decorationWidget = Decoration.widget(
-      prob.from,
-      createCrinkleNode(prob),
-      {
-        side: -1,
-        key: prob.headingId,
-      }
-    )
+    const decorationWidget = Decoration.widget(prob.from, createCrinkleNode(prob), {
+      side: -1,
+      key: prob.headingId
+    })
 
     decos.push(decorationWidget)
   })
@@ -126,9 +114,7 @@ function buildDecorations(doc) {
 
 function expandElement(elem, collapseClass, headingId, open) {
   const startHeight = window.getComputedStyle(elem).height
-  const headingSection = document.querySelector(
-    `.heading[data-id="${headingId}"]`
-  )
+  const headingSection = document.querySelector(`.heading[data-id="${headingId}"]`)
   const headingLevel = headingSection.getAttribute('level')
   const wrapperBlock = headingSection.querySelector('.foldWrapper')
 
@@ -136,12 +122,10 @@ function expandElement(elem, collapseClass, headingId, open) {
   elem.style.transition = 'none'
   elem.style.transitionTimingFunction = 'ease-in-out'
 
-  if (headingLevel === '1') {
-    wrapperBlock.style.height = startHeight
-    wrapperBlock.style.position = 'absolute'
-    wrapperBlock.style.transitionTimingFunction = 'ease-in-out'
-    wrapperBlock.style.transition = 'none'
-  }
+  wrapperBlock.style.height = startHeight
+  wrapperBlock.style.position = 'absolute'
+  wrapperBlock.style.transitionTimingFunction = 'ease-in-out'
+  wrapperBlock.style.transition = 'none'
 
   elem.classList.add('overflow-hidden')
   headingSection.classList.remove('opend', 'closed', 'closing', 'opening')
@@ -154,27 +138,17 @@ function expandElement(elem, collapseClass, headingId, open) {
 
   requestAnimationFrame(() => {
     elem.style.transition = ''
+    wrapperBlock.style.transition = ''
 
-    if (headingLevel === '1') {
-      wrapperBlock.style.transition = ''
-    }
-
-    requestAnimationFrame(() => {
-      elem.style.height = height
-
-      if (headingLevel === '1') {
-        wrapperBlock.style.height = height
-      }
-    })
+    elem.style.height = height
+    wrapperBlock.style.height = height
   })
 
   function callback() {
     elem.style.height = ''
 
-    if (headingLevel === '1') {
-      wrapperBlock.style.height = ''
-      wrapperBlock.style.position = 'relative'
-    }
+    wrapperBlock.style.height = ''
+    wrapperBlock.style.position = 'relative'
 
     if (open) {
       headingSection.classList.remove('closed', 'closing', 'opening')
@@ -204,31 +178,31 @@ const HeadingsContent = Node.create({
     return {
       persist: true,
       id: null,
-      HTMLAttributes: {},
+      HTMLAttributes: {}
     }
   },
   parseHTML() {
     return [
       {
-        tag: `div[data-type="${this.name}"]`,
-      },
+        tag: `div[data-type="${this.name}"]`
+      }
     ]
   },
   addAttributes() {
     return {
       id: {
         default: null,
-        rendered: false,
-      },
+        rendered: false
+      }
     }
   },
   renderHTML({ HTMLAttributes }) {
     return [
       'div',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-        'data-type': this.name,
+        'data-type': this.name
       }),
-      0,
+      0
     ]
   },
   addNodeView() {
@@ -237,23 +211,16 @@ const HeadingsContent = Node.create({
 
       // get parent node
       const parentNode = editor.state.doc?.resolve(getPos())
-      const headingId =
-        getPos() - parentNode.nodeBefore.nodeSize === 1
-          ? '1'
-          : parentNode.parent?.attrs.id
+      const headingId = getPos() - parentNode.nodeBefore.nodeSize === 1 ? '1' : parentNode.parent?.attrs.id
 
       const nodeState = getNodeState(headingId)
 
       dom.setAttribute('class', 'contentWrapper', nodeState)
 
       const attrs = {
-        'data-type': this.name,
+        'data-type': this.name
       }
-      const attributes = mergeAttributes(
-        this.options.HTMLAttributes,
-        HTMLAttributes,
-        attrs
-      )
+      const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, attrs)
 
       if (!nodeState.crinkleOpen) {
         dom.classList.add('overflow-hidden', 'collapsed', 'closed')
@@ -267,16 +234,12 @@ const HeadingsContent = Node.create({
       content.classList.add('contents')
       dom.append(content)
 
-      Object.entries(attributes).forEach(([key, value]) =>
-        dom.setAttribute(key, value)
-      )
+      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value))
 
       dom.addEventListener('toggleHeadingsContent', ({ detail }) => {
         const section = detail.el
         const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
-        const nodeState = headingMap.find(
-          (h) => h.headingId === detail.headingId
-        ) || { crinkleOpen: true }
+        const nodeState = headingMap.find((h) => h.headingId === detail.headingId) || { crinkleOpen: true }
 
         editor.commands.focus()
 
@@ -286,11 +249,7 @@ const HeadingsContent = Node.create({
           const pos = getPos()
           const currentNode = tr.doc.nodeAt(pos)
 
-          if (
-            (currentNode === null || currentNode === void 0
-              ? void 0
-              : currentNode.type) !== this.type
-          ) {
+          if ((currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type) {
             return false
           }
 
@@ -303,16 +262,11 @@ const HeadingsContent = Node.create({
           tr.setMeta('foldAndunfold', true)
           editor.view.dispatch(tr)
 
-          expandElement(
-            section,
-            'collapsed',
-            detail.headingId,
-            !nodeState.crinkleOpen
-          )
-          PubSub.publish('toggleHeadingsContent', {
-            headingId: detail.headingId,
-            crinkleOpen: !nodeState.crinkleOpen,
-          })
+          expandElement(section, 'collapsed', detail.headingId, !nodeState.crinkleOpen)
+          // PubSub.publish('toggleHeadingsContent', {
+          //   headingId: detail.headingId,
+          //   crinkleOpen: !nodeState.crinkleOpen
+          // })
         }
       })
 
@@ -330,7 +284,7 @@ const HeadingsContent = Node.create({
             return false
           }
           return true
-        },
+        }
       }
     }
   },
@@ -344,9 +298,7 @@ const HeadingsContent = Node.create({
         // If backspace hit not at the start of the node, do nothing
         if ($anchor.parentOffset !== 0) return false
 
-        const contentWrapper = $anchor.doc?.nodeAt(
-          $from?.before(blockRange.depth)
-        )
+        const contentWrapper = $anchor.doc?.nodeAt($from?.before(blockRange.depth))
 
         // If the Backspace is not in the contentWrapper, do nothing
         if (
@@ -364,9 +316,7 @@ const HeadingsContent = Node.create({
           if ($anchor.nodeBefore === null) {
             // If there's a text node following the current node
             if ($anchor.nodeAfter?.type.name === 'text') {
-              const clonedTextNode = $anchor.nodeAfter.copy(
-                $anchor.nodeAfter.content
-              )
+              const clonedTextNode = $anchor.nodeAfter.copy($anchor.nodeAfter.content)
 
               // Delete the current node, move the cursor to the end of the previous node (the heading),
               // insert the cloned text node there, and focus the cursor there
@@ -390,7 +340,7 @@ const HeadingsContent = Node.create({
         }
       },
       // Escape node on double enter
-      Enter: ({ editor }) => {},
+      Enter: ({ editor }) => {}
     }
   },
   addProseMirrorPlugins() {
@@ -403,16 +353,16 @@ const HeadingsContent = Node.create({
           },
           apply(tr, old) {
             return tr.docChanged ? buildDecorations(tr.doc) : old
-          },
+          }
         },
         props: {
           decorations(state) {
             return this.getState(state)
-          },
-        },
-      }),
+          }
+        }
+      })
     ]
-  },
+  }
 })
 
 export { HeadingsContent, HeadingsContent as default }
