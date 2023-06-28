@@ -11,6 +11,7 @@ import { useRouter } from 'next/router'
 import { useUser } from '@supabase/auth-helpers-react'
 import useProfileData from '@hooks/useProfileData'
 import randomColor from 'randomcolor'
+import { toast } from 'react-hot-toast'
 
 const scrollHeadingSelection = (event) => {
   const scrollTop = event.currentTarget.scrollTop
@@ -68,7 +69,7 @@ const DesktopEditor = ({ docMetadata }) => {
   useEffect(() => {
     if (provider) {
       provider.on('awarenessUpdate', ({ states }) => {
-        // console.log(states)
+        // console.log(states, '====>>>>awarenessUpdateHandler')
       })
 
       if (profileData && !loading) {
@@ -85,7 +86,40 @@ const DesktopEditor = ({ docMetadata }) => {
     if (editor?.commands?.updateUser && user) {
       editor.commands.updateUser(getCursorUser(user, profileData))
     }
+    if (editor) {
+      if (docMetadata.ownerId === user?.id) {
+        return editor.setEditable(true)
+      }
+      editor.setEditable(!docMetadata.readOnly)
+    }
   }, [editor, loading, user, profileData])
+
+  useEffect(() => {
+    if (!provider) return
+
+    const statelessHandler = ({ payload }) => {
+      const payloadData = JSON.parse(payload)
+
+      if (payloadData.type === 'readOnly') {
+        if (!editor) return
+
+        if (docMetadata.ownerId === user?.id) return editor.setEditable(true)
+
+        editor.setEditable(!payloadData.state)
+
+        if (payloadData.state) return toast.error('Document is now read only')
+        toast.success('Document is now editable')
+      }
+    }
+
+    provider.on('stateless', statelessHandler)
+
+    return () => {
+      if (provider) {
+        provider.off('stateless', statelessHandler)
+      }
+    }
+  }, [provider, editor, user])
 
   useApplyFilters(editor, slugs, applyingFilters, setApplyingFilters, router, rendering)
 
@@ -97,7 +131,7 @@ const DesktopEditor = ({ docMetadata }) => {
   return (
     <>
       <div className="toolbars w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative">
-        {editor ? <Toolbar editor={editor} docMetadata={docMetadata} /> : 'Loading...'}
+        {editor ? <Toolbar editor={editor} docMetadata={docMetadata} provider={provider} /> : 'Loading...'}
       </div>
       <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
         <div
