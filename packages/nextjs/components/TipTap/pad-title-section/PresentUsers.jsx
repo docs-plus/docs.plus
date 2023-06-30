@@ -9,7 +9,7 @@ const PresentUsers = ({ className, user }) => {
     if (!EditorProvider) return
 
     const awarenessUpdateHandler = ({ states }) => {
-      if (states.length > 0) return
+      if (states.length === 0) return
       if (!user) return setPresentUsers(states)
       // if user is present, remove it from the list
       setPresentUsers(() => {
