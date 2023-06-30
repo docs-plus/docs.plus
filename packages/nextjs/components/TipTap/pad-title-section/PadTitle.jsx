@@ -10,6 +10,7 @@ import ShareModal from './ShareModal'
 import { useState } from 'react'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import PresentUsers from './PresentUsers'
+import ReadOnlyIndicator from './ReadOnlyIndicator'
 
 const PadTitle = ({ docMetadata }) => {
   const isKeyboardOpen = useDetectKeyboardOpen()
@@ -66,7 +67,7 @@ const PadTitle = ({ docMetadata }) => {
   }
 
   return (
-    <div className="flex flex-row items-center w-full justify-center sm:justify-normal">
+    <div className="flex flex-row items-center align-middle w-full justify-center sm:justify-normal">
       <div className="padLog hidden sm:block">
         <Link href="/">
           <DocsPlus size="34" />
@@ -87,6 +88,7 @@ const PadTitle = ({ docMetadata }) => {
         )}
       </div> */}
       <DocTitle documentId={docMetadata.documentId} docTitle={docMetadata.title} />
+      <ReadOnlyIndicator docMetadata={docMetadata} />
       <PresentUsers user={user} className="ml-auto mt-2" />
       <Button
         onClick={openShareModal}

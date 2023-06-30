@@ -41,6 +41,9 @@ const useYdocAndProvider = (documentId, setLoading) => {
         },
         onAwarenessUpdate: ({ added, updated, removed }) => {
           // console.log('onAwarenessUpdate', { added, updated, removed })
+        },
+        onStateless: ({ payload }) => {
+          // console.log('onStateless', { payload })
         }
       })
     }
