@@ -89,11 +89,11 @@ const PadTitle = ({ docMetadata }) => {
       </div> */}
       <DocTitle documentId={docMetadata.documentId} docTitle={docMetadata.title} />
       <ReadOnlyIndicator docMetadata={docMetadata} />
-      <PresentUsers user={user} className="ml-auto mt-2" />
+      <PresentUsers user={user} className="ml-auto " />
       <Button
         onClick={openShareModal}
         Icon={PrivateShare}
-        className="bg-indigo-500 mt-2 drop-shadow-sm font-light ml-6 text-white h-9 w-28">
+        className="bg-indigo-500 mt-0 drop-shadow-sm font-light ml-6 text-white w-28">
         Share
       </Button>
       <ProfileSection user={user} />
