@@ -12,21 +12,14 @@ const getHeaderParents = (heading) => {
         node: pHeading,
         text: pHeading.textContent,
         hLevel: i,
-        id: pHeading.closest('.wrapBlock').getAttribute('data-id'),
+        id: pHeading.closest('.wrapBlock').getAttribute('data-id')
       })
   }
 
   return parents
 }
 
-const useApplyFilters = (
-  editor,
-  slugs,
-  applyingFilters,
-  setApplyingFilters,
-  router,
-  rendering
-) => {
+const useApplyFilters = (editor, slugs, applyingFilters, setApplyingFilters, router, rendering) => {
   useEffect(() => {
     if (!editor || rendering || slugs.length === 1) return
 
@@ -48,24 +41,24 @@ const useApplyFilters = (
           parents: getHeaderParents(heading).map((parent) => parent.id),
           text: heading.textContent,
           hLevel: heading.getAttribute('level'),
-          id: heading.closest('.wrapBlock').getAttribute('data-id'),
+          id: heading.closest('.wrapBlock').getAttribute('data-id')
         }
       })
       .map((heading) => {
         return {
           ...heading,
-          openSectionIds: [heading.id, ...heading.parents],
+          openSectionIds: [heading.id, ...heading.parents]
         }
       })
 
-    const headingIds = filteredHeadings
-      .map((heading) => heading.openSectionIds)
-      .flat()
+    const headingIds = filteredHeadings.map((heading) => heading.openSectionIds).flat()
 
     const uniqueArr = [...new Set(headingIds)]
 
     // if the filter result is empty, then redirect to the first slug
-    if (uniqueArr.length === 0) router.push(slugs.at(0))
+    if (uniqueArr.length === 0) {
+      router.push(slugs.at(0))
+    }
 
     const dbMap = []
     headings.forEach((header) => {
@@ -75,12 +68,12 @@ const useApplyFilters = (
       if (!uniqueArr.includes(id)) {
         dbMap.push({
           headingId: id,
-          crinkleOpen: false,
+          crinkleOpen: false
         })
       } else {
         dbMap.push({
           headingId: id,
-          crinkleOpen: true,
+          crinkleOpen: true
         })
       }
     })

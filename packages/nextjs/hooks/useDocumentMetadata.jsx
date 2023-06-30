@@ -18,8 +18,7 @@ const useDocumentMetadata = (slugs, docMetadata) => {
       )
 
       // get the heading map from indexdb, when the document is not in the filter mode
-      if (slugs.length >= 1) {
-        // console.log('get db.meta data from indexdb')
+      if (slugs.length <= 1) {
         db.meta
           .where({ docId: docMetadata.documentId })
           .toArray()
