@@ -7,24 +7,19 @@ const useIsomorphicLayoutEffect = canUseDOM ? useLayoutEffect : useEffect
 const useDocumentMetadata = (slugs, docMetadata) => {
   useIsomorphicLayoutEffect(() => {
     if (docMetadata) {
+      const padName = `${docMetadata.isPrivate ? 'private' : 'public'}.${docMetadata.documentId}`
       localStorage.setItem('docId', docMetadata.documentId)
-      localStorage.setItem('padName', `${docMetadata.isPrivate ? 'private' : 'public'}.${docMetadata.documentId}`)
+      localStorage.setItem('padName', padName)
       localStorage.setItem('slug', slugs)
       localStorage.setItem('title', docMetadata.title)
 
-      initDB(
-        `meta.${docMetadata.documentId}`,
-        `${docMetadata.isPrivate ? 'private' : 'public'}.${docMetadata.documentId}`
-      )
+      initDB(`meta.${docMetadata.documentId}`, padName)
 
       // get the heading map from indexdb, when the document is not in the filter mode
       if (slugs.length <= 1) {
-        db.meta
-          .where({ docId: docMetadata.documentId })
-          .toArray()
-          .then((data) => {
-            localStorage.setItem('headingMap', JSON.stringify(data))
-          })
+        db.meta.toArray().then((data) => {
+          localStorage.setItem('headingMap', JSON.stringify(data))
+        })
       }
     }
   }, [docMetadata])

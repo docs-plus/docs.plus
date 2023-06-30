@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
 
+import { db } from '../db'
+
 const getHeaderParents = (heading) => {
   if (!heading) return
   const hLevel = heading.getAttribute('level')
@@ -76,6 +78,11 @@ const useApplyFilters = (editor, slugs, applyingFilters, setApplyingFilters, rou
           crinkleOpen: true
         })
       }
+    })
+
+    // save the data to indexedDB
+    db.docFilter.bulkPut(dbMap).then((e) => {
+      console.info('bulkPut', e)
     })
 
     localStorage.setItem('headingMap', JSON.stringify(dbMap))
