@@ -95,28 +95,22 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
       }
 
       const filterMode = document.body.classList.contains('filter-mode')
+      let database = filterMode ? db.docFilter : db.meta
 
-      if (!filterMode) {
-        // console.log('must save data to db')
-        db.meta
-          .put({
-            docId: documentId,
-            headingId,
-            crinkleOpen: !nodeState.crinkleOpen,
-            level: currentNode.attrs.level
+      database
+        .put({
+          docId: documentId,
+          headingId,
+          crinkleOpen: !nodeState.crinkleOpen,
+          level: currentNode.attrs.level
+        })
+        .then((_) => {
+          database.toArray().then((data) => {
+            localStorage.setItem('headingMap', JSON.stringify(data))
           })
-          .then((data, ddd) => {
-            db.meta
-              .where({ docId: documentId })
-              .toArray()
-              .then((data) => {
-                localStorage.setItem('headingMap', JSON.stringify(data))
-              })
-          })
-      }
-
-      editor.view.dispatch(tr)
-      toggleHeadingContent(headingNodeEl)
+          editor.view.dispatch(tr)
+          toggleHeadingContent(headingNodeEl)
+        })
     }
   }
 
