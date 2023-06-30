@@ -79,8 +79,9 @@ const DesktopEditor = ({ docMetadata }) => {
   }, [provider, user, profileData])
 
   // TODO: this cuase rerending 1 times
-  const editor = useEditor(editorConfig({ provider }), [loading, applyingFilters])
+  const editor = useEditor(editorConfig({ provider, applyingFilters }), [loading, applyingFilters])
 
+  // update user awareness
   useEffect(() => {
     if (loading) return
     if (editor?.commands?.updateUser && user) {
@@ -94,6 +95,7 @@ const DesktopEditor = ({ docMetadata }) => {
     }
   }, [editor, loading, user, profileData])
 
+  // readOnly handler
   useEffect(() => {
     if (!provider) return
 
@@ -124,9 +126,9 @@ const DesktopEditor = ({ docMetadata }) => {
   useApplyFilters(editor, slugs, applyingFilters, setApplyingFilters, router, rendering)
 
   useEffect(() => {
-    if (loading) return
+    if (loading && setApplyingFilters) return
     setRendering(false)
-  }, [loading, setRendering])
+  }, [loading, setRendering, setApplyingFilters])
 
   return (
     <>
