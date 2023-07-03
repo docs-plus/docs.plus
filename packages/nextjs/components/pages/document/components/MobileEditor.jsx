@@ -1,6 +1,5 @@
 import Editor from './Editor'
 import { use, useEffect, useState } from 'react'
-import useYdocAndProvider from '@hooks/useYdocAndProvider'
 import { useEditorStateContext } from '@context/EditorContext'
 import { useRouter } from 'next/router'
 import { useUser } from '@supabase/auth-helpers-react'
@@ -18,10 +17,7 @@ const MobileEditor = ({ docMetadata }) => {
 
   const isKeyboardOpen = useDetectKeyboardOpen()
 
-  // TODO: this cuase rerending 3 times
-  const { provider } = useYdocAndProvider(docMetadata.documentId, setLoading)
-
-  const editor = useEditorAndProvider({ provider, docMetadata })
+  const { editor } = useEditorAndProvider({ docMetadata })
 
   useEffect(() => {
     setShowToolbar(isKeyboardOpen)

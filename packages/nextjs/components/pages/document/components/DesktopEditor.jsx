@@ -1,7 +1,6 @@
 import Toolbar from '@components/TipTap/toolbar/Toolbar'
 import Editor from '../components/Editor'
 import TOC from '../components/Toc'
-import useYdocAndProvider from '@hooks/useYdocAndProvider'
 import { useEditorStateContext } from '@context/EditorContext'
 import useEditorAndProvider from '@hooks/useEditorAndProvider'
 
@@ -27,12 +26,7 @@ const scrollHeadingSelection = (event) => {
 }
 
 const DesktopEditor = ({ docMetadata }) => {
-  const { setLoading } = useEditorStateContext()
-
-  // TODO: this cuase rerending 3 times
-  const { provider } = useYdocAndProvider(docMetadata.documentId, setLoading)
-
-  const editor = useEditorAndProvider({ provider, docMetadata })
+  const { editor, provider } = useEditorAndProvider({ docMetadata })
 
   return (
     <>
