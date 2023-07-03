@@ -7,22 +7,28 @@ import useDocumentMetadata from '@hooks/useDocumentMetadata'
 
 import MobileLayout from '@components/pages/document/layouts/MobileLayout'
 import DesktopLayout from '@components/pages/document/layouts/DesktopLayout'
+import HeadSeo from '@components/HeadSeo'
 
 const Document = ({ slugs, docMetadata }) => {
   useDocumentMetadata(slugs, docMetadata)
+  const { title, description, keywords } = docMetadata
+  const { setApplyingFilters, isMobile } = useEditorStateContext()
+
+  const isFilterMode = slugs.length > 1
 
   useEffect(() => {
-    // if editor is in the filter mode
-    if (slugs.length > 1) {
+    if (isFilterMode) {
       document.body.classList.add('filter-mode')
+      setApplyingFilters(true)
     }
-  }, [slugs])
+  }, [slugs, setApplyingFilters, isFilterMode])
 
-  const { isMobile } = useEditorStateContext()
-
-  // if (isMobile) return <MobileLayout docMetadata={docMetadata} />
-
-  return <DesktopLayout docMetadata={docMetadata} />
+  return (
+    <>
+      <HeadSeo title={title} description={description} keywords={keywords.length && keywords.join(',')} />
+      {isMobile ? <MobileLayout docMetadata={docMetadata} /> : <DesktopLayout docMetadata={docMetadata} />}
+    </>
+  )
 }
 
 export default Document
