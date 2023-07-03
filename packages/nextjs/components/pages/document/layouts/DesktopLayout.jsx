@@ -1,6 +1,5 @@
 import { useEditorStateContext } from '@context/EditorContext'
 import PadTitle from '@components/TipTap/pad-title-section/PadTitle'
-import HeadSeo from '@components/HeadSeo'
 import { useEffect } from 'react'
 import DesktopEditor from '../components/DesktopEditor'
 import { useState } from 'react'
@@ -14,7 +13,7 @@ const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
 
 const DesktopLayout = ({ docMetadata }) => {
   const { isMobile } = useEditorStateContext()
-  const { title, documentId, description, keywords, slug } = docMetadata
+  const { slug } = docMetadata
 
   const [displayControlCenter, setDisplayControlCenter] = useState(false)
 
@@ -43,7 +42,6 @@ const DesktopLayout = ({ docMetadata }) => {
 
   return (
     <>
-      <HeadSeo title={title} description={description} keywords={keywords && keywords?.join(',')} />
       <div className={`pad tiptap flex flex-col border-solid ${isMobile ? ' m_mobile' : 'm_desktop'}`}>
         <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
           <PadTitle docMetadata={docMetadata} />

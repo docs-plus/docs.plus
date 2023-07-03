@@ -6,9 +6,7 @@ import DocTitle from '@components/TipTap/DocTitle'
 import { Filter, DocsPlus } from '@icons'
 import TOC from './Toc'
 
-const TocModal = ({ editor, docId, docTitle }) => {
-  const { loading, applyingFilters } = useEditorStateContext()
-
+const TocModal = ({ docMetadata, editor }) => {
   const closeLeftSideModal = () => {
     const leftSideModal = document.querySelector('.nd_modal.left')
     const modalWrapper = leftSideModal.querySelector('.modalWrapper')
@@ -50,7 +48,7 @@ const TocModal = ({ editor, docId, docTitle }) => {
           <Link href="/" className="w-8 h-8 flex align-middle justify-center text-black ml-1 outline-0">
             <DocsPlus size="70" />
           </Link>
-          <DocTitle docId={docId} docTitle={docTitle} className="w-8/12 overflow-hidden mt-0" />
+          <DocTitle docMetadata={docMetadata} className="w-8/12 overflow-hidden mt-0" />
           <div className="w-4/12 flex justify-end items-center flex-row ml-auto mr-3">
             <button onClick={openFilterModal} className="btn_openFilterModal w-6 h-6 ml-1 outline-0">
               <Filter fill="rgba(0,0,0,.7)" />

@@ -2,13 +2,14 @@ import { useEffect, useState } from 'react'
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
 import toast from 'react-hot-toast'
 
-const DocTitle = ({ docTitle, documentId, className }) => {
+const DocTitle = ({ className, docMetadata }) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
+  const { title, documentId } = docMetadata
 
-  const [documentTitle, setDocumentTitle] = useState(docTitle)
+  const [documentTitle, setDocumentTitle] = useState(title)
 
   const saveData = (e) => {
-    if (e.target.innerText === docTitle) return
+    if (e.target.innerText === title) return
     mutate({
       title: e.target.innerText,
       documentId

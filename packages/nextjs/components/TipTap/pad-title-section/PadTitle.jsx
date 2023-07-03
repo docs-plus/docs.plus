@@ -27,7 +27,6 @@ const PadTitle = ({ docMetadata }) => {
     const modalBg = leftModal.querySelector('.modalBg')
     modalBg.classList.add('active')
 
-    // editor?.setEditable(true)
     // find div.ProseMirror and add attribute contenteditable=true
     const divProseMirror = document.querySelector('.ProseMirror')
     divProseMirror.setAttribute('contenteditable', 'true')
@@ -73,7 +72,7 @@ const PadTitle = ({ docMetadata }) => {
           <DocsPlus size="34" />
         </Link>
       </div>
-      {/* <div className="sm:hidden">
+      <div className="sm:hidden">
         {isKeyboardOpen ? (
           <button onTouchStart={btn_blurEditor} className="w-10 h-10 flex align-middle justify-center items-center">
             <Check size="30" />
@@ -86,26 +85,32 @@ const PadTitle = ({ docMetadata }) => {
             <Hamburger size="30" />
           </button>
         )}
-      </div> */}
-      <DocTitle documentId={docMetadata.documentId} docTitle={docMetadata.title} />
+      </div>
+
+      <DocTitle docMetadata={docMetadata} />
       <ReadOnlyIndicator docMetadata={docMetadata} />
-      <PresentUsers user={user} className="ml-auto " />
-      <Button
-        onClick={openShareModal}
-        Icon={PrivateShare}
-        className="bg-indigo-500 mt-0 drop-shadow-sm font-light ml-6 text-white w-28">
-        Share
-      </Button>
-      <ProfileSection user={user} />
-      <div className="w-10 h-10 border rounded-full bg-gray-400 ml-auto sm:hidden"></div>
-      {displayShareModal && (
-        <div
-          onClick={closeShareModal}
-          id="ShareModalBlur"
-          className="w-full h-full top-0 left-0 flex align-middle items-center justify-center absolute z-50 backdrop-blur-sm bg-slate-300/20 ">
-          <ShareModal docMetadata={docMetadata} />
-        </div>
-      )}
+
+      <div className="ml-auto flex align-middle ">
+        <PresentUsers user={user} className=" ms:block hidden" />
+
+        <Button
+          onClick={openShareModal}
+          Icon={PrivateShare}
+          className="bg-indigo-500 hidden sm:flex mt-0 drop-shadow-sm font-light ml-6 text-white w-28">
+          Share
+        </Button>
+
+        <ProfileSection user={user} />
+
+        {displayShareModal && (
+          <div
+            onClick={closeShareModal}
+            id="ShareModalBlur"
+            className="w-full h-full top-0 left-0 flex align-middle items-center justify-center absolute z-50 backdrop-blur-sm bg-slate-300/20 ">
+            <ShareModal docMetadata={docMetadata} />
+          </div>
+        )}
+      </div>
     </div>
   )
 }
