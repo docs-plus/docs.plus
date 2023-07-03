@@ -8,6 +8,7 @@ import useApplyFilters from '@hooks/useApplyFilters'
 import { useRouter } from 'next/router'
 import { useEditorStateContext } from '@context/EditorContext'
 import useProfileData from '@hooks/useProfileData'
+import useYdocAndProvider from '@hooks/useYdocAndProvider'
 
 const getCursorUser = (user, profileData) => {
   const lastUpdate = Date.now().toString()
@@ -24,12 +25,15 @@ const getCursorUser = (user, profileData) => {
   }
 }
 
-const useEditorAndProvider = ({ provider, docMetadata }) => {
+const useEditorAndProvider = ({ docMetadata }) => {
   const user = useUser()
   const router = useRouter()
   const { slugs } = router.query
-  const { rendering, setRendering, loading, applyingFilters, setApplyingFilters } = useEditorStateContext()
+  const { rendering, setRendering, loading, applyingFilters, setApplyingFilters, setLoading } = useEditorStateContext()
   const { profileData } = useProfileData()
+
+  // TODO: this cuase rerending 3 times
+  const { provider } = useYdocAndProvider(docMetadata.documentId, setLoading)
 
   useEffect(() => {
     if (provider) {
@@ -94,7 +98,7 @@ const useEditorAndProvider = ({ provider, docMetadata }) => {
     setRendering(false)
   }, [loading, setRendering, setApplyingFilters])
 
-  return editor
+  return { editor, provider }
 }
 
 export default useEditorAndProvider

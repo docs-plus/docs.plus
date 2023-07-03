@@ -44,8 +44,15 @@ const useYdocAndProvider = (documentId, setLoading) => {
         },
         onStateless: ({ payload }) => {
           // console.log('onStateless', { payload })
+        },
+        onDestroy: () => {
+          console.info('destroy provider')
         }
       })
+    }
+
+    return () => {
+      providerRef.current?.destroy()
     }
   }, [])
 
