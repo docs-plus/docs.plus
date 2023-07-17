@@ -14,6 +14,7 @@
     "lint:fix": "next lint --fix"
   },
   "dependencies": {
+    "@docs.plus/extension-hyperlink": "^1.0.4",
     "@faker-js/faker": "^8.0.1",
     "@hocuspocus/provider": "^2.1.0",
     "@supabase/auth-helpers-nextjs": "^0.7.2",
@@ -60,6 +61,7 @@
     "dexie": "^3.2.3",
     "faker": "^6.6.6",
     "lowlight": "^2.9.0",
+    "metadata-scraper": "^0.2.61",
     "mobile-detect": "^1.4.5",
     "next": "latest",
     "next-pwa": "^5.6.0",
