@@ -13,29 +13,6 @@ import { useRouter } from 'next/router'
 
 const Toolbar = ({ editor, docMetadata }) => {
   const router = useRouter()
-  const setLink = useCallback(() => {
-    const previousUrl = editor.getAttributes('link').href
-    const url = window.prompt('URL', previousUrl)
-
-    if (editor.isActive('link')) {
-      return editor.chain().focus().unsetLink().run()
-    }
-
-    // cancelled
-    if (url === null) {
-      return
-    }
-
-    // empty
-    if (url === '') {
-      editor.chain().focus().extendMarkRange('link').unsetLink().run()
-
-      return
-    }
-
-    // update link
-    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run()
-  }, [editor])
 
   const addImage = useCallback(() => {
     const url = window.prompt('URL')
@@ -181,7 +158,9 @@ const Toolbar = ({ editor, docMetadata }) => {
         <ImageBox fill="rgba(0,0,0,.5)" size="14" />
       </button>
 
-      <button className={editor.isActive('link') ? 'is-active' : ''} onClick={setLink}>
+      <button
+        className={editor.isActive('link') ? 'is-active' : ''}
+        onClick={() => editor.chain().focus().setHyperlink()}>
         <Link fill="rgba(0,0,0,.7)" size="18" />
       </button>
 

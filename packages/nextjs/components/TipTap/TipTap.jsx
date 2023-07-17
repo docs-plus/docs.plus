@@ -26,8 +26,11 @@ import OrderedList from '@tiptap/extension-ordered-list'
 import BulletList from '@tiptap/extension-bullet-list'
 
 // Links and Media
-import Link from '@tiptap/extension-link'
 import Image from '@tiptap/extension-image'
+
+import previewHyperlinkModal from './modals/previewHyperlink'
+import setHyperlinks from './modals/setHyperlink'
+import Hyperlink from '@docs.plus/extension-hyperlink'
 
 // Code and Syntax Highlighting
 import Highlight from '@tiptap/extension-highlight'
@@ -244,7 +247,7 @@ const Editor = ({ provider, spellcheck = false }) => {
     },
     extensions: [
       UniqueID.configure({
-        types: ['heading', 'link'],
+        types: ['heading', 'hyperlink'],
         filterTransaction: (transaction) => !isChangeOrigin(transaction),
         generateID: () => {
           const uid = new ShortUniqueId()
@@ -274,8 +277,16 @@ const Editor = ({ provider, spellcheck = false }) => {
       Blockquote,
       TextAlign,
       Underline,
-      Link.configure({
-        protocols: ['ftp', 'mailto']
+      Hyperlink.configure({
+        protocols: ['ftp', 'mailto'],
+        modals: {
+          previewHyperlink: (data) => {
+            return previewHyperlinkModal(data)
+          },
+          setHyperlink: (data) => {
+            return setHyperlinks(data)
+          }
+        }
       }),
       Image.configure({
         inline: true,

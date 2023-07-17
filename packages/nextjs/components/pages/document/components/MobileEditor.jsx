@@ -41,20 +41,12 @@ const MobileEditor = ({ docMetadata }) => {
 
     document.querySelector('html').classList.add('m_mobile')
 
-    editor?.on('focus', ({ editor, event }) => {
-      // The editor is focused.
-      // if (deviceDetect.is('iPhone')) {
-      //   setSelectionPos(editor.state.selection.$anchor.pos)
-      // }
-    })
-
-    editor?.on('selectionUpdate', ({ editor }) => {
-      // The selection has changed.
-      setSelectionPos(editor.state.selection.$anchor.pos)
-    })
+    // editor.on('selectionUpdate', ({ editor }) => {
+    //   // The selection has changed.
+    //   setSelectionPos(editor.state.selection.$anchor.pos)
+    // })
 
     // Make the editor read-only
-    // editor.setEditable(false)
     const divProseMirror = document.querySelector('.ProseMirror')
     divProseMirror?.setAttribute('contenteditable', 'false')
 
@@ -91,7 +83,7 @@ const MobileEditor = ({ docMetadata }) => {
       window.visualViewport.removeEventListener('resize', viewportHandler)
       window.visualViewport.removeEventListener('scroll', viewportHandler)
     }
-  }, [rendering, editor, deviceDetect, loading, setSelectionPos])
+  }, [editor, loading])
 
   function toggleToolbar() {
     if (!isKeyboardOpen) {
@@ -114,7 +106,7 @@ const MobileEditor = ({ docMetadata }) => {
         className={`${
           isKeyboardOpen ? 'block' : 'hidden'
         } toolbars  w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative`}>
-        <ToolbarMobile editor={editor} docMetadata={docMetadata} />
+        {/* <ToolbarMobile editor={editor} docMetadata={docMetadata} /> */}
       </div>
       <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
         <div className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4">
@@ -122,7 +114,7 @@ const MobileEditor = ({ docMetadata }) => {
         </div>
       </div>
       <div className="nd_modal hidden left w-full h-full fixed z-20 overflow-hidden">
-        <TocModal docMetadata={docMetadata} editor={editor} />
+        {/* <TocModal docMetadata={docMetadata} editor={editor} /> */}
       </div>
       <button
         onClick={toggleToolbar}
