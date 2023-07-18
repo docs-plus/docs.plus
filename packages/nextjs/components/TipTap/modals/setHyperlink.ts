@@ -75,7 +75,9 @@ export default function setHyperlink(options: setHyperlinkModalOptions) {
       return
     }
 
-    tippy.hide()
+    setTimeout(() => {
+      tippy.destroyTooltip()
+    })
 
     return options.editor
       .chain()
