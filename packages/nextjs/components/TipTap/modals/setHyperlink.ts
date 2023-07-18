@@ -43,6 +43,11 @@ export default function setHyperlink(options: setHyperlinkModalOptions) {
 
   setTimeout(() => {
     input.focus()
+    input.style.outlineColor = ' #dadce0'
+  })
+
+  input.addEventListener('keydown', () => {
+    input.style.outlineColor = ' #dadce0'
   })
 
   // event listenr for submit button
@@ -50,7 +55,10 @@ export default function setHyperlink(options: setHyperlinkModalOptions) {
     event.preventDefault()
     const url = input.value
 
-    if (!url) return
+    if (!url) {
+      input.style.outlineColor = 'red'
+      return
+    }
 
     const sanitizeURL = find(url)
       .filter((link) => link.isLink)
@@ -62,7 +70,10 @@ export default function setHyperlink(options: setHyperlinkModalOptions) {
       })
       .at(0)
 
-    if (!sanitizeURL?.href) return
+    if (!sanitizeURL?.href) {
+      input.style.outlineColor = 'red'
+      return
+    }
 
     tippy.hide()
 

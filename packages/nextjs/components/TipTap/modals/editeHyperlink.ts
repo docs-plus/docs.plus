@@ -2,6 +2,7 @@ import { Editor, Node } from '@tiptap/core'
 import { EditorView } from '@tiptap/pm/view'
 import { tippy } from '@docs.plus/extension-hyperlink'
 import { roundArrow } from 'tippy.js'
+import { find } from 'linkifyjs'
 
 type EditHyperlinkModalOptions = {
   editor: Editor
@@ -46,12 +47,41 @@ export const editeHyperlinkHandler = (options: EditHyperlinkModalOptions) => {
   options.hyperlinkLinkModal.innerHTML = ''
   options.hyperlinkLinkModal.appendChild(form)
 
+  hrefInput.addEventListener('keydown', () => {
+    hrefInput.style.outlineColor = ' #dadce0'
+  })
+
+  hrefInput.addEventListener('keydown', () => {
+    linkTextInput.style.outlineColor = ' #dadce0'
+  })
+
   // Handle form submission
   form.addEventListener('submit', (e) => {
     e.preventDefault()
 
     const newLinkText = linkTextInput.value
     const newHref = hrefInput.value
+
+    if (!newHref || !newLinkText) {
+      if (!newHref) hrefInput.style.outlineColor = 'red'
+      if (!newLinkText) linkTextInput.style.outlineColor = 'red'
+      return
+    }
+
+    const sanitizeURL = find(newHref)
+      .filter((link) => link.isLink)
+      .filter((link) => {
+        if (options.validate) {
+          return options.validate(link.value)
+        }
+        return true
+      })
+      .at(0)
+
+    if (!sanitizeURL?.href) {
+      hrefInput.style.outlineColor = 'red'
+      return
+    }
 
     options.editor.chain().focus().extendMarkRange('hyperlink').editHyperlink({
       newURL: newHref,
