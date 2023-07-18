@@ -929,10 +929,10 @@
   resolved "https://registry.yarnpkg.com/@colors/colors/-/colors-1.5.0.tgz#bb504579c1cae923e6576a4f5da43d25f97bdbd9"
   integrity sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==
 
-"@docs.plus/extension-hyperlink@^1.0.4":
-  version "1.0.4"
-  resolved "https://registry.yarnpkg.com/@docs.plus/extension-hyperlink/-/extension-hyperlink-1.0.4.tgz#bcbfe7176f66015339ae8ec7160dcb510059c63d"
-  integrity sha512-hV7ToPtBWFxiyVdEHJI/nPoBbscvE3M8gieSXsdDtpUAJf2ykRXO2wLKW+AEyTfT8GoldzpZLi2kMJijSJ6+kg==
+"@docs.plus/extension-hyperlink@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@docs.plus/extension-hyperlink/-/extension-hyperlink-1.1.0.tgz#4ce199ede758ae3d845522ffb9d048760af90446"
+  integrity sha512-T21JTe1ty5R2bdLIBTAGrSG7mCXR3XA80FyRiXRepkD5kVcm2yAIzIQ2L4XIVqcFR+VcX+DJn0gB0Qxu15Y5vA==
   dependencies:
     linkifyjs "^4.1.1"
     tippy.js "^6.3.7"
