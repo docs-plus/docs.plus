@@ -158,11 +158,9 @@ const Toolbar = ({ editor, docMetadata }) => {
         <ImageBox fill="rgba(0,0,0,.5)" size="14" />
       </button>
 
-      <button
-        className={editor.isActive('link') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().setHyperlink()}>
+      <ToolbarButton onClick={() => editor.chain().focus().setHyperlink().run()} editor={editor} type="hyperlink">
         <Link fill="rgba(0,0,0,.7)" size="18" />
-      </button>
+      </ToolbarButton>
 
       <ToolbarButton onClick={() => editor.chain().focus().toggleHighlight().run()} editor={editor} type="highlight">
         <Icon type="HighlightMarker" size="14" />
