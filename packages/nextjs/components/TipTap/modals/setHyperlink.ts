@@ -1,5 +1,5 @@
 import { Editor } from '@tiptap/core'
-import { tippy } from '@docs.plus/extension-hyperlink'
+import { Tooltip } from '@docs.plus/extension-hyperlink'
 import { find } from 'linkifyjs'
 
 type setHyperlinkModalOptions = {
@@ -10,7 +10,11 @@ type setHyperlinkModalOptions = {
 }
 
 export default function setHyperlink(options: setHyperlinkModalOptions) {
-  const { tippyModal } = tippy.init({ ...options, view: options.editor.view })
+  // Create the tooltip instance
+  let tooltip = new Tooltip({ ...options, view: options.editor.view })
+
+  // Initialize the tooltip
+  let { tippyModal } = tooltip.init()
 
   const hyperlinkLinkModal = document.createElement('div')
   const buttonsWrapper = document.createElement('div')
@@ -39,12 +43,13 @@ export default function setHyperlink(options: setHyperlinkModalOptions) {
 
   tippyModal.innerHTML = ''
   tippyModal.append(hyperlinkLinkModal)
-  tippy.update(options.editor.view)
+  tooltip.update(options.editor.view)
 
+  // make sure
   setTimeout(() => {
     input.focus()
     input.style.outlineColor = ' #dadce0'
-  })
+  }, 100)
 
   input.addEventListener('keydown', () => {
     input.style.outlineColor = ' #dadce0'
@@ -75,9 +80,7 @@ export default function setHyperlink(options: setHyperlinkModalOptions) {
       return
     }
 
-    setTimeout(() => {
-      tippy.destroyTooltip()
-    })
+    tooltip.hide()
 
     return options.editor
       .chain()

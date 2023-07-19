@@ -1,8 +1,8 @@
 import { Editor, Node } from '@tiptap/core'
 import { EditorView } from '@tiptap/pm/view'
-import { tippy } from '@docs.plus/extension-hyperlink'
 import { roundArrow } from 'tippy.js'
 import { find } from 'linkifyjs'
+import { Tooltip } from '@docs.plus/extension-hyperlink'
 
 type EditHyperlinkModalOptions = {
   editor: Editor
@@ -10,6 +10,7 @@ type EditHyperlinkModalOptions = {
   view: EditorView
   link: HTMLAnchorElement
   hyperlinkLinkModal: HTMLElement
+  tippy: Tooltip
 }
 
 export const editeHyperlinkHandler = (options: EditHyperlinkModalOptions) => {
@@ -88,11 +89,11 @@ export const editeHyperlinkHandler = (options: EditHyperlinkModalOptions) => {
       newText: newLinkText
     })
 
-    tippy.destroyTooltip()
+    options.tippy.hide()
   })
 
   // Show tooltip
-  tippy.update(options.view, {
+  options.tippy.update(options.view, {
     arrow: roundArrow
   })
 
