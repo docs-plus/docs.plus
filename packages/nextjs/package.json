@@ -14,7 +14,7 @@
     "lint:fix": "next lint --fix"
   },
   "dependencies": {
-    "@docs.plus/extension-hyperlink": "^1.3.0",
+    "@docs.plus/extension-hyperlink": "^1.3.1",
     "@faker-js/faker": "^8.0.2",
     "@hocuspocus/provider": "^2.2.3",
     "@supabase/auth-helpers-nextjs": "^0.7.3",
