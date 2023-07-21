@@ -115,3 +115,7 @@ packages/web/dev-dist
 
 .DS_Store
 **/.DS_Store
+
+# packaged files
+packages/**/*.tgz
+packages/**/dist

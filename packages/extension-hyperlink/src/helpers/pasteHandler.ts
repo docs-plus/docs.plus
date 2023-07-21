@@ -1,44 +1,46 @@
-import { Editor } from '@tiptap/core'
-import { MarkType } from '@tiptap/pm/model'
-import { Plugin, PluginKey } from '@tiptap/pm/state'
-import { find } from 'linkifyjs'
+import { Editor } from "@tiptap/core";
+import { MarkType } from "@tiptap/pm/model";
+import { Plugin, PluginKey } from "@tiptap/pm/state";
+import { find } from "linkifyjs";
 
 type PasteHandlerOptions = {
-  editor: Editor
-  type: MarkType
-}
+  editor: Editor;
+  type: MarkType;
+};
 
 export function pasteHandler(options: PasteHandlerOptions): Plugin {
   return new Plugin({
-    key: new PluginKey('handlePasteLink'),
+    key: new PluginKey("handlePasteHyperlink"),
     props: {
       handlePaste: (view, event, slice) => {
-        const { state } = view
-        const { selection } = state
-        const { empty } = selection
+        const { state } = view;
+        const { selection } = state;
+        const { empty } = selection;
 
         if (empty) {
-          return false
+          return false;
         }
 
-        let textContent = ''
+        let textContent = "";
 
-        slice.content.forEach(node => {
-          textContent += node.textContent
-        })
+        slice.content.forEach((node) => {
+          textContent += node.textContent;
+        });
 
-        const link = find(textContent).find(item => item.isLink && item.value === textContent)
+        const link = find(textContent).find(
+          (item) => item.isLink && item.value === textContent
+        );
 
         if (!textContent || !link) {
-          return false
+          return false;
         }
 
         options.editor.commands.setMark(options.type, {
           href: link.href,
-        })
+        });
 
-        return true
+        return true;
       },
     },
-  })
+  });
 }

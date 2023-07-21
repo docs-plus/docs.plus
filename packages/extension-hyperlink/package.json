@@ -1,52 +1,43 @@
 {
-  "name": "@docsplus/extension-hyperlink",
-  "description": "hyperlink extension for docsplus",
-  "version": "2.0.3",
-  "homepage": "https://docs.plus",
+  "name": "@docs.plus/extension-hyperlink",
+  "description": "Hyperlink component for docs.plus",
+  "version": "1.3.2",
+  "author": "Hossein Marzban",
+  "homepage": "http://github.com/docs-plus/docs.plus",
   "keywords": [
-    "docsplus",
     "tiptap",
-    "tiptap extension"
+    "tiptap extension",
+    "hyperlink",
+    "link"
   ],
-  "license": "MIT",
-  "funding": {
-    "type": "github",
-    "url": "https://github.com/sponsors/ueberdosis"
-  },
-  "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/packages/extension-hyperlink/src/index.d.ts",
+      "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
     }
   },
+  "type": "module",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
   "umd": "dist/index.umd.js",
-  "types": "dist/packages/extension-hyperlink/src/index.d.ts",
+  "types": "dist/index.d.ts",
   "files": [
     "src",
     "dist"
   ],
-  "dependencies": {
-    "linkifyjs": "^4.1.0"
-  },
-  "devDependencies": {
-    "@tiptap/core": "^2.0.3",
-    "@tiptap/pm": "^2.0.3"
-  },
-  "peerDependencies": {
-    "@tiptap/core": "^2.0.0",
-    "@tiptap/pm": "^2.0.0"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/ueberdosis/tiptap",
-    "directory": "packages/extension-hyperlink"
-  },
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "npm run clean && rollup -c"
+    "build": "npm run clean && rollup -c",
+    "ts": "tsc -p tsconfig.json"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "linkifyjs": "^4.1.1",
+    "tippy.js": "^6.3.7"
+  },
+  "peerDependencies": {
+    "@tiptap/core": "^2.0.3",
+    "@tiptap/pm": "^2.0.3"
   }
 }

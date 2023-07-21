@@ -1,15 +1,28 @@
 {
-  "name": "docsplus",
+  "name": "docs.plus",
   "private": true,
+  "license": "MIT",
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "update:packages": "ncu -u"
+    "update:packages": "ncu -u",
+    "dev": "npx lerna run dev --scope=@docs.plus/webapp",
+    "build": "lerna run build",
+    "release": "lerna version --no-push --force-publish",
+    "release:major": "lerna version major --no-push --no-git-tag-version --force-publish",
+    "release:major:pre": "lerna version premajor --no-push --no-git-tag-version --force-publish --preid rc",
+    "release:minor": "lerna version minor --no-push --no-git-tag-version --force-publish",
+    "release:minor:pre": "lerna version preminor --no-push --no-git-tag-version --force-publish --preid rc",
+    "release:patch": "lerna version patch --no-push --no-git-tag-version --force-publish",
+    "release:patch:pre": "lerna version prepatch --no-push --no-git-tag-version --force-publish --preid rc",
+    "release:pre": "lerna version prerelease --no-push --no-git-tag-version --force-publish --preid rc",
+    "publish": "npm run build && lerna exec --since --no-private -- npm publish --tag latest --access public"
   },
   "engines": {
     "node": ">=18.15.0",
-    "npm": "please-use-yarn"
+    "npm": "please-use-yarn",
+    "yarn": ">= 1.22.19"
   },
   "dependencies": {
     "bson": "^5.3.0",
@@ -17,6 +30,43 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "npm-check-updates": "^16.10.12"
+    "npm-check-updates": "^16.10.12",
+    "@babel/core": "^7.22.9",
+    "@babel/plugin-proposal-nullish-coalescing-operator": "^7.18.6",
+    "@babel/plugin-proposal-optional-chaining": "^7.21.0",
+    "@babel/plugin-syntax-typescript": "^7.22.5",
+    "@babel/preset-env": "^7.22.9",
+    "@babel/preset-react": "^7.22.5",
+    "@rollup/plugin-babel": "^6.0.3",
+    "@rollup/plugin-commonjs": "^25.0.3",
+    "@rollup/plugin-json": "^6.0.0",
+    "@rollup/plugin-node-resolve": "^15.1.0",
+    "@rollup/plugin-terser": "^0.4.3",
+    "@types/react": "^18.2.15",
+    "@types/react-dom": "^18.2.7",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "babel-loader": "^9.1.3",
+    "babel-plugin-module-resolver": "^5.0.0",
+    "eslint": "^8.45.0",
+    "eslint-config-airbnb-base": "^15.0.0",
+    "eslint-plugin-html": "^7.1.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-simple-import-sort": "^10.0.0",
+    "eslint-plugin-vue": "^9.15.1",
+    "husky": "^8.0.3",
+    "lerna": "^7.1.4",
+    "lint-staged": "^13.2.3",
+    "minimist": "^1.2.8",
+    "next-transpile-modules": "^10.0.0",
+    "rollup": "^3.26.3",
+    "rollup-plugin-auto-external": "^2.0.0",
+    "rollup-plugin-sourcemaps": "^0.6.3",
+    "rollup-plugin-typescript2": "^0.35.0",
+    "sass": "^1.63.6",
+    "ts-loader": "9.4.4",
+    "tsup": "^7.1.0",
+    "typescript": "^5.1.6",
+    "webpack": "^5.88.1"
   }
 }

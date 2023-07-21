@@ -1,5 +1,7 @@
-import { Link } from './link'
+import { Hyperlink } from "./hyperlink";
+import Tooltip from "./helpers/tippyHelper";
 
-export * from './link'
+export { Tooltip };
+export * from "./hyperlink";
 
-export default Link
+export default Hyperlink;
