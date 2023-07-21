@@ -81,7 +81,7 @@ export default function previewHyperlink(options: HyperlinkModalOptions) {
     navigator.clipboard.writeText(href)
   })
 
-  hyperlinkLinkModal.append(newBubble, copyButton, removeButton, editButton)
+  hyperlinkLinkModal.append(newBubble, copyButton, editButton, removeButton)
 
   return hyperlinkLinkModal
 }
