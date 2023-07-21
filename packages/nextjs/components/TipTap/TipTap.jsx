@@ -279,6 +279,7 @@ const Editor = ({ provider, spellcheck = false }) => {
       Underline,
       Hyperlink.configure({
         protocols: ['ftp', 'mailto'],
+        hyperlinkOnPaste: false,
         modals: {
           previewHyperlink: (data) => {
             return previewHyperlinkModal(data)
