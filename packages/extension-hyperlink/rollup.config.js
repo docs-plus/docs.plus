@@ -51,15 +51,16 @@ const config = {
       tsconfigOverride: {
         compilerOptions: {
           declaration: true,
+          declarationDir: "./dist",
           paths: {
-            "@docsplus/*": ["packages/*/src"],
+            "@docs.plus/*": ["packages/*/dist", "packages/*/src"],
           },
         },
       },
-      include: null,
+      include: ["./**/*.ts", "./**/*.tsx"],
     }),
-    // json(),
-    // terser(),
+    json(),
+    terser({ output: { comments: false } }),
   ],
 };
 

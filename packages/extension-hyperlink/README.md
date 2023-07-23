@@ -4,7 +4,7 @@ The Hyperlink extension adds support for tags to the editor. The extension is he
 
 In a real world application, you would probably add a more sophisticated user interface.
 
-Pasted URLs will be transformed to links automatically.
+> Pasted URLs will be transformed to links automatically.
 
 ## Installation
 
@@ -90,6 +90,7 @@ Hyperlink.configure({
 ### Modals
 
 The modals configuration option lets you incorporate an interactive user interface similar to Google Docs for setting and previewing hyperlinks. This provides users with a more intuitive and interactive experience; [More details in the code](https://github.com/HMarzban/extension-hyperlink/blob/4f37ffa18237f10d76c316844b1c2ab20b751fe9/packages/nextjs/src/components/Tiptap.tsx#L21-L28).
+
 ````js
 Hyperlink.configure({
   modals: {
@@ -141,9 +142,9 @@ Hyperlink.configure({
 These commands allow you to edit the text and href value of a hyperlink.
 
 ```js
-editor.commands.editHyperLinkText('New Text')
-editor.commands.editHyperLinkHref('https://new-url.com')
-editor.commands.editHyperlink({
+this.editor.commands.editHyperLinkText('New Text')
+this.editor.commands.editHyperLinkHref('https://new-url.com')
+this.editor.commands.editHyperlink({
   newText: 'New Text', newURL: 'https://new-url.com'
 })
 ```
@@ -153,9 +154,9 @@ editor.commands.editHyperlink({
 Links the selected text.
 
 ````js
-editor.commands.setHyperlink({ href: '<https://example.com>' })
-editor.commands.setHyperlink({ href: '<https://example.com>', target: '_blank' })
-editor.commands.unsetHyperlink()
+this.editor.commands.setHyperlink({ href: '<https://example.com>' })
+this.editor.commands.setHyperlink({ href: '<https://example.com>', target: '_blank' })
+this.editor.commands.unsetHyperlink()
 ````
 
 ### unsetHyperlink()
@@ -163,10 +164,40 @@ editor.commands.unsetHyperlink()
 Removes a Hyperlink.
 
 ````js
-editor.commands.unsetHyperlink()
+this.editor.commands.unsetHyperlink()
 ````
 
 ## Keyboard shortcuts
 
 Doesn’t have a keyboard shortcut
-This extension doesn’t bind a specific keyboard shortcut. You would probably open your custom UI on Mod-k though.
+This extension doesn’t bind a specific keyboard shortcut. You would probably open your custom UI on `Mod-k` though.
+
+## Get the current value
+
+Did you know that you can use `getAttributes`` to find out which attributes, for example which href, is currently set? Don’t confuse it with a <u>command</u> (which changes the state), it’s just a method. Here is how that could look like:
+
+```js
+this.editor.getAttributes('link').href
+```
+
+## Sorce code and Example
+
+- Demo:
+[packages/extension-hyperlink](https://github.com/HMarzban/extension-hyperlink)
+- Extension:
+[packages/extension-hyperlink](https://github.com/HMarzban/extension-hyperlink/tree/main/packages/extension-hyperlink)
+- Usage:  [packages/nextjs/src/components/Tiptap.tsx](https://github.com/HMarzban/extension-hyperlink/blob/59f45eba1886202f4840eb2112c34574c16fe68a/packages/nextjs/src/components/Tiptap.tsx#L19-L29)
+
+## Inspiration and Acknowledgment, Let's Connect
+
+Hey, friend! Thanks for your interest in our Hyperlink extension, part of the wonderful world of docs.plus. docs.plus is our passion project, all about making collaboration and knowledge sharing not just simpler, but downright enjoyable.
+
+Here's a fun fact - our extension is a nod to Tiptap's [extension-link](https://github.com/HMarzban/extension-hyperlink/tree/main/packages/extension-hyperlink). We were so inspired by their "headless" approach, we decided to run with it, adding our own spin to make it more user-friendly and packed with versatile features.
+
+Although we're not officially affiliated with Tiptap, we believe in giving credit where it's due. Their brilliant work laid the groundwork for our extension and we're truly grateful for that!
+
+And speaking of gratitude, we're so thankful for folks like you who show interest in our work. If you've got any spark of an idea on how to make this extension even better, or if you're simply curious about Docs.plus, we're here to chat. No formalities, just friendly conversation!
+
+Want to delve deeper into what we're about? Feel free to explore the [docs.plus repository](https://github.com/docs-plus/docs.plus) - it's there for you!
+
+Once again, thanks for stopping by. We're excited to see what great things we can create together in this amazing world of open source!
