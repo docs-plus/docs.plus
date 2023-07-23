@@ -8,7 +8,7 @@
   "scripts": {
     "update:packages": "ncu -u",
     "dev": "npx lerna run dev --scope=@docs.plus/webapp",
-    "build": "lerna run build",
+    "build": "npx lerna run build",
     "release": "lerna version --no-push --force-publish",
     "release:major": "lerna version major --no-push --no-git-tag-version --force-publish",
     "release:major:pre": "lerna version premajor --no-push --no-git-tag-version --force-publish --preid rc",
@@ -30,7 +30,7 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "npm-check-updates": "^16.10.12",
+    "@atomico/rollup-plugin-sizes": "^1.1.4",
     "@babel/core": "^7.22.9",
     "@babel/plugin-proposal-nullish-coalescing-operator": "^7.18.6",
     "@babel/plugin-proposal-optional-chaining": "^7.21.0",
@@ -54,11 +54,13 @@
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-simple-import-sort": "^10.0.0",
     "eslint-plugin-vue": "^9.15.1",
+    "fs-extra": "^11.1.1",
     "husky": "^8.0.3",
     "lerna": "^7.1.4",
     "lint-staged": "^13.2.3",
     "minimist": "^1.2.8",
     "next-transpile-modules": "^10.0.0",
+    "npm-check-updates": "^16.10.12",
     "rollup": "^3.26.3",
     "rollup-plugin-auto-external": "^2.0.0",
     "rollup-plugin-sourcemaps": "^0.6.3",
