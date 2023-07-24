@@ -9,7 +9,7 @@ const MobileLayout = ({ docMetadata }) => {
   return (
     <>
       <div className={`pad tiptap relative flex  flex-col border-solid ${isMobile ? 'm_mobile' : 'm_desktop'}`}>
-        <div className="docTitle top-0 bg-white w-full min-h-14 p-2 flex flex-row items-center sm:border-b-0 border-b">
+        <div className="docTitle sticky z-50 top-0 bg-white w-full min-h-14 p-2 flex flex-row items-center sm:border-b-0 border-b">
           <PadTitle docMetadata={docMetadata} />
         </div>
         <MobileEditor docMetadata={docMetadata} />
