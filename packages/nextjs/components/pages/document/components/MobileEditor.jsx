@@ -106,7 +106,7 @@ const MobileEditor = ({ docMetadata }) => {
         className={`${
           isKeyboardOpen ? 'block' : 'hidden'
         } toolbars  w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative`}>
-        {/* <ToolbarMobile editor={editor} docMetadata={docMetadata} /> */}
+        <ToolbarMobile editor={editor} docMetadata={docMetadata} />
       </div>
       <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
         <div className="editorWrapper w-9/12 grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4">
@@ -114,7 +114,7 @@ const MobileEditor = ({ docMetadata }) => {
         </div>
       </div>
       <div className="nd_modal hidden left w-full h-full fixed z-20 overflow-hidden">
-        {/* <TocModal docMetadata={docMetadata} editor={editor} /> */}
+        <TocModal docMetadata={docMetadata} editor={editor} />
       </div>
       <button
         onClick={toggleToolbar}
