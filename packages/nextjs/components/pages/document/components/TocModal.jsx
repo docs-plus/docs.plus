@@ -1,7 +1,5 @@
 import React from 'react'
 import Link from 'next/link'
-
-import { useEditorStateContext } from '@context/EditorContext'
 import DocTitle from '@components/TipTap/DocTitle'
 import { Filter, DocsPlus } from '@icons'
 import TOC from './Toc'
