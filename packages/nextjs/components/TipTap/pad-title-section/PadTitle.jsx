@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import DocTitle from '../DocTitle'
 import { DocsPlus, Hamburger, Check, PrivateShare } from '@icons'
-import { useEditorStateContext } from '@context/EditorContext'
 import { useUser } from '@supabase/auth-helpers-react'
 import { Avatar } from '@components/Avatar'
 import PubSub from 'pubsub-js'
@@ -91,7 +90,7 @@ const PadTitle = ({ docMetadata }) => {
       <ReadOnlyIndicator docMetadata={docMetadata} />
 
       <div className="ml-auto flex align-middle ">
-        <PresentUsers user={user} className=" ms:block hidden" />
+        <PresentUsers user={user} className="sm:block hidden" />
 
         <Button
           onClick={openShareModal}
