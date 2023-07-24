@@ -38,16 +38,11 @@ jobs:
      run: |
       cp ../../../.env packages/nextjs
       cp ../../../.env packages/hocuspocus.server
+   - name: Build monorepo packages
+     run: yarn build
   env:
    # The environment variable DATABASE_URL is sourced from a secret in your repository.
    DATABASE_URL: ${{secrets.STAGE_DATABASE_URL}}
-
- build:
-  needs: setup
-  runs-on: stage.docs.plus
-  steps:
-   - name: Build monorepo packages
-     run: yarn build
 
  # The "build-front" job builds the front-end, it depends on the "setup" job.
  build-front:
