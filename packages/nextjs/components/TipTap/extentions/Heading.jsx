@@ -1,6 +1,6 @@
-import { Node, mergeAttributes, findChildren, isActive } from '@tiptap/core'
+import { Node, mergeAttributes, InputRule, callOrReturn } from '@tiptap/core'
 import { Slice, Fragment } from '@tiptap/pm/model'
-import { Selection, Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
 
 import changeHeadingLevel from './changeHeadingLevel'
 import wrapContenWithHeading from './wrapContenWithHeading'
@@ -23,40 +23,34 @@ const Blockquote = Node.create({
       id: 1,
       HTMLAttributes: {
         class: 'heading',
-        level: 1,
-      },
+        level: 1
+      }
     }
   },
   addAttributes() {
     return {
       level: {
         default: 1,
-        rendered: false,
-      },
+        rendered: false
+      }
     }
   },
+
   addNodeView() {
     return ({ editor, getPos, node, HTMLAttributes }) => {
       const dom = document.createElement('div')
 
-      const headingId =
-        getPos() === 0 ? '1' : !node.attrs.id ? '1' : HTMLAttributes['data-id']
+      const headingId = getPos() === 0 ? '1' : !node.attrs.id ? '1' : HTMLAttributes['data-id']
 
-      const attributes = mergeAttributes(
-        this.options.HTMLAttributes,
-        HTMLAttributes,
-        {
-          'data-type': this.name,
-          level: node.firstChild?.attrs.level,
-          'data-id': headingId,
-        }
-      )
+      const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        'data-type': this.name,
+        level: node.firstChild?.attrs.level,
+        'data-id': headingId
+      })
 
       const nodeState = getNodeState(headingId)
 
-      Object.entries(attributes).forEach(([key, value]) =>
-        dom.setAttribute(key, value)
-      )
+      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value))
 
       dom.classList.add(nodeState.crinkleOpen ? 'opend' : 'closed')
 
@@ -78,7 +72,7 @@ const Blockquote = Node.create({
           if (updatedNode.type.name !== this.name) return false
 
           return true
-        },
+        }
       }
     }
   },
@@ -90,11 +84,7 @@ const Blockquote = Node.create({
     const hasLevel = this.options.levels.includes(node.attrs.level)
     const level = hasLevel ? node.attrs.level : this.options.levels[0]
 
-    return [
-      'div',
-      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes),
-      0,
-    ]
+    return ['div', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0]
   },
   addCommands() {
     return {
@@ -113,8 +103,8 @@ const Blockquote = Node.create({
           return changeHeadingLevel(arrg, attributes, dispatch)
         }
 
-        return wrapContenWithHeading(arrg, attributes, dispatch)
-      },
+        return wrapContenWithHeading(arrg, attributes)
+      }
     }
   },
   addKeyboardShortcuts() {
@@ -134,9 +124,7 @@ const Blockquote = Node.create({
 
         // if a user Enter in the contentHeading block,
         // should go to the next block, which is contentWrapper
-        const parent = $head.path
-          .filter((x) => x?.type?.name)
-          .findLast((x) => x.type.name === this.name)
+        const parent = $head.path.filter((x) => x?.type?.name).findLast((x) => x.type.name === this.name)
 
         // INFO: if the content is hide, do not anything
         // ! this open in the Heading block is wrong and Have to change, It's opposite
@@ -149,35 +137,26 @@ const Blockquote = Node.create({
         // some times the contentWrapper cleaned up, so it should be create first
         // otherwise just the cursour must move to contnetWrapper
         // TODO: find better way for this 4
-        if (
-          parent?.content?.content.length === 1 ||
-          parent.lastChild?.firstChild?.type.name === 'heading'
-        ) {
+        if (parent?.content?.content.length === 1 || parent.lastChild?.firstChild?.type.name === 'heading') {
           // console.log("yes iminininin", parent.lastChild.firstChild.contentsize === 0, parent.lastChild.firstChild)
           // If there is not any contentWrapper
           // if first child of the heading is another heading
           // console.log(parent.lastChild.type.name === "contentWrapper")
           // console.log(parent.lastChild.content.lastChild.type.name === "heading")
           // if the contentWrapper does not contain any content
-          if (
-            parent.lastChild.content.size === 0 ||
-            parent.lastChild?.firstChild?.content.size === 0
-          ) {
+          if (parent.lastChild.content.size === 0 || parent.lastChild?.firstChild?.content.size === 0) {
             return editor.commands.insertContentAt($anchor.pos, {
               type: 'contentWrapper',
               content: [
                 {
-                  type: 'paragraph',
-                },
-              ],
+                  type: 'paragraph'
+                }
+              ]
             })
           }
 
           // move to contentWrapper
-          editor.commands.insertContentAt(
-            $anchor.start(depth + 2) + 1,
-            '<p></p>'
-          )
+          editor.commands.insertContentAt($anchor.start(depth + 2) + 1, '<p></p>')
 
           return true
         }
@@ -185,11 +164,7 @@ const Blockquote = Node.create({
         // INFO: 1 mean start of the next line
         const nextLine = end + 1
 
-        return editor
-          .chain()
-          .insertContentAt(nextLine, '<p></p>')
-          .scrollIntoView()
-          .run()
+        return editor.chain().insertContentAt(nextLine, '<p></p>').scrollIntoView().run()
       },
       ...this.options.levels.reduce(
         (items, level) => ({
@@ -197,13 +172,39 @@ const Blockquote = Node.create({
           ...{
             [`Mod-Alt-${level}`]: () =>
               this.editor.commands.wrapBlock({
-                level: level,
-              }),
-          },
+                level: level
+              })
+          }
         }),
         {}
-      ),
+      )
     }
+  },
+  addInputRules() {
+    return this.options.levels.map((level) => {
+      const config = {
+        find: new RegExp(`^(#{1,${level}})\\s$`),
+        type: this.type,
+        getAttributes: {
+          level
+        }
+      }
+      return new InputRule({
+        find: config.find,
+        handler: (data) => {
+          const { state, range, match } = data
+          const $start = state.doc.resolve(range.from)
+          const attributes = callOrReturn(config.getAttributes, undefined, match) || {}
+
+          if (!$start.node(-1).canReplaceWith($start.index(-1), $start.indexAfter(-1), config.type)) {
+            return null
+          }
+
+          state.tr.delete(range.from, range.to)
+          return wrapContenWithHeading({ ...data, tr: state.tr }, attributes)
+        }
+      })
+    })
   },
   addProseMirrorPlugins() {
     return [
@@ -221,29 +222,21 @@ const Blockquote = Node.create({
             const { from, to } = selection
 
             // TODO: this function retrive blocks level from the selection, I need to block characters level from the selection
-            const contentWrapper = getSelectionBlocks(
-              doc.cut(from, to),
-              null,
-              null,
-              true,
-              true
-            )
+            const contentWrapper = getSelectionBlocks(doc.cut(from, to), null, null, true, true)
 
             // convert Json Block to Node Block
-            let serializeSelection = contentWrapper.map((x) =>
-              this.editor.state.schema.nodeFromJSON(x)
-            )
+            let serializeSelection = contentWrapper.map((x) => this.editor.state.schema.nodeFromJSON(x))
 
             // convert Node Block to Fragment
             serializeSelection = Fragment.fromArray(serializeSelection)
 
             // convert Fragment to Slice and save it to clipboard
             return Slice.maxOpen(serializeSelection)
-          },
-        },
-      }),
+          }
+        }
+      })
     ]
-  },
+  }
 })
 
 export { Blockquote, Blockquote as default }
