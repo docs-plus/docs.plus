@@ -4,6 +4,8 @@ import { serialize } from 'cookie'
 
 export async function middleware(req) {
   const res = NextResponse.next()
+  if (!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) return res
+
   const supabase = createMiddlewareClient({ req, res })
 
   const {
@@ -18,6 +20,4 @@ export async function middleware(req) {
     // Add the cookie to the response headers
     res.headers.set('Set-Cookie', userIdCookie)
   }
-
-  return res
 }

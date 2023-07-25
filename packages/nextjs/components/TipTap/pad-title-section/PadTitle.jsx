@@ -10,12 +10,13 @@ import { useState } from 'react'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import PresentUsers from './PresentUsers'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
+import { useEditorStateContext } from '@context/EditorContext'
 
 const PadTitle = ({ docMetadata }) => {
   const isKeyboardOpen = useDetectKeyboardOpen()
   const user = useUser()
-
   const [displayShareModal, setDisplayShareModal] = useState(false)
+  const { isAuthServiceAvailable } = useEditorStateContext()
 
   const btn_leftOpenModal = (e) => {
     if (!e.target.closest('button').classList.contains('btn_modal')) return
@@ -92,7 +93,7 @@ const PadTitle = ({ docMetadata }) => {
       <ReadOnlyIndicator docMetadata={docMetadata} />
 
       <div className="ml-auto flex align-middle ">
-        <PresentUsers user={user} className="sm:block hidden" />
+        {isAuthServiceAvailable && <PresentUsers user={user} className="sm:block hidden" />}
 
         <Button
           onClick={openShareModal}
@@ -101,7 +102,7 @@ const PadTitle = ({ docMetadata }) => {
           Share
         </Button>
 
-        <ProfileSection user={user} />
+        {isAuthServiceAvailable && <ProfileSection user={user} />}
 
         {displayShareModal && (
           <div

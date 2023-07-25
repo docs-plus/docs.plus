@@ -11,7 +11,7 @@ const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
 })
 
 const DesktopLayout = ({ docMetadata }) => {
-  const { isMobile } = useEditorStateContext()
+  const { isMobile, isAuthServiceAvailable } = useEditorStateContext()
   const { slug } = docMetadata
 
   const [displayControlCenter, setDisplayControlCenter] = useState(false)
@@ -46,7 +46,7 @@ const DesktopLayout = ({ docMetadata }) => {
           <PadTitle docMetadata={docMetadata} />
         </div>
         <DesktopEditor docMetadata={docMetadata} />
-        {displayControlCenter && (
+        {isAuthServiceAvailable && displayControlCenter && (
           <div
             onClick={closeControlCenter}
             id="controlCenterBlur"
