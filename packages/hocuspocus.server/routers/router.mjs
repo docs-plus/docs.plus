@@ -48,7 +48,7 @@ router.get('/documents/:docName', async (req, res) => {
   const { docName } = req.params
   const { userId } = req.query
   const token = req.headers.token
-  const user = token ? { ...jwt_decode(token), id: userId } : null
+  const user = token && userId ? { ...jwt_decode(token), id: userId } : null
 
   const doc = await prisma.documentMetadata.findUnique({
     where: {
@@ -136,10 +136,10 @@ router.get('/documents', async (req, res) => {
   })
 
   const userIds = documents.filter((doc) => doc.ownerId && doc.ownerId).map((doc) => doc.ownerId)
-  const ownerProfiles = await getOwnerProfiles(userIds)
 
-  // I need to check if has cookie token
+  // I need to check if has cookie token also
   if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
+    const ownerProfiles = await getOwnerProfiles(userIds)
     documents = documents.map((doc) => {
       const user = ownerProfiles?.find((profile) => profile.id === doc.ownerId)
       return { ...doc, user }
