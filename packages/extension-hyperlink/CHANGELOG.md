@@ -3,6 +3,14 @@
 All notable changes to this project will be documented in this file.
 See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
 
+## [1.3.4](https://github.com/HMarzban/extension-hyperlink/compare/v1.3.3...v1.3.4) (2023-07-25)
+
+### Bug Fixes
+
+* **@docs.plus/extension-hyperlink:** hide on click ([0e84209](https://github.com/HMarzban/extension-hyperlink/commit/0e842095d19ab37fc48d3ba56e81f6264ebc059a))
+* **@docs.plus/extension-hyperlink:** prevent  display the modal in the wrong position ([56b41d5](https://github.com/HMarzban/extension-hyperlink/commit/56b41d56f030ec49fc34b045efe5ccb9a4859a4d))
+* typo ([ea69c3d](https://github.com/HMarzban/extension-hyperlink/commit/ea69c3df87067caa595629dcbb5919f43e68bb3c))
+
 ## [1.3.3](https://github.com/HMarzban/extension-hyperlink/compare/v1.3.2...v1.3.3) (2023-07-23)
 
 **Note:** Version bump only for package @docs.plus/extension-hyperlink
