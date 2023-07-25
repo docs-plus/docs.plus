@@ -4,7 +4,6 @@ import { useEffect } from 'react'
 import DesktopEditor from '../components/DesktopEditor'
 import { useState } from 'react'
 import PubSub from 'pubsub-js'
-
 import dynamic from 'next/dynamic'
 
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
