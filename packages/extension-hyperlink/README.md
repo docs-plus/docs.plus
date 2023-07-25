@@ -91,7 +91,105 @@ Hyperlink.configure({
 
 The modals configuration option lets you incorporate an interactive user interface similar to Google Docs for setting and previewing hyperlinks. This provides users with a more intuitive and interactive experience; [More details in the code](https://github.com/HMarzban/extension-hyperlink/blob/4f37ffa18237f10d76c316844b1c2ab20b751fe9/packages/nextjs/src/components/Tiptap.tsx#L21-L28).
 
-````js
+<details>
+<summary>The `previewHyperlinkModal` function</summary>
+
+```ts
+type HyperlinkModalOptions = {
+  editor: Editor;
+  validate?: (url: string) => boolean;
+  view: EditorView;
+  link: HTMLAnchorElement;
+  node?: any;
+  nodePos: number;
+  tippy: Tooltip;
+};
+
+const previewHyperlink(options: HyperlinkModalOptions): HTMLElement {
+  const href = options.link.href;
+  const hyperlinkLinkModal = document.createElement("div");
+
+  const hrefTitle = document.createElement("a");
+  hrefTitle.setAttribute("target", "_blank");
+  hrefTitle.setAttribute("rel", "noreferrer");
+  hrefTitle.setAttribute("href", href);
+  hrefTitle.innerText = href;
+
+  hyperlinkLinkModal.append(hrefTitle);
+
+  return hyperlinkLinkModal;
+}
+```
+
+</details>
+
+<details>
+<summary>The `setHyperlinks` function</summary>
+
+```ts
+type setHyperlinkModalOptions = {
+  editor: Editor;
+  validate?: (url: string) => boolean;
+  extentionName: string;
+  attributes: Record<string, any>;
+};
+
+let tooltip: Tooltip = undefined;
+
+
+const setHyperlink(options: setHyperlinkModalOptions): void {
+  // Create the tooltip instance
+  if (!tooltip) tooltip = new Tooltip({ ...options, view: options.editor.view });
+
+  // Initialize the tooltip
+  let { tippyModal } = tooltip.init();
+
+  const hyperlinkLinkModal = document.createElement("div");
+  const buttonsWrapper = document.createElement("div");
+  const inputsWrapper = document.createElement("div");
+
+  hyperlinkLinkModal.classList.add("hyperlinkLinkModal");
+
+  buttonsWrapper.classList.add("buttonsWrapper");
+  inputsWrapper.classList.add("inputsWrapper");
+
+  // create a form that contain url input and a button for submit
+  const form = document.createElement("form");
+  const input = document.createElement("input");
+  const button = document.createElement("button");
+
+  input.setAttribute("type", "text");
+  input.setAttribute("placeholder", "https://example.com");
+  button.setAttribute("type", "submit");
+  button.innerText = "Submit";
+
+  inputsWrapper.append(input);
+  buttonsWrapper.append(button);
+  form.append(inputsWrapper, buttonsWrapper);
+
+  hyperlinkLinkModal.append(form);
+
+  tippyModal.innerHTML = "";
+  tippyModal.append(hyperlinkLinkModal);
+
+    // event listenr for submit button
+  form.addEventListener("submit", (event) => {
+    event.preventDefault();
+    const url = input.value;
+    if (!url)return;
+
+    return options.editor
+      .chain()
+      .setMark(options.extentionName, { href: url})
+      .setMeta("preventautohyperlink", true)
+      .run();
+  });
+}
+```
+
+</details>
+
+````ts
 Hyperlink.configure({
   modals: {
     previewHyperlink: (data) => {
@@ -190,14 +288,14 @@ this.editor.getAttributes('link').href
 
 ## Inspiration and Acknowledgment, Let's Connect
 
-Hey, friend! Thanks for your interest in our Hyperlink extension, part of the wonderful world of docs.plus. docs.plus is our passion project, all about making collaboration and knowledge sharing not just simpler, but downright enjoyable.
+Hey there! Thanks so much for taking an interest in our Hyperlink extension, a part of the awesome world of docs.plus. At docs.plus, we're all about making collaboration and knowledge sharing not just simpler, but downright enjoyable!
 
-Here's a fun fact - our extension is a nod to Tiptap's [extension-link](https://github.com/HMarzban/extension-hyperlink/tree/main/packages/extension-hyperlink). We were so inspired by their "headless" approach, we decided to run with it, adding our own spin to make it more user-friendly and packed with versatile features.
+Let us share a little behind-the-scenes story with you. Our extension was inspired by Tiptap's [extension-link](https://github.com/HMarzban/extension-hyperlink/tree/main/packages/extension-hyperlink). We were so impressed by their "headless" approach that we decided to take it further and add our own touch to make it even more user-friendly and versatile.
 
-Although we're not officially affiliated with Tiptap, we believe in giving credit where it's due. Their brilliant work laid the groundwork for our extension and we're truly grateful for that!
+Now, let's be clear, we're not officially affiliated with Tiptap, but we firmly believe in giving credit where it's due. Their brilliant work laid the foundation for our extension, and we're truly grateful for that!
 
-And speaking of gratitude, we're so thankful for folks like you who show interest in our work. If you've got any spark of an idea on how to make this extension even better, or if you're simply curious about Docs.plus, we're here to chat. No formalities, just friendly conversation!
+But enough about us, let's talk about you! We genuinely appreciate your interest in our work. If you have any ideas or suggestions on how we can make this extension even better, or if you're simply curious about Docs.plus, we'd love to chat.
 
-Want to delve deeper into what we're about? Feel free to explore the [docs.plus repository](https://github.com/docs-plus/docs.plus) - it's there for you!
+If you want to dive deeper into what we're all about, feel free to explore the [docs.plus repository](https://github.com/docs-plus/docs.plus) - it's there for you!
 
-Once again, thanks for stopping by. We're excited to see what great things we can create together in this amazing world of open source!
+Once again, thank you for dropping by. We're thrilled to see what incredible things we can create together in this amazing world of open source!

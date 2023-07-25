@@ -39,7 +39,7 @@ export interface HyperlinkOptions {
    */
   modals: {
     previewHyperlink?: ((options: any) => HTMLElement) | null;
-    setHyperlink?: ((options: any) => HTMLElement) | null;
+    setHyperlink?: ((options: any) => void) | null;
   };
   /**
    * A validation function that modifies link verification for the auto linker.
