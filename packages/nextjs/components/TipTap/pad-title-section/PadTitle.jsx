@@ -53,7 +53,7 @@ const PadTitle = ({ docMetadata }) => {
 
   const ProfileSection = ({ user }) => {
     return (
-      <div className="mr-2 ml-5 flex">
+      <div className="mr-2 ml-5 sm:flex hidden">
         {user && (
           <button onClick={openControlCenter}>
             <Avatar width={24} height={24} className="rounded-full shadow-md border w-11 h-11" />
@@ -73,7 +73,9 @@ const PadTitle = ({ docMetadata }) => {
       </div>
       <div className="sm:hidden">
         {isKeyboardOpen ? (
-          <button onTouchStart={btn_blurEditor} className="w-10 h-10 flex align-middle justify-center items-center">
+          <button
+            onTouchStart={btn_blurEditor}
+            className="w-10 h-10 flex align-middle justify-center items-center">
             <Check size="30" />
           </button>
         ) : (
