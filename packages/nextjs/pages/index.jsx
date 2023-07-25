@@ -25,6 +25,7 @@ function TabLayout({ children }) {
 function Home({ hostname }) {
   const user = useUser()
   const { isAuthServiceAvailable } = useEditorStateContext()
+  const isUserSignedIn = user && isAuthServiceAvailable
 
   return (
     <div>
@@ -38,13 +39,13 @@ function Home({ hostname }) {
             <Tab name="deck" className="flex items-center ">
               <DocsPlus size={26} />
             </Tab>
-            {isAuthServiceAvailable && user && <Tab name="documents">Documents</Tab>}
+            {isUserSignedIn && <Tab name="documents">Documents</Tab>}
             {isAuthServiceAvailable && !user && (
               <Tab name="sign-in" className="ml-auto">
                 Sign in
               </Tab>
             )}
-            {isAuthServiceAvailable && user && (
+            {isUserSignedIn && (
               <Tab name="profile" className="ml-auto py-2">
                 <Avatar
                   defaultURI={user?.user_metadata?.avatar_url}
@@ -59,7 +60,7 @@ function Home({ hostname }) {
             <TabLayout name="deck">
               <DeckPanel hostname={hostname} />
             </TabLayout>
-            {isAuthServiceAvailable && user && (
+            {isUserSignedIn && (
               <TabLayout name="documents">
                 <DocumentsPanel />
               </TabLayout>
@@ -69,7 +70,7 @@ function Home({ hostname }) {
                 <SignInPanel />
               </TabLayout>
             )}
-            {isAuthServiceAvailable && user && (
+            {isUserSignedIn && (
               <TabLayout name="profile">
                 <ProfilePanel />
               </TabLayout>

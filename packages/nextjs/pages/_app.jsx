@@ -67,7 +67,9 @@ const Header = () => {
 
 export default function MyApp({ Component, pageProps, initialSession }) {
   const isMobileInitial = pageProps.isMobile || false
-  const [supabaseClient] = useState(() => createPagesBrowserClient())
+  const [supabaseClient] = useState(
+    () => process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && createPagesBrowserClient()
+  )
 
   // Create a new supabase browser client on every first render.
   if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {

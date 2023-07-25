@@ -29,6 +29,7 @@ const ToggleSection = ({ name, className, description, value, checked, onChange 
 
 const GearModal = ({ docMetadata }) => {
   const user = useUser()
+  const { isAuthServiceAvailable, EditorProvider } = useEditorStateContext()
 
   const [indentSetting, setIndentSetting] = useBooleanLocalStorageState('setting.indentHeading', false)
   const [h1SectionBreakSetting, setH1SectionBreakSetting] = useBooleanLocalStorageState(
@@ -36,13 +37,10 @@ const GearModal = ({ docMetadata }) => {
     true
   )
   const [docDescription, setDocDescription] = useState(docMetadata.description)
-
   const { isLoading, isSuccess, mutate } = useUpdateDocMetadata()
   const [tags, setTags] = useState(docMetadata.keywords)
   const [readOnly, setreadOnly] = useState(docMetadata.readOnly || false)
   const [formTargetHandler, setFormTargetHndler] = useState('description')
-
-  const { EditorProvider } = useEditorStateContext()
 
   // Save document description
   const saveDescriptionHandler = (e) => {
@@ -103,6 +101,7 @@ const GearModal = ({ docMetadata }) => {
     return (
       <div className="antialiased  mt-2 border p-2 rounded-md">
         <p className="font-bold">Document Owner: </p>
+
         <div className="flex align-baseline items-center justify-between">
           <div className="mt-1 ml-2">
             <p className="text-sm">
@@ -143,7 +142,7 @@ const GearModal = ({ docMetadata }) => {
     <div className="gearModal nd_modal">
       <p className="font-medium text-base text-gray-400 pb-1">Settings:</p>
       <hr />
-      {docMetadata.ownerProfile && (
+      {docMetadata.ownerProfile && isAuthServiceAvailable && (
         <div>
           <OwnerProfile />
         </div>

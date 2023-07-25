@@ -10,9 +10,11 @@ import Icon from './Icon'
 import FilterModal from './FilterModal'
 import GearModal from './GearModal'
 import { useRouter } from 'next/router'
+import { useEditorStateContext } from '@context/EditorContext'
 
 const Toolbar = ({ editor, docMetadata }) => {
   const router = useRouter()
+  const { isAuthServiceAvailable } = useEditorStateContext()
 
   const addImage = useCallback(() => {
     const url = window.prompt('URL')
@@ -41,7 +43,9 @@ const Toolbar = ({ editor, docMetadata }) => {
   const [totalHeading, setTotalHeading] = useState(0)
 
   useEffect(() => {
-    const selectedHeadingOption = options.find((option) => editor.isActive('contentHeading', { level: option.value }))
+    const selectedHeadingOption = options.find((option) =>
+      editor.isActive('contentHeading', { level: option.value })
+    )
 
     setSelectValue(selectedHeadingOption || options.at(0))
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -123,15 +127,24 @@ const Toolbar = ({ editor, docMetadata }) => {
         <Icon type="Bold" size="10" />
       </ToolbarButton>
 
-      <ToolbarButton onClick={() => editor.chain().focus().toggleItalic().run()} editor={editor} type="italic">
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleItalic().run()}
+        editor={editor}
+        type="italic">
         <Icon type="Italic" size="10" />
       </ToolbarButton>
 
-      <ToolbarButton onClick={() => editor.chain().focus().toggleUnderline().run()} editor={editor} type="underline">
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleUnderline().run()}
+        editor={editor}
+        type="underline">
         <Icon type="Underline" size="10" />
       </ToolbarButton>
 
-      <ToolbarButton onClick={() => editor.chain().focus().toggleStrike().run()} editor={editor} type="strike">
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleStrike().run()}
+        editor={editor}
+        type="strike">
         <Icon type="Stric" size="14" />
       </ToolbarButton>
 
@@ -144,11 +157,17 @@ const Toolbar = ({ editor, docMetadata }) => {
         <Icon type="OrderList" size="16" />
       </ToolbarButton>
 
-      <ToolbarButton onClick={() => editor.chain().focus().toggleBulletList().run()} editor={editor} type="bulletList">
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        editor={editor}
+        type="bulletList">
         <Icon type="BulletList" size="16" />
       </ToolbarButton>
 
-      <ToolbarButton onClick={() => editor.chain().focus().toggleTaskList().run()} editor={editor} type="taskList">
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleTaskList().run()}
+        editor={editor}
+        type="taskList">
         <Icon type="CheckList" size="16" />
       </ToolbarButton>
 
@@ -158,11 +177,17 @@ const Toolbar = ({ editor, docMetadata }) => {
         <ImageBox fill="rgba(0,0,0,.5)" size="14" />
       </button>
 
-      <ToolbarButton onClick={() => editor.chain().focus().setHyperlink().run()} editor={editor} type="hyperlink">
+      <ToolbarButton
+        onClick={() => editor.chain().focus().setHyperlink().run()}
+        editor={editor}
+        type="hyperlink">
         <Link fill="rgba(0,0,0,.7)" size="18" />
       </ToolbarButton>
 
-      <ToolbarButton onClick={() => editor.chain().focus().toggleHighlight().run()} editor={editor} type="highlight">
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleHighlight().run()}
+        editor={editor}
+        type="highlight">
         <Icon type="HighlightMarker" size="14" />
       </ToolbarButton>
 
@@ -182,9 +207,11 @@ const Toolbar = ({ editor, docMetadata }) => {
       </button>
 
       <div className="ml-auto flex align-baseline items-center">
-        <button onClick={openControlCenter}>
-          <Folder fill="rgba(0,0,0,.7)" size="18" />
-        </button>
+        {isAuthServiceAvailable && (
+          <button onClick={openControlCenter}>
+            <Folder fill="rgba(0,0,0,.7)" size="18" />
+          </button>
+        )}
 
         <div className="divided"></div>
 
