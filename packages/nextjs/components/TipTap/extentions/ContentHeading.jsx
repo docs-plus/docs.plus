@@ -1,4 +1,4 @@
-import { Selection, Plugin, TextSelection, PluginKey } from '@tiptap/pm/state'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { Node, mergeAttributes } from '@tiptap/core'
 
@@ -104,7 +104,7 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
           crinkleOpen: !nodeState.crinkleOpen,
           level: currentNode.attrs.level
         })
-        .then((_) => {
+        .then(() => {
           database.toArray().then((data) => {
             localStorage.setItem('headingMap', JSON.stringify(data))
           })
@@ -212,8 +212,7 @@ const HeadingsTitle = Node.create({
     return {
       Backspace: ({ editor }) => {
         const { schema, selection, doc } = this.editor.state
-        const { empty, $anchor, $head, $from, $to, from, to } = selection
-        const { start, end, depth } = $from.blockRange($to)
+        const { $anchor, from } = selection
 
         // current node
         const node = doc.nodeAt(from)

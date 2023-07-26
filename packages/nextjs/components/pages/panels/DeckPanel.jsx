@@ -1,8 +1,8 @@
-import { DocsPlus, GoogleGIcon, Sparkles } from '@icons'
+import { DocsPlus } from '@icons'
 import Button from '../../../components/Button'
 import slugify from 'slugify'
 import { useUser } from '@supabase/auth-helpers-react'
-import { useState, useRef, useContext, useEffect, useCallback } from 'react'
+import { useState, useContext } from 'react'
 import { TabsContext } from '../../../components/Tabs/Tabs'
 import { useEditorStateContext } from '../../../context/EditorContext'
 import InputOverlapLabel from '../../../components/InputOverlapLabel'
@@ -89,7 +89,7 @@ const DeckPanel = ({ hostname }) => {
         <div className="p-5 sm:w-[24rem] w-full border sm:border rounded-md flex flex-col">
           <div className="flex flex-col  text-gray-800">
             <p className="text-lg antialiased mb-8 text-center font-bold">
-              Let's have a collaborative journey!
+              {`Let's have a collaborative journey!`}
             </p>
 
             <button className="px-3 w-full py-2 border rounded" onClick={() => enterToPad('random')}>
@@ -133,7 +133,7 @@ const DeckPanel = ({ hostname }) => {
             {isAuthServiceAvailable && !user && (
               <div>
                 <p className="text-gray-400 text-sm mt-4">
-                  Don't have an account yet?{' '}
+                  {`Don't have an account yet?`}
                   <button
                     className="font-bold text-docsy antialiased"
                     onClick={() => setActiveTab('sign-in')}>

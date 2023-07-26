@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import Button from '../../../../components/Button'
-import { ShieldCheck, Bell, AngleSmallRight, signOutAlt, Exit } from '@icons'
-import { useRouter } from 'next/router'
+import { ShieldCheck, Bell, AngleSmallRight, Exit } from '@icons'
 import { Avatar } from '../../../../components/Avatar'
 import dynamic from 'next/dynamic'
 
@@ -15,7 +14,6 @@ import NotificationsTab from './NotificationsTab'
 import { toast } from 'react-hot-toast'
 
 const ProfilePanel = () => {
-  const router = useRouter()
   const user = useUser()
   const supabaseClient = useSupabaseClient()
   const [loadSignOut, setLoadSignOut] = useState(false)

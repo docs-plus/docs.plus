@@ -1,5 +1,3 @@
-import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from '@tiptap/pm/model'
-
 /**
  *
  * @param {Object} tr  transform object
@@ -12,7 +10,7 @@ export const getPrevHeadingList = (tr, start, from) => {
 
   if (from < start) throw new Error("[Heading]: position is invalid 'from < start'")
   try {
-    tr.doc.nodesBetween(start, from, function (node, pos, parent, index) {
+    tr.doc.nodesBetween(start, from, function (node, pos) {
       if (node.type.name === 'heading') {
         const headingLevel = node.firstChild?.attrs?.level
         const depth = tr.doc.resolve(pos).depth
@@ -29,9 +27,8 @@ export const getPrevHeadingList = (tr, start, from) => {
   } catch (error) {
     console.error('[Heading]: getPrevHeadingList', error, { tr, start, from })
     // return Slice.empty
-  } finally {
-    return titleHMap
   }
+  return titleHMap
 }
 
 /**
@@ -43,7 +40,6 @@ export const getPrevHeadingList = (tr, start, from) => {
  */
 export const getSelectionBlocks = (doc, start, end, includeContentHeading = false, range = false) => {
   const firstHEading = true
-  const prevDepth = 0
   const selectedContents = []
 
   if (range) {
@@ -77,7 +73,7 @@ export const getSelectionBlocks = (doc, start, end, includeContentHeading = fals
     return selectedContents
   }
 
-  doc.nodesBetween(start, end, function (node, pos, parent, index) {
+  doc.nodesBetween(start, end, function (node, pos, parent) {
     if (pos < start) return
 
     if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
@@ -121,7 +117,7 @@ export const getRangeBlocks = (doc, start, end) => {
   let prevDepth = 0
   const selectedContents = []
 
-  doc.nodesBetween(start, end, function (node, pos, parent, index) {
+  doc.nodesBetween(start, end, function (node, pos, parent) {
     if (pos < start) return
 
     if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
@@ -251,7 +247,7 @@ export const getPrevHeadingPos = (doc, startPos, endPos) => {
   let prevHStartPos = 0
   let prevHEndPos = 0
 
-  doc.nodesBetween(startPos, endPos, function (node, pos, parent, index) {
+  doc.nodesBetween(startPos, endPos, function (node, pos) {
     if (node.type.name === 'heading') {
       const depth = doc.resolve(pos).depth
 

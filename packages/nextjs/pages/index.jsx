@@ -84,8 +84,8 @@ function Home({ hostname }) {
 
 export default Home
 
-export async function getServerSideProps({ req, res }) {
+export async function getServerSideProps(context) {
   return {
-    props: { hostname: req?.headers?.host }
+    props: { hostname: context.req?.headers?.host }
   }
 }

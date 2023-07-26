@@ -87,7 +87,7 @@ const ProfileTab = () => {
       }
     }
 
-    const { data, error } = await supabaseClient
+    const { error } = await supabaseClient
       .from('profiles')
       .update({
         full_name: fullName,

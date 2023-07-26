@@ -43,7 +43,7 @@ const GearModal = ({ docMetadata }) => {
   const [formTargetHandler, setFormTargetHndler] = useState('description')
 
   // Save document description
-  const saveDescriptionHandler = (e) => {
+  const saveDescriptionHandler = () => {
     saveDocDescriptionHandler(mutate, docMetadata.documentId, docDescription, tags)
   }
 
@@ -92,11 +92,7 @@ const GearModal = ({ docMetadata }) => {
   }
 
   const OwnerProfile = () => {
-    const { avatar_url, full_name, username, id: userId } = docMetadata.ownerProfile
-    const lastUpdate = Date.now().toString()
-
-    let avatar = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${userId}.png?${lastUpdate}`
-    if (avatar_url) avatar = avatar_url
+    const { full_name, username } = docMetadata.ownerProfile
 
     return (
       <div className="antialiased  mt-2 border p-2 rounded-md">

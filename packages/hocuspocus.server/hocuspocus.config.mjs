@@ -12,7 +12,7 @@ import { SQLite } from '@hocuspocus/extension-sqlite'
 import { Throttle } from '@hocuspocus/extension-throttle'
 import { Redis } from '@hocuspocus/extension-redis'
 import { Logger } from '@hocuspocus/extension-logger'
-import jwt_decode from 'jwt-decode'
+// import jwt_decode from 'jwt-decode'
 
 import { checkEnvBolean } from './utils/index.mjs'
 
@@ -32,7 +32,6 @@ const StoreDocument = new Queue('store documents changes', {
 StoreDocument.process(async function (job, done) {
   const { data } = job
   try {
-    const { documentName, state, context, jwt } = data
     console.time(`Store Data, jobId:${job.id}`)
     // const { id, email } = jwt ? jwt_decode(jwt) : { id: null, email: null }
 

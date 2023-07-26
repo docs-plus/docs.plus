@@ -1,5 +1,5 @@
-import { Slice, Fragment, NodeRange, NodeType, Mark, ContentMatch } from '@tiptap/pm/model'
-import { TextSelection, Selection } from '@tiptap/pm/state'
+import { Slice } from '@tiptap/pm/model'
+import { TextSelection } from '@tiptap/pm/state'
 
 import { getRangeBlocks, getHeadingsBlocksMap, findPrevBlock, getPrevHeadingPos } from './helper'
 
@@ -52,10 +52,9 @@ const extractParagraphsAndHeadings = (clipboardContents, { schema }) => {
 
 const clipboardPast = (slice, editor) => {
   const { state, view } = editor
-  const { schema, selection, doc, tr } = state
-  const { from, to, $anchor } = selection
+  const { selection, doc, tr } = state
+  const { from, to } = selection
 
-  let newPosResolver
   let $from = selection.$from
   let start = $from.pos
 
@@ -97,7 +96,6 @@ const clipboardPast = (slice, editor) => {
         tr.setSelection(newSelection)
 
         // Update the variables accordingly
-        newPosResolver = $nextPos
         $from = newSelection.$from
         start = $from.pos
       }
@@ -111,7 +109,7 @@ const clipboardPast = (slice, editor) => {
   let titleEndPos = titleStartPos + titleNode.content.size
   const contentWrapper = getRangeBlocks(doc, start, titleEndPos)
 
-  let { prevHStartPos, prevHEndPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
+  let { prevHStartPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
 
   const clipboardContentJson = slice.toJSON().content
 

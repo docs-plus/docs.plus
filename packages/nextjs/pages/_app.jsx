@@ -13,7 +13,7 @@ import { EditorStateProvider } from '../context/EditorContext'
 import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs'
 import { SessionContextProvider } from '@supabase/auth-helpers-react'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
 // Create a client
 const queryClient = new QueryClient()

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import { useMutation } from '@tanstack/react-query'
 import { Envelope, AngleSmallLeft, Sparkles } from '@icons'
@@ -40,7 +40,7 @@ const ChangeEmailSection = ({ email, emailError, handleEmailChange, saveNewEmail
   </div>
 )
 
-const SecuritySection = ({ email, profileData, loading, acceptNewEmail, setLoading }) => (
+const SecuritySection = ({ email, loading, acceptNewEmail, setLoading }) => (
   <div className="border-l h-full">
     <TabTitle>Security</TabTitle>
     <TabSection name="Account email" description="The email address associated with your docs.plus account">
@@ -140,7 +140,7 @@ const SecurityTab = () => {
       const redirectPathname = pathname.join('/')
 
       // const { error } = await supabaseClient.from('profiles').update({ email }).eq('id', user.id)
-      const { user, error } = await supabaseClient.auth.updateUser({
+      const { error } = await supabaseClient.auth.updateUser({
         email,
         options: {
           emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT + redirectPathname

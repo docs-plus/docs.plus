@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { useEditorStateContext } from '@context/EditorContext'
 import PadTitle from '@components/TipTap/pad-title-section/PadTitle'
 import FilterModal from '../components/FilterModal'

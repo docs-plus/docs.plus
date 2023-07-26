@@ -3,10 +3,10 @@ import { TextSelection } from '@tiptap/pm/state'
 import { getRangeBlocks, getHeadingsBlocksMap, createThisBlockMap } from './helper'
 
 const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
-  const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
-  const { schema, selection, doc } = state
-  const { $from, $to, $anchor, $cursor, from } = selection
-  const { start, end, depth } = $from.blockRange($to)
+  const { state, tr } = arrg
+  const { selection, doc } = state
+  const { $from, $to, $anchor, from } = selection
+  const { start, depth } = $from.blockRange($to)
 
   console.info('[Heading]: Backward process,  comingLevel < currentHLevel')
 

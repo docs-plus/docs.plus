@@ -5,12 +5,12 @@ import { roundArrow } from 'tippy.js'
 
 type setHyperlinkModalOptions = {
   editor: Editor
-  validate?: (url: string) => boolean
+  validate?: (url: string) => boolean // eslint-disable-line no-unused-vars
   extentionName: string
   attributes: Record<string, any>
 }
 
-let tooltip: Tooltip = undefined
+let tooltip: Tooltip
 
 export default function setHyperlink(options: setHyperlinkModalOptions): void {
   // Create the tooltip instance

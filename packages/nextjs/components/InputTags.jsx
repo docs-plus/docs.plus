@@ -1,6 +1,5 @@
 import { useState, useCallback, useEffect } from 'react'
 import InputOverlapLabel from './InputOverlapLabel'
-import { randstr } from '@utils/index'
 
 const InputTags = ({ label, onChangeTags, defaultTags, placeholder }) => {
   const [input, setInput] = useState('')

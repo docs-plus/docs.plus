@@ -1,8 +1,6 @@
 import Editor from './Editor'
-import { use, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useEditorStateContext } from '@context/EditorContext'
-import { useRouter } from 'next/router'
-import { useUser } from '@supabase/auth-helpers-react'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import { Pencil } from '@icons'
 import ToolbarMobile from './ToolbarMobile'
@@ -11,8 +9,7 @@ import TocModal from '../components/TocModal'
 import useEditorAndProvider from '@hooks/useEditorAndProvider'
 
 const MobileEditor = ({ docMetadata }) => {
-  const { rendering, loading, setLoading, deviceDetect, selectionPos, setSelectionPos } =
-    useEditorStateContext()
+  const { loading, deviceDetect, selectionPos } = useEditorStateContext()
 
   const [showToolbar, setShowToolbar] = useState(false)
 

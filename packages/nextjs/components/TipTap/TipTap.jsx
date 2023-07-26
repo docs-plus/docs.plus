@@ -1,5 +1,3 @@
-import React, { useEffect, useState } from 'react'
-import { useEditor, EditorContent } from '@tiptap/react'
 import { Node } from '@tiptap/core'
 import randomColor from 'randomcolor'
 import { lowlight } from 'lowlight'
@@ -229,17 +227,9 @@ const Editor = ({ provider, spellcheck = false }) => {
   }
 
   return {
-    onCreate: (editor) => {
+    onCreate: () => {
       scrollDown()
     },
-    onUpdate: (editor) => {},
-    onTransaction({ editor, transaction }) {},
-    // onBeforeCreate({ editor }) {
-    // },
-    // onCreate({ editor }) {
-    // },
-    // onBeforeCreate({ editor }) {
-    // },
     editorProps: {
       attributes: {
         spellcheck

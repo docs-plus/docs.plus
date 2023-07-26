@@ -3,10 +3,10 @@ import changeHeadingLevelForward from './changeHeadingLevel-forward'
 import changeHeadingLevelForwardH1 from './changeHeadingLevel-h1'
 
 const changeHeadingLevel = (arrg, attributes) => {
-  const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
-  const { schema, selection, doc } = state
-  const { $from, $to, $anchor, $cursor } = selection
-  const { start, end, depth } = $from.blockRange($to)
+  const { state } = arrg
+  const { selection } = state
+  const { $from, $to } = selection
+  const { start } = $from.blockRange($to)
 
   const commingLevel = attributes.level
   const currentHLevel = $from.doc.nodeAt(start).attrs.level

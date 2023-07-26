@@ -10,10 +10,10 @@ import {
 } from './helper'
 
 const changeHeadingLevelForward = (arrg, attributes) => {
-  const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
-  const { schema, selection, doc } = state
-  const { $from, $to, $anchor, $cursor, $head, from } = selection
-  const { start, end, depth } = $from.blockRange($to)
+  const { state, tr } = arrg
+  const { selection, doc } = state
+  const { $from, $to, $anchor, from } = selection
+  const { start, depth } = $from.blockRange($to)
 
   console.info('[Heading]: change heading level forwarding')
 
@@ -33,7 +33,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
   const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== 'heading')
   const contentWrapperHeadings = contentWrapper.filter((x) => x.type === 'heading')
 
-  const { prevHStartPos, prevHEndPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
+  const { prevHStartPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
 
   let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
 

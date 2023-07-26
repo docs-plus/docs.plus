@@ -1,7 +1,6 @@
 import Toolbar from '@components/TipTap/toolbar/Toolbar'
 import Editor from '../components/Editor'
 import TOC from '../components/Toc'
-import { useEditorStateContext } from '@context/EditorContext'
 import useEditorAndProvider from '@hooks/useEditorAndProvider'
 
 const scrollHeadingSelection = (event) => {
