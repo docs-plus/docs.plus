@@ -6,7 +6,7 @@ import {
   createThisBlockMap,
   getPrevHeadingList,
   getPrevHeadingPos,
-  findPrevBlock,
+  findPrevBlock
 } from './helper'
 
 const changeHeadingLevelForward = (arrg, attributes) => {
@@ -20,7 +20,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
   const commingLevel = attributes.level
   const caretSelectionTextBlock = {
     type: 'text',
-    text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' ',
+    text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' '
   }
 
   const block = createThisBlockMap($from, depth, caretSelectionTextBlock)
@@ -30,22 +30,12 @@ const changeHeadingLevelForward = (arrg, attributes) => {
   const contentWrapper = getRangeBlocks(doc, start, titleEndPos)
   const titleHMap = getHeadingsBlocksMap(doc, titleStartPos, titleEndPos)
 
-  const contentWrapperParagraphs = contentWrapper.filter(
-    (x) => x.type !== 'heading'
-  )
-  const contentWrapperHeadings = contentWrapper.filter(
-    (x) => x.type === 'heading'
-  )
+  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== 'heading')
+  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === 'heading')
 
-  const { prevHStartPos, prevHEndPos } = getPrevHeadingPos(
-    doc,
-    titleStartPos,
-    start - 1
-  )
+  const { prevHStartPos, prevHEndPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
 
-  let mapHPost = titleHMap.filter(
-    (x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos
-  )
+  let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
 
   let { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
 
@@ -58,14 +48,14 @@ const changeHeadingLevelForward = (arrg, attributes) => {
         type: 'contentHeading',
         content: [block.headingContent],
         attrs: {
-          level: attributes.level,
-        },
+          level: attributes.level
+        }
       },
       {
         type: 'contentWrapper',
-        content: contentWrapperParagraphs,
-      },
-    ],
+        content: contentWrapperParagraphs
+      }
+    ]
   }
 
   const node = state.schema.nodeFromJSON(jsonNode)
@@ -74,8 +64,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
   tr.delete(start - 1, titleEndPos)
   // then add the new heading with the content
   const insertPos =
-    (contentWrapperHeadings.length === 0 ? prevBlock.endBlockPos : start - 1) -
-    (shouldNested ? 2 : 0)
+    (contentWrapperHeadings.length === 0 ? prevBlock.endBlockPos : start - 1) - (shouldNested ? 2 : 0)
 
   tr.insert(tr.mapping.map(insertPos), node)
 
@@ -95,9 +84,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
     )
 
     mapHPost = mapHPost.filter(
-      (x) =>
-        x.startBlockPos < heading.startBlockPos &&
-        x.startBlockPos >= prevHStartPos
+      (x) => x.startBlockPos < heading.startBlockPos && x.startBlockPos >= prevHStartPos
     )
 
     const { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)

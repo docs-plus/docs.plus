@@ -3,7 +3,7 @@ import {
   findChildren,
   combineTransactionSteps,
   getChangedRanges,
-  findChildrenInRange,
+  findChildrenInRange
 } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Slice, Fragment } from '@tiptap/pm/model'
@@ -19,9 +19,7 @@ function removeDuplicates(array, by = JSON.stringify) {
   return array.filter((item) => {
     const key = by(item)
 
-    return Object.prototype.hasOwnProperty.call(seen, key)
-      ? false
-      : (seen[key] = true)
+    return Object.prototype.hasOwnProperty.call(seen, key) ? false : (seen[key] = true)
   })
 }
 
@@ -45,7 +43,7 @@ const UniqueID = Extension.create({
       attributeName: 'id',
       types: [],
       generateID: () => v4(),
-      filterTransaction: null,
+      filterTransaction: null
     }
   },
   addGlobalAttributes() {
@@ -55,21 +53,19 @@ const UniqueID = Extension.create({
         attributes: {
           [this.options.attributeName]: {
             default: null,
-            parseHTML: (element) =>
-              element.getAttribute(`data-${this.options.attributeName}`),
+            parseHTML: (element) => element.getAttribute(`data-${this.options.attributeName}`),
             renderHTML: (attributes) => {
               if (!attributes[this.options.attributeName]) {
                 return {}
               }
 
               return {
-                [`data-${this.options.attributeName}`]:
-                  attributes[this.options.attributeName],
+                [`data-${this.options.attributeName}`]: attributes[this.options.attributeName]
               }
-            },
-          },
-        },
-      },
+            }
+          }
+        }
+      }
     ]
   },
   // check initial content for missing ids
@@ -79,26 +75,20 @@ const UniqueID = Extension.create({
     // This leads to empty block nodes.
     // See: https://github.com/ueberdosis/tiptap/issues/2400
     // console.log(this.editor.extensionManager.extensions.filter(x => x.type === 'extension'))
-    if (
-      this.editor.extensionManager.extensions.find(
-        (extension) => extension.name === 'collaboration'
-      )
-    ) {
+    if (this.editor.extensionManager.extensions.find((extension) => extension.name === 'collaboration')) {
       return
     }
     const { view, state } = this.editor
     const { tr, doc } = state
     const { types, attributeName, generateID } = this.options
     const nodesWithoutId = findChildren(doc, (node) => {
-      return (
-        types.includes(node.type.name) && node.attrs[attributeName] === null
-      )
+      return types.includes(node.type.name) && node.attrs[attributeName] === null
     })
 
     nodesWithoutId.forEach(({ node, pos }) => {
       tr.setNodeMarkup(pos, undefined, {
         ...node.attrs,
-        [attributeName]: generateID(),
+        [attributeName]: generateID()
       })
     })
     tr.setMeta('addToHistory', false)
@@ -113,15 +103,13 @@ const UniqueID = Extension.create({
         key: new PluginKey('uniqueID'),
         appendTransaction: (transactions, oldState, newState) => {
           const docChanges =
-            transactions.some((transaction) => transaction.docChanged) &&
-            !oldState.doc.eq(newState.doc)
+            transactions.some((transaction) => transaction.docChanged) && !oldState.doc.eq(newState.doc)
           const filterTransactions =
             this.options.filterTransaction &&
             transactions.some((tr) => {
               let _a, _b
 
-              return !((_b = (_a = this.options).filterTransaction) === null ||
-              _b === void 0
+              return !((_b = (_a = this.options).filterTransaction) === null || _b === void 0
                 ? void 0
                 : _b.call(_a, tr))
             })
@@ -138,16 +126,10 @@ const UniqueID = Extension.create({
           const changes = getChangedRanges(transform)
 
           changes.forEach(({ newRange }) => {
-            const newNodes = findChildrenInRange(
-              newState.doc,
-              newRange,
-              (node) => {
-                return types.includes(node.type.name)
-              }
-            )
-            const newIds = newNodes
-              .map(({ node }) => node.attrs[attributeName])
-              .filter((id) => id !== null)
+            const newNodes = findChildrenInRange(newState.doc, newRange, (node) => {
+              return types.includes(node.type.name)
+            })
+            const newIds = newNodes.map(({ node }) => node.attrs[attributeName]).filter((id) => id !== null)
             const duplicatedNewIds = findDuplicates(newIds)
 
             newNodes.forEach(({ node, pos }) => {
@@ -157,14 +139,12 @@ const UniqueID = Extension.create({
               // this helps to prevent adding new ids to the same node
               // if the node changed multiple times within one transaction
               const id =
-                (_a = tr.doc.nodeAt(pos)) === null || _a === void 0
-                  ? void 0
-                  : _a.attrs[attributeName]
+                (_a = tr.doc.nodeAt(pos)) === null || _a === void 0 ? void 0 : _a.attrs[attributeName]
 
               if (id === null) {
                 tr.setNodeMarkup(pos, undefined, {
                   ...node.attrs,
-                  [attributeName]: generateID(),
+                  [attributeName]: generateID()
                 })
 
                 return
@@ -176,7 +156,7 @@ const UniqueID = Extension.create({
               if (newNode) {
                 tr.setNodeMarkup(pos, undefined, {
                   ...node.attrs,
-                  [attributeName]: generateID(),
+                  [attributeName]: generateID()
                 })
               }
             })
@@ -193,9 +173,7 @@ const UniqueID = Extension.create({
             let _a
 
             dragSourceElement = (
-              (_a = view.dom.parentElement) === null || _a === void 0
-                ? void 0
-                : _a.contains(event.target)
+              (_a = view.dom.parentElement) === null || _a === void 0 ? void 0 : _a.contains(event.target)
             )
               ? view.dom.parentElement
               : null
@@ -206,7 +184,7 @@ const UniqueID = Extension.create({
           return {
             destroy() {
               window.removeEventListener('dragstart', handleDragstart)
-            },
+            }
           }
         },
         props: {
@@ -220,9 +198,7 @@ const UniqueID = Extension.create({
 
               if (
                 dragSourceElement !== view.dom.parentElement ||
-                ((_a = event.dataTransfer) === null || _a === void 0
-                  ? void 0
-                  : _a.effectAllowed) === 'copy'
+                ((_a = event.dataTransfer) === null || _a === void 0 ? void 0 : _a.effectAllowed) === 'copy'
               ) {
                 dragSourceElement = null
                 transformPasted = true
@@ -235,7 +211,7 @@ const UniqueID = Extension.create({
               transformPasted = true
 
               return false
-            },
+            }
           },
           // we’ll remove ids for every pasted node
           // so we can create a new one within `appendTransaction`
@@ -264,7 +240,7 @@ const UniqueID = Extension.create({
                 const nodeWithoutId = node.type.create(
                   {
                     ...node.attrs,
-                    [attributeName]: null,
+                    [attributeName]: null
                   },
                   removeId(node.content),
                   node.marks
@@ -279,16 +255,12 @@ const UniqueID = Extension.create({
             // reset check
             transformPasted = false
 
-            return new Slice(
-              removeId(slice.content),
-              slice.openStart,
-              slice.openEnd
-            )
-          },
-        },
-      }),
+            return new Slice(removeId(slice.content), slice.openStart, slice.openEnd)
+          }
+        }
+      })
     ]
-  },
+  }
 })
 
 export { UniqueID, UniqueID as default }

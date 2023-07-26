@@ -85,7 +85,9 @@ const AvatarSection = ({ profileData }) => {
   }, [supabaseClient, user])
 
   return (
-    <div className="avatar-uploader mt-4 w-32 h-32 relative rounded-xl border drop-shadow-sm " onClick={handleClick}>
+    <div
+      className="avatar-uploader mt-4 w-32 h-32 relative rounded-xl border drop-shadow-sm "
+      onClick={handleClick}>
       <div
         className={` ${
           !uploading ? 'hover:opacity-50 opacity-0' : 'opacity-80 bg-white'

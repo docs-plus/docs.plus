@@ -43,7 +43,9 @@ const DocumentTable = ({ data }) => {
                     className="w-8 h-8 rounded-full drop-shadow-md mr-1"
                   />
                 ) : (
-                  <p className="text-sm overflow-hidden truncate antialiased overflow-ellipsis">unknown user</p>
+                  <p className="text-sm overflow-hidden truncate antialiased overflow-ellipsis">
+                    unknown user
+                  </p>
                 )}
                 <p className="text-sm overflow-hidden truncate antialiased overflow-ellipsis">
                   {row.user?.full_name || row.user?.username || row.user?.email}

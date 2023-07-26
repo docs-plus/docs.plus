@@ -34,7 +34,10 @@ const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, prof
           return
         }
 
-        const { data, error } = await supabaseClient.from(PROFILES).select('username').eq('username', userName)
+        const { data, error } = await supabaseClient
+          .from(PROFILES)
+          .select('username')
+          .eq('username', userName)
 
         if (error) {
           console.error(error)

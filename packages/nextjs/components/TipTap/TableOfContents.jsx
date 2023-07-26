@@ -16,16 +16,12 @@ const TableOfContent = ({ editor, className }) => {
     editorDoc?.descendants((node, _pos, _parent, _index) => {
       if (node.type.name === 'contentHeading') {
         let headingId = _parent.attrs?.id || node?.attrs.id || '1'
-        let headingSection = document.querySelector(
-          `.ProseMirror .heading[data-id="${headingId}"]`
-        )
+        let headingSection = document.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
         let offsetTop = getOffsetTop(headingSection)
 
         if (offsetTop === 0) {
           headingId = '1'
-          headingSection = document.querySelector(
-            `.ProseMirror .heading[data-id="${headingId}"]`
-          )
+          headingSection = document.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
           offsetTop = getOffsetTop(headingSection)
         }
 
@@ -34,7 +30,7 @@ const TableOfContent = ({ editor, className }) => {
           text: node?.textContent,
           id: headingId,
           open: headingSection?.classList.contains('opend'),
-          offsetTop: offsetTop,
+          offsetTop: offsetTop
         })
       }
     })
@@ -49,10 +45,7 @@ const TableOfContent = ({ editor, className }) => {
     let trTimer
 
     editor.on('transaction', (tr, state) => {
-      if (
-        tr.transaction.meta?.foldAndunfold ||
-        tr.transaction.meta?.renderTOC
-      ) {
+      if (tr.transaction.meta?.foldAndunfold || tr.transaction.meta?.renderTOC) {
         trTimer = setTimeout(() => {
           handleUpdate(tr)
         }, 1000)
@@ -86,9 +79,7 @@ const TableOfContent = ({ editor, className }) => {
   const scroll2Header = (e) => {
     e.preventDefault()
     let id = e.target.getAttribute('data-id')
-    const offsetParent = e.target
-      .closest('.toc__item')
-      .getAttribute('data-offsettop')
+    const offsetParent = e.target.closest('.toc__item').getAttribute('data-offsettop')
 
     if (offsetParent === '0') id = '1'
 
@@ -100,18 +91,14 @@ const TableOfContent = ({ editor, className }) => {
   }
 
   const toggleSection = (item) => {
-    document
-      .querySelector(
-        `.ProseMirror .heading[data-id="${item.id}"] .buttonWrapper .btnFold`
-      )
-      ?.click()
+    document.querySelector(`.ProseMirror .heading[data-id="${item.id}"] .buttonWrapper .btnFold`)?.click()
 
     setItems((x) =>
       items.map((i) => {
         if (i.id === item.id) {
           return {
             ...i,
-            open: !i.open,
+            open: !i.open
           }
         }
 
@@ -136,16 +123,12 @@ const TableOfContent = ({ editor, className }) => {
         <div
           key={item.id}
           className={`
-            toc__item toc__item--${item.level} text-ellipsis overflow-hidden ${
-            item.open ? '' : 'closed'
-          }
+            toc__item toc__item--${item.level} text-ellipsis overflow-hidden ${item.open ? '' : 'closed'}
           `}
           data-id={item.id}
           data-offsettop={item.offsetTop}>
           <span>
-            <span
-              className="btnFold"
-              onClick={() => toggleSection(item)}></span>
+            <span className="btnFold" onClick={() => toggleSection(item)}></span>
             <a
               className="text-black text-ellipsis overflow-hidden"
               data-id={item.id}
@@ -156,9 +139,7 @@ const TableOfContent = ({ editor, className }) => {
           </span>
 
           {children.length > 0 && (
-            <div className={`${item.open ? '' : '!hidden'}`}>
-              {renderToc(children)}
-            </div>
+            <div className={`${item.open ? '' : '!hidden'}`}>{renderToc(children)}</div>
           )}
         </div>
       )
