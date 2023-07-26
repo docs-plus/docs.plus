@@ -253,7 +253,7 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
           editor: this.editor,
           validate: this.options.validate,
           view: this.editor.view,
-          modals: this.options.modals,
+          modal: this.options.modals.previewHyperlink,
         })
       );
     }
