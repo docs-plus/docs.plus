@@ -3,7 +3,11 @@ import ContentLoader from 'react-content-loader'
 const DocumentWithPictureLoader = (props) => {
   return (
     <div {...props}>
-      <ContentLoader backgroundColor="#f3f3f3" width={'100%'} height={140} uniqueKey="document-simple-loader5">
+      <ContentLoader
+        backgroundColor="#f3f3f3"
+        width={'100%'}
+        height={140}
+        uniqueKey="document-simple-loader5">
         <rect x="0" y="0" rx="4" ry="4" width="54%" height="29" />
         <rect x="0" y="48" rx="4" ry="4" width="12%" height="15" />
         <rect x="17%" y="48" rx="4" ry="4" width="32%" height="15" />

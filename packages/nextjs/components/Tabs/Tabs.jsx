@@ -1,11 +1,4 @@
-import React, {
-  useState,
-  useContext,
-  createContext,
-  useRef,
-  useEffect,
-  useCallback,
-} from 'react'
+import React, { useState, useContext, createContext, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import styles from './Tabs.module.css'
 
@@ -13,12 +6,7 @@ import styles from './Tabs.module.css'
 const TabsContext = createContext()
 
 // The Tabs component acts as the container for all tab-related components.
-function Tabs({
-  children,
-  defaultActiveTab = null,
-  putNameAsHashToURI = true,
-  ...props
-}) {
+function Tabs({ children, defaultActiveTab = null, putNameAsHashToURI = true, ...props }) {
   // Initialize the active tab state with defaultActiveTab
   const [activeTab, setActiveTab] = useState(defaultActiveTab)
   const router = useRouter()
@@ -34,7 +22,7 @@ function Tabs({
     setActiveTab,
     defaultActiveTab,
     putNameAsHashToURI,
-    changeTab,
+    changeTab
   }
 
   // Provide tab states and setter function to child components.
@@ -52,23 +40,18 @@ function TabList({ children, ...props }) {
   const tabsElement = useRef(null)
   const [highlightStyle, setHighlightStyle] = useState({})
   const router = useRouter()
-  const { activeTab, setActiveTab, defaultActiveTab, putNameAsHashToURI } =
-    useContext(TabsContext)
+  const { activeTab, setActiveTab, defaultActiveTab, putNameAsHashToURI } = useContext(TabsContext)
 
   // On component mount and update, update the active tab based on the URL hash.
   useEffect(() => {
     if (!putNameAsHashToURI) return setActiveTab(defaultActiveTab)
     // Get the panel name from the URL hash.
-    const panel = new URLSearchParams(
-      window.location.hash.replace('#', '')
-    ).get('panel')
+    const panel = new URLSearchParams(window.location.hash.replace('#', '')).get('panel')
 
     if (!panel) return setActiveTab(defaultActiveTab)
 
     // Collect all the panel names from the children (tab buttons).
-    const panelNames = React.Children.toArray(children).map(
-      (child) => child.props.name
-    )
+    const panelNames = React.Children.toArray(children).map((child) => child.props.name)
 
     // If the panel name exists in the child panel names, update the active tab.
     if (panelNames.includes(panel)) {
@@ -88,7 +71,7 @@ function TabList({ children, ...props }) {
 
       setHighlightStyle({
         left: `${rect.left - containerRect.left}px`,
-        width: `${rect.width}px`,
+        width: `${rect.width}px`
       })
     }
   }, [activeTab])
@@ -116,10 +99,7 @@ function TabList({ children, ...props }) {
   }, [tabsElement, updateHighlight])
 
   return (
-    <nav
-      ref={tabsElement}
-      className={`relative flex border-b border-gray-200 ${styles.tabList}`}
-      {...props}>
+    <nav ref={tabsElement} className={`relative flex border-b border-gray-200 ${styles.tabList}`} {...props}>
       <div
         className={`absolute bottom-1 rounded-md bg-docsy h-1 transition-all duration-300 ${styles.highlight}`}
         style={highlightStyle}
@@ -132,8 +112,7 @@ function TabList({ children, ...props }) {
 // The Tab component represents an individual tab button.
 function Tab({ children, name, ...props }) {
   const router = useRouter()
-  const { activeTab, setActiveTab, putNameAsHashToURI } =
-    useContext(TabsContext)
+  const { activeTab, setActiveTab, putNameAsHashToURI } = useContext(TabsContext)
   const isActive = activeTab === name
 
   const onClick = () => {
@@ -146,17 +125,10 @@ function Tab({ children, name, ...props }) {
   }`
 
   // Append defaultClassName to existing className or assign it if not present.
-  props.className = props.className
-    ? `${props.className} ${defaultClassName}`
-    : defaultClassName
+  props.className = props.className ? `${props.className} ${defaultClassName}` : defaultClassName
 
   return (
-    <button
-      data-active={isActive}
-      id={`btnTab_${name}`}
-      onClick={onClick}
-      name={name}
-      {...props}>
+    <button data-active={isActive} id={`btnTab_${name}`} onClick={onClick} name={name} {...props}>
       {children}
     </button>
   )
@@ -167,9 +139,7 @@ function TabPanels({ children, ...props }) {
   const { activeTab } = useContext(TabsContext)
 
   // Filter children based on activeTab name
-  const activeChild = React.Children.toArray(children).find(
-    (child) => child.props.name === activeTab
-  )
+  const activeChild = React.Children.toArray(children).find((child) => child.props.name === activeTab)
 
   return (
     <div className={`p-4 ${styles.tabPanels}`} {...props}>

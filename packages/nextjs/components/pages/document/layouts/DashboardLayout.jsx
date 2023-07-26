@@ -7,7 +7,8 @@ export default function DashboardLayout({ children }) {
       <div className="flex w-full flex-wrap md:flex-no-wrap border-t mt-8">
         <div className="w-full md:w-3/4 p-2 pl-0">
           <p className=" font-normal text-sm text-gray-700 leading-8 text-center sm:text-left">
-            Start exploring our <span className="font-bold antialiased underline">open-source</span> project on
+            Start exploring our <span className="font-bold antialiased underline">open-source</span> project
+            on
             <a href="https://github.com/docs-plus/docs.plus" rel="_blanck">
               {' '}
               GitHub

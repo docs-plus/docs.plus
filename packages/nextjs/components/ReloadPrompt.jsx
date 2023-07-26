@@ -12,12 +12,7 @@ const PwaUpdater = () => {
   }
 
   useEffect(() => {
-    if (
-      typeof window !== 'undefined' &&
-      'serviceWorker' in navigator &&
-      window.workbox !== undefined
-    )
-      return
+    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.workbox !== undefined) return
 
     // add event listeners to handle any of PWA lifecycle event
     // https://developers.google.com/web/tools/workbox/reference-docs/latest/module-workbox-window.Workbox#events
@@ -45,11 +40,7 @@ const PwaUpdater = () => {
       // `event.wasWaitingBeforeRegister` will be false if this is the first time the updated service worker is waiting.
       // When `event.wasWaitingBeforeRegister` is true, a previously updated service worker is still waiting.
       // You may want to customize the UI prompt accordingly.
-      if (
-        confirm(
-          'A newer version of this web app is available, reload to update?'
-        )
-      ) {
+      if (confirm('A newer version of this web app is available, reload to update?')) {
         wb.addEventListener('controlling', (event) => {
           //   window.location.reload()
           console.info('new version is available')

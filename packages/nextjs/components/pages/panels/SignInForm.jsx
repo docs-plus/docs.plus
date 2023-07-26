@@ -104,7 +104,9 @@ const SingInForm = ({ children, ...props }) => {
     <div {...props}>
       <div className={`${!emailSent && 'border  p-5'} rounded-md`}>
         <div className={`${emailSent ? 'hidden' : 'block '}`}>
-          <p className="text-base antialiased text-center font-bold">Your journey with Docs.plus begins now!</p>
+          <p className="text-base antialiased text-center font-bold">
+            Your journey with Docs.plus begins now!
+          </p>
           <div className="flex flex-col items-center justify-center mt-6 ">
             <Button
               className="px-3 flex align-baseline justify-center w-full py-2 border rounded"

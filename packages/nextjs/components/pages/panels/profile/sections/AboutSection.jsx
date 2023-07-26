@@ -1,14 +1,7 @@
 import InputOverlapLabel from '../../../../InputOverlapLabel'
 import TextAreaOvelapLabel from '../../../../TextAreaOvelapLabel'
 
-const AboutSection = ({
-  bio,
-  setBio,
-  company,
-  setCompany,
-  jobTitle,
-  setJobTitle,
-}) => {
+const AboutSection = ({ bio, setBio, company, setCompany, jobTitle, setJobTitle }) => {
   return (
     <div className="flex flex-col">
       <TextAreaOvelapLabel

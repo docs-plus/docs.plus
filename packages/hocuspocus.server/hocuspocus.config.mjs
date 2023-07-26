@@ -166,7 +166,7 @@ export default () => {
     port: process.env.HOCUSPOCUS_PORT,
     extensions: configureExtensions(),
     debounce: 1000,
-    async onStateless({ payload, document, connection }) {
+    async onStateless ({ payload, document, connection }) {
       document.broadcastStateless(payload)
     }
   }

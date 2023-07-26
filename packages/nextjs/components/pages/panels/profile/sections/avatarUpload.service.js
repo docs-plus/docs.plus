@@ -31,7 +31,10 @@ const removeAvatarFromStorage = async (supabaseClient, bucketName, filePath) => 
 
 const updateAvatarInDB = async (supabaseClient, tableName, avatarUrl, userId) => {
   try {
-    const { error, data } = await supabaseClient.from(tableName).update({ avatar_url: avatarUrl }).match({ id: userId })
+    const { error, data } = await supabaseClient
+      .from(tableName)
+      .update({ avatar_url: avatarUrl })
+      .match({ id: userId })
     if (error) {
       toast.error('Failed to update avatar in database.')
       throw error

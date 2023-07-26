@@ -24,7 +24,9 @@ const InputOverlapLabel = forwardRef(
     }, [])
 
     const containerClasses = twMerge(
-      `relative border subpixel-antialiased rounded-md flex align-middle justify-start ${!Icon ? 'pl-2' : ''}`,
+      `relative border subpixel-antialiased rounded-md flex align-middle justify-start ${
+        !Icon ? 'pl-2' : ''
+      }`,
       className
     )
 

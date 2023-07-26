@@ -11,7 +11,7 @@ const Placeholder = Extension.create({
       placeholder: 'Write something …',
       showOnlyWhenEditable: true,
       showOnlyCurrent: true,
-      includeChildren: false,
+      includeChildren: false
     }
   },
   addProseMirrorPlugins() {
@@ -19,8 +19,7 @@ const Placeholder = Extension.create({
       new Plugin({
         props: {
           decorations: ({ doc, selection }) => {
-            const active =
-              this.editor.isEditable || !this.options.showOnlyWhenEditable
+            const active = this.editor.isEditable || !this.options.showOnlyWhenEditable
             const { anchor } = selection
             const decorations = []
 
@@ -45,9 +44,9 @@ const Placeholder = Extension.create({
                           editor: this.editor,
                           node,
                           pos,
-                          hasAnchor,
+                          hasAnchor
                         })
-                      : this.options.placeholder,
+                      : this.options.placeholder
                 })
 
                 decorations.push(decoration)
@@ -57,11 +56,11 @@ const Placeholder = Extension.create({
             })
 
             return DecorationSet.create(doc, decorations)
-          },
-        },
-      }),
+          }
+        }
+      })
     ]
-  },
+  }
 })
 
 export { Placeholder, Placeholder as default }

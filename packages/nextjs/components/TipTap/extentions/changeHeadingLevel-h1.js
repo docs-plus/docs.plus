@@ -5,7 +5,7 @@ import {
   createThisBlockMap,
   getHeadingsBlocksMap,
   getRangeBlocks,
-  getPrevHeadingPos,
+  getPrevHeadingPos
 } from './helper'
 
 const changeHeadingLevelH1 = (arrg, attributes) => {
@@ -19,7 +19,7 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   const commingLevel = attributes.level
   const caretSelectionTextBlock = {
     type: 'text',
-    text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' ',
+    text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' '
   }
 
   const block = createThisBlockMap($from, depth, caretSelectionTextBlock)
@@ -28,21 +28,17 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   let titleStartPos = 0
   let titleEndPos = 0
 
-  doc.nodesBetween(
-    $from.start(0),
-    start - 1,
-    function (node, pos, parent, index) {
-      if (node.type.name === 'heading') {
-        const headingLevel = node.firstChild?.attrs?.level
+  doc.nodesBetween($from.start(0), start - 1, function (node, pos, parent, index) {
+    if (node.type.name === 'heading') {
+      const headingLevel = node.firstChild?.attrs?.level
 
-        if (headingLevel === currentHLevel) {
-          titleStartPos = pos
-          // INFO: I need the pos of last content in contentWrapper
-          titleEndPos = pos + node.content.size
-        }
+      if (headingLevel === currentHLevel) {
+        titleStartPos = pos
+        // INFO: I need the pos of last content in contentWrapper
+        titleEndPos = pos + node.content.size
       }
     }
-  )
+  })
 
   const contentWrapper = getRangeBlocks(
     doc,
@@ -51,34 +47,21 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   )
   const titleHMap = getHeadingsBlocksMap(doc, titleStartPos, titleEndPos)
 
-  const contentWrapperParagraphs = contentWrapper.filter(
-    (x) => x.type !== 'heading'
-  )
-  const contentWrapperHeadings = contentWrapper.filter(
-    (x) => x.type === 'heading'
-  )
+  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== 'heading')
+  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === 'heading')
 
-  const { prevHStartPos, prevHEndPos } = getPrevHeadingPos(
-    doc,
-    titleStartPos,
-    start - 1
-  )
+  const { prevHStartPos, prevHEndPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
 
-  let mapHPost = titleHMap.filter(
-    (x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos
-  )
+  let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
 
   let shouldNested = false
 
   // FIXME: this is heavy! I need to find better solotion with less loop
   const prevBlockEqual = mapHPost.findLast((x) => x.le === commingLevel)
   const prevBlockGratherFromFirst = mapHPost.find((x) => x.le >= commingLevel)
-  const prevBlockGratherFromLast = mapHPost.findLast(
-    (x) => x.le <= commingLevel
-  )
+  const prevBlockGratherFromLast = mapHPost.findLast((x) => x.le <= commingLevel)
   const lastbloc = mapHPost.at(-1)
-  let prevBlock =
-    prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
+  let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
 
   if (lastbloc.le <= commingLevel) prevBlock = lastbloc
   shouldNested = prevBlock.le < commingLevel
@@ -90,22 +73,19 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
         type: 'contentHeading',
         content: [block.headingContent],
         attrs: {
-          level: attributes.level,
-        },
+          level: attributes.level
+        }
       },
       {
         type: 'contentWrapper',
-        content: contentWrapperParagraphs,
-      },
-    ],
+        content: contentWrapperParagraphs
+      }
+    ]
   }
   const node = state.schema.nodeFromJSON(jsonNode)
 
   // remove content from the current positon to the end of the heading
-  tr.delete(
-    start - 1,
-    $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size
-  )
+  tr.delete(start - 1, $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size)
 
   // then add the new heading with the content
   const insertPos = prevBlock.endBlockPos - (shouldNested ? 2 : 0)
@@ -123,27 +103,20 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
     mapHPost = getPrevHeadingList(
       tr,
       mapHPost.at(0).startBlockPos,
-      mapHPost.at(0).startBlockPos +
-        doc.nodeAt(mapHPost.at(0).startBlockPos).nodeSize +
-        2
+      mapHPost.at(0).startBlockPos + doc.nodeAt(mapHPost.at(0).startBlockPos).nodeSize + 2
     )
 
     mapHPost = mapHPost.filter(
-      (x) =>
-        x.startBlockPos < heading.startBlockPos &&
-        x.startBlockPos >= prevHStartPos
+      (x) => x.startBlockPos < heading.startBlockPos && x.startBlockPos >= prevHStartPos
     )
 
     const node = state.schema.nodeFromJSON(heading)
 
     const prevBlockEqual = mapHPost.findLast((x) => x.le === heading.le)
     const prevBlockGratherFromFirst = mapHPost.find((x) => x.le >= heading.le)
-    const prevBlockGratherFromLast = mapHPost.findLast(
-      (x) => x.le <= heading.le
-    )
+    const prevBlockGratherFromLast = mapHPost.findLast((x) => x.le <= heading.le)
     const lastbloc = mapHPost.at(-1)
-    let prevBlock =
-      prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
+    let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
 
     if (lastbloc.le <= heading.le) prevBlock = lastbloc
     shouldNested = prevBlock.le < heading.le

@@ -1,7 +1,13 @@
 import { TextSelection } from '@tiptap/pm/state'
 
 import changeHeadingLevelBackward from './changeHeadingLevel-backward'
-import { getPrevHeadingList, createThisBlockMap, getHeadingsBlocksMap, getRangeBlocks, findPrevBlock } from './helper'
+import {
+  getPrevHeadingList,
+  createThisBlockMap,
+  getHeadingsBlocksMap,
+  getRangeBlocks,
+  findPrevBlock
+} from './helper'
 
 const wrapContentWithHeading = (arrg, attributes) => {
   const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
@@ -17,7 +23,8 @@ const wrapContentWithHeading = (arrg, attributes) => {
   const block = createThisBlockMap($from, depth, caretSelectionTextBlock)
 
   // TODO: check this statment for comment, (block.edge.start !== -1)
-  const parentLevel = block.edge.start !== -1 && doc?.nodeAt(block.edge.start)?.content?.content[0]?.attrs.level
+  const parentLevel =
+    block.edge.start !== -1 && doc?.nodeAt(block.edge.start)?.content?.content[0]?.attrs.level
 
   // Create a new heading with the same level
   // in this case all content below must cut and wrapp with the new heading
@@ -94,7 +101,11 @@ const wrapContentWithHeading = (arrg, attributes) => {
     let mapHPost = titleHMap
 
     for (const heading of contentWrapperHeadings) {
-      mapHPost = getPrevHeadingList(tr, mapHPost.at(0).startBlockPos, tr.mapping.map(mapHPost.at(0).endBlockPos))
+      mapHPost = getPrevHeadingList(
+        tr,
+        mapHPost.at(0).startBlockPos,
+        tr.mapping.map(mapHPost.at(0).endBlockPos)
+      )
 
       mapHPost = mapHPost.filter(
         (x) => x.startBlockPos < heading.startBlockPos && x.startBlockPos >= block.parent.start

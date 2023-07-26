@@ -5,14 +5,11 @@ const SignInPanel = () => {
     <>
       <div className="sm:w-1/2 p-2 w-full  mt-2 sm:mt-0  ">
         <h4 className="font-bold text-3xl  antialiased">
-          Embrace the Power of Collaboration with{' '}
-          <span className="text-docsy">Docs.plus!</span>
+          Embrace the Power of Collaboration with <span className="text-docsy">Docs.plus!</span>
         </h4>
         <p></p>
 
-        <p className="font-bold mt-1 text-xl text-gray-400 antialiased">
-          Connect, share, learn
-        </p>
+        <p className="font-bold mt-1 text-xl text-gray-400 antialiased">Connect, share, learn</p>
         <p></p>
         <p className="text-base mt-4 antialiased">
           <span className="text-docsy font-bold">– </span>

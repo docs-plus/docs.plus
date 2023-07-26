@@ -23,7 +23,10 @@ const DocumentsPanel = () => {
     return response.data.data
   }
 
-  const { isLoading, isError, data, error } = useQuery(['documents', currentPage, searchQuery], fetchDocuments)
+  const { isLoading, isError, data, error } = useQuery(
+    ['documents', currentPage, searchQuery],
+    fetchDocuments
+  )
 
   const debouncedSearch = useCallback(
     _.debounce((value) => {

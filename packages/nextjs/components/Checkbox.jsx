@@ -23,7 +23,9 @@ const Checkbox = ({
         <label
           disabled={disabled}
           htmlFor={id}
-          className={`ml-2 text-sm font-medium dark:text-gray-300 ${checked ? 'text-gray-500' : 'text-gray-900'}`}>
+          className={`ml-2 text-sm font-medium dark:text-gray-300 ${
+            checked ? 'text-gray-500' : 'text-gray-900'
+          }`}>
           {label}
         </label>
       )}

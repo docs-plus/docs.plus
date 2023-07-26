@@ -11,7 +11,8 @@ import TocModal from '../components/TocModal'
 import useEditorAndProvider from '@hooks/useEditorAndProvider'
 
 const MobileEditor = ({ docMetadata }) => {
-  const { rendering, loading, setLoading, deviceDetect, selectionPos, setSelectionPos } = useEditorStateContext()
+  const { rendering, loading, setLoading, deviceDetect, selectionPos, setSelectionPos } =
+    useEditorStateContext()
 
   const [showToolbar, setShowToolbar] = useState(false)
 
