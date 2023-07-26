@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
-import Button from '../../../../components/Button'
+import Button from '../../../Button'
 import { ShieldCheck, Bell, AngleSmallRight, Exit } from '@icons'
-import { Avatar } from '../../../../components/Avatar'
+import { Avatar } from '../../../Avatar'
 import dynamic from 'next/dynamic'
 
 const ProfileTab = dynamic(() => import('./ProfileTab'), {

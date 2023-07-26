@@ -62,7 +62,7 @@ cd .\packages\hocuspocus.server\
 npm run dev:ws
 
 # PowerShell Window 3
-cd .\packages\nextjs\
+cd .\packages\webapp\
 npm run dev
 ```
 

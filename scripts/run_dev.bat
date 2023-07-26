@@ -78,7 +78,7 @@ start /B npm run dev
 start /B npm run dev:ws
 
 REM Change directory to the frontend package
-cd ..\nextjs
+cd ..\webapp
 
 REM Run the frontend server
 echo Running npm run dev for the frontend

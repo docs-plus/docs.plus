@@ -36,7 +36,7 @@ jobs:
    # Update these paths if your repository structure is different.
    - name: Copy .env files
      run: |
-      cp ../../../.env packages/nextjs
+      cp ../../../.env packages/webapp
       cp ../../../.env packages/hocuspocus.server
    - name: Build monorepo packages
      run: yarn build

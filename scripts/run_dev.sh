@@ -87,7 +87,7 @@ echo "Running npm run dev and npm run dev:ws"
 # sleep 10
 
 # Change directory to the frontend package
-cd ../nextjs
+cd ../webapp
 
 # Run the frontend server
 echo "Running npm run dev for the frontend"
