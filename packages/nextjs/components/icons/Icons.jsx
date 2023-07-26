@@ -156,7 +156,7 @@ export const AddComment = ({ size = 18, fill = 'black' }) => {
 // prettier-ignore
 export const Video = ({ size = 18, fill = 'black' }) => {
   return (
-    <svg viewBox="0 0 20 16" width={size} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 20 16" fill={fill} width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M16,6.48V2a2,2,0,0,0-2-2H2A2,2,0,0,0,0,2V14a2,2,0,0,0,2,2H14a2,2,0,0,0,2-2V9.52l4,4V2.5Zm-2-.79V14H2V2H14Z" /></svg>
   )
 }
@@ -164,7 +164,7 @@ export const Video = ({ size = 18, fill = 'black' }) => {
 // prettier-ignore
 export const ImageBox = ({ size = 18, fill = 'black' }) => {
   return (
-    <svg viewBox="0 0 18 18" width={size} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 18 18" fill={fill} width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M16,0H2A2,2,0,0,0,0,2V16a2,2,0,0,0,2,2H16a2,2,0,0,0,2-2V2A2,2,0,0,0,16,0Zm0,16H2V2H16ZM11,9,8,12.72,6,10,3,14H15Z" />
     </svg>
   )
@@ -173,7 +173,7 @@ export const ImageBox = ({ size = 18, fill = 'black' }) => {
 // prettier-ignore
 export const Gear = ({ size = 18, fill = 'black' }) => {
   return (
-    <svg viewBox="0 0 18 18" width={size} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 18 18" fill={fill} width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M10.66,18H7.33A1.29,1.29,0,0,1,6,16.88l-.24-1.66a6.16,6.16,0,0,1-.71-.4l-1.62.63a1.33,1.33,0,0,1-1.63-.57L.18,12.1A1.29,1.29,0,0,1,.5,10.45l1.38-1c0-.13,0-.26,0-.4s0-.28,0-.41l-1.37-1A1.26,1.26,0,0,1,.18,5.89l1.67-2.8a1.3,1.3,0,0,1,1.61-.55l1.62.64c.24-.15.47-.28.71-.4L6,1.1A1.3,1.3,0,0,1,7.32,0h3.33A1.29,1.29,0,0,1,12,1.12l.24,1.66a7.14,7.14,0,0,1,.71.4l1.62-.63a1.35,1.35,0,0,1,1.64.57l1.65,2.79a1.26,1.26,0,0,1-.32,1.65l-1.37,1c0,.13,0,.26,0,.4s0,.28,0,.41l1.37,1a1.27,1.27,0,0,1,.33,1.64l-1.67,2.83a1.32,1.32,0,0,1-1.62.55l-1.62-.63c-.23.15-.47.28-.7.4L12,16.93A1.31,1.31,0,0,1,10.66,18ZM7.77,16h2.47l.33-2.16.47-.19a5.54,5.54,0,0,0,1.2-.66l.4-.29,2.13.81,1.23-2-1.81-1.34.06-.48A4.77,4.77,0,0,0,14.3,9a4.65,4.65,0,0,0-.05-.66l-.06-.48L16,6.52l-1.24-2-2.14.81-.4-.3A5.32,5.32,0,0,0,11,4.35l-.46-.19L10.24,2H7.77L7.44,4.16,7,4.34A5.81,5.81,0,0,0,5.77,5l-.4.28-2.13-.8L2,6.51,3.81,7.85l-.06.48A5,5,0,0,0,3.7,9a4.77,4.77,0,0,0,0,.66l.06.48L2,11.48l1.23,2,2.14-.81.4.3A5,5,0,0,0,7,13.65l.47.19ZM9,12A3,3,0,1,0,6,9,3,3,0,0,0,9,12Z" />
     </svg>
   )
@@ -182,7 +182,7 @@ export const Gear = ({ size = 18, fill = 'black' }) => {
 // prettier-ignore
 export const OfflineCloud = ({ size = 18, fill = 'black', className }) => {
   return (
-    <svg className={className} viewBox="0 0 18 15.19" width={size} xmlns="http://www.w3.org/2000/svg">
+    <svg className={className} fill={fill} viewBox="0 0 18 15.19" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M15,15.19l-2.12-2.13H4A3.86,3.86,0,0,1,1.17,11.9,3.87,3.87,0,0,1,0,9.06,3.86,3.86,0,0,1,1.08,6.33,3.93,3.93,0,0,1,3.73,5.08c0-.15.09-.3.14-.44A2.75,2.75,0,0,1,4,4.23L.88,1.06,1.94,0,16.06,14.12ZM4,11.56h7.38L5.21,5.4c-.06.18-.11.36-.16.55L4.9,6.5l-1.07.08a2.55,2.55,0,0,0-1.66.78,2.37,2.37,0,0,0-.67,1.7,2.38,2.38,0,0,0,.73,1.77A2.41,2.41,0,0,0,4,11.56Zm12.5.88-1.1-1.09a2,2,0,0,0,.79-.73,1.88,1.88,0,0,0,.31-1.06,1.9,1.9,0,0,0-.58-1.41,1.93,1.93,0,0,0-1.42-.59H13.12L13,6.21a4,4,0,0,0-1.29-2.6A3.89,3.89,0,0,0,9,2.56a3.54,3.54,0,0,0-1,.13A4.61,4.61,0,0,0,7.1,3L6,2A6.24,6.24,0,0,1,7.43,1.3,5,5,0,0,1,9,1.06a5.34,5.34,0,0,1,3.73,1.45A5.36,5.36,0,0,1,14.5,6.06,3.48,3.48,0,0,1,18,9.56a3.42,3.42,0,0,1-.41,1.65A3.49,3.49,0,0,1,16.5,12.44Z" />
     </svg>
   )
@@ -191,7 +191,7 @@ export const OfflineCloud = ({ size = 18, fill = 'black', className }) => {
 // prettier-ignore
 export const OnlineCloud = ({ size = 18, fill = 'black', className }) => {
   return (
-    <svg className={className} viewBox="0 0 20 14" width={size} xmlns="http://www.w3.org/2000/svg">
+    <svg className={className} fill={fill} viewBox="0 0 20 14" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M15.5,14h-10C2.5,14,0,11.5,0,8.5c0-2.8,2.1-5.1,4.8-5.4C5.8,1.2,7.8,0,10,0c3,0,5.4,2.2,5.9,5 C18.2,5.2,20,7.2,20,9.5C20,12,18,14,15.5,14z M10,2C8.4,2,7,2.9,6.3,4.4L6.1,5L5.4,5C3.5,5,2,6.6,2,8.5C2,10.4,3.6,12,5.5,12h10 c1.4,0,2.5-1.1,2.5-2.5S16.9,7,15.5,7H14V6C14,3.8,12.2,2,10,2z M11.6,5L8.9,7.7L7.4,6.2L6,7.6l2.9,2.9L13,6.4L11.6,5z" fill={fill} />
     </svg>
   )
@@ -211,7 +211,7 @@ export const ArrowLeft = ({ size = 18, fill = 'black' }) => {
 // prettier-ignore
 export const Doc = ({ size = 18, fill = 'black', className }) => {
   return (
-    <svg className={className} viewBox="0 0 26 36" width={size} xmlns="http://www.w3.org/2000/svg" >
+    <svg className={className} fill={fill} viewBox="0 0 26 36" width={size} xmlns="http://www.w3.org/2000/svg" >
       <path d="M2.5,0H17l9,9V33.5A2.5,2.5,0,0,1,23.5,36H2.5A2.5,2.5,0,0,1,0,33.5V2.5A2.5,2.5,0,0,1,2.5,0Z" fill="#4285f4" />
       <path d="M0,33a2.5,2.5,0,0,0,2.5,2.5h21A2.5,2.5,0,0,0,26,33v.5A2.5,2.5,0,0,1,23.5,36H2.5A2.5,2.5,0,0,1,0,33.5Z" fill='#1a237e' fillOpacity="0.20000000298023224" />
       <path d="M2.5,0H17V.5H2.5A2.5,2.5,0,0,0,0,3V2.5A2.5,2.5,0,0,1,2.5,0Z" fill='#fff' fillOpacity="0.20000000298023224" />
@@ -242,7 +242,7 @@ export const SearchDoc = ({ size = 18, fill = 'black', className }) => {
 // prettier-ignore
 export const DocsPlus = ({ size = 18, fill = 'black', className }) => {
   return (
-    <svg className={className} viewBox="0 0 1954.69 2508.26" width={size} xmlns="http://www.w3.org/2000/svg">
+    <svg className={className} fill={fill} viewBox="0 0 1954.69 2508.26" width={size} xmlns="http://www.w3.org/2000/svg">
       <defs>
         <linearGradient gradientTransform="matrix(1, 0, 0, -1, 0, 2611.91)" gradientUnits="userSpaceOnUse" id="a" x1="1437.7" x2="1437.7" y1="1849.25" y2="1293.48">
           <stop offset="0" stopColor="#1a237e" stopOpacity="0.2" />
@@ -274,7 +274,7 @@ export const DocsPlus = ({ size = 18, fill = 'black', className }) => {
 // prettier-ignore
 export const PrivateShare = ({ size = 18, fill = 'black' }) => {
   return (
-    <svg viewBox="0 0 21 21" width={size} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 21 21" fill={fill} width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M13.83,11.83a2.58,2.58,0,1,0-2.58-2.58A2.59,2.59,0,0,0,13.83,11.83Zm0,1.29c-2.58,0-5.16.91-5.16,2.07V17H19V15.19C19,14,16.42,13.12,13.83,13.12Z" fill='fill:#fff' isolation="isolate" opacity="0.5" />
       <path d="M9,10A3,3,0,1,0,6,7,3,3,0,0,0,9,10Zm0,2c-2,0-6,1-6,3v2H15V15C15,13,11,12,9,12Z" fill="#fff" />
       <rect fill="#4387fd" fillOpacity="0" height="21" width="21" />
@@ -285,7 +285,7 @@ export const PrivateShare = ({ size = 18, fill = 'black' }) => {
 // prettier-ignore
 export const Hamburger = ({ size = 24, fill = 'black', className }) => {
   return (
-    <svg className={className} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
+    <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M6.5 6C6.5 6.27614 6.27614 6.5 6 6.5C5.72386 6.5 5.5 6.27614 5.5 6C5.5 5.72386 5.72386 5.5 6 5.5C6.27614 5.5 6.5 5.72386 6.5 6Z" stroke="#141414" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M6.5 12C6.5 12.2761 6.27614 12.5 6 12.5C5.72386 12.5 5.5 12.2761 5.5 12C5.5 11.7239 5.72386 11.5 6 11.5C6.27614 11.5 6.5 11.7239 6.5 12Z" stroke="#141414" strokeLinecap="round" strokeLinejoin="round" />
       <path d="M6.5 18C6.5 18.2761 6.27614 18.5 6 18.5C5.72386 18.5 5.5 18.2761 5.5 18C5.5 17.7239 5.72386 17.5 6 17.5C6.27614 17.5 6.5 17.7239 6.5 18Z" stroke="#141414" strokeLinecap="round" strokeLinejoin="round" />
@@ -327,7 +327,7 @@ export const Check = ({ size = 24, fill = 'transparent', className }) => {
 // prettier-ignore
 export const OrderListMobile = ({ size = 24, fill = 'none', className }) => {
   return (
-    <svg className={className} viewBox="0 0 25 24" width={size} xmlns="http://www.w3.org/2000/svg">
+    <svg className={className} fill={fill} viewBox="0 0 25 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M3 16H5V16.5H4V17.5H5V18H3V19H6V15H3V16ZM4 9H5V5H3V6H4V9ZM3 11H4.8L3 13.1V14H6V13H4.2L6 10.9V10H3V11ZM8 6V8H22V6H8ZM8 18H22V16H8V18ZM8 13H22V11H8V13Z" fill="black" />
     </svg>
   )

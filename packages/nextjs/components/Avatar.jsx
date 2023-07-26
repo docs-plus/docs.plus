@@ -7,7 +7,7 @@ import PubSub from 'pubsub-js'
 const AVATAR_URL_CHANNEL_NAME = 'updateAvatarURL'
 
 const useAvatar = () => {
-  const { id: userId, user_metadata } = useUser()
+  const { id: userId } = useUser()
   const lastUpdate = Date.now().toString()
 
   const bucketAddress = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${userId}.png?${lastUpdate}`
@@ -16,9 +16,9 @@ const useAvatar = () => {
   return { avatarUrl, setAvatarUrl }
 }
 
-const Avatar = ({ defaultURI, height = 40, width = 40, ...props }) => {
+const Avatar = ({ height = 40, width = 40, ...props }) => {
   const { avatarUrl, setAvatarUrl } = useAvatar()
-  const { id: userId, user_metadata } = useUser()
+  const { user_metadata } = useUser()
 
   useEffect(() => {
     PubSub.subscribe(AVATAR_URL_CHANNEL_NAME, (msg, newURL) => {

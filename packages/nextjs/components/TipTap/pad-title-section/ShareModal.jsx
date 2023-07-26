@@ -28,7 +28,7 @@ const ShareModal = ({ docMetadata }) => {
     }
   }
 
-  const copyToClipboard = async (e) => {
+  const copyToClipboard = async () => {
     await navigator.clipboard.writeText(href)
     toast.success('Link copied to clipboard!')
   }

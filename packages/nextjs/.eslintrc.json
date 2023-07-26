@@ -23,6 +23,7 @@
     "rules": {
       "prettier/prettier": "warn",
       "no-console": "off",
+      "react-hooks/exhaustive-deps": "warn",
       "no-restricted-syntax": ["error",
           {
             "selector": "CallExpression[callee.object.name='console'][callee.property.name!=/^(info|error)$/]",

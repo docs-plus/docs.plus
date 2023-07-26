@@ -7,7 +7,7 @@ import toast from 'react-hot-toast'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import useProfileData from '@hooks/useProfileData'
 
-const ToggleSection = ({ name, description, value, checked, onChange, children }) => {
+const ToggleSection = ({ name, description, value, checked, onChange }) => {
   return (
     <div className="flex flex-col p-4 antialiased ">
       <p className="text-lg font-bold">{name}</p>
@@ -45,7 +45,7 @@ const NotificationsTab = () => {
   const changePushNotifications = async (e) => {
     setPushNotifications(e.target.checked)
 
-    const { data, error } = await supabaseClient
+    const { error } = await supabaseClient
       .from('profiles')
       .update({ push_notifications: e.target.checked })
       .eq('id', user.id)
@@ -60,7 +60,7 @@ const NotificationsTab = () => {
   const changeEmailNotifications = async (e) => {
     setEmailNotifications(e.target.checked)
 
-    const { data, error } = await supabaseClient
+    const { error } = await supabaseClient
       .from('profiles')
       .update({ email_notifications: e.target.checked })
       .eq('id', user.id)
@@ -76,7 +76,7 @@ const NotificationsTab = () => {
   const changeNotificationNewActivity = async (e) => {
     setNotificationNewActivity(e.target.checked)
 
-    const { data, error } = await supabaseClient
+    const { error } = await supabaseClient
       .from('profiles')
       .update({ email_notification_new_activity: e.target.checked })
       .eq('id', user.id)

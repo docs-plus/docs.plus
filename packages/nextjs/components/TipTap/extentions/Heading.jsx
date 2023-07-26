@@ -37,7 +37,7 @@ const Blockquote = Node.create({
   },
 
   addNodeView() {
-    return ({ editor, getPos, node, HTMLAttributes }) => {
+    return ({ getPos, node, HTMLAttributes }) => {
       const dom = document.createElement('div')
 
       const headingId = getPos() === 0 ? '1' : !node.attrs.id ? '1' : HTMLAttributes['data-id']
@@ -79,11 +79,7 @@ const Blockquote = Node.create({
   parseHTML() {
     return [{ tag: 'div' }]
   },
-  renderHTML({ node, HTMLAttributes }) {
-    // console.log(node, "coming render html")
-    const hasLevel = this.options.levels.includes(node.attrs.level)
-    const level = hasLevel ? node.attrs.level : this.options.levels[0]
-
+  renderHTML({ HTMLAttributes }) {
     return ['div', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0]
   },
   addCommands() {
@@ -92,9 +88,9 @@ const Blockquote = Node.create({
         return changeHeading2paragraphs(arrg)
       },
       wrapBlock: (attributes) => (arrg) => {
-        const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
-        const { schema, selection, doc } = state
-        const { $from, $to, $anchor, $cursor } = selection
+        const { dispatch, state } = arrg
+        const { schema, selection } = state
+        const { $anchor } = selection
 
         // TODO: change heading level
         // First get the content of heading
@@ -109,10 +105,10 @@ const Blockquote = Node.create({
   },
   addKeyboardShortcuts() {
     return {
-      Backspace: (data) => {},
-      Enter: ({ editor, chain }) => {
-        const { state, view } = editor
-        const { schema, selection, doc, tr } = state
+      Backspace: () => {},
+      Enter: ({ editor }) => {
+        const { state } = editor
+        const { schema, selection } = state
         const { $head, $anchor, $from, $to } = selection
 
         // TODO: limited just for contentHeading, contentWrapper
@@ -120,7 +116,7 @@ const Blockquote = Node.create({
           return false
         }
 
-        const { start, end, depth } = $from.blockRange($to)
+        const { end, depth } = $from.blockRange($to)
 
         // if a user Enter in the contentHeading block,
         // should go to the next block, which is contentWrapper
@@ -214,9 +210,9 @@ const Blockquote = Node.create({
         props: {
           // INFO: Div turn confuses the schema service;
           // INFO:if there is a div in the clipboard, the docsplus schema will not serialize as a must.
-          transformPastedHTML: (html, event) => html.replace(/div/g, 'span'),
+          transformPastedHTML: (html) => html.replace(/div/g, 'span'),
           transformPasted: (slice) => clipboardPast(slice, this.editor),
-          transformCopied: (slice, view) => {
+          transformCopied: () => {
             // Can be used to transform copied or cut content before it is serialized to the clipboard.
             const { selection, doc } = this.editor.state
             const { from, to } = selection

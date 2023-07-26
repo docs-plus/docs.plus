@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import { Avatar, AVATAR_URL_CHANNEL_NAME } from '../../../../Avatar'
-import { Camera, Spinner, GoogleGIcon, CircleUser } from '@icons'
+import { Camera, Spinner, CircleUser } from '@icons'
 import { toast } from 'react-hot-toast'
 import PubSub from 'pubsub-js'
 

@@ -38,7 +38,6 @@ const Toolbar = ({ editor, docMetadata }) => {
     { value: 10, label: 'Heading 10' }
   ]
 
-  const [selectedOption, setSelectedOption] = useState(options[0])
   const [selectValue, setSelectValue] = useState(options[0])
   const [totalHeading, setTotalHeading] = useState(0)
 
@@ -52,20 +51,19 @@ const Toolbar = ({ editor, docMetadata }) => {
   }, [editor.isActive('contentHeading')])
 
   const onchangeValue = (e) => {
-    setSelectedOption(e)
     const value = e.value
 
     if (value === 0) editor.chain().focus().normalText().run()
     else editor.chain().focus().wrapBlock({ level: +value }).run()
   }
 
-  const toggleSettingModal = (e) => {
+  const toggleSettingModal = () => {
     hideAllModals('gearModal')
 
     const gearModal = document.querySelector('.gearModal')
     gearModal.classList.toggle('active')
   }
-  const toggleFilterModal = (e) => {
+  const toggleFilterModal = () => {
     hideAllModals('filterModal')
 
     const filterModal = document.querySelector('.filterModal')

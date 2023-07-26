@@ -1,14 +1,13 @@
-import { DocsPlus, GoogleGIcon, Sparkles, OpenEnvelope } from '@icons'
-import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
-import { useState, useRef, useContext, useEffect, useCallback } from 'react'
+import { GoogleGIcon, Sparkles, OpenEnvelope } from '@icons'
+import { useSupabaseClient } from '@supabase/auth-helpers-react'
+import { useState } from 'react'
 import Button from '../../../components/Button'
 import { useMutation } from '@tanstack/react-query'
 import InputOverlapLabel from '../../../components/InputOverlapLabel'
 import { toast } from 'react-hot-toast'
 
-const SingInForm = ({ children, ...props }) => {
+const SingInForm = ({ ...props }) => {
   const supabaseClient = useSupabaseClient()
-  const user = useUser()
 
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
   const [emailError, setEmailError] = useState('')
@@ -24,7 +23,7 @@ const SingInForm = ({ children, ...props }) => {
     const redirectPathname = pathname.join('/')
 
     setGoogleLoading(true)
-    const { data, error } = await supabaseClient.auth.signInWithOAuth({
+    const { error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
       options: {
         redirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT + redirectPathname
@@ -37,7 +36,7 @@ const SingInForm = ({ children, ...props }) => {
     // setGoogleLoading(false)
   }
 
-  const { mutateAsync, isLoading, data } = useMutation(
+  const { mutateAsync, isLoading } = useMutation(
     (email) =>
       fetch('/api/validate-email', {
         method: 'POST',
@@ -83,7 +82,7 @@ const SingInForm = ({ children, ...props }) => {
     pathname.shift()
     const redirectPathname = pathname.join('/')
 
-    const { data, error } = await supabaseClient.auth.signInWithOtp({
+    const { error } = await supabaseClient.auth.signInWithOtp({
       email: magicLinkEmail,
       options: {
         emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT + redirectPathname
@@ -143,7 +142,7 @@ const SingInForm = ({ children, ...props }) => {
                 <span className="mr-2">
                   <Sparkles fill="#888" size={21} />
                 </span>
-                We'll email you a magic link for a password-free sign in
+                {`We'll email you a magic link for a password-free sign in`}
               </p>
             </form>
           </div>

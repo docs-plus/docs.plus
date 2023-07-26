@@ -1,7 +1,6 @@
-import { Node, mergeAttributes, findParentNode, defaultBlockAt } from '@tiptap/core'
-import { Selection, Plugin, TextSelection, PluginKey } from '@tiptap/pm/state'
+import { Node, mergeAttributes } from '@tiptap/core'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
-import PubSub from 'pubsub-js'
 import { getNodeState } from './helper'
 
 function extractContentWrapperBlocks(doc) {
@@ -52,7 +51,7 @@ function createCrinkleNode(prob) {
 
   foldEl.addEventListener('mouseenter', (e) => {
     const heading = e.target.closest('.heading')
-    const level = heading.getAttribute('level')
+    // const level = heading.getAttribute('level')
     // if (level !== '1') return
 
     const classList = heading.classList
@@ -74,7 +73,7 @@ function createCrinkleNode(prob) {
 
   foldEl.addEventListener('mouseleave', (e) => {
     const heading = e.target.closest('.heading')
-    const level = heading.getAttribute('level')
+    // const level = heading.getAttribute('level')
 
     const classList = heading.classList
     if (classList.contains('opening') || classList.contains('closing')) return
@@ -115,7 +114,7 @@ function buildDecorations(doc) {
 function expandElement(elem, collapseClass, headingId, open) {
   const startHeight = window.getComputedStyle(elem).height
   const headingSection = document.querySelector(`.heading[data-id="${headingId}"]`)
-  const headingLevel = headingSection.getAttribute('level')
+  // const headingLevel = headingSection.getAttribute('level')
   const wrapperBlock = headingSection.querySelector('.foldWrapper')
 
   elem.style.height = ''
@@ -206,7 +205,7 @@ const HeadingsContent = Node.create({
     ]
   },
   addNodeView() {
-    return ({ editor, getPos, node, HTMLAttributes }) => {
+    return ({ editor, getPos, HTMLAttributes }) => {
       const dom = document.createElement('div')
 
       // get parent node
@@ -263,10 +262,6 @@ const HeadingsContent = Node.create({
           editor.view.dispatch(tr)
 
           expandElement(section, 'collapsed', detail.headingId, !nodeState.crinkleOpen)
-          // PubSub.publish('toggleHeadingsContent', {
-          //   headingId: detail.headingId,
-          //   crinkleOpen: !nodeState.crinkleOpen
-          // })
         }
       })
 
@@ -290,7 +285,7 @@ const HeadingsContent = Node.create({
   },
   addKeyboardShortcuts() {
     return {
-      Backspace: ({ editor }) => {
+      Backspace: () => {
         const { schema, selection } = this.editor.state
         const { $anchor, $from } = selection
         const blockRange = $from.blockRange($from)
@@ -340,7 +335,7 @@ const HeadingsContent = Node.create({
         }
       },
       // Escape node on double enter
-      Enter: ({ editor }) => {}
+      Enter: () => {}
     }
   },
   addProseMirrorPlugins() {

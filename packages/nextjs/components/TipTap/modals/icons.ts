@@ -27,11 +27,3 @@ export const Pencil = ({ size = 24, fill = 'rgb(104, 81, 255)' }: IconProps = {}
         </svg>
     `
 }
-
-export const AngleUp = ({ size = 32, fill = 'rgb(104, 81, 255)' }: IconProps = {}) => {
-  return `
-        <svg fill=${fill} viewBox="0 0 24 24" width=${size} xmlns="http://www.w3.org/2000/svg">
-            <path d="M17.293,15.207,12,9.914,6.707,15.207,5.293,13.793,10.586,8.5a2,2,0,0,1,2.828,0l5.293,5.293Z"/>
-        </svg>
-    `
-}

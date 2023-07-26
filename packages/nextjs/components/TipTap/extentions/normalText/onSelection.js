@@ -24,23 +24,26 @@ const processHeadings = (state, tr, mapHPost, contentWrapperHeadings) => {
 }
 
 const onSelection = (arrg) => {
-  const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
-  const { schema, selection, doc } = state
-  const { $from, $to, $anchor, $cursor, $head, from, to } = selection
-  const { start, end, depth } = $from.blockRange($to)
+  const { state, tr } = arrg
+  const { selection, doc } = state
+  const { $from, $to, $anchor, from, to } = selection
+  const { start } = $from.blockRange($to)
 
   const currentHLevel = $from.parent.attrs.level
   const titleNode = $from.doc.nodeAt($from.start(1) - 1)
   let titleStartPos = $from.start(1) - 1
   let titleEndPos = titleStartPos + titleNode.content.size
   const prevHStartPos = 0
-  const prevHEndPos = 0
 
   const selectionFirstLinePos = $from.pos - $from.parentOffset
 
   const selectedContents = getSelectionBlocks(doc, selectionFirstLinePos - 1, to)
-  const lastHeadingInSelection = selectedContents.findLast((x) => x.hasOwnProperty('attrs'))
-  const lastHeadingIndex = selectedContents.findLastIndex((x) => x.hasOwnProperty('attrs'))
+  const lastHeadingInSelection = selectedContents.findLast((x) =>
+    Object.prototype.hasOwnProperty.call(x, 'attrs')
+  )
+  const lastHeadingIndex = selectedContents.findLastIndex((x) =>
+    Object.prototype.hasOwnProperty.call(x, 'attrs')
+  )
 
   // on selection we have Heading level 1
   if (titleEndPos < to) {
@@ -66,7 +69,7 @@ const onSelection = (arrg) => {
   )
 
   if (!containLevelOneHeading) {
-    doc.nodesBetween(titleStartPos, start - 1, function (node, pos, parent, index) {
+    doc.nodesBetween(titleStartPos, start - 1, function (node, pos) {
       if (node.type.name === 'heading') {
         const headingLevel = node.firstChild?.attrs?.level
 
@@ -81,7 +84,7 @@ const onSelection = (arrg) => {
     const backspaceAction = doc.nodeAt(from) === null && $anchor.parentOffset === 0
     tr.delete(backspaceAction ? start - 1 : start - 1, titleEndPos)
 
-    doc.nodesBetween($from.start(0), start - 1, function (node, pos, parent, index) {
+    doc.nodesBetween($from.start(0), start - 1, function (node, pos) {
       if (node.type.name === 'heading') {
         const headingLevel = node.firstChild?.attrs?.level
 

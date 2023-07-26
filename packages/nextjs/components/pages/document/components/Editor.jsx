@@ -4,7 +4,7 @@ import DocumentSimpleLoader from '@components/DocumentSimpleLoader'
 import { useEditorStateContext } from '@context/EditorContext'
 
 const Editor = ({ editor }) => {
-  const { loading, applyingFilters } = useEditorStateContext()
+  const { loading } = useEditorStateContext()
   if (loading || !editor) {
     return (
       <div className={`ProseMirror tipta__editor loading mb-12 border-t-0 pt-8 sm:mb-0 sm:p-8 px-6 `}>

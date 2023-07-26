@@ -10,9 +10,9 @@ import {
 } from './helper'
 
 const wrapContentWithHeading = (arrg, attributes) => {
-  const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
-  const { schema, selection, doc } = state
-  const { $from, $to, $anchor, $cursor, to } = selection
+  const { state, tr } = arrg
+  const { selection, doc } = state
+  const { $from, $to, $anchor } = selection
   const { start, end, depth } = $from.blockRange($to)
 
   const cominglevel = attributes.level

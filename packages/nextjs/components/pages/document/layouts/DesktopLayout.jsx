@@ -24,7 +24,7 @@ const DesktopLayout = ({ docMetadata }) => {
   }
 
   useEffect(() => {
-    PubSub.subscribe('toggleControlCenter', (msg, data) => {
+    PubSub.subscribe('toggleControlCenter', () => {
       setDisplayControlCenter(!displayControlCenter)
     })
 

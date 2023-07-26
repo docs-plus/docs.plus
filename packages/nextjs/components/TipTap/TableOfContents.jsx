@@ -9,11 +9,11 @@ const TableOfContent = ({ editor, className }) => {
   const [items, setItems] = useState([])
   const { applyingFilters } = useEditorStateContext()
 
-  const handleUpdate = useCallback((doc, data) => {
+  const handleUpdate = useCallback((doc) => {
     const headings = []
     const editorDoc = doc.editor?.state?.doc || doc.state.doc
 
-    editorDoc?.descendants((node, _pos, _parent, _index) => {
+    editorDoc?.descendants((node, _pos, _parent) => {
       if (node.type.name === 'contentHeading') {
         let headingId = _parent.attrs?.id || node?.attrs.id || '1'
         let headingSection = document.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
@@ -44,7 +44,7 @@ const TableOfContent = ({ editor, className }) => {
     editor.on('update', handleUpdate)
     let trTimer
 
-    editor.on('transaction', (tr, state) => {
+    editor.on('transaction', (tr) => {
       if (tr.transaction.meta?.foldAndunfold || tr.transaction.meta?.renderTOC) {
         trTimer = setTimeout(() => {
           handleUpdate(tr)
@@ -93,7 +93,7 @@ const TableOfContent = ({ editor, className }) => {
   const toggleSection = (item) => {
     document.querySelector(`.ProseMirror .heading[data-id="${item.id}"] .buttonWrapper .btnFold`)?.click()
 
-    setItems((x) =>
+    setItems(() =>
       items.map((i) => {
         if (i.id === item.id) {
           return {

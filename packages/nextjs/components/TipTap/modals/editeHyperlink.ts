@@ -1,4 +1,4 @@
-import { Editor, Node } from '@tiptap/core'
+import { Editor } from '@tiptap/core'
 import { EditorView } from '@tiptap/pm/view'
 import { roundArrow } from 'tippy.js'
 import { find } from 'linkifyjs'
@@ -6,7 +6,7 @@ import { Tooltip } from '@docs.plus/extension-hyperlink'
 
 type EditHyperlinkModalOptions = {
   editor: Editor
-  validate?: (url: string) => boolean
+  validate?: (url: string) => boolean // eslint-disable-line no-unused-vars
   view: EditorView
   link: HTMLAnchorElement
   hyperlinkLinkModal: HTMLElement
@@ -73,7 +73,7 @@ export const editeHyperlinkHandler = (options: EditHyperlinkModalOptions) => {
       .filter((link) => link.isLink)
       .filter((link) => {
         if (options.validate) {
-          return options.validate(link.value)
+          return options.validate(link.value as string)
         }
         return true
       })

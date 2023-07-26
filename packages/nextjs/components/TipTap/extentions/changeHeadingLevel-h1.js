@@ -9,10 +9,10 @@ import {
 } from './helper'
 
 const changeHeadingLevelH1 = (arrg, attributes) => {
-  const { can, chain, commands, dispatch, editor, state, tr, view } = arrg
-  const { schema, selection, doc } = state
-  const { $from, $to, $anchor, $cursor, from } = selection
-  const { start, end, depth } = $from.blockRange($to)
+  const { state, tr } = arrg
+  const { selection, doc } = state
+  const { $from, $to, $anchor, from } = selection
+  const { start, depth } = $from.blockRange($to)
 
   console.info('[Heading]: change heading Level h1')
 
@@ -28,7 +28,7 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   let titleStartPos = 0
   let titleEndPos = 0
 
-  doc.nodesBetween($from.start(0), start - 1, function (node, pos, parent, index) {
+  doc.nodesBetween($from.start(0), start - 1, function (node, pos) {
     if (node.type.name === 'heading') {
       const headingLevel = node.firstChild?.attrs?.level
 
@@ -50,7 +50,7 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== 'heading')
   const contentWrapperHeadings = contentWrapper.filter((x) => x.type === 'heading')
 
-  const { prevHStartPos, prevHEndPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
+  const { prevHStartPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
 
   let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
 

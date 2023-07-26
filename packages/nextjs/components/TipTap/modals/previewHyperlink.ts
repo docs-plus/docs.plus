@@ -6,7 +6,7 @@ import { Tooltip } from '@docs.plus/extension-hyperlink'
 
 type HyperlinkModalOptions = {
   editor: Editor
-  validate?: (url: string) => boolean
+  validate?: (url: string) => boolean // eslint-disable-line no-unused-vars
   view: EditorView
   link: HTMLAnchorElement
   node?: any
