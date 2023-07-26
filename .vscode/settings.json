@@ -28,6 +28,9 @@
   "scss.format.spaceAroundSelectorSeparator": true,
   "eslint.codeActionsOnSave.mode": "all",
   "conventionalCommits.scopes": [
-    "core"
+    "core",
+    "demo",
+    "hocuspocus",
+    "extension-hyperlink"
   ]
 }
