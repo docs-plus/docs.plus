@@ -14,7 +14,7 @@ type HyperlinkModalOptions = {
   tippy: Tooltip
 }
 
-export default function previewHyperlink(options: HyperlinkModalOptions): HTMLElement {
+export default function previewHyperlink(options: HyperlinkModalOptions) {
   const href = options.link.href
 
   const hyperlinkLinkModal = document.createElement('div')

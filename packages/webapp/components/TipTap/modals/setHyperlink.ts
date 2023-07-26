@@ -12,7 +12,7 @@ type setHyperlinkModalOptions = {
 
 let tooltip: Tooltip
 
-export default function setHyperlink(options: setHyperlinkModalOptions): void {
+export default function setHyperlink(options: setHyperlinkModalOptions) {
   // Create the tooltip instance
   if (!tooltip) tooltip = new Tooltip({ ...options, view: options.editor.view })
 

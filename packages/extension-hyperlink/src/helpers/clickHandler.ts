@@ -11,10 +11,7 @@ type ClickHandlerOptions = {
   editor: Editor;
   validate?: (url: string) => boolean;
   view: EditorView;
-  modals: {
-    previewHyperlink?: ((options: any) => HTMLElement) | null;
-    setHyperlink?: ((options: any) => HTMLElement) | null;
-  };
+  modal?: ((options: any) => HTMLElement) | null;
 };
 
 export default function clickHandler(options: ClickHandlerOptions): Plugin {
@@ -45,7 +42,7 @@ export default function clickHandler(options: ClickHandlerOptions): Plugin {
         const target = link?.target ?? attrs.target;
 
         // If there is no previewHyperlink modal provided, then open the link in new window
-        if (!options.modals.previewHyperlink) {
+        if (!options.modal) {
           if (link && href) {
             window.open(href, target);
           }
@@ -56,7 +53,7 @@ export default function clickHandler(options: ClickHandlerOptions): Plugin {
         if (!link?.href) return tooltip.hide();
 
         // Create a preview of the hyperlink
-        const hyperlinkPreview = options.modals.previewHyperlink({
+        const hyperlinkPreview = options.modal({
           link,
           nodePos,
           tippy: tooltip,
