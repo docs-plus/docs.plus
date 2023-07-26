@@ -14,7 +14,7 @@ Docs.plus is a free, real-time collaboration tool built on open-source technolog
 - [Yarn](https://yarnpkg.com/getting-started/install)
 - PostgreSQL (downloadable from the [official PostgreSQL website](https://www.postgresql.org/download/)) or Docker for running a PostgreSQL container.
 
-Docs.plus is organized as a monorepo and uses Yarn [Workspaces](<https://yarnpkg.com/features/workspaces/#gatsby-focus-wrapper>) for managing dependencies and synchronizing versions across different packages.
+Docs.plus is organized as a monorepo and uses Yarn [Workspaces](<https://yarnpkg.com/features/workspaces/#gatsby-focus-wrapper>) and [Lerna](https://lerna.js.org/) for managing dependencies and synchronizing versions across different packages.
 
 ## 🛠 Setting Up Your Development Environment
 
