@@ -2,9 +2,13 @@ import * as dotenvFlow from 'dotenv-flow'
 import { Hocuspocus } from '@hocuspocus/server'
 import HocuspocusConfig from './hocuspocus.config.mjs'
 
-dotenvFlow.config()
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 
+dotenvFlow.config({
+  purge_dotenv: true,
+  node_env: process.env.NODE_ENV,
+  silent: true
+})
 const Serverconfigure = HocuspocusConfig()
 
 // Configure the server …
