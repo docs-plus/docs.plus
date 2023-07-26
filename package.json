@@ -9,6 +9,8 @@
     "update:packages": "ncu -u",
     "dev": "npx lerna run dev --scope=@docs.plus/webapp",
     "build": "npx lerna run build",
+    "lint:fix": "npx lerna run lint:fix",
+    "lint:staged": "lint-staged",
     "release": "lerna version --no-push --force-publish",
     "release:major": "lerna version major --no-push --no-git-tag-version --force-publish",
     "release:major:pre": "lerna version premajor --no-push --no-git-tag-version --force-publish --preid rc",

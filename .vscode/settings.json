@@ -26,5 +26,8 @@
   "less.validate": false,
   "scss.validate": true,
   "scss.format.spaceAroundSelectorSeparator": true,
-  "eslint.codeActionsOnSave.mode": "all"
+  "eslint.codeActionsOnSave.mode": "all",
+  "conventionalCommits.scopes": [
+    "core"
+  ]
 }
