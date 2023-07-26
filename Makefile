@@ -8,7 +8,7 @@ back_ws:
 
 # Start frontend development server
 front_dev:
-	cd packages/nextjs && npm run dev
+	cd packages/webapp && npm run dev
 
 # Run backend, WebSocket and frontend development servers concurrently
 local:
@@ -16,7 +16,7 @@ local:
 
 # Start editor development server
 dev_editor:
-	cd packages/nextjs && npm run dev
+	cd packages/webapp && npm run dev
 
 # Start Hocus Pocus development server
 dev_editor_hocuspocus:
@@ -37,11 +37,11 @@ fastRun:
 
 # Build and run frontend in stage environment
 build_front_stage:
-	cd packages/nextjs && npm run build && npm run pm2:start:stage
+	cd packages/webapp && npm run build && npm run pm2:start:stage
 
 # Build and run frontend in production environment
 build_front_production:
-	cd packages/nextjs && npm run build && npm run pm2:start:prod
+	cd packages/webapp && npm run build && npm run pm2:start:prod
 
 # Build, stop and remove the existing stage container, and run a new stage container
 build_hocuspocus.server_stage: down_stage
