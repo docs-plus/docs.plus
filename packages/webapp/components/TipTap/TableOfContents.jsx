@@ -79,12 +79,14 @@ const TableOfContent = ({ editor, className }) => {
   const scroll2Header = (e) => {
     e.preventDefault()
     let id = e.target.getAttribute('data-id')
+    const heading = e.target.innerText
     const offsetParent = e.target.closest('.toc__item').getAttribute('data-offsettop')
 
     if (offsetParent === '0') id = '1'
 
     const url = new URL(window.location.href)
     url.searchParams.set('id', id)
+    url.searchParams.set('heading', encodeURIComponent(heading))
     window.history.replaceState({}, '', url)
 
     document.querySelector(`.heading[data-id="${id}"]`)?.scrollIntoView()
