@@ -9,6 +9,7 @@ create table profiles (
   website text,
   twitter text,
   facebook text,
+  email text,
   about text,
   company text,
   job_title text,
