@@ -114,7 +114,6 @@ function buildDecorations(doc) {
 function expandElement(elem, collapseClass, headingId, open) {
   const startHeight = window.getComputedStyle(elem).height
   const headingSection = document.querySelector(`.heading[data-id="${headingId}"]`)
-  // const headingLevel = headingSection.getAttribute('level')
   const wrapperBlock = headingSection.querySelector('.foldWrapper')
 
   elem.style.height = ''
@@ -237,32 +236,27 @@ const HeadingsContent = Node.create({
 
       dom.addEventListener('toggleHeadingsContent', ({ detail }) => {
         const section = detail.el
-        const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
-        const nodeState = headingMap.find((h) => h.headingId === detail.headingId) || { crinkleOpen: true }
-
         editor.commands.focus()
 
-        if (editor.isEditable && typeof getPos === 'function') {
-          const { tr } = editor.state
+        if (editor.isEditable && typeof getPos === 'function') return false
 
-          const pos = getPos()
-          const currentNode = tr.doc.nodeAt(pos)
+        const { tr } = editor.state
 
-          if ((currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type) {
-            return false
-          }
+        const pos = getPos()
+        const currentNode = tr.doc.nodeAt(pos)
 
-          if (nodeState.crinkleOpen) {
-            section.classList.add('overflow-hidden')
-          }
-
-          tr.setMeta('addToHistory', false)
-          // for trigger table of contents
-          tr.setMeta('foldAndunfold', true)
-          editor.view.dispatch(tr)
-
-          expandElement(section, 'collapsed', detail.headingId, !nodeState.crinkleOpen)
+        if ((currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type) {
+          return false
         }
+
+        const open = section.classList.contains('collapsed') ? true : false
+
+        tr.setMeta('addToHistory', false)
+        // for trigger table of contents
+        tr.setMeta('foldAndunfold', true)
+        editor.view.dispatch(tr)
+
+        expandElement(section, 'collapsed', detail.headingId, open)
       })
 
       return {
