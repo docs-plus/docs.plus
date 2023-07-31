@@ -104,10 +104,12 @@ const GearModal = ({ docMetadata }) => {
               <b>Name: </b>
               {full_name}
             </p>
-            <p className="text-xs text-gray-500">
-              <b>Username: </b>
-              {username}
-            </p>
+            {username && (
+              <p className="text-xs text-gray-500">
+                <b>Username: </b>
+                {username}
+              </p>
+            )}
           </div>
           {/* <p className="font-semibold text-gray-400 underline underline-offset-1"> Public document</p> */}
 

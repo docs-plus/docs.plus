@@ -1,10 +1,5 @@
+import { Avatar } from '@components/Avatar'
 const DocumentTable = ({ data }) => {
-  const getAvatarAddress = (userId) => {
-    const lastUpdate = Date.now().toString()
-
-    return `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${userId}.png?${lastUpdate}`
-  }
-
   const routeForDocument = (slug) => {
     // router.push(`/${slug}`)
     window.location = `/${slug}`
@@ -30,16 +25,10 @@ const DocumentTable = ({ data }) => {
             <td className="border text-center p2 px-4 pl-2 max-w-[170px] ">
               <div className="flex items-center justify-start ">
                 {row.ownerId ? (
-                  <img
-                    onError={(e) => {
-                      e.target.classList.add('bg-gray-100')
-                      e.target.classList.add('dark:bg-gray-600')
-                      e.target.src = row?.user?.default_avatar_url || ''
-                    }}
-                    src={getAvatarAddress(row?.user?.avatar_url)}
-                    alt=""
+                  <Avatar
                     height={32}
                     width={32}
+                    srcAvatar={row?.user?.avatar_url || row?.user?.default_avatar_url}
                     className="w-8 h-8 rounded-full drop-shadow-md mr-1"
                   />
                 ) : (

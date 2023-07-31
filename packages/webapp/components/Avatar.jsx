@@ -16,11 +16,12 @@ const useAvatar = () => {
   return { avatarUrl, setAvatarUrl }
 }
 
-const Avatar = ({ height = 40, width = 40, ...props }) => {
-  const { avatarUrl, setAvatarUrl } = useAvatar()
+const Avatar = ({ height = 40, width = 40, srcAvatar, ...props }) => {
+  const { avatarUrl, setAvatarUrl } = useAvatar(srcAvatar)
   const { user_metadata } = useUser()
 
   useEffect(() => {
+    if (srcAvatar) return
     PubSub.subscribe(AVATAR_URL_CHANNEL_NAME, (msg, newURL) => {
       setAvatarUrl(newURL)
     })
@@ -31,10 +32,10 @@ const Avatar = ({ height = 40, width = 40, ...props }) => {
 
   return (
     <Image
-      src={avatarUrl}
+      src={srcAvatar || avatarUrl}
       width={width}
       onError={(e) => {
-        if (user_metadata?.avatar_url) setAvatarUrl(user_metadata?.avatar_url)
+        if (user_metadata?.avatar_url && !srcAvatar) setAvatarUrl(user_metadata?.avatar_url)
         else {
           e.target.style.padding = '6px'
           e.target.classList.add('bg-gray-100')

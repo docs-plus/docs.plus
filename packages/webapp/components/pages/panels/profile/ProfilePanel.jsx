@@ -43,12 +43,7 @@ const ProfilePanel = () => {
             onClick={() => {
               changeTab('profile')
             }}>
-            <Avatar
-              defaultURI={user?.user_metadata?.avatar_url}
-              width={22}
-              height={22}
-              className="rounded-full mr-2 border"
-            />
+            <Avatar width={22} height={22} className="rounded-full mr-2 border" />
             Profile
             <AngleSmallRight size={20} className="ml-auto" />
           </li>
