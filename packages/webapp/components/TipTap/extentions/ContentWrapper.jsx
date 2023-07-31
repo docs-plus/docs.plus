@@ -238,7 +238,7 @@ const HeadingsContent = Node.create({
         const section = detail.el
         editor.commands.focus()
 
-        if (editor.isEditable && typeof getPos === 'function') return false
+        if (!editor.isEditable && typeof getPos !== 'function') return false
 
         const { tr } = editor.state
 
