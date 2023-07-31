@@ -6,6 +6,7 @@ import useEditorAndProvider from '@hooks/useEditorAndProvider'
 const scrollHeadingSelection = (event) => {
   const scrollTop = event.currentTarget.scrollTop
   const toc = document.querySelector('.toc__list')
+  if (!toc) return
   const tocLis = [...toc.querySelectorAll('.toc__item')]
   const closest = tocLis
     .map((li) => {
