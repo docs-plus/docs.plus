@@ -14,25 +14,18 @@ type HyperlinkModalOptions = {
   tippy: Tooltip
 }
 
-export default function previewHyperlink(options: HyperlinkModalOptions) {
-  const href = options.link.href
+const createHTMLElement = (type: string, props: any) => {
+  const element = document.createElement(type)
 
-  const hyperlinkLinkModal = document.createElement('div')
-  const removeButton = document.createElement('button')
-  const copyButton = document.createElement('button')
-  const editButton = document.createElement('button')
+  for (const prop in props) {
+    // eslint-disable-next-line no-extra-semi
+    ;(element as any)[prop] = props[prop]
+  }
 
-  const newBubble = document.createElement('div')
-  newBubble.classList.add('metadata')
+  return element
+}
 
-  const hrefTitle = document.createElement('a')
-  hrefTitle.setAttribute('target', '_blank')
-  hrefTitle.setAttribute('rel', 'noreferrer')
-  hrefTitle.setAttribute('href', href)
-  hrefTitle.innerText = href
-
-  newBubble.append(hrefTitle)
-
+const fetchMetadata = (href: string, hrefTitle: HTMLAnchorElement, newBubble: HTMLDivElement) => {
   fetch('/api/metadata', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -40,44 +33,67 @@ export default function previewHyperlink(options: HyperlinkModalOptions) {
   })
     .then((response) => response.json())
     .then((data) => {
-      // Create a new bubble with the title
-      hrefTitle.setAttribute('href', href)
-
       hrefTitle.innerText = data.title || data['og:title'] || href
       newBubble.replaceChildren(hrefTitle)
 
-      // Create an image element if image exists in metadata
       if (data.icon || data.image || data['og:image']) {
-        const img = document.createElement('img')
-        img.src = data.icon || data.image || data['og:image']
-        img.alt = data.title || data['og:title'] || 'hyperlink image'
+        const img = createHTMLElement('img', {
+          src: data.icon || data.image || data['og:image'],
+          alt: data.title || data['og:title'] || 'hyperlink image'
+        })
         newBubble.appendChild(img)
       }
     })
     .catch((error) => {
       console.error('Error fetching metadata:', error)
     })
+}
 
-  hyperlinkLinkModal.classList.add('hyperlinkLinkModal')
+const hrefEventHandller = (href: string) => (event: MouseEvent) => {
+  event.preventDefault()
+  const newUrl = new URL(href)
+  const slugs = newUrl.pathname.split('/').slice(1)
 
-  removeButton.classList.add('remove')
-  removeButton.innerHTML = LinkSlash()
+  if (newUrl.pathname.startsWith(`/${slugs[0]}`)) {
+    return (window.location.href = href)
+  }
 
-  editButton.classList.add('edit')
-  editButton.innerHTML = Pencil()
+  return window.open(href, '_blank')
+}
 
-  copyButton.classList.add('copy')
-  copyButton.innerHTML = Copy()
+export default function previewHyperlink(options: HyperlinkModalOptions) {
+  const { link, tippy, editor } = options
+  const href = link.href
+
+  const hyperlinkLinkModal = createHTMLElement('div', { className: 'hyperlinkLinkModal' })
+  const removeButton = createHTMLElement('button', { className: 'remove', innerHTML: LinkSlash() })
+  const copyButton = createHTMLElement('button', { className: 'copy', innerHTML: Copy() })
+  const editButton = createHTMLElement('button', { className: 'edit', innerHTML: Pencil() })
+
+  const newBubble = createHTMLElement('div', { className: 'metadata' }) as HTMLDivElement
+
+  const hrefTitle = createHTMLElement('a', {
+    target: '_blank',
+    rel: 'noreferrer',
+    href,
+    innerText: href
+  }) as HTMLAnchorElement
+
+  hrefTitle.addEventListener('click', hrefEventHandller(href))
+
+  newBubble.append(hrefTitle)
+
+  fetchMetadata(href, hrefTitle, newBubble)
 
   removeButton.addEventListener('click', () => {
-    options.tippy.hide()
-    return options.editor.chain().focus().unsetHyperlink().run()
+    tippy.hide()
+    return editor.chain().focus().unsetHyperlink().run()
   })
 
   editButton.addEventListener('click', () => editeHyperlinkHandler({ ...options, hyperlinkLinkModal }))
 
   copyButton.addEventListener('click', () => {
-    options.tippy.hide()
+    tippy.hide()
     navigator.clipboard.writeText(href)
   })
 
