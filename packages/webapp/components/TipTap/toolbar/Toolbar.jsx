@@ -94,19 +94,13 @@ const Toolbar = ({ editor, docMetadata }) => {
     <div
       className="tiptap__toolbar editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-4"
       onClick={hideModals}>
-      <ToolbarButton onClick={() => editor.chain().focus().undo().run()} editor={editor} type="undo">
+      {/* <ToolbarButton onClick={() => editor.chain().focus().undo().run()} editor={editor} type="undo">
         <Icon type="Undo" size="16" />
       </ToolbarButton>
 
       <ToolbarButton onClick={() => editor.chain().focus().redo().run()} editor={editor} type="redo">
         <Icon type="Redo" size="16" />
-      </ToolbarButton>
-
-      <ToolbarButton onClick={() => window.print()}>
-        <Icon type="Printer" size="16" />
-      </ToolbarButton>
-
-      <div className="divided"></div>
+      </ToolbarButton> */}
 
       <Select
         className="w-32 text-sm"
@@ -205,6 +199,10 @@ const Toolbar = ({ editor, docMetadata }) => {
       </button>
 
       <div className="ml-auto flex align-baseline items-center">
+        <ToolbarButton onClick={() => window.print()}>
+          <Icon type="Printer" size="16" />
+        </ToolbarButton>
+
         {isAuthServiceAvailable && (
           <button onClick={openControlCenter}>
             <Folder fill="rgba(0,0,0,.7)" size="18" />
