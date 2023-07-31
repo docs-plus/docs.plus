@@ -4,17 +4,20 @@ import { randstr } from '@utils/index'
 import { useEffect, useState } from 'react'
 
 const InputOverlapLabel = forwardRef(
-  ({
-    label,
-    value = '',
-    id: _id = '',
-    Icon,
-    fill = 'rgb(104, 81, 255)',
-    size = 18,
-    className = '',
-    onChange = () => {},
-    ...props
-  }) => {
+  (
+    {
+      label,
+      value = '',
+      id: _id = '',
+      Icon,
+      fill = 'rgb(104, 81, 255)',
+      size = 18,
+      className = '',
+      onChange = () => {},
+      ...props
+    },
+    ref
+  ) => {
     const [id, setId] = useState(_id)
 
     useEffect(() => {
@@ -44,6 +47,7 @@ const InputOverlapLabel = forwardRef(
           </span>
         )}
         <input
+          ref={ref}
           id={id}
           type="text"
           value={value}
