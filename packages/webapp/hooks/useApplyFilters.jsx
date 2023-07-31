@@ -81,9 +81,10 @@ const useApplyFilters = (editor, slugs, applyingFilters, setApplyingFilters, rou
     })
 
     // save the data to indexedDB
-    db.docFilter.bulkPut(dbMap).then((e) => {
-      console.info('bulkPut', e)
-    })
+    db.docFilter.bulkPut(dbMap)
+    // .then((e) => {
+    //   console.info('bulkPut', e)
+    // })
 
     localStorage.setItem('headingMap', JSON.stringify(dbMap))
 
