@@ -77,24 +77,6 @@ $crinkle-unfold-bg: #efefef;
     position: relative;
     height: 100%;
 
-    &.opend,
-    &.opening {
-      .buttonWrapper {
-        button.btnFold::before {
-          content: '\25BC';
-        }
-      }
-    }
-
-    &.closed,
-    &.closing {
-      .buttonWrapper {
-        button.btnFold::before {
-          content: '\25B6';
-        }
-      }
-    }
-
     &.closed {
       &[level="1"] {
         > .wrapBlock > .foldWrapper .fold {
@@ -382,30 +364,32 @@ $crinkle-unfold-bg: #efefef;
       align-items: center;
     }
 
-    &.closed {
-      > span .btnFold {
-        &::before {
-          content: '\25B6';
+    .btnFold {
+      transition: all .2s ease-in-out;
+      margin-right: 4px;
+      opacity: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      width: 20px;
+      height: 20px;
+
+      &:hover{
+        > svg{
+          fill: #2778ff;
         }
       }
-    }
 
-    > span .btnFold {
-      &::before {
-        content: '\25BC';
-        display: block;
-        margin-right: 6px;
-        width: 16px;
-        height: 16px;
-        // border: 2px solid red;
-        font-size: 0.7rem;
-        text-align: center;
-        opacity: 0;
-        cursor: pointer;
+      &.closed{
+        transform: rotate(0deg);
+      }
+      &.opened{
+       transform: rotate(90deg);
       }
     }
 
-    &:hover > span > .btnFold::before {
+    &:hover > span > .btnFold {
       opacity: 1;
     }
   }
