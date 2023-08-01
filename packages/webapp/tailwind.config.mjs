@@ -8,29 +8,29 @@ module.exports = {
     './components/**/*.{js,ts,jsx,tsx}',
 
     // Or if using `src` directory:
-    './src/**/*.{js,ts,jsx,tsx}',
+    './src/**/*.{js,ts,jsx,tsx}'
   ],
   plugins: [],
   darkMode: 'class',
   theme: {
     fontFamily: {
-      sans: 'Helvetica, Arial, sans-serif',
+      sans: 'Helvetica, Arial, sans-serif'
     },
     colors: {
       docsy: '#2778ff',
-      ...colors,
+      ...colors
     },
     extend: {
       spacing: {},
       backgroundColor: {
         primary: 'var(--color-bg-primary)',
-        secondary: 'var(--color-bg-secondary)',
+        secondary: 'var(--color-bg-secondary)'
       },
       textColor: {
         accent: 'var(--color-text-accent)',
         primary: 'var(--color-text-primary)',
-        secondary: 'var(--color-text-secondary)',
-      },
-    },
-  },
+        secondary: 'var(--color-text-secondary)'
+      }
+    }
+  }
 }

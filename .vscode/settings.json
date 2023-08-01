@@ -31,6 +31,7 @@
     "core",
     "demo",
     "hocuspocus",
-    "extension-hyperlink"
+    "extension-hyperlink",
+    "webapp"
   ]
 }
