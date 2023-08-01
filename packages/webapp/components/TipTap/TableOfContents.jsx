@@ -1,13 +1,16 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { useEditorStateContext } from '../../context/EditorContext'
+import { CaretRight } from '@icons'
 
-function getOffsetTop(element) {
-  return element ? element.offsetTop + getOffsetTop(element.offsetParent) : 0
+const getOffsetTop = (element) => (element ? element.offsetTop + getOffsetTop(element.offsetParent) : 0)
+
+const getHeadingDetails = (id) => {
+  const headingSection = document.querySelector(`.ProseMirror .heading[data-id="${id}"]`)
+  const offsetTop = getOffsetTop(headingSection)
+  return { headingSection, offsetTop }
 }
 
 const TableOfContent = ({ editor, className }) => {
   const [items, setItems] = useState([])
-  const { applyingFilters } = useEditorStateContext()
 
   const handleUpdate = useCallback((doc) => {
     const headings = []
@@ -16,13 +19,13 @@ const TableOfContent = ({ editor, className }) => {
     editorDoc?.descendants((node, _pos, _parent) => {
       if (node.type.name === 'contentHeading') {
         let headingId = _parent.attrs?.id || node?.attrs.id || '1'
-        let headingSection = document.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
-        let offsetTop = getOffsetTop(headingSection)
+        let { headingSection, offsetTop } = getHeadingDetails(headingId)
 
         if (offsetTop === 0) {
           headingId = '1'
-          headingSection = document.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
-          offsetTop = getOffsetTop(headingSection)
+          let headingDetails = getHeadingDetails(headingId)
+          headingSection = headingDetails.headingSection
+          offsetTop = headingDetails.offsetTop
         }
 
         headings.push({
@@ -62,7 +65,7 @@ const TableOfContent = ({ editor, className }) => {
       clearTimeout(timer)
       clearTimeout(trTimer)
     }
-  }, [editor, applyingFilters])
+  }, [editor, handleUpdate])
 
   useEffect(() => {
     const transaction = editor.state.tr
@@ -76,13 +79,13 @@ const TableOfContent = ({ editor, className }) => {
     return () => clearTimeout(timer)
   }, [])
 
-  const scroll2Header = (e) => {
+  const scroll2Header = useCallback((e) => {
     e.preventDefault()
     let id = e.target.getAttribute('data-id')
     const heading = e.target.innerText
-    const offsetParent = e.target.closest('.toc__item').getAttribute('data-offsettop')
+    const offsetParent = getOffsetTop(e.target.closest('.toc__item'))
 
-    if (offsetParent === '0') id = '1'
+    if (offsetParent === 0) id = '1'
 
     const url = new URL(window.location.href)
     url.searchParams.set('id', id)
@@ -90,66 +93,66 @@ const TableOfContent = ({ editor, className }) => {
     window.history.replaceState({}, '', url)
 
     document.querySelector(`.heading[data-id="${id}"]`)?.scrollIntoView()
-  }
+  }, [])
 
-  const toggleSection = (item) => {
+  const toggleSection = useCallback((item) => {
+    const itemElement = document.querySelector(`.toc__item[data-id="${item.id}"]`)
+    const btnFoldElement = itemElement.querySelector(`.btnFold`)
+    const childrenWrapperElement = itemElement.querySelector('.childrenWrapper')
+
+    itemElement.classList.toggle('closed')
+    btnFoldElement.classList.toggle('closed')
+    btnFoldElement.classList.toggle('opened')
+    childrenWrapperElement?.classList.toggle('hidden')
+
     document.querySelector(`.ProseMirror .heading[data-id="${item.id}"] .buttonWrapper .btnFold`)?.click()
+  }, [])
 
-    setItems(() =>
-      items.map((i) => {
-        if (i.id === item.id) {
-          return {
-            ...i,
-            open: !i.open
-          }
+  const renderToc = useCallback(
+    (items) => {
+      const renderedItems = []
+      for (let i = 0; i < items.length; ) {
+        const item = items[i]
+        const children = []
+        let j = i + 1
+
+        while (j < items.length && items[j].level > item.level) {
+          children.push(items[j])
+          j++
         }
+        renderedItems.push(
+          <div
+            key={item.id}
+            className={`toc__item toc__item--${item.level} truncate ${item.open ? '' : 'closed'}`}
+            data-id={item.id}
+            data-offsettop={item.offsetTop}>
+            <span>
+              <span
+                className={`btnFold ${item.open ? 'opened' : 'closed'}`}
+                onClick={() => toggleSection(item)}>
+                <CaretRight size={17} fill="#363636" />
+              </span>
+              <a
+                className="text-black truncate"
+                data-id={item.id}
+                href={`?${item.id}`}
+                onClick={scroll2Header}>
+                {item.text}
+              </a>
+            </span>
 
-        return i
-      })
-    )
-  }
-
-  function renderToc(items) {
-    const renderedItems = []
-    let i = 0
-    while (i < items.length) {
-      const item = items[i]
-      const children = []
-      let j = i + 1
-
-      while (j < items.length && items[j].level > item.level) {
-        children.push(items[j])
-        j++
+            {children.length > 0 && (
+              <div className={`childrenWrapper ${item.open ? '' : 'hidden'}`}>{renderToc(children)}</div>
+            )}
+          </div>
+        )
+        i = j
       }
-      renderedItems.push(
-        <div
-          key={item.id}
-          className={`
-            toc__item toc__item--${item.level} text-ellipsis overflow-hidden ${item.open ? '' : 'closed'}
-          `}
-          data-id={item.id}
-          data-offsettop={item.offsetTop}>
-          <span>
-            <span className="btnFold" onClick={() => toggleSection(item)}></span>
-            <a
-              className="text-black text-ellipsis overflow-hidden"
-              data-id={item.id}
-              href={`?${item.id}`}
-              onClick={scroll2Header}>
-              {item.text}
-            </a>
-          </span>
 
-          {children.length > 0 && (
-            <div className={`${item.open ? '' : '!hidden'}`}>{renderToc(children)}</div>
-          )}
-        </div>
-      )
-      i = j
-    }
-
-    return renderedItems
-  }
+      return renderedItems
+    },
+    [toggleSection, scroll2Header]
+  )
 
   if (items.length) {
     const { id, offsetTop } = items.at(-1)
