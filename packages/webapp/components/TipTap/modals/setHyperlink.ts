@@ -34,6 +34,7 @@ export default function setHyperlink(options: setHyperlinkModalOptions) {
   const button = document.createElement('button')
 
   input.setAttribute('type', 'text')
+  input.setAttribute('inputmode', 'url')
   input.setAttribute('placeholder', 'https://example.com')
   button.setAttribute('type', 'submit')
   button.innerText = 'Submit'
