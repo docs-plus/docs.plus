@@ -32,8 +32,9 @@ export const editeHyperlinkHandler = (options: EditHyperlinkModalOptions) => {
   linkTextInput.placeholder = 'Enter link text'
 
   hrefInput.type = 'text'
+  hrefInput.inputMode = 'url'
   hrefInput.value = options.link.href
-  hrefInput.placeholder = 'Enter href'
+  hrefInput.placeholder = 'Enter URL'
 
   applyButton.type = 'submit'
   applyButton.classList.add('btn_applyModal')
