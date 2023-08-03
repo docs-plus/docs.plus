@@ -3,6 +3,7 @@ import { EditorView } from '@tiptap/pm/view'
 import { editeHyperlinkHandler } from './editeHyperlink'
 import { Copy, LinkSlash, Pencil } from './icons'
 import { Tooltip } from '@docs.plus/extension-hyperlink'
+import { copyToClipboard } from '@utils/index'
 
 type HyperlinkModalOptions = {
   editor: Editor
@@ -12,6 +13,7 @@ type HyperlinkModalOptions = {
   node?: any
   nodePos: number
   tippy: Tooltip
+  event: MouseEvent
 }
 
 const createHTMLElement = (type: string, props: any) => {
@@ -94,7 +96,7 @@ export default function previewHyperlink(options: HyperlinkModalOptions) {
 
   copyButton.addEventListener('click', () => {
     tippy.hide()
-    navigator.clipboard.writeText(href)
+    copyToClipboard(href)
   })
 
   hyperlinkLinkModal.append(newBubble, copyButton, editButton, removeButton)
