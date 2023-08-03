@@ -1,31 +1,5 @@
 import { OrderListMobile, BoldMobile, ItalicMobile, UnderlineMobile, InsertLinkMobile } from '@icons'
 
-const setHyperlink = (editor) => {
-  return () => {
-    const previousUrl = editor.getAttributes('link').href
-    const url = window.prompt('URL', previousUrl)
-
-    if (editor.isActive('link')) {
-      return editor.chain().focus().unsetHyperlink().run()
-    }
-
-    // cancelled
-    if (url === null) {
-      return
-    }
-
-    // empty
-    if (url === '') {
-      editor.chain().focus().extendMarkRange('link').unsetHyperlink().run()
-
-      return
-    }
-
-    // update link
-    editor.chain().focus().extendMarkRange('link').setHyperlink({ href: url }).run()
-  }
-}
-
 const Toolbar = ({ editor }) => {
   if (!editor) {
     return null
@@ -57,7 +31,9 @@ const Toolbar = ({ editor }) => {
         <OrderListMobile size="26" fill={editor.isActive('orderedList') ? 'text-blue-700' : ''} />
       </button>
 
-      <button className={editor.isActive('link') ? 'is-active' : ''} onClick={setHyperlink}>
+      <button
+        className={editor.isActive('link') ? 'is-active' : ''}
+        onClick={() => editor.chain().focus().setHyperlink().run()}>
         <InsertLinkMobile size="26" fill={editor.isActive('link') ? 'text-blue-700' : ''} />
       </button>
     </div>
