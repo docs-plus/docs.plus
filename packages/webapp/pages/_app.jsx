@@ -83,7 +83,7 @@ export default function MyApp({ Component, pageProps, initialSession }) {
             </SessionContextProvider>
           </EditorStateProvider>
         </QueryClientProvider>
-        <RelpadPrompt />
+        {/* <RelpadPrompt /> */}
         <Toaster />
       </div>
     )
@@ -96,7 +96,7 @@ export default function MyApp({ Component, pageProps, initialSession }) {
             <Component {...pageProps} />
           </EditorStateProvider>
         </QueryClientProvider>
-        <RelpadPrompt />
+        {/* <RelpadPrompt /> */}
         <Toaster />
       </div>
     )
