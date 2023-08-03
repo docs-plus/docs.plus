@@ -1,7 +1,6 @@
 import Toolbar from '@components/TipTap/toolbar/Toolbar'
 import Editor from '../components/Editor'
 import TOC from '../components/Toc'
-import useEditorAndProvider from '@hooks/useEditorAndProvider'
 
 const scrollHeadingSelection = (event) => {
   const scrollTop = event.currentTarget.scrollTop
@@ -25,9 +24,7 @@ const scrollHeadingSelection = (event) => {
   })
 }
 
-const DesktopEditor = ({ docMetadata }) => {
-  const { editor, provider } = useEditorAndProvider({ docMetadata })
-
+const DesktopEditor = ({ docMetadata, editor, provider }) => {
   return (
     <>
       <div className="toolbars w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative">

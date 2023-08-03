@@ -10,7 +10,7 @@ const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
   loading: () => <div>Loading...</div>
 })
 
-const DesktopLayout = ({ docMetadata }) => {
+const DesktopLayout = ({ docMetadata, editor, provider }) => {
   const { isMobile, isAuthServiceAvailable } = useEditorStateContext()
   const { slug } = docMetadata
 
@@ -45,7 +45,7 @@ const DesktopLayout = ({ docMetadata }) => {
         <div className="docTitle w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
           <PadTitle docMetadata={docMetadata} />
         </div>
-        <DesktopEditor docMetadata={docMetadata} />
+        <DesktopEditor docMetadata={docMetadata} editor={editor} provider={provider} />
         {isAuthServiceAvailable && displayControlCenter && (
           <div
             onClick={closeControlCenter}

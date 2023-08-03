@@ -6,16 +6,12 @@ import { Pencil } from '@icons'
 import ToolbarMobile from './ToolbarMobile'
 import TocModal from '../components/TocModal'
 
-import useEditorAndProvider from '@hooks/useEditorAndProvider'
-
-const MobileEditor = ({ docMetadata }) => {
+const MobileEditor = ({ docMetadata, editor, provider }) => {
   const { loading, deviceDetect, selectionPos, setSelectionPos } = useEditorStateContext()
 
   const [showToolbar, setShowToolbar] = useState(false)
 
   const isKeyboardOpen = useDetectKeyboardOpen()
-
-  const { editor } = useEditorAndProvider({ docMetadata })
 
   useEffect(() => {
     setShowToolbar(isKeyboardOpen)

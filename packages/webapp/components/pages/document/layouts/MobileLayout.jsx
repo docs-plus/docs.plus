@@ -3,7 +3,7 @@ import { useEditorStateContext } from '@context/EditorContext'
 import PadTitle from '@components/TipTap/pad-title-section/PadTitle'
 import FilterModal from '../components/FilterModal'
 import MobileEditor from '../components/MobileEditor'
-const MobileLayout = ({ docMetadata }) => {
+const MobileLayout = ({ docMetadata, editor, provider }) => {
   const { isMobile } = useEditorStateContext()
   const deviceType = isMobile ? 'mobile' : 'desktop'
 
@@ -13,7 +13,7 @@ const MobileLayout = ({ docMetadata }) => {
         <div className="docTitle sticky z-10 top-0 bg-white w-full min-h-14 p-2 flex flex-row items-center sm:border-b-0 border-b">
           <PadTitle docMetadata={docMetadata} />
         </div>
-        <MobileEditor docMetadata={docMetadata} />
+        <MobileEditor docMetadata={docMetadata} editor={editor} provider={provider} />
         <div className="nd_modal hidden bottom nd_filterModal w-full h-full fixed top-0 z-30 ">
           <FilterModal />
         </div>

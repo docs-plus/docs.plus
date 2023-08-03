@@ -8,11 +8,14 @@ import { useEditorStateContext } from '@context/EditorContext'
 import useDocumentMetadata from '@hooks/useDocumentMetadata'
 import { fetchDocument } from '@utils/fetchDocument'
 import HeadSeo from '@components/HeadSeo'
+import useEditorAndProvider from '@hooks/useEditorAndProvider'
 
 const Document = ({ slugs, docMetadata }) => {
   useDocumentMetadata(slugs, docMetadata)
   const { title, description, keywords } = docMetadata
   const { setApplyingFilters, isMobile } = useEditorStateContext()
+
+  const { editor, provider } = useEditorAndProvider({ docMetadata })
 
   const isFilterMode = slugs.length > 1
 
@@ -26,7 +29,11 @@ const Document = ({ slugs, docMetadata }) => {
   return (
     <>
       <HeadSeo title={title} description={description} keywords={keywords.length && keywords.join(',')} />
-      {isMobile ? <MobileLayout docMetadata={docMetadata} /> : <DesktopLayout docMetadata={docMetadata} />}
+      {isMobile ? (
+        <MobileLayout docMetadata={docMetadata} editor={editor} provider={provider} />
+      ) : (
+        <DesktopLayout docMetadata={docMetadata} editor={editor} provider={provider} />
+      )}
     </>
   )
 }
