@@ -36,7 +36,8 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "npm run clean && rollup -c",
-    "ts": "tsc -p tsconfig.json"
+    "ts": "tsc -p tsconfig.json",
+    "postbuild": "node ./scripts/flattenDeclarations.js"
   },
   "license": "MIT",
   "dependencies": {
