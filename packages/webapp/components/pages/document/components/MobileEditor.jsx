@@ -9,7 +9,7 @@ import TocModal from '../components/TocModal'
 import useEditorAndProvider from '@hooks/useEditorAndProvider'
 
 const MobileEditor = ({ docMetadata }) => {
-  const { loading, deviceDetect, selectionPos } = useEditorStateContext()
+  const { loading, deviceDetect, selectionPos, setSelectionPos } = useEditorStateContext()
 
   const [showToolbar, setShowToolbar] = useState(false)
 
@@ -39,10 +39,10 @@ const MobileEditor = ({ docMetadata }) => {
 
     document.querySelector('html').classList.add('m_mobile')
 
-    // editor.on('selectionUpdate', ({ editor }) => {
-    //   // The selection has changed.
-    //   setSelectionPos(editor.state.selection.$anchor.pos)
-    // })
+    editor.on('selectionUpdate', ({ editor }) => {
+      // The selection has changed.
+      setSelectionPos(editor.state.selection?.$anchor?.pos)
+    })
 
     // Make the editor read-only
     const divProseMirror = document.querySelector('.ProseMirror')
