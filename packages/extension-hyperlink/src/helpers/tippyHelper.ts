@@ -97,21 +97,22 @@ class Tooltip {
     if (this.tippyInstance.popper.firstChild) {
       (this.tippyInstance.popper.firstChild as HTMLElement).addEventListener(
         "blur",
-        this.tippyBlurHandler
+        this.tippyBlurHandler,
       );
     }
   }
 
-  update(view: EditorView, option: any = {}) {
+  update(view: EditorView, option?: any, eventPos?: number) {
     this.createTooltip();
 
+    option = option || {};
     option.arrow = option?.arrow ?? false;
 
     if (this.tippyInstance) {
       this.tippyInstance.setProps({
         ...option,
         getReferenceClientRect: () => {
-          const pos = view.state.selection.from;
+          const pos = eventPos || view.state.selection.from;
           // width: 0 is a hack to prevent tippy display in the wrong position
           return { ...posToDOMRect(view, pos, pos), width: 0 };
         },
@@ -125,9 +126,13 @@ class Tooltip {
     if (this.tippyInstance) {
       this.tippyInstance.destroy();
       this.tippyInstance = undefined;
-      this.tippyWrapper.removeEventListener("mousedown", this.mousedownHandler, {
-        capture: true,
-      });
+      this.tippyWrapper.removeEventListener(
+        "mousedown",
+        this.mousedownHandler,
+        {
+          capture: true,
+        },
+      );
       this.view.dom.removeEventListener("dragstart", this.dragstartHandler);
       this.editor.off("blur", this.blurHandler);
     }
