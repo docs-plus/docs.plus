@@ -8,10 +8,12 @@ const FilterModal = ({ totalHeading }) => {
   const [totalSearch, setTotalSearch] = useState(0)
   const [totalHeadings, setTotalHeadings] = useState(totalHeading)
   const [filterInput, setFilterInput] = useState('')
+  const [filteredHeadings, setFilteredHeadings] = useState([])
 
   const handleSearch = useCallback(
     (e) => {
-      const { totalSearch, totalHeadings } = searchThroughHeading(e)
+      const { totalSearch, totalHeadings, filteredHeadings } = searchThroughHeading(e)
+      setFilteredHeadings(filteredHeadings.map((heading) => heading.textContent))
       setTotalHeadings(totalHeadings)
       setTotalSearch(totalSearch)
       if (e.key === 'Enter') {
@@ -40,6 +42,7 @@ const FilterModal = ({ totalHeading }) => {
           label="Find in document"
           value={filterInput}
           onKeyUp={handleSearch}
+          datalist={filteredHeadings}
           onChange={(e) => setFilterInput(e.target.value)}
         />
         <p className="mx-2 text-xs text-center">
