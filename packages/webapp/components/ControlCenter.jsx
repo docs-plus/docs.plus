@@ -1,4 +1,4 @@
-import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@components/Tabs/Tabs'
+import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@components/ui/Tabs/Tabs'
 import dynamic from 'next/dynamic'
 import { useUser } from '@supabase/auth-helpers-react'
 import SignInPanel from '@pages/panels/SignInPanel'

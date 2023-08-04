@@ -1,4 +1,4 @@
-import InputOverlapLabel from '../../../../InputOverlapLabel'
+import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import { useSupabaseClient } from '@supabase/auth-helpers-react'
 import React, { useState, useCallback } from 'react'
 import { debounce } from 'lodash'

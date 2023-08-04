@@ -1,11 +1,11 @@
 import { DocsPlus } from '@icons'
-import Button from '../../Button'
+import Button from '@components/ui/Button'
 import slugify from 'slugify'
 import { useUser } from '@supabase/auth-helpers-react'
 import { useState, useContext } from 'react'
-import { TabsContext } from '../../Tabs/Tabs'
-import { useEditorStateContext } from '../../../context/EditorContext'
-import InputOverlapLabel from '../../InputOverlapLabel'
+import { TabsContext } from '@components/ui/Tabs/Tabs'
+import { useEditorStateContext } from '@context/EditorContext'
+import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 
 const DeckPanel = ({ hostname }) => {
   const user = useUser()

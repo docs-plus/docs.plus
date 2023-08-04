@@ -1,7 +1,7 @@
 import HeadSeo from '@components/HeadSeo'
 import { useUser } from '@supabase/auth-helpers-react'
 import dynamic from 'next/dynamic'
-import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@components/Tabs/Tabs'
+import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@components/ui/Tabs/Tabs'
 import DeckPanel from '@pages/panels/DeckPanel'
 import { useEditorStateContext } from '@context/EditorContext'
 import { Avatar } from '@components/Avatar'

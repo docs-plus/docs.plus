@@ -26,8 +26,8 @@ import BulletList from '@tiptap/extension-bullet-list'
 // Links and Media
 import Image from '@tiptap/extension-image'
 
-import previewHyperlinkModal from './modals/previewHyperlink'
-import setHyperlinks from './modals/setHyperlink'
+import previewHyperlinkModal from './hyperlinkModals/previewHyperlink'
+import setHyperlinks from './hyperlinkModals/setHyperlink'
 import Hyperlink from '@docs.plus/extension-hyperlink'
 
 // Code and Syntax Highlighting

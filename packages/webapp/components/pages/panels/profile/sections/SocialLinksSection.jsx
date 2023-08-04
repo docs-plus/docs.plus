@@ -1,4 +1,4 @@
-import InputOverlapLabel from '../../../../InputOverlapLabel'
+import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import React, { useState } from 'react'
 import { LinkAlt, Facebook, Twitter } from '@icons'
 

@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import _ from 'lodash'
 import DocumentTable from './DocumentTable'
-import InputOverlapLabel from '@components/InputOverlapLabel'
+import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import { Spinner } from '@icons'
 
 const DocumentsPanel = () => {
