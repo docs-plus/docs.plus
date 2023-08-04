@@ -33,7 +33,12 @@ export const searchThroughHeading = (e) => {
     }
   })
 
-  return { searchValue: search, totalSearch: filteredHeadings.length, totalHeadings: headings.length }
+  return {
+    searchValue: search,
+    filteredHeadings,
+    totalSearch: filteredHeadings.length,
+    totalHeadings: headings.length
+  }
 }
 
 export const applySerchThroughHeading = (searchInput, router) => {

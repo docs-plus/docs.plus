@@ -1,7 +1,6 @@
-import { forwardRef } from 'react'
+import { forwardRef, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { randstr } from '@utils/index'
-import { useEffect, useState } from 'react'
 
 const InputOverlapLabel = forwardRef(
   (
@@ -14,6 +13,7 @@ const InputOverlapLabel = forwardRef(
       size = 18,
       className = '',
       onChange = () => {},
+      datalist = [],
       ...props
     },
     ref
@@ -53,9 +53,19 @@ const InputOverlapLabel = forwardRef(
           value={value}
           onChange={onChange}
           placeholder=" "
+          list={datalist.length > 0 ? `${id}-datalist` : undefined}
           className="block p-2 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 disabled:rounded-none disabled:bg-slate-200 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
           {...props}
         />
+
+        {datalist.length > 0 && (
+          <datalist id={`${id}-datalist`}>
+            {datalist.map((option, index) => (
+              <option key={index} value={option} />
+            ))}
+          </datalist>
+        )}
+
         <label htmlFor={id} className={labelClasses}>
           {label}
         </label>
