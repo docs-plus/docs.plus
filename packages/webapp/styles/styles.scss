@@ -210,7 +210,7 @@ $crinkle-unfold-bg: #efefef;
 
     &.closing {
       > .wrapBlock > .foldWrapper {
-        z-index: 10;
+        z-index: 8;
       }
     }
 
@@ -218,7 +218,7 @@ $crinkle-unfold-bg: #efefef;
     &.closing {
       > .wrapBlock > .foldWrapper {
         display: flex;
-        z-index: 10;
+        z-index: 8;
 
         .fold::after {
           animation: foldCrinkle_after $crinkle-time $crinkle-transition;
