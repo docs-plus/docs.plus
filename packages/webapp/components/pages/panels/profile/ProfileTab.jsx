@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react'
 import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
-import Button from '../../../Button'
+import Button from '../../../ui/Button'
 import TabTitle from './components/TabTitle'
 import TabSection from './components/TabSection'
 

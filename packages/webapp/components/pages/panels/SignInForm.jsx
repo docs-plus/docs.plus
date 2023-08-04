@@ -1,9 +1,9 @@
 import { GoogleGIcon, Sparkles, OpenEnvelope } from '@icons'
 import { useSupabaseClient } from '@supabase/auth-helpers-react'
 import { useState } from 'react'
-import Button from '../../Button'
+import Button from '@components/ui/Button'
 import { useMutation } from '@tanstack/react-query'
-import InputOverlapLabel from '../../InputOverlapLabel'
+import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import { toast } from 'react-hot-toast'
 
 const SingInForm = ({ ...props }) => {

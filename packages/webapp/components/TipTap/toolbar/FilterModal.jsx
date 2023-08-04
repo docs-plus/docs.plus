@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import { searchThroughHeading, applySerchThroughHeading } from './toolbarUtils'
-import InputOverlapLabel from '../../InputOverlapLabel'
+import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 
 const FilterModal = ({ totalHeading }) => {
   const router = useRouter()

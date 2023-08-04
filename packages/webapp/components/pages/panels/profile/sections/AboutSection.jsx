@@ -1,5 +1,5 @@
-import InputOverlapLabel from '../../../../InputOverlapLabel'
-import TextAreaOvelapLabel from '../../../../TextAreaOvelapLabel'
+import InputOverlapLabel from '@components/ui/InputOverlapLabel'
+import TextAreaOvelapLabel from '@components/ui/TextAreaOvelapLabel'
 
 const AboutSection = ({ bio, setBio, company, setCompany, jobTitle, setJobTitle }) => {
   return (

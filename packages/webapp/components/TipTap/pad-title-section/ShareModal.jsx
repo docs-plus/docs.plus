@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { Facebook, Twitter, Linkedin, At, World } from '@icons'
-import Button from '@components/Button'
+import Button from '@components/ui/Button'
 
 const socialSharingMap = {
   facebook: `https://www.facebook.com/sharer.php?u=`,
