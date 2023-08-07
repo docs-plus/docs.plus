@@ -103,9 +103,9 @@ const SingInForm = ({ ...props }) => {
     <div {...props}>
       <div className={`${!emailSent && 'border  p-5'} rounded-md`}>
         <div className={`${emailSent ? 'hidden' : 'block '}`}>
-          <p className="text-base antialiased text-center font-bold">
+          {/* <p className="text-base antialiased text-center font-bold">
             Your journey with Docs.plus begins now!
-          </p>
+          </p> */}
           <div className="flex flex-col items-center justify-center mt-6 ">
             <Button
               className="px-3 flex align-baseline justify-center w-full py-2 border rounded"
@@ -133,7 +133,7 @@ const SingInForm = ({ ...props }) => {
 
               {emailError && <p className="mt-2 text-red-600">{emailError}</p>}
               <Button
-                className=" text-black border ml-auto mt-4 w-full px-3 py-2 rounded"
+                className=" transition-all hover:bg-indigo-500 hover:shadow-md bg-docsy text-white shadow-sm border ml-auto mt-4 w-full px-3 py-2 rounded"
                 loading={isLoading || loading}
                 onClick={signInWithEmail}>
                 {btnSubmitText}

@@ -58,9 +58,9 @@ const Header = () => {
       />
       <link rel="manifest" href="/manifest.json" />
 
-      <meta name="application-name" content="Docs Plus" />
+      <meta name="application-name" content="docs.plus" />
       <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-      <meta name="apple-mobile-web-app-title" content="Docs Plus" />
+      <meta name="apple-mobile-web-app-title" content="docs.plus" />
     </Head>
   )
 }
