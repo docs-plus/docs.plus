@@ -29,7 +29,7 @@ function Home({ hostname }) {
 
   return (
     <div>
-      <HeadSeo title="Docs Plus" description="Docs Plus application" />
+      <HeadSeo title="docs.plus" description="docs.plus application" />
       <div className="grid h-full w-full sm:h-screen place-items-center bg-slate-100 p-4">
         <Tabs defaultActiveTab="deck" className="max-w-5xl rounded-md relative">
           <TabList

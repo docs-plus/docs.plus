@@ -1,6 +1,6 @@
 import Head from 'next/head'
 
-const TITLE = 'Docs Plus'
+const TITLE = 'docs.plus'
 const DESCRIPTION =
   'docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge in a hierarchical manner. Collaborate on documents and share knowledge in a structured, logical way.'
 const URL = 'http://docs.plus'
@@ -30,7 +30,7 @@ const HeadSeo = (
       <meta property="og:type" content="website" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
-      <meta property="og:site_name" content="Docs Plus" />
+      <meta property="og:site_name" content={TITLE} />
       <meta property="og:url" content={url} />
       <meta property="og:image" content={IMAGE} />
     </Head>
