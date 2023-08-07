@@ -1,24 +1,33 @@
-import { useEffect, useState } from 'react'
+import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import { useUser } from '@supabase/auth-helpers-react'
 import Image from 'next/image'
-
 import PubSub from 'pubsub-js'
 
 const AVATAR_URL_CHANNEL_NAME = 'updateAvatarURL'
 
-const useAvatar = () => {
-  const { id: userId } = useUser()
-  const lastUpdate = Date.now().toString()
+const useAvatar = (srcAvatar) => {
+  const user = useUser()
+  const { id: userId } = user
 
-  const bucketAddress = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${userId}.png?${lastUpdate}`
-  const [avatarUrl, setAvatarUrl] = useState(bucketAddress)
+  const bucketAddress = useMemo(() => {
+    const lastUpdate = Date.now().toString()
+
+    return (
+      user.user_metadata.avatar_url ||
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${userId}.png?${lastUpdate}`
+    )
+  }, [user.user_metadata.avatar_url, userId])
+
+  const [avatarUrl, setAvatarUrl] = useState(srcAvatar || bucketAddress)
 
   return { avatarUrl, setAvatarUrl }
 }
 
-const Avatar = ({ height = 40, width = 40, srcAvatar, ...props }) => {
+const AvatarComponet = ({ height, width, srcAvatar, ...props }) => {
   const { avatarUrl, setAvatarUrl } = useAvatar(srcAvatar)
-  const { user_metadata } = useUser()
+  const user = useUser()
+
+  const { user_metadata } = user
 
   useEffect(() => {
     if (srcAvatar) return
@@ -30,24 +39,29 @@ const Avatar = ({ height = 40, width = 40, srcAvatar, ...props }) => {
     }
   }, [])
 
+  const onError = useCallback((e) => {
+    if (user_metadata?.avatar_url && !srcAvatar) setAvatarUrl(user_metadata?.avatar_url)
+    else {
+      e.target.style.padding = '6px'
+      e.target.classList.add('bg-gray-100')
+      e.target.classList.add('dark:bg-gray-600')
+      setAvatarUrl('/assets/avatar.svg')
+    }
+  }, [])
+
   return (
     <Image
       src={srcAvatar || avatarUrl}
       width={width}
-      onError={(e) => {
-        if (user_metadata?.avatar_url && !srcAvatar) setAvatarUrl(user_metadata?.avatar_url)
-        else {
-          e.target.style.padding = '6px'
-          e.target.classList.add('bg-gray-100')
-          e.target.classList.add('dark:bg-gray-600')
-          setAvatarUrl('/assets/avatar.svg')
-        }
-      }}
+      onError={onError}
       height={height}
       alt="avatar"
       {...props}
     />
   )
 }
+
+// TODO: improvment, check avatar props are Equal
+const Avatar = React.memo(AvatarComponet)
 
 export { Avatar, useAvatar, AVATAR_URL_CHANNEL_NAME }
