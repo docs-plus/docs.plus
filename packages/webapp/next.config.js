@@ -5,10 +5,10 @@ const isProduction = process.env.NODE_ENV === 'production'
 
 const withPWA = require('next-pwa')({
   dest: 'public',
+  disable: isProduction,
   register: true,
   skipWaiting: false,
   runtimeCaching
-  // disable: process.env.NODE_ENV === 'development',
   // disableDevLogs: true,
 })
 
