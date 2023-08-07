@@ -92,9 +92,11 @@ const DeckPanel = ({ hostname }) => {
               {`Let's have a collaborative journey!`}
             </p> */}
 
-            <button className="px-3 w-full py-2 border rounded" onClick={() => enterToPad('random')}>
+            <Button
+              className="px-3 w-full transition-all hover:bg-indigo-500 hover:shadow-md bg-docsy text-white  py-2 border rounded"
+              onClick={() => enterToPad('random')}>
               Create a new public doc
-            </button>
+            </Button>
 
             <div className="flex items-center justify-center my-6 ">
               <div className="w-full bg-gray-200 h-0 border"></div>

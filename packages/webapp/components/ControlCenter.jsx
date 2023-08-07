@@ -3,14 +3,19 @@ import dynamic from 'next/dynamic'
 import { useUser } from '@supabase/auth-helpers-react'
 import SignInPanel from '@pages/panels/SignInPanel'
 import ProfilePanel from '@pages/panels/profile/ProfilePanel'
+import { twMerge } from 'tailwind-merge'
 
 const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
 const DocumentsPanel = dynamic(() => import('@pages/panels/DocumentsPanel'))
 
-function TabLayout({ children }) {
+function TabLayout({ children, className, footer }) {
   return (
-    <TabPanel className="flex flex-wrap sm:justify-center sm:m-auto p-2 sm:p-6 sm:py-6 pb-2 sm:pb-2">
-      <DashboardLayout>{children}</DashboardLayout>
+    <TabPanel
+      className={twMerge(
+        `flex flex-wrap sm:justify-center sm:m-auto p-2 sm:p-6 sm:py-6 pb-2 sm:pb-2`,
+        className
+      )}>
+      <DashboardLayout footer={footer}>{children}</DashboardLayout>
     </TabPanel>
   )
 }
@@ -19,7 +24,7 @@ const ControlCenter = () => {
   const user = useUser()
 
   return (
-    <div className="bg-slate-100 rounded-md drop-shadow">
+    <div className="bg-slate-100  rounded-md drop-shadow">
       <Tabs defaultActiveTab={user ? 'profile' : 'sign-in'} className="max-w-5xl rounded-md relative">
         <TabList>
           {!user && (
@@ -36,7 +41,7 @@ const ControlCenter = () => {
         </TabList>
         <TabPanels className="bg-white rounded-md  max-w-5xl -top-1 relative z-10">
           {!user && (
-            <TabLayout name="sign-in">
+            <TabLayout name="sign-in" footer={false} className="sm:w-[28rem] w-full p-6 sm:p-6">
               <SignInPanel />
             </TabLayout>
           )}
