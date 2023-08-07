@@ -1,16 +1,15 @@
 import { useEffect, useState, useCallback } from 'react'
 import Select from 'react-select'
-
 import { Link, ImageBox, Gear, ClearMark, Filter, Folder } from '@icons'
 import PubSub from 'pubsub-js'
-
+import dynamic from 'next/dynamic'
 import ToolbarButton from './ToolbarButton'
 import Icon from './Icon'
-
 import FilterModal from './FilterModal'
-import GearModal from './GearModal'
 import { useRouter } from 'next/router'
 import { useEditorStateContext } from '@context/EditorContext'
+
+const GearModal = dynamic(() => import('./GearModal'))
 
 const Toolbar = ({ editor, docMetadata }) => {
   const router = useRouter()
