@@ -3,7 +3,7 @@ import SignInForm from './SignInForm'
 const SignInPanel = () => {
   return (
     <>
-      <div className="sm:w-1/2 p-2 w-full  mt-2 sm:mt-0  ">
+      {/* <div className="sm:w-1/2 p-2 w-full  mt-2 sm:mt-0  ">
         <h4 className="font-bold text-3xl  antialiased">
           Embrace the Power of Collaboration with <span className="text-docsy">Docs.plus!</span>
         </h4>
@@ -19,8 +19,8 @@ const SignInPanel = () => {
           <span className="text-docsy font-bold">– </span>
           Unleash the potential of teamwork and knowledge sharing.
         </p>
-      </div>
-      <div className="sm:w-1/2 w-full mt-6 sm:mt-0 flex justify-end">
+      </div> */}
+      <div className="w-full flex justify-center items-center">
         <SignInForm className="sm:w-[25rem] w-full flex flex-col" />
       </div>
     </>

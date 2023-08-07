@@ -6,6 +6,7 @@ import DeckPanel from '@pages/panels/DeckPanel'
 import { useEditorStateContext } from '@context/EditorContext'
 import { Avatar } from '@components/Avatar'
 import { DocsPlus } from '@icons'
+import { twMerge } from 'tailwind-merge'
 
 const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
 const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
@@ -14,10 +15,14 @@ const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
 const DocumentsPanel = dynamic(() => import('@pages/panels/DocumentsPanel'))
 const ProfilePanel = dynamic(() => import('@pages/panels/profile/ProfilePanel'))
 
-function TabLayout({ children }) {
+function TabLayout({ children, className, footer }) {
   return (
-    <TabPanel className="flex flex-wrap sm:justify-center sm:m-auto p-2 sm:p-6 sm:py-6 pb-2 sm:pb-2">
-      <DashboardLayout>{children}</DashboardLayout>
+    <TabPanel
+      className={twMerge(
+        `flex flex-wrap sm:justify-center sm:m-auto p-2 sm:p-6 sm:py-6 pb-2 sm:pb-2`,
+        className
+      )}>
+      <DashboardLayout footer={footer}>{children}</DashboardLayout>
     </TabPanel>
   )
 }
@@ -61,7 +66,7 @@ function Home({ hostname }) {
               </TabLayout>
             )}
             {isAuthServiceAvailable && !user && (
-              <TabLayout name="sign-in">
+              <TabLayout name="sign-in" footer={false} className="sm:w-[28rem] w-full p-6 sm:p-6">
                 <SignInPanel />
               </TabLayout>
             )}
