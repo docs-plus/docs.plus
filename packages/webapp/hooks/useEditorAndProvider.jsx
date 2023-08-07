@@ -16,6 +16,7 @@ const getCursorUser = (user, profileData) => {
   if (profileData?.avatar_url) {
     bucketAddress = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${user.id}.png?${lastUpdate}`
   }
+
   return {
     name: profileData?.full_name || user.user_metadata.full_name,
     username: profileData?.username || user.user_metadata.user_name,
@@ -29,21 +30,25 @@ const useEditorAndProvider = ({ docMetadata }) => {
   const user = useUser()
   const router = useRouter()
   const { slugs } = router.query
-  const { rendering, setRendering, loading, applyingFilters, setApplyingFilters, setLoading } = useEditorStateContext()
+  const {
+    rendering,
+    setRendering,
+    setPresentUsers,
+    loading,
+    applyingFilters,
+    setApplyingFilters,
+    setLoading
+  } = useEditorStateContext()
+
   const { profileData } = useProfileData()
 
   // TODO: this cuase rerending 3 times
   const { provider } = useYdocAndProvider(docMetadata.documentId, setLoading)
 
   useEffect(() => {
-    if (provider) {
-      provider.on('awarenessUpdate', ({ states }) => {
-        // console.log(states, '====>>>>awarenessUpdateHandler')
-      })
-
-      if (profileData && !loading) {
-        provider.setAwarenessField('user', getCursorUser(user, profileData))
-      }
+    if (!provider) return
+    if (profileData && !loading) {
+      provider.setAwarenessField('user', getCursorUser(user, profileData))
     }
   }, [provider, user, profileData, loading])
 
@@ -97,6 +102,40 @@ const useEditorAndProvider = ({ docMetadata }) => {
     if (loading && setApplyingFilters) return
     setRendering(false)
   }, [loading, setRendering, setApplyingFilters])
+
+  useEffect(() => {
+    if (!provider) return
+    const awarenessUpdateHandler = ({ states }) => {
+      if (states.length === 0) return
+      if (!user) return setPresentUsers(states)
+      // if user is present, remove it from the list
+      setPresentUsers(() => {
+        return states.filter((x) => x.user?.id !== user.id)
+      })
+    }
+
+    provider.on('awarenessUpdate', awarenessUpdateHandler)
+
+    return () => {
+      if (provider) {
+        provider.off('awarenessUpdate', awarenessUpdateHandler)
+      }
+    }
+  }, [provider, user])
+
+  // FIXME: this cuase rerending other components that depend on useEditorStateContext! "Drill props down instead"
+  // // The selection has changed.
+  // useEffect(() => {
+  //   if (!editor || loading) return
+
+  //   editor.on('selectionUpdate', ({ editor }) => {
+  //     setSelectionPos(editor.state.selection?.$anchor?.pos)
+  //   })
+
+  //   return () => {
+  //     editor.off('selectionUpdate')
+  //   }
+  // }, [editor, loading])
 
   return { editor, provider }
 }
