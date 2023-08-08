@@ -59,8 +59,6 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
     const headingNodeEl = el.closest('.heading')
     let headingId = headingNodeEl.getAttribute('data-id')
 
-    editor.commands.focus(from + node.nodeSize - 1)
-
     if (editor.isEditable) {
       const { tr } = editor.state
       const pos = from
