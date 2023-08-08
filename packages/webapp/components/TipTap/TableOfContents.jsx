@@ -123,7 +123,7 @@ const TableOfContent = ({ editor, className }) => {
         renderedItems.push(
           <div
             key={item.id}
-            className={`toc__item toc__item--${item.level} truncate ${item.open ? '' : 'closed'}`}
+            className={`toc__item toc__item--${item.level} ${item.open ? '' : 'closed'}`}
             data-id={item.id}
             data-offsettop={item.offsetTop}>
             <span>
@@ -133,7 +133,7 @@ const TableOfContent = ({ editor, className }) => {
                 <CaretRight size={17} fill="#363636" />
               </span>
               <a
-                className="text-black truncate"
+                className="text-black line-clamp-2 hover:line-clamp-3 "
                 data-id={item.id}
                 href={`?${item.id}`}
                 onClick={scroll2Header}>
