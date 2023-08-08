@@ -82,14 +82,21 @@ const TableOfContent = ({ editor, className }) => {
   const scroll2Header = useCallback((e) => {
     e.preventDefault()
     let id = e.target.getAttribute('data-id')
-    const heading = e.target.innerText
     const offsetParent = getOffsetTop(e.target.closest('.toc__item'))
 
     if (offsetParent === 0) id = '1'
 
+    const nodePos = editor.view.state.doc.resolve(
+      editor?.view.posAtDOM(document.querySelector(`.heading[data-id="${id}"]`))
+    )
+
+    const headingPath = nodePos.path
+      .filter((x) => x?.type?.name === 'heading')
+      .map((x) => x.firstChild.textContent.toLowerCase().trim())
+
     const url = new URL(window.location.href)
     url.searchParams.set('id', id)
-    url.searchParams.set('heading', encodeURIComponent(heading))
+    url.searchParams.set('heading', headingPath.join('>'))
     window.history.replaceState({}, '', url)
 
     document.querySelector(`.heading[data-id="${id}"]`)?.scrollIntoView()
