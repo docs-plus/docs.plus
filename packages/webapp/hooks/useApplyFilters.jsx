@@ -58,11 +58,11 @@ const useApplyFilters = (editor, slugs, applyingFilters, setApplyingFilters, rou
     const uniqueArr = [...new Set(headingIds)]
 
     // if the filter result is empty, then redirect to the first slug
-    if (uniqueArr.length === 0) {
-      router.push(slugs.at(0))
-      setApplyingFilters(false)
-      return
-    }
+    // if (uniqueArr.length === 0) {
+    //   router.push(slugs.at(0))
+    //   setApplyingFilters(false)
+    //   return
+    // }
 
     const dbMap = []
     headings.forEach((header) => {
