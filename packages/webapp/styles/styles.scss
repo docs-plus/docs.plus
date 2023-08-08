@@ -10,6 +10,9 @@ $crinkle-unfold-bg: #efefef;
 
 .foldWrapper {
   background-color: #f8f9fa;
+  transition: height 0.3s ease-in-out;
+  height: 20px;
+
   cursor: pointer;
   width: 100%;
   bottom: 0;
@@ -336,7 +339,7 @@ $crinkle-unfold-bg: #efefef;
       order: 3;
 
       .foldWrapper {
-        transition: all $crinkle-time $crinkle-transition;
+        // transition: all $crinkle-time $crinkle-transition;
 
         .fold {
           transition: height $crinkle-time $crinkle-transition;
