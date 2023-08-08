@@ -243,7 +243,7 @@ const HeadingsContent = Node.create({
 
       dom.addEventListener('toggleHeadingsContent', ({ detail }) => {
         const section = detail.el
-        editor.commands.focus()
+        // editor.commands.focus()
 
         if (!editor.isEditable && typeof getPos !== 'function') return false
 
