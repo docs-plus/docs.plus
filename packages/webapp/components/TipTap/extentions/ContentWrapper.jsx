@@ -44,6 +44,7 @@ function createCrinkleNode(prob) {
     foldEl.append(line)
   }
   foldEl.setAttribute('data-clampedLines', clampedLines + 1)
+
   foldEl.addEventListener('click', (e) => {
     const heading = e.target.closest('.heading')
     if (!heading.classList.contains('closed')) return
@@ -52,51 +53,25 @@ function createCrinkleNode(prob) {
   })
 
   foldEl.addEventListener('mouseenter', (e) => {
-    clearTimeout(mouseLeaveTimeout)
+    const heading = e.target.closest('.heading')
+    const classList = heading.classList
 
-    mouseEnterTimeout = setTimeout(() => {
-      const heading = e.target.closest('.heading')
+    if (classList.contains('opening') || classList.contains('closing')) return
 
-      const classList = heading.classList
-      if (classList.contains('opening') || classList.contains('closing')) return
-
-      const elem = e.target.closest('.foldWrapper')
-      elem.style.height = '20px'
-      elem.style.transition = 'none'
-      elem.style.transitionTimingFunction = 'ease-in-out'
-
-      requestAnimationFrame(() => {
-        elem.style.transition = ''
-
-        requestAnimationFrame(() => {
-          elem.style.height = '70px'
-        })
-      })
-    }, 100)
+    const elem = e.target.closest('.foldWrapper')
+    elem.style.transitionTimingFunction = 'ease-in-out'
+    elem.style.height = '70px'
   })
 
   foldEl.addEventListener('mouseleave', (e) => {
-    clearTimeout(mouseEnterTimeout)
+    const heading = e.target.closest('.heading')
+    const classList = heading.classList
 
-    mouseLeaveTimeout = setTimeout(() => {
-      const heading = e.target.closest('.heading')
+    if (classList.contains('opening') || classList.contains('closing')) return
 
-      const classList = heading.classList
-      if (classList.contains('opening') || classList.contains('closing')) return
-
-      const elem = e.target.closest('.foldWrapper')
-      elem.style.height = '70px'
-      elem.style.transition = 'none'
-      elem.style.transitionTimingFunction = 'ease-in-out'
-
-      requestAnimationFrame(() => {
-        elem.style.transition = ''
-
-        requestAnimationFrame(() => {
-          elem.style.height = '20px'
-        })
-      })
-    }, 100)
+    const elem = e.target.closest('.foldWrapper')
+    elem.style.transitionTimingFunction = 'ease-in-out'
+    elem.style.height = '20px'
   })
 
   return foldEl
