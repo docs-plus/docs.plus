@@ -13,7 +13,7 @@ const TOC = ({ className = '', editor }) => {
     )
   }
 
-  return <TableOfContents className={`${className} tiptap__toc pl-2`} editor={editor} />
+  return <TableOfContents className={`${className} tiptap__toc`} editor={editor} />
 }
 
 export default TOC

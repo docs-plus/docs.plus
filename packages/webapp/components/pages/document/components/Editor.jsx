@@ -135,7 +135,7 @@ const Editor = ({ docMetadata }) => {
           <EditorContent editor={editor} />
         </div>
         {!isMobile && (
-          <div className="max-w-xs w-3/12 overflow-hidden pb-4 sm:py-4 sm:pb-14 scroll-smooth hover:overflow-auto hover:overscroll-contain">
+          <div className="max-w-xs w-3/12 overflow-hidden pb-4 sm:py-4 sm:pb-14 pr-16 scroll-smooth hover:overflow-auto hover:overscroll-contain">
             <TOC editor={editor} />
           </div>
         )}
