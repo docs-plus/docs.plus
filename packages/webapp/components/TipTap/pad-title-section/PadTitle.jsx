@@ -98,7 +98,7 @@ const PadTitle = ({ docMetadata }) => {
         <Button
           onClick={openShareModal}
           Icon={PrivateShare}
-          className="bg-indigo-500 hidden sm:flex mt-0 drop-shadow-sm font-light ml-6 text-white w-28">
+          className="hover:bg-indigo-500 transition-all bg-docsy hidden sm:flex mt-0 drop-shadow-sm font-light ml-6 text-white w-28">
           Share
         </Button>
 
