@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import MobileDetect from 'mobile-detect'
-
+import { DocumentTitleProvider } from '@context/DocumentTitleContext'
 import DesktopLayout from '@components/pages/document/layouts/DesktopLayout'
 import MobileLayout from '@components/pages/document/layouts/MobileLayout'
 import { getSupabaseSession } from '@utils/getSupabaseSession'
@@ -26,7 +26,10 @@ const Document = ({ slugs, docMetadata }) => {
   return (
     <>
       <HeadSeo title={title} description={description} keywords={keywords.length && keywords.join(',')} />
-      {isMobile ? <MobileLayout docMetadata={docMetadata} /> : <DesktopLayout docMetadata={docMetadata} />}
+
+      <DocumentTitleProvider>
+        {isMobile ? <MobileLayout docMetadata={docMetadata} /> : <DesktopLayout docMetadata={docMetadata} />}
+      </DocumentTitleProvider>
     </>
   )
 }
