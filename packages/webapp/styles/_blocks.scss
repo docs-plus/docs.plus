@@ -14,6 +14,9 @@
     background-color: #f8f9fa;
     overflow: auto;
     // @apply absolute;
+    .editorWrapper{
+      padding-bottom: 300px
+    }
 
     .tipta__editor {
       @apply max-w-4xl w-full;
