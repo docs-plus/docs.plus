@@ -47,10 +47,13 @@ const TableOfContent = ({ editor, className }) => {
   useEffect(() => {
     if (!editor) return null
 
-    editor.on('update', handleUpdate)
     let trTimer
 
     editor.on('transaction', (tr) => {
+      if (tr.transaction.selection.$anchor.parent.type.name === 'contentHeading') {
+        handleUpdate(tr)
+      }
+
       if (tr.transaction.meta?.foldAndunfold || tr.transaction.meta?.renderTOC) {
         trTimer = setTimeout(() => {
           handleUpdate(tr)
@@ -68,7 +71,7 @@ const TableOfContent = ({ editor, className }) => {
       clearTimeout(timer)
       clearTimeout(trTimer)
     }
-  }, [editor, handleUpdate])
+  }, [editor])
 
   useEffect(() => {
     const transaction = editor.state.tr
