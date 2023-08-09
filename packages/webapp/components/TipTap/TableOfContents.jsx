@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { CaretRight } from '@icons'
 import PubSub from 'pubsub-js'
 import ENUMS from './enums'
+import slugify from 'slugify'
 
 const getOffsetTop = (element) => (element ? element.offsetTop + getOffsetTop(element.offsetParent) : 0)
 
@@ -81,28 +82,31 @@ const TableOfContent = ({ editor, className }) => {
     return () => clearTimeout(timer)
   }, [])
 
-  const scroll2Header = useCallback((e) => {
-    e.preventDefault()
-    let id = e.target.getAttribute('data-id')
-    const offsetParent = getOffsetTop(e.target.closest('.toc__item'))
+  const scroll2Header = useCallback(
+    (e) => {
+      e.preventDefault()
+      let id = e.target.getAttribute('data-id')
+      const offsetParent = getOffsetTop(e.target.closest('.toc__item'))
 
-    if (offsetParent === 0) id = '1'
+      if (offsetParent === 0) id = '1'
 
-    const nodePos = editor.view.state.doc.resolve(
-      editor?.view.posAtDOM(document.querySelector(`.heading[data-id="${id}"]`))
-    )
+      const nodePos = editor.view.state.doc.resolve(
+        editor?.view.posAtDOM(document.querySelector(`.heading[data-id="${id}"]`))
+      )
 
-    const headingPath = nodePos.path
-      .filter((x) => x?.type?.name === 'heading')
-      .map((x) => x.firstChild.textContent.toLowerCase().trim())
+      const headingPath = nodePos.path
+        .filter((x) => x?.type?.name === 'heading')
+        .map((x) => slugify(x.firstChild.textContent.toLowerCase().trim()))
 
-    const url = new URL(window.location.href)
-    url.searchParams.set('id', id)
-    url.searchParams.set('heading', headingPath.join('>'))
-    window.history.replaceState({}, '', url)
+      const url = new URL(window.location.href)
+      url.searchParams.set('h', headingPath.join('>'))
+      url.searchParams.set('id', id)
+      window.history.replaceState({}, '', url)
 
-    document.querySelector(`.heading[data-id="${id}"]`)?.scrollIntoView()
-  }, [])
+      document.querySelector(`.heading[data-id="${id}"]`)?.scrollIntoView()
+    },
+    [editor]
+  )
 
   const toggleSection = useCallback((item) => {
     const itemElement = document.querySelector(`.toc__item[data-id="${item.id}"]`)
@@ -142,7 +146,7 @@ const TableOfContent = ({ editor, className }) => {
                 <CaretRight size={17} fill="#363636" />
               </span>
               <a
-                className="text-black line-clamp-2 hover:line-clamp-3 "
+                className="text-black sm:line-clamp-2 sm:hover:line-clamp-3 "
                 data-id={item.id}
                 href={`?${item.id}`}
                 onClick={scroll2Header}>
