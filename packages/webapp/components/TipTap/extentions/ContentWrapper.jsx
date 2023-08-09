@@ -2,6 +2,8 @@ import { Node, mergeAttributes } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { getNodeState } from './helper'
+import PubSub from 'pubsub-js'
+import ENUMS from '../enums'
 
 function extractContentWrapperBlocks(doc) {
   const result = []
@@ -28,8 +30,6 @@ function extractContentWrapperBlocks(doc) {
 
 function createCrinkleNode(prob) {
   const foldEl = document.createElement('div')
-  let mouseLeaveTimeout = null
-  let mouseEnterTimeout = null
 
   foldEl.classList.add('foldWrapper')
   const step = 2400
@@ -49,7 +49,10 @@ function createCrinkleNode(prob) {
     const heading = e.target.closest('.heading')
     if (!heading.classList.contains('closed')) return
 
-    return e.target.parentElement.parentElement.querySelector('.btnFold')?.click()
+    const headingId = heading.getAttribute('data-id')
+    const open = heading.classList.contains('open')
+
+    PubSub.publish(ENUMS.EVENTS.FOLD_AND_UNFOLD, { headingId, open: open })
   })
 
   foldEl.addEventListener('mouseenter', (e) => {
@@ -224,6 +227,10 @@ const HeadingsContent = Node.create({
 
         const { tr } = editor.state
 
+        tr.setMeta('addToHistory', false)
+        // for trigger table of contents
+        tr.setMeta(ENUMS.EVENTS.FOLD_AND_UNFOLD, true)
+
         const pos = getPos()
         const currentNode = tr.doc.nodeAt(pos)
 
@@ -233,9 +240,6 @@ const HeadingsContent = Node.create({
 
         const open = section.classList.contains('collapsed') ? true : false
 
-        tr.setMeta('addToHistory', false)
-        // for trigger table of contents
-        tr.setMeta('foldAndunfold', true)
         editor.view.dispatch(tr)
 
         expandElement(section, 'collapsed', detail.headingId, open)
