@@ -124,6 +124,8 @@ const handleHeadingToggle = (editor, { headingId, open }) => {
   if (editor.isEditable) {
     const pos = nodePos.pos
     const currentNode = tr.doc.nodeAt(pos)
+    // update toc
+    tr.setMeta('renderTOC', true)
 
     const documentId = localStorage.getItem('docId')
     const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
