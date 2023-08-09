@@ -1,13 +1,15 @@
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { Node, mergeAttributes } from '@tiptap/core'
-
 import { db } from '../../../db'
-
 import { copyToClipboard } from './helper'
 import onHeading from './normalText/onHeading'
+import PubSub from 'pubsub-js'
+import ENUMS from '../enums'
 
-function extractContentHeadingBlocks(doc) {
+let isProcessing = false
+
+const extractContentHeadingBlocks = (doc) => {
   const result = []
   const record = (from, to, headingId, node) => {
     result.push({ from, to, headingId, node })
@@ -29,6 +31,16 @@ function extractContentHeadingBlocks(doc) {
   return result
 }
 
+const dispatchToggleHeadingSection = (el) => {
+  const headingId = el.getAttribute('data-id')
+  const detailsContent = el.querySelector('div.contentWrapper')
+  const event = new CustomEvent('toggleHeadingsContent', {
+    detail: { headingId, el: detailsContent }
+  })
+
+  detailsContent === null || detailsContent === void 0 ? void 0 : detailsContent.dispatchEvent(event)
+}
+
 const buttonWrapper = (editor, { headingId, from, node }) => {
   const buttonWrapper = document.createElement('div')
   const btnToggleHeading = document.createElement('button')
@@ -43,76 +55,6 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
 
   buttonWrapper.append(btnToggleHeading)
   buttonWrapper.append(btnChatBox)
-
-  const toggleHeadingContent = (el) => {
-    const headingId = el.getAttribute('data-id')
-    const detailsContent = el.querySelector('div.contentWrapper')
-    const event = new CustomEvent('toggleHeadingsContent', {
-      detail: { headingId, el: detailsContent }
-    })
-
-    detailsContent === null || detailsContent === void 0 ? void 0 : detailsContent.dispatchEvent(event)
-  }
-
-  const foldAndUnfold = (e) => {
-    const el = e.target
-    const headingNodeEl = el.closest('.heading')
-    let headingId = headingNodeEl.getAttribute('data-id')
-
-    if (editor.isEditable) {
-      const { tr } = editor.state
-      const pos = from
-      const currentNode = tr.doc.nodeAt(pos)
-      const headingNode = tr.doc.nodeAt(pos - 1)
-
-      // TODO: this is not good way
-      headingId = pos === 1 ? '1' : headingId
-
-      if (currentNode && currentNode.type.name === 'contentHeading') {
-        tr.setNodeMarkup(pos, undefined, {
-          ...currentNode.attrs,
-          level: currentNode.attrs.level,
-          id: headingNode.attrs.id
-        })
-      }
-
-      if (headingNode && headingNode.type.name === 'heading') {
-        tr.setNodeMarkup(pos - 1, undefined, {
-          ...headingNode.attrs,
-          level: currentNode.attrs.level,
-          id: headingNode.attrs.id
-        })
-      }
-
-      tr.setMeta('addToHistory', false)
-
-      const documentId = localStorage.getItem('docId')
-      const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
-      const nodeState = headingMap.find((h) => h.headingId === headingId) || {
-        crinkleOpen: true
-      }
-
-      const filterMode = document.body.classList.contains('filter-mode')
-      let database = filterMode ? db.docFilter : db.meta
-
-      database
-        .put({
-          docId: documentId,
-          headingId,
-          crinkleOpen: !nodeState.crinkleOpen,
-          level: currentNode.attrs.level
-        })
-        .then(() => {
-          database.toArray().then((data) => {
-            localStorage.setItem('headingMap', JSON.stringify(data))
-          })
-          editor.view.dispatch(tr)
-          toggleHeadingContent(headingNodeEl)
-        })
-    }
-  }
-
-  btnToggleHeading.addEventListener('click', foldAndUnfold)
 
   // copy the link to clipboard
   const href = document.createElement('span')
@@ -154,6 +96,64 @@ const appendButtonsDec = (doc, editor) => {
   })
 
   return DecorationSet.create(doc, decos)
+}
+
+const handleHeadingToggle = (editor, { headingId, open }) => {
+  const { tr } = editor.state
+  const headingNodeEl = editor.view.dom.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
+
+  if (isProcessing) return
+  isProcessing = true
+
+  if (!headingNodeEl) {
+    isProcessing = false
+    return
+  }
+
+  // TODO: I have no idea, whay this is working like this!
+  let nodePos
+  try {
+    nodePos = editor.view.state.doc.resolve(editor.view.posAtDOM(headingNodeEl))
+  } catch (error) {
+    isProcessing = false
+    return
+  }
+
+  if (!nodePos) return
+
+  if (editor.isEditable) {
+    const pos = nodePos.pos
+    const currentNode = tr.doc.nodeAt(pos)
+
+    const documentId = localStorage.getItem('docId')
+    const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
+    const nodeState = headingMap.find((h) => h.headingId === headingId) || {
+      crinkleOpen: true
+    }
+    const filterMode = document.body.classList.contains('filter-mode')
+    let database = filterMode ? db.docFilter : db.meta
+    database
+      .put({
+        docId: documentId,
+        headingId,
+        crinkleOpen: !nodeState.crinkleOpen,
+        level: currentNode.attrs.level
+      })
+      .then(() => {
+        database.toArray().then((data) => {
+          localStorage.setItem('headingMap', JSON.stringify(data))
+        })
+        editor.view.dispatch(tr)
+        dispatchToggleHeadingSection(headingNodeEl)
+        isProcessing = false
+      })
+      .catch((err) => {
+        console.error(err)
+        isProcessing = false
+      })
+  } else {
+    isProcessing = false
+  }
 }
 
 const HeadingsTitle = Node.create({
@@ -239,6 +239,8 @@ const HeadingsTitle = Node.create({
     }
   },
   addProseMirrorPlugins() {
+    PubSub.subscribe(ENUMS.EVENTS.FOLD_AND_UNFOLD, (msg, data) => handleHeadingToggle(this.editor, data))
+
     return [
       new Plugin({
         key: new PluginKey('HeadingButtons'),
@@ -250,6 +252,11 @@ const HeadingsTitle = Node.create({
           decorations(state) {
             return this.getState(state)
           }
+        },
+        destroy() {
+          PubSub.unsubscribe(ENUMS.EVENTS.FOLD_AND_UNFOLD, () => {
+            console.info('destroy handleHeadingToggle')
+          })
         }
       })
     ]

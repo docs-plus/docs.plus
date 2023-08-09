@@ -1,5 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { CaretRight } from '@icons'
+import PubSub from 'pubsub-js'
+import ENUMS from './enums'
 
 const getOffsetTop = (element) => (element ? element.offsetTop + getOffsetTop(element.offsetParent) : 0)
 
@@ -112,7 +114,7 @@ const TableOfContent = ({ editor, className }) => {
     btnFoldElement.classList.toggle('opened')
     childrenWrapperElement?.classList.toggle('hidden')
 
-    document.querySelector(`.ProseMirror .heading[data-id="${item.id}"] .buttonWrapper .btnFold`)?.click()
+    PubSub.publish(ENUMS.EVENTS.FOLD_AND_UNFOLD, { headingId: item.id, open: !item.open })
   }, [])
 
   const renderToc = useCallback(
