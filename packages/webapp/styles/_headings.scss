@@ -94,7 +94,8 @@ body.h1SectionBreak {
 .ProseMirror {
   .heading {
     &[level="1"] {
-      padding: 1rem;
+      padding: 2.5rem;
+      padding-bottom: .5rem;
       margin-top: 0;
       border: 1px solid #e1e6e7;
       border-bottom: none;
