@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react'
+import React, { useEffect, useState, useCallback } from 'react'
 import Select from 'react-select'
 import { Link, ImageBox, Gear, ClearMark, Filter, Folder } from '@icons'
 import PubSub from 'pubsub-js'
@@ -225,4 +225,4 @@ const Toolbar = ({ editor, docMetadata }) => {
   )
 }
 
-export default Toolbar
+export default React.memo(Toolbar)
