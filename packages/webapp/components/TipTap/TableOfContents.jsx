@@ -182,4 +182,4 @@ const TableOfContent = ({ editor, className }) => {
   )
 }
 
-export default TableOfContent
+export default React.memo(TableOfContent)
