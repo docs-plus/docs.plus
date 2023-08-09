@@ -12,26 +12,27 @@ $crinkle-unfold-bg: #efefef;
   background-color: #f8f9fa;
   transition: height 0.3s ease-in-out;
   height: 20px;
-
   cursor: pointer;
   width: 100%;
   bottom: 0;
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
-  transition: all $crinkle-time $crinkle-transition;
+  transition: height $crinkle-time $crinkle-transition;
   order: 2;
 
   .fold {
-    width: calc(100% + 2rem + 6px);
+    width: calc(100% + 5rem + 6px);
     position: relative;
     z-index: 2;
-    left: -19px;
+    left: -45px;
     background-color: #f8f9fa;
     padding-right: 4px;
     height: 100%;
     margin-top: -2px;
-    transition: all $crinkle-time $crinkle-transition;
+    transition: height $crinkle-time $crinkle-transition;
+
+
 
     &::after {
       content: "";
@@ -83,25 +84,27 @@ $crinkle-unfold-bg: #efefef;
     &.closed {
       &[level="1"] {
         > .wrapBlock > .foldWrapper .fold {
-          transition: none;
-          width: calc(100% + 2rem + 6px);
-          left: -19px;
+          // transition: none;
+          width: calc(100% + 5rem + 6px);
+          left: -45px;
         }
       }
     }
 
-    &.opening {
-      &[level="1"] {
-        > .wrapBlock > .foldWrapper .fold {
-          transition: none;
-        }
-      }
-    }
+    // &.opening {
+    //   &[level="1"] {
+    //     > .wrapBlock > .foldWrapper .fold {
+    //       transition: none;
+    //       width: calc(100% + 6px);
+    //       left: 30px;
+    //     }
+    //   }
+    // }
 
     &[level="1"] {
       > .wrapBlock > .foldWrapper .fold {
         width: calc(100% + 6px);
-        left: 14px;
+        left: 39px;
       }
     }
 
