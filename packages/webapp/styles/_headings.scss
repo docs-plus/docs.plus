@@ -1,8 +1,11 @@
 body.indentHeading {
   &.h1SectionBreak {
     div.heading {
-      &[level="1"] {
-        box-shadow: 8px 0 34px 0 rgb(60 64 67 / 10%);
+      .foldWrapper {
+        .fold {
+          width: calc(100% + 2rem + 10px);
+          left: 0;
+        }
       }
     }
   }
@@ -34,20 +37,23 @@ body.indentHeading {
 body.h1SectionBreak {
   .ProseMirror {
     background-color: transparent;
-
     .heading {
-      margin-bottom: 1rem;
-
       .heading .heading:last-of-type {
         margin-bottom: 0 !important;
       }
 
+      .foldWrapper {
+        .fold {
+          width: calc(100% + 5rem + 6px);
+          left: -45px;
+        }
+      }
+
       &[level="1"] {
-        box-shadow: 0 1px 3px 1px rgb(00 64 67 / 15%);
-        padding: 1rem;
+        padding: 2.5rem;
         padding-bottom: 0;
         border-bottom: 1px solid #e1e6e7;
-
+        margin-bottom: 1rem;
       }
     }
   }
