@@ -2,10 +2,12 @@ import { useEffect } from 'react'
 import { useDocumentTitle } from '@context/DocumentTitleContext'
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
 import toast from 'react-hot-toast'
+import { useEditorStateContext } from '@context/EditorContext'
 
 const DocTitle = ({ className, docMetadata }) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
   const { title, setTitle } = useDocumentTitle()
+  const { EditorProvider } = useEditorStateContext()
 
   useEffect(() => {
     setTitle(docMetadata.title)
@@ -23,8 +25,23 @@ const DocTitle = ({ className, docMetadata }) => {
   }
 
   useEffect(() => {
+    if (!EditorProvider) return
+
+    const readOnlyStateHandler = ({ payload }) => {
+      const msg = JSON.parse(payload)
+      if (msg.type === 'docTitle') setTitle(msg.state.title)
+    }
+
+    EditorProvider.on('stateless', readOnlyStateHandler)
+
+    return () => EditorProvider.off('stateless', readOnlyStateHandler)
+  }, [EditorProvider])
+
+  useEffect(() => {
     if (isSuccess && data) {
       setTitle(data.data.title)
+      // broadcast to other clients
+      EditorProvider.sendStateless(JSON.stringify({ type: 'docTitle', state: data.data }))
       toast.success('Document title changed successfully')
     }
   }, [isSuccess])
