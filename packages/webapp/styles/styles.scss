@@ -82,6 +82,11 @@ $crinkle-unfold-bg: #efefef;
     height: 100%;
 
     &.closed {
+      padding-bottom: 10px;
+      &:last-of-type{
+        padding-bottom: 0;
+      }
+
       &[level="1"] {
         > .wrapBlock > .foldWrapper .fold {
           // transition: none;
