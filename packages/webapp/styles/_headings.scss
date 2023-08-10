@@ -101,7 +101,7 @@ body.h1SectionBreak {
   .heading {
     &[level="1"] {
       padding: 2.5rem;
-      padding-bottom: .5rem;
+      padding-bottom: .2rem;
       margin-top: 0;
       border: 1px solid #e1e6e7;
       border-bottom: none;
@@ -111,8 +111,13 @@ body.h1SectionBreak {
         border-top: 1px solid #e1e6e7;
       }
 
+      &:not(:first-of-type) {
+        padding-top: 1rem;
+      }
+
       &:last-of-type {
         border-bottom: 1px solid #e1e6e7;
+        padding-bottom: 1.5rem;
       }
     }
   }
