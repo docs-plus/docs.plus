@@ -23,7 +23,7 @@ app.get('/', (_request, response) => {
   response.send({ message: 'Hello World!' })
 })
 
-app.use(middlewares)
+app.use(middlewares())
 app.use('/api', routers)
 
 // Start the server
