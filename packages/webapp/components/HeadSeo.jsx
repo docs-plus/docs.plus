@@ -21,6 +21,8 @@ const HeadSeo = (
       <meta name="description" content={description} />
       <meta name="keywords" content={keywords} />
 
+      <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, notranslate" />
+
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:url" content={url} />
       <meta name="twitter:title" content={title} />
