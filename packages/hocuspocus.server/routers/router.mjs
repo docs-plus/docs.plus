@@ -23,7 +23,7 @@ const getOwnerProfiles = async (userIds) => {
 }
 
 const createNewDocument = async (slug, title, description = '', keywords = '', user) => {
-  const newSlug = slugify(slug, { lower: true, strict: true })
+  const newSlug = slugify(slug.toLowerCase(), { lower: true, strict: true })
   const uid = new ShortUniqueId()
   const documentId = uid.stamp(19)
   const userId = user?.id
@@ -45,7 +45,7 @@ const createNewDocument = async (slug, title, description = '', keywords = '', u
 }
 
 router.get('/documents/:docName', async (req, res) => {
-  const { docName } = req.params
+  const docName = slugify(req.params.docName.toLowerCase(), { lower: true, strict: true })
   const { userId } = req.query
   const token = req.headers.token
   const user = token && userId ? { ...jwt_decode(token), id: userId } : null
