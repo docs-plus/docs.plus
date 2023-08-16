@@ -157,11 +157,6 @@ const clipboardPast = (slice, editor) => {
           ? tr.mapping.map(titleEndPos)
           : tr.doc.nodeAt(lastH1Inserted.startBlockPos).content.size + lastH1Inserted.startBlockPos
 
-      if (lastH1Inserted.startBlockPos !== 0) {
-        lastH1Inserted.startBlockPos = 0
-        lastH1Inserted.endBlockPos = 0
-      }
-
       mapHPost = getHeadingsBlocksMap(tr.doc, startBlock, endBlock)
 
       mapHPost = mapHPost.filter(
