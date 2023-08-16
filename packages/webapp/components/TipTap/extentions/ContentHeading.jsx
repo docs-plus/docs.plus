@@ -214,12 +214,12 @@ const HeadingsTitle = Node.create({
         const { schema, selection, doc } = this.editor.state
         const { $anchor, from } = selection
 
-        // current node
+        // selected node
         const node = doc.nodeAt(from)
         // parent node
         const parent = $anchor.parent
 
-        // if the current node is empty(means there is not content) and the parent is contentHeading
+        // if the selected node is empty(means there is not content) and the parent is contentHeading
         if (
           node !== null ||
           $anchor.parentOffset !== 0 || // this node block contains content
@@ -241,13 +241,17 @@ const HeadingsTitle = Node.create({
     }
   },
   addProseMirrorPlugins() {
-    PubSub.subscribe(ENUMS.EVENTS.FOLD_AND_UNFOLD, (msg, data) => handleHeadingToggle(this.editor, data))
-
     return [
       new Plugin({
         key: new PluginKey('HeadingButtons'),
         state: {
-          init: (_, { doc }) => appendButtonsDec(doc, this.editor),
+          init: (_, { doc }) => {
+            PubSub.subscribe(ENUMS.EVENTS.FOLD_AND_UNFOLD, (msg, data) =>
+              handleHeadingToggle(this.editor, data)
+            )
+
+            return appendButtonsDec(doc, this.editor)
+          },
           apply: (tr, old) => (tr.docChanged ? appendButtonsDec(tr.doc, this.editor) : old)
         },
         props: {
