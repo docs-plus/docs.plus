@@ -54,7 +54,11 @@ const TableOfContent = ({ editor, className }) => {
         handleUpdate(tr)
       }
 
-      if (tr.transaction.meta?.foldAndunfold || tr.transaction.meta?.renderTOC) {
+      if (
+        tr.transaction.meta?.foldAndunfold ||
+        tr.transaction.meta?.renderTOC ||
+        tr.transaction.meta?.paste
+      ) {
         trTimer = setTimeout(() => {
           handleUpdate(tr)
         }, 1000)
