@@ -73,7 +73,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
 
   tr.setSelection(newSelection)
 
-  // after all that, we need to loop through the heading to append
+  // after all that, we need to loop through the rest of remaing heading to append
   for (const heading of contentWrapperHeadings) {
     const commingLevel = heading.le
 
