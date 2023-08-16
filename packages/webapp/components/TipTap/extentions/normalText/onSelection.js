@@ -1,124 +1,146 @@
 import { TextSelection } from '@tiptap/pm/state'
-import { getSelectionBlocks, getRangeBlocks, getPrevHeadingList, findPrevBlock } from '../helper'
+import { getPrevHeadingList, getHeadingsBlocksMap, findPrevBlock } from '../helper'
+import onHeading from './onHeading'
 
-const processHeadings = (state, tr, mapHPost, contentWrapperHeadings) => {
-  for (let heading of contentWrapperHeadings) {
-    if (!heading.le)
-      heading = {
-        ...heading,
-        le: heading.content[0].attrs.level,
-        startBlockPos: 0
+const CONTENT_HEADING_TYPE = 'contentHeading'
+const HEADING_TYPE = 'heading'
+const CONTENT_WRAPPER_TYPE = 'contentWrapper'
+
+const getSelectionBlocks = (doc, start, end, includeContentHeading = false) => {
+  const firstHEading = true
+  const selectedContents = []
+
+  doc.nodesBetween(start, end, function (node, pos, parent) {
+    if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
+      const depth = doc.resolve(pos).depth
+
+      selectedContents.push({
+        depth,
+        startBlockPos: pos,
+        endBlockPos: pos + node.nodeSize,
+        ...node.toJSON()
+      })
+    }
+
+    if (node.type.name === 'contentHeading') {
+      const depth = doc.resolve(pos).depth
+
+      selectedContents.push({
+        depth,
+        level: node.attrs?.level,
+        attrs: includeContentHeading ? node.attrs : {},
+        startBlockPos: pos,
+        endBlockPos: pos + node.nodeSize,
+        type: includeContentHeading ? node.type.name : 'paragraph',
+        content: node.toJSON().content
+      })
+    }
+  })
+
+  return selectedContents
+}
+
+const extractParagraphsAndHeadings = (clipboardContents) => {
+  const paragraphs = []
+  const headings = []
+  let heading = null
+
+  for (const node of clipboardContents) {
+    if (!heading && !node.level) {
+      paragraphs.push(node)
+    }
+
+    if (node.level) {
+      // if new heading is found, push the previous heading into the heading list
+      // and reset the heading
+      if (heading) {
+        headings.push(heading)
+        heading = null
       }
+      heading = {
+        endBlockPos: node.endBlockPos,
+        startBlockPos: node.startBlockPos,
+        level: node.level,
+        type: HEADING_TYPE,
+        attrs: { level: node.level },
+        content: [
+          {
+            type: CONTENT_HEADING_TYPE,
+            attrs: { level: node.level },
+            content: node.content
+          },
+          {
+            type: CONTENT_WRAPPER_TYPE,
+            content: []
+          }
+        ]
+      }
+    } else {
+      heading?.content.at(1).content.push(node)
+    }
+  }
 
-    const startBlock = mapHPost[0].startBlockPos
-    const endBlock = tr.mapping.map(mapHPost.at(0).endBlockPos)
+  if (heading) {
+    headings.push(heading)
+  }
 
-    mapHPost = getPrevHeadingList(tr, startBlock, endBlock)
+  return [paragraphs, headings]
+}
+
+const onSelection = ({ state, tr, editor }) => {
+  const { selection, doc } = state
+  const { $from, $to, from, to } = selection
+
+  let { start } = $from.blockRange($to)
+  start = start === 0 ? from : start
+  const prevHStartPos = 0
+
+  const titleNodeTo = $from.doc.nodeAt($to.start(1) - 1)
+  const titleStartPos = $from.start(1) - 1
+  const titleEndPos = titleStartPos + titleNodeTo.content.size
+
+  const selectedContents = getSelectionBlocks(doc, from, to)
+
+  if (selectedContents[0]?.level) {
+    onHeading({ state, tr, editor })
+    return true
+  }
+
+  const restSelectionContents = getSelectionBlocks(doc, to, titleEndPos)
+  restSelectionContents.shift()
+
+  const [paragraphs, headings] = extractParagraphsAndHeadings(restSelectionContents)
+
+  const newConent = [
+    ...selectedContents.map((node) => state.schema.nodeFromJSON(node)),
+    ...paragraphs.map((node) => state.schema.nodeFromJSON(node))
+  ]
+
+  const titleHMap = getHeadingsBlocksMap(doc, titleStartPos, titleEndPos)
+  let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
+
+  tr.deleteRange(selectedContents.at(0).startBlockPos, titleEndPos)
+  tr.insert(selectedContents.at(0).startBlockPos, newConent)
+
+  // update selection position
+  const focusSelection = new TextSelection(tr.doc.resolve(to))
+  tr.setSelection(focusSelection)
+
+  // after all that, we need to loop through the rest of remaing heading to append
+  for (const heading of headings) {
+    const commingLevel = heading.level || heading.content.at(0).level
+
+    mapHPost = getPrevHeadingList(tr, mapHPost[0].startBlockPos, tr.mapping.map(mapHPost[0].endBlockPos))
+    mapHPost = mapHPost.filter(
+      (x) => x.startBlockPos < heading.startBlockPos && x.startBlockPos >= prevHStartPos
+    )
+
+    const { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
 
     const node = state.schema.nodeFromJSON(heading)
 
-    let { prevBlock, shouldNested } = findPrevBlock(mapHPost, heading.le)
-
     tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
   }
-}
-
-const onSelection = (arrg) => {
-  const { state, tr } = arrg
-  const { selection, doc } = state
-  const { $from, $to, $anchor, from, to } = selection
-  const { start } = $from.blockRange($to)
-
-  const currentHLevel = $from.parent.attrs.level
-  const titleNode = $from.doc.nodeAt($from.start(1) - 1)
-  let titleStartPos = $from.start(1) - 1
-  let titleEndPos = titleStartPos + titleNode.content.size
-  const prevHStartPos = 0
-
-  const selectionFirstLinePos = $from.pos - $from.parentOffset
-
-  const selectedContents = getSelectionBlocks(doc, selectionFirstLinePos - 1, to)
-  const lastHeadingInSelection = selectedContents.findLast((x) =>
-    Object.prototype.hasOwnProperty.call(x, 'attrs')
-  )
-  const lastHeadingIndex = selectedContents.findLastIndex((x) =>
-    Object.prototype.hasOwnProperty.call(x, 'attrs')
-  )
-
-  // on selection we have Heading level 1
-  if (titleEndPos < to) {
-    const getTitleBlock = selectedContents.findLast((x) => x.level === 1)
-
-    titleEndPos = getTitleBlock.startBlockPos + doc.nodeAt(getTitleBlock.startBlockPos - 1).nodeSize - 1
-  }
-
-  // select rest of contents
-  const contentWrapper = getRangeBlocks(doc, lastHeadingInSelection.startBlockPos, titleEndPos)
-  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== 'heading')
-  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === 'heading')
-
-  const normalizeSelectedContents = [
-    ...[...selectedContents].splice(0, lastHeadingIndex + 1),
-    ...contentWrapperParagraphs
-  ]
-
-  const containLevelOneHeading = selectedContents.find((x) => x.level === 1)
-
-  const normalizeSelectedContentsBlocks = normalizeSelectedContents.map((node) =>
-    state.schema.nodeFromJSON(node)
-  )
-
-  if (!containLevelOneHeading) {
-    doc.nodesBetween(titleStartPos, start - 1, function (node, pos) {
-      if (node.type.name === 'heading') {
-        const headingLevel = node.firstChild?.attrs?.level
-
-        if (headingLevel === currentHLevel) {
-          titleStartPos = pos
-          // INFO: I need the pos of last content in contentWrapper
-          titleEndPos = pos + node.content.size
-        }
-      }
-    })
-  } else {
-    const backspaceAction = doc.nodeAt(from) === null && $anchor.parentOffset === 0
-    tr.delete(backspaceAction ? start - 1 : start - 1, titleEndPos)
-
-    doc.nodesBetween($from.start(0), start - 1, function (node, pos) {
-      if (node.type.name === 'heading') {
-        const headingLevel = node.firstChild?.attrs?.level
-
-        if (headingLevel === currentHLevel) {
-          titleStartPos = pos
-          titleEndPos = pos + node.content.size
-        }
-      }
-    })
-  }
-
-  const titleHMap = getPrevHeadingList(tr, titleStartPos, tr.mapping.map(titleEndPos))
-  let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
-
-  // insert normalizeSelectedContentsBlocks
-  if (!containLevelOneHeading) {
-    tr.delete(selectionFirstLinePos, titleEndPos)
-    tr.insert(tr.mapping.map(selectionFirstLinePos) - 1, normalizeSelectedContentsBlocks)
-  } else {
-    const comingLevel = mapHPost.at(-1).le + 1
-    let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
-
-    const insertPos = prevBlock.endBlockPos - (shouldNested ? 2 : 0)
-
-    tr.insert(tr.mapping.map(insertPos), normalizeSelectedContentsBlocks)
-  }
-
-  // update selection position
-  const focusSelection = new TextSelection(tr.doc.resolve(from))
-  tr.setSelection(focusSelection)
-
-  if (!mapHPost.length) mapHPost = titleHMap
-
-  processHeadings(state, tr, mapHPost, contentWrapperHeadings)
 
   return true
 }
