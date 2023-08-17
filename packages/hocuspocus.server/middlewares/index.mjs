@@ -12,15 +12,25 @@ const createMiddleware = () => {
   app.use(helmet())
 
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map((domain) => domain.trim())
+
+  const isDomainOrSubdomain = (origin) => {
+    const hostname = new URL(origin).hostname
+    return allowedOrigins.some((allowedOrigin) => {
+      const regex = new RegExp(`^(.+\\.)*${allowedOrigin}$`, 'i')
+      return regex.test(hostname)
+    })
+  }
+
   const corsOptions = {
     origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(new URL(origin).hostname)) {
+      if (!origin || isDomainOrSubdomain(origin)) {
         callback(null, true)
       } else {
         callback(new Error('Not allowed by CORS'))
       }
     }
   }
+
   app.use(cors(corsOptions))
 
   app.use((req, res, next) => {
