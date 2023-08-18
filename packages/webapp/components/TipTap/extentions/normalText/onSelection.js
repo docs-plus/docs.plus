@@ -1,91 +1,12 @@
 import { TextSelection } from '@tiptap/pm/state'
-import { getPrevHeadingList, getHeadingsBlocksMap, findPrevBlock } from '../helper'
+import {
+  getPrevHeadingList,
+  getHeadingsBlocksMap,
+  findPrevBlock,
+  getSelectionRangeBlocks,
+  extractParagraphsAndHeadings
+} from '../helper'
 import onHeading from './onHeading'
-
-const CONTENT_HEADING_TYPE = 'contentHeading'
-const HEADING_TYPE = 'heading'
-const CONTENT_WRAPPER_TYPE = 'contentWrapper'
-
-const getSelectionBlocks = (doc, start, end, includeContentHeading = false) => {
-  const firstHEading = true
-  const selectedContents = []
-
-  doc.nodesBetween(start, end, function (node, pos, parent) {
-    if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
-      const depth = doc.resolve(pos).depth
-
-      selectedContents.push({
-        depth,
-        startBlockPos: pos,
-        endBlockPos: pos + node.nodeSize,
-        ...node.toJSON()
-      })
-    }
-
-    if (node.type.name === 'contentHeading') {
-      const depth = doc.resolve(pos).depth
-
-      selectedContents.push({
-        depth,
-        level: node.attrs?.level,
-        attrs: includeContentHeading ? node.attrs : {},
-        startBlockPos: pos,
-        endBlockPos: pos + node.nodeSize,
-        type: includeContentHeading ? node.type.name : 'paragraph',
-        content: node.toJSON().content
-      })
-    }
-  })
-
-  return selectedContents
-}
-
-const extractParagraphsAndHeadings = (clipboardContents) => {
-  const paragraphs = []
-  const headings = []
-  let heading = null
-
-  for (const node of clipboardContents) {
-    if (!heading && !node.level) {
-      paragraphs.push(node)
-    }
-
-    if (node.level) {
-      // if new heading is found, push the previous heading into the heading list
-      // and reset the heading
-      if (heading) {
-        headings.push(heading)
-        heading = null
-      }
-      heading = {
-        endBlockPos: node.endBlockPos,
-        startBlockPos: node.startBlockPos,
-        level: node.level,
-        type: HEADING_TYPE,
-        attrs: { level: node.level },
-        content: [
-          {
-            type: CONTENT_HEADING_TYPE,
-            attrs: { level: node.level },
-            content: node.content
-          },
-          {
-            type: CONTENT_WRAPPER_TYPE,
-            content: []
-          }
-        ]
-      }
-    } else {
-      heading?.content.at(1).content.push(node)
-    }
-  }
-
-  if (heading) {
-    headings.push(heading)
-  }
-
-  return [paragraphs, headings]
-}
 
 const onSelection = ({ state, tr, editor }) => {
   const { selection, doc } = state
@@ -99,14 +20,14 @@ const onSelection = ({ state, tr, editor }) => {
   const titleStartPos = $from.start(1) - 1
   const titleEndPos = titleStartPos + titleNodeTo.content.size
 
-  const selectedContents = getSelectionBlocks(doc, from, to)
+  const selectedContents = getSelectionRangeBlocks(doc, from, to)
 
   if (selectedContents[0]?.level) {
     onHeading({ state, tr, editor })
     return true
   }
 
-  const restSelectionContents = getSelectionBlocks(doc, to, titleEndPos)
+  const restSelectionContents = getSelectionRangeBlocks(doc, to, titleEndPos)
   restSelectionContents.shift()
 
   const [paragraphs, headings] = extractParagraphsAndHeadings(restSelectionContents)

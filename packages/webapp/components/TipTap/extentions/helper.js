@@ -1,3 +1,5 @@
+import ENUMS from '../enums'
+
 /**
  *
  * @param {Object} tr  transform object
@@ -11,7 +13,7 @@ export const getPrevHeadingList = (tr, start, from) => {
   if (from < start) throw new Error("[Heading]: position is invalid 'from < start'")
   try {
     tr.doc.nodesBetween(start, from, function (node, pos) {
-      if (node.type.name === 'heading') {
+      if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
         const headingLevel = node.firstChild?.attrs?.level
         const depth = tr.doc.resolve(pos).depth
 
@@ -44,7 +46,11 @@ export const getSelectionBlocks = (doc, start, end, includeContentHeading = fals
 
   if (range) {
     doc.descendants(function (node, pos, parent) {
-      if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
+      if (
+        firstHEading &&
+        node.type.name !== ENUMS.NODES.HEADING_TYPE &&
+        parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
+      ) {
         const depth = doc.resolve(pos).depth
 
         selectedContents.push({
@@ -55,7 +61,7 @@ export const getSelectionBlocks = (doc, start, end, includeContentHeading = fals
         })
       }
 
-      if (node.type.name === 'contentHeading') {
+      if (node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
         const depth = doc.resolve(pos).depth
 
         selectedContents.push({
@@ -64,7 +70,7 @@ export const getSelectionBlocks = (doc, start, end, includeContentHeading = fals
           attrs: includeContentHeading ? node.attrs : {},
           startBlockPos: pos,
           endBlockPos: pos + node.nodeSize,
-          type: includeContentHeading ? node.type.name : 'paragraph',
+          type: includeContentHeading ? node.type.name : ENUMS.NODES.PARAGRAPH_TYPE,
           content: node.toJSON().content
         })
       }
@@ -76,7 +82,11 @@ export const getSelectionBlocks = (doc, start, end, includeContentHeading = fals
   doc.nodesBetween(start, end, function (node, pos, parent) {
     if (pos < start) return
 
-    if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
+    if (
+      firstHEading &&
+      node.type.name !== ENUMS.NODES.HEADING_TYPE &&
+      parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
+    ) {
       const depth = doc.resolve(pos).depth
 
       selectedContents.push({
@@ -87,7 +97,7 @@ export const getSelectionBlocks = (doc, start, end, includeContentHeading = fals
       })
     }
 
-    if (node.type.name === 'contentHeading') {
+    if (node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
       const depth = doc.resolve(pos).depth
 
       selectedContents.push({
@@ -96,7 +106,45 @@ export const getSelectionBlocks = (doc, start, end, includeContentHeading = fals
         attrs: includeContentHeading ? node.attrs : {},
         startBlockPos: pos,
         endBlockPos: pos + node.nodeSize,
-        type: includeContentHeading ? node.type.name : 'paragraph',
+        type: includeContentHeading ? node.type.name : ENUMS.NODES.PARAGRAPH_TYPE,
+        content: node.toJSON().content
+      })
+    }
+  })
+
+  return selectedContents
+}
+
+export const getSelectionRangeBlocks = (doc, start, end, includeContentHeading = false) => {
+  const firstHEading = true
+  const selectedContents = []
+
+  doc.nodesBetween(start, end, function (node, pos, parent) {
+    if (
+      firstHEading &&
+      node.type.name !== ENUMS.NODES.HEADING_TYPE &&
+      parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
+    ) {
+      const depth = doc.resolve(pos).depth
+
+      selectedContents.push({
+        depth,
+        startBlockPos: pos,
+        endBlockPos: pos + node.nodeSize,
+        ...node.toJSON()
+      })
+    }
+
+    if (node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+      const depth = doc.resolve(pos).depth
+
+      selectedContents.push({
+        depth,
+        level: node.attrs?.level,
+        attrs: includeContentHeading ? node.attrs : {},
+        startBlockPos: pos,
+        endBlockPos: pos + node.nodeSize,
+        type: includeContentHeading ? node.type.name : ENUMS.NODES.PARAGRAPH_TYPE,
         content: node.toJSON().content
       })
     }
@@ -120,7 +168,11 @@ export const getRangeBlocks = (doc, start, end) => {
   doc.nodesBetween(start, end, function (node, pos, parent) {
     if (pos < start) return
 
-    if (firstHEading && node.type.name !== 'heading' && parent.type.name === 'contentWrapper') {
+    if (
+      firstHEading &&
+      node.type.name !== ENUMS.NODES.HEADING_TYPE &&
+      parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
+    ) {
       const depth = doc.resolve(pos).depth
 
       selectedContents.push({
@@ -130,7 +182,7 @@ export const getRangeBlocks = (doc, start, end) => {
         ...node.toJSON()
       })
     }
-    if (node.type.name === 'heading') {
+    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
       firstHEading = false
       const headingLevel = node.firstChild?.attrs?.level
       const depth = doc.resolve(pos).depth
@@ -165,7 +217,7 @@ export const getHeadingsBlocksMap = (doc, start, end) => {
   const titleHMap = []
 
   doc.nodesBetween(start, end, function (node, pos, parent, index) {
-    if (node.type.name === 'heading') {
+    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
       const headingLevel = node.firstChild?.attrs?.level
       const depth = doc.resolve(pos).depth
 
@@ -210,7 +262,7 @@ export const createThisBlockMap = ($from, depth, caretSelectionTextBlock = ' ') 
     depth,
     headingContent: caretSelectionTextBlock,
     empty: {
-      type: 'paragraph',
+      type: ENUMS.NODES.PARAGRAPH_TYPE,
       content: [
         {
           type: 'text',
@@ -218,7 +270,7 @@ export const createThisBlockMap = ($from, depth, caretSelectionTextBlock = ' ') 
         }
       ]
     },
-    paragraph: { type: 'paragraph' }
+    paragraph: { type: ENUMS.NODES.PARAGRAPH_TYPE }
   }
 }
 
@@ -248,7 +300,7 @@ export const getPrevHeadingPos = (doc, startPos, endPos) => {
   let prevHEndPos = 0
 
   doc.nodesBetween(startPos, endPos, function (node, pos) {
-    if (node.type.name === 'heading') {
+    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
       const depth = doc.resolve(pos).depth
 
       // INFO: this the trick I've looking for
@@ -286,4 +338,49 @@ export const findPrevBlock = (mapHPost, headingLevel) => {
   const shouldNested = prevBlock.le < headingLevel
 
   return { prevBlock, shouldNested }
+}
+
+export const extractParagraphsAndHeadings = (clipboardContents) => {
+  const paragraphs = []
+  const headings = []
+  let heading = null
+
+  for (const node of clipboardContents) {
+    if (!heading && !node.level) {
+      paragraphs.push(node)
+    }
+
+    if (node.level) {
+      if (heading) {
+        headings.push(heading)
+        heading = null
+      }
+      heading = {
+        endBlockPos: node.endBlockPos,
+        startBlockPos: node.startBlockPos,
+        level: node.level,
+        type: ENUMS.NODES.HEADING_TYPE,
+        attrs: { level: node.level },
+        content: [
+          {
+            type: ENUMS.NODES.CONTENT_HEADING_TYPE,
+            attrs: { level: node.level },
+            content: node.content
+          },
+          {
+            type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
+            content: []
+          }
+        ]
+      }
+    } else {
+      heading?.content.at(1).content.push(node)
+    }
+  }
+
+  if (heading) {
+    headings.push(heading)
+  }
+
+  return [paragraphs, headings]
 }

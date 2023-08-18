@@ -4,6 +4,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { getNodeState } from './helper'
 import PubSub from 'pubsub-js'
 import ENUMS from '../enums'
+import deleteSelectedRange from './deleteSelectedRange.js'
 
 function extractContentWrapperBlocks(doc) {
   const result = []
@@ -266,9 +267,18 @@ const HeadingsContent = Node.create({
   addKeyboardShortcuts() {
     return {
       Backspace: () => {
-        const { schema, selection } = this.editor.state
-        const { $anchor, $from } = selection
-        const blockRange = $from.blockRange($from)
+        const { editor } = this
+        const { schema, selection, doc } = editor.state
+        const { $anchor, $from, $to } = selection
+        const blockRange = $from.blockRange($to)
+
+        if (selection.from !== selection.to)
+          return deleteSelectedRange({
+            editor,
+            state: editor.state,
+            tr: editor.state.tr,
+            view: editor.view
+          })
 
         // If backspace hit not at the start of the node, do nothing
         if ($anchor.parentOffset !== 0) return false
