@@ -53,18 +53,21 @@ const deleteSelectedRange = ({ state, tr, editor }) => {
           type: ENUMS.NODES.CONTENT_HEADING_TYPE,
           content: [blockRange.$from?.nodeBefore?.toJSON()],
           attrs: {
-            level: blockRange.parent.attrs.level
+            level: blockRange.parent.attrs.level || blockRange.$from.parent.attrs.level
           }
         },
         {
           type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
-          content: [
-            { type: ENUMS.NODES.PARAGRAPH_TYPE, content: [blockRange.$to?.nodeAfter?.toJSON()] },
-            ...paragraphs,
-            ...headings
-          ]
+          content: [...paragraphs, ...headings]
         }
       ]
+    }
+
+    if (blockRange.$to?.nodeAfter) {
+      jsonNode.content.at(1).content.unshift({
+        type: ENUMS.NODES.PARAGRAPH_TYPE,
+        content: [blockRange.$to?.nodeAfter?.toJSON()]
+      })
     }
 
     const node = state.schema.nodeFromJSON(jsonNode)
@@ -85,12 +88,14 @@ const deleteSelectedRange = ({ state, tr, editor }) => {
       tr.insert(from, blockRange.$to.nodeAfter)
     }
 
+    const insertPos = blockRange?.$to.nodeAfter ? blockRange?.$to?.nodeAfter.nodeSize : 0
+
     // update selection position
-    const focusSelection = new TextSelection(tr.doc.resolve(from + blockRange?.$to?.nodeAfter.nodeSize || 0))
+    const focusSelection = new TextSelection(tr.doc.resolve(from + insertPos || 0))
     tr.setSelection(focusSelection)
 
     tr.insert(
-      from + blockRange.$to.nodeAfter.nodeSize,
+      from + insertPos,
       paragraphs.map((node) => state.schema.nodeFromJSON(node))
     )
   }
