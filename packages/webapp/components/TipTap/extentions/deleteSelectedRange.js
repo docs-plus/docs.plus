@@ -8,6 +8,25 @@ import {
   extractParagraphsAndHeadings
 } from './helper'
 
+const processRemainingHeadings = ({ state, tr, headings, titleStartPos, titleEndPos }) => {
+  let mapHPost = getHeadingsBlocksMap(state.doc, titleStartPos, titleEndPos)
+  mapHPost = mapHPost.filter(
+    (x) => x.startBlockPos < state.selection.$to.pos && x.startBlockPos >= titleStartPos
+  )
+
+  for (const heading of headings) {
+    const commingLevel = heading.level || heading.content.at(0).level
+    mapHPost = getPrevHeadingList(tr, mapHPost[0].startBlockPos, tr.mapping.map(mapHPost[0].endBlockPos))
+    mapHPost = mapHPost.filter(
+      (x) => x.startBlockPos < heading.startBlockPos && x.startBlockPos >= titleStartPos
+    )
+
+    const { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
+
+    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), state.schema.nodeFromJSON(heading))
+  }
+}
+
 const deleteSelectedRange = ({ state, tr, editor }) => {
   const { selection, doc } = state
   const { $from, $to, from, to } = selection
@@ -15,10 +34,7 @@ const deleteSelectedRange = ({ state, tr, editor }) => {
   const titleStartPos = $from.start(1) - 1
   const titleEndPos = $to.end(1)
 
-  const prevHStartPos = titleStartPos
-
   const selectedContents = getSelectionRangeBlocks(doc, from, to)
-
   const restSelectionContents = getSelectionRangeBlocks(doc, to, titleEndPos)
   restSelectionContents.shift()
 
@@ -29,53 +45,51 @@ const deleteSelectedRange = ({ state, tr, editor }) => {
     ...paragraphs.map((node) => state.schema.nodeFromJSON(node))
   ]
 
-  const titleHMap = getHeadingsBlocksMap(doc, titleStartPos, titleEndPos)
-  let mapHPost = titleHMap.filter((x) => x.startBlockPos < to && x.startBlockPos >= prevHStartPos)
-
-  if (newConent.length === selectedContents.length) {
-    tr.deleteRange(from, to)
-    if (tr) editor.view?.dispatch(tr)
-    return true
-  }
-
   if (blockRange.$from.parent.type.name === 'contentHeading') {
-    tr.deleteRange(selectedContents.at(0).startBlockPos - 1, titleEndPos)
+    const selectedFirstBlockPos = selectedContents.at(0).startBlockPos
+    let node
+
+    tr.deleteRange(selectedFirstBlockPos - 1, titleEndPos)
     newConent.shift()
 
-    const jsonNode = {
+    let jsonNode = {
       type: ENUMS.NODES.HEADING_TYPE,
       content: [
         {
           type: ENUMS.NODES.CONTENT_HEADING_TYPE,
-          content: [blockRange.$from?.nodeBefore?.toJSON()],
+          content: [blockRange.$from?.nodeBefore?.toJSON() || blockRange.$to?.nodeAfter?.toJSON()],
           attrs: {
             level: blockRange.parent.attrs.level || blockRange.$from.parent.attrs.level
           }
         },
         {
           type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
-          content: [...paragraphs, ...headings]
+          content: [...paragraphs]
         }
       ]
     }
+    const headingTypeContent = jsonNode.content.at(0).content.at(0)
 
-    if (blockRange.$to?.nodeAfter) {
+    if (headingTypeContent && blockRange.$to?.nodeAfter) {
       jsonNode.content.at(1).content.unshift({
         type: ENUMS.NODES.PARAGRAPH_TYPE,
         content: [blockRange.$to?.nodeAfter?.toJSON()]
       })
     }
 
-    const node = state.schema.nodeFromJSON(jsonNode)
+    const insertPos = selectedFirstBlockPos - 1
 
-    tr.insert(selectedContents.at(0).startBlockPos - 1, node)
+    if (headingTypeContent === undefined) {
+      node = [...paragraphs].map((node) => state.schema.nodeFromJSON(node))
+    } else {
+      node = state.schema.nodeFromJSON(jsonNode)
+    }
+
+    tr.insert(insertPos, node)
 
     // update selection position
-    const focusSelection = new TextSelection(tr.doc.resolve(selectedContents.at(0).startBlockPos - 1 || 0))
+    const focusSelection = new TextSelection(tr.doc.resolve(from || 0))
     tr.setSelection(focusSelection)
-
-    if (tr) editor.view?.dispatch(tr)
-    return true
   } else {
     tr.deleteRange(selectedContents.at(0).startBlockPos, titleEndPos)
     tr.insert(selectedContents.at(0).startBlockPos, newConent)
@@ -96,21 +110,7 @@ const deleteSelectedRange = ({ state, tr, editor }) => {
     )
   }
 
-  // after all that, we need to loop through the rest of remaing heading to append
-  for (const heading of headings) {
-    const commingLevel = heading.level || heading.content.at(0).level
-
-    mapHPost = getPrevHeadingList(tr, mapHPost[0].startBlockPos, tr.mapping.map(mapHPost[0].endBlockPos))
-    mapHPost = mapHPost.filter(
-      (x) => x.startBlockPos < heading.startBlockPos && x.startBlockPos >= prevHStartPos
-    )
-
-    const { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
-
-    const node = state.schema.nodeFromJSON(heading)
-
-    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
-  }
+  processRemainingHeadings({ state, tr, headings, titleStartPos, titleEndPos })
 
   if (tr) editor.view?.dispatch(tr)
   return true
