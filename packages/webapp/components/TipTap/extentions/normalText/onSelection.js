@@ -12,13 +12,10 @@ const onSelection = ({ state, tr, editor }) => {
   const { selection, doc } = state
   const { $from, $to, from, to } = selection
 
-  let { start } = $from.blockRange($to)
-  start = start === 0 ? from : start
-  const prevHStartPos = 0
-
-  const titleNodeTo = $from.doc.nodeAt($to.start(1) - 1)
   const titleStartPos = $from.start(1) - 1
-  const titleEndPos = titleStartPos + titleNodeTo.content.size
+  const titleEndPos = $to.end(1)
+
+  const prevHStartPos = titleStartPos
 
   const selectedContents = getSelectionRangeBlocks(doc, from, to)
 
@@ -38,7 +35,7 @@ const onSelection = ({ state, tr, editor }) => {
   ]
 
   const titleHMap = getHeadingsBlocksMap(doc, titleStartPos, titleEndPos)
-  let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
+  let mapHPost = titleHMap.filter((x) => x.startBlockPos < to && x.startBlockPos >= prevHStartPos)
 
   tr.deleteRange(selectedContents.at(0).startBlockPos, titleEndPos)
   tr.insert(selectedContents.at(0).startBlockPos, newConent)
