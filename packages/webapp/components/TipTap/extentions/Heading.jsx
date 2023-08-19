@@ -1,12 +1,12 @@
 import { Node, mergeAttributes, InputRule, callOrReturn } from '@tiptap/core'
 import { Slice, Fragment } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
-
 import changeHeadingLevel from './changeHeadingLevel'
 import wrapContenWithHeading from './wrapContenWithHeading'
 import clipboardPast from './clipboardPast'
 import changeHeading2paragraphs from './changeHeading2paragraphs'
 import { getSelectionBlocks, getNodeState } from './helper'
+import deleteSelectedRange from './deleteSelectedRange.js'
 
 const Blockquote = Node.create({
   name: 'heading',
@@ -208,17 +208,27 @@ const Blockquote = Node.create({
       new Plugin({
         key: new PluginKey('copy&pasteHeading'),
         props: {
+          handleDOMEvents: {},
           // INFO: Div turn confuses the schema service;
           // INFO:if there is a div in the clipboard, the docsplus schema will not serialize as a must.
           transformPastedHTML: (html) => html.replace(/div/g, 'span'),
           transformPasted: (slice) => clipboardPast(slice, this.editor),
           transformCopied: () => {
+            const { editor } = this
             // Can be used to transform copied or cut content before it is serialized to the clipboard.
             const { selection, doc } = this.editor.state
             const { from, to } = selection
 
             // TODO: this function retrive blocks level from the selection, I need to block characters level from the selection
             const contentWrapper = getSelectionBlocks(doc.cut(from, to), null, null, true, true)
+
+            // remove selection from the editor
+            deleteSelectedRange({
+              editor,
+              state: editor.state,
+              tr: editor.state.tr,
+              view: editor.view
+            })
 
             // convert Json Block to Node Block
             let serializeSelection = contentWrapper.map((x) => this.editor.state.schema.nodeFromJSON(x))
