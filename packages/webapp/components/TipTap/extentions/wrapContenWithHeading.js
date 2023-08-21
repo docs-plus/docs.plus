@@ -18,7 +18,11 @@ const wrapContentWithHeading = (arrg, attributes) => {
   const cominglevel = attributes.level
   const caretSelectionTextBlock = {
     type: 'text',
-    text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' '
+    text:
+      doc.textBetween($from.pos, $to.pos, ' ') ||
+      doc?.nodeAt($anchor.pos)?.text ||
+      $anchor.nodeBefore?.text ||
+      ' '
   }
   const block = createThisBlockMap($from, depth, caretSelectionTextBlock)
 

@@ -1,11 +1,11 @@
 import { TextSelection } from '@tiptap/pm/state'
 
 import {
-  getPrevHeadingList,
   createThisBlockMap,
   getHeadingsBlocksMap,
   getRangeBlocks,
-  getPrevHeadingPos
+  getPrevHeadingPos,
+  insertRemainingHeadings
 } from './helper'
 
 const changeHeadingLevelH1 = (arrg, attributes) => {
@@ -19,7 +19,11 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   const commingLevel = attributes.level
   const caretSelectionTextBlock = {
     type: 'text',
-    text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' '
+    text:
+      doc.textBetween($from.pos, $to.pos, ' ') ||
+      doc?.nodeAt($anchor.pos)?.text ||
+      $anchor.nodeBefore?.text ||
+      ' '
   }
 
   const block = createThisBlockMap($from, depth, caretSelectionTextBlock)
@@ -99,30 +103,15 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
 
   // FIXME: this loop so much heavy, I need to find better solotion!
   // then loop through the heading to append
-  for (const heading of contentWrapperHeadings) {
-    mapHPost = getPrevHeadingList(
-      tr,
-      mapHPost.at(0).startBlockPos,
-      mapHPost.at(0).startBlockPos + doc.nodeAt(mapHPost.at(0).startBlockPos).nodeSize + 2
-    )
 
-    mapHPost = mapHPost.filter(
-      (x) => x.startBlockPos < heading.startBlockPos && x.startBlockPos >= prevHStartPos
-    )
-
-    const node = state.schema.nodeFromJSON(heading)
-
-    const prevBlockEqual = mapHPost.findLast((x) => x.le === heading.le)
-    const prevBlockGratherFromFirst = mapHPost.find((x) => x.le >= heading.le)
-    const prevBlockGratherFromLast = mapHPost.findLast((x) => x.le <= heading.le)
-    const lastbloc = mapHPost.at(-1)
-    let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
-
-    if (lastbloc.le <= heading.le) prevBlock = lastbloc
-    shouldNested = prevBlock.le < heading.le
-
-    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
-  }
+  return insertRemainingHeadings({
+    state,
+    tr,
+    headings: contentWrapperHeadings,
+    titleStartPos,
+    titleEndPos,
+    prevHStartPos
+  })
 }
 
 export default changeHeadingLevelH1
