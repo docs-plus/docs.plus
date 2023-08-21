@@ -203,12 +203,21 @@ const Blockquote = Node.create({
     })
   },
   addProseMirrorPlugins() {
+    let domeEvent
     return [
       // https://github.com/pageboard/pagecut/blob/bd91a17986978d560cc78642e442655f4e09ce06/src/editor.js#L234-L241
       new Plugin({
         key: new PluginKey('copy&pasteHeading'),
         props: {
-          handleDOMEvents: {},
+          handleDOMEvents: {
+            cut: () => {
+              domeEvent = 'cut'
+              return false
+            },
+            copy: () => {
+              domeEvent = 'copy'
+            }
+          },
           // INFO: Div turn confuses the schema service;
           // INFO:if there is a div in the clipboard, the docsplus schema will not serialize as a must.
           transformPastedHTML: (html) => html.replace(/div/g, 'span'),
@@ -222,13 +231,15 @@ const Blockquote = Node.create({
             // TODO: this function retrive blocks level from the selection, I need to block characters level from the selection
             const contentWrapper = getSelectionBlocks(doc.cut(from, to), null, null, true, true)
 
-            // remove selection from the editor
-            deleteSelectedRange({
-              editor,
-              state: editor.state,
-              tr: editor.state.tr,
-              view: editor.view
-            })
+            if (domeEvent === 'cut') {
+              // remove selection from the editor
+              deleteSelectedRange({
+                editor,
+                state: editor.state,
+                tr: editor.state.tr,
+                view: editor.view
+              })
+            }
 
             // convert Json Block to Node Block
             let serializeSelection = contentWrapper.map((x) => this.editor.state.schema.nodeFromJSON(x))
