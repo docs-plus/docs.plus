@@ -384,3 +384,31 @@ export const extractParagraphsAndHeadings = (clipboardContents) => {
 
   return [paragraphs, headings]
 }
+
+export const insertRemainingHeadings = ({
+  state,
+  tr,
+  headings,
+  titleStartPos,
+  titleEndPos,
+  prevHStartPos
+}) => {
+  let mapHPost = getHeadingsBlocksMap(state.doc, titleStartPos, titleEndPos)
+  mapHPost = mapHPost.filter(
+    (x) => x.startBlockPos < state.selection.$to.pos && x.startBlockPos >= titleStartPos
+  )
+
+  for (const heading of headings) {
+    const commingLevel = heading.level || heading.le || heading.content.at(0).level
+    mapHPost = getPrevHeadingList(tr, mapHPost[0].startBlockPos, tr.mapping.map(mapHPost[0].endBlockPos))
+    mapHPost = mapHPost.filter(
+      (x) => x.startBlockPos < heading.startBlockPos && x.startBlockPos >= prevHStartPos
+    )
+
+    const { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
+
+    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), state.schema.nodeFromJSON(heading))
+  }
+
+  return true
+}

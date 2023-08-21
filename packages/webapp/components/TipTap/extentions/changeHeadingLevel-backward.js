@@ -6,21 +6,25 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
   const { state, tr } = arrg
   const { selection, doc } = state
   const { $from, $to, $anchor, from } = selection
-  const { start, depth } = $from.blockRange($to)
+  const { start, end, depth } = $from.blockRange($to)
 
   console.info('[Heading]: Backward process,  comingLevel < currentHLevel')
 
   const comingLevel = attributes.level
   const caretSelectionTextBlock = {
     type: 'text',
-    text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' '
+    text:
+      doc.textBetween($from.pos, $to.pos, ' ') ||
+      doc?.nodeAt($anchor.pos)?.text ||
+      $anchor.nodeBefore?.text ||
+      ' '
   }
 
   const block = createThisBlockMap($from, depth, caretSelectionTextBlock)
   const titleNode = $from.doc.nodeAt($from.start(1) - 1)
   const titleStartPos = $from.start(1) - 1
   const titleEndPos = titleStartPos + titleNode.content.size
-  const contentWrapper = getRangeBlocks(doc, start, titleEndPos)
+  const contentWrapper = getRangeBlocks(doc, end, titleEndPos)
   const titleHMap = getHeadingsBlocksMap(doc, start, titleEndPos)
 
   const sliceTargetContent = contentWrapper.filter((x) => {
