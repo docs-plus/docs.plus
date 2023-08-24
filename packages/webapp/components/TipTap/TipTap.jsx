@@ -124,7 +124,8 @@ const generatePlaceholderText = (data) => {
       .filter((x) => x?.type?.name === 'heading')
       .map((x) => x.firstChild.textContent)
 
-    return `${headingPath.join(' / ')}: ${msg[Math.floor(Math.random() * msg.length + 1)]}`
+    // `${headingPath.join(' / ')}: ${msg[Math.floor(Math.random() * msg.length + 1)]}`
+    return `${headingPath.join(' / ')}`
   }
 
   return null
