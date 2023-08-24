@@ -1,26 +1,22 @@
 import { TextSelection } from '@tiptap/pm/state'
 
-import { getRangeBlocks, getHeadingsBlocksMap, createThisBlockMap } from './helper'
+import {
+  getRangeBlocks,
+  getHeadingsBlocksMap,
+  createThisBlockMap,
+  createHeadingNodeFromSelection
+} from './helper'
 
 const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
   const { state, tr } = arrg
   const { selection, doc } = state
-  const { $from, $to, $anchor, from } = selection
-  const { start, end, depth } = $from.blockRange($to)
+  const { $from, $to, from } = selection
+  const { start, end } = $from.blockRange($to)
 
   console.info('[Heading]: Backward process,  comingLevel < currentHLevel')
 
   const comingLevel = attributes.level
-  const caretSelectionTextBlock = {
-    type: 'text',
-    text:
-      doc.textBetween($from.pos, $to.pos, ' ') ||
-      doc?.nodeAt($anchor.pos)?.text ||
-      $anchor.nodeBefore?.text ||
-      ' '
-  }
-
-  const block = createThisBlockMap($from, depth, caretSelectionTextBlock)
+  const block = createThisBlockMap(state)
   const titleNode = $from.doc.nodeAt($from.start(1) - 1)
   const titleStartPos = $from.start(1) - 1
   const titleEndPos = titleStartPos + titleNode.content.size
@@ -47,24 +43,15 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
     .filter((x) => endSliceBlocPos <= x.endBlockPos)
     .find((x) => x.le >= comingLevel)?.endBlockPos
 
-  const jsonNewBlock = {
-    type: 'heading',
-    content: [
-      {
-        type: 'contentHeading',
-        content: [block.headingContent],
-        attrs: {
-          level: attributes.level
-        }
-      },
-      {
-        type: 'contentWrapper',
-        content: sliceTargetContent
-      }
-    ]
-  }
-
-  const node = state.schema.nodeFromJSON(jsonNewBlock)
+  const node = createHeadingNodeFromSelection(
+    doc,
+    state,
+    $from.pos,
+    $to.pos,
+    attributes,
+    block,
+    sliceTargetContent
+  )
 
   const newTr = tr.insert(insertPos, node)
 

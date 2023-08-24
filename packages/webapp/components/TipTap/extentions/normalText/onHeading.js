@@ -29,7 +29,9 @@ const onHeading = (args) => {
   const { $from, $to, $anchor, from } = selection
   const { start } = $from.blockRange($to)
 
-  if (doc?.nodeAt(start).type.name !== 'contentHeading') {
+  const nodeName = doc?.nodeAt(start)?.type?.name
+
+  if (/*nodeName !== 'heading' &&*/ nodeName !== 'contentHeading') {
     return console.info('[Heading]: not heading')
   }
 

@@ -11,22 +11,13 @@ import {
 const changeHeadingLevelH1 = (arrg, attributes) => {
   const { state, tr } = arrg
   const { selection, doc } = state
-  const { $from, $to, $anchor, from } = selection
-  const { start, depth } = $from.blockRange($to)
+  const { $from, $to, from } = selection
+  const { start } = $from.blockRange($to)
 
   console.info('[Heading]: change heading Level h1')
 
   const commingLevel = attributes.level
-  const caretSelectionTextBlock = {
-    type: 'text',
-    text:
-      doc.textBetween($from.pos, $to.pos, ' ') ||
-      doc?.nodeAt($anchor.pos)?.text ||
-      $anchor.nodeBefore?.text ||
-      ' '
-  }
-
-  const block = createThisBlockMap($from, depth, caretSelectionTextBlock)
+  const block = createThisBlockMap(state)
   const currentHLevel = $from.doc.nodeAt(block.start).attrs.level
 
   let titleStartPos = 0

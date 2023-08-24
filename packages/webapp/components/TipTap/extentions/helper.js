@@ -215,7 +215,6 @@ export const getRangeBlocks = (doc, start, end) => {
  */
 export const getHeadingsBlocksMap = (doc, start, end) => {
   const titleHMap = []
-
   doc.nodesBetween(start, end, function (node, pos, parent, index) {
     if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
       const headingLevel = node.firstChild?.attrs?.level
@@ -242,7 +241,12 @@ export const getHeadingsBlocksMap = (doc, start, end) => {
  * @returns {Object} blockMap - The current selection's block map.
  */
 
-export const createThisBlockMap = ($from, depth, caretSelectionTextBlock = ' ') => {
+export const createThisBlockMap = (state) => {
+  const { selection } = state
+  const { $from, $to } = selection
+  const { depth } = $from.blockRange($to)
+
+  const caretSelectionTextBlock = getSelectionTextNode(state)
   return {
     parent: {
       end: $from.end(depth - 1),
@@ -393,14 +397,18 @@ export const insertRemainingHeadings = ({
   titleEndPos,
   prevHStartPos
 }) => {
-  let mapHPost = getHeadingsBlocksMap(state.doc, titleStartPos, titleEndPos)
+  let mapHPost = getHeadingsBlocksMap(tr.doc, titleStartPos, titleEndPos)
   mapHPost = mapHPost.filter(
     (x) => x.startBlockPos < state.selection.$to.pos && x.startBlockPos >= titleStartPos
   )
 
   for (const heading of headings) {
     const commingLevel = heading.level || heading.le || heading.content.at(0).level
-    mapHPost = getPrevHeadingList(tr, mapHPost[0].startBlockPos, tr.mapping.map(mapHPost[0].endBlockPos))
+    mapHPost = getPrevHeadingList(
+      tr,
+      mapHPost.at(0).startBlockPos,
+      tr.mapping.map(mapHPost.at(0).endBlockPos)
+    )
     mapHPost = mapHPost.filter(
       (x) => x.startBlockPos < heading.startBlockPos && x.startBlockPos >= prevHStartPos
     )
@@ -411,4 +419,80 @@ export const insertRemainingHeadings = ({
   }
 
   return true
+}
+
+export const createHeadingNodeFromSelection = (doc, state, start, end, attributes, block, contentWrapper) => {
+  const headings = []
+
+  if (start !== end) {
+    doc.nodesBetween(
+      start,
+      end,
+      function (node) {
+        if (node.type.name !== 'text') return
+
+        const newHeading = {
+          type: 'heading',
+          content: [
+            {
+              type: 'contentHeading',
+              content: [node.toJSON()],
+              attrs: {
+                level: attributes.level
+              }
+            },
+            {
+              type: 'contentWrapper',
+              content: []
+            }
+          ]
+        }
+
+        headings.push(newHeading)
+      },
+      start
+    )
+
+    // put the contentWrapper(rest paragraph nodes) in the last heading
+    contentWrapper &&
+      headings
+        .at(-1)
+        .content.at(-1)
+        .content.push(...contentWrapper)
+  } else {
+    const jsonNode = {
+      type: 'heading',
+      content: [
+        {
+          type: 'contentHeading',
+          content: [block.headingContent],
+          attrs: {
+            level: attributes.level
+          }
+        },
+        {
+          type: 'contentWrapper',
+          content: contentWrapper
+        }
+      ]
+    }
+
+    headings.push(jsonNode)
+  }
+
+  return headings.map((x) => state.schema.nodeFromJSON(x))
+}
+
+export const getSelectionTextNode = (state) => {
+  const { selection, doc } = state
+  const { $from, $to, $anchor } = selection
+
+  return {
+    type: 'text',
+    text:
+      doc.textBetween($from.pos, $to.pos, ' ') ||
+      doc?.nodeAt($anchor.pos)?.text ||
+      $anchor.nodeBefore?.text ||
+      ' '
+  }
 }
