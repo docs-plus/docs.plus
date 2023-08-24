@@ -2,29 +2,20 @@ import { TextSelection } from '@tiptap/pm/state'
 
 import changeHeadingLevelBackward from './changeHeadingLevel-backward'
 import {
-  getPrevHeadingList,
   createThisBlockMap,
-  getHeadingsBlocksMap,
+  createHeadingNodeFromSelection,
   getRangeBlocks,
-  findPrevBlock
+  insertRemainingHeadings
 } from './helper'
 
 const wrapContentWithHeading = (arrg, attributes) => {
   const { state, tr } = arrg
   const { selection, doc } = state
-  const { $from, $to, $anchor } = selection
-  const { start, end, depth } = $from.blockRange($to)
+  const { $from, $to } = selection
+  const { start, end } = $from.blockRange($to)
 
   const cominglevel = attributes.level
-  const caretSelectionTextBlock = {
-    type: 'text',
-    text:
-      doc.textBetween($from.pos, $to.pos, ' ') ||
-      doc?.nodeAt($anchor.pos)?.text ||
-      $anchor.nodeBefore?.text ||
-      ' '
-  }
-  const block = createThisBlockMap($from, depth, caretSelectionTextBlock)
+  const block = createThisBlockMap(state)
 
   // TODO: check this statment for comment, (block.edge.start !== -1)
   const parentLevel =
@@ -38,24 +29,16 @@ const wrapContentWithHeading = (arrg, attributes) => {
     const contents = getRangeBlocks(doc, end, block.parent.end)
     const contentWrapper = contents.length === 0 ? [block.paragraph] : contents
 
-    const jsonNode = {
-      type: 'heading',
-      content: [
-        {
-          type: 'contentHeading',
-          content: [block.headingContent],
-          attrs: {
-            level: attributes.level
-          }
-        },
-        {
-          type: 'contentWrapper',
-          content: contentWrapper
-        }
-      ]
-    }
+    const headingNode = createHeadingNodeFromSelection(
+      doc,
+      state,
+      $from.pos,
+      $to.pos,
+      attributes,
+      block,
+      contentWrapper
+    )
 
-    const headingNode = state.schema.nodeFromJSON(jsonNode)
     const insertPos = start + 1
 
     tr.delete(insertPos, block.edge.end)
@@ -72,57 +55,37 @@ const wrapContentWithHeading = (arrg, attributes) => {
   if (cominglevel > parentLevel) {
     console.info('[Heading]: Create a new Heading block as a child of the current Heading block')
 
-    const titleHMap = getHeadingsBlocksMap(doc, block.start, block.parent.end)
     const contentWrapper = getRangeBlocks(doc, end, block.parent.end)
     const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== 'heading')
     const contentWrapperHeadings = contentWrapper.filter((x) => x.type === 'heading')
 
-    const jsonNode = {
-      type: 'heading',
-      content: [
-        {
-          type: 'contentHeading',
-          content: [block.headingContent],
-          attrs: {
-            level: cominglevel
-          }
-        },
-        {
-          type: 'contentWrapper',
-          content: contentWrapperParagraphs
-        }
-      ]
-    }
-    const newHeadingNode = state.schema.nodeFromJSON(jsonNode)
+    const newHeadingNode = createHeadingNodeFromSelection(
+      doc,
+      state,
+      $from.pos,
+      $to.pos,
+      attributes,
+      block,
+      contentWrapperParagraphs
+    )
 
     tr.delete(start, block.parent.end)
     tr.insert(tr.mapping.map(start), newHeadingNode)
 
     const newSelection = new TextSelection(tr.doc.resolve(end))
-
     tr.setSelection(newSelection)
 
-    let mapHPost = titleHMap
+    const titleStartPos = $from.start(1) - 1
+    const titleEndPos = $to.end(1)
 
-    for (const heading of contentWrapperHeadings) {
-      mapHPost = getPrevHeadingList(
-        tr,
-        mapHPost.at(0).startBlockPos,
-        tr.mapping.map(mapHPost.at(0).endBlockPos)
-      )
-
-      mapHPost = mapHPost.filter(
-        (x) => x.startBlockPos < heading.startBlockPos && x.startBlockPos >= block.parent.start
-      )
-
-      let { prevBlock, shouldNested } = findPrevBlock(mapHPost, heading.le)
-
-      const node = state.schema.nodeFromJSON(heading)
-
-      tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
-    }
-
-    return true
+    return insertRemainingHeadings({
+      state,
+      tr,
+      headings: contentWrapperHeadings,
+      prevHStartPos: titleStartPos,
+      titleEndPos,
+      titleStartPos
+    })
   }
 
   if (cominglevel < parentLevel) {
