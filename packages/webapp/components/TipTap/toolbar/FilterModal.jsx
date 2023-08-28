@@ -40,7 +40,7 @@ const FilterModal = ({ totalHeading }) => {
     <div className="filterModal nd_modal">
       <div className="flex align-middle items-center">
         <p className="font-medium text-base text-gray-400 pb-1">Filter:</p>
-        <button onClick={handleApplySearch} className="p-3 w-24 ml-auto border">
+        <button onClick={handleApplySearch} className="!p-3 !w-24 !ml-auto  border">
           <span>Apply</span>
         </button>
       </div>
