@@ -8,10 +8,11 @@ import {
   insertRemainingHeadings
 } from './helper'
 
-const wrapContentWithHeading = (arrg, attributes) => {
+const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
+  console.info('[Heading]: wrapContentWithHeading')
   const { state, tr } = arrg
   const { selection, doc } = state
-  const { $from, $to } = selection
+  const { $from, $to } = newSelection || selection
   const { start, end } = $from.blockRange($to)
 
   const cominglevel = attributes.level
@@ -19,7 +20,8 @@ const wrapContentWithHeading = (arrg, attributes) => {
 
   // TODO: check this statment for comment, (block.edge.start !== -1)
   const parentLevel =
-    block.edge.start !== -1 && doc?.nodeAt(block.edge.start)?.content?.content[0]?.attrs.level
+    (block.edge.start !== -1 && doc?.nodeAt(block.edge.start)?.content?.content[0]?.attrs.level) ||
+    doc?.nodeAt(block.start).attrs.level
 
   // Create a new heading with the same level
   // in this case all content below must cut and wrapp with the new heading
@@ -62,8 +64,8 @@ const wrapContentWithHeading = (arrg, attributes) => {
     const newHeadingNode = createHeadingNodeFromSelection(
       doc,
       state,
-      $from.pos,
-      $to.pos,
+      start,
+      end,
       attributes,
       block,
       contentWrapperParagraphs
@@ -75,14 +77,14 @@ const wrapContentWithHeading = (arrg, attributes) => {
     const newSelection = new TextSelection(tr.doc.resolve(end))
     tr.setSelection(newSelection)
 
-    const titleStartPos = $from.start(1) - 1
-    const titleEndPos = $to.end(1)
+    const titleStartPos = newSelection ? $from.start(1) : $from.start(1) - 1
+    const titleEndPos = newSelection ? tr.curSelection.$to.end(1) : $to.end(1)
 
     return insertRemainingHeadings({
       state,
       tr,
       headings: contentWrapperHeadings,
-      prevHStartPos: titleStartPos,
+      prevHStartPos: end,
       titleEndPos,
       titleStartPos
     })
