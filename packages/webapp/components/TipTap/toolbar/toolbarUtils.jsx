@@ -41,7 +41,7 @@ export const searchThroughHeading = (e) => {
   }
 }
 
-export const applySerchThroughHeading = (searchInput, router) => {
+export const applySearchThroughHeading = (searchInput, router) => {
   const search = searchInput
   const mainDoc = router.query.slugs.at(0)
   window.location.href = `/${mainDoc}/${encodeURIComponent(search)}`
@@ -59,5 +59,22 @@ export const saveDocReadOnlyPage = (mutate, documentId, readOnly) => {
   mutate({
     documentId,
     readOnly
+  })
+}
+
+export const highlightTocHeadings = (headings) => {
+  const headingIds = headings.map((heading) => heading.closest('.heading').getAttribute('data-id'))
+  const tocHeadings = document.querySelectorAll('.tiptap__toc .toc__item a')
+
+  tocHeadings.forEach((tocItem) => {
+    const isHeadingInList = headingIds.includes(tocItem.getAttribute('data-id'))
+
+    if (isHeadingInList) {
+      tocItem.classList.add('bg-yellow-200')
+      tocItem.classList.remove('text-black')
+    } else {
+      tocItem.classList.add('text-black')
+      tocItem.classList.remove('bg-yellow-200')
+    }
   })
 }
