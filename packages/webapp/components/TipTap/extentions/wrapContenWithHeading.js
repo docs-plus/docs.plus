@@ -65,7 +65,7 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
       doc,
       state,
       start,
-      end,
+      $to.pos,
       attributes,
       block,
       contentWrapperParagraphs
@@ -84,7 +84,7 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
       state,
       tr,
       headings: contentWrapperHeadings,
-      prevHStartPos: end,
+      prevHStartPos: $from.start(1) - 1,
       titleEndPos,
       titleStartPos
     })
