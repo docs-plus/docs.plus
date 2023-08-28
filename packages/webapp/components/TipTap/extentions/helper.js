@@ -433,6 +433,9 @@ export const createHeadingNodeFromSelection = (doc, state, start, end, attribute
 
         const newHeading = {
           type: 'heading',
+          attrs: {
+            level: attributes.level
+          },
           content: [
             {
               type: 'contentHeading',
@@ -462,6 +465,9 @@ export const createHeadingNodeFromSelection = (doc, state, start, end, attribute
   } else {
     const jsonNode = {
       type: 'heading',
+      attrs: {
+        level: attributes.level
+      },
       content: [
         {
           type: 'contentHeading',
