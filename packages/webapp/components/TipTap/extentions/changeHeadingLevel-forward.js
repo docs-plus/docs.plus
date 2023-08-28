@@ -6,16 +6,15 @@ import {
   createThisBlockMap,
   getPrevHeadingPos,
   findPrevBlock,
-  insertRemainingHeadings
+  insertRemainingHeadings,
+  createHeadingNodeFromSelection
 } from './helper'
-
-const HEADING_OFFSET = 1
 
 const changeHeadingLevelForward = (arrg, attributes) => {
   const { state, tr } = arrg
   const { selection, doc } = state
   const { $from, $to, from } = selection
-  const { start } = $from.blockRange($to)
+  const { start, end } = $from.blockRange($to)
 
   console.info('[Heading]: change heading level forwarding')
 
@@ -30,33 +29,26 @@ const changeHeadingLevelForward = (arrg, attributes) => {
   const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== 'heading')
   const contentWrapperHeadings = contentWrapper.filter((x) => x.type === 'heading')
 
-  const jsonNode = {
-    type: 'heading',
-    content: [
-      {
-        type: 'contentHeading',
-        content: [block.headingContent],
-        attrs: {
-          level: attributes.level
-        }
-      },
-      {
-        type: 'contentWrapper',
-        content: contentWrapperParagraphs
-      }
-    ]
-  }
+  const restParagraphs = contentWrapperParagraphs.filter((x) => x.startBlockPos >= $to.pos)
 
-  const node = state.schema.nodeFromJSON(jsonNode)
+  const newHeadingNode = createHeadingNodeFromSelection(
+    doc,
+    state,
+    start,
+    end,
+    attributes,
+    block,
+    restParagraphs
+  )
 
   tr.delete(start - 1, titleEndPos)
 
-  let titleHMap = getHeadingsBlocksMap(tr.doc, titleStartPos, titleEndPos)
+  let titleHMap = getHeadingsBlocksMap(tr.doc, titleStartPos, tr.mapping.map(titleEndPos))
   const { prevHStartPos } = getPrevHeadingPos(tr.doc, titleStartPos, start - 1)
   let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
   let { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
 
-  tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
+  tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), newHeadingNode)
 
   // set the cursor to the end of the heading
   const newSelection = new TextSelection(tr.doc.resolve(from - (shouldNested ? 2 : 0)))
@@ -69,7 +61,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
     tr,
     headings: contentWrapperHeadings,
     titleStartPos,
-    titleEndPos,
+    titleEndPos: tr.mapping.map(titleEndPos),
     prevHStartPos: titleStartPos
   })
 }
