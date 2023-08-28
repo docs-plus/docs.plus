@@ -35,7 +35,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
     doc,
     state,
     start,
-    end,
+    $to.pos,
     attributes,
     block,
     restParagraphs
