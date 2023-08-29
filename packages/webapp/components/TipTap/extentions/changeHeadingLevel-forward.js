@@ -1,5 +1,5 @@
 import { TextSelection } from '@tiptap/pm/state'
-
+import ENUMS from '../enums'
 import {
   getRangeBlocks,
   getHeadingsBlocksMap,
@@ -26,8 +26,8 @@ const changeHeadingLevelForward = (arrg, attributes) => {
 
   const contentWrapper = getRangeBlocks(doc, start, titleEndPos)
 
-  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== 'heading')
-  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === 'heading')
+  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
+  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
 
   const restParagraphs = contentWrapperParagraphs.filter((x) => x.startBlockPos >= $to.pos)
 

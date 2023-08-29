@@ -1,5 +1,6 @@
 import { TextSelection } from '@tiptap/pm/state'
 import { getRangeBlocks, getPrevHeadingList, findPrevBlock } from '../helper'
+import ENUMS from '../../enums'
 
 const processHeadings = (state, tr, mapHPost, contentWrapperHeadings) => {
   for (let heading of contentWrapperHeadings) {
@@ -31,12 +32,12 @@ const onHeading = (args) => {
 
   const nodeName = doc?.nodeAt(start)?.type?.name
 
-  if (/*nodeName !== 'heading' &&*/ nodeName !== 'contentHeading') {
+  if (/*nodeName !== ENUMS.NODES.HEADING_TYPE &&*/ nodeName !== ENUMS.NODES.CONTENT_HEADING_TYPE) {
     return console.info('[Heading]: not heading')
   }
 
   const headingText = {
-    type: 'text',
+    type: ENUMS.NODES.TEXT_TYPE,
     text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' '
   }
 
@@ -56,7 +57,7 @@ const onHeading = (args) => {
   // if the current heading is not H1, otherwise we need to find the previous H1
   if (currentHLevel !== 1) {
     doc.nodesBetween(titleStartPos, start - 1, function (node, pos) {
-      if (node.type.name === 'heading') {
+      if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
         const depth = doc.resolve(pos).depth
 
         // INFO: this the trick I've looking for
@@ -68,7 +69,7 @@ const onHeading = (args) => {
     })
   } else {
     doc.nodesBetween($from.start(0), start - 1, function (node, pos) {
-      if (node.type.name === 'heading') {
+      if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
         const headingLevel = node.firstChild?.attrs?.level
 
         if (headingLevel === currentHLevel) {
@@ -79,8 +80,8 @@ const onHeading = (args) => {
     })
   }
 
-  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== 'heading')
-  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === 'heading')
+  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
+  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
 
   const normalContents = [headingText, ...contentWrapperParagraphs].map((x) => editor.schema.nodeFromJSON(x))
 

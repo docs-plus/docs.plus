@@ -269,7 +269,7 @@ export const createThisBlockMap = (state) => {
       type: ENUMS.NODES.PARAGRAPH_TYPE,
       content: [
         {
-          type: 'text',
+          type: ENUMS.NODES.TEXT_TYPE,
           text: ' '
         }
       ]
@@ -429,23 +429,23 @@ export const createHeadingNodeFromSelection = (doc, state, start, end, attribute
       start,
       end,
       function (node) {
-        if (node.type.name !== 'text') return
+        if (node.type.name !== ENUMS.NODES.TEXT_TYPE) return
 
         const newHeading = {
-          type: 'heading',
+          type: ENUMS.NODES.HEADING_TYPE,
           attrs: {
             level: attributes.level
           },
           content: [
             {
-              type: 'contentHeading',
+              type: ENUMS.NODES.CONTENT_HEADING_TYPE,
               content: [node.toJSON()],
               attrs: {
                 level: attributes.level
               }
             },
             {
-              type: 'contentWrapper',
+              type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
               content: []
             }
           ]
@@ -464,20 +464,20 @@ export const createHeadingNodeFromSelection = (doc, state, start, end, attribute
         .content.push(...contentWrapper)
   } else {
     const jsonNode = {
-      type: 'heading',
+      type: ENUMS.NODES.HEADING_TYPE,
       attrs: {
         level: attributes.level
       },
       content: [
         {
-          type: 'contentHeading',
+          type: ENUMS.NODES.CONTENT_HEADING_TYPE,
           content: [block.headingContent],
           attrs: {
             level: attributes.level
           }
         },
         {
-          type: 'contentWrapper',
+          type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
           content: contentWrapper
         }
       ]
@@ -494,7 +494,7 @@ export const getSelectionTextNode = (state) => {
   const { $from, $to, $anchor } = selection
 
   return {
-    type: 'text',
+    type: ENUMS.NODES.TEXT_TYPE,
     text:
       doc.textBetween($from.pos, $to.pos, ' ') ||
       doc?.nodeAt($anchor.pos)?.text ||

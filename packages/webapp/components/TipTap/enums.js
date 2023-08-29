@@ -3,10 +3,13 @@ const enums = {
     FOLD_AND_UNFOLD: 'foldAndUnfold'
   },
   NODES: {
-    CONTENT_HEADING_TYPE: 'contentHeading',
+    DOC_TYPE: 'doc',
     HEADING_TYPE: 'heading',
+    CONTENT_HEADING_TYPE: 'contentHeading',
     CONTENT_WRAPPER_TYPE: 'contentWrapper',
-    PARAGRAPH_TYPE: 'paragraph'
+    PARAGRAPH_TYPE: 'paragraph',
+    HYPERLINK_TYPE: 'hyperlink',
+    TEXT_TYPE: 'text'
   }
 }
 

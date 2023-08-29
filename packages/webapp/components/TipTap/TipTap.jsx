@@ -2,6 +2,7 @@ import { Node } from '@tiptap/core'
 import randomColor from 'randomcolor'
 import { lowlight } from 'lowlight'
 import ShortUniqueId from 'short-unique-id'
+import ENUMS from './enums'
 
 // Collaboration
 import Collaboration, { isChangeOrigin } from '@tiptap/extension-collaboration'
@@ -75,13 +76,13 @@ lowlight.registerLanguage('json', json)
 lowlight.registerLanguage('bash', bash)
 
 const Document = Node.create({
-  name: 'doc',
+  name: ENUMS.NODES.DOC_TYPE,
   topNode: true,
   content: 'heading+'
 })
 
 const Paragraph = Node.create({
-  name: 'paragraph',
+  name: ENUMS.NODES.PARAGRAPH_TYPE,
   group: 'block',
   content: 'inline*',
   parseHTML() {
@@ -93,7 +94,7 @@ const Paragraph = Node.create({
 })
 
 const Text = Node.create({
-  name: 'text',
+  name: ENUMS.NODES.TEXT_TYPE,
   group: 'inline'
 })
 
@@ -112,16 +113,16 @@ const generatePlaceholderText = (data) => {
   const nodeType = node.type.name
   if (!data.editor.isFocused) return null
 
-  if (nodeType === 'contentHeading' || nodeType === 'heading') {
+  if (nodeType === ENUMS.NODES.CONTENT_HEADING_TYPE || nodeType === ENUMS.NODES.HEADING_TYPE) {
     const level = node.attrs.level
     return level - 1 === 0 ? 'Title' : `Heading ${level - 1}`
-  } else if (nodeType === 'paragraph') {
+  } else if (nodeType === ENUMS.NODES.PARAGRAPH_TYPE) {
     const msg = Placeholders
 
     const { $head } = data.editor.view.state.selection
 
     const headingPath = $head.path
-      .filter((x) => x?.type?.name === 'heading')
+      .filter((x) => x?.type?.name === ENUMS.NODES.HEADING_TYPE)
       .map((x) => x.firstChild.textContent)
 
     // `${headingPath.join(' / ')}: ${msg[Math.floor(Math.random() * msg.length + 1)]}`
@@ -196,7 +197,7 @@ const Editor = ({ provider, spellcheck = false }) => {
     },
     extensions: [
       UniqueID.configure({
-        types: ['heading', 'hyperlink'],
+        types: [ENUMS.NODES.HEADING_TYPE, ENUMS.NODES.HYPERLINK_TYPE],
         filterTransaction: (transaction) => !isChangeOrigin(transaction),
         generateID: () => {
           const uid = new ShortUniqueId()

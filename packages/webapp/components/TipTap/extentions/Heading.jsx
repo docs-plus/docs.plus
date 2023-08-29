@@ -7,11 +7,12 @@ import clipboardPast from './clipboardPast'
 import changeHeading2paragraphs from './changeHeading2paragraphs'
 import { getSelectionBlocks, getNodeState } from './helper'
 import deleteSelectedRange from './deleteSelectedRange.js'
+import ENUMS from '../enums'
 
 const Blockquote = Node.create({
-  name: 'heading',
+  name: ENUMS.NODES.HEADING_TYPE,
   content: 'contentHeading+ contentWrapper*',
-  group: 'contentWrapper',
+  group: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
   defining: true,
   isolating: true,
   allowGapCursor: false,
@@ -22,7 +23,7 @@ const Blockquote = Node.create({
       openClassName: 'opend',
       id: 1,
       HTMLAttributes: {
-        class: 'heading',
+        class: ENUMS.NODES.HEADING_TYPE,
         level: 1
       }
     }
@@ -133,7 +134,10 @@ const Blockquote = Node.create({
         // some times the contentWrapper cleaned up, so it should be create first
         // otherwise just the cursour must move to contnetWrapper
         // TODO: find better way for this 4
-        if (parent?.content?.content.length === 1 || parent.lastChild?.firstChild?.type.name === 'heading') {
+        if (
+          parent?.content?.content.length === 1 ||
+          parent.lastChild?.firstChild?.type.name === ENUMS.NODES.HEADING_TYPE
+        ) {
           // console.log("yes iminininin", parent.lastChild.firstChild.contentsize === 0, parent.lastChild.firstChild)
           // If there is not any contentWrapper
           // if first child of the heading is another heading
@@ -142,10 +146,10 @@ const Blockquote = Node.create({
           // if the contentWrapper does not contain any content
           if (parent.lastChild.content.size === 0 || parent.lastChild?.firstChild?.content.size === 0) {
             return editor.commands.insertContentAt($anchor.pos, {
-              type: 'contentWrapper',
+              type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
               content: [
                 {
-                  type: 'paragraph'
+                  type: ENUMS.NODES.PARAGRAPH_TYPE
                 }
               ]
             })
