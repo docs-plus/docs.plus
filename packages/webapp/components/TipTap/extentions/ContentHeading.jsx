@@ -18,10 +18,10 @@ const extractContentHeadingBlocks = (doc) => {
 
   // For each node in the document
   doc.descendants((node, pos) => {
-    if (node.type.name === 'heading') {
+    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
       lastHeadingId = node.attrs.id
     }
-    if (node.type.name === 'contentHeading') {
+    if (node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
       const nodeSize = node.nodeSize
 
       record(pos, pos + nodeSize, lastHeadingId, node)
@@ -159,7 +159,7 @@ const handleHeadingToggle = (editor, { headingId, open }) => {
 }
 
 const HeadingsTitle = Node.create({
-  name: 'contentHeading',
+  name: ENUMS.NODES.CONTENT_HEADING_TYPE,
   content: 'inline*',
   group: 'block',
   defining: true,

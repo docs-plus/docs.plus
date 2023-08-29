@@ -1,5 +1,5 @@
 import { TextSelection } from '@tiptap/pm/state'
-
+import ENUMS from '../enums'
 import {
   createThisBlockMap,
   getHeadingsBlocksMap,
@@ -24,7 +24,7 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   let titleEndPos = 0
 
   doc.nodesBetween($from.start(0), start - 1, function (node, pos) {
-    if (node.type.name === 'heading') {
+    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
       const headingLevel = node.firstChild?.attrs?.level
 
       if (headingLevel === currentHLevel) {
@@ -42,8 +42,8 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   )
   const titleHMap = getHeadingsBlocksMap(doc, titleStartPos, titleEndPos)
 
-  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== 'heading')
-  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === 'heading')
+  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
+  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
 
   const { prevHStartPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
 
@@ -62,17 +62,20 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   shouldNested = prevBlock.le < commingLevel
 
   const jsonNode = {
-    type: 'heading',
+    type: ENUMS.NODES.HEADING_TYPE,
+    attrs: {
+      level: attributes.level
+    },
     content: [
       {
-        type: 'contentHeading',
+        type: ENUMS.NODES.HEADING_CONTENT_TYPE,
         content: [block.headingContent],
         attrs: {
           level: attributes.level
         }
       },
       {
-        type: 'contentWrapper',
+        type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
         content: contentWrapperParagraphs
       }
     ]

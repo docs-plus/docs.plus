@@ -1,5 +1,5 @@
 import { TextSelection } from '@tiptap/pm/state'
-
+import ENUMS from '../enums'
 import changeHeadingLevelBackward from './changeHeadingLevel-backward'
 import {
   createThisBlockMap,
@@ -58,8 +58,8 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
     console.info('[Heading]: Create a new Heading block as a child of the current Heading block')
 
     const contentWrapper = getRangeBlocks(doc, end, block.parent.end)
-    const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== 'heading')
-    const contentWrapperHeadings = contentWrapper.filter((x) => x.type === 'heading')
+    const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
+    const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
 
     const newHeadingNode = createHeadingNodeFromSelection(
       doc,

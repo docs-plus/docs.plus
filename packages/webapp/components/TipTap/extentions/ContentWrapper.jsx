@@ -15,10 +15,10 @@ function extractContentWrapperBlocks(doc) {
 
   // For each node in the document
   doc.descendants((node, pos) => {
-    if (node.type.name === 'heading') {
+    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
       lastHeadingId = node.attrs.id
     }
-    if (node.type.name === 'contentWrapper') {
+    if (node.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
       const nodeSize = node.content.size
       const childCount = node.childCount
 
@@ -150,8 +150,8 @@ function expandElement(elem, collapseClass, headingId, open) {
   elem.addEventListener('transitionend', callback)
 }
 
-const HeadingsContent = Node.create({
-  name: 'contentWrapper',
+const ContentWrapper = Node.create({
+  name: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
   content: '(heading|paragraph|block)*',
   defining: true,
   selectable: false,
@@ -300,7 +300,7 @@ const HeadingsContent = Node.create({
           // If there is no previous node in the selection (i.e., current node is the first node of the contentWrapper)
           if ($anchor.nodeBefore === null) {
             // If there's a text node following the current node
-            if ($anchor.nodeAfter?.type.name === 'text') {
+            if ($anchor.nodeAfter?.type.name === ENUMS.NODES.TEXT_TYPE) {
               const clonedTextNode = $anchor.nodeAfter.copy($anchor.nodeAfter.content)
 
               // Delete the current node, move the cursor to the end of the previous node (the heading),
@@ -350,4 +350,4 @@ const HeadingsContent = Node.create({
   }
 })
 
-export { HeadingsContent, HeadingsContent as default }
+export { ContentWrapper, ContentWrapper as default }

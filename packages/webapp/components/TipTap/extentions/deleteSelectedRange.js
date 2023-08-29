@@ -45,21 +45,25 @@ const deleteSelectedRange = ({ state, tr, editor }) => {
     ...paragraphs.map((node) => state.schema.nodeFromJSON(node))
   ]
 
-  if (blockRange.$from.parent.type.name === 'contentHeading') {
+  if (blockRange.$from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
     const selectedFirstBlockPos = selectedContents.at(0).startBlockPos
     let node
 
     tr.deleteRange(selectedFirstBlockPos - 1, titleEndPos)
     newConent.shift()
 
+    const attrLevel = blockRange.parent.attrs.level || blockRange.$from.parent.attrs.level
     let jsonNode = {
       type: ENUMS.NODES.HEADING_TYPE,
+      attrs: {
+        level: attrLevel
+      },
       content: [
         {
           type: ENUMS.NODES.CONTENT_HEADING_TYPE,
           content: [blockRange.$from?.nodeBefore?.toJSON() || blockRange.$to?.nodeAfter?.toJSON()],
           attrs: {
-            level: blockRange.parent.attrs.level || blockRange.$from.parent.attrs.level
+            level: attrLevel
           }
         },
         {

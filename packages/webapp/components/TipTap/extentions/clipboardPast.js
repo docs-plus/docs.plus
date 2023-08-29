@@ -1,12 +1,7 @@
 import { Slice } from '@tiptap/pm/model'
 import { TextSelection } from '@tiptap/pm/state'
-
+import ENUMS from '../enums'
 import { getRangeBlocks, getHeadingsBlocksMap, findPrevBlock, getPrevHeadingPos } from './helper'
-
-const CONTENT_HEADING_TYPE = 'contentHeading'
-const HEADING_TYPE = 'heading'
-const CONTENT_WRAPPER_TYPE = 'contentWrapper'
-const PARAGRAPH_TYPE = 'paragraph'
 
 const createNodeFromJSON = (node, schema) => schema.nodeFromJSON(node)
 
@@ -16,11 +11,11 @@ const extractParagraphsAndHeadings = (clipboardContents, { schema }) => {
   let heading = null
 
   for (const node of clipboardContents) {
-    if (!heading && node.type !== CONTENT_HEADING_TYPE) {
+    if (!heading && node.type !== ENUMS.NODES.CONTENT_HEADING_TYPE) {
       paragraphs.push(createNodeFromJSON(node, schema))
     }
 
-    if (node.type === CONTENT_HEADING_TYPE) {
+    if (node.type === ENUMS.NODES.CONTENT_HEADING_TYPE) {
       // if new heading is found, push the previous heading into the heading list
       // and reset the heading
       if (heading) {
@@ -28,12 +23,12 @@ const extractParagraphsAndHeadings = (clipboardContents, { schema }) => {
         heading = null
       }
       heading = {
-        type: HEADING_TYPE,
+        type: ENUMS.NODES.HEADING_TYPE,
         attrs: { level: node?.attrs.level },
         content: [
           node,
           {
-            type: CONTENT_WRAPPER_TYPE,
+            type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
             content: []
           }
         ]
@@ -60,12 +55,12 @@ const clipboardPast = (slice, editor) => {
 
   // if user cursor is in the heading,
   // move the cursor to the contentWrapper and do the rest
-  if ($from.parent.type.name === CONTENT_HEADING_TYPE) {
+  if ($from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
     const nextPos = $from.after()
     const $nextPos = tr.doc.resolve(nextPos)
 
     // Check if the next node is a contentWrapper
-    if ($nextPos.nodeAfter && $nextPos.nodeAfter.type.name === CONTENT_WRAPPER_TYPE) {
+    if ($nextPos.nodeAfter && $nextPos.nodeAfter.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
       const contentWrapperStart = nextPos + 1 // +1 to move inside the contentWrapper
 
       // Find the first paragraph or any other block inside the contentWrapper
@@ -73,12 +68,15 @@ const clipboardPast = (slice, editor) => {
 
       // if the heading block does not contain contentWrapper as a first child
       // then create a contentWrapper block
-      if (!firstBlockInsideContentWrapper || firstBlockInsideContentWrapper.type.name === HEADING_TYPE) {
+      if (
+        !firstBlockInsideContentWrapper ||
+        firstBlockInsideContentWrapper.type.name === ENUMS.NODES.HEADING_TYPE
+      ) {
         const contentWrapperBlock = {
-          type: CONTENT_WRAPPER_TYPE,
+          type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
           content: [
             {
-              type: PARAGRAPH_TYPE
+              type: ENUMS.NODES.PARAGRAPH_TYPE
             }
           ]
         }
@@ -131,7 +129,7 @@ const clipboardPast = (slice, editor) => {
 
   let lastBlockPos = paragraphs.length === 0 ? start : tr.mapping.map(start)
 
-  const headingContent = contentWrapper.filter((x) => x.type === HEADING_TYPE)
+  const headingContent = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
 
   if (headingContent.length > 0) {
     headingContent.forEach((heading) => headings.push(createNodeFromJSON(heading, state.schema)))
@@ -188,7 +186,7 @@ const clipboardPast = (slice, editor) => {
 
     if (contentWrapper.length) {
       let contentWrapperParagraphs = contentWrapper
-        .filter((x) => x.type !== HEADING_TYPE)
+        .filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
         .map((paragraph) => createNodeFromJSON(paragraph, state.schema))
 
       // first append the paragraphs in the current selection

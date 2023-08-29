@@ -20,7 +20,7 @@ const TableOfContent = ({ editor, className }) => {
     const editorDoc = doc.editor?.state?.doc || doc.state.doc
 
     editorDoc?.descendants((node, _pos, _parent) => {
-      if (node.type.name === 'contentHeading') {
+      if (node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
         let headingId = _parent.attrs?.id || node?.attrs.id || '1'
         let { headingSection, offsetTop } = getHeadingDetails(headingId)
 
@@ -50,7 +50,7 @@ const TableOfContent = ({ editor, className }) => {
     let trTimer
 
     editor.on('transaction', (tr) => {
-      if (tr.transaction.selection.$anchor.parent.type.name === 'contentHeading') {
+      if (tr.transaction.selection.$anchor.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
         handleUpdate(tr)
       }
 
@@ -102,7 +102,7 @@ const TableOfContent = ({ editor, className }) => {
       )
 
       const headingPath = nodePos.path
-        .filter((x) => x?.type?.name === 'heading')
+        .filter((x) => x?.type?.name === ENUMS.NODES.HEADING_TYPE)
         .map((x) => slugify(x.firstChild.textContent.toLowerCase().trim()))
 
       const url = new URL(window.location.href)
