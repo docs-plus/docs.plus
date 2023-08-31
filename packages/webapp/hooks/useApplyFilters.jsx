@@ -1,24 +1,153 @@
 import { useEffect } from 'react'
-
 import { db } from '../db'
 
-const getHeaderParents = (heading) => {
-  if (!heading) return
-  const hLevel = heading.getAttribute('level')
-  const parents = []
-  // loop through the headings to find the parent heading untile the level is 1
-  for (let i = +hLevel; i >= 1; i--) {
-    const pHeading = heading.closest(`[level="${i}"]`)?.querySelector('.title')
-    if (pHeading)
-      parents.push({
-        node: pHeading,
-        text: pHeading.textContent,
-        hLevel: i,
-        id: pHeading.closest('.wrapBlock').getAttribute('data-id')
-      })
+class Node {
+  constructor(level, heading, parent = null, id) {
+    this.level = level
+    this.heading = heading
+    this.parent = parent
+    this.id = id
+    this.children = []
+  }
+}
+
+function createTree(headings) {
+  let root = new Node(0, 'Root')
+  let currentParent = root
+
+  for (let heading of headings) {
+    let [level, text, id] = heading
+    level = parseInt(level, 10)
+
+    while (currentParent.level >= level) {
+      currentParent = currentParent.parent
+    }
+
+    let node = new Node(level, text, currentParent, id)
+    currentParent.children.push(node)
+    currentParent = node
   }
 
-  return parents
+  return root
+}
+
+function filterTreeDFS(node, filters, result, ancestor = null) {
+  if (!node) return
+
+  const currentAncestor = node.level === 1 ? node : ancestor
+  let weight = 0
+
+  filters.forEach((filter) => {
+    if (node.heading.toLowerCase().includes(filter)) {
+      weight += node.level * 10 + 100
+      result.push({ ...node, weight, ancestor: currentAncestor, filterBy: filter })
+    }
+  })
+
+  node.children.forEach((child) => {
+    filterTreeDFS(child, filters, result, currentAncestor)
+  })
+}
+
+function getPathToRoot(node) {
+  if (!node.parent) return [node]
+  return [node, ...getPathToRoot(node.parent)]
+}
+
+const createPathToRoot = (headings) => {
+  let pathToGod = []
+  for (let heading of headings) {
+    pathToGod.push(getPathToRoot(heading))
+  }
+
+  pathToGod = new Set([
+    ...pathToGod
+      .map((x) => x.map((x) => x.id))
+      .flat()
+      .filter((x) => x)
+  ])
+  return pathToGod
+}
+
+// TODO: Refactor from earth to stars
+// TODO: More comments
+const getHeadingsFilterMap = (slugs, headings) => {
+  // remove the document slug from the slugs array
+  slugs.shift()
+  // make sure all slugs are in lowercase
+  slugs = slugs.map((slug) => slug.toLowerCase())
+
+  const headingFlatMap = Array.from(headings).map((x) => [
+    +x.getAttribute('level'),
+    x.textContent,
+    x.closest('.wrapBlock').getAttribute('data-id')
+  ])
+  const headingTree = createTree(headingFlatMap)
+
+  let filteredNodes = []
+  filterTreeDFS(headingTree, slugs, filteredNodes)
+
+  if (slugs.length === 1) {
+    const pathToGod = createPathToRoot(filteredNodes)
+    return new Set([...filteredNodes.map((x) => x.id), ...pathToGod])
+  }
+
+  // Initialize Map to store slugs with weight
+  const slugsWithWeight = new Map()
+
+  // Initialize slugs with a weight of 0
+  for (const slug of slugs) {
+    slugsWithWeight.set(slug, 0)
+  }
+
+  // Update the weight of slugs based on filteredNodes
+  for (const heading of filteredNodes) {
+    if (heading.level !== 1) {
+      const currentWeight = slugsWithWeight.get(heading.filterBy) || 0
+      slugsWithWeight.set(heading.filterBy, currentWeight + heading.weight)
+    }
+  }
+
+  // Remove the slugs with weight 0
+  for (const [slug, weight] of slugsWithWeight.entries()) {
+    if (weight === 0) {
+      slugsWithWeight.delete(slug)
+    }
+  }
+
+  // sort the slugs by level and weight
+  const slugsWithWeightSorted = [...slugsWithWeight.keys()].sort((a, b) => {
+    const levelA = filteredNodes.find((x) => x.filterBy === a).level
+    const levelB = filteredNodes.find((x) => x.filterBy === b).level
+
+    if (levelA === levelB) return slugsWithWeight.get(b) - slugsWithWeight.get(a)
+
+    return levelA - levelB
+  })
+
+  // pick the most low weight slug from slugsWithWeightSorted as the parents
+  const pickFirstSlug = slugsWithWeightSorted.shift()
+  const pickFirstSlugWeight = slugsWithWeight.get(pickFirstSlug)
+
+  let selectedParent = [
+    pickFirstSlug,
+    ...slugsWithWeightSorted.filter((slug) => slugsWithWeight.get(slug) === pickFirstSlugWeight)
+  ]
+
+  let filterParentSlug = []
+  filterTreeDFS(headingTree, selectedParent, filterParentSlug)
+
+  // now in this step we need to search for rest slugs in the children of the selected parent
+  const newFilterNode = []
+  for (let heading of filterParentSlug) {
+    if (heading.children.length === 0) continue
+    filterTreeDFS(heading, slugsWithWeightSorted, newFilterNode)
+  }
+
+  const pathToRoot = createPathToRoot(newFilterNode)
+  const uniqueArray = new Set([...newFilterNode.map((x) => x.id), ...pathToRoot])
+
+  return uniqueArray
 }
 
 const useApplyFilters = (editor, slugs, applyingFilters, setApplyingFilters, router, rendering) => {
@@ -27,60 +156,19 @@ const useApplyFilters = (editor, slugs, applyingFilters, setApplyingFilters, rou
 
     const headings = document.querySelectorAll('.heading .title')
 
-    // search through the headings that has text content with "diet" with regex
-    const filteredHeadings = Array.from(headings)
-      .filter((heading) => {
-        const key = slugs.at(-1)
-
-        const regex = new RegExp(key, 'i') // i flag makes the regex case-insensitive
-        if (regex.test(heading.textContent)) {
-          return { node: heading, text: heading.textContent }
-        }
-      })
-      .map((heading) => {
-        return {
-          node: heading,
-          parents: getHeaderParents(heading).map((parent) => parent.id),
-          text: heading.textContent,
-          hLevel: heading.getAttribute('level'),
-          id: heading.closest('.wrapBlock').getAttribute('data-id')
-        }
-      })
-      .map((heading) => {
-        return {
-          ...heading,
-          openSectionIds: [heading.id, ...heading.parents]
-        }
-      })
-
-    const headingIds = filteredHeadings.map((heading) => heading.openSectionIds).flat()
-
-    const uniqueArr = [...new Set(headingIds)]
-
-    // if the filter result is empty, then redirect to the first slug
-    // if (uniqueArr.length === 0) {
-    //   router.push(slugs.at(0))
-    //   setApplyingFilters(false)
-    //   return
-    // }
+    const uniqueArr = getHeadingsFilterMap(slugs, headings)
 
     const dbMap = []
     headings.forEach((header) => {
       const wrapBlock = header.closest('.wrapBlock')
       const id = wrapBlock.getAttribute('data-id')
-
-      if (!uniqueArr.includes(id)) {
-        dbMap.push({
-          headingId: id,
-          crinkleOpen: false
-        })
-      } else {
-        dbMap.push({
-          headingId: id,
-          crinkleOpen: true
-        })
-      }
+      dbMap.push({
+        headingId: id,
+        crinkleOpen: uniqueArr.has(id) ? true : false
+      })
     })
+
+    console.log({ dbMap, uniqueArr })
 
     // save the data to indexedDB
     db.docFilter.bulkPut(dbMap)
