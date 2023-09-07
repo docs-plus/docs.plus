@@ -15,6 +15,7 @@ export const EditorStateProvider = ({ children, isMobileInitial }) => {
   )
   const [EditorProvider, setEditorProvider] = useState(null)
   const [presentUsers, setPresentUsers] = useState(null)
+  const [filterResult, setFilterResult] = useState([])
 
   const [isAuthServiceAvailable, setIsAuthServiceAvailable] = useState(
     Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
@@ -51,7 +52,9 @@ export const EditorStateProvider = ({ children, isMobileInitial }) => {
       EditorProvider,
       setEditorProvider,
       presentUsers,
-      setPresentUsers
+      setPresentUsers,
+      filterResult,
+      setFilterResult
     }),
     [
       rendering,
@@ -65,7 +68,9 @@ export const EditorStateProvider = ({ children, isMobileInitial }) => {
       deviceDetect,
       isAuthServiceAvailable,
       presentUsers,
-      setPresentUsers
+      setPresentUsers,
+      filterResult,
+      setFilterResult
     ]
   )
 
