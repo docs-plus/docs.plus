@@ -11,6 +11,7 @@ import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import PresentUsers from './PresentUsers'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
 import { useEditorStateContext } from '@context/EditorContext'
+import FilterBar from './FilterBar'
 
 const PadTitle = ({ docMetadata }) => {
   const isKeyboardOpen = useDetectKeyboardOpen()
@@ -89,7 +90,11 @@ const PadTitle = ({ docMetadata }) => {
         )}
       </div>
 
-      <DocTitle docMetadata={docMetadata} />
+      <div className="flex align-middle items-center justify-start">
+        <DocTitle docMetadata={docMetadata} />
+        <FilterBar />
+      </div>
+
       <ReadOnlyIndicator docMetadata={docMetadata} />
 
       <div className="ml-auto flex align-middle ">
