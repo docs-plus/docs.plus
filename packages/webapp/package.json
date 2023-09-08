@@ -16,6 +16,7 @@
   "dependencies": {
     "@docs.plus/extension-hyperlink": "^2.0.0-beta.103",
     "@faker-js/faker": "^8.0.2",
+    "@floating-ui/react": "^0.25.4",
     "@hocuspocus/provider": "^2.2.3",
     "@supabase/auth-helpers-nextjs": "^0.7.3",
     "@supabase/auth-helpers-react": "^0.4.1",
@@ -57,6 +58,7 @@
     "@tiptap/prosemirror-tables": "^1.1.4",
     "@tiptap/react": "^2.0.4",
     "@tiptap/starter-kit": "^2.0.4",
+    "@types/react": "^18.2.15",
     "axios": "^1.4.0",
     "dexie": "^3.2.4",
     "faker": "^6.6.6",

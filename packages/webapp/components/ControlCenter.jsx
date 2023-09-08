@@ -24,7 +24,7 @@ const ControlCenter = () => {
   const user = useUser()
 
   return (
-    <div className="bg-slate-100  rounded-md drop-shadow">
+    <div className="bg-slate-100 rounded-md drop-shadow">
       <Tabs defaultActiveTab={user ? 'profile' : 'sign-in'} className="max-w-5xl rounded-md relative">
         <TabList>
           {!user && (
@@ -39,7 +39,7 @@ const ControlCenter = () => {
           )}
           {user && <Tab name="documents">Documents</Tab>}
         </TabList>
-        <TabPanels className="bg-white rounded-md  max-w-5xl -top-1 relative z-10">
+        <TabPanels className="bg-white rounded-md max-w-5xl -top-1 relative z-10">
           {!user && (
             <TabLayout name="sign-in" footer={false} className="sm:w-[28rem] w-full p-6 sm:p-6">
               <SignInPanel />
