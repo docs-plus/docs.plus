@@ -1,9 +1,11 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
+import { twMerge } from 'tailwind-merge'
 import { searchThroughHeading, applySearchThroughHeading, highlightTocHeadings } from './toolbarUtils'
-
-const FilterModal = ({ totalHeading }) => {
+import { PopoverContent } from '@components/ui/Popover'
+import Button from '@components/ui/Button'
+const FilterModal = ({ totalHeading, className }) => {
   const router = useRouter()
   const [totalSearch, setTotalSearch] = useState(0)
   const [totalHeadings, setTotalHeadings] = useState(totalHeading)
@@ -37,12 +39,12 @@ const FilterModal = ({ totalHeading }) => {
   }
 
   return (
-    <div className="filterModal nd_modal">
+    <PopoverContent className={twMerge('Popover gearModal', className)}>
       <div className="flex align-middle items-center">
         <p className="font-medium text-base text-gray-400 pb-1">Filter:</p>
-        <button onClick={handleApplySearch} className="!p-3 !w-24 !ml-auto  border">
+        <Button onClick={handleApplySearch} className=" !p-1 !w-24 mb-1 !ml-auto  border">
           <span>Apply</span>
-        </button>
+        </Button>
       </div>
       <hr />
       <div className="content pt-2 flex align-middle justify-between">
@@ -59,7 +61,7 @@ const FilterModal = ({ totalHeading }) => {
           Found <b>{totalSearch}</b> matches out of <b>{totalHeadings}</b> headings
         </p>
       </div>
-    </div>
+    </PopoverContent>
   )
 }
 

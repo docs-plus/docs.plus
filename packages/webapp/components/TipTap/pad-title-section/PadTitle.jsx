@@ -2,21 +2,19 @@ import Link from 'next/link'
 import DocTitle from '../DocTitle'
 import { DocsPlus, Hamburger, Check, PrivateShare } from '@icons'
 import { useUser } from '@supabase/auth-helpers-react'
-import { Avatar } from '@components/Avatar'
-import PubSub from 'pubsub-js'
 import Button from '@components/ui/Button'
 import ShareModal from './ShareModal'
-import { useState } from 'react'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import PresentUsers from './PresentUsers'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
 import { useEditorStateContext } from '@context/EditorContext'
 import FilterBar from './FilterBar'
+import { Dialog, DialogTrigger, DialogContent } from '@components/ui/Dialog'
+import ProfileSection from './ProfileSection'
 
 const PadTitle = ({ docMetadata }) => {
   const isKeyboardOpen = useDetectKeyboardOpen()
   const user = useUser()
-  const [displayShareModal, setDisplayShareModal] = useState(false)
   const { isAuthServiceAvailable } = useEditorStateContext()
 
   const btn_leftOpenModal = (e) => {
@@ -39,30 +37,20 @@ const PadTitle = ({ docMetadata }) => {
 
   const btn_blurEditor = () => {}
 
-  const openControlCenter = () => {
-    PubSub.publish('toggleControlCenter', true)
-  }
-
-  const openShareModal = () => {
-    setDisplayShareModal(true)
-  }
-
-  const closeShareModal = (e) => {
-    if (e.target.id === 'ShareModalBlur') {
-      setDisplayShareModal(false)
-    }
-  }
-
-  const ProfileSection = ({ user }) => {
+  const ShareModalSection = () => {
     return (
-      <div className="mr-2 ml-5 sm:flex hidden">
-        {user && (
-          <button onClick={openControlCenter}>
-            <Avatar width={24} height={24} className="rounded-full shadow-md border w-11 h-11" />
-          </button>
-        )}
-        {!user && <Button onClick={openControlCenter}>Signin</Button>}
-      </div>
+      <Dialog>
+        <DialogTrigger asChild={true}>
+          <Button
+            Icon={PrivateShare}
+            className="hover:bg-indigo-500 transition-all bg-docsy hidden sm:flex mt-0 drop-shadow-sm font-light ml-6 text-white w-28">
+            Share
+          </Button>
+        </DialogTrigger>
+        <DialogContent>
+          <ShareModal docMetadata={docMetadata} />
+        </DialogContent>
+      </Dialog>
     )
   }
 
@@ -99,24 +87,8 @@ const PadTitle = ({ docMetadata }) => {
 
       <div className="ml-auto flex align-middle ">
         {isAuthServiceAvailable && <PresentUsers user={user} className="sm:block hidden" />}
-
-        <Button
-          onClick={openShareModal}
-          Icon={PrivateShare}
-          className="hover:bg-indigo-500 transition-all bg-docsy hidden sm:flex mt-0 drop-shadow-sm font-light ml-6 text-white w-28">
-          Share
-        </Button>
-
+        <ShareModalSection />
         {isAuthServiceAvailable && <ProfileSection user={user} />}
-
-        {displayShareModal && (
-          <div
-            onClick={closeShareModal}
-            id="ShareModalBlur"
-            className="w-full h-full top-0 left-0 flex align-middle items-center justify-center absolute z-50 backdrop-blur-sm bg-slate-300/20 ">
-            <ShareModal docMetadata={docMetadata} />
-          </div>
-        )}
       </div>
     </div>
   )

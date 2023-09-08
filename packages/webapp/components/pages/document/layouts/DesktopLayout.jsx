@@ -1,35 +1,10 @@
 import { useEditorStateContext } from '@context/EditorContext'
 import PadTitle from '@components/TipTap/pad-title-section/PadTitle'
 import { useEffect } from 'react'
-import { useState } from 'react'
-import PubSub from 'pubsub-js'
-import dynamic from 'next/dynamic'
 import Editor from '../components/Editor'
 
-const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
-  loading: () => <div>Loading...</div>
-})
-
 const DesktopLayout = ({ docMetadata }) => {
-  const { isMobile, isAuthServiceAvailable } = useEditorStateContext()
-  const { slug } = docMetadata
-
-  const [displayControlCenter, setDisplayControlCenter] = useState(false)
-
-  const closeControlCenter = (e) => {
-    if (e.target.id === 'controlCenterBlur') {
-      window.history.pushState({}, '', `/${slug}`)
-      setDisplayControlCenter(false)
-    }
-  }
-
-  useEffect(() => {
-    PubSub.subscribe('toggleControlCenter', () => {
-      setDisplayControlCenter(!displayControlCenter)
-    })
-
-    return () => PubSub.unsubscribe('toggleControlCenter')
-  }, [])
+  const { isMobile } = useEditorStateContext()
 
   useEffect(() => {
     // when layout change set editor editable again
@@ -46,14 +21,6 @@ const DesktopLayout = ({ docMetadata }) => {
           <PadTitle docMetadata={docMetadata} />
         </div>
         <Editor docMetadata={docMetadata} />
-        {isAuthServiceAvailable && displayControlCenter && (
-          <div
-            onClick={closeControlCenter}
-            id="controlCenterBlur"
-            className="w-full h-full flex align-middle items-center justify-center absolute z-50 backdrop-blur-sm bg-slate-300/20 ">
-            <ControlCenter />
-          </div>
-        )}
       </div>
     </>
   )

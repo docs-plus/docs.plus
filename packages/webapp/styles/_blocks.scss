@@ -161,10 +161,6 @@
     width: 28px;
     @apply flex rounded items-center justify-center relative;
 
-    &.btn_filterModal {
-      // @apply ml-auto
-    }
-
     svg {}
 
     &:hover {
@@ -199,10 +195,6 @@
     position: absolute;
     display: none;
     top: 38px;
-
-    &.active {
-      display: block;
-    }
 
     .content {
       display: flex;

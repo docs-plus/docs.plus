@@ -10,6 +10,7 @@ import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
 import { useEditorStateContext } from '@context/EditorContext'
 import { useUser } from '@supabase/auth-helpers-react'
+import { PopoverContent } from '@components/ui/Popover'
 
 const ToggleSection = ({ name, className, description, value, checked, onChange }) => {
   const containerClasses = twMerge(`flex flex-col p-2 antialiased `, className)
@@ -27,7 +28,7 @@ const ToggleSection = ({ name, className, description, value, checked, onChange 
   )
 }
 
-const GearModal = ({ docMetadata }) => {
+const GearModal = ({ docMetadata, className }) => {
   const user = useUser()
   const { isAuthServiceAvailable, EditorProvider } = useEditorStateContext()
 
@@ -137,7 +138,7 @@ const GearModal = ({ docMetadata }) => {
   }
 
   return (
-    <div className="gearModal nd_modal">
+    <PopoverContent className={twMerge('Popover gearModal', className)}>
       <p className="font-medium text-base text-gray-400 pb-1">Settings:</p>
       <hr />
       {docMetadata.ownerProfile && isAuthServiceAvailable && (
@@ -180,7 +181,7 @@ const GearModal = ({ docMetadata }) => {
         checked={h1SectionBreakSetting}
         onChange={toggleH1SectionBreakSetting}
       />
-    </div>
+    </PopoverContent>
   )
 }
 

@@ -1,14 +1,19 @@
 import React, { useEffect, useState, useCallback } from 'react'
 import Select from 'react-select'
 import { Link, ImageBox, Gear, ClearMark, Filter, Folder } from '@icons'
-import PubSub from 'pubsub-js'
 import dynamic from 'next/dynamic'
 import ToolbarButton from './ToolbarButton'
 import Icon from './Icon'
 import FilterModal from './FilterModal'
 import { useRouter } from 'next/router'
 import { useEditorStateContext } from '@context/EditorContext'
+import { Popover, PopoverTrigger } from '@components/ui/Popover'
 
+import { Dialog, DialogTrigger, DialogContent } from '@components/ui/Dialog'
+
+const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
+  loading: () => <div>Loading...</div>
+})
 const GearModal = dynamic(() => import('./GearModal'))
 
 const Toolbar = ({ editor, docMetadata }) => {
@@ -56,43 +61,13 @@ const Toolbar = ({ editor, docMetadata }) => {
     else editor.chain().focus().wrapBlock({ level: +value }).run()
   }
 
-  const toggleSettingModal = () => {
-    hideAllModals('gearModal')
-
-    const gearModal = document.querySelector('.gearModal')
-    gearModal.classList.toggle('active')
-  }
-  const toggleFilterModal = () => {
-    hideAllModals('filterModal')
-
-    const filterModal = document.querySelector('.filterModal')
-    const headings = document.querySelectorAll('.title')
-
-    setTotalHeading(headings.length)
-    filterModal.classList.toggle('active')
-    // filterSearchRef.current.focus()
-  }
-
-  const hideAllModals = (target) => {
-    if (target === 'gearModal') document.querySelector('.filterModal').classList.remove('active')
-    if (target === 'filterModal') document.querySelector('.gearModal').classList.remove('active')
-  }
-
-  const hideModals = (e) => {
-    if (e.target.closest('.btn_modal') || e.target.closest('.nd_modal')) return
-    document.querySelector('.gearModal').classList.remove('active')
-    document.querySelector('.filterModal').classList.remove('active')
-  }
-
-  const openControlCenter = () => {
-    router.replace(`#panel=documents`)
-    PubSub.publish('toggleControlCenter', true)
-  }
+  // const openControlCenter = () => {
+  //   router.replace(`#panel=documents`)
+  //   PubSub.publish('toggleControlCenter', true)
+  // }
 
   return (
-    <div
-      className="tiptap__toolbar editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-4"
-      onClick={hideModals}>
+    <div className="tiptap__toolbar editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-4">
       {/* <ToolbarButton onClick={() => editor.chain().focus().undo().run()} editor={editor} type="undo">
         <Icon type="Undo" size="16" />
       </ToolbarButton>
@@ -203,24 +178,31 @@ const Toolbar = ({ editor, docMetadata }) => {
         </ToolbarButton>
 
         {isAuthServiceAvailable && (
-          <button onClick={openControlCenter}>
-            <Folder fill="rgba(0,0,0,.7)" size="18" />
-          </button>
+          <Dialog>
+            <DialogTrigger>
+              <Folder fill="rgba(0,0,0,.7)" size="18" />
+            </DialogTrigger>
+            <DialogContent>
+              <ControlCenter />
+            </DialogContent>
+          </Dialog>
         )}
-
         <div className="divided"></div>
 
-        <button className="btn_filterModal btn_modal" onClick={toggleFilterModal}>
-          <Filter fill="rgba(0,0,0,.7)" size="20" />
-        </button>
+        <Popover>
+          <PopoverTrigger>
+            <Filter fill="rgba(0,0,0,.7)" size="20" />
+          </PopoverTrigger>
+          <FilterModal totalHeading={totalHeading} className="z-50" />
+        </Popover>
 
-        <button className="btn_settingModal btn_modal" onClick={toggleSettingModal}>
-          <Gear fill="rgba(0,0,0,.7)" size="16" />
-        </button>
+        <Popover>
+          <PopoverTrigger>
+            <Gear fill="rgba(0,0,0,.7)" size="16" />
+          </PopoverTrigger>
+          <GearModal docMetadata={docMetadata} className="z-50" />
+        </Popover>
       </div>
-
-      <FilterModal totalHeading={totalHeading} />
-      <GearModal docMetadata={docMetadata} />
     </div>
   )
 }
