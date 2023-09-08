@@ -8,7 +8,7 @@ import FilterModal from './FilterModal'
 import { useRouter } from 'next/router'
 import { useEditorStateContext } from '@context/EditorContext'
 import { Popover, PopoverTrigger } from '@components/ui/Popover'
-
+import { Tooltip, TooltipTrigger, TooltipContent } from '@components/ui/Tooltip'
 import { Dialog, DialogTrigger, DialogContent } from '@components/ui/Dialog'
 
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
@@ -76,6 +76,8 @@ const Toolbar = ({ editor, docMetadata }) => {
         <Icon type="Redo" size="16" />
       </ToolbarButton> */}
 
+      {/* <Tooltip placement="bottom"> */}
+      {/* <TooltipTrigger asChild={true}> */}
       <Select
         className="w-32 text-sm"
         classNamePrefix="nodeStyle"
@@ -86,16 +88,26 @@ const Toolbar = ({ editor, docMetadata }) => {
         value={selectValue}
         onChange={onchangeValue}
       />
+      {/* </TooltipTrigger> */}
+      {/* <TooltipContent className="Tooltip"> */}
+      {/* Change Heading Level (⌘+⌥+0-9) */}
+      {/* </TooltipContent> */}
+      {/* </Tooltip> */}
 
       <div className="divided"></div>
 
-      <ToolbarButton onClick={() => editor.chain().focus().toggleBold().run()} editor={editor} type="bold">
+      <ToolbarButton
+        onClick={() => editor.chain().focus().toggleBold().run()}
+        editor={editor}
+        tooltip="Bold (⌘+B)"
+        type="bold">
         <Icon type="Bold" size="10" />
       </ToolbarButton>
 
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleItalic().run()}
         editor={editor}
+        tooltip="Italic (⌘+I)"
         type="italic">
         <Icon type="Italic" size="10" />
       </ToolbarButton>
@@ -103,6 +115,7 @@ const Toolbar = ({ editor, docMetadata }) => {
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleUnderline().run()}
         editor={editor}
+        tooltip="Underline (⌘+U)"
         type="underline">
         <Icon type="Underline" size="10" />
       </ToolbarButton>
@@ -110,6 +123,7 @@ const Toolbar = ({ editor, docMetadata }) => {
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleStrike().run()}
         editor={editor}
+        tooltip="Strike (⌘+S)"
         type="strike">
         <Icon type="Stric" size="14" />
       </ToolbarButton>
@@ -119,6 +133,7 @@ const Toolbar = ({ editor, docMetadata }) => {
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleOrderedList().run()}
         editor={editor}
+        tooltip="Ordered List (⌘+⇧+7)"
         type="orderedList">
         <Icon type="OrderList" size="16" />
       </ToolbarButton>
@@ -126,6 +141,7 @@ const Toolbar = ({ editor, docMetadata }) => {
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleBulletList().run()}
         editor={editor}
+        tooltip="Bullet List (⌘+⇧+8)"
         type="bulletList">
         <Icon type="BulletList" size="16" />
       </ToolbarButton>
@@ -133,6 +149,7 @@ const Toolbar = ({ editor, docMetadata }) => {
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleTaskList().run()}
         editor={editor}
+        tooltip="Task List (⌘+⇧+9)"
         type="taskList">
         <Icon type="CheckList" size="16" />
       </ToolbarButton>
@@ -146,6 +163,7 @@ const Toolbar = ({ editor, docMetadata }) => {
       <ToolbarButton
         onClick={() => editor.chain().focus().setHyperlink().run()}
         editor={editor}
+        tooltip="Hyperlink (⌘+K)"
         type="hyperlink">
         <Link fill="rgba(0,0,0,.7)" size="18" />
       </ToolbarButton>
@@ -153,6 +171,7 @@ const Toolbar = ({ editor, docMetadata }) => {
       <ToolbarButton
         onClick={() => editor.chain().focus().toggleHighlight().run()}
         editor={editor}
+        tooltip="Highlight (⌘+H)"
         type="highlight">
         <Icon type="HighlightMarker" size="14" />
       </ToolbarButton>
@@ -173,7 +192,7 @@ const Toolbar = ({ editor, docMetadata }) => {
       </button>
 
       <div className="ml-auto flex align-baseline items-center">
-        <ToolbarButton onClick={() => window.print()}>
+        <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)">
           <Icon type="Printer" size="16" />
         </ToolbarButton>
 
