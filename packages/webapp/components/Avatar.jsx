@@ -23,7 +23,7 @@ const useAvatar = (srcAvatar) => {
   return { avatarUrl, setAvatarUrl }
 }
 
-const AvatarComponet = ({ height, width, srcAvatar, ...props }) => {
+let Avatar = React.forwardRef(({ height, width, srcAvatar, ...props }, ref) => {
   const { avatarUrl, setAvatarUrl } = useAvatar(srcAvatar)
   const user = useUser()
 
@@ -51,6 +51,7 @@ const AvatarComponet = ({ height, width, srcAvatar, ...props }) => {
 
   return (
     <Image
+      ref={ref}
       src={srcAvatar || avatarUrl}
       width={width}
       onError={onError}
@@ -59,9 +60,11 @@ const AvatarComponet = ({ height, width, srcAvatar, ...props }) => {
       {...props}
     />
   )
-}
+})
+
+Avatar.displayName = 'AvatarComponent'
 
 // TODO: improvment, check avatar props are Equal
-const Avatar = React.memo(AvatarComponet)
+Avatar = React.memo(Avatar)
 
-export { Avatar, useAvatar, AVATAR_URL_CHANNEL_NAME }
+export { Avatar, AVATAR_URL_CHANNEL_NAME }
