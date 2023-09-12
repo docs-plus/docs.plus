@@ -184,6 +184,26 @@ const constructSortedSlugs = (refinedChildNodes, parentSlugs, sortedSlugs, zeroW
   return [...parentMapSlugs, ...childMapSlugs]
 }
 
+const handelLinearAlgorithm = (headingTree, slugs) => {
+  const refinedFilteredNodes = []
+
+  for (let slug of slugs) {
+    filterTreeDFS(headingTree, [slug], refinedFilteredNodes)
+  }
+
+  const sortedSlugsResult = [...slugs].map((slug) => ({
+    type: 'child',
+    text: slug,
+    existsInParent: refinedFilteredNodes.some((childNode) => slug == childNode.filterBy)
+  }))
+
+  const pathToRoot = createPathToRoot(refinedFilteredNodes)
+  const headingIdsMap = new Set([...refinedFilteredNodes.map((node) => node.id), ...pathToRoot])
+  const selectedNodes = [...refinedFilteredNodes.map((x) => ({ ...x, rootPath: createPathToRoot([x]) }))]
+
+  return { headingIdsMap, sortedSlugs: sortedSlugsResult, selectedNodes }
+}
+
 /**
  * Filters and maps headings based on provided slugs.
  *
@@ -199,6 +219,7 @@ const constructSortedSlugs = (refinedChildNodes, parentSlugs, sortedSlugs, zeroW
 const getHeadingsFilterMap = (slugs, headings) => {
   // Convert slugs to lowercase
   slugs = slugs.map((slug) => slug.toLowerCase())
+  const filterLinearAlgorithm = localStorage.getItem('setting.filterAlgorithm')
 
   const headingFlatMap = mapHeadingsToFlatStructure(headings)
   const headingTree = createTree(headingFlatMap)
@@ -206,6 +227,10 @@ const getHeadingsFilterMap = (slugs, headings) => {
 
   if (slugs.length === 1) {
     return handleSingleSlugCase(filteredNodes, slugs)
+  }
+
+  if (filterLinearAlgorithm === 'true') {
+    return handelLinearAlgorithm(headingTree, slugs)
   }
 
   // Calculate weights for each slug
