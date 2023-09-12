@@ -12,7 +12,7 @@ const socialSharingMap = {
 
 const ShareModal = ({ docMetadata }) => {
   const urlRef = useRef()
-  const [href, setHref] = useState()
+  const [href, setHref] = useState('')
 
   useEffect(() => {
     setHref(window.location.href)

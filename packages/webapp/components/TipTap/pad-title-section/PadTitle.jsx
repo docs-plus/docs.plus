@@ -1,16 +1,14 @@
 import Link from 'next/link'
-import DocTitle from '../DocTitle'
-import { DocsPlus, Hamburger, Check, PrivateShare } from '@icons'
-import { useUser } from '@supabase/auth-helpers-react'
-import Button from '@components/ui/Button'
-import ShareModal from './ShareModal'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
+import { DocsPlus, Hamburger, Check } from '@icons'
+import { useUser } from '@supabase/auth-helpers-react'
+import DocTitle from '../DocTitle'
 import PresentUsers from './PresentUsers'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
 import { useEditorStateContext } from '@context/EditorContext'
 import FilterBar from './FilterBar'
-import { Dialog, DialogTrigger, DialogContent } from '@components/ui/Dialog'
 import ProfileSection from './ProfileSection'
+import ShareModalSection from './ShareSection'
 
 const PadTitle = ({ docMetadata }) => {
   const isKeyboardOpen = useDetectKeyboardOpen()
@@ -36,23 +34,6 @@ const PadTitle = ({ docMetadata }) => {
   }
 
   const btn_blurEditor = () => {}
-
-  const ShareModalSection = () => {
-    return (
-      <Dialog>
-        <DialogTrigger asChild={true}>
-          <Button
-            Icon={PrivateShare}
-            className="hover:bg-indigo-500 transition-all bg-docsy hidden sm:flex mt-0 drop-shadow-sm font-light ml-6 text-white w-28">
-            Share
-          </Button>
-        </DialogTrigger>
-        <DialogContent>
-          <ShareModal docMetadata={docMetadata} />
-        </DialogContent>
-      </Dialog>
-    )
-  }
 
   return (
     <div className="flex flex-row items-center align-middle w-full justify-center sm:justify-normal">
@@ -87,7 +68,7 @@ const PadTitle = ({ docMetadata }) => {
 
       <div className="ml-auto flex align-middle ">
         {isAuthServiceAvailable && <PresentUsers user={user} className="sm:block hidden" />}
-        <ShareModalSection />
+        <ShareModalSection docMetadata={docMetadata} />
         {isAuthServiceAvailable && <ProfileSection user={user} />}
       </div>
     </div>
