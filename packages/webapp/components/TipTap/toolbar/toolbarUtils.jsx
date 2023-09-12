@@ -43,8 +43,7 @@ export const searchThroughHeading = (e) => {
 
 export const applySearchThroughHeading = (searchInput, router) => {
   const search = searchInput
-  const mainDoc = router.query.slugs.at(0)
-  window.location.href = `/${mainDoc}/${encodeURIComponent(search)}`
+  window.location.href = `${location.origin}/${router.asPath}/${encodeURIComponent(search)}`
 }
 
 export const saveDocDescriptionHandler = (mutate, docId, docDescription, tags) => {
