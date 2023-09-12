@@ -138,49 +138,51 @@ const GearModal = ({ docMetadata, className }) => {
   }
 
   return (
-    <PopoverContent className={twMerge('Popover gearModal', className)}>
-      <p className="font-medium text-base text-gray-400 pb-1">Settings:</p>
-      <hr />
-      {docMetadata.ownerProfile && isAuthServiceAvailable && (
-        <div>
-          <OwnerProfile />
+    <PopoverContent className={twMerge('Popover gearModal ', className)}>
+      <div className="max-w-md">
+        <p className="font-medium  text-base text-gray-400 pb-1">Settings:</p>
+        <hr />
+        {docMetadata.ownerProfile && isAuthServiceAvailable && (
+          <div>
+            <OwnerProfile />
+          </div>
+        )}
+        <div className="content pt-5 flex flex-col !items-end">
+          <TextAreaOvelapLabel
+            label="Document Description"
+            value={docDescription}
+            onChange={(e) => setDocDescription(e.target.value)}
+            className="w-full"
+          />
+          <div className=" w-full mt-4">
+            <InputTags
+              label="Document Keywords"
+              placeholder="Type keyword..."
+              onChangeTags={handleTagsChange}
+              defaultTags={tags}></InputTags>
+          </div>
+          <Button
+            loading={formTargetHandler === 'description' && isLoading}
+            className="!w-32 !mt-3"
+            onClick={saveDescriptionHandler}>
+            Save
+          </Button>
         </div>
-      )}
-      <div className="content pt-5 flex flex-col !items-end">
-        <TextAreaOvelapLabel
-          label="Document Description"
-          value={docDescription}
-          onChange={(e) => setDocDescription(e.target.value)}
-          className="w-full"
-        />
-        <div className=" w-full mt-4">
-          <InputTags
-            label="Document Keywords"
-            placeholder="Type keyword..."
-            onChangeTags={handleTagsChange}
-            defaultTags={tags}></InputTags>
-        </div>
-        <Button
-          loading={formTargetHandler === 'description' && isLoading}
-          className="!w-32 !mt-3"
-          onClick={saveDescriptionHandler}>
-          Save
-        </Button>
-      </div>
-      <hr className="my-2" />
+        <hr className="my-2" />
 
-      <ToggleSection
-        name="Heading Indentation"
-        description="Turn on to indent headings for better readability"
-        checked={indentSetting}
-        onChange={toggleIndentSetting}
-      />
-      <ToggleSection
-        name="H1 Section Break"
-        description="Enable to insert a break after H1 headings for clear separation"
-        checked={h1SectionBreakSetting}
-        onChange={toggleH1SectionBreakSetting}
-      />
+        <ToggleSection
+          name="Heading Indentation"
+          description="Turn on to indent headings for better readability"
+          checked={indentSetting}
+          onChange={toggleIndentSetting}
+        />
+        <ToggleSection
+          name="H1 Section Break"
+          description="Enable to insert a break after H1 headings for clear separation"
+          checked={h1SectionBreakSetting}
+          onChange={toggleH1SectionBreakSetting}
+        />
+      </div>
     </PopoverContent>
   )
 }
