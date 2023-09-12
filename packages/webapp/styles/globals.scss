@@ -133,3 +133,91 @@ h1 {
 }
 
 
+@media print {
+    * {
+        overflow: visible !important;
+    }
+    /* Hide elements that are not necessary for the printed version */
+     .tiptap__toc, .toolbars, .docTitle, .tableOfContents {
+        display: none!important;
+    }
+
+    body {
+      color: black;
+      background: #fff;
+      height: auto;
+      font-size: 12pt;
+      line-height: 1.5;
+    }
+
+    .pad .editor{
+      background-color: #fff;
+    }
+
+    .tiptap {
+      width: 100%;
+      display: block;
+      height: auto;
+      position: relative;
+      overflow: auto;
+    }
+
+    .editorWrapper{
+      padding: 0;
+      display: block;
+      width: auto;
+      overflow: auto;
+    }
+
+    .tipta__editor{
+      width: 100%;
+      height: auto;
+      display: block;
+      overflow: auto;
+      margin: auto;
+      padding: 0;
+      max-width: 100%;
+      background: #fff;
+    }
+
+    .heading, .heading[level="1"], .heading[level="1"]:first-of-type{
+      border: none !important;
+      background-color: transparent;
+      margin: inherit;
+      padding: inherit;
+    }
+    .heading{
+      margin: 8pt 0;
+    }
+
+    h1 {
+        font-size: 24pt;
+        line-height: 1.15; /* Approximately 27.6pt */
+    }
+
+    h2 {
+        font-size: 20pt;
+        line-height: 1.2;  /* Approximately 24pt */
+    }
+
+    h3 {
+        font-size: 18pt;
+        line-height: 1.2;  /* Approximately 21.6pt */
+    }
+
+    h4 {
+        font-size: 16pt;
+        line-height: 1.25; /* Approximately 20pt */
+    }
+
+    h5 {
+        font-size: 14pt;
+        line-height: 1.3;  /* Approximately 18.2pt */
+    }
+
+    h6, h7, h8, h9, h10 {
+        font-size: 12pt;
+        line-height: 1.4;  /* Approximately 16.8pt */
+    }
+
+}
