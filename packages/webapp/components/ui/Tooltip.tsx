@@ -11,14 +11,16 @@ import {
   useRole,
   useInteractions,
   useMergeRefs,
-  FloatingPortal
+  FloatingPortal,
+  Placement
 } from '@floating-ui/react'
-import type { Placement } from '@floating-ui/react'
 
 interface TooltipOptions {
   initialOpen?: boolean
   placement?: Placement
   open?: boolean
+  showDelay?: number
+  hideDelay?: number
   onOpenChange?: (open: boolean) => void
 }
 
@@ -26,6 +28,8 @@ export function useTooltip({
   initialOpen = false,
   placement = 'top',
   open: controlledOpen,
+  showDelay = 200,
+  hideDelay = 0,
   onOpenChange: setControlledOpen
 }: TooltipOptions = {}) {
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(initialOpen)
@@ -53,7 +57,9 @@ export function useTooltip({
 
   const hover = useHover(context, {
     move: false,
-    enabled: controlledOpen == null
+    enabled: controlledOpen == null,
+    delay: showDelay,
+    restMs: hideDelay
   })
   const focus = useFocus(context, {
     enabled: controlledOpen == null
