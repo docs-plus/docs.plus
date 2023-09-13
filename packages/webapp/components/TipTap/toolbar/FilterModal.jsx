@@ -44,7 +44,7 @@ const FilterModal = ({ totalHeading, className }) => {
 
   const handelFilterAlgorithm = () => {
     setFilterAlgorithm(!filterAlgorithm)
-    if (router.query.slugs.length > 0) {
+    if (router.query.slugs.length > 1) {
       window.location.href = `${location.origin}/${router.asPath}`
     }
   }
