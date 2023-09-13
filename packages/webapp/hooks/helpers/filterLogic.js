@@ -187,9 +187,7 @@ const constructSortedSlugs = (refinedChildNodes, parentSlugs, sortedSlugs, zeroW
 const handelLinearAlgorithm = (headingTree, slugs) => {
   const refinedFilteredNodes = []
 
-  for (let slug of slugs) {
-    filterTreeDFS(headingTree, [slug], refinedFilteredNodes)
-  }
+  filterTreeDFS(headingTree, slugs, refinedFilteredNodes)
 
   const sortedSlugsResult = [...slugs].map((slug) => ({
     type: 'child',
