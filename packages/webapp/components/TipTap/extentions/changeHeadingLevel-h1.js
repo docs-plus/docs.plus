@@ -4,8 +4,9 @@ import {
   createThisBlockMap,
   getHeadingsBlocksMap,
   getRangeBlocks,
-  getPrevHeadingPos,
-  insertRemainingHeadings
+  findPrevBlock,
+  insertRemainingHeadings,
+  createHeadingNodeFromSelection
 } from './helper'
 
 const changeHeadingLevelH1 = (arrg, attributes) => {
@@ -20,90 +21,64 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   const block = createThisBlockMap(state)
   const currentHLevel = $from.doc.nodeAt(block.start).attrs.level
 
-  let titleStartPos = 0
-  let titleEndPos = 0
+  let titleStartPos = $from.start(1) - 1
+  let titleEndPos = $to.end(1)
 
-  doc.nodesBetween($from.start(0), start - 1, function (node, pos) {
-    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
-      const headingLevel = node.firstChild?.attrs?.level
+  let prevHStartPos = 0
+  let prevHEndPos = 0
 
-      if (headingLevel === currentHLevel) {
-        titleStartPos = pos
-        // INFO: I need the pos of last content in contentWrapper
-        titleEndPos = pos + node.content.size
-      }
-    }
-  })
-
-  const contentWrapper = getRangeBlocks(
-    doc,
-    start,
-    $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size
-  )
-  const titleHMap = getHeadingsBlocksMap(doc, titleStartPos, titleEndPos)
+  const contentWrapper = getRangeBlocks(doc, titleStartPos + 1, titleEndPos)
 
   const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
   const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
 
-  const { prevHStartPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
+  doc.nodesBetween($from.start(0), start - 1, function (node, pos) {
+    if (pos > start - 1) return
 
-  let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
+    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
+      const headingLevel = node.firstChild?.attrs?.level
 
-  let shouldNested = false
-
-  // FIXME: this is heavy! I need to find better solotion with less loop
-  const prevBlockEqual = mapHPost.findLast((x) => x.le === commingLevel)
-  const prevBlockGratherFromFirst = mapHPost.find((x) => x.le >= commingLevel)
-  const prevBlockGratherFromLast = mapHPost.findLast((x) => x.le <= commingLevel)
-  const lastbloc = mapHPost.at(-1)
-  let prevBlock = prevBlockEqual || prevBlockGratherFromLast || prevBlockGratherFromFirst
-
-  if (lastbloc.le <= commingLevel) prevBlock = lastbloc
-  shouldNested = prevBlock.le < commingLevel
-
-  const jsonNode = {
-    type: ENUMS.NODES.HEADING_TYPE,
-    attrs: {
-      level: attributes.level
-    },
-    content: [
-      {
-        type: ENUMS.NODES.HEADING_CONTENT_TYPE,
-        content: [block.headingContent],
-        attrs: {
-          level: attributes.level
-        }
-      },
-      {
-        type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
-        content: contentWrapperParagraphs
+      if (headingLevel === currentHLevel) {
+        prevHStartPos = pos
+        prevHEndPos = pos + node.content.size
       }
-    ]
-  }
-  const node = state.schema.nodeFromJSON(jsonNode)
+    }
+  })
+
+  const titleHMap = getHeadingsBlocksMap(doc, prevHStartPos, titleEndPos)
+  let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
+  let { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
+
+  const newHeadingNode = createHeadingNodeFromSelection(
+    doc,
+    state,
+    titleStartPos,
+    titleStartPos,
+    attributes,
+    block,
+    contentWrapperParagraphs
+  )
 
   // remove content from the current positon to the end of the heading
-  tr.delete(start - 1, $from.start(1) - 1 + $from.doc.nodeAt($from.start(1) - 1).content.size)
+  tr.delete(titleStartPos, titleEndPos)
 
   // then add the new heading with the content
   const insertPos = prevBlock.endBlockPos - (shouldNested ? 2 : 0)
 
-  tr.insert(tr.mapping.map(insertPos), node)
+  tr.insert(tr.mapping.map(insertPos), newHeadingNode)
 
   // set the cursor to the end of the heading
   const newSelection = new TextSelection(tr.doc.resolve(from))
 
   tr.setSelection(newSelection)
 
-  // FIXME: this loop so much heavy, I need to find better solotion!
   // then loop through the heading to append
-
   return insertRemainingHeadings({
     state,
     tr,
     headings: contentWrapperHeadings,
-    titleStartPos,
-    titleEndPos,
+    titleStartPos: prevHStartPos,
+    titleEndPos: prevHEndPos,
     prevHStartPos
   })
 }
