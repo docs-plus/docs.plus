@@ -32,7 +32,7 @@ const onSelection = ({ state, tr, editor }) => {
   tr.insert(selectedContents.at(0).startBlockPos, newConent)
 
   // update selection position
-  const focusSelection = new TextSelection(tr.doc.resolve(to))
+  const focusSelection = new TextSelection(tr.doc.resolve(from))
   tr.setSelection(focusSelection)
 
   // after all that, we need to loop through the rest of remaing heading to append
@@ -40,9 +40,9 @@ const onSelection = ({ state, tr, editor }) => {
     state,
     tr,
     headings,
-    titleStartPos,
-    titleEndPos,
-    prevHStartPos
+    titleStartPos: tr.mapping.map(titleStartPos),
+    titleEndPos: tr.mapping.map(titleEndPos),
+    prevHStartPos: tr.mapping.map(prevHStartPos)
   })
 }
 
