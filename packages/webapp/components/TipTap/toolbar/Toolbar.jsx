@@ -112,7 +112,7 @@ const Toolbar = ({ editor, docMetadata }) => {
       <div className="divided"></div>
 
       <ToolbarButton
-        tooltip="Clear Node/Mark"
+        tooltip="Clear Formatting"
         onClick={() => {
           const range = editor.view.state.selection.ranges[0]
           if (range.$from === range.$to) {
@@ -132,7 +132,7 @@ const Toolbar = ({ editor, docMetadata }) => {
         {isAuthServiceAvailable && (
           <Dialog>
             <DialogTrigger asChild={true}>
-              <ToolbarButton tooltip="Documents">
+              <ToolbarButton tooltip="Open">
                 <Folder fill="rgba(0,0,0,.7)" size="18" />
               </ToolbarButton>
             </DialogTrigger>
