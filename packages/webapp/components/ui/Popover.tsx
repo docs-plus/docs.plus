@@ -21,6 +21,7 @@ interface PopoverOptions {
   placement?: Placement
   modal?: boolean
   open?: boolean
+  offcet?: number
   onOpenChange?: (open: boolean) => void
 }
 
@@ -29,7 +30,8 @@ export function usePopover({
   placement = 'bottom',
   modal,
   open: controlledOpen,
-  onOpenChange: setControlledOpen
+  onOpenChange: setControlledOpen,
+  offcet: offcetSize = 5
 }: PopoverOptions = {}) {
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(initialOpen)
   const [labelId, setLabelId] = React.useState<string | undefined>()
@@ -44,13 +46,13 @@ export function usePopover({
     onOpenChange: setOpen,
     whileElementsMounted: autoUpdate,
     middleware: [
-      offset(5),
+      offset(offcetSize),
       flip({
         crossAxis: placement.includes('-'),
         fallbackAxisSideDirection: 'end',
-        padding: 5
+        padding: offcetSize
       }),
-      shift({ padding: 5 })
+      shift({ padding: offcetSize })
     ]
   })
 
