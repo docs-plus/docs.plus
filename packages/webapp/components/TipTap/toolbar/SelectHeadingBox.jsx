@@ -4,7 +4,7 @@ import React, { useCallback } from 'react'
 
 const SelectHeadingBox = ({ editor }) => {
   const options = [
-    { value: 0, label: 'Normal Text' },
+    { value: 'p', label: 'Normal Text' },
     { value: 1, label: 'Heading 1' },
     { value: 2, label: 'Heading 2' },
     { value: 3, label: 'Heading 3' },
@@ -18,8 +18,11 @@ const SelectHeadingBox = ({ editor }) => {
   ]
   const onHeadingChange = useCallback(
     (value) => {
-      if (value === 0) editor.chain().focus().normalText().run()
-      else editor.chain().focus().wrapBlock({ level: +value }).run()
+      if (value === 'p') {
+        editor.chain().focus().normalText().run()
+      } else {
+        editor.chain().focus().wrapBlock({ level: +value }).run()
+      }
     },
     [editor]
   )
@@ -29,7 +32,7 @@ const SelectHeadingBox = ({ editor }) => {
       return editor.isActive('contentHeading', { level: option.value })
     })
 
-    return selectedHeadingOption?.value || options.at(0).value
+    return selectedHeadingOption || options.at(0)
   }
 
   return (
