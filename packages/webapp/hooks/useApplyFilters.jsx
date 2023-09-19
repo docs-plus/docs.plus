@@ -2,16 +2,25 @@ import { useEffect } from 'react'
 import { db } from '../db'
 import { useEditorStateContext } from '@context/EditorContext'
 import getHeadingsFilterMap from './helpers/filterLogic'
+import { useRouter } from 'next/router'
 
-const useApplyFilters = (editor, slugs, applyingFilters, setApplyingFilters, router, rendering) => {
-  const { setFilterResult } = useEditorStateContext()
+const useApplyFilters = (editor) => {
+  const router = useRouter()
+  const { slugs } = router.query
+  const { setFilterResult, setApplyingFilters, rendering, loading } = useEditorStateContext()
 
   useEffect(() => {
-    if (!editor || rendering || slugs.length === 1) return
+    if (!editor || rendering || loading || slugs.length === 1) return
+
     // remove the document slug from the slugs array
     slugs.shift()
 
     const headings = document.querySelectorAll('.heading .title')
+
+    if (!headings) {
+      console.error('[apply filter]: document is empty, no headings found')
+      return
+    }
     const { headingIdsMap, sortedSlugs, selectedNodes } = getHeadingsFilterMap(slugs, headings)
 
     const dbHeadigMap = []
@@ -38,7 +47,7 @@ const useApplyFilters = (editor, slugs, applyingFilters, setApplyingFilters, rou
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [rendering])
+  }, [rendering, loading])
 }
 
 export default useApplyFilters
