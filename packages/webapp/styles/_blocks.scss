@@ -354,26 +354,32 @@
 
   h1 {
     @apply text-6xl;
+    padding-top: 13.8pt; /* Half of 27.6pt */
   }
 
   h2 {
     @apply text-5xl;
+    padding-top: 12pt; /* Half of 24pt */
   }
 
   h3 {
     @apply text-4xl;
+    padding-top: 10.8pt; /* Half of 21.6pt */
   }
 
   h4 {
     @apply text-3xl;
+    padding-top: 10pt; /* Half of 20pt */
   }
 
   h5 {
     @apply text-2xl;
+    padding-top: 9.1pt; /* Half of 18.2pt */
   }
 
   :is(h6, h7, h8, h9, h10) {
     @apply text-xl;
+    padding-top: 8.4pt; /* Half of 16.8pt */
   }
 
   code {

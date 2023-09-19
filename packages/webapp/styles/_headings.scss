@@ -112,7 +112,7 @@ body.h1SectionBreak {
       }
 
       &:not(:first-of-type) {
-        padding-top: 1rem;
+        padding-top: 2rem;
       }
 
       &:last-of-type {
@@ -125,50 +125,6 @@ body.h1SectionBreak {
   .title {
     z-index: 9;
     width: 100%;
-
-    &.is-empty::before {
-      position: absolute;
-    }
-
-    &[level="1"].is-empty::before {
-      font-size: 3.75rem;
-    }
-
-    &[level="2"].is-empty::before {
-      font-size: 3rem;
-    }
-
-    &[level="3"].is-empty::before {
-      font-size: 2.25rem;
-    }
-
-    &[level="4"].is-empty::before {
-      font-size: 1.875rem;
-    }
-
-    &[level="5"].is-empty::before {
-      font-size: 1.5rem;
-    }
-
-    &[level="6"].is-empty::before {
-      font-size: 1.25rem;
-    }
-
-    &[level="7"].is-empty::before {
-      font-size: 1.125rem;
-    }
-
-    &[level="8"].is-empty::before {
-      font-size: 1.125rem;
-    }
-
-    &[level="9"].is-empty::before {
-      font-size: 1.125rem;
-    }
-
-    &[level="10"].is-empty::before {
-      font-size: 1.125rem;
-    }
 
     :is(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10) {
       margin-left: -33px;
