@@ -134,6 +134,9 @@ const handleHeadingToggle = (editor, { headingId, open }) => {
     }
     const filterMode = document.body.classList.contains('filter-mode')
     let database = filterMode ? db.docFilter : db.meta
+
+    // In filter mode, avoid saving the heading map to prevent overwriting the primary heading filter.
+    if (filterMode) return
     database
       .put({
         docId: documentId,
