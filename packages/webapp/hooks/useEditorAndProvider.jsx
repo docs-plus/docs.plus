@@ -5,7 +5,6 @@ import randomColor from 'randomcolor'
 import { toast } from 'react-hot-toast'
 import { useUser } from '@supabase/auth-helpers-react'
 import useApplyFilters from '@hooks/useApplyFilters'
-import { useRouter } from 'next/router'
 import { useEditorStateContext } from '@context/EditorContext'
 import useProfileData from '@hooks/useProfileData'
 import useYdocAndProvider from '@hooks/useYdocAndProvider'
@@ -28,17 +27,8 @@ const getCursorUser = (user, profileData) => {
 
 const useEditorAndProvider = ({ docMetadata }) => {
   const user = useUser()
-  const router = useRouter()
-  const { slugs } = router.query
-  const {
-    rendering,
-    setRendering,
-    setPresentUsers,
-    loading,
-    applyingFilters,
-    setApplyingFilters,
-    setLoading
-  } = useEditorStateContext()
+  const { setRendering, setPresentUsers, loading, applyingFilters, setApplyingFilters, setLoading } =
+    useEditorStateContext()
 
   const { profileData } = useProfileData()
 
@@ -94,9 +84,9 @@ const useEditorAndProvider = ({ docMetadata }) => {
         provider.off('stateless', statelessHandler)
       }
     }
-  }, [provider, editor, user, docMetadata])
+  }, [provider, editor, user, docMetadata, loading])
 
-  useApplyFilters(editor, slugs, applyingFilters, setApplyingFilters, router, rendering)
+  useApplyFilters(editor)
 
   useEffect(() => {
     if (loading && setApplyingFilters) return
