@@ -1,0 +1,10 @@
+.Dialog-overlay {
+  @apply w-full h-full flex align-middle items-center justify-center absolute z-50 backdrop-blur-sm bg-slate-300/20;
+}
+
+.Dialog {
+  margin: 15px;
+  background-color: white;
+  padding: 15px;
+  border-radius: 4px;
+}

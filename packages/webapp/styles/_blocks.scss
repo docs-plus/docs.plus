@@ -2,20 +2,12 @@
   position: relative;
   @apply h-full;
 
-  .header {
-    // height: $Pad_Header__height;
-  }
-
-  .toolbars {
-    // height: $Pad_Toolbar__height;
-  }
-
   .editor {
     background-color: #f8f9fa;
     overflow: auto;
-    // @apply absolute;
-    .editorWrapper{
-      padding-bottom: 300px
+
+    .editorWrapper {
+      padding-bottom: 300px;
     }
 
     .tipta__editor {
@@ -23,227 +15,15 @@
 
       .heading {
         background-color: #fff;
-        // padding: 0 1rem;
-      }
-
-    }
-  }
-}
-
-.toc {
-  background: rgba(black, 0.1);
-  border-radius: 0.5rem;
-  opacity: 0.75;
-  padding: 0.75rem;
-  min-width: 200px;
-  text-align: left;
-  line-height: 2rem;
-
-  &__list {
-    list-style: none;
-
-    &::before {
-      // content: "Table of Contents";
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.025rem;
-      opacity: 0.5;
-      text-transform: uppercase;
-      padding-bottom: 20px;
-    }
-  }
-
-  &__item {
-    padding-left: 1.5rem;
-
-    &.active > span {
-      a {
-        color: #4285f4;
-      }
-
-      a::after {
-
-        opacity: 1;
       }
     }
-
-    a {
-      font-weight: normal;
-      position: relative;
-      @apply text-sm text-gray-400;
-
-      &::after {
-        content: "";
-        display: block;
-        width: 100%;
-        border: 1px solid #4285f4;
-        position: absolute;
-        opacity: 0;
-        transition: all 0.1s cubic-bezier(0.39, 0.575, 0.565, 1);
-      }
-    }
-
-    a:hover {
-      opacity: 0.5;
-      color: #0D0D0D
-    }
-
-    &--1 {
-      padding-left: 0 !important;
-
-      > span > a {
-        @apply text-base font-medium text-black;
-      }
-    }
-
   }
 }
 
-.drag_box {
-  position: relative;
-
-  &:hover {
-    > #dragspan {
-      opacity: 1;
-    }
-  }
-
-  #dragspan {
-    display: block;
-    position: absolute;
-    left: -20px;
-    top: 0;
-    opacity: 0;
-    transition: all .1s cubic-bezier(0.39, 0.575, 0.565, 1);
-
-    &:hover {
-      opacity: 1;
-    }
-
-    &::after {
-      content: '';
-      display: block;
-      flex: 0 0 auto;
-      position: relative;
-      width: 1rem;
-      height: 1rem;
-      top: 0.3rem;
-      margin-right: 0.5rem;
-      cursor: grab;
-      background-image: url('data:image/svg+xml;charset=UTF-8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 16"><path fill-opacity="0.2" d="M4 14c0 1.1-.9 2-2 2s-2-.9-2-2 .9-2 2-2 2 .9 2 2zM2 6C.9 6 0 6.9 0 8s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-6C.9 0 0 .9 0 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm6 4c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" /></svg>');
-      background-repeat: no-repeat;
-      background-size: contain;
-      background-position: center;
-    }
-  }
-
-}
-
-.tiptap__toolbar {
-  @apply border-t border-b;
-
-  .divided {
-    display: inline-block;
-    height: 20px;
-    @apply border-l mx-[10px] my-[6px];
-    // float: left;
-  }
-
-  button {
-    float: left;
-    margin: 4px 2px;
-    // padding: 2px 6px;
-    background-color: transparent;
-    outline: none;
-    cursor: pointer;
-    height: 28px;
-    width: 28px;
-    @apply flex rounded items-center justify-center relative;
-
-    svg {}
-
-    &:hover {
-      background: #eee;
-      color: black;
-    }
-
-    &.is-active {
-      background-color: #e8f0fe;
-      color: #1a73e8;
-
-      svg {
-        fill: #1a73e8;
-      }
-    }
-
-    &[disabled]:hover {
-      color: #aaa;
-      background-color: transparent;
-    }
-  }
-
-  .gearModal,
-  .filterModal {
-    width: 430px;
-    padding: 8px;
-    border: 1px solid #ddd;
-    position: absolute;
-    right: 14px;
-    background: #fff;
-    border-radius: 4px;
-    position: absolute;
-    display: none;
-    top: 38px;
-
-    .content {
-      display: flex;
-      align-items: center;
-    }
-  }
-}
-
-.m_mobile {
-  .tiptap__toolbar {
-    border: none;
-    box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
-    border-top: 1px solid rgba(0, 0, 0, 0.08);
-  }
-}
-
-.nodeStyle__control,
-.nodeStyle__value-container {
-  min-height: 28px !important;
-  height: 28px;
-}
-
-.nodeStyle__control {
-  border-width: 0 !important;
-  padding: 0 0 0 4px !important;
-}
-
-.nodeStyle__control:hover {
-  background-color: #eee;
-}
-
-.nodeStyle__input-container,
-.nodeStyle__value-container {
-  margin: 0 !important;
-  padding: 0 !important;
-}
-
-.nodeStyle__indicator-separator {
-  margin: 5px 0 !important;
-  display: none !important;
-}
-
-.nodeStyle__indicator {
-  padding: 0 !important;
-}
-
-.nodeStyle__menu {
-  padding: 0 !important;
-  margin: 0 !important;
+.m_mobile .tiptap__toolbar {
+  border: none;
+  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
 .ProseMirror {
@@ -251,7 +31,7 @@
   outline: none;
   min-height: 800px;
 
-  *.unselectable {
+  &.unselectable {
     -moz-user-select: -moz-none;
     -khtml-user-select: none;
     -webkit-user-select: none;
@@ -263,8 +43,7 @@
     margin-top: 0.75em;
   }
 
-  /* Placeholder (at the top) */
-  .ProseMirror p.is-editor-empty:first-child::before {
+  p.is-editor-empty:first-child::before {
     color: #adb5bd;
     content: attr(data-placeholder);
     float: left;
@@ -272,7 +51,6 @@
     pointer-events: none;
   }
 
-  /* Give a remote user a caret */
   .collaboration-cursor__caret {
     border-left: 1px solid #0d0d0d;
     border-right: 1px solid #0d0d0d;
@@ -281,15 +59,12 @@
     pointer-events: none;
     position: relative;
     word-break: normal;
-    position: relative;
   }
 
-  /* Render the username above the caret */
   .collaboration-cursor__label {
     border-radius: 3px 3px 3px 0;
     color: #0d0d0d;
     font-size: 12px;
-    font-style: normal;
     font-weight: 600;
     left: -1px;
     line-height: normal;
@@ -334,6 +109,11 @@
     }
   }
 
+  ul,
+  ol {
+    padding: 0 1rem;
+  }
+
   ul {
     list-style-type: revert;
   }
@@ -342,17 +122,12 @@
     list-style-type: decimal;
   }
 
-  ul,
-  ol {
-    padding: 0 1rem;
-  }
-
   :is(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10) {
     font-weight: bold;
     @apply font-medium mt-0 mb-2;
   }
 
-  h1 {
+  ßh1 {
     @apply text-6xl;
     padding-top: 13.8pt; /* Half of 27.6pt */
   }

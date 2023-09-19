@@ -1,0 +1,61 @@
+@media print {
+  * {
+    overflow: visible !important;
+  }
+
+  // Hiding unnecessary elements
+  .tiptap__toc,
+  .toolbars,
+  .docTitle,
+  .tableOfContents {
+    display: none !important;
+  }
+
+  body {
+    color: black;
+    background: #fff;
+    height: auto;
+    font-size: 12pt;
+    line-height: 1.5;
+  }
+
+  .pad .editor {
+    background-color: #fff;
+  }
+
+  .tiptap,
+  .editorWrapper,
+  .tipta__editor {
+    width: 100%;
+    height: auto;
+    display: block;
+    overflow: auto;
+    background: #fff;
+    padding: 0;
+  }
+
+  .tiptap {
+    position: relative;
+  }
+
+  .editorWrapper {
+    padding: 0;
+  }
+
+  .tipta__editor {
+    margin: auto;
+    max-width: 100%;
+  }
+
+  .heading {
+    border: none !important;
+    background-color: transparent;
+    margin: 8pt 0;
+    padding: inherit;
+  }
+
+  .heading[level="1"],
+  .heading[level="1"]:first-of-type {
+    margin: inherit;
+  }
+}

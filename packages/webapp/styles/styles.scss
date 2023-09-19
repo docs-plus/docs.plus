@@ -1,5 +1,8 @@
 @use './blocks';
 @use './headings';
+@use './print';
+@use './components/index';
+
 
 $pad-header-height: 64px;
 $pad-toolbar-height: 38px;
@@ -97,15 +100,7 @@ $crinkle-unfold-bg: #efefef;
       }
     }
 
-    // &.opening {
-    //   &[level="1"] {
-    //     > .wrapBlock > .foldWrapper .fold {
-    //       transition: none;
-    //       width: calc(100% + 6px);
-    //       left: 30px;
-    //     }
-    //   }
-    // }
+
 
     &[level="1"] {
       > .wrapBlock > .foldWrapper .fold {
@@ -114,35 +109,7 @@ $crinkle-unfold-bg: #efefef;
       }
     }
 
-    // &[level="2"] {
-    //   > .wrapBlock > .foldWrapper {
-    //     height: calc(100% - 60px);
-    //   }
-    // }
 
-    // &[level="3"] {
-    //   > .wrapBlock > .foldWrapper {
-    //     height: calc(100% - 50px);
-    //   }
-    // }
-
-    // &[level="4"] {
-    //   > .wrapBlock > .foldWrapper {
-    //     height: calc(100% - 40px);
-    //   }
-    // }
-
-    // &[level="5"] {
-    //   > .wrapBlock > .foldWrapper {
-    //     height: calc(100% - 40px);
-    //   }
-    // }
-
-    // &:is([level="6"], [level="7"], [level="8"], [level="9"], [level="10"]) {
-    //   > .wrapBlock > .foldWrapper {
-    //     height: calc(100% - 40px);
-    //   }
-    // }
 
     @keyframes foldCrinkle_after {
       0% {
@@ -203,20 +170,6 @@ $crinkle-unfold-bg: #efefef;
         z-index: 2;
       }
 
-      // &:hover {
-
-      //   &:not([level="1"]) {
-      //     > .wrapBlock > .foldWrapper ~ .contentWrapper {
-      //       height: 70px !important;
-      //     }
-
-      //     height: calc(100% - 70px);
-
-      //     > .wrapBlock > .foldWrapper .fold::before {
-      //       background-color: #ccc;
-      //     }
-      //   }
-      // }
 
     }
 
@@ -365,79 +318,6 @@ $crinkle-unfold-bg: #efefef;
   }
 }
 
-.tiptap__toc {
-  .toc__item {
-    position: relative;
-    width: 100%;
-    margin: 6px 0;
-
-    > span {
-      display: flex;
-      align-items: center;
-    }
-
-    .btnFold {
-      transition: all .2s ease-in-out;
-      margin-right: 4px;
-      opacity: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      width: 20px;
-      height: 20px;
-
-      &:hover{
-        > svg{
-          fill: #2778ff;
-        }
-      }
-
-      &.closed{
-        transform: rotate(0deg);
-      }
-      &.opened{
-       transform: rotate(90deg);
-      }
-    }
-
-    &:hover > span > .btnFold {
-      opacity: 1;
-    }
-  }
-}
-
-.m_mobile {
-  .tiptap__toc .toc__item > span .btnFold::before {
-    opacity: 1;
-  }
-
-  .ProseMirror {
-    .wrapBlock {
-      .buttonWrapper {
-        visibility: hidden;
-      }
-    }
-
-    div.heading {
-      .foldWrapper .fold {
-        width: calc(100% + 1rem + 6px);
-        left: -12px;
-      }
-
-      &.closed {
-        &[level="1"] {
-          > .wrapBlock > .foldWrapper .fold {
-            transition: none;
-            width: calc(100% + 1rem + 6px);
-            left: -11px;
-          }
-        }
-      }
-    }
-  }
-}
-
 .nd_modal {
   &.left {
     .modalBg {
@@ -479,17 +359,6 @@ $crinkle-unfold-bg: #efefef;
         transform: translateY(0);
       }
     }
-  }
-}
-
-.btn_bigBluePencil {
-  transition: all .3s linear 2s;
-  transform: translateY(200%);
-  box-shadow: 0px 4px 5px rgba(0, 0, 0, 0.14), 0px 1px 10px rgba(0, 0, 0, 0.12), 0px 2px 4px rgba(0, 0, 0, 0.2);
-  background-color: #007AFF;
-
-  &.active {
-    transform: translateY(0);
   }
 }
 
