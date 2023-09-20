@@ -53,6 +53,15 @@ export async function getServerSideProps(context) {
     }
   } catch (error) {
     console.error('getServerSideProps error:', error)
+    const message = error.message.includes("(reading 'isPrivate')")
+      ? `Something went wrong on our server side. We're looking into it!`
+      : error.message
+
+    return {
+      redirect: {
+        destination: `/500?error=${encodeURIComponent(message)}`,
+        permanent: false
+      }
+    }
   }
-  return { props: {} }
 }
