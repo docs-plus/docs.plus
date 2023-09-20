@@ -25,10 +25,18 @@ const Document = ({ slugs, docMetadata }) => {
 
   return (
     <>
-      <HeadSeo title={title} description={description} keywords={keywords.length && keywords.join(',')} />
+      <HeadSeo
+        title={title}
+        description={description}
+        keywords={keywords.length && keywords.join(',')}
+      />
 
       <DocumentTitleProvider>
-        {isMobile ? <MobileLayout docMetadata={docMetadata} /> : <DesktopLayout docMetadata={docMetadata} />}
+        {isMobile ? (
+          <MobileLayout docMetadata={docMetadata} />
+        ) : (
+          <DesktopLayout docMetadata={docMetadata} />
+        )}
       </DocumentTitleProvider>
     </>
   )

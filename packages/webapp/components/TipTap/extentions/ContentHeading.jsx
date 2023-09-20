@@ -38,7 +38,9 @@ const dispatchToggleHeadingSection = (el) => {
     detail: { headingId, el: detailsContent }
   })
 
-  detailsContent === null || detailsContent === void 0 ? void 0 : detailsContent.dispatchEvent(event)
+  detailsContent === null || detailsContent === void 0
+    ? void 0
+    : detailsContent.dispatchEvent(event)
 }
 
 const buttonWrapper = (editor, { headingId, from, node }) => {
@@ -100,7 +102,9 @@ const appendButtonsDec = (doc, editor) => {
 
 const handleHeadingToggle = (editor, { headingId, open }) => {
   const { tr } = editor.state
-  const headingNodeEl = editor.view.dom.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
+  const headingNodeEl = editor.view.dom.querySelector(
+    `.ProseMirror .heading[data-id="${headingId}"]`
+  )
 
   if (isProcessing) return
   isProcessing = true

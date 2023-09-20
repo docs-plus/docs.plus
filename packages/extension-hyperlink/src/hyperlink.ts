@@ -1,87 +1,87 @@
-import { Mark, markPasteRule, mergeAttributes } from "@tiptap/core";
-import { Plugin } from "@tiptap/pm/state";
-import { find, registerCustomProtocol, reset } from "linkifyjs";
-import autoHyperlink from "./helpers/autoHyperlink";
-import clickHandler from "./helpers/clickHandler";
-import { pasteHandler } from "./helpers/pasteHandler";
-import editHyperlinkHelper from "./helpers/editHyperlink";
+import { Mark, markPasteRule, mergeAttributes } from '@tiptap/core'
+import { Plugin } from '@tiptap/pm/state'
+import { find, registerCustomProtocol, reset } from 'linkifyjs'
+import autoHyperlink from './helpers/autoHyperlink'
+import clickHandler from './helpers/clickHandler'
+import { pasteHandler } from './helpers/pasteHandler'
+import editHyperlinkHelper from './helpers/editHyperlink'
 
 export interface LinkProtocolOptions {
-  scheme: string;
-  optionalSlashes?: boolean;
+  scheme: string
+  optionalSlashes?: boolean
 }
 
 export interface HyperlinkOptions {
   /**
    * If enabled, it adds links as you type.
    */
-  autoHyperlink: boolean;
+  autoHyperlink: boolean
   /**
    * An array of custom protocols to be registered with linkifyjs.
    */
-  protocols: Array<LinkProtocolOptions | string>;
+  protocols: Array<LinkProtocolOptions | string>
   /**
    * If enabled, links will be opened on click.
    */
-  openOnClick: boolean;
+  openOnClick: boolean
   /**
    * Adds a link to the current selection if the pasted content only contains an url.
    */
-  hyperlinkOnPaste: boolean;
+  hyperlinkOnPaste: boolean
   /**
    * A list of HTML attributes to be rendered.
    */
-  HTMLAttributes: Record<string, any>;
+  HTMLAttributes: Record<string, any>
   /**
    * A list of modals to be rendered.
    * @default null
    * @example
    */
   modals: {
-    previewHyperlink?: ((options: any) => HTMLElement) | null;
-    setHyperlink?: ((options: any) => void) | null;
-  };
+    previewHyperlink?: ((options: any) => HTMLElement) | null
+    setHyperlink?: ((options: any) => void) | null
+  }
   /**
    * A validation function that modifies link verification for the auto linker.
    * @param url - The url to be validated.
    * @returns - True if the url is valid, false otherwise.
    */
-  validate?: (url: string) => boolean;
+  validate?: (url: string) => boolean
 }
 
-declare module "@tiptap/core" {
+declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     link: {
       /**
        * Edit the hyperlink's text
        */
-      editHyperLinkText: (text: string) => ReturnType;
+      editHyperLinkText: (text: string) => ReturnType
 
       /**
        * Edit the hyperlink's href value
        */
-      editHyperLinkHref: (href: string) => ReturnType;
+      editHyperLinkHref: (href: string) => ReturnType
 
       /**
        * Edit the hyperlink's
        */
-      editHyperlink: (attributes?: { newText?: string; newURL?: string }) => ReturnType;
+      editHyperlink: (attributes?: { newText?: string; newURL?: string }) => ReturnType
 
       /**
        *  Set a hyperlink
        */
-      setHyperlink: (attributes?: { href: string; target?: string | null }) => ReturnType;
+      setHyperlink: (attributes?: { href: string; target?: string | null }) => ReturnType
 
       /**
        * Unset a link mark
        */
-      unsetHyperlink: () => ReturnType;
-    };
+      unsetHyperlink: () => ReturnType
+    }
   }
 }
 
 export const Hyperlink = Mark.create<HyperlinkOptions>({
-  name: "hyperlink",
+  name: 'hyperlink',
 
   priority: 1000,
 
@@ -89,20 +89,20 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
 
   onCreate() {
     this.options.protocols.forEach((protocol) => {
-      if (typeof protocol === "string") {
-        registerCustomProtocol(protocol);
-        return;
+      if (typeof protocol === 'string') {
+        registerCustomProtocol(protocol)
+        return
       }
-      registerCustomProtocol(protocol.scheme, protocol.optionalSlashes);
-    });
+      registerCustomProtocol(protocol.scheme, protocol.optionalSlashes)
+    })
   },
 
   onDestroy() {
-    reset();
+    reset()
   },
 
   inclusive() {
-    return this.options.autoHyperlink;
+    return this.options.autoHyperlink
   },
 
   addOptions() {
@@ -112,38 +112,38 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
       autoHyperlink: true,
       protocols: [],
       HTMLAttributes: {
-        target: "_blank",
-        rel: "noopener noreferrer nofollow",
-        class: null,
+        target: '_blank',
+        rel: 'noopener noreferrer nofollow',
+        class: null
       },
       modals: {
         previewHyperlink: null,
-        setHyperlink: null,
+        setHyperlink: null
       },
-      validate: undefined,
-    };
+      validate: undefined
+    }
   },
 
   addAttributes() {
     return {
       href: {
-        default: null,
+        default: null
       },
       target: {
-        default: this.options.HTMLAttributes.target,
+        default: this.options.HTMLAttributes.target
       },
       class: {
-        default: this.options.HTMLAttributes.class,
-      },
-    };
+        default: this.options.HTMLAttributes.class
+      }
+    }
   },
 
   parseHTML() {
-    return [{ tag: 'a[href]:not([href *= "javascript:" i])' }];
+    return [{ tag: 'a[href]:not([href *= "javascript:" i])' }]
   },
 
   renderHTML({ HTMLAttributes }) {
-    return ["a", mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
+    return ['a', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0]
   },
 
   addCommands() {
@@ -154,16 +154,16 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
           if (!this.options.modals.setHyperlink) {
             return chain()
               .setMark(this.name, attributes)
-              .setMeta("preventAutohyperlink", true)
-              .run();
+              .setMeta('preventAutohyperlink', true)
+              .run()
           } else {
             this.options.modals.setHyperlink({
               editor,
               validate: this.options.validate,
               extentionName: this.name,
-              attributes,
-            });
-            return true;
+              attributes
+            })
+            return true
           }
         },
 
@@ -173,8 +173,8 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
           return editHyperlinkHelper({
             ...attributes,
             editor,
-            validate: this.options.validate,
-          });
+            validate: this.options.validate
+          })
         },
 
       editHyperLinkText:
@@ -183,8 +183,8 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
           return editHyperlinkHelper({
             editor,
             newText,
-            validate: this.options.validate,
-          });
+            validate: this.options.validate
+          })
         },
 
       editHyperLinkHref:
@@ -193,8 +193,8 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
           return editHyperlinkHelper({
             editor,
             validate: this.options.validate,
-            newURL,
-          });
+            newURL
+          })
         },
 
       unsetHyperlink:
@@ -202,10 +202,10 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
         ({ chain }) => {
           return chain()
             .unsetMark(this.name, { extendEmptyMarkRange: true })
-            .setMeta("preventAutohyperlink", true)
-            .run();
-        },
-    };
+            .setMeta('preventAutohyperlink', true)
+            .run()
+        }
+    }
   },
 
   addPasteRules() {
@@ -215,35 +215,35 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
           find(text)
             .filter((link) => {
               if (this.options.validate) {
-                return this.options.validate(link.value);
+                return this.options.validate(link.value)
               }
 
-              return true;
+              return true
             })
             .filter((link) => link.isLink)
             .map((link) => ({
               text: link.value,
               index: link.start,
-              data: link,
+              data: link
             })),
         type: this.type,
         getAttributes: (match) => ({
-          href: match.data?.href,
-        }),
-      }),
-    ];
+          href: match.data?.href
+        })
+      })
+    ]
   },
 
   addProseMirrorPlugins() {
-    const plugins: Plugin[] = [];
+    const plugins: Plugin[] = []
 
     if (this.options.autoHyperlink) {
       plugins.push(
         autoHyperlink({
           type: this.type,
-          validate: this.options.validate,
+          validate: this.options.validate
         })
-      );
+      )
     }
 
     if (this.options.openOnClick) {
@@ -253,20 +253,20 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
           editor: this.editor,
           validate: this.options.validate,
           view: this.editor.view,
-          modal: this.options.modals.previewHyperlink,
+          modal: this.options.modals.previewHyperlink
         })
-      );
+      )
     }
 
     if (this.options.hyperlinkOnPaste) {
       plugins.push(
         pasteHandler({
           editor: this.editor,
-          type: this.type,
+          type: this.type
         })
-      );
+      )
     }
 
-    return plugins;
-  },
-});
+    return plugins
+  }
+})

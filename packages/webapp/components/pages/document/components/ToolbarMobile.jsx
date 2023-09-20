@@ -1,4 +1,10 @@
-import { OrderListMobile, BoldMobile, ItalicMobile, UnderlineMobile, InsertLinkMobile } from '@icons'
+import {
+  OrderListMobile,
+  BoldMobile,
+  ItalicMobile,
+  UnderlineMobile,
+  InsertLinkMobile
+} from '@icons'
 
 const Toolbar = ({ editor }) => {
   if (!editor) {

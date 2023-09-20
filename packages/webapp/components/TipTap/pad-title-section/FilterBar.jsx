@@ -19,7 +19,9 @@ const Chip = ({ type, text, onMouseEnter, onMouseLeave }) => {
   }
 
   const removeFilter = (slug) => {
-    const newPath = `/${location.pathname.split('/').at(1)}/${slugs.filter((s) => s !== slug).join('/')}`
+    const newPath = `/${location.pathname.split('/').at(1)}/${slugs
+      .filter((s) => s !== slug)
+      .join('/')}`
     window.location = newPath
   }
 

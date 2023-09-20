@@ -121,7 +121,9 @@ const Blockquote = Node.create({
 
         // if a user Enter in the contentHeading block,
         // should go to the next block, which is contentWrapper
-        const parent = $head.path.filter((x) => x?.type?.name).findLast((x) => x.type.name === this.name)
+        const parent = $head.path
+          .filter((x) => x?.type?.name)
+          .findLast((x) => x.type.name === this.name)
 
         // INFO: if the content is hide, do not anything
         // ! this open in the Heading block is wrong and Have to change, It's opposite
@@ -144,7 +146,10 @@ const Blockquote = Node.create({
           // console.log(parent.lastChild.type.name === "contentWrapper")
           // console.log(parent.lastChild.content.lastChild.type.name === "heading")
           // if the contentWrapper does not contain any content
-          if (parent.lastChild.content.size === 0 || parent.lastChild?.firstChild?.content.size === 0) {
+          if (
+            parent.lastChild.content.size === 0 ||
+            parent.lastChild?.firstChild?.content.size === 0
+          ) {
             return editor.commands.insertContentAt($anchor.pos, {
               type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
               content: [
@@ -196,7 +201,9 @@ const Blockquote = Node.create({
           const $start = state.doc.resolve(range.from)
           const attributes = callOrReturn(config.getAttributes, undefined, match) || {}
 
-          if (!$start.node(-1).canReplaceWith($start.index(-1), $start.indexAfter(-1), config.type)) {
+          if (
+            !$start.node(-1).canReplaceWith($start.index(-1), $start.indexAfter(-1), config.type)
+          ) {
             return null
           }
 
@@ -246,7 +253,9 @@ const Blockquote = Node.create({
             }
 
             // convert Json Block to Node Block
-            let serializeSelection = contentWrapper.map((x) => this.editor.state.schema.nodeFromJSON(x))
+            let serializeSelection = contentWrapper.map((x) =>
+              this.editor.state.schema.nodeFromJSON(x)
+            )
 
             // convert Node Block to Fragment
             serializeSelection = Fragment.fromArray(serializeSelection)

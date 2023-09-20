@@ -99,7 +99,10 @@ function TabList({ children, ...props }) {
   }, [tabsElement, updateHighlight])
 
   return (
-    <nav ref={tabsElement} className={`relative flex border-b border-gray-200 ${styles.tabList}`} {...props}>
+    <nav
+      ref={tabsElement}
+      className={`relative flex border-b border-gray-200 ${styles.tabList}`}
+      {...props}>
       <div
         className={`absolute bottom-1 rounded-md bg-docsy h-1 transition-all duration-300 ${styles.highlight}`}
         style={highlightStyle}
@@ -139,7 +142,9 @@ function TabPanels({ children, ...props }) {
   const { activeTab } = useContext(TabsContext)
 
   // Filter children based on activeTab name
-  const activeChild = React.Children.toArray(children).find((child) => child.props.name === activeTab)
+  const activeChild = React.Children.toArray(children).find(
+    (child) => child.props.name === activeTab
+  )
 
   return (
     <div className={`p-4 ${styles.tabPanels}`} {...props}>

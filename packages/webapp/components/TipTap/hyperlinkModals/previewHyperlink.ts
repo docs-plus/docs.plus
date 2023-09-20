@@ -92,7 +92,9 @@ export default function previewHyperlink(options: HyperlinkModalOptions) {
     return editor.chain().focus().unsetHyperlink().run()
   })
 
-  editButton.addEventListener('click', () => editeHyperlinkHandler({ ...options, hyperlinkLinkModal }))
+  editButton.addEventListener('click', () =>
+    editeHyperlinkHandler({ ...options, hyperlinkLinkModal })
+  )
 
   copyButton.addEventListener('click', () => {
     tippy.hide()

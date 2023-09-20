@@ -10,7 +10,7 @@ export default function SupabaseProvider({ children, session }) {
 
   useEffect(() => {
     const {
-      data: { subscription },
+      data: { subscription }
     } = supabase.auth.onAuthStateChange(() => {
       router.refresh()
     })

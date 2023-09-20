@@ -2,12 +2,8 @@
   "compilerOptions": {
     "target": "ES2019",
     "baseUrl": ".",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
-     "paths": {
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "paths": {
       "@utils/*": ["utils/*"],
       "@components/*": ["components/*"],
       "@pages/*": ["components/pages/*"],
@@ -17,8 +13,8 @@
       "@public/*": ["public/*"],
       "@icons": ["components/icons/Icons.jsx"],
       "@tiptapEditor": ["components/tiptap/*"],
-      "@pages": ["components/pages/*"],
-     },
+      "@pages": ["components/pages/*"]
+    },
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -40,7 +36,5 @@
     "pages/_app.jsx",
     "pages/api/hello.js"
   ],
-  "exclude": [
-    "node_modules"
-  ]
+  "exclude": ["node_modules"]
 }

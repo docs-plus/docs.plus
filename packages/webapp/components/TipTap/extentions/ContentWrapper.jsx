@@ -195,7 +195,8 @@ const ContentWrapper = Node.create({
 
       // get parent node
       const parentNode = editor.state.doc?.resolve(getPos())
-      const headingId = getPos() - parentNode.nodeBefore.nodeSize === 1 ? '1' : parentNode.parent?.attrs.id
+      const headingId =
+        getPos() - parentNode.nodeBefore.nodeSize === 1 ? '1' : parentNode.parent?.attrs.id
 
       const nodeState = getNodeState(headingId)
 
@@ -235,7 +236,9 @@ const ContentWrapper = Node.create({
         const pos = getPos()
         const currentNode = tr.doc.nodeAt(pos)
 
-        if ((currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type) {
+        if (
+          (currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type
+        ) {
           return false
         }
 

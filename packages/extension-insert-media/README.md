@@ -1,6 +1,5 @@
 # Underdevelopment
 
-
 # @tiptap/extension-youtube
 
 [![Version](https://img.shields.io/npm/v/@tiptap/extension-youtube.svg?label=version)](https://www.npmjs.com/package/@tiptap/extension-youtube)
@@ -10,7 +9,7 @@
 
 ## Introduction
 
-Tiptap is a headless wrapper around [ProseMirror](https://ProseMirror.net) – a toolkit for building rich text WYSIWYG editors, which is already in use at many well-known companies such as *New York Times*, *The Guardian* or *Atlassian*.
+Tiptap is a headless wrapper around [ProseMirror](https://ProseMirror.net) – a toolkit for building rich text WYSIWYG editors, which is already in use at many well-known companies such as _New York Times_, _The Guardian_ or _Atlassian_.
 
 ## Official Documentation
 

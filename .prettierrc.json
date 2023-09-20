@@ -7,7 +7,7 @@
   "endOfLine": "lf",
   "htmlWhitespaceSensitivity": "ignore",
   "bracketSpacing": true,
-  "printWidth": 110,
+  "printWidth": 100,
   "proseWrap": "preserve",
   "quoteProps": "as-needed",
   "trailingComma": "none"

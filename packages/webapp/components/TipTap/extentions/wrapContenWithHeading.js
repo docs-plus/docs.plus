@@ -58,7 +58,9 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
     console.info('[Heading]: Create a new Heading block as a child of the current Heading block')
 
     const contentWrapper = getRangeBlocks(doc, end, block.parent.end)
-    const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
+    const contentWrapperParagraphs = contentWrapper.filter(
+      (x) => x.type !== ENUMS.NODES.HEADING_TYPE
+    )
     const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
 
     const newHeadingNode = createHeadingNodeFromSelection(
@@ -91,7 +93,9 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
   }
 
   if (cominglevel < parentLevel) {
-    console.info('[Heading]: break the current Heading chain, cominglevel is grether than parentLevel')
+    console.info(
+      '[Heading]: break the current Heading chain, cominglevel is grether than parentLevel'
+    )
 
     return changeHeadingLevelBackward(arrg, attributes, true)
   }

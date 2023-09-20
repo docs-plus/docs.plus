@@ -60,14 +60,17 @@ const DeckPanel = ({ hostname }) => {
             <DocsPlus className="mr-3" size="58" />{' '}
             <span className="font-bold text-4xl antialiased">docs.plus</span>
           </div>
-          <h2 className="mt-3 text-gray-400 font-semibold antialiased">Get everyone on the same page</h2>
+          <h2 className="mt-3 text-gray-400 font-semibold antialiased">
+            Get everyone on the same page
+          </h2>
           <div className="mt-5 leading-7 ">
             <p>
-              <span>+</span>A <a href="https://github.com/docs-plus">free &amp; open source</a> project by{' '}
-              <a href="https://newspeak.house">Newspeak House</a>
+              <span>+</span>A <a href="https://github.com/docs-plus">free &amp; open source</a>{' '}
+              project by <a href="https://newspeak.house">Newspeak House</a>
             </p>
             <p>
-              <span>+</span> Enquiries to <a href="https://www.twitter.com/docsdotplus">@docsdotplus</a> or{' '}
+              <span>+</span> Enquiries to{' '}
+              <a href="https://www.twitter.com/docsdotplus">@docsdotplus</a> or{' '}
               <a href="mailto:ed@newspeak.house">ed@newspeak.house</a>
             </p>
             <p>
@@ -75,12 +78,13 @@ const DeckPanel = ({ hostname }) => {
               <a href="https://github.com/docs-plus/docs.plus/issues">reporting it</a>.{' '}
             </p>
             <p>
-              <span>+</span> <a href="https://www.patreon.com/docsplus">Back us on Patreon</a> to help us pay
-              for hosting &amp; development
+              <span>+</span> <a href="https://www.patreon.com/docsplus">Back us on Patreon</a> to
+              help us pay for hosting &amp; development
             </p>
             <p>
-              <span>+</span> Kindly seed funded by <a href="https://www.grantfortheweb.org">Grant for Web</a>{' '}
-              &amp; <a href="https://www.nesta.org.uk">Nesta</a>
+              <span>+</span> Kindly seed funded by{' '}
+              <a href="https://www.grantfortheweb.org">Grant for Web</a> &amp;{' '}
+              <a href="https://www.nesta.org.uk">Nesta</a>
             </p>
           </div>
         </div>

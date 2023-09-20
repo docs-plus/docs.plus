@@ -10,7 +10,14 @@ import toast from 'react-hot-toast'
 import useEmail from '@hooks/useEmail'
 import useProfileData from '@hooks/useProfileData'
 
-const ChangeEmailSection = ({ email, emailError, handleEmailChange, saveNewEmail, loading, setLoading }) => (
+const ChangeEmailSection = ({
+  email,
+  emailError,
+  handleEmailChange,
+  saveNewEmail,
+  loading,
+  setLoading
+}) => (
   <div className="border-l h-full">
     <TabTitle className="flex">
       <button
@@ -43,7 +50,9 @@ const ChangeEmailSection = ({ email, emailError, handleEmailChange, saveNewEmail
 const SecuritySection = ({ email, loading, acceptNewEmail, setLoading }) => (
   <div className="border-l h-full">
     <TabTitle>Security</TabTitle>
-    <TabSection name="Account email" description="The email address associated with your docs.plus account">
+    <TabSection
+      name="Account email"
+      description="The email address associated with your docs.plus account">
       <div className="flex flex-col">
         <InputOverlapLabel
           Icon={Envelope}

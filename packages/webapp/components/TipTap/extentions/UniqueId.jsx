@@ -75,7 +75,11 @@ const UniqueID = Extension.create({
     // This leads to empty block nodes.
     // See: https://github.com/ueberdosis/tiptap/issues/2400
     // console.log(this.editor.extensionManager.extensions.filter(x => x.type === 'extension'))
-    if (this.editor.extensionManager.extensions.find((extension) => extension.name === 'collaboration')) {
+    if (
+      this.editor.extensionManager.extensions.find(
+        (extension) => extension.name === 'collaboration'
+      )
+    ) {
       return
     }
     const { view, state } = this.editor
@@ -103,7 +107,8 @@ const UniqueID = Extension.create({
         key: new PluginKey('uniqueID'),
         appendTransaction: (transactions, oldState, newState) => {
           const docChanges =
-            transactions.some((transaction) => transaction.docChanged) && !oldState.doc.eq(newState.doc)
+            transactions.some((transaction) => transaction.docChanged) &&
+            !oldState.doc.eq(newState.doc)
           const filterTransactions =
             this.options.filterTransaction &&
             transactions.some((tr) => {
@@ -129,7 +134,9 @@ const UniqueID = Extension.create({
             const newNodes = findChildrenInRange(newState.doc, newRange, (node) => {
               return types.includes(node.type.name)
             })
-            const newIds = newNodes.map(({ node }) => node.attrs[attributeName]).filter((id) => id !== null)
+            const newIds = newNodes
+              .map(({ node }) => node.attrs[attributeName])
+              .filter((id) => id !== null)
             const duplicatedNewIds = findDuplicates(newIds)
 
             newNodes.forEach(({ node, pos }) => {
@@ -139,7 +146,9 @@ const UniqueID = Extension.create({
               // this helps to prevent adding new ids to the same node
               // if the node changed multiple times within one transaction
               const id =
-                (_a = tr.doc.nodeAt(pos)) === null || _a === void 0 ? void 0 : _a.attrs[attributeName]
+                (_a = tr.doc.nodeAt(pos)) === null || _a === void 0
+                  ? void 0
+                  : _a.attrs[attributeName]
 
               if (id === null) {
                 tr.setNodeMarkup(pos, undefined, {
@@ -173,7 +182,9 @@ const UniqueID = Extension.create({
             let _a
 
             dragSourceElement = (
-              (_a = view.dom.parentElement) === null || _a === void 0 ? void 0 : _a.contains(event.target)
+              (_a = view.dom.parentElement) === null || _a === void 0
+                ? void 0
+                : _a.contains(event.target)
             )
               ? view.dom.parentElement
               : null
@@ -198,7 +209,9 @@ const UniqueID = Extension.create({
 
               if (
                 dragSourceElement !== view.dom.parentElement ||
-                ((_a = event.dataTransfer) === null || _a === void 0 ? void 0 : _a.effectAllowed) === 'copy'
+                ((_a = event.dataTransfer) === null || _a === void 0
+                  ? void 0
+                  : _a.effectAllowed) === 'copy'
               ) {
                 dragSourceElement = null
                 transformPasted = true

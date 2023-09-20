@@ -1,5 +1,9 @@
 import { TextSelection } from '@tiptap/pm/state'
-import { getSelectionRangeBlocks, extractParagraphsAndHeadings, insertRemainingHeadings } from '../helper'
+import {
+  getSelectionRangeBlocks,
+  extractParagraphsAndHeadings,
+  insertRemainingHeadings
+} from '../helper'
 import onHeading from './onHeading'
 
 const onSelection = ({ state, tr, editor }) => {

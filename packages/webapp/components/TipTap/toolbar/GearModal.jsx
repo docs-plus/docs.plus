@@ -4,7 +4,11 @@ import InputTags from '@components/ui/InputTags'
 import Button from '@components/ui/Button'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import toast from 'react-hot-toast'
-import { useBooleanLocalStorageState, saveDocDescriptionHandler, saveDocReadOnlyPage } from './toolbarUtils'
+import {
+  useBooleanLocalStorageState,
+  saveDocDescriptionHandler,
+  saveDocReadOnlyPage
+} from './toolbarUtils'
 import Toggle from '@components/ui/Toggle'
 import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
@@ -32,7 +36,10 @@ const GearModal = ({ docMetadata, className }) => {
   const user = useUser()
   const { isAuthServiceAvailable, EditorProvider } = useEditorStateContext()
 
-  const [indentSetting, setIndentSetting] = useBooleanLocalStorageState('setting.indentHeading', false)
+  const [indentSetting, setIndentSetting] = useBooleanLocalStorageState(
+    'setting.indentHeading',
+    false
+  )
   const [h1SectionBreakSetting, setH1SectionBreakSetting] = useBooleanLocalStorageState(
     'setting.h1SectionBreakSetting',
     true
@@ -116,7 +123,9 @@ const GearModal = ({ docMetadata, className }) => {
 
           <Image
             className="w-9 h-9 border-2 rounded-full"
-            src={docMetadata?.ownerProfile?.avatar_url || docMetadata?.ownerProfile?.default_avatar_url}
+            src={
+              docMetadata?.ownerProfile?.avatar_url || docMetadata?.ownerProfile?.default_avatar_url
+            }
             height={32}
             width={32}
             alt={full_name}

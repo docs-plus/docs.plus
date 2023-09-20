@@ -18,7 +18,9 @@ const getPathToRoot = (node) => (!node.parent ? [node] : [node, ...getPathToRoot
  * @returns {Set<string>} - A set containing unique ids representing the heading path to the root.
  */
 const createPathToRoot = (headings) => {
-  const ids = headings.flatMap((heading) => getPathToRoot(heading).map((node) => node.id)).filter((id) => id)
+  const ids = headings
+    .flatMap((heading) => getPathToRoot(heading).map((node) => node.id))
+    .filter((id) => id)
   return new Set(ids)
 }
 
@@ -197,7 +199,9 @@ const handelLinearAlgorithm = (headingTree, slugs) => {
 
   const pathToRoot = createPathToRoot(refinedFilteredNodes)
   const headingIdsMap = new Set([...refinedFilteredNodes.map((node) => node.id), ...pathToRoot])
-  const selectedNodes = [...refinedFilteredNodes.map((x) => ({ ...x, rootPath: createPathToRoot([x]) }))]
+  const selectedNodes = [
+    ...refinedFilteredNodes.map((x) => ({ ...x, rootPath: createPathToRoot([x]) }))
+  ]
 
   return { headingIdsMap, sortedSlugs: sortedSlugsResult, selectedNodes }
 }
@@ -234,7 +238,10 @@ const getHeadingsFilterMap = (slugs, headings) => {
   // Calculate weights for each slug
   const slugsWithWeight = calculateSlugsWeight(slugs, filteredNodes)
 
-  const { parentSlugs, sortedSlugs, zeroWeightSlugs } = classifySlugs(slugsWithWeight, filteredNodes)
+  const { parentSlugs, sortedSlugs, zeroWeightSlugs } = classifySlugs(
+    slugsWithWeight,
+    filteredNodes
+  )
 
   const { refindParentNodes, refinedChildNodes } = refineFilterByPrimarySlugs(
     headingTree,
@@ -242,7 +249,12 @@ const getHeadingsFilterMap = (slugs, headings) => {
     sortedSlugs
   )
 
-  const sortedSlugsResult = constructSortedSlugs(refinedChildNodes, parentSlugs, sortedSlugs, zeroWeightSlugs)
+  const sortedSlugsResult = constructSortedSlugs(
+    refinedChildNodes,
+    parentSlugs,
+    sortedSlugs,
+    zeroWeightSlugs
+  )
 
   const pathToRoot = createPathToRoot(refinedChildNodes)
   const headingIdsMap = new Set([...refinedChildNodes.map((node) => node.id), ...pathToRoot])

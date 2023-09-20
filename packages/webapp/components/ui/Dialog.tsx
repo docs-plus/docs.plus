@@ -94,36 +94,37 @@ interface DialogTriggerProps {
   asChild?: boolean
 }
 
-export const DialogTrigger = React.forwardRef<HTMLElement, React.HTMLProps<HTMLElement> & DialogTriggerProps>(
-  function DialogTrigger({ children, asChild = false, ...props }, propRef) {
-    const context = useDialogContext()
-    const childrenRef = (children as any).ref
-    const ref = useMergeRefs([context.refs.setReference, propRef, childrenRef])
+export const DialogTrigger = React.forwardRef<
+  HTMLElement,
+  React.HTMLProps<HTMLElement> & DialogTriggerProps
+>(function DialogTrigger({ children, asChild = false, ...props }, propRef) {
+  const context = useDialogContext()
+  const childrenRef = (children as any).ref
+  const ref = useMergeRefs([context.refs.setReference, propRef, childrenRef])
 
-    // `asChild` allows the user to pass any element as the anchor
-    if (asChild && React.isValidElement(children)) {
-      return React.cloneElement(
-        children,
-        context.getReferenceProps({
-          ref,
-          ...props,
-          ...children.props,
-          'data-state': context.open ? 'open' : 'closed'
-        })
-      )
-    }
-
-    return (
-      <button
-        ref={ref}
-        // The user can style the trigger based on the state
-        data-state={context.open ? 'open' : 'closed'}
-        {...context.getReferenceProps(props)}>
-        {children}
-      </button>
+  // `asChild` allows the user to pass any element as the anchor
+  if (asChild && React.isValidElement(children)) {
+    return React.cloneElement(
+      children,
+      context.getReferenceProps({
+        ref,
+        ...props,
+        ...children.props,
+        'data-state': context.open ? 'open' : 'closed'
+      })
     )
   }
-)
+
+  return (
+    <button
+      ref={ref}
+      // The user can style the trigger based on the state
+      data-state={context.open ? 'open' : 'closed'}
+      {...context.getReferenceProps(props)}>
+      {children}
+    </button>
+  )
+})
 
 export const DialogContent = React.forwardRef<HTMLDivElement, React.HTMLProps<HTMLDivElement>>(
   function DialogContent(props, propRef) {
@@ -150,9 +151,10 @@ export const DialogContent = React.forwardRef<HTMLDivElement, React.HTMLProps<HT
   }
 )
 
-export const DialogClose = React.forwardRef<HTMLButtonElement, React.ButtonHTMLAttributes<HTMLButtonElement>>(
-  function DialogClose(props, ref) {
-    const { setOpen } = useDialogContext()
-    return <button type="button" {...props} ref={ref} onClick={() => setOpen(false)} />
-  }
-)
+export const DialogClose = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement>
+>(function DialogClose(props, ref) {
+  const { setOpen } = useDialogContext()
+  return <button type="button" {...props} ref={ref} onClick={() => setOpen(false)} />
+})

@@ -25,7 +25,9 @@ const ControlCenter = () => {
 
   return (
     <div className="bg-slate-100 rounded-md drop-shadow">
-      <Tabs defaultActiveTab={user ? 'profile' : 'sign-in'} className="max-w-5xl rounded-md relative">
+      <Tabs
+        defaultActiveTab={user ? 'profile' : 'sign-in'}
+        className="max-w-5xl rounded-md relative">
         <TabList>
           {!user && (
             <Tab name="sign-in" className="">

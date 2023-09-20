@@ -12,7 +12,12 @@ const PwaUpdater = () => {
   }
 
   useEffect(() => {
-    if (typeof window !== 'undefined' && 'serviceWorker' in navigator && window.workbox !== undefined) return
+    if (
+      typeof window !== 'undefined' &&
+      'serviceWorker' in navigator &&
+      window.workbox !== undefined
+    )
+      return
 
     // add event listeners to handle any of PWA lifecycle event
     // https://developers.google.com/web/tools/workbox/reference-docs/latest/module-workbox-window.Workbox#events

@@ -46,7 +46,9 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   })
 
   const titleHMap = getHeadingsBlocksMap(doc, prevHStartPos, titleEndPos)
-  let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
+  let mapHPost = titleHMap.filter(
+    (x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos
+  )
   let { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
 
   const newHeadingNode = createHeadingNodeFromSelection(

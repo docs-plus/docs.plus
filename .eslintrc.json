@@ -5,12 +5,9 @@
         "node": true
     },
     "extends": [
-      "next",
-      "next/core-web-vitals",
-      "prettier",
-      "eslint:recommended"
-    ],
-    "overrides": [
+      "eslint:recommended",
+      "plugin:react/recommended",
+      "plugin:prettier/recommended"
     ],
     "parserOptions": {
         "ecmaVersion": "latest",
@@ -22,13 +19,16 @@
     ],
     "rules": {
       "prettier/prettier": "warn",
+      "react/react-in-jsx-scope": "off",
+      "react/prop-types": "off",
       "no-console": "off",
       "react-hooks/exhaustive-deps": "warn",
-      "no-restricted-syntax": ["error",
+      "no-restricted-syntax": [
+          "error",
           {
             "selector": "CallExpression[callee.object.name='console'][callee.property.name!=/^(info|error)$/]",
             "message": "Unexpected console method."
           }
         ]
-      }
+    }
 }
