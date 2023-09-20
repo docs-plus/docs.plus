@@ -7,7 +7,7 @@
   "scripts": {
     "prisma:init:migrations": "prisma migrate dev --name init",
     "prisma:migrate:dev": "prisma migrate dev",
-    "dev": "NODE_ENV=development nodemon index.js",
+    "dev:pg": "NODE_ENV=development nodemon index.js",
     "dev:ws": "NODE_ENV=development nodemon -r dotenv/config hocuspocus.server.js",
     "start:production:rest": "NODE_ENV=production npx prisma migrate deploy && node index.js",
     "start:production:ws": "NODE_ENV=production node -r dotenv/config hocuspocus.server.js",
