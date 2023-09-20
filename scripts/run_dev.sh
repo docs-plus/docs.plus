@@ -21,7 +21,7 @@ cd packages/hocuspocus.server
 # Set the NODE_ENV variable to 'development'
 export NODE_ENV=development
 
-# Check if .env file exist29s
+# Check if .env file exists
 if [ ! -f .env ]; then
     echo ".env file not found. Creating one from .env.example..."
     cp .env.example .env
@@ -57,14 +57,14 @@ else
   exit 1
 fi
 
-# Run npm generate:dev and wait until it's finished
-echo "Running npm run generate:dev"
-npm run generate:dev
+# Run npm prisma:init:migrations and wait until it's finished
+echo "Running npm run prisma:init:migrations"
+npm run prisma:init:migrations
 
 # Ensure that the previous command was successful before continuing
 # If not, the script will exit with the error code from the last command
 if [ $? -ne 0 ]; then
-    echo "npm run generate:dev failed with error code $?"
+    echo "npm run prisma:init:migrations failed with error code $?"
     exit $?
 fi
 

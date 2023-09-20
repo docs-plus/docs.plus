@@ -8,7 +8,6 @@ import Paragraph from '@tiptap/extension-paragraph'
 import Text from '@tiptap/extension-text'
 import { TiptapTransformer } from '@hocuspocus/transformer'
 import { Database } from '@hocuspocus/extension-database'
-import { SQLite } from '@hocuspocus/extension-sqlite'
 import { Throttle } from '@hocuspocus/extension-throttle'
 import { Redis } from '@hocuspocus/extension-redis'
 import { Logger } from '@hocuspocus/extension-logger'
@@ -114,47 +113,37 @@ const configureExtensions = () => {
     )
   }
 
-  if (process.env.DATABASE_TYPE === 'SQLite') {
-    extensions.push(
-      new SQLite({
-        database: 'db.sqlite'
-      })
-    )
-  }
-
-  if (process.env.DATABASE_TYPE === 'PostgreSQL') {
-    extensions.push(
-      new Database({
-        fetch: async ({ documentName, context }) => {
-          try {
-            const doc = await prisma.documents.findMany({
-              take: 1,
-              where: { documentId: documentName },
-              orderBy: { id: 'desc' }
-            })
-
-            return doc[0]?.data || generateDefaultState()
-          } catch (err) {
-            console.error('Error fetching data:', err)
-            await prisma.$disconnect()
-            throw err
-          }
-        },
-        store: async (data) => {
-          const { documentName, state, context } = data
-          // console.log(data.requestHeaders.cookie.split(';')[0].split('=')[1])
-          StoreDocument.add({
-            documentName,
-            state: state.toString('base64'),
-            context,
-            email: data.requestParameters.get('email'),
-            userId: data.requestParameters.get('userId'),
-            jwt: data.requestHeaders.cookie?.split(';')[0].split('=')[1]
+  extensions.push(
+    new Database({
+      fetch: async ({ documentName, context }) => {
+        try {
+          const doc = await prisma.documents.findMany({
+            take: 1,
+            where: { documentId: documentName },
+            orderBy: { id: 'desc' }
           })
+
+          return doc[0]?.data || generateDefaultState()
+        } catch (err) {
+          console.error('Error fetching data:', err)
+          await prisma.$disconnect()
+          throw err
         }
-      })
-    )
-  }
+      },
+      store: async (data) => {
+        const { documentName, state, context } = data
+        // console.log(data.requestHeaders.cookie.split(';')[0].split('=')[1])
+        StoreDocument.add({
+          documentName,
+          state: state.toString('base64'),
+          context,
+          email: data.requestParameters.get('email'),
+          userId: data.requestParameters.get('userId'),
+          jwt: data.requestHeaders.cookie?.split(';')[0].split('=')[1]
+        })
+      }
+    })
+  )
 
   return extensions
 }
@@ -165,7 +154,7 @@ export default () => {
     port: process.env.HOCUSPOCUS_PORT,
     extensions: configureExtensions(),
     debounce: 1000,
-    async onStateless ({ payload, document, connection }) {
+    async onStateless({ payload, document, connection }) {
       document.broadcastStateless(payload)
     }
   }
