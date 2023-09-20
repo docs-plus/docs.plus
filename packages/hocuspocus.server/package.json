@@ -20,10 +20,7 @@
   "author": "Hossein Marzban",
   "type": "module",
   "devDependencies": {
-    "eslint-plugin-markdown": "^3.0.0",
-    "prisma": "5.3.1",
-    "snazzy": "^9.0.0",
-    "standard": "^17.0.0"
+    "prisma": "5.3.1"
   },
   "dependencies": {
     "@hocuspocus/extension-database": "^2.1.0",
@@ -47,20 +44,14 @@
     "crypto-random-string": "^5.0.0",
     "dotenv-flow": "^3.2.0",
     "express": "^4.18.2",
-    "express-validator": "^6.15.0",
     "express-ws": "^5.0.2",
     "helmet": "^7.0.0",
-    "ioredis": "^5.3.2",
-    "js-base64": "^3.7.5",
     "jwt-decode": "^3.1.2",
-    "lib0": "^0.2.78",
     "lodash": "^4.17.21",
     "morgan": "^1.10.0",
     "pm2": "^5.3.0",
-    "redis": "^4.6.7",
     "short-unique-id": "^4.4.4",
     "slugify": "^1.6.6",
-    "socket.io": "^4.6.1",
     "uuid": "^9.0.0"
   },
   "optionalDependencies": {
