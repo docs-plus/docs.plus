@@ -4,7 +4,8 @@ import PubSub from 'pubsub-js'
 import ENUMS from './enums'
 import slugify from 'slugify'
 
-const getOffsetTop = (element) => (element ? element.offsetTop + getOffsetTop(element.offsetParent) : 0)
+const getOffsetTop = (element) =>
+  element ? element.offsetTop + getOffsetTop(element.offsetParent) : 0
 
 const getHeadingDetails = (id) => {
   const headingSection = document.querySelector(`.ProseMirror .heading[data-id="${id}"]`)
@@ -162,7 +163,9 @@ const TableOfContent = ({ editor, className }) => {
             </span>
 
             {children.length > 0 && (
-              <div className={`childrenWrapper ${item.open ? '' : 'hidden'}`}>{renderToc(children)}</div>
+              <div className={`childrenWrapper ${item.open ? '' : 'hidden'}`}>
+                {renderToc(children)}
+              </div>
             )}
           </div>
         )

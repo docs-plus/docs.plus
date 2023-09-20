@@ -68,7 +68,12 @@ const ShareModal = ({ docMetadata }) => {
         </Button>
       </div>
       <div className="flex mt-5 justify-between bg-neutral-200 p-2 rounded-md">
-        <input className="bg-transparent w-9/12 outline-none pl-1" ref={urlRef} value={href} readOnly />
+        <input
+          className="bg-transparent w-9/12 outline-none pl-1"
+          ref={urlRef}
+          value={href}
+          readOnly
+        />
         <Button className="w-3/12 border-neutral-400" onClick={copyToClipboard}>
           Copy Link
         </Button>

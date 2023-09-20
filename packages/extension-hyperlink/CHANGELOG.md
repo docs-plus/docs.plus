@@ -19,9 +19,9 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* **@docs.plus/extension-hyperlink:** hide on click ([0e84209](https://github.com/HMarzban/extension-hyperlink/commit/0e842095d19ab37fc48d3ba56e81f6264ebc059a))
-* **@docs.plus/extension-hyperlink:** prevent  display the modal in the wrong position ([56b41d5](https://github.com/HMarzban/extension-hyperlink/commit/56b41d56f030ec49fc34b045efe5ccb9a4859a4d))
-* typo ([ea69c3d](https://github.com/HMarzban/extension-hyperlink/commit/ea69c3df87067caa595629dcbb5919f43e68bb3c))
+- **@docs.plus/extension-hyperlink:** hide on click ([0e84209](https://github.com/HMarzban/extension-hyperlink/commit/0e842095d19ab37fc48d3ba56e81f6264ebc059a))
+- **@docs.plus/extension-hyperlink:** prevent display the modal in the wrong position ([56b41d5](https://github.com/HMarzban/extension-hyperlink/commit/56b41d56f030ec49fc34b045efe5ccb9a4859a4d))
+- typo ([ea69c3d](https://github.com/HMarzban/extension-hyperlink/commit/ea69c3df87067caa595629dcbb5919f43e68bb3c))
 
 ## [1.3.3](https://github.com/HMarzban/extension-hyperlink/compare/v1.3.2...v1.3.3) (2023-07-23)
 
@@ -31,33 +31,33 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* interfaces and types ([2715032](https://github.com/HMarzban/extension-hyperlink/commit/27150323de93cafc9e8463be1ac490342db46cd5))
-* replace hyperlink with new text ([f20b889](https://github.com/HMarzban/extension-hyperlink/commit/f20b8894ae11958475c6875d07abc1431a8ce731))
-* select closet ancher element ([40ab594](https://github.com/HMarzban/extension-hyperlink/commit/40ab594a2c641f06acebbe21ac7aaa3848366ea5))
-* wrong selection of the anchor node ([9ff85cf](https://github.com/HMarzban/extension-hyperlink/commit/9ff85cfd17d8a325ae137942023c7290887ab1d7))
+- interfaces and types ([2715032](https://github.com/HMarzban/extension-hyperlink/commit/27150323de93cafc9e8463be1ac490342db46cd5))
+- replace hyperlink with new text ([f20b889](https://github.com/HMarzban/extension-hyperlink/commit/f20b8894ae11958475c6875d07abc1431a8ce731))
+- select closet ancher element ([40ab594](https://github.com/HMarzban/extension-hyperlink/commit/40ab594a2c641f06acebbe21ac7aaa3848366ea5))
+- wrong selection of the anchor node ([9ff85cf](https://github.com/HMarzban/extension-hyperlink/commit/9ff85cfd17d8a325ae137942023c7290887ab1d7))
 
 ## [1.3.1](https://github.com/HMarzban/extension-hyperlink/compare/v1.0.4...v1.3.1) (2023-07-20)
 
 ### Bug Fixes
 
-* interfaces and types ([2715032](https://github.com/HMarzban/extension-hyperlink/commit/27150323de93cafc9e8463be1ac490342db46cd5))
-* replace hyperlink with new text ([f20b889](https://github.com/HMarzban/extension-hyperlink/commit/f20b8894ae11958475c6875d07abc1431a8ce731))
-* select closet ancher element ([40ab594](https://github.com/HMarzban/extension-hyperlink/commit/40ab594a2c641f06acebbe21ac7aaa3848366ea5))
-* wrong selection of the anchor node ([9ff85cf](https://github.com/HMarzban/extension-hyperlink/commit/9ff85cfd17d8a325ae137942023c7290887ab1d7))
+- interfaces and types ([2715032](https://github.com/HMarzban/extension-hyperlink/commit/27150323de93cafc9e8463be1ac490342db46cd5))
+- replace hyperlink with new text ([f20b889](https://github.com/HMarzban/extension-hyperlink/commit/f20b8894ae11958475c6875d07abc1431a8ce731))
+- select closet ancher element ([40ab594](https://github.com/HMarzban/extension-hyperlink/commit/40ab594a2c641f06acebbe21ac7aaa3848366ea5))
+- wrong selection of the anchor node ([9ff85cf](https://github.com/HMarzban/extension-hyperlink/commit/9ff85cfd17d8a325ae137942023c7290887ab1d7))
 
 # [1.3.0](https://github.com/HMarzban/extension-hyperlink/compare/v1.0.4...v1.3.0) (2023-07-20)
 
 ### Bug Fixes
 
-* interfaces and types ([2715032](https://github.com/HMarzban/extension-hyperlink/commit/27150323de93cafc9e8463be1ac490342db46cd5))
-* replace hyperlink with new text ([f20b889](https://github.com/HMarzban/extension-hyperlink/commit/f20b8894ae11958475c6875d07abc1431a8ce731))
-* select closet ancher element ([40ab594](https://github.com/HMarzban/extension-hyperlink/commit/40ab594a2c641f06acebbe21ac7aaa3848366ea5))
+- interfaces and types ([2715032](https://github.com/HMarzban/extension-hyperlink/commit/27150323de93cafc9e8463be1ac490342db46cd5))
+- replace hyperlink with new text ([f20b889](https://github.com/HMarzban/extension-hyperlink/commit/f20b8894ae11958475c6875d07abc1431a8ce731))
+- select closet ancher element ([40ab594](https://github.com/HMarzban/extension-hyperlink/commit/40ab594a2c641f06acebbe21ac7aaa3848366ea5))
 
 ## [1.2.1](https://github.com/HMarzban/extension-hyperlink/compare/v1.0.4...v1.2.1) (2023-07-19)
 
 ### Bug Fixes
 
-* interfaces and types ([2715032](https://github.com/HMarzban/extension-hyperlink/commit/27150323de93cafc9e8463be1ac490342db46cd5))
+- interfaces and types ([2715032](https://github.com/HMarzban/extension-hyperlink/commit/27150323de93cafc9e8463be1ac490342db46cd5))
 
 # [1.2.0](https://github.com/HMarzban/extension-hyperlink/compare/v1.0.4...v1.2.0) (2023-07-19)
 

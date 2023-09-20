@@ -15,7 +15,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* Update peerDependencies to fix lerna version tasks ([#3914](https://github.com/ueberdosis/tiptap/issues/3914)) ([0534f76](https://github.com/ueberdosis/tiptap/commit/0534f76401bf5399c01ca7f39d87f7221d91b4f7))
+- Update peerDependencies to fix lerna version tasks ([#3914](https://github.com/ueberdosis/tiptap/issues/3914)) ([0534f76](https://github.com/ueberdosis/tiptap/commit/0534f76401bf5399c01ca7f39d87f7221d91b4f7))
 
 # [2.0.0-beta.220](https://github.com/ueberdosis/tiptap/compare/v2.0.0-beta.219...v2.0.0-beta.220) (2023-02-28)
 
@@ -41,7 +41,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* fix builds including prosemirror ([a380ec4](https://github.com/ueberdosis/tiptap/commit/a380ec41d198ebacc80cea9e79b0a8aa3092618a))
+- fix builds including prosemirror ([a380ec4](https://github.com/ueberdosis/tiptap/commit/a380ec41d198ebacc80cea9e79b0a8aa3092618a))
 
 # [2.0.0-beta.214](https://github.com/ueberdosis/tiptap/compare/v2.0.0-beta.213...v2.0.0-beta.214) (2023-02-08)
 
@@ -63,7 +63,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Features
 
-* **pm:** new prosemirror package for dependency resolving ([f387ad3](https://github.com/ueberdosis/tiptap/commit/f387ad3dd4c2b30eaea33fb0ba0b42e0cd39263b))
+- **pm:** new prosemirror package for dependency resolving ([f387ad3](https://github.com/ueberdosis/tiptap/commit/f387ad3dd4c2b30eaea33fb0ba0b42e0cd39263b))
 
 # [2.0.0-beta.209](https://github.com/ueberdosis/tiptap/compare/v2.0.0-beta.208...v2.0.0-beta.209) (2022-12-16)
 
@@ -89,7 +89,7 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* **core:** rename esm modules to esm.js ([c1a0c3a](https://github.com/ueberdosis/tiptap/commit/c1a0c3ae43baac9dd5ed90903d3a0d4eaeea7702))
+- **core:** rename esm modules to esm.js ([c1a0c3a](https://github.com/ueberdosis/tiptap/commit/c1a0c3ae43baac9dd5ed90903d3a0d4eaeea7702))
 
 # [2.0.0-beta.203](https://github.com/ueberdosis/tiptap/compare/v2.0.0-beta.202...v2.0.0-beta.203) (2022-11-24)
 
@@ -103,8 +103,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Bug Fixes
 
-* **extension-youtube:** remove default options from youtube extension ([bf58124](https://github.com/ueberdosis/tiptap/commit/bf5812461bd85f19a06dfceaaca5ef6cfda6d3dd))
-* **extension-youtube:** set allowFullscreen to default ([4841c05](https://github.com/ueberdosis/tiptap/commit/4841c05c72dca2e2464a944526b9049f21bd5726))
+- **extension-youtube:** remove default options from youtube extension ([bf58124](https://github.com/ueberdosis/tiptap/commit/bf5812461bd85f19a06dfceaaca5ef6cfda6d3dd))
+- **extension-youtube:** set allowFullscreen to default ([4841c05](https://github.com/ueberdosis/tiptap/commit/4841c05c72dca2e2464a944526b9049f21bd5726))
 
 # [2.0.0-beta.200](https://github.com/ueberdosis/tiptap/compare/v2.0.0-beta.199...v2.0.0-beta.200) (2022-11-04)
 
@@ -138,8 +138,8 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Features
 
-* **core:** add nodePasteRule to core ([15123ee](https://github.com/ueberdosis/tiptap/commit/15123ee092261fe86352d491121804607e08e031))
-* **extension/youtube:** add paste handlers for youtube extension ([ec595ff](https://github.com/ueberdosis/tiptap/commit/ec595ff8037319efa10cea995c62442c3d8d3959))
+- **core:** add nodePasteRule to core ([15123ee](https://github.com/ueberdosis/tiptap/commit/15123ee092261fe86352d491121804607e08e031))
+- **extension/youtube:** add paste handlers for youtube extension ([ec595ff](https://github.com/ueberdosis/tiptap/commit/ec595ff8037319efa10cea995c62442c3d8d3959))
 
 # [2.0.0-beta.5](https://github.com/ueberdosis/tiptap/compare/@tiptap/extension-youtube@2.0.0-beta.4...@tiptap/extension-youtube@2.0.0-beta.5) (2022-06-20)
 
@@ -149,10 +149,10 @@ See [Conventional Commits](https://conventionalcommits.org) for commit guideline
 
 ### Reverts
 
-* Revert "Publish" ([9c38d27](https://github.com/ueberdosis/tiptap/commit/9c38d2713e6feac5645ad9c1bfc57abdbf054576))
+- Revert "Publish" ([9c38d27](https://github.com/ueberdosis/tiptap/commit/9c38d2713e6feac5645ad9c1bfc57abdbf054576))
 
 # [2.0.0-beta.2](https://github.com/ueberdosis/tiptap/compare/@tiptap/extension-youtube@2.0.0-beta.2...@tiptap/extension-youtube@2.0.0-beta.2) (2022-06-17)
 
 ### Reverts
 
-* Revert "Publish" ([9c38d27](https://github.com/ueberdosis/tiptap/commit/9c38d2713e6feac5645ad9c1bfc57abdbf054576))
+- Revert "Publish" ([9c38d27](https://github.com/ueberdosis/tiptap/commit/9c38d2713e6feac5645ad9c1bfc57abdbf054576))

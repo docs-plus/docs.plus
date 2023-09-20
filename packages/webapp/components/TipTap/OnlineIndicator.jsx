@@ -38,7 +38,10 @@ const OnlineIndicator = ({ className }) => {
   return (
     <div className={className}>
       {showStatus && (
-        <div className={` flex align-baseline justify-center status ${isOnline ? 'online' : 'offline'}`}>
+        <div
+          className={` flex align-baseline justify-center status ${
+            isOnline ? 'online' : 'offline'
+          }`}>
           {isOnline ? (
             <span className="flex align-baseline justify-center text-xs font-medium text-gray-500">
               <OnlineCloud className="mr-2" /> Saved to docsplus

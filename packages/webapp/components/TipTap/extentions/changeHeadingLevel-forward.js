@@ -45,7 +45,9 @@ const changeHeadingLevelForward = (arrg, attributes) => {
 
   let titleHMap = getHeadingsBlocksMap(tr.doc, titleStartPos, tr.mapping.map(titleEndPos))
   const { prevHStartPos } = getPrevHeadingPos(tr.doc, titleStartPos, start - 1)
-  let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
+  let mapHPost = titleHMap.filter(
+    (x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos
+  )
   let { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
 
   tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), newHeadingNode)

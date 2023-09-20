@@ -19,7 +19,9 @@ const FilterModal = () => {
 
     const filterHeadings = (headings) => {
       const regex = new RegExp(search, 'i')
-      const filteredHeadings = Array.from(headings).filter((heading) => regex.test(heading.textContent))
+      const filteredHeadings = Array.from(headings).filter((heading) =>
+        regex.test(heading.textContent)
+      )
       setTotalSearch(filteredHeadings.length)
     }
 

@@ -2,7 +2,11 @@ import React, { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/router'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import { twMerge } from 'tailwind-merge'
-import { searchThroughHeading, applySearchThroughHeading, highlightTocHeadings } from './toolbarUtils'
+import {
+  searchThroughHeading,
+  applySearchThroughHeading,
+  highlightTocHeadings
+} from './toolbarUtils'
 import { PopoverContent } from '@components/ui/Popover'
 import Button from '@components/ui/Button'
 import Toggle from '@components/ui/Toggle'
@@ -14,7 +18,10 @@ const FilterModal = ({ totalHeading, className }) => {
   const [totalHeadings, setTotalHeadings] = useState(totalHeading)
   const [filterInput, setFilterInput] = useState('')
   const [filteredHeadings, setFilteredHeadings] = useState([])
-  const [filterAlgorithm, setFilterAlgorithm] = useBooleanLocalStorageState('setting.filterAlgorithm', false)
+  const [filterAlgorithm, setFilterAlgorithm] = useBooleanLocalStorageState(
+    'setting.filterAlgorithm',
+    false
+  )
 
   useEffect(() => {
     if (totalHeading !== totalSearch && totalSearch > 0) {

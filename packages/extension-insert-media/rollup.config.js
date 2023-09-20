@@ -16,32 +16,32 @@ export default {
       name: pkg.name,
       file: pkg.umd,
       format: 'umd',
-      sourcemap: true,
+      sourcemap: true
     },
     {
       name: pkg.name,
       file: pkg.main,
       format: 'cjs',
       sourcemap: true,
-      exports: 'auto',
+      exports: 'auto'
     },
     {
       name: pkg.name,
       file: pkg.module,
       format: 'es',
-      sourcemap: true,
-    },
+      sourcemap: true
+    }
   ],
   plugins: [
     autoExternal({
-      packagePath: './package.json',
+      packagePath: './package.json'
     }),
     sourcemaps(),
     resolve(),
     commonjs(),
     babel({
       babelHelpers: 'bundled',
-      exclude: '../../node_modules/**',
+      exclude: '../../node_modules/**'
     }),
     sizes(),
     typescript({
@@ -50,11 +50,11 @@ export default {
         compilerOptions: {
           declaration: true,
           paths: {
-            '@tiptap/*': ['packages/*/src'],
-          },
+            '@tiptap/*': ['packages/*/src']
+          }
         },
-        include: null,
-      },
-    }),
-  ],
+        include: null
+      }
+    })
+  ]
 }

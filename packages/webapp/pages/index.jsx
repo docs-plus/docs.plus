@@ -52,7 +52,11 @@ function Home({ hostname }) {
             )}
             {isUserSignedIn && (
               <Tab name="profile" className="ml-auto py-2">
-                <Avatar width={22} height={22} className="rounded-full drop-shadow border w-10 h-10" />
+                <Avatar
+                  width={22}
+                  height={22}
+                  className="rounded-full drop-shadow border w-10 h-10"
+                />
               </Tab>
             )}
           </TabList>

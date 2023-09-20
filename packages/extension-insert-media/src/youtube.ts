@@ -3,30 +3,30 @@ import { mergeAttributes, Node, nodePasteRule } from '@tiptap/core'
 import { getEmbedUrlFromYoutubeUrl, isValidYoutubeUrl, YOUTUBE_REGEX_GLOBAL } from './utils'
 
 export interface YoutubeOptions {
-  addPasteHandler: boolean;
-  allowFullscreen: boolean;
-  autoplay: boolean;
-  ccLanguage?: string;
-  ccLoadPolicy?: boolean;
-  controls: boolean;
-  disableKBcontrols: boolean;
-  enableIFrameApi: boolean;
-  endTime: number;
-  height: number;
-  interfaceLanguage?: string;
-  ivLoadPolicy: number;
-  loop: boolean;
-  modestBranding: boolean;
-  HTMLAttributes: Record<string, any>;
-  inline: boolean;
-  nocookie: boolean;
-  origin: string;
-  playlist: string;
-  progressBarColor?: string;
-  width: number;
+  addPasteHandler: boolean
+  allowFullscreen: boolean
+  autoplay: boolean
+  ccLanguage?: string
+  ccLoadPolicy?: boolean
+  controls: boolean
+  disableKBcontrols: boolean
+  enableIFrameApi: boolean
+  endTime: number
+  height: number
+  interfaceLanguage?: string
+  ivLoadPolicy: number
+  loop: boolean
+  modestBranding: boolean
+  HTMLAttributes: Record<string, any>
+  inline: boolean
+  nocookie: boolean
+  origin: string
+  playlist: string
+  progressBarColor?: string
+  width: number
 }
 
-type SetYoutubeVideoOptions = { src: string, width?: number, height?: number, start?: number }
+type SetYoutubeVideoOptions = { src: string; width?: number; height?: number; start?: number }
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
@@ -34,7 +34,7 @@ declare module '@tiptap/core' {
       /**
        * Insert a youtube video
        */
-      setYoutubeVideo: (options: SetYoutubeVideoOptions) => ReturnType,
+      setYoutubeVideo: (options: SetYoutubeVideoOptions) => ReturnType
     }
   }
 }
@@ -64,7 +64,7 @@ export const Youtube = Node.create<YoutubeOptions>({
       origin: '',
       playlist: '',
       progressBarColor: undefined,
-      width: 640,
+      width: 640
     }
   },
 
@@ -81,40 +81,42 @@ export const Youtube = Node.create<YoutubeOptions>({
   addAttributes() {
     return {
       src: {
-        default: null,
+        default: null
       },
       start: {
-        default: 0,
+        default: 0
       },
       width: {
-        default: this.options.width,
+        default: this.options.width
       },
       height: {
-        default: this.options.height,
-      },
+        default: this.options.height
+      }
     }
   },
 
   parseHTML() {
     return [
       {
-        tag: 'div[data-youtube-video] iframe',
-      },
+        tag: 'div[data-youtube-video] iframe'
+      }
     ]
   },
 
   addCommands() {
     return {
-      setYoutubeVideo: (options: SetYoutubeVideoOptions) => ({ commands }) => {
-        if (!isValidYoutubeUrl(options.src)) {
-          return false
-        }
+      setYoutubeVideo:
+        (options: SetYoutubeVideoOptions) =>
+        ({ commands }) => {
+          if (!isValidYoutubeUrl(options.src)) {
+            return false
+          }
 
-        return commands.insertContent({
-          type: this.name,
-          attrs: options,
-        })
-      },
+          return commands.insertContent({
+            type: this.name,
+            attrs: options
+          })
+        }
     }
   },
 
@@ -127,10 +129,10 @@ export const Youtube = Node.create<YoutubeOptions>({
       nodePasteRule({
         find: YOUTUBE_REGEX_GLOBAL,
         type: this.type,
-        getAttributes: match => {
+        getAttributes: (match) => {
           return { src: match.input }
-        },
-      }),
+        }
+      })
     ]
   },
 
@@ -153,7 +155,7 @@ export const Youtube = Node.create<YoutubeOptions>({
       origin: this.options.origin,
       playlist: this.options.playlist,
       progressBarColor: this.options.progressBarColor,
-      startAt: HTMLAttributes.start || 0,
+      startAt: HTMLAttributes.start || 0
     })
 
     HTMLAttributes.src = embedUrl
@@ -181,11 +183,11 @@ export const Youtube = Node.create<YoutubeOptions>({
             modestBranding: this.options.modestBranding,
             origin: this.options.origin,
             playlist: this.options.playlist,
-            progressBarColor: this.options.progressBarColor,
+            progressBarColor: this.options.progressBarColor
           },
-          HTMLAttributes,
-        ),
-      ],
+          HTMLAttributes
+        )
+      ]
     ]
-  },
+  }
 })

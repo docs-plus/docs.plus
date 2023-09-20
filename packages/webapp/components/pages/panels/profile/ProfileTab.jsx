@@ -57,7 +57,10 @@ const ProfileTab = () => {
       return false
     }
 
-    const { data, error } = await supabaseClient.from(PROFILES).select('username').eq('username', userName)
+    const { data, error } = await supabaseClient
+      .from(PROFILES)
+      .select('username')
+      .eq('username', userName)
 
     if (error) {
       console.error(error)

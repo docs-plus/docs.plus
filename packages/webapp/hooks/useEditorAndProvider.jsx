@@ -27,8 +27,14 @@ const getCursorUser = (user, profileData) => {
 
 const useEditorAndProvider = ({ docMetadata }) => {
   const user = useUser()
-  const { setRendering, setPresentUsers, loading, applyingFilters, setApplyingFilters, setLoading } =
-    useEditorStateContext()
+  const {
+    setRendering,
+    setPresentUsers,
+    loading,
+    applyingFilters,
+    setApplyingFilters,
+    setLoading
+  } = useEditorStateContext()
 
   const { profileData } = useProfileData()
 

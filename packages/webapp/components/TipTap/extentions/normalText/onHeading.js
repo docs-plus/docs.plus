@@ -83,12 +83,16 @@ const onHeading = (args) => {
   const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
   const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
 
-  const normalContents = [headingText, ...contentWrapperParagraphs].map((x) => editor.schema.nodeFromJSON(x))
+  const normalContents = [headingText, ...contentWrapperParagraphs].map((x) =>
+    editor.schema.nodeFromJSON(x)
+  )
 
   if (backspaceAction) normalContents.shift()
 
   const titleHMap = getPrevHeadingList(tr, titleStartPos, tr.mapping.map(titleEndPos))
-  let mapHPost = titleHMap.filter((x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos)
+  let mapHPost = titleHMap.filter(
+    (x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos
+  )
 
   const comingLevel = mapHPost.at(-1).le + 1
   let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)

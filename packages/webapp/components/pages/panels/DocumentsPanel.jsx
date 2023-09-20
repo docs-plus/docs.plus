@@ -15,9 +15,9 @@ const DocumentsPanel = () => {
 
   const fetchDocuments = async ({ queryKey: [, page, search] }) => {
     const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents?limit=${itemsPerPage}&offset=${page * itemsPerPage}${
-        search ? '&title=' + search : ''
-      }`
+      `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents?limit=${itemsPerPage}&offset=${
+        page * itemsPerPage
+      }${search ? '&title=' + search : ''}`
     )
     return response.data.data
   }
@@ -88,7 +88,9 @@ const DocumentsPanel = () => {
           {Array.from({ length: pages }, (_, i) => (
             <button
               key={i}
-              className={`mx-1 px-4 py-2 border rounded ${i === currentPage ? 'bg-blue-500 text-white' : ''}`}
+              className={`mx-1 px-4 py-2 border rounded ${
+                i === currentPage ? 'bg-blue-500 text-white' : ''
+              }`}
               onClick={() => setCurrentPage(i)}>
               {i + 1}
             </button>

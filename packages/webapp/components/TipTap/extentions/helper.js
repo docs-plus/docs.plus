@@ -40,7 +40,13 @@ export const getPrevHeadingList = (tr, start, from) => {
  * @param {Number} end end pos
  * @returns Array of Selection Block
  */
-export const getSelectionBlocks = (doc, start, end, includeContentHeading = false, range = false) => {
+export const getSelectionBlocks = (
+  doc,
+  start,
+  end,
+  includeContentHeading = false,
+  range = false
+) => {
   const firstHEading = true
   const selectedContents = []
 
@@ -421,7 +427,15 @@ export const insertRemainingHeadings = ({
   return true
 }
 
-export const createHeadingNodeFromSelection = (doc, state, start, end, attributes, block, contentWrapper) => {
+export const createHeadingNodeFromSelection = (
+  doc,
+  state,
+  start,
+  end,
+  attributes,
+  block,
+  contentWrapper
+) => {
   const headings = []
 
   if (start !== end) {

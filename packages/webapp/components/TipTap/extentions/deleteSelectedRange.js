@@ -16,7 +16,11 @@ const processRemainingHeadings = ({ state, tr, headings, titleStartPos, titleEnd
 
   for (const heading of headings) {
     const commingLevel = heading.level || heading.content.at(0).level
-    mapHPost = getPrevHeadingList(tr, mapHPost[0].startBlockPos, tr.mapping.map(mapHPost[0].endBlockPos))
+    mapHPost = getPrevHeadingList(
+      tr,
+      mapHPost[0].startBlockPos,
+      tr.mapping.map(mapHPost[0].endBlockPos)
+    )
     mapHPost = mapHPost.filter(
       (x) => x.startBlockPos < heading.startBlockPos && x.startBlockPos >= titleStartPos
     )

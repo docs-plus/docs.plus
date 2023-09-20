@@ -5,7 +5,11 @@ import { Camera, Spinner, CircleUser } from '@icons'
 import { toast } from 'react-hot-toast'
 import PubSub from 'pubsub-js'
 
-import { uploadAvatarToStorage, updateAvatarInDB, removeAvatarFromStorage } from './avatarUpload.service'
+import {
+  uploadAvatarToStorage,
+  updateAvatarInDB,
+  removeAvatarFromStorage
+} from './avatarUpload.service'
 
 const AVATARS = 'avatars'
 const PROFILES = 'profiles'
@@ -95,7 +99,12 @@ const AvatarSection = ({ profileData }) => {
         {!uploading ? <Camera size={24} fill="#fff" /> : <Spinner />}
       </div>
       <Avatar height={32} width={32} className="w-32 h-32 rounded-xl" />
-      <input ref={fileInputRef} type="file" onChange={handleFileChange} style={{ display: 'none' }} />
+      <input
+        ref={fileInputRef}
+        type="file"
+        onChange={handleFileChange}
+        style={{ display: 'none' }}
+      />
       {isProfileAvatar && (
         <button
           className="changeAvatarToDefault -right-1 absolute flex items-center justify-around  -bottom-1 w-5 h-5 bg-white rounded-full drop-shadow-lg"

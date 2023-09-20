@@ -26,7 +26,11 @@ const AvatarStack = ({ users }) => {
               />
             ) : (
               <div className="w-9 h-9 border-2 flex  justify-center relative align-middle overflow-hidden bg-gray-100 dark:bg-gray-600 rounded-full ">
-                <Avatar size={48} fill="#aaa" className="absolute top-[0px] text-gray-400 -left-[4px]" />
+                <Avatar
+                  size={48}
+                  fill="#aaa"
+                  className="absolute top-[0px] text-gray-400 -left-[4px]"
+                />
               </div>
             )}
           </div>

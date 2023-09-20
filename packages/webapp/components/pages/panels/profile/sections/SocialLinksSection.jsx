@@ -2,7 +2,14 @@ import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import React, { useState } from 'react'
 import { LinkAlt, Facebook, Twitter } from '@icons'
 
-const SocialLinksSection = ({ twitter, setTwitter, facebook, setFacebook, website, setWebsite }) => {
+const SocialLinksSection = ({
+  twitter,
+  setTwitter,
+  facebook,
+  setFacebook,
+  website,
+  setWebsite
+}) => {
   const [twitterError, setTwitterError] = useState('')
   const [facebookError, setFacebookError] = useState('')
   const [websiteError, setWebsiteError] = useState('')

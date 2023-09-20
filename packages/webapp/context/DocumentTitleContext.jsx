@@ -12,5 +12,9 @@ export const DocumentTitleProvider = ({ children }) => {
 
   const setTitle = (title) => setDocTitle(title)
 
-  return <DocumentTitleContext.Provider value={{ title, setTitle }}>{children}</DocumentTitleContext.Provider>
+  return (
+    <DocumentTitleContext.Provider value={{ title, setTitle }}>
+      {children}
+    </DocumentTitleContext.Provider>
+  )
 }

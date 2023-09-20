@@ -14,7 +14,11 @@ const useProfileData = () => {
     setLoadingProfileData(true)
 
     const fetchProfile = async () => {
-      const { data, error } = await supabaseClient.from('profiles').select().eq('id', user.id).single()
+      const { data, error } = await supabaseClient
+        .from('profiles')
+        .select()
+        .eq('id', user.id)
+        .single()
       if (error) {
         setProfileFetchingError(error)
       } else {

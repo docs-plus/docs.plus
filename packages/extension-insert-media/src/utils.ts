@@ -1,29 +1,31 @@
-export const YOUTUBE_REGEX = /^(https?:\/\/)?(www\.|music\.)?(youtube\.com|youtu\.be)(?!.*\/channel\/)(?!\/@)(.+)?$/
-export const YOUTUBE_REGEX_GLOBAL = /^(https?:\/\/)?(www\.|music\.)?(youtube\.com|youtu\.be)(?!.*\/channel\/)(?!\/@)(.+)?$/g
+export const YOUTUBE_REGEX =
+  /^(https?:\/\/)?(www\.|music\.)?(youtube\.com|youtu\.be)(?!.*\/channel\/)(?!\/@)(.+)?$/
+export const YOUTUBE_REGEX_GLOBAL =
+  /^(https?:\/\/)?(www\.|music\.)?(youtube\.com|youtu\.be)(?!.*\/channel\/)(?!\/@)(.+)?$/g
 
 export const isValidYoutubeUrl = (url: string) => {
   return url.match(YOUTUBE_REGEX)
 }
 
 export interface GetEmbedUrlOptions {
-  url: string;
-  allowFullscreen?: boolean;
-  autoplay?: boolean;
-  ccLanguage?:string;
-  ccLoadPolicy?:boolean;
-  controls?: boolean;
-  disableKBcontrols?: boolean,
-  enableIFrameApi?: boolean;
-  endTime?: number;
-  interfaceLanguage?: string;
-  ivLoadPolicy?: number;
-  loop?: boolean;
-  modestBranding?: boolean;
-  nocookie?: boolean;
-  origin?: string;
-  playlist?: string;
-  progressBarColor?: string;
-  startAt?: number;
+  url: string
+  allowFullscreen?: boolean
+  autoplay?: boolean
+  ccLanguage?: string
+  ccLoadPolicy?: boolean
+  controls?: boolean
+  disableKBcontrols?: boolean
+  enableIFrameApi?: boolean
+  endTime?: number
+  interfaceLanguage?: string
+  ivLoadPolicy?: number
+  loop?: boolean
+  modestBranding?: boolean
+  nocookie?: boolean
+  origin?: string
+  playlist?: string
+  progressBarColor?: string
+  startAt?: number
 }
 
 export const getYoutubeEmbedUrl = (nocookie?: boolean) => {
@@ -49,7 +51,7 @@ export const getEmbedUrlFromYoutubeUrl = (options: GetEmbedUrlOptions) => {
     origin,
     playlist,
     progressBarColor,
-    startAt,
+    startAt
   } = options
 
   // if is already an embed url, return it

@@ -112,7 +112,9 @@ const NotificationsTab = () => {
             description="Receive notifications via email so you never miss a mention, reply, upvote or comment on docs.plus"
           />
 
-          <TabSection name="Send me emails for:" className={`${emailNotifications ? 'flex' : 'hidden'}`}>
+          <TabSection
+            name="Send me emails for:"
+            className={`${emailNotifications ? 'flex' : 'hidden'}`}>
             <Checkbox
               className="mt-2"
               label="New activity notifications (mentions, replies, etc.)"
