@@ -21,7 +21,6 @@ services:
     links:
       - redis
     environment:
-      DATABASE_TYPE: ${DATABASE_TYPE:-SQLite}
       REDIS_HOST: redis
       ENVIRONMENT: ${ENVIRONMENT}
 

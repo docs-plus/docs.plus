@@ -56,11 +56,11 @@ IF %ERRORLEVEL% NEQ 0 (
     echo PostgreSQL is running on %PG_HOST%:%PG_PORT%
 )
 
-REM Run npm generate:dev and wait until it's finished
-echo Running npm run generate:dev
-npm run generate:dev
+REM Run npm prisma:init:migrations and wait until it's finished
+echo Running npm run prisma:init:migrations
+npm run prisma:init:migrations
 IF %ERRORLEVEL% NEQ 0 (
-    echo npm run generate:dev failed with error code %ERRORLEVEL%
+    echo npm run prisma:init:migrations failed with error code %ERRORLEVEL%
     exit /b %ERRORLEVEL%
 )
 

@@ -1,42 +1,40 @@
-version: "3.9"
+version: '3.9'
 
 services:
- postgres:
-  container_name: postgres
-  image: postgres:14.5
-  env_file:
-   - ./.env
-  environment:
-   POSTGRES_USER: ${PG_USER:-pgUser}
-   POSTGRES_PASSWORD: ${PG_PASSWORD:-pgPW}
-   POSTGRES_DB: ${PG_DB}
-  volumes:
-   - database-data:/var/lib/postgresql/data/
-  restart: always
-  ports:
-   - '${PG_PORT}:5432'
+  postgres:
+    container_name: postgres
+    image: postgres:14.5
+    env_file:
+      - ./.env
+    environment:
+      POSTGRES_USER: '${PG_USER:-pgUser}'
+      POSTGRES_PASSWORD: '${PG_PASSWORD:-pgPW}'
+      POSTGRES_DB: '${PG_DB:-docsplus}'
+    volumes:
+      - database-data:/var/lib/postgresql/data/
+    restart: always
+    ports:
+      - '${PG_PORT:-5432}:5432'
 
- redis-server:
-  image: redis:alpine
-  restart: unless-stopped
+  redis-server:
+    image: redis:alpine
+    restart: unless-stopped
 
- backend:
-  env_file: .env
-  restart: always
-  build: .
-  depends_on:
-   - redis-server
-   # - postgres
-  links:
-   - redis-server
-   # - postgres
-  environment:
-   DATABASE_TYPE: ${DATABASE_TYPE:-SQLite}
-   REDIS_HOST: redis-server
-   PG_SERVER: postgres
-   DATABASE_URL: "postgresql://${PG_USER:-pgUser}:${PG_PASSWORD:-pgPW}@postgres/${PG_DB:-5455}?schema=public"
-  ports:
-   - '${EXPOSE_APP_PORT:-8002}:${APP_PORT}'
+  backend:
+    env_file: .env
+    restart: always
+    build: .
+    depends_on:
+      - redis-server
+      - postgres
+    environment:
+      REDIS_HOST: redis-server
+      PG_SERVER: postgres
+      # This DATABASE_URL will override the one from .env during runtime.
+      DATABASE_URL: 'postgresql://${PG_USER:-pgUser}:${PG_PASSWORD:-pgPW}@postgres/${PG_DB:-docsplus}?schema=public'
+
+    ports:
+      - '${EXPOSE_APP_PORT:-8002}:${APP_PORT}'
 
 volumes:
- database-data:
+  database-data:

@@ -1,25 +1,34 @@
-# Dockerfile
-
-FROM node:alpine3.10
-
-ARG ENVIRONMENT
+# Build Stage
+FROM node:alpine3.17 as builder
 
 ENV NODE_ENV=production
 
-WORKDIR /app
+# for Node-gyp and dependencies
+RUN apk add --no-cache python3 make g++ && \
+  mkdir -p /app && \
+  chown -R node:node /app
 
-# Print the value of the ENVIRONMENT variable
-RUN echo "Environment is set to: ${ENVIRONMENT}"
+USER node
+
+WORKDIR /app
 
 COPY package*.json ./
 COPY prisma ./prisma/
-COPY .env ./
 
-RUN npm install pm2 -g
-RUN npm install --production
-RUN npx prisma generate
+RUN npm install && npx prisma generate
 
+# Runtime Stage
+FROM node:alpine3.17
+
+ARG ENVIRONMENT=stage
+
+ENV ENVIRONMENT=$ENVIRONMENT
+
+WORKDIR /app
+
+COPY --from=builder /app .
 COPY . .
 
-CMD pm2-runtime pm2.config.cjs --only ${ENVIRONMENT}_rest,${ENVIRONMENT}_ws
+RUN npm install pm2 -g
 
+CMD pm2-runtime pm2.config.cjs --only ${ENVIRONMENT}_rest,${ENVIRONMENT}_ws
