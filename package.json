@@ -7,6 +7,7 @@
   ],
   "scripts": {
     "update:packages": "ncu -u",
+    "start:webapp": "cd packages/webapp && npm run start",
     "dev": "npx lerna run dev --scope=@docs.plus/webapp",
     "build": "npx lerna run build",
     "lint:fix": "npx lerna run lint:fix",
@@ -41,7 +42,6 @@
     "@babel/plugin-syntax-typescript": "^7.22.5",
     "@babel/preset-env": "^7.22.9",
     "@babel/preset-react": "^7.22.5",
-    "@hocuspocus/cli": "^2.5.0",
     "@rollup/plugin-babel": "^6.0.3",
     "@rollup/plugin-commonjs": "^25.0.3",
     "@rollup/plugin-json": "^6.0.0",

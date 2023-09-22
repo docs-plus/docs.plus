@@ -1,0 +1,22 @@
+# packages/webapp/Dockerfile
+FROM node:18.18 as builder
+
+WORKDIR /app
+
+COPY . .
+
+RUN corepack enable
+
+RUN yarn
+
+RUN yarn build
+
+FROM node:18.18
+
+WORKDIR /app
+
+COPY --from=builder /app .
+
+EXPOSE 3000
+
+CMD ["yarn", "start:webapp"]

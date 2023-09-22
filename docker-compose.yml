@@ -1,0 +1,57 @@
+# docker-compose.yml
+version: '3.9'
+
+services:
+  webapp:
+    build:
+      context: .
+      dockerfile: packages/webapp/Dockerfile
+    container_name: docker-next
+    depends_on:
+      - backend
+    ports:
+      - '3000:3000'
+    volumes:
+      - .:/app
+      - /app/node_modules
+
+  postgres:
+    container_name: postgres
+    image: postgres:14.5
+    env_file:
+      - packages/hocuspocus.server/.env
+    environment:
+      POSTGRES_USER: '${PG_USER:-pgUser}'
+      POSTGRES_PASSWORD: '${PG_PASSWORD:-pgPW}'
+      POSTGRES_DB: '${PG_DB:-docsplus}'
+    volumes:
+      - database-data:/var/lib/postgresql/data/
+    restart: always
+    ports:
+      - '${PG_PORT:-5432}:5432'
+
+  redis-server:
+    image: redis:alpine
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./packages/hocuspocus.server
+      dockerfile: Dockerfile
+    env_file:
+      - packages/hocuspocus.server/.env
+    restart: always
+    depends_on:
+      - redis-server
+      - postgres
+    environment:
+      REDIS_HOST: redis-server
+      PG_SERVER: postgres
+      DATABASE_URL: 'postgresql://${PG_USER:-pgUser}:${PG_PASSWORD:-pgPW}@postgres/${PG_DB:-docsplus}?schema=public'
+    ports:
+      - '${EXPOSE_APP_PORT:-2300}:${APP_PORT:-2300}'
+      - '${HOCUSPOCUS_PORT:-1234}:${HOCUSPOCUS_PORT:-1234}'
+
+volumes:
+  database-data:
+    name: docsplus_data
