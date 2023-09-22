@@ -11,12 +11,14 @@ const prisma = new PrismaClient()
 const router = expressRouter()
 
 const getOwnerProfile = async (userId) => {
+  if (!process.env.SUPABASE_URL && !process.env.SUPABASE_ANON_KEY) return null
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
   const { data } = await supabase.from('profiles').select('*').eq('id', userId)
   return data[0]
 }
 
 const getOwnerProfiles = async (userIds) => {
+  if (!process.env.SUPABASE_URL && !process.env.SUPABASE_ANON_KEY) return null
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
   const { data } = await supabase.from('profiles').select('*').in('id', userIds)
   return data
@@ -57,7 +59,8 @@ router.get('/documents/:docName', async (req, res) => {
   })
 
   if (doc === null) return createNewDocument(docName, null, null, null, user)
-  if (doc.keywords) doc.keywords = doc.keywords.length === 0 ? [] : doc.keywords.split(',').map((k) => k.trim())
+  if (doc.keywords)
+    doc.keywords = doc.keywords.length === 0 ? [] : doc.keywords.split(',').map((k) => k.trim())
 
   const ownerProfile = doc.ownerId ? await getOwnerProfile(doc.ownerId) : null
 
@@ -65,7 +68,13 @@ router.get('/documents/:docName', async (req, res) => {
 })
 
 router.get('/documents', async (req, res) => {
-  const { title, keywords: reqKeywords, description, limit: reqLimit, offset: reqOffset } = req.query
+  const {
+    title,
+    keywords: reqKeywords,
+    description,
+    limit: reqLimit,
+    offset: reqOffset
+  } = req.query
 
   const limit = parseInt(reqLimit, 10) || 10 // Default limit is 10
   const offset = parseInt(reqOffset, 10) || 0 // Default offset is 0
@@ -170,7 +179,8 @@ router.put('/documents/:docId', validator.body(UPDATE_DOCUMENT_METADATA), async 
   newMetaData.data.readOnly = readOnly
 
   const updatedDoc = await prisma.documentMetadata.update(newMetaData)
-  updatedDoc.keywords = updatedDoc.keywords.length === 0 ? [] : updatedDoc.keywords.split(',').map((k) => k.trim())
+  updatedDoc.keywords =
+    updatedDoc.keywords.length === 0 ? [] : updatedDoc.keywords.split(',').map((k) => k.trim())
 
   return updatedDoc
 })

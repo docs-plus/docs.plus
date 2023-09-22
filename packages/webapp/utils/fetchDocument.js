@@ -6,7 +6,7 @@ export async function fetchDocument(slug, session) {
   const documentMetadata = await fetch(url, fetchOptions)
   const { data } = await documentMetadata.json()
 
-  const docClientId = `${data.isPrivate ? 'private' : 'public'}.${data.documentId}`
+  const docClientId = `${data && data.isPrivate ? 'private' : 'public'}.${data.documentId}`
 
   return {
     ...data,
