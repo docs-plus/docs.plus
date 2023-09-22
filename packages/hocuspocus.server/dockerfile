@@ -1,12 +1,10 @@
 # Build Stage
-FROM node:alpine3.17 as builder
+FROM node:18.18 as builder
 
 ENV NODE_ENV=production
 
 # for Node-gyp and dependencies
-RUN apk add --no-cache python3 make g++ && \
-  mkdir -p /app && \
-  chown -R node:node /app
+RUN corepack enable
 
 USER node
 
@@ -15,10 +13,10 @@ WORKDIR /app
 COPY package*.json ./
 COPY prisma ./prisma/
 
-RUN npm install && npx prisma generate
+RUN npm install && npx prisma generate && npm cache clean --force
 
 # Runtime Stage
-FROM node:alpine3.17
+FROM node:18.18
 
 ARG ENVIRONMENT=stage
 
