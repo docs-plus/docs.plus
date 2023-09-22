@@ -6,6 +6,7 @@
     "packages/*"
   ],
   "scripts": {
+    "start": "sh ./scripts/run_dev.sh",
     "update:packages": "ncu -u",
     "start:webapp": "cd packages/webapp && npm run start",
     "dev": "npx lerna run dev --scope=@docs.plus/webapp",

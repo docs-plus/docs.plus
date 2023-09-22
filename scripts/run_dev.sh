@@ -80,7 +80,7 @@ fi
 
 # Run npm run dev and npm run dev:ws simultaneously in the background
 echo "Running npm run dev and npm run dev:ws"
-(npm run dev &)
+(npm run dev:pg &)
 (npm run dev:ws &)
 
 # Wait for a while to let the backend server start
