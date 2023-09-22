@@ -40,13 +40,12 @@ docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgre
 ```
 
 More details on the PostgreSQL Docker image are available in the [official Docker documentation](https://docs.docker.com/samples/postgres/).
-
 ### Running the Project
 
 **Unix-based systems (macOS, Linux):**
 
 ```bash
-./run_dev.sh
+$ yarn start
 ```
 
 **Windows systems:**
@@ -67,6 +66,11 @@ npm run dev
 ```
 
 💡 We're actively seeking contributors to improve our Windows setup instructions. If you can assist, we'd be thrilled! Your contribution will enhance the accessibility of docs.plus for Windows users and foster our community's growth. All collaboration is warmly welcomed!
+
+## Docker Deployment
+```sh
+$ docker-compose up
+```
 
 ## 📫 Connect With Us
 
