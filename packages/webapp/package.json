@@ -57,9 +57,9 @@
     "@tiptap/prosemirror-tables": "^1.1.4",
     "@tiptap/react": "^2.0.4",
     "@tiptap/starter-kit": "^2.0.4",
-    "axios": "^1.4.0",
+    "axios": "^1.5.0",
     "dexie": "^3.2.4",
-    "lowlight": "^2.9.0",
+    "lowlight": "^3.0.0",
     "metadata-scraper": "^0.2.61",
     "mobile-detect": "^1.4.5",
     "next": "^13.5.2",
@@ -79,13 +79,13 @@
     "y-prosemirror": "^1.2.1",
     "y-webrtc": "^10.2.5",
     "y-websocket": "^1.5.0",
-    "yjs": "^13.6.7"
+    "yjs": "^13.6.8"
   },
   "devDependencies": {
-    "autoprefixer": "^10.4.15",
+    "autoprefixer": "^10.4.16",
     "postcss": "^8.4.30",
     "prettier": "^3.0.3",
-    "sass": "^1.67.0",
+    "sass": "^1.68.0",
     "tailwindcss": "^3.3.3"
   }
 }
