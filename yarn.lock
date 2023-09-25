@@ -2380,7 +2380,7 @@
   resolved "https://registry.yarnpkg.com/@tiptap/extension-bullet-list/-/extension-bullet-list-2.1.11.tgz#bb72bbd8b7aaeb8c03ba9575886f7c1faec8e4e5"
   integrity sha512-SOOVH2aSmdMtjWL7TTLbN72xbAFz2G5jifT4UCXb7Qx6LsyhNCyDCu0ukOW8rSosGoSdmBXxAsD9sBJ1jEOmZw==
 
-"@tiptap/extension-code-block-lowlight@^2.0.4":
+"@tiptap/extension-code-block-lowlight@^2.1.11":
   version "2.1.11"
   resolved "https://registry.yarnpkg.com/@tiptap/extension-code-block-lowlight/-/extension-code-block-lowlight-2.1.11.tgz#6eec38c3b8662fae81ec2f117a2d18564f1fbb1a"
   integrity sha512-k3olDvsRYO32JR9hyNa6VLqUdhwcpLwvR4Z6tJ66jHag5rsfP/7JZxJhrX9A1AF/jRCILdTiq9DTKybHieFjsw==

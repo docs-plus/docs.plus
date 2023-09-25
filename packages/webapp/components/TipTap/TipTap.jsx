@@ -1,6 +1,6 @@
 import { Node } from '@tiptap/core'
 import randomColor from 'randomcolor'
-import { lowlight } from 'lowlight'
+import { createLowlight } from 'lowlight'
 import ShortUniqueId from 'short-unique-id'
 import ENUMS from './enums'
 
@@ -65,15 +65,16 @@ import TableRow from '@tiptap/extension-table-row'
 
 import Placeholders from './placeholders'
 
-lowlight.registerLanguage('html', html)
-lowlight.registerLanguage('css', css)
-lowlight.registerLanguage('js', js)
-lowlight.registerLanguage('ts', ts)
-lowlight.registerLanguage('markdown', md)
-lowlight.registerLanguage('python', python)
-lowlight.registerLanguage('yaml', yaml)
-lowlight.registerLanguage('json', json)
-lowlight.registerLanguage('bash', bash)
+const lowlight = createLowlight()
+lowlight.register('html', html)
+lowlight.register('css', css)
+lowlight.register('js', js)
+lowlight.register('ts', ts)
+lowlight.register('markdown', md)
+lowlight.register('python', python)
+lowlight.register('yaml', yaml)
+lowlight.register('json', json)
+lowlight.register('bash', bash)
 
 const Document = Node.create({
   name: ENUMS.NODES.DOC_TYPE,
