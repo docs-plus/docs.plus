@@ -1132,6 +1132,14 @@
   resolved "https://registry.yarnpkg.com/@colors/colors/-/colors-1.5.0.tgz#bb504579c1cae923e6576a4f5da43d25f97bdbd9"
   integrity sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==
 
+"@docs.plus/extension-hypermultimedia@^1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@docs.plus/extension-hypermultimedia/-/extension-hypermultimedia-1.1.0.tgz#25df7ada229870a9aa6f60d21554395929194dc3"
+  integrity sha512-5shF7SgkRlQQbyuR+Krv2XECQU3AJWxjhFd5vx4eurp61tdqvnqEvBCooRTeGzXnTNBHGPWOzvMX/O3C2X4lSw==
+  dependencies:
+    linkifyjs "^4.1.1"
+    tippy.js "^6.3.7"
+
 "@esbuild/android-arm64@0.18.20":
   version "0.18.20"
   resolved "https://registry.yarnpkg.com/@esbuild/android-arm64/-/android-arm64-0.18.20.tgz#984b4f9c8d0377443cc2dfcef266d02244593622"
@@ -10694,11 +10702,6 @@ short-unique-id@^4.4.4:
   version "4.4.4"
   resolved "https://registry.yarnpkg.com/short-unique-id/-/short-unique-id-4.4.4.tgz#a45df68303bbd2dbb5785ed7708e891809c9cb7a"
   integrity sha512-oLF1NCmtbiTWl2SqdXZQbo5KM1b7axdp0RgQLq8qCBBLoq+o3A5wmLrNM6bZIh54/a8BJ3l69kTXuxwZ+XCYuw==
-
-short-unique-id@^5.0.3:
-  version "5.0.3"
-  resolved "https://registry.yarnpkg.com/short-unique-id/-/short-unique-id-5.0.3.tgz#bc6975dc5e8b296960ff5ac91ddabbc7ddb693d9"
-  integrity sha512-yhniEILouC0s4lpH0h7rJsfylZdca10W9mDJRAFh3EpcSUanCHGb0R7kcFOIUCZYSAPo0PUD5ZxWQdW0T4xaug==
 
 side-channel@^1.0.4:
   version "1.0.4"
