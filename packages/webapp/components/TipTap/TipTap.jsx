@@ -63,6 +63,15 @@ import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import TableRow from '@tiptap/extension-table-row'
 
+import {
+  HypermediaKit,
+  imageModal,
+  youtubeModal,
+  vimeoModal,
+  soundCloudModal,
+  twitterModal,
+} from "@docs.plus/extension-hypermultimedia";
+
 import Placeholders from './placeholders'
 
 const lowlight = createLowlight()
@@ -240,13 +249,30 @@ const Editor = ({ provider, spellcheck = false }) => {
           }
         }
       }),
-      Image.configure({
-        inline: true,
-        allowBase64: true,
-        HTMLAttributes: {
-          class: 'image-class'
-        }
+      HypermediaKit.configure({
+        Image: {
+          modal: imageModal,
+        },
+        Youtube: {
+          modal: youtubeModal,
+        },
+        Vimeo: {
+          modal: vimeoModal,
+        },
+        SoundCloud: {
+          modal: soundCloudModal,
+        },
+        Twitter: {
+          modal: twitterModal,
+        },
       }),
+      // Image.configure({
+      //   inline: true,
+      //   allowBase64: true,
+      //   HTMLAttributes: {
+      //     class: 'image-class'
+      //   }
+      // }),
       TaskList,
       TaskItem.configure({
         nested: true,
