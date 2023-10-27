@@ -1132,10 +1132,10 @@
   resolved "https://registry.yarnpkg.com/@colors/colors/-/colors-1.5.0.tgz#bb504579c1cae923e6576a4f5da43d25f97bdbd9"
   integrity sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==
 
-"@docs.plus/extension-hypermultimedia@^1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@docs.plus/extension-hypermultimedia/-/extension-hypermultimedia-1.1.0.tgz#25df7ada229870a9aa6f60d21554395929194dc3"
-  integrity sha512-5shF7SgkRlQQbyuR+Krv2XECQU3AJWxjhFd5vx4eurp61tdqvnqEvBCooRTeGzXnTNBHGPWOzvMX/O3C2X4lSw==
+"@docs.plus/extension-hypermultimedia@^1.1.2-alpha.1":
+  version "1.1.2-alpha.1"
+  resolved "https://registry.yarnpkg.com/@docs.plus/extension-hypermultimedia/-/extension-hypermultimedia-1.1.2-alpha.1.tgz#6f9cbf32d5004065a81c75d3615c62a7f0502254"
+  integrity sha512-+NYhmFVQB2tvJT4nPKFLfAbu1mo4ytpTQCKBqktg/yG9YhrwuwpzJw+DAzVsg/a8FWOoupDmWjjmlRTriOEzBA==
   dependencies:
     linkifyjs "^4.1.1"
     tippy.js "^6.3.7"
