@@ -252,18 +252,23 @@ const Editor = ({ provider, spellcheck = false }) => {
       HypermediaKit.configure({
         Image: {
           modal: imageModal,
+          inline: true
         },
         Youtube: {
           modal: youtubeModal,
+          inline: true
         },
         Vimeo: {
           modal: vimeoModal,
+          inline: true
         },
         SoundCloud: {
           modal: soundCloudModal,
+          inline: true
         },
         Twitter: {
           modal: twitterModal,
+          inline: true
         },
       }),
       // Image.configure({
