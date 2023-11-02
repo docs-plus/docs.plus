@@ -8,7 +8,7 @@ import { useEditorStateContext } from '@context/EditorContext'
 import { Popover, PopoverTrigger } from '@components/ui/Popover'
 import { Dialog, DialogTrigger, DialogContent } from '@components/ui/Dialog'
 import SelectHeadingBox from './SelectHeadingBox'
-import InsertImageButton from './InsertImageButton'
+import InsertMultimediaButton from './InsertMultimediaButton'
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
   loading: () => <div>Loading...</div>
 })
@@ -91,7 +91,7 @@ const Toolbar = ({ editor, docMetadata }) => {
 
       <div className="divided"></div>
 
-      <InsertImageButton />
+      <InsertMultimediaButton editor={editor} />
 
       <ToolbarButton
         onClick={() => editor.chain().focus().setHyperlink().run()}
@@ -141,6 +141,7 @@ const Toolbar = ({ editor, docMetadata }) => {
             </DialogContent>
           </Dialog>
         )}
+
         <div className="divided"></div>
 
         <Popover>

@@ -64,7 +64,7 @@ import TableHeader from '@tiptap/extension-table-header'
 import TableRow from '@tiptap/extension-table-row'
 
 import {
-  HypermediaKit,
+  HyperMultimediaKit,
   imageModal,
   youtubeModal,
   vimeoModal,
@@ -249,7 +249,7 @@ const Editor = ({ provider, spellcheck = false }) => {
           }
         }
       }),
-      HypermediaKit.configure({
+      HyperMultimediaKit.configure({
         Image: {
           modal: imageModal,
           inline: true
