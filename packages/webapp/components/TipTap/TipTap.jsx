@@ -25,8 +25,6 @@ import OrderedList from '@tiptap/extension-ordered-list'
 import BulletList from '@tiptap/extension-bullet-list'
 
 // Links and Media
-import Image from '@tiptap/extension-image'
-
 import previewHyperlinkModal from './hyperlinkModals/previewHyperlink'
 import setHyperlinks from './hyperlinkModals/setHyperlink'
 import Hyperlink from '@docs.plus/extension-hyperlink'
@@ -254,6 +252,14 @@ const Editor = ({ provider, spellcheck = false }) => {
           modal: imageModal,
           inline: true
         },
+        Video: {
+          modal: youtubeModal,
+          inline: true
+        },
+        Audio: {
+          modal: twitterModal,
+          inline: true
+        },
         Youtube: {
           modal: youtubeModal,
           inline: true
@@ -271,13 +277,6 @@ const Editor = ({ provider, spellcheck = false }) => {
           inline: true
         },
       }),
-      // Image.configure({
-      //   inline: true,
-      //   allowBase64: true,
-      //   HTMLAttributes: {
-      //     class: 'image-class'
-      //   }
-      // }),
       TaskList,
       TaskItem.configure({
         nested: true,
