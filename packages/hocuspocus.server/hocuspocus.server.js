@@ -1,4 +1,4 @@
-import * as dotenvFlow from 'dotenv-flow'
+import dotenvFlow from 'dotenv-flow'
 import { Hocuspocus } from '@hocuspocus/server'
 import HocuspocusConfig from './hocuspocus.config.mjs'
 

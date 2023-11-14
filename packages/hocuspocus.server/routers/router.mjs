@@ -6,6 +6,12 @@ import * as validator from '../utils/routerValidator.mjs'
 import { CREATE_DOCUMENT, UPDATE_DOCUMENT_METADATA } from './schema/documents.mjs'
 import { createClient } from '@supabase/supabase-js'
 import jwt_decode from 'jwt-decode'
+import mime from 'mime'
+import { v4 as uuidv4 } from 'uuid'
+import { checkEnvBolean } from '../utils/index.mjs'
+import * as localStorage from './storage/storage.local.mjs'
+import * as AWSS3Storage from './storage/storage.AWS.S3.mjs'
+import { extractFileType } from './storage/fileType.mjs'
 
 const prisma = new PrismaClient()
 const router = expressRouter()
@@ -183,6 +189,69 @@ router.put('/documents/:docId', validator.body(UPDATE_DOCUMENT_METADATA), async 
     updatedDoc.keywords.length === 0 ? [] : updatedDoc.keywords.split(',').map((k) => k.trim())
 
   return updatedDoc
+})
+
+router.expressRouter.get('/plugins/hypermultimedia/:documentId/:mediaId', (req, res) => {
+  const { documentId, mediaId } = req.params
+
+  if (checkEnvBolean(process.env.PERSIST_TO_LOCAL_STORAGE)) {
+    return localStorage.get(documentId, mediaId, res).catch((err) => {
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.write(JSON.stringify(err.message))
+      res.end()
+    })
+  }
+
+  return AWSS3Storage.get(documentId, mediaId, res).catch((err) => {
+    res.writeHead(500, { 'Content-Type': 'application/json' })
+    res.write(JSON.stringify(err.message))
+    res.end()
+  })
+})
+
+router.expressRouter.post('/plugins/hypermultimedia/:documentId', async (req, res) => {
+  const documentId = req.params.documentId
+  const files = req.files
+  const mediaFile = files?.mediaFile
+  const canPersist2Local = checkEnvBolean(process.env.PERSIST_TO_LOCAL_STORAGE) || false
+
+  // TODO: check if the config is aviailable
+  //if (!storageConfig) return
+
+  if (!mediaFile) return res.status(400).send('No files were uploaded.')
+
+  // if "persistToLocal" set true,   save the media to current directory
+  if (canPersist2Local) {
+    const uploadResult = await localStorage.upload(documentId, mediaFile).catch((err) => {
+      console.error(err)
+      return res.status(400).send('No files were uploaded.')
+    })
+    res.send({ ...uploadResult })
+    return res.end()
+  }
+
+  // if s3 storage config available
+  if (process.env.DO_STORAGE_ENDPOINT) {
+    const format = mime.getExtension(mediaFile.mimetype)
+    const fileName = `${uuidv4()}.${format}`
+    const fileType = extractFileType(mediaFile.mimetype)
+    const Key = `${documentId}/${fileName}`
+
+    const data = await AWSS3Storage.upload(documentId, fileName, mediaFile.data).catch((err) => {
+      console.error('AWS.S3 router:', err)
+      return res.status(400).send('No files were uploaded.')
+    })
+
+    const result = { type: 's3', error: true, fileType, fileName, data: mediaFile.data }
+
+    if (!data) {
+      return res.status(400).json(result)
+    }
+
+    return res.status(201).json({ ...result, error: false, fileAddress: Key })
+  }
+
+  return req.send(true)
 })
 
 export default router.expressRouter

@@ -1,4 +1,4 @@
-import * as dotenvFlow from 'dotenv-flow'
+import dotenvFlow from 'dotenv-flow'
 import express from 'express'
 import chalk from 'chalk'
 import { checkEnvBolean } from './utils/index.mjs'

@@ -1,5 +1,12 @@
 import path from 'path'
 import express from 'express'
+import dotenvFlow from 'dotenv-flow'
+
+dotenvFlow.config({
+  purge_dotenv: true,
+  node_env: process.env.NODE_ENV,
+  silent: true
+})
 
 const createRoute = (method, responseHandler, expressRouter) => {
   return (routePath, ...callbacks) => {
@@ -7,7 +14,13 @@ const createRoute = (method, responseHandler, expressRouter) => {
     expressRouter[method](routePath, ...callbacks, (req, res) => {
       const result = lastCallback(req, res)
       // most of the time result is a promise, but we also support literal values in response handlers.
-      if (!res.headersSent) { responseHandler(req, res, result) } else { console.warn('WARNING FOR DEVELOPER: use express router directly if you want to handle response yourself.') }
+      if (!res.headersSent) {
+        responseHandler(req, res, result)
+      } else {
+        console.warn(
+          'WARNING FOR DEVELOPER: use express router directly if you want to handle response yourself.'
+        )
+      }
     })
   }
 }
@@ -36,8 +49,10 @@ const fileHandler = async (req, res, result) => {
       // if (process.env.NODE_ENV) {
       // res.set('X-Accel-Redirect', path.join('/uploads', filePath)).send()
       // } else {
-      res.sendFile(filePath, { root: path.join(process.env.UPLOAD_ROOT) }, err => {
-        if (err) { res.status(404).send(err) }
+      res.sendFile(filePath, { root: path.join(process.env.UPLOAD_ROOT) }, (err) => {
+        if (err) {
+          res.status(404).send(err)
+        }
       })
       // }
     } else {
