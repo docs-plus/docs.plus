@@ -30,6 +30,12 @@ module.exports = withPWA({
         hostname: '*.supabase.co',
         port: '',
         pathname: '/**'
+      },
+      {
+        protocol: 'http',
+        hostname: '*.localhost',
+        port: '',
+        pathname: '/**'
       }
     ]
   },
