@@ -91,7 +91,7 @@ const Toolbar = ({ editor, docMetadata }) => {
 
       <div className="divided"></div>
 
-      <InsertMultimediaButton editor={editor} />
+      <InsertMultimediaButton editor={editor} docMetadata={docMetadata} />
 
       <ToolbarButton
         onClick={() => editor.chain().focus().setHyperlink().run()}
