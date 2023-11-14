@@ -4,6 +4,10 @@ import morgan from 'morgan'
 import helmet from 'helmet'
 import chalk from 'chalk'
 import cors from 'cors'
+import fileUpload from 'express-fileupload'
+
+const TWO_MEG = 2 * 1024 * 1024
+const MAX_UPLOAD_SIZE = TWO_MEG //  maxFileSize
 
 const createMiddleware = () => {
   const app = express()
@@ -11,7 +15,9 @@ const createMiddleware = () => {
   app.use(morgan(`${chalk.green('[morgan]')} :method :url :status - :response-time ms`))
   app.use(helmet())
 
-  const allowedOrigins = (process.env.ALLOWED_ORIGINS || '').split(',').map((domain) => domain.trim())
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
+    .split(',')
+    .map((domain) => domain.trim())
 
   const isDomainOrSubdomain = (origin) => {
     const hostname = new URL(origin).hostname
@@ -41,6 +47,14 @@ const createMiddleware = () => {
 
   app.use(bodyParser.urlencoded({ extended: true }))
   app.use(bodyParser.json())
+  app.use(
+    fileUpload({
+      createParentPath: true,
+      limits: { fileSize: process.env.DO_STORAGE_MAX_FILE_SIZE || MAX_UPLOAD_SIZE },
+      tempFileDir: process.env.LOCAL_STORAGE_PATH || './temp',
+      parseNested: true
+    })
+  )
 
   return app
 }

@@ -5,3 +5,5 @@ volumes
 .env.production
 
 yarn-error.log
+
+temp
