@@ -50,7 +50,8 @@ const onHeading = (args) => {
   let prevHStartPos = 0
   // let prevHEndPos = 0
 
-  const backspaceAction = doc.nodeAt(from) === null && $anchor.parentOffset === 0
+  const backspaceAction =
+    args.backspaceAction || (doc.nodeAt(from) === null && $anchor.parentOffset === 0)
 
   tr.delete(backspaceAction ? start - 1 : start - 1, titleEndPos)
 
@@ -87,12 +88,15 @@ const onHeading = (args) => {
     editor.schema.nodeFromJSON(x)
   )
 
-  if (backspaceAction) normalContents.shift()
+  // if (backspaceAction) normalContents.shift()
 
   const titleHMap = getPrevHeadingList(tr, titleStartPos, tr.mapping.map(titleEndPos))
   let mapHPost = titleHMap.filter(
     (x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos
   )
+
+  // in canse for first heading of the document
+  if (!mapHPost.length) return
 
   const comingLevel = mapHPost.at(-1).le + 1
   let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)

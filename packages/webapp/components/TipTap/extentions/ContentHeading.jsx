@@ -9,6 +9,8 @@ import ENUMS from '../enums'
 
 let isProcessing = false
 
+
+// Helpers
 const extractContentHeadingBlocks = (doc) => {
   const result = []
   const record = (from, to, headingId, node) => {
@@ -165,6 +167,58 @@ const handleHeadingToggle = (editor, { headingId, open }) => {
   }
 }
 
+
+const getNodeHLevel =  (doc, pos) => {
+    return doc.nodeAt(pos).attrs.level;
+}
+
+const getPreviousHeadingPositions =  (doc, $from, blockStartPos, currentHLevel) => {
+    let prevHStartPos = 0;
+    let prevHEndPos = 0;
+
+    doc.nodesBetween($from.start(0), blockStartPos, (node, pos) => {
+        if (pos > blockStartPos) return;
+
+        if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
+            const headingLevel = node.firstChild?.attrs?.level;
+
+            if (headingLevel === currentHLevel) {
+                prevHStartPos = pos;
+                prevHEndPos = pos + node.content.size;
+            }
+        }
+    });
+
+    return { prevHStartPos, prevHEndPos };
+}
+
+const isTopLevelHeading =  (currentHLevel, parentHeadingNode) => {
+    return currentHLevel === 1 && parentHeadingNode.attrs.level === 1;
+}
+
+const handleHeadingRemoval =  (editor, backspaceAction) => {
+    console.info('[Heading]: remove the heading node');
+
+    return onHeading({
+        backspaceAction,
+        editor,
+        state: editor.state,
+        tr: editor.state.tr,
+        view: editor.view
+    });
+}
+
+const shouldRemoveHeading =  (node, $anchor, parent, schema) => {
+    return (
+        node !== null ||
+        $anchor.parentOffset !== 0 ||
+        parent.type.name !== schema.nodes.contentHeading.name ||
+        $anchor.pos === 2
+    );
+}
+
+
+// Tiptap Node
 const HeadingsTitle = Node.create({
   name: ENUMS.NODES.CONTENT_HEADING_TYPE,
   content: 'inline*',
@@ -217,33 +271,27 @@ const HeadingsTitle = Node.create({
   },
   addKeyboardShortcuts() {
     return {
-      Backspace: ({ editor }) => {
-        const { schema, selection, doc } = this.editor.state
-        const { $anchor, from } = selection
+      Backspace: () => {
+        const { schema, selection, doc, tr } = this.editor.state;
+        const { $anchor, from, $to, $from } = selection;
 
-        // selected node
-        const node = doc.nodeAt(from)
-        // parent node
-        const parent = $anchor.parent
+        const node = doc.nodeAt(from);
+        const parent = $anchor.parent;
+        const blockStartPos = $from.start(1) - 1;
+        const currentHLevel = getNodeHLevel($from.doc, blockStartPos);
 
-        // if the selected node is empty(means there is not content) and the parent is contentHeading
-        if (
-          node !== null ||
-          $anchor.parentOffset !== 0 || // this node block contains content
-          parent.type.name !== schema.nodes.contentHeading.name ||
-          $anchor.pos === 2 // || // if the caret is in the first heading
-          // parent.attrs.open === false // if the heading is closed
-        )
-          return false
+        const { prevHStartPos, prevHEndPos } = getPreviousHeadingPositions(doc, $from, blockStartPos, currentHLevel);
 
-        console.info('[Heading]: remove the heading node')
+        const parentHeadingNode = doc.nodeAt(prevHStartPos);
 
-        return onHeading({
-          editor,
-          state: editor.state,
-          tr: editor.state.tr,
-          view: editor.view
-        })
+        if (isTopLevelHeading(currentHLevel, parentHeadingNode))
+          return handleHeadingRemoval(this.editor, true);
+
+
+        if (shouldRemoveHeading(node, $anchor, parent, schema))
+          return handleHeadingRemoval(this.editor, false);
+
+        return false;
       }
     }
   },
