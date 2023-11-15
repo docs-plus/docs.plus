@@ -106,7 +106,6 @@ const Blockquote = Node.create({
   },
   addKeyboardShortcuts() {
     return {
-      Backspace: () => {},
       Enter: ({ editor }) => {
         const { state } = editor
         const { schema, selection } = state
