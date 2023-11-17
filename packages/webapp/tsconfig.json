@@ -35,7 +35,8 @@
     "**/*.tsx",
     "pages/index.jsx",
     "pages/_app.jsx",
-    "pages/api/hello.js"
+    "pages/api/hello.js",
+    "middleware.js"
   ],
   "exclude": ["node_modules"]
 }
