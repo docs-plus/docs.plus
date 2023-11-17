@@ -5,10 +5,10 @@ import { useState, useContext } from 'react'
 import { TabsContext } from '@components/ui/Tabs/Tabs'
 import { useEditorStateContext } from '@context/EditorContext'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
-import  {useAuthStore} from '@utils/supabase'
+import { useAuthStore } from '@utils/supabase'
 
 const DeckPanel = ({ hostname }) => {
-  const { user } = useAuthStore();
+  const { user } = useAuthStore()
 
   const { isAuthServiceAvailable } = useEditorStateContext()
   const [loadingDoc, setLoadingDoc] = useState(false)

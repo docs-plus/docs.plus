@@ -8,7 +8,7 @@ import Button from '@components/ui/Button'
 import toast from 'react-hot-toast'
 import useEmail from '@hooks/useEmail'
 import useProfileData from '@hooks/useProfileData'
-import  {useAuthStore, supabaseClient} from '@utils/supabase'
+import { useAuthStore, supabaseClient } from '@utils/supabase'
 
 const ChangeEmailSection = ({
   email,
@@ -81,7 +81,7 @@ const SecuritySection = ({ email, loading, acceptNewEmail, setLoading }) => (
 )
 
 const SecurityTab = () => {
-  const { user } = useAuthStore();
+  const { user } = useAuthStore()
 
   const { profileData, loadingProfileData, profileFetchingError } = useProfileData()
 

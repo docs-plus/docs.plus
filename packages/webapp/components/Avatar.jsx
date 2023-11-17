@@ -1,12 +1,12 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import PubSub from 'pubsub-js'
-import  {useAuthStore} from '@utils/supabase'
+import { useAuthStore } from '@utils/supabase'
 
 const AVATAR_URL_CHANNEL_NAME = 'updateAvatarURL'
 
 const useAvatar = (srcAvatar) => {
-  const { user } = useAuthStore();
+  const { user } = useAuthStore()
   const { id: userId } = user
 
   const bucketAddress = useMemo(() => {
@@ -25,7 +25,7 @@ const useAvatar = (srcAvatar) => {
 
 let Avatar = React.forwardRef(({ height, width, srcAvatar, ...props }, ref) => {
   const { avatarUrl, setAvatarUrl } = useAvatar(srcAvatar)
-  const { user } = useAuthStore();
+  const { user } = useAuthStore()
 
   const { user_metadata } = user
 

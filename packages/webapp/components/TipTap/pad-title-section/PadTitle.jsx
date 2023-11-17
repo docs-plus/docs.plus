@@ -8,10 +8,10 @@ import { useEditorStateContext } from '@context/EditorContext'
 import FilterBar from './FilterBar'
 import ProfileSection from './ProfileSection'
 import ShareModalSection from './ShareSection'
-import  {useAuthStore} from '@utils/supabase'
+import { useAuthStore } from '@utils/supabase'
 
 const PadTitle = ({ docMetadata }) => {
-  const { user } = useAuthStore();
+  const { user } = useAuthStore()
   const isKeyboardOpen = useDetectKeyboardOpen()
 
   const { isAuthServiceAvailable } = useEditorStateContext()

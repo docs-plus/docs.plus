@@ -8,14 +8,13 @@ import {
   useMergeRefs,
   FloatingPortal,
   FloatingFocusManager,
-  FloatingOverlay,
-  useId
+  FloatingOverlay
 } from '@floating-ui/react'
 
 interface DialogOptions {
   initialOpen?: boolean
   open?: boolean
-  onOpenChange?: (open: boolean) => void
+  onOpenChange?: () => void
 }
 
 export function useDialog({

@@ -271,7 +271,7 @@ const ContentWrapper = Node.create({
     return {
       Backspace: () => {
         const { editor } = this
-        const { schema, selection, doc } = editor.state
+        const { schema, selection } = editor.state
         const { $anchor, $from, $to } = selection
         const blockRange = $from.blockRange($to)
 

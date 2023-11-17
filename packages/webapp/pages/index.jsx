@@ -6,7 +6,7 @@ import { useEditorStateContext } from '@context/EditorContext'
 import { Avatar } from '@components/Avatar'
 import { DocsPlus } from '@icons'
 import { twMerge } from 'tailwind-merge'
-import  {useAuthStore} from '@utils/supabase'
+import { useAuthStore } from '@utils/supabase'
 
 const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
 const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
@@ -28,7 +28,7 @@ function TabLayout({ children, className, footer }) {
 }
 
 function Home({ hostname }) {
-  const { user } = useAuthStore();
+  const { user } = useAuthStore()
   const { isAuthServiceAvailable } = useEditorStateContext()
   const isUserSignedIn = user && isAuthServiceAvailable
 

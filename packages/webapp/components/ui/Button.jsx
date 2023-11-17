@@ -3,7 +3,10 @@ import PropTypes from 'prop-types'
 import { twMerge } from 'tailwind-merge'
 
 const Button = React.forwardRef(
-  ({ children = null, style, onClick, loading = false, className = '', Icon, iconSize, iconFill }, ref) => (
+  (
+    { children = null, style, onClick, loading = false, className = '', Icon, iconSize, iconFill },
+    ref
+  ) => (
     <button
       ref={ref}
       className={twMerge(
@@ -40,11 +43,11 @@ const Button = React.forwardRef(
       ) : (
         <React.Fragment>
           {Icon && (
-            <span className={`${!children? "w-12/12":"w-1/12" }`}>
+            <span className={`${!children ? 'w-12/12' : 'w-1/12'}`}>
               <Icon size={iconSize} fill={iconFill} />
             </span>
           )}
-          {children&&<span className= {`${!Icon? "w-12/12":"w-11/12" }`}>{children}</span>}
+          {children && <span className={`${!Icon ? 'w-12/12' : 'w-11/12'}`}>{children}</span>}
         </React.Fragment>
       )}
     </button>
@@ -59,7 +62,7 @@ Button.propTypes = {
   className: PropTypes.string,
   Icon: PropTypes.elementType,
   iconSize: PropTypes.number,
-  iconFill: PropTypes.string,
+  iconFill: PropTypes.string
 }
 
 Button.displayName = 'Button'

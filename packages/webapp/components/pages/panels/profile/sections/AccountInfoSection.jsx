@@ -3,7 +3,7 @@ import React, { useState, useCallback } from 'react'
 import { debounce } from 'lodash'
 import toast from 'react-hot-toast'
 import { At, CircleUser } from '@icons'
-import  { supabaseClient} from '@utils/supabase'
+import { supabaseClient } from '@utils/supabase'
 
 // Defined constants
 const PROFILES = 'profiles'

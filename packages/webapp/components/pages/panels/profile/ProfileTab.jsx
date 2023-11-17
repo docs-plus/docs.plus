@@ -8,13 +8,13 @@ import AccountInfoSection from './sections/AccountInfoSection'
 import AboutSection from './sections/AboutSection'
 import SocialLinksSection from './sections/SocialLinksSection'
 import useProfileData from '@hooks/useProfileData'
-import  {useAuthStore, supabaseClient} from '@utils/supabase'
+import { useAuthStore, supabaseClient } from '@utils/supabase'
 
 // Defined constants
 const PROFILES = 'profiles'
 
 const ProfileTab = () => {
-  const { user } = useAuthStore();
+  const { user } = useAuthStore()
 
   const [fullName, setFullName] = useState(user.user_metadata.full_name || '')
   const [userName, setUserName] = useState(user.user_metadata.username || '')

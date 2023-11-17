@@ -5,7 +5,7 @@ import Checkbox from '../../../ui/Checkbox'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import useProfileData from '@hooks/useProfileData'
-import  {useAuthStore, supabaseClient} from '@utils/supabase'
+import { useAuthStore, supabaseClient } from '@utils/supabase'
 
 const ToggleSection = ({ name, description, value, checked, onChange }) => {
   return (
@@ -22,7 +22,7 @@ const ToggleSection = ({ name, description, value, checked, onChange }) => {
 }
 
 const NotificationsTab = () => {
-  const { user } = useAuthStore();
+  const { user } = useAuthStore()
 
   const { profileData, profileFetchingError, loadingProfileData } = useProfileData()
 

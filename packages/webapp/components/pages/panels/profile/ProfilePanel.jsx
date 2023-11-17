@@ -11,8 +11,7 @@ const ProfileTab = dynamic(() => import('./ProfileTab'), {
 import SecurityTab from './SecurityTab'
 import NotificationsTab from './NotificationsTab'
 import { toast } from 'react-hot-toast'
-import  { supabaseClient} from '@utils/supabase'
-
+import { supabaseClient } from '@utils/supabase'
 
 const ProfilePanel = () => {
   const [loadSignOut, setLoadSignOut] = useState(false)
