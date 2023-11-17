@@ -5,12 +5,30 @@ function Custom500() {
   const router = useRouter()
   const { error } = router.query
 
+  // Function to navigate back
+  const handleBack = () => {
+    router.back()
+  }
+
   return (
-    <div className="h-screen w-full m-auto flex flex-col justify-center items-center p-4 bg-gray-100">
-      <div className="p-4 w-2/6 text-center bg-white shadow-xl rounded-lg">
-        <h1 className="text-2xl font-bold mb-4">Oops! Something went wrong. (500)</h1>
-        <p className="text-red-600 mb-4">{error || 'An unexpected error occurred.'}</p>
-        <Link href="/">Return to Home</Link>
+    <div className="flex items-center justify-center h-screen bg-gray-200 p-6">
+      <div className="max-w-lg w-full bg-white rounded-lg shadow-xl p-8 space-y-6">
+        <h1 className="text-3xl font-bold text-gray-800">Oops! Something went wrong.</h1>
+        <p className="text-red-600 text-lg">
+          {error || 'An unexpected error occurred. Please try again later.'}
+        </p>
+        <div className="flex justify-between items-center">
+          <Link href="/" className="text-blue-600 hover:text-blue-800 transition duration-300">
+            Return to Home
+          </Link>
+          <button
+            onClick={handleBack}
+            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            // Replace false with a condition to check if the server is fixed
+            disabled={false}>
+            Go Back
+          </button>
+        </div>
       </div>
     </div>
   )
