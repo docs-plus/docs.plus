@@ -1,14 +1,15 @@
 import { DocsPlus } from '@icons'
 import Button from '@components/ui/Button'
 import slugify from 'slugify'
-import { useUser } from '@supabase/auth-helpers-react'
 import { useState, useContext } from 'react'
 import { TabsContext } from '@components/ui/Tabs/Tabs'
 import { useEditorStateContext } from '@context/EditorContext'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
+import  {useAuthStore} from '@utils/supabase'
 
 const DeckPanel = ({ hostname }) => {
-  const user = useUser()
+  const { user } = useAuthStore();
+
   const { isAuthServiceAvailable } = useEditorStateContext()
   const [loadingDoc, setLoadingDoc] = useState(false)
   const [error, setError] = useState(null)

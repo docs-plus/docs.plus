@@ -1,13 +1,12 @@
 import { GoogleGIcon, Sparkles, OpenEnvelope } from '@icons'
-import { useSupabaseClient } from '@supabase/auth-helpers-react'
 import { useState } from 'react'
 import Button from '@components/ui/Button'
 import { useMutation } from '@tanstack/react-query'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import { toast } from 'react-hot-toast'
+import  { supabaseClient} from '@utils/supabase'
 
 const SingInForm = ({ ...props }) => {
-  const supabaseClient = useSupabaseClient()
 
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
   const [emailError, setEmailError] = useState('')

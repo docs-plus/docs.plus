@@ -1,15 +1,14 @@
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
-import { useSupabaseClient } from '@supabase/auth-helpers-react'
 import React, { useState, useCallback } from 'react'
 import { debounce } from 'lodash'
 import toast from 'react-hot-toast'
 import { At, CircleUser } from '@icons'
+import  { supabaseClient} from '@utils/supabase'
 
 // Defined constants
 const PROFILES = 'profiles'
 
 const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, profileData }) => {
-  const supabaseClient = useSupabaseClient()
   const [errorBorderClass, setErrorBorderClass] = useState('')
 
   const checkUserName = useCallback(

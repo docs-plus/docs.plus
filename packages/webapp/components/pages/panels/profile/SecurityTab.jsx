@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import { useMutation } from '@tanstack/react-query'
 import { Envelope, AngleSmallLeft, Sparkles } from '@icons'
 import TabTitle from './components/TabTitle'
@@ -9,6 +8,7 @@ import Button from '@components/ui/Button'
 import toast from 'react-hot-toast'
 import useEmail from '@hooks/useEmail'
 import useProfileData from '@hooks/useProfileData'
+import  {useAuthStore, supabaseClient} from '@utils/supabase'
 
 const ChangeEmailSection = ({
   email,
@@ -81,8 +81,8 @@ const SecuritySection = ({ email, loading, acceptNewEmail, setLoading }) => (
 )
 
 const SecurityTab = () => {
-  const user = useUser()
-  const supabaseClient = useSupabaseClient()
+  const { user } = useAuthStore();
+
   const { profileData, loadingProfileData, profileFetchingError } = useProfileData()
 
   const { email, setEmail, error: emailError, setError: setEmailError } = useEmail(user.email)

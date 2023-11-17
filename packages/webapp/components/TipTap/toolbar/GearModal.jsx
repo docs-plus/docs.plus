@@ -13,8 +13,8 @@ import Toggle from '@components/ui/Toggle'
 import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
 import { useEditorStateContext } from '@context/EditorContext'
-import { useUser } from '@supabase/auth-helpers-react'
 import { PopoverContent } from '@components/ui/Popover'
+import  {useAuthStore} from '@utils/supabase'
 
 const ToggleSection = ({ name, className, description, value, checked, onChange }) => {
   const containerClasses = twMerge(`flex flex-col p-2 antialiased `, className)
@@ -33,7 +33,8 @@ const ToggleSection = ({ name, className, description, value, checked, onChange 
 }
 
 const GearModal = ({ docMetadata, className }) => {
-  const user = useUser()
+  const { user } = useAuthStore();
+
   const { isAuthServiceAvailable, EditorProvider } = useEditorStateContext()
 
   const [indentSetting, setIndentSetting] = useBooleanLocalStorageState(

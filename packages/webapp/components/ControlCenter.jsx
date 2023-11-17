@@ -1,9 +1,9 @@
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@components/ui/Tabs/Tabs'
 import dynamic from 'next/dynamic'
-import { useUser } from '@supabase/auth-helpers-react'
 import SignInPanel from '@pages/panels/SignInPanel'
 import ProfilePanel from '@pages/panels/profile/ProfilePanel'
 import { twMerge } from 'tailwind-merge'
+import  {useAuthStore} from '@utils/supabase'
 
 const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
 const DocumentsPanel = dynamic(() => import('@pages/panels/DocumentsPanel'))
@@ -21,7 +21,7 @@ function TabLayout({ children, className, footer }) {
 }
 
 const ControlCenter = () => {
-  const user = useUser()
+  const { user } = useAuthStore();
 
   return (
     <div className="bg-slate-100 rounded-md drop-shadow">
