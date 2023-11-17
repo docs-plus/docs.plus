@@ -8,10 +8,8 @@ import { useEditorStateContext } from '@context/EditorContext'
 import FilterBar from './FilterBar'
 import ProfileSection from './ProfileSection'
 import ShareModalSection from './ShareSection'
-import { useAuthStore } from '@utils/supabase'
 
-const PadTitle = ({ docMetadata }) => {
-  const { user } = useAuthStore()
+const PadTitle = () => {
   const isKeyboardOpen = useDetectKeyboardOpen()
 
   const { isAuthServiceAvailable } = useEditorStateContext()
@@ -61,16 +59,16 @@ const PadTitle = ({ docMetadata }) => {
       </div>
 
       <div className="flex align-middle items-center justify-start">
-        <DocTitle docMetadata={docMetadata} />
+        <DocTitle />
         <FilterBar />
       </div>
 
-      <ReadOnlyIndicator docMetadata={docMetadata} />
+      <ReadOnlyIndicator />
 
       <div className="ml-auto flex align-middle ">
-        {isAuthServiceAvailable && <PresentUsers user={user} className="sm:block hidden" />}
-        <ShareModalSection docMetadata={docMetadata} />
-        {isAuthServiceAvailable && <ProfileSection user={user} />}
+        {isAuthServiceAvailable && <PresentUsers className="sm:block hidden" />}
+        <ShareModalSection />
+        {isAuthServiceAvailable && <ProfileSection />}
       </div>
     </div>
   )

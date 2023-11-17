@@ -2,8 +2,10 @@ import { useEffect, useState } from 'react'
 import { useEditorStateContext } from '@context/EditorContext'
 import { PenSlash } from '@icons'
 import { twMerge } from 'tailwind-merge'
+import { useDocumentMetadataContext } from '@context/DocumentMetadataContext'
 
-const ReadOnlyIndicator = ({ docMetadata, className }) => {
+const ReadOnlyIndicator = ({ className }) => {
+  const docMetadata = useDocumentMetadataContext()
   const [isReadOnly, setIsReadOnly] = useState(docMetadata.readOnly)
   const { EditorProvider } = useEditorStateContext()
 

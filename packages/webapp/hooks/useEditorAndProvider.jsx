@@ -7,7 +7,8 @@ import useApplyFilters from '@hooks/useApplyFilters'
 import { useEditorStateContext } from '@context/EditorContext'
 import useProfileData from '@hooks/useProfileData'
 import useYdocAndProvider from '@hooks/useYdocAndProvider'
-import  {useAuthStore} from '@utils/supabase'
+import { useAuthStore } from '@utils/supabase'
+import { useDocumentMetadataContext } from '@context/DocumentMetadataContext'
 
 const getCursorUser = (user, profileData) => {
   const lastUpdate = Date.now().toString()
@@ -25,8 +26,10 @@ const getCursorUser = (user, profileData) => {
   }
 }
 
-const useEditorAndProvider = ({ docMetadata }) => {
-  const { user } = useAuthStore();
+const useEditorAndProvider = () => {
+  const user = useAuthStore.use.user()
+  const docMetadata = useDocumentMetadataContext()
+
   const {
     setRendering,
     setPresentUsers,

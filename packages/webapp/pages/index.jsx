@@ -28,7 +28,7 @@ function TabLayout({ children, className, footer }) {
 }
 
 function Home({ hostname }) {
-  const { user } = useAuthStore()
+  const user = useAuthStore.use.user()
   const { isAuthServiceAvailable } = useEditorStateContext()
   const isUserSignedIn = user && isAuthServiceAvailable
 

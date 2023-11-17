@@ -2,12 +2,15 @@ import dynamic from 'next/dynamic'
 import { Dialog, DialogTrigger, DialogContent } from '@components/ui/Dialog'
 import { Avatar } from '@components/Avatar'
 import Button from '@components/ui/Button'
+import { useAuthStore } from '@utils/supabase'
 
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
   loading: () => <div>Loading...</div>
 })
 
-const ProfileSection = ({ user }) => {
+const ProfileSection = () => {
+  const { user } = useAuthStore()
+
   return (
     <div className="mr-2 ml-5 sm:flex hidden">
       <Dialog>

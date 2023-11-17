@@ -21,7 +21,7 @@ function TabLayout({ children, className, footer }) {
 }
 
 const ControlCenter = () => {
-  const { user } = useAuthStore()
+  const user = useAuthStore.use.user()
 
   return (
     <div className="bg-slate-100 rounded-md drop-shadow">

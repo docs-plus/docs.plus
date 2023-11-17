@@ -73,32 +73,16 @@ export default function MyApp({ Component, pageProps }) {
 
   const isMobileInitial = pageProps.isMobile || false
 
-  // Create a new supabase browser client on every first render.
-  if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    return (
-      <div id="root">
-        <Header />
-        <QueryClientProvider client={queryClient}>
-          <EditorStateProvider isMobileInitial={isMobileInitial}>
-            <Component {...pageProps} />
-          </EditorStateProvider>
-        </QueryClientProvider>
-        <RelpadPrompt />
-        <Toaster />
-      </div>
-    )
-  } else {
-    return (
-      <div id="root">
-        <Header />
-        <QueryClientProvider client={queryClient}>
-          <EditorStateProvider isMobileInitial={isMobileInitial}>
-            <Component {...pageProps} />
-          </EditorStateProvider>
-        </QueryClientProvider>
-        <RelpadPrompt />
-        <Toaster />
-      </div>
-    )
-  }
+  return (
+    <div id="root">
+      <Header />
+      <QueryClientProvider client={queryClient}>
+        <EditorStateProvider isMobileInitial={isMobileInitial}>
+          <Component {...pageProps} />
+        </EditorStateProvider>
+      </QueryClientProvider>
+      <RelpadPrompt />
+      <Toaster />
+    </div>
+  )
 }

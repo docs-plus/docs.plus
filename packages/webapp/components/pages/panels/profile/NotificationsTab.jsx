@@ -22,7 +22,7 @@ const ToggleSection = ({ name, description, value, checked, onChange }) => {
 }
 
 const NotificationsTab = () => {
-  const { user } = useAuthStore()
+  const user = useAuthStore.use.user()
 
   const { profileData, profileFetchingError, loadingProfileData } = useProfileData()
 

@@ -14,7 +14,7 @@ const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
 })
 const GearModal = dynamic(() => import('./GearModal'))
 
-const Toolbar = ({ editor, docMetadata }) => {
+const Toolbar = ({ editor }) => {
   const { isAuthServiceAvailable } = useEditorStateContext()
 
   return (
@@ -91,7 +91,7 @@ const Toolbar = ({ editor, docMetadata }) => {
 
       <div className="divided"></div>
 
-      <InsertMultimediaButton editor={editor} docMetadata={docMetadata} />
+      <InsertMultimediaButton editor={editor} />
 
       <ToolbarButton
         onClick={() => editor.chain().focus().setHyperlink().run()}
@@ -159,7 +159,7 @@ const Toolbar = ({ editor, docMetadata }) => {
               <Gear fill="rgba(0,0,0,.7)" size="16" />
             </ToolbarButton>
           </PopoverTrigger>
-          <GearModal docMetadata={docMetadata} className="z-50" />
+          <GearModal className="z-50" />
         </Popover>
       </div>
     </div>

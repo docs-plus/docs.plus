@@ -16,7 +16,8 @@ const PROFILES = 'profiles'
 const PUBLIC = 'public'
 
 const AvatarSection = ({ profileData }) => {
-  const { user } = useAuthStore()
+  const user = useAuthStore.use.user()
+
   const fileInputRef = useRef()
   const [uploading, setUploading] = useState(false)
   const [isProfileAvatar, setIsProfileAvatar] = useState(false)

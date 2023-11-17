@@ -14,7 +14,7 @@ import { useAuthStore, supabaseClient } from '@utils/supabase'
 const PROFILES = 'profiles'
 
 const ProfileTab = () => {
-  const { user } = useAuthStore()
+  const user = useAuthStore.use.user()
 
   const [fullName, setFullName] = useState(user.user_metadata.full_name || '')
   const [userName, setUserName] = useState(user.user_metadata.username || '')

@@ -81,7 +81,7 @@ const SecuritySection = ({ email, loading, acceptNewEmail, setLoading }) => (
 )
 
 const SecurityTab = () => {
-  const { user } = useAuthStore()
+  const user = useAuthStore.use.user()
 
   const { profileData, loadingProfileData, profileFetchingError } = useProfileData()
 

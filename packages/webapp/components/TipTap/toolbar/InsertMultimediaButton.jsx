@@ -5,6 +5,7 @@ import Button from '@components/ui/Button'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import ToolbarButton from './ToolbarButton'
 import toast from 'react-hot-toast'
+import { useDocumentMetadataContext } from '@context/DocumentMetadataContext'
 
 const MediaTypes = ['Picture', 'Film', 'MusicFile', 'Youtube', 'Vimeo', 'SoundCloud', 'XTwitter']
 
@@ -64,7 +65,7 @@ async function handleFileUpload(event, docMetadata, editor) {
     if (!response.ok) {
       toast.dismiss(loadingToast)
       toast.error('Error uploading file')
-      return console.log('error', response)
+      return console.error('error', response)
     }
 
     const result = await response.json()
@@ -73,7 +74,7 @@ async function handleFileUpload(event, docMetadata, editor) {
     if (!result.fileType) {
       toast.dismiss(loadingToast)
       toast.error('File type is not recognized.')
-      return console.log('error', result)
+      return console.error('error', result)
     }
 
     const insertMediaContent = (type, url) => {
@@ -97,11 +98,13 @@ async function handleFileUpload(event, docMetadata, editor) {
   } catch (error) {
     toast.dismiss(loadingToast)
     toast.error('Error uploading file')
-    console.log('error', error)
+    console.error('error', error)
   }
 }
 
-function HyperlinkForm({ onSubmit, docMetadata, editor }) {
+function HyperlinkForm({ onSubmit, editor }) {
+  const docMetadata = useDocumentMetadataContext()
+
   const [mediaURL, setMediaURL] = useState('')
   const [mediaType, setMediaType] = useState(MediaTypes[0])
   const inputRef = React.useRef(null)

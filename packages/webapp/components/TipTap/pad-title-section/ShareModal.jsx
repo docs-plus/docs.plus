@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { Facebook, Twitter, Linkedin, At, World } from '@icons'
 import Button from '@components/ui/Button'
+import { useDocumentMetadataContext } from '@context/DocumentMetadataContext'
 
 const socialSharingMap = {
   facebook: `https://www.facebook.com/sharer.php?u=`,
@@ -10,7 +11,9 @@ const socialSharingMap = {
   email: `mailto:?body=`
 }
 
-const ShareModal = ({ docMetadata }) => {
+const ShareModal = () => {
+  const docMetadata = useDocumentMetadataContext()
+
   const urlRef = useRef()
   const [href, setHref] = useState('')
 
