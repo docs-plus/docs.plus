@@ -3,67 +3,67 @@ name: CI-Stage
 
 # Workflow will be triggered when code is pushed or a pull request is created on 'main' branch.
 on:
- push:
-  branches: [main]
- pull_request:
-  branches: [main]
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
- # The "setup" job is responsible for setting up the environment and preparing for the build processes.
- setup:
-  # The runner that the job will run on. 'stage.docs.plus' is expected to be a self-hosted runner.
-  runs-on: prod.docs.plus
-  # The job will only run if the commit message contains the word 'build'.
-  if: contains(github.event.head_commit.message, 'build')
-  strategy:
-   matrix:
-    # This matrix configuration will run the job on the Long Term Support (LTS) version of Node.js.
-    node-version: ["lts/*"]
-  steps:
-   # This step checks out your repository under $GITHUB_WORKSPACE so your job can access it.
-   - name: Check out code
-     uses: actions/checkout@v3
-   # This step sets up Node.js on the runner and installs the version specified in the matrix above.
-   - name: Set up Node.js
-     uses: actions/setup-node@v3
-     with:
-      node-version: ${{ matrix.node-version }}
-   # This step installs project dependencies using Yarn.
-   # The --frozen-lockfile option ensures the exact package versions specified in yarn.lock are installed.
-   - name: Install dependencies
-     run: yarn install --frozen-lockfile
-   # This step copies the .env file from the root directory to the required directories for each package.
-   # Update these paths if your repository structure is different.
-   - name: Copy .env files
-     run: |
-      cp ../../../.env packages/webapp
-      cp ../../../.env packages/hocuspocus.server
-   - name: Build monorepo packages
-     run: yarn build
-  env:
-   # The environment variable DATABASE_URL is sourced from a secret in your repository.
-   DATABASE_URL: ${{secrets.STAGE_DATABASE_URL}}
+  # The "setup" job is responsible for setting up the environment and preparing for the build processes.
+  setup:
+    # The runner that the job will run on. 'stage.docs.plus' is expected to be a self-hosted runner.
+    runs-on: prod.docs.plus
+    # The job will only run if the commit message contains the word 'build'.
+    if: contains(github.event.head_commit.message, 'build')
+    strategy:
+      matrix:
+        # This matrix configuration will run the job on the Long Term Support (LTS) version of Node.js.
+        node-version: ['lts/*']
+    steps:
+      # This step checks out your repository under $GITHUB_WORKSPACE so your job can access it.
+      - name: Check out code
+        uses: actions/checkout@v4
+      # This step sets up Node.js on the runner and installs the version specified in the matrix above.
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      # This step installs project dependencies using Yarn.
+      # The --frozen-lockfile option ensures the exact package versions specified in yarn.lock are installed.
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      # This step copies the .env file from the root directory to the required directories for each package.
+      # Update these paths if your repository structure is different.
+      - name: Copy .env files
+        run: |
+          cp ../../../.env packages/webapp
+          cp ../../../.env packages/hocuspocus.server
+      - name: Build monorepo packages
+        run: yarn build
+    env:
+      # The environment variable DATABASE_URL is sourced from a secret in your repository.
+      DATABASE_URL: ${{secrets.STAGE_DATABASE_URL}}
 
- # The "build-front" job builds the front-end, it depends on the "setup" job.
- build-front:
-  # Specifies that this job depends on the 'setup' job.
-  needs: setup
-  runs-on: prod.docs.plus
-  # This job will only run if the commit message contains the word 'front'.
-  if: contains(github.event.head_commit.message, 'front')
-  steps:
-   # This step runs the build command for the front-end.
-   - name: Build Front-end
-     run: make build_front_production
+  # The "build-front" job builds the front-end, it depends on the "setup" job.
+  build-front:
+    # Specifies that this job depends on the 'setup' job.
+    needs: setup
+    runs-on: prod.docs.plus
+    # This job will only run if the commit message contains the word 'front'.
+    if: contains(github.event.head_commit.message, 'front')
+    steps:
+      # This step runs the build command for the front-end.
+      - name: Build Front-end
+        run: make build_front_production
 
- # The "build-back" job builds the back-end, it also depends on the "setup" job.
- build-back:
-  # Specifies that this job depends on the 'setup' job.
-  needs: setup
-  runs-on: prod.docs.plus
-  # This job will only run if the commit message contains the word 'back'.
-  if: contains(github.event.head_commit.message, 'back')
-  steps:
-   # This step runs the build command for the back-end.
-   - name: Build Back-end
-     run: make build_hocuspocus.server_prod
+  # The "build-back" job builds the back-end, it also depends on the "setup" job.
+  build-back:
+    # Specifies that this job depends on the 'setup' job.
+    needs: setup
+    runs-on: prod.docs.plus
+    # This job will only run if the commit message contains the word 'back'.
+    if: contains(github.event.head_commit.message, 'back')
+    steps:
+      # This step runs the build command for the back-end.
+      - name: Build Back-end
+        run: make build_hocuspocus.server_prod
