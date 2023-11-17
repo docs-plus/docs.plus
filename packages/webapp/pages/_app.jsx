@@ -81,7 +81,7 @@ export default function MyApp({ Component, pageProps }) {
           <Component {...pageProps} />
         </EditorStateProvider>
       </QueryClientProvider>
-      <RelpadPrompt />
+      {/* <RelpadPrompt /> */}
       <Toaster />
     </div>
   )

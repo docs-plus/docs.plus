@@ -1,0 +1,555 @@
+-- This script is designed to set up a database schema for a Slack-like application using PostgreSQL.
+-- It includes definitions for users, channels, messages, roles, and permissions, along with various triggers and functions
+-- for maintaining data integrity and supporting application features.
+-- The database is intended to work with Supabase and includes row-level security for data protection.
+
+-- Custom types
+
+-- Define various permissions for app functionality.
+-- This includes creating, deleting, and editing channels and messages,
+-- as well as viewing, editing, and deleting users, and creating, editing, and deleting roles.
+create type public.app_permission as enum (
+  'channels.create', 'channels.delete', 'channels.edit',
+  'messages.create', 'messages.delete', 'messages.edit',
+  'users.view', 'users.edit', 'users.delete',
+  'roles.create', 'roles.edit', 'roles.delete'
+);
+
+-- Define roles within the app.
+-- 'admin' has the highest level of access,
+-- 'moderator' has limited administrative capabilities,
+-- 'member' is a standard user role,
+-- 'guest' has restricted access, usually for temporary or limited users.
+create type public.app_role as enum ('admin', 'moderator', 'member', 'guest');
+
+-- Define the status of the users.
+-- 'ONLINE' indicates the user is actively using the app,
+-- 'OFFLINE' indicates the user is not currently using the app,
+-- 'AWAY' signifies the user is temporarily away,
+-- 'BUSY' shows the user is occupied and might not respond promptly,
+-- 'INVISIBLE' allows users to use the app without appearing online.
+create type public.user_status as enum ('ONLINE', 'OFFLINE', 'AWAY', 'BUSY', 'INVISIBLE');
+
+-- Define the types of messages that can be sent.
+-- 'text' is a standard text message,
+-- 'image' is a message with an image attachment,
+-- 'video' is a message with a video attachment,
+-- 'audio' is a message with an audio attachment.
+create type public.message_type as enum ('text', 'image', 'video', 'audio', 'link', 'giphy', 'file');
+
+
+-- NOTE: The following types are not currently used in the schema.
+-- Define the types of notifications that can be sent.
+create type public.notification_type as enum (
+  'message', 'channel_invite', 'mention', 'reply', 'thread_update',
+  'channel_update', 'member_join', 'member_leave', 'user_activity',
+  'task_assignment', 'event_reminder', 'system_update', 'security_alert',
+  'like_reaction', 'feedback_request', 'performance_insight'
+);
+
+
+-- USERS
+
+-- This table stores the primary user information for each user in the application.
+-- It includes a unique identifier, a username, and the user's current status,
+-- along with timestamps for creation and last update.
+create table public.users (
+  id          uuid not null primary key, -- Unique identifier for each user, linked to the Supabase Auth user ID.
+  username    text not null unique,      -- The username chosen by the user. Ensured to be unique.
+  status      user_status default 'OFFLINE'::public.user_status  -- Current status of the user, defaults to 'OFFLINE'.
+);
+
+comment on table public.users is 'Profile data for each user.';
+comment on column public.users.id is 'References the internal Supabase Auth user ID.';
+comment on column public.users.username is 'Unique username for each user.';
+comment on column public.users.status is 'Current online/offline status of the user, using the user_status enum.';
+
+-- Index for optimizing queries filtering or sorting by username.
+CREATE INDEX idx_users_username ON public.users (username);
+
+
+-- CHANNELS
+-- This table represents the channels in the application, similar to chat rooms or discussion groups.
+create table public.channels (
+  id                  uuid DEFAULT uuid_generate_v4() not null primary key, -- Unique identifier for each channel.
+  inserted_at         timestamp with time zone default timezone('utc'::text, now()) not null, -- Timestamp of channel creation.
+  slug                text not null unique, -- URL-friendly unique identifier for the channel.
+  created_by          uuid references public.users not null, -- User ID of the channel creator.
+  is_private          boolean default false, -- True if the channel is private, false if public.
+  is_read_only        boolean default false, -- True if the channel is read-only.
+  description         TEXT CHECK (length(description) <= 1000), -- A brief description of the channel's purpose.
+  member_limit        INT, -- Maximum number of members allowed in the channel.
+  is_archived         boolean default false, -- True if the channel is archived.
+  last_activity_at    timestamp with time zone default timezone('utc'::text, now()) not null, -- Timestamp of the last activity in the channel.
+  last_message_preview TEXT -- Preview of the last message sent in the channel.
+);
+
+-- MESSAGES
+-- This table stores all messages exchanged in the application.
+-- It includes timestamps for insertion, updates, and flags for deleted and edited messages.
+-- Each message is linked to a user and a channel and can have various types like text, image, video, or audio.
+CREATE TABLE public.messages (
+  id                     UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY, -- Unique identifier for each message.
+  inserted_at            TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL, -- Timestamp when the message was created.
+  updated_at             TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL, -- Timestamp for the last update of the message.
+  deleted_at             TIMESTAMP WITH TIME ZONE, -- Timestamp when the message was deleted, if applicable.
+  edited_at              TIMESTAMP WITH TIME ZONE, -- Timestamp when the message was edited, if applicable.
+  content                TEXT NOT NULL, -- Main content of the message.
+  media_urls             JSONB, -- JSONB field to store an array of media URLs.
+  user_id                UUID REFERENCES public.users NOT NULL, -- Reference to the user who sent the message.
+  channel_id             UUID REFERENCES public.channels ON DELETE SET NULL NOT NULL, -- Reference to the channel where the message was posted.
+  reactions              JSONB, -- Stores reactions to the message in JSONB format.
+  type                   message_type, -- Type of the message using the 'message_type' enum.
+  metadata               JSONB, -- JSONB field for additional metadata about the message.
+  reply_to_message_id    UUID REFERENCES public.messages(id), -- ID of the message being replied to, if any.
+  replied_message_preview TEXT, -- Preview of the replied message.
+  original_message_id    UUID REFERENCES public.messages(id) -- ID of the original message if this is a forwarded message.
+);
+comment on table public.messages is 'Individual messages sent by each user.';
+
+-- const media_urls = [
+--   {
+--     url: 'https://www.youtube.com/watch?v=9bZkp7q19f0',
+--     type: 'video',
+--     description: "Gangnam Style"
+--   },
+--   {
+--     url: 'https://www.youtube.com/watch?v=9bZkp7q19f0',
+--     type: 'video',
+--     description: "Gangnam Style"
+--   }
+-- ]
+
+-- const reactions = {
+--    '😄': ['jsidjaisjdijasd', 'ajsdiuajsod', aisojdoiajsd],
+--    '👍': ['jsidjaisjdijasd', 'ajsdiuajsod', aisojdoiajsd],
+-- }
+
+-- const reactions = {
+--    '😄': [
+--     {user_id: 'asdasdaasd', created_at: '2021-01-01T00:00:00.000Z'},
+--   ],
+--    '👍': ['jsidjaisjdijasd', 'ajsdiuajsod', aisojdoiajsd],
+-- }
+
+-- Index definitions to optimize query performance on frequently accessed columns.
+CREATE INDEX idx_messages_channel_id ON public.messages (channel_id);
+CREATE INDEX idx_messages_user_id ON public.messages (user_id);
+CREATE INDEX idx_messages_inserted_at ON public.messages (inserted_at);
+CREATE INDEX idx_messages_type ON public.messages (type);
+CREATE INDEX idx_messages_channel_id_inserted_at ON public.messages (channel_id, inserted_at);
+
+
+ALTER TABLE public.channels ADD CONSTRAINT check_slug_format CHECK (slug ~ '^[a-z0-9]+(?:-[a-z0-9]+)*$');
+comment on table public.channels is 'Channels for group discussions and messaging.';
+
+CREATE INDEX idx_channels_slug ON public.channels (slug);
+CREATE INDEX idx_channels_created_by ON public.channels (created_by);
+CREATE INDEX idx_channels_archived_activity ON public.channels (is_archived, last_activity_at);
+
+-- Triggers and functions to update channel information based on message activities.
+
+CREATE OR REPLACE FUNCTION update_last_message_preview()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.channels
+  SET last_message_preview = substring(NEW.content from 1 for 100) -- example to get the first 100 characters
+  WHERE id = NEW.channel_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_last_message_preview
+AFTER INSERT ON public.messages
+FOR EACH ROW
+EXECUTE FUNCTION update_last_message_preview();
+
+
+--- Update Trigger for Edited Messages
+CREATE OR REPLACE FUNCTION handle_message_update()
+RETURNS TRIGGER AS $$
+DECLARE
+  last_message RECORD;
+BEGIN
+  -- Get the last message in the channel
+  SELECT * INTO last_message FROM public.messages
+  WHERE channel_id = NEW.channel_id
+  ORDER BY inserted_at DESC
+  LIMIT 1;
+
+  -- Check if the updated message is the last message
+  IF last_message.id = NEW.id THEN
+    UPDATE public.channels
+    SET last_message_preview = substring(NEW.content from 1 for 100)
+    WHERE id = NEW.channel_id;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_handle_message_update
+AFTER UPDATE ON public.messages
+FOR EACH ROW
+WHEN (OLD.content IS DISTINCT FROM NEW.content)
+EXECUTE FUNCTION handle_message_update();
+
+---- Trigger for Deleted Messages
+CREATE OR REPLACE FUNCTION handle_message_delete()
+RETURNS TRIGGER AS $$
+DECLARE
+  next_message RECORD;
+BEGIN
+  -- Get the next most recent message in the channel
+  SELECT * INTO next_message FROM public.messages
+  WHERE channel_id = OLD.channel_id
+  ORDER BY inserted_at DESC
+  LIMIT 1;
+
+  -- Update the last message preview based on the next most recent message
+  UPDATE public.channels
+  SET last_message_preview = CASE
+    WHEN next_message IS NOT NULL THEN substring(next_message.content from 1 for 100)
+    ELSE NULL -- Or your default text like 'No messages in this channel'
+  END
+  WHERE id = OLD.channel_id;
+
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_handle_message_delete
+AFTER DELETE ON public.messages
+FOR EACH ROW
+EXECUTE FUNCTION handle_message_delete();
+
+-- PINNED MESSAGES
+-- This table keeps track of messages that are pinned in channels.
+CREATE TABLE public.pinned_messages (
+  id            UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY, -- Unique identifier for each pinned message entry.
+  channel_id    UUID REFERENCES public.channels(id) ON DELETE CASCADE NOT NULL, -- Channel in which the message is pinned.
+  message_id    UUID REFERENCES public.messages(id) ON DELETE CASCADE NOT NULL, -- The message that is pinned.
+  pinned_at     TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL, -- Timestamp when the message was pinned.
+  pinned_by     UUID REFERENCES public.users(id) NOT NULL, -- User who pinned the message.
+  UNIQUE (channel_id, message_id)
+);
+COMMENT ON TABLE public.pinned_messages IS 'Tracks messages pinned in each channel.';
+
+CREATE INDEX idx_pinned_messages_channel_id ON public.pinned_messages (channel_id);
+CREATE INDEX idx_pinned_messages_message_id ON public.pinned_messages (message_id);
+
+-- Triggers to update last activity in channels based on message and pinned message activities.
+
+-- PINNED MESSAGES TRIGGER TO UPDATE LAST ACTIVITY
+CREATE OR REPLACE FUNCTION update_last_activity()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.channels
+  SET last_activity_at = NOW()
+  WHERE id = NEW.channel_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_update_last_activity
+AFTER INSERT ON public.messages
+FOR EACH ROW
+EXECUTE FUNCTION update_last_activity();
+
+CREATE TRIGGER trigger_update_last_activity_pinned
+AFTER INSERT OR DELETE ON public.pinned_messages
+FOR EACH ROW
+EXECUTE FUNCTION update_last_activity();
+
+
+
+-- Triggers and functions for handling message updates, replies, and soft deletes.
+-- (Triggers and function definitions remain the same)
+
+-- TRIGGER TO UPDATE replied_message_preview
+CREATE OR REPLACE FUNCTION update_message_previews()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.messages
+  SET replied_message_preview = NEW.content -- Or whatever content should be previewed
+  WHERE reply_to_message_id = NEW.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_replied_previews
+BEFORE UPDATE ON public.messages
+FOR EACH ROW
+EXECUTE FUNCTION update_message_previews();
+
+-- TRIGGER TO UPDATE forwarded messages, listen on the content column
+CREATE OR REPLACE FUNCTION update_forwarded_messages()
+RETURNS TRIGGER AS $$
+BEGIN
+  UPDATE public.messages
+  SET content = NEW.content
+  WHERE original_message_id = NEW.id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER update_original_message
+AFTER UPDATE ON public.messages
+FOR EACH ROW
+WHEN (OLD.content IS DISTINCT FROM NEW.content)
+EXECUTE FUNCTION update_forwarded_messages();
+
+
+-- TRIGGER TO SOFT DELETE forwarded messages
+CREATE OR REPLACE FUNCTION soft_delete_forwarded_messages()
+RETURNS TRIGGER AS $$
+BEGIN
+  -- Set the deleted_at timestamp for forwarded messages
+  UPDATE public.messages
+  SET deleted_at = now()
+  WHERE original_message_id = OLD.id AND deleted_at IS NULL;
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER soft_delete_original_message
+AFTER DELETE ON public.messages
+FOR EACH ROW
+EXECUTE FUNCTION soft_delete_forwarded_messages();
+
+-- USER ROLES
+create table public.user_roles (
+  id        uuid DEFAULT uuid_generate_v4() not null primary key,
+  user_id   uuid references public.users on delete cascade not null,
+  role      app_role not null,
+  unique (user_id, role)
+);
+comment on table public.user_roles is 'Application roles for each user.';
+
+
+-- ROLE PERMISSIONS
+create table public.role_permissions (
+  id           uuid DEFAULT uuid_generate_v4() not null primary key,
+  role         app_role not null,
+  permission   app_permission not null,
+  unique (role, permission)
+);
+comment on table public.role_permissions is 'Application permissions for each role.';
+
+CREATE INDEX idx_user_roles_user_id ON public.user_roles (user_id);
+CREATE INDEX idx_role_permissions_role ON public.role_permissions (role);
+
+-- authorize with role-based access control (RBAC)
+create function public.authorize(
+  requested_permission app_permission,
+  user_id uuid
+)
+returns boolean as $$
+declare
+  bind_permissions int;
+begin
+  select count(*)
+  from public.role_permissions
+  inner join public.user_roles on role_permissions.role = user_roles.role
+  where role_permissions.permission = authorize.requested_permission
+    and user_roles.user_id = authorize.user_id
+  into bind_permissions;
+
+  return bind_permissions > 0;
+end;
+$$ language plpgsql security definer;
+
+
+
+-- This table tracks the membership of users in channels.
+-- It records the last message read by each user in a channel to maintain read status.
+CREATE TABLE public.channel_members (
+  channel_id UUID REFERENCES public.channels(id) ON DELETE CASCADE, -- Channel ID, deletes member records if channel is deleted.
+  member_id UUID REFERENCES public.users(id) ON DELETE CASCADE, -- Member's User ID, deletes member records if user is deleted.
+  last_read_message_id UUID REFERENCES public.messages(id), -- Last message read by the user in the channel.
+  last_read_update TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()), -- Timestamp of the last read update.
+  UNIQUE (channel_id, member_id) -- Ensures unique membership records per channel.
+);
+COMMENT ON TABLE public.channel_members IS 'Tracks the membership of users in channels.';
+
+CREATE INDEX idx_channel_members_channel_id ON public.channel_members (channel_id);
+CREATE INDEX idx_channel_members_member_id ON public.channel_members (member_id);
+
+-- This table handles notifications for users.
+-- Notifications can be for messages, channel invites, or other types.
+CREATE TABLE public.notifications (
+  id              UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY, -- Unique identifier for each notification.
+  user_id         UUID REFERENCES public.users NOT NULL, -- User who receives the notification.
+  type            notification_type NOT NULL,
+  ref_id          UUID, -- Reference ID, either a message or channel ID.
+  message_preview TEXT, -- Preview of the message, if applicable.
+  created_at      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL, -- Creation timestamp of the notification.
+  read_at         TIMESTAMP WITH TIME ZONE -- Timestamp when the notification was read.
+);
+COMMENT ON TABLE public.notifications IS 'Notifications sent to users.';
+
+CREATE INDEX idx_notifications_user_id ON public.notifications (user_id);
+CREATE INDEX idx_notifications_created_at ON public.notifications (created_at);
+
+-- Function to create message notifications.
+-- It inserts a notification for each member of a channel when a new message is posted.
+-- The notification includes a preview of the message content.
+-- The notification is not created for the user who posted the message.
+CREATE OR REPLACE FUNCTION create_message_notifications()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO public.notifications (user_id, type, ref_id, created_at, message_preview)
+  SELECT member_id, 'message', NEW.id, NOW(), substring(NEW.content from 1 for 100)
+  FROM public.channel_members
+  WHERE channel_id = NEW.channel_id AND member_id != NEW.user_id;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_create_message_notifications
+AFTER INSERT ON public.messages
+FOR EACH ROW
+EXECUTE FUNCTION create_message_notifications();
+
+
+CREATE TABLE public.message_mentions (
+  id            UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
+  message_id    UUID REFERENCES public.messages(id) ON DELETE CASCADE,
+  mentioned_user_id UUID REFERENCES public.users(id) ON DELETE CASCADE
+);
+
+-- Function to create mention notifications.
+-- It inserts a notification for each user mentioned in a new message.
+CREATE OR REPLACE FUNCTION create_mention_notifications()
+RETURNS TRIGGER AS $$
+DECLARE
+  mention_record RECORD; -- Declare a record type variable
+BEGIN
+  FOR mention_record IN SELECT mentioned_user_id FROM public.message_mentions WHERE message_id = NEW.id LOOP
+    INSERT INTO public.notifications (user_id, type, ref_id, created_at, message_preview)
+    VALUES (mention_record.mentioned_user_id, 'mention', NEW.id, NOW(), substring(NEW.content from 1 for 100));
+  END LOOP;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trigger_create_mention_notifications
+AFTER INSERT ON public.messages
+FOR EACH ROW
+EXECUTE FUNCTION create_mention_notifications();
+
+
+-- Secure the tables
+alter table public.users enable row level security;
+alter table public.channels enable row level security;
+alter table public.messages enable row level security;
+alter table public.user_roles enable row level security;
+alter table public.role_permissions enable row level security;
+create policy "Allow logged-in read access" on public.users for select using ( auth.role() = 'authenticated' );
+create policy "Allow individual insert access" on public.users for insert with check ( auth.uid() = id );
+create policy "Allow individual update access" on public.users for update using ( auth.uid() = id );
+create policy "Allow logged-in read access" on public.channels for select using ( auth.role() = 'authenticated' );
+create policy "Allow individual insert access" on public.channels for insert with check ( auth.uid() = created_by );
+create policy "Allow individual delete access" on public.channels for delete using ( auth.uid() = created_by );
+create policy "Allow authorized delete access" on public.channels for delete using ( authorize('channels.delete', auth.uid()) );
+create policy "Allow logged-in read access" on public.messages for select using ( auth.role() = 'authenticated' );
+create policy "Allow individual insert access" on public.messages for insert with check ( auth.uid() = user_id );
+create policy "Allow individual update access" on public.messages for update using ( auth.uid() = user_id );
+create policy "Allow individual delete access" on public.messages for delete using ( auth.uid() = user_id );
+create policy "Allow authorized delete access" on public.messages for delete using ( authorize('messages.delete', auth.uid()) );
+create policy "Allow individual read access" on public.user_roles for select using ( auth.uid() = user_id );
+
+-- Send "previous data" on change
+alter table public.users replica identity full;
+alter table public.channels replica identity full;
+alter table public.messages replica identity full;
+
+-- inserts a row into public.users and assigns roles
+create function public.handle_new_user()
+returns trigger as $$
+declare is_admin boolean;
+begin
+  insert into public.users (id, username)
+  values (new.id, new.email);
+
+  select count(*) = 1 from auth.users into is_admin;
+
+  if position('+supaadmin@' in new.email) > 0 then
+    insert into public.user_roles (user_id, role) values (new.id, 'admin');
+  elsif position('+supamod@' in new.email) > 0 then
+    insert into public.user_roles (user_id, role) values (new.id, 'moderator');
+  end if;
+
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- trigger the function every time a user is created
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
+/**
+ * REALTIME SUBSCRIPTIONS
+ * Only allow realtime listening on public tables.
+ */
+
+begin;
+  -- remove the realtime publication
+  drop publication if exists supabase_realtime;
+
+  -- re-create the publication but don't enable it for any tables
+  create publication supabase_realtime;
+commit;
+
+-- add tables to the publication
+alter publication supabase_realtime add table public.channels;
+alter publication supabase_realtime add table public.messages;
+alter publication supabase_realtime add table public.users;
+
+-- DUMMY DATA
+insert into public.users (id, username)
+values
+    ('8d0fd2b3-9ca7-4d9e-a95f-9e13dded323e', 'supabot'),
+    ('5f55998b-7958-4ae3-bcb7-539c65c00884', 'jack'),
+    ('35477c6b-f9a0-4bad-af0b-545c99b33fae', 'philip');
+
+insert into public.channels (id, slug, created_by, description)
+values
+    ('4b9f0f7e-6cd5-49b6-a8c3-141ef5905959', 'public', '8d0fd2b3-9ca7-4d9e-a95f-9e13dded323e', null),
+    ('27c6745d-cebd-4afd-92b0-3b9b9312381b', 'random', '8d0fd2b3-9ca7-4d9e-a95f-9e13dded323e', null),
+    ('7ea75977-9bc0-4008-b5b8-13c56d16a588', 'game-boy', '35477c6b-f9a0-4bad-af0b-545c99b33fae', 'game boy, lates game awards, etc.'),
+    ('4d582754-4d72-48f8-9e72-f6aa63dacada', 'netfilix', '35477c6b-f9a0-4bad-af0b-545c99b33fae', 'lets talk about netflix series');
+
+
+insert into public.channel_members (channel_id, member_id)
+values
+    ('4b9f0f7e-6cd5-49b6-a8c3-141ef5905959', '8d0fd2b3-9ca7-4d9e-a95f-9e13dded323e'), -- public, supabot
+    ('27c6745d-cebd-4afd-92b0-3b9b9312381b', '8d0fd2b3-9ca7-4d9e-a95f-9e13dded323e'), -- random, supabot
+    ('7ea75977-9bc0-4008-b5b8-13c56d16a588', '5f55998b-7958-4ae3-bcb7-539c65c00884'), -- game_boy, jack
+    ('4d582754-4d72-48f8-9e72-f6aa63dacada', '5f55998b-7958-4ae3-bcb7-539c65c00884'), -- game_boy, jack
+    ('7ea75977-9bc0-4008-b5b8-13c56d16a588', '35477c6b-f9a0-4bad-af0b-545c99b33fae'), -- game_boy, philip
+    ('4d582754-4d72-48f8-9e72-f6aa63dacada', '35477c6b-f9a0-4bad-af0b-545c99b33fae'); -- netfilix, philip
+
+insert into public.messages (id, content, channel_id, user_id)
+values
+    ('84fd39d1-4467-4181-b07d-b4e9573bc8f9', 'Hello World 👋', '4b9f0f7e-6cd5-49b6-a8c3-141ef5905959', '8d0fd2b3-9ca7-4d9e-a95f-9e13dded323e'),
+    ('0363b237-8a72-462c-91b5-f5ee40958cf5', 'Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.', '27c6745d-cebd-4afd-92b0-3b9b9312381b', '8d0fd2b3-9ca7-4d9e-a95f-9e13dded323e'),
+    ('5de80678-2e4b-4850-ae0e-4e71afaf61bb', 'hey, whats up, what do we have for this weekend?', '4d582754-4d72-48f8-9e72-f6aa63dacada', '5f55998b-7958-4ae3-bcb7-539c65c00884'),
+    ('46e33eff-3a56-4619-bb7c-07e3e96af041', 'whats up?', '4d582754-4d72-48f8-9e72-f6aa63dacada', '5f55998b-7958-4ae3-bcb7-539c65c00884'),
+    ('7e84eca7-cf38-4eee-8127-847e78727ea5', 'We have new event, follow up in this link...', '7ea75977-9bc0-4008-b5b8-13c56d16a588', '35477c6b-f9a0-4bad-af0b-545c99b33fae');
+
+insert into public.pinned_messages (channel_id, message_id, pinned_by)
+values
+    ('7ea75977-9bc0-4008-b5b8-13c56d16a588', '7e84eca7-cf38-4eee-8127-847e78727ea5', '35477c6b-f9a0-4bad-af0b-545c99b33fae');
+
+
+--- forward message
+--- mention in the message
+
+
+insert into public.role_permissions (role, permission)
+values
+    ('admin', 'channels.delete'),
+    ('admin', 'messages.delete'),
+    ('moderator', 'messages.delete');
