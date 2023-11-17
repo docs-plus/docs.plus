@@ -13,7 +13,8 @@
       "@public/*": ["public/*"],
       "@icons": ["components/icons/Icons.jsx"],
       "@tiptapEditor": ["components/tiptap/*"],
-      "@pages": ["components/pages/*"]
+      "@pages": ["components/pages/*"],
+      "@stores": ["stores/index.js"],
     },
     "allowJs": true,
     "skipLibCheck": true,
