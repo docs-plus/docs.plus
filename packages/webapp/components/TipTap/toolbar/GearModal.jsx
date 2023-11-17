@@ -14,7 +14,7 @@ import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
 import { useEditorStateContext } from '@context/EditorContext'
 import { PopoverContent } from '@components/ui/Popover'
-import  {useAuthStore} from '@utils/supabase'
+import { useAuthStore } from '@utils/supabase'
 
 const ToggleSection = ({ name, className, description, value, checked, onChange }) => {
   const containerClasses = twMerge(`flex flex-col p-2 antialiased `, className)
@@ -33,7 +33,7 @@ const ToggleSection = ({ name, className, description, value, checked, onChange 
 }
 
 const GearModal = ({ docMetadata, className }) => {
-  const { user } = useAuthStore();
+  const { user } = useAuthStore()
 
   const { isAuthServiceAvailable, EditorProvider } = useEditorStateContext()
 

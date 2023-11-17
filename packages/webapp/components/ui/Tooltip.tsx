@@ -21,7 +21,7 @@ interface TooltipOptions {
   open?: boolean
   showDelay?: number
   hideDelay?: number
-  onOpenChange?: (open: boolean) => void
+  onOpenChange?: () => void
 }
 
 export function useTooltip({

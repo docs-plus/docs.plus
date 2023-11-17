@@ -14,7 +14,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
   const { state, tr } = arrg
   const { selection, doc } = state
   const { $from, $to, from } = selection
-  const { start, end } = $from.blockRange($to)
+  const { start } = $from.blockRange($to)
 
   console.info('[Heading]: change heading level forwarding')
 

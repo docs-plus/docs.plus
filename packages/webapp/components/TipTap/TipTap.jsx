@@ -67,10 +67,9 @@ import {
   youtubeModal,
   vimeoModal,
   soundCloudModal,
-  twitterModal,
-} from "@docs.plus/extension-hypermultimedia";
-
-import Placeholders from './placeholders'
+  twitterModal
+} from '@docs.plus/extension-hypermultimedia'
+// import Placeholders from './placeholders'
 
 const lowlight = createLowlight()
 lowlight.register('html', html)
@@ -125,7 +124,7 @@ const generatePlaceholderText = (data) => {
     const level = node.attrs.level
     return level - 1 === 0 ? 'Title' : `Heading ${level - 1}`
   } else if (nodeType === ENUMS.NODES.PARAGRAPH_TYPE) {
-    const msg = Placeholders
+    // const msg = Placeholders
 
     const { $head } = data.editor.view.state.selection
 
@@ -275,7 +274,7 @@ const Editor = ({ provider, spellcheck = false }) => {
         Twitter: {
           modal: twitterModal,
           inline: true
-        },
+        }
       }),
       TaskList,
       TaskItem.configure({

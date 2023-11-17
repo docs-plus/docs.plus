@@ -4,10 +4,9 @@ import Button from '@components/ui/Button'
 import { useMutation } from '@tanstack/react-query'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import { toast } from 'react-hot-toast'
-import  { supabaseClient} from '@utils/supabase'
+import { supabaseClient } from '@utils/supabase'
 
 const SingInForm = ({ ...props }) => {
-
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
   const [emailError, setEmailError] = useState('')
   const [highlightEmailInput, setHighlightEmailInput] = useState(false)

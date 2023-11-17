@@ -12,8 +12,7 @@ import {
   useMergeRefs,
   Placement,
   FloatingPortal,
-  FloatingFocusManager,
-  useId
+  FloatingFocusManager
 } from '@floating-ui/react'
 
 interface PopoverOptions {
@@ -22,7 +21,7 @@ interface PopoverOptions {
   modal?: boolean
   open?: boolean
   offcet?: number
-  onOpenChange?: (open: boolean) => void
+  onOpenChange?: () => void
 }
 
 export function usePopover({

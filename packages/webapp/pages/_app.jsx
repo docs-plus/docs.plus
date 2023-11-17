@@ -2,7 +2,7 @@ import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import { Toaster } from 'react-hot-toast'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import  {useAuthStore, supabaseClient} from '../utils/supabase'
+import { useAuthStore, supabaseClient } from '../utils/supabase'
 import '../styles/styles.scss'
 import '../styles/globals.scss'
 
@@ -63,8 +63,7 @@ const Header = () => {
   )
 }
 
-export default function MyApp({ Component, pageProps, initialSession }) {
-
+export default function MyApp({ Component, pageProps }) {
   useEffect(() => {
     // Listen to Supabase authentication changes
     supabaseClient?.auth?.onAuthStateChange((event, session) => {
@@ -81,7 +80,7 @@ export default function MyApp({ Component, pageProps, initialSession }) {
         <Header />
         <QueryClientProvider client={queryClient}>
           <EditorStateProvider isMobileInitial={isMobileInitial}>
-              <Component {...pageProps} />
+            <Component {...pageProps} />
           </EditorStateProvider>
         </QueryClientProvider>
         <RelpadPrompt />

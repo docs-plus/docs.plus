@@ -34,7 +34,7 @@ const scrollHeadingSelection = (event) => {
 const Editor = ({ docMetadata }) => {
   const { editor, provider } = useEditorAndProvider({ docMetadata })
   // Mobile specific code
-  const { loading, deviceDetect, selectionPos, setSelectionPos, isMobile } = useEditorStateContext()
+  const { deviceDetect, selectionPos, isMobile } = useEditorStateContext()
   const [showToolbar, setShowToolbar] = useState(false)
   const isKeyboardOpen = useDetectKeyboardOpen()
 

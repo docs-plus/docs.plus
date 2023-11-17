@@ -9,7 +9,6 @@ import ENUMS from '../enums'
 
 let isProcessing = false
 
-
 // Helpers
 const extractContentHeadingBlocks = (doc) => {
   const result = []
@@ -102,7 +101,7 @@ const appendButtonsDec = (doc, editor) => {
   return DecorationSet.create(doc, decos)
 }
 
-const handleHeadingToggle = (editor, { headingId, open }) => {
+const handleHeadingToggle = (editor, { headingId }) => {
   const { tr } = editor.state
   const headingNodeEl = editor.view.dom.querySelector(
     `.ProseMirror .heading[data-id="${headingId}"]`
@@ -167,56 +166,54 @@ const handleHeadingToggle = (editor, { headingId, open }) => {
   }
 }
 
-
-const getNodeHLevel =  (doc, pos) => {
-    return doc.nodeAt(pos).attrs.level;
+const getNodeHLevel = (doc, pos) => {
+  return doc.nodeAt(pos).attrs.level
 }
 
-const getPreviousHeadingPositions =  (doc, $from, blockStartPos, currentHLevel) => {
-    let prevHStartPos = 0;
-    let prevHEndPos = 0;
+const getPreviousHeadingPositions = (doc, $from, blockStartPos, currentHLevel) => {
+  let prevHStartPos = 0
+  let prevHEndPos = 0
 
-    doc.nodesBetween($from.start(0), blockStartPos, (node, pos) => {
-        if (pos > blockStartPos) return;
+  doc.nodesBetween($from.start(0), blockStartPos, (node, pos) => {
+    if (pos > blockStartPos) return
 
-        if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
-            const headingLevel = node.firstChild?.attrs?.level;
+    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
+      const headingLevel = node.firstChild?.attrs?.level
 
-            if (headingLevel === currentHLevel) {
-                prevHStartPos = pos;
-                prevHEndPos = pos + node.content.size;
-            }
-        }
-    });
+      if (headingLevel === currentHLevel) {
+        prevHStartPos = pos
+        prevHEndPos = pos + node.content.size
+      }
+    }
+  })
 
-    return { prevHStartPos, prevHEndPos };
+  return { prevHStartPos, prevHEndPos }
 }
 
-const isTopLevelHeading =  (currentHLevel, parentHeadingNode) => {
-    return currentHLevel === 1 && parentHeadingNode.attrs.level === 1;
+const isTopLevelHeading = (currentHLevel, parentHeadingNode) => {
+  return currentHLevel === 1 && parentHeadingNode.attrs.level === 1
 }
 
-const handleHeadingRemoval =  (editor, backspaceAction) => {
-    console.info('[Heading]: remove the heading node');
+const handleHeadingRemoval = (editor, backspaceAction) => {
+  console.info('[Heading]: remove the heading node')
 
-    return onHeading({
-        backspaceAction,
-        editor,
-        state: editor.state,
-        tr: editor.state.tr,
-        view: editor.view
-    });
+  return onHeading({
+    backspaceAction,
+    editor,
+    state: editor.state,
+    tr: editor.state.tr,
+    view: editor.view
+  })
 }
 
-const shouldRemoveHeading =  (node, $anchor, parent, schema) => {
-    return (
-        node !== null ||
-        $anchor.parentOffset !== 0 ||
-        parent.type.name !== schema.nodes.contentHeading.name ||
-        $anchor.pos === 2
-    );
+const shouldRemoveHeading = (node, $anchor, parent, schema) => {
+  return (
+    node !== null ||
+    $anchor.parentOffset !== 0 ||
+    parent.type.name !== schema.nodes.contentHeading.name ||
+    $anchor.pos === 2
+  )
 }
-
 
 // Tiptap Node
 const HeadingsTitle = Node.create({
@@ -272,26 +269,30 @@ const HeadingsTitle = Node.create({
   addKeyboardShortcuts() {
     return {
       Backspace: () => {
-        const { schema, selection, doc, tr } = this.editor.state;
-        const { $anchor, from, $to, $from } = selection;
+        const { schema, selection, doc } = this.editor.state
+        const { $anchor, from, $from } = selection
 
-        const node = doc.nodeAt(from);
-        const parent = $anchor.parent;
-        const blockStartPos = $from.start(1) - 1;
-        const currentHLevel = getNodeHLevel($from.doc, blockStartPos);
+        const node = doc.nodeAt(from)
+        const parent = $anchor.parent
+        const blockStartPos = $from.start(1) - 1
+        const currentHLevel = getNodeHLevel($from.doc, blockStartPos)
 
-        const { prevHStartPos, prevHEndPos } = getPreviousHeadingPositions(doc, $from, blockStartPos, currentHLevel);
+        const { prevHStartPos } = getPreviousHeadingPositions(
+          doc,
+          $from,
+          blockStartPos,
+          currentHLevel
+        )
 
-        const parentHeadingNode = doc.nodeAt(prevHStartPos);
+        const parentHeadingNode = doc.nodeAt(prevHStartPos)
 
         if (isTopLevelHeading(currentHLevel, parentHeadingNode))
-          return handleHeadingRemoval(this.editor, true);
-
+          return handleHeadingRemoval(this.editor, true)
 
         if (shouldRemoveHeading(node, $anchor, parent, schema))
-          return handleHeadingRemoval(this.editor, false);
+          return handleHeadingRemoval(this.editor, false)
 
-        return false;
+        return false
       }
     }
   },
