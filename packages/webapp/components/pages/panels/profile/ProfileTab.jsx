@@ -1,23 +1,20 @@
 import React, { useState, useEffect, useCallback } from 'react'
-import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import Button from '../../../ui/Button'
 import TabTitle from './components/TabTitle'
 import TabSection from './components/TabSection'
-
 import toast from 'react-hot-toast'
-
 import AvatarSection from './sections/AvatarSection'
 import AccountInfoSection from './sections/AccountInfoSection'
 import AboutSection from './sections/AboutSection'
 import SocialLinksSection from './sections/SocialLinksSection'
 import useProfileData from '@hooks/useProfileData'
+import  {useAuthStore, supabaseClient} from '@utils/supabase'
 
 // Defined constants
 const PROFILES = 'profiles'
 
 const ProfileTab = () => {
-  const user = useUser()
-  const supabaseClient = useSupabaseClient()
+  const { user } = useAuthStore();
 
   const [fullName, setFullName] = useState(user.user_metadata.full_name || '')
   const [userName, setUserName] = useState(user.user_metadata.username || '')

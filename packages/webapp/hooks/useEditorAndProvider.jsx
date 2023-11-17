@@ -3,11 +3,11 @@ import { useEffect } from 'react'
 import editorConfig from '@components/TipTap/TipTap'
 import randomColor from 'randomcolor'
 import { toast } from 'react-hot-toast'
-import { useUser } from '@supabase/auth-helpers-react'
 import useApplyFilters from '@hooks/useApplyFilters'
 import { useEditorStateContext } from '@context/EditorContext'
 import useProfileData from '@hooks/useProfileData'
 import useYdocAndProvider from '@hooks/useYdocAndProvider'
+import  {useAuthStore} from '@utils/supabase'
 
 const getCursorUser = (user, profileData) => {
   const lastUpdate = Date.now().toString()
@@ -26,7 +26,7 @@ const getCursorUser = (user, profileData) => {
 }
 
 const useEditorAndProvider = ({ docMetadata }) => {
-  const user = useUser()
+  const { user } = useAuthStore();
   const {
     setRendering,
     setPresentUsers,

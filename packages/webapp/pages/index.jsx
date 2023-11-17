@@ -1,5 +1,4 @@
 import HeadSeo from '@components/HeadSeo'
-import { useUser } from '@supabase/auth-helpers-react'
 import dynamic from 'next/dynamic'
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@components/ui/Tabs/Tabs'
 import DeckPanel from '@pages/panels/DeckPanel'
@@ -7,6 +6,7 @@ import { useEditorStateContext } from '@context/EditorContext'
 import { Avatar } from '@components/Avatar'
 import { DocsPlus } from '@icons'
 import { twMerge } from 'tailwind-merge'
+import  {useAuthStore} from '@utils/supabase'
 
 const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
 const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
@@ -28,7 +28,7 @@ function TabLayout({ children, className, footer }) {
 }
 
 function Home({ hostname }) {
-  const user = useUser()
+  const { user } = useAuthStore();
   const { isAuthServiceAvailable } = useEditorStateContext()
   const isUserSignedIn = user && isAuthServiceAvailable
 

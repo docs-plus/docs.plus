@@ -1,7 +1,6 @@
 import Link from 'next/link'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import { DocsPlus, Hamburger, Check } from '@icons'
-import { useUser } from '@supabase/auth-helpers-react'
 import DocTitle from '../DocTitle'
 import PresentUsers from './PresentUsers'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
@@ -9,10 +8,12 @@ import { useEditorStateContext } from '@context/EditorContext'
 import FilterBar from './FilterBar'
 import ProfileSection from './ProfileSection'
 import ShareModalSection from './ShareSection'
+import  {useAuthStore} from '@utils/supabase'
 
 const PadTitle = ({ docMetadata }) => {
+  const { user } = useAuthStore();
   const isKeyboardOpen = useDetectKeyboardOpen()
-  const user = useUser()
+
   const { isAuthServiceAvailable } = useEditorStateContext()
 
   const btn_leftOpenModal = (e) => {

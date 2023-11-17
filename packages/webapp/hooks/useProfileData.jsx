@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useSupabaseClient, useUser } from '@supabase/auth-helpers-react'
+import  {useAuthStore, supabaseClient} from '@utils/supabase'
+
 
 const useProfileData = () => {
-  const user = useUser()
-  const supabaseClient = useSupabaseClient()
+  const { user } = useAuthStore();
 
   const [loadingProfileData, setLoadingProfileData] = useState(false)
   const [profileData, setProfileData] = useState(null)

@@ -2,6 +2,7 @@ import Head from 'next/head'
 import dynamic from 'next/dynamic'
 import { Toaster } from 'react-hot-toast'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import  {useAuthStore, supabaseClient} from '../utils/supabase'
 import '../styles/styles.scss'
 import '../styles/globals.scss'
 
@@ -10,10 +11,7 @@ const RelpadPrompt = dynamic(() => import(`../components/ReloadPrompt`), {
 })
 
 import { EditorStateProvider } from '../context/EditorContext'
-import { createPagesBrowserClient } from '@supabase/auth-helpers-nextjs'
-import { SessionContextProvider } from '@supabase/auth-helpers-react'
-
-import { useState } from 'react'
+import { useEffect } from 'react'
 
 // Create a client
 const queryClient = new QueryClient()
@@ -66,10 +64,15 @@ const Header = () => {
 }
 
 export default function MyApp({ Component, pageProps, initialSession }) {
+
+  useEffect(() => {
+    // Listen to Supabase authentication changes
+    supabaseClient?.auth?.onAuthStateChange((event, session) => {
+      session && useAuthStore.getState().setUser(session?.user || null)
+    })
+  }, [])
+
   const isMobileInitial = pageProps.isMobile || false
-  const [supabaseClient] = useState(
-    () => process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && createPagesBrowserClient()
-  )
 
   // Create a new supabase browser client on every first render.
   if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
@@ -78,12 +81,10 @@ export default function MyApp({ Component, pageProps, initialSession }) {
         <Header />
         <QueryClientProvider client={queryClient}>
           <EditorStateProvider isMobileInitial={isMobileInitial}>
-            <SessionContextProvider supabaseClient={supabaseClient} initialSession={initialSession}>
               <Component {...pageProps} />
-            </SessionContextProvider>
           </EditorStateProvider>
         </QueryClientProvider>
-        {/* <RelpadPrompt /> */}
+        <RelpadPrompt />
         <Toaster />
       </div>
     )
@@ -96,7 +97,7 @@ export default function MyApp({ Component, pageProps, initialSession }) {
             <Component {...pageProps} />
           </EditorStateProvider>
         </QueryClientProvider>
-        {/* <RelpadPrompt /> */}
+        <RelpadPrompt />
         <Toaster />
       </div>
     )

@@ -1,5 +1,4 @@
 import { useState } from 'react'
-import { useUser, useSupabaseClient } from '@supabase/auth-helpers-react'
 import Button from '../../../ui/Button'
 import { ShieldCheck, Bell, AngleSmallRight, Exit } from '@icons'
 import { Avatar } from '../../../Avatar'
@@ -12,10 +11,10 @@ const ProfileTab = dynamic(() => import('./ProfileTab'), {
 import SecurityTab from './SecurityTab'
 import NotificationsTab from './NotificationsTab'
 import { toast } from 'react-hot-toast'
+import  { supabaseClient} from '@utils/supabase'
+
 
 const ProfilePanel = () => {
-  const user = useUser()
-  const supabaseClient = useSupabaseClient()
   const [loadSignOut, setLoadSignOut] = useState(false)
   const [activeTab, setActiveTab] = useState('profile')
 
