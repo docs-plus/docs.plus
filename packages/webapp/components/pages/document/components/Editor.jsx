@@ -31,8 +31,8 @@ const scrollHeadingSelection = (event) => {
   })
 }
 
-const Editor = ({ docMetadata }) => {
-  const { editor, provider } = useEditorAndProvider({ docMetadata })
+const Editor = () => {
+  const { editor, provider } = useEditorAndProvider()
   // Mobile specific code
   const { deviceDetect, selectionPos, isMobile } = useEditorStateContext()
   const [showToolbar, setShowToolbar] = useState(false)
@@ -120,12 +120,12 @@ const Editor = ({ docMetadata }) => {
       <div className="toolbars w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative">
         {!isMobile ? (
           editor ? (
-            <Toolbar editor={editor} docMetadata={docMetadata} provider={provider} />
+            <Toolbar editor={editor} provider={provider} />
           ) : (
             'Loading...'
           )
         ) : (
-          isKeyboardOpen && <ToolbarMobile editor={editor} docMetadata={docMetadata} />
+          isKeyboardOpen && <ToolbarMobile editor={editor} />
         )}
       </div>
       <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
@@ -143,7 +143,7 @@ const Editor = ({ docMetadata }) => {
       {isMobile && (
         <>
           <div className="nd_modal hidden left w-full h-full fixed z-20 overflow-hidden">
-            <TocModal docMetadata={docMetadata} editor={editor} />
+            <TocModal editor={editor} />
           </div>
           <button
             onClick={toggleToolbar}

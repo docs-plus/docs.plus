@@ -4,7 +4,7 @@ import DocTitle from '@components/TipTap/DocTitle'
 import { Filter, DocsPlus } from '@icons'
 import TOC from './Toc'
 
-const TocModal = ({ docMetadata, editor }) => {
+const TocModal = ({ editor }) => {
   const closeLeftSideModal = () => {
     const leftSideModal = document.querySelector('.nd_modal.left')
     const modalWrapper = leftSideModal.querySelector('.modalWrapper')
@@ -48,7 +48,7 @@ const TocModal = ({ docMetadata, editor }) => {
             className="w-8 h-8 flex align-middle justify-center text-black ml-1 outline-0">
             <DocsPlus size="70" />
           </Link>
-          <DocTitle docMetadata={docMetadata} className="w-8/12 overflow-hidden mt-0" />
+          <DocTitle className="w-8/12 overflow-hidden mt-0" />
           <div className="w-4/12 flex justify-end items-center flex-row ml-auto mr-3">
             <button
               onClick={openFilterModal}

@@ -3,7 +3,7 @@ import Button from '@components/ui/Button'
 import ShareModal from './ShareModal'
 import { PrivateShare } from '@icons'
 
-const ShareModalSection = ({ docMetadata }) => {
+const ShareModalSection = () => {
   return (
     <Dialog>
       <DialogTrigger asChild={true}>
@@ -14,7 +14,7 @@ const ShareModalSection = ({ docMetadata }) => {
         </Button>
       </DialogTrigger>
       <DialogContent>
-        <ShareModal docMetadata={docMetadata} />
+        <ShareModal />
       </DialogContent>
     </Dialog>
   )

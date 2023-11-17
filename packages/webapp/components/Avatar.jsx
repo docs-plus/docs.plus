@@ -6,7 +6,7 @@ import { useAuthStore } from '@utils/supabase'
 const AVATAR_URL_CHANNEL_NAME = 'updateAvatarURL'
 
 const useAvatar = (srcAvatar) => {
-  const { user } = useAuthStore()
+  const user = useAuthStore.use.user()
   const { id: userId } = user
 
   const bucketAddress = useMemo(() => {
@@ -25,7 +25,7 @@ const useAvatar = (srcAvatar) => {
 
 let Avatar = React.forwardRef(({ height, width, srcAvatar, ...props }, ref) => {
   const { avatarUrl, setAvatarUrl } = useAvatar(srcAvatar)
-  const { user } = useAuthStore()
+  const user = useAuthStore.use.user()
 
   const { user_metadata } = user
 

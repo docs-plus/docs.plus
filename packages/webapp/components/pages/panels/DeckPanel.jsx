@@ -8,7 +8,7 @@ import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import { useAuthStore } from '@utils/supabase'
 
 const DeckPanel = ({ hostname }) => {
-  const { user } = useAuthStore()
+  const user = useAuthStore.use.user()
 
   const { isAuthServiceAvailable } = useEditorStateContext()
   const [loadingDoc, setLoadingDoc] = useState(false)
