@@ -38,7 +38,7 @@ app.get('/sse/:action', (req, res) => {
   res.setHeader('Connection', 'keep-alive')
   res.flushHeaders()
 
-  sse.addClient(action, { req, res })
+  sse.addClient(action, { res })
 
   res.on('close', () => {
     console.info(`Client disconnected from event ${action}`)

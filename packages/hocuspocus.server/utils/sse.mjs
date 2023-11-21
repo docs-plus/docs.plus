@@ -2,30 +2,35 @@ class SSE {
   clients = {}
 
   addClient(eventId, client) {
-    // Initialize the event array if it doesn't exist
+    // Initialize the client Set if it doesn't exist
     if (!this.clients[eventId]) {
-      this.clients[eventId] = []
+      this.clients[eventId] = new Set()
     }
 
     // Add the new client
-    this.clients[eventId].push(client)
+    this.clients[eventId].add(client)
 
     // Remove the client on 'close' event
-    client.req.on('close', () => {
+    client.res.on('close', () => {
       console.info(`Client disconnected from event ${eventId}`)
-      this.clients[eventId] = this.clients[eventId].filter((c) => c !== client)
-      // Optionally, clean up the event array if it's empty
-      if (this.clients[eventId].length === 0) {
+      this.clients[eventId].delete(client)
+      // Optionally, clean up the event Set if it's empty
+      if (this.clients[eventId].size === 0) {
         delete this.clients[eventId]
       }
     })
   }
 
   send(eventId, data) {
+    const serializedData = `data: ${JSON.stringify(data)}\n\n`
     if (this.clients[eventId]) {
-      this.clients[eventId].forEach((client) =>
-        client.res.write(`data: ${JSON.stringify(data)}\n\n`)
-      )
+      this.clients[eventId].forEach((client) => {
+        try {
+          client.res.write(serializedData)
+        } catch (error) {
+          console.error(`Error sending data to client: ${error}`)
+        }
+      })
     }
   }
 }
