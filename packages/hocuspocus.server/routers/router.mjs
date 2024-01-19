@@ -19,8 +19,8 @@ const router = expressRouter()
 const getOwnerProfile = async (userId) => {
   if (!process.env.SUPABASE_URL && !process.env.SUPABASE_ANON_KEY) return null
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
-  const { data } = await supabase.from('profiles').select('*').eq('id', userId)
-  return data[0]
+  const { data } = await supabase.from('profiles').select('*').eq('id', userId).single()
+  return data ? data : null
 }
 
 const getOwnerProfiles = async (userIds) => {
