@@ -5,7 +5,8 @@ import slugify from 'slugify'
 import * as validator from '../utils/routerValidator.mjs'
 import { CREATE_DOCUMENT, UPDATE_DOCUMENT_METADATA } from './schema/documents.mjs'
 import { createClient } from '@supabase/supabase-js'
-import jwt_decode from 'jwt-decode'
+import { jwtDecode } from 'jwt-decode'
+
 import mime from 'mime'
 import { v4 as uuidv4 } from 'uuid'
 import { checkEnvBolean } from '../utils/index.mjs'
@@ -56,7 +57,7 @@ router.get('/documents/:docName', async (req, res) => {
   const docName = slugify(req.params.docName.toLowerCase(), { lower: true, strict: true })
   const { userId } = req.query
   const token = req.headers.token
-  const user = token && userId ? { ...jwt_decode(token), id: userId } : null
+  const user = token && userId ? { ...jwtDecode(token), id: userId } : null
 
   const doc = await prisma.documentMetadata.findUnique({
     where: {

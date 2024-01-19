@@ -11,7 +11,6 @@ import { Database } from '@hocuspocus/extension-database'
 import { Throttle } from '@hocuspocus/extension-throttle'
 import { Redis } from '@hocuspocus/extension-redis'
 import { Logger } from '@hocuspocus/extension-logger'
-// import jwt_decode from 'jwt-decode'
 
 import { checkEnvBolean } from './utils/index.mjs'
 
@@ -32,7 +31,6 @@ StoreDocument.process(async function (job, done) {
   const { data } = job
   try {
     console.time(`Store Data, jobId:${job.id}`)
-    // const { id, email } = jwt ? jwt_decode(jwt) : { id: null, email: null }
 
     return await prisma.documents.create({
       data: {
