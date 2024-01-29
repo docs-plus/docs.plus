@@ -1,8 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react'
-import { CaretRight } from '@icons'
+import { CaretRight, ChatLeft } from '@icons'
 import PubSub from 'pubsub-js'
 import ENUMS from './enums'
 import slugify from 'slugify'
+import { useStore, useChatStore, useAuthStore } from '@stores'
+import { useRouter } from 'next/router'
+import toast from 'react-hot-toast'
 
 const getOffsetTop = (element) =>
   element ? element.offsetTop + getOffsetTop(element.offsetParent) : 0
@@ -15,6 +18,12 @@ const getHeadingDetails = (id) => {
 
 const TableOfContent = ({ editor, className }) => {
   const [items, setItems] = useState([])
+  const { query } = useRouter()
+  const setChatRoom = useChatStore((state) => state.setChatRoom)
+  const { headingId } = useChatStore((state) => state.chatRoom)
+  const { workspaceId } = useStore((state) => state.settings)
+  const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
+  const user = useAuthStore((state) => state.profile)
 
   const handleUpdate = useCallback((doc) => {
     const headings = []
@@ -129,6 +138,56 @@ const TableOfContent = ({ editor, className }) => {
     PubSub.publish(ENUMS.EVENTS.FOLD_AND_UNFOLD, { headingId: item.id, open: !item.open })
   }, [])
 
+  const openChatContainerHandler = useCallback(
+    (item) => {
+      const nodePos = editor.view.state.doc.resolve(
+        editor?.view.posAtDOM(document.querySelector(`.heading[data-id="${item.id}"]`))
+      )
+
+      if (!user) {
+        toast.error('Please login to use chat feature')
+        document.getElementById('btn_signin').click()
+        return
+      }
+
+      // toggle chatroom
+      if (headingId === item.id) {
+        return destroyChatRoom()
+      }
+
+      destroyChatRoom()
+
+      const headingPath = nodePos.path
+        .filter((x) => x?.type?.name === ENUMS.NODES.HEADING_TYPE)
+        .map((x) => {
+          const text = x.firstChild.textContent.toLowerCase().trim()
+          return { text, id: x.attrs.id }
+        })
+
+      const headingAddress = headingPath.map((x, index) => {
+        const prevHeadingPath = headingPath
+          .slice(0, index)
+          .map((x) => slugify(x.text))
+          .join('>')
+
+        const slug = slugify(x.text)
+
+        const url = new URL(window.location.origin + `/${query.slugs?.at(0)}`)
+        url.searchParams.set('h', prevHeadingPath)
+        url.searchParams.set('id', x.id)
+
+        return {
+          ...x,
+          slug: slugify(x.text),
+          url: url.href
+        }
+      })
+
+      setChatRoom(item.id, workspaceId, headingAddress)
+    },
+    [editor, workspaceId, headingId]
+  )
+
   const renderToc = useCallback(
     (items) => {
       const renderedItems = []
@@ -144,10 +203,10 @@ const TableOfContent = ({ editor, className }) => {
         renderedItems.push(
           <div
             key={item.id}
-            className={`toc__item toc__item--${item.level} ${item.open ? '' : 'closed'}`}
+            className={`toc__item toc__item--${item.level} ${item.open ? '' : 'closed'} `}
             data-id={item.id}
             data-offsettop={item.offsetTop}>
-            <span>
+            <span className="group">
               <span
                 className={`btnFold ${item.open ? 'opened' : 'closed'}`}
                 onClick={() => toggleSection(item)}>
@@ -160,6 +219,12 @@ const TableOfContent = ({ editor, className }) => {
                 onClick={scroll2Header}>
                 {item.text}
               </a>
+              <span className="ml-auto" onClick={() => openChatContainerHandler(item)}>
+                <ChatLeft
+                  className={`btnChat ${headingId === item.id && '!opacity-100 fill-docsy'} transition-all ml-5 group-hover:fill-docsy hover:fill-indigo-900 cursor-pointer`}
+                  size={18}
+                />
+              </span>
             </span>
 
             {children.length > 0 && (
@@ -174,7 +239,7 @@ const TableOfContent = ({ editor, className }) => {
 
       return renderedItems
     },
-    [toggleSection, scroll2Header]
+    [toggleSection, scroll2Header, headingId]
   )
 
   if (items.length) {

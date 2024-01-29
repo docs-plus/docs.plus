@@ -3,7 +3,8 @@ import { Avatar, AVATAR_URL_CHANNEL_NAME } from '../../../../Avatar'
 import { Camera, Spinner, CircleUser } from '@icons'
 import { toast } from 'react-hot-toast'
 import PubSub from 'pubsub-js'
-import { useAuthStore, supabaseClient } from '@utils/supabase'
+import { supabaseClient } from '@utils/supabase'
+import { useAuthStore } from '@stores'
 
 import {
   uploadAvatarToStorage,
@@ -16,7 +17,7 @@ const PROFILES = 'profiles'
 const PUBLIC = 'public'
 
 const AvatarSection = ({ profileData }) => {
-  const user = useAuthStore.use.user()
+  const user = useAuthStore((state) => state.profile)
 
   const fileInputRef = useRef()
   const [uploading, setUploading] = useState(false)

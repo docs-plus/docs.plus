@@ -1,22 +1,22 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react'
 import Image from 'next/image'
 import PubSub from 'pubsub-js'
-import { useAuthStore } from '@utils/supabase'
+import { useAuthStore } from '@stores'
 
 const AVATAR_URL_CHANNEL_NAME = 'updateAvatarURL'
 
 const useAvatar = (srcAvatar) => {
-  const user = useAuthStore.use.user()
-  const { id: userId } = user
+  const user = useAuthStore((state) => state.profile)
+  const { id: userId, avatar_url } = user
 
   const bucketAddress = useMemo(() => {
     const lastUpdate = Date.now().toString()
 
     return (
-      user.user_metadata.avatar_url ||
+      avatar_url ||
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${userId}.png?${lastUpdate}`
     )
-  }, [user.user_metadata.avatar_url, userId])
+  }, [avatar_url, userId])
 
   const [avatarUrl, setAvatarUrl] = useState(srcAvatar || bucketAddress)
 
@@ -25,7 +25,7 @@ const useAvatar = (srcAvatar) => {
 
 let Avatar = React.forwardRef(({ height, width, srcAvatar, ...props }, ref) => {
   const { avatarUrl, setAvatarUrl } = useAvatar(srcAvatar)
-  const user = useAuthStore.use.user()
+  const user = useAuthStore((state) => state.profile)
 
   const { user_metadata } = user
 

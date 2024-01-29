@@ -2,11 +2,10 @@ import HeadSeo from '@components/HeadSeo'
 import dynamic from 'next/dynamic'
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@components/ui/Tabs/Tabs'
 import DeckPanel from '@pages/panels/DeckPanel'
-import { useEditorStateContext } from '@context/EditorContext'
 import { Avatar } from '@components/Avatar'
 import { DocsPlus } from '@icons'
 import { twMerge } from 'tailwind-merge'
-import { useAuthStore } from '@utils/supabase'
+import { useStore, useAuthStore } from '@stores'
 
 const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
 const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
@@ -28,8 +27,9 @@ function TabLayout({ children, className, footer }) {
 }
 
 function Home({ hostname }) {
-  const user = useAuthStore.use.user()
-  const { isAuthServiceAvailable } = useEditorStateContext()
+  const user = useAuthStore((state) => state.profile)
+  const { isAuthServiceAvailable } = useStore((state) => state.settings)
+
   const isUserSignedIn = user && isAuthServiceAvailable
 
   return (

@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
 import toast from 'react-hot-toast'
-import { useEditorStateContext } from '@context/EditorContext'
 import { useDocumentMetadataContext } from '@context/DocumentMetadataContext'
+import { useStore } from '@stores'
+
 const SSE_TITLE_ADDRESS = (docId) => `${process.env.NEXT_PUBLIC_SSE_URL}/${docId}_docTitle`
 
 const broadcastTitle = async (documentId, newTitle) => {
@@ -18,8 +19,8 @@ const broadcastTitle = async (documentId, newTitle) => {
 const DocTitle = ({ className }) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
   const [title, setTitle] = useState()
-  const { EditorProvider } = useEditorStateContext()
   const docMetadata = useDocumentMetadataContext()
+  const { hocuspocusProvider } = useStore((state) => state.settings)
 
   useEffect(() => {
     setTitle(docMetadata.title)
@@ -52,23 +53,23 @@ const DocTitle = ({ className }) => {
   }
 
   useEffect(() => {
-    if (!EditorProvider) return
+    if (!hocuspocusProvider) return
 
     const readOnlyStateHandler = ({ payload }) => {
       const msg = JSON.parse(payload)
       if (msg.type === 'docTitle') setTitle(msg.state.title)
     }
 
-    EditorProvider.on('stateless', readOnlyStateHandler)
+    hocuspocusProvider.on('stateless', readOnlyStateHandler)
 
-    return () => EditorProvider.off('stateless', readOnlyStateHandler)
-  }, [EditorProvider])
+    return () => hocuspocusProvider.off('stateless', readOnlyStateHandler)
+  }, [hocuspocusProvider])
 
   useEffect(() => {
     if (isSuccess && data) {
       setTitle(data.data.title)
       // broadcast to other clients
-      EditorProvider.sendStateless(JSON.stringify({ type: 'docTitle', state: data.data }))
+      hocuspocusProvider.sendStateless(JSON.stringify({ type: 'docTitle', state: data.data }))
       toast.success('Document title changed successfully')
     }
   }, [isSuccess])

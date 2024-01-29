@@ -4,8 +4,8 @@ import Toggle from '../../../ui/Toggle'
 import Checkbox from '../../../ui/Checkbox'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
-import useProfileData from '@hooks/useProfileData'
-import { useAuthStore, supabaseClient } from '@utils/supabase'
+import { supabaseClient } from '@utils/supabase'
+import { useAuthStore } from '@stores'
 
 const ToggleSection = ({ name, description, value, checked, onChange }) => {
   return (
@@ -22,25 +22,11 @@ const ToggleSection = ({ name, description, value, checked, onChange }) => {
 }
 
 const NotificationsTab = () => {
-  const user = useAuthStore.use.user()
-
-  const { profileData, profileFetchingError, loadingProfileData } = useProfileData()
+  const user = useAuthStore((state) => state.profile)
 
   const [pushNotifications, setPushNotifications] = useState(false)
   const [emailNotifications, setEmailNotifications] = useState(false)
   const [notificationNewActivity, setNotificationNewActivity] = useState(false)
-
-  useEffect(() => {
-    if (profileFetchingError) {
-      console.error(profileFetchingError)
-      toast.error('Error fetching your profile' + profileFetchingError.message)
-    }
-    if (!loadingProfileData && profileData) {
-      setPushNotifications(profileData.push_notifications)
-      setEmailNotifications(profileData.email_notifications)
-      setNotificationNewActivity(profileData.email_notification_new_activity)
-    }
-  }, [loadingProfileData, profileData, profileFetchingError])
 
   const changePushNotifications = async (e) => {
     setPushNotifications(e.target.checked)
@@ -92,44 +78,39 @@ const NotificationsTab = () => {
   return (
     <div className="border-l h-full">
       <TabTitle>Notifications</TabTitle>
-      {loadingProfileData && <div className="p-4">Loading...</div>}
 
-      {!loadingProfileData && (
-        <>
-          <ToggleSection
-            value="pushNotifications"
-            checked={pushNotifications}
-            onChange={changePushNotifications}
-            name="Push notifications"
-            description="The dcos.plus notification system notifies you of important events such as replies, mentions, updates, etc."
-          />
+      <ToggleSection
+        value="pushNotifications"
+        checked={pushNotifications}
+        onChange={changePushNotifications}
+        name="Push notifications"
+        description="The dcos.plus notification system notifies you of important events such as replies, mentions, updates, etc."
+      />
 
-          <ToggleSection
-            value="emailNotifications"
-            checked={emailNotifications}
-            onChange={changeEmailNotifications}
-            name="Email notifications"
-            description="Receive notifications via email so you never miss a mention, reply, upvote or comment on docs.plus"
-          />
+      <ToggleSection
+        value="emailNotifications"
+        checked={emailNotifications}
+        onChange={changeEmailNotifications}
+        name="Email notifications"
+        description="Receive notifications via email so you never miss a mention, reply, upvote or comment on docs.plus"
+      />
 
-          <TabSection
-            name="Send me emails for:"
-            className={`${emailNotifications ? 'flex' : 'hidden'}`}>
-            <Checkbox
-              className="mt-2"
-              label="New activity notifications (mentions, replies, etc.)"
-              onChange={changeNotificationNewActivity}
-              checked={notificationNewActivity}
-            />
-            <Checkbox
-              className="mt-2"
-              label="Email me System notifications (security related, always on)"
-              disabled={true}
-              checked={true}
-            />
-          </TabSection>
-        </>
-      )}
+      <TabSection
+        name="Send me emails for:"
+        className={`${emailNotifications ? 'flex' : 'hidden'}`}>
+        <Checkbox
+          className="mt-2"
+          label="New activity notifications (mentions, replies, etc.)"
+          onChange={changeNotificationNewActivity}
+          checked={notificationNewActivity}
+        />
+        <Checkbox
+          className="mt-2"
+          label="Email me System notifications (security related, always on)"
+          disabled={true}
+          checked={true}
+        />
+      </TabSection>
     </div>
   )
 }
