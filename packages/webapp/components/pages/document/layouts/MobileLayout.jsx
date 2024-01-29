@@ -1,11 +1,14 @@
 import React from 'react'
-import { useEditorStateContext } from '@context/EditorContext'
 import PadTitle from '@components/TipTap/pad-title-section/PadTitle'
 import FilterModal from '../components/FilterModal'
 import Editor from '../components/Editor'
+import { useStore } from '@stores'
 
 const MobileLayout = () => {
-  const { isMobile } = useEditorStateContext()
+  const {
+    editor: { isMobile }
+  } = useStore((state) => state.settings)
+
   const deviceType = isMobile ? 'mobile' : 'desktop'
 
   return (

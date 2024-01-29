@@ -3,7 +3,7 @@ import dynamic from 'next/dynamic'
 import SignInPanel from '@pages/panels/SignInPanel'
 import ProfilePanel from '@pages/panels/profile/ProfilePanel'
 import { twMerge } from 'tailwind-merge'
-import { useAuthStore } from '@utils/supabase'
+import { useAuthStore } from '@stores'
 
 const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
 const DocumentsPanel = dynamic(() => import('@pages/panels/DocumentsPanel'))
@@ -21,7 +21,7 @@ function TabLayout({ children, className, footer }) {
 }
 
 const ControlCenter = () => {
-  const user = useAuthStore.use.user()
+  const user = useAuthStore((state) => state.profile)
 
   return (
     <div className="bg-slate-100 rounded-md drop-shadow">

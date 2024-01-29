@@ -1,13 +1,17 @@
 import { useEffect } from 'react'
 import { db } from '../db'
-import { useEditorStateContext } from '@context/EditorContext'
 import getHeadingsFilterMap from './helpers/filterLogic'
 import { useRouter } from 'next/router'
+import { useStore } from '@stores'
 
 const useApplyFilters = (editor) => {
   const router = useRouter()
   const { slugs } = router.query
-  const { setFilterResult, setApplyingFilters, rendering, loading } = useEditorStateContext()
+  const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
+
+  const {
+    editor: { rendering, loading }
+  } = useStore((state) => state.settings)
 
   useEffect(() => {
     if (!editor || rendering || loading || slugs.length === 1) return
@@ -42,8 +46,8 @@ const useApplyFilters = (editor) => {
     localStorage.setItem('headingMap', JSON.stringify(dbHeadigMap))
 
     const timer = setTimeout(() => {
-      setFilterResult({ sortedSlugs, selectedNodes })
-      setApplyingFilters(false)
+      setWorkspaceEditorSetting('filterResult', { sortedSlugs, selectedNodes })
+      setWorkspaceEditorSetting('applyingFilters', false)
     }, 300)
 
     return () => clearTimeout(timer)

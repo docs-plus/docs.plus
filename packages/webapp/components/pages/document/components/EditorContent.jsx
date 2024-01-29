@@ -1,14 +1,14 @@
 import { EditorContent as TiptapEditor } from '@tiptap/react'
 import DocumentWithPictureLoader from '@components/DocumentWithPictureLoader'
 import DocumentSimpleLoader from '@components/DocumentSimpleLoader'
-import { useEditorStateContext } from '@context/EditorContext'
+import { useStore } from '@stores'
 
 const EditorContent = ({ editor }) => {
-  const { loading } = useEditorStateContext()
-  if (loading || !editor) {
+  const { editor: editorSetting } = useStore((state) => state.settings)
+
+  if (editorSetting.loading || !editor) {
     return (
-      <div
-        className={`ProseMirror tipta__editor loading mb-12 border-t-0 pt-8 sm:mb-0 sm:p-8 px-6 `}>
+      <div className={`ProseMirror tipta__editor mb-12 border-t-0 pt-8 sm:mb-0 sm:p-8 px-6 `}>
         <DocumentSimpleLoader className="!h-auto heading !border-t-0" level="1" />
         <DocumentWithPictureLoader className="!h-auto heading" level="1" />
         <DocumentSimpleLoader className="!h-auto heading" level="1" />

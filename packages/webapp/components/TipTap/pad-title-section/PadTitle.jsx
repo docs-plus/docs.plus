@@ -4,15 +4,14 @@ import { DocsPlus, Hamburger, Check } from '@icons'
 import DocTitle from '../DocTitle'
 import PresentUsers from './PresentUsers'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
-import { useEditorStateContext } from '@context/EditorContext'
 import FilterBar from './FilterBar'
 import ProfileSection from './ProfileSection'
 import ShareModalSection from './ShareSection'
+import { useStore } from '@stores'
 
 const PadTitle = () => {
   const isKeyboardOpen = useDetectKeyboardOpen()
-
-  const { isAuthServiceAvailable } = useEditorStateContext()
+  const { isAuthServiceAvailable } = useStore((state) => state.settings)
 
   const btn_leftOpenModal = (e) => {
     if (!e.target.closest('button').classList.contains('btn_modal')) return

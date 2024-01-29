@@ -3,18 +3,17 @@ import Button from '@components/ui/Button'
 import slugify from 'slugify'
 import { useState, useContext } from 'react'
 import { TabsContext } from '@components/ui/Tabs/Tabs'
-import { useEditorStateContext } from '@context/EditorContext'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
-import { useAuthStore } from '@utils/supabase'
+import { useStore, useAuthStore } from '@stores'
 
 const DeckPanel = ({ hostname }) => {
-  const user = useAuthStore.use.user()
+  const user = useAuthStore((state) => state.profile)
 
-  const { isAuthServiceAvailable } = useEditorStateContext()
   const [loadingDoc, setLoadingDoc] = useState(false)
   const [error, setError] = useState(null)
   const { setActiveTab } = useContext(TabsContext)
   const [documentName, setDocumentName] = useState('')
+  const { isAuthServiceAvailable } = useStore((state) => state.settings)
 
   // slugify the docNameRef
   const validateDocName = (docSlug) => {

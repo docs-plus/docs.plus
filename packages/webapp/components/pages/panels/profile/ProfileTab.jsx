@@ -7,17 +7,18 @@ import AvatarSection from './sections/AvatarSection'
 import AccountInfoSection from './sections/AccountInfoSection'
 import AboutSection from './sections/AboutSection'
 import SocialLinksSection from './sections/SocialLinksSection'
-import useProfileData from '@hooks/useProfileData'
-import { useAuthStore, supabaseClient } from '@utils/supabase'
+import { supabaseClient } from '@utils/supabase'
+import { useAuthStore } from '@stores'
 
 // Defined constants
 const PROFILES = 'profiles'
 
 const ProfileTab = () => {
-  const user = useAuthStore.use.user()
+  const user = useAuthStore((state) => state.profile)
+  const displayName = useAuthStore((state) => state.displayName)
 
-  const [fullName, setFullName] = useState(user.user_metadata.full_name || '')
-  const [userName, setUserName] = useState(user.user_metadata.username || '')
+  const [fullName, setFullName] = useState(displayName || '')
+  const [userName, setUserName] = useState(user.username || displayName || '')
 
   const [bio, setBio] = useState('')
   const [company, setCompany] = useState('')
@@ -29,24 +30,18 @@ const ProfileTab = () => {
 
   const [loading, setLoading] = useState(false)
 
-  const { loadingProfileData, profileData, profileFetchingError } = useProfileData()
-
   useEffect(() => {
-    if (profileFetchingError) {
-      console.error(profileFetchingError)
-      toast.error('Error fetching your profile' + profileFetchingError.message)
+    if (user) {
+      setFullName(user.full_name || '')
+      setUserName(user.username || '')
+      setBio(user.about || '')
+      setCompany(user.company || '')
+      setJobTitle(user.job_title || '')
+      setTwitter(user.twitter || '')
+      setFacebook(user.facebook || '')
+      setWebsite(user.website || '')
     }
-    if (profileData) {
-      setFullName(profileData.full_name || '')
-      setUserName(profileData.username || '')
-      setBio(profileData.about || '')
-      setCompany(profileData.company || '')
-      setJobTitle(profileData.job_title || '')
-      setTwitter(profileData.twitter || '')
-      setFacebook(profileData.facebook || '')
-      setWebsite(profileData.website || '')
-    }
-  }, [loadingProfileData, profileData, profileFetchingError])
+  }, [user])
 
   const checkUserName = useCallback(async (userName) => {
     if (userName && userName.length < 4 && userName.indexOf(' ') >= 0) {
@@ -114,63 +109,58 @@ const ProfileTab = () => {
   return (
     <div className="border-l h-full relative  ">
       <TabTitle className="">Profile</TabTitle>
-      {loadingProfileData ? (
-        <div className="p-4">Loading...</div>
-      ) : (
-        <>
-          <div className="h-[30rem] overflow-y-auto relative">
-            <TabSection
-              name="Profile Picture"
-              description="Upload a picture to make your profile stand out and let people recognize your comments and contributions easily!">
-              <AvatarSection
-                profileData={profileData}
-                fullName={fullName}
-                setFullName={setFullName}
-                userName={userName}
-                setUserName={setUserName}
-              />
-            </TabSection>
-            <TabSection name="Account Information">
-              <AccountInfoSection
-                profileData={profileData}
-                fullName={fullName}
-                setFullName={setFullName}
-                userName={userName}
-                setUserName={setUserName}
-              />
-            </TabSection>
-            <TabSection name="About">
-              <AboutSection
-                profileData={profileData}
-                bio={bio}
-                setBio={setBio}
-                company={company}
-                setCompany={setCompany}
-                jobTitle={jobTitle}
-                setJobTitle={setJobTitle}
-              />
-            </TabSection>
-            <TabSection
-              name="Profile Social Links"
-              description="Add your social media profiles so others can connect with you and you can grow your network!">
-              <SocialLinksSection
-                profileData={profileData}
-                twitter={twitter}
-                setTwitter={setTwitter}
-                facebook={facebook}
-                setFacebook={setFacebook}
-                website={website}
-                setWebsite={setWebsite}
-              />
-            </TabSection>
-          </div>
-          <div className="sticky bottom-0 flex flex-row-reverse border-t pt-4 bg-white z-10">
-            <Button className="!w-32 mr-8 text-sm !p-2" loading={loading} onClick={handleSave}>
-              Save Changes
-            </Button>
-          </div>
-        </>
-      )}
+
+      <div className="h-[30rem] overflow-y-auto relative">
+        <TabSection
+          name="Profile Picture"
+          description="Upload a picture to make your profile stand out and let people recognize your comments and contributions easily!">
+          <AvatarSection
+            profileData={user}
+            fullName={fullName}
+            setFullName={setFullName}
+            userName={userName}
+            setUserName={setUserName}
+          />
+        </TabSection>
+        <TabSection name="Account Information">
+          <AccountInfoSection
+            profileData={user}
+            fullName={fullName}
+            setFullName={setFullName}
+            userName={userName}
+            setUserName={setUserName}
+          />
+        </TabSection>
+        <TabSection name="About">
+          <AboutSection
+            profileData={user}
+            bio={bio}
+            setBio={setBio}
+            company={company}
+            setCompany={setCompany}
+            jobTitle={jobTitle}
+            setJobTitle={setJobTitle}
+          />
+        </TabSection>
+        <TabSection
+          name="Profile Social Links"
+          description="Add your social media profiles so others can connect with you and you can grow your network!">
+          <SocialLinksSection
+            profileData={user}
+            twitter={twitter}
+            setTwitter={setTwitter}
+            facebook={facebook}
+            setFacebook={setFacebook}
+            website={website}
+            setWebsite={setWebsite}
+          />
+        </TabSection>
+      </div>
+      <div className="sticky bottom-0 flex flex-row-reverse border-t pt-4 bg-white z-10">
+        <Button className="!w-32 mr-8 text-sm !p-2" loading={loading} onClick={handleSave}>
+          Save Changes
+        </Button>
+      </div>
     </div>
   )
 }

@@ -1,26 +1,26 @@
 import { useEffect, useState } from 'react'
-import { useEditorStateContext } from '@context/EditorContext'
 import { PenSlash } from '@icons'
 import { twMerge } from 'tailwind-merge'
 import { useDocumentMetadataContext } from '@context/DocumentMetadataContext'
+import { useStore } from '@stores'
 
 const ReadOnlyIndicator = ({ className }) => {
   const docMetadata = useDocumentMetadataContext()
   const [isReadOnly, setIsReadOnly] = useState(docMetadata.readOnly)
-  const { EditorProvider } = useEditorStateContext()
+  const { hocuspocusProvider } = useStore((state) => state.settings)
 
   useEffect(() => {
-    if (!EditorProvider) return
+    if (!hocuspocusProvider) return
 
     const readOnlyStateHandler = ({ payload }) => {
       const msg = JSON.parse(payload)
       if (msg.type === 'readOnly') setIsReadOnly(msg.state)
     }
 
-    EditorProvider.on('stateless', readOnlyStateHandler)
+    hocuspocusProvider.on('stateless', readOnlyStateHandler)
 
-    return () => EditorProvider.off('stateless', readOnlyStateHandler)
-  }, [EditorProvider])
+    return () => hocuspocusProvider.off('stateless', readOnlyStateHandler)
+  }, [hocuspocusProvider])
 
   const classes = twMerge(
     'rounded-md p-2 ml-4 hover:border-docsy transition-all hover:drop-shadow-md flex align-middle items-center justify-center border text-gray-500',

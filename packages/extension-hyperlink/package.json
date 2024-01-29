@@ -47,5 +47,8 @@
   "peerDependencies": {
     "@tiptap/core": "^2.0.3",
     "@tiptap/pm": "^2.0.3"
+  },
+  "devDependencies": {
+    "rollup-plugin-sourcemaps": "^0.6.3"
   }
 }

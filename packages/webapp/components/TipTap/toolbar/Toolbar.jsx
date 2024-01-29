@@ -4,18 +4,19 @@ import { Link, Gear, ClearMark, Filter, Folder } from '@icons'
 import ToolbarButton from './ToolbarButton'
 import Icon from './Icon'
 import FilterModal from './FilterModal'
-import { useEditorStateContext } from '@context/EditorContext'
 import { Popover, PopoverTrigger } from '@components/ui/Popover'
 import { Dialog, DialogTrigger, DialogContent } from '@components/ui/Dialog'
 import SelectHeadingBox from './SelectHeadingBox'
 import InsertMultimediaButton from './InsertMultimediaButton'
+import { useStore } from '@stores'
+
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
   loading: () => <div>Loading...</div>
 })
 const GearModal = dynamic(() => import('./GearModal'))
 
 const Toolbar = ({ editor }) => {
-  const { isAuthServiceAvailable } = useEditorStateContext()
+  const { isAuthServiceAvailable } = useStore((state) => state.settings)
 
   return (
     <div className="tiptap__toolbar   editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-4">

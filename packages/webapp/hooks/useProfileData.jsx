@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react'
-import { useAuthStore, supabaseClient } from '@utils/supabase'
+import { supabaseClient } from '@utils/supabase'
+import { useAuthStore } from '@stores'
 
 const useProfileData = () => {
-  const user = useAuthStore.use.user()
+  const user = useAuthStore((state) => state.profile)
 
   const [loadingProfileData, setLoadingProfileData] = useState(false)
   const [profileData, setProfileData] = useState(null)

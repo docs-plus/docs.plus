@@ -33,8 +33,16 @@
         align-items: center;
       }
 
+      .btnChat {
+        opacity: 0;
+      }
+
+      &:hover > span > span > .btnChat {
+        opacity: 1;
+      }
+
       .btnFold {
-        transition: all .2s ease-in-out;
+        transition: all 0.2s ease-in-out;
         margin-right: 4px;
         opacity: 0;
         display: flex;
@@ -75,7 +83,7 @@
         @apply text-sm text-gray-400;
 
         &::after {
-          content: "";
+          content: '';
           display: block;
           width: 100%;
           border: 1px solid #4285f4;
@@ -86,7 +94,7 @@
 
         &:hover {
           opacity: 0.5;
-          color: #0D0D0D;
+          color: #0d0d0d;
         }
       }
 

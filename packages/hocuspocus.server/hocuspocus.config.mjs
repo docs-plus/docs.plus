@@ -1,6 +1,5 @@
 import * as Y from 'yjs'
 import cryptoRandomString from 'crypto-random-string'
-
 import { PrismaClient } from '@prisma/client'
 import { generateJSON } from '@tiptap/html'
 import Document from '@tiptap/extension-document'
@@ -11,9 +10,7 @@ import { Database } from '@hocuspocus/extension-database'
 import { Throttle } from '@hocuspocus/extension-throttle'
 import { Redis } from '@hocuspocus/extension-redis'
 import { Logger } from '@hocuspocus/extension-logger'
-
 import { checkEnvBolean } from './utils/index.mjs'
-
 import Queue from 'bull'
 
 const StoreDocument = new Queue('store documents changes', {
@@ -115,13 +112,11 @@ const configureExtensions = () => {
     new Database({
       fetch: async ({ documentName, context }) => {
         try {
-          const doc = await prisma.documents.findMany({
-            take: 1,
+          const doc = await prisma.documents.findFirst({
             where: { documentId: documentName },
             orderBy: { id: 'desc' }
           })
-
-          return doc[0]?.data || generateDefaultState()
+          return doc?.data || generateDefaultState()
         } catch (err) {
           console.error('Error fetching data:', err)
           await prisma.$disconnect()
@@ -130,7 +125,6 @@ const configureExtensions = () => {
       },
       store: async (data) => {
         const { documentName, state, context } = data
-        // console.log(data.requestHeaders.cookie.split(';')[0].split('=')[1])
         StoreDocument.add({
           documentName,
           state: state.toString('base64'),

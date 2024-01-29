@@ -6,9 +6,9 @@ import TabSection from './components/TabSection'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import Button from '@components/ui/Button'
 import toast from 'react-hot-toast'
-import useEmail from '@hooks/useEmail'
-import useProfileData from '@hooks/useProfileData'
-import { useAuthStore, supabaseClient } from '@utils/supabase'
+import useEmailValidation from '@hooks/useEmailValidation'
+import { supabaseClient } from '@utils/supabase'
+import { useAuthStore } from '@stores'
 
 const ChangeEmailSection = ({
   email,
@@ -81,26 +81,18 @@ const SecuritySection = ({ email, loading, acceptNewEmail, setLoading }) => (
 )
 
 const SecurityTab = () => {
-  const user = useAuthStore.use.user()
+  const user = useAuthStore((state) => state.profile)
 
-  const { profileData, loadingProfileData, profileFetchingError } = useProfileData()
+  const {
+    email,
+    setEmail,
+    error: emailError,
+    setError: setEmailError
+  } = useEmailValidation(user.email)
 
-  const { email, setEmail, error: emailError, setError: setEmailError } = useEmail(user.email)
   const [displayChangeEmailSection, setDisplayChangeEmailSection] = useState(false)
   const [loading, setLoading] = useState(false)
   const [acceptNewEmail, setAcceptNewEmail] = useState(false)
-
-  useEffect(() => {
-    if (profileFetchingError) {
-      console.error(profileFetchingError)
-      toast.error('Error fetching your profile: ' + profileFetchingError.message)
-    }
-  }, [loadingProfileData, profileData, profileFetchingError])
-
-  if (profileFetchingError) {
-    console.error(profileFetchingError)
-    toast.error('Error fetching your profile: ' + profileFetchingError.message)
-  }
 
   const validateEmailMutation = useMutation(
     (email) =>
@@ -172,12 +164,7 @@ const SecurityTab = () => {
     }
   }
 
-  return loadingProfileData ? (
-    <div className="border-l h-full">
-      <TabTitle>Security</TabTitle>
-      <div className="p-4">Loading...</div>
-    </div>
-  ) : displayChangeEmailSection ? (
+  return displayChangeEmailSection ? (
     <ChangeEmailSection
       email={email}
       emailError={emailError}
@@ -189,7 +176,7 @@ const SecurityTab = () => {
   ) : (
     <SecuritySection
       email={email}
-      profileData={profileData}
+      profileData={user}
       loading={displayChangeEmailSection}
       setLoading={setDisplayChangeEmailSection}
       acceptNewEmail={acceptNewEmail}

@@ -306,7 +306,7 @@ export const Hamburger = ({ size = 24, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const Filter = ({ size = 24, fill = 'black', className }) => {
+export const Filter = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path fill={fill} d="M17.9502 6.3747C18.4741 5.71993 18.0079 4.75 17.1694 4.75H6.83062C5.99212 4.75 5.52595 5.71993 6.04976 6.3747L9.31174 10.4522C9.59544 10.8068 9.75 11.2474 9.75 11.7016V18.25C9.75 18.8023 10.1977 19.25 10.75 19.25H13.25C13.8023 19.25 14.25 18.8023 14.25 18.25V11.7016C14.25 11.2474 14.4046 10.8068 14.6883 10.4522L17.9502 6.3747Z" />
@@ -315,7 +315,7 @@ export const Filter = ({ size = 24, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const Pencil = ({ size = 24, fill = 'transparent', className }) => {
+export const Pencil = ({ size = 24, fill = 'transparent', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M4.75 19.2498L9 18.2498L18.9491 8.3007C19.3397 7.91018 19.3397 7.27702 18.9491 6.88649L17.1134 5.05071C16.7228 4.66018 16.0897 4.66018 15.6991 5.05071L5.75 14.9998L4.75 19.2498Z" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -325,7 +325,7 @@ export const Pencil = ({ size = 24, fill = 'transparent', className }) => {
 }
 
 // prettier-ignore
-export const Check = ({ size = 24, fill = 'transparent', className }) => {
+export const Check = ({ size = 24, fill = 'transparent', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M5.75 12.8665L8.33995 16.4138C9.15171 17.5256 10.8179 17.504 11.6006 16.3715L18.25 6.75" stroke="black" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
@@ -334,7 +334,7 @@ export const Check = ({ size = 24, fill = 'transparent', className }) => {
 }
 
 // prettier-ignore
-export const OrderListMobile = ({ size = 24, fill = 'none', className }) => {
+export const OrderListMobile = ({ size = 24, fill = 'none', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 25 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M3 16H5V16.5H4V17.5H5V18H3V19H6V15H3V16ZM4 9H5V5H3V6H4V9ZM3 11H4.8L3 13.1V14H6V13H4.2L6 10.9V10H3V11ZM8 6V8H22V6H8ZM8 18H22V16H8V18ZM8 13H22V11H8V13Z" fill="black" />
@@ -343,7 +343,7 @@ export const OrderListMobile = ({ size = 24, fill = 'none', className }) => {
 }
 
 // prettier-ignore
-export const BoldMobile = ({ size = 24, fill = 'black', className }) => {
+export const BoldMobile = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 25 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path fill={fill} d="M15.7499 11.8C16.2395 11.5018 16.6527 11.0934 16.9566 10.6073C17.2604 10.1212 17.4465 9.57077 17.4999 9C17.5092 8.48388 17.4167 7.971 17.2277 7.49063C17.0387 7.01027 16.757 6.57184 16.3985 6.20039C16.0401 5.82894 15.6119 5.53174 15.1386 5.32578C14.6653 5.11981 14.156 5.00911 13.6399 5H7.1499V19H14.1499C14.6411 18.9948 15.1264 18.8929 15.5781 18.7001C16.0299 18.5073 16.4392 18.2274 16.7828 17.8764C17.1264 17.5253 17.3975 17.1101 17.5806 16.6543C17.7637 16.1985 17.8552 15.7112 17.8499 15.22V15.1C17.8502 14.4071 17.6528 13.7285 17.2808 13.144C16.9088 12.5594 16.3777 12.0931 15.7499 11.8ZM9.1499 7H13.3499C13.7761 6.98681 14.1961 7.10428 14.5536 7.33665C14.9111 7.56902 15.1889 7.90517 15.3499 8.3C15.5128 8.82779 15.4601 9.39859 15.2034 9.88765C14.9467 10.3767 14.5068 10.7443 13.9799 10.91C13.7753 10.97 13.5631 11.0003 13.3499 11H9.1499V7ZM13.7499 17H9.1499V13H13.7499C14.1761 12.9868 14.5961 13.1043 14.9536 13.3367C15.3111 13.569 15.5889 13.9052 15.7499 14.3C15.9128 14.8278 15.8601 15.3986 15.6034 15.8877C15.3467 16.3767 14.9068 16.7443 14.3799 16.91C14.1753 16.97 13.9631 17.0003 13.7499 17Z" />
@@ -352,7 +352,7 @@ export const BoldMobile = ({ size = 24, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const ItalicMobile = ({ size = 24, fill = 'black', className }) => {
+export const ItalicMobile = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 25 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path fill={fill} d="M12.2601 9H14.2601L12.0601 19H10.0601L12.2601 9ZM13.9401 5C13.7423 5 13.5489 5.05865 13.3845 5.16853C13.22 5.27841 13.0919 5.43459 13.0162 5.61732C12.9405 5.80004 12.9207 6.00111 12.9593 6.19509C12.9979 6.38907 13.0931 6.56725 13.233 6.70711C13.3728 6.84696 13.551 6.9422 13.745 6.98079C13.9389 7.01937 14.14 6.99957 14.3227 6.92388C14.5055 6.84819 14.6616 6.72002 14.7715 6.55557C14.8814 6.39112 14.9401 6.19778 14.9401 6C14.9401 5.73478 14.8347 5.48043 14.6472 5.29289C14.4596 5.10536 14.2053 5 13.9401 5Z" />
@@ -361,7 +361,7 @@ export const ItalicMobile = ({ size = 24, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const UnderlineMobile = ({ size = 24, fill = 'black', className }) => {
+export const UnderlineMobile = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 25 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path fill={fill} d="M19.5 20V22H5.5V20H19.5ZM16.5 13.215C16.4671 13.875 16.2711 14.5165 15.9297 15.0823C15.5883 15.6481 15.1121 16.1205 14.5435 16.4572C13.975 16.794 13.3318 16.9847 12.6716 17.0122C12.0114 17.0397 11.3546 16.9033 10.76 16.615C10.0746 16.3185 9.49341 15.8241 9.09077 15.1952C8.68813 14.5663 8.48242 13.8315 8.5 13.085V5.005H6.5V13.215C6.53383 14.1564 6.78885 15.0766 7.24442 15.9012C7.69998 16.7257 8.34329 17.4314 9.12227 17.9611C9.90125 18.4908 10.794 18.8296 11.7283 18.9502C12.6625 19.0707 13.6121 18.9696 14.5 18.655C15.6811 18.2613 16.7059 17.5012 17.4252 16.485C18.1446 15.4689 18.5211 14.2498 18.5 13.005V5.005H16.5V13.215ZM16.5 5H18.5H16.5ZM8.5 5H6.5H8.5Z" />
@@ -705,6 +705,21 @@ export const MusicFile = ({ size = 24, fill = 'black', className }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="m15 12a1 1 0 0 1 -1 1h-1v4.5a2.5 2.5 0 1 1 -2.5-2.5 2.577 2.577 0 0 1 .5.05v-2.05a2 2 0 0 1 2-2h1a1 1 0 0 1 1 1zm7-1.515v8.515a5.006 5.006 0 0 1 -5 5h-10a5.006 5.006 0 0 1 -5-5v-14a5.006 5.006 0 0 1 5-5h4.515a6.955 6.955 0 0 1 4.95 2.051l3.484 3.484a6.955 6.955 0 0 1 2.051 4.95zm-6.949-7.02a4.989 4.989 0 0 0 -1.051-.781v4.316a1 1 0 0 0 1 1h4.316a4.989 4.989 0 0 0 -.781-1.051zm4.949 7.02c0-.165-.032-.323-.047-.485h-4.953a3 3 0 0 1 -3-3v-4.953c-.162-.015-.32-.047-.485-.047h-4.515a3 3 0 0 0 -3 3v14a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3z"/>
+    </svg>
+  )
+}
+
+// prettier-ignore
+export const ChatLeft = ({ size = 24, fill = 'black', className }) => {
+  return (
+    <svg
+      className={className}
+      fill={fill}
+      strokeWidth="0"
+      viewBox="0 0 16 16"
+      width={size}
+      xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 2a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H4.414a1 1 0 0 0-.707.293L.854 15.146A.5.5 0 0 1 0 14.793V2zm3.5 1a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9zm0 2.5a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9zm0 2.5a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1h-5z"></path>
     </svg>
   )
 }

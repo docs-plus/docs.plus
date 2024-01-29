@@ -11,8 +11,17 @@ module.exports = {
     // Or if using `src` directory:
     './src/**/*.{js,ts,jsx,tsx,mdx}'
   ],
-  plugins: [],
+  'tailwindCSS.experimental.classRegex': [
+    'twc\\.[^`]+`([^`]*)`',
+    'twc\\(.*?\\).*?`([^)]*)',
+    ['twc\\.[^`]+\\(([^)]*)\\)', "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+    ['twc\\(.*?\\).*?\\(([^)]*)\\)', "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
+  plugins: [require('@tailwindcss/typography'), require('daisyui')],
   darkMode: 'class',
+  daisyui: {
+    themes: ['light', 'lemonade']
+  },
   theme: {
     fontFamily: {
       sans: 'Helvetica, Arial, sans-serif'

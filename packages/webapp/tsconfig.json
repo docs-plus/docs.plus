@@ -2,6 +2,11 @@
   "compilerOptions": {
     "target": "ES2019",
     "baseUrl": ".",
+      "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "lib": ["dom", "dom.iterable", "esnext"],
     "paths": {
       "@utils/*": ["utils/*"],
@@ -14,7 +19,9 @@
       "@icons": ["components/icons/Icons.jsx"],
       "@tiptapEditor": ["components/tiptap/*"],
       "@pages": ["components/pages/*"],
-      "@stores": ["stores/index.js"],
+      "@stores": ["stores/index.ts"],
+      "@types": ["types/supabase.ts"],
+      "@api": ["api/index.ts"],
     },
     "allowJs": true,
     "skipLibCheck": true,
@@ -22,8 +29,9 @@
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
     "esModuleInterop": true,
+    "maxNodeModuleJsDepth": 10,
     "module": "esnext",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
     "jsx": "preserve",
@@ -34,7 +42,7 @@
     "**/*.ts",
     "**/*.tsx",
     "pages/index.jsx",
-    "pages/_app.jsx",
+    "pages/_app.tsx",
     "pages/api/hello.js",
     "middleware.js"
   ],
