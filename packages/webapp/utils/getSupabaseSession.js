@@ -24,7 +24,7 @@ export async function getSupabaseSession(context) {
 
     const {
       data: { session: sessionData }
-    } = await supabase.auth.getSession()
+    } = await supabase.auth.getSession().catch(console.error)
 
     session = sessionData
   }

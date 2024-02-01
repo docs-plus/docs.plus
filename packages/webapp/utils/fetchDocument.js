@@ -3,8 +3,8 @@ export async function fetchDocument(slug, session) {
   const url = session ? `${baseAPIUrl}?userId=${session.user.id}` : baseAPIUrl
   const fetchOptions = session ? { headers: { token: session.access_token || '' } } : {}
 
-  const documentMetadata = await fetch(url, fetchOptions)
-  const { data } = await documentMetadata.json()
+  const documentMetadata = await fetch(url, fetchOptions).catch(console.error)
+  const { data } = await documentMetadata.json().catch(console.error)
 
   const docClientId = `${data && data.isPrivate ? 'private' : 'public'}.${data.documentId}`
 
