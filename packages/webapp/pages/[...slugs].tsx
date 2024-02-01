@@ -90,9 +90,9 @@ export default Document
 
 export async function getServerSideProps(context: any) {
   const slug = context.query.slugs.at(0)
-  const session = await getSupabaseSession(context)
 
   try {
+    const session = await getSupabaseSession(context)
     const docMetadata = await fetchDocument(slug, session)
     const device = new MobileDetect(context.req.headers['user-agent'])
 
