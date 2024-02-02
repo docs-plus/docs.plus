@@ -54,7 +54,6 @@ const Document = ({ slugs, docMetadata }: any) => {
           .select()
 
         const { data: channels } = await getChannels(docMetadata.documentId)
-        console.log({ channels })
         if (channels) bulkSetChannels(channels)
       } catch (error) {
         console.error('checkworkspace error:', error)
@@ -95,11 +94,6 @@ export async function getServerSideProps(context: any) {
     const session = await getSupabaseSession(context)
     const docMetadata = await fetchDocument(slug, session)
     const device = new MobileDetect(context.req.headers['user-agent'])
-    console.log({
-      session,
-      docMetadata,
-      device
-    })
 
     return {
       props: {
