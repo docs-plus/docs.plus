@@ -16,6 +16,12 @@ const useYdocAndProvider = (documentId: string) => {
   })
 
   useEffect(() => {
+    console.log('useYdocAndProvider', {
+      documentId,
+      hocuspocusProvider,
+      destroyed,
+      url: `${process.env.NEXT_PUBLIC_PROVIDER_URL}`
+    })
     const createProvider = () => {
       if (typeof window !== 'undefined') {
         providerRef.current = new HocuspocusProvider({
