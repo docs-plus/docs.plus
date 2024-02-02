@@ -61,10 +61,10 @@ const useYdocAndProvider = (documentId: string) => {
             setWorkspaceEditorSetting('presentUsers', [])
             setWorkspaceEditorSetting('filterResult', [])
 
-            setTimeout(() => {
-              console.log('craete new provider')
-              createProvider()
-            }, 1000)
+            // setTimeout(() => {
+            //   console.log('craete new provider')
+            //   createProvider()
+            // }, 1000)
           }
         })
       }
