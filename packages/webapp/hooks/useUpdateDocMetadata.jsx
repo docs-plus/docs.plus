@@ -21,7 +21,11 @@ const useUpdateDocMetadata = () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify(body)
-      }).then((res) => res.json())
+      })
+        .then((res) => res.json())
+        .catch((error) => {
+          console.error('Error:', error)
+        })
     },
     onSuccess: (data) => {
       queryClient.setQueryData(['getDocumentMetadataByDocName'], data)

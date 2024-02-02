@@ -41,8 +41,8 @@ module.exports = withPWA({
   },
   eslint: {
     ignoreDuringBuilds: true
-  },
-  compiler: {
-    removeConsole: isProduction
   }
+  // compiler: {
+  //   removeConsole: isProduction
+  // }
 })

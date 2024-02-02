@@ -11,6 +11,9 @@ const useYdocAndProvider = (documentId: string) => {
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const { hocuspocusProvider } = useStore((state) => state.settings)
+  console.log({
+    websocket: process.env.NEXT_PUBLIC_PROVIDER_URL
+  })
 
   useEffect(() => {
     const createProvider = () => {
@@ -20,10 +23,10 @@ const useYdocAndProvider = (documentId: string) => {
           name: documentId,
           document: ydocRef.current,
           onStatus: (data) => {
-            // console.log('onStatus', data)
+            console.log('onStatus', data)
           },
           onSynced: (data) => {
-            // console.log('++onSynced', data)
+            console.log('++onSynced', data)
             // console.log(`++content loaded from Server, pad name: ${ documentId }`, provider?.isSynced)
             if (data?.state) setWorkspaceEditorSetting('rendering', false)
           },
@@ -31,7 +34,7 @@ const useYdocAndProvider = (documentId: string) => {
           // console.log('documentUpdateHandler', update)
           // },
           onDisconnect: (data) => {
-            // console.log('onDisconnect', data)
+            console.log('onDisconnect', data)
           },
           onMessage: (data) => {
             // console.log('onMessage', data)
@@ -43,10 +46,10 @@ const useYdocAndProvider = (documentId: string) => {
             // console.log('onStateless', { payload })
           },
           onOutgoingMessage: ({ message }) => {
-            // console.log('onOutgoingMessage', { message })
+            console.log('onOutgoingMessage', { message })
           },
           onClose: ({ event }) => {
-            // console.log('onClose', { event })
+            console.log('onClose', { event })
           },
           onDestroy: () => {
             console.info('destroy provider')

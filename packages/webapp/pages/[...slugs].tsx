@@ -95,6 +95,11 @@ export async function getServerSideProps(context: any) {
     const session = await getSupabaseSession(context)
     const docMetadata = await fetchDocument(slug, session)
     const device = new MobileDetect(context.req.headers['user-agent'])
+    console.log({
+      session,
+      docMetadata,
+      device
+    })
 
     return {
       props: {
