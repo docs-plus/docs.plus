@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useStore, useAuthStore, useChatStore } from '@stores'
 import { groupedMessages } from '@utils/groupMessages'
-import { fetchChannelInitialData, CreateChannel } from '@api'
+import { fetchChannelInitialData, CreateChannel, join2Channel } from '@api'
 import slugify from 'slugify'
 
 interface UseChannelInitialData {
@@ -46,6 +46,21 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
       input_channel_id: channelId,
       message_limit: 20
     })
+
+    console.log({
+      channelData
+    })
+
+    if (!channelData.is_user_channel_member) {
+      console.log('yep, must be join to channel!')
+      const data = await join2Channel({
+        channel_id: channelId,
+        member_id: user.id
+      })
+      console.log({
+        data
+      })
+    }
 
     if (channelError) throw new Error(channelError.message)
 

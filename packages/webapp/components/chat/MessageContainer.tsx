@@ -60,7 +60,7 @@ export default function MessageContainer({}: any) {
 
   if (error) {
     return (
-      <MessageWrapper>
+      <MessageWrapper className="flex-col justify-start">
         <Toolbar />
         <div className="badge badge-error">Error loading messages...</div>
       </MessageWrapper>

@@ -11,17 +11,7 @@ const useYdocAndProvider = (documentId: string) => {
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const { hocuspocusProvider } = useStore((state) => state.settings)
-  console.log({
-    websocket: process.env.NEXT_PUBLIC_PROVIDER_URL
-  })
-
   useEffect(() => {
-    console.log('useYdocAndProvider', {
-      documentId,
-      hocuspocusProvider,
-      destroyed,
-      url: `${process.env.NEXT_PUBLIC_PROVIDER_URL}`
-    })
     const createProvider = () => {
       if (typeof window !== 'undefined') {
         providerRef.current = new HocuspocusProvider({
@@ -29,10 +19,10 @@ const useYdocAndProvider = (documentId: string) => {
           name: documentId,
           document: ydocRef.current,
           onStatus: (data) => {
-            console.log('onStatus', data)
+            // console.log('onStatus', data)
           },
           onSynced: (data) => {
-            console.log('++onSynced', data)
+            // console.log('++onSynced', data)
             // console.log(`++content loaded from Server, pad name: ${ documentId }`, provider?.isSynced)
             if (data?.state) setWorkspaceEditorSetting('rendering', false)
           },
@@ -40,7 +30,7 @@ const useYdocAndProvider = (documentId: string) => {
           // console.log('documentUpdateHandler', update)
           // },
           onDisconnect: (data) => {
-            console.log('onDisconnect', data)
+            // console.log('onDisconnect', data)
           },
           onMessage: (data) => {
             // console.log('onMessage', data)
@@ -52,10 +42,10 @@ const useYdocAndProvider = (documentId: string) => {
             // console.log('onStateless', { payload })
           },
           onOutgoingMessage: ({ message }) => {
-            console.log('onOutgoingMessage', { message })
+            // console.log('onOutgoingMessage', { message })
           },
           onClose: ({ event }) => {
-            console.log('onClose', { event })
+            // console.log('onClose', { event })
           },
           onDestroy: () => {
             console.info('destroy provider')
@@ -66,11 +56,6 @@ const useYdocAndProvider = (documentId: string) => {
             setWorkspaceSetting('hocuspocusProvider', null)
             setWorkspaceEditorSetting('presentUsers', [])
             setWorkspaceEditorSetting('filterResult', [])
-
-            // setTimeout(() => {
-            //   console.log('craete new provider')
-            //   createProvider()
-            // }, 1000)
           }
         })
       }
@@ -87,7 +72,6 @@ const useYdocAndProvider = (documentId: string) => {
 
   useEffect(() => {
     if (!hocuspocusProvider && providerRef.current) {
-      console.log({ hocuspocusProvider, providerRef })
       setWorkspaceSetting('hocuspocusProvider', providerRef.current)
     }
   }, [providerRef.current])
