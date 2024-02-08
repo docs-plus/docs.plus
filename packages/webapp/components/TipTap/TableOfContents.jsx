@@ -239,7 +239,7 @@ const TableOfContent = ({ editor, className }) => {
 
       return renderedItems
     },
-    [toggleSection, scroll2Header, headingId]
+    [toggleSection, scroll2Header, headingId, editor]
   )
 
   if (items.length) {

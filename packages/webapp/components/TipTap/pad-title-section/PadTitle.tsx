@@ -16,18 +16,18 @@ const PadTitle = () => {
   const btn_leftOpenModal = (e) => {
     if (!e.target.closest('button').classList.contains('btn_modal')) return
 
-    const leftModal = document.querySelector('.nd_modal.left')
+    const leftModal = document.querySelector('.nd_modal.left') as HTMLDivElement
     leftModal.classList.remove('hidden')
 
-    const modalBg = leftModal.querySelector('.modalBg')
+    const modalBg = leftModal.querySelector('.modalBg') as HTMLDivElement
     modalBg.classList.add('active')
 
     // find div.ProseMirror and add attribute contenteditable=true
-    const divProseMirror = document.querySelector('.ProseMirror')
+    const divProseMirror = document.querySelector('.ProseMirror') as HTMLDivElement
     divProseMirror.setAttribute('contenteditable', 'true')
 
     setTimeout(() => {
-      leftModal.querySelector('.modalWrapper').classList.add('active')
+      leftModal.querySelector('.modalWrapper')?.classList.add('active')
     }, 200)
   }
 
@@ -37,7 +37,7 @@ const PadTitle = () => {
     <div className="flex flex-row items-center align-middle w-full justify-center sm:justify-normal">
       <div className="padLog hidden sm:block">
         <Link href="/">
-          <DocsPlus size="34" />
+          <DocsPlus size={34} />
         </Link>
       </div>
       <div className="sm:hidden">
@@ -45,14 +45,14 @@ const PadTitle = () => {
           <button
             onTouchStart={btn_blurEditor}
             className="w-10 h-10 flex align-middle justify-center items-center">
-            <Check size="30" />
+            <Check size={30} />
           </button>
         ) : (
           <button
             onTouchStart={btn_leftOpenModal}
             className="btn_modal w-10 h-10 flex align-middle justify-center items-center"
             type="button">
-            <Hamburger size="30" />
+            <Hamburger size={30} />
           </button>
         )}
       </div>

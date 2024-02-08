@@ -5,7 +5,7 @@ const PresentUsers = ({ className }: any) => {
     editor: { presentUsers }
   } = useStore((state) => state.settings)
 
-  if (!presentUsers) return null
+  if (!presentUsers || presentUsers.length <= 1) return null
 
   return (
     <div className={className}>

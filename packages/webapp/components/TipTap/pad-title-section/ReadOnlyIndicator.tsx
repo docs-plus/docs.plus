@@ -25,14 +25,14 @@ const ReadOnlyIndicator = ({ className }: any) => {
     className
   )
 
+  if (!isReadOnly) return null
+
   return (
     <>
-      {isReadOnly && (
-        <div className={classes}>
-          <PenSlash size={13} fill="#ccc" />
-          <p className="font-bold sm:flex hidden ml-3 text-xs antialiased">Read-only</p>
-        </div>
-      )}
+      <div className={classes}>
+        <PenSlash size={13} fill="#ccc" />
+        <p className="font-bold sm:flex hidden ml-3 text-xs antialiased">Read-only</p>
+      </div>
     </>
   )
 }
