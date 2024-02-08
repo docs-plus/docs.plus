@@ -13,7 +13,7 @@ const PadTitle = () => {
   const isKeyboardOpen = useDetectKeyboardOpen()
   const { isAuthServiceAvailable } = useStore((state) => state.settings)
 
-  const btn_leftOpenModal = (e) => {
+  const btn_leftOpenModal = (e: any) => {
     if (!e.target.closest('button').classList.contains('btn_modal')) return
 
     const leftModal = document.querySelector('.nd_modal.left') as HTMLDivElement
