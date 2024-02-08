@@ -4,13 +4,13 @@ import getHeadingsFilterMap from './helpers/filterLogic'
 import { useRouter } from 'next/router'
 import { useStore } from '@stores'
 
-const useApplyFilters = (editor) => {
+const useApplyFilters = () => {
   const router = useRouter()
   const { slugs } = router.query
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
 
   const {
-    editor: { rendering, loading }
+    editor: { rendering, loading, instance: editor }
   } = useStore((state) => state.settings)
 
   useEffect(() => {

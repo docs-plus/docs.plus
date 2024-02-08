@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import { useStore } from '@stores'
 
 const TITLE = 'docs.plus'
 const DESCRIPTION =
@@ -7,14 +8,18 @@ const URL = 'http://docs.plus'
 const KEYWORDS = 'docs, collaborative, real-time, knowledge, open-source'
 const IMAGE = '/icons/android-chrome-512x512.png'
 
-const HeadSeo = (
-  { title, description, url, keywords }: any = {
-    title: TITLE,
-    description: DESCRIPTION,
-    url: URL,
-    keywords: KEYWORDS
+const HeadSeo = () => {
+  const {
+    metadata,
+    editor: { isMobile, applyingFilters }
+  } = useStore((state) => state.settings)
+
+  const { title, description, url, keywords } = {
+    title: metadata?.title || TITLE,
+    description: metadata?.description || DESCRIPTION,
+    url: `${URL}/${metadata?.slug}` || URL,
+    keywords: metadata?.keywords.join(',') || KEYWORDS
   }
-) => {
   return (
     <Head>
       <title>{title}</title>

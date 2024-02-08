@@ -5,7 +5,7 @@ import Button from '@components/ui/Button'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import ToolbarButton from './ToolbarButton'
 import toast from 'react-hot-toast'
-import { useDocumentMetadataContext } from '@context/DocumentMetadataContext'
+import { useStore } from '@stores'
 
 const MediaTypes = ['Picture', 'Film', 'MusicFile', 'Youtube', 'Vimeo', 'SoundCloud', 'XTwitter']
 
@@ -58,7 +58,7 @@ async function handleFileUpload(event, docMetadata, editor) {
 
   try {
     const response = await fetch(
-      `http://localhost:2300/api/plugins/hypermultimedia/${docMetadata.documentId}`,
+      `${process.env.NEXT_PUBLIC_RESTAPI_URL}/plugins/hypermultimedia/${docMetadata.documentId}`,
       requestOptions
     )
 
@@ -103,7 +103,7 @@ async function handleFileUpload(event, docMetadata, editor) {
 }
 
 function HyperlinkForm({ onSubmit, editor }) {
-  const docMetadata = useDocumentMetadataContext()
+  const { metadata: docMetadata } = useStore((state) => state.settings)
 
   const [mediaURL, setMediaURL] = useState('')
   const [mediaType, setMediaType] = useState(MediaTypes[0])

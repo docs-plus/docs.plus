@@ -13,7 +13,6 @@ import Toggle from '@components/ui/Toggle'
 import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
 import { PopoverContent } from '@components/ui/Popover'
-import { useDocumentMetadataContext } from '@context/DocumentMetadataContext'
 import { useAuthStore, useStore } from '@stores'
 
 const ToggleSection = ({ name, className, description, value, checked, onChange }: any) => {
@@ -33,10 +32,12 @@ const ToggleSection = ({ name, className, description, value, checked, onChange 
 }
 
 const GearModal = ({ className }: any) => {
-  const docMetadata = useDocumentMetadataContext() as any
-
   const user = useAuthStore((state) => state.profile)
-  const { hocuspocusProvider, isAuthServiceAvailable } = useStore((state) => state.settings)
+  const {
+    hocuspocusProvider,
+    isAuthServiceAvailable,
+    metadata: docMetadata
+  } = useStore((state) => state.settings)
 
   const [indentSetting, setIndentSetting] = useBooleanLocalStorageState(
     'setting.indentHeading',

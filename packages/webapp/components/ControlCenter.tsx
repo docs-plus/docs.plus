@@ -8,9 +8,10 @@ import { useAuthStore } from '@stores'
 const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
 const DocumentsPanel = dynamic(() => import('@pages/panels/DocumentsPanel'))
 
-function TabLayout({ children, className, footer }) {
+function TabLayout({ name, children, className, footer }: any) {
   return (
     <TabPanel
+      name={name}
       className={twMerge(
         `flex flex-wrap sm:justify-center sm:m-auto p-2 sm:p-6 sm:py-6 pb-2 sm:pb-2`,
         className

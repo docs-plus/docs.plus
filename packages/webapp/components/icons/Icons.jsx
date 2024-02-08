@@ -249,7 +249,7 @@ export const SearchDoc = ({ size = 18, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const DocsPlus = ({ size = 18, fill = 'black', className }) => {
+export const DocsPlus = ({ size = 18, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 1954.69 2508.26" width={size} xmlns="http://www.w3.org/2000/svg">
       <defs>
@@ -417,7 +417,7 @@ export const Sparkles = ({ size = 24, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const OpenEnvelope = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const OpenEnvelope = ({ size = 24, fill = 'rgb(104, 81, 255)', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 40 40" width={size} xmlns="http://www.w3.org/2000/svg">
       <path
@@ -428,7 +428,7 @@ export const OpenEnvelope = ({ size = 24, fill = 'rgb(104, 81, 255)', className 
 }
 
 // prettier-ignore
-export const Envelope = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const Envelope = ({ size = 24, fill = 'rgb(104, 81, 255)', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M19,1H5A5.006,5.006,0,0,0,0,6V18a5.006,5.006,0,0,0,5,5H19a5.006,5.006,0,0,0,5-5V6A5.006,5.006,0,0,0,19,1ZM5,3H19a3,3,0,0,1,2.78,1.887l-7.658,7.659a3.007,3.007,0,0,1-4.244,0L2.22,4.887A3,3,0,0,1,5,3ZM19,21H5a3,3,0,0,1-3-3V7.5L8.464,13.96a5.007,5.007,0,0,0,7.072,0L22,7.5V18A3,3,0,0,1,19,21Z"/>
@@ -437,7 +437,7 @@ export const Envelope = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) =
 }
 
 // prettier-ignore
-export const ShieldCheck = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const ShieldCheck = ({ size = 24, fill = 'rgb(104, 81, 255)', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M18.581,2.14,12.316.051a1,1,0,0,0-.632,0L5.419,2.14A4.993,4.993,0,0,0,2,6.883V12c0,7.563,9.2,11.74,9.594,11.914a1,1,0,0,0,.812,0C12.8,23.74,22,19.563,22,12V6.883A4.993,4.993,0,0,0,18.581,2.14ZM20,12c0,5.455-6.319,9.033-8,9.889-1.683-.853-8-4.42-8-9.889V6.883A3,3,0,0,1,6.052,4.037L12,2.054l5.948,1.983A3,3,0,0,1,20,6.883Z"/>
@@ -447,7 +447,7 @@ export const ShieldCheck = ({ size = 24, fill = 'rgb(104, 81, 255)', className }
 }
 
 // prettier-ignore
-export const Bell = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const Bell = ({ size = 24, fill = 'rgb(104, 81, 255)', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <g id="_01_align_center">
@@ -458,7 +458,7 @@ export const Bell = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
 }
 
 // prettier-ignore
-export const AngleSmallRight = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const AngleSmallRight = ({ size = 24, fill = 'rgb(104, 81, 255)', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
         <path d="M15.4,9.88,10.81,5.29a1,1,0,0,0-1.41,0,1,1,0,0,0,0,1.42L14,11.29a1,1,0,0,1,0,1.42L9.4,17.29a1,1,0,0,0,1.41,1.42l4.59-4.59A3,3,0,0,0,15.4,9.88Z"/>
@@ -467,7 +467,7 @@ export const AngleSmallRight = ({ size = 24, fill = 'rgb(104, 81, 255)', classNa
 }
 
 // prettier-ignore
-export const AngleSmallLeft = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const AngleSmallLeft = ({ size = 24, fill = 'rgb(104, 81, 255)', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M10.6,12.71a1,1,0,0,1,0-1.42l4.59-4.58a1,1,0,0,0,0-1.42,1,1,0,0,0-1.41,0L9.19,9.88a3,3,0,0,0,0,4.24l4.59,4.59a1,1,0,0,0,.7.29,1,1,0,0,0,.71-.29,1,1,0,0,0,0-1.42Z"/>
@@ -476,7 +476,7 @@ export const AngleSmallLeft = ({ size = 24, fill = 'rgb(104, 81, 255)', classNam
 }
 
 // prettier-ignore
-export const signOutAlt = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const signOutAlt = ({ size = 24, fill = 'rgb(104, 81, 255)', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <g id="_01_align_center">
@@ -488,7 +488,7 @@ export const signOutAlt = ({ size = 24, fill = 'rgb(104, 81, 255)', className })
 }
 
 // prettier-ignore
-export const Exit = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const Exit = ({ size = 24, fill = 'rgb(104, 81, 255)', className = "" }) => {
   return (
     <svg className={className}  fill={fill} viewBox="0 0 24 24" x="0px" y="0px" width={size} xmlns="http://www.w3.org/2000/svg">
         <path d="M3,3H8V0H3A3,3,0,0,0,0,3V21a3,3,0,0,0,3,3H8V21H3Z"/>
@@ -498,7 +498,7 @@ export const Exit = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
 }
 
 // prettier-ignore
-export const Camera = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const Camera = ({ size = 24, fill = 'rgb(104, 81, 255)', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M19,4h-.508L16.308,1.168A3.023,3.023,0,0,0,13.932,0H10.068A3.023,3.023,0,0,0,7.692,1.168L5.508,4H5A5.006,5.006,0,0,0,0,9V19a5.006,5.006,0,0,0,5,5H19a5.006,5.006,0,0,0,5-5V9A5.006,5.006,0,0,0,19,4ZM9.276,2.39A1.006,1.006,0,0,1,10.068,2h3.864a1.008,1.008,0,0,1,.792.39L15.966,4H8.034ZM22,19a3,3,0,0,1-3,3H5a3,3,0,0,1-3-3V9A3,3,0,0,1,5,6H19a3,3,0,0,1,3,3Z"/>
@@ -508,7 +508,7 @@ export const Camera = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => 
 }
 
 // prettier-ignore
-export const Spinner = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const Spinner = ({ size = 24, fill = 'rgb(104, 81, 255)', className = "" }) => {
   return (
     <svg className={`animate-spin  h-5 w-5 ${className}`} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -518,7 +518,7 @@ export const Spinner = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) =>
 }
 
 // prettier-ignore
-export const LinkAlt = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const LinkAlt = ({ size = 24, fill = 'rgb(104, 81, 255)', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M7.835,16.17c-.23-.23-.446-.482-.641-.748-.325-.446-.227-1.072,.22-1.397,.446-.325,1.071-.227,1.397,.219,.129,.178,.274,.349,.437,.511,.803,.803,1.87,1.245,3.005,1.245s2.203-.442,3.005-1.245l5.5-5.5c1.657-1.657,1.657-4.354,0-6.011s-4.354-1.657-6.011,0l-1.058,1.058c-.391,.391-1.023,.391-1.414,0s-.391-1.023,0-1.414l1.058-1.058c2.437-2.438,6.402-2.438,8.839,0,2.437,2.437,2.437,6.402,0,8.839l-5.5,5.5c-1.18,1.181-2.75,1.831-4.419,1.831s-3.239-.65-4.418-1.83Zm-1.582,7.83c1.67,0,3.239-.65,4.419-1.831l1.058-1.058c.391-.39,.391-1.023,0-1.414-.39-.391-1.023-.39-1.414,0l-1.059,1.058c-.803,.803-1.87,1.245-3.005,1.245s-2.202-.442-3.005-1.245-1.245-1.87-1.245-3.005,.442-2.203,1.245-3.005l5.5-5.5c.803-.803,1.87-1.245,3.005-1.245s2.203,.442,3.005,1.245c.16,.161,.306,.332,.436,.51,.324,.447,.949,.547,1.397,.221,.447-.325,.546-.95,.221-1.397-.19-.262-.405-.513-.639-.747-1.181-1.182-2.751-1.832-4.42-1.832s-3.239,.65-4.419,1.831L1.834,13.331C.653,14.511,.003,16.081,.003,17.75c0,1.669,.65,3.239,1.831,4.419,1.18,1.181,2.749,1.831,4.419,1.831Z"/>
@@ -527,7 +527,7 @@ export const LinkAlt = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) =>
 }
 
 // prettier-ignore
-export const Facebook = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const Facebook = ({ size = 24, fill = 'rgb(104, 81, 255)', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <g>
@@ -615,7 +615,7 @@ export const Folder = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => 
 }
 
 // prettier-ignore
-export const PenSlash = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const PenSlash = ({ size = 24, fill = 'rgb(104, 81, 255)', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="m19.727,7.982l-3.71-3.71,3.504-3.504c1.024-1.024,2.685-1.024,3.71,0,1.024,1.024,1.024,2.685,0,3.71l-3.504,3.504Zm-1.414,1.414l-3.71-3.71-3.751,3.751L1.457.043.043,1.457l22.5,22.5,1.414-1.414-9.395-9.395,3.751-3.751ZM0,20.29v3.71h3.71l8.015-8.015-3.71-3.71L0,20.29Z"/>

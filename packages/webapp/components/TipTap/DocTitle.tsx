@@ -1,12 +1,11 @@
 import { useEffect, useState } from 'react'
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
 import toast from 'react-hot-toast'
-import { useDocumentMetadataContext } from '@context/DocumentMetadataContext'
 import { useStore } from '@stores'
 
-const SSE_TITLE_ADDRESS = (docId) => `${process.env.NEXT_PUBLIC_SSE_URL}/${docId}_docTitle`
+const SSE_TITLE_ADDRESS = (docId: string) => `${process.env.NEXT_PUBLIC_SSE_URL}/${docId}_docTitle`
 
-const broadcastTitle = async (documentId, newTitle) => {
+const broadcastTitle = async (documentId: string, newTitle: string) => {
   await fetch(SSE_TITLE_ADDRESS(documentId), {
     method: 'POST',
     headers: {
@@ -16,11 +15,10 @@ const broadcastTitle = async (documentId, newTitle) => {
   })
 }
 
-const DocTitle = ({ className }) => {
+const DocTitle = ({ className }: any) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
   const [title, setTitle] = useState()
-  const docMetadata = useDocumentMetadataContext()
-  const { hocuspocusProvider } = useStore((state) => state.settings)
+  const { hocuspocusProvider, metadata: docMetadata } = useStore((state) => state.settings)
 
   useEffect(() => {
     setTitle(docMetadata.title)
@@ -41,11 +39,12 @@ const DocTitle = ({ className }) => {
 
   const documentTitle = docMetadata.title || title
 
-  const saveData = (e) => {
+  const saveData = (e: any) => {
     if (e.target.innerText === documentTitle) return
 
     broadcastTitle(docMetadata.documentId, e.target.innerText)
 
+    // @ts-ignore
     mutate({
       title: e.target.innerText,
       documentId: docMetadata.documentId
@@ -55,7 +54,7 @@ const DocTitle = ({ className }) => {
   useEffect(() => {
     if (!hocuspocusProvider) return
 
-    const readOnlyStateHandler = ({ payload }) => {
+    const readOnlyStateHandler = ({ payload }: any) => {
       const msg = JSON.parse(payload)
       if (msg.type === 'docTitle') setTitle(msg.state.title)
     }
@@ -79,15 +78,13 @@ const DocTitle = ({ className }) => {
   return (
     <div className={`${className} `}>
       <div
-        dangerouslySetInnerHTML={{ __html: title }}
+        dangerouslySetInnerHTML={{ __html: title || '' }}
         contentEditable
         className="border border-transparent px-2 py-0 rounded-sm text-lg font-medium w-full hover:border-slate-300 truncate"
-        type="text"
         onBlur={saveData}
         onKeyDown={(e) => {
-          if (event.key === 'Enter') {
+          if (e.key === 'Enter') {
             e.preventDefault()
-            e.target.blur()
           }
         }}></div>
     </div>

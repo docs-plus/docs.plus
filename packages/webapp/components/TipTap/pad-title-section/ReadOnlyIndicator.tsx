@@ -1,18 +1,16 @@
 import { useEffect, useState } from 'react'
 import { PenSlash } from '@icons'
 import { twMerge } from 'tailwind-merge'
-import { useDocumentMetadataContext } from '@context/DocumentMetadataContext'
 import { useStore } from '@stores'
 
-const ReadOnlyIndicator = ({ className }) => {
-  const docMetadata = useDocumentMetadataContext()
-  const [isReadOnly, setIsReadOnly] = useState(docMetadata.readOnly)
-  const { hocuspocusProvider } = useStore((state) => state.settings)
+const ReadOnlyIndicator = ({ className }: any) => {
+  const { hocuspocusProvider, metadata } = useStore((state) => state.settings)
+  const [isReadOnly, setIsReadOnly] = useState(metadata.readOnly)
 
   useEffect(() => {
     if (!hocuspocusProvider) return
 
-    const readOnlyStateHandler = ({ payload }) => {
+    const readOnlyStateHandler = ({ payload }: any) => {
       const msg = JSON.parse(payload)
       if (msg.type === 'readOnly') setIsReadOnly(msg.state)
     }

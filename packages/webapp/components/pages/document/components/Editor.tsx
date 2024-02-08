@@ -49,6 +49,7 @@ const Editor = () => {
   const [showToolbar, setShowToolbar] = useState(false)
   const isKeyboardOpen = useDetectKeyboardOpen()
 
+  // adjust the editor size base on the chat room pannel height
   useEffect(() => {
     const editorWrapper = editorWrapperRef.current as HTMLElement
 
