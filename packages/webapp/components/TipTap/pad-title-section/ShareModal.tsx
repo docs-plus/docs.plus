@@ -2,8 +2,7 @@ import React, { useRef, useState, useEffect } from 'react'
 import { toast } from 'react-hot-toast'
 import { Facebook, Twitter, Linkedin, At, World } from '@icons'
 import Button from '@components/ui/Button'
-import { useDocumentMetadataContext } from '@context/DocumentMetadataContext'
-
+import { useStore } from '@stores'
 const socialSharingMap = {
   facebook: `https://www.facebook.com/sharer.php?u=`,
   twitter: `https://twitter.com/intent/tweet?url=`,
@@ -12,17 +11,16 @@ const socialSharingMap = {
 }
 
 const ShareModal = () => {
-  const docMetadata = useDocumentMetadataContext()
-
-  const urlRef = useRef()
+  const urlRef = useRef() as any
   const [href, setHref] = useState('')
+  const { metadata: docMetadata } = useStore((state) => state.settings)
 
   useEffect(() => {
     setHref(window.location.href)
   }, [])
 
-  const handleShare = (social) => {
-    const url = socialSharingMap[social]
+  const handleShare = (social: string) => {
+    const url = socialSharingMap[social as keyof typeof socialSharingMap]
 
     if (url) {
       window.open(`${url}${href}`, '_blank')
@@ -52,21 +50,21 @@ const ShareModal = () => {
   }
 
   return (
-    <div className="modal flex flex-col antialiased p-4 w-[32rem] rounded-md border shadow-md z-50 bg-white">
-      <div className="flex">
-        <Button Icon={Facebook} className="btn" onClick={() => handleShare('facebook')}>
+    <div className="flex flex-col antialiased p-4 w-[32rem] rounded-md border shadow-md z-50 bg-white">
+      <div className="flex space-x-4">
+        <Button Icon={Facebook} onClick={() => handleShare('facebook')}>
           Facebook
         </Button>
-        <Button Icon={Twitter} className="btn ml-3" onClick={() => handleShare('twitter')}>
+        <Button Icon={Twitter} onClick={() => handleShare('twitter')}>
           Twitter
         </Button>
       </div>
 
-      <div className="flex mt-3">
-        <Button Icon={Linkedin} className="btn" onClick={() => handleShare('linkedin')}>
+      <div className="flex mt-3 space-x-4">
+        <Button Icon={Linkedin} onClick={() => handleShare('linkedin')}>
           LinkedIn
         </Button>
-        <Button Icon={At} className="btn ml-3" onClick={() => handleShare('email')}>
+        <Button Icon={At} onClick={() => handleShare('email')}>
           Email
         </Button>
       </div>
@@ -81,13 +79,13 @@ const ShareModal = () => {
           Copy Link
         </Button>
       </div>
-      {typeof navigator !== 'undefined' && navigator.share && (
+      {/* {typeof navigator !== 'undefined' && navigator.share && (
         <div className="mt-5 ">
           <Button Icon={World} className="" onClick={webShareAPI}>
             Web Share
           </Button>
         </div>
-      )}
+      )} */}
     </div>
   )
 }

@@ -1,18 +1,15 @@
 import PadTitle from '@components/TipTap/pad-title-section/PadTitle'
 import { useEffect } from 'react'
 import Editor from '../components/Editor'
-import { useStore, useAuthStore } from '@stores'
+import { useStore } from '@stores'
 
 const DesktopLayout = () => {
   const {
     editor: { isMobile }
   } = useStore((state) => state.settings)
 
+  // TODO: reconsider this
   useEffect(() => {
-    // when layout change set editor editable again
-    // editor?.setEditable(true)
-    const divProseMirror = document.querySelector('.ProseMirror')
-    divProseMirror?.setAttribute('contenteditable', 'true')
     document.querySelector('html').classList.remove('m_mobile')
   }, [])
 
@@ -20,7 +17,7 @@ const DesktopLayout = () => {
     <>
       <div
         className={`pad tiptap flex flex-col border-solid ${isMobile ? ' m_mobile' : 'm_desktop'}`}>
-        <div className="docTitle bg-white w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
+        <div className="docTitle bg-white z-20 relative w-full min-h-14 px-2 py-3 flex flex-row items-center sm:border-b-0 border-b">
           <PadTitle />
         </div>
         <Editor />

@@ -4,7 +4,10 @@ import { IndexeddbPersistence } from 'y-indexeddb'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
 
-const useYdocAndProvider = (documentId: string) => {
+const useYdocAndProvider = () => {
+  const {
+    metadata: { documentId }
+  } = useStore((state) => state.settings)
   const [destroyed, setDestroyed] = useState(false)
   const ydocRef = useRef(new Y.Doc())
   const providerRef = useRef<any>(null)

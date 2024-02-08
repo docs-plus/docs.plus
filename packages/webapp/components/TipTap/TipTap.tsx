@@ -141,7 +141,7 @@ const generatePlaceholderText = (data: any) => {
   return null
 }
 
-const Editor = ({ provider, ydoc, spellcheck = false }: any): Partial<EditorOptions> => {
+const Editor = ({ provider, ydoc, spellcheck = false, user }: any): Partial<EditorOptions> => {
   if (!provider) {
     return {
       extensions: [
@@ -166,13 +166,19 @@ const Editor = ({ provider, ydoc, spellcheck = false }: any): Partial<EditorOpti
   const CollaborationCursorConfig = {
     provider,
     user: {
-      name: 'Adam Doe',
+      name: 'anonymous',
       color: randomColor()
     }
   } as unknown as CollaborationCursorOptions
 
   if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    CollaborationCursorConfig.user.name = 'Unknown User'
+    const newUser = {
+      display_name: user?.display_name || user?.username || user?.email || 'anonymous',
+      id: user?.id || user?.email || 'anonymous',
+      color: randomColor()
+    }
+
+    CollaborationCursorConfig.user = newUser
     CollaborationCursorConfig.render = (user: Record<string, any>): HTMLElement => {
       const cursor = document.createElement('span')
       cursor.classList.add('collaboration-cursor__caret')
@@ -183,7 +189,7 @@ const Editor = ({ provider, ydoc, spellcheck = false }: any): Partial<EditorOpti
       avatar.classList.add('collaboration-cursor__avatar')
       avatar.setAttribute(
         'style',
-        `background-image: url(${user.avatar}); background-color:#ddd; border-color: ${user.color};`
+        `background-image: url(${user.avatar_url}); background-color:#ddd; border-color: ${user.color};`
       )
 
       const label = document.createElement('div')
@@ -191,7 +197,7 @@ const Editor = ({ provider, ydoc, spellcheck = false }: any): Partial<EditorOpti
       label.setAttribute('style', `background-color: ${user.color}`)
       label.insertBefore(document.createTextNode(user.name), null)
       cursor.insertBefore(label, null)
-      if (user.avatar) cursor.insertBefore(avatar, null)
+      if (user.avatar_url) cursor.insertBefore(avatar, null)
       return cursor
     }
   }

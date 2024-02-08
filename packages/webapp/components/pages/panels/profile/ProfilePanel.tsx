@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import Button from '../../../ui/Button'
 import { ShieldCheck, Bell, AngleSmallRight, Exit } from '@icons'
-import { Avatar } from '../../../Avatar'
+import { Avatar } from '../../../ui/Avatar'
 import dynamic from 'next/dynamic'
+import { useAuthStore } from '@stores'
 
 const ProfileTab = dynamic(() => import('./ProfileTab'), {
   loading: () => <div>Loading...</div>
@@ -16,6 +17,8 @@ import { supabaseClient } from '@utils/supabase'
 const ProfilePanel = () => {
   const [loadSignOut, setLoadSignOut] = useState(false)
   const [activeTab, setActiveTab] = useState('profile')
+  const displayName = useAuthStore((state) => state.profile?.display_name)
+  const user = useAuthStore((state) => state.profile)
 
   const signOut = async () => {
     setLoadSignOut(true)
@@ -23,10 +26,10 @@ const ProfilePanel = () => {
     if (error) {
       toast.error('Error signOut:' + error.message)
     }
-    window.location = window.location.pathname
+    window.location.assign(window.location.pathname)
   }
 
-  const changeTab = (tab) => {
+  const changeTab = (tab: string) => {
     setActiveTab(tab)
   }
 
@@ -41,7 +44,12 @@ const ProfilePanel = () => {
             onClick={() => {
               changeTab('profile')
             }}>
-            <Avatar width={22} height={22} className="rounded-full mr-2 border" />
+            <Avatar
+              id={user?.id}
+              src={user?.avatar_url}
+              alt={displayName}
+              className="rounded-full mr-2 border w-6 scale-125"
+            />
             Profile
             <AngleSmallRight size={20} className="ml-auto" />
           </li>

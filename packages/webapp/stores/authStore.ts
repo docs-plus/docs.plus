@@ -10,7 +10,7 @@ export interface IAuthStore {
   loading: boolean
   displayName?: string | null
   setSession: (session: any) => void
-  setProfile: (profile: TProfile) => void
+  setProfile: (profile: TProfile | null) => void
   setLoading: (loading: boolean) => void
   setDisplayName: (displayName: string) => void
 }

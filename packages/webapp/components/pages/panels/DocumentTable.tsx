@@ -1,8 +1,8 @@
-import { Avatar } from '@components/Avatar'
-const DocumentTable = ({ data }) => {
-  const routeForDocument = (slug) => {
-    // router.push(`/${slug}`)
-    window.location = `/${slug}`
+import { Avatar } from '@components/ui/Avatar'
+
+const DocumentTable = ({ data }: any) => {
+  const routeForDocument = (slug: string) => {
+    window.location.assign(`/${slug}`)
   }
 
   return (
@@ -15,7 +15,7 @@ const DocumentTable = ({ data }) => {
         </tr>
       </thead>
       <tbody>
-        {data?.docs.map((row) => (
+        {data?.docs.map((row: any) => (
           <tr key={row.id}>
             <td className="border px-4 py-2 max-w-[500px] overflow-hidden truncate antialiased overflow-ellipsis">
               <a className="cursor-pointer" onClick={() => routeForDocument(row.slug)}>
@@ -28,7 +28,8 @@ const DocumentTable = ({ data }) => {
                   <Avatar
                     height={32}
                     width={32}
-                    srcAvatar={row?.user?.avatar_url || row?.user?.default_avatar_url}
+                    srtc={row?.user?.avatar_url}
+                    id={row.user?.id}
                     className="w-8 h-8 rounded-full drop-shadow-md mr-1"
                   />
                 ) : (

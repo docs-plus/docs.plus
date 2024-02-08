@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
-import { Avatar, AVATAR_URL_CHANNEL_NAME } from '../../../../Avatar'
+import { Avatar, AVATAR_URL_CHANNEL_NAME } from '@components/ui/Avatar'
 import { Camera, Spinner, CircleUser } from '@icons'
 import { toast } from 'react-hot-toast'
 import PubSub from 'pubsub-js'
@@ -16,10 +16,10 @@ const AVATARS = 'avatars'
 const PROFILES = 'profiles'
 const PUBLIC = 'public'
 
-const AvatarSection = ({ profileData }) => {
+const AvatarSection = ({ profileData }: any) => {
   const user = useAuthStore((state) => state.profile)
-
-  const fileInputRef = useRef()
+  const displayName = useAuthStore((state) => state.displayName)
+  const fileInputRef = useRef() as any
   const [uploading, setUploading] = useState(false)
   const [isProfileAvatar, setIsProfileAvatar] = useState(false)
 
@@ -28,15 +28,15 @@ const AvatarSection = ({ profileData }) => {
     setIsProfileAvatar(profileAvatart ? true : false)
   }, [profileData])
 
-  const handleClick = useCallback((e) => {
+  const handleClick = useCallback((e: any) => {
     if (e.target.parentElement.classList.contains('changeAvatarToDefault')) return
     if (['input', 'div', 'svg'].includes(e.target.localName)) {
-      fileInputRef.current.click()
+      fileInputRef?.current?.click()
     }
   }, [])
 
   const handleFileChange = useCallback(
-    async (event) => {
+    async (event: any) => {
       const avatarFile = event.target.files[0]
 
       if (event.target?.files[0]?.size > 256000) {
@@ -54,12 +54,14 @@ const AvatarSection = ({ profileData }) => {
       if (!avatarFile) return
 
       try {
-        const filePath = `${PUBLIC}/${user.id}.png`
+        const filePath = `${PUBLIC}/${user?.id}.png`
         await uploadAvatarToStorage(supabaseClient, AVATARS, filePath, avatarFile)
-        const bucketAddress = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${user.id}.png`
+        const bucketAddress = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${user?.id}.png`
 
+        //@ts-ignore
         PubSub.publish(AVATAR_URL_CHANNEL_NAME, `${bucketAddress}?${Date.now().toString()}`)
-        await updateAvatarInDB(supabaseClient, PROFILES, bucketAddress, user.id)
+
+        await updateAvatarInDB(supabaseClient, PROFILES, bucketAddress, user?.id)
         setIsProfileAvatar(true)
 
         toast.success('Avatar uploaded successfully!')
@@ -74,13 +76,15 @@ const AvatarSection = ({ profileData }) => {
   )
 
   const changeAvatarToDefault = useCallback(async () => {
-    const googleAvatar = user?.user_metadata?.picture
+    const googleAvatar = user?.avatar_url
     // if (isAvatarDefault) return
     try {
-      await updateAvatarInDB(supabaseClient, PROFILES, null, user.id)
+      await updateAvatarInDB(supabaseClient, PROFILES, null, user?.id)
+
+      //@ts-ignore
       PubSub.publish(AVATAR_URL_CHANNEL_NAME, googleAvatar)
 
-      await removeAvatarFromStorage(supabaseClient, AVATARS, `${PUBLIC}/${user.id}.png`)
+      await removeAvatarFromStorage(supabaseClient, AVATARS, `${PUBLIC}/${user?.id}.png`)
       setIsProfileAvatar(false)
 
       toast.success('Avatar changed successfully!')
@@ -99,7 +103,13 @@ const AvatarSection = ({ profileData }) => {
         } absolute w-full h-full transition-opacity cursor-pointer rounded-xl bg-black flex items-center justify-center`}>
         {!uploading ? <Camera size={24} fill="#fff" /> : <Spinner />}
       </div>
-      <Avatar height={32} width={32} className="w-32 h-32 rounded-xl" />
+      <Avatar
+        id={user?.id}
+        src={user?.avatar_url}
+        alt={displayName}
+        justImage={true}
+        className="w-32 h-32"
+      />
       <input
         ref={fileInputRef}
         type="file"

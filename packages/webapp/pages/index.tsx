@@ -1,8 +1,9 @@
+import { GetServerSidePropsContext } from 'next'
 import HeadSeo from '@components/HeadSeo'
 import dynamic from 'next/dynamic'
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@components/ui/Tabs/Tabs'
 import DeckPanel from '@pages/panels/DeckPanel'
-import { Avatar } from '@components/Avatar'
+import { Avatar } from '@components/ui/Avatar'
 import { DocsPlus } from '@icons'
 import { twMerge } from 'tailwind-merge'
 import { useStore, useAuthStore } from '@stores'
@@ -14,9 +15,17 @@ const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
 const DocumentsPanel = dynamic(() => import('@pages/panels/DocumentsPanel'))
 const ProfilePanel = dynamic(() => import('@pages/panels/profile/ProfilePanel'))
 
-function TabLayout({ children, className, footer }) {
+type TabLayoutProps = {
+  name: string
+  children: React.ReactNode
+  className?: string
+  footer?: boolean // or React.ReactNode, depending on what footer is supposed to be
+}
+
+function TabLayout({ name, children, className, footer }: TabLayoutProps) {
   return (
     <TabPanel
+      name={name}
       className={twMerge(
         `flex flex-wrap sm:justify-center sm:m-auto p-2 sm:p-6 sm:py-6 pb-2 sm:pb-2`,
         className
@@ -26,15 +35,19 @@ function TabLayout({ children, className, footer }) {
   )
 }
 
-function Home({ hostname }) {
+function Home({ hostname }: { hostname: string }) {
   const user = useAuthStore((state) => state.profile)
+  const displayName = useAuthStore((state) => state.displayName)
   const { isAuthServiceAvailable } = useStore((state) => state.settings)
+  console.log({
+    user
+  })
 
   const isUserSignedIn = user && isAuthServiceAvailable
 
   return (
     <div>
-      <HeadSeo title="docs.plus" description="docs.plus application" />
+      <HeadSeo />
       <div className="grid h-full w-full sm:h-screen place-items-center bg-slate-100 p-4">
         <Tabs defaultActiveTab="deck" className="max-w-5xl rounded-md relative">
           <TabList
@@ -53,6 +66,9 @@ function Home({ hostname }) {
             {isUserSignedIn && (
               <Tab name="profile" className="ml-auto py-2">
                 <Avatar
+                  src={user.avatar_url}
+                  id={user.id}
+                  alt={displayName}
                   width={22}
                   height={22}
                   className="rounded-full drop-shadow border w-10 h-10"
@@ -88,7 +104,7 @@ function Home({ hostname }) {
 
 export default Home
 
-export async function getServerSideProps(context) {
+export async function getServerSideProps(context: GetServerSidePropsContext) {
   return {
     props: { hostname: context.req?.headers?.host }
   }

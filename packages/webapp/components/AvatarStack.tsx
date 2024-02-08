@@ -1,38 +1,30 @@
-import Image from 'next/image'
-import { Avatar } from '@icons'
+import { useAuthStore } from '@stores'
+import { Avatar } from './ui/Avatar'
 
 const AvatarStack = ({ users }: any) => {
   const displayedUsers = users?.slice(0, 4)
   const remainingUsers = users.length - 4
+  const profile = useAuthStore((state: any) => state.profile)
+
+  console.log({
+    users
+  })
 
   return (
     <div className="flex -space-x-4">
       {displayedUsers.map((user: any, index: number) => {
-        const userName = user?.user?.name || 'Unknown'
-        const userAvatar = user?.user?.avatar || ''
-
+        if (user?.user?.id === profile?.id) return null
         return (
           <div
             key={user.clientId || index}
-            title={userName}
-            className="relative border-gray-200  dark:border-gray-800 bg-white rounded-full w-9 h-9">
-            {userAvatar ? (
-              <Image
-                className="w-9 h-9 border-2 rounded-full"
-                src={userAvatar}
-                alt={`Avatar of ${userName}`}
-                fill={true}
-                title={userName}
-              />
-            ) : (
-              <div className="w-9 h-9 border-2 flex  justify-center relative align-middle overflow-hidden bg-gray-100 dark:bg-gray-600 rounded-full ">
-                <Avatar
-                  size={48}
-                  fill="#aaa"
-                  className="absolute top-[0px] text-gray-400 -left-[4px]"
-                />
-              </div>
-            )}
+            className="tooltip tooltip-bottom"
+            data-tip={user.user.displayName || 'anonymous'}>
+            <Avatar
+              className="w-9 h-9 border-2 rounded-full"
+              id={user.user?.id}
+              src={user.user?.avatar_url}
+              alt={user.user.displayName}
+            />
           </div>
         )
       })}

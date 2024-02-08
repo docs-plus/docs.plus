@@ -3,16 +3,16 @@ import { useRouter } from 'next/router'
 import styles from './Tabs.module.css'
 
 // Create a Context to allow child components to consume tab related states and functions.
-const TabsContext = createContext()
+const TabsContext = createContext('TabsContext')
 
 // The Tabs component acts as the container for all tab-related components.
-function Tabs({ children, defaultActiveTab = null, putNameAsHashToURI = true, ...props }) {
+function Tabs({ children, defaultActiveTab = null, putNameAsHashToURI = true, ...props }: any) {
   // Initialize the active tab state with defaultActiveTab
   const [activeTab, setActiveTab] = useState(defaultActiveTab)
   const router = useRouter()
 
   // Function to change the active tab
-  const changeTab = (tabName) => {
+  const changeTab = (tabName: string) => {
     setActiveTab(tabName)
     if (putNameAsHashToURI) router.replace(`#panel=${tabName}`)
   }
@@ -27,6 +27,7 @@ function Tabs({ children, defaultActiveTab = null, putNameAsHashToURI = true, ..
 
   // Provide tab states and setter function to child components.
   return (
+    // @ts-ignore
     <TabsContext.Provider value={value}>
       <div className={`w-full ${styles.tabs}`} {...props}>
         {children}
@@ -36,10 +37,11 @@ function Tabs({ children, defaultActiveTab = null, putNameAsHashToURI = true, ..
 }
 
 // TabList manages the list of tab buttons.
-function TabList({ children, ...props }) {
+function TabList({ children, ...props }: any) {
   const tabsElement = useRef(null)
   const [highlightStyle, setHighlightStyle] = useState({})
   const router = useRouter()
+  // @ts-ignore
   const { activeTab, setActiveTab, defaultActiveTab, putNameAsHashToURI } = useContext(TabsContext)
 
   // On component mount and update, update the active tab based on the URL hash.
@@ -51,6 +53,7 @@ function TabList({ children, ...props }) {
     if (!panel) return setActiveTab(defaultActiveTab)
 
     // Collect all the panel names from the children (tab buttons).
+    // @ts-ignore
     const panelNames = React.Children.toArray(children).map((child) => child.props.name)
 
     // If the panel name exists in the child panel names, update the active tab.
@@ -63,7 +66,7 @@ function TabList({ children, ...props }) {
 
   // This function updates the highlight style for the active tab button.
   const updateHighlight = useCallback(() => {
-    const tabsNode = tabsElement.current
+    const tabsNode = tabsElement.current as any
     const activeTabNode = tabsNode.querySelector(`[data-active='true']`)
     if (activeTabNode) {
       const rect = activeTabNode.getBoundingClientRect()
@@ -113,8 +116,9 @@ function TabList({ children, ...props }) {
 }
 
 // The Tab component represents an individual tab button.
-function Tab({ children, name, ...props }) {
+function Tab({ children, name, ...props }: any) {
   const router = useRouter()
+  // @ts-ignore
   const { activeTab, setActiveTab, putNameAsHashToURI } = useContext(TabsContext)
   const isActive = activeTab === name
 
@@ -138,11 +142,13 @@ function Tab({ children, name, ...props }) {
 }
 
 // The TabPanels component serves as a container for TabPanel components.
-function TabPanels({ children, ...props }) {
+function TabPanels({ children, ...props }: any) {
+  // @ts-ignore
   const { activeTab } = useContext(TabsContext)
 
   // Filter children based on activeTab name
   const activeChild = React.Children.toArray(children).find(
+    // @ts-ignore
     (child) => child.props.name === activeTab
   )
 
@@ -154,7 +160,7 @@ function TabPanels({ children, ...props }) {
 }
 
 // The TabPanel component represents the content of a tab.
-function TabPanel({ children, name, ...props }) {
+function TabPanel({ children, name, ...props }: any) {
   return (
     <div name={name} {...props}>
       {children}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import MobileDetect from 'mobile-detect'
 import DesktopLayout from '@components/pages/document/layouts/DesktopLayout'
 import MobileLayout from '@components/pages/document/layouts/MobileLayout'
@@ -6,83 +6,26 @@ import { getSupabaseSession } from '@utils/getSupabaseSession'
 import useDocumentMetadata from '@hooks/useDocumentMetadata'
 import { fetchDocument } from '@utils/fetchDocument'
 import HeadSeo from '@components/HeadSeo'
-import { DocumentMetadataProvider } from '@context/DocumentMetadataContext'
-import { supabaseClient } from '@utils/supabase'
-import { useStore, useAuthStore, useChatStore } from '@stores'
-import { getChannels } from '@api'
+import useMapDocumentAndWorkspace from '@hooks/useMapDocumentAndWorkspace'
+import useInitiateDocumentAndWorkspace from '@hooks/useInitiateDocumentAndWorkspace'
 
-const Document = ({ slugs, docMetadata }: any) => {
+const Document = ({ slugs, docMetadata, isMobile }: any) => {
   useDocumentMetadata(slugs, docMetadata)
-  const user = useAuthStore((state: any) => state.profile)
-  const { title, description, keywords } = docMetadata
-  const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
-  const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
-  const bulkSetChannels = useChatStore((state: any) => state.bulkSetChannels)
-  const {
-    editor: { isMobile, applyingFilters }
-  } = useStore((state) => state.settings)
+  useInitiateDocumentAndWorkspace(docMetadata)
+  const { loading } = useMapDocumentAndWorkspace(docMetadata)
 
-  const isFilterMode = slugs.length > 1
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    if (isFilterMode) {
-      document.body.classList.add('filter-mode')
-      setWorkspaceEditorSetting('applyingFilters', true)
-    }
-  }, [slugs, applyingFilters, isFilterMode])
-
-  useEffect(() => {
-    if (!docMetadata) return
-    setWorkspaceSetting('workspaceId', docMetadata.documentId)
-    setWorkspaceSetting('metadata', docMetadata)
-  }, [docMetadata])
-
-  useEffect(() => {
-    const checkworkspace = async () => {
-      setLoading(true)
-      try {
-        const data = await supabaseClient
-          .from('workspaces')
-          .upsert({
-            id: docMetadata.documentId,
-            name: docMetadata.title,
-            description: docMetadata.description,
-            slug: docMetadata.slug,
-            created_by: user.id
-          })
-          .select()
-
-        const { data: channels } = await getChannels(docMetadata.documentId)
-        if (channels) bulkSetChannels(channels)
-      } catch (error) {
-        console.error('checkworkspace error:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-    if (user) checkworkspace()
-    else setLoading(false)
-  }, [user])
-
-  return (
-    <>
-      <HeadSeo
-        title={title}
-        description={description}
-        keywords={keywords.length && keywords.join(',')}
-      />
-      {loading ? (
+  if (loading) {
+    return (
+      <>
+        <HeadSeo />
         <div className="w-full h-full flex items-center justify-center">
           <span className="loading loading-spinner loading-lg"></span>
         </div>
-      ) : (
-        <DocumentMetadataProvider docMetadata={docMetadata}>
-          {isMobile ? <MobileLayout /> : <DesktopLayout />}
-        </DocumentMetadataProvider>
-      )}
-    </>
-  )
+      </>
+    )
+  }
+
+  return isMobile ? <MobileLayout /> : <DesktopLayout />
 }
 
 export default Document
