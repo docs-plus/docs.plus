@@ -18,7 +18,7 @@ const HeadSeo = () => {
     title: metadata?.title || TITLE,
     description: metadata?.description || DESCRIPTION,
     url: `${URL}/${metadata?.slug}` || URL,
-    keywords: metadata?.keywords.join(',') || KEYWORDS
+    keywords: metadata?.keywords?.join(',') || KEYWORDS
   }
   return (
     <Head>
