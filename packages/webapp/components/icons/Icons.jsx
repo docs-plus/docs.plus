@@ -292,7 +292,7 @@ export const PrivateShare = ({ size = 18, fill = 'black' }) => {
 }
 
 // prettier-ignore
-export const Hamburger = ({ size = 24, fill = 'black', className }) => {
+export const Hamburger = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M6.5 6C6.5 6.27614 6.27614 6.5 6 6.5C5.72386 6.5 5.5 6.27614 5.5 6C5.5 5.72386 5.72386 5.5 6 5.5C6.27614 5.5 6.5 5.72386 6.5 6Z" stroke="#141414" strokeLinecap="round" strokeLinejoin="round" />

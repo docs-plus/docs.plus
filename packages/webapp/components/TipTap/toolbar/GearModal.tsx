@@ -104,6 +104,7 @@ const GearModal = ({ className }: any) => {
 
   const OwnerProfile = () => {
     const { full_name, username } = docMetadata.ownerProfile
+    console.log('jaisjdoajsdoijaoisjdoij3oijio32ioj23joi23oi32oi32joi2332')
 
     return (
       <div className="antialiased  mt-2 border p-2 rounded-md">
