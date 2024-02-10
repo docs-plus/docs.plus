@@ -2123,6 +2123,14 @@
     "@tiptap/core" "^2.1.12"
     "@tiptap/starter-kit" "^2.1.12"
 
+"@hocuspocus/transformer@^2.11.0":
+  version "2.11.0"
+  resolved "https://registry.yarnpkg.com/@hocuspocus/transformer/-/transformer-2.11.0.tgz#e73a0ee87e5f854d3dd3fdfc40c705e6b40fd032"
+  integrity sha512-ZaDdgd6IMZPxq1ldTG/3Ir7VHIGbSXgIdHE2G5mcJWEyZTrQW2K3VsU2/QDiMQxWgkk2ShXz05RvcHDgiMhcMw==
+  dependencies:
+    "@tiptap/core" "^2.1.12"
+    "@tiptap/starter-kit" "^2.1.12"
+
 "@humanwhocodes/config-array@^0.11.13":
   version "0.11.14"
   resolved "https://registry.yarnpkg.com/@humanwhocodes/config-array/-/config-array-0.11.14.tgz#d78e481a039f7566ecc9660b4ea7fe6b1fec442b"
@@ -3772,6 +3780,11 @@
   dependencies:
     "@tanstack/query-core" "4.36.1"
     use-sync-external-store "^1.2.0"
+
+"@tiptap-pro/extension-collaboration-history@^2.6.5":
+  version "2.6.5"
+  resolved "https://registry.tiptap.dev/@tiptap-pro%2fextension-collaboration-history/-/extension-collaboration-history-2.6.5.tgz#c9212f601bce87e9d168a8f52847d083d85aa6cb"
+  integrity sha512-JFa2qaGCDjDzWlrXijo6L/zYKy46u6PNkOsa9mqoGmcw/DMUFbdva3uYw9teq/YSuO486w37fD5PDWNFg0thig==
 
 "@tiptap/core@^2.0.3", "@tiptap/core@^2.1.12", "@tiptap/core@^2.2.1":
   version "2.2.1"

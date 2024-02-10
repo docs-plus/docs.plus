@@ -1,4 +1,4 @@
-import TableOfContents from '@components/TipTap/TableOfContents'
+import TableOfContents from '@components/TipTap/tableOfContents'
 import TableOfcontentLoader from '@components/TableOfContentsLoader'
 import { useStore } from '@stores'
 
@@ -15,7 +15,7 @@ const TOC = ({ className = '' }: any) => {
     )
   }
 
-  return <TableOfContents className={`${className} tiptap__toc `} editor={editor} />
+  return <TableOfContents className={`${className} tiptap__toc `} />
 }
 
 export default TOC
