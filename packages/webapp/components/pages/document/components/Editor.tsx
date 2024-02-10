@@ -168,10 +168,8 @@ const Editor = () => {
             onScroll={!isMobile ? scrollHeadingSelection : undefined}>
             <EditorContent editor={editor} />
           </div>
-
           <ChatContainer />
         </div>
-
         {!isMobile && (
           <div
             className={`${chatRoom.headingPath && 'border-r border-gray-200 dark:border-gray-700'} tableOfContents max-w-xs w-3/12 overflow-hidden pb-4 sm:py-4 sm:pb-14 pr-16 scroll-smooth hover:overflow-auto hover:overscroll-contain`}>
