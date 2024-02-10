@@ -5,10 +5,9 @@ import MessageContainer from '@components/chat/MessageContainer'
 
 const ChatContainer = () => {
   const chatRoom = useChatStore((state) => state.chatRoom)
-
-  if (!chatRoom?.headingPath.length) return null
-
   const { handleMouseDown, gripperRef, height } = useResizeContainer()
+
+  if (!chatRoom?.headingId) return null
 
   return (
     <div
