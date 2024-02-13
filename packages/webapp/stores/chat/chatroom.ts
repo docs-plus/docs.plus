@@ -10,6 +10,8 @@ type TChatRoom = {
   open: boolean
   pannelHeight: number
   userPickingEmoji?: any
+  replayMessageMemory?: any
+  editeMessageMemory?: any
 }
 
 interface IChatroomStore {
@@ -20,6 +22,8 @@ interface IChatroomStore {
   destroyChatRoom: () => void
   setOrUpdateChatPannelHeight: (height: number) => void
   setOrUpdateChatRoom: (key: keyof TChatRoom, value: any) => void
+  setReplayMessageMemory: (message: any) => void
+  setEditeMessageMemory: (message: any) => void
 }
 
 const getWorkspaceId = () => {
@@ -34,6 +38,18 @@ const chatRoom = immer<IChatroomStore>((set) => ({
     open: false,
     pannelHeight: 300,
     userPickingEmoji: undefined
+  },
+
+  setReplayMessageMemory: (message) => {
+    set((state) => {
+      state.chatRoom.replayMessageMemory = message
+    })
+  },
+
+  setEditeMessageMemory: (message) => {
+    set((state) => {
+      state.chatRoom.editeMessageMemory = message
+    })
   },
 
   setChatRoom: (headingId, documentId, headingPath) => {

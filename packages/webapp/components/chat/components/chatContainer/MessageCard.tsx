@@ -7,11 +7,10 @@ import { MessageContextMenu } from '../../MessageContextMenu'
 import MessageReaction from '../../MessageReaction'
 import { useUserProfileModalStore } from '../UserProfileModal'
 import { Avatar } from '../ui/Avatar'
-import { useAuthStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 import MessageFooter from './MessageFooter'
 import MessageHeader from './MessageHeader'
 import MessageContent from './MessageContent'
-import { setReplayMessage } from '../../hooks/useReplyOrForwardMessage'
 import { isOnlyEmoji } from '@utils/emojis'
 
 type TMessageCardProps = {
@@ -25,6 +24,7 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
   const openModal = useUserProfileModalStore((state) => state.openModal)
   const modalOpen = useUserProfileModalStore((state) => state.modalOpen)
   const closeModal = useUserProfileModalStore((state) => state.closeModal)
+  const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
   const cardRef = useRef(null)
 
   useEffect(() => {
@@ -40,7 +40,7 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
   }
 
   const handleDoubleClick = useCallback(() => {
-    setReplayMessage(data)
+    setReplayMessageMemory(data)
     // Triggering editor focus if needed
     const event = new CustomEvent('editor:focus')
     document.dispatchEvent(event)

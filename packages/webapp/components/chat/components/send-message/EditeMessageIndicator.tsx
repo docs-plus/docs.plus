@@ -1,7 +1,7 @@
-import { useEditeMessageInfo, setEditeMessage } from '../../hooks/useReplyOrForwardMessage'
 import { twx, cn } from '@utils/twx'
 import { IoCloseOutline } from 'react-icons/io5'
 import { RiPencilFill } from 'react-icons/ri'
+import { useChatStore } from '@stores'
 
 type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: number }
 
@@ -14,16 +14,17 @@ const IconButton = twx.button<BtnIcon>((props) =>
 )
 
 export const EditeMessageIndicator = () => {
-  const editeMessage = useEditeMessageInfo()
+  const setEditeMessageMemory = useChatStore((state) => state.setEditeMessageMemory)
+  const { editeMessageMemory } = useChatStore((state) => state.chatRoom)
 
   const handleCloseEditeMessage = () => {
-    setEditeMessage(null)
+    setEditeMessageMemory(null)
   }
 
   const replyToUser =
-    editeMessage?.user_details?.fullname || editeMessage?.user_details?.username || ''
+    editeMessageMemory?.user_details?.fullname || editeMessageMemory?.user_details?.username || ''
 
-  if (!editeMessage) return null
+  if (!editeMessageMemory) return null
 
   return (
     <div className="flex w-full  items-center justify-between px-4 py-2 text-base-content">
@@ -33,7 +34,7 @@ export const EditeMessageIndicator = () => {
           Edite message
           <span className=" ml-1 font-normal">{replyToUser}</span>
         </span>
-        <span className="text-sm">{editeMessage?.content}</span>
+        <span className="text-sm">{editeMessageMemory?.content}</span>
       </div>
       <IconButton onClick={handleCloseEditeMessage}>
         <IoCloseOutline size={22} />
