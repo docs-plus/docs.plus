@@ -1,12 +1,10 @@
 import { useEffect, useCallback } from 'react'
-import { useRouter } from 'next/router'
 import { useAuthStore } from '@stores'
 import { supabaseClient } from '@utils/supabase'
 import { getUserById } from '@api'
 import { useApi } from '@hooks/useApi'
 
 export const useOnAuthStateChange = () => {
-  const router = useRouter()
   const setLoading = useAuthStore((state) => state.setLoading)
   const { request: getUserByIdRequest } = useApi(getUserById, null, false)
 
@@ -32,9 +30,12 @@ export const useOnAuthStateChange = () => {
       if (event === 'INITIAL_SESSION') {
         // if (!session?.user) router.push('/login')
       }
-
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
-        if (!session?.user) return
+      if (event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
+        if (!session?.user) {
+          // when user does not login!
+          setLoading(false)
+          return
+        }
         useAuthStore.getState().setSession(session?.user || null)
         if (session?.user) getUserProfile(session?.user)
         setLoading(false)

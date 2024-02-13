@@ -64,7 +64,7 @@ const RenderToc = ({ children, item, renderTocs }) => {
 
       setChatRoom(item.id, workspaceId, headingAddress)
     },
-    [editor, workspaceId, headingId]
+    [editor, workspaceId, headingId, user]
   )
 
   return (

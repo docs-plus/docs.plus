@@ -62,7 +62,9 @@ export default function MessageContainer({}: any) {
     return (
       <MessageWrapper className="flex-col justify-start">
         <Toolbar />
-        <div className="badge badge-error">Error loading messages...</div>
+        <div className='className="relative flex items-center justify-center w-full h-full overflow-auto flex-col px-10 pt-1"'>
+          <div className="badge badge-error">Error loading messages...</div>
+        </div>
       </MessageWrapper>
     )
   }
