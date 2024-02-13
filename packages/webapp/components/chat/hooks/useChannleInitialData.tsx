@@ -47,10 +47,6 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
       message_limit: 20
     })
 
-    console.log({
-      channelData
-    })
-
     if (!channelData.is_user_channel_member) {
       console.log('yep, must be join to channel!')
       const data = await join2Channel({

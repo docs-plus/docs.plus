@@ -7,6 +7,7 @@ import { Avatar } from '@components/ui/Avatar'
 import { DocsPlus } from '@icons'
 import { twMerge } from 'tailwind-merge'
 import { useStore, useAuthStore } from '@stores'
+import { useMemo } from 'react'
 
 const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
 const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
@@ -37,13 +38,21 @@ function TabLayout({ name, children, className, footer }: TabLayoutProps) {
 
 function Home({ hostname }: { hostname: string }) {
   const user = useAuthStore((state) => state.profile)
+  const authLoading = useAuthStore((state) => state.loading)
   const displayName = useAuthStore((state) => state.displayName)
   const { isAuthServiceAvailable } = useStore((state) => state.settings)
-  console.log({
-    user
-  })
 
   const isUserSignedIn = user && isAuthServiceAvailable
+
+  if (authLoading) {
+    return (
+      <div className="w-full h-full flex items-center justify-center">
+        <div className="max-w-5xl w-full flex items-center justify-center rounded-md relative">
+          <span className="loading loading-spinner loading-lg"></span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div>

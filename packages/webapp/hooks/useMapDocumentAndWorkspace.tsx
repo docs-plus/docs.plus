@@ -7,12 +7,13 @@ const useMapDocumentAndWorkspace = (docMetadata: any) => {
   const [loading, setLoading] = useState(true)
   const bulkSetChannels = useChatStore((state: any) => state.bulkSetChannels)
   const user = useAuthStore((state: any) => state.profile)
+  const authLoading = useAuthStore((state) => state.loading)
 
   useEffect(() => {
     const checkworkspace = async () => {
       setLoading(true)
       try {
-        const data = await supabaseClient
+        await supabaseClient
           .from('workspaces')
           .upsert({
             id: docMetadata.documentId,
@@ -33,7 +34,7 @@ const useMapDocumentAndWorkspace = (docMetadata: any) => {
     }
     if (user) checkworkspace()
     else setLoading(false)
-  }, [user])
+  }, [authLoading, user])
 
   return { loading }
 }
