@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
 // @ts-nocheck
 
-import { useEditor, EditorContent, Editor } from '@tiptap/react'
+import { EditorContent } from '@tiptap/react'
 import { EditorToolbar } from './EditorToolbar'
 import { ReplayMessageIndicator } from './ReplayMessageIndicator'
 import {

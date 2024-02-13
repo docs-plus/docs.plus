@@ -1,7 +1,7 @@
 /* eslint-disable no-use-before-define */
 // @ts-nocheck
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import { TMessageWithUser } from '@api'
 import { MessageContextMenu } from '../../MessageContextMenu'
 import MessageReaction from '../../MessageReaction'
