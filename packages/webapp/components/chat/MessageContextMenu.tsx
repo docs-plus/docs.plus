@@ -1,6 +1,5 @@
 import React, { forwardRef, useMemo } from 'react'
 import { deleteMessage, pinMessage } from '@api'
-import { setReplayMessage, setEditeMessage } from './hooks/useReplyOrForwardMessage'
 import { BsReplyFill, BsFillPinFill, BsFillTrashFill, BsFillPinAngleFill } from 'react-icons/bs'
 import { RiPencilFill } from 'react-icons/ri'
 import toast from 'react-hot-toast'
@@ -13,6 +12,9 @@ export const MessageContextMenu = forwardRef<
 >(({ messageData, className, parrentRef }, ref) => {
   const addChannelPinnedMessage = useChatStore((state) => state.addChannelPinnedMessage)
   const removeChannelPinnedMessage = useChatStore((state) => state.removeChannelPinnedMessage)
+  const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
+  const setEditeMessageMemory = useChatStore((state) => state.setEditeMessageMemory)
+
   const { headingId: channelId } = useChatStore((state) => state.chatRoom)
   const { broadcaster } = useStore((state) => state.settings)
 
@@ -20,7 +22,7 @@ export const MessageContextMenu = forwardRef<
 
   const handleReplayMessage = () => {
     if (messageData) {
-      setReplayMessage(messageData)
+      setReplayMessageMemory(messageData)
       // call editor focus
       const event = new CustomEvent('editor:focus')
       document.dispatchEvent(event)
@@ -63,7 +65,7 @@ export const MessageContextMenu = forwardRef<
 
   const handelEdite = () => {
     if (!messageData) return
-    setEditeMessage(messageData)
+    setEditeMessageMemory(messageData)
   }
 
   const isPinned = useMemo(() => {

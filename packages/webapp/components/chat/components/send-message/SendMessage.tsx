@@ -4,13 +4,6 @@
 import { EditorContent } from '@tiptap/react'
 import { EditorToolbar } from './EditorToolbar'
 import { ReplayMessageIndicator } from './ReplayMessageIndicator'
-import {
-  useReplayMessageInfo,
-  setReplayMessage,
-  useEditeMessageInfo,
-  setEditeMessage
-} from '../../hooks/useReplyOrForwardMessage'
-
 import { useState, useCallback, useEffect, useMemo } from 'react'
 import { twx, cn } from '@utils/twx'
 import { ImAttachment } from 'react-icons/im'
@@ -37,14 +30,15 @@ const IconButton = twx.button<BtnIcon>((prop: { $active: any; $size: any }) =>
 
 export default function SendMessage() {
   const [showEditorToolbar, setShowEditorToolbar] = useState(false)
+  const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
+  const setEditeMessageMemory = useChatStore((state) => state.setEditeMessageMemory)
+  const { replayMessageMemory, editeMessageMemory } = useChatStore((state) => state.chatRoom)
 
   const user = useAuthStore((state: any) => state.profile)
   const { headingId: channelId } = useChatStore((state) => state.chatRoom)
 
   const setOrUpdateUserPresence = useStore((state: any) => state.setOrUpdateUserPresence)
   const usersPresence = useStore((state: any) => state.usersPresence)
-  const replayedMessage = useReplayMessageInfo()
-  const editeMessage = useEditeMessageInfo()
   const { request: postRequestMessage, loading: postMsgLoading } = useApi(sendMessage, null, false)
   const { request: editeRequestMessage, loading: editMsgLoading } = useApi(
     updateMessage,
@@ -63,36 +57,36 @@ export default function SendMessage() {
 
     editor
       .chain()
-      .insertContent(editeMessage?.html || editeMessage?.content || '', {
+      .insertContent(editeMessageMemory?.html || editeMessageMemory?.content || '', {
         parseOptions: {
           preserveWhitespace: false
         }
       })
       .focus('end')
       .run()
-  }, [editor, editeMessage])
+  }, [editor, editeMessageMemory])
 
   const submit = useCallback(async () => {
     if (!html || !text || loading) return
     const { htmlChunks, textChunks } = chunkHtmlContent(html, 3000)
 
-    if (replayedMessage?.id) {
-      const user = replayedMessage.user_details
+    if (replayMessageMemory?.id) {
+      const user = replayMessageMemory.user_details
       if (!usersPresence.has(user.id)) setOrUpdateUserPresence(user.id, user)
     }
 
-    if (editeMessage?.id) {
-      const user = editeMessage.user_details
+    if (editeMessageMemory?.id) {
+      const user = editeMessageMemory.user_details
       if (!usersPresence.has(user.id)) setOrUpdateUserPresence(user.id, user)
     }
 
-    const messageId = editeMessage?.id || replayedMessage?.id || null
+    const messageId = editeMessageMemory?.id || replayMessageMemory?.id || null
 
     try {
       editor?.commands.clearContent(true)
 
       if (htmlChunks.length === 0) {
-        if (editeMessage) {
+        if (editeMessageMemory) {
           editeRequestMessage(text, html, messageId)
         } else {
           postRequestMessage(text, channelId, user.id, html, messageId)
@@ -103,7 +97,7 @@ export default function SendMessage() {
       // INFO: order to send message is important
       for (const [index, htmlChunk] of htmlChunks.entries()) {
         const textChunk = textChunks[index]
-        if (editeMessage) {
+        if (editeMessageMemory) {
           editeRequestMessage(textChunk, htmlChunk, messageId)
         } else {
           postRequestMessage(textChunk, channelId, user.id, htmlChunk, messageId)
@@ -115,8 +109,8 @@ export default function SendMessage() {
       // clear the editor
       document.dispatchEvent(new CustomEvent('messages:container:scroll:down'))
       // if it has reply or forward message, clear it
-      if (replayedMessage) setReplayMessage(null)
-      if (editeMessage) setEditeMessage(null)
+      if (replayMessageMemory) setReplayMessageMemory(null)
+      if (editeMessageMemory) setEditeMessageMemory(null)
     }
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -133,14 +127,14 @@ export default function SendMessage() {
   const handleEsc = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (replayedMessage) setReplayMessage(null)
-        if (editeMessage) {
-          setEditeMessage(null)
+        if (replayMessageMemory) setReplayMessageMemory(null)
+        if (editeMessageMemory) {
+          setEditeMessageMemory(null)
           editor?.commands.clearContent(true)
         }
       }
     },
-    [replayedMessage, editeMessage]
+    [replayMessageMemory, editeMessageMemory]
   )
 
   useEffect(() => {
