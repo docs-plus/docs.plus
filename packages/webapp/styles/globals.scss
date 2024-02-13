@@ -611,3 +611,8 @@ ol {
     cursor: col-resize;
   }
 }
+
+[data-floating-ui-portal] {
+  position: relative;
+  z-index: 50;
+}

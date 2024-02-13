@@ -1,15 +1,8 @@
-import React, { forwardRef, use, useMemo } from 'react'
+import React, { forwardRef, useMemo } from 'react'
 import { deleteMessage, pinMessage } from '@api'
 import { setReplayMessage, setEditeMessage } from './hooks/useReplyOrForwardMessage'
-import {
-  BsReplyFill,
-  BsForwardFill,
-  BsFillPinFill,
-  BsFillTrashFill,
-  BsFillPinAngleFill
-} from 'react-icons/bs'
+import { BsReplyFill, BsFillPinFill, BsFillTrashFill, BsFillPinAngleFill } from 'react-icons/bs'
 import { RiPencilFill } from 'react-icons/ri'
-import { useForwardMessageModalStore } from './components/ForwardMessageModal'
 import toast from 'react-hot-toast'
 import { ContextMenu, MenuItem } from './components/ui/ContextMenu'
 import { useStore, useChatStore } from '@stores'
@@ -18,13 +11,10 @@ export const MessageContextMenu = forwardRef<
   HTMLUListElement,
   { messageData: any; className: string; parrentRef: any }
 >(({ messageData, className, parrentRef }, ref) => {
-  const openModal = useForwardMessageModalStore((state: any) => state.openModal)
   const addChannelPinnedMessage = useChatStore((state) => state.addChannelPinnedMessage)
   const removeChannelPinnedMessage = useChatStore((state) => state.removeChannelPinnedMessage)
   const { headingId: channelId } = useChatStore((state) => state.chatRoom)
   const { broadcaster } = useStore((state) => state.settings)
-
-  // useChatStore((state) => state.chatRoom)
 
   if (!channelId) return null
 
@@ -82,11 +72,6 @@ export const MessageContextMenu = forwardRef<
 
   const messageButtonList = [
     { title: 'Replay', icon: <BsReplyFill size={20} />, onClickFn: handleReplayMessage },
-    {
-      title: 'Forward',
-      icon: <BsForwardFill size={20} />,
-      onClickFn: () => openModal('forwardMessageModal', messageData)
-    },
     {
       title: isPinned ? 'Unpin' : 'Pin',
       icon: isPinned ? <BsFillPinAngleFill size={20} /> : <BsFillPinFill size={20} />,
