@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react'
-import { MessageHeader } from './MessageHeader'
 import ScrollToBottomButton from './components/chatContainer/ScrollToBottomButton' // Import the new component
 import {
   useChannelInitialData,

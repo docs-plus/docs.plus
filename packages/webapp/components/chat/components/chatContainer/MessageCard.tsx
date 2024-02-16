@@ -5,8 +5,7 @@ import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import { TMessageWithUser } from '@api'
 import { MessageContextMenu } from '../../MessageContextMenu'
 import MessageReaction from '../../MessageReaction'
-import { useUserProfileModalStore } from '../UserProfileModal'
-import { Avatar } from '../ui/Avatar'
+import { Avatar } from '@components/ui/Avatar'
 import { useAuthStore, useChatStore } from '@stores'
 import MessageFooter from './MessageFooter'
 import MessageHeader from './MessageHeader'
@@ -21,23 +20,12 @@ type TMessageCardProps = {
 
 function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardProps, ref: any) {
   const user = useAuthStore.use.profile()
-  const openModal = useUserProfileModalStore((state) => state.openModal)
-  const modalOpen = useUserProfileModalStore((state) => state.modalOpen)
-  const closeModal = useUserProfileModalStore((state) => state.closeModal)
   const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
   const cardRef = useRef(null)
 
   useEffect(() => {
     if (ref) ref.current = cardRef.current
   }, [ref])
-
-  const handleAvatarClick = () => {
-    // Assuming data contains user information
-    if (modalOpen) closeModal()
-    else {
-      openModal('userProfileModal', data.user_details)
-    }
-  }
 
   const handleDoubleClick = useCallback(() => {
     setReplayMessageMemory(data)
@@ -76,7 +64,6 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
         }}
         id={data?.user_details?.id}
         alt={`avatar_${data?.user_details?.id}`}
-        onClick={handleAvatarClick}
       />
 
       {isOnlyEmoji(data?.content) ? (
