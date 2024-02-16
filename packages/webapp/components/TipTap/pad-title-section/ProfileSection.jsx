@@ -21,7 +21,7 @@ const ProfileSection = () => {
               src={user.avatar_url}
               width={24}
               height={24}
-              className="rounded-full shadow-md border w-11 h-11"
+              className="rounded-full shadow-xl border w-11 h-11"
             />
           ) : (
             <Button id="btn_signin">Signin</Button>

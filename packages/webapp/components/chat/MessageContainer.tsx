@@ -17,7 +17,6 @@ import {
 import { ChannelActionBar } from './components/ChannelActionBar'
 
 import Toolbar from './components/Toolbar'
-
 import { twx } from '@utils/twx'
 
 const MessageWrapper = twx.div`relative flex w-full max-w-full max-w-full items-center justify-center bg-base-300`
@@ -78,7 +77,6 @@ export default function MessageContainer({}: any) {
 
   return (
     <MessageWrapper className="flex-col h-full justify-start">
-      {/* <MessageHeader /> */}
       <Toolbar />
       <PinnedMessagesDisplay loading={loading} />
       <LoadingOverlay loading={loading} />

@@ -1,6 +1,6 @@
 import AvatarStack from '../../AvatarStack'
 import { useStore } from '@stores'
-const PresentUsers = ({ className }: any) => {
+const PresentUsers = () => {
   const {
     editor: { presentUsers }
   } = useStore((state) => state.settings)
@@ -8,7 +8,7 @@ const PresentUsers = ({ className }: any) => {
   if (!presentUsers || presentUsers.length <= 1) return null
 
   return (
-    <div className={className}>
+    <div className="sm:block hidden">
       <AvatarStack users={presentUsers} />
     </div>
   )
