@@ -1,7 +1,13 @@
 import { immer } from 'zustand/middleware/immer'
 import { Database } from '@types'
-import { useStore } from '@stores'
-export type TProfile = Database['public']['Tables']['users']['Row']
+import { useAuthStore, useStore } from '@stores'
+import { json } from 'stream/consumers'
+import { broadcastPresence } from '@api'
+
+export type TProfile = Database['public']['Tables']['users']['Row'] & {
+  presentIn?: string | null
+  channelId: string | null
+}
 
 type TChatRoom = {
   headingPath: Array<Object>
@@ -16,7 +22,12 @@ type TChatRoom = {
 
 interface IChatroomStore {
   chatRoom: TChatRoom
-  setChatRoom: (headingId: string, documentId: string, headingPath: Array<Object>) => void
+  setChatRoom: (
+    headingId: string,
+    documentId: string,
+    headingPath: Array<Object>,
+    user: TProfile
+  ) => void
   openChatRoom: () => void
   closeChatRoom: () => void
   destroyChatRoom: () => void
@@ -26,8 +37,15 @@ interface IChatroomStore {
   setEditeMessageMemory: (message: any) => void
 }
 
-const getWorkspaceId = () => {
-  return useStore.getState().settings.workspaceId
+const getWorkspaceId = (): string => {
+  return useStore.getState().settings.workspaceId || ''
+}
+
+const joinToChannel = (workspaceId: string, channelId: string, userId: string) => {
+  broadcastPresence(workspaceId, channelId, userId)
+}
+const leaveChannel = (workspaceId: string, userId: string) => {
+  broadcastPresence(workspaceId, null, userId)
 }
 
 const chatRoom = immer<IChatroomStore>((set) => ({
@@ -37,7 +55,9 @@ const chatRoom = immer<IChatroomStore>((set) => ({
     headingPath: [],
     open: false,
     pannelHeight: 300,
-    userPickingEmoji: undefined
+    userPickingEmoji: undefined,
+    replayMessageMemory: undefined,
+    editeMessageMemory: undefined
   },
 
   setReplayMessageMemory: (message) => {
@@ -52,7 +72,7 @@ const chatRoom = immer<IChatroomStore>((set) => ({
     })
   },
 
-  setChatRoom: (headingId, documentId, headingPath) => {
+  setChatRoom: (headingId, documentId, headingPath, user) => {
     let newHeadingId: string = headingId
     if (+newHeadingId === 1) newHeadingId = `1_${documentId}`
     set((state) => {
@@ -60,6 +80,8 @@ const chatRoom = immer<IChatroomStore>((set) => ({
       state.chatRoom.documentId = documentId
       state.chatRoom.headingPath = headingPath
     })
+
+    joinToChannel(getWorkspaceId(), newHeadingId, user.id)
   },
 
   setOrUpdateChatRoom: (key, value) => {
@@ -102,6 +124,9 @@ const chatRoom = immer<IChatroomStore>((set) => ({
         pannelHeight: 300
       }
     })
+    const user = useAuthStore.getState().profile
+    if (!user) return
+    leaveChannel(getWorkspaceId(), user.id)
   }
 }))
 

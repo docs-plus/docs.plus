@@ -1,4 +1,3 @@
-import React, { useState, useRef } from 'react'
 import useResizeContainer from './hooks/useResizeContainer'
 import { useChatStore } from '@stores'
 import MessageContainer from '@components/chat/MessageContainer'

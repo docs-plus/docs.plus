@@ -2,18 +2,7 @@ import { useEffect, useState } from 'react'
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
 import toast from 'react-hot-toast'
 import { useStore } from '@stores'
-
-const SSE_TITLE_ADDRESS = (docId: string) => `${process.env.NEXT_PUBLIC_SSE_URL}/${docId}_docTitle`
-
-const broadcastTitle = async (documentId: string, newTitle: string) => {
-  await fetch(SSE_TITLE_ADDRESS(documentId), {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ title: newTitle })
-  })
-}
+import { broadcastDocTitle } from '@api'
 
 const DocTitle = ({ className }: any) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
@@ -22,27 +11,12 @@ const DocTitle = ({ className }: any) => {
 
   useEffect(() => {
     setTitle(docMetadata.title)
-  }, [])
-
-  useEffect(() => {
-    const eventSource = new EventSource(SSE_TITLE_ADDRESS(docMetadata.documentId))
-
-    eventSource.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      if (data.body.title) setTitle(data.title)
-    }
-
-    return () => {
-      eventSource.close()
-    }
-  }, [])
-
-  const documentTitle = docMetadata.title || title
+  }, [docMetadata?.title])
 
   const saveData = (e: any) => {
-    if (e.target.innerText === documentTitle) return
+    if (e.target.innerText === title) return
 
-    broadcastTitle(docMetadata.documentId, e.target.innerText)
+    broadcastDocTitle(docMetadata.documentId, e.target.innerText)
 
     // @ts-ignore
     mutate({
