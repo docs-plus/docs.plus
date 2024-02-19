@@ -22,16 +22,29 @@ class SSE {
   }
 
   send(eventId, data) {
-    const serializedData = `data: ${JSON.stringify(data)}\n\n`
-    if (this.clients[eventId]) {
-      this.clients[eventId].forEach((client) => {
+    return new Promise((resolve, reject) => {
+      const serializedData = `data: ${JSON.stringify(data)}\n\n`
+      const channelId = data.body?.channelId || null
+      const userId = data.body?.userId || null
+
+      if (this.clients[eventId]) {
         try {
-          client.res.write(serializedData)
+          this.clients[eventId].forEach((client) => {
+            if (userId && client.res.supabaseUserId === userId) {
+              client.res.channelId = channelId
+            }
+
+            client.res.write(serializedData)
+          })
+          resolve()
         } catch (error) {
           console.error(`Error sending data to client: ${error}`)
+          reject(error)
         }
-      })
-    }
+      } else {
+        resolve() // Resolve the promise if there are no clients to send data to
+      }
+    })
   }
 }
 
