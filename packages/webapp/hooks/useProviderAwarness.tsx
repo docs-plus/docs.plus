@@ -4,7 +4,7 @@ import randomColor from 'randomcolor'
 
 // Helper functions
 const getCursorUser = (user: any, displayName: string | null | undefined) => {
-  let bucketAddress = user?.avatar_url || '/assets/avatar.svg'
+  let bucketAddress = user?.avatar_url || null //'/assets/avatar.svg'
 
   if (!user) {
     return {
@@ -48,10 +48,12 @@ const useProviderAwarness = () => {
   //awarenessUpdate handler
   useEffect(() => {
     if (!provider) return
-    const awarenessUpdateHandler = ({ states }: any) => {
+    const awarenessUpdateHandler = (data: any) => {
+      const { states }: any = data
       if (states.length === 0) return
       // if user is present, remove it from the list
-      setWorkspaceEditorSetting('presentUsers', states)
+      const users = states.map((user: any) => user.user)
+      setWorkspaceEditorSetting('presentUsers', users)
     }
 
     provider.on('awarenessUpdate', awarenessUpdateHandler)

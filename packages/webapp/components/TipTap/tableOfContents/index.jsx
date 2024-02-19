@@ -62,7 +62,8 @@ const RenderToc = ({ children, item, renderTocs }) => {
         }
       })
 
-      setChatRoom(item.id, workspaceId, headingAddress)
+      // TODO: change naming => open chatroom
+      setChatRoom(item.id, workspaceId, headingAddress, user)
     },
     [editor, workspaceId, headingId, user]
   )

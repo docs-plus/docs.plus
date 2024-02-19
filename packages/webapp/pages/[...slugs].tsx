@@ -8,10 +8,13 @@ import { fetchDocument } from '@utils/fetchDocument'
 import HeadSeo from '@components/HeadSeo'
 import useMapDocumentAndWorkspace from '@hooks/useMapDocumentAndWorkspace'
 import useInitiateDocumentAndWorkspace from '@hooks/useInitiateDocumentAndWorkspace'
+import useSSESubscription from '@hooks/useSSESubscription'
 
 const Document = ({ slugs, docMetadata, isMobile }: any) => {
   useDocumentMetadata(slugs, docMetadata)
   useInitiateDocumentAndWorkspace(docMetadata)
+  useSSESubscription(docMetadata)
+
   const { loading } = useMapDocumentAndWorkspace(docMetadata)
 
   if (loading) {

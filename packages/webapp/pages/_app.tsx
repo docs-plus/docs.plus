@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useOnAuthStateChange } from '@hooks/useOnAuthStateChange'
 import { useCatchUserPresences } from '@hooks/useCatchUserPresences'
 import { useInitialSteps } from '@hooks/useInitialSteps'
+import { useBroadcastListner } from '@hooks/useBroadcastListner'
 
 import '../styles/styles.scss'
 import '../styles/globals.scss'
@@ -64,6 +65,7 @@ export default function MyApp({ Component, pageProps }: any) {
   useOnAuthStateChange()
   useCatchUserPresences()
   useInitialSteps(isMobileInitial)
+  useBroadcastListner()
 
   return (
     <div id="root">

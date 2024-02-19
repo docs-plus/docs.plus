@@ -1,15 +1,14 @@
+import { useEffect } from 'react'
 import AvatarStack from '../../AvatarStack'
 import { useStore } from '@stores'
 const PresentUsers = () => {
-  const {
-    editor: { presentUsers }
-  } = useStore((state) => state.settings)
+  const usersPresence = useStore((state) => state.usersPresence)
 
-  if (!presentUsers || presentUsers.length <= 1) return null
+  if (!usersPresence || usersPresence.size <= 1) return null
 
   return (
     <div className="sm:block hidden">
-      <AvatarStack users={presentUsers} />
+      <AvatarStack users={Array.from(usersPresence.values())} />
     </div>
   )
 }
