@@ -33,13 +33,14 @@ class SSE {
             if (userId && client.res.supabaseUserId === userId) {
               client.res.channelId = channelId
             }
-
             client.res.write(serializedData)
           })
           resolve()
         } catch (error) {
           console.error(`Error sending data to client: ${error}`)
           reject(error)
+        } finally {
+          resolve()
         }
       } else {
         resolve() // Resolve the promise if there are no clients to send data to

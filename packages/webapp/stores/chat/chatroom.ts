@@ -42,7 +42,11 @@ const getWorkspaceId = (): string => {
 }
 
 const joinToChannel = (workspaceId: string, channelId: string, userId: string) => {
-  broadcastPresence(workspaceId, channelId, userId)
+  // A short delay before joining the channel to ensure all necessary initializations are complete.
+  // This delay helps in avoiding conflicts and potential message queue issues with Server-Sent Events (SSE).
+  setTimeout(() => {
+    broadcastPresence(workspaceId, channelId, userId)
+  }, 500)
 }
 const leaveChannel = (workspaceId: string, userId: string) => {
   broadcastPresence(workspaceId, null, userId)
