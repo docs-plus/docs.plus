@@ -26,7 +26,7 @@ app.get('/', (_request, response) => {
 
 app.use(middlewares())
 app.use('/api', routers)
-app.use('/sse', sseRouters)
+// app.use('/sse', sseRouters)
 
 // Start the server
 app.listen(APP_PORT, () => {
