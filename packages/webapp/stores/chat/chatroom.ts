@@ -2,7 +2,7 @@ import { immer } from 'zustand/middleware/immer'
 import { Database } from '@types'
 import { useAuthStore, useStore } from '@stores'
 import { json } from 'stream/consumers'
-import { broadcastPresence } from '@api'
+// import { broadcastPresence } from '@api'
 
 export type TProfile = Database['public']['Tables']['users']['Row'] & {
   presentIn?: string | null

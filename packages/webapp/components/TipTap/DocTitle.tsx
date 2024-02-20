@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
 import toast from 'react-hot-toast'
 import { useStore } from '@stores'
-import { broadcastDocTitle } from '@api'
+// import { broadcastDocTitle } from '@api'
 
 const DocTitle = ({ className }: any) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
@@ -16,7 +16,7 @@ const DocTitle = ({ className }: any) => {
   const saveData = (e: any) => {
     if (e.target.innerText === title) return
 
-    broadcastDocTitle(docMetadata.documentId, e.target.innerText)
+    // broadcastDocTitle(docMetadata.documentId, e.target.innerText)
 
     // @ts-ignore
     mutate({
