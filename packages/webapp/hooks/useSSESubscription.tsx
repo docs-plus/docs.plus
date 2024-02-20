@@ -7,22 +7,28 @@ const useSSESubscription = (docMetadata: any) => {
   const user = useAuthStore((state) => state.profile)
   const setOrUpdateUserPresence = useStore((state) => state.setOrUpdateUserPresence)
 
-  const handleEventMessage = useCallback((event: { data: string }) => {
-    const data = JSON.parse(event.data)
-    if (data.body.action === 'updateTitle' && data.body.title) {
-      setWorkspaceSetting('metadata', { ...docMetadata, title: data.title })
-    } else if (data.body.action === 'syncPresence') {
-      data.body.userPrecenses?.forEach((presence: any) => {
-        const userPresence = useStore.getState().usersPresence.get(presence.id)
-        if (!userPresence) return
-        const newUserPresence = {
-          ...userPresence,
-          channelId: presence?.channelId || null
-        }
-        setOrUpdateUserPresence(presence.id, newUserPresence)
+  const handleEventMessage = useCallback(
+    (event: { data: string }) => {
+      const data = JSON.parse(event.data)
+      console.log({
+        data: data.body
       })
-    }
-  }, [])
+      if (data.body.action === 'updateTitle' && data.body.title) {
+        setWorkspaceSetting('metadata', { ...docMetadata, title: data.title })
+      } else if (data.body.action === 'syncPresence') {
+        data.body.userPrecenses?.forEach((presence: any) => {
+          const userPresence = useStore.getState().usersPresence.get(presence.id)
+          if (!userPresence) return
+          const newUserPresence = {
+            ...userPresence,
+            channelId: presence?.channelId || null
+          }
+          setOrUpdateUserPresence(presence.id, newUserPresence)
+        })
+      }
+    },
+    [user]
+  )
 
   const initializeEventSource = useCallback(() => {
     let eventSource: EventSource
