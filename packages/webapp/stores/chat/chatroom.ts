@@ -41,17 +41,6 @@ const getWorkspaceId = (): string => {
   return useStore.getState().settings.workspaceId || ''
 }
 
-const joinToChannel = (workspaceId: string, channelId: string, userId: string) => {
-  // A short delay before joining the channel to ensure all necessary initializations are complete.
-  // This delay helps in avoiding conflicts and potential message queue issues with Server-Sent Events (SSE).
-  setTimeout(() => {
-    broadcastPresence(workspaceId, channelId, userId)
-  }, 500)
-}
-const leaveChannel = (workspaceId: string, userId: string) => {
-  broadcastPresence(workspaceId, null, userId)
-}
-
 const chatRoom = immer<IChatroomStore>((set) => ({
   chatRoom: {
     headingId: undefined,
@@ -85,7 +74,11 @@ const chatRoom = immer<IChatroomStore>((set) => ({
       state.chatRoom.headingPath = headingPath
     })
 
-    joinToChannel(getWorkspaceId(), newHeadingId, user.id)
+    useStore.getState().settings.broadcaster.send({
+      type: 'broadcast',
+      event: 'presence',
+      payload: { ...user, channelId: newHeadingId }
+    })
   },
 
   setOrUpdateChatRoom: (key, value) => {
@@ -130,7 +123,16 @@ const chatRoom = immer<IChatroomStore>((set) => ({
     })
     const user = useAuthStore.getState().profile
     if (!user) return
-    leaveChannel(getWorkspaceId(), user.id)
+    useStore
+      .getState()
+      .settings.broadcaster.track({ ...user, channelId: null })
+      .then()
+
+    useStore.getState().settings.broadcaster.send({
+      type: 'broadcast',
+      event: 'presence',
+      payload: { ...user, channelId: null }
+    })
   }
 }))
 
