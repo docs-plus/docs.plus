@@ -21,10 +21,12 @@ export const useCatchUserPresences = () => {
       })
       .on('presence', { event: 'sync' }, () => {
         // const newState = messageSubscription.presenceState()
-        // console.log('sync', newState)
-        // newState.forEach((value: any, key: any) => {
-        //   channelUsersPresence.set(key, value);
-        // }
+        // console.log('sync', newState, typeof newState, data)
+        // Object.keys(newState).forEach((key) => {
+        // channelUsersPresence.set(key, value);
+        // console.log('sync', { key, value: newState[key].at(0) })
+        // setOrUpdateUserPresence(newState[key].at(0), newState[key].at(0))
+        // })
       })
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
@@ -38,11 +40,12 @@ export const useCatchUserPresences = () => {
         }
         setOrUpdateUserPresence(newPresences.at(0)?.id, newUser)
       })
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        // console.log('leave', key, leftPresences)
+        // const newState = messageSubscription.presenceState()
+        // console.log('leave', { key, leftPresences, newState })
         // update user status to offline in the channel member state store
         // if the user is in the channel member state store
+        // if (leftPresences.at(0).channelId === 'empty') return
         removeUserPresence(leftPresences.at(0)?.id)
         // if (!usersPresence.has(leftPresences.at(0)?.id)) return
         // const newUser: any = {
@@ -51,7 +54,12 @@ export const useCatchUserPresences = () => {
         // }
         // setOrUpdateUserPresence(leftPresences.at(0)?.id, newUser)
       })
-
+      .on('broadcast', { event: 'presence' }, (data) => {
+        // console.log('broadcast ->> presence', { data })
+        const payload = data.payload
+        if (usersPresence.has(payload.id)) return
+        setOrUpdateUserPresence(payload.id, payload)
+      })
       .subscribe(async (status) => {
         if (status !== 'SUBSCRIBED') return
         // console.log("SUBSCRIBED", { status, profile });
