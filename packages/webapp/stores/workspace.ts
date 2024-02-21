@@ -36,8 +36,8 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
     broadcaster: undefined,
     editor: {
       instance: undefined,
-      rendering: false,
-      loading: false,
+      rendering: true,
+      loading: true,
       applyingFilters: false,
       selectionPos: 0,
       filterResult: [],

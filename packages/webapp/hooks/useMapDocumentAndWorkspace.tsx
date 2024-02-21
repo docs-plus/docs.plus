@@ -9,6 +9,7 @@ const useMapDocumentAndWorkspace = (docMetadata: any) => {
   const authLoading = useAuthStore((state) => state.loading)
 
   useEffect(() => {
+    if (authLoading || !user) return
     const checkworkspace = async () => {
       setLoading(true)
       try {
