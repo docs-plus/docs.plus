@@ -1,6 +1,3 @@
-/* eslint-disable no-use-before-define */
-// @ts-nocheck
-
 import { useEffect, useState, useRef } from 'react'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import Toolbar from '@components/TipTap/toolbar/Toolbar'
@@ -12,32 +9,12 @@ import ToolbarMobile from './ToolbarMobile'
 import TocModal from './TocModal'
 import { useStore } from '@stores'
 import ChatContainer from './chat/ChatContainer'
-
-const scrollHeadingSelection = (event: any) => {
-  const scrollTop = event.currentTarget.scrollTop
-  const toc = document.querySelector('.toc__list')
-  if (!toc) return
-  const tocLis = [...toc.querySelectorAll('.toc__item')]
-  const closest = tocLis
-    .map((li) => {
-      li.classList.remove('active')
-      return li
-    })
-    .filter((li) => {
-      const thisOffsetTop = +(li?.getAttribute('data-offsettop') || 0) - 220
-      return thisOffsetTop <= scrollTop // && nextSiblingOffsetTop >= scrollTop
-    })
-  closest.at(-1)?.classList.add('active')
-  closest.at(-1)?.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start',
-    inline: 'nearest'
-  })
-}
+import { scrollHeadingSelection } from '../helpers'
+import { useAdjustEditorSizeForChatRoom } from '../hooks'
 
 const Editor = () => {
-  const { editor, provider } = useEditorAndProvider()
-  const editorWrapperRef = useRef(null)
+  const { editor } = useEditorAndProvider()
+  const editorWrapperRef = useRef<HTMLDivElement>(null)
   // Mobile specific code
   const {
     deviceDetect,
@@ -49,18 +26,7 @@ const Editor = () => {
   const [showToolbar, setShowToolbar] = useState(false)
   const isKeyboardOpen = useDetectKeyboardOpen()
 
-  // adjust the editor size base on the chat room pannel height
-  useEffect(() => {
-    const editorWrapper = editorWrapperRef.current as HTMLElement
-
-    if (!editorWrapper) return
-    if (!chatRoom.documentId) {
-      editorWrapper.style.marginBottom = 0
-      return
-    }
-
-    editorWrapper.style.marginBottom = `${chatRoom.pannelHeight}px`
-  }, [editorWrapperRef.current, chatRoom.pannelHeight, chatRoom.documentId])
+  useAdjustEditorSizeForChatRoom(editorWrapperRef)
 
   useEffect(() => {
     if (!isMobile) return
@@ -150,15 +116,7 @@ const Editor = () => {
   return (
     <>
       <div className="toolbars w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative">
-        {!isMobile ? (
-          editor ? (
-            <Toolbar editor={editor} />
-          ) : (
-            'Loading...'
-          )
-        ) : (
-          isKeyboardOpen && <ToolbarMobile editor={editor} />
-        )}
+        {!isMobile ? <Toolbar /> : isKeyboardOpen && <ToolbarMobile />}
       </div>
       <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
         <div className="flex flex-col w-full relative align-top">
@@ -166,21 +124,21 @@ const Editor = () => {
             ref={editorWrapperRef}
             className="editorWrapper h-full grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
             onScroll={!isMobile ? scrollHeadingSelection : undefined}>
-            <EditorContent editor={editor} />
+            <EditorContent />
           </div>
           <ChatContainer />
         </div>
         {!isMobile && (
           <div
             className={`${chatRoom.headingPath && 'border-r border-gray-200 dark:border-gray-700'} tableOfContents max-w-xs w-3/12 overflow-hidden pb-4 sm:py-4 sm:pb-14 pr-16 scroll-smooth hover:overflow-auto hover:overscroll-contain`}>
-            <TOC editor={editor} />
+            <TOC />
           </div>
         )}
       </div>
       {isMobile && (
         <>
           <div className="nd_modal hidden left w-full h-full fixed z-20 overflow-hidden">
-            <TocModal editor={editor} />
+            <TocModal />
           </div>
           <button
             onClick={toggleToolbar}

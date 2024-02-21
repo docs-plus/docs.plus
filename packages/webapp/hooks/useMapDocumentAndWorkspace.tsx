@@ -1,6 +1,5 @@
-import { supabaseClient } from '@utils/supabase'
-import { useStore, useAuthStore, useChatStore } from '@stores'
-import { getChannels } from '@api'
+import { useAuthStore, useChatStore } from '@stores'
+import { getChannels, upsertWorkspace } from '@api'
 import { useEffect, useState } from 'react'
 
 const useMapDocumentAndWorkspace = (docMetadata: any) => {
@@ -13,16 +12,13 @@ const useMapDocumentAndWorkspace = (docMetadata: any) => {
     const checkworkspace = async () => {
       setLoading(true)
       try {
-        await supabaseClient
-          .from('workspaces')
-          .upsert({
-            id: docMetadata.documentId,
-            name: docMetadata.title,
-            description: docMetadata.description,
-            slug: docMetadata.slug,
-            created_by: user.id
-          })
-          .select()
+        await upsertWorkspace({
+          id: docMetadata.documentId,
+          name: docMetadata.title,
+          description: docMetadata.description,
+          slug: docMetadata.slug,
+          created_by: user.id
+        })
 
         const { data: channels } = await getChannels(docMetadata.documentId)
         if (channels) bulkSetChannels(channels)

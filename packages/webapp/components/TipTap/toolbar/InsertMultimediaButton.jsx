@@ -204,7 +204,12 @@ function HyperlinkForm({ onSubmit, editor }) {
   )
 }
 
-const InsertMultimedia = ({ editor, docMetadata }) => {
+const InsertMultimedia = () => {
+  const {
+    editor: { instance: editor },
+    metadata: docMetadata
+  } = useStore((state) => state.settings)
+
   const insertMedia = useCallback(
     (mediaUrl, mediaType) => {
       if (!mediaUrl) return

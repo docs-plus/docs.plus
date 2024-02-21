@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, RefObject } from 'react'
 import { useRouter } from 'next/router'
 
 const FilterModal = () => {
-  const filterSearchRef = useRef(null)
+  const filterSearchRef: RefObject<HTMLInputElement> = useRef(null)
   const [totalHeading, setTotalHeading] = useState(0)
   const [totalSearch, setTotalSearch] = useState(0)
   const [search, setSearch] = useState('')
@@ -17,9 +17,9 @@ const FilterModal = () => {
   useEffect(() => {
     const headings = countHeadings()
 
-    const filterHeadings = (headings) => {
+    const filterHeadings = (headings: any) => {
       const regex = new RegExp(search, 'i')
-      const filteredHeadings = Array.from(headings).filter((heading) =>
+      const filteredHeadings = Array.from(headings).filter((heading: any) =>
         regex.test(heading.textContent)
       )
       setTotalSearch(filteredHeadings.length)
@@ -28,7 +28,7 @@ const FilterModal = () => {
     filterHeadings(headings)
   }, [search])
 
-  const searchThroughHeading = (e) => {
+  const searchThroughHeading = (e: any) => {
     setSearch(e.target.value)
 
     if (e.key === 'Enter') {
@@ -37,15 +37,15 @@ const FilterModal = () => {
   }
 
   const applySearch = () => {
-    const search = filterSearchRef.current.value
-    const mainDoc = router.query.slugs.at(0)
-    window.location.href = `/${mainDoc}/${encodeURIComponent(search)}`
+    const search = filterSearchRef.current?.value
+    const mainDoc = router.query.slugs?.[0] // Add nullish coalescing operator
+    if (search) window.location.href = `/${mainDoc}/${encodeURIComponent(search)}`
   }
 
   const closeFilterModal = () => {
-    const bottomSideModal = document.querySelector('.nd_modal.bottom')
-    const modalWrapper = bottomSideModal.querySelector('.modalWrapper')
-    const modalBg = bottomSideModal.querySelector('.modalBg')
+    const bottomSideModal = document.querySelector('.nd_modal.bottom') as HTMLElement
+    const modalWrapper = bottomSideModal.querySelector('.modalWrapper') as HTMLElement
+    const modalBg = bottomSideModal.querySelector('.modalBg') as HTMLElement
 
     modalWrapper.classList.remove('active')
     modalBg.classList.remove('active')

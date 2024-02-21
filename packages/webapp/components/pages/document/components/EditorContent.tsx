@@ -3,10 +3,12 @@ import DocumentWithPictureLoader from '@components/DocumentWithPictureLoader'
 import DocumentSimpleLoader from '@components/DocumentSimpleLoader'
 import { useStore } from '@stores'
 
-const EditorContent = ({ editor }) => {
-  const { editor: editorSetting } = useStore((state) => state.settings)
+const EditorContent = () => {
+  const {
+    editor: { instance: editor, loading, rendering }
+  } = useStore((state) => state.settings)
 
-  if (editorSetting.loading || !editor) {
+  if (loading || rendering || !editor) {
     return (
       <div className={`ProseMirror tipta__editor mb-12 border-t-0 pt-8 sm:mb-0 sm:p-8 px-6 `}>
         <DocumentSimpleLoader className="!h-auto heading !border-t-0" level="1" />

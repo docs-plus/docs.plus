@@ -1,6 +1,8 @@
+import React from 'react'
 import ContentLoader from 'react-content-loader'
 
-const TableOfcontentLoader = (props) => {
+// Using React.HTMLProps<HTMLDivElement> for general div props
+const TableOfcontentLoader: React.FC<React.HTMLProps<HTMLDivElement>> = (props) => {
   return (
     <div {...props}>
       <ContentLoader

@@ -2,7 +2,9 @@ import createSelectors from '@utils/zustand'
 import { create } from 'zustand'
 import { Database } from '@types'
 
-type TProfile = Database['public']['Tables']['users']['Row']
+type TProfile = Database['public']['Tables']['users']['Row'] & {
+  channelId?: string | null
+}
 
 export interface IAuthStore {
   session: object | null

@@ -37,7 +37,7 @@ const icons = {
   Filter
 }
 
-const Icon = ({ type, fill = 'rgba(0,0,0,.7)', size = '16' }) => {
+const Icon = ({ type, fill = 'rgba(0,0,0,.7)', size = 16 }) => {
   const IconComponent = icons[type]
   return <IconComponent fill={fill} size={size} />
 }

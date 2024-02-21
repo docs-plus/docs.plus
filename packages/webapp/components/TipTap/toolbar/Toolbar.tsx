@@ -15,8 +15,16 @@ const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
 })
 const GearModal = dynamic(() => import('./GearModal'))
 
-const Toolbar = ({ editor }) => {
+const Toolbar = () => {
+  const {
+    editor: { instance: editor }
+  } = useStore((state) => state.settings)
   const { isAuthServiceAvailable } = useStore((state) => state.settings)
+
+  // TODO: skeleton loading
+  if (!editor) {
+    return <>Loading...</>
+  }
 
   return (
     <div className="tiptap__toolbar   editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-4">
@@ -37,7 +45,7 @@ const Toolbar = ({ editor }) => {
         editor={editor}
         tooltip="Bold (⌘+B)"
         type="bold">
-        <Icon type="Bold" size="10" />
+        <Icon type="Bold" size={10} />
       </ToolbarButton>
 
       <ToolbarButton
@@ -45,7 +53,7 @@ const Toolbar = ({ editor }) => {
         editor={editor}
         tooltip="Italic (⌘+I)"
         type="italic">
-        <Icon type="Italic" size="10" />
+        <Icon type="Italic" size={10} />
       </ToolbarButton>
 
       <ToolbarButton
@@ -53,7 +61,7 @@ const Toolbar = ({ editor }) => {
         editor={editor}
         tooltip="Underline (⌘+U)"
         type="underline">
-        <Icon type="Underline" size="10" />
+        <Icon type="Underline" size={10} />
       </ToolbarButton>
 
       <ToolbarButton
@@ -61,7 +69,7 @@ const Toolbar = ({ editor }) => {
         editor={editor}
         tooltip="Strike (⌘+S)"
         type="strike">
-        <Icon type="Stric" size="14" />
+        <Icon type="Stric" size={14} />
       </ToolbarButton>
 
       <div className="divided"></div>
@@ -71,7 +79,7 @@ const Toolbar = ({ editor }) => {
         editor={editor}
         tooltip="Ordered List (⌘+⇧+7)"
         type="orderedList">
-        <Icon type="OrderList" size="16" />
+        <Icon type="OrderList" size={16} />
       </ToolbarButton>
 
       <ToolbarButton
@@ -79,7 +87,7 @@ const Toolbar = ({ editor }) => {
         editor={editor}
         tooltip="Bullet List (⌘+⇧+8)"
         type="bulletList">
-        <Icon type="BulletList" size="16" />
+        <Icon type="BulletList" size={16} />
       </ToolbarButton>
 
       <ToolbarButton
@@ -87,19 +95,19 @@ const Toolbar = ({ editor }) => {
         editor={editor}
         tooltip="Task List (⌘+⇧+9)"
         type="taskList">
-        <Icon type="CheckList" size="16" />
+        <Icon type="CheckList" size={16} />
       </ToolbarButton>
 
       <div className="divided"></div>
 
-      <InsertMultimediaButton editor={editor} />
+      <InsertMultimediaButton />
 
       <ToolbarButton
         onClick={() => editor.chain().focus().setHyperlink().run()}
         editor={editor}
         tooltip="Hyperlink (⌘+K)"
         type="hyperlink">
-        <Link fill="rgba(0,0,0,.7)" size="18" />
+        <Link fill="rgba(0,0,0,.7)" size={18} />
       </ToolbarButton>
 
       <ToolbarButton
@@ -107,7 +115,7 @@ const Toolbar = ({ editor }) => {
         editor={editor}
         tooltip="Highlight (⌘+H)"
         type="highlight">
-        <Icon type="HighlightMarker" size="14" />
+        <Icon type="HighlightMarker" size={14} />
       </ToolbarButton>
 
       <div className="divided"></div>
@@ -122,19 +130,19 @@ const Toolbar = ({ editor }) => {
             editor.commands.unsetAllMarks()
           }
         }}>
-        <ClearMark fill="rgba(0,0,0,.7)" size="14" />
+        <ClearMark fill="rgba(0,0,0,.7)" size={14} />
       </ToolbarButton>
 
       <div className="ml-auto flex align-baseline items-center">
         <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)">
-          <Icon type="Printer" size="16" />
+          <Icon type="Printer" size={16} />
         </ToolbarButton>
 
         {isAuthServiceAvailable && (
           <Dialog>
             <DialogTrigger asChild={true}>
               <ToolbarButton tooltip="Open">
-                <Folder fill="rgba(0,0,0,.7)" size="18" />
+                <Folder fill="rgba(0,0,0,.7)" size={18} />
               </ToolbarButton>
             </DialogTrigger>
             <DialogContent>
@@ -148,7 +156,7 @@ const Toolbar = ({ editor }) => {
         <Popover>
           <PopoverTrigger asChild={true}>
             <ToolbarButton tooltip="Filter Document">
-              <Filter fill="rgba(0,0,0,.7)" size="20" />
+              <Filter fill="rgba(0,0,0,.7)" size={20} />
             </ToolbarButton>
           </PopoverTrigger>
           <FilterModal className="z-50" />
@@ -157,7 +165,7 @@ const Toolbar = ({ editor }) => {
         <Popover>
           <PopoverTrigger asChild={true}>
             <ToolbarButton tooltip="Document Settings">
-              <Gear fill="rgba(0,0,0,.7)" size="16" />
+              <Gear fill="rgba(0,0,0,.7)" size={16} />
             </ToolbarButton>
           </PopoverTrigger>
           <GearModal className="z-50" />

@@ -45,7 +45,7 @@ const Footer = () => {
   )
 }
 
-export default function DashboardLayout({ children, footer = true }) {
+export default function DashboardLayout({ children, footer = true }: any) {
   return (
     <>
       {children} {footer && <Footer />}

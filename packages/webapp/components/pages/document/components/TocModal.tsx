@@ -1,31 +1,38 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import Link from 'next/link'
 import DocTitle from '@components/TipTap/DocTitle'
 import { Filter, DocsPlus } from '@icons'
 import TOC from './Toc'
+import { useStore } from '@stores'
 
-const TocModal = ({ editor }) => {
-  const closeLeftSideModal = () => {
-    const leftSideModal = document.querySelector('.nd_modal.left')
-    const modalWrapper = leftSideModal.querySelector('.modalWrapper')
-    const modalBg = leftSideModal.querySelector('.modalBg')
+const TocModal = () => {
+  const {
+    editor: { instance: editor }
+  } = useStore((state) => state.settings)
+
+  // TODO: refactor needed
+  const closeLeftSideModal = useCallback(() => {
+    const leftSideModal = document.querySelector('.nd_modal.left') as HTMLDivElement
+    const modalWrapper = leftSideModal.querySelector('.modalWrapper') as HTMLDivElement
+    const modalBg = leftSideModal.querySelector('.modalBg') as HTMLDivElement
 
     modalWrapper.classList.remove('active')
     modalBg.classList.remove('active')
 
     // editor?.setEditable(false)
-    const divProseMirror = document.querySelector('.ProseMirror')
+    const divProseMirror = document.querySelector('.ProseMirror') as HTMLDivElement
     divProseMirror.setAttribute('contenteditable', 'false')
 
     modalBg.ontransitionend = () => {
       leftSideModal.classList.add('hidden')
     }
-  }
+  }, [])
 
-  const openFilterModal = () => {
-    const bottomSideModal = document.querySelector('.nd_modal.bottom')
-    const modalWrapper = bottomSideModal.querySelector('.modalWrapper')
-    const modalBg = bottomSideModal.querySelector('.modalBg')
+  // TODO: refactor needed
+  const openFilterModal = useCallback(() => {
+    const bottomSideModal = document.querySelector('.nd_modal.bottom') as HTMLDivElement
+    const modalWrapper = bottomSideModal.querySelector('.modalWrapper') as HTMLDivElement
+    const modalBg = bottomSideModal.querySelector('.modalBg') as HTMLDivElement
 
     bottomSideModal.classList.remove('hidden')
     modalBg.classList.add('active')
@@ -33,7 +40,7 @@ const TocModal = ({ editor }) => {
     setTimeout(() => {
       modalWrapper.classList.add('active')
     }, 200)
-  }
+  }, [])
 
   return (
     <div className="h-full">
@@ -46,7 +53,7 @@ const TocModal = ({ editor }) => {
           <Link
             href="/"
             className="w-8 h-8 flex align-middle justify-center text-black ml-1 outline-0">
-            <DocsPlus size="70" />
+            <DocsPlus size={70} />
           </Link>
           <DocTitle className="w-8/12 overflow-hidden mt-0 " />
           <div className="w-4/12 flex justify-end items-center flex-row ml-auto mr-3">

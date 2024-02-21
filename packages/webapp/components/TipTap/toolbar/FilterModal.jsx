@@ -12,7 +12,7 @@ import Button from '@components/ui/Button'
 import Toggle from '@components/ui/Toggle'
 import { useBooleanLocalStorageState } from './toolbarUtils'
 
-const FilterModal = ({ totalHeading, className }) => {
+const FilterModal = ({ totalHeading = 0, className }) => {
   const router = useRouter()
   const [totalSearch, setTotalSearch] = useState(0)
   const [totalHeadings, setTotalHeadings] = useState(totalHeading)
