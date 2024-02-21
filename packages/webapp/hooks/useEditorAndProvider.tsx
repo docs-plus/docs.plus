@@ -23,20 +23,20 @@ const useEditorAndProvider = () => {
   ])
 
   useEffect(() => {
-    if (!editor) return
+    if (!editor || editorSetting.rendering) return
     setWorkspaceEditorSetting('instance', editor)
     setWorkspaceEditorSetting('loading', false)
-  }, [editor])
+  }, [editor, editorSetting.rendering])
 
   useProviderAwarness()
   useEditorEditableState()
   useEditorReadOnly()
   useApplyFilters()
 
-  useEffect(() => {
-    if (editorSetting?.loading && editorSetting?.applyingFilters) return
-    setWorkspaceEditorSetting('rendering', false)
-  }, [editorSetting?.loading, editorSetting?.applyingFilters])
+  // useEffect(() => {
+  //   if (editorSetting?.loading && editorSetting?.applyingFilters) return
+  //   setWorkspaceEditorSetting('rendering', false)
+  // }, [editorSetting?.loading, editorSetting?.applyingFilters])
 
   // FIXME: this cuase rerending other components that depend on useEditorStateContext! "Drill props down instead"
   // // The selection has changed.
