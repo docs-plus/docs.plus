@@ -1,16 +1,16 @@
 import { useState, useEffect, useCallback } from 'react'
 
-// TODO: refactor, rename to useEmailValidation
-const useEmailValidation = (initialEmail = '') => {
-  const [email, setEmail] = useState(initialEmail)
-  const [error, setError] = useState('')
+const useEmailValidation = (initialEmail: string = '') => {
+  const [email, setEmail] = useState<string>(initialEmail)
+  const [error, setError] = useState<string>('')
 
   const validateEmail = useCallback((email: string) => {
-    if (email === '') return
-    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
-    if (!email) {
+    if (email === '') {
       setError('Email is required')
-    } else if (!re.test(String(email).toLowerCase())) {
+      return
+    }
+    const re = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/
+    if (!re.test(String(email).toLowerCase())) {
       setError('Email is invalid')
     } else {
       setError('')

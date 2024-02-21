@@ -20,7 +20,7 @@ type TabLayoutProps = {
   name: string
   children: React.ReactNode
   className?: string
-  footer?: boolean // or React.ReactNode, depending on what footer is supposed to be
+  footer?: boolean
 }
 
 function TabLayout({ name, children, className, footer }: TabLayoutProps) {

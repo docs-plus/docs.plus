@@ -10,7 +10,7 @@ const DesktopLayout = () => {
 
   // TODO: reconsider this
   useEffect(() => {
-    document.querySelector('html').classList.remove('m_mobile')
+    document.querySelector('html')?.classList.remove('m_mobile')
   }, [])
 
   return (

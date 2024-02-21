@@ -1,6 +1,6 @@
 import { twMerge } from 'tailwind-merge'
 
-const TabTitle = ({ children, className }) => {
+const TabTitle = ({ children, className }: any) => {
   return (
     <h2
       className={twMerge(

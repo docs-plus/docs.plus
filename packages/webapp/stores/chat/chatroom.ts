@@ -1,12 +1,9 @@
 import { immer } from 'zustand/middleware/immer'
 import { Database } from '@types'
 import { useAuthStore, useStore } from '@stores'
-import { json } from 'stream/consumers'
-// import { broadcastPresence } from '@api'
 
 export type TProfile = Database['public']['Tables']['users']['Row'] & {
-  presentIn?: string | null
-  channelId: string | null
+  channelId?: string | null
 }
 
 type TChatRoom = {
@@ -39,6 +36,22 @@ interface IChatroomStore {
 
 const getWorkspaceId = (): string => {
   return useStore.getState().settings.workspaceId || ''
+}
+
+const join2Channel = (user: TProfile, channelId: string) => {
+  useStore.getState().settings.broadcaster.send({
+    type: 'broadcast',
+    event: 'presence',
+    payload: { ...user, channelId }
+  })
+}
+
+const leaveChannel = (user: TProfile) => {
+  useStore.getState().settings.broadcaster.send({
+    type: 'broadcast',
+    event: 'presence',
+    payload: { ...user, channelId: null }
+  })
 }
 
 const chatRoom = immer<IChatroomStore>((set) => ({
@@ -74,11 +87,7 @@ const chatRoom = immer<IChatroomStore>((set) => ({
       state.chatRoom.headingPath = headingPath
     })
 
-    useStore.getState().settings.broadcaster.send({
-      type: 'broadcast',
-      event: 'presence',
-      payload: { ...user, channelId: newHeadingId }
-    })
+    join2Channel(user, newHeadingId)
   },
 
   setOrUpdateChatRoom: (key, value) => {
@@ -123,16 +132,7 @@ const chatRoom = immer<IChatroomStore>((set) => ({
     })
     const user = useAuthStore.getState().profile
     if (!user) return
-    useStore
-      .getState()
-      .settings.broadcaster.track({ ...user, channelId: null })
-      .then()
-
-    useStore.getState().settings.broadcaster.send({
-      type: 'broadcast',
-      event: 'presence',
-      payload: { ...user, channelId: null }
-    })
+    leaveChannel(user)
   }
 }))
 

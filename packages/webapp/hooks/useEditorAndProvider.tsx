@@ -7,9 +7,10 @@ import { useStore, useAuthStore } from '@stores'
 import useProviderAwarness from './useProviderAwarness'
 import useEditorEditableState from './useEditorEditableState'
 import useEditorReadOnly from './useEditorReadOnly'
+
 const useEditorAndProvider = () => {
   const user = useAuthStore((state) => state.profile)
-  const { editor: editorSetting, metadata } = useStore((state) => state.settings)
+  const { editor: editorSetting } = useStore((state) => state.settings)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
 
   // TODO: this cuase rerending 3 times
