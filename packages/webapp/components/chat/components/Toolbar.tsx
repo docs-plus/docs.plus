@@ -1,12 +1,12 @@
 import Breadcrumb from './Breadcrumb'
 import { useStore, useChatStore } from '@stores'
 import AvatarStack from '@components/AvatarStack'
-import { Close as CloseIcon } from '@icons'
 import { useEffect, useState } from 'react'
+import { IoCloseSharp } from 'react-icons/io5'
 
 const CloseButton = ({ onClick }: any) => (
-  <button onClick={onClick}>
-    <CloseIcon className="feather feather-x cursor-pointer hover:text-indigo-400 rounded-full w-4 h-4 ml-2" />
+  <button className="btn btn-circle btn-xs ml-auto" onClick={onClick}>
+    <IoCloseSharp size={20} />
   </button>
 )
 
@@ -34,7 +34,7 @@ const Toolbar = () => {
       </div>
       <div className="ml-auto flex items-center justify-end">
         <div className="mr-4 h-8">
-          <AvatarStack size={8} users={presentUsers} />
+          <AvatarStack size={8} users={presentUsers} tooltipPosition="tooltip-left" />
         </div>
         <CloseButton onClick={handelCloseChatRoom} />
       </div>
