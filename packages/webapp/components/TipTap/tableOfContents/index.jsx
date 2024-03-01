@@ -123,16 +123,7 @@ const renderTocs = (items, headingId) => {
 }
 
 const TableOfContent = ({ className }) => {
-  const { query } = useRouter()
-  const setChatRoom = useChatStore((state) => state.setChatRoom)
   const { headingId } = useChatStore((state) => state.chatRoom)
-  const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
-  const user = useAuthStore((state) => state.profile)
-  const {
-    workspaceId,
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
-
   const { items } = useHandelTocUpdate()
   const [renderedTocs, setRenderedTocs] = useState([])
 
