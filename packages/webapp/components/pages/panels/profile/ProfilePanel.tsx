@@ -1,6 +1,5 @@
 import { useState } from 'react'
 import Button from '@components/ui/Button'
-import { ShieldCheck, Bell, AngleSmallRight, Exit } from '@icons'
 import { Avatar } from '@components/ui/Avatar'
 import dynamic from 'next/dynamic'
 import { useAuthStore } from '@stores'
@@ -8,6 +7,8 @@ import { toast } from 'react-hot-toast'
 import { supabaseClient } from '@utils/supabase'
 import Loading from '@components/ui/Loading'
 import { LuLogOut } from 'react-icons/lu'
+import { RiShieldCheckLine, RiArrowRightSLine } from 'react-icons/ri'
+import { LuBell } from 'react-icons/lu'
 
 const ProfileTab = dynamic(() => import('./ProfileTab'), {
   loading: () => <Loading />
@@ -41,66 +42,76 @@ const ProfilePanel = () => {
   return (
     <>
       <div className="w-4/12 p-4 px-6 relative">
-        <ul className="">
+        <ul className="menu flex space-y-2  pl-0">
           <li
-            className={`flex align-baseline justify-start py-3 rounded-md px-2 cursor-pointer ${
-              activeTab === 'profile' && 'bg-slate-200 drop-shadow-sm'
-            }`}
             onClick={() => {
               changeTab('profile')
             }}>
-            <Avatar
-              id={user?.id}
-              src={user?.avatar_url}
-              alt={displayName}
-              className="rounded-full mr-2 border w-6 scale-125"
-            />
-            Profile
-            <AngleSmallRight size={20} className="ml-auto" />
+            <a href="#" className={`${activeTab === 'profile' ? 'active' : ''}`}>
+              <Avatar
+                id={user?.id}
+                src={user?.avatar_url}
+                alt={displayName}
+                className="rounded-full mr-2 border w-6 scale-125"
+              />
+              Profile
+              <RiArrowRightSLine size={20} className="ml-auto" />
+            </a>
           </li>
           <li
-            className={`flex align-baseline justify-start py-3 rounded-md px-2 cursor-pointer ${
-              activeTab === 'security' && 'bg-slate-200 drop-shadow-sm'
-            }`}
             onClick={() => {
               changeTab('security')
             }}>
-            <ShieldCheck size={20} className="mr-2" />
-            Security
-            <AngleSmallRight size={20} className="ml-auto" />
+            <a href="#" className={`${activeTab === 'security' ? 'active ' : ''}`}>
+              <RiShieldCheckLine size={22} className="mr-2" />
+              Security
+              <RiArrowRightSLine size={20} className="ml-auto" />
+            </a>
           </li>
           <li
-            className={`flex align-baseline justify-start py-3 rounded-md px-2 cursor-pointer ${
-              activeTab === 'notifications' && 'bg-slate-200 drop-shadow-sm'
-            }`}
             onClick={() => {
               changeTab('notifications')
             }}>
-            <Bell size={20} className="mr-2" />
-            Notifications
-            <AngleSmallRight size={20} className="ml-auto" />
+            <a href="#" className={`${activeTab === 'notifications' ? 'active' : ''}`}>
+              <LuBell size={22} className="mr-2" />
+              Notifications
+              <RiArrowRightSLine size={20} className="ml-auto" />
+            </a>
           </li>
         </ul>
-        <div className="border rounded-md p-4 mt-10 flex flex-col text-base antialiased">
-          <a href="#" target="_blank" className="mt-2">
-            FAQ
-          </a>
-          <a href="#" target="_blank" className="mt-2">
-            Request a feature
-          </a>
-          <a href="#" target="_blank" className="mt-2">
-            Report an issue
-          </a>
-          <a href="#" target="_blank" className="mt-2">
-            Privacy policy
-          </a>
-          <a href="#" target="_blank" className="mt-2">
-            Terms of service
-          </a>
+        <div className="divider"></div>
+        <div className=" rounded-md flex flex-col">
+          <ul className="menu">
+            <li>
+              <a href="#" target="_blank" className="mt-2">
+                FAQ
+              </a>
+            </li>
+            <li>
+              <a href="#" target="_blank" className="mt-2">
+                Request a feature
+              </a>
+            </li>
+            <li>
+              <a href="#" target="_blank" className="mt-2">
+                Report an issue
+              </a>
+            </li>
+            <li>
+              <a href="#" target="_blank" className="mt-2">
+                Privacy policy
+              </a>
+            </li>
+            <li>
+              <a href="#" target="_blank" className="mt-2">
+                Terms of service
+              </a>
+            </li>
+          </ul>
         </div>
         <Button
           onClick={signOut}
-          className="mt-40 join-item btn-block flex items-center justify-center"
+          className="mt-28 join-item btn-block flex items-center justify-center"
           loading={loadSignOut}>
           <LuLogOut size={18} className="mr-auto" />
           <span className="mr-auto -ml-[24px]">Sign-out</span>
