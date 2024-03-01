@@ -124,6 +124,8 @@ const SecurityTab = () => {
   }
 
   const saveNewEmail = async (e) => {
+    toast.error('This feature is temporarily unavailable.')
+    return
     e.preventDefault()
     if (emailError) return
     if (email.length === 0) return

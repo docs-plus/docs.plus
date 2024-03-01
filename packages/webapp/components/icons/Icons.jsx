@@ -180,7 +180,7 @@ export const Gear = ({ size = 18, fill = 'black' }) => {
 }
 
 // prettier-ignore
-export const OfflineCloud = ({ size = 18, fill = 'black', className }) => {
+export const OfflineCloud = ({ size = 18, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 18 15.19" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M15,15.19l-2.12-2.13H4A3.86,3.86,0,0,1,1.17,11.9,3.87,3.87,0,0,1,0,9.06,3.86,3.86,0,0,1,1.08,6.33,3.93,3.93,0,0,1,3.73,5.08c0-.15.09-.3.14-.44A2.75,2.75,0,0,1,4,4.23L.88,1.06,1.94,0,16.06,14.12ZM4,11.56h7.38L5.21,5.4c-.06.18-.11.36-.16.55L4.9,6.5l-1.07.08a2.55,2.55,0,0,0-1.66.78,2.37,2.37,0,0,0-.67,1.7,2.38,2.38,0,0,0,.73,1.77A2.41,2.41,0,0,0,4,11.56Zm12.5.88-1.1-1.09a2,2,0,0,0,.79-.73,1.88,1.88,0,0,0,.31-1.06,1.9,1.9,0,0,0-.58-1.41,1.93,1.93,0,0,0-1.42-.59H13.12L13,6.21a4,4,0,0,0-1.29-2.6A3.89,3.89,0,0,0,9,2.56a3.54,3.54,0,0,0-1,.13A4.61,4.61,0,0,0,7.1,3L6,2A6.24,6.24,0,0,1,7.43,1.3,5,5,0,0,1,9,1.06a5.34,5.34,0,0,1,3.73,1.45A5.36,5.36,0,0,1,14.5,6.06,3.48,3.48,0,0,1,18,9.56a3.42,3.42,0,0,1-.41,1.65A3.49,3.49,0,0,1,16.5,12.44Z" />
@@ -189,7 +189,7 @@ export const OfflineCloud = ({ size = 18, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const OnlineCloud = ({ size = 18, fill = 'black', className }) => {
+export const OnlineCloud = ({ size = 18, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 20 14" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M15.5,14h-10C2.5,14,0,11.5,0,8.5c0-2.8,2.1-5.1,4.8-5.4C5.8,1.2,7.8,0,10,0c3,0,5.4,2.2,5.9,5 C18.2,5.2,20,7.2,20,9.5C20,12,18,14,15.5,14z M10,2C8.4,2,7,2.9,6.3,4.4L6.1,5L5.4,5C3.5,5,2,6.6,2,8.5C2,10.4,3.6,12,5.5,12h10 c1.4,0,2.5-1.1,2.5-2.5S16.9,7,15.5,7H14V6C14,3.8,12.2,2,10,2z M11.6,5L8.9,7.7L7.4,6.2L6,7.6l2.9,2.9L13,6.4L11.6,5z" fill={fill} />
@@ -209,7 +209,7 @@ export const ArrowLeft = ({ size = 18, fill = 'black' }) => {
 }
 
 // prettier-ignore
-export const ArrowDown = ({ size = 18, fill = 'black', className }) => {
+export const ArrowDown = ({ size = 18, fill = 'black', className = "" }) => {
   return (
     <svg viewBox="0 0 24 24" width={size} className={className} xmlns="http://www.w3.org/2000/svg">
       <path fill={fill} d="M6.414,9H17.586a1,1,0,0,1,.707,1.707l-5.586,5.586a1,1,0,0,1-1.414,0L5.707,10.707A1,1,0,0,1,6.414,9Z"/>
@@ -218,7 +218,7 @@ export const ArrowDown = ({ size = 18, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const Doc = ({ size = 18, fill = 'black', className }) => {
+export const Doc = ({ size = 18, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 26 36" width={size} xmlns="http://www.w3.org/2000/svg" >
       <path d="M2.5,0H17l9,9V33.5A2.5,2.5,0,0,1,23.5,36H2.5A2.5,2.5,0,0,1,0,33.5V2.5A2.5,2.5,0,0,1,2.5,0Z" fill="#4285f4" />
@@ -233,7 +233,7 @@ export const Doc = ({ size = 18, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const SearchDoc = ({ size = 18, fill = 'black', className }) => {
+export const SearchDoc = ({ size = 18, fill = 'black', className = "" }) => {
   return (
     <svg className={className} viewBox="0 0 16 20" width={size} xmlns="http://www.w3.org/2000/svg" >
       <g>
@@ -379,7 +379,7 @@ export const InsertLinkMobile = ({ size = 24, fill = 'black', className = "" }) 
 }
 
 // prettier-ignore
-export const GoogleGIcon = ({ size = 24, fill = 'black', className }) => {
+export const GoogleGIcon = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 48 48" width={size} xmlns="http://www.w3.org/2000/svg">
       <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
@@ -391,7 +391,7 @@ export const GoogleGIcon = ({ size = 24, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const Sparkles = ({ size = 24, fill = 'black', className }) => {
+export const Sparkles = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 48 48" width={size} xmlns="http://www.w3.org/2000/svg">
       <g>
@@ -538,7 +538,7 @@ export const Facebook = ({ size = 24, fill = 'rgb(104, 81, 255)', className = ""
 }
 
 // prettier-ignore
-export const Twitter = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const Twitter = ({ size = 24, fill = 'rgb(104, 81, 255)', className = '' }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M21.543,7.104c0.014,0.211,0.014,0.423,0.014,0.636  c0,6.507-4.954,14.01-14.01,14.01v-0.004C4.872,21.75,2.252,20.984,0,19.539c0.389,0.047,0.78,0.07,1.172,0.071  c2.218,0.002,4.372-0.742,6.115-2.112c-2.107-0.04-3.955-1.414-4.6-3.42c0.738,0.142,1.498,0.113,2.223-0.084  c-2.298-0.464-3.95-2.483-3.95-4.827c0-0.021,0-0.042,0-0.062c0.685,0.382,1.451,0.593,2.235,0.616  C1.031,8.276,0.363,5.398,1.67,3.148c2.5,3.076,6.189,4.946,10.148,5.145c-0.397-1.71,0.146-3.502,1.424-4.705  c1.983-1.865,5.102-1.769,6.967,0.214c1.103-0.217,2.16-0.622,3.127-1.195c-0.368,1.14-1.137,2.108-2.165,2.724  C22.148,5.214,23.101,4.953,24,4.555C23.339,5.544,22.507,6.407,21.543,7.104z"/>
@@ -547,7 +547,7 @@ export const Twitter = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) =>
 }
 
 // prettier-ignore
-export const Linkedin = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const Linkedin = ({ size = 24, fill = 'rgb(104, 81, 255)', className = '' }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <g>
@@ -560,7 +560,7 @@ export const Linkedin = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) =
 }
 
 // prettier-ignore
-export const At = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const At = ({ size = 24, fill = 'rgb(104, 81, 255)', className = '' }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M12,0A12.013,12.013,0,0,0,0,12c-.126,9.573,11.159,15.429,18.9,9.817a1,1,0,1,0-1.152-1.634C11.3,24.856,1.9,19.978,2,12,2.549-1.266,21.453-1.263,22,12v2a2,2,0,0,1-4,0V12C17.748,4.071,6.251,4.072,6,12a6.017,6.017,0,0,0,10.52,3.933A4,4,0,0,0,24,14V12A12.013,12.013,0,0,0,12,0Zm0,16a4,4,0,0,1,0-8A4,4,0,0,1,12,16Z"/>
@@ -569,7 +569,7 @@ export const At = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
 }
 
 // prettier-ignore
-export const CircleUser = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const CircleUser = ({ size = 24, fill = 'rgb(104, 81, 255)', className = '' }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="m12,0C5.383,0,0,5.383,0,12s5.383,12,12,12,12-5.383,12-12S18.617,0,12,0Zm-4,21.164v-.164c0-2.206,1.794-4,4-4s4,1.794,4,4v.164c-1.226.537-2.578.836-4,.836s-2.774-.299-4-.836Zm9.925-1.113c-.456-2.859-2.939-5.051-5.925-5.051s-5.468,2.192-5.925,5.051c-2.47-1.823-4.075-4.753-4.075-8.051C2,6.486,6.486,2,12,2s10,4.486,10,10c0,3.298-1.605,6.228-4.075,8.051Zm-5.925-15.051c-2.206,0-4,1.794-4,4s1.794,4,4,4,4-1.794,4-4-1.794-4-4-4Zm0,6c-1.103,0-2-.897-2-2s.897-2,2-2,2,.897,2,2-.897,2-2,2Z"/>
@@ -578,7 +578,7 @@ export const CircleUser = ({ size = 24, fill = 'rgb(104, 81, 255)', className })
 }
 
 // prettier-ignore
-export const User = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const User = ({ size = 24, fill = 'rgb(104, 81, 255)', className = '' }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M12,12A6,6,0,1,0,6,6,6.006,6.006,0,0,0,12,12ZM12,2A4,4,0,1,1,8,6,4,4,0,0,1,12,2Z"/>
@@ -588,7 +588,7 @@ export const User = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
 }
 
 // prettier-ignore
-export const World = ({ size = 24, fill = 'rgb(104, 81, 255)', className }) => {
+export const World = ({ size = 24, fill = 'rgb(104, 81, 255)', className = '' }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M12,0A12,12,0,1,0,24,12,12.013,12.013,0,0,0,12,0ZM22,12a9.938,9.938,0,0,1-1.662,5.508l-1.192-1.193A.5.5,0,0,1,19,15.962V15a3,3,0,0,0-3-3H13a1,1,0,0,1-1-1v-.5a.5.5,0,0,1,.5-.5A2.5,2.5,0,0,0,15,7.5v-1a.5.5,0,0,1,.5-.5h1.379a2.516,2.516,0,0,0,1.767-.732l.377-.377A9.969,9.969,0,0,1,22,12Zm-19.951.963,3.158,3.158A2.978,2.978,0,0,0,7.329,17H10a1,1,0,0,1,1,1v3.949A10.016,10.016,0,0,1,2.049,12.963ZM13,21.949V18a3,3,0,0,0-3-3H7.329a1,1,0,0,1-.708-.293L2.163,10.249A9.978,9.978,0,0,1,17.456,3.63l-.224.224A.507.507,0,0,1,16.879,4H15.5A2.5,2.5,0,0,0,13,6.5v1a.5.5,0,0,1-.5.5A2.5,2.5,0,0,0,10,10.5V11a3,3,0,0,0,3,3h3a1,1,0,0,1,1,1v.962a2.516,2.516,0,0,0,.732,1.767l1.337,1.337A9.971,9.971,0,0,1,13,21.949Z"/>
@@ -644,7 +644,7 @@ export const Close = ({ size = 24, fill = 'black', className = "" }) => {
 }
 
 // prettier-ignore
-export const Youtube = ({ size = 24, fill = 'black', className }) => {
+export const Youtube = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <g >
@@ -655,7 +655,7 @@ export const Youtube = ({ size = 24, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const XTwitter = ({ size = 24, fill = 'black', className }) => {
+export const XTwitter = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="m18.9,1.153h3.682l-8.042,9.189,9.46,12.506h-7.405l-5.804-7.583-6.634,7.583H.469l8.6-9.831L0,1.153h7.593l5.241,6.931,6.065-6.931Zm-1.293,19.494h2.039L6.482,3.239h-2.19l13.314,17.408Z"/>
@@ -664,7 +664,7 @@ export const XTwitter = ({ size = 24, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const SoundCloud = ({ size = 24, fill = 'black', className }) => {
+export const SoundCloud = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24"  width={size} xmlns="http://www.w3.org/2000/svg">
 <path fillRule="evenodd"  clipRule="evenodd"  d="M10.069,16.995L9.931,14.43l0.138-6.345  c0-0.224,0.185-0.405,0.414-0.405c0.228,0,0.414,0.181,0.414,0.405l0.138,6.345l-0.138,2.565c0,0.224-0.185,0.405-0.414,0.405  C10.254,17.4,10.069,17.219,10.069,16.995z M8.414,16.995L8.276,14.43l0.138-4.725c0-0.224,0.185-0.405,0.414-0.405  c0.228,0,0.414,0.181,0.414,0.405l0.138,4.725l-0.138,2.565c0,0.224-0.185,0.405-0.414,0.405C8.599,17.4,8.414,17.219,8.414,16.995z   M6.759,16.995L6.621,14.43l0.138-5.265c0-0.224,0.185-0.405,0.414-0.405c0.228,0,0.414,0.181,0.414,0.405l0.138,5.265l-0.138,2.565  c0,0.224-0.185,0.405-0.414,0.405C6.944,17.4,6.759,17.219,6.759,16.995z M5.103,16.995L4.966,14.43l0.138-4.185  c0-0.224,0.185-0.405,0.414-0.405c0.228,0,0.414,0.181,0.414,0.405l0.138,4.185l-0.138,2.565c0,0.224-0.185,0.405-0.414,0.405  C5.289,17.4,5.103,17.219,5.103,16.995z M3.448,16.995L3.31,14.43l0.138-2.025C3.448,12.181,3.634,12,3.862,12  s0.414,0.181,0.414,0.405l0.138,2.025l-0.138,2.565c0,0.224-0.185,0.405-0.414,0.405S3.448,17.219,3.448,16.995z M1.793,16.995  L1.655,14.43l0.138-2.565c0-0.224,0.185-0.405,0.414-0.405c0.228,0,0.414,0.181,0.414,0.405l0.138,2.565l-0.138,2.565  c0,0.224-0.185,0.405-0.414,0.405C1.978,17.4,1.793,17.219,1.793,16.995z M0.138,15.915L0,14.43l0.138-1.485  c0-0.224,0.185-0.405,0.414-0.405s0.414,0.181,0.414,0.405l0.138,1.485l-0.138,1.485c0,0.224-0.185,0.405-0.414,0.405  S0.138,16.139,0.138,15.915z M19.515,11.131c0.365-0.136,0.761-0.211,1.175-0.211c1.828,0,3.31,1.451,3.31,3.24  s-1.482,3.24-3.31,3.24h-8.275c-0.457,0-0.828-0.364-0.828-0.811V7.95c0-1.35,2.483-1.35,2.483-1.35  C16.814,6.6,19.09,8.562,19.515,11.131z"/>
@@ -673,7 +673,7 @@ export const SoundCloud = ({ size = 24, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const Vimeo = ({ size = 24, fill = 'black', className }) => {
+export const Vimeo = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M23.988,6.412c-0.107,2.341-1.739,5.546-4.895,9.614c-3.263,4.249-6.024,6.374-8.282,6.374c-1.399,0-2.583-1.294-3.55-3.882  c-0.646-2.372-1.291-4.744-1.937-7.117C4.606,8.814,3.836,7.519,3.013,7.519c-0.18,0-0.808,0.379-1.883,1.133L0,7.195  c1.185-1.043,2.353-2.085,3.503-3.129c1.58-1.368,2.766-2.087,3.556-2.16c1.868-0.18,3.018,1.099,3.449,3.838  c0.466,2.955,0.789,4.792,0.97,5.511c0.538,2.451,1.131,3.675,1.778,3.675c0.502,0,1.257-0.795,2.263-2.385  c1.005-1.59,1.543-2.8,1.616-3.631c0.143-1.372-0.395-2.06-1.616-2.06c-0.575,0-1.167,0.132-1.776,0.394  c1.179-3.871,3.433-5.751,6.759-5.644C22.968,1.677,24.13,3.279,23.988,6.412z"/>
@@ -682,7 +682,7 @@ export const Vimeo = ({ size = 24, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const Picture = ({ size = 24, fill = 'black', className }) => {
+export const Picture = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="M19,0H5A5.006,5.006,0,0,0,0,5V19a5.006,5.006,0,0,0,5,5H19a5.006,5.006,0,0,0,5-5V5A5.006,5.006,0,0,0,19,0ZM5,2H19a3,3,0,0,1,3,3V19a2.951,2.951,0,0,1-.3,1.285l-9.163-9.163a5,5,0,0,0-7.072,0L2,14.586V5A3,3,0,0,1,5,2ZM5,22a3,3,0,0,1-3-3V17.414l4.878-4.878a3,3,0,0,1,4.244,0L20.285,21.7A2.951,2.951,0,0,1,19,22Z"/>
@@ -692,7 +692,7 @@ export const Picture = ({ size = 24, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const Film = ({ size = 24, fill = 'black', className }) => {
+export const Film = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="m19 0h-14a5.006 5.006 0 0 0 -5 5v14a5.006 5.006 0 0 0 5 5h14a5.006 5.006 0 0 0 5-5v-14a5.006 5.006 0 0 0 -5-5zm1 11h2v2h-2zm0-2v-2h2v2zm-2 2h-12v-9h12zm-14 2h-2v-2h2zm0-4h-2v-2h2zm-2 6h2v2h-2zm4-2h12v9h-12zm14 2h2v2h-2zm2-10h-2v-2.816a3 3 0 0 1 2 2.816zm-18-2.816v2.816h-2a3 3 0 0 1 2-2.816zm-2 16.816h2v2.816a3 3 0 0 1 -2-2.816zm18 2.816v-2.816h2a3 3 0 0 1 -2 2.816z"/>
@@ -701,7 +701,7 @@ export const Film = ({ size = 24, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const MusicFile = ({ size = 24, fill = 'black', className }) => {
+export const MusicFile = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg className={className} fill={fill} viewBox="0 0 24 24" width={size} xmlns="http://www.w3.org/2000/svg">
       <path d="m15 12a1 1 0 0 1 -1 1h-1v4.5a2.5 2.5 0 1 1 -2.5-2.5 2.577 2.577 0 0 1 .5.05v-2.05a2 2 0 0 1 2-2h1a1 1 0 0 1 1 1zm7-1.515v8.515a5.006 5.006 0 0 1 -5 5h-10a5.006 5.006 0 0 1 -5-5v-14a5.006 5.006 0 0 1 5-5h4.515a6.955 6.955 0 0 1 4.95 2.051l3.484 3.484a6.955 6.955 0 0 1 2.051 4.95zm-6.949-7.02a4.989 4.989 0 0 0 -1.051-.781v4.316a1 1 0 0 0 1 1h4.316a4.989 4.989 0 0 0 -.781-1.051zm4.949 7.02c0-.165-.032-.323-.047-.485h-4.953a3 3 0 0 1 -3-3v-4.953c-.162-.015-.32-.047-.485-.047h-4.515a3 3 0 0 0 -3 3v14a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3z"/>
@@ -710,7 +710,7 @@ export const MusicFile = ({ size = 24, fill = 'black', className }) => {
 }
 
 // prettier-ignore
-export const ChatLeft = ({ size = 24, fill = 'black', className }) => {
+export const ChatLeft = ({ size = 24, fill = 'black', className = "" }) => {
   return (
     <svg
       className={className}

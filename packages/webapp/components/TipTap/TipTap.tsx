@@ -63,6 +63,8 @@ import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import TableRow from '@tiptap/extension-table-row'
 
+import { Indent } from './extentions/indent'
+
 import {
   HyperMultimediaKit,
   imageModal,
@@ -234,6 +236,7 @@ const Editor = ({ provider, ydoc, spellcheck = false, user }: any): Partial<Edit
       Gapcursor,
       Paragraph,
       Text,
+      Indent,
       ListItem,
       OrderedList,
       Heading.configure(),

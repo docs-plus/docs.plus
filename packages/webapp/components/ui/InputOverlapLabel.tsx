@@ -5,17 +5,17 @@ import { randstr } from '@utils/index'
 const InputOverlapLabel = forwardRef(
   (
     {
-      label,
+      label = '',
       value = '',
       id: _id = '',
-      Icon,
+      Icon = null,
       fill = 'rgb(104, 81, 255)',
       size = 18,
       className = '',
       onChange = () => {},
       datalist = [],
       ...props
-    },
+    }: any,
     ref
   ) => {
     const [id, setId] = useState(_id)
@@ -52,7 +52,7 @@ const InputOverlapLabel = forwardRef(
           ref={ref}
           id={id}
           type="text"
-          value={value}
+          value={value || ''}
           onChange={onChange}
           placeholder=" "
           list={datalist.length > 0 ? `${id}-datalist` : undefined}
@@ -62,7 +62,7 @@ const InputOverlapLabel = forwardRef(
 
         {datalist.length > 0 && (
           <datalist id={`${id}-datalist`}>
-            {datalist.map((option, index) => (
+            {datalist.map((option: string, index: number) => (
               <option key={index} value={option} />
             ))}
           </datalist>

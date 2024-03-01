@@ -20,7 +20,18 @@ module.exports = {
   plugins: [require('@tailwindcss/typography'), require('daisyui')],
   darkMode: 'class',
   daisyui: {
-    themes: ['light', 'lemonade']
+    themes: [
+      {
+        docsyLight: {
+          ...require('daisyui/src/theming/themes')['light'],
+          primary: '#2778ff',
+          '--rounded-box': '0.4rem',
+          '--rounded-btn': '0.4rem'
+        }
+      }
+      // 'light',
+      // 'lemonade'
+    ]
   },
   theme: {
     fontFamily: {

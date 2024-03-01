@@ -17,7 +17,7 @@ const Toolbar = () => {
   }
 
   return (
-    <div className="tiptap__toolbar text-blue-700 editorButtons justify-evenly flex flex-row items-center py-1 px-4">
+    <div className="tiptap__toolbar text-blue-700 relative z-10 editorButtons justify-evenly flex flex-row items-center py-1 px-4">
       <button
         className={editor.isActive('bold') ? 'is-active' : ''}
         onClick={() => editor.chain().focus().toggleBold().run()}>

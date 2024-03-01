@@ -49,10 +49,12 @@ body.h1SectionBreak {
         }
       }
 
-      &[level="1"] {
+      &[level='1'] {
         padding: 2.5rem;
         padding-bottom: 0;
+        border-top: 1px solid #e1e6e7;
         border-bottom: 1px solid #e1e6e7;
+        border-radius: 2px;
         margin-bottom: 1rem;
       }
     }
@@ -65,7 +67,6 @@ body.h1SectionBreak {
     background-color: #f8f9fa;
     padding: 12px;
 
-
     &.loading {
       padding: 0 !important;
     }
@@ -74,7 +75,7 @@ body.h1SectionBreak {
       margin: 0 !important;
       padding: 0 !important;
 
-      &[level="1"] {
+      &[level='1'] {
         margin-bottom: 0 !important;
         // border: none !important;
         box-shadow: none !important;
@@ -91,17 +92,15 @@ body.h1SectionBreak {
           border-radius: 0 0 4px 4px !important;
         }
       }
-
-
     }
   }
 }
 
 .ProseMirror {
   .heading {
-    &[level="1"] {
+    &[level='1'] {
       padding: 2.5rem;
-      padding-bottom: .2rem;
+      padding-bottom: 0.2rem;
       margin-top: 0;
       border: 1px solid #e1e6e7;
       border-bottom: none;
@@ -109,6 +108,7 @@ body.h1SectionBreak {
 
       &:first-of-type {
         border-top: 1px solid #e1e6e7;
+        border-radius: 4px;
       }
 
       &:not(:first-of-type) {
@@ -118,6 +118,7 @@ body.h1SectionBreak {
       &:last-of-type {
         border-bottom: 1px solid #e1e6e7;
         padding-bottom: 1.5rem;
+        border-radius: 4px;
       }
     }
   }
@@ -130,6 +131,5 @@ body.h1SectionBreak {
       margin-left: -33px;
       width: 100%;
     }
-
   }
 }

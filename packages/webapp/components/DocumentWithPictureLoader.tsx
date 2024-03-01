@@ -1,5 +1,4 @@
 import React from 'react'
-import ContentLoader from 'react-content-loader'
 
 type TProps = {
   level: string
@@ -12,43 +11,29 @@ const DocumentWithPictureLoader: React.FC<React.HTMLProps<HTMLDivElement> & TPro
 ) => {
   return (
     <div {...props}>
-      <ContentLoader
-        backgroundColor="#f3f3f3"
-        width={'100%'}
-        height={140}
-        uniqueKey="document-simple-loader5">
-        <rect x="0" y="0" rx="4" ry="4" width="54%" height="29" />
-        <rect x="0" y="48" rx="4" ry="4" width="12%" height="15" />
-        <rect x="17%" y="48" rx="4" ry="4" width="32%" height="15" />
-        {/*  */}
-        <rect x="2%" y="90" rx="4" ry="4" width="94%" height="15" />
-        <rect x="2%" y="120" rx="4" ry="4" width="30%" height="15" />
-      </ContentLoader>
-      <ContentLoader
-        backgroundColor="#c6c6c6"
-        width={'100%'}
-        height={120}
-        className="mt-2"
-        uniqueKey="document-simple-loader22">
-        <rect x="2%" y="0" rx="4" ry="4" width="14%" height="108" />
-
-        <rect x="18%" y="0" rx="4" ry="4" width="78%" height="15" />
-        <rect x="18%" y="30" rx="4" ry="4" width="58%" height="15" />
-        <rect x="18%" y="60" rx="4" ry="4" width="78%" height="15" />
-        <rect x="18%" y="90" rx="4" ry="4" width="28%" height="15" />
-      </ContentLoader>
-      <ContentLoader
-        backgroundColor="#f3f3f3"
-        width={'100%'}
-        height={160}
-        className="mt-2"
-        uniqueKey="document-simple-loader242">
-        <rect x="2%" y="0" rx="4" ry="4" width="78%" height="15" />
-        <rect x="2%" y="30" rx="4" ry="4" width="94%" height="15" />
-        <rect x="2%" y="60" rx="4" ry="4" width="78%" height="15" />
-        <rect x="2%" y="90" rx="4" ry="4" width="94%" height="15" />
-        <rect x="2%" y="120" rx="4" ry="4" width="52%" height="15" />
-      </ContentLoader>
+      <div className="skeleton h-7 w-[54%] mt-3"></div>
+      <div className="flex space-x-10">
+        <div className="skeleton h-5 w-[12%] mt-3"></div>
+        <div className="skeleton h-5 w-[32%] mt-3"></div>
+      </div>
+      <div className="ml-6 mt-6">
+        <div className="skeleton h-5 w-[94%] mt-3"></div>
+        <div className="skeleton h-5 w-[30%] mt-3"></div>
+        <div className="flex  mt-3">
+          <div className="skeleton bg-neutral w-40 h-34"></div>
+          <div className="float-left w-full ml-4">
+            <div className="skeleton bg-neutral h-5 w-[78%] "></div>
+            <div className="skeleton bg-neutral h-5 w-[58%] mt-3"></div>
+            <div className="skeleton bg-neutral h-5 w-[78%] mt-3"></div>
+            <div className="skeleton bg-neutral h-5 w-[28%] mt-3"></div>
+          </div>
+        </div>
+        <div className="skeleton h-5 w-[78%] mt-3"></div>
+        <div className="skeleton h-5 w-[94%] mt-3"></div>
+        <div className="skeleton h-5 w-[78%] mt-3"></div>
+        <div className="skeleton h-5 w-[94%] mt-3"></div>
+        <div className="skeleton h-5 w-[52%] mt-3"></div>
+      </div>
     </div>
   )
 }

@@ -2,6 +2,7 @@
 @use './headings';
 @use './print';
 @use './components/index';
+@use './daisyui';
 
 $pad-header-height: 64px;
 $pad-toolbar-height: 38px;
@@ -34,10 +35,8 @@ $crinkle-unfold-bg: #efefef;
     margin-top: -2px;
     transition: height $crinkle-time $crinkle-transition;
 
-
-
     &::after {
-      content: "";
+      content: '';
       display: block;
       max-height: 50%;
       height: 100%;
@@ -51,7 +50,7 @@ $crinkle-unfold-bg: #efefef;
     }
 
     &::before {
-      content: "";
+      content: '';
       display: block;
       max-height: 50%;
       height: 100%;
@@ -67,7 +66,6 @@ $crinkle-unfold-bg: #efefef;
     }
 
     &:last-of-type {
-
       &::after {
         border: 1px solid #e1e6e7;
         box-shadow: none;
@@ -77,7 +75,6 @@ $crinkle-unfold-bg: #efefef;
 }
 
 .ProseMirror {
-
   // buttons in heading
   div.heading {
     position: relative;
@@ -86,11 +83,11 @@ $crinkle-unfold-bg: #efefef;
 
     &.closed {
       padding-bottom: 10px;
-      &:last-of-type{
+      &:last-of-type {
         padding-bottom: 0;
       }
 
-      &[level="1"] {
+      &[level='1'] {
         > .wrapBlock > .foldWrapper .fold {
           // transition: none;
           width: calc(100% + 5rem + 6px);
@@ -99,16 +96,12 @@ $crinkle-unfold-bg: #efefef;
       }
     }
 
-
-
-    &[level="1"] {
+    &[level='1'] {
       > .wrapBlock > .foldWrapper .fold {
         width: calc(100% + 6px);
         left: 39px;
       }
     }
-
-
 
     @keyframes foldCrinkle_after {
       0% {
@@ -168,8 +161,6 @@ $crinkle-unfold-bg: #efefef;
       > .wrapBlock > .foldWrapper {
         z-index: 2;
       }
-
-
     }
 
     &.closing {
@@ -200,7 +191,8 @@ $crinkle-unfold-bg: #efefef;
       }
 
       > .wrapBlock > .foldWrapper {
-        .fold {}
+        .fold {
+        }
       }
 
       > .wrapBlock > .contentWrapper {
@@ -282,10 +274,9 @@ $crinkle-unfold-bg: #efefef;
         display: none;
 
         &:hover {
-          color: #646cff
+          color: #646cff;
         }
       }
-
     }
 
     .contentWrapper {
@@ -321,17 +312,17 @@ $crinkle-unfold-bg: #efefef;
   &.left {
     .modalBg {
       opacity: 0;
-      transition: all .2s;
+      transition: all 0.2s;
       transition-timing-function: linear;
 
       &.active {
-        opacity: .4;
+        opacity: 0.4;
       }
     }
 
     .modalWrapper {
       transform: translateX(-100%);
-      transition: all .2s linear;
+      transition: all 0.2s linear;
 
       &.active {
         transform: translateX(0);
@@ -342,17 +333,17 @@ $crinkle-unfold-bg: #efefef;
   &.bottom {
     .modalBg {
       opacity: 0;
-      transition: all .2s;
+      transition: all 0.2s;
       transition-timing-function: linear;
 
       &.active {
-        opacity: .4;
+        opacity: 0.4;
       }
     }
 
     .modalWrapper {
       transform: translateY(100%);
-      transition: all .2s linear;
+      transition: all 0.2s linear;
 
       &.active {
         transform: translateY(0);
@@ -361,10 +352,8 @@ $crinkle-unfold-bg: #efefef;
   }
 }
 
-
 .tippy-box {
-
-  .hyperlinkLinkModal{
+  .hyperlinkLinkModal {
     background-color: #fff;
     border-radius: 10px;
     border: 1px solid #dadce0;
@@ -372,23 +361,23 @@ $crinkle-unfold-bg: #efefef;
     align-items: center;
     justify-content: space-between;
     padding: 6px 6px;
-    box-shadow: 0 1px 3px 1px rgba(60,64,67,.15);
+    box-shadow: 0 1px 3px 1px rgba(60, 64, 67, 0.15);
     margin-top: -6px;
 
-    .metadata{
+    .metadata {
       width: 200px;
       display: flex;
       align-items: center;
       justify-content: flex-end;
       flex-direction: row-reverse;
-      a{
-        font-size: .9rem;
+      a {
+        font-size: 0.9rem;
         margin-right: 6px;
         white-space: nowrap;
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      img{
+      img {
         width: 18px;
         height: 18px;
         border-radius: 50%;
@@ -400,7 +389,7 @@ $crinkle-unfold-bg: #efefef;
       margin-left: auto;
     }
 
-    form{
+    form {
       display: flex;
       align-items: flex-end;
       width: 100%;
@@ -410,50 +399,48 @@ $crinkle-unfold-bg: #efefef;
         padding: 0.4rem 0.8rem;
         margin-bottom: 0.2rem;
         width: 100%;
-        &:last-of-type{
+        &:last-of-type {
           margin-bottom: 0;
         }
       }
-      .buttonsWrapper{
+      .buttonsWrapper {
         margin-left: 8px;
-        button{
+        button {
           border-radius: 6px;
           padding: 4px 14px;
           width: 70px;
           margin-bottom: 0.2rem;
           color: #1a73e8;
-          &:hover{
-            background: rgba(26,115,232,.04);
+          &:hover {
+            background: rgba(26, 115, 232, 0.04);
             color: #174ea6;
           }
         }
       }
     }
 
-     button{
+    button {
       width: 30px;
       height: 30px;
       border-radius: 50%;
-      margin: 0  0.25rem;
+      margin: 0 0.25rem;
       display: flex;
       align-items: center;
       justify-content: center;
       transition: background-color 0.1s ease-in-out;
-      &:hover{
+      &:hover {
         background-color: #eee;
       }
 
-      > svg{
+      > svg {
         width: 16px;
         height: 16px;
       }
     }
-
   }
 
   .tippy-svg-arrow {
-    top: -12px!important;
+    top: -12px !important;
     fill: #aaa;
   }
-
 }

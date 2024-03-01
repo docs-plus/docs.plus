@@ -2,7 +2,7 @@ import { randstr } from '@utils/index'
 
 const TextAreaOvelapLabel = ({
   label,
-  value = null,
+  value = '',
   onChange,
   id,
   rows = '4',

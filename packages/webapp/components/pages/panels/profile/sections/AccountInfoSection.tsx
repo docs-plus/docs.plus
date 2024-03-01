@@ -3,40 +3,40 @@ import React, { useState, useCallback } from 'react'
 import { debounce } from 'lodash'
 import toast from 'react-hot-toast'
 import { At, CircleUser } from '@icons'
-import { supabaseClient } from '@utils/supabase'
+import { useAuthStore } from '@stores'
+import { getSimilarUsername } from '@api'
 
 // Defined constants
 const PROFILES = 'profiles'
 
-const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, profileData }) => {
+const AccountInfoSection = () => {
   const [errorBorderClass, setErrorBorderClass] = useState('')
+  const user = useAuthStore((state) => state.profile)
+  const setProfile = useAuthStore((state) => state.setProfile)
 
-  const checkUserName = useCallback(
+  const checkUsername = useCallback(
     debounce(
-      async (userName) => {
-        if (!userName) return
-        if (userName === profileData?.username) {
+      async (username: string) => {
+        if (!username) return
+        if (username === user?.username) {
           setErrorBorderClass('border-green-500')
           return true
         }
 
-        if (userName.length < 4) {
+        if (username.length < 4) {
           toast.error('Username must be at least 3 characters long.')
           setErrorBorderClass('border-red-500')
           return
         }
 
         // check usename must not contain spaces
-        if (userName.indexOf(' ') >= 0) {
+        if (username.indexOf(' ') >= 0) {
           toast.error('Username must not contain spaces.')
           setErrorBorderClass('border-red-500')
           return
         }
 
-        const { data, error } = await supabaseClient
-          .from(PROFILES)
-          .select('username')
-          .eq('username', userName)
+        const { data, error } = await getSimilarUsername(username)
 
         if (error) {
           console.error(error)
@@ -56,17 +56,25 @@ const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, prof
       650,
       { leading: false, trailing: true }
     ),
-    [supabaseClient, profileData]
+    [user]
   )
 
-  const handleUserNameChange = (e) => {
-    const userName = e.target.value
-    setUserName(userName)
-    if (userName === '') {
+  const handleUsernameChange = (event: any) => {
+    const username = event.target.value
+    if (!username || !user) return
+
+    setProfile({ ...user, username })
+
+    if (username === '') {
       setErrorBorderClass('')
       return
     }
-    checkUserName(userName)
+    checkUsername(username)
+  }
+
+  const handelrFullName = (event: any) => {
+    if (!user) return
+    setProfile({ ...user, full_name: event.target.value })
   }
 
   return (
@@ -76,15 +84,15 @@ const AccountInfoSection = ({ fullName, setFullName, userName, setUserName, prof
         size={17}
         label="Full Name"
         className={`mt-4`}
-        value={fullName}
-        onChange={(e) => setFullName(e.target.value)}
+        value={user?.full_name}
+        onChange={handelrFullName}
       />
       <InputOverlapLabel
         Icon={CircleUser}
         label="Username"
         className={`mt-4 ${errorBorderClass}`}
-        value={userName}
-        onChange={handleUserNameChange}
+        value={user?.username}
+        onChange={handleUsernameChange}
       />
     </div>
   )

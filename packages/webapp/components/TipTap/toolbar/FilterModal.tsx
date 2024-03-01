@@ -7,12 +7,11 @@ import {
   applySearchThroughHeading,
   highlightTocHeadings
 } from './toolbarUtils'
-import { PopoverContent } from '@components/ui/Popover'
 import Button from '@components/ui/Button'
 import Toggle from '@components/ui/Toggle'
 import { useBooleanLocalStorageState } from './toolbarUtils'
 
-const FilterModal = ({ totalHeading = 0, className }) => {
+const FilterModal = ({ totalHeading = 0, className = '' }) => {
   const router = useRouter()
   const [totalSearch, setTotalSearch] = useState(0)
   const [totalHeadings, setTotalHeadings] = useState(totalHeading)
@@ -32,8 +31,8 @@ const FilterModal = ({ totalHeading = 0, className }) => {
   }, [totalSearch])
 
   const handleSearch = useCallback(
-    (e) => {
-      const { totalSearch, totalHeadings, filteredHeadings } = searchThroughHeading(e)
+    (e: any) => {
+      const { totalSearch, totalHeadings, filteredHeadings } = searchThroughHeading(e) as any
       setFilteredHeadings(filteredHeadings)
       setTotalHeadings(totalHeadings)
       setTotalSearch(totalSearch)
@@ -50,13 +49,15 @@ const FilterModal = ({ totalHeading = 0, className }) => {
   }
 
   const handelFilterAlgorithm = () => {
+    if (!router.query.slugs) return
+
     setFilterAlgorithm(!filterAlgorithm)
-    if (router.query.slugs.length > 1) {
+    if (router.query.slugs?.length > 1) {
       window.location.href = `${location.origin}/${router.asPath}`
     }
   }
 
-  const ToggleSection = ({ name, className, description, value, checked, onChange }) => {
+  const ToggleSection = ({ name, className, description, value, checked, onChange }: any) => {
     const containerClasses = twMerge(`flex flex-col p-2 antialiased `, className)
 
     return (
@@ -73,7 +74,7 @@ const FilterModal = ({ totalHeading = 0, className }) => {
   }
 
   return (
-    <PopoverContent className={twMerge('Popover gearModal', className)}>
+    <div className={twMerge(' gearModal', className)}>
       <div className="flex align-middle items-center">
         <p className="font-medium text-base text-gray-400 pb-1">Filter:</p>
         <Button onClick={handleApplySearch} className=" !p-1 !w-24 mb-1 !ml-auto  border">
@@ -88,8 +89,8 @@ const FilterModal = ({ totalHeading = 0, className }) => {
           label="Find in document"
           value={filterInput}
           onKeyUp={handleSearch}
-          datalist={filteredHeadings.map((heading) => heading.textContent)}
-          onChange={(e) => setFilterInput(e.target.value)}
+          datalist={filteredHeadings.map((heading: any) => heading.textContent)}
+          onChange={(e: any) => setFilterInput(e.target.value)}
         />
         <p className="mx-2 text-xs text-center">
           Found <b>{totalSearch}</b> matches out of <b>{totalHeadings}</b> headings
@@ -101,7 +102,7 @@ const FilterModal = ({ totalHeading = 0, className }) => {
         checked={filterAlgorithm}
         onChange={handelFilterAlgorithm}
       />
-    </PopoverContent>
+    </div>
   )
 }
 

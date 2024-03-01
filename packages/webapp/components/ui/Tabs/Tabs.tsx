@@ -1,4 +1,12 @@
-import React, { useState, useContext, createContext, useRef, useEffect, useCallback } from 'react'
+import React, {
+  useState,
+  useContext,
+  createContext,
+  useRef,
+  useEffect,
+  useCallback,
+  use
+} from 'react'
 import { useRouter } from 'next/router'
 import styles from './Tabs.module.css'
 
@@ -16,6 +24,12 @@ function Tabs({ children, defaultActiveTab = null, putNameAsHashToURI = true, ..
     setActiveTab(tabName)
     if (putNameAsHashToURI) router.replace(`#panel=${tabName}`)
   }
+
+  useEffect(() => {
+    if (putNameAsHashToURI) {
+      router.replace(`#panel=${defaultActiveTab}`)
+    }
+  }, [defaultActiveTab, putNameAsHashToURI])
 
   const value = {
     activeTab,

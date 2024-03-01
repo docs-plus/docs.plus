@@ -29,50 +29,54 @@ const NotificationsTab = () => {
   const [notificationNewActivity, setNotificationNewActivity] = useState(false)
 
   const changePushNotifications = async (e) => {
-    setPushNotifications(e.target.checked)
+    // setPushNotifications(e.target.checked)
 
-    const { error } = await supabaseClient
-      .from('profiles')
-      .update({ push_notifications: e.target.checked })
-      .eq('id', user.id)
-      .single()
+    // const { error } = await supabaseClient
+    //   .from('profiles')
+    //   .update({ push_notifications: e.target.checked })
+    //   .eq('id', user.id)
+    //   .single()
 
-    if (error) {
-      console.error(error)
-      toast.error('Error updating your profile' + error.message)
-    }
-    toast.success('Profile updated')
+    // if (error) {
+    //   console.error(error)
+    //   toast.error('Error updating your profile' + error.message)
+    // }
+    // toast.success('Profile updated')
+    toast.error('This feature is temporarily unavailable.')
   }
   const changeEmailNotifications = async (e) => {
-    setEmailNotifications(e.target.checked)
+    // setEmailNotifications(e.target.checked)
 
-    const { error } = await supabaseClient
-      .from('profiles')
-      .update({ email_notifications: e.target.checked })
-      .eq('id', user.id)
-      .single()
+    // const { error } = await supabaseClient
+    //   .from('profiles')
+    //   .update({ email_notifications: e.target.checked })
+    //   .eq('id', user.id)
+    //   .single()
 
-    if (error) {
-      console.error(error)
-      toast.error('Error updating your profile' + error.message)
-    }
-    toast.success('Profile updated')
+    // if (error) {
+    //   console.error(error)
+    //   toast.error('Error updating your profile' + error.message)
+    // }
+    // toast.success('Profile updated')
+    // display toast and say this feature currenlty disabled
+    toast.error('This feature is temporarily unavailable.')
   }
 
   const changeNotificationNewActivity = async (e) => {
-    setNotificationNewActivity(e.target.checked)
+    // setNotificationNewActivity(e.target.checked)
 
-    const { error } = await supabaseClient
-      .from('profiles')
-      .update({ email_notification_new_activity: e.target.checked })
-      .eq('id', user.id)
-      .single()
+    // const { error } = await supabaseClient
+    //   .from('profiles')
+    //   .update({ email_notification_new_activity: e.target.checked })
+    //   .eq('id', user.id)
+    //   .single()
 
-    if (error) {
-      console.error(error)
-      toast.error('Error updating your profile' + error.message)
-    }
-    toast.success('Profile updated')
+    // if (error) {
+    //   console.error(error)
+    //   toast.error('Error updating your profile' + error.message)
+    // }
+    // toast.success('Profile updated')
+    toast.error('This feature is temporarily unavailable.')
   }
 
   return (

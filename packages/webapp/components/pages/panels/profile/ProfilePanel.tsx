@@ -1,18 +1,23 @@
 import { useState } from 'react'
-import Button from '../../../ui/Button'
+import Button from '@components/ui/Button'
 import { ShieldCheck, Bell, AngleSmallRight, Exit } from '@icons'
-import { Avatar } from '../../../ui/Avatar'
+import { Avatar } from '@components/ui/Avatar'
 import dynamic from 'next/dynamic'
 import { useAuthStore } from '@stores'
-
-const ProfileTab = dynamic(() => import('./ProfileTab'), {
-  loading: () => <div>Loading...</div>
-})
-
-import SecurityTab from './SecurityTab'
-import NotificationsTab from './NotificationsTab'
 import { toast } from 'react-hot-toast'
 import { supabaseClient } from '@utils/supabase'
+import Loading from '@components/ui/Loading'
+import { LuLogOut } from 'react-icons/lu'
+
+const ProfileTab = dynamic(() => import('./ProfileTab'), {
+  loading: () => <Loading />
+})
+const SecurityTab = dynamic(() => import('./SecurityTab'), {
+  loading: () => <Loading />
+})
+const NotificationsTab = dynamic(() => import('./NotificationsTab'), {
+  loading: () => <Loading />
+})
 
 const ProfilePanel = () => {
   const [loadSignOut, setLoadSignOut] = useState(false)
@@ -93,8 +98,12 @@ const ProfilePanel = () => {
             Terms of service
           </a>
         </div>
-        <Button onClick={signOut} className="mt-40" Icon={Exit} iconSize={18} loading={loadSignOut}>
-          Sign-out
+        <Button
+          onClick={signOut}
+          className="mt-40 join-item btn-block flex items-center justify-center"
+          loading={loadSignOut}>
+          <LuLogOut size={18} className="mr-auto" />
+          <span className="mr-auto -ml-[24px]">Sign-out</span>
         </Button>
       </div>
       <div className="w-8/12 p-4">

@@ -5,36 +5,21 @@ import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@components/ui/Tabs/Tab
 import DeckPanel from '@pages/panels/DeckPanel'
 import { Avatar } from '@components/ui/Avatar'
 import { DocsPlus } from '@icons'
-import { twMerge } from 'tailwind-merge'
 import { useStore, useAuthStore } from '@stores'
+import TabLayout from '@components/pages/TabLayout'
 import { useMemo } from 'react'
+import Loading from '@components/ui/Loading'
+import { LuLogIn } from 'react-icons/lu'
 
-const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
 const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
-  loading: () => <div>Loading...</div>
+  loading: () => <Loading />
 })
-const DocumentsPanel = dynamic(() => import('@pages/panels/DocumentsPanel'))
-const ProfilePanel = dynamic(() => import('@pages/panels/profile/ProfilePanel'))
-
-type TabLayoutProps = {
-  name: string
-  children: React.ReactNode
-  className?: string
-  footer?: boolean
-}
-
-function TabLayout({ name, children, className, footer }: TabLayoutProps) {
-  return (
-    <TabPanel
-      name={name}
-      className={twMerge(
-        `flex flex-wrap sm:justify-center sm:m-auto p-2 sm:p-6 sm:py-6 pb-2 sm:pb-2`,
-        className
-      )}>
-      <DashboardLayout footer={footer}>{children}</DashboardLayout>
-    </TabPanel>
-  )
-}
+const DocumentsPanel = dynamic(() => import('@pages/panels/DocumentsPanel'), {
+  loading: () => <Loading />
+})
+const ProfilePanel = dynamic(() => import('@pages/panels/profile/ProfilePanel'), {
+  loading: () => <Loading />
+})
 
 function Home({ hostname }: { hostname: string }) {
   const user = useAuthStore((state) => state.profile)
@@ -42,7 +27,10 @@ function Home({ hostname }: { hostname: string }) {
   const displayName = useAuthStore((state) => state.displayName)
   const { isAuthServiceAvailable } = useStore((state) => state.settings)
 
-  const isUserSignedIn = user && isAuthServiceAvailable
+  const isUserSignedIn = useMemo(
+    () => user && isAuthServiceAvailable,
+    [user, isAuthServiceAvailable]
+  )
 
   if (authLoading) {
     return (
@@ -55,28 +43,32 @@ function Home({ hostname }: { hostname: string }) {
   }
 
   return (
-    <div>
+    <>
       <HeadSeo />
-      <div className="grid h-full w-full sm:h-screen place-items-center bg-slate-100 p-4">
+      <div className="w-full h-full flex items-center justify-center bg-slate-100 p-4">
         <Tabs defaultActiveTab="deck" className="max-w-5xl rounded-md relative">
           <TabList
             className={`${
               isAuthServiceAvailable ? 'flex' : 'hidden'
             } bg-slate-200 rounded-t-md relative drop-shadow-md z-0 -bottom-1 `}>
             <Tab name="deck" className="flex items-center ">
-              <DocsPlus size={26} />
+              <div className="tooltip tooltip-top" data-tip="docs.plus">
+                <DocsPlus size={26} />
+              </div>
             </Tab>
             {isUserSignedIn && <Tab name="documents">Documents</Tab>}
             {isAuthServiceAvailable && !user && (
-              <Tab name="sign-in" className="ml-auto">
-                Sign in
+              <Tab name="sign-in" className="ml-auto flex items-center">
+                <div className="tooltip tooltip-top" data-tip="Sign in">
+                  <LuLogIn size={22} />
+                </div>
               </Tab>
             )}
             {isUserSignedIn && (
               <Tab name="profile" className="ml-auto py-2">
                 <Avatar
-                  src={user.avatar_url}
-                  id={user.id}
+                  src={user?.avatar_url}
+                  id={user?.id}
                   alt={displayName}
                   width={22}
                   height={22}
@@ -107,7 +99,7 @@ function Home({ hostname }: { hostname: string }) {
           </TabPanels>
         </Tabs>
       </div>
-    </div>
+    </>
   )
 }
 

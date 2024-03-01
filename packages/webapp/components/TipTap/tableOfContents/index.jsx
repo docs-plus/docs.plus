@@ -27,7 +27,7 @@ const RenderToc = ({ children, item, renderTocs }) => {
 
       if (!user) {
         toast.error('Please login to use chat feature')
-        document.getElementById('btn_signin').click()
+        document.getElementById('btn_signin')?.click()
         return
       }
 
