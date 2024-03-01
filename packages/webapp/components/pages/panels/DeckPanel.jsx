@@ -56,8 +56,7 @@ const DeckPanel = ({ hostname }) => {
       <div className="sm:w-1/2 sm:mx-auto">
         <div className="p-4">
           <div className="flex flex-row items-end antialiased">
-            {' '}
-            <DocsPlus className="mr-3" size="58" />{' '}
+            <DocsPlus className="mr-3" size="58" />
             <span className="font-bold text-4xl antialiased">docs.plus</span>
           </div>
           <h2 className="mt-3 text-gray-400 font-semibold antialiased">
@@ -92,21 +91,15 @@ const DeckPanel = ({ hostname }) => {
       <div className="sm:w-1/2 w-full mt-6 sm:mt-0 flex justify-end">
         <div className="p-5 sm:w-[24rem] w-full border sm:border rounded-md flex justify-center flex-col">
           <div className="flex flex-col  text-gray-800">
-            {/* <p className="text-lg antialiased mb-8 text-center font-bold">
+            {/* <p className="text-lg antialiased mb-8  text-gray-700 font-bold">
               {`Let's have a collaborative journey!`}
             </p> */}
 
-            <Button
-              className="px-3 w-full transition-all hover:bg-indigo-500 hover:shadow-md bg-docsy text-white  py-2 border rounded"
-              onClick={() => enterToPad('random')}>
+            <Button className="btn-neutral text-white" onClick={() => enterToPad('random')}>
               Create a new Public Doc
             </Button>
 
-            <div className="flex items-center justify-center my-6 ">
-              <div className="w-full bg-gray-200 h-0 border"></div>
-              <div className="text-center px-2 font-medium text-gray-400 antialiased">OR</div>
-              <div className="w-full bg-gray-200 h-0 border"></div>
-            </div>
+            <div className="divider text-gray-400">OR</div>
 
             <div className="flex flex-col w-full">
               <div className="flex flex-col sm:flex-row w-full font-mono text-sm align-middle">
@@ -130,12 +123,13 @@ const DeckPanel = ({ hostname }) => {
                 </p>
               )}
               <Button
-                className="border transition-all hover:bg-indigo-500 hover:shadow-md bg-docsy text-white shadow-sm ml-auto mt-2 w-full px-3 py-2 rounded"
+                className="btn-primary mt-2 text-white"
                 loading={loadingDoc}
                 onClick={enterToPad}>
                 Open Public Doc
               </Button>
             </div>
+
             {isAuthServiceAvailable && !user && (
               <div>
                 <p className="text-gray-400 text-sm mt-4">

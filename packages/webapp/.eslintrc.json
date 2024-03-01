@@ -4,8 +4,19 @@
         "es2021": true,
         "node": true
     },
-    "extends": ["next", "next/core-web-vitals", "plugin:@typescript-eslint/recommended","plugin:tailwindcss/recommended", "prettier"],
+    "extends": [
+      "next",
+      "next/core-web-vitals",
+      "plugin:@typescript-eslint/recommended",
+      "plugin:tailwindcss/recommended",
+      "prettier-plugin-tailwindcss",
+      "prettier"
+    ],
     "overrides": [
+      {
+        "files": ["*.ts", "*.tsx", "*.js"],
+        "parser": "@typescript-eslint/parser"
+      }
     ],
     "parserOptions": {
         "ecmaVersion": "latest",

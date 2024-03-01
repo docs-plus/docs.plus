@@ -16,7 +16,7 @@ const AVATARS = 'avatars'
 const PROFILES = 'profiles'
 const PUBLIC = 'public'
 
-const AvatarSection = ({ profileData }: any) => {
+const AvatarSection = () => {
   const user = useAuthStore((state) => state.profile)
   const displayName = useAuthStore((state) => state.displayName)
   const fileInputRef = useRef() as any
@@ -24,9 +24,9 @@ const AvatarSection = ({ profileData }: any) => {
   const [isProfileAvatar, setIsProfileAvatar] = useState(false)
 
   useEffect(() => {
-    const profileAvatart = profileData?.avatar_url
+    const profileAvatart = user?.avatar_url
     setIsProfileAvatar(profileAvatart ? true : false)
-  }, [profileData])
+  }, [user])
 
   const handleClick = useCallback((e: any) => {
     if (e.target.parentElement.classList.contains('changeAvatarToDefault')) return

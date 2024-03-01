@@ -8,19 +8,19 @@
   }
 
   button {
-    float: left;
-    margin: 4px 2px;
-    background-color: transparent;
-    outline: none;
-    cursor: pointer;
-    height: 28px;
-    width: 28px;
-    @apply flex rounded items-center justify-center relative;
+    // float: left;
+    // margin: 4px 2px;
+    // background-color: transparent;
+    // outline: none;
+    // cursor: pointer;
+    // height: 28px;
+    // width: 28px;
+    // @apply flex rounded items-center justify-center relative;
 
-    &:hover {
-      background: #eee;
-      color: black;
-    }
+    // &:hover {
+    //   background: #eee;
+    //   color: black;
+    // }
 
     &.is-active {
       background-color: #e8f0fe;
@@ -44,10 +44,6 @@
     border: 1px solid #ddd;
     background: #fff;
     border-radius: 4px;
-    position: absolute;
-    display: none;
-    top: 38px;
-    right: 14px;
 
     .content {
       display: flex;

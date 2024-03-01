@@ -21,13 +21,13 @@ function TabLayout({ name, children, className, footer }: any) {
   )
 }
 
-const ControlCenter = () => {
+const ControlCenter = ({ defaultTab }: any) => {
   const user = useAuthStore((state) => state.profile)
 
   return (
     <div className="bg-slate-100 rounded-md drop-shadow">
       <Tabs
-        defaultActiveTab={user ? 'profile' : 'sign-in'}
+        defaultActiveTab={user ? (defaultTab ? defaultTab : 'profile') : 'sign-in'}
         className="max-w-5xl rounded-md relative">
         <TabList>
           {!user && (

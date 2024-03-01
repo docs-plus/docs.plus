@@ -7,7 +7,7 @@ import { Pencil } from '@icons'
 import TOC from './Toc'
 import ToolbarMobile from './ToolbarMobile'
 import TocModal from './TocModal'
-import { useStore } from '@stores'
+import { useStore, useChatStore } from '@stores'
 import ChatContainer from './chat/ChatContainer'
 import { scrollHeadingSelection } from '../helpers'
 import { useAdjustEditorSizeForChatRoom } from '../hooks'
@@ -21,7 +21,7 @@ const Editor = () => {
     editor: { isMobile, selectionPos }
   } = useStore((state) => state.settings)
 
-  const chatRoom = useStore((state) => state.chatRoom)
+  const chatRoom = useChatStore((state) => state.chatRoom)
 
   const [showToolbar, setShowToolbar] = useState(false)
   const isKeyboardOpen = useDetectKeyboardOpen()
@@ -115,7 +115,7 @@ const Editor = () => {
 
   return (
     <>
-      <div className="toolbars w-full bg-white h-auto z-10 sm:block fixed bottom-0 sm:relative">
+      <div className="toolbars w-full bg-white h-auto z-[9] sm:block fixed bottom-0 sm:relative">
         {!isMobile ? <Toolbar /> : isKeyboardOpen && <ToolbarMobile />}
       </div>
       <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
@@ -130,7 +130,7 @@ const Editor = () => {
         </div>
         {!isMobile && (
           <div
-            className={`${chatRoom.headingPath && 'border-r border-gray-200 dark:border-gray-700'} tableOfContents max-w-xs w-3/12 overflow-hidden pb-4 sm:py-4 sm:pb-14 pr-16 scroll-smooth hover:overflow-auto hover:overscroll-contain`}>
+            className={`${chatRoom.headingId ? 'border-r border-gray-200 dark:border-gray-700' : ''} tableOfContents max-w-xs w-3/12 overflow-hidden pb-4 sm:py-4 sm:pb-14 pr-4 scroll-smooth hover:overflow-auto hover:overscroll-contain`}>
             <TOC />
           </div>
         )}

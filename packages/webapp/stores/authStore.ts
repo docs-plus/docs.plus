@@ -4,6 +4,10 @@ import { Database } from '@types'
 
 type TProfile = Database['public']['Tables']['users']['Row'] & {
   channelId?: string | null
+  company?: string
+  job_title?: string
+  twitter?: string
+  facebook?: string
 }
 
 export interface IAuthStore {

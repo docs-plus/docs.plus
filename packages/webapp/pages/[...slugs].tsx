@@ -20,7 +20,8 @@ const Document = ({ slugs, docMetadata, isMobile }: any) => {
       <>
         <HeadSeo />
         <div className="w-full h-full flex items-center justify-center">
-          <span className="loading loading-spinner loading-lg"></span>
+          <span>Hang tight! content is loading</span>
+          <span className="loading loading-dots loading-xs mt-2 ml-2"></span>
         </div>
       </>
     )

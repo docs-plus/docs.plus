@@ -104,7 +104,6 @@ const GearModal = ({ className }: any) => {
 
   const OwnerProfile = () => {
     const { full_name, username } = docMetadata.ownerProfile
-    console.log('jaisjdoajsdoijaoisjdoij3oijio32ioj23joi23oi32oi32joi2332')
 
     return (
       <div className="antialiased  mt-2 border p-2 rounded-md">
@@ -151,7 +150,7 @@ const GearModal = ({ className }: any) => {
   }
 
   return (
-    <PopoverContent className={twMerge('Popover gearModal ', className)}>
+    <div className={twMerge('gearModal ', className)}>
       <div className="max-w-md">
         <p className="font-medium  text-base text-gray-400 pb-1">Settings:</p>
         <hr />
@@ -196,7 +195,7 @@ const GearModal = ({ className }: any) => {
           onChange={toggleH1SectionBreakSetting}
         />
       </div>
-    </PopoverContent>
+    </div>
   )
 }
 
