@@ -42,10 +42,10 @@ const Chip = ({ type, text, onMouseEnter, onMouseLeave }: any) => {
 
 const FilterBar = () => {
   const {
-    editor: { filterResult }
+    editor: {
+      filterResult: { sortedSlugs, selectedNodes }
+    }
   } = useStore((state) => state.settings)
-
-  const { sortedSlugs, selectedNodes } = filterResult
 
   if (!sortedSlugs) return null
 
