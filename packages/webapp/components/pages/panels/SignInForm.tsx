@@ -4,7 +4,7 @@ import Button from '@components/ui/Button'
 import { useMutation } from '@tanstack/react-query'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import { toast } from 'react-hot-toast'
-import { supabaseClient } from '@utils/supabase'
+import { createClient } from '@utils/supabase/components'
 
 const SingInForm = ({ ...props }) => {
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
@@ -14,13 +14,18 @@ const SingInForm = ({ ...props }) => {
   const [btnSubmitText, setBtnSubmitText] = useState('Send magic link')
   const [googleLoading, setGoogleLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
+  const supabaseClient = createClient()
 
   const signInWithGoogle = async () => {
     setGoogleLoading(true)
     const { error } = await supabaseClient.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: location.origin + location.pathname
+        // queryParams: {
+        //   access_type: 'offline',
+        //   prompt: 'consent'
+        // },
+        redirectTo: `${location.origin}/auth/callback?next=` + location.pathname
       }
     })
     if (error) {

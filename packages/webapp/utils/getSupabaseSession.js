@@ -4,7 +4,7 @@ export async function getSupabaseSession(context) {
   let supabase, session
 
   if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    supabase = supabase = createServerClient(
+    supabase = createServerClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL,
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
       {
