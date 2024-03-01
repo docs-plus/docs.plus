@@ -51,7 +51,7 @@ const SingInForm = ({ ...props }) => {
         return res.json()
       }),
     {
-      onError: (error) => {
+      onError: (error: any) => {
         setEmailError(error.message)
         setHighlightEmailInput(true)
         console.error('Failed to validate email:', error)
@@ -63,11 +63,12 @@ const SingInForm = ({ ...props }) => {
     }
   )
 
-  const signInWithEmail = async (e) => {
+  const signInWithEmail = async (e: any) => {
     e.preventDefault()
 
     if (magicLinkEmail.length === 0) return
 
+    //@ts-ignore
     const { isValid } = await mutateAsync(magicLinkEmail)
     if (!isValid) {
       setBtnSubmitText('Send magic link')
@@ -123,7 +124,7 @@ const SingInForm = ({ ...props }) => {
                 className={`  ${highlightEmailInput ? 'border-red-600' : ''}`}
                 label="Enter your Email"
                 value={magicLinkEmail}
-                onChange={(e) => setMagicLinkEmail(e.target.value)}
+                onChange={(e: any) => setMagicLinkEmail(e.target.value)}
               />
 
               {emailError && <p className="mt-2 text-red-600">{emailError}</p>}
