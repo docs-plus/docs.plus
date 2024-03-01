@@ -1,10 +1,11 @@
 import { useEffect, useCallback } from 'react'
 import { useAuthStore } from '@stores'
-import { supabaseClient } from '@utils/supabase'
 import { getUserById } from '@api'
 import { useApi } from '@hooks/useApi'
+import { createClient } from '@utils/supabase/components'
 
 export const useOnAuthStateChange = () => {
+  const supabaseClient = createClient()
   const setLoading = useAuthStore((state) => state.setLoading)
   const { request: getUserByIdRequest } = useApi(getUserById, null, false)
 
@@ -30,7 +31,7 @@ export const useOnAuthStateChange = () => {
       if (event === 'INITIAL_SESSION') {
         // if (!session?.user) router.push('/login')
       }
-      if (event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
+      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
         if (!session?.user) {
           // when user does not login!
           setLoading(false)

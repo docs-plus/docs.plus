@@ -5,7 +5,7 @@ import { useStore } from '@stores'
 
 const ReadOnlyIndicator = ({ className }: any) => {
   const { hocuspocusProvider, metadata } = useStore((state) => state.settings)
-  const [isReadOnly, setIsReadOnly] = useState(metadata.readOnly)
+  const [isReadOnly, setIsReadOnly] = useState(metadata?.readOnly)
 
   useEffect(() => {
     if (!hocuspocusProvider) return

@@ -4,11 +4,11 @@ import { Avatar } from '@components/ui/Avatar'
 import dynamic from 'next/dynamic'
 import { useAuthStore } from '@stores'
 import { toast } from 'react-hot-toast'
-import { supabaseClient } from '@utils/supabase'
 import Loading from '@components/ui/Loading'
 import { LuLogOut } from 'react-icons/lu'
 import { RiShieldCheckLine, RiArrowRightSLine } from 'react-icons/ri'
 import { LuBell } from 'react-icons/lu'
+import { createClient } from '@utils/supabase/components'
 
 const ProfileTab = dynamic(() => import('./ProfileTab'), {
   loading: () => <Loading />
@@ -25,6 +25,7 @@ const ProfilePanel = () => {
   const [activeTab, setActiveTab] = useState('profile')
   const displayName = useAuthStore((state) => state.profile?.display_name)
   const user = useAuthStore((state) => state.profile)
+  const supabaseClient = createClient()
 
   const signOut = async () => {
     setLoadSignOut(true)
