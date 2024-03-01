@@ -58,7 +58,7 @@ const useYdocAndProvider = () => {
             setWorkspaceEditorSetting('applyingFilters', false)
             setWorkspaceSetting('hocuspocusProvider', null)
             setWorkspaceEditorSetting('presentUsers', [])
-            setWorkspaceEditorSetting('filterResult', [])
+            // setWorkspaceEditorSetting('filterResult', [])
           }
         })
       }

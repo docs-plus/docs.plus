@@ -1,40 +1,46 @@
 import { useEffect } from 'react'
-import { db } from '../db'
+import { db, TDocFilter } from '../db'
 import getHeadingsFilterMap from './helpers/filterLogic'
 import { useRouter } from 'next/router'
 import { useStore } from '@stores'
 
 const useApplyFilters = () => {
   const router = useRouter()
-  const { slugs } = router.query
+  const { slugs } = router.query as { slugs: string[] }
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
-
   const {
     editor: { rendering, loading, instance: editor }
   } = useStore((state) => state.settings)
 
   useEffect(() => {
+    if (!slugs) return
     if (!editor || rendering || loading || slugs.length === 1) return
 
     // remove the document slug from the slugs array
     slugs.shift()
 
-    const headings = document.querySelectorAll('.heading .title')
+    const headings = document.querySelectorAll('.heading .title') as NodeListOf<HTMLElement>
 
     if (!headings) {
       console.error('[apply filter]: document is empty, no headings found')
       return
     }
-    const { headingIdsMap, sortedSlugs, selectedNodes } = getHeadingsFilterMap(slugs, headings)
+    const { headingIdsMap, sortedSlugs, selectedNodes } = getHeadingsFilterMap(
+      slugs,
+      Array.from(headings)
+    )
 
-    const dbHeadigMap = []
+    const dbHeadigMap: TDocFilter[] = []
     headings.forEach((header) => {
       const wrapBlock = header.closest('.wrapBlock')
-      const id = wrapBlock.getAttribute('data-id')
-      dbHeadigMap.push({
-        headingId: id,
-        crinkleOpen: headingIdsMap.has(id) ? true : false
-      })
+      const id = wrapBlock?.getAttribute('data-id')
+      // if id is null then skip
+      if (id) {
+        dbHeadigMap.push({
+          headingId: id,
+          crinkleOpen: headingIdsMap.has(id) ? true : false
+        })
+      }
     })
 
     // save the data to indexedDB
