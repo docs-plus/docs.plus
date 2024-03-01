@@ -64,4 +64,3 @@ const Placeholder = Extension.create({
 })
 
 export { Placeholder, Placeholder as default }
-// # sourceMappingURL=tiptap-extension-placeholder.esm.js.map

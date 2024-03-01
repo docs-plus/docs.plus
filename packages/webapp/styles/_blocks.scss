@@ -92,6 +92,9 @@
 
     p {
       margin: 0;
+      &.is-empty {
+        margin: 0 !important;
+      }
     }
 
     li {
@@ -179,6 +182,7 @@
     color: #adb5bd;
     pointer-events: none;
     height: 0;
+    width: 100%;
   }
 
   pre {
