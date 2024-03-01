@@ -8,7 +8,7 @@ import Loading from '@components/ui/Loading'
 import { LuLogOut } from 'react-icons/lu'
 import { RiShieldCheckLine, RiArrowRightSLine } from 'react-icons/ri'
 import { LuBell } from 'react-icons/lu'
-import { createClient } from '@utils/supabase/components'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 const ProfileTab = dynamic(() => import('./ProfileTab'), {
   loading: () => <Loading />
@@ -25,7 +25,7 @@ const ProfilePanel = () => {
   const [activeTab, setActiveTab] = useState('profile')
   const displayName = useAuthStore((state) => state.profile?.display_name)
   const user = useAuthStore((state) => state.profile)
-  const supabaseClient = createClient()
+  const supabaseClient = createClientComponentClient()
 
   const signOut = async () => {
     setLoadSignOut(true)

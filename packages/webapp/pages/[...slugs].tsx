@@ -7,8 +7,8 @@ import { fetchDocument } from '@utils/fetchDocument'
 import HeadSeo from '@components/HeadSeo'
 import useMapDocumentAndWorkspace from '@hooks/useMapDocumentAndWorkspace'
 import useInitiateDocumentAndWorkspace from '@hooks/useInitiateDocumentAndWorkspace'
-import { createClient } from '@utils/supabase/server-propps'
 import { getChannels, upsertWorkspace } from '@api'
+import { createPagesServerClient } from '@supabase/auth-helpers-nextjs'
 
 const Document = ({ slugs, docMetadata, isMobile, channels }: any) => {
   useDocumentMetadata(slugs, docMetadata)
@@ -35,7 +35,7 @@ export default Document
 
 export async function getServerSideProps(context: any) {
   const slug = context.query.slugs.at(0)
-  const supabase = createClient(context)
+  const supabase = createPagesServerClient(context)
 
   try {
     const { data, error } = await supabase.auth.getSession()
