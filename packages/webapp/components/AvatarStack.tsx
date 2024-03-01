@@ -1,7 +1,7 @@
 import { useAuthStore } from '@stores'
 import { Avatar } from './ui/Avatar'
 
-const AvatarStack = ({ users = [], size = 9 }: any) => {
+const AvatarStack = ({ users = [], size = 9, tooltipPosition = 'tooltip-bottom' }: any) => {
   const displayedUsers = users?.slice(0, 4)
   const remainingUsers = users.length - 4
   const profile = useAuthStore((state: any) => state.profile)
@@ -13,7 +13,7 @@ const AvatarStack = ({ users = [], size = 9 }: any) => {
         return (
           <Avatar
             key={index}
-            className={`rounded-full shadow-xl border w-${size} h-${size} tooltip tooltip-bottom`}
+            className={`rounded-full shadow-xl border w-${size} h-${size} tooltip ${tooltipPosition}`}
             id={user?.id}
             src={user?.avatar_url}
             alt={user.displayName}

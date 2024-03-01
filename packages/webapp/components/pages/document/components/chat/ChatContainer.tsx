@@ -11,7 +11,7 @@ const ChatContainer = () => {
   return (
     <div
       ref={gripperRef}
-      className="bg-slate-50 flex flex-row h-[300px] w-full overflow-auto flex-wrap absolute bottom-0 z-50"
+      className="bg-slate-50 flex flex-row h-[300px] w-full overflow-auto flex-wrap absolute bottom-0 z-40"
       style={{ height: `${height}px` }}>
       <div
         className="gripper absolute  left-0 z-[51] border-t border-gray-200 dark:border-gray-700 top-0 w-full cursor-ns-resize"
