@@ -141,7 +141,12 @@ const handleHeadingToggle = (editor, { headingId }) => {
     let database = filterMode ? db.docFilter : db.meta
 
     // In filter mode, avoid saving the heading map to prevent overwriting the primary heading filter.
-    if (filterMode) return
+    if (filterMode) {
+      editor.view.dispatch(tr)
+      dispatchToggleHeadingSection(headingNodeEl)
+      isProcessing = false
+      return
+    }
     database
       .put({
         docId: documentId,
@@ -302,9 +307,9 @@ const HeadingsTitle = Node.create({
         key: new PluginKey('HeadingButtons'),
         state: {
           init: (_, { doc }) => {
-            PubSub.subscribe(ENUMS.EVENTS.FOLD_AND_UNFOLD, (msg, data) =>
+            PubSub.subscribe(ENUMS.EVENTS.FOLD_AND_UNFOLD, (msg, data) => {
               handleHeadingToggle(this.editor, data)
-            )
+            })
 
             return appendButtonsDec(doc, this.editor)
           },
