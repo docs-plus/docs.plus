@@ -4,7 +4,7 @@ import Button from '@components/ui/Button'
 import { useMutation } from '@tanstack/react-query'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import { toast } from 'react-hot-toast'
-import { createClient } from '@utils/supabase/components'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 const SingInForm = ({ ...props }) => {
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
@@ -14,7 +14,7 @@ const SingInForm = ({ ...props }) => {
   const [btnSubmitText, setBtnSubmitText] = useState('Send magic link')
   const [googleLoading, setGoogleLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
-  const supabaseClient = createClient()
+  const supabaseClient = createClientComponentClient()
 
   const signInWithGoogle = async () => {
     setGoogleLoading(true)
@@ -25,7 +25,7 @@ const SingInForm = ({ ...props }) => {
         //   access_type: 'offline',
         //   prompt: 'consent'
         // },
-        redirectTo: `${location.origin}/auth/callback?next=` + location.pathname
+        redirectTo: `${location.origin}/api/auth/callback?next=` + location.pathname
       }
     })
     if (error) {

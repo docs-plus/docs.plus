@@ -2,10 +2,10 @@ import { useEffect, useCallback } from 'react'
 import { useAuthStore } from '@stores'
 import { getUserById } from '@api'
 import { useApi } from '@hooks/useApi'
-import { createClient } from '@utils/supabase/components'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export const useOnAuthStateChange = () => {
-  const supabaseClient = createClient()
+  const supabaseClient = createClientComponentClient()
   const setLoading = useAuthStore((state) => state.setLoading)
   const { request: getUserByIdRequest } = useApi(getUserById, null, false)
 
