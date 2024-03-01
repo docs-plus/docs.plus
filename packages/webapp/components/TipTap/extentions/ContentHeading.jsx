@@ -291,6 +291,12 @@ const HeadingsTitle = Node.create({
 
         const parentHeadingNode = doc.nodeAt(prevHStartPos)
 
+        // if the parent is not a content_heading node
+        if (parent.type.name !== ENUMS.NODES.CONTENT_HEADING_TYPE) return false
+
+        // if the caret is not at the beginning of the content_heading node
+        if ($anchor.parentOffset !== 0) return false
+
         if (isTopLevelHeading(currentHLevel, parentHeadingNode))
           return handleHeadingRemoval(this.editor, true)
 
