@@ -41,14 +41,14 @@ const RenderToc = ({ children, item, renderTocs }) => {
       const headingPath = nodePos.path
         .filter((x) => x?.type?.name === ENUMS.NODES.HEADING_TYPE)
         .map((x) => {
-          const text = x.firstChild.textContent.toLowerCase().trim()
+          const text = x.firstChild.textContent.trim()
           return { text, id: x.attrs.id }
         })
 
       const headingAddress = headingPath.map((x, index) => {
         const prevHeadingPath = headingPath
           .slice(0, index)
-          .map((x) => slugify(x.text))
+          .map((x) => slugify(x.text, { lower: true, strict: true }))
           .join('>')
 
         const url = new URL(window.location.origin + `/${query.slugs?.at(0)}`)
