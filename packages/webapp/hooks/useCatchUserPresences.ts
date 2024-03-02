@@ -37,14 +37,33 @@ export const useCatchUserPresences = () => {
         // console.log('join', { key, newPresences })
         // const usersPresence = useStore.getState().usersPresence
         // if (usersPresence.has(newPresences.at(0)?.id)) return
-        const newUser: any = {
-          ...newPresences.at(0),
-          status: 'ONLINE'
+
+        // when a new user joins the channel, I need to send the current users status to the new user
+
+        const usersPresence = useStore.getState().usersPresence
+
+        const payload = Array.from(usersPresence.values())
+          .filter((user: any) => user.channelId)
+          .map((user: any) => ({ id: user.id, channelId: user.channelId }))
+
+        if (payload.length) {
+          messageSubscription.send({
+            type: 'broadcast',
+            event: 'presenceSync',
+            payload
+          })
         }
-        setOrUpdateUserPresence(newPresences.at(0)?.id, newUser)
+
+        newPresences.forEach((presence) => {
+          const user: any = {
+            ...presence,
+            status: 'ONLINE'
+          }
+          setOrUpdateUserPresence(user.id, user)
+        })
       })
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        // const newState = messageSubscription.presenceState()
+        const newState = messageSubscription.presenceState()
         // console.log('leave', { key, leftPresences, newState })
         // update user status to offline in the channel member state store
         // if the user is in the channel member state store
@@ -56,6 +75,19 @@ export const useCatchUserPresences = () => {
         //   status: 'OFFLINE'
         // }
         // setOrUpdateUserPresence(leftPresences.at(0)?.id, newUser)
+      })
+      .on('broadcast', { event: 'presenceSync' }, (data) => {
+        const usersPresence = useStore.getState().usersPresence
+        const payload = data.payload
+        if (!payload.length) return
+
+        payload.forEach((user: any) => {
+          const newUser: any = {
+            ...usersPresence.get(user.id),
+            ...user
+          }
+          setOrUpdateUserPresence(user.id, newUser)
+        })
       })
       .on('broadcast', { event: 'presence' }, (data) => {
         // console.log('broadcast ->> presence', { data })
