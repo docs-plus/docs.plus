@@ -150,9 +150,9 @@ const GearModal = ({ className }: any) => {
   }
 
   return (
-    <div className={twMerge('gearModal ', className)}>
+    <div className={twMerge('gearModal text-neutral ', className)}>
       <div className="max-w-md">
-        <p className="font-medium  text-base text-gray-400 pb-1">Settings:</p>
+        <p className="font-medium pb-1">Settings:</p>
         <hr />
         {docMetadata.ownerProfile && isAuthServiceAvailable && (
           <div>
@@ -175,7 +175,7 @@ const GearModal = ({ className }: any) => {
           </div>
           <Button
             loading={formTargetHandler === 'description' && isLoading}
-            className="!w-32 !mt-3"
+            className="btn-block btn-primary text-white btn-sm mt-4"
             onClick={saveDescriptionHandler}>
             Save
           </Button>
