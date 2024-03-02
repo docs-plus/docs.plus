@@ -74,15 +74,12 @@ const FilterModal = ({ totalHeading = 0, className = '' }) => {
   }
 
   return (
-    <div className={twMerge(' gearModal', className)}>
+    <div className={twMerge(' gearModal text-neutral', className)}>
       <div className="flex align-middle items-center">
-        <p className="font-medium text-base text-gray-400 pb-1">Filter:</p>
-        <Button onClick={handleApplySearch} className=" !p-1 !w-24 mb-1 !ml-auto  border">
-          <span>Apply</span>
-        </Button>
+        <p className="font-medium  pb-1">Filter:</p>
       </div>
       <hr />
-      <div className="content pt-2 flex align-middle justify-between pb-2 border-b">
+      <div className="content pt-2 mt-4 flex align-middle justify-between pb-2 border-b">
         <InputOverlapLabel
           className="h-10"
           id="filterSearchBox"
@@ -92,7 +89,7 @@ const FilterModal = ({ totalHeading = 0, className = '' }) => {
           datalist={filteredHeadings.map((heading: any) => heading.textContent)}
           onChange={(e: any) => setFilterInput(e.target.value)}
         />
-        <p className="mx-2 text-xs text-center">
+        <p className="mx-2 text-xs  text-center">
           Found <b>{totalSearch}</b> matches out of <b>{totalHeadings}</b> headings
         </p>
       </div>
@@ -102,6 +99,9 @@ const FilterModal = ({ totalHeading = 0, className = '' }) => {
         checked={filterAlgorithm}
         onChange={handelFilterAlgorithm}
       />
+      <Button onClick={handleApplySearch} className="btn-primary btn-sm mt-6 btn-block text-white">
+        <span>Apply</span>
+      </Button>
     </div>
   )
 }
