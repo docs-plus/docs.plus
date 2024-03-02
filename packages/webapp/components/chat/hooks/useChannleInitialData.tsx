@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useStore, useAuthStore, useChatStore } from '@stores'
 import { groupedMessages } from '@utils/groupMessages'
-import { fetchChannelInitialData, CreateChannel, join2Channel } from '@api'
+import { fetchChannelInitialData, CreateChannel, join2Channel, UpsertChannel } from '@api'
 import slugify from 'slugify'
 
 interface UseChannelInitialData {
@@ -34,7 +34,7 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
     if (!currentChannel && workspaceId) {
       let newChannelId = channelId
       if ('' + newChannelId === '1') newChannelId = `1_${workspaceId}`
-      const data = await CreateChannel({
+      const data = await UpsertChannel({
         id: newChannelId,
         workspace_id: workspaceId,
         created_by: user.id,
