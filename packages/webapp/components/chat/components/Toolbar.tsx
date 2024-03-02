@@ -21,7 +21,7 @@ const Toolbar = () => {
     const precenseUsers = usersPresence.values()
     const users = Array.from(precenseUsers).filter((user) => user?.channelId === chatRoom.headingId)
     setPresentUsers(users)
-  }, [usersPresence])
+  }, [usersPresence, chatRoom])
 
   const handelCloseChatRoom = () => {
     destroyChatRoom()
