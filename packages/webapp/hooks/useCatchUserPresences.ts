@@ -1,8 +1,10 @@
 import { useEffect } from 'react'
 import { useStore, useAuthStore } from '@stores'
-import { supabaseClient } from '@utils/supabase'
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 
 export const useCatchUserPresences = () => {
+  const supabaseClient = createClientComponentClient()
+
   const profile = useAuthStore((state) => state.profile)
   const { workspaceId } = useStore((state) => state.settings)
   const setOrUpdateUserPresence = useStore((state) => state.setOrUpdateUserPresence)
@@ -33,7 +35,8 @@ export const useCatchUserPresences = () => {
         // add the user into the channel member state store
         // if the user is not in the channel member state store
         // console.log('join', { key, newPresences })
-        if (usersPresence.has(newPresences.at(0)?.id)) return
+        // const usersPresence = useStore.getState().usersPresence
+        // if (usersPresence.has(newPresences.at(0)?.id)) return
         const newUser: any = {
           ...newPresences.at(0),
           status: 'ONLINE'
@@ -57,7 +60,8 @@ export const useCatchUserPresences = () => {
       .on('broadcast', { event: 'presence' }, (data) => {
         // console.log('broadcast ->> presence', { data })
         const payload = data.payload
-        if (usersPresence.has(payload.id)) return
+        // const usersPresence = useStore.getState().usersPresence
+        // if (usersPresence.has(payload.id)) return
         setOrUpdateUserPresence(payload.id, payload)
       })
       .subscribe(async (status) => {
