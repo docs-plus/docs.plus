@@ -1,3 +1,5 @@
+$bg-root: #f8f9fa;
+
 body.indentHeading {
   &.h1SectionBreak {
     div.heading {
@@ -64,7 +66,7 @@ body.h1SectionBreak {
 // if it is mobile
 @media (max-width: 640px) {
   .ProseMirror {
-    background-color: #f8f9fa;
+    background-color: $bg-root;
     padding: 12px;
 
     &.loading {
