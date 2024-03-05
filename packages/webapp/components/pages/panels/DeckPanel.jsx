@@ -64,26 +64,53 @@ const DeckPanel = ({ hostname }) => {
           </h2>
           <div className="mt-5 leading-7 ">
             <p>
-              <span>+</span>A <a href="https://github.com/docs-plus">free &amp; open source</a>{' '}
-              project by <a href="https://newspeak.house">Newspeak House</a>
+              <span>+</span> A{' '}
+              <a href="https://github.com/docs-plus" className="link link-primary no-underline">
+                {' '}
+                free &amp; open source
+              </a>{' '}
+              project by{' '}
+              <a href="https://newspeak.house" className="link link-primary no-underline">
+                Newspeak House
+              </a>
             </p>
             <p>
               <span>+</span> Enquiries to{' '}
-              <a href="https://www.twitter.com/docsdotplus">@docsdotplus</a> or{' '}
-              <a href="mailto:ed@newspeak.house">ed@newspeak.house</a>
+              <a
+                href="https://www.twitter.com/docsdotplus"
+                className="link link-primary no-underline">
+                @docsdotplus
+              </a>{' '}
+              or{' '}
+              <a href="mailto:ed@newspeak.house" className="link link-primary no-underline">
+                ed@newspeak.house
+              </a>
             </p>
             <p>
               <span>+</span> Found a bug? Help us out by{' '}
-              <a href="https://github.com/docs-plus/docs.plus/issues">reporting it</a>.{' '}
+              <a
+                href="https://github.com/docs-plus/docs.plus/issues"
+                className="link link-primary no-underline">
+                reporting it
+              </a>
+              .{' '}
             </p>
             <p>
-              <span>+</span> <a href="https://www.patreon.com/docsplus">Back us on Patreon</a> to
-              help us pay for hosting &amp; development
+              <span>+</span>{' '}
+              <a href="https://www.patreon.com/docsplus" className="link link-primary no-underline">
+                Back us on Patreon
+              </a>{' '}
+              to help us pay for hosting &amp; development
             </p>
             <p>
               <span>+</span> Kindly seed funded by{' '}
-              <a href="https://www.grantfortheweb.org">Grant for Web</a> &amp;{' '}
-              <a href="https://www.nesta.org.uk">Nesta</a>
+              <a href="https://www.grantfortheweb.org" className="link link-primary no-underline">
+                Grant for Web
+              </a>{' '}
+              &amp;{' '}
+              <a href="https://www.nesta.org.uk" className="link link-primary no-underline">
+                Nesta
+              </a>
             </p>
           </div>
         </div>
