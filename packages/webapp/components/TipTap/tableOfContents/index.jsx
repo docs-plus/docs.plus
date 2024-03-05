@@ -81,15 +81,18 @@ const RenderToc = ({ children, item, renderTocs }) => {
           <CaretRight size={17} fill="#363636" />
         </span>
         <a
-          className="text-black sm:line-clamp-2 sm:hover:line-clamp-3 "
+          className="text-black sm:line-clamp-3 sm:hover:line-clamp-5 "
           data-id={item.id}
           href={`?${item.id}`}
           onClick={(e) => handelScroll2Header(e, editor)}>
           {item.text}
         </a>
-        <span className="ml-auto" onClick={() => openChatContainerHandler(item)}>
+        <span
+          className="btn_chat ml-auto tooltip   tooltip-left"
+          onClick={() => openChatContainerHandler(item)}
+          data-tip="Open chat room">
           <ChatLeft
-            className={`btnChat ${headingId === item.id && '!opacity-100 fill-docsy'} transition-all ml-5 group-hover:fill-docsy hover:fill-indigo-900 cursor-pointer`}
+            className={`btnChat ${headingId === item.id && '!opacity-100 fill-docsy'} transition-all group-hover:fill-docsy hover:fill-indigo-900 cursor-pointer`}
             size={18}
           />
         </span>

@@ -119,7 +119,7 @@ const Editor = () => {
         {!isMobile ? <Toolbar /> : isKeyboardOpen && <ToolbarMobile />}
       </div>
       <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
-        <div className="flex flex-col w-full relative align-top">
+        <div className="flex flex-col w-9/12 relative align-top ">
           <div
             ref={editorWrapperRef}
             className="editorWrapper h-full grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
@@ -130,7 +130,7 @@ const Editor = () => {
         </div>
         {!isMobile && (
           <div
-            className={`${chatRoom.headingId ? 'border-r border-gray-200 dark:border-gray-700' : ''} tableOfContents max-w-xs w-3/12 overflow-hidden pb-4 sm:py-4 sm:pb-14 pr-4 scroll-smooth hover:overflow-auto hover:overscroll-contain`}>
+            className={`${chatRoom.headingId ? 'border-r border-gray-200 dark:border-gray-700' : ''}  tableOfContents mr-auto h-full max-h-full !max-w-[16rem] w-3/12 pb-4 sm:py-4 sm:pb-14 pr-4 scroll-smooth   overflow-hidden hover:overflow-auto hover:overscroll-contain`}>
             <TOC />
           </div>
         )}

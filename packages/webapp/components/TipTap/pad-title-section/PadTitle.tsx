@@ -49,7 +49,7 @@ const PadTitle = () => {
 
   return (
     <>
-      <div className="docTitle bg-white z-[9] relative w-full min-h-12 p-2 flex flex-row items-center sm:border-b-0 border-b">
+      <div className="docTitle bg-white z-10 relative w-full min-h-12 p-2 flex flex-row items-center sm:border-b-0 border-b">
         <div className="flex flex-row items-center align-middle w-full justify-center sm:justify-normal">
           <div className="padLog hidden sm:block">
             <Link href="/">
