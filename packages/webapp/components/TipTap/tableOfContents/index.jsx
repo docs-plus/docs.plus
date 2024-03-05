@@ -9,15 +9,24 @@ import { toggleHeadingSection, handelScroll2Header } from './helper'
 import useHandelTocUpdate from './useHandelTocUpdate'
 
 const RenderToc = ({ children, item, renderTocs }) => {
-  const { query } = useRouter()
+  const router = useRouter()
+  const { query } = router
   const setChatRoom = useChatStore((state) => state.setChatRoom)
   const { headingId } = useChatStore((state) => state.chatRoom)
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
+  const [activeHeading, setActiveHeading] = useState(null)
   const user = useAuthStore((state) => state.profile)
   const {
     workspaceId,
     editor: { instance: editor }
   } = useStore((state) => state.settings)
+
+  useEffect(() => {
+    const url = new URL(window.location.href)
+    const heading = url.searchParams.get('id')
+
+    if (heading) setActiveHeading(heading)
+  }, [router.asPath])
 
   const openChatContainerHandler = useCallback(
     (item) => {
@@ -69,39 +78,38 @@ const RenderToc = ({ children, item, renderTocs }) => {
   )
 
   return (
-    <div
+    <li
       key={item.id}
       className={`toc__item toc__item--${item.level} ${item.open ? '' : 'closed'} `}
       data-id={item.id}
       data-offsettop={item.offsetTop}>
-      <span className="group">
+      <a
+        className={`group ${activeHeading === item.id ? 'active' : ''}`}
+        onClick={(e) => handelScroll2Header(e, editor, setActiveHeading)}
+        href={`?${item.id}`}
+        data-id={item.id}>
+        <span className="sm:line-clamp-3 sm:hover:line-clamp-5 toc__link">{item.text}</span>
         <span
-          className={`btnFold ${item.open ? 'opened' : 'closed'}`}
-          onClick={() => toggleHeadingSection(item)}>
+          className={`btnFold tooltip tooltip-top  ${item.open ? 'opened' : 'closed'}`}
+          onClick={() => toggleHeadingSection(item)}
+          data-tip="Toggle">
           <CaretRight size={17} fill="#363636" />
         </span>
-        <a
-          className="text-black sm:line-clamp-3 sm:hover:line-clamp-5 "
-          data-id={item.id}
-          href={`?${item.id}`}
-          onClick={(e) => handelScroll2Header(e, editor)}>
-          {item.text}
-        </a>
         <span
-          className="btn_chat ml-auto tooltip   tooltip-left"
+          className="btn_chat ml-auto tooltip  tooltip-top"
           onClick={() => openChatContainerHandler(item)}
-          data-tip="Open chat room">
+          data-tip="Chat Room">
           <ChatLeft
             className={`btnChat ${headingId === item.id && '!opacity-100 fill-docsy'} transition-all group-hover:fill-docsy hover:fill-indigo-900 cursor-pointer`}
             size={18}
           />
         </span>
-      </span>
+      </a>
 
       {children.length > 0 && (
-        <div className={`childrenWrapper ${item.open ? '' : 'hidden'}`}>{renderTocs(children)}</div>
+        <ul className={`childrenWrapper ${item.open ? '' : 'hidden'}`}>{renderTocs(children)}</ul>
       )}
-    </div>
+    </li>
   )
 }
 
@@ -141,7 +149,7 @@ const TableOfContent = ({ className }) => {
 
   return (
     <div className={`${className}`}>
-      <div className="toc__list ">{renderedTocs}</div>
+      <ul className="toc__list menu p-0 ">{renderedTocs}</ul>
     </div>
   )
 }

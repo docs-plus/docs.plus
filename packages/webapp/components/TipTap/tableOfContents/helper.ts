@@ -25,14 +25,27 @@ export const toggleHeadingSection = (item: any) => {
   PubSub.publish(ENUMS.EVENTS.FOLD_AND_UNFOLD, { headingId: item.id, open: !item.open })
 }
 
-export const handelScroll2Header = (e: any, editor: any) => {
+export const handelScroll2Header = (e: any, editor: any, setActiveHeading: any) => {
   e.preventDefault()
-  let id = e.target.getAttribute('data-id')
+  let id = e.target.closest('a').getAttribute('data-id')
   const offsetParent = getOffsetTop(e.target.closest('.toc__item'))
+
+  if (!id) return
 
   if (offsetParent === 0) id = '1'
 
-  const nodePos = editor.view.state.doc.resolve(
+  // find all a tag in this .tiptap__toc and remove active class
+  const aTags = document.querySelectorAll('.toc__item a')
+  aTags.forEach((a) => a.classList.remove('active'))
+  // now add active class to the clicked a tag
+  e.target.classList.add('active')
+
+  setActiveHeading(id)
+
+  const posAt = editor?.view.posAtDOM(document.querySelector(`.heading[data-id="${id}"]`))
+  if (posAt === -1) return
+
+  const nodePos = editor.view.state.doc?.resolve(
     editor?.view.posAtDOM(document.querySelector(`.heading[data-id="${id}"]`))
   )
 

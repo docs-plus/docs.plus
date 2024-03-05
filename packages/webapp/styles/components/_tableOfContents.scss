@@ -1,59 +1,122 @@
+$bg-root: #f8f9fa;
+
 .tiptap__toc {
-  padding-left: 4px;
+  padding-left: 20px;
+
+  padding-top: 10px;
+
+  ul > li:hover {
+    // change background of ul to red
+    & ~ ul {
+      // change background of ul to red
+      background-color: red;
+    }
+  }
+
+  .toc__item {
+    > a {
+      padding: 0.3rem 0.4rem;
+      position: relative;
+      transition: all 0.2s ease-in-out;
+      margin-bottom: 0.1rem;
+      display: flex;
+      &:active {
+        .btnChat {
+          @apply fill-base-300 bg-transparent;
+        }
+      }
+      &.active {
+        padding-left: 20px;
+        > a {
+          color: #fff;
+          font-weight: normal;
+        }
+        .btnChat {
+          opacity: 1;
+          @apply fill-base-300 bg-transparent;
+        }
+
+        .btnFold {
+          opacity: 1;
+          > svg {
+            @apply fill-base-300;
+          }
+        }
+      }
+    }
+  }
   .toc {
-    background: rgba(black, 0.1);
-    border-radius: 0.5rem;
-    opacity: 0.75;
-    padding: 0.75rem;
-    min-width: 200px;
-    text-align: left;
-    line-height: 2rem;
+    // background: rgba(black, 0.1);
+    // border-radius: 0.5rem;
+    // opacity: 0.75;
+    // padding: 0.75rem;
+    // min-width: 200px;
+    // text-align: left;
+    // line-height: 2rem;
 
     &__list {
-      list-style: none;
+      // list-style: none;
 
       &::before {
-        display: block;
-        font-size: 0.75rem;
-        font-weight: 700;
-        letter-spacing: 0.025rem;
-        opacity: 0.5;
-        text-transform: uppercase;
-        padding-bottom: 20px;
+        // display: block;
+        // font-size: 0.75rem;
+        // font-weight: 700;
+        // letter-spacing: 0.025rem;
+        // opacity: 0.5;
+        // text-transform: uppercase;
+        // padding-bottom: 20px;
       }
     }
 
     &__item {
-      padding-left: 1.5rem;
-      position: relative;
-      width: 100%;
-      margin: 6px 0;
-
-      > span {
-        display: flex;
-        align-items: center;
+      .btn_chat {
+        display: block;
+        width: 16px;
+        height: 24px;
+        --tooltip-offset: 26px;
+        --tooltip-tail-offset: 20px;
+        font-weight: normal;
       }
-
       .btnChat {
         opacity: 0;
-        background-color: #f8f9fa;
-        @apply size-[18px];
-      }
-
-      .btn_chat {
+        background-color: $bg-root;
+        width: 24px;
+        border-radius: 6px;
+        height: 24px;
+        padding: 4px;
         position: absolute;
-        right: 0;
+        right: -5px;
+        top: 52%;
+        transform: translateY(-50%);
       }
 
-      &:hover > span > span > .btnChat {
+      .btn_chat:hover {
+        @apply fill-neutral-content;
+      }
+
+      a:not(:active, .active):hover .btnChat {
+        @apply bg-base-300;
+      }
+
+      &:hover > a > span > .btnChat {
         opacity: 1;
       }
 
+      &:hover > a {
+        padding-left: 20px;
+      }
+
+      &:hover > a .btn_fold {
+        transition-delay: 0.2s;
+      }
+
       .btnFold {
-        transition: all 0.2s ease-in-out;
-        margin-right: 4px;
+        transition: all 0.1s linear;
+        // margin-right: 4px;
+        font-weight: normal;
         position: absolute;
-        left: 0;
+        left: 0px;
+        top: 50%;
         opacity: 0;
         display: flex;
         align-items: center;
@@ -61,21 +124,27 @@
         cursor: pointer;
         width: 20px;
         height: 20px;
+        transform: translateY(-50%);
+
+        & > svg {
+          position: absolute;
+          top: 50%;
+        }
 
         &:hover > svg {
           fill: #2778ff;
         }
 
-        &.closed {
-          transform: rotate(0deg);
+        &.closed > svg {
+          transform: translateY(-50%) rotate(0deg);
         }
 
-        &.opened {
-          transform: rotate(90deg);
+        &.opened > svg {
+          transform: translateY(-50%) rotate(90deg);
         }
       }
 
-      &:hover > span > .btnFold {
+      &:hover > a > .btnFold {
         opacity: 1;
       }
 
@@ -88,32 +157,25 @@
       }
 
       a {
-        font-weight: normal;
-        position: relative;
-        width: 100%;
-        @apply text-sm text-gray-400;
+        // font-weight: normal;
+        // position: relative;
+        // width: 100%;
+        // @apply text-sm text-gray-400;
 
         &::after {
           content: '';
-          display: block;
-          width: 100%;
-          border: 1px solid #4285f4;
-          position: absolute;
-          opacity: 0;
-          transition: all 0.1s cubic-bezier(0.39, 0.575, 0.565, 1);
-        }
-
-        &:hover {
-          opacity: 0.5;
-          color: #0d0d0d;
+          // display: block;
+          // width: 100%;
+          // border: 1px solid #4285f4;
+          // position: absolute;
+          // opacity: 0;
+          // transition: all 0.1s cubic-bezier(0.39, 0.575, 0.565, 1);
         }
       }
 
       &--1 {
-        // padding-left: 0 !important;
-
-        > span > a {
-          @apply text-base font-medium text-black;
+        > a {
+          @apply text-base font-semibold text-black;
         }
       }
     }

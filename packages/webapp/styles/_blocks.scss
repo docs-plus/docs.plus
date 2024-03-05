@@ -1,9 +1,11 @@
+$bg-root: #f8f9fa;
+
 .pad {
   position: relative;
   @apply h-full;
 
   .editor {
-    background-color: #f8f9fa;
+    background-color: $bg-root;
     overflow: auto;
 
     .editorWrapper {

@@ -10,9 +10,10 @@ $crinkle-time: 0.4s;
 $crinkle-transition: ease-out;
 $crinkle-fold-bg: #ccc;
 $crinkle-unfold-bg: #efefef;
+$bg-root: #f8f9fa;
 
 .foldWrapper {
-  background-color: #f8f9fa;
+  background-color: $bg-root;
   transition: height 0.3s ease-in-out;
   height: 20px;
   cursor: pointer;
@@ -29,7 +30,7 @@ $crinkle-unfold-bg: #efefef;
     position: relative;
     z-index: 2;
     left: -45px;
-    background-color: #f8f9fa;
+    background-color: $bg-root;
     padding-right: 4px;
     height: 100%;
     margin-top: -2px;
@@ -76,6 +77,16 @@ $crinkle-unfold-bg: #efefef;
 
 .ProseMirror {
   // buttons in heading
+
+  a {
+    font-weight: 500;
+    color: #646cff;
+    text-decoration: inherit;
+  }
+
+  a:hover {
+    color: #535bf2;
+  }
   div.heading {
     position: relative;
     height: 100%;
