@@ -13,7 +13,7 @@ const AvatarStack = ({ users = [], size = 9, tooltipPosition = 'tooltip-bottom' 
         return (
           <Avatar
             key={index}
-            className={`rounded-full shadow-xl border w-${size} h-${size} tooltip ${tooltipPosition}`}
+            className={`rounded-full shadow-xl border w-${size} h-${size} tooltip  ${tooltipPosition}`}
             id={user?.id}
             src={user?.avatar_url}
             alt={user.displayName}

@@ -6,3 +6,15 @@
 .dropdown-content {
   @apply drop-shadow-sm;
 }
+
+.tooltip:before {
+  padding: 0.25rem 0.5rem !important;
+  -webkit-font-smoothing: auto !important;
+  -moz-osx-font-smoothing: auto !important;
+  background: black !important;
+  border-radius: 0.375rem /* 6px */ !important;
+  --tw-text-opacity: 1 !important;
+  color: rgb(255 255 255 / var(--tw-text-opacity)) !important;
+  font-size: 0.75rem !important/* 12px */;
+  line-height: 1rem !important /* 16px */;
+}

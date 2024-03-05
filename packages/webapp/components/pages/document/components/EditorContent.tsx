@@ -18,7 +18,7 @@ const EditorContent = () => {
     )
   }
 
-  return <TiptapEditor className={`tipta__editor mb-12 sm:mb-0 sm:p-8`} editor={editor} />
+  return <TiptapEditor className={`tipta__editor mb-12 sm:mb-0 sm:p-3`} editor={editor} />
 }
 
 export default EditorContent

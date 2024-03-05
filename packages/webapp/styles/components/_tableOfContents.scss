@@ -1,4 +1,5 @@
 .tiptap__toc {
+  padding-left: 4px;
   .toc {
     background: rgba(black, 0.1);
     border-radius: 0.5rem;
@@ -35,6 +36,13 @@
 
       .btnChat {
         opacity: 0;
+        background-color: #f8f9fa;
+        @apply size-[18px];
+      }
+
+      .btn_chat {
+        position: absolute;
+        right: 0;
       }
 
       &:hover > span > span > .btnChat {
@@ -44,6 +52,8 @@
       .btnFold {
         transition: all 0.2s ease-in-out;
         margin-right: 4px;
+        position: absolute;
+        left: 0;
         opacity: 0;
         display: flex;
         align-items: center;
@@ -80,6 +90,7 @@
       a {
         font-weight: normal;
         position: relative;
+        width: 100%;
         @apply text-sm text-gray-400;
 
         &::after {
@@ -99,7 +110,7 @@
       }
 
       &--1 {
-        padding-left: 0 !important;
+        // padding-left: 0 !important;
 
         > span > a {
           @apply text-base font-medium text-black;
