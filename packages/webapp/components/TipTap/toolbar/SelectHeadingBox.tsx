@@ -1,8 +1,7 @@
-import { Tooltip, TooltipTrigger, TooltipContent } from '@components/ui/Tooltip'
 import SelectBox from '@components/ui/SelectBox'
 import React, { useCallback } from 'react'
 
-const SelectHeadingBox = ({ editor }) => {
+const SelectHeadingBox = ({ editor }: any) => {
   const options = [
     { value: 'p', label: 'Normal Text' },
     { value: 1, label: 'Heading 1' },
@@ -17,7 +16,7 @@ const SelectHeadingBox = ({ editor }) => {
     { value: 10, label: 'Heading 10' }
   ]
   const onHeadingChange = useCallback(
-    (value) => {
+    (value: string) => {
       if (value === 'p') {
         editor.chain().focus().normalText().run()
       } else {
@@ -27,7 +26,7 @@ const SelectHeadingBox = ({ editor }) => {
     [editor]
   )
 
-  function getCurrentHeading(editor) {
+  function getCurrentHeading(editor: any): any {
     const selectedHeadingOption = options.find((option) => {
       return editor.isActive('contentHeading', { level: option.value })
     })
@@ -36,12 +35,9 @@ const SelectHeadingBox = ({ editor }) => {
   }
 
   return (
-    <Tooltip placement="bottom">
-      <TooltipTrigger asChild={true}>
-        <SelectBox options={options} value={getCurrentHeading(editor)} onChange={onHeadingChange} />
-      </TooltipTrigger>
-      <TooltipContent className="Tooltip">Change Heading Level (⌘+⌥+0-9)</TooltipContent>
-    </Tooltip>
+    <div className="tooltip tooltip-bottom" data-tip="Heading Level (⌘+⌥+0-9)">
+      <SelectBox options={options} value={getCurrentHeading(editor)} onChange={onHeadingChange} />
+    </div>
   )
 }
 
