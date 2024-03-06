@@ -8,7 +8,7 @@ import FilterBar from './FilterBar'
 import { useStore } from '@stores'
 import Modal from '@components/ui/Modal'
 import dynamic from 'next/dynamic'
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { useAuthStore } from '@stores'
@@ -80,10 +80,10 @@ const PadTitle = () => {
 
           <ReadOnlyIndicator />
 
-          <div className="ml-auto flex items-center justify-center ">
+          <div className="ml-auto flex items-center justify-center">
             {isAuthServiceAvailable && <PresentUsers />}
             <Button
-              className="btn-wide h-[2.6rem] min-h-[2.6rem] max-w-28 btn-primary text-white "
+              className="btn-wide ml-3 h-[2.6rem] min-h-[2.6rem] max-w-28 btn-primary text-white"
               onClick={() => setShareModalOpen(true)}>
               <PrivateShare />
               Share
@@ -92,8 +92,9 @@ const PadTitle = () => {
               <div className="mr-2 ml-5 sm:flex hidden">
                 {user ? (
                   <Button
-                    className="btn-ghost btn-circle h-11 min-h-11"
-                    onClick={() => setProfileModalOpen(true)}>
+                    className="btn-ghost tooltip tooltip-bottom btn-circle"
+                    onClick={() => setProfileModalOpen(true)}
+                    data-tip="Profile">
                     <Avatar
                       id={user.id}
                       src={user.avatar_url}

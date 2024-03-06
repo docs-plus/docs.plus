@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import React from 'react'
 import AvatarStack from '../../AvatarStack'
 import { useStore } from '@stores'
 const PresentUsers = () => {
@@ -13,4 +13,4 @@ const PresentUsers = () => {
   )
 }
 
-export default PresentUsers
+export default React.memo(PresentUsers)
