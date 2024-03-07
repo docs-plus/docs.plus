@@ -5,17 +5,19 @@ import { IoMdArrowDropdown } from 'react-icons/io'
 type OptionType = {
   value: string | number
   label: string
+  className: string
 }
 
 // Define a type for the component props
 type SelectBoxProps = {
   options: OptionType[]
+  subOptions?: { summary: string; options: OptionType[] }
   value: OptionType | null
   onChange: (value: string) => void
   placeholder?: string
 }
 
-const SelectBox = ({ options, value, onChange, placeholder }: SelectBoxProps) => {
+const SelectBox = ({ options, value, onChange, placeholder, subOptions }: SelectBoxProps) => {
   const handleClick = (event: React.MouseEvent<HTMLLIElement>) => {
     const targetValue = event.currentTarget.dataset.value as string
     onChange(targetValue)
@@ -46,17 +48,45 @@ const SelectBox = ({ options, value, onChange, placeholder }: SelectBoxProps) =>
       </div>
       <div
         tabIndex={0}
-        className="dropdown-content relative z-10 max-h-60 overflow-auto shadow rounded bg-base-100">
-        <ul className="flex flex-col menu p-2 w-36">
+        className="dropdown-content relative z-10 max-h-66 overflow-auto shadow rounded bg-base-100">
+        <ul className="flex flex-col menu p-2 w-40">
           {options.map((option, index) => (
             <li
               key={index}
               onClick={handleClick}
               data-value={option.value}
               className="group-focus-visible/drop:bg-docsy">
-              <a role="button">{option.label}</a>
+              <a
+                role="button"
+                className={option.className + ` ${option.value === value?.value ? 'active' : ''}`}>
+                {option.label}
+              </a>
             </li>
           ))}
+          {subOptions && (
+            <li>
+              <details open>
+                <summary>{subOptions.summary}</summary>
+                <ul>
+                  {subOptions.options.map((option, index) => (
+                    <li
+                      key={index}
+                      onClick={handleClick}
+                      data-value={option.value}
+                      className="group-focus-visible/drop:bg-docsy">
+                      <a
+                        role="button"
+                        className={
+                          option.className + ` ${option.value === value?.value ? 'active' : ''}`
+                        }>
+                        {option.label}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            </li>
+          )}
         </ul>
       </div>
     </div>
