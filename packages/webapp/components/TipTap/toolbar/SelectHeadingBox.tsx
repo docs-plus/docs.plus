@@ -3,18 +3,27 @@ import React, { useCallback } from 'react'
 
 const SelectHeadingBox = ({ editor }: any) => {
   const options = [
-    { value: 'p', label: 'Normal Text' },
-    { value: 1, label: 'Heading 1' },
-    { value: 2, label: 'Heading 2' },
-    { value: 3, label: 'Heading 3' },
-    { value: 4, label: 'Heading 4' },
-    { value: 5, label: 'Heading 5' },
-    { value: 6, label: 'Heading 6' },
-    { value: 7, label: 'Heading 7' },
-    { value: 8, label: 'Heading 8' },
-    { value: 9, label: 'Heading 9' },
-    { value: 10, label: 'Heading 10' }
+    { value: 'p', label: 'Normal Text', className: 'text-[14px]' },
+    { value: 1, label: 'Heading 1', className: 'text-[20px]' },
+    { value: 2, label: 'Heading 2', className: 'text-[18px]' },
+    { value: 3, label: 'Heading 3', className: 'text-[17px]' },
+    { value: 4, label: 'Heading 4', className: 'text-[16px]' },
+    { value: 5, label: 'Heading 5', className: 'text-[15px]' },
+    { value: 6, label: 'Heading 6', className: 'text-[14px]' }
   ]
+
+  const restOptions = [
+    { value: 7, label: 'Heading 7', className: 'text-[13px]' },
+    { value: 8, label: 'Heading 8', className: 'text-[13px]' },
+    { value: 9, label: 'Heading 9', className: 'text-[13px]' },
+    { value: 10, label: 'Heading 10', className: 'text-[13px]' }
+  ]
+
+  const subOptions = {
+    summary: 'More',
+    options: restOptions
+  }
+
   const onHeadingChange = useCallback(
     (value: string) => {
       if (value === 'p') {
@@ -27,16 +36,24 @@ const SelectHeadingBox = ({ editor }: any) => {
   )
 
   function getCurrentHeading(editor: any): any {
-    const selectedHeadingOption = options.find((option) => {
+    const newOptions = [...options, ...restOptions]
+    const selectedHeadingOption = newOptions.find((option) => {
       return editor.isActive('contentHeading', { level: option.value })
     })
 
-    return selectedHeadingOption || options.at(0)
+    return selectedHeadingOption || newOptions.at(0)
   }
 
   return (
     <div className="tooltip tooltip-bottom" data-tip="Heading Level (⌘+⌥+0-9)">
-      <SelectBox options={options} value={getCurrentHeading(editor)} onChange={onHeadingChange} />
+      <div className="!w-36 !max-w-36  ">
+        <SelectBox
+          options={options}
+          subOptions={subOptions}
+          value={getCurrentHeading(editor)}
+          onChange={onHeadingChange}
+        />
+      </div>
     </div>
   )
 }

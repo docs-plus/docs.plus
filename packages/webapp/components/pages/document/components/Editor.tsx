@@ -130,7 +130,7 @@ const Editor = () => {
         </div>
         {!isMobile && (
           <div
-            className={`${chatRoom.headingId ? 'border-r border-gray-200 dark:border-gray-700' : ''}  tableOfContents h-full max-h-full  w-3/12`}>
+            className={`${chatRoom.headingId ? 'border-r border-gray-200 dark:border-gray-700' : ''} tableOfContents h-full max-h-full w-3/12`}>
             <TOC />
           </div>
         )}

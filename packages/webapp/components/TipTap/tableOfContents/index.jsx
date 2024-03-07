@@ -149,7 +149,7 @@ const TableOfContent = ({ className }) => {
 
   return (
     <div className={`${className}`}>
-      <ul className="toc__list menu p-0 ">{renderedTocs}</ul>
+      <ul className="toc__list menu p-0">{renderedTocs}</ul>
     </div>
   )
 }

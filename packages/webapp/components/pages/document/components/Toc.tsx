@@ -17,7 +17,7 @@ const TOC = ({ className = '' }: any) => {
 
   return (
     <TableOfContents
-      className={`${className} tiptap__toc  pb-4 sm:py-4 h-full sm:pb-14 pr-6 scroll-smooth overflow-hidden overflow-y-auto hover:overscroll-contain !max-w-[19rem]`}
+      className={`${className} tiptap__toc pb-4 sm:py-4 h-full sm:pb-14 pr-6 scroll-smooth overflow-hidden overflow-y-auto hover:overscroll-contain !max-w-[19rem]`}
     />
   )
 }
