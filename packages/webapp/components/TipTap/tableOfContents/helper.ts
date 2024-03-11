@@ -27,6 +27,7 @@ export const toggleHeadingSection = (item: any) => {
 
 export const handelScroll2Header = (e: any, editor: any, setActiveHeading: any) => {
   e.preventDefault()
+  if (e.target.tagName !== 'A') return
   let id = e.target.closest('a').getAttribute('data-id')
   const offsetParent = getOffsetTop(e.target.closest('.toc__item'))
 
