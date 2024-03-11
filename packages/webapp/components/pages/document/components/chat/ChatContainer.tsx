@@ -11,10 +11,10 @@ const ChatContainer = () => {
   return (
     <div
       ref={gripperRef}
-      className="bg-slate-50 flex flex-row h-[300px] w-full overflow-auto flex-wrap absolute bottom-0 z-40"
+      className="bg-slate-50 flex group flex-row h-[300px] w-full overflow-auto flex-wrap absolute bottom-0 z-40"
       style={{ height: `${height}px` }}>
       <div
-        className="gripper absolute  left-0 z-[51] border-t border-gray-200 dark:border-gray-700 top-0 w-full cursor-ns-resize"
+        className="gripper absolute group-hover:h-[4px] hover:border-white hover:bg-neutral hover:opacity-90  transition-all duration-300 left-0 z-[51] border-t border-gray-200 dark:border-gray-700 top-0 w-full cursor-ns-resize"
         onMouseDown={handleMouseDown}
       />
       <MessageContainer workspaceId={chatRoom.documentId} channelId={chatRoom.headingId} />
