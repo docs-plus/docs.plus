@@ -1,3 +1,4 @@
+import React from 'react'
 import { useChatStore } from '@stores'
 import { IoMdGitBranch } from 'react-icons/io'
 import { RiArrowRightSLine } from 'react-icons/ri'
@@ -12,7 +13,7 @@ const Breadcrumb = () => {
       <ul className="menu p-1 menu-horizontal flex items-center menu-sm">
         {headingPath.map((heading: any, index: number) => {
           return (
-            <>
+            <React.Fragment key={index}>
               {index === 0 ? (
                 <IoMdGitBranch size={18} className="mr-1" />
               ) : (
@@ -29,7 +30,7 @@ const Breadcrumb = () => {
                   )}
                 </div>
               </li>
-            </>
+            </React.Fragment>
           )
         })}
       </ul>
