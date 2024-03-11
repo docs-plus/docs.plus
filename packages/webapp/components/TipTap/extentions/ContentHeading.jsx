@@ -34,7 +34,11 @@ const extractContentHeadingBlocks = (doc) => {
 
 const dispatchToggleHeadingSection = (el) => {
   const headingId = el.getAttribute('data-id')
-  const detailsContent = el.querySelector('div.contentWrapper')
+  const selectFirstHeading = document
+    .querySelector(".ProseMirror .heading[data-id='1']")
+    .querySelector('div.contentWrapper')
+  const detailsContent =
+    headingId === '1' ? selectFirstHeading : el.querySelector('div.contentWrapper')
   const event = new CustomEvent('toggleHeadingsContent', {
     detail: { headingId, el: detailsContent }
   })
