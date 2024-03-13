@@ -19,7 +19,10 @@ const Toolbar = () => {
   useEffect(() => {
     if (!chatRoom) return
     const precenseUsers = usersPresence.values()
-    const users = Array.from(precenseUsers).filter((user) => user?.channelId === chatRoom.headingId)
+    const users = Array.from(precenseUsers)
+      .filter((user) => user?.channelId === chatRoom.headingId)
+      .filter((user) => user?.status !== 'OFFLINE')
+
     setPresentUsers(users)
   }, [usersPresence, chatRoom])
 

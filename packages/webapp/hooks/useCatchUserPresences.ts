@@ -63,18 +63,18 @@ export const useCatchUserPresences = () => {
         })
       })
       .on('presence', { event: 'leave' }, ({ key, leftPresences }) => {
-        const newState = messageSubscription.presenceState()
+        // const newState = messageSubscription.presenceState()
         // console.log('leave', { key, leftPresences, newState })
         // update user status to offline in the channel member state store
         // if the user is in the channel member state store
         // if (leftPresences.at(0).channelId === 'empty') return
-        removeUserPresence(leftPresences.at(0)?.id)
+        // removeUserPresence(leftPresences.at(0)?.id)
         // if (!usersPresence.has(leftPresences.at(0)?.id)) return
-        // const newUser: any = {
-        //   ...leftPresences.at(0),
-        //   status: 'OFFLINE'
-        // }
-        // setOrUpdateUserPresence(leftPresences.at(0)?.id, newUser)
+        const newUser: any = {
+          ...leftPresences.at(0),
+          status: 'OFFLINE'
+        }
+        setOrUpdateUserPresence(leftPresences.at(0)?.id, newUser)
       })
       .on('broadcast', { event: 'presenceSync' }, (data) => {
         const usersPresence = useStore.getState().usersPresence
