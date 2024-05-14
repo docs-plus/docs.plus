@@ -1,9 +1,8 @@
-/* eslint-disable no-use-before-define */
-// @ts-nocheck
 import { useEffect, useState } from 'react'
-import { useStore, useAuthStore, useChatStore } from '@stores'
-import { groupedMessages } from '@utils/groupMessages'
-import { fetchChannelInitialData, CreateChannel, join2Channel, UpsertChannel } from '@api'
+import { useStore, useChatStore, useAuthStore } from '@stores'
+import { groupedMessages } from '@utils/index'
+import { fetchChannelInitialData, upsertChannel } from '@api'
+import { useChannel } from '../context/ChannelProvider'
 import slugify from 'slugify'
 
 interface UseChannelInitialData {
@@ -12,29 +11,26 @@ interface UseChannelInitialData {
 }
 
 export const useChannelInitialData = (setError: (error: any) => void): UseChannelInitialData => {
+  const { channelId } = useChannel()
+
   const [initialMessagesLoading, setInitialMessagesLoading] = useState<boolean>(true)
   const [msgLength, setMsgLength] = useState<number>(0)
-  const { headingId: channelId, documentId: workspaceId } = useChatStore((state) => state.chatRoom)
-
+  const { documentId: workspaceId } = useChatStore((state) => state.chatRoom)
   const bulkSetChannelPinnedMessages = useChatStore(
     (state: any) => state.bulkSetChannelPinnedMessages
   )
-  const bulkSetMessages = useChatStore((state: any) => state.bulkSetMessages)
-  const setWorkspaceSetting = useChatStore((state: any) => state.setWorkspaceSetting)
-  const setOrUpdateChannel = useChatStore((state: any) => state.setOrUpdateChannel)
+  const bulkSetMessages = useChatStore((state) => state.bulkSetMessages)
+  const setWorkspaceChannelSetting = useChatStore((state) => state.setWorkspaceChannelSetting)
+  const setLastMessage = useChatStore((state) => state.setLastMessage)
   const currentChannel = useChatStore((state: any) => state.channels.get(channelId))
-  const bulkSetChannelMembers = useChatStore((state: any) => state.bulkSetChannelMembers)
+  const addChannelMember = useChatStore((state) => state.addChannelMember)
   const user = useAuthStore((state: any) => state.profile)
-
-  // first check if the channel already exists in the store
-  // if it does not exsit, create a new channel
-  // if it exists, update the channel
 
   const processChannelData = async (channelId: string) => {
     if (!currentChannel && workspaceId) {
       let newChannelId = channelId
       if ('' + newChannelId === '1') newChannelId = `1_${workspaceId}`
-      const data = await UpsertChannel({
+      const data = await upsertChannel({
         id: newChannelId,
         workspace_id: workspaceId,
         created_by: user.id,
@@ -47,18 +43,27 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
       message_limit: 20
     })
 
-    if (!channelData.is_user_channel_member) {
-      console.log('yep, must be join to channel!')
-      const data = await join2Channel({
-        channel_id: channelId,
-        member_id: user.id
-      })
-      console.log({
-        data
-      })
-    }
-
     if (channelError) throw new Error(channelError.message)
+
+    setWorkspaceChannelSetting(
+      channelId,
+      'scrollPageOffset',
+      channelData?.total_messages_since_last_read >= 20
+        ? channelData?.total_messages_since_last_read
+        : 20
+    )
+    setWorkspaceChannelSetting(channelId, 'unreadMessage', channelData?.unread_message)
+    setWorkspaceChannelSetting(channelId, 'lastReadMessageId', channelData?.last_read_message_id)
+    setWorkspaceChannelSetting(
+      channelId,
+      'lastReadMessageTimestamp',
+      channelData?.last_read_message_timestamp
+    )
+    setWorkspaceChannelSetting(
+      channelId,
+      'totalMsgSincLastRead',
+      channelData?.total_messages_since_last_read
+    )
 
     updateChannelState(channelData)
   }
@@ -82,19 +87,24 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
   }, [channelId])
 
   const updateChannelState = (channelData: any) => {
-    if (channelData.member_count) {
-      setOrUpdateChannel(channelId, { ...currentChannel, member_count: channelData.member_count })
+    if (channelData.channel_member_info) {
+      const userId = useAuthStore.getState()?.session?.id || ''
+
+      addChannelMember(channelId, {
+        ...channelData.channel_member_info,
+        id: userId
+      })
     }
 
-    bulkSetChannelMembers(channelId, channelData.channel_members || [])
+    setWorkspaceChannelSetting(
+      channelId,
+      'isUserChannelMember',
+      channelData?.is_user_channel_member || false
+    )
 
-    // if (channelData.is_user_channel_member) {
-    //   setWorkspaceSetting('isUserChannelMember', channelData.is_user_channel_member)
-    // }
-
-    // if (channelData.channel_info) {
-    //   setWorkspaceSetting('channelInfo', channelData.channel_info)
-    // }
+    if (channelData.channel_info) {
+      setWorkspaceChannelSetting(channelId, 'channelInfo', channelData.channel_info)
+    }
 
     if (channelData.pinned_messages) {
       bulkSetChannelPinnedMessages(channelId, channelData.pinned_messages)
@@ -102,6 +112,8 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
 
     if (channelData.last_messages) {
       const newMessages = groupedMessages(channelData.last_messages.reverse())
+      const lastMessage = newMessages.at(-1)
+      setLastMessage(channelId, lastMessage)
       bulkSetMessages(channelId, newMessages)
       setMsgLength(newMessages.length)
     } else {

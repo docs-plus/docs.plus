@@ -1,7 +1,9 @@
 import { useEffect, useState } from 'react'
 import { supabaseClient } from '@utils/supabase'
 import { useChatStore } from '@stores'
-import { dbMessagesListener, dbChannelsListner } from './listner'
+import { useAuthStore } from '@stores'
+import { dbMessagesListener } from './listner'
+import { useChannel } from '../context/ChannelProvider'
 
 // there is not relation join in realtime subscription
 // so we first get the online members and save it to the channel member state store
@@ -21,32 +23,24 @@ import { dbMessagesListener, dbChannelsListner } from './listner'
 // pinned message, I just put the contnet to the pinned message
 
 export const useMessageSubscription = () => {
-  const [initialSubscribeLoading, setInitialSubscribeLoading] = useState(true)
-  const { headingId: channelId, documentId: workspaceId } = useChatStore((state) => state.chatRoom)
+  const { channelId } = useChannel()
 
+  const [initialSubscribeLoading, setInitialSubscribeLoading] = useState(true)
+  const { documentId: workspaceId } = useChatStore((state) => state.chatRoom)
+
+  const user = useAuthStore((state) => state.profile)
   useEffect(() => {
     if (!channelId || !workspaceId) return
 
     const messageSubscription = supabaseClient
       .channel(`channel:${channelId}`)
-
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'channels',
-          filter: `workspace_id=eq.${workspaceId}`
-        },
-        dbChannelsListner
-      )
+      // todo: move to worksapce channel
 
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'messages', filter: `channel_id=eq.${channelId}` },
         dbMessagesListener
       )
-
       .subscribe(async (status) => {
         if (status !== 'SUBSCRIBED') return
         setInitialSubscribeLoading(false)
@@ -55,7 +49,7 @@ export const useMessageSubscription = () => {
     return () => {
       messageSubscription.unsubscribe()
     }
-  }, [channelId, workspaceId])
+  }, [channelId, workspaceId, user])
 
   return { initialSubscribeLoading }
 }

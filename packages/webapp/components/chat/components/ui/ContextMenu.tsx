@@ -26,7 +26,7 @@ import {
 export const MenuItem = forwardRef<HTMLLIElement, React.LiHTMLAttributes<HTMLLIElement>>(
   ({ children, ...props }, ref) => {
     return (
-      <li {...props} role="menuitem">
+      <li {...props} role="menuitem" ref={ref}>
         {children}
       </li>
     )
@@ -42,7 +42,7 @@ interface Props {
 }
 
 export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<HTMLUListElement>>(
-  ({ children, parrentRef, className }, forwardedRef) => {
+  ({ children, parrentRef, className }, ref) => {
     const [activeIndex, setActiveIndex] = useState<number | null>(null)
     const [isOpen, setIsOpen] = useState(false)
 
@@ -143,7 +143,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
           <FloatingFocusManager context={context} initialFocus={refs.floating}>
             <ul
               className={className}
-              ref={refs.setFloating}
+              ref={refs.setFloating || ref}
               style={floatingStyles}
               {...getFloatingProps()}>
               {Children.map(

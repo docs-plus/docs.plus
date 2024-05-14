@@ -1,5 +1,8 @@
 /** @type {import('next').NextConfig} */
 
+// HINT: if you want to disable the workbox logs in your console,
+// just open console logs and put this `-/workbox/` in the filter bar.
+
 const runtimeCaching = require('next-pwa/cache')
 const isProduction = process.env.NODE_ENV === 'production'
 const path = require('path')

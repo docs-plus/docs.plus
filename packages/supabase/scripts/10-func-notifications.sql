@@ -306,7 +306,7 @@ CREATE OR REPLACE FUNCTION decrement_unread_message_count() RETURNS TRIGGER AS $
 DECLARE
     channel_member RECORD;
     notification_count INT;
-    channel_id_used UUID;
+    channel_id_used VARCHAR(36);
 BEGIN
     -- Determine whether it's a soft delete (update) or hard delete
     IF TG_OP = 'DELETE' THEN

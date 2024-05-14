@@ -1,4 +1,3 @@
-import { createClient } from '@utils/supabase/components'
 import { PostgrestResponse } from '@supabase/supabase-js'
 import { Database } from '@types'
 import { supabaseClient } from '@utils/supabase'

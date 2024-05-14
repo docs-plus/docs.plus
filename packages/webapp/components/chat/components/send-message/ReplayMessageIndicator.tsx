@@ -1,7 +1,8 @@
 import { FaReply } from 'react-icons/fa'
-import { twx, cn } from '@utils/twx'
+import { twx, cn } from '@utils/index'
 import { IoCloseOutline } from 'react-icons/io5'
-import { useChatStore } from '@stores'
+import { useStore, useChatStore } from '@stores'
+import { useChannel } from '../../context/ChannelProvider'
 
 type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: number }
 
@@ -14,17 +15,24 @@ const IconButton = twx.button<BtnIcon>((props) =>
 )
 
 export const ReplayMessageIndicator = () => {
+  const { channelId } = useChannel()
+
   const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
-  const { replayMessageMemory } = useChatStore((state) => state.chatRoom)
+  const channelSettings = useChatStore(
+    (state) => state.workspaceSettings.channels.get(channelId) || {}
+  )
+  const { replayMessageMemory } = channelSettings
 
   const handleCloseReplayMessage = () => {
-    setReplayMessageMemory(null)
+    setReplayMessageMemory(channelId, null)
   }
 
   const replyToUser =
     replayMessageMemory?.user_details?.fullname || replayMessageMemory?.user_details?.username || ''
 
   if (!replayMessageMemory) return null
+
+  if (replayMessageMemory.channel_id !== channelId) return null
 
   return (
     <div className="flex w-full  items-center justify-between px-4 py-2 text-base-content">

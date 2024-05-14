@@ -7,6 +7,6 @@ export const join2Channel = async ({ channel_id, member_id }: TNewChannel) =>
   supabaseClient
     .from('channel_members')
     .upsert({ channel_id, member_id })
-    .select()
+    .select('*, channel:channel_id(*)')
     .single()
     .throwOnError()

@@ -10,7 +10,7 @@ const Breadcrumb = () => {
 
   return (
     <nav className="flex" aria-label="Breadcrumb">
-      <ul className="menu p-1 menu-horizontal flex items-center menu-sm">
+      <ul className="menu p-0 menu-horizontal flex items-center menu-sm">
         {headingPath.map((heading: any, index: number) => {
           return (
             <React.Fragment key={index}>

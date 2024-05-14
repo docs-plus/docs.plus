@@ -1,4 +1,4 @@
-import { useStore, useChatStore } from '@stores'
+import { useChatStore } from '@stores'
 
 export const channelUpdate = (payload: any) => {
   const setOrUpdateChannel = useChatStore.getState().setOrUpdateChannel

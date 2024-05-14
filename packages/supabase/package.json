@@ -11,7 +11,7 @@
     "stop": "dotenv -- supabase stop",
     "status": "dotenv -- supabase status",
     "db:reset": "dotenv -- supabase db reset",
-    "supabase:types": "dotenv -- npx supabase gen types typescript --local > ../web/src/types/supabase.ts"
+    "supabase:types": "dotenv -- npx supabase gen types typescript --local > ../webapp/types/supabase.ts"
   },
   "keywords": [],
   "author": "",

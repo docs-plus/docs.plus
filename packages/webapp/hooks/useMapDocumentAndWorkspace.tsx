@@ -8,12 +8,17 @@ const useMapDocumentAndWorkspace = (docMetadata: any, channels: any) => {
   const bulkSetChannels = useChatStore((state: any) => state.bulkSetChannels)
   const user = useAuthStore((state: any) => state.profile)
   const authLoading = useAuthStore((state) => state.loading)
+  const clearAndInitialChannels = useChatStore((state) => state.clearAndInitialChannels)
+
+  useEffect(() => {
+    if (!channels) return
+    clearAndInitialChannels(channels)
+  }, [channels])
 
   useEffect(() => {
     if (authLoading || setUpsertWorkspace) return
     const checkworkspace = async () => {
       setLoading(true)
-      bulkSetChannels(channels)
       setUpsertWorkspace = true
       setLoading(false)
     }

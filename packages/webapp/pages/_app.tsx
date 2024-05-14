@@ -5,6 +5,8 @@ import { useOnAuthStateChange } from '@hooks/useOnAuthStateChange'
 import { useCatchUserPresences } from '@hooks/useCatchUserPresences'
 import { useInitialSteps } from '@hooks/useInitialSteps'
 import { useBroadcastListner } from '@hooks/useBroadcastListner'
+import useServiceWorker from '@hooks/useServiceWorker'
+import { useHandleUserStatus } from '@hooks/useHanelUserStatus'
 
 import '../styles/styles.scss'
 import '../styles/globals.scss'
@@ -61,11 +63,12 @@ const Header = () => {
 
 export default function MyApp({ Component, pageProps }: any) {
   const isMobileInitial = pageProps.isMobile || false
-
+  useServiceWorker()
   useOnAuthStateChange()
   useCatchUserPresences()
-  useInitialSteps(isMobileInitial)
   useBroadcastListner()
+  useHandleUserStatus()
+  useInitialSteps(isMobileInitial)
 
   return (
     <div id="root">

@@ -2,8 +2,8 @@
 -- Description: Represents various channels in the application, similar to chat rooms or discussion groups.
 -- Channels have attributes like privacy settings, member limits, activity timestamps, and user interaction settings.
 CREATE TABLE public.channels (
-    id                              UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
-    workspace_id                    UUID NOT NULL REFERENCES public.workspaces,
+    id                              VARCHAR(36) DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
+    workspace_id                    VARCHAR(36) NOT NULL REFERENCES public.workspaces,
     created_at                      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL,
     updated_at                      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL,
     slug                            TEXT NOT NULL UNIQUE,

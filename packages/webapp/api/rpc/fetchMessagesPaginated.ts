@@ -1,10 +1,7 @@
 import { supabaseClient } from '@utils/supabase'
 import { Database } from '@types'
-import { PostgrestResponse } from '@supabase/postgrest-js'
 
 type TMsgPaginnatedArg = Database['public']['Functions']['get_channel_messages_paginated']['Args']
-type TMsgPaginnatedReturn =
-  Database['public']['Functions']['get_channel_messages_paginated']['Returns'][0]
 type TMsg = Database['public']['Tables']['messages']['Row']
 type Tmsg = {
   messages: TMsg[] | null

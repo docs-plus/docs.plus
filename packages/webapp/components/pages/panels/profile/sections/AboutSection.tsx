@@ -9,6 +9,7 @@ const AboutSection = () => {
   const handelUserDescription = (event: any) => {
     const description = event.target.value
     if (!user || !description) return
+    // @ts-ignore
     setProfile({ ...user, description })
   }
 
@@ -29,6 +30,7 @@ const AboutSection = () => {
       <TextAreaOvelapLabel
         label="About"
         className="mt-4"
+        // @ts-ignore
         value={user?.description}
         onChange={handelUserDescription}
       />

@@ -1,7 +1,7 @@
 -- Table: public.workspaces
 -- Description: Represents various workspaces. Each workspace can contain multiple channels.
 CREATE TABLE public.workspaces (
-    id                UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
+    id                VARCHAR(36) DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
     name              TEXT NOT NULL CHECK (length(name) <= 100), -- Workspace name, limited to 100 characters.
     slug              TEXT NOT NULL UNIQUE CHECK (length(slug) <= 100), -- Unique slug for the workspace, used for user-friendly URLs, limited to 100 characters.
     description       TEXT CHECK (length(description) <= 1000), -- Optional description of the workspace, limited to 1000 characters.

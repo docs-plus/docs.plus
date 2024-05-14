@@ -1,5 +1,6 @@
 import { useEffect, MutableRefObject, Dispatch, SetStateAction } from 'react'
 import { useChatStore } from '@stores'
+import { useChannel } from '../context/ChannelProvider'
 
 export const useCustomEventHandler = (
   channelUsersPresence: Map<string, any>,
@@ -7,7 +8,8 @@ export const useCustomEventHandler = (
   messageContainerRef: MutableRefObject<HTMLElement | null>,
   messagesEndRef: MutableRefObject<HTMLElement | null>
 ) => {
-  const { headingId: channelId } = useChatStore((state) => state.chatRoom)
+  const { channelId } = useChannel()
+
   const messagesByChannel = useChatStore((state: any) => state.messagesByChannel)
   const messages = messagesByChannel.get(channelId)
 

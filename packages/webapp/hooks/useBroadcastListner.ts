@@ -1,10 +1,20 @@
 import { useStore, useChatStore } from '@stores'
 import { useEffect } from 'react'
 
-type TPinnedMsg = {
+type TBroadcastPayload = {
   event: 'pinnedMessage'
   type: 'broadcast'
   payload: { actionType: 'pin' | 'unpin'; message: any }
+}
+
+type TTypeIndicator = {
+  event: 'pinnedMessage'
+  type: 'typingIndicator'
+  payload: {
+    activeChannelId: string
+    user: any
+    type: 'startTyping' | 'stopTyping'
+  }
 }
 
 export const useBroadcastListner = () => {
@@ -12,15 +22,29 @@ export const useBroadcastListner = () => {
   const addChannelPinnedMessage = useChatStore((state) => state.addChannelPinnedMessage)
   const removeChannelPinnedMessage = useChatStore((state) => state.removeChannelPinnedMessage)
 
+  const setTypingIndicator = useChatStore((state) => state.setTypingIndicator)
+  const removeTypingIndicator = useChatStore((state) => state.removeTypingIndicator)
+
   useEffect(() => {
     if (!broadcaster) return
-    broadcaster.on('broadcast', { event: 'pinnedMessage' }, ({ payload }: TPinnedMsg) => {
-      const message = payload.message
-      if (payload.actionType === 'pin') {
-        addChannelPinnedMessage(message.channel_id, message)
-      } else if (payload.actionType === 'unpin') {
-        removeChannelPinnedMessage(message.channel_id, message.id)
-      }
-    })
+    broadcaster
+      .on('broadcast', { event: 'pinnedMessage' }, ({ payload }: TBroadcastPayload) => {
+        const message = payload.message
+        const type = payload.actionType
+
+        if (type === 'pin') {
+          addChannelPinnedMessage(message.channel_id, message)
+        } else if (type === 'unpin') {
+          removeChannelPinnedMessage(message.channel_id, message.id)
+        }
+      })
+      .on('broadcast', { event: 'typingIndicator' }, (data: TTypeIndicator) => {
+        const payload = data.payload
+        if (payload.type === 'startTyping') {
+          setTypingIndicator(payload.activeChannelId, payload.user)
+        } else if (payload.type === 'stopTyping') {
+          removeTypingIndicator(payload.activeChannelId, payload.user)
+        }
+      })
   }, [broadcaster])
 }

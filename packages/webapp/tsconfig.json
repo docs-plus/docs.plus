@@ -22,6 +22,7 @@
       "@stores": ["stores/index.ts"],
       "@types": ["types/supabase.ts"],
       "@api": ["api/index.ts"],
+      "@toast": ["components/toast/index.ts"],
     },
     "allowJs": true,
     "skipLibCheck": true,
