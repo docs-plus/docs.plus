@@ -1,11 +1,11 @@
-import React from "react";
+import React from 'react'
 
 type CheckboxModalProps = {
-  id: string;
-  children?: React.ReactNode;
-  triggerRef: any;
-  onCheckboxChange?: any;
-};
+  id: string
+  children?: React.ReactNode
+  triggerRef: any
+  onCheckboxChange?: any
+}
 
 // Note the use of React.forwardRef here and the inclusion of ref in the function parameters
 export const ModalContainer = React.forwardRef<HTMLInputElement, CheckboxModalProps>(
@@ -28,11 +28,11 @@ export const ModalContainer = React.forwardRef<HTMLInputElement, CheckboxModalPr
           </label>
         </div>
       </div>
-    );
-  },
-);
+    )
+  }
+)
 
-ModalContainer.displayName = "ModalContainer";
+ModalContainer.displayName = 'ModalContainer'
 
 // Usage:
 

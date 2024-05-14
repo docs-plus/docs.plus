@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react'
 import { IoCloseOutline } from 'react-icons/io5'
 import { FaRegUser } from 'react-icons/fa'
 import { AiOutlineExclamationCircle } from 'react-icons/ai'
-import { useAuthStore, useStore, useChatStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 import { creatDirectMessageChannel } from '@api'
 import { useRouter } from 'next/router'
 

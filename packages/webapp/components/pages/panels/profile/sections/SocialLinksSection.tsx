@@ -75,7 +75,7 @@ const SocialLinksSection = () => {
         value={user?.twitter}
         onChange={handleTwitterChange}
       />
-      {twitterError && <p className="text-red-500 text-xs mt-2 font-semibold">{twitterError}</p>}
+      {twitterError && <p className="mt-2 text-xs font-semibold text-red-500">{twitterError}</p>}
       <InputOverlapLabel
         Icon={Facebook}
         label="Facebook"
@@ -83,7 +83,7 @@ const SocialLinksSection = () => {
         value={user?.facebook}
         onChange={handleFacebookChange}
       />
-      {facebookError && <p className="text-red-500 text-xs mt-2 font-semibold">{facebookError}</p>}
+      {facebookError && <p className="mt-2 text-xs font-semibold text-red-500">{facebookError}</p>}
       <InputOverlapLabel
         Icon={LinkAlt}
         label="Website"
@@ -91,7 +91,7 @@ const SocialLinksSection = () => {
         value={user?.website}
         onChange={handleWebsiteChange}
       />
-      {websiteError && <p className="text-red-500 text-xs mt-2 font-semibold">{websiteError}</p>}
+      {websiteError && <p className="mt-2 text-xs font-semibold text-red-500">{websiteError}</p>}
     </div>
   )
 }

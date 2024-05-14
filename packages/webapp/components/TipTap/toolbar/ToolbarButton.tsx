@@ -10,7 +10,7 @@ const ToolbarButton = React.forwardRef(
       <span ref={ref}>
         <Button
           className={twMerge(
-            'outline-none tooltip tooltip-bottom p-0 size-8 btn-sm btn-ghost',
+            'btn-ghost btn-sm tooltip tooltip-bottom size-8 p-0 outline-none',
             buttonClass,
             position
           )}

@@ -115,14 +115,14 @@ const Editor = () => {
 
   return (
     <>
-      <div className="toolbars w-full bg-white h-auto z-[9] sm:block fixed bottom-0 sm:relative">
+      <div className="toolbars fixed bottom-0 z-[9] h-auto w-full bg-white sm:relative sm:block">
         {!isMobile ? <Toolbar /> : isKeyboardOpen && <ToolbarMobile />}
       </div>
-      <div className="editor w-full h-full flex relative flex-row-reverse align-top justify-around ">
-        <div className="flex flex-col w-[78%] max-w-full relative align-top ">
+      <div className="editor relative flex size-full flex-row-reverse justify-around align-top ">
+        <div className="relative flex w-[78%] max-w-full flex-col align-top ">
           <div
             ref={editorWrapperRef}
-            className="editorWrapper h-full grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
+            className="editorWrapper flex h-full grow items-start justify-center overflow-y-auto border-t-0 p-0 sm:py-4"
             onScroll={!isMobile ? scrollHeadingSelection : undefined}>
             <EditorContent />
           </div>
@@ -137,14 +137,14 @@ const Editor = () => {
       </div>
       {isMobile && (
         <>
-          <div className="nd_modal hidden left w-full h-full fixed z-20 overflow-hidden">
+          <div className="nd_modal left fixed z-20 hidden size-full overflow-hidden">
             <TocModal />
           </div>
           <button
             onClick={toggleToolbar}
             className={`btn_bigBluePencil ${
-              !isKeyboardOpen ? 'block active' : 'hidden'
-            } w-14 h-14 z-10 outline-none fixed bottom-12 right-8 rounded-full drop-shadow-md flex align-middle items-center justify-center`}>
+              !isKeyboardOpen ? 'active block' : 'hidden'
+            } fixed bottom-12 right-8 z-10 flex size-14 items-center justify-center rounded-full align-middle outline-none drop-shadow-md`}>
             <Pencil size={25} />
           </button>
         </>

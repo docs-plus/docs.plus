@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { useStore, useChatStore } from '@stores'
+import { useChatStore } from '@stores'
 
 // Assuming 'startThreadMessage' has a type you can import, replace 'any' with that type
 type StartThreadMessageType = any // Use the appropriate type here

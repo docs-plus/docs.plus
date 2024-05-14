@@ -1,7 +1,7 @@
 import { twx, cn } from '@utils/index'
 import { IoCloseOutline } from 'react-icons/io5'
 import { RiPencilFill } from 'react-icons/ri'
-import { useStore, useChatStore } from '@stores'
+import { useChatStore } from '@stores'
 import { useChannel } from '../../context/ChannelProvider'
 
 type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: number }

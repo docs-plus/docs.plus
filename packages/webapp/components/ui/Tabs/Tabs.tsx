@@ -1,12 +1,4 @@
-import React, {
-  useState,
-  useContext,
-  createContext,
-  useRef,
-  useEffect,
-  useCallback,
-  use
-} from 'react'
+import React, { useState, useContext, createContext, useRef, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import styles from './Tabs.module.css'
 
@@ -121,7 +113,7 @@ function TabList({ children, ...props }: any) {
       className={`relative flex border-b border-gray-200 ${styles.tabList}`}
       {...props}>
       <div
-        className={`absolute bottom-1 rounded-md bg-docsy h-1 transition-all duration-300 ${styles.highlight}`}
+        className={`absolute bottom-1 h-1 rounded-md bg-docsy transition-all duration-300 ${styles.highlight}`}
         style={highlightStyle}
       />
       {children}

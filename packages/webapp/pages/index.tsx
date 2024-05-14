@@ -34,8 +34,8 @@ function Home({ hostname }: { hostname: string }) {
 
   if (authLoading) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <div className="max-w-5xl w-full flex items-center justify-center rounded-md relative">
+      <div className="flex size-full items-center justify-center">
+        <div className="relative flex w-full max-w-5xl items-center justify-center rounded-md">
           <span className="loading loading-spinner loading-lg"></span>
         </div>
       </div>
@@ -45,12 +45,12 @@ function Home({ hostname }: { hostname: string }) {
   return (
     <>
       <HeadSeo />
-      <div className="w-full h-full flex items-center justify-center bg-slate-100 p-4">
-        <Tabs defaultActiveTab="deck" className="max-w-5xl rounded-md relative">
+      <div className="flex size-full items-center justify-center bg-slate-100 p-4">
+        <Tabs defaultActiveTab="deck" className="relative max-w-5xl rounded-md">
           <TabList
             className={`${
               isAuthServiceAvailable ? 'flex' : 'hidden'
-            } bg-slate-200 rounded-t-md relative drop-shadow-md z-0 -bottom-1 `}>
+            } relative -bottom-1 z-0 rounded-t-md bg-slate-200 drop-shadow-md `}>
             <Tab name="deck" className="flex items-center ">
               <div className="tooltip tooltip-top" data-tip="docs.plus">
                 <DocsPlus size={26} />
@@ -72,12 +72,12 @@ function Home({ hostname }: { hostname: string }) {
                   alt={displayName}
                   width={22}
                   height={22}
-                  className="rounded-full drop-shadow border w-10 h-10"
+                  className="size-10 rounded-full border drop-shadow"
                 />
               </Tab>
             )}
           </TabList>
-          <TabPanels className="bg-white rounded-md shadow max-w-5xl relative z-10">
+          <TabPanels className="relative z-10 max-w-5xl rounded-md bg-white shadow">
             <TabLayout name="deck">
               <DeckPanel hostname={hostname} />
             </TabLayout>
@@ -87,7 +87,7 @@ function Home({ hostname }: { hostname: string }) {
               </TabLayout>
             )}
             {isAuthServiceAvailable && !user && (
-              <TabLayout name="sign-in" footer={false} className="sm:w-[28rem] w-full p-6 sm:p-6">
+              <TabLayout name="sign-in" footer={false} className="w-full p-6 sm:w-[28rem] sm:p-6">
                 <SignInPanel />
               </TabLayout>
             )}

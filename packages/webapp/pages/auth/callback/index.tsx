@@ -2,7 +2,7 @@ import { type CookieOptions, createServerClient, serialize } from '@supabase/ssr
 import { type GetServerSidePropsContext } from 'next'
 import Link from 'next/link'
 
-export default function page({}) {
+export default function page() {
   return (
     <div>
       <Link href="/">Home</Link>

@@ -47,7 +47,7 @@ const Toolbar = () => {
 
   return (
     <>
-      <div className="tiptap__toolbar space-x-1 editorButtons justify-between sm:justify-start flex flex-row items-center px-1 sm:px-4">
+      <div className="tiptap__toolbar editorButtons flex flex-row items-center justify-between space-x-1 px-1 sm:justify-start sm:px-4">
         {/* <ToolbarButton onClick={() => editor.chain().focus().undo().run()} editor={editor} type="undo">
         <Icon type="Undo" size="16" />
       </ToolbarButton>
@@ -153,7 +153,7 @@ const Toolbar = () => {
           <ClearMark fill="rgba(0,0,0,.7)" size={14} />
         </ToolbarButton>
 
-        <div className="!ml-auto flex align-baseline items-center">
+        <div className="!ml-auto flex items-center align-baseline">
           <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)">
             <Icon type="Printer" size={16} />
           </ToolbarButton>

@@ -11,19 +11,19 @@ function Custom500() {
   }
 
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-200 p-6">
-      <div className="max-w-lg w-full bg-white rounded-lg shadow-xl p-8 space-y-6">
+    <div className="flex h-screen items-center justify-center bg-gray-200 p-6">
+      <div className="w-full max-w-lg space-y-6 rounded-lg bg-white p-8 shadow-xl">
         <h1 className="text-3xl font-bold text-gray-800">Oops! Something went wrong.</h1>
-        <p className="text-red-600 text-lg">
+        <p className="text-lg text-red-600">
           {error || 'An unexpected error occurred. Please try again later.'}
         </p>
-        <div className="flex justify-between items-center">
-          <Link href="/" className="text-blue-600 hover:text-blue-800 transition duration-300">
+        <div className="flex items-center justify-between">
+          <Link href="/" className="text-blue-600 transition duration-300 hover:text-blue-800">
             Return to Home
           </Link>
           <button
             onClick={handleBack}
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            className="rounded bg-blue-500 px-4 py-2 font-bold text-white hover:bg-blue-700"
             // Replace false with a condition to check if the server is fixed
             disabled={false}>
             Go Back

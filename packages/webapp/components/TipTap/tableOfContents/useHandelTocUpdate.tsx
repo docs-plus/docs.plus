@@ -28,7 +28,7 @@ const useHandelTocUpdate = () => {
 
         if (offsetTop === 0) {
           headingId = '1'
-          let headingDetails = getHeadingDetails(headingId)
+          const headingDetails = getHeadingDetails(headingId)
           headingSection = headingDetails.headingSection
           offsetTop = headingDetails.offsetTop
         }

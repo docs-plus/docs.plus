@@ -16,7 +16,7 @@ const TabLayout = ({ name, children, className, footer }: TabLayoutProps) => {
     <TabPanel
       name={name}
       className={twMerge(
-        `flex flex-wrap sm:justify-center sm:m-auto p-2 sm:p-6 sm:py-6 pb-2 sm:pb-2`,
+        `flex flex-wrap p-2 pb-2 sm:m-auto sm:justify-center sm:p-6 sm:py-6 sm:pb-2`,
         className
       )}>
       <DashboardLayout footer={footer}>{children}</DashboardLayout>

@@ -26,7 +26,7 @@ const SelectBox = ({ options, value, onChange, placeholder, subOptions }: Select
   }
 
   function checkAndCloseDropDown(e: React.MouseEvent<HTMLDivElement>) {
-    let targetEl = e.currentTarget
+    const targetEl = e.currentTarget
     if (targetEl && targetEl.matches(':focus')) {
       setTimeout(function () {
         targetEl.blur()
@@ -39,7 +39,7 @@ const SelectBox = ({ options, value, onChange, placeholder, subOptions }: Select
       <div
         tabIndex={0}
         role="button"
-        className="btn btn-ghost btn-sm m-1 group font-normal"
+        className="group btn btn-ghost btn-sm m-1 font-normal"
         onMouseDown={checkAndCloseDropDown}>
         {placeholder || value?.label}
         <div className="group-focus:rotate-180">
@@ -48,8 +48,8 @@ const SelectBox = ({ options, value, onChange, placeholder, subOptions }: Select
       </div>
       <div
         tabIndex={0}
-        className="dropdown-content relative z-10 max-h-66 overflow-auto shadow rounded bg-base-100">
-        <ul className="flex flex-col menu p-2 w-40">
+        className="max-h-66 dropdown-content relative z-10 overflow-auto rounded bg-base-100 shadow">
+        <ul className="menu flex w-40 flex-col p-2">
           {options.map((option, index) => (
             <li
               key={index}

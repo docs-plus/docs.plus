@@ -13,7 +13,7 @@ function TabLayout({ name, children, className, footer }: any) {
     <TabPanel
       name={name}
       className={twMerge(
-        `flex flex-wrap sm:justify-center sm:m-auto p-2 sm:p-6 sm:py-6 pb-2 sm:pb-2`,
+        `flex flex-wrap p-2 pb-2 sm:m-auto sm:justify-center sm:p-6 sm:py-6 sm:pb-2`,
         className
       )}>
       <DashboardLayout footer={footer}>{children}</DashboardLayout>
@@ -25,10 +25,10 @@ const ControlCenter = ({ defaultTab }: any) => {
   const user = useAuthStore((state) => state.profile)
 
   return (
-    <div className="bg-slate-100 rounded-md drop-shadow">
+    <div className="rounded-md bg-slate-100 drop-shadow">
       <Tabs
         defaultActiveTab={user ? (defaultTab ? defaultTab : 'profile') : 'sign-in'}
-        className="max-w-5xl rounded-md relative">
+        className="relative max-w-5xl rounded-md">
         <TabList>
           {!user && (
             <Tab name="sign-in" className="">
@@ -42,9 +42,9 @@ const ControlCenter = ({ defaultTab }: any) => {
           )}
           {user && <Tab name="documents">Documents</Tab>}
         </TabList>
-        <TabPanels className="bg-white rounded-md max-w-5xl -top-1 relative z-10">
+        <TabPanels className="relative -top-1 z-10 max-w-5xl rounded-md bg-white">
           {!user && (
-            <TabLayout name="sign-in" footer={false} className="sm:w-[28rem] w-full p-6 sm:p-6">
+            <TabLayout name="sign-in" footer={false} className="w-full p-6 sm:w-[28rem] sm:p-6">
               <SignInPanel />
             </TabLayout>
           )}

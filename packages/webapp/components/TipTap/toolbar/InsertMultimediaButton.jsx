@@ -131,13 +131,13 @@ function HyperlinkForm({ onSubmit, editor }) {
 
   return (
     <form
-      className="bg-white border border-gray-100 flex flex-col p-2 w-96 rounded-md shadow-md z-50"
+      className="z-50 flex w-96 flex-col rounded-md border border-gray-100 bg-white p-2 shadow-md"
       onSubmit={(e) => {
         e.preventDefault()
         onSubmit(mediaURL, mediaType)
       }}>
       <div>
-        <div className="flex justify-center items-center mb-2 border-b pb-2">
+        <div className="mb-2 flex items-center justify-center border-b pb-2">
           {MediaTypes.map((type) => (
             <Button
               key={type}
@@ -146,12 +146,12 @@ function HyperlinkForm({ onSubmit, editor }) {
               iconFill={`${mediaType === type ? 'rgba(0,0,0,.9)' : 'rgba(0,0,0,.4)'}`}
               className={`${
                 mediaType === type ? 'bg-gray-200' : ''
-              } mr-1 cursor-pointer border-none hover:bg-gray-100 items-center justify-center flex`}
+              } mr-1 flex cursor-pointer items-center justify-center border-none hover:bg-gray-100`}
               onClick={() => setMediaType(type)}
             />
           ))}
         </div>
-        <div className="w-full flex justify-between items-center">
+        <div className="flex w-full items-center justify-between">
           <InputOverlapLabel
             className="w-8/12"
             label={`${mediaType} URL...`}
@@ -159,19 +159,19 @@ function HyperlinkForm({ onSubmit, editor }) {
             ref={inputRef}
             onChange={inputURLChange}
           />
-          <Button className="w-4/12 ml-2" onClick={() => onSubmit(mediaURL, mediaType)}>
+          <Button className="ml-2 w-4/12" onClick={() => onSubmit(mediaURL, mediaType)}>
             Insert
           </Button>
         </div>
       </div>
       <div>
-        <div className="flex items-center justify-center w-full mt-2 border-t pt-2">
+        <div className="mt-2 flex w-full items-center justify-center border-t pt-2">
           <label
             htmlFor="dropzone-file"
-            className="flex flex-col items-center justify-center w-full h-36 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 dark:hover:bg-bray-800 dark:bg-gray-700 hover:bg-gray-100 dark:border-gray-600 dark:hover:border-gray-500 dark:hover:bg-gray-600">
-            <div className="flex flex-col items-center justify-center pt-5 pb-6">
+            className="dark:hover:bg-bray-800 flex h-36 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:hover:border-gray-500 dark:hover:bg-gray-600">
+            <div className="flex flex-col items-center justify-center pb-6 pt-5">
               <svg
-                className="w-8 h-8 mb-4 text-gray-500 dark:text-gray-400"
+                className="mb-4 size-8 text-gray-500 dark:text-gray-400"
                 aria-hidden="true"
                 xmlns="http://www.w3.org/2000/svg"
                 fill="none"

@@ -10,5 +10,9 @@
   "printWidth": 100,
   "proseWrap": "preserve",
   "quoteProps": "as-needed",
-  "trailingComma": "none"
+  "trailingComma": "none",
+  "plugins": [
+    "prettier-plugin-tailwindcss"
+  ],
+  "tailwindConfig": "packages/webapp/tailwind.config.js"
 }

@@ -63,14 +63,14 @@ const ShareModal = ({ setIsOpen }: any) => {
   }
 
   return (
-    <div className=" p-4 pt-2 flex flex-col">
-      <div className="flex mb-6">
+    <div className=" flex flex-col p-4 pt-2">
+      <div className="mb-6 flex">
         <p className="text-2xl font-semibold ">Share</p>
         <button className="btn btn-circle btn-xs ml-auto" onClick={() => setIsOpen(false)}>
           <IoCloseSharp size={20} />
         </button>
       </div>
-      <div className="flex space-x-4 justify-around">
+      <div className="flex justify-around space-x-4">
         <button className="btn flex-1" onClick={() => handleShare('facebook')}>
           <Facebook />
         </button>
@@ -91,9 +91,9 @@ const ShareModal = ({ setIsOpen }: any) => {
         </button>
       </div>
 
-      <p className="font-semibold mt-6 mb-2">Page Link</p>
+      <p className="mb-2 mt-6 font-semibold">Page Link</p>
       <div className="flex  justify-between rounded-md" onClick={copyToClipboard}>
-        <label className="input input-bordered w-full flex items-center gap-2">
+        <label className="input input-bordered flex w-full items-center gap-2">
           <input type="text" className="grow" ref={urlRef} value={href} readOnly />
           <button className="">
             <FiCopy />

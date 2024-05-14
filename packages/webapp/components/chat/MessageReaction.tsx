@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react'
 import { twx, cn } from '@utils/index'
 import { MdOutlineAddReaction } from 'react-icons/md'
-import { useAuthStore, useStore, useChatStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 
 type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: number }
 

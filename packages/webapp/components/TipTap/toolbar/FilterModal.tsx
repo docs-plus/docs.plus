@@ -63,9 +63,9 @@ const FilterModal = ({ totalHeading = 0, className = '' }) => {
     return (
       <div className={containerClasses}>
         <p className="text-base font-bold">{name}</p>
-        <div className="flex w-full flex-row align-middle justify-between items-center">
-          <p className="text-gray-500 text-sm">{description}</p>
-          <div className="border-l flex-col h-full py-2 px-3 ml-2 mr-6">
+        <div className="flex w-full flex-row items-center justify-between align-middle">
+          <p className="text-sm text-gray-500">{description}</p>
+          <div className="ml-2 mr-6 h-full flex-col border-l px-3 py-2">
             <Toggle id={value} checked={checked} onChange={onChange} />
           </div>
         </div>
@@ -75,11 +75,11 @@ const FilterModal = ({ totalHeading = 0, className = '' }) => {
 
   return (
     <div className={twMerge(' gearModal text-neutral', className)}>
-      <div className="flex align-middle items-center">
-        <p className="font-medium  pb-1">Filter:</p>
+      <div className="flex items-center align-middle">
+        <p className="pb-1  font-medium">Filter:</p>
       </div>
       <hr />
-      <div className="content pt-2 mt-4 flex align-middle justify-between pb-2 border-b">
+      <div className="content mt-4 flex justify-between border-b py-2 align-middle">
         <InputOverlapLabel
           className="h-10"
           id="filterSearchBox"
@@ -89,7 +89,7 @@ const FilterModal = ({ totalHeading = 0, className = '' }) => {
           datalist={filteredHeadings.map((heading: any) => heading.textContent)}
           onChange={(e: any) => setFilterInput(e.target.value)}
         />
-        <p className="mx-2 text-xs  text-center">
+        <p className="mx-2 text-center  text-xs">
           Found <b>{totalSearch}</b> matches out of <b>{totalHeadings}</b> headings
         </p>
       </div>
@@ -99,7 +99,7 @@ const FilterModal = ({ totalHeading = 0, className = '' }) => {
         checked={filterAlgorithm}
         onChange={handelFilterAlgorithm}
       />
-      <Button onClick={handleApplySearch} className="btn-primary btn-sm mt-6 btn-block text-white">
+      <Button onClick={handleApplySearch} className="btn-primary btn-sm btn-block mt-6 text-white">
         <span>Apply</span>
       </Button>
     </div>

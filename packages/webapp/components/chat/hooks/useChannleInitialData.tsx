@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useStore, useChatStore, useAuthStore } from '@stores'
+import { useChatStore, useAuthStore } from '@stores'
 import { groupedMessages } from '@utils/index'
 import { fetchChannelInitialData, upsertChannel } from '@api'
 import { useChannel } from '../context/ChannelProvider'
@@ -30,7 +30,7 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
     if (!currentChannel && workspaceId) {
       let newChannelId = channelId
       if ('' + newChannelId === '1') newChannelId = `1_${workspaceId}`
-      const data = await upsertChannel({
+      await upsertChannel({
         id: newChannelId,
         workspace_id: workspaceId,
         created_by: user.id,

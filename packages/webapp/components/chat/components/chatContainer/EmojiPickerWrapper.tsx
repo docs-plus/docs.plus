@@ -1,6 +1,6 @@
-import React from "react";
-import data from "@emoji-mart/data/sets/14/native.json";
-import Picker from "@emoji-mart/react";
+import React from 'react'
+import data from '@emoji-mart/data/sets/14/native.json'
+import Picker from '@emoji-mart/react'
 
 export const EmojiPickerWrapper = React.forwardRef(
   ({ isEmojiBoxOpen, emojiPickerPosition, closeEmojiPicker, handleEmojiSelect }: any, ref: any) => {
@@ -11,11 +11,10 @@ export const EmojiPickerWrapper = React.forwardRef(
         style={{
           top: `${emojiPickerPosition.top}px`,
           left: `${emojiPickerPosition.left}px`,
-          visibility: isEmojiBoxOpen ? "visible" : "hidden",
-          zIndex: 999,
+          visibility: isEmojiBoxOpen ? 'visible' : 'hidden',
+          zIndex: 999
         }}
-        ref={ref}
-      >
+        ref={ref}>
         <Picker
           data={data}
           emojiVersion="14"
@@ -24,8 +23,8 @@ export const EmojiPickerWrapper = React.forwardRef(
           onEmojiSelect={handleEmojiSelect}
         />
       </div>
-    );
-  },
-);
+    )
+  }
+)
 
-EmojiPickerWrapper.displayName = "EmojiPickerWrapper";
+EmojiPickerWrapper.displayName = 'EmojiPickerWrapper'

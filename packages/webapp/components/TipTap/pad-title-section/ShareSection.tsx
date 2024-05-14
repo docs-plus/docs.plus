@@ -9,7 +9,7 @@ const ShareModalSection = () => {
       <DialogTrigger asChild={true}>
         <Button
           Icon={PrivateShare}
-          className="hover:bg-indigo-500 transition-all bg-docsy hidden sm:flex mt-0 drop-shadow-sm font-light ml-6 text-white w-28">
+          className="ml-6 mt-0 hidden w-28 bg-docsy font-light text-white drop-shadow-sm transition-all hover:bg-indigo-500 sm:flex">
           Share
         </Button>
       </DialogTrigger>

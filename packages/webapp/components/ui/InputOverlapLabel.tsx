@@ -56,7 +56,7 @@ const InputOverlapLabel = forwardRef(
           onChange={onChange}
           placeholder=" "
           list={datalist.length > 0 ? `${id}-datalist` : undefined}
-          className="block p-2 pt-4 w-full text-sm text-gray-900 bg-transparent rounded-lg border-1 border-gray-300 appearance-none dark:text-white dark:border-gray-600 dark:focus:border-blue-500 disabled:rounded-none disabled:bg-slate-200 focus:outline-none focus:ring-0 focus:border-blue-600 peer"
+          className="border-1 peer block w-full appearance-none rounded-lg border-gray-300 bg-transparent p-2 pt-4 text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 disabled:rounded-none disabled:bg-slate-200 dark:border-gray-600 dark:text-white dark:focus:border-blue-500"
           {...props}
         />
 

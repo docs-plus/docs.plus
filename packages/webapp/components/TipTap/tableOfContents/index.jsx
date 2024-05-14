@@ -9,33 +9,6 @@ import useHandelTocUpdate from './useHandelTocUpdate'
 import * as toast from '@components/toast'
 import AvatarStack from '@components/AvatarStack'
 
-const Aavatart = ({ className }) => {
-  return (
-    <div className={`avatar-group -space-x-4 rtl:space-x-reverse ${className}`}>
-      <div className="avatar border">
-        <div className="w-6">
-          <img src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg" />
-        </div>
-      </div>
-      <div className="avatar border">
-        <div className="w-6">
-          <img src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg" />
-        </div>
-      </div>
-      {/* <div className="avatar border">
-        <div className="w-6">
-          <img src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg" />
-        </div>
-      </div> */}
-      <div className="avatar placeholder border">
-        <div className="w-6 bg-neutral text-neutral-content text-sm">
-          <span>+9</span>
-        </div>
-      </div>
-    </div>
-  )
-}
-
 const RenderToc = ({ children, item, renderTocs }) => {
   const router = useRouter()
   const { query } = router
@@ -125,7 +98,7 @@ const RenderToc = ({ children, item, renderTocs }) => {
   return (
     <li
       key={item.id}
-      className={`toc__item relative toc__item--${item.level} ${item.open ? '' : 'closed'} `}
+      className={`toc__item toc__item-- relative${item.level} ${item.open ? '' : 'closed'} `}
       data-id={item.id}
       data-offsettop={item.offsetTop}>
       <a
@@ -133,7 +106,7 @@ const RenderToc = ({ children, item, renderTocs }) => {
         onClick={(e) => handelScroll2Header(e, editor, setActiveHeading)}
         href={`?${item.id}`}
         data-id={item.id}>
-        <span className="sm:line-clamp-3 sm:hover:line-clamp-5 toc__link">{item.text}</span>
+        <span className="toc__link sm:line-clamp-3 sm:hover:line-clamp-5">{item.text}</span>
         <span
           className={`btnFold tooltip tooltip-top  ${item.open ? 'opened' : 'closed'}`}
           onClick={() => toggleHeadingSection(item)}
@@ -141,16 +114,16 @@ const RenderToc = ({ children, item, renderTocs }) => {
           <CaretRight size={17} fill="#363636" />
         </span>
         <span
-          className="btn_chat ml-auto tooltip relative tooltip-top"
+          className="btn_chat tooltip tooltip-top relative ml-auto"
           onClick={() => openChatContainerHandler(item)}
           data-tip="Chat Room">
           {unreadMessage > 0 && (
-            <div className="badge badge-sm p-1 badge-accent absolute scale-90 -right-[12px] z-[1] -top-[6px]  shadow border">
+            <div className="badge badge-accent badge-sm absolute -right-[12px] -top-[6px] z-[1] scale-90 border  p-1 shadow">
               {unreadMessage}
             </div>
           )}
           <ChatLeft
-            className={`btnChat ${unreadMessage > 0 ? '!opacity-100' : 'opacity-0'} ${headingId === item.id && '!opacity-100 fill-docsy'} transition-all group-hover:fill-docsy hover:fill-indigo-900 cursor-pointer`}
+            className={`btnChat ${unreadMessage > 0 ? '!opacity-100' : 'opacity-0'} ${headingId === item.id && 'fill-docsy !opacity-100'} cursor-pointer transition-all hover:fill-indigo-900 group-hover:fill-docsy`}
             size={18}
           />
         </span>

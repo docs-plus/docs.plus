@@ -20,8 +20,8 @@ const SignInPanel = () => {
           Unleash the potential of teamwork and knowledge sharing.
         </p>
       </div> */}
-      <div className="w-full flex justify-center items-center">
-        <SignInForm className="sm:w-[25rem] w-full flex flex-col" />
+      <div className="flex w-full items-center justify-center">
+        <SignInForm className="flex w-full flex-col sm:w-[25rem]" />
       </div>
     </>
   )

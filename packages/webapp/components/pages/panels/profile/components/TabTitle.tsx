@@ -4,7 +4,7 @@ const TabTitle = ({ children, className }: any) => {
   return (
     <h2
       className={twMerge(
-        `text-2xl font-bold pb-2 pl-4 border-b antialiased hover:subpixel-antialiased`,
+        `border-b pb-2 pl-4 text-2xl font-bold antialiased hover:subpixel-antialiased`,
         className
       )}>
       {children}

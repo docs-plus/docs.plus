@@ -18,10 +18,10 @@ const ChangeEmailSection = ({
   loading,
   setLoading
 }) => (
-  <div className="border-l h-full">
+  <div className="h-full border-l">
     <TabTitle className="flex">
       <button
-        className="rounded-md w-7 h-7 flex items-center justify-center mr-4 hover:bg-slate-200 transition-all"
+        className="mr-4 flex size-7 items-center justify-center rounded-md transition-all hover:bg-slate-200"
         onClick={() => setLoading(false)}>
         <AngleSmallLeft size={24} className="" />
       </button>
@@ -38,7 +38,7 @@ const ChangeEmailSection = ({
           onChange={handleEmailChange}
         />
         {emailError}
-        {emailError && <p className="text-red-500 text-xs mt-2 font-semibold">{emailError}</p>}
+        {emailError && <p className="mt-2 text-xs font-semibold text-red-500">{emailError}</p>}
       </div>
       <Button className="mt-6 w-40" onClick={saveNewEmail} loading={loading}>
         Save changes
@@ -48,7 +48,7 @@ const ChangeEmailSection = ({
 )
 
 const SecuritySection = ({ email, loading, acceptNewEmail, setLoading }) => (
-  <div className="border-l h-full">
+  <div className="h-full border-l">
     <TabTitle>Security</TabTitle>
     <TabSection
       name="Account email"
@@ -69,7 +69,7 @@ const SecuritySection = ({ email, loading, acceptNewEmail, setLoading }) => (
         </Button>
       )}
       {acceptNewEmail && (
-        <p className="mt-4 bg-gray-100 flex p-3 pt-4 text-sm text-gray-500 rounded drop-shadow-md">
+        <p className="mt-4 flex rounded bg-gray-100 p-3 pt-4 text-sm text-gray-500 drop-shadow-md">
           <span className="mr-2">
             <Sparkles fill="#888" size={21} />
           </span>

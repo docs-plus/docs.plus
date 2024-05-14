@@ -5,7 +5,7 @@ import { useStore } from '@stores'
 
 const CloseButton = ({ onClick }: any) => (
   <button onClick={onClick}>
-    <CloseIcon className="feather feather-x cursor-pointer hover:text-indigo-400 rounded-full w-4 h-4 ml-2" />
+    <CloseIcon className="feather feather-x ml-2 size-4 cursor-pointer rounded-full hover:text-indigo-400" />
   </button>
 )
 
@@ -27,12 +27,12 @@ const Chip = ({ type, text, onMouseEnter, onMouseLeave }: any) => {
   return (
     <div
       className={twMerge(
-        `flex justify-center items-center m-1 font-medium py-1 px-2 bg-white rounded-md border cursor-pointer`,
+        `m-1 flex cursor-pointer items-center justify-center rounded-md border bg-white px-2 py-1 font-medium`,
         colorMap[type as keyof typeof colorMap]
       )}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}>
-      <div className="text-xs font-normal leading-none max-w-full flex-initial">{text}</div>
+      <div className="max-w-full flex-initial text-xs font-normal leading-none">{text}</div>
       <div className="flex flex-auto flex-row-reverse">
         <CloseButton onClick={() => removeFilter(text)} />
       </div>
@@ -72,7 +72,7 @@ const FilterBar = () => {
   }
 
   return (
-    <div className="flex align-middle items-center">
+    <div className="flex items-center align-middle">
       {sortedSlugs.map((slug: any, index: number) => (
         <Chip
           key={index}

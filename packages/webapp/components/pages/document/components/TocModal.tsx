@@ -47,30 +47,28 @@ const TocModal = () => {
       <div
         onTouchStart={closeLeftSideModal}
         onClick={closeLeftSideModal}
-        className="modalBg h-full w-full bg-black opacity-40 absolute top-0 left-0 z-0"></div>
-      <div className="modalWrapper relative h-full z-10 bg-white w-10/12 overflow-hidden ">
-        <div className="text-blue-600 py-3 flex fixed top-0 w-full border-b bg-white align-middle justify-center ">
+        className="modalBg absolute left-0 top-0 z-0 size-full bg-black opacity-40"></div>
+      <div className="modalWrapper relative z-10 h-full w-10/12 overflow-hidden bg-white ">
+        <div className="fixed top-0 flex w-full justify-center border-b bg-white py-3 align-middle text-blue-600 ">
           <Link
             href="/"
-            className="w-8 h-8 flex align-middle justify-center text-black ml-1 outline-0">
+            className="ml-1 flex size-8 justify-center align-middle text-black outline-0">
             <DocsPlus size={70} />
           </Link>
-          <DocTitle className="w-8/12 overflow-hidden mt-0 " />
-          <div className="w-4/12 flex justify-end items-center flex-row ml-auto mr-3">
-            <button
-              onClick={openFilterModal}
-              className="btn_openFilterModal w-6 h-6 ml-1 outline-0">
+          <DocTitle className="mt-0 w-8/12 overflow-hidden " />
+          <div className="ml-auto mr-3 flex w-4/12 flex-row items-center justify-end">
+            <button onClick={openFilterModal} className="btn_openFilterModal ml-1 size-6 outline-0">
               <Filter fill="rgba(0,0,0,.7)" />
             </button>
             <button
               onTouchStart={closeLeftSideModal}
               onClick={closeLeftSideModal}
-              className="w-6 h-6 ml-2 rounded-full bg-slate-200 text-black outline-0">
+              className="ml-2 size-6 rounded-full bg-slate-200 text-black outline-0">
               X
             </button>
           </div>
         </div>
-        <div className="h-full mt-16 pb-16 overflow-hidden hover:overflow-auto">
+        <div className="mt-16 h-full overflow-hidden pb-16 hover:overflow-auto">
           <TOC editor={editor} />
         </div>
       </div>

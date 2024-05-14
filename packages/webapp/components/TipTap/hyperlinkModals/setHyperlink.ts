@@ -17,7 +17,7 @@ export default function setHyperlink(options: setHyperlinkModalOptions) {
   if (!tooltip) tooltip = new Tooltip({ ...options, view: options.editor.view })
 
   // Initialize the tooltip
-  let { tippyModal } = tooltip.init()
+  const { tippyModal } = tooltip.init()
 
   const hyperlinkLinkModal = document.createElement('div')
   const buttonsWrapper = document.createElement('div')

@@ -31,7 +31,7 @@ const ReadOnlyIndicator = ({ className }: any) => {
     <>
       <div className={classes}>
         <PenSlash size={13} fill="#ccc" />
-        <p className="font-bold sm:flex hidden ml-3 text-xs antialiased">Read-only</p>
+        <p className="ml-3 hidden text-xs font-bold antialiased sm:flex">Read-only</p>
       </div>
     </>
   )

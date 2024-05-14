@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { useChatStore, useStore } from '@stores'
+import { useChatStore } from '@stores'
 
 const maxDisplayedUsers = 3
 
