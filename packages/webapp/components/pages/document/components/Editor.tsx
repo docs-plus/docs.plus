@@ -118,8 +118,8 @@ const Editor = () => {
       <div className="toolbars w-full bg-white h-auto z-[9] sm:block fixed bottom-0 sm:relative">
         {!isMobile ? <Toolbar /> : isKeyboardOpen && <ToolbarMobile />}
       </div>
-      <div className="editor w-full h-full flex relative flex-row-reverse align-top ">
-        <div className="flex flex-col w-9/12 relative align-top ">
+      <div className="editor w-full h-full flex relative flex-row-reverse align-top justify-around ">
+        <div className="flex flex-col w-[78%] max-w-full relative align-top ">
           <div
             ref={editorWrapperRef}
             className="editorWrapper h-full grow flex items-start justify-center overflow-y-auto p-0 border-t-0 sm:py-4"
@@ -130,7 +130,7 @@ const Editor = () => {
         </div>
         {!isMobile && (
           <div
-            className={`${chatRoom.headingId ? 'border-r border-gray-200 dark:border-gray-700' : ''} tableOfContents h-full max-h-full w-3/12`}>
+            className={`${chatRoom.headingId ? 'border-r border-gray-200 dark:border-gray-700' : ''} tableOfContents h-full max-h-full w-[22%]`}>
             <TOC />
           </div>
         )}

@@ -30,8 +30,6 @@ interface IChatroomStore {
   destroyChatRoom: () => void
   setOrUpdateChatPannelHeight: (height: number) => void
   setOrUpdateChatRoom: (key: keyof TChatRoom, value: any) => void
-  setReplayMessageMemory: (message: any) => void
-  setEditeMessageMemory: (message: any) => void
 }
 
 const getWorkspaceId = (): string => {
@@ -64,18 +62,6 @@ const chatRoom = immer<IChatroomStore>((set) => ({
     userPickingEmoji: undefined,
     replayMessageMemory: undefined,
     editeMessageMemory: undefined
-  },
-
-  setReplayMessageMemory: (message) => {
-    set((state) => {
-      state.chatRoom.replayMessageMemory = message
-    })
-  },
-
-  setEditeMessageMemory: (message) => {
-    set((state) => {
-      state.chatRoom.editeMessageMemory = message
-    })
   },
 
   setChatRoom: (headingId, documentId, headingPath, user) => {

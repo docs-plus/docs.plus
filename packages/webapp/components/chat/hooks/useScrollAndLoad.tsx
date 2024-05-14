@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { useChatStore } from '@stores'
-
+import { useChannel } from '../context/ChannelProvider'
 const SCROLL_TIMEOUT_DELAY = 100
 
 // If the type of messages is different, adjust the Map type accordingly.
@@ -9,13 +9,13 @@ export const useScrollAndLoad = (
   messageContainerRef: any,
   msgLength: number
 ) => {
+  const { channelId } = useChannel()
+
   const [loading, setLoading] = useState<boolean>(msgLength === 0 ? false : true)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
-  const {
-    headingId: channelId,
-    documentId: workspaceId,
-    userPickingEmoji
-  } = useChatStore((state) => state.chatRoom)
+
+  const channelSettings = useChatStore((state) => state.workspaceSettings.channels.get(channelId))
+  const { userPickingEmoji, unreadMessage, lastReadMessageId } = channelSettings || {}
 
   const messagesByChannel = useChatStore((state: any) => state.messagesByChannel)
   const messages = messagesByChannel.get(channelId)
@@ -23,15 +23,35 @@ export const useScrollAndLoad = (
   const scrollToBottom = useCallback(
     (options: ScrollIntoViewOptions = {}) => {
       if (userPickingEmoji) return
+
       if (messagesEndRef.current) {
         if (options.behavior === 'smooth') {
-          messagesEndRef.current.scrollIntoView({ behavior: 'smooth', block: 'end', inline: 'end' })
+          messagesEndRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'end'
+          })
         } else {
-          messagesEndRef.current.scrollIntoView(false)
+          let findLastMsg = true
+          messageContainerRef?.current?.childNodes?.forEach((element: HTMLElement) => {
+            if ('msgId' in element && element.msgId === lastReadMessageId) {
+              element.scrollIntoView({
+                block: 'center'
+              })
+              findLastMsg = false
+              setLoading(false)
+              return
+            }
+          })
+          if (findLastMsg) {
+            messageContainerRef?.current?.lastChild.scrollIntoView(false)
+            findLastMsg = false
+          }
         }
+      } else {
+        messageContainerRef?.current?.lastChild.scrollIntoView(false)
       }
     },
-    [messagesEndRef]
+    [messageContainerRef, unreadMessage, lastReadMessageId]
   )
 
   const checkIfScrolledToBottom = () => {
@@ -62,22 +82,23 @@ export const useScrollAndLoad = (
       const distanceToBottom = scrollHeight - scrollTop - clientHeight
 
       // Consider the user close to the bottom if they are within 100px of the bottom.
-      return distanceToBottom < 200
+      return distanceToBottom < 100
     }
 
     // Decide whether to scroll to the bottom based on loading state and user's position.
     const handleScrollToBottom = () => {
+      if (initialMessagesLoaded) return
       if (loading) {
         // If still loading, just scroll to bottom without smooth behavior.
         scrollToBottom()
       } else if (isUserCloseToBottom()) {
         // If not loading and user is close to the bottom, scroll smoothly.
-        scrollToBottom({ behavior: 'smooth', block: 'end', inline: 'end' })
+        scrollToBottom({ behavior: 'smooth' })
       }
     }
 
     // Use a timer to defer scrolling until the new messages are rendered.
-    const timer = setTimeout(handleScrollToBottom, 100)
+    const timer = setTimeout(handleScrollToBottom, 300)
 
     return () => clearTimeout(timer)
   }, [messages, initialMessagesLoaded, loading, channelId])
@@ -92,6 +113,7 @@ export const useScrollAndLoad = (
       const { scrollTop, scrollHeight, clientHeight } = container
 
       container.addEventListener('scroll', checkIfScrolledToBottom)
+      checkIfScrolledToBottom()
 
       // If the user is scrolled to the top of the container, load more messages.
       if (

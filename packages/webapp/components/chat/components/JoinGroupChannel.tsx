@@ -1,31 +1,34 @@
-/* eslint-disable no-use-before-define */
-// @ts-nocheck
-
 import { useCallback } from 'react'
-import { useChatStore, useAuthStore } from '@stores'
+import { useStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 import { join2Channel } from '@api'
 import { useApi } from '@hooks/useApi'
+import { useChannel } from '../context/ChannelProvider'
 
 export default function JoinGroupChannel() {
-  const { headingId: channelId } = useChatStore((state) => state.chatRoom)
+  const { channelId } = useChannel()
 
   const user = useAuthStore((state) => state.profile)
   const { loading, request: request2JoinChannel } = useApi(join2Channel, null, false)
-  // const setWorkspaceSetting = useChatStore((state: any) => state.setWorkspaceSetting)
   const setOrUpdateChannel = useChatStore((state) => state.setOrUpdateChannel)
   const channel = useChatStore((state) => state.channels.get(channelId))
+  const setWorkspaceChannelSetting = useChatStore((state: any) => state.setWorkspaceChannelSetting)
 
   // TODO: move to api layer
   const joinToChannel = useCallback(async () => {
-    if (!channel) return
+    if (!channelId) return
     try {
       const { error, data } = await request2JoinChannel({
         channel_id: channelId,
         member_id: user?.id
       })
+
       if (error) console.error(error)
-      // setWorkspaceSetting('isUserChannelMember', true)
-      setOrUpdateChannel(channelId, { ...channel, member_count: (channel?.member_count ?? 0) + 1 })
+      setWorkspaceChannelSetting(channelId, 'isUserChannelMember', true)
+      setOrUpdateChannel(channelId, {
+        ...data.channel,
+        member_count: (channel?.member_count ?? 0) + 1
+      })
     } catch (error) {
       console.error(error)
     }

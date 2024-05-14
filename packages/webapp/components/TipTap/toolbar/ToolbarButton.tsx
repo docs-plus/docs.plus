@@ -1,5 +1,6 @@
 import React from 'react'
 import Button from '@components/ui/Button'
+import { twMerge } from 'tailwind-merge'
 
 const ToolbarButton = React.forwardRef(
   ({ type, editor, onClick, children, tooltip, position }: any, ref: any) => {
@@ -8,9 +9,11 @@ const ToolbarButton = React.forwardRef(
     return (
       <span ref={ref}>
         <Button
-          className={
-            buttonClass + 'outline-none tooltip tooltip-bottom p-0 size-8 btn-sm btn-ghost'
-          }
+          className={twMerge(
+            'outline-none tooltip tooltip-bottom p-0 size-8 btn-sm btn-ghost',
+            buttonClass,
+            position
+          )}
           onClick={onClick}
           data-tip={tooltip}>
           {children}

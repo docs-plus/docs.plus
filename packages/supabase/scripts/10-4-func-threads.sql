@@ -30,7 +30,7 @@ CREATE OR REPLACE FUNCTION create_thread_message(
     p_content TEXT,
     p_html TEXT,
     p_thread_id UUID,
-    p_workspace_id UUID
+    p_workspace_id VARCHAR(36)
 )
 RETURNS VOID
 AS $$

@@ -1,22 +1,16 @@
 import { immer } from 'zustand/middleware/immer'
 import { Database } from '@types'
-import { useStore } from '@stores'
 
-export type TChannel = Database['public']['Tables']['channels']['Row'] & {
-  member_count: number | null
-}
+export type TChannel = Database['public']['Tables']['channels']['Row']
 
 export interface IChannelStore {
   channels: Map<string, TChannel>
   bulkSetChannels: (channels: TChannel[]) => void
   clearAndInitialChannels: (channels: TChannel[]) => void
   setOrUpdateChannel: (channelId: string, channelData: TChannel) => void
+  updateChannelRow: (channelId: string, channelData: TChannel) => void
   removeChannel: (channelId: string) => void
   clearChannels: () => void
-}
-
-const getWorkspaceId = () => {
-  return useStore.getState().settings.workspaceId
 }
 
 const channelsStore = immer<IChannelStore>((set) => ({
@@ -33,20 +27,32 @@ const channelsStore = immer<IChannelStore>((set) => ({
   },
 
   setOrUpdateChannel: (channelId, channelData) => {
-    let newChannelId: string = channelId
-    if (+newChannelId === 1) newChannelId = `1_${getWorkspaceId()}`
     set((state) => {
       // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
-      state.channels.set(newChannelId, channelData)
+      state.channels.set(channelId, {
+        ...state.channels.get(channelId),
+        ...channelData
+      })
+    })
+  },
+
+  updateChannelRow: (channelId, channelData) => {
+    set((state) => {
+      const channel = state.channels.get(channelId)
+      if (!channel) return
+
+      state.channels.set(channelId, {
+        ...channel,
+        ...channelData,
+        id: channel.id
+      })
     })
   },
 
   removeChannel: (channelId) => {
-    let newChannelId: string = channelId
-    if (+newChannelId === 1) newChannelId = `1_${getWorkspaceId()}`
     set((state) => {
-      state.channels.delete(newChannelId)
+      state.channels.delete(channelId)
     })
   },
 

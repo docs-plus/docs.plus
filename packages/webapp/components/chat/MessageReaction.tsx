@@ -1,7 +1,7 @@
 import React, { useCallback } from 'react'
-import { twx, cn } from '@utils/twx'
+import { twx, cn } from '@utils/index'
 import { MdOutlineAddReaction } from 'react-icons/md'
-import { useAuthStore } from '@stores'
+import { useAuthStore, useStore, useChatStore } from '@stores'
 
 type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: number }
 
@@ -14,7 +14,10 @@ const IconButton = twx.button<BtnIcon>((prop) =>
 )
 
 export default function MessageReaction({ message }: any) {
-  const user = useAuthStore.use.profile()
+  const user = useAuthStore((state: any) => state.profile)
+  const member = useChatStore((state) => state.channelMembers.get(message.channel_id))
+
+  // Allow users who are members of the channel to react to the message.
 
   const openEmojiPicker = useCallback(
     (clickEvent: any) => {
@@ -26,11 +29,13 @@ export default function MessageReaction({ message }: any) {
     [message]
   )
 
+  if (user && !member?.get(user?.id)) return null
+
   return (
     <div
-      className={`dropdown dropdown-end dropdown-bottom absolute top-[50%] translate-y-[-50%] ${
-        message?.user_details?.id === user?.id ? 'dropdown-left -left-4' : 'dropdown-right -right-4'
-      } hidden group-hover:block`}>
+      className={`dropdown dropdown-end dropdown-bottom absolute bottom-1 ${
+        message?.user_details?.id === user?.id ? 'dropdown-left -left-5' : 'dropdown-right -right-7'
+      } hidden group-hover/msgcard:block`}>
       <IconButton onClick={openEmojiPicker}>
         <MdOutlineAddReaction size={24} />
       </IconButton>

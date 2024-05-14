@@ -1,46 +1,122 @@
-import { immer } from "zustand/middleware/immer";
+import { immer } from 'zustand/middleware/immer'
+
+type TChannelSettings = {
+  channelId?: string | null
+  channelInfo?: any
+  isUserChannelMember?: boolean
+  isUserChannelOwner?: boolean
+  isUserChannelAdmin?: boolean
+  userPickingEmoji?: boolean
+  replayMessageMemory?: any
+  editMessageMemory?: any
+  forwardMessageMemory?: any
+  unreadMessage?: boolean
+  scrollPage?: number
+  scrollPageOffset?: number
+  lastReadMessageId?: string | null
+  lastReadMessageTimestamp?: Date
+  totalMsgSinceLastRead?: number
+  totalMsgSincLastRead?: number
+}
 
 type WorkspaceSettings = {
-  workspaceId?: string | null | undefined;
-  channelId?: string | null | undefined;
-  channelInfo?: any;
-  isUserChannelMember?: boolean;
-  isUserChannelOwner?: boolean;
-  isUserChannelAdmin?: boolean;
-  workspaceBroadcaster?: any;
-  userPickingEmoji?: boolean;
-};
+  workspaceId?: string
+  workspaceBroadcaster?: any
+  activeChannelId?: string // we use this id for typing indicators
+  typingIndicators: { [key: string]: Map<string, any> }
+  channels: Map<string, TChannelSettings>
+}
 
 export interface IWorkspaceSettingsStore {
-  workspaceSettings: WorkspaceSettings;
-  setWorkspaceSetting: (key: string, value: any) => void;
-  setWorkspaceSettings: (settings: WorkspaceSettings) => void;
+  workspaceSettings: WorkspaceSettings
+  setWorkspaceChannelSettings: (channelId: string, value: TChannelSettings) => void
+  setWorkspaceChannelSetting: (channelId: string, key: keyof TChannelSettings, value: any) => void
+  setWorkspaceSetting: (key: keyof WorkspaceSettings, value: any) => void
+  setWorkspaceSettings: (settings: WorkspaceSettings) => void
+  setReplayMessageMemory: (channelId: string, message: any) => void
+  setEditMessageMemory: (channelId: string, message: any) => void
+  setForwardMessageMemory: (channelId: string, message: any) => void
+  setTypingIndicator: (channelId: string, user: any) => void
+  removeTypingIndicator: (channelId: string, user: any) => void
 }
 
 const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
   workspaceSettings: {
-    workspaceId: null,
-    channelId: null,
-    channelInfo: {},
-    isUserChannelMember: false,
-    isUserChannelOwner: false,
-    isUserChannelAdmin: false,
-    userPickingEmoji: false,
+    workspaceId: undefined,
+    workspaceBroadcaster: undefined,
+    channels: new Map(),
+    activeChannelId: undefined,
+    typingIndicators: {}
   },
 
-  // Update a single setting
+  setWorkspaceChannelSettings: (channelId, value) => {
+    set((state) => {
+      state.workspaceSettings.channels.set(channelId, value)
+    })
+  },
+
+  setWorkspaceChannelSetting: (channelId, key, value) => {
+    set((state) => {
+      const channelSettings =
+        state.workspaceSettings.channels.get(channelId) || ({} as TChannelSettings)
+      channelSettings[key] = value
+      state.workspaceSettings.channels.set(channelId, channelSettings)
+    })
+  },
+
   setWorkspaceSetting: (key, value) => {
-    return set((state) => ({
-      workspaceSettings: { ...state.workspaceSettings, [key]: value },
-    }));
+    set((state) => {
+      state.workspaceSettings[key] = value
+    })
   },
 
-  // Update multiple settings at once
   setWorkspaceSettings: (settings) => {
-    return set((state) => ({
-      workspaceSettings: { ...state.workspaceSettings, ...settings },
-    }));
+    set((state) => {
+      Object.assign(state.workspaceSettings, settings)
+    })
   },
-}));
 
-export default useWorkspaceSettingsStore;
+  setReplayMessageMemory: (channelId, message) => {
+    setMemory(set, 'replayMessageMemory', channelId, message)
+  },
+
+  setEditMessageMemory: (channelId, message) => {
+    setMemory(set, 'editMessageMemory', channelId, message)
+  },
+
+  setForwardMessageMemory: (channelId, message) => {
+    setMemory(set, 'forwardMessageMemory', channelId, message)
+  },
+
+  setTypingIndicator: (channelId, user) => {
+    return set((state) => {
+      const typingIndicators = state.workspaceSettings.typingIndicators
+
+      if (!typingIndicators[channelId]) {
+        typingIndicators[channelId] = new Map()
+      }
+
+      typingIndicators[channelId].set(user.id, user)
+    })
+  },
+
+  removeTypingIndicator: (channelId, user) => {
+    return set((state) => {
+      const typingIndicators = state.workspaceSettings.typingIndicators
+
+      if (typingIndicators[channelId]) {
+        typingIndicators[channelId].delete(user.id)
+      }
+    })
+  }
+}))
+
+function setMemory(set: any, memoryType: string, channelId: string, message: any) {
+  set((state: any) => {
+    const channelSettings = state.workspaceSettings.channels.get(channelId) || {}
+    channelSettings[memoryType] = message
+    state.workspaceSettings.channels.set(channelId, channelSettings)
+  })
+}
+
+export default useWorkspaceSettingsStore

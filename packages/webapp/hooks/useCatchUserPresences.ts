@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
-import { useStore, useAuthStore } from '@stores'
+import { useStore, useAuthStore, useChatStore } from '@stores'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { dbChannelsListner } from '@components/chat/hooks/listner/dbChannelsListner'
 
 export const useCatchUserPresences = () => {
   const supabaseClient = createClientComponentClient()
@@ -8,9 +9,20 @@ export const useCatchUserPresences = () => {
   const profile = useAuthStore((state) => state.profile)
   const { workspaceId } = useStore((state) => state.settings)
   const setOrUpdateUserPresence = useStore((state) => state.setOrUpdateUserPresence)
-  const usersPresence = useStore((state) => state.usersPresence)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
-  const removeUserPresence = useStore((state) => state.removeUserPresence)
+
+  const updateChannelRow = useChatStore((state) => state.updateChannelRow)
+  const addChannelMember = useChatStore((state) => state.addChannelMember)
+  const channelMembers = useChatStore((state) => state.channelMembers)
+
+  const channelMemebrs = (payload: any) => {
+    if (payload.table === 'channel_members') {
+      updateChannelRow(payload.new.channel_id, payload.new)
+      if (!channelMembers.has(payload.new.channel_id)) {
+        addChannelMember(payload.new.channel_id, { ...payload.new, id: payload.new.member_id })
+      }
+    }
+  }
 
   useEffect(() => {
     if (!workspaceId || !profile) return
@@ -30,6 +42,26 @@ export const useCatchUserPresences = () => {
         // setOrUpdateUserPresence(newState[key].at(0), newState[key].at(0))
         // })
       })
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'channel_members',
+          filter: `member_id=eq.${profile.id}`
+        },
+        channelMemebrs
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'channels',
+          filter: `workspace_id=eq.${workspaceId}`
+        },
+        dbChannelsListner
+      )
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       .on('presence', { event: 'join' }, ({ key, newPresences }) => {
         // add the user into the channel member state store

@@ -1,7 +1,7 @@
 -- Test
 -- SELECT * FROM get_channel_aggregate_data('99634205-5238-4ffc-90ec-c64be3ad25cf');
 CREATE OR REPLACE FUNCTION get_channel_aggregate_data(
-    input_channel_id UUID,
+    input_channel_id VARCHAR(36),
     message_limit INT DEFAULT 20
 )
 RETURNS TABLE(
@@ -143,7 +143,7 @@ $$ LANGUAGE plpgsql;
 -------------------------------------------------
 -- p_message_id =: is the last message inserted in the channel
 CREATE OR REPLACE FUNCTION mark_messages_as_read(
-    p_channel_id UUID, 
+    p_channel_id VARCHAR(36), 
     p_message_id UUID
 )
 RETURNS VOID AS $$
@@ -207,7 +207,7 @@ $$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER;
 --------------------------------------------------
 
 CREATE OR REPLACE FUNCTION get_channel_messages_paginated(
-    input_channel_id UUID,
+    input_channel_id VARCHAR(36),
     page INT,
     page_size INT DEFAULT 20 
 )
@@ -269,7 +269,7 @@ $$ LANGUAGE plpgsql;
 -------------------------------
 --- It's like a server function, and we do not concern ourselves with performance issues!
 CREATE OR REPLACE FUNCTION create_direct_message_channel(
-    workspace_uid UUID,
+    workspace_uid VARCHAR(36),
     user_id UUID
 ) RETURNS JSONB AS $$
 DECLARE

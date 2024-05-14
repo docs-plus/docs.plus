@@ -1,4 +1,6 @@
-import { useEditor, EditorContent, Editor } from '@tiptap/react'
+import { useState, useEffect } from 'react'
+import { useEditor, Editor } from '@tiptap/react'
+
 // Code and Syntax Highlighting
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import css from 'highlight.js/lib/languages/css'
@@ -13,7 +15,7 @@ import json from 'highlight.js/lib/languages/json'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 // import Mention from "@tiptap/extension-mention";
-// import suggestion from './suggestion'
+// import suggestion from "./suggestion";
 
 // load all highlight.js languages
 import { createLowlight } from 'lowlight'
@@ -28,7 +30,7 @@ lowlight.register('yaml', yaml)
 lowlight.register('json', json)
 // lowlight.register("bash", bash);
 
-import { useState, useEffect } from 'react'
+import { handleTypingIndicator, TypingIndicatorType } from './handelTypeingIndicator'
 
 export const useTiptapEditor = ({ loading }: any) => {
   const [html, setHtml] = useState('')
@@ -63,12 +65,22 @@ export const useTiptapEditor = ({ loading }: any) => {
         })
       ],
       onUpdate: ({ editor }) => {
+        const text = editor?.getText()
         setHtml(editor?.getHTML())
         setText(editor?.getText())
+        if (text.length) handleTypingIndicator(TypingIndicatorType.StartTyping)
+      },
+      onBlur: () => {
+        if (text.length) handleTypingIndicator(TypingIndicatorType.StopTyping)
       },
       editable: true,
       editorProps: {
         handleKeyDown: (view, event) => {
+          // if key is Enter and shift is not pressed
+          if (event.key === 'Enter' && !event.shiftKey) {
+            if (text.length) handleTypingIndicator(TypingIndicatorType.SentMsg)
+            return true // Indicates that this key event was handled
+          }
           if (event.key === 'Enter' && event.metaKey) {
             return true // Indicates that this key event was handled
           }

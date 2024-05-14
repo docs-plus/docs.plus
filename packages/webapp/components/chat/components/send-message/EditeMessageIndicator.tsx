@@ -1,7 +1,8 @@
-import { twx, cn } from '@utils/twx'
+import { twx, cn } from '@utils/index'
 import { IoCloseOutline } from 'react-icons/io5'
 import { RiPencilFill } from 'react-icons/ri'
-import { useChatStore } from '@stores'
+import { useStore, useChatStore } from '@stores'
+import { useChannel } from '../../context/ChannelProvider'
 
 type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: number }
 
@@ -14,17 +15,22 @@ const IconButton = twx.button<BtnIcon>((props) =>
 )
 
 export const EditeMessageIndicator = () => {
-  const setEditeMessageMemory = useChatStore((state) => state.setEditeMessageMemory)
-  const { editeMessageMemory } = useChatStore((state) => state.chatRoom)
+  const { channelId } = useChannel()
+  const setEditMessageMemory = useChatStore((state) => state.setEditMessageMemory)
+  const channelSettings = useChatStore((state: any) =>
+    state.workspaceSettings.channels.get(channelId)
+  )
+  const { editMessageMemory } = channelSettings || {}
 
   const handleCloseEditeMessage = () => {
-    setEditeMessageMemory(null)
+    setEditMessageMemory(channelId, null)
   }
 
   const replyToUser =
-    editeMessageMemory?.user_details?.fullname || editeMessageMemory?.user_details?.username || ''
+    editMessageMemory?.user_details?.fullname || editMessageMemory?.user_details?.username || ''
 
-  if (!editeMessageMemory) return null
+  if (!editMessageMemory) return null
+  if (editMessageMemory.channel_id !== channelId) return null
 
   return (
     <div className="flex w-full  items-center justify-between px-4 py-2 text-base-content">
@@ -34,7 +40,7 @@ export const EditeMessageIndicator = () => {
           Edite message
           <span className=" ml-1 font-normal">{replyToUser}</span>
         </span>
-        <span className="text-sm">{editeMessageMemory?.content}</span>
+        <span className="text-sm">{editMessageMemory?.content}</span>
       </div>
       <IconButton onClick={handleCloseEditeMessage}>
         <IoCloseOutline size={22} />

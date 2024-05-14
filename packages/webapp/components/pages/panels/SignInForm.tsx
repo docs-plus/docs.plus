@@ -3,8 +3,11 @@ import { useState } from 'react'
 import Button from '@components/ui/Button'
 import { useMutation } from '@tanstack/react-query'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
-import { toast } from 'react-hot-toast'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { signInWithOAuth } from '@api'
+import { useSupabase } from '@hooks/useSupabase'
+import { Provider } from '@supabase/supabase-js'
+import * as toast from '@components/toast'
 
 const SingInForm = ({ ...props }) => {
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
@@ -12,27 +15,34 @@ const SingInForm = ({ ...props }) => {
   const [highlightEmailInput, setHighlightEmailInput] = useState(false)
   const [loading, setLoading] = useState(false)
   const [btnSubmitText, setBtnSubmitText] = useState('Send magic link')
-  const [googleLoading, setGoogleLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
   const supabaseClient = createClientComponentClient()
+  const {
+    loading: googleLoading,
+    request,
+    setLoading: setGoogleLoading
+  } = useSupabase(signInWithOAuth, null, false)
 
-  const signInWithGoogle = async () => {
-    setGoogleLoading(true)
-    const { error } = await supabaseClient.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        // queryParams: {
-        //   access_type: 'offline',
-        //   prompt: 'consent'
-        // },
-        redirectTo: `${location.origin}/api/auth/callback?next=` + location.pathname
-      }
-    })
-    if (error) {
-      toast.error('Error signin SSO: ' + error.message)
-      console.error(error)
+  // Handle authentication with OAuth
+  const handleOAuthSignIn = async (provider: Provider) => {
+    try {
+      await request({
+        provider,
+        options: {
+          redirectTo: `${location.origin}/api/auth/callback?next=` + location.pathname,
+          queryParams: {
+            // access_type: 'offline',
+            // prompt: 'consent'
+          }
+        }
+      })
+      setGoogleLoading(true)
+
+      // set loading true untile the redirect to login
+    } catch (error) {
+      console.error('Authentication error:', error)
+      toast.Error('Authentication error:' + error)
     }
-    // setGoogleLoading(false)
   }
 
   const { mutateAsync, isLoading } = useMutation(
@@ -90,8 +100,8 @@ const SingInForm = ({ ...props }) => {
     })
 
     if (error) {
-      toast.error('Error signin with email: ' + error.message)
       console.error(error)
+      toast.Error('Error signin with email: ' + error.message)
     }
 
     setLoading(false)
@@ -109,8 +119,9 @@ const SingInForm = ({ ...props }) => {
           <div className="flex flex-col items-center justify-center mt-6 ">
             <Button
               className="btn-block"
-              onClick={() => signInWithGoogle()}
+              onClick={() => handleOAuthSignIn('google')}
               loading={googleLoading}
+              disabled={googleLoading || loading}
               Icon={GoogleGIcon}>
               Continue with Google
             </Button>
@@ -131,6 +142,7 @@ const SingInForm = ({ ...props }) => {
               <Button
                 className="btn-neutral btn-block  text-white mt-4"
                 loading={isLoading || loading}
+                disabled={isLoading || loading || googleLoading}
                 onClick={signInWithEmail}>
                 {btnSubmitText}
               </Button>

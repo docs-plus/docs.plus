@@ -3,7 +3,7 @@
 -- enabling the application to maintain an up-to-date read status. This is crucial for message-based applications where read receipts are important.
 CREATE TABLE public.channel_members (
     id                    UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY, -- Unique ID for the channel member record.
-    channel_id            UUID NOT NULL REFERENCES public.channels ON DELETE CASCADE, -- The ID of the channel. If the channel is deleted, associated member records are also deleted.
+    channel_id            VARCHAR(36) NOT NULL REFERENCES public.channels ON DELETE CASCADE, -- The ID of the channel. If the channel is deleted, associated member records are also deleted.
     member_id             UUID NOT NULL REFERENCES public.users ON DELETE CASCADE, -- The ID of the channel member (user). If the user is deleted, their membership records are also deleted.
     last_read_message_id  UUID REFERENCES public.messages, -- The ID of the last message read by the user in the channel. Helps in tracking read status.
     last_read_update_at   TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()), -- Timestamp when the user's last read status was updated.

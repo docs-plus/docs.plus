@@ -343,6 +343,16 @@ ol {
   background: rgba(0, 0, 0, 0.3);
 }
 
+.daisy_tooltip {
+  max-width: 20rem;
+  border-radius: 0.25rem;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  width: max-content;
+}
+
+.ProseMirror,
 .msg_card {
   outline: none;
 
@@ -447,6 +457,12 @@ ol {
     height: auto;
   }
 
+  blockquote {
+    border-left: 2px solid #f1f3f5;
+    margin: 0;
+    padding: 0.2rem 0.4rem;
+  }
+
   hr {
     border: none;
     border-top: 2px solid #fff;
@@ -467,6 +483,7 @@ ol {
     color: #fff;
     font-family: 'JetBrainsMono', monospace;
     overflow: auto;
+    padding: 2px 10px;
 
     code {
       background: none;

@@ -13,7 +13,7 @@ export const getAllMessages = async (channelId: string) =>
     .returns<TMessageWithUser[]>()
     .throwOnError()
 
-export type TMessageWithUser = {
+export type TMessageWithUser = TMessage & {
   id: string
   created_at: string
   updated_at: string
@@ -22,6 +22,7 @@ export type TMessageWithUser = {
   content: string
   html: string
   media_urls?: any
+  readed_at: string | null
   user_id: {
     username: string
     id: string
@@ -36,7 +37,10 @@ export type TMessageWithUser = {
       username: string
     }
   }
-  user_details: any
+  user_details: any | null
   replied_message_preview?: any
   original_message_id?: any
+  isGroupEnd: boolean
+  isGroupStart: boolean
+  isNewGroupById: boolean
 }

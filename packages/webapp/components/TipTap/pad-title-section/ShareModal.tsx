@@ -1,11 +1,11 @@
-import React, { useRef, useState, useEffect } from 'react'
-import { toast } from 'react-hot-toast'
+import React, { useRef, useState, useEffect, useCallback } from 'react'
 import { Facebook, Twitter, Linkedin, At, World } from '@icons'
 import { useStore } from '@stores'
 import { BsWhatsapp } from 'react-icons/bs'
 import { BsReddit } from 'react-icons/bs'
 import { FiCopy } from 'react-icons/fi'
 import { IoCloseSharp } from 'react-icons/io5'
+import * as toast from '@components/toast'
 
 const socialSharingMap = {
   facebook: `https://www.facebook.com/sharer.php?u=`,
@@ -37,10 +37,15 @@ const ShareModal = ({ setIsOpen }: any) => {
     }
   }
 
-  const copyToClipboard = async () => {
-    await navigator.clipboard.writeText(href)
-    toast.success('Link copied to clipboard!')
-  }
+  const copyToClipboard = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(href)
+      toast.Success('Link copied to clipboard!')
+    } catch (err) {
+      console.error('Failed to copy the link to clipboard', err)
+      toast.Error('Failed to copy the link. Please try again.')
+    }
+  }, [href])
 
   const webShareAPI = () => {
     if (navigator.share) {
@@ -87,12 +92,10 @@ const ShareModal = ({ setIsOpen }: any) => {
       </div>
 
       <p className="font-semibold mt-6 mb-2">Page Link</p>
-      <div className="flex  justify-between rounded-md">
-        <label
-          className="input input-bordered w-full flex items-center gap-2"
-          onClick={copyToClipboard}>
+      <div className="flex  justify-between rounded-md" onClick={copyToClipboard}>
+        <label className="input input-bordered w-full flex items-center gap-2">
           <input type="text" className="grow" ref={urlRef} value={href} readOnly />
-          <button className="" onClick={copyToClipboard}>
+          <button className="">
             <FiCopy />
           </button>
         </label>

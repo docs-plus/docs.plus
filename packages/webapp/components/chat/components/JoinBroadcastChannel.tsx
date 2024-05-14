@@ -1,21 +1,23 @@
-/* eslint-disable no-use-before-define */
-// @ts-nocheck
 import { supabaseClient } from '@utils/supabase'
 import { useEffect, useState, useCallback } from 'react'
 import { useStore, useAuthStore, useChatStore } from '@stores'
 import { join2Channel } from '@api'
 import { useApi } from '@hooks/useApi'
+import { useChannel } from '../context/ChannelProvider'
 
 export default function JoinBroadcastChannel() {
+  const { channelId } = useChannel()
+
   const [mute, setMute] = useState(false)
-  const { headingId: channelId } = useChatStore((state) => state.chatRoom)
+  const channelSettings = useStore((state: any) => state.workspaceSettings.channels.get(channelId))
+  const { isUserChannelMember } = channelSettings || {}
   const user = useAuthStore((state) => state.profile)
   const { loading, request: request2JoinChannel } = useApi(join2Channel, null, false)
 
   const channelMemberInfo = useChatStore((state) => state.channelMembers.get(channelId))
-  // const setWorkspaceSetting = useStore((state: any) => state.setWorkspaceSetting)
   const setOrUpdateChannel = useChatStore((state) => state.setOrUpdateChannel)
   const channel = useChatStore((state) => state.channels.get(channelId))
+  const setWorkspaceChannelSetting = useChatStore((state: any) => state.setWorkspaceChannelSetting)
 
   useEffect(() => {
     if (!channelMemberInfo || !user) return
@@ -31,8 +33,12 @@ export default function JoinBroadcastChannel() {
         member_id: user?.id
       })
       if (error) console.error(error)
-      // setWorkspaceSetting('isUserChannelMember', true)
-      setOrUpdateChannel(channelId, { ...channel, member_count: (channel?.member_count ?? 0) + 1 })
+
+      setWorkspaceChannelSetting(channelId, 'isUserChannelMember', true)
+      setOrUpdateChannel(channelId, {
+        ...data.channel,
+        member_count: (channel?.member_count ?? 0) + 1
+      })
     } catch (error) {
       console.error(error)
     }
@@ -44,6 +50,7 @@ export default function JoinBroadcastChannel() {
       setMute(muteOrUnmute)
 
       try {
+        // TODO: move to api layer
         const { error } = await supabaseClient
           .from('channel_members')
           .update({
@@ -67,16 +74,16 @@ export default function JoinBroadcastChannel() {
 
   return (
     <div className="flex w-full flex-col items-center justify-center p-2">
-      {/* {isUserChannelMember ? (
+      {isUserChannelMember ? (
         <button className="btn btn-block" onClick={() => muteHandler(!mute)}>
           {mute ? 'Unmute' : 'Mute'}
         </button>
-      ) : ( */}
-      <button className="btn btn-block" onClick={joinUserToChannel}>
-        Join
-        {loading && <span className="loading loading-spinner ml-auto"></span>}
-      </button>
-      {/* )} */}
+      ) : (
+        <button className="btn btn-block" onClick={joinUserToChannel}>
+          Join
+          {loading && <span className="loading loading-spinner ml-auto"></span>}
+        </button>
+      )}
     </div>
   )
 }

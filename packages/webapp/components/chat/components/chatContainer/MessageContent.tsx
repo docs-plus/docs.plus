@@ -1,25 +1,25 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import DOMPurify from 'dompurify'
-import { isOnlyEmoji, splitEmojis } from '@utils/emojis'
+import { isOnlyEmoji, splitEmojis } from '@utils/index'
 import { getEmojiDataFromNative } from 'emoji-mart'
+import { useAuthStore } from '@stores'
 interface MessageContentProps {
   data: {
     content: string
     html?: string
+    user_details: {
+      id: string
+    }
   }
 }
 
 const MessageContent: React.FC<MessageContentProps> = ({ data }) => {
+  const user = useAuthStore((state) => state.profile)
   const sanitizedHtml = useMemo(() => {
     return data.html ? DOMPurify.sanitize(data.html) : data.content
   }, [data.html, data.content])
 
-  const [htmlContent, setHtmlContent] = useState(sanitizedHtml)
   const [emojiTitles, setEmojiTitles] = useState<Record<number, string>>({})
-
-  useEffect(() => {
-    setHtmlContent(sanitizedHtml)
-  }, [sanitizedHtml])
 
   const contentIsOnlyEmoji = isOnlyEmoji(data.content)
 
@@ -44,7 +44,8 @@ const MessageContent: React.FC<MessageContentProps> = ({ data }) => {
   return (
     <div className="flex flex-col">
       {contentIsOnlyEmoji ? (
-        <div>
+        <div
+          className={`flex ${data?.user_details?.id === user?.id ? 'justify-end' : 'justify-start'}`}>
           {splitEmojis(data.content)?.map((emoji: string, index: number) => (
             <div key={index} className="tooltip tooltip-bottom" data-tip={emojiTitles[index]}>
               {
@@ -57,9 +58,9 @@ const MessageContent: React.FC<MessageContentProps> = ({ data }) => {
         </div>
       ) : (
         <div
-          className="message--card__content prose-slate prose-invert overflow-hidden text-wrap"
+          className="message--card__content prose-slate prose-invert text-wrap"
           dir="auto"
-          dangerouslySetInnerHTML={{ __html: htmlContent }}
+          dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />
       )}
     </div>

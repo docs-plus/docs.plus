@@ -1,5 +1,5 @@
-import { useStore, useChatStore } from '@stores'
-import { groupedMessages } from '@utils/groupMessages'
+import { useAuthStore, useChatStore, useStore } from '@stores'
+import { groupedMessages } from '@utils/index'
 
 const getChannelMessages = (channelId: string): any => {
   const messagesByChannel = useChatStore.getState().messagesByChannel
@@ -7,9 +7,14 @@ const getChannelMessages = (channelId: string): any => {
 }
 
 export const messageInsert = (payload: any) => {
-  const { headingId: channelId } = useChatStore.getState().chatRoom
+  const channelId = payload.new.channel_id
+
+  const removeMessage = useChatStore.getState().removeMessage
   const setOrUpdateMessage = useChatStore.getState().setOrUpdateMessage
+  const setLastMessage = useChatStore.getState().setLastMessage
   const usersPresence = useStore.getState().usersPresence
+
+  removeMessage(channelId, 'fake_id')
 
   if (!channelId) return
 
@@ -30,7 +35,10 @@ export const messageInsert = (payload: any) => {
   }
 
   // if there is no messages, just add the message
-  if (!messages) return setOrUpdateMessage(channelId, payload.new.id, newMessage)
+  if (!messages) {
+    setLastMessage(channelId, newMessage)
+    return setOrUpdateMessage(channelId, payload.new.id, newMessage)
+  }
 
   const msgs = [...getChannelMessages(channelId)?.values()]
 
@@ -40,6 +48,9 @@ export const messageInsert = (payload: any) => {
 
   // if the last message is from the same user, we need to group the messages
   const newInstanceOfMessages = groupedMessages([lastMessage1, lastMessage0, newMessage])
+
+  // TODO: do we need anymore this?!/!
+  setLastMessage(channelId, newInstanceOfMessages.at(-1))
 
   setOrUpdateMessage(channelId, lastMessage0.id, newInstanceOfMessages.at(1))
   setOrUpdateMessage(channelId, newMessage.id, newInstanceOfMessages.at(2))

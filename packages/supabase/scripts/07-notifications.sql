@@ -6,7 +6,7 @@ CREATE TABLE public.notifications (
     receiver_user_id    UUID NOT NULL REFERENCES public.users, -- The ID of the user who will receive the notification.
     type                notification_category NOT NULL, -- Type of the notification (e.g., message, invite, mention).
     message_id          UUID REFERENCES public.messages ON DELETE CASCADE,  -- ID of the associated message, if the notification is message-related.
-    channel_id          UUID REFERENCES public.channels ON DELETE CASCADE, -- ID of the associated channel, if the notification is channel-related.
+    channel_id          VARCHAR(36) REFERENCES public.channels ON DELETE CASCADE, -- ID of the associated channel, if the notification is channel-related.
     message_preview     TEXT, -- Preview of the content related to the notification (if applicable).
     created_at          TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL, -- Timestamp when the notification was created.
     readed_at           TIMESTAMP WITH TIME ZONE, -- Timestamp when the notification was marked as read by the user.

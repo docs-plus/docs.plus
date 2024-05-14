@@ -7,8 +7,10 @@ import { fetchDocument } from '@utils/fetchDocument'
 import HeadSeo from '@components/HeadSeo'
 import useMapDocumentAndWorkspace from '@hooks/useMapDocumentAndWorkspace'
 import useInitiateDocumentAndWorkspace from '@hooks/useInitiateDocumentAndWorkspace'
-import { getChannels, upsertWorkspace } from '@api'
+import { getChannels, upsertWorkspace, getChannelsByWorkspaceAndUserids } from '@api'
 import { createPagesServerClient } from '@supabase/auth-helpers-nextjs'
+import { useEffect } from 'react'
+import { useChatStore } from '@stores'
 
 const Document = ({ slugs, docMetadata, isMobile, channels }: any) => {
   useDocumentMetadata(slugs, docMetadata)
@@ -54,12 +56,21 @@ export async function getServerSideProps(context: any) {
         created_by: data.session.user.id
       })
 
-      channels = await getChannels(docMetadata.documentId)
+      channels = await getChannelsByWorkspaceAndUserids(
+        docMetadata.documentId,
+        data.session.user.id
+      )
+      //@ts-ignore
+      // TODO: need db function to get all channels by workspaceId and not thread
+      channels =
+        channels.data
+          .filter((x) => x.workspace?.type && x.workspace?.type !== 'THREAD')
+          .map((x) => ({ ...x, ...x.workspace })) || [] //data || [];
     }
 
     return {
       props: {
-        channels: channels?.data || null,
+        channels: channels || null,
         docMetadata,
         isMobile: device.mobile() ? true : false,
         slugs: context.query.slugs

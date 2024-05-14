@@ -3,12 +3,12 @@ import Button from '@components/ui/Button'
 import { Avatar } from '@components/ui/Avatar'
 import dynamic from 'next/dynamic'
 import { useAuthStore } from '@stores'
-import { toast } from 'react-hot-toast'
 import Loading from '@components/ui/Loading'
 import { LuLogOut } from 'react-icons/lu'
 import { RiShieldCheckLine, RiArrowRightSLine } from 'react-icons/ri'
 import { LuBell } from 'react-icons/lu'
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import * as toast from '@components/toast'
 
 const ProfileTab = dynamic(() => import('./ProfileTab'), {
   loading: () => <Loading />
@@ -31,7 +31,7 @@ const ProfilePanel = () => {
     setLoadSignOut(true)
     const { error } = await supabaseClient.auth.signOut()
     if (error) {
-      toast.error('Error signOut:' + error.message)
+      toast.Error('Error signOut:' + error.message)
     }
     window.location.assign(window.location.pathname)
   }

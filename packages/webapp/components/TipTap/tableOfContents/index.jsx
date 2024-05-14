@@ -1,12 +1,40 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { CaretRight, ChatLeft } from '@icons'
 import ENUMS from '../enums'
 import slugify from 'slugify'
 import { useStore, useChatStore, useAuthStore } from '@stores'
 import { useRouter } from 'next/router'
-import toast from 'react-hot-toast'
 import { toggleHeadingSection, handelScroll2Header } from './helper'
 import useHandelTocUpdate from './useHandelTocUpdate'
+import * as toast from '@components/toast'
+import AvatarStack from '@components/AvatarStack'
+
+const Aavatart = ({ className }) => {
+  return (
+    <div className={`avatar-group -space-x-4 rtl:space-x-reverse ${className}`}>
+      <div className="avatar border">
+        <div className="w-6">
+          <img src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg" />
+        </div>
+      </div>
+      <div className="avatar border">
+        <div className="w-6">
+          <img src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg" />
+        </div>
+      </div>
+      {/* <div className="avatar border">
+        <div className="w-6">
+          <img src="https://img.daisyui.com/images/stock/photo-1534528741775-53994a69daeb.jpg" />
+        </div>
+      </div> */}
+      <div className="avatar placeholder border">
+        <div className="w-6 bg-neutral text-neutral-content text-sm">
+          <span>+9</span>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 const RenderToc = ({ children, item, renderTocs }) => {
   const router = useRouter()
@@ -20,6 +48,19 @@ const RenderToc = ({ children, item, renderTocs }) => {
     workspaceId,
     editor: { instance: editor }
   } = useStore((state) => state.settings)
+  const channels = useChatStore((state) => state.channels)
+  const usersPresence = useStore((state) => state.usersPresence)
+
+  const [presentUsers, setPresentUsers] = useState([])
+  useEffect(() => {
+    if (!usersPresence) return
+    const precenseUsers = usersPresence.values()
+    const users = Array.from(precenseUsers)
+      .filter((user) => user?.channelId === item.id)
+      .filter((user) => user?.status !== 'OFFLINE')
+
+    setPresentUsers(users)
+  }, [usersPresence])
 
   useEffect(() => {
     const url = new URL(window.location.href)
@@ -35,7 +76,7 @@ const RenderToc = ({ children, item, renderTocs }) => {
       )
 
       if (!user) {
-        toast.error('Please login to use chat feature')
+        toast.Info('Please login to use chat feature')
         document.getElementById('btn_signin')?.click()
         return
       }
@@ -77,14 +118,18 @@ const RenderToc = ({ children, item, renderTocs }) => {
     [editor, workspaceId, headingId, user]
   )
 
+  const unreadMessage = useMemo(() => {
+    return channels.get(item.id)?.unread_message_count
+  }, [channels, item.id])
+
   return (
     <li
       key={item.id}
-      className={`toc__item toc__item--${item.level} ${item.open ? '' : 'closed'} `}
+      className={`toc__item relative toc__item--${item.level} ${item.open ? '' : 'closed'} `}
       data-id={item.id}
       data-offsettop={item.offsetTop}>
       <a
-        className={`group ${activeHeading === item.id ? 'active' : ''}`}
+        className={`group relative ${activeHeading === item.id ? 'active' : ''}`}
         onClick={(e) => handelScroll2Header(e, editor, setActiveHeading)}
         href={`?${item.id}`}
         data-id={item.id}>
@@ -96,14 +141,25 @@ const RenderToc = ({ children, item, renderTocs }) => {
           <CaretRight size={17} fill="#363636" />
         </span>
         <span
-          className="btn_chat ml-auto tooltip  tooltip-top"
+          className="btn_chat ml-auto tooltip relative tooltip-top"
           onClick={() => openChatContainerHandler(item)}
           data-tip="Chat Room">
+          {unreadMessage > 0 && (
+            <div className="badge badge-sm p-1 badge-accent absolute scale-90 -right-[12px] z-[1] -top-[6px]  shadow border">
+              {unreadMessage}
+            </div>
+          )}
           <ChatLeft
-            className={`btnChat ${headingId === item.id && '!opacity-100 fill-docsy'} transition-all group-hover:fill-docsy hover:fill-indigo-900 cursor-pointer`}
+            className={`btnChat ${unreadMessage > 0 ? '!opacity-100' : 'opacity-0'} ${headingId === item.id && '!opacity-100 fill-docsy'} transition-all group-hover:fill-docsy hover:fill-indigo-900 cursor-pointer`}
             size={18}
           />
         </span>
+
+        <div className="absolute -right-9">
+          {presentUsers.length > 0 && (
+            <AvatarStack size={8} users={presentUsers} tooltipPosition="tooltip-left" />
+          )}
+        </div>
       </a>
 
       {children.length > 0 && (

@@ -1,8 +1,10 @@
 import PinnedMessagesSlider from '../PinnedMessagesSlider'
-import { useChatStore } from '@stores'
+import { useChatStore } from 'stores'
+import { useChannel } from '../../context/ChannelProvider'
 
 export const PinnedMessagesDisplay = ({ loading }: any) => {
-  const { headingId: channelId } = useChatStore((state) => state.chatRoom)
+  const { channelId } = useChannel()
+
   const channelPinnedMessages = useChatStore((state: any) => state.pinnedMessages)
   const pinnedMessages = channelPinnedMessages.get(channelId)
 

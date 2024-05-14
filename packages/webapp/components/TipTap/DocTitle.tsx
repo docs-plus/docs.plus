@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
-import toast from 'react-hot-toast'
 import { useStore } from '@stores'
 // import { broadcastDocTitle } from '@api'
+import * as toast from '@components/toast'
 
 const DocTitle = ({ className }: any) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
@@ -43,7 +43,7 @@ const DocTitle = ({ className }: any) => {
       setTitle(data.data.title)
       // broadcast to other clients
       hocuspocusProvider.sendStateless(JSON.stringify({ type: 'docTitle', state: data.data }))
-      toast.success('Document title changed successfully')
+      toast.Success('Document title changed successfully')
     }
   }, [isSuccess])
 
