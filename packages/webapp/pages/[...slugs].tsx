@@ -43,7 +43,7 @@ export async function getServerSideProps(context: any) {
     const { data, error } = await supabase.auth.getSession()
     const docMetadata = await fetchDocument(slug, data.session)
     const device = new MobileDetect(context.req.headers['user-agent'])
-    let channels = null
+    let channels: any = null
 
     if (error) console.error('error:', error)
 
@@ -60,12 +60,11 @@ export async function getServerSideProps(context: any) {
         docMetadata.documentId,
         data.session.user.id
       )
-      //@ts-ignore
       // TODO: need db function to get all channels by workspaceId and not thread
       channels =
-        channels.data
-          .filter((x) => x.workspace?.type && x.workspace?.type !== 'THREAD')
-          .map((x) => ({ ...x, ...x.workspace })) || [] //data || [];
+        channels?.data
+          .filter((x: any) => x.workspace?.type && x.workspace?.type !== 'THREAD')
+          .map((x: any) => ({ ...x, ...x.workspace })) || [] //data || [];
     }
 
     return {
