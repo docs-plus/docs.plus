@@ -55,40 +55,40 @@ const DocumentsPanel = () => {
   }
 
   return (
-    <div className="flex flex-col items-center justify-center w-full">
+    <div className="flex w-full flex-col items-center justify-center">
       <InputOverlapLabel
         label="Search Documents"
-        className="w-full px-3 border rounded mb-4"
+        className="mb-4 w-full rounded border px-3"
         value={inputValue}
         onChange={handleSearch}
       />
       {isError && <div className="flex h-96">Error: {error.message}</div>}
       {!isError && isLoading ? (
-        <div className="flex h-96 align-baseline items-center justify-around">
+        <div className="flex h-96 items-center justify-around align-baseline">
           <Spinner />
           <span className="ml-2">Loading...</span>
         </div>
       ) : (!isError && data?.total) > 0 ? (
         <DocumentTable data={data} />
       ) : (
-        <div className="flex h-96 align-baseline items-center">
+        <div className="flex h-96 items-center align-baseline">
           <span>No documents found</span>
         </div>
       )}
 
       {!isLoading && data?.total > 0 && pages > 1 && (
-        <div className="flex mt-4">
+        <div className="mt-4 flex">
           {currentPage > 0 && (
             <button
               onClick={handlePrevPage}
-              className="px-4 py-2 border rounded text-white bg-blue-500 hover:bg-blue-700">
+              className="rounded border bg-blue-500 px-4 py-2 text-white hover:bg-blue-700">
               Prev
             </button>
           )}
           {Array.from({ length: pages }, (_, i) => (
             <button
               key={i}
-              className={`mx-1 px-4 py-2 border rounded ${
+              className={`mx-1 rounded border px-4 py-2 ${
                 i === currentPage ? 'bg-blue-500 text-white' : ''
               }`}
               onClick={() => setCurrentPage(i)}>
@@ -98,7 +98,7 @@ const DocumentsPanel = () => {
           {currentPage < pages - 1 && (
             <button
               onClick={handleNextPage}
-              className="px-4 py-2 border rounded text-white bg-blue-500 hover:bg-blue-700">
+              className="rounded border bg-blue-500 px-4 py-2 text-white hover:bg-blue-700">
               Next
             </button>
           )}

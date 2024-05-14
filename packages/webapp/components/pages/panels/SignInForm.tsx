@@ -116,7 +116,7 @@ const SingInForm = ({ ...props }) => {
           {/* <p className="text-base antialiased text-center font-bold">
             Your journey with Docs.plus begins now!
           </p> */}
-          <div className="flex flex-col items-center justify-center mt-6 ">
+          <div className="mt-6 flex flex-col items-center justify-center ">
             <Button
               className="btn-block"
               onClick={() => handleOAuthSignIn('google')}
@@ -127,7 +127,7 @@ const SingInForm = ({ ...props }) => {
             </Button>
           </div>
           <div className="divider text-gray-400">OR</div>
-          <div className="flex flex-col w-full  items-center justify-center mt-6 ">
+          <div className="mt-6 flex w-full  flex-col items-center justify-center ">
             <form onSubmit={signInWithEmail}>
               {/* <input type="email" placeholder="Enter your Email" /> */}
 
@@ -140,13 +140,13 @@ const SingInForm = ({ ...props }) => {
 
               {emailError && <p className="mt-2 text-red-600">{emailError}</p>}
               <Button
-                className="btn-neutral btn-block  text-white mt-4"
+                className="btn-neutral btn-block  mt-4 text-white"
                 loading={isLoading || loading}
                 disabled={isLoading || loading || googleLoading}
                 onClick={signInWithEmail}>
                 {btnSubmitText}
               </Button>
-              <p className="mt-4 bg-gray-100 flex p-3 pt-4 text-sm text-gray-500 rounded drop-shadow-md">
+              <p className="mt-4 flex rounded bg-gray-100 p-3 pt-4 text-sm text-gray-500 drop-shadow-md">
                 <span className="mr-2">
                   <Sparkles fill="#888" size={21} />
                 </span>
@@ -158,16 +158,16 @@ const SingInForm = ({ ...props }) => {
         <div
           className={`${
             emailSent ? 'block' : 'hidden'
-          } bg-slate-200 text-center py-8 px-16 flex flex-col justify-center items-center p-3 pt-4 text-base text-gray-500 rounded-md drop-shadow-sm border`}>
+          } flex flex-col items-center justify-center rounded-md border bg-slate-200 p-3 px-16 py-8 pt-4 text-center text-base text-gray-500 drop-shadow-sm`}>
           <div>
             <OpenEnvelope fill="black" size={40} className="mb-4" />
           </div>
-          <p className="font-bold text-base mb-3"> Check Your Email!</p>
-          <p className="font-normal text-sm">
+          <p className="mb-3 text-base font-bold"> Check Your Email!</p>
+          <p className="text-sm font-normal">
             We emailed a magic link to <br />
             <b className="text-blue-500">{magicLinkEmail}</b>
           </p>
-          <p className="font-normal text-sm">Click the Link to log in or Sign up.</p>
+          <p className="text-sm font-normal">Click the Link to log in or Sign up.</p>
         </div>
       </div>
     </div>

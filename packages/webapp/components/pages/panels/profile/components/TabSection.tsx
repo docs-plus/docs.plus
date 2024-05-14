@@ -4,7 +4,7 @@ const TabSection = ({ name, description, children, className }: any) => {
   return (
     <div className={twMerge(`flex flex-col p-4 antialiased`, className)}>
       <p className="text-lg font-bold">{name}</p>
-      <p className="text-gray-400 text-sm">{description}</p>
+      <p className="text-sm text-gray-400">{description}</p>
       {children}
     </div>
   )

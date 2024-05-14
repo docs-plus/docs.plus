@@ -95,12 +95,12 @@ const AvatarSection = () => {
 
   return (
     <div
-      className="avatar-uploader mt-4 w-32 h-32 relative rounded-xl border drop-shadow-sm "
+      className="avatar-uploader relative mt-4 size-32 rounded-xl border drop-shadow-sm "
       onClick={handleClick}>
       <div
         className={` ${
-          !uploading ? 'hover:opacity-50 opacity-0' : 'opacity-80 bg-white'
-        } absolute w-full h-full transition-opacity cursor-pointer rounded-xl bg-black flex items-center justify-center`}>
+          !uploading ? 'opacity-0 hover:opacity-50' : 'bg-white opacity-80'
+        } absolute flex size-full cursor-pointer items-center justify-center rounded-xl bg-black transition-opacity`}>
         {!uploading ? <Camera size={24} fill="#fff" /> : <Spinner />}
       </div>
       <Avatar
@@ -108,7 +108,7 @@ const AvatarSection = () => {
         src={user?.avatar_url}
         alt={displayName}
         justImage={true}
-        className="w-32 h-32"
+        className="size-32"
       />
       <input
         ref={fileInputRef}
@@ -118,10 +118,10 @@ const AvatarSection = () => {
       />
       {isProfileAvatar && (
         <button
-          className="changeAvatarToDefault -right-1 absolute flex items-center justify-around  -bottom-1 w-5 h-5 bg-white rounded-full drop-shadow-lg"
+          className="changeAvatarToDefault absolute -bottom-1 -right-1 flex size-5  items-center justify-around rounded-full bg-white drop-shadow-lg"
           onClick={changeAvatarToDefault}
           title="Change to default avatar">
-          <CircleUser size={18} className=" w-5 h-5 bg-white rounded-full drop-shadow-lg z-10" />
+          <CircleUser size={18} className=" z-10 size-5 rounded-full bg-white drop-shadow-lg" />
         </button>
       )}
     </div>

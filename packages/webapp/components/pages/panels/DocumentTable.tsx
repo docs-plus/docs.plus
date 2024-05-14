@@ -6,8 +6,8 @@ const DocumentTable = ({ data }: any) => {
   }
 
   return (
-    <table className="table-auto rounded-md overflow-hidden shadow-sm bg-white w-full">
-      <thead className="bg-slate-200 border">
+    <table className="w-full table-auto overflow-hidden rounded-md bg-white shadow-sm">
+      <thead className="border bg-slate-200">
         <tr>
           <th className="px-4 py-2 text-left antialiased">Name</th>
           <th className="px-4 py-2 text-left antialiased">Owner</th>
@@ -17,12 +17,12 @@ const DocumentTable = ({ data }: any) => {
       <tbody>
         {data?.docs.map((row: any) => (
           <tr key={row.id}>
-            <td className="border px-4 py-2 max-w-[500px] overflow-hidden truncate antialiased overflow-ellipsis">
+            <td className="max-w-[500px] overflow-hidden truncate text-ellipsis border px-4 py-2 antialiased">
               <a className="cursor-pointer" onClick={() => routeForDocument(row.slug)}>
                 {row.title}
               </a>
             </td>
-            <td className="border text-center p2 px-4 pl-2 max-w-[170px] ">
+            <td className="max-w-[170px] border px-4 pl-2 text-center ">
               <div className="flex items-center justify-start ">
                 {row.ownerId ? (
                   <Avatar
@@ -30,19 +30,19 @@ const DocumentTable = ({ data }: any) => {
                     width={32}
                     srtc={row?.user?.avatar_url}
                     id={row.user?.id}
-                    className="w-8 h-8 rounded-full drop-shadow-md mr-1"
+                    className="mr-1 size-8 rounded-full drop-shadow-md"
                   />
                 ) : (
-                  <p className="text-sm overflow-hidden truncate antialiased overflow-ellipsis">
+                  <p className="overflow-hidden truncate text-ellipsis text-sm antialiased">
                     unknown user
                   </p>
                 )}
-                <p className="text-sm overflow-hidden truncate antialiased overflow-ellipsis">
+                <p className="overflow-hidden truncate text-ellipsis text-sm antialiased">
                   {row.user?.full_name || row.user?.username || row.user?.email}
                 </p>
               </div>
             </td>
-            <td className="border text-center px-4 py-2 max-w-[260px] text-sm overflow-hidden truncate antialiased overflow-ellipsis">
+            <td className="max-w-[260px] overflow-hidden truncate text-ellipsis border px-4 py-2 text-center text-sm antialiased">
               Created on {new Date(row.updatedAt).toLocaleDateString()}
             </td>
           </tr>

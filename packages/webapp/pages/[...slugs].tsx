@@ -22,9 +22,9 @@ const Document = ({ slugs, docMetadata, isMobile, channels }: any) => {
     return (
       <>
         <HeadSeo />
-        <div className="w-full h-full flex items-center justify-center">
+        <div className="flex size-full items-center justify-center">
           <span>Hang tight! content is loading</span>
-          <span className="loading loading-dots loading-xs mt-2 ml-2"></span>
+          <span className="loading loading-dots loading-xs ml-2 mt-2"></span>
         </div>
       </>
     )

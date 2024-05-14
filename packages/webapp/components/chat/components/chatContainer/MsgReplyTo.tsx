@@ -8,5 +8,5 @@ export const MsgReplyTo = ({ data }: any) => {
         {data?.replied_message_preview}
       </p>
     </div>
-  );
-};
+  )
+}

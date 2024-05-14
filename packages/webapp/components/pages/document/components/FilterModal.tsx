@@ -60,15 +60,15 @@ const FilterModal = () => {
       <div
         onTouchStart={closeFilterModal}
         onClick={closeFilterModal}
-        className="modalBg h-full w-full bg-black opacity-40 absolute top-0 left-0 z-0"></div>
-      <div className="modalWrapper h-3/6 w-full p-4  bg-white rounded-tr-2xl rounded-tl-2xl z-10 fixed bottom-0">
-        <div className="text-blue-600 py-2 mb-3 flex w-full  bg-white">
+        className="modalBg absolute left-0 top-0 z-0 size-full bg-black opacity-40"></div>
+      <div className="modalWrapper fixed bottom-0 z-10  h-3/6 w-full rounded-t-2xl bg-white p-4">
+        <div className="mb-3 flex w-full bg-white py-2  text-blue-600">
           <p className="w-2/3">Filters</p>
-          <div className="w-1/3 flex justify-items-end items-center justify-end flex-row">
+          <div className="flex w-1/3 flex-row items-center justify-end justify-items-end">
             <button
               onTouchStart={closeFilterModal}
               onClick={closeFilterModal}
-              className="w-6 h-6 rounded-full bg-slate-200 text-black outline-0">
+              className="size-6 rounded-full bg-slate-200 text-black outline-0">
               X
             </button>
           </div>
@@ -76,13 +76,13 @@ const FilterModal = () => {
         <div className="flex w-full justify-center align-middle">
           <input
             id="filterSearchBox"
-            className="p-1 px-2 w-10/12 rounded bg-slate-200 text-black"
+            className="w-10/12 rounded bg-slate-200 p-1 px-2 text-black"
             type="text"
             placeholder="Find"
             onKeyDown={searchThroughHeading}
             ref={filterSearchRef}
           />
-          <p className="ml-2 text-sm w-2/12 leading-10">
+          <p className="ml-2 w-2/12 text-sm leading-10">
             {totalSearch} of {totalHeading}
           </p>
         </div>
@@ -90,7 +90,7 @@ const FilterModal = () => {
         <button
           onTouchStart={applySearch}
           onClick={applySearch}
-          className="w-full p-2 border rounded mt-10 outline-0">
+          className="mt-10 w-full rounded border p-2 outline-0">
           Filter Contents
         </button>
       </div>

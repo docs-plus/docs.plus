@@ -11,9 +11,9 @@ const ToggleSection = ({ name, description, value, checked, onChange }) => {
   return (
     <div className="flex flex-col p-4 antialiased ">
       <p className="text-lg font-bold">{name}</p>
-      <div className="flex flex-row align-middle items-center">
-        <p className="text-gray-400 text-base">{description}</p>
-        <div className="border-l flex-col h-full py-4 px-2 ml-2">
+      <div className="flex flex-row items-center align-middle">
+        <p className="text-base text-gray-400">{description}</p>
+        <div className="ml-2 h-full flex-col border-l px-2 py-4">
           <Toggle id={value} checked={checked} onChange={onChange} />
         </div>
       </div>
@@ -80,7 +80,7 @@ const NotificationsTab = () => {
   }
 
   return (
-    <div className="border-l h-full">
+    <div className="h-full border-l">
       <TabTitle>Notifications</TabTitle>
 
       <ToggleSection

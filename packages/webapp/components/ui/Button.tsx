@@ -19,7 +19,7 @@ const Button = React.forwardRef(
   ) => (
     <button
       ref={ref as React.RefObject<HTMLButtonElement>}
-      className={twMerge('btn antialiased flex justify-center flex-row items-center', className)}
+      className={twMerge('btn flex flex-row items-center justify-center antialiased', className)}
       disabled={loading}
       style={style}
       type="button"

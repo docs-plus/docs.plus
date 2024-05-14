@@ -7,7 +7,6 @@ import { useAuthStore } from '@stores'
 import { getSimilarUsername } from '@api'
 
 // Defined constants
-const PROFILES = 'profiles'
 
 const AccountInfoSection = () => {
   const [errorBorderClass, setErrorBorderClass] = useState('')

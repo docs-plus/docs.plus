@@ -61,17 +61,17 @@ const InputTags = ({ label, onChangeTags, defaultTags, placeholder }) => {
   }, [onChangeTags])
 
   return (
-    <div className="border rounded-md p-2 pt-2 flex flex-wrap relative">
-      <div className="cursor-text absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-[1.1rem] left-1">
+    <div className="relative flex flex-wrap rounded-md border p-2">
+      <div className="absolute left-1 top-2 z-10 origin-[0] -translate-y-4 scale-75 cursor-text bg-white px-2 text-sm text-gray-500 duration-300 peer-placeholder-shown:top-1/2 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:scale-100 peer-focus:top-2 peer-focus:-translate-y-[1.1rem] peer-focus:scale-75 peer-focus:px-2 peer-focus:text-blue-600 dark:bg-gray-900 dark:text-gray-400 peer-focus:dark:text-blue-500">
         {label}
       </div>
       {tags.map((tag, index) => (
         <div
           key={index}
-          className="text-sm px-2 pr-1 h-9 mr-2 mt-2 border flex align-middle items-center justify-center rounded-md">
+          className="mr-2 mt-2 flex h-9 items-center justify-center rounded-md border px-2 pr-1 align-middle text-sm">
           {tag}
           <button
-            className="!bg-indigo-600 !ml-2 !text-white !h-4 !w-4 flex items-center justify-center align-middle rounded-full"
+            className="!ml-2 flex !h-4 !w-4 items-center justify-center rounded-full !bg-indigo-600 align-middle !text-white"
             onClick={() => deleteTag(index)}>
             <span className="text-xs">x</span>
           </button>

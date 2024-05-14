@@ -53,13 +53,13 @@ const DeckPanel = ({ hostname }) => {
 
   return (
     <>
-      <div className="sm:w-1/2 sm:mx-auto">
+      <div className="sm:mx-auto sm:w-1/2">
         <div className="p-4">
           <div className="flex flex-row items-end antialiased">
             <DocsPlus className="mr-3" size="58" />
-            <span className="font-bold text-4xl antialiased">docs.plus</span>
+            <span className="text-4xl font-bold antialiased">docs.plus</span>
           </div>
-          <h2 className="mt-3 text-gray-400 font-semibold antialiased">
+          <h2 className="mt-3 font-semibold text-gray-400 antialiased">
             Get everyone on the same page
           </h2>
           <div className="mt-5 leading-7 ">
@@ -115,8 +115,8 @@ const DeckPanel = ({ hostname }) => {
           </div>
         </div>
       </div>
-      <div className="sm:w-1/2 w-full mt-6 sm:mt-0 flex justify-end">
-        <div className="p-5 sm:w-[24rem] w-full border sm:border rounded-md flex justify-center flex-col">
+      <div className="mt-6 flex w-full justify-end sm:mt-0 sm:w-1/2">
+        <div className="flex w-full flex-col justify-center rounded-md border p-5 sm:w-96 sm:border">
           <div className="flex flex-col  text-gray-800">
             {/* <p className="text-lg antialiased mb-8  text-gray-700 font-bold">
               {`Let's have a collaborative journey!`}
@@ -128,14 +128,14 @@ const DeckPanel = ({ hostname }) => {
 
             <div className="divider text-gray-400">OR</div>
 
-            <div className="flex flex-col w-full">
-              <div className="flex flex-col sm:flex-row w-full font-mono text-sm align-middle">
-                <p className="sm:px-2 py-2 leading-6 rounded sm:rounded-l sm:border sm:border-r-0 sm:rounded-r-none">
+            <div className="flex w-full flex-col">
+              <div className="font-mono flex w-full flex-col align-middle text-sm sm:flex-row">
+                <p className="rounded py-2 leading-6 sm:rounded-l sm:rounded-r-none sm:border sm:border-r-0 sm:px-2">
                   {hostname}
                 </p>
 
                 <InputOverlapLabel
-                  className=" w-full sm:rounded-l-none  font-mono"
+                  className=" font-mono w-full  sm:rounded-l-none"
                   value={documentName}
                   label="Document Name"
                   id="padName"
@@ -145,7 +145,7 @@ const DeckPanel = ({ hostname }) => {
                 />
               </div>
               {error && (
-                <p className="text-red-700 text-sm mt-2">
+                <p className="mt-2 text-sm text-red-700">
                   *Only lowercase letters, numbers and dashes are allowed
                 </p>
               )}
@@ -159,7 +159,7 @@ const DeckPanel = ({ hostname }) => {
 
             {isAuthServiceAvailable && !user && (
               <div>
-                <p className="text-gray-400 text-sm mt-4">
+                <p className="mt-4 text-sm text-gray-400">
                   {`Don't have an account yet? `}
                   <button
                     className="font-bold text-docsy antialiased"

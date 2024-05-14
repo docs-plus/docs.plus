@@ -7,7 +7,7 @@ const PresentUsers = () => {
   if (!usersPresence || usersPresence.size <= 1) return null
 
   return (
-    <div className="sm:block hidden">
+    <div className="hidden sm:block">
       <AvatarStack users={Array.from(usersPresence.values())} />
     </div>
   )

@@ -70,10 +70,10 @@ const ProfileTab = () => {
   }
 
   return (
-    <div className="border-l h-full relative  ">
+    <div className="relative h-full border-l  ">
       <TabTitle className="">Profile</TabTitle>
 
-      <div className="h-[30rem] overflow-y-auto relative">
+      <div className="relative h-[30rem] overflow-y-auto">
         <TabSection
           name="Profile Picture"
           description="Upload a picture to make your profile stand out and let people recognize your comments and contributions easily!">
@@ -91,8 +91,8 @@ const ProfileTab = () => {
           <SocialLinksSection />
         </TabSection>
       </div>
-      <div className="sticky bottom-0 flex flex-row-reverse border-t pt-4 bg-white z-10">
-        <Button className="!w-40 btn-primary text-white " loading={loading} onClick={handleSave}>
+      <div className="sticky bottom-0 z-10 flex flex-row-reverse border-t bg-white pt-4">
+        <Button className="btn-primary !w-40 text-white " loading={loading} onClick={handleSave}>
           Save Changes
         </Button>
       </div>

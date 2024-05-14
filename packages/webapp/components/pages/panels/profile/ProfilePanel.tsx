@@ -42,7 +42,7 @@ const ProfilePanel = () => {
 
   return (
     <>
-      <div className="w-4/12 p-4 px-6 relative">
+      <div className="relative w-4/12 p-4 px-6">
         <ul className="menu flex space-y-2  pl-0">
           <li
             onClick={() => {
@@ -53,7 +53,7 @@ const ProfilePanel = () => {
                 id={user?.id}
                 src={user?.avatar_url}
                 alt={displayName}
-                className="rounded-full mr-2 border w-6 scale-125"
+                className="mr-2 w-6 scale-125 rounded-full border"
               />
               Profile
               <RiArrowRightSLine size={20} className="ml-auto" />
@@ -81,7 +81,7 @@ const ProfilePanel = () => {
           </li>
         </ul>
         <div className="divider"></div>
-        <div className=" rounded-md flex flex-col">
+        <div className=" flex flex-col rounded-md">
           <ul className="menu">
             <li>
               <a href="#" target="_blank" className="mt-2">
@@ -112,10 +112,10 @@ const ProfilePanel = () => {
         </div>
         <Button
           onClick={signOut}
-          className="mt-28 join-item btn-block flex items-center justify-center"
+          className="join-item btn-block mt-28 flex items-center justify-center"
           loading={loadSignOut}>
           <LuLogOut size={18} className="mr-auto" />
-          <span className="mr-auto -ml-[24px]">Sign-out</span>
+          <span className="-ml-[24px] mr-auto">Sign-out</span>
         </Button>
       </div>
       <div className="w-8/12 p-4">

@@ -49,8 +49,8 @@ const PadTitle = () => {
 
   return (
     <>
-      <div className="docTitle bg-white z-10 relative w-full min-h-12 p-2 flex flex-row items-center sm:border-b-0 border-b">
-        <div className="flex flex-row items-center align-middle w-full justify-center sm:justify-normal">
+      <div className="docTitle relative z-10 flex min-h-12 w-full flex-row items-center border-b bg-white p-2 sm:border-b-0">
+        <div className="flex w-full flex-row items-center justify-center align-middle sm:justify-normal">
           <div className="padLog hidden sm:block">
             <Link href="/">
               <DocsPlus size={34} />
@@ -60,20 +60,20 @@ const PadTitle = () => {
             {isKeyboardOpen ? (
               <button
                 onTouchStart={btn_blurEditor}
-                className="w-10 h-10 flex align-middle justify-center items-center">
+                className="flex size-10 items-center justify-center align-middle">
                 <Check size={30} />
               </button>
             ) : (
               <button
                 onTouchStart={btn_leftOpenModal}
-                className="btn_modal w-10 h-10 flex align-middle justify-center items-center"
+                className="btn_modal flex size-10 items-center justify-center align-middle"
                 type="button">
                 <Hamburger size={30} />
               </button>
             )}
           </div>
 
-          <div className="flex align-middle items-center justify-start">
+          <div className="flex items-center justify-start align-middle">
             <DocTitle />
             <FilterBar />
           </div>
@@ -83,16 +83,16 @@ const PadTitle = () => {
           <div className="ml-auto flex items-center justify-center">
             {isAuthServiceAvailable && <PresentUsers />}
             <Button
-              className="btn-wide ml-3 h-[2.6rem] min-h-[2.6rem] max-w-28 btn-primary text-white"
+              className="btn-primary btn-wide ml-3 h-[2.6rem] min-h-[2.6rem] max-w-28 text-white"
               onClick={() => setShareModalOpen(true)}>
               <PrivateShare />
               Share
             </Button>
             {isAuthServiceAvailable && (
-              <div className="mr-2 ml-5 sm:flex hidden">
+              <div className="ml-5 mr-2 hidden sm:flex">
                 {user ? (
                   <Button
-                    className="btn-ghost tooltip tooltip-bottom btn-circle"
+                    className="btn-circle btn-ghost tooltip tooltip-bottom"
                     onClick={() => setProfileModalOpen(true)}
                     data-tip="Profile">
                     <Avatar
@@ -100,7 +100,7 @@ const PadTitle = () => {
                       src={user.avatar_url}
                       width={24}
                       height={24}
-                      className="rounded-full shadow-xl border w-11 h-11 cursor-pointer"
+                      className="size-11 cursor-pointer rounded-full border shadow-xl"
                     />
                   </Button>
                 ) : (

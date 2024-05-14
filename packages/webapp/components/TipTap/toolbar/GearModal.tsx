@@ -21,9 +21,9 @@ const ToggleSection = ({ name, className, description, value, checked, onChange 
   return (
     <div className={containerClasses}>
       <p className="text-base font-bold">{name}</p>
-      <div className="flex w-full flex-row align-middle justify-between items-center">
-        <p className="text-gray-500 text-sm">{description}</p>
-        <div className="border-l flex-col h-full py-2 px-3 ml-2 mr-6">
+      <div className="flex w-full flex-row items-center justify-between align-middle">
+        <p className="text-sm text-gray-500">{description}</p>
+        <div className="ml-2 mr-6 h-full flex-col border-l px-3 py-2">
           <Toggle id={value} checked={checked} onChange={onChange} />
         </div>
       </div>
@@ -106,11 +106,11 @@ const GearModal = ({ className }: any) => {
     const { full_name, username } = docMetadata.ownerProfile
 
     return (
-      <div className="antialiased  mt-2 border p-2 rounded-md">
+      <div className="mt-2  rounded-md border p-2 antialiased">
         <p className="font-bold">Document Owner: </p>
 
-        <div className="flex align-baseline items-center justify-between">
-          <div className="mt-1 ml-2">
+        <div className="flex items-center justify-between align-baseline">
+          <div className="ml-2 mt-1">
             <p className="text-sm">
               <b>Name: </b>
               {full_name}
@@ -125,7 +125,7 @@ const GearModal = ({ className }: any) => {
           {/* <p className="font-semibold text-gray-400 underline underline-offset-1"> Public document</p> */}
 
           <Image
-            className="w-9 h-9 border-2 rounded-full"
+            className="size-9 rounded-full border-2"
             src={
               docMetadata?.ownerProfile?.avatar_url || docMetadata?.ownerProfile?.default_avatar_url
             }
@@ -136,7 +136,7 @@ const GearModal = ({ className }: any) => {
           />
         </div>
         {user?.id === docMetadata?.ownerId && (
-          <div className="border-t mt-4 ">
+          <div className="mt-4 border-t ">
             <ToggleSection
               name="Read-only"
               description="Enable to make document read-only"
@@ -152,21 +152,21 @@ const GearModal = ({ className }: any) => {
   return (
     <div className={twMerge('gearModal text-neutral ', className)}>
       <div className="max-w-md">
-        <p className="font-medium pb-1">Settings:</p>
+        <p className="pb-1 font-medium">Settings:</p>
         <hr />
         {docMetadata.ownerProfile && isAuthServiceAvailable && (
           <div>
             <OwnerProfile />
           </div>
         )}
-        <div className="content pt-5 flex flex-col !items-end">
+        <div className="content flex flex-col !items-end pt-5">
           <TextAreaOvelapLabel
             label="Document Description"
             value={docDescription}
             onChange={(e: ChangeEvent<HTMLInputElement>) => setDocDescription(e.target.value)}
             className="w-full"
           />
-          <div className=" w-full mt-4">
+          <div className=" mt-4 w-full">
             <InputTags
               label="Document Keywords"
               placeholder="Type keyword..."
@@ -175,7 +175,7 @@ const GearModal = ({ className }: any) => {
           </div>
           <Button
             loading={formTargetHandler === 'description' && isLoading}
-            className="btn-block btn-primary text-white btn-sm mt-4"
+            className="btn-primary btn-sm btn-block mt-4 text-white"
             onClick={saveDescriptionHandler}>
             Save
           </Button>

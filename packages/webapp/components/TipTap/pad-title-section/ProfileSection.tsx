@@ -14,7 +14,7 @@ const ProfileSection = () => {
   const [isModalOpen, setModalOpen] = useState(false)
 
   return (
-    <div className="mr-2 ml-5 sm:flex hidden">
+    <div className="ml-5 mr-2 hidden sm:flex">
       {user ? (
         <Avatar
           onClick={() => setModalOpen(true)}
@@ -22,7 +22,7 @@ const ProfileSection = () => {
           src={user.avatar_url}
           width={24}
           height={24}
-          className="rounded-full shadow-xl border w-11 h-11 cursor-pointer"
+          className="size-11 cursor-pointer rounded-full border shadow-xl"
         />
       ) : (
         <Button id="btn_signin">Signin</Button>

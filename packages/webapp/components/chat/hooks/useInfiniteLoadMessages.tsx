@@ -1,6 +1,6 @@
 import { useState, useEffect, MutableRefObject } from 'react'
 import { groupedMessages } from '@utils/index'
-import { useStore, useChatStore } from '@stores'
+import { useChatStore } from '@stores'
 import { fetchMessagesPaginated } from '@api'
 import { useChannel } from '../context/ChannelProvider'
 

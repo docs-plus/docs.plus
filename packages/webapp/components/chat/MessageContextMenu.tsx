@@ -11,7 +11,7 @@ import { RiPencilFill } from 'react-icons/ri'
 // import { useForwardMessageModalStore } from '@/components/messages/components/ForwardMessageModal'
 import toast from 'react-hot-toast'
 import { ContextMenu, MenuItem } from './components/ui/ContextMenu'
-import { useStore, useAuthStore, useChatStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 import { BiSolidMessageDetail } from 'react-icons/bi'
 import { useChannel } from './context/ChannelProvider'
 

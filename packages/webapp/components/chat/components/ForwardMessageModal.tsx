@@ -1,7 +1,7 @@
 import { ModalContainer } from './ui/ModalContainer'
 import { useEffect, useRef } from 'react'
 import { create } from 'zustand'
-import { useStore, useAuthStore, useChatStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 import { forwardMessage } from '@api'
 import { useApi } from '@hooks/useApi'
 import toast from 'react-hot-toast'

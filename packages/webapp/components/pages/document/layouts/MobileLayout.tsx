@@ -14,11 +14,11 @@ const MobileLayout = () => {
   return (
     <>
       <div className={`pad tiptap relative flex flex-col border-solid ${deviceType}`}>
-        <div className="docTitle sticky z-10 top-0 bg-white w-full min-h-14 p-2 flex flex-row items-center sm:border-b-0 border-b">
+        <div className="docTitle sticky top-0 z-10 flex min-h-14 w-full flex-row items-center border-b bg-white p-2 sm:border-b-0">
           <PadTitle />
         </div>
         <Editor />
-        <div className="nd_modal hidden bottom nd_filterModal w-full h-full fixed top-0 z-30 ">
+        <div className="nd_modal bottom nd_filterModal fixed top-0 z-30 hidden size-full ">
           <FilterModal />
         </div>
       </div>

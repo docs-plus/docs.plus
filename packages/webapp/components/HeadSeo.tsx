@@ -13,7 +13,7 @@ const DEFAULT_METADATA = {
 const HeadSeo = () => {
   const { metadata } = useStore((state) => state.settings)
 
-  const buildMetadata = ({ title, description, url, keywords, slug }: any) => ({
+  const buildMetadata = ({ title, description, keywords, slug }: any) => ({
     title: title || DEFAULT_METADATA.title,
     description: description || DEFAULT_METADATA.description,
     url: slug ? `${DEFAULT_METADATA.url}/${slug}` : DEFAULT_METADATA.url,

@@ -10,14 +10,14 @@ const Checkbox = ({
   className
 }) => {
   return (
-    <div className={twMerge(`flex align-middle items-center`, className)}>
+    <div className={twMerge(`flex items-center align-middle`, className)}>
       <input
         id={id}
         type="checkbox"
         onChange={onChange}
         disabled={disabled}
         checked={checked}
-        className={`w-4 h-4 checked:accent-indigo-700 text-indigo-600 bg-gray-100 border-gray-300 rounded-md focus:ring-indigo-500 dark:focus:ring-indigo-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600`}
+        className={`size-4 rounded-md border-gray-300 bg-gray-100 text-indigo-600 checked:accent-indigo-700 focus:ring-2 focus:ring-indigo-500 dark:border-gray-600 dark:bg-gray-700 dark:ring-offset-gray-800 dark:focus:ring-indigo-600`}
       />
       {label && (
         <label

@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import debounce from 'lodash/debounce'
 import { markReadMessages } from '@api'
-import { useStore, useChatStore } from '@stores'
+import { useChatStore } from '@stores'
 
 export const useCheckReadMessage = ({ messageContainerRef, channelId, messages }: any) => {
   const [visibleCount, setVisibleCount] = useState<string[]>([])

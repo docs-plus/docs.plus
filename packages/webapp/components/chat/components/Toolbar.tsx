@@ -37,7 +37,7 @@ const Toolbar = () => {
   }
 
   return (
-    <div className="w-full bg-white px-2 py-2 flex items-center relative z-50 border-b border-gray-200 ">
+    <div className="relative z-50 flex w-full items-center border-b border-gray-200 bg-white p-2 ">
       <div className="px-1">
         <Breadcrumb />
         <div className="flex items-center justify-start space-x-2 ">
@@ -46,7 +46,7 @@ const Toolbar = () => {
           <div className="flex space-x-3">
             <p className="text-xs text-base-content">{channel?.member_count} subscribers</p>
 
-            <span className="msgIndicator text-xs block text-accent truncate"></span>
+            <span className="msgIndicator block truncate text-xs text-accent"></span>
           </div>
         </div>
       </div>

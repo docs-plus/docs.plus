@@ -25,7 +25,7 @@ export const ToastNotification = (message: string, options?: Partial<TToastOpt>)
       <div
         className={`${
           t.visible ? 'animate-fadeIn' : 'animate-fadeOut'
-        } join border-none shadow-lg border p-0 flex bg-base-100 rounded-md items-center w-auto min-w-60`}>
+        } join flex w-auto min-w-60 items-center rounded-md border border-none bg-base-100 p-0 shadow-lg`}>
         {opts.displayIcon && (
           <div className={`join-item px-2 ${opts.iconClassName}`}>{opts.icon}</div>
         )}
@@ -33,7 +33,7 @@ export const ToastNotification = (message: string, options?: Partial<TToastOpt>)
           <span>{message}</span>
         </div>
         {opts.displayBtnClose && (
-          <button onClick={() => toast.dismiss(t.id)} className="btn !border-l btn-ghost join-item">
+          <button onClick={() => toast.dismiss(t.id)} className="btn btn-ghost join-item !border-l">
             Close
           </button>
         )}
