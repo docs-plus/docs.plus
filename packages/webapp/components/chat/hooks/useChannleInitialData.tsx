@@ -25,6 +25,7 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
   const currentChannel = useChatStore((state: any) => state.channels.get(channelId))
   const addChannelMember = useChatStore((state) => state.addChannelMember)
   const user = useAuthStore((state: any) => state.profile)
+  const setOrUpdateChannel = useChatStore((state: any) => state.setOrUpdateChannel)
 
   const processChannelData = async (channelId: string) => {
     if (!currentChannel && workspaceId) {
@@ -44,6 +45,8 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
     })
 
     if (channelError) throw new Error(channelError.message)
+
+    setOrUpdateChannel(channelId, channelData.channel_info)
 
     setWorkspaceChannelSetting(
       channelId,
