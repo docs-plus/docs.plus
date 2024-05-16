@@ -1,12 +1,9 @@
--- add tables to the publication
--- reflace the tables changes to all subscribers
-alter publication supabase_realtime add table public.users;
-alter publication supabase_realtime add table public.channels;
-alter publication supabase_realtime add table public.messages;
-alter publication supabase_realtime add table public.channel_members;
-
--- Send "previous data" on change
--- for tracking row changed in realtime
-alter table public.users replica identity full;
-alter table public.channels replica identity full;
-alter table public.messages replica identity full;
+-- Create a new publication named 'supabase_realtime'
+-- This publication will include the specified tables
+-- and will track 'insert', 'update', and 'delete' events
+CREATE PUBLICATION supabase_realtime FOR TABLE
+  public.users,           -- Track changes in the 'users' table
+  public.channels,        -- Track changes in the 'channels' table
+  public.messages,        -- Track changes in the 'messages' table
+  public.channel_members  -- Track changes in the 'channel_members' table
+    WITH (publish = 'insert, update, delete'); -- Publish insert, update, and delete events
