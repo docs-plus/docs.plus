@@ -20,8 +20,6 @@ const Toolbar = () => {
   const chatRoom = useChatStore((state) => state.chatRoom)
   const channel = useChatStore((state: any) => state.channels.get(channelId))
 
-  // console.log({ usersPresence })
-
   useEffect(() => {
     if (!chatRoom) return
     const precenseUsers = usersPresence.values()
