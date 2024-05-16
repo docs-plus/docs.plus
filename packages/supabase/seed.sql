@@ -1,4 +1,3 @@
-
 -- Custom types
 
 -- Define various permissions for app functionality.
@@ -94,7 +93,7 @@ CREATE TYPE notification_category AS ENUM (
 -- COMMENT ON ENUM LABEL notification_category.'invitation' IS 'Sent when a user receives an invitation to join a channel, group, or event.';
 -- COMMENT ON ENUM LABEL notification_category.'system_alert' IS 'Related to system-wide updates or changes, such as maintenance notices, security alerts, or policy updates.';
 -- Table: public.users
--- Description: This table holds essential information about each user within the application. 
+-- Description: This table holds essential information about each user within the application.
 -- It includes user identification, personal and contact details, and system-related information.
 CREATE TABLE public.users (
     id              UUID NOT NULL PRIMARY KEY REFERENCES auth.users ON DELETE CASCADE,
@@ -121,7 +120,7 @@ COMMENT ON COLUMN public.users.status IS 'Represents the current online/offline 
 -- Table: public.workspaces
 -- Description: Represents various workspaces. Each workspace can contain multiple channels.
 CREATE TABLE public.workspaces (
-    id                UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
+    id                VARCHAR(36) DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
     name              TEXT NOT NULL CHECK (length(name) <= 100), -- Workspace name, limited to 100 characters.
     slug              TEXT NOT NULL UNIQUE CHECK (length(slug) <= 100), -- Unique slug for the workspace, used for user-friendly URLs, limited to 100 characters.
     description       TEXT CHECK (length(description) <= 1000), -- Optional description of the workspace, limited to 1000 characters.
@@ -139,8 +138,8 @@ COMMENT ON TABLE public.workspaces IS 'This table contains information about var
 -- Description: Represents various channels in the application, similar to chat rooms or discussion groups.
 -- Channels have attributes like privacy settings, member limits, activity timestamps, and user interaction settings.
 CREATE TABLE public.channels (
-    id                              UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
-    workspace_id                    UUID NOT NULL REFERENCES public.workspaces,
+    id                              VARCHAR(36) DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
+    workspace_id                    VARCHAR(36) NOT NULL REFERENCES public.workspaces,
     created_at                      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL,
     updated_at                      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL,
     slug                            TEXT NOT NULL UNIQUE,
@@ -167,7 +166,7 @@ COMMENT ON TABLE public.channels IS 'This table contains information about vario
 
 
 -- Table: public.messages
--- Description: Stores all messages exchanged in the application. This includes various types of messages like text, image, video, or audio. 
+-- Description: Stores all messages exchanged in the application. This includes various types of messages like text, image, video, or audio.
 -- The table also tracks message status (edited, deleted) and associations (user, channel, replies, and forwardings).
 CREATE TABLE public.messages (
     id                     UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
@@ -179,7 +178,7 @@ CREATE TABLE public.messages (
     html                   TEXT CHECK (length(html) <= 3000), -- The actual HTML content of the message.
     medias                 JSONB, -- Stores URLs to media (images, videos, etc.) associated with the message.
     user_id                UUID NOT NULL REFERENCES public.users, -- The ID of the user who sent the message.
-    channel_id             UUID NOT NULL REFERENCES public.channels ON DELETE SET NULL, -- The ID of the channel where the message was sent.
+    channel_id             VARCHAR(36) NOT NULL REFERENCES public.channels ON DELETE SET NULL, -- The ID of the channel where the message was sent.
     reactions              JSONB, -- JSONB field storing user reactions to the message.
     type                   message_type, -- Enumerated type of the message (text, image, video, etc.).
     metadata               JSONB, -- Additional metadata about the message in JSONB format.
@@ -255,7 +254,7 @@ COMMENT ON TABLE public.messages IS 'Contains individual messages sent by users,
 -- Description: Maintains a record of messages that are pinned in various channels. Pinned messages are typically important or frequently referenced.
 CREATE TABLE public.pinned_messages (
     id            UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
-    channel_id    UUID NOT NULL REFERENCES public.channels ON DELETE CASCADE, -- The ID of the channel in which the message is pinned.
+    channel_id    VARCHAR(36) NOT NULL REFERENCES public.channels ON DELETE CASCADE, -- The ID of the channel in which the message is pinned.
     message_id    UUID NOT NULL REFERENCES public.messages ON DELETE CASCADE, -- The ID of the message that is pinned.
     pinned_at     TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL, -- Timestamp when the message was pinned.
     pinned_by     UUID NOT NULL REFERENCES public.users, -- The ID of the user who pinned the message.
@@ -274,7 +273,7 @@ CREATE TABLE public.notifications (
     receiver_user_id    UUID NOT NULL REFERENCES public.users, -- The ID of the user who will receive the notification.
     type                notification_category NOT NULL, -- Type of the notification (e.g., message, invite, mention).
     message_id          UUID REFERENCES public.messages ON DELETE CASCADE,  -- ID of the associated message, if the notification is message-related.
-    channel_id          UUID REFERENCES public.channels ON DELETE CASCADE, -- ID of the associated channel, if the notification is channel-related.
+    channel_id          VARCHAR(36) REFERENCES public.channels ON DELETE CASCADE, -- ID of the associated channel, if the notification is channel-related.
     message_preview     TEXT, -- Preview of the content related to the notification (if applicable).
     created_at          TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL, -- Timestamp when the notification was created.
     readed_at           TIMESTAMP WITH TIME ZONE, -- Timestamp when the notification was marked as read by the user.
@@ -284,11 +283,11 @@ CREATE TABLE public.notifications (
 
 COMMENT ON TABLE public.notifications IS 'Table to store and manage notifications for various user interactions and activities within the application.';
 -- Table: public.channel_members
--- Description: Manages the membership of users within channels. This table tracks which messages each user has read in a channel, 
+-- Description: Manages the membership of users within channels. This table tracks which messages each user has read in a channel,
 -- enabling the application to maintain an up-to-date read status. This is crucial for message-based applications where read receipts are important.
 CREATE TABLE public.channel_members (
     id                    UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY, -- Unique ID for the channel member record.
-    channel_id            UUID NOT NULL REFERENCES public.channels ON DELETE CASCADE, -- The ID of the channel. If the channel is deleted, associated member records are also deleted.
+    channel_id            VARCHAR(36) NOT NULL REFERENCES public.channels ON DELETE CASCADE, -- The ID of the channel. If the channel is deleted, associated member records are also deleted.
     member_id             UUID NOT NULL REFERENCES public.users ON DELETE CASCADE, -- The ID of the channel member (user). If the user is deleted, their membership records are also deleted.
     last_read_message_id  UUID REFERENCES public.messages, -- The ID of the last message read by the user in the channel. Helps in tracking read status.
     last_read_update_at   TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()), -- Timestamp when the user's last read status was updated.
@@ -383,9 +382,9 @@ DECLARE
   username text;
 BEGIN
   IF new.raw_user_meta_data->>'full_name' IS NULL THEN
-    username := new.email; 
+    username := new.email;
   ELSE
-    username := new.raw_user_meta_data->>'full_name'; 
+    username := new.raw_user_meta_data->>'full_name';
   END IF;
 
   INSERT INTO public.users (id, full_name, avatar_url, email, username)
@@ -435,7 +434,7 @@ EXECUTE FUNCTION update_online_at();
     1.
         Trigger: trigger_add_creator_as_admin
         Description: Trigger that invokes add_channel_creator_as_admin function
-                     to add the channel creator as an admin in channel_members table 
+                     to add the channel creator as an admin in channel_members table
                      after a new channel is created.
     -----------------------------------------
     -----------------------------------------
@@ -473,15 +472,15 @@ RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO public.messages (channel_id, type, user_id, content, metadata)
     VALUES (
-        NEW.id, 
-        'notification', 
-        '992bb85e-78f8-4747-981a-fd63d9317ff1', 
-        'Channel created', 
+        NEW.id,
+        'notification',
+        '992bb85e-78f8-4747-981a-fd63d9317ff1',
+        'Channel created',
         jsonb_build_object(
             'type', 'channel_created'
         )
     );
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -524,17 +523,17 @@ BEGIN
     IF OLD.name IS DISTINCT FROM NEW.name THEN
         INSERT INTO public.messages (channel_id, type, user_id, content, metadata)
         VALUES (
-            NEW.id, 
-            'notification', 
-            '992bb85e-78f8-4747-981a-fd63d9317ff1', 
-            'Channel name was changed to "' || NEW.name || '"', 
+            NEW.id,
+            'notification',
+            '992bb85e-78f8-4747-981a-fd63d9317ff1',
+            'Channel name was changed to "' || NEW.name || '"',
             jsonb_build_object(
-                'type', 'channel_name_changed', 
+                'type', 'channel_name_changed',
                 'name', NEW.name
             )
         );
     END IF;
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -564,16 +563,16 @@ BEGIN
 
     INSERT INTO public.messages (user_id, channel_id, type, content, metadata)
     VALUES (
-        NEW.member_id, 
-        NEW.channel_id, 
-        'notification', 
-        joining_username || ' joined the channel', 
+        NEW.member_id,
+        NEW.channel_id,
+        'notification',
+        joining_username || ' joined the channel',
         jsonb_build_object(
-            'type', 'user_join_channel', 
+            'type', 'user_join_channel',
             'user_name', joining_username
         )
     );
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -599,16 +598,16 @@ BEGIN
 
     INSERT INTO public.messages (user_id, channel_id, type, content, metadata)
     VALUES (
-        OLD.member_id, 
-        OLD.channel_id, 
-        'notification', 
-        leaving_username || ' left the channel', 
+        OLD.member_id,
+        OLD.channel_id,
+        'notification',
+        leaving_username || ' left the channel',
         jsonb_build_object(
-            'type', 'user_leave_channel', 
+            'type', 'user_leave_channel',
             'user_name', leaving_username
         )
     );
-    
+
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -658,6 +657,29 @@ CREATE TRIGGER trg_decrement_member_count
 AFTER DELETE ON public.channel_members
 FOR EACH ROW
 EXECUTE FUNCTION decrement_member_count();
+
+
+--------------------------------------------
+--------------------------------------------
+CREATE OR REPLACE FUNCTION prevent_duplicate_channel_member()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Check if a record already exists with the same channel_id and member_id
+    IF EXISTS (
+        SELECT 1 FROM public.channel_members
+        WHERE channel_id = NEW.channel_id AND member_id = NEW.member_id
+    ) THEN
+        -- If exists, raise an exception
+        RAISE EXCEPTION 'This user is already a member of the channel.';
+    END IF;
+    -- If not, allow the insertion
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER check_duplicate_member
+BEFORE INSERT ON public.channel_members
+FOR EACH ROW EXECUTE FUNCTION prevent_duplicate_channel_member();
 CREATE OR REPLACE FUNCTION handle_soft_delete() RETURNS TRIGGER AS $$
 DECLARE
     truncated_content TEXT;
@@ -925,7 +947,7 @@ CREATE OR REPLACE FUNCTION create_thread_message(
     p_content TEXT,
     p_html TEXT,
     p_thread_id UUID,
-    p_workspace_id UUID
+    p_workspace_id VARCHAR(36)
 )
 RETURNS VOID
 AS $$
@@ -1012,7 +1034,7 @@ BEGIN
         END IF;
 
         -- Increment the message_count
-        current_metadata := jsonb_set(current_metadata, '{thread, message_count}', 
+        current_metadata := jsonb_set(current_metadata, '{thread, message_count}',
             ((current_metadata->'thread'->>'message_count')::int + 1)::text::jsonb, true);
 
         -- Update the root message's metadata
@@ -1042,7 +1064,7 @@ BEGIN
     -- Check for the root message ID from the thread_id of the message being deleted or soft-deleted
     IF OLD.thread_id IS NOT NULL AND OLD.deleted_at IS NOT NULL THEN
         root_id := NEW.thread_id;
-        
+
         -- Retrieve current metadata or initialize if null
         SELECT metadata INTO current_metadata FROM public.messages WHERE id = root_id;
         IF current_metadata IS NULL THEN
@@ -1055,7 +1077,7 @@ BEGIN
         END IF;
 
         -- Decrement the message_count but do not go below zero
-        current_metadata := jsonb_set(current_metadata, '{thread, message_count}', 
+        current_metadata := jsonb_set(current_metadata, '{thread, message_count}',
             GREATEST((current_metadata->'thread'->>'message_count')::int - 1, 0)::text::jsonb, true);
 
         -- Update the root message's metadata
@@ -1245,7 +1267,7 @@ COMMENT ON TRIGGER update_channel_preview_on_new_message_trigger ON public.messa
 /*
     --------------------------------------------------------
     Trigger Function: copy_content_for_forwarded_message
-    Description: Prepares a new message record before insertion when the message is a forward. 
+    Description: Prepares a new message record before insertion when the message is a forward.
                  It copies the content and media from the original message, resetting certain fields to ensure integrity.
     --------------------------------------------------------
 */
@@ -1260,8 +1282,8 @@ BEGIN
   -- Check if the message is a forward by the presence of origin_message_id
   IF NEW.origin_message_id IS NOT NULL THEN
     -- Retrieve content, media, and metadata from the original message
-    SELECT content, html, medias, metadata, user_id INTO original_message 
-    FROM public.messages 
+    SELECT content, html, medias, metadata, user_id INTO original_message
+    FROM public.messages
     WHERE id = NEW.origin_message_id;
 
     -- Retrieve the forwarding user's details
@@ -1304,7 +1326,7 @@ $$ LANGUAGE plpgsql;
 /*
     --------------------------------------------------------
     Trigger: forward_message_content_before_insert_trigger
-    Description: Activated before inserting a new message. It invokes copy_content_for_forwarded_message 
+    Description: Activated before inserting a new message. It invokes copy_content_for_forwarded_message
                  function to replicate content and media for forwarded messages, ensuring that certain fields are reset.
     --------------------------------------------------------
 */
@@ -1384,7 +1406,7 @@ FOR EACH ROW EXECUTE FUNCTION update_message_metadata_on_unpin();
 /*
     --------------------------------------------------------
     Trigger Function: update_channel_activity_on_pin
-    Description: Updates the last activity timestamp of a channel when a message is pinned to it. 
+    Description: Updates the last activity timestamp of a channel when a message is pinned to it.
                  This helps in tracking the latest interactions within the channel.
     --------------------------------------------------------
 */
@@ -1404,7 +1426,7 @@ $$ LANGUAGE plpgsql;
 /*
     --------------------------------------------------------
     Trigger: channel_activity_update_on_message_pin_trigger
-    Description: Triggered after a message is pinned. It invokes update_channel_activity_on_pin 
+    Description: Triggered after a message is pinned. It invokes update_channel_activity_on_pin
                  function to refresh the channel's last activity timestamp.
     --------------------------------------------------------
 */
@@ -1552,7 +1574,7 @@ EXECUTE FUNCTION create_notifications_for_everyone();
 -- Description: Creates a notification for each member of the channel, excluding the sender,
 --              only if the channel is not muted, the member has not muted notifications,
 --              and the member is not currently online.
---              If the user is online, they do not need a notification for the current and other channels; 
+--              If the user is online, they do not need a notification for the current and other channels;
 --              instead, they only need the unread count and mention notifications.
 CREATE OR REPLACE FUNCTION create_notifications_for_regular_messages()
 RETURNS TRIGGER AS $$
@@ -1701,7 +1723,7 @@ COMMENT ON FUNCTION increment_unread_count_on_new_message() IS 'Function to incr
 /*
     --------------------------------------------------------
     Trigger: increment_unread_count_after_new_message
-    Description: Triggered after a new message is inserted. Calls the 
+    Description: Triggered after a new message is inserted. Calls the
                  increment_unread_count_on_new_message function to update unread message counts
                  for members in the message's channel.
     --------------------------------------------------------
@@ -1721,7 +1743,7 @@ CREATE OR REPLACE FUNCTION decrement_unread_message_count() RETURNS TRIGGER AS $
 DECLARE
     channel_member RECORD;
     notification_count INT;
-    channel_id_used UUID;
+    channel_id_used VARCHAR(36);
 BEGIN
     -- Determine whether it's a soft delete (update) or hard delete
     IF TG_OP = 'DELETE' THEN
@@ -1733,8 +1755,8 @@ BEGIN
     -- Decrement unread message count for channel members
     FOR channel_member IN SELECT * FROM public.channel_members WHERE channel_id = channel_id_used LOOP
         -- Count the notifications associated with the message for this particular user
-        SELECT COUNT(*) INTO notification_count 
-        FROM public.notifications 
+        SELECT COUNT(*) INTO notification_count
+        FROM public.notifications
         WHERE receiver_user_id = channel_member.member_id AND channel_id = channel_id_used AND readed_at IS NULL;
 
         UPDATE public.channel_members
@@ -1763,7 +1785,7 @@ EXECUTE FUNCTION decrement_unread_message_count();
 -- Test
 -- SELECT * FROM get_channel_aggregate_data('99634205-5238-4ffc-90ec-c64be3ad25cf');
 CREATE OR REPLACE FUNCTION get_channel_aggregate_data(
-    input_channel_id UUID,
+    input_channel_id VARCHAR(36),
     message_limit INT DEFAULT 20
 )
 RETURNS TABLE(
@@ -1787,7 +1809,7 @@ DECLARE
     last_read_message_timestamp TIMESTAMP WITH TIME ZONE;
     unread_message BOOLEAN := FALSE;
 BEGIN
- 
+
     -- Get the last_read_message_id for the current user in the channel
     SELECT cm.last_read_message_id INTO last_read_message_id
     FROM public.channel_members cm
@@ -1800,8 +1822,8 @@ BEGIN
 
     -- Count messages since the last read message and adjust message_limit
     SELECT COUNT(*) INTO total_messages_since_last_read
-    FROM public.messages 
-    WHERE channel_id = input_channel_id 
+    FROM public.messages
+    WHERE channel_id = input_channel_id
         AND created_at >= last_read_message_timestamp
         AND deleted_at IS NULL;
 
@@ -1833,9 +1855,9 @@ BEGIN
     FROM (
         SELECT m.*,
             json_build_object(
-                'id', u.id, 
-                'username', u.username, 
-                'fullname', u.full_name, 
+                'id', u.id,
+                'username', u.username,
+                'fullname', u.full_name,
                 'avatar_url', u.avatar_url
             ) AS user_details,
             CASE
@@ -1873,7 +1895,7 @@ BEGIN
     IF total_messages_since_last_read <= 0 THEN
         total_messages_since_last_read := message_limit;
     END IF;
-        
+
     -- Query for the pinned messages
     SELECT json_agg(pm) INTO pinned_result
     FROM public.pinned_messages pm
@@ -1905,7 +1927,7 @@ $$ LANGUAGE plpgsql;
 -------------------------------------------------
 -- p_message_id =: is the last message inserted in the channel
 CREATE OR REPLACE FUNCTION mark_messages_as_read(
-    p_channel_id UUID, 
+    p_channel_id VARCHAR(36),
     p_message_id UUID
 )
 RETURNS VOID AS $$
@@ -1935,7 +1957,6 @@ BEGIN
         WHERE channel_id = p_channel_id
           AND user_id != auth.uid()
           AND created_at <= target_timestamp
-          AND thread_id IS NULL
           AND readed_at IS NULL;
 
         IF messages_to_mark_count > 0 THEN
@@ -1945,7 +1966,6 @@ BEGIN
             WHERE channel_id = p_channel_id
               AND user_id != auth.uid()
               AND created_at <= target_timestamp
-              AND thread_id IS NULL
               AND readed_at IS NULL;
 
             -- Mark the notification as read
@@ -1971,9 +1991,9 @@ $$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER;
 --------------------------------------------------
 
 CREATE OR REPLACE FUNCTION get_channel_messages_paginated(
-    input_channel_id UUID,
+    input_channel_id VARCHAR(36),
     page INT,
-    page_size INT DEFAULT 20 
+    page_size INT DEFAULT 20
 )
 RETURNS TABLE(
     messages JSONB
@@ -1989,9 +2009,9 @@ BEGIN
     FROM (
         SELECT m.*,
             json_build_object(
-                'id', u.id, 
-                'username', u.username, 
-                'fullname', u.full_name, 
+                'id', u.id,
+                'username', u.username,
+                'fullname', u.full_name,
                 'avatar_url', u.avatar_url
             ) AS user_details,
             CASE
@@ -2014,10 +2034,9 @@ BEGIN
             END AS replied_message_details
         FROM public.messages m
         LEFT JOIN public.users u ON m.user_id = u.id
-        WHERE m.channel_id = input_channel_id 
-            AND m.deleted_at IS NULL 
-            AND m.thread_id IS NULL
-        ORDER BY m.created_at DESC 
+        WHERE m.channel_id = input_channel_id
+            AND m.deleted_at IS NULL
+        ORDER BY m.created_at DESC
         LIMIT page_size OFFSET message_offset
     ) t;
 
@@ -2032,8 +2051,9 @@ $$ LANGUAGE plpgsql;
 
 -------------------------------
 -------------------------------
+--- It's like a server function, and we do not concern ourselves with performance issues!
 CREATE OR REPLACE FUNCTION create_direct_message_channel(
-    workspace_uid UUID,
+    workspace_uid VARCHAR(36),
     user_id UUID
 ) RETURNS JSONB AS $$
 DECLARE
@@ -2041,9 +2061,11 @@ DECLARE
     display_name TEXT;
     full_name TEXT;
     email TEXT;
-    new_channel JSONB;  -- Declaring as JSONB
-    existing_channel JSONB;  -- Declaring as JSONB
-    current_user_id UUID := auth.uid(); -- Store the current user ID
+    new_channel JSONB;
+    existing_channel JSONB;
+    current_user_id UUID := auth.uid();
+    new_channel_id UUID := uuid_generate_v4();
+    is_member BOOLEAN;
 BEGIN
     -- Get the name of the user
     SELECT users.username, users.full_name, users.display_name, users.email
@@ -2058,8 +2080,7 @@ BEGIN
     WHERE ch.type = 'DIRECT'
     AND ch.workspace_id = workspace_uid
     AND EXISTS (
-        SELECT 1
-        FROM public.channel_members cm
+        SELECT 1 FROM public.channel_members cm
         WHERE cm.channel_id = ch.id
         AND cm.member_id IN (current_user_id, user_id)
         GROUP BY cm.channel_id
@@ -2072,13 +2093,29 @@ BEGIN
     END IF;
 
     -- Otherwise, create a new channel
-    INSERT INTO public.channels (workspace_id, type, name, slug, created_by)
-    VALUES (workspace_uid, 'DIRECT', user_name, uuid_generate_v4(), current_user_id)
+    INSERT INTO public.channels (id, workspace_id, type, name, slug, created_by)
+    VALUES (new_channel_id, workspace_uid, 'DIRECT', user_name, uuid_generate_v4(), current_user_id)
     RETURNING to_jsonb(public.channels.*) INTO new_channel;
 
-    -- Add both users as members to the new channel
-    INSERT INTO public.channel_members (channel_id, member_id, joined_at)
-    VALUES (new_channel->>'id', user_id, now());
+    -- Check if the current user is already a member of the new channel
+    SELECT EXISTS (
+        SELECT 1 FROM public.channel_members WHERE channel_id = new_channel_id AND member_id = current_user_id
+    ) INTO is_member;
+
+    IF NOT is_member THEN
+        INSERT INTO public.channel_members (channel_id, member_id, joined_at)
+        VALUES (new_channel_id, current_user_id, now());
+    END IF;
+
+    -- Check if the other user is already a member of the new channel
+    SELECT EXISTS (
+        SELECT 1 FROM public.channel_members WHERE channel_id = new_channel_id AND member_id = user_id
+    ) INTO is_member;
+
+    IF NOT is_member THEN
+        INSERT INTO public.channel_members (channel_id, member_id, joined_at)
+        VALUES (new_channel_id, user_id, now());
+    END IF;
 
     RETURN new_channel;
 END;
@@ -2087,16 +2124,16 @@ $$ LANGUAGE plpgsql;
 /*----------------  Events TABLE  ---------------------*/
 
 
-create table public.events ( 
-  -- a primary key is necessary for realtime RLS to work 
-  id int generated always as identity primary key, 
-  -- `null` if the event is public, and the `auth.uid` if the event is for specific user. 
+create table public.events (
+  -- a primary key is necessary for realtime RLS to work
+  id int generated always as identity primary key,
+  -- `null` if the event is public, and the `auth.uid` if the event is for specific user.
   uid uuid,
-  -- customized topic including filters (e.g. "messages_view|{otherUID}" or "comments|{postID}") 
-  topic text, 
+  -- customized topic including filters (e.g. "messages_view|{otherUID}" or "comments|{postID}")
+  topic text,
   -- The inserted/updated data wrapped in a json object
   data json,
-  -- `INSERT`, `UPDATE`, or `DELETE` 
+  -- `INSERT`, `UPDATE`, or `DELETE`
   event_type text,
   -- used to delete old events by a cron job
   created_at timestamp with time zone DEFAULT now() NOT NULL
@@ -2105,7 +2142,7 @@ create table public.events (
 
 /*----------------  REALTIME SETUP  ---------------------*/
 
--- clients can only listen to the events table and only for insert events. 
+-- clients can only listen to the events table and only for insert events.
 ALTER PUBLICATION supabase_realtime SET (publish = 'insert');
 ALTER PUBLICATION supabase_realtime ADD TABLE events;
 
@@ -2178,105 +2215,6 @@ CREATE INDEX idx_workspaces_slug ON public.workspaces (slug);
 -- create a system user for system messages
 insert into auth.users (id, email)
 values ('992bb85e-78f8-4747-981a-fd63d9317ff1', 'system@system.com');
-/*
-  File: storage_buckets.sql
-  Description: This script defines the storage buckets for a messaging application, similar to Slack.
-  The buckets are designed to store different types of media: user avatars, channel avatars, and general media files.
-  Each bucket has specific policies to control access and usage, ensuring secure and organized file management.
-
-  Reference Documentation:
-  - Storage Overview: https://supabase.com/docs/guides/storage
-  - Storage Schema: https://supabase.com/docs/guides/storage/schema/design
-  - Storage API: https://supabase.com/docs/reference/javascript/storage
-
-  Buckets Overview:
-  - 'user_avatars': For storing user profile images.
-  - 'channel_avatars': For storing images representing chat channels.
-  - 'media': For storing general media files related to messages.
-*/
-
--- User Avatars Bucket Configuration
--- Purpose: Store user profile images.
--- Max File Size: 1MB (1,048,576 bytes).
--- Allowed MIME Types: JPEG, PNG, SVG, GIF, WebP.
-INSERT INTO storage.buckets
-    (id, name, public, file_size_limit, allowed_mime_types)
-VALUES
-    ('user_avatars', 'user_avatars', true, 1048576,
-     '{"image/jpeg", "image/png", "image/svg+xml", "image/gif", "image/webp"}');
-
--- Policies for User Avatars Bucket
-CREATE POLICY "User Avatar is publicly accessible" ON storage.objects
-    FOR SELECT TO authenticated USING (bucket_id = 'user_avatars');
-CREATE POLICY "User can upload an avatar" ON storage.objects
-    FOR INSERT WITH CHECK (bucket_id = 'user_avatars');
-CREATE POLICY "User can update own avatar" ON storage.objects
-    FOR UPDATE TO authenticated USING (auth.uid() = owner AND bucket_id = 'user_avatars');
-CREATE POLICY "User can delete own avatar" ON storage.objects
-    FOR DELETE TO authenticated USING (auth.uid() = owner AND  bucket_id = 'user_avatars');
-
--- Channel Avatars Bucket Configuration
--- Purpose: Store images for chat channels.
--- Max File Size: 1MB (1,048,576 bytes).
--- Allowed MIME Types: JPEG, PNG, SVG, GIF, WebP.
-INSERT INTO storage.buckets
-    (id, name, public, file_size_limit, allowed_mime_types)
-VALUES
-    ('channel_avatars', 'channel_avatars', true, 1048576,
-     '{"image/jpeg", "image/png", "image/svg+xml", "image/gif", "image/webp"}');
-
--- Policies for Channel Avatars Bucket
-CREATE POLICY "Channel Avatar is publicly accessible" ON storage.objects
-    FOR SELECT TO authenticated USING (bucket_id = 'channel_avatars');
-CREATE POLICY "User can upload a channel avatar" ON storage.objects
-    FOR INSERT WITH CHECK (bucket_id = 'channel_avatars');
-CREATE POLICY "User can update own channel avatar" ON storage.objects
-    FOR UPDATE TO authenticated USING (auth.uid() = owner AND bucket_id = 'channel_avatars');
-CREATE POLICY "User can delete own channel avatar" ON storage.objects
-    FOR DELETE TO authenticated USING (auth.uid() = owner AND bucket_id = 'channel_avatars');
-
--- Media Files Bucket Configuration
--- Purpose: Store various media files related to messages.
--- Max File Size: 2MB (2,097,152 bytes).
--- Allowed MIME Types: All file types.
-INSERT INTO storage.buckets
-    (id, name, public, file_size_limit, allowed_mime_types)
-VALUES
-    ('media', 'media', true, 2097152, '{"*/*"}');
-
--- Policies for Media Files Bucket
-CREATE POLICY "Media files are publicly accessible" ON storage.objects
-    FOR SELECT TO authenticated USING (bucket_id = 'media');
-CREATE POLICY "User can upload media files" ON storage.objects
-    FOR INSERT TO authenticated WITH CHECK (bucket_id = 'media');
-CREATE POLICY "User can update own media files" ON storage.objects
-    FOR UPDATE TO authenticated USING (auth.uid() = owner AND bucket_id = 'media');
-CREATE POLICY "User can delete own media files" ON storage.objects
-    FOR DELETE TO authenticated USING (auth.uid() = owner AND bucket_id = 'media');
--- RLS: Row Level Security
--- RLS is used to restrict access to rows in a table
-
--- CREATE TYPE public.channel_type AS ENUM
--- (
---     'PUBLIC',     -- PUBLIC: Open for all users. Any user of the application can join and participate.
---     'PRIVATE',    -- PRIVATE: Restricted access. Users can join only by invitation or approval.
---     'BROADCAST',  -- BROADCAST: One-way communication channel where selected users can post, but all users can view.
---     'ARCHIVE',    -- ARCHIVE: Read-only channel for historical/reference purposes. No new messages can be posted.
---     'DIRECT',     -- DIRECT: One-on-one private conversation between two users.
---     'GROUP'       -- GROUP: For a specific set of users, typically used for group discussions or team collaborations.
--- );
-
--- 1. only admin user can archive channel
--- 2. only admin user can insert pinned message
--- 3. only admin user can delete pinned message
--- 4. only user who is joined in channel can send messages
--- 5. only user who is joined in channel can reply to messages
--- 6. only user who is joined in channel can edit own messages
--- 7. only user who is joined in channel can delete own messages
--- 8. only user who is joined in channel can forward a message to this channel
--- 9. only user who is joined in channel can forward a message to other channel if user is joined in that channel
--- 10. noone can insert, delete, update messages in channel which is archived
--- 11. only admin user can insert, delete, update messages in channel which is broadcast
 
 -- 12. owner of the message just can access to the message metadata
 -- 13. owner of the channel can mention to everyone in the channel
@@ -2300,18 +2238,18 @@ CREATE EXTENSION IF NOT EXISTS pg_cron;
 
 -- Confirm that 'pg_cron' extension is activated.
 -- SELECT * FROM pg_extension WHERE extname = 'pg_cron';
--- This cron job is scheduled to run every 5 minutes. Its purpose is to update the status of users in the `public.users` table. 
+-- This cron job is scheduled to run every 5 minutes. Its purpose is to update the status of users in the `public.users` table.
 -- It sets the status to 'OFFLINE' for users who have not been active (as indicated by their `last_seen_at` timestamp) for more than 5 minutes.
 -- This ensures that the user status remains up-to-date, reflecting whether they are currently active or inactive in the application.
 -- NOTE: Active the pg_cron Extension in Supabase.
 SELECT cron.schedule(
     'update-user-status',
     '*/5 * * * *',
-    $$ 
+    $$
     UPDATE public.users
     SET status = 'OFFLINE'
     WHERE online_at < NOW() - INTERVAL '5 minutes' AND status = 'ONLINE';
-    $$ 
+    $$
 );
 
 
@@ -2366,8 +2304,8 @@ values
 */
 insert into public.channels (id, workspace_id, slug, name, created_by, description, type)
 values
-    ('4b9f0f7e-6cd5-49b6-a8c3-141ef5905959', '91fd572a-60a3-4baa-9e6a-39e7ae460d9e', 'public', 'Public', '8d0fd2b3-9ca7-4d9e-a95f-9e13dded323e', 'General public discussions', 'PUBLIC'), 
-    ('27c6745d-cebd-4afd-92b0-3b9b9312381b', '91fd572a-60a3-4baa-9e6a-39e7ae460d9e', 'random', 'Random', '8d0fd2b3-9ca7-4d9e-a95f-9e13dded323e', 'Random thoughts and ideas', 'PUBLIC'), 
+    ('4b9f0f7e-6cd5-49b6-a8c3-141ef5905959', '91fd572a-60a3-4baa-9e6a-39e7ae460d9e', 'public', 'Public', '8d0fd2b3-9ca7-4d9e-a95f-9e13dded323e', 'General public discussions', 'PUBLIC'),
+    ('27c6745d-cebd-4afd-92b0-3b9b9312381b', '91fd572a-60a3-4baa-9e6a-39e7ae460d9e', 'random', 'Random', '8d0fd2b3-9ca7-4d9e-a95f-9e13dded323e', 'Random thoughts and ideas', 'PUBLIC'),
     ('7ea75977-9bc0-4008-b5b8-13c56d16a588', '91fd572a-60a3-4baa-9e6a-39e7ae460d9e', 'game-boy', 'GameBoy', '35477c6b-f9a0-4bad-af0b-545c99b33fae', 'Game boy, win game awards, etc.', 'BROADCAST'),
     ('4d582754-4d72-48f8-9e72-f6aa63dacada', '91fd572a-60a3-4baa-9e6a-39e7ae460d9e', 'netfilix', 'Netfilix', '35477c6b-f9a0-4bad-af0b-545c99b33fae', 'Let’s talk about Netflix series', 'PRIVATE'),
     ('70ceab8b-2cf6-4004-8561-219de9b11ec2', '91fd572a-60a3-4baa-9e6a-39e7ae460d9e', 'movie-night', 'Movie Night', '1059dbd0-3478-46f9-b8a9-dcd23ed0a23a', 'Movie suggestions and discussions', 'DIRECT'),
@@ -2383,7 +2321,7 @@ values
 -- openai       -> BROADCAST    -> jhon
 -- tech-talk    -> GROUP        -> lisa
 
-/* 
+/*
     -----------------------------------------
     3. Join Users to Channels
        Expectation: Users should be joined to channels as members.
@@ -2395,7 +2333,7 @@ values
     -- Owner and Admin -> philip
     ('7ea75977-9bc0-4008-b5b8-13c56d16a588', '5f55998b-7958-4ae3-bcb7-539c65c00884'), -- game-boy   ==join==>   jack
     ('7ea75977-9bc0-4008-b5b8-13c56d16a588', '1059dbd0-3478-46f9-b8a9-dcd23ed0a23a'), -- game-boy   ==join==>   emma
-    
+
     -- Owner and Admin -> philip
     ('4d582754-4d72-48f8-9e72-f6aa63dacada', 'c2e3e9e7-d0e8-4960-9b05-d263deb2722f'), -- netfilix   ==join==>   lisa
     ('4d582754-4d72-48f8-9e72-f6aa63dacada', '1059dbd0-3478-46f9-b8a9-dcd23ed0a23a'), -- netfilix   ==join==>   emma
@@ -2413,10 +2351,10 @@ values
     ('dc6a0f60-5260-456b-a5c7-b799cece8807', '35477c6b-f9a0-4bad-af0b-545c99b33fae'), -- openai     ==join==>   philip
     ('dc6a0f60-5260-456b-a5c7-b799cece8807', '5f55998b-7958-4ae3-bcb7-539c65c00884'); -- openai     ==join==>   jack
 
-/* 
+/*
     -----------------------------------------
     4. Create Random Messages
-       Expectations: 
+       Expectations:
            - Five messages should be created.
            - Channel's last message preview must be updated.
            - Messages longer than 70 characters should be truncated.
@@ -2428,18 +2366,18 @@ values
 insert into public.messages (id, content, channel_id, user_id)
 values
     (
-    '84fd39d1-4467-4181-b07d-b4e9573bc8f9', 
+    '84fd39d1-4467-4181-b07d-b4e9573bc8f9',
     'Hello World 👋',
     '4b9f0f7e-6cd5-49b6-a8c3-141ef5905959', '8d0fd2b3-9ca7-4d9e-a95f-9e13dded323e' -- public -- supabot
     ),
     (
-    '0363b237-8a72-462c-91b5-f5ee40958cf5', 
-    'Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.', 
+    '0363b237-8a72-462c-91b5-f5ee40958cf5',
+    'Perfection is attained, not when there is nothing more to add, but when there is nothing left to take away.',
     '27c6745d-cebd-4afd-92b0-3b9b9312381b',  '8d0fd2b3-9ca7-4d9e-a95f-9e13dded323e' -- random -- supabot
     ),
     (
     '5de80678-2e4b-4850-ae0e-4e71afaf61bb',
-    'hey, whats up, what do we have for this weekend?', 
+    'hey, whats up, what do we have for this weekend?',
     '4d582754-4d72-48f8-9e72-f6aa63dacada', 'c2e3e9e7-d0e8-4960-9b05-d263deb2722f'  -- netfilix -- lisa
     ),
     (
@@ -2487,7 +2425,7 @@ values
 INSERT INTO public.messages (id, content, channel_id, user_id)
 VALUES (
     'f8d2002b-01ff-4c4a-9375-92c24e942950',
-    'Exciting news about upcoming features!', 
+    'Exciting news about upcoming features!',
     '4d582754-4d72-48f8-9e72-f6aa63dacada',  -- netfilix
     '1059dbd0-3478-46f9-b8a9-dcd23ed0a23a' -- emma
 );
@@ -2495,8 +2433,8 @@ VALUES (
 -- step 2: add a reaction to the message - lisa reaction
 UPDATE public.messages
 SET reactions = jsonb_set(
-    COALESCE(reactions, '{}'), 
-    '{😄}', 
+    COALESCE(reactions, '{}'),
+    '{😄}',
     COALESCE(reactions->'😄', '[]') || jsonb_build_array(jsonb_build_object('user_id', 'c2e3e9e7-d0e8-4960-9b05-d263deb2722f', 'created_at', current_timestamp)),
     true
 )
@@ -2505,8 +2443,8 @@ WHERE id = 'f8d2002b-01ff-4c4a-9375-92c24e942950';
 -- step 3: add another reaction to the message - philip racation
 UPDATE public.messages
 SET reactions = jsonb_set(
-    COALESCE(reactions, '{}'), 
-    '{👍}', 
+    COALESCE(reactions, '{}'),
+    '{👍}',
     COALESCE(reactions->'👍', '[]') || jsonb_build_array(jsonb_build_object('user_id', '35477c6b-f9a0-4bad-af0b-545c99b33fae', 'created_at', current_timestamp)),
     true
 )
@@ -2515,7 +2453,7 @@ WHERE id = 'f8d2002b-01ff-4c4a-9375-92c24e942950';
 /*
     -----------------------------------------
     7. Reply to Messages
-       Expectation: 
+       Expectation:
             1. Two messages should be attached to the first message (ID '1a3485e7-48eb-4fd1-afe1-3bb5506e4fe1') as replies.
             2. Notifications should be created for the replies:
                 a. A 'reply' type notification should be sent to the user with ID '1059dbd0-3478-46f9-b8a9-dcd23ed0a23a' (emma), as she is the owner of the original message.
@@ -2526,8 +2464,8 @@ WHERE id = 'f8d2002b-01ff-4c4a-9375-92c24e942950';
 
 -- step 1: create a message
 INSERT INTO public.messages (id, content, channel_id, user_id )
-VALUES 
-(   
+VALUES
+(
     '1a3485e7-48eb-4fd1-afe1-3bb5506e4fe1', -- ID
     'Whos excited for the new Netflix series?', -- Content
     '4d582754-4d72-48f8-9e72-f6aa63dacada', -- Channel: netfilix
@@ -2536,7 +2474,7 @@ VALUES
 
 -- step 2: reply to the message
 INSERT INTO public.messages (channel_id, user_id, content, reply_to_message_id)
-VALUES 
+VALUES
 (
     '4d582754-4d72-48f8-9e72-f6aa63dacada', -- Channel: netfilix
     'c2e3e9e7-d0e8-4960-9b05-d263deb2722f', -- User: lisa
@@ -2571,8 +2509,8 @@ values
 -- step 2: emma react to the message
 UPDATE public.messages
 SET reactions = jsonb_set(
-    COALESCE(reactions, '{}'), 
-    '{👍}', 
+    COALESCE(reactions, '{}'),
+    '{👍}',
     COALESCE(reactions->'👍', '[]') || jsonb_build_array(jsonb_build_object('user_id', '1059dbd0-3478-46f9-b8a9-dcd23ed0a23a', 'created_at', current_timestamp)),
     true
 )
@@ -2581,8 +2519,8 @@ WHERE id = '0486ed3d-8e48-49ed-b8af-2387909f642f';
 -- step 3: add a custom metadata to the message
 UPDATE public.messages
 SET metadata = jsonb_set(
-    COALESCE(metadata, '{}'), 
-    '{is_important}', 
+    COALESCE(metadata, '{}'),
+    '{is_important}',
     'true',
     true
 )
@@ -2600,7 +2538,7 @@ VALUES(
 -- step 6: forward the message in to two channels
 INSERT INTO public.messages (id, channel_id, user_id, origin_message_id)
 values
-(   
+(
     'b9a33e13-3fd0-43f7-b46e-1291253587ad', -- ID
     'dc6a0f60-5260-456b-a5c7-b799cece8807', -- Channel: openai
     '35477c6b-f9a0-4bad-af0b-545c99b33fae', -- User: philip
@@ -2626,8 +2564,8 @@ values
 -- step 8: lisa react to the forwarded message
 UPDATE public.messages
 SET reactions = jsonb_set(
-    COALESCE(reactions, '{}'), 
-    '{😼}', 
+    COALESCE(reactions, '{}'),
+    '{😼}',
     COALESCE(reactions->'😼', '[]') || jsonb_build_array(jsonb_build_object('user_id', 'c2e3e9e7-d0e8-4960-9b05-d263deb2722f', 'created_at', current_timestamp)),
     true
 )
@@ -2636,8 +2574,8 @@ WHERE id = '4701aef9-cfcc-45e2-80ec-e0f3ffdc25dc';
 -- step 9: add a custom metadata to the forwarded message
 UPDATE public.messages
 SET metadata = jsonb_set(
-    COALESCE(metadata, '{}'), 
-    '{is_important}', 
+    COALESCE(metadata, '{}'),
+    '{is_important}',
     'true',
     true
 )
@@ -2757,7 +2695,7 @@ WHERE id = '5716352d-9380-49aa-9509-71e06f8b3d23';
 /*
     -----------------------------------------
     12. Soft Delete a Message
-       Expectation: 
+       Expectation:
        This scenario tests the soft deletion of a message within the application, focusing on the comprehensive effects of such an action.
        Specifically, it examines the following outcomes:
        1. The targeted message should be soft-deleted, indicated by the 'deleted_at' timestamp being set.
@@ -2846,7 +2784,7 @@ WHERE id = 'de4b69f5-a304-4afa-80cc-89882d612d20';
 /*
     -----------------------------------------
     13. update the messgae content
-        Expectation: 
+        Expectation:
             1. The message content should be updated.
             2. The message preview should be updated.
             3. The edited_at timestamp should be updated.
@@ -2873,7 +2811,7 @@ WHERE id = '4b858af7-fceb-4f94-a8fb-b0af4c2a3cde';
 /*
     -----------------------------------------
     14. thread a message
-        Expectation: 
+        Expectation:
             1. The message should be threaded.
             2. The message preview in channel should not be update.
             3. --
@@ -2894,7 +2832,7 @@ VALUES
 -- step 2: reply to the message
 INSERT INTO public.messages (id, channel_id, user_id, content, reply_to_message_id)
 values
-(   
+(
     'd9ad17c9-6431-47ee-8ef7-09d7a1abb68c', -- ID
     '4d582754-4d72-48f8-9e72-f6aa63dacada', -- Channel: netfilix
     'c2e3e9e7-d0e8-4960-9b05-d263deb2722f', -- User: lisa
@@ -2904,7 +2842,7 @@ values
 
 -- step 3: open a thread (update the first message), we will update the is_threaded_root to true with trigger
 UPDATE public.messages
-SET 
+SET
     thread_id = '5fb62876-c099-4284-8295-f3e898ad88e0',
     thread_owner_id = 'c2e3e9e7-d0e8-4960-9b05-d263deb2722f'
 WHERE id = '5fb62876-c099-4284-8295-f3e898ad88e0';
@@ -2947,8 +2885,8 @@ values
 -- step 7: reaction to the thread message, emma
 UPDATE public.messages
 SET reactions = jsonb_set(
-    COALESCE(reactions, '{}'), 
-    '{👍}', 
+    COALESCE(reactions, '{}'),
+    '{👍}',
     COALESCE(reactions->'👍', '[]') || jsonb_build_array(jsonb_build_object('user_id', '1059dbd0-3478-46f9-b8a9-dcd23ed0a23a', 'created_at', current_timestamp)),
     true
 )
