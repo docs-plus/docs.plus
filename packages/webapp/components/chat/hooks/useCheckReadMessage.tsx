@@ -70,10 +70,8 @@ export const useCheckReadMessage = ({ messageContainerRef, channelId, messages }
     const current = messageContainerRef.current
     if (!current) return
 
-    dCheckVisibility.current = debounce(checkVisibility, 1000)
-    current.addEventListener('scroll', dCheckVisibility.current, {
-      passive: true
-    })
+    dCheckVisibility.current = debounce(checkVisibility, 600)
+    current.addEventListener('scroll', dCheckVisibility.current)
     return () => {
       current.removeEventListener('scroll', dCheckVisibility.current)
       dCheckVisibility.current.cancel()

@@ -1,28 +1,28 @@
 import React from 'react'
-import PadTitle from '@components/TipTap/pad-title-section/PadTitle'
+import MobilePadTitle from '@components/TipTap/pad-title-section/MobilePadTitle'
 import FilterModal from '../components/FilterModal'
-import Editor from '../components/Editor'
+import MobileEditor from '../components/MobileEditor'
 import { useStore } from '@stores'
 
 const MobileLayout = () => {
   const {
-    editor: { isMobile }
-  } = useStore((state) => state.settings)
+    settings: {
+      editor: { isMobile }
+    }
+  } = useStore((state) => state)
 
-  const deviceType = isMobile ? 'mobile' : 'desktop'
+  const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
 
   return (
-    <>
-      <div className={`pad tiptap relative flex flex-col border-solid ${deviceType}`}>
-        <div className="docTitle sticky top-0 z-10 flex min-h-14 w-full flex-row items-center border-b bg-white p-2 sm:border-b-0">
-          <PadTitle />
-        </div>
-        <Editor />
-        <div className="nd_modal bottom nd_filterModal fixed top-0 z-30 hidden size-full ">
-          <FilterModal />
-        </div>
+    <div className={`pad tiptap relative flex flex-col border-solid ${deviceClass}`}>
+      <div className="docTitle sticky top-0 z-10 flex min-h-14 w-full flex-row items-center bg-white">
+        <MobilePadTitle />
       </div>
-    </>
+      <MobileEditor />
+      <div className="nd_modal bottom nd_filterModal fixed top-0 z-30 hidden size-full">
+        <FilterModal />
+      </div>
+    </div>
   )
 }
 

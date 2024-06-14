@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import MobileDetect from 'mobile-detect'
 import DesktopLayout from '@components/pages/document/layouts/DesktopLayout'
 import MobileLayout from '@components/pages/document/layouts/MobileLayout'
@@ -7,25 +7,30 @@ import { fetchDocument } from '@utils/fetchDocument'
 import HeadSeo from '@components/HeadSeo'
 import useMapDocumentAndWorkspace from '@hooks/useMapDocumentAndWorkspace'
 import useInitiateDocumentAndWorkspace from '@hooks/useInitiateDocumentAndWorkspace'
-import { getChannels, upsertWorkspace, getChannelsByWorkspaceAndUserids } from '@api'
+import { upsertWorkspace, getChannelsByWorkspaceAndUserids } from '@api'
 import { createPagesServerClient } from '@supabase/auth-helpers-nextjs'
-import { useEffect } from 'react'
-import { useChatStore } from '@stores'
+import { LoadingDots } from '@components/LoadingDots'
+import useEditorAndProvider from '@hooks/useEditorAndProvider'
 
 const Document = ({ slugs, docMetadata, isMobile, channels }: any) => {
   useDocumentMetadata(slugs, docMetadata)
   useInitiateDocumentAndWorkspace(docMetadata)
-
   const { loading } = useMapDocumentAndWorkspace(docMetadata, channels)
+
+  // initialize the editor and its provider!
+  useEditorAndProvider()
+
+  useEffect(() => {
+    document?.querySelector('html')?.classList.add(isMobile ? 'm_mobile' : 'm_desktop')
+  }, [isMobile])
 
   if (loading) {
     return (
       <>
         <HeadSeo />
-        <div className="flex size-full items-center justify-center">
+        <LoadingDots>
           <span>Hang tight! content is loading</span>
-          <span className="loading loading-dots loading-xs ml-2 mt-2"></span>
-        </div>
+        </LoadingDots>
       </>
     )
   }
@@ -76,6 +81,7 @@ export async function getServerSideProps(context: any) {
       }
     }
   } catch (error: any) {
+    console.log('===================================>>>', error)
     console.error('getServerSideProps error:', error)
     const message = error.message.includes("(reading 'isPrivate')")
       ? `Something went wrong on our server side. We're looking into it!`

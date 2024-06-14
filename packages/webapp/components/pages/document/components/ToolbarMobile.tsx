@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   OrderListMobile,
   BoldMobile,
@@ -7,7 +8,7 @@ import {
 } from '@icons'
 import { useStore } from '@stores'
 
-const Toolbar = () => {
+const ToolbarMobile = () => {
   const {
     editor: { instance: editor }
   } = useStore((state) => state.settings)
@@ -16,39 +17,32 @@ const Toolbar = () => {
     return null
   }
 
+  const buttons = [
+    { name: 'bold', icon: BoldMobile, action: 'toggleBold', size: 24 },
+    { name: 'italic', icon: ItalicMobile, action: 'toggleItalic', size: 24 },
+    { name: 'underline', icon: UnderlineMobile, action: 'toggleUnderline', size: 24 },
+    { name: 'orderedList', icon: OrderListMobile, action: 'toggleOrderedList', size: 26 },
+    { name: 'link', icon: InsertLinkMobile, action: 'setHyperlink', size: 26 }
+  ]
+
+  const handleButtonClick = (e: React.MouseEvent<HTMLButtonElement>, action: string) => {
+    e.preventDefault()
+    editor.view.focus()
+    editor.chain().focus()[action]().run()
+  }
+
   return (
-    <div className="tiptap__toolbar editorButtons relative z-10 flex flex-row items-center justify-evenly px-4 py-1 text-blue-700">
-      <button
-        className={editor.isActive('bold') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleBold().run()}>
-        <BoldMobile size={24} fill={editor.isActive('bold') ? 'text-blue-700' : ''} />
-      </button>
-
-      <button
-        className={editor.isActive('italic') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleItalic().run()}>
-        <ItalicMobile size={24} fill={editor.isActive('italic') ? 'text-blue-700' : ''} />
-      </button>
-
-      <button
-        className={editor.isActive('underline') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleUnderline().run()}>
-        <UnderlineMobile size={24} fill={editor.isActive('underline') ? 'text-blue-700' : ''} />
-      </button>
-
-      <button
-        className={editor.isActive('orderedList') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().toggleOrderedList().run()}>
-        <OrderListMobile size={26} fill={editor.isActive('orderedList') ? 'text-blue-700' : ''} />
-      </button>
-
-      <button
-        className={editor.isActive('link') ? 'is-active' : ''}
-        onClick={() => editor.chain().focus().setHyperlink().run()}>
-        <InsertLinkMobile size={26} fill={editor.isActive('link') ? 'text-blue-700' : ''} />
-      </button>
+    <div className="tiptap__toolbar editorButtons btm-nav btm-nav-sm relative sticky bottom-0 text-blue-700">
+      {buttons.map(({ name, icon: Icon, action, size }) => (
+        <button
+          key={name}
+          className={`p-0 ${editor.isActive(name) ? 'is-active' : ''}`}
+          onClick={(e) => handleButtonClick(e, action)}>
+          <Icon size={size} fill={editor.isActive(name) ? 'text-blue-700' : ''} />
+        </button>
+      ))}
     </div>
   )
 }
 
-export default Toolbar
+export default ToolbarMobile

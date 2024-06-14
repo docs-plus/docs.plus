@@ -17,7 +17,7 @@
       }
 
       &.closed {
-        &[level="1"] {
+        &[level='1'] {
           > .wrapBlock > .foldWrapper .fold {
             transition: none;
             width: calc(100% + 1rem + 6px);
@@ -30,11 +30,12 @@
 }
 
 .btn_bigBluePencil {
-  transition: all .3s linear 2s;
+  transition: all 0.3s linear 2s;
   transform: translateY(200%);
-  box-shadow: 0px 4px 5px rgba(0, 0, 0, 0.14), 0px 1px 10px rgba(0, 0, 0, 0.12), 0px 2px 4px rgba(0, 0, 0, 0.2);
-  background-color: #007AFF;
-
+  box-shadow:
+    0px 4px 5px rgba(0, 0, 0, 0.14),
+    0px 1px 10px rgba(0, 0, 0, 0.12),
+    0px 2px 4px rgba(0, 0, 0, 0.2);
   &.active {
     transform: translateY(0);
   }

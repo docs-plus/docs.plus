@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef, RefObject } from 'react'
 import { useRouter } from 'next/router'
+import { IoClose } from 'react-icons/io5'
 
 const FilterModal = () => {
   const filterSearchRef: RefObject<HTMLInputElement> = useRef(null)
@@ -68,8 +69,8 @@ const FilterModal = () => {
             <button
               onTouchStart={closeFilterModal}
               onClick={closeFilterModal}
-              className="size-6 rounded-full bg-slate-200 text-black outline-0">
-              X
+              className="btn btn-circle btn-xs ml-2">
+              <IoClose size={20} />
             </button>
           </div>
         </div>

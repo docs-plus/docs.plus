@@ -8,6 +8,7 @@ const useYdocAndProvider = () => {
   const {
     metadata: { documentId }
   } = useStore((state) => state.settings)
+
   const [destroyed, setDestroyed] = useState(false)
   const ydocRef = useRef(new Y.Doc())
   const providerRef = useRef<any>(null)
@@ -15,6 +16,8 @@ const useYdocAndProvider = () => {
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const { hocuspocusProvider } = useStore((state) => state.settings)
   useEffect(() => {
+    if (!documentId) return
+
     const createProvider = () => {
       if (typeof window !== 'undefined') {
         providerRef.current = new HocuspocusProvider({
@@ -71,7 +74,7 @@ const useYdocAndProvider = () => {
     return () => {
       providerRef.current?.destroy()
     }
-  }, [])
+  }, [documentId])
 
   useEffect(() => {
     if (!hocuspocusProvider && providerRef.current) {

@@ -6,21 +6,34 @@
   @apply box-border font-sans;
 }
 
+// body {
+//   min-height: 100vh;
+//   /* mobile viewport bug fix */
+//   min-height: -webkit-fill-available;
+// }
+
+// html {
+//   height: -webkit-fill-available;
+// }
+
 .ProseMirror {
   @apply h-full outline-none;
 }
 
 html:not(.m_mobile) {
-  @apply p-0 m-0 max-h-full min-h-full h-full;
+  @apply m-0 h-full max-h-full min-h-full p-0;
 
   body {
-    @apply p-0 m-0 max-h-full min-h-full h-full;
+    @apply m-0 h-full max-h-full min-h-full p-0;
   }
 }
 
 #root,
 #__next {
   @apply h-full;
+  //   min-height: 100vh;
+  // /* mobile viewport bug fix */
+  // min-height: -webkit-fill-available;
 }
 
 .tippy-box {
@@ -243,7 +256,7 @@ html:not(.m_mobile) {
     }
 
     select {
-      @apply border-gray-300 py-2 px-2 rounded-md;
+      @apply rounded-md border-gray-300 px-2 py-2;
       &:hover {
         background-color: #eee;
       }

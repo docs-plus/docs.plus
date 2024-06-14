@@ -13,7 +13,7 @@ $bg-root: #f8f9fa;
     }
 
     .tipta__editor {
-      @apply max-w-4xl w-full;
+      @apply w-full max-w-4xl;
 
       .heading {
         background-color: #fff;
@@ -24,7 +24,7 @@ $bg-root: #f8f9fa;
 
 .m_mobile .tiptap__toolbar {
   border: none;
-  box-shadow: 0 -5px 20px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 -5px 10px rgba(0, 0, 0, 0.1);
   border-top: 1px solid rgba(0, 0, 0, 0.08);
 }
 
@@ -129,7 +129,7 @@ $bg-root: #f8f9fa;
 
   :is(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10) {
     font-weight: bold;
-    @apply font-medium mt-0 mb-2;
+    @apply mb-2 mt-0 font-medium;
   }
 
   h1 {

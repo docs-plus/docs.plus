@@ -45,7 +45,7 @@ function Home({ hostname }: { hostname: string }) {
   return (
     <>
       <HeadSeo />
-      <div className="flex size-full items-center justify-center bg-slate-100 p-4">
+      <div className="flex size-full justify-center bg-slate-100 p-4 sm:items-center">
         <Tabs defaultActiveTab="deck" className="relative max-w-5xl rounded-md">
           <TabList
             className={`${

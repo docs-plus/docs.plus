@@ -27,7 +27,14 @@ export const toggleHeadingSection = (item: any) => {
 
 export const handelScroll2Header = (e: any, editor: any, setActiveHeading: any) => {
   e.preventDefault()
-  if (e.target.tagName !== 'A') return
+
+  const isValidTarget =
+    e.target.tagName === 'A' ||
+    (e.target.tagName === 'SPAN' && e.target.parentElement.nodeName === 'A')
+
+  if (!isValidTarget) return
+
+  // if (e.target.tagName !== 'A') return
   let id = e.target.closest('a').getAttribute('data-id')
   const offsetParent = getOffsetTop(e.target.closest('.toc__item'))
 
@@ -35,13 +42,14 @@ export const handelScroll2Header = (e: any, editor: any, setActiveHeading: any) 
 
   if (offsetParent === 0) id = '1'
 
+  // Update the active heading using the setActiveHeading function
+  setActiveHeading(id)
+
   // find all a tag in this .tiptap__toc and remove active class
   const aTags = document.querySelectorAll('.toc__item a')
   aTags.forEach((a) => a.classList.remove('active'))
   // now add active class to the clicked a tag
   e.target.classList.add('active')
-
-  setActiveHeading(id)
 
   const posAt = editor?.view.posAtDOM(document.querySelector(`.heading[data-id="${id}"]`))
   if (posAt === -1) return
