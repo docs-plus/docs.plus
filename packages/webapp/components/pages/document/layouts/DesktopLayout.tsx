@@ -1,26 +1,22 @@
+import React from 'react'
 import PadTitle from '@components/TipTap/pad-title-section/PadTitle'
-import { useEffect } from 'react'
-import Editor from '../components/Editor'
+import DesktopEditor from '../components/DesktopEditor'
 import { useStore } from '@stores'
 
 const DesktopLayout = () => {
   const {
-    editor: { isMobile }
-  } = useStore((state) => state.settings)
+    settings: {
+      editor: { isMobile }
+    }
+  } = useStore((state) => state)
 
-  // TODO: reconsider this
-  useEffect(() => {
-    document.querySelector('html')?.classList.remove('m_mobile')
-  }, [])
+  const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
 
   return (
-    <>
-      <div
-        className={`pad tiptap flex flex-col border-solid ${isMobile ? ' m_mobile' : 'm_desktop'}`}>
-        <PadTitle />
-        <Editor />
-      </div>
-    </>
+    <div className={`pad tiptap flex flex-col border-solid ${deviceClass}`}>
+      <PadTitle />
+      <DesktopEditor />
+    </div>
   )
 }
 

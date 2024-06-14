@@ -40,17 +40,18 @@ const useEditorAndProvider = () => {
 
   // FIXME: this cuase rerending other components that depend on useEditorStateContext! "Drill props down instead"
   // // The selection has changed.
-  // useEffect(() => {
-  //   if (!editor || editorSetting?.loading) return
+  useEffect(() => {
+    if (!editor || editorSetting?.loading) return
 
-  //   editor.on('selectionUpdate', ({ editor }) => {
-  //     setSelectionPos(editor.state.selection?.$anchor?.pos)
-  //   })
+    editor.on('selectionUpdate', ({ editor }) => {
+      console.log('selection pos update', editor.state.selection?.$anchor?.pos)
+      setWorkspaceEditorSetting('selectionPos', editor.state.selection?.$anchor?.pos)
+    })
 
-  //   return () => {
-  //     editor.off('selectionUpdate')
-  //   }
-  // }, [editor, editorSetting?.loading])
+    return () => {
+      editor.off('selectionUpdate')
+    }
+  }, [editor, editorSetting?.loading])
 
   return { editor, provider }
 }

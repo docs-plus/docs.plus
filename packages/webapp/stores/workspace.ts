@@ -32,7 +32,9 @@ export interface IWorkspaceStore {
 const workspaceStore = immer<IWorkspaceStore>((set) => ({
   settings: {
     workspaceId: undefined,
-    metadata: undefined,
+    metadata: {
+      documentId: undefined
+    },
     broadcaster: undefined,
     editor: {
       instance: undefined,

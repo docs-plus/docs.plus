@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
-import { getHeadingDetails } from './helper'
-import ENUMS from '../enums'
+import { getHeadingDetails } from '../helper'
+import ENUMS from '../../enums'
 import { useStore } from '@stores'
 
 type Theading = {

@@ -1,5 +1,11 @@
 $bg-root: #f8f9fa;
 
+.m_mobile {
+  .btnChat {
+    opacity: 1 !important;
+  }
+}
+
 .tiptap__toc {
   padding-left: 20px;
   padding-top: 10px;
@@ -20,7 +26,7 @@ $bg-root: #f8f9fa;
       margin-bottom: 0.1rem;
       &:active {
         .btnChat {
-          @apply fill-base-300 bg-transparent;
+          @apply bg-transparent fill-base-300;
         }
       }
       &.active {
@@ -31,7 +37,7 @@ $bg-root: #f8f9fa;
         }
         .btnChat {
           opacity: 1;
-          @apply fill-base-300 bg-transparent;
+          @apply bg-transparent fill-base-300;
         }
 
         .btnFold {

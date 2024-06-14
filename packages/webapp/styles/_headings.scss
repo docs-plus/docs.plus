@@ -65,9 +65,12 @@ body.h1SectionBreak {
 
 // if it is mobile
 @media (max-width: 640px) {
+  .pad .editor .editorWrapper {
+    padding: 0;
+  }
   .ProseMirror {
-    background-color: $bg-root;
-    padding: 12px;
+    // background-color: $bg-root;
+    // padding: 12px;
 
     &.loading {
       padding: 0 !important;
@@ -82,16 +85,19 @@ body.h1SectionBreak {
         // border: none !important;
         box-shadow: none !important;
         // border-radius: 6px;
-        border-bottom: none !important;
-        padding: 8px !important;
+        // border-bottom: none !important;
+        padding: 12px !important;
 
         &:first-of-type {
-          border-radius: 4px 4px 0 0 !important;
+          border-radius: 0 !important;
+          border: none !important;
         }
 
         &:last-of-type {
+          border: none !important;
           border-bottom: 1px solid #e1e6e7 !important;
-          border-radius: 0 0 4px 4px !important;
+          // border-radius: 0 0 4px 4px !important;
+          border-radius: 0 !important;
         }
       }
     }

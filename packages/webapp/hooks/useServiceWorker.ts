@@ -21,25 +21,25 @@ const useServiceWorker = () => {
 
       // Add event listeners
       const handleInstall = (event) => {
-        console.info(`Event ${event.type} is triggered.`, event)
+        // console.info(`Event ${event.type} is triggered.`, event)
       }
 
       const handleControlling = (event) => {
-        console.info(`Event ${event.type} is triggered.`, event)
+        // console.info(`Event ${event.type} is triggered.`, event)
       }
 
       const handleActivated = (event) => {
-        console.info(`Event ${event.type} is triggered.`, event)
+        // console.info(`Event ${event.type} is triggered.`, event)
       }
 
       const promptNewVersionAvailable = (event) => {
         // Custom logic for prompting new version
-        console.info(`Event ${event.type} is triggered.`, event)
+        // console.info(`Event ${event.type} is triggered.`, event)
         // ...
       }
 
       const handleMessage = (event) => {
-        console.info(`Event ${event.type} is triggered.`, event)
+        // console.info(`Event ${event.type} is triggered.`, event)
       }
 
       wb.addEventListener('installed', handleInstall)

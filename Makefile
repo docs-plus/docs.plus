@@ -6,13 +6,36 @@ back_dev:
 back_ws:
 	cd packages/hocuspocus.server && npm run dev:ws
 
+# Start Supabase development server
+supabase_start:
+	cd packages/Supabase && npm run start
+
+# Stop Supabase server
+supabase_stop:
+	cd packages/Supabase && npm run stop
+
+# Display Supabase status
+supabase_status:
+	cd packages/supabase && npm run status
+
+# Resets the local database to a clean state.
+supabase-reset:
+	@echo "Resetting the database..."
+	@read -p "Are you sure you want to reset the database? [y/N]: " confirm; \
+	if [ "$$confirm" = "y" ]; then \
+		make prepare-seed && \
+		cd packages/supabase && pnpm db:reset; \
+	else \
+		echo "Database reset canceled."; \
+	fi
+
 # Start frontend development server
 front_dev:
 	cd packages/webapp && npm run dev
 
 # Run backend, WebSocket and frontend development servers concurrently
 local:
-	make -j 3 back_dev back_ws front_dev
+	make -j 4 supabase_start back_dev back_ws front_dev
 
 # Start editor development server
 dev_editor:

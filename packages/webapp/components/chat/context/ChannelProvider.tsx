@@ -5,6 +5,12 @@ type TSettings = {
   displayChannelBar?: boolean
   pickEmoji?: boolean
   displaySystemNotifyChip?: boolean
+  textEditor?: {
+    emojiPicker?: boolean
+    toolbar?: boolean
+    sendButton?: boolean
+    attachmentButton?: boolean
+  }
   contextMenue?: {
     replyInThread?: boolean
     reply?: boolean
@@ -36,6 +42,12 @@ const defaultContextValue: ChannelContextValue = {
     displayChannelBar: true,
     pickEmoji: true,
     displaySystemNotifyChip: true,
+    textEditor: {
+      emojiPicker: true,
+      toolbar: true,
+      sendButton: true,
+      attachmentButton: true
+    },
     contextMenue: {
       replyInThread: true,
       reply: true,

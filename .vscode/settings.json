@@ -51,5 +51,11 @@
     "webapp",
     "filter",
     "heading"
+  ],
+  "tailwindCSS.experimental.classRegex": [
+    "tw`([^`]*)", // tw`...`
+    "tw\\([^)]*\\)", // tw(...)
+    "tw\\.\\w+\\(`([^`]*)`\\)", // tw.xxx(`...`)
+    "tw\\.\\w+\\(\\[([^)]*)\\]\\)" // tw.xxx([ ... ])
   ]
 }
