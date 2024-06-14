@@ -9,9 +9,9 @@ const BreadcrumbMobile = () => {
 
   if (!headingPath.length) return null
 
-  const firstHeading = headingPath[0]
-  const lastHeading = headingPath[headingPath.length - 1]
-  const middleHeadings = headingPath.slice(1, headingPath.length - 1)
+  const firstHeading = headingPath[0] as any
+  const lastHeading = headingPath[headingPath.length - 1] as any
+  const middleHeadings = headingPath.slice(1, headingPath.length - 1) as any
 
   return (
     <nav className="flex w-full items-center " aria-label="BreadcrumbMobile">

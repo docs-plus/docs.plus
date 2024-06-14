@@ -7,7 +7,7 @@ export type TProfile = Database['public']['Tables']['users']['Row'] & {
 }
 
 type TChatRoom = {
-  headingPath: Array<Object>
+  headingPath: Array<any>
   headingId?: string
   documentId?: string
   open: boolean
@@ -22,7 +22,7 @@ interface IChatroomStore {
   setChatRoom: (
     headingId: string,
     documentId: string,
-    headingPath: Array<Object>,
+    headingPath: Array<any>,
     user: TProfile
   ) => void
   openChatRoom: () => void

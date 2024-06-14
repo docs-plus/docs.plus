@@ -27,7 +27,6 @@ const IconButton = twx.button<BtnIcon>((prop) =>
   cn(
     'btn btn-ghost w-8 h-8 btn-xs p-1 ',
     prop.$active && 'btn-active',
-    prop.$mr ? `mr-${prop.$mr}` : 'mr-2',
     prop.$size && `w-${prop.$size} h-${prop.$size}`,
     prop.$className || ''
   )

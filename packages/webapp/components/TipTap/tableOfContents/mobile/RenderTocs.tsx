@@ -1,6 +1,6 @@
 import { RenderToc } from './RenderToc'
 
-export const RenderTocs = (items) => {
+export const RenderTocs = (items: any) => {
   const renderedItems = []
 
   for (let i = 0; i < items.length; ) {

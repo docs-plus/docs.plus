@@ -3,7 +3,7 @@ import { useChatStore } from '@stores'
 import useHandelTocUpdate from '../hooks/useHandelTocUpdate'
 import { RenderTocs } from './RenderTocs'
 
-const TableOfContents = ({ className }) => {
+const TableOfContents = ({ className }: any) => {
   const { headingId } = useChatStore((state) => state.chatRoom)
   const { items } = useHandelTocUpdate()
   const [renderedTocs, setRenderedTocs] = useState([])
@@ -11,6 +11,7 @@ const TableOfContents = ({ className }) => {
   useEffect(() => {
     if (!items.length) return
     const tocs = RenderTocs(items)
+    // @ts-ignore
     setRenderedTocs(tocs)
   }, [items, headingId])
 
