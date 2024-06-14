@@ -47,7 +47,9 @@ const Editor = () => {
   }, [deviceDetect, editor, isKeyboardOpen, loading])
 
   useEffect(() => {
+    // @ts-ignore
     document.querySelector('html').style.height = window.visualViewport.height + 'px'
+    // @ts-ignore
     document.body.style.height = window.visualViewport.height + 'px'
   }, [isKeyboardOpen])
 

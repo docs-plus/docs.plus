@@ -18,7 +18,7 @@ const useOpenChatContainer = () => {
   } = useStore((state) => state.settings)
 
   const openChatContainerHandler = useCallback(
-    (item) => {
+    (item: any) => {
       const nodePos = editor.view.state.doc.resolve(
         editor?.view.posAtDOM(document.querySelector(`.heading[data-id="${item.id}"]`))
       )
@@ -37,16 +37,16 @@ const useOpenChatContainer = () => {
       destroyChatRoom()
 
       const headingPath = nodePos.path
-        .filter((x) => x?.type?.name === ENUMS.NODES.HEADING_TYPE)
-        .map((x) => {
+        .filter((x: any) => x?.type?.name === ENUMS.NODES.HEADING_TYPE)
+        .map((x: any) => {
           const text = x.firstChild.textContent.trim()
           return { text, id: x.attrs.id }
         })
 
-      const headingAddress = headingPath.map((x, index) => {
+      const headingAddress = headingPath.map((x: any, index: any) => {
         const prevHeadingPath = headingPath
           .slice(0, index)
-          .map((x) => slugify(x.text, { lower: true, strict: true }))
+          .map((x: any) => slugify(x.text, { lower: true, strict: true }))
           .join('>')
 
         const url = new URL(window.location.origin + `/${query.slugs?.at(0)}`)
@@ -61,7 +61,7 @@ const useOpenChatContainer = () => {
       })
 
       // TODO: change naming => open chatroom
-      setChatRoom(item.id, workspaceId, headingAddress, user)
+      if (workspaceId) setChatRoom(item.id, workspaceId, headingAddress, user)
     },
     [editor, workspaceId, headingId, user]
   )

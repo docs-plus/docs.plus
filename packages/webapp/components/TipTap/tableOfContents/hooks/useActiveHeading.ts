@@ -3,7 +3,7 @@ import { useRouter } from 'next/router'
 
 const useActiveHeading = () => {
   const router = useRouter()
-  const [activeHeading, setActiveHeading] = useState(null)
+  const [activeHeading, setActiveHeading] = useState<string | null>(null)
 
   useEffect(() => {
     const url = new URL(window.location.href)
