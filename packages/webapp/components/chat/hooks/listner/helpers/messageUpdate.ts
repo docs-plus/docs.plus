@@ -27,7 +27,7 @@ export const messageUpdate = (payload: any) => {
   // update the messages map
   if (payload.new.deleted_at) {
     removeMessage(channelId, payload.new.id)
-    if (lastMessages.id === payload.new.id) {
+    if (lastMessages?.id === payload.new.id) {
       setLastMessage(channelId, null)
     }
 

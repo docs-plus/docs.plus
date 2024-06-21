@@ -20,7 +20,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
   return (
     <li
       key={item.id}
-      className={`toc__item toc__item-- relative${item.level} ${item.open ? '' : 'closed'} `}
+      className={`toc__item relative w-full${item.level} ${item.open ? '' : 'closed'} `}
       data-id={item.id}
       data-offsettop={item.offsetTop}>
       <a
@@ -28,7 +28,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
         onClick={(e) => handelScroll2Header(e, editor, setActiveHeading)}
         href={`?${item.id}`}
         data-id={item.id}>
-        <span className="toc__link sm:line-clamp-3 sm:hover:line-clamp-5">{item.text}</span>
+        <span className="toc__link ">{item.text}</span>
         <span
           className={`btnFold ${item.open ? 'opened' : 'closed'}`}
           onClick={() => toggleHeadingSection(item)}
@@ -37,7 +37,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
         </span>
         <span className="block w-8 pl-8"></span>
         <span
-          className="absolute right-0 ml-auto block flex  items-center justify-end overflow-hidden rounded-l-lg bg-neutral px-1 text-neutral-content"
+          className="absolute right-0 ml-auto block flex items-center justify-end overflow-hidden rounded-l-lg bg-neutral px-1 text-neutral-content"
           onClick={() => openChatContainerHandler(item)}>
           {unreadMessage > 0 && <div className="mx-1 text-sm">{unreadMessage}</div>}
           <ChatLeft

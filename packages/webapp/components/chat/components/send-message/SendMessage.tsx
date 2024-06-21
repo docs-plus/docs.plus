@@ -164,8 +164,6 @@ export default function SendMessage() {
         toast.Error(error.message)
       } finally {
         // clear the editor
-        document.dispatchEvent(new CustomEvent('messages:container:scroll:down'))
-
         // Refocus the editor to keep the keyboard open on mobile
         editor.view.focus()
         editor.commands.focus()
@@ -173,6 +171,8 @@ export default function SendMessage() {
         // if it has reply or forward message, clear it
         if (replayMessageMemory) setReplayMessageMemory(channelId, null)
         if (editMessageMemory) setEditMessageMemory(channelId, null)
+
+        document.dispatchEvent(new CustomEvent('messages:container:scroll:down'))
       }
 
       // eslint-disable-next-line react-hooks/exhaustive-deps

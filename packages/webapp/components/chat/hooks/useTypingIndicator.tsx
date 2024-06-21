@@ -28,9 +28,6 @@ export const useTypingIndicator = () => {
   const { typingIndicators } = useChatStore((state) => state.workspaceSettings)
 
   useEffect(() => {
-    console.log({
-      typingIndicators
-    })
     Object.keys(typingIndicators).forEach((channelId) => {
       const typingIndicator = typingIndicators[channelId]
       if (typingIndicator) {
