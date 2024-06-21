@@ -32,11 +32,11 @@ const ToolbarMobile = () => {
   }
 
   return (
-    <div className="tiptap__toolbar editorButtons btm-nav btm-nav-sm relative sticky bottom-0 bg-base-100 text-blue-700">
+    <div className="tiptap__toolbar sticky bottom-0 flex h-12 items-center justify-around gap-1 bg-base-100 text-blue-700">
       {buttons.map(({ name, icon: Icon, action, size }) => (
         <button
           key={name}
-          className={`p-0 ${editor.isActive(name) ? 'is-active' : ''}`}
+          className={`mx-1 flex h-full flex-1 items-center justify-center  p-0 ${editor.isActive(name) ? 'is-active' : ''}`}
           onClick={(e) => handleButtonClick(e, action)}>
           <Icon size={size} className={editor.isActive(name) ? 'fill-current text-blue-700' : ''} />
         </button>
