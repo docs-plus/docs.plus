@@ -20,7 +20,7 @@ const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
 
 const MobileLeftSidePanel = () => {
   return (
-    <div className="drawer z-30">
+    <div className="drawer z-30 w-full">
       <input id="mobile_left_side_panel" type="checkbox" className="drawer-toggle" />
       <div className="drawer-content">
         <label htmlFor="mobile_left_side_panel" className="btn btn-ghost drawer-button px-2">

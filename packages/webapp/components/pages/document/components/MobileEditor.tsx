@@ -150,7 +150,7 @@ const Editor = () => {
         </button>
       </div>
       <div
-        className={` ${isKeyboardOpen && !chatRoom?.headingId ? 'block' : 'hidden'} toolbars z-10 w-full bg-base-100`}>
+        className={`toolbars fixed bottom-0 z-10 w-full bg-base-100 ${isKeyboardOpen && !chatRoom?.headingId ? 'block' : 'hidden'}`}>
         <ToolbarMobile />
       </div>
     </>

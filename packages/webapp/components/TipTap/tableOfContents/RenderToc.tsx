@@ -23,7 +23,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
   return (
     <li
       key={item.id}
-      className={`toc__item toc__item-- relative${item.level} ${item.open ? '' : 'closed'} `}
+      className={`toc__item relative${item.level} ${item.open ? '' : 'closed'} `}
       data-id={item.id}
       data-offsettop={item.offsetTop}>
       <a
