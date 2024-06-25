@@ -4,9 +4,31 @@
   }
 
   .ProseMirror {
+    .title {
+      padding-right: 40px;
+    }
+
+    .heading:not([level='1']) {
+      .btn_openChatBox {
+        right: -12px !important;
+      }
+    }
     .wrapBlock {
       .buttonWrapper {
-        visibility: hidden;
+        visibility: visible !important;
+        position: static;
+        .btn_openChatBox {
+          padding: 6px 0;
+          @apply absolute right-0 ml-auto flex items-center justify-end overflow-hidden rounded-l-lg bg-neutral fill-white text-neutral-content;
+          svg {
+            padding-right: 8px;
+            width: 24px;
+            height: 24px;
+          }
+          span {
+            padding: 0 6px;
+          }
+        }
       }
     }
 

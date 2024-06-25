@@ -1,3 +1,5 @@
+// TODO: Refactor this file, it's too long and hard to understand
+
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { Node, mergeAttributes } from '@tiptap/core'
@@ -6,6 +8,10 @@ import { copyToClipboard } from './helper'
 import onHeading from './normalText/onHeading'
 import PubSub from 'pubsub-js'
 import ENUMS from '../enums'
+import { ChatLeftSVG } from '@icons'
+import { useChatStore, useAuthStore, useStore } from '@stores'
+import * as toast from '@components/toast'
+import slugify from 'slugify'
 
 let isProcessing = false
 
@@ -52,6 +58,7 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
   const buttonWrapper = document.createElement('div')
   const btnToggleHeading = document.createElement('button')
   const btnChatBox = document.createElement('button')
+  const unreadMsgCount = document.createElement('span')
 
   buttonWrapper.classList.add('buttonWrapper')
 
@@ -59,6 +66,69 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
   btnChatBox.setAttribute('type', 'button')
   btnToggleHeading.classList.add('btnFold')
   btnToggleHeading.setAttribute('type', 'button')
+
+  btnChatBox.innerHTML = ChatLeftSVG({ size: 24 })
+
+  btnChatBox.prepend(unreadMsgCount)
+
+  btnChatBox.addEventListener('click', (e) => {
+    e.preventDefault()
+
+    const { workspaceId } = useStore.getState().settings
+    const { headingId: opendHeadingId } = useChatStore.getState().chatRoom
+    const user = useAuthStore.getState().profile
+
+    const setChatRoom = useChatStore.getState().setChatRoom
+    const destroyChatRoom = useChatStore.getState().destroyChatRoom
+
+    const nodePos = editor.view.state.doc.resolve(from)
+
+    if (!user) {
+      toast.Info('Please login to use chat feature')
+      document.getElementById('btn_signin')?.click()
+      return
+    }
+
+    // toggle chatroom
+    if (headingId === opendHeadingId) {
+      return destroyChatRoom()
+    }
+
+    // destroyChatRoom()
+
+    const headingPath = nodePos.path
+      .filter((x) => x?.type?.name === ENUMS.NODES.HEADING_TYPE)
+      .map((x) => {
+        const text = x.firstChild.textContent.trim()
+        return { text, id: x.attrs.id }
+      })
+
+    const headingAddress = headingPath.map((x, index) => {
+      const prevHeadingPath = headingPath
+        .slice(0, index)
+        .map((x) => slugify(x.text, { lower: true, strict: true }))
+        .join('>')
+
+      const slugs = window.location.pathname.split('/').filter((x) => x)
+
+      const url = new URL(window.location.origin + `/${slugs?.at(0)}`)
+      url.searchParams.set('h', prevHeadingPath)
+      url.searchParams.set('id', x.id)
+
+      return {
+        ...x,
+        slug: slugify(x.text),
+        url: url.href
+      }
+    })
+
+    // TODO: change naming => open chatroom
+    if (workspaceId) setChatRoom(headingId, workspaceId, headingAddress, user)
+    editor
+      .chain()
+      .focus(from + node.nodeSize - 1)
+      .run()
+  })
 
   buttonWrapper.append(btnToggleHeading)
   buttonWrapper.append(btnChatBox)
@@ -96,7 +166,8 @@ const appendButtonsDec = (doc, editor) => {
   contentWrappers.forEach((prob) => {
     const decorationWidget = Decoration.widget(prob.to, buttonWrapper(editor, prob), {
       side: -1,
-      key: prob.headingId
+      key: prob.headingId,
+      ignoreSelection: true
     })
 
     decos.push(decorationWidget)
@@ -119,7 +190,8 @@ const handleHeadingToggle = (editor, { headingId }) => {
     return
   }
 
-  // TODO: I have no idea, whay this is working like this!
+  // TODO: I have no idea why this is working like this!
+
   let nodePos
   try {
     nodePos = editor.view.state.doc.resolve(editor.view.posAtDOM(headingNodeEl))

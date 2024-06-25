@@ -3,6 +3,7 @@
 @use './print';
 @use './components/index';
 @use './daisyui';
+@use './mobile';
 
 $pad-header-height: 64px;
 $pad-toolbar-height: 38px;

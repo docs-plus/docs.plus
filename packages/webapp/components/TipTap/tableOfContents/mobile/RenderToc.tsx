@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { CaretRight, ChatLeft } from '@icons'
 import { useStore, useChatStore } from '@stores'
 import { toggleHeadingSection, handelScroll2Header } from '../helper'
@@ -16,6 +16,15 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
   const [activeHeading, setActiveHeading] = useActiveHeading()
   const unreadMessage = useUnreadMessage(item)
   const openChatContainerHandler = useOpenChatContainer()
+
+  useEffect(() => {
+    if (!unreadMessage) return
+    const element = document.querySelector(
+      `.wrapBlock[data-id="${item.id}"] > .buttonWrapper .btn_openChatBox span`
+    )
+    if (!element) return
+    element.innerHTML = unreadMessage > 0 ? unreadMessage : ''
+  }, [unreadMessage])
 
   return (
     <li
