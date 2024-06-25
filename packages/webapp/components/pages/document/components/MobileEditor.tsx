@@ -1,28 +1,19 @@
-import { useEffect, useState, useRef, use } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import EditorContent from './EditorContent'
 import { Pencil } from '@icons'
 import ToolbarMobile from './ToolbarMobile'
-import TocModal from '@components/pages/document/components/TocModal'
 import { useStore, useChatStore } from '@stores'
 import ChatontainerMobile from './chat/ChatontainerMobile'
 import { scrollHeadingSelection } from '../helpers'
 import { useAdjustEditorSizeForChatRoom } from '../hooks'
-
-const getIOSWindowHeight = function () {
-  const zoomLevel = document.documentElement.clientWidth / window.innerWidth
-  return window.innerHeight * zoomLevel
-}
-
-const getHeightOfIOSToolbars = function () {
-  const tH = (window.orientation === 0 ? screen.height : screen.width) - getIOSWindowHeight()
-  return tH > 1 ? tH : 0
-}
+import { debounce } from 'lodash'
 
 const Editor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
 
   const chatRoom = useChatStore((state) => state.chatRoom)
+  const channels = useChatStore((state) => state.channels)
 
   const {
     deviceDetect,
@@ -33,6 +24,33 @@ const Editor = () => {
   const isKeyboardOpen = useDetectKeyboardOpen() || false
 
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
+
+  // Debounced function for update logic
+  const debouncedUpdateLogic = debounce(() => {
+    channels.forEach((channel: any) => {
+      if (channel.unread_message_count) {
+        const element = document.querySelector(
+          `.wrapBlock[data-id="${channel.id}"] > .buttonWrapper .btn_openChatBox span`
+        )
+        if (element && channel.unread_message_count > 0) {
+          element.innerHTML = channel.unread_message_count
+        }
+      }
+    })
+  }, 300) // Adjust the debounce delay (300ms in this example)
+
+  // TODO: put this in a separate hook file
+  useEffect(() => {
+    if (!editor) return
+
+    // Attach the debounced function to the 'update' event
+    editor.on('update', debouncedUpdateLogic)
+
+    // Cleanup function to remove the event listener
+    return () => {
+      editor.off('update', debouncedUpdateLogic)
+    }
+  }, [editor, channels, debouncedUpdateLogic])
 
   // we need this for first init
   useEffect(() => {

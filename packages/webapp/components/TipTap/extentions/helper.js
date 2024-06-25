@@ -291,7 +291,6 @@ export const createThisBlockMap = (state) => {
  */
 export const copyToClipboard = (text, callback) => {
   navigator.clipboard.writeText(text).then(() => {
-    alert('Copied to clipboard')
     if (callback) callback()
   })
 }
