@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { db, TDocFilter } from '../db'
 import getHeadingsFilterMap from './helpers/filterLogic'
 import { useRouter } from 'next/router'
@@ -12,7 +12,24 @@ const useApplyFilters = () => {
     editor: { rendering, loading, instance: editor }
   } = useStore((state) => state.settings)
 
+  const [isDocumentReady, setIsDocumentReady] = useState(false)
+
   useEffect(() => {
+    const checkDocumentReady = () => {
+      const headings = document.querySelectorAll('.heading .title')
+      if (headings.length > 0) {
+        setIsDocumentReady(true)
+      } else {
+        // If document is not ready, check again after a short delay
+        setTimeout(checkDocumentReady, 200)
+      }
+    }
+
+    checkDocumentReady()
+  }, [])
+
+  useEffect(() => {
+    if (!isDocumentReady) return
     if (!slugs) return
     if (!editor || rendering || loading || slugs.length === 1) return
 
@@ -57,7 +74,7 @@ const useApplyFilters = () => {
     }, 300)
 
     return () => clearTimeout(timer)
-  }, [rendering, loading])
+  }, [rendering, loading, isDocumentReady])
 }
 
 export default useApplyFilters
