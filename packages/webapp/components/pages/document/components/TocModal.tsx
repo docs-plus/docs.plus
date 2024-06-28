@@ -40,9 +40,12 @@ const TocModal = () => {
           </Link>
           <DocTitle className="mt-0 w-8/12 overflow-hidden" />
           <div className="ml-auto mr-3 flex w-4/12 flex-row items-center justify-end">
-            <button onClick={openFilterModal} className="btn_openFilterModal btn btn-circle btn-xs">
+            <label
+              htmlFor="filterModalBottom"
+              aria-label="close sidebar"
+              className="btn btn-circle btn-xs ml-2">
               <MdFilterAlt size={18} />
-            </button>
+            </label>
             <label
               htmlFor="mobile_left_side_panel"
               aria-label="close sidebar"
