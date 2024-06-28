@@ -81,7 +81,6 @@ export async function getServerSideProps(context: any) {
       }
     }
   } catch (error: any) {
-    console.log('===================================>>>', error)
     console.error('getServerSideProps error:', error)
     const message = error.message.includes("(reading 'isPrivate')")
       ? `Something went wrong on our server side. We're looking into it!`
