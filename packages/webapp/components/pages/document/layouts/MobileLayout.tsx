@@ -19,9 +19,7 @@ const MobileLayout = () => {
         <MobilePadTitle />
       </div>
       <MobileEditor />
-      <div className="nd_modal bottom nd_filterModal fixed top-0 z-30 hidden size-full">
-        <FilterModal />
-      </div>
+      <FilterModal />
     </div>
   )
 }

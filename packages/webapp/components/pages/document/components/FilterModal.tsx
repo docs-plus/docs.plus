@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, RefObject } from 'react'
 import { useRouter } from 'next/router'
 import { IoClose } from 'react-icons/io5'
+import { ModalBottomToTop } from '@components/ui/ModalBottomToTop'
 
 const FilterModal = () => {
   const filterSearchRef: RefObject<HTMLInputElement> = useRef(null)
@@ -43,59 +44,42 @@ const FilterModal = () => {
     if (search) window.location.href = `/${mainDoc}/${encodeURIComponent(search)}`
   }
 
-  const closeFilterModal = () => {
-    const bottomSideModal = document.querySelector('.nd_modal.bottom') as HTMLElement
-    const modalWrapper = bottomSideModal.querySelector('.modalWrapper') as HTMLElement
-    const modalBg = bottomSideModal.querySelector('.modalBg') as HTMLElement
-
-    modalWrapper.classList.remove('active')
-    modalBg.classList.remove('active')
-
-    modalBg.ontransitionend = () => {
-      bottomSideModal.classList.add('hidden')
-    }
-  }
-
   return (
-    <div className="h-full">
-      <div
-        onTouchStart={closeFilterModal}
-        onClick={closeFilterModal}
-        className="modalBg absolute left-0 top-0 z-0 size-full bg-black opacity-40"></div>
-      <div className="modalWrapper fixed bottom-0 z-10  h-3/6 w-full rounded-t-2xl bg-white p-4">
+    <ModalBottomToTop modalId="filterModalBottom">
+      <div className="size-full max-h-96 rounded-t-2xl bg-white p-4">
         <div className="mb-3 flex w-full bg-white py-2  text-blue-600">
           <p className="w-2/3">Filters</p>
           <div className="flex w-1/3 flex-row items-center justify-end justify-items-end">
-            <button
-              onTouchStart={closeFilterModal}
-              onClick={closeFilterModal}
-              className="btn btn-circle btn-xs ml-2">
+            <label htmlFor="filterModalBottom" className="btn btn-circle btn-xs ml-2">
               <IoClose size={20} />
-            </button>
+            </label>
           </div>
         </div>
-        <div className="flex w-full justify-center align-middle">
+        <div className="join w-full">
           <input
             id="filterSearchBox"
-            className="w-10/12 rounded bg-slate-200 p-1 px-2 text-black"
+            className="input join-item input-bordered w-9/12"
             type="text"
             placeholder="Find"
             onKeyDown={searchThroughHeading}
             ref={filterSearchRef}
           />
-          <p className="ml-2 w-2/12 text-sm leading-10">
-            {totalSearch} of {totalHeading}
+          <p className="join-item flex w-3/12 items-center justify-center rounded-r bg-base-300 text-sm">
+            <span className="text-center">
+              found <br /> {totalSearch} of {totalHeading}
+            </span>
           </p>
         </div>
-
-        <button
-          onTouchStart={applySearch}
-          onClick={applySearch}
-          className="mt-10 w-full rounded border p-2 outline-0">
-          Filter Contents
-        </button>
+        <div className="mt-8">
+          <button
+            onTouchStart={applySearch}
+            onClick={applySearch}
+            className="btn btn-neutral btn-block">
+            Filter Contents
+          </button>
+        </div>
       </div>
-    </div>
+    </ModalBottomToTop>
   )
 }
 
