@@ -46,8 +46,13 @@ const FilterModal = () => {
     if (search) window.location.href = `/${mainDoc}/${encodeURIComponent(search)}`
   }
 
+  const handleModalStateChange = (isOpen: boolean) => {
+    if (!isOpen) setSearch('')
+    else countHeadings()
+  }
+
   return (
-    <ModalBottomToTop modalId="filterModalBottom">
+    <ModalBottomToTop modalId="filterModalBottom" onModalStateChange={handleModalStateChange}>
       <div className="size-full max-h-96 rounded-t-2xl bg-white p-4">
         <div className="mb-3 flex w-full bg-white py-2  text-blue-600">
           <p className="w-2/3">Filters</p>

@@ -1,19 +1,35 @@
+import React, { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ModalBottomToTopProps {
   modalId?: string
   className?: string
   children: React.ReactNode
+  onModalStateChange?: (isOpen: boolean) => void
 }
 
 export const ModalBottomToTop: React.FC<ModalBottomToTopProps> = ({
   modalId = 'bottom_to_top_modal',
   className,
-  children
+  children,
+  onModalStateChange
 }) => {
+  const handleCheckboxChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      if (onModalStateChange) {
+        onModalStateChange(event.target.checked)
+      }
+    },
+    [onModalStateChange]
+  )
   return (
     <div className={twMerge('bottom-to-top-modal', className)}>
-      <input type="checkbox" id={modalId} className="peer modal-toggle hidden" />
+      <input
+        type="checkbox"
+        id={modalId}
+        className="peer modal-toggle hidden"
+        onChange={handleCheckboxChange}
+      />
 
       <div className="modal-overlay pointer-events-none absolute inset-0 z-50 flex h-full items-end justify-center opacity-0 transition-all duration-300 peer-checked:pointer-events-auto peer-checked:opacity-100">
         <label
