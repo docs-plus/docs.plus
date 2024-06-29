@@ -11,36 +11,11 @@ import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { useAuthStore } from '@stores'
 import Loading from '@components/ui/Loading'
-import TocModal from '@components/pages/document/components/TocModal'
 import { FaCheck } from 'react-icons/fa6'
 
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
   loading: () => <Loading />
 })
-
-const MobileLeftSidePanel = () => {
-  return (
-    <div className="drawer z-30 w-full">
-      <input id="mobile_left_side_panel" type="checkbox" className="drawer-toggle" />
-      <div className="drawer-content">
-        <label htmlFor="mobile_left_side_panel" className="btn btn-ghost drawer-button px-2">
-          <Hamburger size={30} />
-        </label>
-      </div>
-      <div className="drawer-side">
-        <label
-          htmlFor="mobile_left_side_panel"
-          aria-label="close sidebar"
-          className="drawer-overlay"></label>
-        <div className="min-h-full w-full">
-          <label htmlFor="mobile_left_side_panel">
-            <TocModal />
-          </label>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 const MobilePadTitle = () => {
   const user = useAuthStore((state) => state.profile)
@@ -61,7 +36,9 @@ const MobilePadTitle = () => {
                 <FaCheck size={20} />
               </label>
             ) : (
-              <MobileLeftSidePanel />
+              <label htmlFor="mobile_left_side_panel" className="btn btn-ghost drawer-button px-2">
+                <Hamburger size={30} />
+              </label>
             )}
           </div>
 
