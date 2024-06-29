@@ -4,7 +4,7 @@ import EditorContent from './EditorContent'
 import { Pencil } from '@icons'
 import ToolbarMobile from './ToolbarMobile'
 import { useStore, useChatStore } from '@stores'
-import ChatontainerMobile from './chat/ChatontainerMobile'
+import ChatContainerMobile from './chat/ChatContainerMobile'
 import { scrollHeadingSelection } from '../helpers'
 import { useAdjustEditorSizeForChatRoom } from '../hooks'
 import { debounce } from 'lodash'
@@ -158,7 +158,7 @@ const Editor = () => {
         </div>
       </div>
 
-      <ChatontainerMobile />
+      <ChatContainerMobile />
 
       <div className="relative z-0">
         <button
