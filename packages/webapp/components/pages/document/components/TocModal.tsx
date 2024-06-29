@@ -12,25 +12,12 @@ const TocModal = () => {
     editor: { loading, applyingFilters, rendering, instance: editor }
   } = useStore((state) => state.settings)
 
-  const openFilterModal = useCallback(() => {
-    const bottomSideModal = document.querySelector('.nd_modal.bottom') as HTMLDivElement
-    const modalWrapper = bottomSideModal.querySelector('.modalWrapper') as HTMLDivElement
-    const modalBg = bottomSideModal.querySelector('.modalBg') as HTMLDivElement
-
-    bottomSideModal.classList.remove('hidden')
-    modalBg.classList.add('active')
-
-    setTimeout(() => {
-      modalWrapper.classList.add('active')
-    }, 200)
-  }, [])
-
   if (loading || !editor || applyingFilters || rendering) {
     return null
   }
 
   return (
-    <div className="z-30 h-dvh w-4/5 min-w-[80%] max-w-[80%] bg-base-200 text-base-content">
+    <div className="z-30 h-dvh w-full min-w-[80%] max-w-[80%] bg-base-200 text-base-content">
       <div className="modalWrapper relative sticky top-0 z-30 size-full overflow-hidden overflow-y-auto">
         <div className="sticky top-0 z-20 flex w-full justify-center overflow-hidden border-b bg-base-100 py-3 align-middle">
           <Link

@@ -32,7 +32,7 @@ const MobileLeftSidePanel = () => {
           htmlFor="mobile_left_side_panel"
           aria-label="close sidebar"
           className="drawer-overlay"></label>
-        <div className="min-h-full">
+        <div className="min-h-full w-full">
           <label htmlFor="mobile_left_side_panel">
             <TocModal />
           </label>
