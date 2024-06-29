@@ -18,7 +18,7 @@ const initSettings = {
   }
 }
 
-const ChatontainerMobile = () => {
+const ChatContainerMobile = () => {
   const chatRoom = useChatStore((state) => state.chatRoom)
   const { handleMouseDown, gripperRef, height } = useResizeContainer()
 
@@ -43,4 +43,4 @@ const ChatontainerMobile = () => {
   )
 }
 
-export default ChatontainerMobile
+export default ChatContainerMobile
