@@ -17,6 +17,10 @@ const FilterModal = () => {
   }
 
   useEffect(() => {
+    if (search.length === 0) {
+      setTotalSearch(0)
+      return
+    }
     const headings = countHeadings()
 
     const filterHeadings = (headings: any) => {
@@ -33,9 +37,7 @@ const FilterModal = () => {
   const searchThroughHeading = (e: any) => {
     setSearch(e.target.value)
 
-    if (e.key === 'Enter') {
-      applySearch()
-    }
+    if (e.key === 'Enter') applySearch()
   }
 
   const applySearch = () => {
@@ -61,7 +63,7 @@ const FilterModal = () => {
             className="input join-item input-bordered w-9/12"
             type="text"
             placeholder="Find"
-            onKeyDown={searchThroughHeading}
+            onKeyUp={searchThroughHeading}
             ref={filterSearchRef}
           />
           <p className="join-item flex w-3/12 items-center justify-center rounded-r bg-base-300 text-sm">
@@ -74,6 +76,9 @@ const FilterModal = () => {
           <button
             onTouchStart={applySearch}
             onClick={applySearch}
+            disabled={
+              !search || search.length === 0 || totalSearch === 0 || totalSearch === totalHeading
+            }
             className="btn btn-neutral btn-block">
             Filter Contents
           </button>
