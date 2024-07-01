@@ -45,7 +45,7 @@ function Home({ hostname }: { hostname: string }) {
   return (
     <>
       <HeadSeo />
-      <div className="flex size-full justify-center bg-slate-100 p-4 sm:items-center">
+      <div className="flex  size-auto justify-center overflow-auto bg-slate-100 p-4 sm:size-full sm:items-center">
         <Tabs defaultActiveTab="deck" className="relative max-w-5xl rounded-md">
           <TabList
             className={`${
@@ -77,7 +77,7 @@ function Home({ hostname }: { hostname: string }) {
               </Tab>
             )}
           </TabList>
-          <TabPanels className="relative z-10 max-w-5xl rounded-md bg-white shadow">
+          <TabPanels className="relative z-10 max-w-5xl rounded-md bg-white shadow ">
             <TabLayout name="deck">
               <DeckPanel hostname={hostname} />
             </TabLayout>
