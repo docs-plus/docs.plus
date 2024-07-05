@@ -1,7 +1,6 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import EditorContent from './EditorContent'
-import { Pencil } from '@icons'
 import ToolbarMobile from './ToolbarMobile'
 import { useStore, useChatStore } from '@stores'
 import { scrollHeadingSelection } from '../helpers'
@@ -16,10 +15,9 @@ const Editor = () => {
 
   const {
     deviceDetect,
-    editor: { instance: editor, isMobile, selectionPos, loading }
+    editor: { instance: editor, isMobile, loading }
   } = useStore((state) => state.settings)
 
-  const [showToolbar, setShowToolbar] = useState(false)
   const isKeyboardOpen = useDetectKeyboardOpen() || false
 
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
@@ -126,24 +124,6 @@ const Editor = () => {
     }
   }, [deviceDetect])
 
-  const toggleToolbar = () => {
-    if (!isMobile) return
-
-    if (!isKeyboardOpen) {
-      const divProseMirror = document.querySelector('.tiptap.ProseMirror') as HTMLElement
-      divProseMirror.setAttribute('contenteditable', 'true')
-      editor?.setEditable(true)
-    }
-
-    editor
-      ?.chain()
-      .focus(selectionPos || 'start')
-      .setTextSelection(selectionPos || 0)
-      .scrollIntoView()
-
-    setShowToolbar(!showToolbar)
-  }
-
   return (
     <>
       <div className="editor relative flex size-full flex-row-reverse justify-around align-top">
@@ -157,13 +137,6 @@ const Editor = () => {
         </div>
       </div>
 
-      <div className="relative z-0">
-        <button
-          onClick={toggleToolbar}
-          className={`btn_bigBluePencil btn btn-circle btn-neutral flex size-14 ${!isKeyboardOpen ? 'active block' : 'hidden'} fixed bottom-8 right-6 z-10 `}>
-          <Pencil size={26} />
-        </button>
-      </div>
       <div
         className={`toolbars sticky bottom-0 z-10 w-full bg-base-100 ${isKeyboardOpen && !chatRoom?.headingId ? 'block' : 'hidden'}`}>
         <ToolbarMobile />

@@ -24,7 +24,7 @@ const MobilePadTitle = () => {
   const [isProfileModalOpen, setProfileModalOpen] = useState(false)
 
   return (
-    <>
+    <div className="docTitle sticky top-0 z-10 flex min-h-14 w-full flex-row items-center bg-white">
       <div className="docTitle relative z-10 flex min-h-12 w-full flex-col items-center border-b bg-white p-2">
         <div className="flex w-full flex-row items-center align-middle ">
           <div className="">
@@ -88,7 +88,7 @@ const MobilePadTitle = () => {
         setIsOpen={setProfileModalOpen}>
         <ControlCenter defaultTab="profile" />
       </Modal>
-    </>
+    </div>
   )
 }
 
