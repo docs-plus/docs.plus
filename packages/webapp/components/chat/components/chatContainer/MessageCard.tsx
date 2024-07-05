@@ -66,7 +66,7 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
     <div
       className={`group/msgcard ${
         ownerMsg ? 'owner chat-end ml-auto' : 'chat-start mr-auto'
-      } msg_card chat relative w-fit min-w-[80%] max-w-[90%] sm:min-w-[200px] ${isGroupEnd ? 'chat_group-end !mb-2' : 'chat_group-start'}`}
+      } msg_card chat relative w-fit min-w-[80%] max-w-[90%] sm:min-w-[250px] ${isGroupEnd ? 'chat_group-end !mb-2' : 'chat_group-start'}`}
       ref={cardRef}
       onDoubleClick={handleDoubleClick}>
       {!ownerMsg && (

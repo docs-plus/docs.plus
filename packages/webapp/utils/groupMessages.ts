@@ -18,7 +18,8 @@ export const groupedMessages = (messages: Message[]) =>
     const isGroupStart =
       index === 0 ||
       message?.user_id !== prevMessage?.user_id ||
-      isDifferentDay(message.created_at, prevMessage?.created_at)
+      isDifferentDay(message.created_at, prevMessage?.created_at) ||
+      prevMessage?.type === 'notification'
 
     const isGroupEnd =
       index === array.length - 1 ||
