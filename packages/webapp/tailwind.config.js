@@ -39,10 +39,14 @@ module.exports = {
     },
     colors: {
       docsy: '#2778ff',
+      'bg-chatBubble-owner': '#A6C5FA',
       ...colors
     },
     extend: {
       spacing: {},
+      boxShadow: {
+        'top-only': '0 -2px 2px -1px rgba(0, 0, 0, 0.04), 0 -2px 2px -1px rgba(0, 0, 0, 0.06)'
+      },
       animation: {
         fadeIn: 'fadeIn 0.3s ease-out',
         fadeOut: 'fadeOut 0.1s ease-in forwards'

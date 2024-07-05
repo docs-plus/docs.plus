@@ -25,10 +25,10 @@ const ReplyIndicator = ({ count }: { count: number | undefined }) =>
   ) : null
 
 const PinIndicator = ({ isPinned }: { isPinned?: boolean }) =>
-  isPinned ? <TbPinned className=" size-4 rotate-45 text-gray-300" /> : null
+  isPinned ? <TbPinned className=" size-4 rotate-45 text-base-content" /> : null
 
 const EditedIndicator = ({ isEdited }: { isEdited?: boolean }) =>
-  isEdited ? <span className="text-xs text-gray-300 text-opacity-50">edited</span> : null
+  isEdited ? <span className="text-xs text-base-content text-opacity-50">edited</span> : null
 
 const Timestamp = ({
   time,
@@ -42,10 +42,10 @@ const Timestamp = ({
   return (
     <div className="flex space-x-1 rounded bg-base-100/10 px-1">
       <time className="whitespace-nowrap text-xs opacity-50">{time}</time>
-      {id === 'fake_id' && <IoTimeOutline className="size-4 text-gray-300" />}
+      {id === 'fake_id' && <IoTimeOutline className="size-4 text-base-content" />}
       <div className={id !== 'fake_id' ? 'block' : 'hidden'}>
-        {!readed_at ? <IoCheckmarkSharp className="size-4 text-gray-300" /> : null}
-        {readed_at ? <IoCheckmarkDoneSharp className="size-4 text-gray-300" /> : null}
+        {!readed_at ? <IoCheckmarkSharp className="size-4 text-base-content" /> : null}
+        {readed_at ? <IoCheckmarkDoneSharp className="size-4 text-base-content" /> : null}
       </div>
     </div>
   )
@@ -55,7 +55,7 @@ const ThreadIndicator = ({ count }: { count: number | null }) => {
   if (!count) return
   return (
     <div className="flex items-center justify-between space-x-1 rounded bg-base-100/10 px-1">
-      <BiSolidMessageDetail className="size-4 text-gray-300" />
+      <BiSolidMessageDetail className="size-4 text-base-content" />
       {count && <span className="whitespace-nowrap pb-[3px] text-xs opacity-100">{count}</span>}
     </div>
   )
@@ -67,7 +67,7 @@ const MessageFooter: React.FC<{ data: TMessageWithUser }> = ({ data }) => {
 
   return (
     <>
-      <div className="chat-footer mt-1 flex items-center justify-end gap-2 pl-4">
+      <div className="chat-footer mt-1 flex items-center justify-end gap-2 pl-4 text-base-content">
         <div className="flex items-center gap-2">
           <ReplyIndicator count={countRepliedMessages} />
           <PinIndicator isPinned={data.metadata?.pinned} />

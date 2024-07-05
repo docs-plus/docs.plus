@@ -15,18 +15,23 @@ const getUserDisplayName = (data: TMessageWithUser) => {
   return data?.user_details?.display_name || data?.user_details?.username
 }
 
-const MessageHeader: React.FC<{ data: TMessageWithUser }> = ({ data }) => {
+const MessageHeader: React.FC<{ data: TMessageWithUser; ownerMsg?: boolean }> = ({
+  data,
+  ownerMsg
+}) => {
   const forwardMessageOrigin = getForwardMessageOrigin(data)
   const userDisplayName = getUserDisplayName(data)
 
   return (
-    <>
-      {data.isGroupStart && <div className="chat-header text-secondary">{userDisplayName}</div>}
+    <div className="chat-header">
+      {data.isGroupStart && !ownerMsg && (
+        <div className="chat-header text-secondary">{userDisplayName}</div>
+      )}
 
       <MsgForwardIndicator forwardMessageOrigin={forwardMessageOrigin} />
 
       {data.reply_to_message_id && <MsgReplyTo data={data} />}
-    </>
+    </div>
   )
 }
 
