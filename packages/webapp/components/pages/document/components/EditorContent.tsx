@@ -13,9 +13,9 @@ const EditorContent = ({ className }: { className?: string }) => {
   useEffect(() => {
     // TODO: this is temporary
     //@ts-ignore
-    document.querySelector('.tiptap.ProseMirror').setAttribute('inputmode', 'text')
+    document.querySelector('.tiptap.ProseMirror')?.setAttribute('inputmode', 'text')
     //@ts-ignore
-    document.querySelector('.tiptap.ProseMirror').setAttribute('enterkeyhint', 'enter')
+    document.querySelector('.tiptap.ProseMirror')?.setAttribute('enterkeyhint', 'enter')
   }, [editor])
 
   if (loading || rendering || !editor) {
