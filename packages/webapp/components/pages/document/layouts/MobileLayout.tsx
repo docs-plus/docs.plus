@@ -5,6 +5,7 @@ import MobileEditor from '../components/MobileEditor'
 import { useStore } from '@stores'
 import TocModal from '@components/pages/document/components/TocModal'
 import ChatContainerMobile from '@components/pages/document/components/chat/ChatContainerMobile'
+import BigPencilBtn from '@components/pages/document/components/BigPencilBtn'
 
 const MobileLeftSidePanel = () => {
   return (
@@ -36,11 +37,10 @@ const MobileLayout = () => {
 
   return (
     <div className={`pad tiptap relative flex flex-col border-solid ${deviceClass}`}>
-      <div className="docTitle sticky top-0 z-10 flex min-h-14 w-full flex-row items-center bg-white">
-        <MobilePadTitle />
-      </div>
+      <MobilePadTitle />
       <MobileLeftSidePanel />
       <MobileEditor />
+      <BigPencilBtn />
       <ChatContainerMobile />
       <FilterModal />
     </div>
