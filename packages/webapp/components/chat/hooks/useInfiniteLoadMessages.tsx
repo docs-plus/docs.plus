@@ -57,6 +57,7 @@ export const useInfiniteLoadMessages = (
     if (pageMessages?.messages && pageMessages?.messages?.length > 0) {
       // Convert pageMessages.messages to a Map
       const newMessagesMap: any = new Map(
+        // @ts-ignore
         groupedMessages(pageMessages.messages.reverse()).map((message: any) => [
           message.id,
           message

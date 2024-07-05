@@ -67,6 +67,8 @@ const FilterModal = () => {
             id="filterSearchBox"
             className="input join-item input-bordered w-9/12"
             type="text"
+            inputMode="text"
+            enterKeyHint="search"
             placeholder="Find"
             onKeyUp={searchThroughHeading}
             ref={filterSearchRef}

@@ -58,39 +58,47 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
     return data.isGroupEnd
   }, [data.isGroupEnd])
 
+  const ownerMsg = useMemo(() => {
+    return data?.user_details?.id === user?.id
+  }, [data?.user_details?.id, user])
+
   return (
     <div
       className={`group/msgcard ${
-        data?.user_details?.id === user?.id ? 'owner chat-end ml-auto' : 'chat-start mr-auto'
-      } msg_card chat relative  w-fit min-w-[80%] max-w-[90%] sm:min-w-[200px] ${isGroupEnd ? 'chat_group-end !mb-2' : 'chat_group-start'}`}
+        ownerMsg ? 'owner chat-end ml-auto' : 'chat-start mr-auto'
+      } msg_card chat relative w-fit min-w-[80%] max-w-[90%] sm:min-w-[200px] ${isGroupEnd ? 'chat_group-end !mb-2' : 'chat_group-start'}`}
       ref={cardRef}
       onDoubleClick={handleDoubleClick}>
-      <Avatar
-        src={data?.user_details?.avatar_url}
-        className="avatar chat-image w-10 cursor-pointer rounded-full transition-all hover:scale-105"
-        style={{
-          width: 40,
-          height: 40,
-          cursour: 'pointer',
-          visibility: isGroupEnd ? 'visible' : 'hidden'
-        }}
-        id={data?.user_details?.id}
-        alt={`avatar_${data?.user_details?.id}`}
-        onClick={handleAvatarClick}
-      />
+      {!ownerMsg && (
+        <div className="avatar chat-image">
+          <Avatar
+            src={data?.user_details?.avatar_url}
+            className="avatar chat-image w-10 cursor-pointer rounded-full transition-all hover:scale-105"
+            style={{
+              width: 40,
+              height: 40,
+              cursour: 'pointer',
+              visibility: isGroupEnd ? 'visible' : 'hidden'
+            }}
+            id={data?.user_details?.id}
+            alt={`avatar_${data?.user_details?.id}`}
+            onClick={handleAvatarClick}
+          />
+        </div>
+      )}
+
+      <MessageHeader data={data} ownerMsg={ownerMsg} />
 
       {isOnlyEmoji(data?.content) ? (
         <div className="mb-4 min-w-full max-w-[70%]">
-          <MessageHeader data={data} />
           <MessageContent data={data} />
           <MessageFooter data={data} />
         </div>
       ) : (
         <div
-          className={`chat-bubble !mt-0 flex w-full flex-col ${
+          className={`chat-bubble !mt-0 flex w-full flex-col text-base-content ${ownerMsg ? ' bg-bg-chatBubble-owner ' : 'bg-white  drop-shadow'} ${
             isGroupEnd ? 'bubble_group-end' : 'bubble_group-start !rounded-ee-xl !rounded-es-xl'
           }`}>
-          <MessageHeader data={data} />
           <MessageContent data={data} />
           <MessageFooter data={data} />
         </div>

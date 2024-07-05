@@ -4,6 +4,7 @@ import FilterModal from '../components/FilterModal'
 import MobileEditor from '../components/MobileEditor'
 import { useStore } from '@stores'
 import TocModal from '@components/pages/document/components/TocModal'
+import ChatContainerMobile from '@components/pages/document/components/chat/ChatContainerMobile'
 
 const MobileLeftSidePanel = () => {
   return (
@@ -40,6 +41,7 @@ const MobileLayout = () => {
       </div>
       <MobileLeftSidePanel />
       <MobileEditor />
+      <ChatContainerMobile />
       <FilterModal />
     </div>
   )

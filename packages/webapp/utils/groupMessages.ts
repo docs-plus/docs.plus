@@ -4,7 +4,7 @@ import { isSameDay, parseISO } from 'date-fns'
 interface Message {
   created_at: string // ISO date string
   user_id: string
-  // Add other relevant properties of the message here
+  type: string
 }
 
 const isDifferentDay = (date1: string, date2: string) => {
@@ -12,27 +12,28 @@ const isDifferentDay = (date1: string, date2: string) => {
 }
 
 export const groupedMessages = (messages: Message[]) =>
-  messages.map((message, index, array) => {
-    // Using `at()` to access previous and next messages
-    const prevMessage = array.at(index - 1)
-    const nextMessage = array.at(index + 1)
+  messages
+    .filter((msg) => msg.type !== 'notification')
+    .map((message, index, array) => {
+      const prevMessage = array.at(index - 1)
+      const nextMessage = array.at(index + 1)
 
-    const isGroupStart =
-      index === 0 ||
-      message?.user_id !== prevMessage?.user_id ||
-      isDifferentDay(message.created_at, prevMessage?.created_at)
+      const isGroupStart =
+        index === 0 ||
+        message?.user_id !== prevMessage?.user_id ||
+        isDifferentDay(message.created_at, prevMessage?.created_at)
 
-    const isGroupEnd =
-      index === array.length - 1 ||
-      message?.user_id !== nextMessage?.user_id ||
-      isDifferentDay(message.created_at, nextMessage?.created_at)
+      const isGroupEnd =
+        index === array.length - 1 ||
+        message?.user_id !== nextMessage?.user_id ||
+        isDifferentDay(message.created_at, nextMessage?.created_at)
 
-    const isNewGroupById = message?.user_id !== prevMessage?.user_id
+      const isNewGroupById = message?.user_id !== prevMessage?.user_id
 
-    return {
-      ...message,
-      isGroupStart,
-      isGroupEnd,
-      isNewGroupById
-    }
-  })
+      return {
+        ...message,
+        isGroupStart,
+        isGroupEnd,
+        isNewGroupById
+      }
+    })

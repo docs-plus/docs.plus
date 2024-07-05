@@ -209,6 +209,21 @@ export default function SendMessage() {
     }
   }, [handleEsc])
 
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault()
+      submit(e)
+    }
+  }
+
+  useEffect(() => {
+    // TODO: this is temporary
+    setTimeout(() => {
+      document.querySelector('.tiptap.ProseMirror')?.setAttribute('inputmode', 'text')
+      document.querySelector('.tiptap.ProseMirror')?.setAttribute('enterkeyhint', 'send')
+    }, 1000)
+  }, [editor])
+
   if (!editor || !user) return null
 
   return (
@@ -223,9 +238,9 @@ export default function SendMessage() {
 
       <div
         className={`my-2 mt-1 w-full px-2${showEditorToolbar ? 0 : 2}`}
-        onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && submit(e)}>
+        onKeyDown={(e) => handleKeyDown(e)}>
         <div className="flex w-full flex-col rounded-md bg-base-300 px-2 sm:px-3">
-          <div className="flex items-end py-1 text-base sm:py-2">
+          <div className="flex items-center py-1 text-base sm:py-2">
             {settings?.textEditor?.attachmentButton && (
               <IconButton $size={8}>
                 <ImAttachment size={20} />

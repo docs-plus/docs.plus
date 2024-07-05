@@ -1,5 +1,5 @@
 -- Table: public.messages
--- Description: Stores all messages exchanged in the application. This includes various types of messages like text, image, video, or audio. 
+-- Description: Stores all messages exchanged in the application. This includes various types of messages like text, image, video, or audio.
 -- The table also tracks message status (edited, deleted) and associations (user, channel, replies, and forwardings).
 CREATE TABLE public.messages (
     id                     UUID DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
@@ -13,7 +13,7 @@ CREATE TABLE public.messages (
     user_id                UUID NOT NULL REFERENCES public.users, -- The ID of the user who sent the message.
     channel_id             VARCHAR(36) NOT NULL REFERENCES public.channels ON DELETE SET NULL, -- The ID of the channel where the message was sent.
     reactions              JSONB, -- JSONB field storing user reactions to the message.
-    type                   message_type, -- Enumerated type of the message (text, image, video, etc.).
+    type                   message_type DEFAULT 'text', -- Enumerated type of the message (text, image, video, etc.).
     metadata               JSONB, -- Additional metadata about the message in JSONB format.
     reply_to_message_id    UUID REFERENCES public.messages(id) ON DELETE SET NULL, -- The ID of the message this message is replying to, if any.
     replied_message_preview TEXT, -- Preview text of the message being replied to.

@@ -16,7 +16,7 @@ const ToolbarMobile = () => {
   }
 
   return (
-    <div className="relative z-50 flex w-full items-center border-b border-gray-200 bg-white p-2">
+    <div className="shadow-top-only relative z-50 flex w-full items-center rounded-t-2xl bg-white p-2">
       <div className="min-w-0 flex-1">
         <BreadcrumbMobile />
       </div>

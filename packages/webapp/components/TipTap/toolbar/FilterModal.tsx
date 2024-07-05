@@ -84,6 +84,8 @@ const FilterModal = ({ totalHeading = 0, className = '' }) => {
           className="h-10"
           id="filterSearchBox"
           label="Find in document"
+          inputmode="text"
+          enterkeyhint="search"
           value={filterInput}
           onKeyUp={handleSearch}
           datalist={filteredHeadings.map((heading: any) => heading.textContent)}
