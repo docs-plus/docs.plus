@@ -34,6 +34,7 @@ const IconButton = twx.button<BtnIcon>((prop) =>
 
 export default function SendMessage() {
   const { channelId, settings } = useChannel()
+  const editorElement = useRef<HTMLDivElement>(null)
 
   const [showEditorToolbar, setShowEditorToolbar] = useState(false)
   const setEditMessageMemory = useChatStore((state) => state.setEditMessageMemory)
@@ -224,6 +225,17 @@ export default function SendMessage() {
     }, 1000)
   }, [editor])
 
+  useEffect(() => {
+    const setAttributes = () => {
+      const firstChild = editorElement.current?.firstChild as HTMLElement | null
+      if (firstChild) {
+        firstChild.setAttribute('inputmode', 'text')
+        firstChild.setAttribute('enterkeyhint', 'send')
+      }
+    }
+    setAttributes()
+  }, [editor])
+
   if (!editor || !user) return null
 
   return (
@@ -246,9 +258,12 @@ export default function SendMessage() {
                 <ImAttachment size={20} />
               </IconButton>
             )}
-
-            <EditorContent className="max-h-52 w-full overflow-auto" editor={editor} dir="auto" />
-
+            <EditorContent
+              ref={editorElement}
+              className="max-h-52 w-full overflow-auto"
+              editor={editor}
+              dir="auto"
+            />
             {settings?.textEditor?.toolbar && (
               <IconButton
                 $size={8}
@@ -257,13 +272,11 @@ export default function SendMessage() {
                 <MdFormatColorText size={24} />
               </IconButton>
             )}
-
             {settings?.textEditor?.emojiPicker && (
               <IconButton $size={8} onClick={openEmojiPicker}>
                 <BsFillEmojiSmileFill size={22} />
               </IconButton>
             )}
-
             <IconButton
               $size={8}
               onClick={submit}

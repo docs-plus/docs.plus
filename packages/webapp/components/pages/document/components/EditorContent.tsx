@@ -3,19 +3,23 @@ import DocumentWithPictureLoader from '@components/DocumentWithPictureLoader'
 import DocumentSimpleLoader from '@components/DocumentSimpleLoader'
 import { useStore } from '@stores'
 import { twMerge } from 'tailwind-merge'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 const EditorContent = ({ className }: { className?: string }) => {
   const {
     editor: { instance: editor, loading, rendering }
   } = useStore((state) => state.settings)
+  const editorElement = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // TODO: this is temporary
-    //@ts-ignore
-    document.querySelector('.tiptap.ProseMirror')?.setAttribute('inputmode', 'text')
-    //@ts-ignore
-    document.querySelector('.tiptap.ProseMirror')?.setAttribute('enterkeyhint', 'enter')
+    const setAttributes = () => {
+      const firstChild = editorElement.current?.firstChild as HTMLElement | null
+      if (firstChild) {
+        firstChild.setAttribute('inputmode', 'text')
+        firstChild.setAttribute('enterkeyhint', 'enter')
+      }
+    }
+    setAttributes()
   }, [editor])
 
   if (loading || rendering || !editor) {
@@ -27,9 +31,10 @@ const EditorContent = ({ className }: { className?: string }) => {
       </div>
     )
   }
+
   return (
     <TiptapEditor
-      inputMode="text"
+      ref={editorElement}
       className={twMerge('tipta__editor', className)}
       editor={editor}
     />
