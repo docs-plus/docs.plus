@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import EditorContent from './EditorContent'
 import ToolbarMobile from './ToolbarMobile'
@@ -61,32 +61,39 @@ const Editor = () => {
     }, 500)
   }, [deviceDetect, editor, isKeyboardOpen, loading])
 
+  const setHeights = useCallback(() => {
+    const htmlElement = document.querySelector('html')
+    const bodyElement = document.body
+    const visualViewport = window.visualViewport
+    if (htmlElement && bodyElement && visualViewport) {
+      htmlElement.style.height = `${visualViewport.height}px`
+      bodyElement.style.height = `${visualViewport.height}px`
+    }
+  }, [])
+
+  const resetHeights = useCallback(() => {
+    const htmlElement = document.querySelector('html')
+    const bodyElement = document.body
+    if (htmlElement && bodyElement) {
+      htmlElement.style.height = ''
+      bodyElement.style.height = ''
+    }
+  }, [])
+
   useEffect(() => {
-    // @ts-ignore
-    document.querySelector('html').style.height = window.visualViewport.height + 'px'
-    // @ts-ignore
-    document.body.style.height = window.visualViewport.height + 'px'
-  }, [isKeyboardOpen])
+    setHeights()
+    return resetHeights
+  }, [isKeyboardOpen, setHeights, resetHeights])
 
   useEffect(() => {
     const viewportHandler = (event: any) => {
-      // if (isHandled) return // Prevent multiple executions
-
       event.preventDefault()
-      // if (!isKeyboardOpen) return
-
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
 
-      const toolbar = document.querySelector('.toolbars .tiptap__toolbar')
       const viewport = event.target
       const viewportHeight = Math.trunc(viewport.height)
 
-      // document.body.style.height = `${viewportHeight}px`
-
       const htmlElement = document.querySelector('html') as HTMLElement
-
-      // in this situation, the height of the html element is the height of the viewport
-      // in this situation, the pageTop need for calculation
       if (htmlElement) {
         htmlElement.style.height = `${viewportHeight + viewport.pageTop}px`
         document.body.style.height = `${viewportHeight + viewport.pageTop}px`
@@ -115,12 +122,13 @@ const Editor = () => {
       }
     }
 
-    window.visualViewport?.addEventListener('resize', viewportHandler)
-    window.visualViewport?.addEventListener('scroll', viewportHandler)
+    const visualViewport = window.visualViewport
+    visualViewport?.addEventListener('resize', viewportHandler)
+    visualViewport?.addEventListener('scroll', viewportHandler)
 
     return () => {
-      window.visualViewport?.removeEventListener('resize', viewportHandler)
-      window.visualViewport?.removeEventListener('scroll', viewportHandler)
+      visualViewport?.removeEventListener('resize', viewportHandler)
+      visualViewport?.removeEventListener('scroll', viewportHandler)
     }
   }, [deviceDetect])
 
@@ -138,7 +146,9 @@ const Editor = () => {
       </div>
 
       <div
-        className={`toolbars sticky bottom-0 z-10 w-full bg-base-100 ${isKeyboardOpen && !chatRoom?.headingId ? 'block' : 'hidden'}`}>
+        className={`toolbars sticky bottom-0 z-10 w-full bg-base-100 ${
+          isKeyboardOpen && !chatRoom?.headingId ? 'block' : 'hidden'
+        }`}>
         <ToolbarMobile />
       </div>
     </>
