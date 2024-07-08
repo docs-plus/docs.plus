@@ -25,6 +25,8 @@ const updateIndicator = (channelId: string, typingIndicator: Map<string, any>) =
 }
 
 export const useTypingIndicator = () => {
+  // INFO: disable typing indicator for no
+  return
   const { typingIndicators } = useChatStore((state) => state.workspaceSettings)
 
   useEffect(() => {

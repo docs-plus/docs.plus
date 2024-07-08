@@ -20,7 +20,7 @@ const Breadcrumb = () => {
                 <RiArrowRightSLine size={20} />
               )}
               <li key={index} aria-current={headingPath.length - 1 === index ? 'page' : undefined}>
-                <div className="flex items-center whitespace-nowrap">
+                <div className="flex items-center whitespace-nowrap px-1">
                   {headingPath.length - 1 === index ? (
                     <span className="">{heading.text}</span>
                   ) : (
