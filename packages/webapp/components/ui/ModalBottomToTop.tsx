@@ -20,6 +20,7 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
     const [isDragging, setIsDragging] = useState<boolean>(false)
     const [startY, setStartY] = useState<number>(0)
     const [startHeight, setStartHeight] = useState<number>(0)
+    const [isTouched, setIsTouched] = useState<boolean>(false)
 
     const handleCheckboxChange = useCallback(
       (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -36,6 +37,7 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
         setIsDragging(true)
         setStartY(e.touches[0].clientY)
         setStartHeight(modalHeight)
+        setIsTouched(true)
       },
       [modalHeight]
     )
@@ -53,6 +55,7 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
 
     const handleTouchEnd = useCallback(() => {
       setIsDragging(false)
+      setIsTouched(false)
     }, [])
 
     useEffect(() => {
@@ -103,12 +106,15 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
           <div
             ref={contentRef}
             className={twMerge(
-              'modal-content sticky bottom-0 w-full max-w-md translate-y-full rounded-t-lg bg-white shadow-lg transition-transform duration-300 ease-in-out peer-checked:translate-y-0',
+              'modal-content sticky bottom-0 w-full max-w-md translate-y-full rounded-t-2xl bg-white shadow-lg transition-transform duration-300 ease-in-out peer-checked:translate-y-0',
               contentClassName
             )}
             style={{ height: modalHeight ? `${modalHeight}px` : '300px', maxHeight: '94%' }}>
             <div
-              className="gripper g group sticky top-0 z-10 mx-auto mb-2 flex h-6 w-full cursor-row-resize items-center justify-center transition-all  hover:scale-110  "
+              className={twMerge(
+                'gripper group sticky top-0 z-10 mx-auto flex h-6 w-full cursor-row-resize items-center justify-center pt-1 transition-all',
+                isTouched ? 'scale-110' : ''
+              )}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}>
