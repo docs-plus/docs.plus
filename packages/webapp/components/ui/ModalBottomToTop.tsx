@@ -1,47 +1,124 @@
-import React, { useCallback } from 'react'
+import React, { useCallback, useImperativeHandle, forwardRef, useState, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ModalBottomToTopProps {
   modalId?: string
   className?: string
+  contentClassName?: string
   children: React.ReactNode
   onModalStateChange?: (isOpen: boolean) => void
 }
 
-export const ModalBottomToTop: React.FC<ModalBottomToTopProps> = ({
-  modalId = 'bottom_to_top_modal',
-  className,
-  children,
-  onModalStateChange
-}) => {
-  const handleCheckboxChange = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
-      if (onModalStateChange) {
-        onModalStateChange(event.target.checked)
+export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
+  (
+    { modalId = 'bottom_to_top_modal', className, children, onModalStateChange, contentClassName },
+    ref
+  ) => {
+    const checkboxRef = React.useRef<HTMLInputElement>(null)
+    const contentRef = React.useRef<HTMLDivElement>(null)
+    const [modalHeight, setModalHeight] = useState<number>(300)
+    const [isDragging, setIsDragging] = useState<boolean>(false)
+    const [startY, setStartY] = useState<number>(0)
+    const [startHeight, setStartHeight] = useState<number>(0)
+
+    const handleCheckboxChange = useCallback(
+      (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (onModalStateChange) {
+          onModalStateChange(event.target.checked)
+        }
+      },
+      [onModalStateChange]
+    )
+
+    const handleTouchStart = useCallback(
+      (e: React.TouchEvent) => {
+        e.preventDefault()
+        setIsDragging(true)
+        setStartY(e.touches[0].clientY)
+        setStartHeight(modalHeight)
+      },
+      [modalHeight]
+    )
+
+    const handleTouchMove = useCallback(
+      (e: React.TouchEvent) => {
+        if (!isDragging) return
+        e.preventDefault()
+        const deltaY = startY - e.touches[0].clientY
+        const newHeight = Math.max(100, Math.min(window.innerHeight * 0.9, startHeight + deltaY))
+        setModalHeight(newHeight)
+      },
+      [isDragging, startY, startHeight]
+    )
+
+    const handleTouchEnd = useCallback(() => {
+      setIsDragging(false)
+    }, [])
+
+    useEffect(() => {
+      const handleTouchMoveGlobal = (e: TouchEvent) => {
+        if (isDragging) {
+          e.preventDefault()
+        }
       }
-    },
-    [onModalStateChange]
-  )
-  return (
-    <div className={twMerge('bottom-to-top-modal', className)}>
-      <input
-        type="checkbox"
-        id={modalId}
-        className="peer modal-toggle hidden"
-        onChange={handleCheckboxChange}
-      />
 
-      <div className="modal-overlay pointer-events-none absolute inset-0 z-50 flex h-full items-end justify-center opacity-0 transition-all duration-300 peer-checked:pointer-events-auto peer-checked:opacity-100">
-        <label
-          htmlFor={modalId}
-          className="modal-backdrop absolute inset-0 h-full bg-[#0006]"></label>
+      document.addEventListener('touchmove', handleTouchMoveGlobal, { passive: false })
+      return () => {
+        document.removeEventListener('touchmove', handleTouchMoveGlobal)
+      }
+    }, [isDragging])
 
-        <div className="modal-content sticky bottom-0 max-h-[90vh] w-full max-w-md translate-y-full overflow-y-auto rounded-t-lg bg-white shadow-lg transition-transform duration-300 ease-in-out peer-checked:translate-y-0">
-          {children}
+    useImperativeHandle(ref, () => ({
+      check: () => {
+        if (checkboxRef.current) {
+          checkboxRef.current.checked = true
+          handleCheckboxChange({ target: { checked: true } } as React.ChangeEvent<HTMLInputElement>)
+        }
+      },
+      uncheck: () => {
+        if (checkboxRef.current) {
+          checkboxRef.current.checked = false
+          handleCheckboxChange({
+            target: { checked: false }
+          } as React.ChangeEvent<HTMLInputElement>)
+        }
+      }
+    }))
+
+    return (
+      <div className={twMerge('bottom-to-top-modal', className)}>
+        <input
+          type="checkbox"
+          id={modalId}
+          ref={checkboxRef}
+          className="peer modal-toggle hidden"
+          onChange={handleCheckboxChange}
+        />
+
+        <div className="modal-overlay pointer-events-none absolute inset-0 z-50 flex h-full flex-col items-center justify-end opacity-0 transition-all duration-300 peer-checked:pointer-events-auto peer-checked:opacity-100">
+          <label
+            htmlFor={modalId}
+            className="modal-backdrop absolute inset-0 h-full bg-[#0006]"></label>
+
+          <div
+            ref={contentRef}
+            className={twMerge(
+              'modal-content sticky bottom-0 w-full max-w-md translate-y-full rounded-t-lg bg-white shadow-lg transition-transform duration-300 ease-in-out peer-checked:translate-y-0',
+              contentClassName
+            )}
+            style={{ height: modalHeight ? `${modalHeight}px` : '300px', maxHeight: '94%' }}>
+            <div
+              className="gripper g group sticky top-0 z-10 mx-auto mb-2 flex h-6 w-full cursor-row-resize items-center justify-center transition-all  hover:scale-110  "
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}>
+              <div className="h-2 w-24 rounded-md bg-neutral group-hover:drop-shadow-md"></div>
+            </div>
+            {children}
+          </div>
         </div>
-      </div>
 
-      <style>{`
+        <style>{`
         #${modalId}:checked ~ .modal-overlay {
           opacity: 1;
           pointer-events: auto;
@@ -51,6 +128,9 @@ export const ModalBottomToTop: React.FC<ModalBottomToTopProps> = ({
           transform: translateY(0);
         }
       `}</style>
-    </div>
-  )
-}
+      </div>
+    )
+  }
+)
+
+ModalBottomToTop.displayName = 'ModalBottomToTop'
