@@ -139,8 +139,8 @@ const DeckPanel = ({ hostname }) => {
                   value={documentName}
                   label="Document Name"
                   id="padName"
-                  inputmode="text"
-                  enterkeyhint="Go"
+                  inputMode="text"
+                  enterKeyHint="Go"
                   type="text"
                   onChange={(e) => setDocumentName(e.target.value)}
                   onKeyDown={handleKeyDown}
