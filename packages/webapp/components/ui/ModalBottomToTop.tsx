@@ -33,7 +33,7 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
 
     const handleTouchStart = useCallback(
       (e: React.TouchEvent) => {
-        e.preventDefault()
+        // e.preventDefault()
         setIsDragging(true)
         setStartY(e.touches[0].clientY)
         setStartHeight(modalHeight)
@@ -45,9 +45,9 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
     const handleTouchMove = useCallback(
       (e: React.TouchEvent) => {
         if (!isDragging) return
-        e.preventDefault()
+        // e.preventDefault()
         const deltaY = startY - e.touches[0].clientY
-        const newHeight = Math.max(100, Math.min(window.innerHeight * 0.9, startHeight + deltaY))
+        const newHeight = Math.max(100, Math.min(window.innerHeight * 1, startHeight + deltaY))
         setModalHeight(newHeight)
       },
       [isDragging, startY, startHeight]
@@ -109,7 +109,7 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
               'modal-content sticky bottom-0 w-full max-w-md translate-y-full rounded-t-2xl bg-white shadow-lg transition-transform duration-300 ease-in-out peer-checked:translate-y-0',
               contentClassName
             )}
-            style={{ height: modalHeight ? `${modalHeight}px` : '300px', maxHeight: '94%' }}>
+            style={{ height: modalHeight ? `${modalHeight}px` : '300px', maxHeight: '100%' }}>
             <div
               className={twMerge(
                 'gripper group sticky top-0 z-10 mx-auto flex h-6 w-full cursor-row-resize items-center justify-center pt-1 transition-all',
