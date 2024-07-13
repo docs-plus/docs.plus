@@ -47,7 +47,9 @@ const ChatContainerMobile = () => {
       onModalStateChange={modalStateChange}
       modalId="chatBottomPannel"
       contentClassName="h-[300px] overflow-hidden">
-      <div className="flex h-full flex-col justify-start overflow-hidden pb-6">
+      <div
+        style={{ height: 'calc(100% - 24px)' }}
+        className="flex flex-col justify-start overflow-hidden">
         <ToolbarMobile />
         <ChannelProvider initChannelId={chatRoom.headingId} initSettings={initSettings}>
           <ChatRoom className="flex h-auto flex-auto flex-col overflow-auto "></ChatRoom>

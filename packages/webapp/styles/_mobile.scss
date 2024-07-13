@@ -1,4 +1,14 @@
+:root {
+  --app-height: 100%;
+}
+
 .m_mobile {
+  html,
+  body {
+    height: var(--app-height);
+    overflow: hidden;
+  }
+
   .tiptap__toc .toc__item > span .btnFold::before {
     opacity: 1;
   }
