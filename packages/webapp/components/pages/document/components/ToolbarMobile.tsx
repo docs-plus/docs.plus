@@ -32,7 +32,7 @@ const ToolbarMobile = () => {
   }
 
   return (
-    <div className="tiptap__toolbar sticky bottom-0 flex h-12 items-center justify-around gap-1 bg-base-100 text-blue-700">
+    <div className="tiptap__toolbar  flex h-12 items-center justify-around gap-1 bg-base-100 text-blue-700">
       {buttons.map(({ name, icon: Icon, action, size }) => (
         <button
           key={name}
