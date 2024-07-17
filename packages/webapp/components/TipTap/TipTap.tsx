@@ -146,6 +146,9 @@ const generatePlaceholderText = (data: any) => {
 const Editor = ({ provider, ydoc, spellcheck = false, user }: any): Partial<EditorOptions> => {
   if (!provider) {
     return {
+      // @ts-ignore
+      immediatelyRender: false,
+      shouldRerenderOnTransaction: false,
       extensions: [
         Document,
         Bold,
@@ -217,6 +220,9 @@ const Editor = ({ provider, ydoc, spellcheck = false, user }: any): Partial<Edit
         spellcheck
       }
     },
+    // @ts-ignore
+    immediatelyRender: false,
+    shouldRerenderOnTransaction: true,
     extensions: [
       UniqueID.configure({
         types: [ENUMS.NODES.HEADING_TYPE, ENUMS.NODES.HYPERLINK_TYPE],

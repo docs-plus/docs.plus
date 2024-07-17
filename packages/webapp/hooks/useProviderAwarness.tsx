@@ -37,7 +37,7 @@ const useProviderAwarness = () => {
   useEffect(() => {
     if (!editor) return
     // console.log('update user awareness', { user, displayName })
-    editor.commands.updateUser(getCursorUser(user, displayName))
+    if (editor.commands.updateUser) editor.commands.updateUser(getCursorUser(user, displayName))
   }, [editor, user, displayName])
 
   useEffect(() => {

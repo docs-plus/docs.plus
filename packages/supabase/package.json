@@ -1,5 +1,5 @@
 {
-  "name": "supabase_back",
+  "name": "@docs.plus/supabase_back",
   "version": "0.1.0",
   "description": "",
   "main": "index.js",
@@ -17,7 +17,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "dotenv-cli": "^7.4.1",
-    "supabase": "^1.148.6"
+    "dotenv-cli": "^7.4.2",
+    "supabase": "^1.183.5"
   }
 }

@@ -1,10 +1,10 @@
 # Start backend development server with PostgreSQL
 back_dev:
-	cd packages/hocuspocus.server && npm run dev:pg
+	cd packages/hocuspocus.server && npm run dev:pg --trace-deprecation
 
 # Start backend WebSocket server
 back_ws:
-	cd packages/hocuspocus.server && npm run dev:ws
+	cd packages/hocuspocus.server && npm run dev:ws --trace-deprecation
 
 # Start Supabase development server
 supabase_start:
@@ -31,7 +31,7 @@ supabase-reset:
 
 # Start frontend development server
 front_dev:
-	cd packages/webapp && npm run dev
+	cd packages/webapp && npm run dev --trace-deprecation
 
 # Run backend, WebSocket and frontend development servers concurrently
 local:
