@@ -81,6 +81,7 @@ const useHandelTocUpdate = () => {
 
   // first initial render
   useEffect(() => {
+    if (!editor) return
     const transaction = editor.state.tr
     transaction.setMeta('renderTOC', true)
     editor.view.dispatch(transaction)
@@ -90,7 +91,7 @@ const useHandelTocUpdate = () => {
     }, 200)
 
     return () => clearTimeout(timer)
-  }, [])
+  }, [editor])
 
   return { items }
 }

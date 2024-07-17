@@ -28,15 +28,16 @@ const ToolbarMobile = () => {
   const handleButtonClick = (e: any, action: string) => {
     e.preventDefault()
     editor.view.focus()
+    // @ts-ignore
     editor.chain().focus()[action]().run()
   }
 
   return (
-    <div className="tiptap__toolbar  flex h-12 items-center justify-around gap-1 bg-base-100 text-blue-700">
+    <div className="tiptap__toolbar flex h-12 items-center justify-around gap-1 bg-base-100 text-blue-700">
       {buttons.map(({ name, icon: Icon, action, size }) => (
         <button
           key={name}
-          className={`mx-1 flex h-full flex-1 items-center justify-center  p-0 ${editor.isActive(name) ? 'is-active' : ''}`}
+          className={`mx-1 flex h-full flex-1 items-center justify-center p-0 ${editor.isActive(name) ? 'is-active' : ''}`}
           onClick={(e) => handleButtonClick(e, action)}>
           <Icon size={size} className={editor.isActive(name) ? 'fill-current text-blue-700' : ''} />
         </button>

@@ -21,7 +21,7 @@ const useResizeContainer = () => {
 
     const doDrag = (e: MouseEvent) => {
       let newHeight = startHeight - e.clientY + startY
-      if (editor.isEditable) editor?.setEditable(false)
+      if (editor?.isEditable) editor?.setEditable(false)
 
       // Clamping the new height between the min and max values
       newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight))
@@ -31,7 +31,7 @@ const useResizeContainer = () => {
     }
 
     const stopDrag = () => {
-      if (!editor.isEditable) editor?.setEditable(true)
+      if (!editor?.isEditable) editor?.setEditable(true)
 
       document.documentElement.removeEventListener('mousemove', doDrag as EventListener, false)
       document.documentElement.removeEventListener('mouseup', stopDrag as EventListener, false)

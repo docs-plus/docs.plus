@@ -1,5 +1,5 @@
 import { immer } from 'zustand/middleware/immer'
-import { Editor } from '@tiptap/core'
+import { Editor } from '@tiptap/react'
 
 type EditorSettings = {
   instance?: Editor
