@@ -19,13 +19,13 @@ const DocumentWithPictureLoader: React.FC<React.HTMLProps<HTMLDivElement> & TPro
       <div className="ml-6 mt-6">
         <div className="skeleton mt-3 h-5 w-[94%]"></div>
         <div className="skeleton mt-3 h-5 w-[30%]"></div>
-        <div className="mt-3  flex">
-          <div className="skeleton h-36 w-40 bg-neutral"></div>
+        <div className="mt-3 flex">
+          <div className="skeleton h-36 w-40 bg-neutral opacity-60"></div>
           <div className="float-left ml-4 w-full">
-            <div className="skeleton h-5 w-[78%] bg-neutral "></div>
-            <div className="skeleton mt-3 h-5 w-[58%] bg-neutral"></div>
-            <div className="skeleton mt-3 h-5 w-[78%] bg-neutral"></div>
-            <div className="skeleton mt-3 h-5 w-[28%] bg-neutral"></div>
+            <div className="skeleton h-5 w-[78%] bg-neutral opacity-60"></div>
+            <div className="skeleton mt-3 h-5 w-[58%] bg-neutral opacity-60"></div>
+            <div className="skeleton mt-3 h-5 w-[78%] bg-neutral opacity-60"></div>
+            <div className="skeleton mt-3 h-5 w-[28%] bg-neutral opacity-60"></div>
           </div>
         </div>
         <div className="skeleton mt-3 h-5 w-[78%]"></div>

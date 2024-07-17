@@ -17,9 +17,9 @@ const DocumentSimpleLoader: React.FC<React.HTMLProps<HTMLDivElement> & TProps> =
         <div className="skeleton mt-3 h-5 w-[94%] rounded"></div>
         <div className="skeleton mt-3 h-5 w-[30%] rounded"></div>
         <div className="flex space-x-8">
-          <div className="skeleton mt-3 h-5 w-1/5 rounded bg-docsy"></div>
-          <div className="skeleton mt-3 h-5 w-[16%] rounded bg-docsy"></div>
-          <div className="skeleton mt-3 h-5 w-[54%] rounded bg-docsy"></div>
+          <div className="skeleton mt-3 h-5 w-1/5 rounded bg-docsy opacity-60"></div>
+          <div className="skeleton mt-3 h-5 w-[16%] rounded bg-docsy opacity-60"></div>
+          <div className="skeleton mt-3 h-5 w-[54%] rounded bg-docsy opacity-60"></div>
         </div>
         <div className="skeleton mt-3 h-5 w-[78%] rounded"></div>
         <div className="skeleton mt-3 h-5 w-[94%] rounded"></div>
