@@ -1,6 +1,7 @@
 import PubSub from 'pubsub-js'
 import slugify from 'slugify'
 import ENUMS from '../enums'
+import { Editor } from '@tiptap/react'
 
 export const getOffsetTop = (element: any): number =>
   element ? element.offsetTop + getOffsetTop(element.offsetParent) : 0
@@ -25,7 +26,7 @@ export const toggleHeadingSection = (item: any) => {
   PubSub.publish(ENUMS.EVENTS.FOLD_AND_UNFOLD, { headingId: item.id, open: !item.open })
 }
 
-export const handelScroll2Header = (e: any, editor: any, setActiveHeading: any) => {
+export const handelScroll2Header = (e: any, editor: Editor, setActiveHeading: any) => {
   e.preventDefault()
 
   const isValidTarget =
@@ -51,13 +52,15 @@ export const handelScroll2Header = (e: any, editor: any, setActiveHeading: any) 
   // now add active class to the clicked a tag
   e.target.classList.add('active')
 
-  const posAt = editor?.view.posAtDOM(document.querySelector(`.heading[data-id="${id}"]`))
+  const targetHeading = document.querySelector(`.heading[data-id="${id}"]`)
+
+  if (!targetHeading) return
+
+  const posAt = editor?.view.posAtDOM(targetHeading, 0)
   if (posAt === -1) return
 
-  const nodePos = editor.view.state.doc?.resolve(
-    editor?.view.posAtDOM(document.querySelector(`.heading[data-id="${id}"]`))
-  )
-
+  const nodePos = editor.view.state.doc?.resolve(editor?.view.posAtDOM(targetHeading, 0))
+  //@ts-ignore
   const headingPath = nodePos.path
     .filter((x: any) => x?.type?.name === ENUMS.NODES.HEADING_TYPE)
     .map((x: any) => slugify(x.firstChild.textContent.toLowerCase().trim()))
@@ -67,7 +70,5 @@ export const handelScroll2Header = (e: any, editor: any, setActiveHeading: any) 
   url.searchParams.set('id', id)
   window.history.replaceState({}, '', url)
 
-  document.querySelector(`.heading[data-id="${id}"]`)?.scrollIntoView({
-    behavior: 'smooth'
-  })
+  targetHeading?.scrollIntoView(true)
 }

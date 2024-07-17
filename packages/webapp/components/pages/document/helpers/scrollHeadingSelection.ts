@@ -15,9 +15,5 @@ export const scrollHeadingSelection = (event: UIEvent<HTMLDivElement>) => {
       return thisOffsetTop <= scrollTop // && nextSiblingOffsetTop >= scrollTop
     })
   closest.at(-1)?.classList.add('active')
-  closest.at(-1)?.scrollIntoView({
-    behavior: 'smooth',
-    block: 'start',
-    inline: 'nearest'
-  })
+  closest.at(-1)?.scrollIntoView(true)
 }

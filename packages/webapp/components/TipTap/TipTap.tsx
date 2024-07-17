@@ -115,7 +115,7 @@ const scrollDown = () => {
 
   if (!id) return
   setTimeout(() => {
-    document.querySelector(`[data-id="${url.searchParams.get('id')}"]`)?.scrollIntoView()
+    document.querySelector(`[data-id="${url.searchParams.get('id')}"]`)?.scrollIntoView(true)
   }, 200)
 }
 
