@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { use, useEffect } from 'react'
 import MobileDetect from 'mobile-detect'
 import DesktopLayout from '@components/pages/document/layouts/DesktopLayout'
 import MobileLayout from '@components/pages/document/layouts/MobileLayout'
@@ -10,21 +10,24 @@ import useInitiateDocumentAndWorkspace from '@hooks/useInitiateDocumentAndWorksp
 import { upsertWorkspace, getChannelsByWorkspaceAndUserids } from '@api'
 import { createPagesServerClient } from '@supabase/auth-helpers-nextjs'
 import { LoadingDots } from '@components/LoadingDots'
-import useEditorAndProvider from '@hooks/useEditorAndProvider'
+import useYdocAndProvider from '@hooks/useYdocAndProvider'
+import { useStore } from '@stores'
+import DocumentLayouts from '@components/pages/document/layouts/DocumentLayouts'
 
 const Document = ({ slugs, docMetadata, isMobile, channels }: any) => {
   useDocumentMetadata(slugs, docMetadata)
   useInitiateDocumentAndWorkspace(docMetadata)
   const { loading } = useMapDocumentAndWorkspace(docMetadata, channels)
+  const { editor: editorSetting } = useStore((state) => state.settings)
 
   // initialize the editor and its provider!
-  useEditorAndProvider()
+  useYdocAndProvider()
 
   useEffect(() => {
     document?.querySelector('html')?.classList.add(isMobile ? 'm_mobile' : 'm_desktop')
   }, [isMobile])
 
-  if (loading) {
+  if (loading && editorSetting.loading) {
     return (
       <>
         <HeadSeo />
@@ -35,7 +38,7 @@ const Document = ({ slugs, docMetadata, isMobile, channels }: any) => {
     )
   }
 
-  return isMobile ? <MobileLayout /> : <DesktopLayout />
+  return <DocumentLayouts isMobile={isMobile} />
 }
 
 export default Document

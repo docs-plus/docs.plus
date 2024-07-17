@@ -1,7 +1,8 @@
 import { immer } from 'zustand/middleware/immer'
+import { Editor } from '@tiptap/core'
 
 type EditorSettings = {
-  instance?: any
+  instance?: Editor
   rendering?: boolean
   loading?: boolean
   applyingFilters?: boolean

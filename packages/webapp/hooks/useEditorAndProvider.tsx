@@ -10,13 +10,12 @@ import useEditorReadOnly from './useEditorReadOnly'
 
 const useEditorAndProvider = () => {
   const user = useAuthStore((state) => state.profile)
-  const { editor: editorSetting } = useStore((state) => state.settings)
+  const { editor: editorSetting, hocuspocusProvider: provider } = useStore(
+    (state) => state.settings
+  )
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
 
-  // TODO: this cuase rerending 3 times
-  const { provider, ydoc } = useYdocAndProvider()
-
-  const editor = useEditor(editorConfig({ provider, ydoc, user }), [
+  const editor = useEditor(editorConfig({ provider, ydoc: null, user }), [
     editorSetting?.loading,
     editorSetting?.applyingFilters,
     provider
