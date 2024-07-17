@@ -19,9 +19,12 @@ const useOpenChatContainer = () => {
 
   const openChatContainerHandler = useCallback(
     (item: any) => {
+      if (!editor) return
+
       const nodePos = editor.view.state.doc.resolve(
-        editor?.view.posAtDOM(document.querySelector(`.heading[data-id="${item.id}"]`))
-      )
+        // @ts-ignore
+        editor?.view?.posAtDOM(document.querySelector(`.heading[data-id="${item.id}"]`), 0)
+      ) as any
 
       if (!user) {
         toast.Info('Please login to use chat feature')
