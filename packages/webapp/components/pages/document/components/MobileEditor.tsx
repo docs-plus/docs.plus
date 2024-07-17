@@ -26,10 +26,10 @@ const Editor = () => {
 
   return (
     <>
-      <div className="editor relative flex size-full w-full max-w-full flex-row-reverse flex-col justify-around align-top">
+      <div className="editor relative flex size-full w-full max-w-full flex-col justify-around align-top">
         <div
           ref={editorWrapperRef}
-          className="editorWrapper flex h-full grow items-start justify-center overflow-hidden overflow-y-auto border-t-0 p-0 "
+          className="editorWrapper flex h-full grow items-start justify-center overflow-hidden overflow-y-auto border-t-0 p-0"
           onScroll={scrollHeadingSelection}>
           <EditorContent />
         </div>

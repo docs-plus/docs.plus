@@ -6,7 +6,8 @@
   html,
   body {
     height: var(--app-height);
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
   }
 
   .tiptap__toc .toc__item > span .btnFold::before {
