@@ -20,6 +20,8 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
   const unreadMessage = useUnreadMessage(item)
   const openChatContainerHandler = useOpenChatContainer()
 
+  if (!editor) return
+
   return (
     <li
       key={item.id}
@@ -33,7 +35,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
         data-id={item.id}>
         <span className="toc__link sm:line-clamp-3 sm:hover:line-clamp-5">{item.text}</span>
         <span
-          className={`btnFold tooltip tooltip-top  ${item.open ? 'opened' : 'closed'}`}
+          className={`btnFold tooltip tooltip-top ${item.open ? 'opened' : 'closed'}`}
           onClick={() => toggleHeadingSection(item)}
           data-tip="Toggle">
           <CaretRight size={17} fill="#363636" />
@@ -43,7 +45,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
           onClick={() => openChatContainerHandler(item)}
           data-tip="Chat Room">
           {unreadMessage > 0 && (
-            <div className="badge badge-accent badge-sm absolute -right-[12px] -top-[6px] z-[1] scale-90 border  p-1 shadow">
+            <div className="badge badge-accent badge-sm absolute -right-[12px] -top-[6px] z-[1] scale-90 border p-1 shadow">
               {unreadMessage}
             </div>
           )}

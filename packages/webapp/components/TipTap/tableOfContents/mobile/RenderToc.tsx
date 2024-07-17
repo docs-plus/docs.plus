@@ -26,6 +26,8 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
     element.innerHTML = unreadMessage > 0 ? unreadMessage : ''
   }, [unreadMessage])
 
+  if (!editor) return
+
   return (
     <li
       key={item.id}
@@ -37,7 +39,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
         onClick={(e) => handelScroll2Header(e, editor, setActiveHeading)}
         href={`?${item.id}`}
         data-id={item.id}>
-        <span className="toc__link ">{item.text}</span>
+        <span className="toc__link">{item.text}</span>
         <span
           className={`btnFold ${item.open ? 'opened' : 'closed'}`}
           onClick={() => toggleHeadingSection(item)}
