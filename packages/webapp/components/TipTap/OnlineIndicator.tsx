@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react'
 
 import { OfflineCloud, OnlineCloud } from '@icons'
 
-const OnlineIndicator = ({ className }) => {
+const OnlineIndicator = ({ className }: { className: string }) => {
   const [isOnline, setIsOnline] = useState(false)
   const [showStatus, setShowStatus] = useState(true)
 
@@ -39,7 +39,7 @@ const OnlineIndicator = ({ className }) => {
     <div className={className}>
       {showStatus && (
         <div
-          className={` status flex justify-center align-baseline ${
+          className={`status flex justify-center align-baseline ${
             isOnline ? 'online' : 'offline'
           }`}>
           {isOnline ? (

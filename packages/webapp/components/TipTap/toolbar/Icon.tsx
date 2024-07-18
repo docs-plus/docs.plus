@@ -18,7 +18,7 @@ import {
   Filter
 } from '@icons'
 
-const icons = {
+const icons: { [key: string]: React.ComponentType<{ size?: number; fill?: string }> } = {
   Bold,
   Italic,
   Underline,
@@ -37,7 +37,13 @@ const icons = {
   Filter
 }
 
-const Icon = ({ type, fill = 'rgba(0,0,0,.7)', size = 16 }) => {
+type TIcon = {
+  type: string
+  fill?: string
+  size: number
+}
+
+const Icon = ({ type, fill = 'rgba(0,0,0,.7)', size = 16 }: TIcon) => {
   const IconComponent = icons[type]
   return <IconComponent fill={fill} size={size} />
 }
