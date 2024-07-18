@@ -15,6 +15,12 @@
   }
 
   .ProseMirror {
+    .heading {
+      &[level='1'] {
+        border: none;
+      }
+    }
+
     .title {
       padding-right: 40px;
     }
