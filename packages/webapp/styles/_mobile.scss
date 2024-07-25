@@ -1,5 +1,7 @@
 :root {
   --app-height: 100%;
+  --app-overFlow-y: auto;
+  --app-position_b: 'fixed';
 }
 
 .m_mobile {
@@ -7,11 +9,20 @@
   body {
     height: var(--app-height);
     overflow-x: hidden;
-    overflow-y: auto;
+    overflow-y: var(--app-overFlow-y);
+    position: var(--app-position_b);
+    top: 0;
+    left: 0;
+    width: 100%;
   }
 
-  .tiptap__toc .toc__item > span .btnFold::before {
-    opacity: 1;
+  .tiptap__toc {
+    .menu :where(li ul) {
+      padding: 0;
+    }
+    .toc__item > span .btnFold::before {
+      opacity: 1;
+    }
   }
 
   .ProseMirror {
