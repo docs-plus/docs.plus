@@ -7,6 +7,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "_print-googleid": "echo $GOOGLE_CLIENT_ID",
     "print-googleid": "dotenv -- npm run _print-googleid",
+    "update:packages": "ncu -u",
     "start": "dotenv -- supabase start",
     "stop": "dotenv -- supabase stop",
     "status": "dotenv -- supabase status",
@@ -18,6 +19,6 @@
   "license": "ISC",
   "devDependencies": {
     "dotenv-cli": "^7.4.2",
-    "supabase": "^1.183.5"
+    "supabase": "^1.187.3"
   }
 }
