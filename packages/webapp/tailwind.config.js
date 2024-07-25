@@ -1,7 +1,5 @@
 /** @type {import('tailwindcss').Config} */
 
-const colors = require('tailwindcss/colors')
-
 module.exports = {
   content: [
     './app/**/*.{js,ts,jsx,tsx,mdx}', // Note the addition of the `app` directory.
@@ -37,12 +35,11 @@ module.exports = {
     fontFamily: {
       sans: 'Helvetica, Arial, sans-serif'
     },
-    colors: {
-      docsy: '#2778ff',
-      'bg-chatBubble-owner': '#A6C5FA',
-      ...colors
-    },
     extend: {
+      colors: {
+        docsy: '#2778ff',
+        'bg-chatBubble-owner': '#A6C5FA'
+      },
       spacing: {},
       boxShadow: {
         'top-only': '0 -2px 2px -1px rgba(0, 0, 0, 0.04), 0 -2px 2px -1px rgba(0, 0, 0, 0.06)'
