@@ -30,7 +30,7 @@ const BigPencilBtn = () => {
     <div className="relative z-0">
       <button
         onClick={toggleToolbar}
-        className={`btn_bigBluePencil btn btn-circle btn-neutral flex size-14 ${!isKeyboardOpen ? 'active block' : 'hidden'} fixed bottom-8 right-6 z-10 `}>
+        className={`btn_bigBluePencil btn btn-circle btn-neutral flex size-14 ${!isKeyboardOpen ? 'active block' : 'hidden'} fixed bottom-8 right-6 z-10`}>
         <Pencil size={26} />
       </button>
     </div>

@@ -17,8 +17,8 @@ const TocModal = () => {
   }
 
   return (
-    <div className="z-30 h-dvh w-full min-w-[80%] max-w-[80%] bg-base-200 text-base-content">
-      <div className="modalWrapper relative sticky top-0 z-30 size-full overflow-hidden overflow-y-auto">
+    <div className="z-30 h-full w-full min-w-[80%] max-w-[80%] bg-base-200 text-base-content">
+      <div className="modalWrapper sticky top-0 z-30 size-full overflow-auto">
         <div className="sticky top-0 z-20 flex w-full justify-center overflow-hidden border-b bg-base-100 py-3 align-middle">
           <Link
             href="/"
@@ -41,7 +41,7 @@ const TocModal = () => {
             </label>
           </div>
         </div>
-        <div className="h-full overflow-y-auto pb-16">
+        <div className="h-full pb-16">
           <TableOfContents className="tiptap__toc size-full pb-4 pl-2" />
         </div>
       </div>

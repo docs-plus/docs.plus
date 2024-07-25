@@ -1,54 +1,76 @@
-import { useEffect } from 'react'
-import { useStore } from '@stores'
+import { useEffect, useRef } from 'react'
 
-const usePageHeightAdjust = () => {
-  const { deviceDetect } = useStore((state) => state.settings)
+const useVisualViewportHandler = () => {
+  const offsetRef = useRef(0)
+
+  const handleScrollToTop = () => {
+    window.scrollTo(0, 0)
+  }
 
   useEffect(() => {
-    const viewportHandler = (event: any) => {
-      event.preventDefault()
+    const visualViewport = window.visualViewport as VisualViewport
+    let viewportWidth = window.innerWidth
+    let viewportHeight = window.innerHeight
 
-      const viewport = event.target
-      const viewportHeight = Math.round(viewport.height)
-
+    const handleResize = (event: any) => {
+      const target = event.target
       const doc = document.documentElement
 
-      const pageTop = Math.round(viewport.pageTop)
-      doc.style.setProperty('--app-height', `${Math.trunc(viewportHeight + pageTop)}px`)
-
-      const toolbars = document.querySelector('.toolbars .tiptap__toolbar') as HTMLElement
-      if (toolbars) {
-        const pageTop = Math.round(viewport.pageTop)
-        toolbars.style.top = `${Math.trunc(viewport.clientHeight + pageTop)}px`
+      if (viewportWidth !== target.width) {
+        viewportWidth = window.innerWidth
+        viewportHeight = window.innerHeight
       }
 
-      const selection = window?.getSelection()?.anchorNode?.parentElement
-      if (!selection) return
+      if (viewportHeight - target.height > 150) {
+        handleScrollToTop()
+        const selection = window?.getSelection()?.anchorNode?.parentElement
+        const pageTop = Math.round(visualViewport.pageTop)
+        const viewport = window?.visualViewport as VisualViewport
 
-      if (deviceDetect.is('iPhone')) {
-        if (event.type !== 'scroll') {
-          window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+        const viewportHeight = Math.round(viewport.height)
 
-          setTimeout(() => {
-            selection?.scrollIntoView({
-              behavior: 'auto',
-              block: 'center',
-              inline: 'nearest'
-            })
-          }, 200)
+        doc.style.setProperty('--app-height', `${Math.trunc(viewportHeight)}px`)
+
+        if (selection) {
+          selection.scrollIntoView({
+            behavior: 'instant',
+            block: 'center',
+            inline: 'nearest'
+          })
+          if (pageTop === 0) {
+            doc.style.setProperty('--app-position_b', `fixed`)
+          } else {
+            doc.style.setProperty('--app-position_b', `initial`)
+            // hack to fix the scroll pos
+            window.scrollTo({ top: 1, left: 0, behavior: 'instant' })
+          }
         }
+      } else if (viewportHeight === target.height || viewportHeight - target.height <= 150) {
+        offsetRef.current = viewportHeight - target.height
+
+        if (offsetRef.current > 0) {
+          window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
+          doc.style.setProperty('--app-position_b', `initial`)
+        }
+
+        doc.style.setProperty('--app-height', `100%`)
+        doc.style.setProperty('--app-position_b', `fixed`)
       }
     }
 
-    const visualViewport = window.visualViewport
-    visualViewport?.addEventListener('resize', viewportHandler)
-    visualViewport?.addEventListener('scroll', viewportHandler)
+    if (visualViewport) {
+      visualViewport.addEventListener('resize', handleResize)
+    }
+
+    document.addEventListener('touchend', handleScrollToTop)
 
     return () => {
-      visualViewport?.removeEventListener('resize', viewportHandler)
-      visualViewport?.removeEventListener('scroll', viewportHandler)
+      if (visualViewport) {
+        visualViewport.removeEventListener('resize', handleResize)
+      }
+      document.removeEventListener('touchend', handleScrollToTop)
     }
-  }, [deviceDetect])
+  }, [])
 }
 
-export default usePageHeightAdjust
+export default useVisualViewportHandler
