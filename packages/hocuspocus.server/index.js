@@ -4,7 +4,7 @@ import chalk from 'chalk'
 import { checkEnvBolean } from './utils/index.mjs'
 import routers from './routers/router.mjs'
 import middlewares from './middlewares/index.mjs'
-import sseRouters from './routers/sse.mjs'
+// import sseRouters from './routers/sse.mjs' // INFO: depricated
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 
@@ -26,7 +26,7 @@ app.get('/', (_request, response) => {
 
 app.use(middlewares())
 app.use('/api', routers)
-// app.use('/sse', sseRouters)
+// app.use('/sse', sseRouters) // INFO: depricated
 
 // Start the server
 app.listen(APP_PORT, () => {
