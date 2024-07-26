@@ -9,7 +9,8 @@ const enums = {
     CONTENT_WRAPPER_TYPE: 'contentWrapper',
     PARAGRAPH_TYPE: 'paragraph',
     HYPERLINK_TYPE: 'hyperlink',
-    TEXT_TYPE: 'text'
+    TEXT_TYPE: 'text',
+    BULLETLIST_TYPE: 'bulletList'
   }
 }
 
