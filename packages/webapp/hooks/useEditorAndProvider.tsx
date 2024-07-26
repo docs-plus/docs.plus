@@ -43,7 +43,6 @@ const useEditorAndProvider = () => {
     if (!editor || editorSetting?.loading) return
 
     editor.on('selectionUpdate', ({ editor }) => {
-      console.log('selection pos update', editor.state.selection?.$anchor?.pos)
       setWorkspaceEditorSetting('selectionPos', editor.state.selection?.$anchor?.pos)
     })
 
