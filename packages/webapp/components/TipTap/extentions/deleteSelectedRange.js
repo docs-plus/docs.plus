@@ -44,10 +44,8 @@ const deleteSelectedRange = ({ state, tr, editor }) => {
 
   const [paragraphs, headings] = extractParagraphsAndHeadings(restSelectionContents)
 
-  // INFO: this is temprory, find a better way to handle this
-  // if the selected range node type is bulletList, then let the default behavior
-  if (selectedContents.length === 1 && selectedContents.at(0).type === ENUMS.NODES.BULLETLIST_TYPE)
-    return false
+  // if selected range is one, then let the default behavior
+  if (selectedContents.length === 1) return false
 
   const newConent = [
     ...selectedContents.map((node) => state.schema.nodeFromJSON(node)),
