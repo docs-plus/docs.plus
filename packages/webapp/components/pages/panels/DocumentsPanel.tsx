@@ -31,6 +31,7 @@ const DocumentsPanel = () => {
   const debouncedSearch = useCallback(
     _.debounce((value) => {
       setSearchQuery(value)
+      setCurrentPage(0)
     }, 700),
     []
   )
@@ -111,7 +112,7 @@ const DocumentsPanel = () => {
     <div className="card w-full bg-base-100">
       <div className="card-body p-0">
         <h2 className="card-title mb-4">Documents</h2>
-        <div className="form-control mb-4 w-full ">
+        <div className="form-control mb-4 w-full">
           <InputOverlapLabel
             label="Search Documents"
             className="input input-bordered w-full"
@@ -127,7 +128,7 @@ const DocumentsPanel = () => {
         ) : (!isError && data?.total) > 0 ? (
           <DocumentTable data={data} />
         ) : (
-          <div className="alert alert-info">No documents found</div>
+          <div className="alert m-4 shadow-md">No documents found</div>
         )}
 
         {!isLoading && data?.total > 0 && pages > 1 && (
