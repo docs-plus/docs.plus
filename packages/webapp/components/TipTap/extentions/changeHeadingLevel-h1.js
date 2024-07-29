@@ -58,7 +58,8 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
     titleStartPos,
     attributes,
     block,
-    contentWrapperParagraphs
+    contentWrapperParagraphs,
+    selection
   )
 
   // remove content from the current positon to the end of the heading

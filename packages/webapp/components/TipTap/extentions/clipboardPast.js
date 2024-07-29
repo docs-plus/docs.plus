@@ -105,6 +105,13 @@ const clipboardPast = (slice, editor) => {
   const titleNode = $from.doc.nodeAt($from.start(1) - 1)
   let titleStartPos = $from.start(1) - 1
   let titleEndPos = titleStartPos + titleNode.content.size
+
+  if (titleStartPos === 0) {
+    titleStartPos = 0
+    start = 1
+    titleEndPos = titleEndPos - 2
+  }
+
   const contentWrapper = getRangeBlocks(doc, start, titleEndPos)
 
   let { prevHStartPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
@@ -125,6 +132,30 @@ const clipboardPast = (slice, editor) => {
     const newSelection = new TextSelection(tr.doc.resolve(selection.from))
 
     tr.setSelection(newSelection)
+  } else {
+    const firstHeading = headings.shift()
+    const firstHeadingContent = firstHeading.firstChild.content.toJSON()
+    const firstHeadingWrapperContent = firstHeading.lastChild.content.toJSON()
+
+    const firstHeadingBlock = {
+      type: ENUMS.NODES.PARAGRAPH_TYPE,
+      content: firstHeadingContent
+    }
+
+    const firstHeadingNode = createNodeFromJSON(firstHeadingBlock, state.schema)
+
+    tr.insert(tr.mapping.map(from), firstHeadingNode)
+
+    // move cursour to the contentwrapper
+    if (firstHeadingWrapperContent.length) {
+      const firstHeadingWrapperContentNodes = firstHeadingWrapperContent.map((node) =>
+        createNodeFromJSON(node, state.schema)
+      )
+
+      tr.insert(tr.mapping.map(tr.mapping.map(from) + 2), firstHeadingWrapperContentNodes)
+    }
+
+    tr.setSelection(new TextSelection(tr.doc.resolve(from)))
   }
 
   let lastBlockPos = paragraphs.length === 0 ? start : tr.mapping.map(start)
@@ -164,7 +195,7 @@ const clipboardPast = (slice, editor) => {
       let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
 
       // find prevBlock.le in mapHPost
-      const robob = mapHPost.filter((x) => prevBlock?.le === x.le)
+      const robob = mapHPost.filter((x) => prevBlock?.le === x?.le)
 
       if (robob.length > 1) {
         prevBlock = robob.at(-1)
