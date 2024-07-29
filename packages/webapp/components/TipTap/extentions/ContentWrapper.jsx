@@ -272,16 +272,18 @@ const ContentWrapper = Node.create({
       Backspace: () => {
         const { editor } = this
         const { schema, selection } = editor.state
-        const { $anchor, $from, $to } = selection
+        const { $anchor, $from, $head, $to } = selection
         const blockRange = $from.blockRange($to)
 
-        if (selection.from !== selection.to)
+        // if we have selection, node range || multiple lines block
+        if ($anchor.pos !== $head.pos) {
           return deleteSelectedRange({
             editor,
             state: editor.state,
             tr: editor.state.tr,
             view: editor.view
           })
+        }
 
         // If backspace hit not at the start of the node, do nothing
         if ($anchor.parentOffset !== 0) return false
@@ -292,8 +294,9 @@ const ContentWrapper = Node.create({
         if (
           contentWrapper.type.name === schema.nodes.contentHeading.name ||
           contentWrapper.type.name !== schema.nodes.contentWrapper.name
-        )
+        ) {
           return
+        }
 
         // Get the contentWrapper node pos
         const contentWrapperPos = $from.before(2)
@@ -304,7 +307,12 @@ const ContentWrapper = Node.create({
           if ($anchor.nodeBefore === null) {
             // If there's a text node following the current node
             if ($anchor.nodeAfter?.type.name === ENUMS.NODES.TEXT_TYPE) {
-              const clonedTextNode = $anchor.nodeAfter.copy($anchor.nodeAfter.content)
+              const cloneCurrentNodeAsParagraph = {
+                type: ENUMS.NODES.PARAGRAPH_TYPE,
+                content: $anchor.path
+                  .findLast((node) => node?.type?.name === ENUMS.NODES.PARAGRAPH_TYPE)
+                  .content.toJSON()
+              }
 
               // Delete the current node, move the cursor to the end of the previous node (the heading),
               // insert the cloned text node there, and focus the cursor there
@@ -312,7 +320,7 @@ const ContentWrapper = Node.create({
                 .chain()
                 .deleteRange({ from: blockRange.start, to: blockRange.end })
                 .setTextSelection(blockRange.start - 2)
-                .insertContent(clonedTextNode.toJSON())
+                .insertContent(cloneCurrentNodeAsParagraph)
                 .scrollIntoView()
                 .run()
             } else {

@@ -38,7 +38,8 @@ const changeHeadingLevelForward = (arrg, attributes) => {
     $to.pos,
     attributes,
     block,
-    restParagraphs
+    restParagraphs,
+    selection
   )
 
   tr.delete(start - 1, titleEndPos)

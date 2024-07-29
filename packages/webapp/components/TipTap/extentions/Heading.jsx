@@ -9,7 +9,7 @@ import { getSelectionBlocks, getNodeState } from './helper'
 import deleteSelectedRange from './deleteSelectedRange.js'
 import ENUMS from '../enums'
 
-const Blockquote = Node.create({
+const Heading = Node.create({
   name: ENUMS.NODES.HEADING_TYPE,
   content: 'contentHeading+ contentWrapper*',
   group: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
@@ -72,6 +72,20 @@ const Blockquote = Node.create({
         update: (updatedNode) => {
           if (updatedNode.type.name !== this.name) return false
 
+          // Ensure contentWrapper exists
+          const hasContentWrapper =
+            updatedNode.childCount > 1 ||
+            (updatedNode.firstChild &&
+              updatedNode.firstChild.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE)
+          if (!hasContentWrapper) {
+            const transaction = this.editor.state.tr
+            transaction.insert(
+              updatedNode.content.size,
+              this.editor.schema.nodes.contentWrapper.create()
+            )
+            this.editor.view.dispatch(transaction)
+          }
+
           return true
         }
       }
@@ -101,7 +115,20 @@ const Blockquote = Node.create({
         }
 
         return wrapContenWithHeading(arrg, attributes)
-      }
+      },
+      ensureContentWrapper:
+        () =>
+        ({ tr, state, dispatch }) => {
+          const { doc, schema } = state
+          doc.descendants((node, pos) => {
+            if (node.type.name === ENUMS.NODES.HEADING_TYPE && !node.childCount) {
+              const contentWrapper = schema.nodes.contentWrapper.create()
+              tr.insert(pos + node.nodeSize, contentWrapper)
+            }
+          })
+          if (dispatch) dispatch(tr)
+          return true
+        }
     }
   },
   addKeyboardShortcuts() {
@@ -215,6 +242,23 @@ const Blockquote = Node.create({
   addProseMirrorPlugins() {
     let domeEvent
     return [
+      new Plugin({
+        key: new PluginKey('ensureContentWrapperPlugin'),
+        appendTransaction: (transactions, oldState, newState) => {
+          let tr = newState.tr
+          let modified = false
+
+          newState.doc.descendants((node, pos) => {
+            if (node.type.name === ENUMS.NODES.HEADING_TYPE && !node.childCount) {
+              const contentWrapper = newState.schema.nodes.contentWrapper.create()
+              tr = tr.insert(pos + node.nodeSize, contentWrapper)
+              modified = true
+            }
+          })
+
+          return modified ? tr : null
+        }
+      }),
       // https://github.com/pageboard/pagecut/blob/bd91a17986978d560cc78642e442655f4e09ce06/src/editor.js#L234-L241
       new Plugin({
         key: new PluginKey('copy&pasteHeading'),
@@ -268,4 +312,4 @@ const Blockquote = Node.create({
   }
 })
 
-export { Blockquote, Blockquote as default }
+export { Heading, Heading as default }

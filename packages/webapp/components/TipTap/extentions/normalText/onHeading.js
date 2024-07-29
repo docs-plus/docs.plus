@@ -36,9 +36,11 @@ const onHeading = (args) => {
     return console.info('[Heading]: not heading')
   }
 
-  const headingText = {
-    type: ENUMS.NODES.TEXT_TYPE,
-    text: doc?.nodeAt($anchor.pos)?.text || $anchor.nodeBefore?.text || ' '
+  let parent = doc?.nodeAt(start)
+
+  let headingText = {
+    type: ENUMS.NODES.PARAGRAPH_TYPE,
+    content: parent.content.toJSON()
   }
 
   const titleNode = $from.doc.nodeAt($from.start(1) - 1)

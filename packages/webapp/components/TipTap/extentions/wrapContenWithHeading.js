@@ -38,7 +38,8 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
       $to.pos,
       attributes,
       block,
-      contentWrapper
+      contentWrapper,
+      selection
     )
 
     const insertPos = start + 1
@@ -70,7 +71,8 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
       $to.pos,
       attributes,
       block,
-      contentWrapperParagraphs
+      contentWrapperParagraphs,
+      selection
     )
 
     tr.delete(start, block.parent.end)

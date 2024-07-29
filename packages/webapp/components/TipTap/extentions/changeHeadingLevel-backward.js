@@ -50,7 +50,8 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
     $to.pos,
     attributes,
     block,
-    sliceTargetContent
+    sliceTargetContent,
+    selection
   )
 
   const newTr = tr.insert(insertPos, node)

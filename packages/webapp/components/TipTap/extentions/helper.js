@@ -426,6 +426,7 @@ export const insertRemainingHeadings = ({
   return true
 }
 
+//TODO: secend part of the condition need to revise
 export const createHeadingNodeFromSelection = (
   doc,
   state,
@@ -433,7 +434,8 @@ export const createHeadingNodeFromSelection = (
   end,
   attributes,
   block,
-  contentWrapper
+  contentWrapper,
+  selection
 ) => {
   const headings = []
 
@@ -442,7 +444,10 @@ export const createHeadingNodeFromSelection = (
       start,
       end,
       function (node) {
-        if (node.type.name !== ENUMS.NODES.TEXT_TYPE) return
+        // we need block level not inline level node
+        if (!node.isBlock) return
+        if (node.type.name === ENUMS.NODES.HEADING_TYPE) return
+        if (node.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) return
 
         const newHeading = {
           type: ENUMS.NODES.HEADING_TYPE,
@@ -452,7 +457,7 @@ export const createHeadingNodeFromSelection = (
           content: [
             {
               type: ENUMS.NODES.CONTENT_HEADING_TYPE,
-              content: [node.toJSON()],
+              content: node.content.toJSON(),
               attrs: {
                 level: attributes.level
               }
