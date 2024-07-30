@@ -196,7 +196,7 @@ const ContentWrapper = Node.create({
       // get parent node
       const parentNode = editor.state.doc?.resolve(getPos())
       const headingId =
-        getPos() - parentNode.nodeBefore.nodeSize === 1 ? '1' : parentNode.parent?.attrs.id
+        getPos() - parentNode.nodeBefore?.nodeSize === 1 ? '1' : parentNode.parent?.attrs.id
 
       const nodeState = getNodeState(headingId)
 
