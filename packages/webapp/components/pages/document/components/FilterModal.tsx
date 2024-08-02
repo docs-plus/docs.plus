@@ -53,8 +53,8 @@ const FilterModal = () => {
 
   return (
     <ModalBottomToTop modalId="filterModalBottom" onModalStateChange={handleModalStateChange}>
-      <div className="size-full max-h-96 rounded-t-2xl bg-white p-4">
-        <div className="mb-3 flex w-full bg-white py-2  text-blue-600">
+      <div className="h-full max-h-96 w-full rounded-t-2xl bg-white p-4">
+        <div className="mb-3 flex w-full bg-white py-2 text-blue-600">
           <p className="w-2/3">Filters</p>
           <div className="flex w-1/3 flex-row items-center justify-end justify-items-end">
             <label htmlFor="filterModalBottom" className="btn btn-circle btn-xs ml-2">
