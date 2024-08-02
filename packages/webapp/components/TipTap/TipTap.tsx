@@ -124,7 +124,7 @@ const generatePlaceholderText = (data: any) => {
   const nodeType = node.type.name
   if (!data.editor.isFocused) return null
 
-  if (nodeType === ENUMS.NODES.CONTENT_HEADING_TYPE || nodeType === ENUMS.NODES.HEADING_TYPE) {
+  if (nodeType === ENUMS.NODES.CONTENT_HEADING_TYPE) {
     const level = node.attrs.level
     return level - 1 === 0 ? 'Title' : `Heading ${level - 1}`
   } else if (nodeType === ENUMS.NODES.PARAGRAPH_TYPE) {
