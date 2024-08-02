@@ -1,7 +1,5 @@
-import React, { use, useEffect } from 'react'
+import React, { useEffect } from 'react'
 import MobileDetect from 'mobile-detect'
-import DesktopLayout from '@components/pages/document/layouts/DesktopLayout'
-import MobileLayout from '@components/pages/document/layouts/MobileLayout'
 import useDocumentMetadata from '@hooks/useDocumentMetadata'
 import { fetchDocument } from '@utils/fetchDocument'
 import HeadSeo from '@components/HeadSeo'

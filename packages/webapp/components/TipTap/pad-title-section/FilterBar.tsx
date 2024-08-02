@@ -1,27 +1,35 @@
 import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
-import { Close as CloseIcon } from '@icons'
 import { useStore } from '@stores'
+import { IoCloseSharp } from 'react-icons/io5'
 
 const CloseButton = ({ onClick }: any) => (
   <button onClick={onClick}>
-    <CloseIcon className="feather feather-x ml-2 size-4 cursor-pointer rounded-full hover:text-indigo-400" />
+    <IoCloseSharp
+      size={14}
+      className="feather feather-x ml-2 cursor-pointer rounded-full hover:text-indigo-400"
+    />
   </button>
 )
 
 const Chip = ({ type, text, onMouseEnter, onMouseLeave }: any) => {
   const router = useRouter()
   const { slugs } = router.query
+  const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
+
   const colorMap = {
     child: 'text-gray-700 bg-gray-100 border-gray-300',
     parent: 'text-blue-700 bg-blue-100 border-blue-300',
     neutral: 'text-red-700 bg-red-100 border-red-300 cursor-not-allowed'
   }
 
-  const removeFilter = (slug: any) => {
+  const removeFilterHandler = (slug: any) => {
     const newSlug = Array.isArray(slugs) ? slugs.filter((s) => s !== slug).join('/') : ''
     const newPath = `/${location.pathname.split('/').at(1)}/${newSlug}`
-    window.location.href = newPath
+    setWorkspaceEditorSetting('applyingFilters', true)
+    router.push(`${location.origin}${newPath}`, undefined, {
+      shallow: true
+    })
   }
 
   return (
@@ -34,13 +42,13 @@ const Chip = ({ type, text, onMouseEnter, onMouseLeave }: any) => {
       onMouseLeave={onMouseLeave}>
       <div className="max-w-full flex-initial text-xs font-normal leading-none">{text}</div>
       <div className="flex flex-auto flex-row-reverse">
-        <CloseButton onClick={() => removeFilter(text)} />
+        <CloseButton onClick={() => removeFilterHandler(text)} />
       </div>
     </div>
   )
 }
 
-const FilterBar = () => {
+const FilterBar = ({ className }: { className?: string }) => {
   const {
     editor: {
       filterResult: { sortedSlugs, selectedNodes }
@@ -72,7 +80,7 @@ const FilterBar = () => {
   }
 
   return (
-    <div className="flex items-center align-middle">
+    <div className={twMerge('flex items-center align-middle', className)}>
       {sortedSlugs.map((slug: any, index: number) => (
         <Chip
           key={index}

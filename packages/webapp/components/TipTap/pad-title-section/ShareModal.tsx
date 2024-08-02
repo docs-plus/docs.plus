@@ -63,9 +63,9 @@ const ShareModal = ({ setIsOpen }: any) => {
   }
 
   return (
-    <div className=" flex flex-col p-4 pt-2">
+    <div className="flex flex-col p-3 pt-2">
       <div className="mb-6 flex">
-        <p className="text-2xl font-semibold ">Share</p>
+        <p className="text-2xl font-semibold">Share</p>
         <button className="btn btn-circle btn-xs ml-auto" onClick={() => setIsOpen(false)}>
           <IoCloseSharp size={20} />
         </button>
@@ -92,7 +92,7 @@ const ShareModal = ({ setIsOpen }: any) => {
       </div>
 
       <p className="mb-2 mt-6 font-semibold">Page Link</p>
-      <div className="flex  justify-between rounded-md" onClick={copyToClipboard}>
+      <div className="flex justify-between rounded-md" onClick={copyToClipboard}>
         <label className="input input-bordered flex w-full items-center gap-2">
           <input type="text" className="grow" ref={urlRef} value={href} readOnly />
           <button className="">
@@ -104,7 +104,7 @@ const ShareModal = ({ setIsOpen }: any) => {
       {
         // @ts-ignore
         typeof navigator !== 'undefined' && navigator.share && (
-          <div className="mt-5 ">
+          <div className="mt-5">
             <button
               className="btn btn-block flex items-center justify-center"
               onClick={webShareAPI}>
