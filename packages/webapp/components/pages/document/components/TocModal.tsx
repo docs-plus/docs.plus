@@ -41,7 +41,7 @@ const TocModal = () => {
             </label>
           </div>
         </div>
-        <div className="h-full pb-16">
+        <div className="h-full pb-8">
           <TableOfContents className="tiptap__toc size-full pb-4 pl-2" />
         </div>
       </div>
