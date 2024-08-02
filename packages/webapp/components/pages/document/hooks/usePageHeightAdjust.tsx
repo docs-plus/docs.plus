@@ -71,6 +71,13 @@ const useVisualViewportHandler = () => {
       document.removeEventListener('touchend', handleScrollToTop)
     }
   }, [])
+
+  // for android, first time load
+  useEffect(() => {
+    const doc = document.documentElement
+    doc.style.setProperty('--app-height', `100%`)
+    doc.style.setProperty('--app-position_b', `fixed`)
+  }, [])
 }
 
 export default useVisualViewportHandler
