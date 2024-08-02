@@ -56,7 +56,7 @@ const Dropdown = ({ label, button, children }: DropdownProps) => {
       {isOpen && (
         <div
           tabIndex={0}
-          className="dropdown-content z-[1] w-auto rounded-box bg-base-100 p-2 shadow">
+          className="dropdown-content z-[1] w-auto rounded-box border border-stone-200 bg-base-100 p-2 shadow-md">
           {children}
         </div>
       )}

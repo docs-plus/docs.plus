@@ -9,13 +9,13 @@ const useInitiateDocumentAndWorkspace = (docMetadata: any) => {
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
 
-  const isFilterMode = slugs.length > 1
   useEffect(() => {
+    const isFilterMode = slugs.length > 1
     if (isFilterMode) {
       document.body.classList.add('filter-mode')
       setWorkspaceEditorSetting('applyingFilters', true)
     }
-  }, [slugs, isFilterMode])
+  }, [slugs])
 
   useEffect(() => {
     if (!docMetadata) return

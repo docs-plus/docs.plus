@@ -31,6 +31,17 @@ const useApplyFilters = () => {
   useEffect(() => {
     if (!isDocumentReady) return
     if (!slugs) return
+    // if slugs is empty, then remove all filters data set
+    if (slugs.length === 1) {
+      setWorkspaceEditorSetting('filterResult', { sortedSlugs: [], selectedNodes: [] })
+      setWorkspaceEditorSetting('applyingFilters', true)
+      localStorage.setItem('headingMap', JSON.stringify([]))
+      // toggle applyingFilters, in order to trigger the Editor to re-render
+      setTimeout(() => {
+        setWorkspaceEditorSetting('applyingFilters', false)
+      }, 500)
+      return
+    }
     if (!editor || rendering || loading || slugs.length === 1) return
 
     // remove the document slug from the slugs array
@@ -42,6 +53,7 @@ const useApplyFilters = () => {
       console.error('[apply filter]: document is empty, no headings found')
       return
     }
+
     const { headingIdsMap, sortedSlugs, selectedNodes } = getHeadingsFilterMap(
       slugs,
       Array.from(headings)
@@ -68,13 +80,11 @@ const useApplyFilters = () => {
 
     localStorage.setItem('headingMap', JSON.stringify(dbHeadigMap))
 
-    const timer = setTimeout(() => {
+    setTimeout(() => {
       setWorkspaceEditorSetting('filterResult', { sortedSlugs, selectedNodes })
       setWorkspaceEditorSetting('applyingFilters', false)
     }, 300)
-
-    return () => clearTimeout(timer)
-  }, [rendering, loading, isDocumentReady])
+  }, [rendering, loading, isDocumentReady, slugs])
 }
 
 export default useApplyFilters

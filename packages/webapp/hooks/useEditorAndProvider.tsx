@@ -18,7 +18,8 @@ const useEditorAndProvider = () => {
   const editor = useEditor(editorConfig({ provider, ydoc: null, user }), [
     editorSetting?.loading,
     editorSetting?.applyingFilters,
-    provider
+    provider,
+    editorSetting.rendering
   ])
 
   useEffect(() => {
@@ -32,10 +33,10 @@ const useEditorAndProvider = () => {
   useEditorReadOnly()
   useApplyFilters()
 
-  // useEffect(() => {
-  //   if (editorSetting?.loading && editorSetting?.applyingFilters) return
-  //   setWorkspaceEditorSetting('rendering', false)
-  // }, [editorSetting?.loading, editorSetting?.applyingFilters])
+  useEffect(() => {
+    if (editorSetting?.loading && editorSetting?.applyingFilters) return
+    setWorkspaceEditorSetting('rendering', false)
+  }, [editorSetting?.loading, editorSetting?.applyingFilters])
 
   // FIXME: this cuase rerending other components that depend on useEditorStateContext! "Drill props down instead"
   // // The selection has changed.
