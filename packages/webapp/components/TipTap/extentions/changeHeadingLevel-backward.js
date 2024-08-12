@@ -30,18 +30,15 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
   })
 
   // remove the first paragraph, if the request is to wrap the content
-  if (asWrapper) {
-    const pickedNode = sliceTargetContent.shift()
-
-    if (sliceTargetContent.length === 0) {
-      sliceTargetContent.push({ ...pickedNode, content: [block.paragraph] })
-    }
+  if (asWrapper && sliceTargetContent.length === 0) {
+    sliceTargetContent.push(block.empty)
   }
 
-  const endSliceBlocPos = sliceTargetContent[sliceTargetContent.length - 1].endBlockPos
-  const insertPos = titleHMap
-    .filter((x) => endSliceBlocPos <= x.endBlockPos)
-    .find((x) => x.le >= comingLevel)?.endBlockPos
+  const lastBlockPos = sliceTargetContent[sliceTargetContent.length - 1]?.endBlockPos
+  const insertPos = lastBlockPos
+    ? titleHMap.filter((x) => lastBlockPos <= x.endBlockPos).find((x) => x.le >= comingLevel)
+        ?.endBlockPos
+    : titleHMap.find((x) => x.le >= comingLevel)?.endBlockPos
 
   const node = createHeadingNodeFromSelection(
     doc,
