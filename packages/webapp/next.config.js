@@ -53,11 +53,11 @@ module.exports = withPWA({
       '*.supabase.co',
       '*.docs.plus',
       '*.localhost',
-      process.env.NEXT_PUBLIC_RESTAPI_URL,
-      process.env.NEXT_PUBLIC_PROVIDER_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_WS_URL
-    ]
+      process.env.NEXT_PUBLIC_RESTAPI_URL || '',
+      process.env.NEXT_PUBLIC_PROVIDER_URL || '',
+      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+      process.env.NEXT_PUBLIC_SUPABASE_WS_URL || ''
+    ].filter(Boolean) // Filters out any empty strings
 
     return [
       {
@@ -66,15 +66,15 @@ module.exports = withPWA({
           contentSecurityPolicy: {
             directives: {
               defaultSrc: ["'self'"],
-              scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
-              styleSrc: ["'self'", "'unsafe-inline'"],
-              imgSrc: allowAddress,
-              connectSrc: allowAddress,
-              fontSrc: ["'self'", 'data:'],
+              scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", ...allowAddress],
+              styleSrc: ["'self'", "'unsafe-inline'", ...allowAddress],
+              imgSrc: [...allowAddress, '*'],
+              connectSrc: [...allowAddress, '*'],
+              fontSrc: ["'self'", 'data:', '*'],
               objectSrc: ["'none'"],
-              frameSrc: ["'self'"],
-              frameAncestors: ["'self'"],
-              formAction: ["'self'"],
+              frameSrc: ["'self'", ...allowAddress],
+              frameAncestors: ["'self'", ...allowAddress],
+              formAction: ["'self'", ...allowAddress],
               upgradeInsecureRequests: []
             }
           },
