@@ -28,17 +28,19 @@ export default function JoinBroadcastChannel() {
   const joinUserToChannel = useCallback(async () => {
     if (!channel) return
     try {
-      const { error, data } = await request2JoinChannel({
-        channel_id: channelId,
-        member_id: user?.id
-      })
-      if (error) console.error(error)
+      if (user) {
+        const { error, data } = await request2JoinChannel({
+          channel_id: channelId,
+          member_id: user?.id
+        })
+        if (error) console.error(error)
+        setOrUpdateChannel(channelId, {
+          ...data.channel,
+          member_count: (channel?.member_count ?? 0) + 1
+        })
+      }
 
-      setWorkspaceChannelSetting(channelId, 'isUserChannelMember', true)
-      setOrUpdateChannel(channelId, {
-        ...data.channel,
-        member_count: (channel?.member_count ?? 0) + 1
-      })
+      setWorkspaceChannelSetting(channelId, 'isUserChannelMember', user ? true : false)
     } catch (error) {
       console.error(error)
     }

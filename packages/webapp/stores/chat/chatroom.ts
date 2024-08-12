@@ -23,8 +23,9 @@ interface IChatroomStore {
     headingId: string,
     documentId: string,
     headingPath: Array<any>,
-    user: TProfile
+    user: TProfile | null
   ) => void
+  updateChatRoom: (key: keyof TChatRoom, value: any) => void
   openChatRoom: () => void
   closeChatRoom: () => void
   destroyChatRoom: () => void
@@ -37,7 +38,8 @@ const getWorkspaceId = (): string => {
 }
 
 const join2Channel = (user: TProfile, channelId: string) => {
-  useStore.getState().settings.broadcaster.send({
+  if (!user) return
+  useStore.getState().settings?.broadcaster.send({
     type: 'broadcast',
     event: 'presence',
     payload: { ...user, channelId }
@@ -45,6 +47,7 @@ const join2Channel = (user: TProfile, channelId: string) => {
 }
 
 const leaveChannel = (user: TProfile) => {
+  if (!user) return
   useStore.getState().settings.broadcaster.send({
     type: 'broadcast',
     event: 'presence',
@@ -64,6 +67,13 @@ const chatRoom = immer<IChatroomStore>((set) => ({
     editeMessageMemory: undefined
   },
 
+  updateChatRoom: (key, value) => {
+    set((state) => {
+      // @ts-ignore
+      state.chatRoom[key] = value
+    })
+  },
+
   setChatRoom: (headingId, documentId, headingPath, user) => {
     let newHeadingId: string = headingId
     if (+newHeadingId === 1) newHeadingId = `1_${documentId}`
@@ -73,7 +83,7 @@ const chatRoom = immer<IChatroomStore>((set) => ({
       state.chatRoom.headingPath = headingPath
     })
 
-    join2Channel(user, newHeadingId)
+    if (user) join2Channel(user, newHeadingId)
   },
 
   setOrUpdateChatRoom: (key, value) => {

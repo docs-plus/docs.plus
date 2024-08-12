@@ -202,7 +202,7 @@ const handleHeadingToggle = (editor, { headingId }) => {
 
   if (!nodePos) return
 
-  if (editor.isEditable) {
+  // if (editor.isEditable) {
     const pos = nodePos.pos
     const currentNode = tr.doc.nodeAt(pos)
     // update toc
@@ -242,9 +242,9 @@ const handleHeadingToggle = (editor, { headingId }) => {
         console.error(err)
         isProcessing = false
       })
-  } else {
-    isProcessing = false
-  }
+  // } else {
+  //   isProcessing = false
+  // }
 }
 
 const getNodeHLevel = (doc, pos) => {

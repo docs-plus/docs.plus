@@ -18,17 +18,22 @@ export default function JoinGroupChannel() {
   const joinToChannel = useCallback(async () => {
     if (!channelId) return
     try {
-      const { error, data } = await request2JoinChannel({
-        channel_id: channelId,
-        member_id: user?.id
-      })
+      if (user) {
+        const { error, data } = await request2JoinChannel({
+          channel_id: channelId,
+          member_id: user?.id
+        })
+        if (error) {
+          console.error(error)
+          return
+        }
+        setOrUpdateChannel(channelId, {
+          ...data.channel,
+          member_count: (channel?.member_count ?? 0) + 1
+        })
+      }
 
-      if (error) console.error(error)
-      setWorkspaceChannelSetting(channelId, 'isUserChannelMember', true)
-      setOrUpdateChannel(channelId, {
-        ...data.channel,
-        member_count: (channel?.member_count ?? 0) + 1
-      })
+      setWorkspaceChannelSetting(channelId, 'isUserChannelMember', user ? true : false)
     } catch (error) {
       console.error(error)
     }

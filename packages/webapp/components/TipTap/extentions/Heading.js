@@ -1,13 +1,13 @@
 import { Node, mergeAttributes, InputRule, callOrReturn } from '@tiptap/core'
 import { Slice, Fragment } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
-import changeHeadingLevel from './changeHeadingLevel'
-import wrapContenWithHeading from './wrapContenWithHeading'
-import clipboardPast from './clipboardPast'
-import changeHeading2paragraphs from './changeHeading2paragraphs'
-import { getSelectionBlocks, getNodeState } from './helper'
+import changeHeadingLevel from './changeHeadingLevel.js'
+import wrapContenWithHeading from './wrapContenWithHeading.js'
+import clipboardPast from './clipboardPast.js'
+import changeHeading2paragraphs from './changeHeading2paragraphs.js'
+import { getSelectionBlocks, getNodeState } from './helper.js'
 import deleteSelectedRange from './deleteSelectedRange.js'
-import ENUMS from '../enums'
+import ENUMS from '../enums.js'
 
 const Heading = Node.create({
   name: ENUMS.NODES.HEADING_TYPE,

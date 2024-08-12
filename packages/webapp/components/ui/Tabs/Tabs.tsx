@@ -5,6 +5,13 @@ import styles from './Tabs.module.css'
 // Create a Context to allow child components to consume tab related states and functions.
 const TabsContext = createContext('TabsContext')
 
+// Helper function to update the URL hash using pushState
+const updateURLHash = (tabName: string) => {
+  const url = new URL(window.location.href)
+  url.hash = `#panel=${tabName}`
+  window.history.pushState({}, '', url)
+}
+
 // The Tabs component acts as the container for all tab-related components.
 function Tabs({ children, defaultActiveTab = null, putNameAsHashToURI = true, ...props }: any) {
   // Initialize the active tab state with defaultActiveTab
@@ -14,12 +21,12 @@ function Tabs({ children, defaultActiveTab = null, putNameAsHashToURI = true, ..
   // Function to change the active tab
   const changeTab = (tabName: string) => {
     setActiveTab(tabName)
-    if (putNameAsHashToURI) router.replace(`#panel=${tabName}`)
+    if (putNameAsHashToURI) updateURLHash(tabName)
   }
 
   useEffect(() => {
     if (putNameAsHashToURI) {
-      router.replace(`#panel=${defaultActiveTab}`)
+      updateURLHash(defaultActiveTab)
     }
   }, [defaultActiveTab, putNameAsHashToURI])
 
@@ -130,7 +137,7 @@ function Tab({ children, name, ...props }: any) {
 
   const onClick = () => {
     setActiveTab(name)
-    if (putNameAsHashToURI) router.replace(`#panel=${name}`)
+    if (putNameAsHashToURI) updateURLHash(name)
   }
 
   const defaultClassName = `p-4 px-6 hover:text-indigo-700 focus:outline-none ${

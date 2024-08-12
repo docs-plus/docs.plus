@@ -53,7 +53,7 @@ const SystemNotifyChip = ({ message }: any) => {
 
   return (
     <div className="msg_card chat my-4 flex justify-center pb-1" ref={cardRef}>
-      <div className="badge badge-secondary">{message.content}</div>
+      <div className="badge border-none bg-bg-chatBubble-owner">{message.content}</div>
     </div>
   )
 }

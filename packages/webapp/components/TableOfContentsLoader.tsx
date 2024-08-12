@@ -1,6 +1,5 @@
 import React from 'react'
 
-// Using React.HTMLProps<HTMLDivElement> for general div props
 const TableOfcontentLoader: React.FC<React.HTMLProps<HTMLDivElement>> = (props) => {
   return (
     <div {...props}>

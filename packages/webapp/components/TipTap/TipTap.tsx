@@ -48,13 +48,13 @@ import bash from 'highlight.js/lib/languages/bash'
 import Typography from '@tiptap/extension-typography'
 import Heading from './extentions/Heading'
 import ContentHeading from './extentions/ContentHeading'
+import ContentWrapper from './extentions/ContentWrapper'
 
 // Other Nodes and Extensions
 import Blockquote from '@tiptap/extension-blockquote'
 import Placeholder from '@tiptap/extension-placeholder'
 import Gapcursor from '@tiptap/extension-gapcursor'
 import UniqueID from './extentions/UniqueId'
-import ContentWrapper from './extentions/ContentWrapper'
 import HardBreak from '@tiptap/extension-hard-break'
 
 // Table
@@ -212,7 +212,7 @@ const Editor = ({ provider, ydoc, spellcheck = false, user }: any): Partial<Edit
       scrollDown()
       // console.log('onCreate')
     },
-    onUpdate: () => {
+    onUpdate: ({ editor, transaction }) => {
       // console.log('onUpdate')
     },
     editorProps: {
