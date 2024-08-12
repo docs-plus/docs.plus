@@ -56,7 +56,7 @@ module.exports = withPWA({
       process.env.NEXT_PUBLIC_RESTAPI_URL,
       process.env.NEXT_PUBLIC_PROVIDER_URL,
       process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_ws_URL
+      process.env.NEXT_PUBLIC_SUPABASE_WS_URL
     ]
 
     return [
