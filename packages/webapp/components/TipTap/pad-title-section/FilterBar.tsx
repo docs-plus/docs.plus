@@ -2,6 +2,7 @@ import { useRouter } from 'next/router'
 import { twMerge } from 'tailwind-merge'
 import { useStore } from '@stores'
 import { IoCloseSharp } from 'react-icons/io5'
+import { TbFilter, TbFilterX, TbFilterCheck } from 'react-icons/tb'
 
 const CloseButton = ({ onClick }: any) => (
   <button onClick={onClick}>
@@ -48,12 +49,21 @@ const Chip = ({ type, text, onMouseEnter, onMouseLeave }: any) => {
   )
 }
 
-const FilterBar = ({ className }: { className?: string }) => {
+const FilterBar = ({
+  className,
+  displayRestButton = false
+}: {
+  className?: string
+  displayRestButton?: boolean
+}) => {
+  const router = useRouter()
+
   const {
     editor: {
       filterResult: { sortedSlugs, selectedNodes }
     }
   } = useStore((state) => state.settings)
+  const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
 
   if (!sortedSlugs) return null
 
@@ -79,8 +89,15 @@ const FilterBar = ({ className }: { className?: string }) => {
     headings.forEach((header) => header.firstElementChild?.classList.remove('bg-yellow-100'))
   }
 
+  const resetFilterHandler = () => {
+    const url = new URL(window.location.href)
+    const documentSlug = url.pathname.split('/').at(1)
+    router.push(`/${documentSlug}`, undefined, { shallow: true })
+    setWorkspaceEditorSetting('applyingFilters', true)
+  }
+
   return (
-    <div className={twMerge('flex items-center align-middle', className)}>
+    <div className={twMerge('group flex items-center align-middle', className)}>
       {sortedSlugs.map((slug: any, index: number) => (
         <Chip
           key={index}
@@ -90,6 +107,15 @@ const FilterBar = ({ className }: { className?: string }) => {
           onMouseEnter={() => highlightHeading(slug.text)}
         />
       ))}
+
+      {displayRestButton && (
+        <button
+          className="btn btn-ghost btn-xs ml-3 text-xs font-medium opacity-0 transition-all group-hover:opacity-100"
+          onClick={resetFilterHandler}>
+          <TbFilterX size={14} fill="rgba(42,42,42)" />
+          <span className="">Reset</span>
+        </button>
+      )}
     </div>
   )
 }

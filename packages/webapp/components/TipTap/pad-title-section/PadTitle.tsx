@@ -38,7 +38,7 @@ const PadTitle = () => {
 
           <div className="flex items-center justify-start align-middle">
             <DocTitle />
-            <FilterBar />
+            <FilterBar displayRestButton={true} />
           </div>
 
           <ReadOnlyIndicator />
