@@ -3,11 +3,13 @@ import JoinBroadcastChannel from './JoinBroadcastChannel'
 import JoinGroupChannel from './JoinGroupChannel'
 import JoinPrivateChannel from './JoinDirectChannel'
 import JoinDirectChannel from './JoinPrivateChannel'
-import { useChatStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 import { useChannel } from '../context/ChannelProvider'
+import SignInToJoinChannel from './SignInToJoinChannel'
 
 export const ChannelActionBar = () => {
   const { channelId } = useChannel()
+  const user = useAuthStore((state: any) => state.profile)
 
   const channelSettings = useChatStore((state: any) =>
     state.workspaceSettings.channels.get(channelId)
@@ -16,6 +18,8 @@ export const ChannelActionBar = () => {
     channelSettings || {}
 
   const channels = useChatStore((state: any) => state.channels)
+
+  if (!user) return <SignInToJoinChannel />
 
   if (
     (channels.has(channelId) && channels.get(channelId).type === 'THREAD') ||

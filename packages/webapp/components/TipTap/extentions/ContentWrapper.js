@@ -1,9 +1,9 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
-import { getNodeState } from './helper'
+import { getNodeState } from './helper.js'
 import PubSub from 'pubsub-js'
-import ENUMS from '../enums'
+import ENUMS from '../enums.js'
 import deleteSelectedRange from './deleteSelectedRange.js'
 
 function extractContentWrapperBlocks(doc) {
@@ -225,7 +225,7 @@ const ContentWrapper = Node.create({
         const section = detail.el
         // editor.commands.focus()
 
-        if (!editor.isEditable && typeof getPos !== 'function') return false
+        if (/*!editor.isEditable &&*/ typeof getPos !== 'function') return false
 
         const { tr } = editor.state
 

@@ -74,6 +74,8 @@ export const useTiptapEditor = ({ loading }: any) => {
         if (text.length) handleTypingIndicator(TypingIndicatorType.StopTyping)
       },
       editable: true,
+      immediatelyRender: false,
+      shouldRerenderOnTransaction: false,
       editorProps: {
         handleKeyDown: (view, event) => {
           // if key is Enter and shift is not pressed

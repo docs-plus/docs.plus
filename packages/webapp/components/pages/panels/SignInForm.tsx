@@ -26,10 +26,19 @@ const SingInForm = ({ ...props }) => {
   // Handle authentication with OAuth
   const handleOAuthSignIn = async (provider: Provider) => {
     try {
+      const currentUrl = new URL(location.href)
+      const authCallbackURL = new URL(`${currentUrl.origin}/api/auth/callback`)
+
+      currentUrl.searchParams.forEach((value, key) => {
+        authCallbackURL.searchParams.append(key, value)
+      })
+
+      authCallbackURL.searchParams.append('next', currentUrl.pathname)
+
       await request({
         provider,
         options: {
-          redirectTo: `${location.origin}/api/auth/callback?next=` + location.pathname,
+          redirectTo: authCallbackURL.href,
           queryParams: {
             // access_type: 'offline',
             // prompt: 'consent'
@@ -111,12 +120,12 @@ const SingInForm = ({ ...props }) => {
 
   return (
     <div {...props}>
-      <div className={`${!emailSent && 'border  p-5'} rounded-md`}>
-        <div className={`${emailSent ? 'hidden' : 'block '}`}>
+      <div className={`${!emailSent && 'border p-5'} rounded-md`}>
+        <div className={`${emailSent ? 'hidden' : 'block'}`}>
           {/* <p className="text-base antialiased text-center font-bold">
             Your journey with Docs.plus begins now!
           </p> */}
-          <div className="mt-6 flex flex-col items-center justify-center ">
+          <div className="mt-6 flex flex-col items-center justify-center">
             <Button
               className="btn-block"
               onClick={() => handleOAuthSignIn('google')}
@@ -127,12 +136,12 @@ const SingInForm = ({ ...props }) => {
             </Button>
           </div>
           <div className="divider text-gray-400">OR</div>
-          <div className="mt-6 flex w-full  flex-col items-center justify-center ">
+          <div className="mt-6 flex w-full flex-col items-center justify-center">
             <form onSubmit={signInWithEmail}>
               {/* <input type="email" placeholder="Enter your Email" /> */}
 
               <InputOverlapLabel
-                className={`  ${highlightEmailInput ? 'border-red-600' : ''}`}
+                className={` ${highlightEmailInput ? 'border-red-600' : ''}`}
                 label="Enter your Email"
                 value={magicLinkEmail}
                 onChange={(e: any) => setMagicLinkEmail(e.target.value)}
@@ -140,7 +149,7 @@ const SingInForm = ({ ...props }) => {
 
               {emailError && <p className="mt-2 text-red-600">{emailError}</p>}
               <Button
-                className="btn-neutral btn-block  mt-4 text-white"
+                className="btn-neutral btn-block mt-4 text-white"
                 loading={isLoading || loading}
                 disabled={isLoading || loading || googleLoading}
                 onClick={signInWithEmail}>

@@ -1,15 +1,12 @@
 /** @type {import('next').NextConfig} */
 
-// HINT: if you want to disable the workbox logs in your console,
-// just open console logs and put this `-/workbox/` in the filter bar.
-
 const runtimeCaching = require('next-pwa/cache')
 const isProduction = process.env.NODE_ENV === 'production'
 const path = require('path')
-
+const { createSecureHeaders } = require('next-secure-headers')
 const withPWA = require('next-pwa')({
   dest: 'public',
-  disable: isProduction,
+  disable: !isProduction,
   register: true,
   skipWaiting: false,
   runtimeCaching
@@ -47,5 +44,60 @@ module.exports = withPWA({
   },
   compiler: {
     removeConsole: isProduction
+  },
+  async headers() {
+    const allowAddress = [
+      "'self'",
+      'data:',
+      '*.googleusercontent.com',
+      '*.supabase.co',
+      '*.docs.plus',
+      '*.localhost',
+      process.env.NEXT_PUBLIC_RESTAPI_URL,
+      process.env.NEXT_PUBLIC_PROVIDER_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_ws_URL
+    ]
+
+    return [
+      {
+        source: '/:path*',
+        headers: createSecureHeaders({
+          contentSecurityPolicy: {
+            directives: {
+              defaultSrc: ["'self'"],
+              scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+              styleSrc: ["'self'", "'unsafe-inline'"],
+              imgSrc: allowAddress,
+              connectSrc: allowAddress,
+              fontSrc: ["'self'", 'data:'],
+              objectSrc: ["'none'"],
+              frameSrc: ["'self'"],
+              frameAncestors: ["'self'"],
+              formAction: ["'self'"],
+              upgradeInsecureRequests: []
+            }
+          },
+          strictTransportSecurity: {
+            maxAge: 63072000,
+            includeSubDomains: true,
+            preload: true
+          },
+          xContentTypeOptions: 'nosniff',
+          referrerPolicy: 'same-origin',
+          xFrameOptions: 'DENY',
+          xXSSProtection: '1; mode=block'
+        })
+      },
+      {
+        source: '/robots.txt',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'text/plain'
+          }
+        ]
+      }
+    ]
   }
 })

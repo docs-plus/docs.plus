@@ -28,7 +28,7 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
   const setOrUpdateChannel = useChatStore((state: any) => state.setOrUpdateChannel)
 
   const processChannelData = async (channelId: string) => {
-    if (!currentChannel && workspaceId) {
+    if (!currentChannel && workspaceId && user) {
       let newChannelId = channelId
       if ('' + newChannelId === '1') newChannelId = `1_${workspaceId}`
       await upsertChannel({

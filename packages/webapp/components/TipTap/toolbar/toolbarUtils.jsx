@@ -42,9 +42,9 @@ export const searchThroughHeading = (e) => {
 }
 
 export const applySearchThroughHeading = (searchInput, router) => {
-  const search = searchInput
-  const newFilterAddress = `${location.origin}${router.asPath}/${encodeURIComponent(search)}`
-  router.push(newFilterAddress, undefined, { shallow: true })
+  const url = new URL(router.asPath, window.location.origin)
+  url.pathname = `${url.pathname}/${encodeURIComponent(searchInput)}`
+  router.push(url.toString(), undefined, { shallow: true })
 }
 
 export const saveDocDescriptionHandler = (mutate, docId, docDescription, tags) => {
