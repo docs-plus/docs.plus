@@ -31,6 +31,16 @@ $ cd docs.plus
 $ yarn
 ```
 
+### Environment Configuration
+
+Before starting the project, you must create the `.env` files based on the provided examples in the following locations:
+
+- `packages/webapp/.env.example`
+- `packages/supabase/.env.example`
+- `packages/hocuspocus.server/.env.example`
+
+Copy each `.env.example` file to `.env` in the same directory and update the necessary configurations as needed. The examples provide guidance on which values to replace.
+
 ### PostgreSQL Database Setup
 
 Set up a PostgreSQL database accessible to your development environment. If using Docker, here's a basic command to start a PostgreSQL container:
@@ -40,12 +50,13 @@ docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgre
 ```
 
 More details on the PostgreSQL Docker image are available in the [official Docker documentation](https://docs.docker.com/samples/postgres/).
+
 ### Running the Project
 
 **Unix-based systems (macOS, Linux):**
 
 ```bash
-$ yarn start
+yarn start
 ```
 
 **Windows systems:**
@@ -68,8 +79,9 @@ npm run dev
 💡 We're actively seeking contributors to improve our Windows setup instructions. If you can assist, we'd be thrilled! Your contribution will enhance the accessibility of docs.plus for Windows users and foster our community's growth. All collaboration is warmly welcomed!
 
 ## Docker Deployment
+
 ```sh
-$ docker-compose up
+docker-compose up
 ```
 
 ## 📫 Connect With Us
