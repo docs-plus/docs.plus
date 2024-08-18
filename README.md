@@ -1,108 +1,109 @@
-# 📚docs.plus
+# 📚 docs.plus
 
 [![Generic badge](https://img.shields.io/badge/version-2.0.0-green.svg)](https://docs.plus)
 [![Apache License](https://img.shields.io/badge/License-Apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
 
-docs.plus is a free, real-time collaboration tool built on open-source technologies. It empowers communities to share and organize information logically and hierarchically, making teamwork and knowledge sharing straightforward and effective.
+**docs.plus** is a free, real-time collaboration tool built on open-source technologies. It empowers communities to share and organize information logically and hierarchically, making teamwork and knowledge sharing straightforward and effective.
 
 ## 🚀 Quick Start
 
-**Prerequisites:**
+### Prerequisites
 
-- Node.js (version ">=18.15.0")
-- [Yarn](https://yarnpkg.com/getting-started/install)
-- PostgreSQL (downloadable from the [official PostgreSQL website](https://www.postgresql.org/download/)) or Docker for running a PostgreSQL container.
+Ensure you have the following installed:
 
-docs.plus is organized as a monorepo and uses Yarn [Workspaces](<https://yarnpkg.com/features/workspaces/#gatsby-focus-wrapper>) and [Lerna](https://lerna.js.org/) for managing dependencies and synchronizing versions across different packages.
+- **Node.js** (version `>=18.15.0`)
+- **Yarn** - [Installation Guide](https://yarnpkg.com/getting-started/install)
+- **PostgreSQL** - Download from the [official PostgreSQL website](https://www.postgresql.org/download/) or run via Docker.
+- **Supabase** - You can choose between:
+  - [Self-hosted](https://supabase.com/docs/guides/self-hosting/docker)
+  - [Cloud-based](https://supabase.com/)
+  - [CLI Installation](https://supabase.com/docs/guides/cli/getting-started)
 
-## 🛠 Setting Up Your Development Environment
+### Development Environment Setup
 
-Follow these steps to get started with docs.plus:
+Follow these steps to set up your development environment:
 
-```bash
-# Clone the repository
-$ git clone https://github.com/docs-plus/docs.plus.git
+1. **Clone the Repository**
 
-# Navigate to the project directory
-$ cd docs.plus
+   ```bash
+   git clone https://github.com/docs-plus/docs.plus.git
+   cd docs.plus
+   ```
 
-# Install dependencies
-$ yarn
-```
+2. **Install Dependencies**
+
+   ```bash
+   yarn
+   ```
+
+3. **Install Supabase CLI**
+
+   ```bash
+   brew install supabase/tap/supabase
+   ```
+
+   > If you're using a different package manager, refer to the [Supabase CLI installation guide](https://supabase.com/docs/guides/cli/installation).
 
 ### Environment Configuration
 
-Before starting the project, you must create the `.env` files based on the provided examples in the following locations:
+Before starting the project, you need to create the `.env` files by following these steps:
 
-- `packages/webapp/.env.example`
-- `packages/supabase/.env.example`
-- `packages/hocuspocus.server/.env.example`
+1. **Locate the Example Files**: You will find `.env.example` files in the following directories:
 
-Copy each `.env.example` file to `.env` in the same directory and update the necessary configurations as needed. The examples provide guidance on which values to replace.
+   - `packages/webapp/.env.example`
+   - `packages/supabase/.env.example`
+   - `packages/hocuspocus.server/.env.example`
+
+2. **Create .env Files**: Copy each `.env.example` to a new `.env` file in the same directory.
+
+   ```bash
+   cp packages/webapp/.env.example packages/webapp/.env
+   cp packages/supabase/.env.example packages/supabase/.env
+   cp packages/hocuspocus.server/.env.example packages/hocuspocus.server/.env
+   ```
+
+3. **Update Configurations**: Edit the `.env` files to replace placeholders with your actual configuration values.
 
 ### PostgreSQL Database Setup
 
-Set up a PostgreSQL database accessible to your development environment. If using Docker, here's a basic command to start a PostgreSQL container:
+You can set up PostgreSQL in your development environment by running the following Docker command:
 
 ```bash
 docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgres
 ```
 
-More details on the PostgreSQL Docker image are available in the [official Docker documentation](https://docs.docker.com/samples/postgres/).
+For more information on the PostgreSQL Docker image, refer to the [official Docker documentation](https://docs.docker.com/samples/postgres/).
 
 ### Running the Project
 
-**Unix-based systems (macOS, Linux):**
+After setting up the environment and configuring the `.env` files, you can start the project in development mode using:
 
 ```bash
-yarn start
+make local
 ```
 
-**Windows systems:**
-Ensure PowerShell is installed. Then, to start the development servers, open three separate PowerShell windows and run the following commands:
+This command will start the development server for the webapp, as well as the backend services (`hocuspocus` & `supabase`).
 
-```bash
-# PowerShell Window 1
-cd .\packages\hocuspocus.server\
-npm run dev
-
-# PowerShell Window 2
-cd .\packages\hocuspocus.server\
-npm run dev:ws
-
-# PowerShell Window 3
-cd .\packages\webapp\
-npm run dev
-```
-
-💡 We're actively seeking contributors to improve our Windows setup instructions. If you can assist, we'd be thrilled! Your contribution will enhance the accessibility of docs.plus for Windows users and foster our community's growth. All collaboration is warmly welcomed!
-
-## Docker Deployment
-
-```sh
-docker-compose up
-```
+For more details on available commands, refer to the [Makefile](./Makefile).
 
 ## 📫 Connect With Us
 
-We'd love to hear from you! Join our [Discussions](https://github.com/docs-plus/docs.plus/discussions), or reach out through:
+We'd love to hear from you! You can reach out through the following channels:
 
-- Twitter: [@docsdotplus](https://twitter.com/docsdotplus)
-- Github: [docs.plus](https://github.com/nwspk/docs.plus)
-- Slack: [docsplus](docsplus.slack.com)
-- Email: [contact@newspeak.house](mailto:contact@newspeak.house)
+- **Twitter**: [@docsdotplus](https://twitter.com/docsdotplus)
+- **GitHub**: [docs.plus](https://github.com/nwspk/docs.plus)
+- **Slack**: [docsplus](https://docsplus.slack.com)
+- **Email**: [contact@newspeak.house](mailto:contact@newspeak.house)
 
 ## 📜 License
 
-docs.plus is under the [Apache License v2](http://www.apache.org/licenses/LICENSE-2.0.html), granting you freedom to use, modify, distribute, and even sell your modifications under the same terms.
+docs.plus is licensed under the [Apache License v2](http://www.apache.org/licenses/LICENSE-2.0.html). You are free to use, modify, distribute, and even sell your modifications under the same terms.
 
 ## 🙏 Support Our Project
 
-docs.plus is free and open-source. Keeping it running and
-
- continuously improving requires resources. If you're able to support us, we'd greatly appreciate it:
+docs.plus is a free and open-source project. To keep it running and continuously improving, we need your support. If you're able to contribute, we'd greatly appreciate it:
 
 <a href="https://patreon.com/docsplus"><img src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Ddocsplus%26type%3Dpatrons&style=for-the-badge" /> </a>
 
-Your support maintains our servers and enhances this platform for everyone's benefit. Thank you for your generosity!
+Your support helps maintain our servers and enhances the platform for everyone's benefit. Thank you for your generosity!
