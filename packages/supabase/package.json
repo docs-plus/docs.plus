@@ -4,9 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "_print-googleid": "echo $GOOGLE_CLIENT_ID",
-    "print-googleid": "dotenv -- npm run _print-googleid",
     "update:packages": "ncu -u",
     "start": "dotenv -- supabase start",
     "stop": "dotenv -- supabase stop",
