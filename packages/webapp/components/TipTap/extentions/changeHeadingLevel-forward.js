@@ -18,7 +18,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
 
   console.info('[Heading]: change heading level forwarding')
 
-  const commingLevel = attributes.level
+  const comingLevel = attributes.level
   const block = createThisBlockMap(state)
 
   const titleStartPos = $from.start(1) - 1
@@ -59,7 +59,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
   let mapHPost = titleHMap.filter(
     (x) => x.startBlockPos < newStartPos && x.startBlockPos >= prevHStartPos
   )
-  let { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
+  let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
 
   tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), newHeadingNode)
 
