@@ -29,6 +29,14 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
 
   const contentWrapper = getRangeBlocks(doc, titleStartPos + 1, titleEndPos)
 
+  // TODO: handel this case later
+  if ($from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE && $from.pos !== $to.pos) {
+    console.error(
+      '[Heading]: Cannot change heading level when content is selected within a heading'
+    )
+    return false
+  }
+
   const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
   const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
 

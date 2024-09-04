@@ -152,7 +152,7 @@ function expandElement(elem, collapseClass, headingId, open) {
 
 const ContentWrapper = Node.create({
   name: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
-  content: '(heading|paragraph|block)*',
+  content: '(block)* heading*',
   defining: true,
   selectable: false,
   isolating: true,
@@ -168,7 +168,8 @@ const ContentWrapper = Node.create({
   parseHTML() {
     return [
       {
-        tag: `div[data-type="${this.name}"]`
+        tag: `div[data-type="${this.name}"]`,
+        contentElement: 'div.contents'
       }
     ]
   },
@@ -186,12 +187,15 @@ const ContentWrapper = Node.create({
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         'data-type': this.name
       }),
-      0
+      ['div', { class: 'contents' }, 0]
     ]
   },
   addNodeView() {
-    return ({ editor, getPos, HTMLAttributes }) => {
+    return ({ editor, getPos, HTMLAttributes, node }) => {
       const dom = document.createElement('div')
+      const content = document.createElement('div')
+      content.classList.add('contents')
+      dom.appendChild(content)
 
       // get parent node
       const parentNode = editor.state.doc?.resolve(getPos())
@@ -213,11 +217,6 @@ const ContentWrapper = Node.create({
         dom.classList.remove('overflow-hidden', 'collapsed', 'closed')
         dom.classList.add('opend')
       }
-
-      const content = document.createElement('div')
-
-      content.classList.add('contents')
-      dom.append(content)
 
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value))
 
@@ -251,7 +250,7 @@ const ContentWrapper = Node.create({
 
       return {
         dom,
-        contentDOM: dom,
+        contentDOM: content,
         ignoreMutation(mutation) {
           if (mutation.type === 'selection') {
             return false
@@ -269,6 +268,7 @@ const ContentWrapper = Node.create({
   },
   addKeyboardShortcuts() {
     return {
+      //TODO: refactor needed
       Backspace: () => {
         const { editor } = this
         const { schema, selection } = editor.state
@@ -277,15 +277,12 @@ const ContentWrapper = Node.create({
 
         // if we have selection, node range || multiple lines block
         if ($anchor.pos !== $head.pos) {
-          return deleteSelectedRange({
-            editor,
-            state: editor.state,
-            tr: editor.state.tr,
-            view: editor.view
-          })
+          console.info('[Heading][Backspace]: Delete selected range')
+          return deleteSelectedRange(editor)
         }
 
         // If backspace hit not at the start of the node, do nothing
+        // TODO: Revise this condition
         if ($anchor.parentOffset !== 0) return false
 
         const contentWrapper = $anchor.doc?.nodeAt($from?.before(blockRange.depth))
@@ -336,7 +333,33 @@ const ContentWrapper = Node.create({
         }
       },
       // Escape node on double enter
-      Enter: () => {}
+      Enter: () => {
+        const { state, dispatch } = this.editor.view
+        const { selection, doc } = state
+        const { $from, $to } = selection
+
+        // Check if we're in a ContentWrapper
+        const contentWrapper = $from.node($from.depth - 1)
+        if (contentWrapper.type.name !== ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
+          return false
+        }
+
+        // Check if there's a heading before the cursor in this ContentWrapper
+        let hasHeadingBefore = false
+        contentWrapper.forEach((node, offset) => {
+          if (node.type.name === ENUMS.NODES.HEADING_TYPE && offset < $from.parentOffset) {
+            hasHeadingBefore = true
+          }
+        })
+
+        if (hasHeadingBefore) {
+          // If there's a heading before, only allow creating new headings
+          return this.editor.commands.setNode(ENUMS.NODES.HEADING_TYPE)
+        }
+
+        // If no heading before, allow normal paragraph insertion
+        return false // Let Tiptap handle default Enter behavior
+      }
     }
   },
   addProseMirrorPlugins() {

@@ -8,11 +8,9 @@ const changeHeading2Paragrapht = (arrg) => {
 
   if ($anchor.pos === $head.pos) {
     console.info('[Heading], normalText on Heading block')
-
     return onHeading(arrg)
   } else {
     console.info('[Heading], normalText on selection')
-
     return onSelection(arrg)
   }
 }

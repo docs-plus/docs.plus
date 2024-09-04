@@ -12,7 +12,6 @@ import { ChatLeftSVG } from '@icons'
 import { useChatStore, useAuthStore, useStore } from '@stores'
 import * as toast from '@components/toast'
 import slugify from 'slugify'
-
 let isProcessing = false
 
 // Helpers
@@ -203,45 +202,45 @@ const handleHeadingToggle = (editor, { headingId }) => {
   if (!nodePos) return
 
   // if (editor.isEditable) {
-    const pos = nodePos.pos
-    const currentNode = tr.doc.nodeAt(pos)
-    // update toc
-    tr.setMeta('renderTOC', true)
+  const pos = nodePos.pos
+  const currentNode = tr.doc.nodeAt(pos)
+  // update toc
+  tr.setMeta('renderTOC', true)
 
-    const documentId = localStorage.getItem('docId')
-    const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
-    const nodeState = headingMap.find((h) => h.headingId === headingId) || {
-      crinkleOpen: true
-    }
-    const filterMode = document.body.classList.contains('filter-mode')
-    let database = filterMode ? db.docFilter : db.meta
+  const documentId = localStorage.getItem('docId')
+  const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
+  const nodeState = headingMap.find((h) => h.headingId === headingId) || {
+    crinkleOpen: true
+  }
+  const filterMode = document.body.classList.contains('filter-mode')
+  let database = filterMode ? db.docFilter : db.meta
 
-    // In filter mode, avoid saving the heading map to prevent overwriting the primary heading filter.
-    if (filterMode) {
+  // In filter mode, avoid saving the heading map to prevent overwriting the primary heading filter.
+  if (filterMode) {
+    editor.view.dispatch(tr)
+    dispatchToggleHeadingSection(headingNodeEl)
+    isProcessing = false
+    return
+  }
+  database
+    .put({
+      docId: documentId,
+      headingId,
+      crinkleOpen: !nodeState.crinkleOpen,
+      level: currentNode.attrs.level
+    })
+    .then(() => {
+      database.toArray().then((data) => {
+        localStorage.setItem('headingMap', JSON.stringify(data))
+      })
       editor.view.dispatch(tr)
       dispatchToggleHeadingSection(headingNodeEl)
       isProcessing = false
-      return
-    }
-    database
-      .put({
-        docId: documentId,
-        headingId,
-        crinkleOpen: !nodeState.crinkleOpen,
-        level: currentNode.attrs.level
-      })
-      .then(() => {
-        database.toArray().then((data) => {
-          localStorage.setItem('headingMap', JSON.stringify(data))
-        })
-        editor.view.dispatch(tr)
-        dispatchToggleHeadingSection(headingNodeEl)
-        isProcessing = false
-      })
-      .catch((err) => {
-        console.error(err)
-        isProcessing = false
-      })
+    })
+    .catch((err) => {
+      console.error(err)
+      isProcessing = false
+    })
   // } else {
   //   isProcessing = false
   // }
@@ -275,36 +274,15 @@ const isTopLevelHeading = (currentHLevel, parentHeadingNode) => {
   return currentHLevel === 1 && parentHeadingNode.attrs.level === 1
 }
 
-const handleHeadingRemoval = (editor, backspaceAction) => {
-  console.info('[Heading]: remove the heading node')
-
-  return onHeading({
-    backspaceAction,
-    editor,
-    state: editor.state,
-    tr: editor.state.tr,
-    view: editor.view
-  })
-}
-
-const shouldRemoveHeading = (node, $anchor, parent, schema) => {
-  return (
-    node !== null ||
-    $anchor.parentOffset !== 0 ||
-    parent.type.name !== schema.nodes.contentHeading.name ||
-    $anchor.pos === 2
-  )
-}
-
 // Tiptap Node
 const HeadingsTitle = Node.create({
   name: ENUMS.NODES.CONTENT_HEADING_TYPE,
   content: 'inline*',
   group: 'block',
   defining: true,
+  isolating: true,
   // draggable: false,
   // selectable: false,
-  // isolating: true,
   allowGapCursor: false,
   addOptions() {
     return {
@@ -349,35 +327,92 @@ const HeadingsTitle = Node.create({
   },
   addKeyboardShortcuts() {
     return {
-      Backspace: () => {
-        const { schema, selection, doc } = this.editor.state
+      Backspace: ({}) => {
+        const { editor } = this
+        const { schema, selection, doc } = editor.state
         const { $anchor, from, $from } = selection
 
-        const node = doc.nodeAt(from)
-        const parent = $anchor.parent
+        // it mean first heading node
+        if (from === 2) return
+
         const blockStartPos = $from.start(1) - 1
         const currentHLevel = getNodeHLevel($from.doc, blockStartPos)
 
-        const { prevHStartPos } = getPreviousHeadingPositions(
-          doc,
-          $from,
-          blockStartPos,
-          currentHLevel
-        )
-
-        const parentHeadingNode = doc.nodeAt(prevHStartPos)
+        // Check if the current node is the first child of the contentWrapper
+        const isFirstChild = $from.index() === 0
 
         // if the parent is not a content_heading node
-        if (parent.type.name !== ENUMS.NODES.CONTENT_HEADING_TYPE) return false
+        if ($from.parent.type.name !== ENUMS.NODES.CONTENT_HEADING_TYPE) return false
 
         // if the caret is not at the beginning of the content_heading node
         if ($anchor.parentOffset !== 0) return false
 
-        if (isTopLevelHeading(currentHLevel, parentHeadingNode))
-          return handleHeadingRemoval(this.editor, true)
+        return onHeading({
+          backspaceAction: true,
+          editor,
+          state: editor.state,
+          tr: editor.state.tr,
+          view: editor.view
+        })
+      },
+      Enter: () => {
+        const {
+          state,
+          view: { dispatch }
+        } = this.editor
+        const { selection, doc, schema } = state
+        const { $from, $to } = selection
 
-        if (shouldRemoveHeading(node, $anchor, parent, schema))
-          return handleHeadingRemoval(this.editor, false)
+        // Check if we're in a content heading
+        if ($from.parent.type.name !== ENUMS.NODES.CONTENT_HEADING_TYPE) {
+          return false
+        }
+
+        // Check if the cursor is in the middle of the node
+        if ($from.parentOffset === 0 || $from.parentOffset === $from.parent.content.size) {
+          return false
+        }
+
+        // Get the content after the cursor
+        const afterContent = $from.parent.cut($from.parentOffset).content
+
+        // Create a new transaction
+        const tr = state.tr
+
+        // Delete the content after the cursor in the current node
+        tr.delete($from.pos, $to.end())
+
+        // Find the content wrapper
+        const contentWrapperPos = $to.end($to.depth) + 1
+        const contentWrapper = doc.nodeAt(contentWrapperPos)
+
+        if (contentWrapper && contentWrapper.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
+          // Save the first child of the content wrapper
+          const firstChild = contentWrapper.firstChild
+          let savedContent = firstChild ? firstChild.content : null
+
+          if (firstChild) {
+            tr.delete(
+              tr.mapping.map(contentWrapperPos + 1),
+              tr.mapping.map(contentWrapperPos + 1 + firstChild.nodeSize)
+            )
+          }
+
+          // Create a new paragraph with the saved content
+          const newParagraph = schema.nodes[ENUMS.NODES.PARAGRAPH_TYPE].create(null, afterContent)
+          savedContent = savedContent
+            ? newParagraph.content.append(savedContent)
+            : newParagraph.content
+
+          const newNode = schema.nodes[ENUMS.NODES.PARAGRAPH_TYPE].create(null, savedContent)
+
+          // Insert the new node at the beginning of the content wrapper
+          tr.insert(tr.mapping.map(contentWrapperPos + 1), newNode)
+
+          // Dispatch the transaction
+          dispatch(tr)
+          return true
+        }
 
         return false
       }

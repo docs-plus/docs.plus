@@ -13,22 +13,24 @@ const changeHeadingLevel = (arrg, attributes) => {
 
   if (commingLevel === currentHLevel) {
     console.info('[heading]: commingLevel === nextSiblingLevel')
-
     return true
   }
 
   // H1
   if (currentHLevel === 1) {
+    console.info('[Heading]: change heading level forward, currentHLevel === 1')
     return changeHeadingLevelForwardH1(arrg, attributes)
   }
 
   // H2 > H3 || H4 > H3
   if (commingLevel > currentHLevel) {
+    console.info('[Heading]: change heading level forward, commingLevel > currentHLevel')
     return changeHeadingLevelForward(arrg, attributes)
   }
 
   // H2 < H3 || H4 < H3
   if (commingLevel < currentHLevel) {
+    console.info('[Heading]: change heading level backward, commingLevel < currentHLevel')
     return changeHeadingLevelBackward(arrg, attributes)
   }
 

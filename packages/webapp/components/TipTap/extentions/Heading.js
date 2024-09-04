@@ -11,7 +11,7 @@ import ENUMS from '../enums.js'
 
 const Heading = Node.create({
   name: ENUMS.NODES.HEADING_TYPE,
-  content: 'contentHeading+ contentWrapper*',
+  content: 'contentHeading contentWrapper',
   group: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
   defining: true,
   isolating: true,
@@ -104,13 +104,11 @@ const Heading = Node.create({
       },
       wrapBlock: (attributes) => (arrg) => {
         const { dispatch, state } = arrg
-        const { schema, selection } = state
+        const { selection } = state
         const { $anchor } = selection
 
-        // TODO: change heading level
-        // First get the content of heading
-        // then copy the contentWrapper of the heading
-        if ($anchor.parent.type.name === schema.nodes.contentHeading.name) {
+        // if cursor is on the heading block, change the level of the heading
+        if ($anchor.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
           return changeHeadingLevel(arrg, attributes, dispatch)
         }
 
@@ -133,6 +131,17 @@ const Heading = Node.create({
   },
   addKeyboardShortcuts() {
     return {
+      Delete: () => {
+        const { $anchor, $head } = this.editor.state.selection
+        // we need detect the selection
+        if ($anchor?.pos === $head?.pos) return false
+
+        console.info('[Heading] Delete key pressed')
+
+        // if user select a range of content, then hit any key, remove the selected content
+        return deleteSelectedRange(this.editor)
+      },
+      // TODO: Refactor from scratch to make it more readable and improve the performance
       Enter: ({ editor }) => {
         const { state } = editor
         const { schema, selection } = state
@@ -166,7 +175,6 @@ const Heading = Node.create({
           parent?.content?.content.length === 1 ||
           parent.lastChild?.firstChild?.type.name === ENUMS.NODES.HEADING_TYPE
         ) {
-          // console.log("yes iminininin", parent.lastChild.firstChild.contentsize === 0, parent.lastChild.firstChild)
           // If there is not any contentWrapper
           // if first child of the heading is another heading
           // console.log(parent.lastChild.type.name === "contentWrapper")
@@ -287,12 +295,7 @@ const Heading = Node.create({
 
             if (domeEvent === 'cut') {
               // remove selection from the editor
-              deleteSelectedRange({
-                editor,
-                state: editor.state,
-                tr: editor.state.tr,
-                view: editor.view
-              })
+              deleteSelectedRange(editor)
             }
 
             // convert Json Block to Node Block
@@ -305,6 +308,26 @@ const Heading = Node.create({
 
             // convert Fragment to Slice and save it to clipboard
             return Slice.maxOpen(serializeSelection)
+          }
+        }
+      }),
+      new Plugin({
+        key: new PluginKey('handleRangeSelection'),
+        props: {
+          handleTextInput: () => {
+            const { $anchor, $head } = this.editor.state.selection
+            // we need detect the selection
+            if ($anchor?.pos === $head?.pos) return false
+
+            // if the $ancher parent is contentheading then return false
+            if ($anchor.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+              return false
+            }
+
+            console.info('[Heading] Range selection delete')
+
+            // if user select a range of content, then hit any key, remove the selected content
+            return deleteSelectedRange(this.editor)
           }
         }
       })

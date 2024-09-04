@@ -24,17 +24,27 @@ const changeHeadingLevelForward = (arrg, attributes) => {
   const titleStartPos = $from.start(1) - 1
   const titleEndPos = $to.end(1)
 
+  let newStartPos = start
+
+  const fromParent = $from.parent.type.name
+  if (fromParent === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+    const headSelection = $from.blockRange($to)
+    if (headSelection.parent.type.name === ENUMS.NODES.HEADING_TYPE) {
+      // INFO: 2 is the offset of the heading node
+      newStartPos = headSelection.$from.pos - headSelection.$from.parentOffset - 2
+    }
+  }
+
   const contentWrapper = getRangeBlocks(doc, start, titleEndPos)
 
   const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
   const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
-
   const restParagraphs = contentWrapperParagraphs.filter((x) => x.startBlockPos >= $to.pos)
 
   const newHeadingNode = createHeadingNodeFromSelection(
     doc,
     state,
-    start,
+    newStartPos,
     $to.pos,
     attributes,
     block,
@@ -42,19 +52,19 @@ const changeHeadingLevelForward = (arrg, attributes) => {
     selection
   )
 
-  tr.delete(start - 1, titleEndPos)
+  tr.delete(newStartPos, titleEndPos)
 
   let titleHMap = getHeadingsBlocksMap(tr.doc, titleStartPos, tr.mapping.map(titleEndPos))
-  const { prevHStartPos } = getPrevHeadingPos(tr.doc, titleStartPos, start - 1)
+  const { prevHStartPos } = getPrevHeadingPos(tr.doc, titleStartPos, newStartPos)
   let mapHPost = titleHMap.filter(
-    (x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos
+    (x) => x.startBlockPos < newStartPos && x.startBlockPos >= prevHStartPos
   )
   let { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
 
   tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), newHeadingNode)
 
   // set the cursor to the end of the heading
-  const newSelection = new TextSelection(tr.doc.resolve(from - (shouldNested ? 2 : 0)))
+  const newSelection = new TextSelection(tr.doc.resolve(newStartPos - (shouldNested ? 2 : 0)))
 
   tr.setSelection(newSelection)
 

@@ -17,7 +17,9 @@ const onSelection = ({ state, tr, editor }) => {
 
   const selectedContents = getSelectionRangeBlocks(doc, from, to)
 
+  // check if the selected content start in contentheading/heading node
   if (selectedContents[0]?.level) {
+    console.info('[Heading]: selected content start with heading node')
     onHeading({ state, tr, editor })
     return true
   }

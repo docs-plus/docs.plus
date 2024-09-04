@@ -7,12 +7,16 @@ import ENUMS from '../enums'
  * @param {Number} from  end pos
  * @returns
  */
-export const getPrevHeadingList = (tr, start, from) => {
+export const getPrevHeadingList = (tr, start, from, startPos = 0) => {
   const titleHMap = []
 
-  if (from < start) throw new Error("[Heading]: position is invalid 'from < start'")
+  if (from < start)
+    throw new Error(
+      `[Heading]: position is invalid 'from[${from}] < start[${start}]', startPos[${startPos}] `
+    )
   try {
     tr.doc.nodesBetween(start, from, function (node, pos) {
+      if (startPos > 0 && pos < startPos) return
       if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
         const headingLevel = node.firstChild?.attrs?.level
         const depth = tr.doc.resolve(pos).depth
@@ -127,7 +131,7 @@ export const getSelectionRangeBlocks = (doc, start, end, includeContentHeading =
 
   doc.nodesBetween(start, end, function (node, pos, parent) {
     if (
-      firstHEading &&
+      node.isBlock &&
       node.type.name !== ENUMS.NODES.HEADING_TYPE &&
       parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
     ) {
@@ -221,6 +225,7 @@ export const getRangeBlocks = (doc, start, end) => {
  */
 export const getHeadingsBlocksMap = (doc, start, end) => {
   const titleHMap = []
+
   doc.nodesBetween(start, end, function (node, pos, parent, index) {
     if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
       const headingLevel = node.firstChild?.attrs?.level
@@ -340,7 +345,7 @@ export const findPrevBlock = (mapHPost, headingLevel) => {
 
   let prevBlock = prevBlockEqual || prevBlockGreaterFromLast || prevBlockGreaterFromFirst
 
-  if (lastBlock.le <= headingLevel) {
+  if (lastBlock?.le <= headingLevel) {
     prevBlock = lastBlock
   }
 
@@ -403,17 +408,24 @@ export const insertRemainingHeadings = ({
   prevHStartPos
 }) => {
   let mapHPost = getHeadingsBlocksMap(tr.doc, titleStartPos, titleEndPos)
-  mapHPost = mapHPost.filter(
-    (x) => x.startBlockPos < state.selection.$to.pos && x.startBlockPos >= titleStartPos
-  )
+
+  // if the first heading is not h1, then we need to filter the mapHPost to only include headings that are before the current selection
+  if (mapHPost.length > 1 && headings.at(0).le !== 1) {
+    mapHPost = mapHPost.filter(
+      (x) => x.startBlockPos < state.selection.$to.pos && x.startBlockPos >= titleStartPos
+    )
+  }
 
   for (const heading of headings) {
     const commingLevel = heading.level || heading.le || heading.content.at(0).level
     mapHPost = getPrevHeadingList(
       tr,
       mapHPost.at(0).startBlockPos,
-      tr.mapping.map(mapHPost.at(0).endBlockPos)
+      headings.at(0).le === 1
+        ? mapHPost.at(0).endBlockPos
+        : tr.mapping.map(mapHPost.at(0).endBlockPos)
     )
+
     mapHPost = mapHPost.filter(
       (x) => x.startBlockPos < heading.startBlockPos && x.startBlockPos >= prevHStartPos
     )
@@ -421,12 +433,28 @@ export const insertRemainingHeadings = ({
     const { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
 
     tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), state.schema.nodeFromJSON(heading))
+    // update the prevHStartPos in order to narrow down the mapHpost
+    prevHStartPos = prevBlock.startBlockPos
   }
 
   return true
 }
 
-//TODO: secend part of the condition need to revise
+/**
+ * Recursively finds paragraphs within a node and pushes them to the newContent array.
+ * @param {Object} currentNode - The current node to search for paragraphs.
+ * @param {Array} newContent - The array to push found paragraphs into.
+ */
+const findParagraphs = (currentNode, newContent) => {
+  currentNode.forEach((childNode) => {
+    if (childNode.type.name === ENUMS.NODES.PARAGRAPH_TYPE) {
+      newContent.push(childNode.toJSON())
+    } else if (childNode.childCount > 0) {
+      findParagraphs(childNode, newContent)
+    }
+  })
+}
+
 export const createHeadingNodeFromSelection = (
   doc,
   state,
@@ -434,20 +462,54 @@ export const createHeadingNodeFromSelection = (
   end,
   attributes,
   block,
-  contentWrapper,
-  selection
+  contentWrapper
 ) => {
   const headings = []
 
-  if (start !== end) {
+  const { selection } = state
+  const { $anchor, $head } = selection
+
+  // if selection
+  if ($anchor.pos !== $head.pos) {
+    const mResolve = doc.resolve(start)
+    let newStart = start - mResolve.parentOffset
+
+    let contentWrapperPos = mResolve.pos
+    while (contentWrapperPos > 0) {
+      const node = doc.nodeAt(contentWrapperPos)
+      if (node && node.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
+        break
+      }
+      contentWrapperPos--
+    }
+
+    const newStartNode = doc.nodeAt(newStart)
+    if (newStartNode && !newStartNode.isBlock) {
+      const $newStart = doc.resolve(newStart)
+      const parentPos = $newStart.before($newStart.depth)
+      const parentNode = doc.nodeAt(parentPos)
+      if (parentNode && parentNode.isBlock) {
+        newStart = parentPos
+      }
+    }
+
     doc.nodesBetween(
-      start,
+      newStart,
       end,
-      function (node) {
-        // we need block level not inline level node
-        if (!node.isBlock) return
-        if (node.type.name === ENUMS.NODES.HEADING_TYPE) return
-        if (node.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) return
+      function (node, pos, parent) {
+        if (
+          !(
+            node.isBlock &&
+            parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE &&
+            node.type.name !== ENUMS.NODES.HEADING_TYPE
+          )
+        )
+          return
+
+        let newContent = []
+        if (node.type.name !== ENUMS.NODES.PARAGRAPH_TYPE) {
+          findParagraphs(node, newContent)
+        }
 
         const newHeading = {
           type: ENUMS.NODES.HEADING_TYPE,
@@ -457,29 +519,34 @@ export const createHeadingNodeFromSelection = (
           content: [
             {
               type: ENUMS.NODES.CONTENT_HEADING_TYPE,
-              content: node.content.toJSON(),
+              content: newContent.length ? newContent : node.content.toJSON(),
               attrs: {
                 level: attributes.level
               }
             },
             {
               type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
-              content: []
+              content: [
+                {
+                  type: ENUMS.NODES.PARAGRAPH_TYPE
+                }
+              ]
             }
           ]
         }
 
         headings.push(newHeading)
       },
-      start
+      newStart
     )
 
     // put the contentWrapper(rest paragraph nodes) in the last heading
-    contentWrapper &&
-      headings
-        .at(-1)
-        .content.at(-1)
-        .content.push(...contentWrapper)
+    if (contentWrapper.length && headings.length) {
+      const selectLastHeadingContent = headings.at(-1).content.at(-1).content
+      // remove all empty paragraph
+      selectLastHeadingContent.pop()
+      selectLastHeadingContent.push(...contentWrapper)
+    }
   } else {
     const jsonNode = {
       type: ENUMS.NODES.HEADING_TYPE,
@@ -519,4 +586,101 @@ export const getSelectionTextNode = (state) => {
       $anchor.nodeBefore?.text ||
       ' '
   }
+}
+
+/**
+ *
+ * @param {Object} doc prosemirror doc
+ * @param {Number} start start pos
+ * @param {Number} end end pos
+ * @returns Array of Selection Block
+ */
+export const getSelectionRangeSlice = (doc, start, end) => {
+  let firstHEading = true
+  let prevDepth = 0
+  const selectedContents = []
+  const mResolve = doc.resolve(start)
+
+  if (mResolve.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+    // TODO: handle this case later
+    throw new Error('Selection starts within a content heading')
+  }
+
+  let newStart = start - mResolve.parentOffset
+
+  let contentWrapperPos = mResolve.pos
+  while (contentWrapperPos > 0) {
+    const node = doc.nodeAt(contentWrapperPos)
+    if (node && node.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
+      break
+    }
+    contentWrapperPos--
+  }
+
+  const newStartNode = doc.nodeAt(newStart)
+  if (newStartNode && !newStartNode.isBlock) {
+    const $newStart = doc.resolve(newStart)
+    const parentPos = $newStart.before($newStart.depth)
+    const parentNode = doc.nodeAt(parentPos)
+    if (parentNode && parentNode.isBlock) {
+      newStart = parentPos
+    }
+  }
+
+  doc.nodesBetween(newStart, end, function (node, pos, parent, index) {
+    if (pos < contentWrapperPos) return
+
+    if (
+      firstHEading &&
+      node.isBlock &&
+      parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE &&
+      node.type.name !== ENUMS.NODES.HEADING_TYPE
+    ) {
+      const resolve = doc.resolve(pos)
+
+      // Prepare the content object to be pushed into selectedContents
+      let contentObject = {
+        // resolve,
+        depth: resolve.depth,
+        startBlockPos: pos,
+        endBlockPos: pos + node.nodeSize,
+        index,
+        node,
+        ...node.toJSON()
+      }
+
+      // Add the prepared content object to selectedContents
+      selectedContents.push(contentObject)
+
+      // Log for debugging purposes
+    }
+    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
+      firstHEading = false
+      const headingLevel = node.firstChild?.attrs?.level
+      const depth = doc.resolve(pos).depth
+
+      if (prevDepth === 0) prevDepth = depth
+
+      if (prevDepth >= depth) {
+        selectedContents.push({
+          le: headingLevel,
+          depth,
+          startBlockPos: pos,
+          endBlockPos: pos + node.nodeSize,
+          ...node.toJSON()
+        })
+        prevDepth = depth
+      }
+    }
+  })
+
+  if (mResolve.parentOffset > 0) {
+    let firstNode = selectedContents.at(0)
+    const newposfor = newStart + mResolve.parentOffset
+    const newContent = firstNode.node.cut(newposfor - firstNode.startBlockPos)
+    selectedContents[0].content = newContent.content.toJSON()
+    selectedContents[0].startBlockPos = newStart
+  }
+
+  return selectedContents
 }
