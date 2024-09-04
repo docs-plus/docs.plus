@@ -17,7 +17,7 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
 
   console.info('[Heading]: change heading Level h1')
 
-  const commingLevel = attributes.level
+  const comingLevel = attributes.level
   const block = createThisBlockMap(state)
   const currentHLevel = $from.doc.nodeAt(block.start).attrs.level
 
@@ -57,7 +57,7 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   let mapHPost = titleHMap.filter(
     (x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos
   )
-  let { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
+  let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
 
   const newHeadingNode = createHeadingNodeFromSelection(
     doc,

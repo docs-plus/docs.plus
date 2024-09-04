@@ -8,11 +8,11 @@ const changeHeadingLevel = (arrg, attributes) => {
   const { $from, $to } = selection
   const { start } = $from.blockRange($to)
 
-  const commingLevel = attributes.level
+  const comingLevel = attributes.level
   const currentHLevel = $from.doc.nodeAt(start).attrs.level
 
-  if (commingLevel === currentHLevel) {
-    console.info('[heading]: commingLevel === nextSiblingLevel')
+  if (comingLevel === currentHLevel) {
+    console.info('[heading]: comingLevel === nextSiblingLevel')
     return true
   }
 
@@ -23,14 +23,14 @@ const changeHeadingLevel = (arrg, attributes) => {
   }
 
   // H2 > H3 || H4 > H3
-  if (commingLevel > currentHLevel) {
-    console.info('[Heading]: change heading level forward, commingLevel > currentHLevel')
+  if (comingLevel > currentHLevel) {
+    console.info('[Heading]: change heading level forward, comingLevel > currentHLevel')
     return changeHeadingLevelForward(arrg, attributes)
   }
 
   // H2 < H3 || H4 < H3
-  if (commingLevel < currentHLevel) {
-    console.info('[Heading]: change heading level backward, commingLevel < currentHLevel')
+  if (comingLevel < currentHLevel) {
+    console.info('[Heading]: change heading level backward, comingLevel < currentHLevel')
     return changeHeadingLevelBackward(arrg, attributes)
   }
 

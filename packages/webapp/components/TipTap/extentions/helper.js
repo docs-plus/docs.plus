@@ -388,7 +388,7 @@ export const insertRemainingHeadings = ({
   }
 
   for (const heading of headings) {
-    const commingLevel = heading.level || heading.le || heading.content.at(0).level
+    const comingLevel = heading.level || heading.le || heading.content.at(0).level
     mapHPost = getPrevHeadingList(
       tr,
       mapHPost.at(0).startBlockPos,
@@ -401,7 +401,7 @@ export const insertRemainingHeadings = ({
 
     mapHPost = mapHPost.filter((x) => x.startBlockPos >= prevHBlock.prevHStartPos)
 
-    const { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
+    const { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
 
     const node = state.schema.nodeFromJSON(heading)
 
