@@ -1,30 +1,35 @@
 import { Slice } from '@tiptap/pm/model'
 import { TextSelection } from '@tiptap/pm/state'
 import ENUMS from '../enums'
-import { getRangeBlocks, getHeadingsBlocksMap, findPrevBlock, getPrevHeadingPos } from './helper'
+import {
+  getSelectionRangeSlice,
+  getHeadingsBlocksMap,
+  findPrevBlock,
+  getPrevHeadingPos
+} from './helper'
 
+// Helper function to create a node from JSON using the provided schema
 const createNodeFromJSON = (node, schema) => schema.nodeFromJSON(node)
 
+// Function to extract paragraphs and headings from clipboard contents
 const extractParagraphsAndHeadings = (clipboardContents, { schema }) => {
   const paragraphs = []
   const headings = []
-  let heading = null
+  let currentHeading = null
 
-  for (const node of clipboardContents) {
-    if (!heading && node.type !== ENUMS.NODES.CONTENT_HEADING_TYPE) {
+  // Iterate through clipboard contents and categorize nodes as paragraphs or headings
+  clipboardContents.forEach((node) => {
+    // If no heading is found and the node is not a heading type, treat it as a paragraph
+    if (!currentHeading && node.type !== ENUMS.NODES.CONTENT_HEADING_TYPE) {
       paragraphs.push(createNodeFromJSON(node, schema))
-    }
-
-    if (node.type === ENUMS.NODES.CONTENT_HEADING_TYPE) {
-      // if new heading is found, push the previous heading into the heading list
-      // and reset the heading
-      if (heading) {
-        headings.push(createNodeFromJSON(heading, schema))
-        heading = null
+    } else if (node.type === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+      // If a new heading is found, push the previous heading into the heading list and reset the heading
+      if (currentHeading) {
+        headings.push(createNodeFromJSON(currentHeading, schema))
       }
-      heading = {
+      currentHeading = {
         type: ENUMS.NODES.HEADING_TYPE,
-        attrs: { level: node?.attrs.level },
+        attrs: { level: node?.attrs.level, id: null },
         content: [
           node,
           {
@@ -34,204 +39,182 @@ const extractParagraphsAndHeadings = (clipboardContents, { schema }) => {
         ]
       }
     } else {
-      heading?.content.at(1).content.push(node)
+      // If the node is not a heading, append it to the current heading's content
+      currentHeading?.content[1].content.push(node)
     }
-  }
+  })
 
-  if (heading) {
-    headings.push(createNodeFromJSON(heading, schema))
+  // Push the last heading into the headings array if it exists
+  if (currentHeading) {
+    headings.push(createNodeFromJSON(currentHeading, schema))
   }
 
   return [paragraphs, headings]
 }
 
-const clipboardPast = (slice, editor) => {
-  const { state, view } = editor
-  const { selection, doc, tr } = state
-  const { from, to } = selection
-
-  let $from = selection.$from
-  let start = $from.pos
-
-  // if user cursor is in the heading,
-  // move the cursor to the contentWrapper and do the rest
-  if ($from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
-    const nextPos = $from.after()
-    const $nextPos = tr.doc.resolve(nextPos)
-
-    // Check if the next node is a contentWrapper
-    if ($nextPos.nodeAfter && $nextPos.nodeAfter.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
-      const contentWrapperStart = nextPos + 1 // +1 to move inside the contentWrapper
-
-      // Find the first paragraph or any other block inside the contentWrapper
-      let firstBlockInsideContentWrapper = $nextPos.nodeAfter.firstChild
-
-      // if the heading block does not contain contentWrapper as a first child
-      // then create a contentWrapper block
-      if (
-        !firstBlockInsideContentWrapper ||
-        firstBlockInsideContentWrapper.type.name === ENUMS.NODES.HEADING_TYPE
-      ) {
-        const contentWrapperBlock = {
-          type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
-          content: [
-            {
-              type: ENUMS.NODES.PARAGRAPH_TYPE
-            }
-          ]
-        }
-
-        const node = createNodeFromJSON(contentWrapperBlock, state.schema)
-        tr.insert(contentWrapperStart, node)
-        firstBlockInsideContentWrapper = node.firstChild
-      }
-
-      if (firstBlockInsideContentWrapper) {
-        const firstBlockStart = contentWrapperStart + 1 // +1 to move inside the first block
-
-        // Move the cursor to the first line of the contentWrapper
-        const newSelection = new TextSelection(tr.doc.resolve(firstBlockStart))
-        tr.setSelection(newSelection)
-
-        // Update the variables accordingly
-        $from = newSelection.$from
-        start = $from.pos
-      }
-    }
-  }
-
-  // return Slice.empty
-
-  const titleNode = $from.doc.nodeAt($from.start(1) - 1)
-  let titleStartPos = $from.start(1) - 1
-  let titleEndPos = titleStartPos + titleNode.content.size
-
-  if (titleStartPos === 0) {
-    titleStartPos = 0
-    start = 1
-    titleEndPos = titleEndPos - 2
-  }
-
-  const contentWrapper = getRangeBlocks(doc, start, titleEndPos)
-
-  let { prevHStartPos } = getPrevHeadingPos(doc, titleStartPos, start - 1)
-
-  const clipboardContentJson = slice.toJSON().content
-
-  const [paragraphs, headings] = extractParagraphsAndHeadings(clipboardContentJson, state)
-
-  // if there is no heading block, then just return
-  if (headings.length <= 0) return slice
-
-  tr.delete(to, titleEndPos)
-
-  if (paragraphs.length !== 0) {
-    // first append the paragraphs in the current selection
-    tr.replaceWith(tr.mapping.map(from), tr.mapping.map(from), paragraphs)
-
-    const newSelection = new TextSelection(tr.doc.resolve(selection.from))
-
-    tr.setSelection(newSelection)
-  } else {
-    const firstHeading = headings.shift()
-    const firstHeadingContent = firstHeading.firstChild.content.toJSON()
-    const firstHeadingWrapperContent = firstHeading.lastChild.content.toJSON()
-
-    const firstHeadingBlock = {
-      type: ENUMS.NODES.PARAGRAPH_TYPE,
-      content: firstHeadingContent
-    }
-
-    const firstHeadingNode = createNodeFromJSON(firstHeadingBlock, state.schema)
-
-    tr.insert(tr.mapping.map(from), firstHeadingNode)
-
-    // move cursour to the contentwrapper
-    if (firstHeadingWrapperContent.length) {
-      const firstHeadingWrapperContentNodes = firstHeadingWrapperContent.map((node) =>
-        createNodeFromJSON(node, state.schema)
-      )
-
-      tr.insert(tr.mapping.map(tr.mapping.map(from) + 2), firstHeadingWrapperContentNodes)
-    }
-
-    tr.setSelection(new TextSelection(tr.doc.resolve(from)))
-  }
-
-  let lastBlockPos = paragraphs.length === 0 ? start : tr.mapping.map(start)
-
-  const headingContent = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
-
-  if (headingContent.length > 0) {
-    headingContent.forEach((heading) => headings.push(createNodeFromJSON(heading, state.schema)))
-  }
-
+// Function to insert headings into the transaction at the appropriate positions
+const insertHeadings = (
+  tr,
+  headings,
+  lastBlockPos,
+  lastH1Inserted,
+  from,
+  titleStartPos,
+  prevHStartPos
+) => {
   let mapHPost = {}
-  // return Slice.empty
 
-  const lastH1Inserted = {
-    startBlockPos: 0,
-    endBlockPos: 0
-  }
+  // Iterate over each heading and insert it into the correct position
+  headings.forEach((heading) => {
+    const comingLevel = heading.attrs.level || heading.content.firstChild.attrs.level
+    const startBlock =
+      lastH1Inserted.startBlockPos === 0 ? tr.mapping.map(from) : lastH1Inserted.startBlockPos
+    const endBlock =
+      lastH1Inserted.endBlockPos === 0
+        ? tr.mapping.map(from)
+        : tr.doc.nodeAt(lastH1Inserted.startBlockPos).content.size + lastH1Inserted.startBlockPos
 
-  try {
-    // paste the headings
-    for (let heading of headings) {
-      const comingLevel = heading.content.firstChild.attrs.level
+    // Get the map of headings blocks within the specified range
+    mapHPost = getHeadingsBlocksMap(tr.doc, startBlock, endBlock).filter(
+      (x) => x.startBlockPos >= (comingLevel === 1 ? titleStartPos : prevHStartPos)
+    )
 
-      const startBlock =
-        lastH1Inserted.startBlockPos === 0 ? tr.mapping.map(start) : lastH1Inserted.startBlockPos
-      const endBlock =
-        lastH1Inserted.endBlockPos === 0
-          ? tr.mapping.map(titleEndPos)
-          : tr.doc.nodeAt(lastH1Inserted.startBlockPos).content.size + lastH1Inserted.startBlockPos
+    // Find the previous block and determine if it should be nested
+    let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
 
-      mapHPost = getHeadingsBlocksMap(tr.doc, startBlock, endBlock)
-
-      mapHPost = mapHPost.filter(
-        (x) => x.startBlockPos >= (comingLevel === 1 ? titleStartPos : prevHStartPos)
-      )
-
-      let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
-
-      // find prevBlock.le in mapHPost
-      const robob = mapHPost.filter((x) => prevBlock?.le === x?.le)
-
-      if (robob.length > 1) {
-        prevBlock = robob.at(-1)
-      }
-
-      lastBlockPos = prevBlock?.endBlockPos
-
-      if (prevBlock && prevBlock.depth === 2) {
-        prevHStartPos = prevBlock.startBlockPos
-      }
-
-      tr.insert(lastBlockPos - (shouldNested ? 2 : 0), heading)
-
-      if (comingLevel === 1) {
-        lastH1Inserted.startBlockPos = lastBlockPos
-        lastH1Inserted.endBlockPos = tr.mapping.map(lastBlockPos + heading.content.size)
-      }
+    // Find the last occurrence of the previous block level if there are duplicates
+    const robob = mapHPost.filter((x) => prevBlock?.le === x?.le)
+    if (robob.length > 1) {
+      prevBlock = robob.at(-1)
     }
 
-    if (contentWrapper.length) {
-      let contentWrapperParagraphs = contentWrapper
-        .filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
-        .map((paragraph) => createNodeFromJSON(paragraph, state.schema))
+    lastBlockPos = prevBlock?.endBlockPos
 
-      // first append the paragraphs in the current selection
-      tr.insert(lastBlockPos + headings.at(-1).content.size - 2, contentWrapperParagraphs)
+    // Update the previous heading start position if the previous block is at depth 2
+    if (prevBlock && prevBlock.depth === 2) {
+      prevHStartPos = prevBlock.startBlockPos
     }
-  } catch (error) {
-    console.error('[heading]:', error)
+
+    // Insert the heading at the appropriate position
+    tr.insert(lastBlockPos - (shouldNested ? 2 : 0), heading)
+
+    // Update the position of the last H1 heading inserted
+    if (comingLevel === 1) {
+      lastH1Inserted.startBlockPos = lastBlockPos
+      lastH1Inserted.endBlockPos = tr.mapping.map(lastBlockPos + heading.content.size)
+    }
+  })
+
+  return { lastBlockPos, prevHStartPos }
+}
+
+// Main function to handle pasting clipboard content
+const clipboardPaste = (slice, editor) => {
+  const { state, view } = editor
+  const { doc, tr } = state
+  let { selection } = state
+  let { from, to, $to, $from } = selection
+
+  const titleStartPos = $from.start(1) - 1
+  const titleEndPos = $to.end(1)
+
+  if ($from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+    //TODO: handle this case later
+    console.error('[Heading] Selection starts within a content heading. Cannot transform.')
     return Slice.empty
   }
 
-  tr.setMeta('paste', true)
-  view.dispatch(tr)
+  // If the user's cursor is in the heading, move the cursor to the contentWrapper and adjust the selection
+  if ($from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+    const contentWrapperPos = $to.end($to.depth) + 1
+    from = contentWrapperPos
+    to = contentWrapperPos
+    $from = $from.doc.resolve(from)
+    $to = $to.doc.resolve(to)
+    selection = TextSelection.create(tr.doc, from, to)
+  }
 
-  return Slice.empty
+  // Get the slice of content within the selection range
+  const contentWrapper = getSelectionRangeSlice(doc, from, titleEndPos)
+  const clipboardContentJson = slice.toJSON().content
+
+  // Extract paragraphs and headings from the clipboard content
+  const [paragraphs, headings] = extractParagraphsAndHeadings(clipboardContentJson, state)
+
+  // If there are no headings to paste, return the original slice
+  if (headings.length === 0) return slice
+
+  // Delete the current content in the selection range
+  tr.delete(to, titleEndPos)
+
+  // If there are paragraphs, replace the current selection with the paragraphs
+  if (paragraphs.length !== 0) {
+    tr.replaceWith(tr.mapping.map(from), tr.mapping.map(from), paragraphs)
+    const newSelection = new TextSelection(tr.doc.resolve(selection.from))
+    tr.setSelection(newSelection)
+  }
+
+  // Determine the last block position after inserting paragraphs
+  let lastBlockPos = paragraphs.length === 0 ? from : tr.mapping.map(from)
+
+  // Filter out heading content from the contentWrapper
+  const headingContent = contentWrapper
+    .filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
+    .map((x) => createNodeFromJSON(x, state.schema))
+
+  // Initialize the position of the last H1 heading inserted
+  let lastH1Inserted = {
+    startBlockPos: tr.mapping.map(titleStartPos),
+    endBlockPos: tr.mapping.map(titleEndPos)
+  }
+
+  let { prevHStartPos } = getPrevHeadingPos(doc, titleStartPos, from)
+
+  try {
+    // Insert headings into the transaction
+    const insertionResult = insertHeadings(
+      tr,
+      headings,
+      lastBlockPos,
+      lastH1Inserted,
+      from,
+      titleStartPos,
+      prevHStartPos
+    )
+
+    lastBlockPos = insertionResult.lastBlockPos
+    prevHStartPos = insertionResult.prevHStartPos
+
+    // If there is remaining content in the contentWrapper, insert it after the last heading
+    if (contentWrapper.length) {
+      const contentWrapperParagraphs = contentWrapper
+        .filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
+        .map((paragraph) => createNodeFromJSON(paragraph, state.schema))
+
+      if (contentWrapperParagraphs.length > 0) {
+        tr.insert(lastBlockPos + headings.at(-1).content.size - 2, contentWrapperParagraphs)
+      }
+    }
+
+    // Insert the filtered heading content into the transaction
+    insertHeadings(
+      tr,
+      headingContent,
+      lastBlockPos,
+      lastH1Inserted,
+      from,
+      titleStartPos,
+      prevHStartPos
+    )
+
+    tr.setMeta('paste', true)
+    view.dispatch(tr)
+    return Slice.empty
+  } catch (error) {
+    // Log the error if any occurs during the paste operation and return an empty slice
+    console.error('[heading][clipboardPaste]:', error)
+    return Slice.empty
+  }
 }
 
-export default clipboardPast
+export default clipboardPaste
