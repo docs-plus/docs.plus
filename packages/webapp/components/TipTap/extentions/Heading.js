@@ -316,12 +316,17 @@ const Heading = Node.create({
         props: {
           handleTextInput: () => {
             const { $anchor, $head } = this.editor.state.selection
+
             // we need detect the selection
             if ($anchor?.pos === $head?.pos) return false
 
+            // TODO: Handle this case later
             // if the $ancher parent is contentheading then return false
             if ($anchor.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
-              return false
+              console.info(
+                '[Heading][RangeSelection]: contentHeading detected, we do not need to handle this'
+              )
+              return true
             }
 
             console.info('[Heading] Range selection delete')

@@ -215,6 +215,12 @@ const Editor = ({ provider, ydoc, spellcheck = false, user }: any): Partial<Edit
     onUpdate: ({ editor, transaction }) => {
       // console.log('onUpdate')
     },
+    enableContentCheck: true,
+    content: 'heading',
+    onContentError({ editor, error, disableCollaboration }) {
+      // your handler here
+      console.error('onContentError', error)
+    },
     editorProps: {
       attributes: {
         spellcheck
@@ -268,36 +274,36 @@ const Editor = ({ provider, ydoc, spellcheck = false, user }: any): Partial<Edit
           }
         }
       }),
-      // HyperMultimediaKit.configure({
-      //   Image: {
-      //     modal: imageModal,
-      //     inline: true
-      //   },
-      //   Video: {
-      //     modal: youtubeModal,
-      //     inline: true
-      //   },
-      //   Audio: {
-      //     modal: twitterModal,
-      //     inline: true
-      //   },
-      //   Youtube: {
-      //     modal: youtubeModal,
-      //     inline: true
-      //   },
-      //   Vimeo: {
-      //     modal: vimeoModal,
-      //     inline: true
-      //   },
-      //   SoundCloud: {
-      //     modal: soundCloudModal,
-      //     inline: true
-      //   },
-      //   Twitter: {
-      //     modal: twitterModal,
-      //     inline: true
-      //   }
-      // }),
+      HyperMultimediaKit.configure({
+        Image: {
+          modal: imageModal,
+          inline: true
+        },
+        Video: {
+          modal: youtubeModal,
+          inline: true
+        },
+        Audio: {
+          modal: twitterModal,
+          inline: true
+        },
+        Youtube: {
+          modal: youtubeModal,
+          inline: true
+        }
+        // Vimeo: {
+        //   modal: vimeoModal,
+        //   inline: true
+        // },
+        // SoundCloud: {
+        //   modal: soundCloudModal,
+        //   inline: true
+        // },
+        // Twitter: {
+        //   modal: twitterModal,
+        //   inline: true
+        // }
+      }),
       TaskList,
       TaskItem.configure({
         nested: true,

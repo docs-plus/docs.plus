@@ -6,7 +6,9 @@ import {
   createHeadingNodeFromSelection,
   getRangeBlocks,
   insertRemainingHeadings,
-  getSelectionRangeSlice
+  getHeadingsBlocksMap,
+  getPrevHeadingPos,
+  findPrevBlock
 } from './helper'
 
 const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
@@ -44,10 +46,13 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
     console.info('[Heading]: create a new heading with same level')
 
     let titleEndPos = $to.end(1)
+    let titleStartPos = $from.start(1) - 1
+    const contents = getRangeBlocks(doc, end, titleEndPos)
 
-    const contents = getRangeBlocks(doc, start - 1, titleEndPos)
+    let paragraphs = contents.filter((x) => x.type === ENUMS.NODES.PARAGRAPH_TYPE)
+    const headings = contents.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
 
-    const contentWrapper = contents.length === 0 ? [block.paragraph] : contents
+    paragraphs = paragraphs.length === 0 ? [block.paragraph] : paragraphs
 
     if (doc?.nodeAt(start)?.type?.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
       console.error(
@@ -63,20 +68,29 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
       $to.pos,
       attributes,
       block,
-      contentWrapper,
+      paragraphs,
       selection
     )
 
-    const insertPos = start + 1
+    tr.delete(start, titleEndPos)
 
-    tr.delete(insertPos, titleEndPos)
-    tr.insert(tr.mapping.map(titleEndPos), headingNode)
+    let titleHMap = getHeadingsBlocksMap(tr.doc, titleStartPos, tr.mapping.map(titleEndPos))
+    const { prevHStartPos } = getPrevHeadingPos(tr.doc, titleStartPos, start)
+    let mapHPost = titleHMap.filter(
+      (x) => x.startBlockPos < start && x.startBlockPos >= prevHStartPos
+    )
+    let { prevBlock, shouldNested } = findPrevBlock(mapHPost, cominglevel)
 
-    const newSelection1 = new TextSelection(tr.doc.resolve(insertPos))
+    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), headingNode)
 
-    tr.setSelection(newSelection1)
-
-    return true
+    return insertRemainingHeadings({
+      state,
+      tr,
+      headings,
+      prevHStartPos,
+      titleEndPos: tr.mapping.map(titleEndPos),
+      titleStartPos
+    })
   }
 
   // Create a new Heading block as a child of the current Heading block
