@@ -11,7 +11,8 @@
     "pm2:start:stage": "pm2 reload pm2.config.js --env production --only nextjs_stage",
     "pm2:start:prod": "pm2 reload pm2.config.js --env production --only nextjs_production",
     "update:packages": "ncu -u",
-    "lint:fix": "next lint --fix"
+    "lint:fix": "next lint --fix",
+    "test": "jest"
   },
   "dependencies": {
     "@dicebear/collection": "^9.2.1",
@@ -103,15 +104,22 @@
     "zustand": "^4.5.4"
   },
   "devDependencies": {
+    "@babel/preset-env": "^7.25.4",
+    "@babel/preset-react": "^7.24.7",
     "@tailwindcss/typography": "^0.5.13",
+    "@testing-library/jest-dom": "^6.5.0",
+    "@testing-library/react": "^16.0.1",
     "@types/dompurify": "^3.0.5",
     "@types/lodash": "^4.17.7",
     "@types/node": "^22.0.2",
     "@types/react": "^18.3.3",
     "@types/react-dom": "^18.3.0",
     "autoprefixer": "^10.4.19",
+    "babel-jest": "^29.7.0",
     "daisyui": "^4.12.10",
     "eslint-plugin-tailwindcss": "^3.17.4",
+    "jest": "^29.7.0",
+    "jest-environment-jsdom": "^29.7.0",
     "postcss": "^8.4.40",
     "prettier": "^3.3.3",
     "prettier-plugin-tailwindcss": "^0.6.5",

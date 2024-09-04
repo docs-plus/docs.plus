@@ -286,11 +286,12 @@ const ContentWrapper = Node.create({
         if ($anchor.parentOffset !== 0) return false
 
         const contentWrapper = $anchor.doc?.nodeAt($from?.before(blockRange.depth))
+        const nodeType = contentWrapper.type.name
 
         // If the Backspace is not in the contentWrapper, do nothing
         if (
-          contentWrapper.type.name === schema.nodes.contentHeading.name ||
-          contentWrapper.type.name !== schema.nodes.contentWrapper.name
+          nodeType === schema.nodes.contentHeading.name ||
+          nodeType !== schema.nodes.contentWrapper.name
         ) {
           return
         }

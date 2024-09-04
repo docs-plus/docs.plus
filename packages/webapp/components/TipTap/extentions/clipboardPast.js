@@ -135,7 +135,7 @@ const clipboardPaste = (slice, editor) => {
   }
 
   // Get the slice of content within the selection range
-  const contentWrapper = getSelectionRangeSlice(doc, from, titleEndPos)
+  const contentWrapper = getSelectionRangeSlice(doc, state, from, titleEndPos)
   const clipboardContentJson = slice.toJSON().content
 
   // Extract paragraphs and headings from the clipboard content

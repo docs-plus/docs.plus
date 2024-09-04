@@ -1,19 +1,23 @@
 import ENUMS from '../enums'
 
 /**
- *
- * @param {Object} tr  transform object
- * @param {Number} start  start pos
- * @param {Number} from  end pos
- * @returns
+ * Get a list of previous headings within a specified range in the document.
+ * @param {Object} tr - Transform object
+ * @param {Number} start - Start position
+ * @param {Number} from - End position
+ * @param {Number} [startPos=0] - Optional starting position to filter results
+ * @returns {Array} Array of heading objects
+ * @throws {Error} If the 'from' position is less than the 'start' position
  */
 export const getPrevHeadingList = (tr, start, from, startPos = 0) => {
+  if (from < start) {
+    throw new Error(
+      `[Heading]: Invalid position range. 'from' (${from}) is less than 'start' (${start}). startPos: ${startPos}`
+    )
+  }
+
   const titleHMap = []
 
-  if (from < start)
-    throw new Error(
-      `[Heading]: position is invalid 'from[${from}] < start[${start}]', startPos[${startPos}] `
-    )
   try {
     tr.doc.nodesBetween(start, from, function (node, pos) {
       if (startPos > 0 && pos < startPos) return
@@ -31,18 +35,20 @@ export const getPrevHeadingList = (tr, start, from, startPos = 0) => {
       }
     })
   } catch (error) {
-    console.error('[Heading]: getPrevHeadingList', error, { tr, start, from })
-    // return Slice.empty
+    console.error('[Heading]: Error in getPrevHeadingList', error, { tr, start, from })
   }
+
   return titleHMap
 }
 
 /**
- *
- * @param {Object} doc prosemirror doc
- * @param {Number} start start pos
- * @param {Number} end end pos
- * @returns Array of Selection Block
+ * Get selection blocks from a Prosemirror document.
+ * @param {Object} doc - Prosemirror document
+ * @param {Number} start - Start position
+ * @param {Number} end - End position
+ * @param {Boolean} [includeContentHeading=false] - Whether to include content heading
+ * @param {Boolean} [range=false] - Whether to use range or nodesBetween
+ * @returns {Array} Array of selection blocks
  */
 export const getSelectionBlocks = (
   doc,
@@ -51,65 +57,20 @@ export const getSelectionBlocks = (
   includeContentHeading = false,
   range = false
 ) => {
-  const firstHEading = true
   const selectedContents = []
+  const processNode = (node, pos, parent) => {
+    const depth = doc.resolve(pos).depth
+    const isContentWrapper = parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
+    const isContentHeading = node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE
 
-  if (range) {
-    doc.descendants(function (node, pos, parent) {
-      if (
-        firstHEading &&
-        node.type.name !== ENUMS.NODES.HEADING_TYPE &&
-        parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
-      ) {
-        const depth = doc.resolve(pos).depth
-
-        selectedContents.push({
-          depth,
-          startBlockPos: pos,
-          endBlockPos: pos + node.nodeSize,
-          ...node.toJSON()
-        })
-      }
-
-      if (node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
-        const depth = doc.resolve(pos).depth
-
-        selectedContents.push({
-          depth,
-          level: node.attrs?.level,
-          attrs: includeContentHeading ? node.attrs : {},
-          startBlockPos: pos,
-          endBlockPos: pos + node.nodeSize,
-          type: includeContentHeading ? node.type.name : ENUMS.NODES.PARAGRAPH_TYPE,
-          content: node.toJSON().content
-        })
-      }
-    })
-
-    return selectedContents
-  }
-
-  doc.nodesBetween(start, end, function (node, pos, parent) {
-    if (pos < start) return
-
-    if (
-      firstHEading &&
-      node.type.name !== ENUMS.NODES.HEADING_TYPE &&
-      parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
-    ) {
-      const depth = doc.resolve(pos).depth
-
+    if (isContentWrapper && node.type.name !== ENUMS.NODES.HEADING_TYPE) {
       selectedContents.push({
         depth,
         startBlockPos: pos,
         endBlockPos: pos + node.nodeSize,
         ...node.toJSON()
       })
-    }
-
-    if (node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
-      const depth = doc.resolve(pos).depth
-
+    } else if (isContentHeading) {
       selectedContents.push({
         depth,
         level: node.attrs?.level,
@@ -120,36 +81,39 @@ export const getSelectionBlocks = (
         content: node.toJSON().content
       })
     }
-  })
+  }
+
+  if (range) {
+    doc.descendants(processNode)
+  } else {
+    doc.nodesBetween(start, end, (node, pos, parent) => {
+      if (pos >= start) {
+        processNode(node, pos, parent)
+      }
+    })
+  }
 
   return selectedContents
 }
 
 export const getSelectionRangeBlocks = (doc, start, end, includeContentHeading = false) => {
-  const firstHEading = true
   const selectedContents = []
 
-  doc.nodesBetween(start, end, function (node, pos, parent) {
-    if (
-      node.isBlock &&
-      node.type.name !== ENUMS.NODES.HEADING_TYPE &&
-      parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
-    ) {
-      const depth = doc.resolve(pos).depth
+  const processNode = (node, pos, parent) => {
+    if (!node.isBlock) return
+    const isContentWrapper = parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
+    const isContentHeading = node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE
 
+    if (node.type.name !== ENUMS.NODES.HEADING_TYPE && isContentWrapper) {
       selectedContents.push({
-        depth,
+        depth: doc.resolve(pos).depth,
         startBlockPos: pos,
         endBlockPos: pos + node.nodeSize,
         ...node.toJSON()
       })
-    }
-
-    if (node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
-      const depth = doc.resolve(pos).depth
-
+    } else if (isContentHeading) {
       selectedContents.push({
-        depth,
+        depth: doc.resolve(pos).depth,
         level: node.attrs?.level,
         attrs: includeContentHeading ? node.attrs : {},
         startBlockPos: pos,
@@ -158,7 +122,9 @@ export const getSelectionRangeBlocks = (doc, start, end, includeContentHeading =
         content: node.toJSON().content
       })
     }
-  })
+  }
+
+  doc.nodesBetween(start, end, processNode)
 
   return selectedContents
 }
@@ -175,24 +141,20 @@ export const getRangeBlocks = (doc, start, end) => {
   let prevDepth = 0
   const selectedContents = []
 
-  doc.nodesBetween(start, end, function (node, pos, parent) {
+  doc.nodesBetween(start, end, (node, pos, parent) => {
     if (pos < start) return
 
-    if (
-      firstHEading &&
-      node.type.name !== ENUMS.NODES.HEADING_TYPE &&
-      parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
-    ) {
-      const depth = doc.resolve(pos).depth
+    const nodeType = node.type.name
+    const isContentWrapper = parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
 
+    if (firstHEading && nodeType !== ENUMS.NODES.HEADING_TYPE && isContentWrapper) {
       selectedContents.push({
-        depth,
+        depth: doc.resolve(pos).depth,
         startBlockPos: pos,
         endBlockPos: pos + node.nodeSize,
         ...node.toJSON()
       })
-    }
-    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
+    } else if (nodeType === ENUMS.NODES.HEADING_TYPE) {
       firstHEading = false
       const headingLevel = node.firstChild?.attrs?.level
       const depth = doc.resolve(pos).depth
@@ -200,6 +162,8 @@ export const getRangeBlocks = (doc, start, end) => {
       if (prevDepth === 0) prevDepth = depth
 
       if (prevDepth >= depth) {
+        prevDepth = depth
+
         selectedContents.push({
           le: headingLevel,
           depth,
@@ -207,7 +171,6 @@ export const getRangeBlocks = (doc, start, end) => {
           endBlockPos: pos + node.nodeSize,
           ...node.toJSON()
         })
-        prevDepth = depth
       }
     }
   })
@@ -338,15 +301,17 @@ export const getPrevHeadingPos = (doc, startPos, endPos) => {
  *   - shouldNested: A boolean value indicating whether the block should be nested or not.
  */
 export const findPrevBlock = (mapHPost, headingLevel) => {
-  const prevBlockEqual = mapHPost.findLast((x) => x.le === headingLevel)
-  const prevBlockGreaterFromFirst = mapHPost.find((x) => x.le >= headingLevel)
-  const prevBlockGreaterFromLast = mapHPost.findLast((x) => x.le <= headingLevel)
-  const lastBlock = mapHPost.at(-1)
+  if (mapHPost.length === 0) {
+    console.error('[Heading][findPrevBlock] no mapHPost')
+    return { prevBlock: null, shouldNested: false }
+  }
 
-  let prevBlock = prevBlockEqual || prevBlockGreaterFromLast || prevBlockGreaterFromFirst
+  // Find the last block with a level less than or equal to the heading level
+  const prevBlock = mapHPost.findLast((x) => x.le <= headingLevel)
 
-  if (lastBlock?.le <= headingLevel) {
-    prevBlock = lastBlock
+  if (!prevBlock) {
+    // If no suitable block found, return the first block
+    return { prevBlock: mapHPost[0], shouldNested: true }
   }
 
   const shouldNested = prevBlock.le < headingLevel
@@ -399,6 +364,7 @@ export const extractParagraphsAndHeadings = (clipboardContents) => {
   return [paragraphs, headings]
 }
 
+// TODO: range of node number must be reconsidered, it has long range for iteration
 export const insertRemainingHeadings = ({
   state,
   tr,
@@ -407,6 +373,11 @@ export const insertRemainingHeadings = ({
   titleEndPos,
   prevHStartPos
 }) => {
+  if (!headings.length) {
+    console.info('[Heading][insertRemainingHeadings] no headings to insert')
+    return false
+  }
+
   let mapHPost = getHeadingsBlocksMap(tr.doc, titleStartPos, titleEndPos)
 
   // if the first heading is not h1, then we need to filter the mapHPost to only include headings that are before the current selection
@@ -421,20 +392,20 @@ export const insertRemainingHeadings = ({
     mapHPost = getPrevHeadingList(
       tr,
       mapHPost.at(0).startBlockPos,
-      headings.at(0).le === 1
+      mapHPost.length === 1 && mapHPost.at(0).le === 1
         ? mapHPost.at(0).endBlockPos
         : tr.mapping.map(mapHPost.at(0).endBlockPos)
     )
 
-    mapHPost = mapHPost.filter(
-      (x) => x.startBlockPos < heading.startBlockPos && x.startBlockPos >= prevHStartPos
-    )
+    const prevHBlock = getPrevHeadingPos(tr.doc, titleStartPos, tr.mapping.map(titleEndPos))
+
+    mapHPost = mapHPost.filter((x) => x.startBlockPos >= prevHBlock.prevHStartPos)
 
     const { prevBlock, shouldNested } = findPrevBlock(mapHPost, commingLevel)
 
-    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), state.schema.nodeFromJSON(heading))
-    // update the prevHStartPos in order to narrow down the mapHpost
-    prevHStartPos = prevBlock.startBlockPos
+    const node = state.schema.nodeFromJSON(heading)
+
+    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
   }
 
   return true
@@ -467,12 +438,14 @@ export const createHeadingNodeFromSelection = (
   const headings = []
 
   const { selection } = state
-  const { $anchor, $head } = selection
+  const { $anchor, $head, $from, $to } = selection
+  const isMultipleSelection = $anchor.pos !== $head.pos
 
   // if selection
-  if ($anchor.pos !== $head.pos) {
+  if (isMultipleSelection) {
     const mResolve = doc.resolve(start)
-    let newStart = start - mResolve.parentOffset
+
+    let { start: newStart } = $from.blockRange($to)
 
     let contentWrapperPos = mResolve.pos
     while (contentWrapperPos > 0) {
@@ -492,6 +465,11 @@ export const createHeadingNodeFromSelection = (
         newStart = parentPos
       }
     }
+
+    //  const isContentWrapper = parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
+    //  const isHeading = node.type.name === ENUMS.NODES.HEADING_TYPE
+
+    //  if (!isContentWrapper && isHeading) return
 
     doc.nodesBetween(
       newStart,
@@ -595,20 +573,20 @@ export const getSelectionTextNode = (state) => {
  * @param {Number} end end pos
  * @returns Array of Selection Block
  */
-export const getSelectionRangeSlice = (doc, start, end) => {
+export const getSelectionRangeSlice = (doc, state, start, end) => {
   let firstHEading = true
   let prevDepth = 0
   const selectedContents = []
-  const mResolve = doc.resolve(start)
+  const sResolve = doc.resolve(start)
 
-  if (mResolve.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+  if (sResolve.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
     // TODO: handle this case later
     throw new Error('Selection starts within a content heading')
   }
 
-  let newStart = start - mResolve.parentOffset
+  let newStart = start - sResolve.parentOffset
 
-  let contentWrapperPos = mResolve.pos
+  let contentWrapperPos = sResolve.pos
   while (contentWrapperPos > 0) {
     const node = doc.nodeAt(contentWrapperPos)
     if (node && node.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
@@ -629,32 +607,22 @@ export const getSelectionRangeSlice = (doc, start, end) => {
 
   doc.nodesBetween(newStart, end, function (node, pos, parent, index) {
     if (pos < contentWrapperPos) return
+    if (!node.isBlock) return
 
-    if (
-      firstHEading &&
-      node.isBlock &&
-      parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE &&
-      node.type.name !== ENUMS.NODES.HEADING_TYPE
-    ) {
-      const resolve = doc.resolve(pos)
+    const isContentWrapper = parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
+    const nodeType = node.type.name
 
-      // Prepare the content object to be pushed into selectedContents
+    if (firstHEading && isContentWrapper && nodeType !== ENUMS.NODES.HEADING_TYPE) {
       let contentObject = {
-        // resolve,
-        depth: resolve.depth,
+        depth: doc.resolve(pos).depth,
         startBlockPos: pos,
         endBlockPos: pos + node.nodeSize,
-        index,
         node,
         ...node.toJSON()
       }
 
-      // Add the prepared content object to selectedContents
       selectedContents.push(contentObject)
-
-      // Log for debugging purposes
-    }
-    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
+    } else if (nodeType === ENUMS.NODES.HEADING_TYPE) {
       firstHEading = false
       const headingLevel = node.firstChild?.attrs?.level
       const depth = doc.resolve(pos).depth
@@ -662,6 +630,8 @@ export const getSelectionRangeSlice = (doc, start, end) => {
       if (prevDepth === 0) prevDepth = depth
 
       if (prevDepth >= depth) {
+        prevDepth = depth
+
         selectedContents.push({
           le: headingLevel,
           depth,
@@ -669,17 +639,16 @@ export const getSelectionRangeSlice = (doc, start, end) => {
           endBlockPos: pos + node.nodeSize,
           ...node.toJSON()
         })
-        prevDepth = depth
       }
     }
   })
 
-  if (mResolve.parentOffset > 0) {
+  if (sResolve.parentOffset > 0) {
     let firstNode = selectedContents.at(0)
-    const newposfor = newStart + mResolve.parentOffset
+    const newposfor = newStart + sResolve.parentOffset
     const newContent = firstNode.node.cut(newposfor - firstNode.startBlockPos)
-    selectedContents[0].content = newContent.content.toJSON()
-    selectedContents[0].startBlockPos = newStart
+    selectedContents.at(0).content = newContent.content.toJSON()
+    selectedContents.at(0).startBlockPos = newStart
   }
 
   return selectedContents

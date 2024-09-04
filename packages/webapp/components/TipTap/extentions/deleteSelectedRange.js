@@ -84,10 +84,11 @@ const deleteSelectedRange = (editor) => {
   const titleEndPos = $to.end(1)
   const fromOffset = from - ($anchor?.textOffset || 0)
   const toOffset = to - ($head?.textOffset || 0)
+
   try {
-    const titleSelectionRange = getSelectionRangeSlice(doc, to, titleEndPos)
+    const titleSelectionRange = getSelectionRangeSlice(doc, state, to, titleEndPos)
     const selectedContents = getSelectionRangeBlocks(doc, fromOffset, toOffset)
-    const restSelectionContents = getSelectionRangeSlice(doc, to, titleEndPos)
+    const restSelectionContents = getSelectionRangeSlice(doc, state, to, titleEndPos)
 
     const paragraphs = restSelectionContents.filter(
       (node) => node.type !== ENUMS.NODES.HEADING_TYPE
