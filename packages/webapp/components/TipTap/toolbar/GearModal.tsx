@@ -1,6 +1,5 @@
-import React, { useState, useEffect, ChangeEvent, ChangeEventHandler } from 'react'
+import React, { useState, useEffect, ChangeEvent } from 'react'
 import TextAreaOvelapLabel from '@components/ui/TextAreaOvelapLabel'
-import InputTags from '@components/ui/InputTags'
 import Button from '@components/ui/Button'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import toast from 'react-hot-toast'
@@ -12,8 +11,11 @@ import {
 import Toggle from '@components/ui/Toggle'
 import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
-import { PopoverContent } from '@components/ui/Popover'
 import { useAuthStore, useStore } from '@stores'
+import { Gear } from '@icons'
+import { TagsInput } from 'react-tag-input-component'
+import { TbPageBreak } from 'react-icons/tb'
+import { HiOutlineDocumentText } from 'react-icons/hi'
 
 const ToggleSection = ({ name, className, description, value, checked, onChange }: any) => {
   const containerClasses = twMerge(`flex flex-col p-2 antialiased `, className)
@@ -67,7 +69,7 @@ const GearModal = ({ className }: any) => {
     })
   }
 
-  const handleTagsChange = (newTags: string) => {
+  const handleTagsChange = (newTags: string[]) => {
     setTags(newTags)
   }
 
@@ -106,7 +108,7 @@ const GearModal = ({ className }: any) => {
     const { full_name, username } = docMetadata.ownerProfile
 
     return (
-      <div className="mt-2  rounded-md border p-2 antialiased">
+      <div className="mt-2 rounded-md border p-2 antialiased">
         <p className="font-bold">Document Owner: </p>
 
         <div className="flex items-center justify-between align-baseline">
@@ -136,7 +138,7 @@ const GearModal = ({ className }: any) => {
           />
         </div>
         {user?.id === docMetadata?.ownerId && (
-          <div className="mt-4 border-t ">
+          <div className="mt-4 border-t">
             <ToggleSection
               name="Read-only"
               description="Enable to make document read-only"
@@ -150,50 +152,90 @@ const GearModal = ({ className }: any) => {
   }
 
   return (
-    <div className={twMerge('gearModal text-neutral ', className)}>
-      <div className="max-w-md">
-        <p className="pb-1 font-medium">Settings:</p>
-        <hr />
-        {docMetadata.ownerProfile && isAuthServiceAvailable && (
-          <div>
-            <OwnerProfile />
-          </div>
-        )}
-        <div className="content flex flex-col !items-end pt-5">
-          <TextAreaOvelapLabel
-            label="Document Description"
-            value={docDescription}
-            onChange={(e: ChangeEvent<HTMLInputElement>) => setDocDescription(e.target.value)}
-            className="w-full"
-          />
-          <div className=" mt-4 w-full">
-            <InputTags
-              label="Document Keywords"
-              placeholder="Type keyword..."
-              onChangeTags={handleTagsChange}
-              defaultTags={tags}></InputTags>
-          </div>
-          <Button
-            loading={formTargetHandler === 'description' && isLoading}
-            className="btn-primary btn-sm btn-block mt-4 text-white"
-            onClick={saveDescriptionHandler}>
-            Save
-          </Button>
+    <div className={twMerge('gearModal text-neutral', className)}>
+      <div className="mb-4 flex items-center align-middle">
+        <div>
+          <p className="m-0 flex items-center space-x-1 font-semibold">
+            <Gear size={18} className="ml-1 mr-1" fill="rgba(42,42,42)" />
+            <span>Settings</span>
+          </p>
+          <small className="pl-1 text-gray-400">Document settings and preferences</small>
         </div>
-        <hr className="my-2" />
+      </div>
 
-        <ToggleSection
-          name="Heading Indentation"
-          description="Turn on to indent headings for better readability"
-          checked={indentSetting}
-          onChange={toggleIndentSetting}
-        />
-        <ToggleSection
-          name="H1 Section Break"
-          description="Enable to insert a break after H1 headings for clear separation"
-          checked={h1SectionBreakSetting}
-          onChange={toggleH1SectionBreakSetting}
-        />
+      <div className="collapse collapse-arrow bg-base-200">
+        <input type="radio" className="peer" name="gear-pear" />
+        <div className="collapse-title flex items-center p-0 text-sm font-semibold">
+          <TbPageBreak className="mx-2 ml-3" size={18} />
+          Page Preferences
+        </div>
+        <div className="collapse-content !pb-0">
+          <div className="card-body p-0">
+            <ToggleSection
+              name="Heading Indentation"
+              description="Turn on to indent headings for better readability"
+              checked={indentSetting}
+              onChange={toggleIndentSetting}
+            />
+            <ToggleSection
+              name="H1 Section Break"
+              description="Enable to insert a break after H1 headings for clear separation"
+              checked={h1SectionBreakSetting}
+              onChange={toggleH1SectionBreakSetting}
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="collapse collapse-arrow mt-3 bg-base-300">
+        <input type="radio" className="peer" name="gear-pear" defaultChecked />
+        <div className="collapse-title flex items-center p-0 text-sm font-semibold">
+          <HiOutlineDocumentText className="mx-2 ml-3" size={18} />
+          Document Preferences
+        </div>
+        <div className="collapse-content !pb-0">
+          <div className="card-body p-0 pb-2">
+            <div className="">
+              <label htmlFor="docDescription" className="mb-1 block text-sm font-medium">
+                Description
+              </label>
+              <textarea
+                id="docDescription"
+                className="textarea textarea-bordered w-full"
+                value={docDescription}
+                onChange={(e) => setDocDescription(e.target.value)}
+                placeholder="Enter document description..."></textarea>
+            </div>
+            <div>
+              <label htmlFor="docKeywords" className="mb-1 block text-sm font-medium">
+                Keywords
+              </label>
+              <span className="documentKeywordTnput">
+                <TagsInput
+                  value={tags}
+                  onChange={handleTagsChange}
+                  name="tags"
+                  placeHolder="Type keyword..."
+                />
+              </span>
+            </div>
+            <div className="mt-4 flex justify-end">
+              <Button
+                loading={formTargetHandler === 'description' && isLoading}
+                className="bg btn btn-neutral btn-sm"
+                onClick={saveDescriptionHandler}>
+                Save Preferences
+              </Button>
+            </div>
+          </div>
+          <div className="max-w-md">
+            {docMetadata.ownerProfile && isAuthServiceAvailable && (
+              <div>
+                <OwnerProfile />
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   )
