@@ -187,7 +187,7 @@ const GearModal = ({ className }: any) => {
         </div>
       </div>
 
-      <div className="collapse collapse-arrow mt-3 bg-base-300">
+      <div className="collapse collapse-arrow mt-3 bg-base-200">
         <input type="radio" className="peer" name="gear-pear" defaultChecked />
         <div className="collapse-title flex items-center p-0 text-sm font-semibold">
           <HiOutlineDocumentText className="mx-2 ml-3" size={18} />
