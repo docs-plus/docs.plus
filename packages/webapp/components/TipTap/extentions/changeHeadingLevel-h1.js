@@ -17,6 +17,11 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
 
   console.info('[Heading]: change heading Level h1')
 
+  if (start === 1 && $from.pos - $from.parentOffset === 2) {
+    console.info('[Heading]: The first heading cannot be changed to a lower heading level')
+    return true
+  }
+
   const comingLevel = attributes.level
   const block = createThisBlockMap(state)
   const currentHLevel = $from.doc.nodeAt(block.start).attrs.level
