@@ -3,6 +3,7 @@ import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
 import { useStore } from '@stores'
 // import { broadcastDocTitle } from '@api'
 import * as toast from '@components/toast'
+import DOMPurify from 'dompurify'
 
 const DocTitle = ({ className }: any) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
@@ -23,6 +24,22 @@ const DocTitle = ({ className }: any) => {
       title: e.target.innerText,
       documentId: docMetadata.documentId
     })
+  }
+
+  const handlePaste = (e: any) => {
+    e.preventDefault()
+    const text = e.clipboardData.getData('text/plain')
+    const sanitizedText = DOMPurify.sanitize(text)
+    const selection = window.getSelection()
+    if (!selection?.rangeCount) return
+    selection.deleteFromDocument()
+    selection.getRangeAt(0).insertNode(document.createTextNode(sanitizedText))
+    selection.collapseToEnd()
+  }
+
+  const handleInput = (e: any) => {
+    const sanitizedContent = DOMPurify.sanitize(e.target.innerHTML)
+    e.target.innerHTML = sanitizedContent
   }
 
   useEffect(() => {
@@ -60,7 +77,9 @@ const DocTitle = ({ className }: any) => {
           if (e.key === 'Enter') {
             e.preventDefault()
           }
-        }}></div>
+        }}
+        onPaste={handlePaste}
+        onInput={handleInput}></div>
     </div>
   )
 }
