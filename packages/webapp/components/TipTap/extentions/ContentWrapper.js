@@ -279,6 +279,13 @@ const ContentWrapper = Node.create({
         // if we have selection, node range || multiple lines block
         if ($anchor.pos !== $head.pos) {
           console.info('[Heading][Backspace]: Delete selected range')
+          // Check if both $anchor and $head parents are content headings
+          if (
+            $anchor.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE &&
+            $head.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE
+          ) {
+            return false
+          }
           return deleteSelectedRange(editor)
         }
 
