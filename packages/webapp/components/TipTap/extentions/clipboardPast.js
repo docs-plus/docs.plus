@@ -121,21 +121,11 @@ const clipboardPaste = (slice, editor) => {
   if ($from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
     //TODO: handle this case later
     console.error('[Heading] Selection starts within a content heading. Cannot transform.')
-    return Slice.empty
-  }
-
-  // If the user's cursor is in the heading, move the cursor to the contentWrapper and adjust the selection
-  if ($from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
-    const contentWrapperPos = $to.end($to.depth) + 1
-    from = contentWrapperPos
-    to = contentWrapperPos
-    $from = $from.doc.resolve(from)
-    $to = $to.doc.resolve(to)
-    selection = TextSelection.create(tr.doc, from, to)
+    return slice.content.content.length === 1 ? slice : Slice.empty
   }
 
   // Get the slice of content within the selection range
-  const contentWrapper = getSelectionRangeSlice(doc, state, from, titleEndPos)
+  const contentWrapper = getSelectionRangeSlice(tr.doc, state, from, titleEndPos)
   const clipboardContentJson = slice.toJSON().content
 
   // Extract paragraphs and headings from the clipboard content
@@ -168,7 +158,7 @@ const clipboardPaste = (slice, editor) => {
     endBlockPos: tr.mapping.map(titleEndPos)
   }
 
-  let { prevHStartPos } = getPrevHeadingPos(doc, titleStartPos, from)
+  let { prevHStartPos } = getPrevHeadingPos(tr.doc, titleStartPos, from)
 
   try {
     // Insert headings into the transaction
