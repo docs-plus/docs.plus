@@ -5,6 +5,7 @@ import { getNodeState } from './helper.js'
 import PubSub from 'pubsub-js'
 import ENUMS from '../enums.js'
 import deleteSelectedRange from './deleteSelectedRange.js'
+import { TextSelection } from '@tiptap/pm/state'
 
 function extractContentWrapperBlocks(doc) {
   const result = []
@@ -271,7 +272,7 @@ const ContentWrapper = Node.create({
       //TODO: refactor needed
       Backspace: () => {
         const { editor } = this
-        const { schema, selection } = editor.state
+        const { schema, selection, tr } = editor.state
         const { $anchor, $from, $head, $to } = selection
         const blockRange = $from.blockRange($to)
 
@@ -282,7 +283,7 @@ const ContentWrapper = Node.create({
         }
 
         // If backspace hit not at the start of the node, do nothing
-        // TODO: Revise this condition
+        // TODO: Revise this condition, maybe it's better to use "textOffset"
         if ($anchor.parentOffset !== 0) return false
 
         const contentWrapper = $anchor.doc?.nodeAt($from?.before(blockRange.depth))
@@ -305,22 +306,31 @@ const ContentWrapper = Node.create({
           if ($anchor.nodeBefore === null) {
             // If there's a text node following the current node
             if ($anchor.nodeAfter?.type.name === ENUMS.NODES.TEXT_TYPE) {
+              const paragraphContent = $anchor.path
+                .findLast((node) => node?.type?.name === ENUMS.NODES.PARAGRAPH_TYPE)
+                .content.toJSON()
+
+              // Filter out the "hardBreak" nodes from the paragraph content
+              const filteredContent = paragraphContent.filter(
+                (node) => node.type.name !== 'hardBreak'
+              )
+
               const cloneCurrentNodeAsParagraph = {
                 type: ENUMS.NODES.PARAGRAPH_TYPE,
-                content: $anchor.path
-                  .findLast((node) => node?.type?.name === ENUMS.NODES.PARAGRAPH_TYPE)
-                  .content.toJSON()
+                content: filteredContent
               }
 
-              // Delete the current node, move the cursor to the end of the previous node (the heading),
-              // insert the cloned text node there, and focus the cursor there
-              return this.editor
-                .chain()
-                .deleteRange({ from: blockRange.start, to: blockRange.end })
-                .setTextSelection(blockRange.start - 2)
-                .insertContent(cloneCurrentNodeAsParagraph)
-                .scrollIntoView()
-                .run()
+              const newNode = editor.state.schema.nodeFromJSON(cloneCurrentNodeAsParagraph)
+
+              tr.delete(blockRange.start, blockRange.end)
+
+              // we can not append block node to contentHeading node, so we just append the inline node
+              tr.insert(blockRange.start - 2, newNode.content)
+
+              const newSelection = new TextSelection(tr.doc.resolve(blockRange.start - 2))
+              tr.setSelection(newSelection)
+
+              return editor.view.dispatch(tr)
             } else {
               // If no text node is following, just delete the current node and move the cursor to the end of the heading
               return this.editor
