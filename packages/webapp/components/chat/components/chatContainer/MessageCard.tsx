@@ -10,6 +10,8 @@ import MessageHeader from './MessageHeader'
 import MessageContent from './MessageContent'
 import { isOnlyEmoji } from '@utils/index'
 import { useChannel } from '../../context/ChannelProvider'
+import { MsgComment } from './MsgComment'
+import { MsgReplyTo } from './MsgReplyTo'
 
 type TMessageCardProps = {
   data: TMessageWithUser
@@ -91,14 +93,19 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
 
       {isOnlyEmoji(data?.content) ? (
         <div className="mb-4 min-w-full max-w-[70%]">
+          {data.reply_to_message_id && <MsgReplyTo data={data} />}
+
           <MessageContent data={data} />
           <MessageFooter data={data} />
         </div>
       ) : (
         <div
-          className={`chat-bubble !mt-0 flex w-full flex-col text-base-content ${ownerMsg ? ' bg-bg-chatBubble-owner ' : 'bg-white  drop-shadow'} ${
+          className={`chat-bubble !mt-0 flex w-full flex-col px-2 text-base-content ${ownerMsg ? 'bg-bg-chatBubble-owner' : 'bg-white drop-shadow'} ${
             isGroupEnd ? 'bubble_group-end' : 'bubble_group-start !rounded-ee-xl !rounded-es-xl'
           }`}>
+          {data.metadata?.comment && <MsgComment data={data} />}
+          {data.reply_to_message_id && <MsgReplyTo data={data} />}
+
           <MessageContent data={data} />
           <MessageFooter data={data} />
         </div>

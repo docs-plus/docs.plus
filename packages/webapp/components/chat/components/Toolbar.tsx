@@ -20,6 +20,9 @@ const Toolbar = () => {
   const usersPresence = useStore((state) => state.usersPresence)
   const [presentUsers, setPresentUsers] = useState<any>([])
   const chatRoom = useChatStore((state) => state.chatRoom)
+  const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
+  const setCommentMessageMemory = useChatStore((state) => state.setCommentMessageMemory)
+  const setEditMessageMemory = useChatStore((state) => state.setEditMessageMemory)
   // const channel = useChatStore((state: any) => state.channels.get(channelId))
 
   useEffect(() => {
@@ -33,11 +36,18 @@ const Toolbar = () => {
   }, [usersPresence, chatRoom])
 
   const handelCloseChatRoom = () => {
+    // clear reply, comment, edit message memory
+    if (chatRoom?.headingId) {
+      setReplayMessageMemory(chatRoom.headingId, null)
+      setCommentMessageMemory(chatRoom.headingId, null)
+      setEditMessageMemory(chatRoom.headingId, null)
+    }
+
     destroyChatRoom()
   }
 
   return (
-    <div className="relative z-50 flex w-full items-center border-b border-gray-200 bg-white p-2 ">
+    <div className="relative z-50 flex w-full items-center border-b border-gray-200 bg-white p-2">
       <div className="px-1">
         <Breadcrumb />
         {/* <div className="flex items-center justify-start space-x-2 ">

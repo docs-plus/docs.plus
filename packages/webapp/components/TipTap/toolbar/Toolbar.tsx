@@ -1,5 +1,5 @@
 import dynamic from 'next/dynamic'
-import React, { useState } from 'react'
+import React, { useCallback, useState } from 'react'
 import { Link, Gear, ClearMark, Filter, Folder } from '@icons'
 import ToolbarButton from './ToolbarButton'
 import Icon from './Icon'
@@ -11,6 +11,10 @@ import Dropdown from '@components/ui/Dropdown'
 import Loading from '@components/ui/Loading'
 import Modal from '@components/ui/Modal'
 import ToolbarSkeleton from './ToolbarSkeleton'
+import { MdAddComment } from 'react-icons/md'
+import { Editor } from '@tiptap/core'
+import PubSub from 'pubsub-js'
+import { CHAT_COMMENT } from '@services/eventsHub'
 
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
   loading: () => <Loading />
@@ -41,6 +45,39 @@ const Toolbar = () => {
   } = useStore((state) => state.settings)
   const { isAuthServiceAvailable } = useStore((state) => state.settings)
   const [isModalOpen, setModalOpen] = useState(false)
+
+  const createComment = useCallback((editor: Editor) => {
+    const { selection } = editor.view.state
+
+    // if no selection, do nothing
+    if (selection.empty) return
+    // TODO: check for higher heading node
+    let headingNode = null
+    let depth = selection.$from.depth
+    while (depth > 0) {
+      const node = selection.$from.node(depth)
+      if (node.type.name.startsWith('heading')) {
+        headingNode = node
+        break
+      }
+      depth--
+    }
+    const headingId = headingNode?.attrs.id
+
+    if (!headingId) {
+      console.error('[chatComment]: No headingId found')
+      return
+    }
+
+    const selectedText = editor.state.doc.textBetween(selection.from, selection.to, '\n')
+    const selectedHtml = '' //editor.view.dom.innerHTML.slice(selection.from, selection.to)
+
+    PubSub.publish(CHAT_COMMENT, {
+      content: selectedText,
+      html: selectedHtml,
+      headingId
+    })
+  }, [])
 
   // TODO: skeleton loading
   if (loading || rendering || !editor) return <ToolbarSkeleton />
@@ -121,6 +158,14 @@ const Toolbar = () => {
         <div className="divided"></div>
 
         <InsertMultimediaButton />
+
+        <ToolbarButton
+          onClick={() => createComment(editor)}
+          editor={editor}
+          tooltip="comment (⌘+Option+M)"
+          type="chatComment">
+          <MdAddComment fill="rgba(0,0,0,.7)" size={18} />
+        </ToolbarButton>
 
         <ToolbarButton
           onClick={() => editor.chain().focus().setHyperlink().run()}

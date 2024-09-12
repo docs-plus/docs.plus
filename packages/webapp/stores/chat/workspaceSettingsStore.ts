@@ -8,6 +8,7 @@ type TChannelSettings = {
   isUserChannelAdmin?: boolean
   userPickingEmoji?: boolean
   replayMessageMemory?: any
+  commentMessageMemory?: any
   editMessageMemory?: any
   forwardMessageMemory?: any
   unreadMessage?: boolean
@@ -33,6 +34,7 @@ export interface IWorkspaceSettingsStore {
   setWorkspaceChannelSetting: (channelId: string, key: keyof TChannelSettings, value: any) => void
   setWorkspaceSetting: (key: keyof WorkspaceSettings, value: any) => void
   setWorkspaceSettings: (settings: WorkspaceSettings) => void
+  setCommentMessageMemory: (channelId: string, message: any) => void
   setReplayMessageMemory: (channelId: string, message: any) => void
   setEditMessageMemory: (channelId: string, message: any) => void
   setForwardMessageMemory: (channelId: string, message: any) => void
@@ -74,6 +76,10 @@ const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
     set((state) => {
       Object.assign(state.workspaceSettings, settings)
     })
+  },
+
+  setCommentMessageMemory: (channelId, message) => {
+    setMemory(set, 'commentMessageMemory', channelId, message)
   },
 
   setReplayMessageMemory: (channelId, message) => {
