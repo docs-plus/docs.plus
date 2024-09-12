@@ -4907,6 +4907,11 @@
   resolved "https://registry.yarnpkg.com/@types/prop-types/-/prop-types-15.7.12.tgz#12bb1e2be27293c1406acb6af1c3f3a1481d98c6"
   integrity sha512-5zvhXYtRNRluoE/jAp4GVsSduVUzNWKkOZrCDBWYtE7biZywwdC2AcEzg+cSMLFRfVgeAFqpfNabiPjxFddV1Q==
 
+"@types/pubsub-js@^1.8.6":
+  version "1.8.6"
+  resolved "https://registry.yarnpkg.com/@types/pubsub-js/-/pubsub-js-1.8.6.tgz#2492cca3a25431d29df8235f57ef5090e1b501b1"
+  integrity sha512-Kwug5cwV0paUDm/NfwDx1sp9xI0bGIvmWJjJWCU8NngkCCMt3EIC7oPDvb6fV7BR8kPpFyyBu4D11bda/2MdPA==
+
 "@types/react-dom@^18.3.0":
   version "18.3.0"
   resolved "https://registry.yarnpkg.com/@types/react-dom/-/react-dom-18.3.0.tgz#0cbc818755d87066ab6ca74fbedb2547d74a82b0"

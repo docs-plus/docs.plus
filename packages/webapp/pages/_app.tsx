@@ -1,4 +1,5 @@
 import Head from 'next/head'
+import { useEffect } from 'react'
 import { Toaster } from 'react-hot-toast'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { useOnAuthStateChange } from '@hooks/useOnAuthStateChange'
@@ -7,6 +8,7 @@ import { useInitialSteps } from '@hooks/useInitialSteps'
 import { useBroadcastListner } from '@hooks/useBroadcastListner'
 import useServiceWorker from '@hooks/useServiceWorker'
 import { useHandleUserStatus } from '@hooks/useHanelUserStatus'
+import { eventsHub } from '@services/eventsHub'
 
 import '../styles/styles.scss'
 import '../styles/globals.scss'
@@ -69,6 +71,9 @@ export default function MyApp({ Component, pageProps }: any) {
   useBroadcastListner()
   useHandleUserStatus()
   useInitialSteps(isMobileInitial)
+  useEffect(() => {
+    eventsHub()
+  }, [])
 
   return (
     <div id="root">

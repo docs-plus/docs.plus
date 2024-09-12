@@ -1,6 +1,5 @@
 import React from 'react'
 import { MsgForwardIndicator } from './MsgForwardIndicator'
-import { MsgReplyTo } from './MsgReplyTo'
 import { TMessageWithUser } from '@api'
 
 // Assuming TypeScript usage for better type safety
@@ -29,8 +28,6 @@ const MessageHeader: React.FC<{ data: TMessageWithUser; ownerMsg?: boolean }> = 
       )}
 
       <MsgForwardIndicator forwardMessageOrigin={forwardMessageOrigin} />
-
-      {data.reply_to_message_id && <MsgReplyTo data={data} />}
     </div>
   )
 }

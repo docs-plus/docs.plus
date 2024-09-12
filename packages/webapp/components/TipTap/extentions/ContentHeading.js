@@ -9,9 +9,8 @@ import onHeading from './normalText/onHeading'
 import PubSub from 'pubsub-js'
 import ENUMS from '../enums'
 import { ChatLeftSVG } from '@icons'
-import { useChatStore, useAuthStore, useStore } from '@stores'
-import * as toast from '@components/toast'
-import slugify from 'slugify'
+import { CHAT_OPEN } from '@services/eventsHub'
+
 let isProcessing = false
 
 // Helpers
@@ -73,56 +72,10 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
   btnChatBox.addEventListener('click', (e) => {
     e.preventDefault()
 
-    const { workspaceId } = useStore.getState().settings
-    const { headingId: opendHeadingId } = useChatStore.getState().chatRoom
-    const user = useAuthStore.getState().profile
-
-    const setChatRoom = useChatStore.getState().setChatRoom
-    const destroyChatRoom = useChatStore.getState().destroyChatRoom
-
-    const nodePos = editor.view.state.doc.resolve(from)
-
-    if (!user) {
-      toast.Info('Please login to use chat feature')
-      document.getElementById('btn_signin')?.click()
-      return
-    }
-
-    // toggle chatroom
-    if (headingId === opendHeadingId) {
-      return destroyChatRoom()
-    }
-
-    // destroyChatRoom()
-
-    const headingPath = nodePos.path
-      .filter((x) => x?.type?.name === ENUMS.NODES.HEADING_TYPE)
-      .map((x) => {
-        const text = x.firstChild.textContent.trim()
-        return { text, id: x.attrs.id }
-      })
-
-    const headingAddress = headingPath.map((x, index) => {
-      const prevHeadingPath = headingPath
-        .slice(0, index)
-        .map((x) => slugify(x.text, { lower: true, strict: true }))
-        .join('>')
-
-      const slugs = window.location.pathname.split('/').filter((x) => x)
-
-      const url = new URL(window.location.origin + `/${slugs?.at(0)}`)
-      url.searchParams.set('h', prevHeadingPath)
-      url.searchParams.set('id', x.id)
-
-      return {
-        ...x,
-        slug: slugify(x.text),
-        url: url.href
-      }
+    PubSub.publish(CHAT_OPEN, {
+      headingId
     })
 
-    // TODO: change naming => open chatroom
-    if (workspaceId) setChatRoom(headingId, workspaceId, headingAddress, user)
     editor
       .chain()
       .focus(from + node.nodeSize - 1)

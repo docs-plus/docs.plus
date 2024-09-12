@@ -8,7 +8,7 @@ import { IoSend } from 'react-icons/io5'
 import { MdFormatColorText } from 'react-icons/md'
 import { BsFillEmojiSmileFill } from 'react-icons/bs'
 import { useStore, useAuthStore, useChatStore } from '@stores'
-import { sendMessage, updateMessage, create_thread_message } from '@api'
+import { sendMessage, updateMessage, create_thread_message, sendCommentMessage } from '@api'
 import { useApi } from '@hooks/useApi'
 import { EditeMessageIndicator } from './EditeMessageIndicator'
 import { useTiptapEditor } from './Editor'
@@ -16,6 +16,7 @@ import { chunkHtmlContent } from '@utils/index'
 import { useChannel } from '../../context/ChannelProvider'
 import { messageInsert } from '../../hooks/listner/helpers'
 import * as toast from '@components/toast'
+import { CommentMessageIndicator } from './CommentMessageIndicator'
 
 type BtnIcon = React.ComponentProps<'button'> & {
   $active?: boolean
@@ -39,19 +40,23 @@ export default function SendMessage() {
   const [showEditorToolbar, setShowEditorToolbar] = useState(false)
   const setEditMessageMemory = useChatStore((state) => state.setEditMessageMemory)
   const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
+  const setCommentMessageMemory = useChatStore((state) => state.setCommentMessageMemory)
   const startThreadMessage = useChatStore((state) => state.startThreadMessage)
   const channels = useChatStore((state) => state.channels)
 
-  const user = useAuthStore((state: any) => state.profile)
-  const { workspaceId } = useChatStore((state: any) => state.workspaceSettings)
-  const channelSettings = useChatStore((state: any) =>
-    state.workspaceSettings.channels.get(channelId)
-  )
-  const { replayMessageMemory, editMessageMemory } = channelSettings || {}
+  const user = useAuthStore((state) => state.profile)
+  const { workspaceId } = useChatStore((state) => state.workspaceSettings)
+  const channelSettings = useChatStore((state) => state.workspaceSettings.channels.get(channelId))
+  const { replayMessageMemory, editMessageMemory, commentMessageMemory } = channelSettings || {}
 
   const setOrUpdateUserPresence = useChatStore((state: any) => state.setOrUpdateUserPresence)
   const usersPresence = useStore((state: any) => state.usersPresence)
   const { request: postRequestMessage, loading: postMsgLoading } = useApi(sendMessage, null, false)
+  const { request: commentRequestMessage, loading: commentMsgLoading } = useApi(
+    sendCommentMessage,
+    null,
+    false
+  )
   const { request: editeRequestMessage, loading: editMsgLoading } = useApi(
     updateMessage,
     null,
@@ -65,8 +70,8 @@ export default function SendMessage() {
   )
 
   const loading = useMemo(() => {
-    return postMsgLoading || editMsgLoading || postThreadMsgLoading
-  }, [postMsgLoading, editMsgLoading, postThreadMsgLoading])
+    return postMsgLoading || editMsgLoading || commentMsgLoading || postThreadMsgLoading
+  }, [postMsgLoading, editMsgLoading, commentMsgLoading, postThreadMsgLoading])
 
   const { editor, text, html } = useTiptapEditor({ loading })
 
@@ -88,7 +93,7 @@ export default function SendMessage() {
 
   const submit = useCallback(
     async (e: any) => {
-      if (!editor) return
+      if (!editor || !user) return
 
       e.preventDefault()
       editor.view.focus()
@@ -142,6 +147,11 @@ export default function SendMessage() {
             })
           } else if (editMessageMemory) {
             editeRequestMessage(text, html, messageId)
+          } else if (commentMessageMemory) {
+            commentRequestMessage(text, channelId, user.id, html, {
+              content: commentMessageMemory.content,
+              html: commentMessageMemory.html
+            })
           } else {
             messageInsert(fakemessage)
             // postRequestMessage(text, channelId, user.id, html, messageId)
@@ -157,6 +167,11 @@ export default function SendMessage() {
           const textChunk = textChunks[index]
           if (editMessageMemory) {
             editeRequestMessage(textChunk, htmlChunk, messageId)
+          } else if (commentMessageMemory) {
+            commentRequestMessage(textChunk, channelId, user.id, htmlChunk, {
+              content: commentMessageMemory.content,
+              html: commentMessageMemory.html
+            })
           } else {
             postRequestMessage(textChunk, channelId, user.id, htmlChunk, messageId)
           }
@@ -172,6 +187,7 @@ export default function SendMessage() {
         // if it has reply or forward message, clear it
         if (replayMessageMemory) setReplayMessageMemory(channelId, null)
         if (editMessageMemory) setEditMessageMemory(channelId, null)
+        if (commentMessageMemory) setCommentMessageMemory(channelId, null)
 
         document.dispatchEvent(new CustomEvent('messages:container:scroll:down'))
       }
@@ -195,6 +211,10 @@ export default function SendMessage() {
         if (replayMessageMemory) setReplayMessageMemory(channelId, null)
         if (editMessageMemory) {
           setEditMessageMemory(channelId, null)
+          editor?.commands.clearContent(true)
+        }
+        if (commentMessageMemory) {
+          setCommentMessageMemory(channelId, null)
           editor?.commands.clearContent(true)
         }
       }
@@ -239,12 +259,13 @@ export default function SendMessage() {
   if (!editor || !user) return null
 
   return (
-    <div className="flex w-full flex-col bg-base-200 p-1 px-2 pb-0 ">
+    <div className="flex w-full flex-col bg-base-200 p-1 px-2 pb-0">
+      <CommentMessageIndicator />
       <ReplayMessageIndicator />
       <EditeMessageIndicator />
       <EditorToolbar
         editor={editor}
-        className=" px-2"
+        className="px-2"
         style={{ display: showEditorToolbar ? 'flex' : 'none' }}
       />
 

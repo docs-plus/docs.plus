@@ -23,7 +23,8 @@
       "@types": ["types/supabase.ts"],
       "@api": ["api/index.ts"],
       "@toast": ["components/toast/index.ts"],
-      "@enum": ["components/TipTap/enums.js"]
+      "@enum": ["components/TipTap/enums.js"],
+      "@services/*": ["services/*"]
     },
     "allowJs": true,
     "skipLibCheck": true,

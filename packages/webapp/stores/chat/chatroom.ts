@@ -64,7 +64,8 @@ const chatRoom = immer<IChatroomStore>((set) => ({
     pannelHeight: 300,
     userPickingEmoji: undefined,
     replayMessageMemory: undefined,
-    editeMessageMemory: undefined
+    editeMessageMemory: undefined,
+    commentMessageMemory: undefined
   },
 
   updateChatRoom: (key, value) => {

@@ -7,6 +7,8 @@ import useProviderAwarness from './useProviderAwarness'
 import useEditorEditableState from './useEditorEditableState'
 import useEditorReadOnly from './useEditorReadOnly'
 import { useRouter } from 'next/router'
+import PubSub from 'pubsub-js'
+import { CHAT_OPEN } from '@services/eventsHub'
 
 const useEditorAndProvider = () => {
   const { slugs } = useRouter().query
@@ -32,12 +34,14 @@ const useEditorAndProvider = () => {
     if (!workspaceId) return
     // check if the url contain open_heading_chat
     const url = new URL(window.location.href)
-    const openHeadingChat = url.searchParams.get('open_heading_chat')
+    const openHeadingChatId = url.searchParams.get('open_heading_chat')
 
-    if (openHeadingChat && !editorSetting?.loading) {
+    if (openHeadingChatId && !editorSetting?.loading) {
       // TODO: we need beter flag rather than using setTimeout
       setTimeout(() => {
-        setChatRoom(openHeadingChat, workspaceId, [], user)
+        PubSub.publish(CHAT_OPEN, {
+          headingId: openHeadingChatId
+        })
       }, 800)
     }
   }, [editorSetting?.loading, slugs, workspaceId, user])
