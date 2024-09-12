@@ -65,6 +65,8 @@ import TableRow from '@tiptap/extension-table-row'
 
 import { Indent } from './extentions/indent'
 
+import ChatCommentExtension from './extentions/ChatCommentExtension'
+
 import {
   HyperMultimediaKit,
   imageModal,
@@ -262,6 +264,7 @@ const Editor = ({ provider, ydoc, spellcheck = false, user }: any): Partial<Edit
       Blockquote,
       TextAlign,
       Underline,
+      ChatCommentExtension,
       Hyperlink.configure({
         protocols: ['ftp', 'mailto'],
         hyperlinkOnPaste: false,
