@@ -25,7 +25,7 @@
 
   .tiptap,
   .editorWrapper,
-  .tipta__editor {
+  .tiptap__editor {
     width: 100%;
     height: auto;
     display: block;
@@ -42,7 +42,7 @@
     padding: 0;
   }
 
-  .tipta__editor {
+  .tiptap__editor {
     margin: auto;
     max-width: 100%;
   }
@@ -54,8 +54,8 @@
     padding: inherit;
   }
 
-  .heading[level="1"],
-  .heading[level="1"]:first-of-type {
+  .heading[level='1'],
+  .heading[level='1']:first-of-type {
     margin: inherit;
   }
 }
