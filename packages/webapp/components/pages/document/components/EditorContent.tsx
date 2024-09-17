@@ -41,7 +41,10 @@ const EditorContent = ({ className }: { className?: string }) => {
       <RenderLoader className={applyingFilters ? 'block' : 'hidden'} />
       <TiptapEditor
         ref={editorElement}
-        className={twMerge(`tipta__editor ${!applyingFilters ? 'block' : 'hidden'}`, className)}
+        className={twMerge(
+          `tipta__editor relative ${!applyingFilters ? 'block' : 'hidden'}`,
+          className
+        )}
         editor={editor}
       />
     </>

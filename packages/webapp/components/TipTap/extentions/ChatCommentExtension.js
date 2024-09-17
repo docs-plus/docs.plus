@@ -2,6 +2,32 @@ import { Extension } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import PubSub from 'pubsub-js'
 import { CHAT_COMMENT } from '@services/eventsHub'
+import { AddCommentMD } from '@icons'
+
+const createChatCommentButton = (view, selection) => {
+  const button = document.createElement('button')
+  button.innerHTML = AddCommentMD({ size: 22, fill: '#fff' })
+  button.classList.add('chat-comment-button')
+  button.addEventListener('click', () => {
+    openChatComment(view.state)
+  })
+
+  const { from } = selection
+  const { top: nodeTop } = view.coordsAtPos(from)
+
+  const editorElement = view.dom.closest('.tipta__editor')
+  const { top: editorTop } = editorElement.getBoundingClientRect()
+
+  const offsetTop = nodeTop - editorTop
+
+  button.style.position = 'absolute'
+  button.style.right = '12px'
+  button.style.top = `${offsetTop}px`
+
+  button.classList.add('btn', 'btn-circle', 'btn-primary', 'size-10')
+
+  view.dom.parentNode.appendChild(button)
+}
 
 const openChatComment = (state) => {
   const { selection } = state
@@ -50,6 +76,20 @@ const ChatCommentExtension = Extension.create({
               if (event.keyCode === 77 && event.altKey && event.metaKey) {
                 event.preventDefault()
                 openChatComment(view.state)
+              }
+              return false
+            },
+            mouseup: (view, event) => {
+              const { selection } = view.state
+              if (!selection.empty) {
+                createChatCommentButton(view, selection)
+              }
+              return false
+            },
+            mousedown: (view, event) => {
+              const button = view.dom.parentNode.querySelector('.chat-comment-button')
+              if (button) {
+                button.remove()
               }
               return false
             }
