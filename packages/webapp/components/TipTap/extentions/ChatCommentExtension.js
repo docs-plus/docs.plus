@@ -20,9 +20,16 @@ const createChatCommentButton = (view, selection) => {
 
   const offsetTop = nodeTop - editorTop
 
+  // Get the current node element height
+  const node = view.nodeDOM(from)
+  const nodeHeight = node ? node.offsetHeight : 0
+
+  // Adjust the button position to be centered vertically relative to the node
+  const adjustedTop = offsetTop + nodeHeight / 2 - 16
+
   button.style.position = 'absolute'
   button.style.right = '12px'
-  button.style.top = `${offsetTop}px`
+  button.style.top = `${Math.round(adjustedTop)}px`
 
   button.classList.add('btn', 'btn-circle', 'btn-primary', 'size-10')
 
