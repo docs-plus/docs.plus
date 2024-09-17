@@ -55,7 +55,7 @@ export const useScrollAndLoad = (
     const container = messageContainerRef.current as any
     if (!container) return
 
-    const lastInsertedMessageId = container.children.at(-1)?.msgId
+    const lastInsertedMessageId = container.children[container.children.length - 1]?.msgId
     const comingMessageBelongsToCurrentUser =
       messages.get(lastInsertedMessageId)?.user_id === user?.id
 
