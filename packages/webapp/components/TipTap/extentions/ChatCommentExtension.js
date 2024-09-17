@@ -15,7 +15,7 @@ const createChatCommentButton = (view, selection) => {
   const { from } = selection
   const { top: nodeTop } = view.coordsAtPos(from)
 
-  const editorElement = view.dom.closest('.tipta__editor')
+  const editorElement = view.dom.closest('.tiptap__editor')
   const { top: editorTop } = editorElement.getBoundingClientRect()
 
   const offsetTop = nodeTop - editorTop

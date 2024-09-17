@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef } from 'react'
 
 const RenderLoader = ({ className }: { className?: string }) => {
   return (
-    <div className={twMerge('ProseMirror tipta__editor', className)}>
+    <div className={twMerge('ProseMirror tiptap__editor', className)}>
       <DocumentSimpleLoader className="heading !h-auto" level="1" />
       <DocumentWithPictureLoader className="heading !h-auto" level="1" />
       <DocumentSimpleLoader className="heading !h-auto" level="1" />
@@ -42,7 +42,7 @@ const EditorContent = ({ className }: { className?: string }) => {
       <TiptapEditor
         ref={editorElement}
         className={twMerge(
-          `tipta__editor relative ${!applyingFilters ? 'block' : 'hidden'}`,
+          `tiptap__editor relative ${!applyingFilters ? 'block' : 'hidden'}`,
           className
         )}
         editor={editor}
