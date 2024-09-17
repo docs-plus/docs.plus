@@ -52,10 +52,10 @@ export const useScrollAndLoad = (
   const handleScrollToBottom = useCallback(() => {
     if (initialMessagesLoaded) return
 
-    const container = messageContainerRef.current
+    const container = messageContainerRef.current as any
     if (!container) return
 
-    const lastInsertedMessageId = container.children[container.children.length - 1]?.msgId
+    const lastInsertedMessageId = container.children.at(-1)?.msgId
     const comingMessageBelongsToCurrentUser =
       messages.get(lastInsertedMessageId)?.user_id === user?.id
 
