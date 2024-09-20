@@ -8,6 +8,7 @@ import { useAdjustEditorSizeForChatRoom } from '../hooks'
 import useEditableDocControl from '@components/pages/document/hooks/useEditableDocControl'
 import usePageHeightAdjust from '@components/pages/document/hooks/usePageHeightAdjust'
 import useUpdateDocPageUnreadMsg from '@components/pages/document/hooks/useUpdateDocPageUnreadMsg'
+import { MobileBubbleMenu } from './MobileBubbleMenu'
 
 const Editor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
@@ -31,6 +32,7 @@ const Editor = () => {
           ref={editorWrapperRef}
           className="editorWrapper flex h-full grow items-start justify-center overflow-hidden overflow-y-auto border-t-0 p-0"
           onScroll={scrollHeadingSelection}>
+          <MobileBubbleMenu />
           <EditorContent />
         </div>
       </div>

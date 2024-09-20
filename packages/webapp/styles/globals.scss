@@ -649,3 +649,12 @@ ol {
 .collapse-arrow > .collapse-title:after {
   top: 1.6rem;
 }
+
+/* Bubble menu */
+.bubble-menu {
+  box-shadow: 0 0px 20px 4px rgba(0, 0, 0, 0.06);
+  button {
+    font-size: 16px;
+    font-weight: 400;
+  }
+}
