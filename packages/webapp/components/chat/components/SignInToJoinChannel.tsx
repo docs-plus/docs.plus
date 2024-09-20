@@ -1,4 +1,5 @@
 import { useChannel } from '../context/ChannelProvider'
+import { useChatStore } from '@stores'
 
 export default function SignInToJoinChannel({}) {
   const { channelId } = useChannel()
@@ -10,6 +11,9 @@ export default function SignInToJoinChannel({}) {
     window.history.pushState({}, '', url.href)
 
     document.getElementById('btn_signin')?.click()
+
+    // destroy the chat room
+    useChatStore.getState().destroyChatRoom()
   }
 
   return (
