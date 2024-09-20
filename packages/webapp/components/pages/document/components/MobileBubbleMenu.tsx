@@ -44,6 +44,21 @@ export const MobileBubbleMenu = ({}: Props) => {
       html: selectedHtml,
       headingId
     })
+
+    // Deselect the text after creating the comment
+    editor.commands.setTextSelection(selection.to)
+
+    // scroll the document to the top of the page
+    editor.commands.scrollIntoView()
+
+    const WindowsSelection = window?.getSelection()?.anchorNode?.parentElement as HTMLElement | null
+    if (WindowsSelection) {
+      WindowsSelection.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+        inline: 'nearest'
+      })
+    }
   }, [])
 
   console.log('mobile bubble menu', { editor })
@@ -53,10 +68,13 @@ export const MobileBubbleMenu = ({}: Props) => {
       {editor && (
         <BubbleMenu
           className="bubble-menu join rounded-[10px] bg-base-100 drop-shadow-lg"
-          tippyOptions={{ duration: 100 }}
+          tippyOptions={{
+            duration: 100,
+            hideOnClick: true
+          }}
           editor={editor}>
           <button
-            className="bt btn-ghost join-item flex max-h-[42px] min-h-[42px] items-center"
+            className="bt btn-ghost join-item flex max-h-[42px] min-h-[42px] items-center px-4"
             onClick={() => createComment(editor)}>
             Add Comments
           </button>
