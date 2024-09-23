@@ -3,6 +3,7 @@ import randomColor from 'randomcolor'
 import { createLowlight } from 'lowlight'
 import ShortUniqueId from 'short-unique-id'
 import ENUMS from './enums'
+import { useStore } from '@stores'
 
 // Collaboration
 import Collaboration, { isChangeOrigin } from '@tiptap/extension-collaboration'
@@ -145,7 +146,14 @@ const generatePlaceholderText = (data: any) => {
   return null
 }
 
+// TODO: editor extensions should be dynamic
 const Editor = ({ provider, ydoc, spellcheck = false, user }: any): Partial<EditorOptions> => {
+  const {
+    settings: {
+      editor: { isMobile }
+    }
+  } = useStore((state) => state)
+
   if (!provider) {
     return {
       // @ts-ignore
@@ -264,7 +272,7 @@ const Editor = ({ provider, ydoc, spellcheck = false, user }: any): Partial<Edit
       Blockquote,
       TextAlign,
       Underline,
-      ChatCommentExtension,
+      ...(isMobile ? [] : [ChatCommentExtension]),
       Hyperlink.configure({
         protocols: ['ftp', 'mailto'],
         hyperlinkOnPaste: false,
