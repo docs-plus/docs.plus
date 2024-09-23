@@ -1,8 +1,29 @@
-import { Extension } from '@tiptap/core'
+import { Extension, isTextSelection } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import PubSub from 'pubsub-js'
 import { CHAT_COMMENT } from '@services/eventsHub'
 import { AddCommentMD } from '@icons'
+
+const shouldShow = (editor) => {
+  const state = editor.state
+  const view = editor.view
+  const { from, to } = state.selection
+  const { doc, selection } = state
+  const { empty } = selection
+
+  // Sometime check for `empty` is not enough.
+  // Doubleclick an empty paragraph returns a node size of 2.
+  // So we check also for an empty text size.
+  const isEmptyTextBlock = !doc.textBetween(from, to).length && isTextSelection(state.selection)
+
+  const hasEditorFocus = view.hasFocus()
+
+  if (!hasEditorFocus || empty || isEmptyTextBlock || !editor.isEditable) {
+    return false
+  }
+
+  return true
+}
 
 const createChatCommentButton = (view, selection) => {
   const button = document.createElement('button')
@@ -25,13 +46,13 @@ const createChatCommentButton = (view, selection) => {
   const nodeHeight = node ? node.offsetHeight : 0
 
   // Adjust the button position to be centered vertically relative to the node
-  const adjustedTop = offsetTop + nodeHeight / 2 - 16
+  const adjustedTop = nodeHeight ? offsetTop + nodeHeight / 2 - 16 : offsetTop - 16
 
   button.style.position = 'absolute'
   button.style.right = '12px'
   button.style.top = `${Math.round(adjustedTop)}px`
 
-  button.classList.add('btn', 'btn-circle', 'btn-primary', 'size-10')
+  button.classList.add('btn', 'btn-circle', 'btn-primary', 'size-10', 'min-h-10')
 
   view.dom.parentNode.appendChild(button)
 }
@@ -87,18 +108,25 @@ const ChatCommentExtension = Extension.create({
               return false
             },
             mouseup: (view, event) => {
-              const { selection } = view.state
-              if (!selection.empty) {
-                createChatCommentButton(view, selection)
+              const state = this.editor.state
+
+              if (shouldShow(this.editor)) {
+                createChatCommentButton(view, state.selection)
+              } else {
+                const button = view.dom.parentNode.querySelector('.chat-comment-button')
+                if (button) {
+                  button.remove()
+                }
               }
-              return false
+
+              return true
             },
             mousedown: (view, event) => {
               const button = view.dom.parentNode.querySelector('.chat-comment-button')
               if (button) {
                 button.remove()
               }
-              return false
+              return true
             }
           }
         }
