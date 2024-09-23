@@ -46,10 +46,10 @@ export const MobileBubbleMenu = ({}: Props) => {
     })
 
     // Deselect the text after creating the comment
-    // editor.commands.setTextSelection(selection.to)
+    editor.commands.setTextSelection(selection.to)
 
     // scroll the document to the top of the page
-    // editor.commands.scrollIntoView()
+    editor.commands.scrollIntoView()
 
     const WindowsSelection = window?.getSelection()?.anchorNode?.parentElement as HTMLElement | null
     if (WindowsSelection) {
@@ -60,8 +60,6 @@ export const MobileBubbleMenu = ({}: Props) => {
       })
     }
   }, [])
-
-  console.log('mobile bubble menu', { editor })
 
   return (
     <div>
