@@ -37,7 +37,13 @@ Follow these steps to set up your development environment:
    yarn
    ```
 
-3. **Install Supabase CLI**
+3. **Build Dependencies**
+
+   ```bash
+   yarn build
+   ```
+
+4. **Install Supabase CLI**
 
    ```bash
    brew install supabase/tap/supabase
