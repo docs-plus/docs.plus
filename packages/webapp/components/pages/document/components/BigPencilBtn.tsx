@@ -17,6 +17,7 @@ const BigPencilBtn = () => {
     if (!isKeyboardOpen) {
       const divProseMirror = document.querySelector('.tiptap.ProseMirror') as HTMLElement
       divProseMirror.setAttribute('contenteditable', 'true')
+      useStore.getState().setWorkspaceEditorSetting('isEditable', true)
       editor?.setEditable(true)
     }
 
@@ -30,8 +31,8 @@ const BigPencilBtn = () => {
     <div className="relative z-0">
       <button
         onClick={toggleToolbar}
-        className={`btn_bigBluePencil btn btn-circle btn-neutral flex size-14 ${!isKeyboardOpen ? 'active block' : 'hidden'} fixed bottom-8 right-6 z-10`}>
-        <Pencil size={26} />
+        className={`btn_bigBluePencil btn btn-circle flex size-[70px] bg-docsy shadow-md ${!isKeyboardOpen ? 'active block' : 'hidden'} fixed bottom-8 right-6 z-10`}>
+        <Pencil size={32} />
       </button>
     </div>
   )

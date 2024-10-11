@@ -17,6 +17,7 @@ const useEditableDocControl = () => {
       if (isKeyboardOpen) return
       const divProseMirror = document.querySelector('.tiptap.ProseMirror')
       divProseMirror?.setAttribute('contenteditable', 'false')
+      useStore.getState().setWorkspaceEditorSetting('isEditable', false)
       editor?.setEditable(false)
     }, 500)
   }, [deviceDetect, editor, isKeyboardOpen, loading])

@@ -38,7 +38,7 @@
 
     .heading:not([level='1']) {
       .btn_openChatBox {
-        right: -12px !important;
+        right: -0px !important;
       }
     }
     .wrapBlock {
@@ -47,14 +47,38 @@
         position: static;
         .btn_openChatBox {
           padding: 6px 0;
-          @apply absolute right-0 ml-auto flex items-center justify-end overflow-hidden rounded-l-lg bg-neutral fill-white text-neutral-content;
+          @apply absolute right-3 ml-auto flex items-center overflow-hidden rounded-lg bg-docsy fill-white px-3 text-neutral-content;
           svg {
-            padding-right: 8px;
-            width: 24px;
-            height: 24px;
+            width: 18px;
+            height: 18px;
+            fill: #fff;
+            display: block;
           }
-          span {
-            padding: 0 6px;
+
+          .chatLeft {
+            fill: #fff;
+            position: relative;
+            top: 1px;
+            left: -2px;
+            display: inline-block;
+          }
+
+          // Hide .chatLeft when data-unread-count is not empty
+          &[data-unread-count]:not([data-unread-count='']) {
+            .chatLeft {
+              display: none;
+            }
+          }
+
+          .arrowDown {
+            // margin-left: -6px;
+            position: relative;
+            left: 6px;
+          }
+
+          &::before {
+            content: attr(data-unread-count);
+            color: #fff;
           }
         }
       }
@@ -83,9 +107,9 @@
   transition: all 0.3s linear 2s;
   transform: translateY(200%);
   box-shadow:
-    0px 4px 5px rgba(0, 0, 0, 0.14),
-    0px 1px 10px rgba(0, 0, 0, 0.12),
-    0px 2px 4px rgba(0, 0, 0, 0.2);
+    0px 4px 8px rgba(0, 0, 0, 0.1),
+    0px 8px 16px rgba(0, 0, 0, 0.08),
+    0px 16px 24px rgba(0, 0, 0, 0.06);
   &.active {
     transform: translateY(0);
   }

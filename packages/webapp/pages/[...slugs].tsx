@@ -1,3 +1,4 @@
+import { GetServerSidePropsContext } from 'next'
 import React, { useEffect } from 'react'
 import MobileDetect from 'mobile-detect'
 import useDocumentMetadata from '@hooks/useDocumentMetadata'
@@ -41,14 +42,14 @@ const Document = ({ slugs, docMetadata, isMobile, channels }: any) => {
 
 export default Document
 
-export async function getServerSideProps(context: any) {
-  const slug = context.query.slugs.at(0)
+export async function getServerSideProps(context: GetServerSidePropsContext) {
+  const slug = context.query.slugs?.at(0)
   const supabase = createPagesServerClient(context)
 
   try {
     const { data, error } = await supabase.auth.getSession()
     const docMetadata = await fetchDocument(slug, data.session)
-    const device = new MobileDetect(context.req.headers['user-agent'])
+    const device = new MobileDetect(context.req.headers['user-agent'] || '')
     let channels: any = null
 
     if (error) console.error('error:', error)
@@ -77,7 +78,7 @@ export async function getServerSideProps(context: any) {
       props: {
         channels: channels || null,
         docMetadata,
-        isMobile: device.mobile() ? true : false,
+        isMobile: device.mobile(),
         slugs: context.query.slugs
       }
     }

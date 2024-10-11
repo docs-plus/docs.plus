@@ -10,6 +10,7 @@ type EditorSettings = {
   filterResult?: any
   isMobile?: boolean
   presentUsers?: any
+  isEditable?: boolean
 }
 
 type Workspace = {
@@ -44,7 +45,8 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
       applyingFilters: false,
       selectionPos: 0,
       filterResult: [],
-      presentUsers: []
+      presentUsers: [],
+      isEditable: false
     },
     hocuspocusProvider: undefined
   },

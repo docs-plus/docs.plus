@@ -16,7 +16,9 @@ const useUpdateDocPageUnreadMsg = () => {
           `.wrapBlock[data-id="${channel.id}"] > .buttonWrapper .btn_openChatBox span`
         )
         if (element && channel.unread_message_count > 0) {
-          element.innerHTML = channel.unread_message_count
+          element.setAttribute('data-unread-count', channel.unread_message_count.toString())
+        } else {
+          element?.removeAttribute('data-unread-count')
         }
       }
     })

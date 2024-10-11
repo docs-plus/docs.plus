@@ -62,7 +62,7 @@ const DeckPanel = ({ hostname }) => {
           <h2 className="mt-3 font-semibold text-gray-400 antialiased">
             Get everyone on the same page
           </h2>
-          <div className="mt-5 leading-7 ">
+          <div className="mt-5 leading-7">
             <p>
               <span>+</span> A{' '}
               <a href="https://github.com/docs-plus" className="link link-primary no-underline">
@@ -117,25 +117,29 @@ const DeckPanel = ({ hostname }) => {
       </div>
       <div className="mt-6 flex w-full justify-end sm:mt-0 sm:w-1/2">
         <div className="flex w-full flex-col justify-center rounded-md border p-5 sm:w-96 sm:border">
-          <div className="flex flex-col  text-gray-800">
-            {/* <p className="text-lg antialiased mb-8  text-gray-700 font-bold">
-              {`Let's have a collaborative journey!`}
-            </p> */}
+          <div className="flex flex-col text-gray-800">
+            {/* <p className="mb-3 text-lg font-bold text-gray-700 antialiased"> */}
+            {/* {`Let's have a collaborative journey!`} */}
+            {/* Start by entering a document name */}
+            {/* </p> */}
+            <span className="hidden w-full md:block">
+              <Button
+                className="btn-neutral btn-block text-white"
+                onClick={() => enterToPad('random')}>
+                Create a new Public Doc
+              </Button>
 
-            <Button className="btn-neutral text-white" onClick={() => enterToPad('random')}>
-              Create a new Public Doc
-            </Button>
-
-            <div className="divider text-gray-400">OR</div>
+              <div className="divider text-gray-400">OR</div>
+            </span>
 
             <div className="flex w-full flex-col">
               <div className="font-mono flex w-full flex-col align-middle text-sm sm:flex-row">
-                <p className="rounded py-2 leading-6 sm:rounded-l sm:rounded-r-none sm:border sm:border-r-0 sm:px-2">
+                <p className="hidden rounded py-2 leading-6 sm:rounded-l sm:rounded-r-none sm:border sm:border-r-0 sm:px-2 md:block">
                   {hostname}
                 </p>
 
                 <InputOverlapLabel
-                  className=" font-mono w-full  sm:rounded-l-none"
+                  className="font-mono w-full font-bold sm:rounded-l-none"
                   value={documentName}
                   label="Document Name"
                   id="padName"
@@ -151,12 +155,12 @@ const DeckPanel = ({ hostname }) => {
                   *Only lowercase letters, numbers and dashes are allowed
                 </p>
               )}
-              <Button
-                className="btn-primary mt-2 text-white"
+              <button
+                className="btn btn-primary btn-block mt-2 text-white"
                 loading={loadingDoc}
                 onClick={enterToPad}>
                 Open Public Doc
-              </Button>
+              </button>
             </div>
 
             {isAuthServiceAvailable && !user && (
