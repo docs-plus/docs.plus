@@ -8,7 +8,7 @@ import { copyToClipboard } from './helper'
 import onHeading from './normalText/onHeading'
 import PubSub from 'pubsub-js'
 import ENUMS from '../enums'
-import { ChatLeftSVG } from '@icons'
+import { ChatLeftSVG, ArrowDownSVG } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
 
 let isProcessing = false
@@ -56,7 +56,6 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
   const buttonWrapper = document.createElement('div')
   const btnToggleHeading = document.createElement('button')
   const btnChatBox = document.createElement('button')
-  const unreadMsgCount = document.createElement('span')
 
   buttonWrapper.classList.add('buttonWrapper')
 
@@ -65,9 +64,9 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
   btnToggleHeading.classList.add('btnFold')
   btnToggleHeading.setAttribute('type', 'button')
 
-  btnChatBox.innerHTML = ChatLeftSVG({ size: 24 })
-
-  btnChatBox.prepend(unreadMsgCount)
+  btnChatBox.innerHTML =
+    ChatLeftSVG({ size: 20, className: 'chatLeft' }) +
+    ArrowDownSVG({ size: 20, className: 'arrowDown' })
 
   btnChatBox.addEventListener('click', (e) => {
     e.preventDefault()

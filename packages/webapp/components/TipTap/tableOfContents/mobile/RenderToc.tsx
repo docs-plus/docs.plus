@@ -23,7 +23,11 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
       `.wrapBlock[data-id="${item.id}"] > .buttonWrapper .btn_openChatBox span`
     )
     if (!element) return
-    element.innerHTML = unreadMessage > 0 ? unreadMessage : ''
+    if (unreadMessage > 0) {
+      element.setAttribute('data-unread-count', unreadMessage.toString())
+    } else {
+      element.removeAttribute('data-unread-count')
+    }
   }, [unreadMessage])
 
   if (!editor) return
@@ -48,7 +52,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
         </span>
         <span className="block w-8 pl-8"></span>
         <span
-          className="absolute right-0 ml-auto block flex items-center justify-end overflow-hidden rounded-l-lg bg-neutral px-1 text-neutral-content"
+          className="absolute right-0 ml-auto flex items-center justify-end overflow-hidden rounded-l-lg bg-neutral px-1 text-neutral-content"
           onClick={() => openChatContainerHandler(item)}>
           {unreadMessage > 0 && <div className="mx-1 text-sm">{unreadMessage}</div>}
           <ChatLeft

@@ -1,4 +1,5 @@
 import { GetServerSidePropsContext } from 'next'
+import MobileDetect from 'mobile-detect'
 import HeadSeo from '@components/HeadSeo'
 import dynamic from 'next/dynamic'
 import { Tabs, TabList, Tab, TabPanels, TabPanel } from '@components/ui/Tabs/Tabs'
@@ -11,6 +12,8 @@ import { useMemo } from 'react'
 import Loading from '@components/ui/Loading'
 import { LuLogIn } from 'react-icons/lu'
 
+const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
+
 const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
   loading: () => <Loading />
 })
@@ -21,7 +24,19 @@ const ProfilePanel = dynamic(() => import('@pages/panels/profile/ProfilePanel'),
   loading: () => <Loading />
 })
 
-function Home({ hostname }: { hostname: string }) {
+const MobileView = ({ hostname }: { hostname: string }) => {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
+      <div className="flex flex-wrap rounded-md bg-white p-2 pb-2 shadow-md sm:m-auto sm:justify-center sm:p-6 sm:py-6 sm:pb-2">
+        <DashboardLayout>
+          <DeckPanel hostname={hostname} />
+        </DashboardLayout>
+      </div>
+    </div>
+  )
+}
+
+function Home({ hostname, isMobile }: { hostname: string; isMobile: boolean }) {
   const user = useAuthStore((state) => state.profile)
   const authLoading = useAuthStore((state) => state.loading)
   const displayName = useAuthStore((state) => state.displayName)
@@ -42,16 +57,18 @@ function Home({ hostname }: { hostname: string }) {
     )
   }
 
+  if (isMobile) return <MobileView hostname={hostname} />
+
   return (
     <>
       <HeadSeo />
-      <div className="flex  size-auto justify-center overflow-auto bg-slate-100 p-4 sm:size-full sm:items-center">
+      <div className="flex size-auto justify-center overflow-auto bg-slate-100 p-4 sm:size-full sm:items-center">
         <Tabs defaultActiveTab="deck" className="relative max-w-5xl rounded-md">
           <TabList
             className={`${
               isAuthServiceAvailable ? 'flex' : 'hidden'
-            } relative -bottom-1 z-0 rounded-t-md bg-slate-200 drop-shadow-md `}>
-            <Tab name="deck" className="flex items-center ">
+            } relative -bottom-1 z-0 rounded-t-md bg-slate-200 drop-shadow-md`}>
+            <Tab name="deck" className="flex items-center">
               <div className="tooltip tooltip-top" data-tip="docs.plus">
                 <DocsPlus size={26} />
               </div>
@@ -77,7 +94,7 @@ function Home({ hostname }: { hostname: string }) {
               </Tab>
             )}
           </TabList>
-          <TabPanels className="relative z-10 max-w-5xl rounded-md bg-white shadow ">
+          <TabPanels className="relative z-10 max-w-5xl rounded-md bg-white shadow">
             <TabLayout name="deck">
               <DeckPanel hostname={hostname} />
             </TabLayout>
@@ -106,7 +123,13 @@ function Home({ hostname }: { hostname: string }) {
 export default Home
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
+  const userAgent = context.req.headers['user-agent']
+  const device = new MobileDetect(userAgent || '')
+
   return {
-    props: { hostname: context.req?.headers?.host }
+    props: {
+      hostname: context.req?.headers?.host || '',
+      isMobile: device.mobile() ? true : false
+    }
   }
 }

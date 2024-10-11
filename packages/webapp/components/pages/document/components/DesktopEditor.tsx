@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import clsx from 'clsx'
-import Toolbar from '@components/TipTap/toolbar/Toolbar'
+import ToolbarDesktop from '@components/TipTap/toolbar/ToolbarDesktop'
 import EditorContent from './EditorContent'
 import TOC from './Toc'
 import { useStore, useChatStore } from '@stores'
@@ -31,7 +31,7 @@ const DesktopEditor = () => {
   return (
     <>
       <div className="toolbars fixed bottom-0 z-[9] h-auto w-full bg-white sm:relative sm:block">
-        <Toolbar />
+        <ToolbarDesktop />
       </div>
       <div className="editor relative flex size-full flex-row-reverse justify-around align-top">
         <div className="relative flex w-[78%] max-w-full flex-col align-top">

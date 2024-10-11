@@ -39,7 +39,7 @@ const GearButton = () => {
   )
 }
 
-const Toolbar = () => {
+const ToolbarDesktop = () => {
   const {
     editor: { instance: editor, loading, rendering }
   } = useStore((state) => state.settings)
@@ -203,7 +203,7 @@ const Toolbar = () => {
             <Icon type="Printer" size={16} />
           </ToolbarButton>
           {isAuthServiceAvailable && (
-            <ToolbarButton href="panel=documents" tooltip="Open" onClick={() => setModalOpen(true)}>
+            <ToolbarButton tooltip="Open" onClick={() => setModalOpen(true)}>
               <Folder fill="rgba(0,0,0,.7)" size={18} />
             </ToolbarButton>
           )}
@@ -225,4 +225,4 @@ const Toolbar = () => {
   )
 }
 
-export default React.memo(Toolbar)
+export default React.memo(ToolbarDesktop)

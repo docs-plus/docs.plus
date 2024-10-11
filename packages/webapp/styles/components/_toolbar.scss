@@ -1,27 +1,51 @@
+.tiptap-toolbar-mobile {
+  user-select: none;
+  pointer-events: none;
+
+  .divided {
+    display: inline-block;
+    height: 24px;
+    @apply mx-[10px] my-[6px] border-l;
+  }
+
+  button {
+    &.is-active {
+      background-color: #e8f0fe;
+      color: #1a73e8;
+
+      svg {
+        fill: #1a73e8;
+      }
+    }
+
+    &[disabled]:hover {
+      color: #aaa;
+      background-color: transparent;
+    }
+  }
+
+  &__main {
+    pointer-events: auto;
+    box-shadow:
+      0 -4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 -2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  &__format-selection {
+    pointer-events: auto;
+  }
+}
+
 .tiptap__toolbar {
-  @apply border-t border-b;
+  @apply border-b border-t;
 
   .divided {
     display: inline-block;
     height: 20px;
-    @apply border-l mx-[10px] my-[6px];
+    @apply mx-[10px] my-[6px] border-l;
   }
 
   button {
-    // float: left;
-    // margin: 4px 2px;
-    // background-color: transparent;
-    // outline: none;
-    // cursor: pointer;
-    // height: 28px;
-    // width: 28px;
-    // @apply flex rounded items-center justify-center relative;
-
-    // &:hover {
-    //   background: #eee;
-    //   color: black;
-    // }
-
     &.is-active {
       background-color: #e8f0fe;
       color: #1a73e8;
