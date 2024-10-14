@@ -26,34 +26,36 @@ const MobilePadTitle = () => {
   return (
     <div className="docTitle sticky left-0 top-0 z-10 h-auto w-full bg-white">
       <div className="relative z-10 flex min-h-12 w-full flex-col items-center border-b bg-white p-2">
-        <div className="flex w-full flex-row items-center align-middle">
-          <div className="">
+        <div className="flex w-full flex-row items-center justify-between">
+          <div className="flex w-[80%] items-center">
             {isKeyboardOpen ? (
               <label
                 htmlFor="mobile_left_side_panel"
                 aria-label="close sidebar"
-                className="flex size-10 items-center justify-center align-middle">
+                className="flex size-10 shrink-0 items-center justify-center">
                 <FaCheck size={20} />
               </label>
             ) : (
-              <label htmlFor="mobile_left_side_panel" className="btn btn-ghost drawer-button px-2">
+              <label
+                htmlFor="mobile_left_side_panel"
+                className="btn btn-ghost drawer-button shrink-0 px-2">
                 <Hamburger size={30} />
               </label>
             )}
+
+            <div className="ml-2 w-[calc(100%-40px)] overflow-hidden">
+              <DocTitle className="truncate text-sm font-medium" />
+            </div>
           </div>
 
-          <div className="flex items-center justify-start align-middle">
-            <DocTitle />
-          </div>
+          <div className="flex w-[20%] items-center justify-end">
+            <ReadOnlyIndicator />
 
-          <ReadOnlyIndicator />
-
-          <div className="ml-auto flex items-center justify-center">
             {isAuthServiceAvailable && (
-              <div className="ml-5 mr-2">
+              <div className="ml-2">
                 {user ? (
                   <Button
-                    className="btn-circle btn-ghost tooltip tooltip-bottom"
+                    className="btn-circle btn-ghost tooltip tooltip-bottom p-0"
                     onClick={() => setProfileModalOpen(true)}
                     data-tip="Profile">
                     <Avatar
@@ -61,13 +63,13 @@ const MobilePadTitle = () => {
                       src={user.avatar_url}
                       width={24}
                       height={24}
-                      className="size-11 cursor-pointer rounded-full border shadow-xl"
+                      className="size-8 cursor-pointer rounded-full border shadow-xl"
                     />
                   </Button>
                 ) : (
                   <Button
                     id="btn_signin"
-                    className="btn btn-neutral h-[2.6rem] min-h-[2.6rem]"
+                    className="btn btn-neutral btn-sm"
                     onClick={() => setProfileModalOpen(true)}>
                     Signin
                   </Button>
@@ -76,7 +78,7 @@ const MobilePadTitle = () => {
             )}
           </div>
         </div>
-        <div className="mr-auto pl-10">
+        <div className="w-full">
           <FilterBar />
         </div>
       </div>
