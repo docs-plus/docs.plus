@@ -28,10 +28,10 @@ const BigPencilBtn = () => {
       .scrollIntoView()
   }
   return (
-    <div className="relative z-0">
+    <div className="relative z-10">
       <button
         onClick={toggleToolbar}
-        className={`btn_bigBluePencil btn btn-circle flex size-[70px] bg-docsy shadow-md ${!isKeyboardOpen ? 'active block' : 'hidden'} fixed bottom-8 right-6 z-10`}>
+        className={`btn_bigBluePencil btn btn-circle flex size-[68px] border-none bg-docsy shadow-md ${!isKeyboardOpen ? 'active block' : 'hidden'} fixed bottom-8 right-6 z-10`}>
         <Pencil size={32} />
       </button>
     </div>
