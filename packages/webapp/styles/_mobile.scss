@@ -114,3 +114,16 @@
     transform: translateY(0);
   }
 }
+
+.headingSelection {
+  &.is-active {
+    background-color: #e8f0fe;
+    color: #1a73e8;
+    border: none;
+    box-shadow: 0 0 0 1px #1a73e870;
+
+    svg {
+      fill: #1a73e8;
+    }
+  }
+}

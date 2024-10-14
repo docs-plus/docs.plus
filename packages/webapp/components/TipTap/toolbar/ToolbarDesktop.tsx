@@ -12,9 +12,7 @@ import Loading from '@components/ui/Loading'
 import Modal from '@components/ui/Modal'
 import ToolbarSkeleton from './ToolbarSkeleton'
 import { MdAddComment } from 'react-icons/md'
-import { Editor } from '@tiptap/core'
-import PubSub from 'pubsub-js'
-import { CHAT_COMMENT } from '@services/eventsHub'
+import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
   loading: () => <Loading />
@@ -46,38 +44,7 @@ const ToolbarDesktop = () => {
   const { isAuthServiceAvailable } = useStore((state) => state.settings)
   const [isModalOpen, setModalOpen] = useState(false)
 
-  const createComment = useCallback((editor: Editor) => {
-    const { selection } = editor.view.state
-
-    // if no selection, do nothing
-    if (selection.empty) return
-    // TODO: check for higher heading node
-    let headingNode = null
-    let depth = selection.$from.depth
-    while (depth > 0) {
-      const node = selection.$from.node(depth)
-      if (node.type.name.startsWith('heading')) {
-        headingNode = node
-        break
-      }
-      depth--
-    }
-    const headingId = headingNode?.attrs.id
-
-    if (!headingId) {
-      console.error('[chatComment]: No headingId found')
-      return
-    }
-
-    const selectedText = editor.state.doc.textBetween(selection.from, selection.to, '\n')
-    const selectedHtml = '' //editor.view.dom.innerHTML.slice(selection.from, selection.to)
-
-    PubSub.publish(CHAT_COMMENT, {
-      content: selectedText,
-      html: selectedHtml,
-      headingId
-    })
-  }, [])
+  const { createComment } = useTurnSelectedTextIntoComment()
 
   // TODO: skeleton loading
   if (loading || rendering || !editor) return <ToolbarSkeleton />

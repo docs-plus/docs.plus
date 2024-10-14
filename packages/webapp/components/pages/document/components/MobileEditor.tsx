@@ -1,7 +1,7 @@
 import { useRef } from 'react'
 import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import EditorContent from './EditorContent'
-import ToolbarMobile from './ToolbarMobile'
+import ToolbarMobile from './toolbarMobile/ToolbarMobile'
 import { useChatStore } from '@stores'
 import { scrollHeadingSelection } from '../helpers'
 import { useAdjustEditorSizeForChatRoom } from '../hooks'
