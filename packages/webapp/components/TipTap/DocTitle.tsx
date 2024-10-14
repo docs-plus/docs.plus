@@ -4,7 +4,7 @@ import { useStore } from '@stores'
 import * as toast from '@components/toast'
 import DOMPurify from 'dompurify'
 
-const DocTitle = ({ className }: { className: string }) => {
+const DocTitle = ({ className }: { className?: string }) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
   const [title, setTitle] = useState<string | undefined>('')
   const { hocuspocusProvider, metadata: docMetadata } = useStore((state) => state.settings)
@@ -71,7 +71,9 @@ const DocTitle = ({ className }: { className: string }) => {
 
   useEffect(() => {
     if (isSuccess && data) {
+      // @ts-ignore
       setTitle(data.data.title)
+      // @ts-ignore
       hocuspocusProvider.sendStateless(JSON.stringify({ type: 'docTitle', state: data.data }))
       toast.Success('Document title changed successfully')
     }
