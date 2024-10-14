@@ -12,7 +12,7 @@ import {
 } from './helper'
 
 const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
-  console.info('[Heading]: wrapContentWithHeading')
+  console.info('[Heading]: Wrap up Content With Heading')
   const { state, tr } = arrg
   const { selection, doc } = state
   const { $from, $to } = newSelection || selection
@@ -61,6 +61,9 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
       return false
     }
 
+    console.log('p[p[[p', {
+      selection
+    })
     const headingNode = createHeadingNodeFromSelection(
       doc,
       state,
@@ -71,6 +74,10 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
       paragraphs,
       selection
     )
+
+    console.log({
+      headingNode
+    })
 
     tr.delete(start, titleEndPos)
 

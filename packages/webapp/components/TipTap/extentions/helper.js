@@ -426,6 +426,31 @@ const findParagraphs = (currentNode, newContent) => {
   })
 }
 
+/**
+ *
+ * @param {Object} selection
+ * @returns {Boolean}
+ */
+export const isSelectionWithinSingleBlock = (selection) => {
+  const { $anchor, $head, $from, $to } = selection
+  const isMultipleSelection = $anchor.pos !== $head.pos
+  const isMultipleSelectionInSameDepth = $from.depth === $to.depth
+  const isMultipleSelectionInSameBlock = $from.index($from.depth) === $to.index($to.depth)
+
+  return isMultipleSelection && isMultipleSelectionInSameDepth && isMultipleSelectionInSameBlock
+}
+
+/**
+ *
+ * @param {Object} doc
+ * @param {Object} state
+ * @param {Number} start
+ * @param {Number} end
+ * @param {Object} attributes
+ * @param {Object} block
+ * @param {Array} contentWrapper
+ * @returns {Array}
+ */
 export const createHeadingNodeFromSelection = (
   doc,
   state,
@@ -437,16 +462,14 @@ export const createHeadingNodeFromSelection = (
 ) => {
   const headings = []
 
-  const { selection } = state
-  const { $anchor, $head, $from, $to } = selection
-  const isMultipleSelection = $anchor.pos !== $head.pos
+  if (!isSelectionWithinSingleBlock(state.selection)) {
+    const { $from, $to } = state.selection
 
-  // if selection
-  if (isMultipleSelection) {
     const mResolve = doc.resolve(start)
 
     let { start: newStart } = $from.blockRange($to)
 
+    // find the contentWrapper node position of the current(start) selection
     let contentWrapperPos = mResolve.pos
     while (contentWrapperPos > 0) {
       const node = doc.nodeAt(contentWrapperPos)
