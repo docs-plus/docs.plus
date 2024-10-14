@@ -737,8 +737,8 @@ export const ChatLeftSVG = ({ size = 24, fill = 'black', className = '' }) => `
 `
 
 export const AddCommentMD = ({ size = 18, fill = 'black', className = '' }) => `
-    <svg stroke="currentColor"
-     class="${className}"
+    <svg
+        class="${className}"
         fill="${fill}"
         width="${size}"
         strokeWidth="0" viewBox="0 0 24 24"  xmlns="http://www.w3.org/2000/svg">
