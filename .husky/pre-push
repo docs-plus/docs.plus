@@ -1,0 +1,15 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Change to the webapp directory
+cd packages/webapp || exit 1
+
+# Run the Next.js build
+echo "Running Next.js build..."
+if npm run build; then
+    echo "Build successful. Proceeding with push."
+    exit 0
+else
+    echo "Build failed. Push aborted."
+    exit 1
+fi
