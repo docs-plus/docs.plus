@@ -40,6 +40,14 @@ const DocTitle = ({ className }: any) => {
   const handleInput = (e: any) => {
     const sanitizedContent = DOMPurify.sanitize(e.target.innerHTML)
     e.target.innerHTML = sanitizedContent
+
+    // Move cursor to the end of the content
+    const range = document.createRange()
+    const selection = window.getSelection()
+    range.selectNodeContents(e.target)
+    range.collapse(false)
+    selection?.removeAllRanges()
+    selection?.addRange(range)
   }
 
   useEffect(() => {
