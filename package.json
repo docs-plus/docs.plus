@@ -24,7 +24,8 @@
     "publish": "npm run build && lerna exec --since --no-private -- npm publish --tag latest --access public",
     "lint": "eslint './packages/**/*.js*' --fix",
     "format": "prettier --write './packages/**/*.{js,jsx,ts,tsx,json,md}'",
-    "update:all": "ncu -u && npx lerna exec --scope=@docs.plus/webapp -- ncu -u && npx lerna exec --scope=@docs.plus/supabase_back -- ncu -u && npx lerna exec --scope=@docs.plus/hocuspocus -- ncu -u"
+    "update:all": "ncu -u && npx lerna exec --scope=@docs.plus/webapp -- ncu -u && npx lerna exec --scope=@docs.plus/supabase_back -- ncu -u && npx lerna exec --scope=@docs.plus/hocuspocus -- ncu -u",
+    "pre-push": "node pre-push.js"
   },
   "engines": {
     "node": ">=18.15.0",

@@ -4,7 +4,7 @@ import { useStore } from '@stores'
 import * as toast from '@components/toast'
 import DOMPurify from 'dompurify'
 
-const DocTitle = ({ className }: { className?: string }) => {
+const DocTitle = ({ className }: { className: string }) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
   const [title, setTitle] = useState<string | undefined>('')
   const { hocuspocusProvider, metadata: docMetadata } = useStore((state) => state.settings)
