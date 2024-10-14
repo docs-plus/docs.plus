@@ -1,61 +1,67 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
 import { useStore } from '@stores'
-// import { broadcastDocTitle } from '@api'
 import * as toast from '@components/toast'
 import DOMPurify from 'dompurify'
 
-const DocTitle = ({ className }: any) => {
+const DocTitle = ({ className }: { className: string }) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
-  const [title, setTitle] = useState()
+  const [title, setTitle] = useState<string | undefined>('')
   const { hocuspocusProvider, metadata: docMetadata } = useStore((state) => state.settings)
 
   useEffect(() => {
-    setTitle(docMetadata.title)
+    if (docMetadata?.title) {
+      setTitle(docMetadata.title)
+    }
   }, [docMetadata?.title])
 
-  const saveData = (e: any) => {
-    if (e.target.innerText === title) return
+  const saveData = useCallback(
+    (e: React.FocusEvent<HTMLDivElement>) => {
+      const newTitle = e.target.innerText
+      if (newTitle === title) return
 
-    // broadcastDocTitle(docMetadata.documentId, e.target.innerText)
+      mutate({
+        title: newTitle,
+        documentId: docMetadata.documentId
+      })
+    },
+    [title, mutate, docMetadata]
+  )
 
-    // @ts-ignore
-    mutate({
-      title: e.target.innerText,
-      documentId: docMetadata.documentId
-    })
-  }
-
-  const handlePaste = (e: any) => {
+  const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
     e.preventDefault()
     const text = e.clipboardData.getData('text/plain')
     const sanitizedText = DOMPurify.sanitize(text)
     const selection = window.getSelection()
-    if (!selection?.rangeCount) return
-    selection.deleteFromDocument()
-    selection.getRangeAt(0).insertNode(document.createTextNode(sanitizedText))
-    selection.collapseToEnd()
-  }
 
-  const handleInput = (e: any) => {
-    const sanitizedContent = DOMPurify.sanitize(e.target.innerHTML)
-    e.target.innerHTML = sanitizedContent
+    if (selection?.rangeCount) {
+      selection.deleteFromDocument()
+      selection.getRangeAt(0).insertNode(document.createTextNode(sanitizedText))
+      selection.collapseToEnd()
+    }
+  }, [])
+
+  const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
+    const sanitizedContent = DOMPurify.sanitize(e.currentTarget.innerHTML)
+    e.currentTarget.innerHTML = sanitizedContent
 
     // Move cursor to the end of the content
     const range = document.createRange()
     const selection = window.getSelection()
-    range.selectNodeContents(e.target)
+    range.selectNodeContents(e.currentTarget)
     range.collapse(false)
     selection?.removeAllRanges()
     selection?.addRange(range)
-  }
+  }, [])
 
   useEffect(() => {
     if (!hocuspocusProvider) return
 
     const readOnlyStateHandler = ({ payload }: any) => {
       const msg = JSON.parse(payload)
-      if (msg.type === 'docTitle') setTitle(msg.state.title)
+      if (msg.type === 'docTitle') {
+        setTitle(msg.state.title)
+      }
     }
 
     hocuspocusProvider.on('stateless', readOnlyStateHandler)
@@ -66,16 +72,15 @@ const DocTitle = ({ className }: any) => {
   useEffect(() => {
     if (isSuccess && data) {
       setTitle(data.data.title)
-      // broadcast to other clients
       hocuspocusProvider.sendStateless(JSON.stringify({ type: 'docTitle', state: data.data }))
       toast.Success('Document title changed successfully')
     }
-  }, [isSuccess])
+  }, [isSuccess, data, hocuspocusProvider])
 
-  if (isLoading) return 'Loading...'
+  if (isLoading) return <div>Loading...</div>
 
   return (
-    <div className={`${className} `}>
+    <div className={className}>
       <div
         dangerouslySetInnerHTML={{ __html: title || '' }}
         contentEditable
@@ -84,10 +89,12 @@ const DocTitle = ({ className }: any) => {
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
             e.preventDefault()
+            e.currentTarget.blur()
           }
         }}
         onPaste={handlePaste}
-        onInput={handleInput}></div>
+        onInput={handleInput}
+      />
     </div>
   )
 }
