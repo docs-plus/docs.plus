@@ -47,7 +47,7 @@
         position: static;
         .btn_openChatBox {
           padding: 6px 0;
-          @apply absolute right-3 ml-auto flex items-center overflow-hidden rounded-lg bg-docsy fill-white px-3 text-neutral-content;
+          @apply absolute right-3 ml-auto flex items-center overflow-hidden rounded-lg bg-docsy fill-white px-3 text-neutral-content shadow;
           svg {
             width: 18px;
             height: 18px;
