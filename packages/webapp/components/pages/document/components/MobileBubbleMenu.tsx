@@ -76,11 +76,12 @@ export const MobileBubbleMenu = ({}: Props) => {
             onClick={() => createComment(editor)}>
             Add Comments
           </button>
-          {/* <button
+          <div className="divider divider-horizontal m-0"></div>
+          <button
             className="btn btn-ghost join-item max-h-[42px] min-h-[42px] px-4"
-            onClick={() => createComment(editor)}>
+            onClick={() => editor.chain().focus().setHyperlink().run()}>
             Insert Link
-          </button> */}
+          </button>
         </BubbleMenu>
       )}
     </div>
