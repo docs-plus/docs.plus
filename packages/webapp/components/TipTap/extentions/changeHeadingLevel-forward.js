@@ -1,4 +1,3 @@
-import { TextSelection } from '@tiptap/pm/state'
 import ENUMS from '../enums'
 import {
   getRangeBlocks,
@@ -8,7 +7,8 @@ import {
   findPrevBlock,
   insertRemainingHeadings,
   createHeadingNodeFromSelection,
-  getEndPosSelection
+  getEndPosSelection,
+  putTextSelectionEndNode
 } from './helper'
 
 const changeHeadingLevelForward = (arrg, attributes) => {
@@ -62,12 +62,12 @@ const changeHeadingLevelForward = (arrg, attributes) => {
   )
   let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
 
-  tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), newHeadingNode)
+  const insertPos = prevBlock.endBlockPos - (shouldNested ? 2 : 0)
+  tr.insert(insertPos, newHeadingNode)
 
   // set the cursor to the end of the heading
-  const newSelection = new TextSelection(tr.doc.resolve(newStartPos - (shouldNested ? 2 : 0)))
-
-  tr.setSelection(newSelection)
+  const updatedSelection = putTextSelectionEndNode(tr, insertPos, newHeadingNode)
+  tr.setSelection(updatedSelection)
 
   // after all that, we need to loop through the rest of remaing heading to append
   return insertRemainingHeadings({

@@ -9,7 +9,8 @@ import {
   getHeadingsBlocksMap,
   getPrevHeadingPos,
   findPrevBlock,
-  getEndPosSelection
+  getEndPosSelection,
+  putTextSelectionEndNode
 } from './helper'
 
 const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
@@ -84,7 +85,11 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
     )
     let { prevBlock, shouldNested } = findPrevBlock(mapHPost, cominglevel)
 
-    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), headingNode)
+    const insertFirstNodes = prevBlock.endBlockPos - (shouldNested ? 2 : 0)
+    tr.insert(insertFirstNodes, headingNode)
+
+    const updatedSelection = putTextSelectionEndNode(tr, insertFirstNodes, headingNode)
+    tr.setSelection(updatedSelection)
 
     return insertRemainingHeadings({
       state,
@@ -133,11 +138,13 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
       selection
     )
 
-    tr.delete(tr.mapping.map(newStartPos), block.parent.end)
-    tr.insert(tr.mapping.map(newStartPos), newHeadingNode)
+    const insertFirstNodesPos = tr.mapping.map(newStartPos)
 
-    const newSelection = new TextSelection(tr.doc.resolve(startPos))
-    tr.setSelection(newSelection)
+    tr.delete(insertFirstNodesPos, block.parent.end)
+    tr.insert(insertFirstNodesPos, newHeadingNode)
+
+    const updatedSelection = putTextSelectionEndNode(tr, insertFirstNodesPos, newHeadingNode)
+    tr.setSelection(updatedSelection)
 
     titleStartPos = newSelection ? $from.start(1) : $from.start(1) - 1
     titleEndPos = newSelection ? tr.curSelection.$to.end(1) : $to.end(1)

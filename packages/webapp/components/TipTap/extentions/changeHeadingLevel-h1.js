@@ -6,7 +6,8 @@ import {
   getRangeBlocks,
   findPrevBlock,
   insertRemainingHeadings,
-  createHeadingNodeFromSelection
+  createHeadingNodeFromSelection,
+  putTextSelectionEndNode
 } from './helper'
 
 const changeHeadingLevelH1 = (arrg, attributes) => {
@@ -79,14 +80,13 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   tr.delete(titleStartPos, titleEndPos)
 
   // then add the new heading with the content
-  const insertPos = prevBlock.endBlockPos - (shouldNested ? 2 : 0)
+  const insertPos = tr.mapping.map(prevBlock.endBlockPos - (shouldNested ? 2 : 0))
 
-  tr.insert(tr.mapping.map(insertPos), newHeadingNode)
+  tr.insert(insertPos, newHeadingNode)
 
   // set the cursor to the end of the heading
-  const newSelection = new TextSelection(tr.doc.resolve(from))
-
-  tr.setSelection(newSelection)
+  const updatedSelection = putTextSelectionEndNode(tr, insertPos, newHeadingNode)
+  tr.setSelection(updatedSelection)
 
   // then loop through the heading to append
   return insertRemainingHeadings({
