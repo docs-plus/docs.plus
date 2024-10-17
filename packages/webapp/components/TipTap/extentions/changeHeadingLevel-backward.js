@@ -7,13 +7,14 @@ import {
   createHeadingNodeFromSelection,
   findPrevBlock,
   insertRemainingHeadings,
-  getPrevHeadingPos
+  getPrevHeadingPos,
+  getEndPosSelection
 } from './helper'
 
 const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
   const { state, tr } = arrg
   const { selection, doc } = state
-  const { $from, $to, from } = selection
+  const { $from, $to } = selection
   const { start, end } = $from.blockRange($to)
 
   console.info('[Heading]: Backward process, comingLevel < currentHLevel')
@@ -23,14 +24,14 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
   const titleStartPos = $from.start(1) - 1
   const titleEndPos = $from.end(1)
 
-  const contentWrapper = getRangeBlocks(doc, end, titleEndPos)
+  const startPos = getEndPosSelection(doc, state)
+  const contentWrapper = getRangeBlocks(doc, startPos, titleEndPos)
 
-  const sliceTargetContent = contentWrapper.filter((x) => {
-    if (x.type !== ENUMS.NODES.HEADING_TYPE) return x
-  })
+  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
+  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
 
-  if (asWrapper && sliceTargetContent.length === 0) {
-    sliceTargetContent.push(block.empty)
+  if (asWrapper && contentWrapperParagraphs.length === 0) {
+    contentWrapperParagraphs.push(block.empty)
   }
 
   const node = createHeadingNodeFromSelection(
@@ -40,7 +41,7 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
     $to.pos,
     attributes,
     block,
-    sliceTargetContent,
+    contentWrapperParagraphs,
     selection
   )
 
@@ -86,7 +87,7 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
   insertRemainingHeadings({
     state,
     tr,
-    headings: contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE), //newContentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE),
+    headings: contentWrapperHeadings,
     titleStartPos: comingLevel === 1 ? lastH1Inserted.startBlockPos : titleStartPos,
     titleEndPos: comingLevel === 1 ? lastH1Inserted.endBlockPos : tr.mapping.map(titleEndPos),
     prevHStartPos: comingLevel === 1 ? lastH1Inserted.startBlockPos : titleHMap.at(-1).startBlockPos
