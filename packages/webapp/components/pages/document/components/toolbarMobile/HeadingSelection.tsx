@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useCallback, useEffect } from 'react'
 import { MdAdd, MdOutlineRemove } from 'react-icons/md'
 
 const HeadingSelection = ({ editor }: { editor: any }) => {
@@ -9,6 +9,7 @@ const HeadingSelection = ({ editor }: { editor: any }) => {
     for (let i = 1; i <= 9; i++) {
       if (editor.isActive('contentHeading', { level: i })) {
         setCurrentHeading('heading')
+        setCurrentHeadingLevel(i)
         return
       }
     }
@@ -16,20 +17,34 @@ const HeadingSelection = ({ editor }: { editor: any }) => {
   }, [editor])
 
   const decreaseHeadingLevel = useCallback(() => {
-    if (currentHeadingLevel >= 1) {
+    if (currentHeadingLevel > 1) {
       setCurrentHeadingLevel(currentHeadingLevel - 1)
+      changeHeadingLevel(currentHeadingLevel - 1)
     }
   }, [currentHeadingLevel])
 
   const increaseHeadingLevel = useCallback(() => {
     if (currentHeadingLevel <= 9) {
       setCurrentHeadingLevel(currentHeadingLevel + 1)
+      changeHeadingLevel(currentHeadingLevel + 1)
     }
   }, [currentHeadingLevel])
 
-  const toggleContentSectionLevel = useCallback(() => {
-    console.log('toggleContentSectionLevel', { currentHeading })
+  const changeHeadingLevel = (level: number) => {
+    editor.view.focus()
+    const { $anchor } = editor.state.selection
 
+    if (currentHeading === 'heading') {
+      // prevent to change or remove first Title node
+      if ($anchor.pos - $anchor.parentOffset === 2) {
+        return false
+      }
+
+      editor.chain().focus().wrapBlock({ level: +level }).run()
+    }
+  }
+
+  const toggleContentSectionLevel = useCallback(() => {
     editor.view.focus()
     const { $anchor } = editor.state.selection
 
@@ -45,7 +60,7 @@ const HeadingSelection = ({ editor }: { editor: any }) => {
     }
   }, [currentHeadingLevel, editor, currentHeading])
 
-  React.useEffect(() => {
+  useEffect(() => {
     updateCurrentHeading()
     const updateListener = () => updateCurrentHeading()
     editor.on('selectionUpdate', updateListener)
