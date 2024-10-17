@@ -1,4 +1,5 @@
 import ENUMS from '../enums'
+import { TextSelection } from '@tiptap/pm/state'
 
 /**
  * Get a list of previous headings within a specified range in the document.
@@ -410,6 +411,16 @@ export const insertRemainingHeadings = ({
   }
 
   return true
+}
+
+export const putTextSelectionEndNode = (tr, insertPos, headingNode) => {
+  const firstHeading = headingNode.at(0)
+  const firstHeadingChild = firstHeading.firstChild
+  const firstChildNodeSize = firstHeadingChild?.nodeSize
+
+  const updatedSelection = new TextSelection(tr.doc.resolve(insertPos + firstChildNodeSize))
+
+  return updatedSelection
 }
 
 /**

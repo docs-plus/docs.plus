@@ -8,7 +8,8 @@ import {
   findPrevBlock,
   insertRemainingHeadings,
   getPrevHeadingPos,
-  getEndPosSelection
+  getEndPosSelection,
+  putTextSelectionEndNode
 } from './helper'
 
 const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
@@ -61,8 +62,8 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
 
   tr.insert(insertPos, node)
 
-  const newTextSelection = new TextSelection(tr.doc.resolve(insertPos))
-  tr.setSelection(newTextSelection)
+  const updatedSelection = putTextSelectionEndNode(tr, insertPos, node)
+  tr.setSelection(updatedSelection)
 
   const lastH1Inserted = {
     startBlockPos: 0,
@@ -77,11 +78,6 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
   if (comingLevel === 1) {
     lastH1Inserted.startBlockPos = insertPos
     lastH1Inserted.endBlockPos = insertPos + totalNodeSize
-    // also update the state
-    // Update the selection to the end of the newly inserted H1
-    const newPos = insertPos
-    const newSelection = TextSelection.create(tr.doc, newPos)
-    tr.setSelection(newSelection)
   }
 
   insertRemainingHeadings({
