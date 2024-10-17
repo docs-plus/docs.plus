@@ -125,5 +125,14 @@
     svg {
       fill: #1a73e8;
     }
+
+    button {
+      &:disabled {
+        color: #9e9e9e;
+        svg {
+          fill: #9e9e9e;
+        }
+      }
+    }
   }
 }

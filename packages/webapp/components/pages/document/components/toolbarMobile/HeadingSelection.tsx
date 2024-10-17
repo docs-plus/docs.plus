@@ -1,46 +1,46 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { MdAdd, MdOutlineRemove } from 'react-icons/md'
 
-const HeadingSelection = ({ editor }: { editor: any }) => {
-  const [currentHeading, setCurrentHeading] = useState<'heading' | 'p'>('p')
-  const [currentHeadingLevel, setCurrentHeadingLevel] = useState<number>(1)
+type HeadingSelectionProps = {
+  editor: any
+}
 
-  const updateCurrentHeading = useCallback(() => {
+const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
+  const [activeSectionType, setActiveSectionType] = useState<'heading' | 'p'>('p')
+  const [headingLevel, setHeadingLevel] = useState<number>(1)
+
+  const updateActiveSectionType = useCallback(() => {
     for (let i = 1; i <= 9; i++) {
       if (editor.isActive('contentHeading', { level: i })) {
-        setCurrentHeading('heading')
-        setCurrentHeadingLevel(i)
+        setActiveSectionType('heading')
+        setHeadingLevel(i)
         return
       }
     }
-    setCurrentHeading('p')
+    setActiveSectionType('p')
   }, [editor])
 
-  const decreaseHeadingLevel = useCallback(() => {
-    if (currentHeadingLevel > 1) {
-      setCurrentHeadingLevel(currentHeadingLevel - 1)
-      changeHeadingLevel(currentHeadingLevel - 1)
-    }
-  }, [currentHeadingLevel])
+  const changeHeadingLevel = useCallback(
+    (hLevel: number) => {
+      if ((hLevel < 0 && headingLevel > 1) || (hLevel > 0 && headingLevel < 9)) {
+        const newLevel = headingLevel + hLevel
+        setHeadingLevel(newLevel)
+        applyHeadingLevel(newLevel)
+      }
+    },
+    [headingLevel]
+  )
 
-  const increaseHeadingLevel = useCallback(() => {
-    if (currentHeadingLevel <= 9) {
-      setCurrentHeadingLevel(currentHeadingLevel + 1)
-      changeHeadingLevel(currentHeadingLevel + 1)
-    }
-  }, [currentHeadingLevel])
-
-  const changeHeadingLevel = (level: number) => {
+  const applyHeadingLevel = (level: number) => {
     editor.view.focus()
     const { $anchor } = editor.state.selection
 
-    if (currentHeading === 'heading') {
-      // prevent to change or remove first Title node
+    if (activeSectionType === 'heading') {
+      // Prevent changing or removing the first Title node
       if ($anchor.pos - $anchor.parentOffset === 2) {
-        return false
+        return
       }
-
-      editor.chain().focus().wrapBlock({ level: +level }).run()
+      editor.chain().focus().wrapBlock({ level }).run()
     }
   }
 
@@ -48,39 +48,40 @@ const HeadingSelection = ({ editor }: { editor: any }) => {
     editor.view.focus()
     const { $anchor } = editor.state.selection
 
-    // prevent to change or remove first Title node
+    // Prevent changing or removing the first Title node
     if ($anchor.pos - $anchor.parentOffset === 2) {
-      return false
+      return
     }
 
-    if (currentHeading === 'p') {
-      editor.chain().focus().wrapBlock({ level: +currentHeadingLevel }).run()
+    if (activeSectionType === 'p') {
+      editor.chain().focus().wrapBlock({ level: headingLevel }).run()
     } else {
       editor.chain().focus().normalText().run()
     }
-  }, [currentHeadingLevel, editor, currentHeading])
+  }, [headingLevel, editor, activeSectionType])
 
   useEffect(() => {
-    updateCurrentHeading()
-    const updateListener = () => updateCurrentHeading()
-    editor.on('selectionUpdate', updateListener)
-    editor.on('update', updateListener)
+    updateActiveSectionType()
+    editor.on('selectionUpdate', updateActiveSectionType)
+    editor.on('update', updateActiveSectionType)
     return () => {
-      editor.off('selectionUpdate', updateListener)
-      editor.off('update', updateListener)
+      editor.off('selectionUpdate', updateActiveSectionType)
+      editor.off('update', updateActiveSectionType)
     }
-  }, [editor, updateCurrentHeading])
+  }, [editor, updateActiveSectionType])
 
   return (
     <div
-      className={`headingSelection ${currentHeading === 'heading' ? 'is-active' : ''} flex h-9 w-32 items-center justify-between rounded-md border border-gray-400 px-2`}>
-      <button onTouchEnd={decreaseHeadingLevel}>
+      className={`headingSelection ${activeSectionType === 'heading' ? 'is-active' : ''} flex h-9 w-32 items-center justify-between rounded-md border border-gray-400 px-2`}>
+      <button onTouchEnd={() => changeHeadingLevel(-1)} disabled={headingLevel === 1}>
         <MdOutlineRemove size={24} />
       </button>
       <p
         className="flex h-8 w-8 items-center justify-center font-semibold"
-        onTouchEnd={toggleContentSectionLevel}>{`H${currentHeadingLevel}`}</p>
-      <button onTouchEnd={increaseHeadingLevel}>
+        onTouchEnd={toggleContentSectionLevel}>
+        {`H${headingLevel}`}
+      </p>
+      <button onTouchEnd={() => changeHeadingLevel(1)} disabled={headingLevel === 9}>
         <MdAdd size={24} />
       </button>
     </div>
