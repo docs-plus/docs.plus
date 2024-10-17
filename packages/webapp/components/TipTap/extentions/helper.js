@@ -146,15 +146,16 @@ export const getRangeBlocks = (doc, start, end) => {
 
     const nodeType = node.type.name
     const isContentWrapper = parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
+    const isHeadingNode = nodeType === ENUMS.NODES.HEADING_TYPE
 
-    if (firstHEading && nodeType !== ENUMS.NODES.HEADING_TYPE && isContentWrapper) {
+    if (firstHEading && !isHeadingNode && isContentWrapper) {
       selectedContents.push({
         depth: doc.resolve(pos).depth,
         startBlockPos: pos,
         endBlockPos: pos + node.nodeSize,
         ...node.toJSON()
       })
-    } else if (nodeType === ENUMS.NODES.HEADING_TYPE) {
+    } else if (isHeadingNode) {
       firstHEading = false
       const headingLevel = node.firstChild?.attrs?.level
       const depth = doc.resolve(pos).depth
@@ -426,18 +427,23 @@ const findParagraphs = (currentNode, newContent) => {
   })
 }
 
-/**
- *
- * @param {Object} selection
- * @returns {Boolean}
- */
-export const isSelectionWithinSingleBlock = (selection) => {
-  const { $anchor, $head, $from, $to } = selection
-  const isMultipleSelection = $anchor.pos !== $head.pos
-  const isMultipleSelectionInSameDepth = $from.depth === $to.depth
-  const isMultipleSelectionInSameBlock = $from.index($from.depth) === $to.index($to.depth)
+export const getEndPosSelection = (doc, state) => {
+  const { $from, $to, from, to } = state.selection
+  const { start, end } = $from.blockRange($to)
 
-  return isMultipleSelection && isMultipleSelectionInSameDepth && isMultipleSelectionInSameBlock
+  const startPos =
+    from === to ? end : isMultipleSelection(doc, from, to) ? end : from + doc?.nodeAt(from).nodeSize
+
+  return startPos
+}
+
+// This is a temporary fix for detecting multiple selections.
+// I haven’t found a better solution yet.
+// Heads-up: selecting text by dragging the cursor works differently than double-clicking or tapping on a line.
+export const isMultipleSelection = (doc, start, end) => {
+  const textBetween = doc.textBetween(start, end, '-/||/-')
+  const textBetweenArray = textBetween.split('-/||/-').filter((item) => item.trim() !== '')
+  return textBetweenArray.length > 1
 }
 
 /**
@@ -461,10 +467,9 @@ export const createHeadingNodeFromSelection = (
   contentWrapper
 ) => {
   const headings = []
+  const { $from, $to } = state.selection
 
-  if (!isSelectionWithinSingleBlock(state.selection)) {
-    const { $from, $to } = state.selection
-
+  if (isMultipleSelection(doc, start, end)) {
     const mResolve = doc.resolve(start)
 
     let { start: newStart } = $from.blockRange($to)
@@ -479,6 +484,7 @@ export const createHeadingNodeFromSelection = (
       contentWrapperPos--
     }
 
+    // if the newStart is not a block, then we need to find the parent block position
     const newStartNode = doc.nodeAt(newStart)
     if (newStartNode && !newStartNode.isBlock) {
       const $newStart = doc.resolve(newStart)
@@ -488,11 +494,6 @@ export const createHeadingNodeFromSelection = (
         newStart = parentPos
       }
     }
-
-    //  const isContentWrapper = parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
-    //  const isHeading = node.type.name === ENUMS.NODES.HEADING_TYPE
-
-    //  if (!isContentWrapper && isHeading) return
 
     doc.nodesBetween(
       newStart,
@@ -557,6 +558,7 @@ export const createHeadingNodeFromSelection = (
       content: [
         {
           type: ENUMS.NODES.CONTENT_HEADING_TYPE,
+          // TODO: this is not correct, need to fix it, hint: the contnet could be multiple nodes like text, hyperlink and etc.
           content: [block.headingContent],
           attrs: {
             level: attributes.level

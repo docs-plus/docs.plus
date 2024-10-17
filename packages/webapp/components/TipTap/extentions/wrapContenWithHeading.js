@@ -8,7 +8,8 @@ import {
   insertRemainingHeadings,
   getHeadingsBlocksMap,
   getPrevHeadingPos,
-  findPrevBlock
+  findPrevBlock,
+  getEndPosSelection
 } from './helper'
 
 const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
@@ -47,7 +48,9 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
 
     let titleEndPos = $to.end(1)
     let titleStartPos = $from.start(1) - 1
-    const contents = getRangeBlocks(doc, end, titleEndPos)
+
+    const startPos = getEndPosSelection(doc, state)
+    const contents = getRangeBlocks(doc, startPos, titleEndPos)
 
     let paragraphs = contents.filter((x) => x.type === ENUMS.NODES.PARAGRAPH_TYPE)
     const headings = contents.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
@@ -61,9 +64,6 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
       return false
     }
 
-    console.log('p[p[[p', {
-      selection
-    })
     const headingNode = createHeadingNodeFromSelection(
       doc,
       state,
@@ -74,10 +74,6 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
       paragraphs,
       selection
     )
-
-    console.log({
-      headingNode
-    })
 
     tr.delete(start, titleEndPos)
 
@@ -104,6 +100,7 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
   if (cominglevel > parentLevel) {
     console.info('[Heading]: Create a new Heading block as a child of the current Heading block')
 
+    const startPos = getEndPosSelection(doc, state)
     const rangeBlocks = getRangeBlocks(doc, $from.pos, end)
     const hasLevelOneHeading = rangeBlocks.some(
       (block) => block.type === ENUMS.NODES.HEADING_TYPE && block.attrs.level === 1
@@ -119,7 +116,7 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
     let titleStartPos = $from.start(1) - 1
     let titleEndPos = $to.end(1)
 
-    const contentWrapper = getRangeBlocks(doc, end, titleEndPos)
+    const contentWrapper = getRangeBlocks(doc, startPos, titleEndPos)
     const contentWrapperParagraphs = contentWrapper.filter(
       (x) => x.type !== ENUMS.NODES.HEADING_TYPE
     )
@@ -139,7 +136,7 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
     tr.delete(tr.mapping.map(newStartPos), block.parent.end)
     tr.insert(tr.mapping.map(newStartPos), newHeadingNode)
 
-    const newSelection = new TextSelection(tr.doc.resolve(end))
+    const newSelection = new TextSelection(tr.doc.resolve(startPos))
     tr.setSelection(newSelection)
 
     titleStartPos = newSelection ? $from.start(1) : $from.start(1) - 1

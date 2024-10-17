@@ -7,13 +7,14 @@ import {
   getPrevHeadingPos,
   findPrevBlock,
   insertRemainingHeadings,
-  createHeadingNodeFromSelection
+  createHeadingNodeFromSelection,
+  getEndPosSelection
 } from './helper'
 
 const changeHeadingLevelForward = (arrg, attributes) => {
   const { state, tr } = arrg
   const { selection, doc } = state
-  const { $from, $to, from } = selection
+  const { $from, $to } = selection
   const { start } = $from.blockRange($to)
 
   console.info('[Heading]: change heading level forwarding')
@@ -35,11 +36,11 @@ const changeHeadingLevelForward = (arrg, attributes) => {
     }
   }
 
-  const contentWrapper = getRangeBlocks(doc, start, titleEndPos)
+  const startPos = getEndPosSelection(doc, state)
+  const contentWrapper = getRangeBlocks(doc, startPos, titleEndPos)
 
   const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
   const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
-  const restParagraphs = contentWrapperParagraphs.filter((x) => x.startBlockPos >= $to.pos)
 
   const newHeadingNode = createHeadingNodeFromSelection(
     doc,
@@ -48,7 +49,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
     $to.pos,
     attributes,
     block,
-    restParagraphs,
+    contentWrapperParagraphs,
     selection
   )
 
