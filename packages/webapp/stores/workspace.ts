@@ -10,7 +10,7 @@ type EditorSettings = {
   filterResult?: any
   isMobile?: boolean
   presentUsers?: any
-  isEditable?: boolean
+  isEditable: boolean
 }
 
 type Workspace = {

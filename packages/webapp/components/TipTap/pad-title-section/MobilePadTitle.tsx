@@ -1,5 +1,3 @@
-import useDetectKeyboardOpen from 'use-detect-keyboard-open'
-import { Hamburger, Check } from '@icons'
 import DocTitle from '../DocTitle'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
 import FilterBar from './FilterBar'
@@ -11,16 +9,67 @@ import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { useAuthStore } from '@stores'
 import Loading from '@components/ui/Loading'
-import { FaCheck } from 'react-icons/fa6'
+import { MdCheck, MdMenu } from 'react-icons/md'
 
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
   loading: () => <Loading />
 })
 
+const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
+  if (isEditable) {
+    return (
+      <label className="flex size-10 shrink-0 items-center justify-center">
+        <MdCheck size={22} />
+      </label>
+    )
+  }
+
+  return (
+    <label
+      htmlFor="mobile_left_side_panel"
+      aria-label="close sidebar"
+      className="btn btn-ghost drawer-button shrink-0 px-2">
+      <MdMenu size={30} />
+    </label>
+  )
+}
+
+interface UserProfileButtonProps {
+  user: any
+  onProfileClick: () => void
+}
+
+const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => {
+  if (user) {
+    return (
+      <Button
+        className="btn-circle btn-ghost tooltip tooltip-bottom p-0"
+        onClick={onProfileClick}
+        data-tip="Profile">
+        <Avatar
+          id={user.id}
+          src={user.avatar_url}
+          width={24}
+          height={24}
+          className="size-10 cursor-pointer rounded-full border bg-base-300 shadow-md"
+        />
+      </Button>
+    )
+  }
+
+  return (
+    <Button id="btn_signin" className="btn btn-neutral btn-sm" onClick={onProfileClick}>
+      Signin
+    </Button>
+  )
+}
+
 const MobilePadTitle = () => {
   const user = useAuthStore((state) => state.profile)
-  const isKeyboardOpen = useDetectKeyboardOpen()
-  const { isAuthServiceAvailable } = useStore((state) => state.settings)
+  const {
+    isAuthServiceAvailable,
+    editor: { isEditable }
+  } = useStore((state) => state.settings)
   const [isProfileModalOpen, setProfileModalOpen] = useState(false)
 
   return (
@@ -28,20 +77,7 @@ const MobilePadTitle = () => {
       <div className="relative z-10 flex min-h-12 w-full flex-col items-center border-b bg-white p-2">
         <div className="flex w-full flex-row items-center justify-between">
           <div className="flex w-[80%] items-center">
-            {isKeyboardOpen ? (
-              <label
-                htmlFor="mobile_left_side_panel"
-                aria-label="close sidebar"
-                className="flex size-10 shrink-0 items-center justify-center">
-                <FaCheck size={20} />
-              </label>
-            ) : (
-              <label
-                htmlFor="mobile_left_side_panel"
-                className="btn btn-ghost drawer-button shrink-0 px-2">
-                <Hamburger size={30} />
-              </label>
-            )}
+            <EditableToggle isEditable={isEditable} />
 
             <div className="ml-2 w-[calc(100%-40px)] overflow-hidden">
               <DocTitle className="truncate text-sm font-medium" />
@@ -50,32 +86,7 @@ const MobilePadTitle = () => {
 
           <div className="flex w-[20%] items-center justify-end">
             <ReadOnlyIndicator />
-
-            {isAuthServiceAvailable && (
-              <div className="ml-2">
-                {user ? (
-                  <Button
-                    className="btn-circle btn-ghost tooltip tooltip-bottom p-0"
-                    onClick={() => setProfileModalOpen(true)}
-                    data-tip="Profile">
-                    <Avatar
-                      id={user.id}
-                      src={user.avatar_url}
-                      width={24}
-                      height={24}
-                      className="size-8 cursor-pointer rounded-full border shadow-xl"
-                    />
-                  </Button>
-                ) : (
-                  <Button
-                    id="btn_signin"
-                    className="btn btn-neutral btn-sm"
-                    onClick={() => setProfileModalOpen(true)}>
-                    Signin
-                  </Button>
-                )}
-              </div>
-            )}
+            <UserProfileButton user={user} onProfileClick={() => setProfileModalOpen(true)} />
           </div>
         </div>
         <div className="w-full">

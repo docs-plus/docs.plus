@@ -17,11 +17,49 @@
   }
 
   .tiptap__toc {
-    .menu :where(li ul) {
-      padding: 0;
+    .toc__list {
+      flex-wrap: nowrap !important;
+      li ul {
+        white-space: unset;
+      }
     }
+
+    :where(.menu li) {
+      flex-wrap: nowrap;
+    }
+
     .toc__item > span .btnFold::before {
       opacity: 1;
+    }
+
+    .btn_openChatBox {
+      padding: 2px 0 2px 8px;
+      @apply absolute right-1 flex items-center justify-center overflow-hidden rounded-lg bg-docsy fill-white text-neutral-content;
+      svg {
+        // width: 14px;
+        // height: 14px;
+        fill: #fff;
+        display: block;
+      }
+
+      .chatLeft {
+        fill: #fff;
+        position: relative;
+        top: 1px;
+        display: inline-block;
+      }
+
+      // Hide .chatLeft when data-unread-count is not empty
+      &[data-unread-count]:not([data-unread-count='']) {
+        .chatLeft {
+          display: none;
+        }
+      }
+
+      &::before {
+        content: attr(data-unread-count);
+        color: #fff;
+      }
     }
   }
 

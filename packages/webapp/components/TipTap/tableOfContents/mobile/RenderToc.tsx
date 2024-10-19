@@ -7,6 +7,8 @@ import useActiveHeading from '../hooks/useActiveHeading'
 import useOpenChatContainer from '../hooks/useOpenChatContainer'
 import useUnreadMessage from '../hooks/useUnreadMessage'
 
+import { MdOutlineArrowDropDown } from 'react-icons/md'
+
 export const RenderToc = ({ childItems, item, renderTocs }: any) => {
   const { headingId } = useChatStore((state) => state.chatRoom)
   const {
@@ -39,26 +41,28 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
       data-id={item.id}
       data-offsettop={item.offsetTop}>
       <a
-        className={`relative ${activeHeading === item.id ? 'active overflow-hidden' : ''} `}
+        className={`relative !py-2 ${activeHeading === item.id ? 'active overflow-hidden' : ''} `}
         onClick={(e) => handelScroll2Header(e, editor, setActiveHeading)}
         href={`?${item.id}`}
         data-id={item.id}>
-        <span className="toc__link">{item.text}</span>
         <span
           className={`btnFold ${item.open ? 'opened' : 'closed'}`}
           onClick={() => toggleHeadingSection(item)}
           data-tip="Toggle">
           <CaretRight size={17} fill="#363636" />
         </span>
+        <span className="toc__link">{item.text}</span>
+
         <span className="block w-8 pl-8"></span>
         <span
-          className="absolute right-0 ml-auto flex items-center justify-end overflow-hidden rounded-l-lg bg-neutral px-1 text-neutral-content"
-          onClick={() => openChatContainerHandler(item)}>
-          {unreadMessage > 0 && <div className="mx-1 text-sm">{unreadMessage}</div>}
+          className="btn_openChatBox flex items-center justify-end overflow-hidden bg-neutral text-neutral-content"
+          onClick={() => openChatContainerHandler(item)}
+          data-unread-count={unreadMessage > 0 ? unreadMessage : ''}>
           <ChatLeft
-            className={`ml-1 h-6 fill-neutral-content ${headingId === item.id && '!fill-accent'}`}
+            className={`chatLeft fill-neutral-content ${headingId === item.id && '!fill-accent'}`}
             size={14}
           />
+          <MdOutlineArrowDropDown size={20} className="arrowDown" />
         </span>
       </a>
 
