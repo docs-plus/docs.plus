@@ -13,7 +13,7 @@ const useUpdateDocPageUnreadMsg = () => {
     channels.forEach((channel: any) => {
       if (channel.unread_message_count) {
         const element = document.querySelector(
-          `.wrapBlock[data-id="${channel.id}"] > .buttonWrapper .btn_openChatBox span`
+          `.wrapBlock[data-id="${channel.id}"] > .buttonWrapper .btn_openChatBox`
         )
         if (element && channel.unread_message_count > 0) {
           element.setAttribute('data-unread-count', channel.unread_message_count.toString())
