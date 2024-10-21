@@ -77,7 +77,6 @@ const chatRoom = immer<IChatroomStore>((set) => ({
 
   setChatRoom: (headingId, documentId, headingPath, user) => {
     let newHeadingId: string = headingId
-    if (+newHeadingId === 1) newHeadingId = `1_${documentId}`
     set((state) => {
       state.chatRoom.headingId = newHeadingId
       state.chatRoom.documentId = documentId
@@ -88,11 +87,6 @@ const chatRoom = immer<IChatroomStore>((set) => ({
   },
 
   setOrUpdateChatRoom: (key, value) => {
-    if (key === 'headingId') {
-      let newHeadingId: string = value
-      if (+newHeadingId === 1) newHeadingId = `1_${getWorkspaceId()}`
-      value = newHeadingId
-    }
     set((state) => {
       // @ts-ignore
       state.chatRoom[key] = value
