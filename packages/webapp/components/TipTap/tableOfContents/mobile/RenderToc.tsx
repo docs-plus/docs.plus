@@ -21,8 +21,9 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
 
   useEffect(() => {
     if (!unreadMessage) return
+
     const element = document.querySelector(
-      `.wrapBlock[data-id="${item.id}"] > .buttonWrapper .btn_openChatBox span`
+      `.wrapBlock[data-id="${item.id}"] > .buttonWrapper .btn_openChatBox`
     )
     if (!element) return
     if (unreadMessage > 0) {
