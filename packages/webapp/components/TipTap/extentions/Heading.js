@@ -41,7 +41,7 @@ const Heading = Node.create({
     return ({ getPos, node, HTMLAttributes }) => {
       const dom = document.createElement('div')
 
-      const headingId = getPos() === 0 ? '1' : !node.attrs.id ? '1' : HTMLAttributes['data-id']
+      const headingId = node.attrs.id || ''
 
       const attributes = mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
         'data-type': this.name,
@@ -72,18 +72,26 @@ const Heading = Node.create({
         update: (updatedNode) => {
           if (updatedNode.type.name !== this.name) return false
 
-          // Ensure contentWrapper exists
-          const hasContentWrapper =
-            updatedNode.childCount > 1 ||
-            (updatedNode.firstChild &&
-              updatedNode.firstChild.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE)
-          if (!hasContentWrapper) {
-            const transaction = this.editor.state.tr
-            transaction.insert(
-              updatedNode.content.size,
-              this.editor.schema.nodes.contentWrapper.create()
-            )
-            this.editor.view.dispatch(transaction)
+          const prevHeadingId = dom.getAttribute('data-id')
+          const newHeadingId = updatedNode.attrs.id
+
+          // TODO: this is temporary solution, need to find better way for this
+          if (!prevHeadingId.length && newHeadingId) {
+            dom.setAttribute('data-id', newHeadingId)
+            content.setAttribute('data-id', newHeadingId)
+            console.log('update the node', {
+              newHeadingId
+            })
+
+            // Update the node's ID
+            if (this.editor && this.editor.state) {
+              const { tr } = this.editor.state
+              const pos = getPos()
+              if (pos !== undefined) {
+                tr.setNodeMarkup(pos, null, { ...updatedNode.attrs, id: newHeadingId })
+                this.editor.view.dispatch(tr)
+              }
+            }
           }
 
           return true

@@ -23,15 +23,8 @@ const useHandelTocUpdate = () => {
 
     editorDoc?.descendants((node: any, _pos: any, _parent: any) => {
       if (node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
-        let headingId = _parent.attrs?.id || node?.attrs.id || '1'
+        let headingId = _parent.attrs?.id || node?.attrs.id
         let { headingSection, offsetTop } = getHeadingDetails(headingId)
-
-        if (offsetTop === 0) {
-          headingId = '1'
-          const headingDetails = getHeadingDetails(headingId)
-          headingSection = headingDetails.headingSection
-          offsetTop = headingDetails.offsetTop
-        }
 
         headings.push({
           level: node.attrs?.level,
