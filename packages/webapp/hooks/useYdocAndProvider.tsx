@@ -6,6 +6,7 @@ import { useStore } from '@stores'
 
 const useYdocAndProvider = () => {
   const {
+    editor: { instance: editor },
     metadata: { documentId }
   } = useStore((state) => state.settings)
 
@@ -28,9 +29,8 @@ const useYdocAndProvider = () => {
             // console.log('onStatus', data)
           },
           onSynced: (data) => {
-            // console.log('++onSynced', data)
-            // console.log(`++content loaded from Server, pad name: ${ documentId }`, provider?.isSynced)
-            if (data?.state) setWorkspaceEditorSetting('rendering', false)
+            console.log('++onSynced', data)
+            if (data?.state) setWorkspaceEditorSetting('providerSyncing', false)
           },
           // documentUpdateHandler: (update) => {
           // console.log('documentUpdateHandler', update)
@@ -57,7 +57,7 @@ const useYdocAndProvider = () => {
             console.info('destroy provider')
             setDestroyed(true)
             setWorkspaceEditorSetting('loading', true)
-            setWorkspaceEditorSetting('rendering', true)
+            setWorkspaceEditorSetting('providerSyncing', true)
             setWorkspaceEditorSetting('applyingFilters', false)
             setWorkspaceSetting('hocuspocusProvider', null)
             setWorkspaceEditorSetting('presentUsers', [])
