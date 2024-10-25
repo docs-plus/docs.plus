@@ -5,7 +5,7 @@ const config: Config = {
     turnstile: {
       siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '',
       verifyUrl: '/api/verify-turnstile',
-      expireTime: 60 * 60 * 24 * 2 // 24 hours
+      expireTime: 60 * 60 * 24 * 2 // 2 days
     }
   },
   editor: {
@@ -15,7 +15,7 @@ const config: Config = {
       <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>
       <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>
     `,
-    getDefaultContent: (Heading: string) => {
+    getDefaultContent: (Heading: string = 'Welcome to Your New Document') => {
       return `<h1>${Heading}</h1>
       <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>
       <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>
