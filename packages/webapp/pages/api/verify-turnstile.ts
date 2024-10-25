@@ -37,7 +37,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         cookie.serialize('turnstileVerified', 'true', {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'Strict', // Prevent the cookie from being sent with cross-site requests
+          sameSite: 'strict', // Prevent the cookie from being sent with cross-site requests
           maxAge: Config.app.turnstile.expireTime,
           path: '/'
         })
