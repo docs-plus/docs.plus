@@ -1,5 +1,5 @@
 import { GoogleGIcon, Sparkles, OpenEnvelope } from '@icons'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Button from '@components/ui/Button'
 import { useMutation } from '@tanstack/react-query'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
@@ -8,14 +8,19 @@ import { signInWithOAuth } from '@api'
 import { useSupabase } from '@hooks/useSupabase'
 import { Provider } from '@supabase/supabase-js'
 import * as toast from '@components/toast'
+import { Turnstile } from '@marsidev/react-turnstile'
+import Config from '@config'
 
-const SingInForm = ({ ...props }) => {
+const SignInForm = ({ ...props }) => {
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
   const [emailError, setEmailError] = useState('')
   const [highlightEmailInput, setHighlightEmailInput] = useState(false)
   const [loading, setLoading] = useState(false)
   const [btnSubmitText, setBtnSubmitText] = useState('Send magic link')
   const [emailSent, setEmailSent] = useState(false)
+  const [captchaToken, setCaptchaToken] = useState<string>('')
+  const [isCaptchaLoaded, setIsCaptchaLoaded] = useState(false)
+
   const supabaseClient = createClientComponentClient()
   const {
     loading: googleLoading,
@@ -23,8 +28,16 @@ const SingInForm = ({ ...props }) => {
     setLoading: setGoogleLoading
   } = useSupabase(signInWithOAuth, null, false)
 
+  useEffect(() => {
+    setIsCaptchaLoaded(!!captchaToken)
+  }, [captchaToken])
+
   // Handle authentication with OAuth
   const handleOAuthSignIn = async (provider: Provider) => {
+    if (!isCaptchaLoaded) {
+      toast.Error('Please wait for the security check to complete')
+      return
+    }
     try {
       const currentUrl = new URL(location.href)
       const authCallbackURL = new URL(`${currentUrl.origin}/api/auth/callback`)
@@ -40,8 +53,7 @@ const SingInForm = ({ ...props }) => {
         options: {
           redirectTo: authCallbackURL.href,
           queryParams: {
-            // access_type: 'offline',
-            // prompt: 'consent'
+            captchaToken
           }
         }
       })
@@ -85,6 +97,11 @@ const SingInForm = ({ ...props }) => {
   const signInWithEmail = async (e: any) => {
     e.preventDefault()
 
+    if (!isCaptchaLoaded) {
+      toast.Error('Please wait for the security check to complete')
+      return
+    }
+
     if (magicLinkEmail.length === 0) return
 
     //@ts-ignore
@@ -125,12 +142,13 @@ const SingInForm = ({ ...props }) => {
           {/* <p className="text-base antialiased text-center font-bold">
             Your journey with Docs.plus begins now!
           </p> */}
+
           <div className="mt-6 flex flex-col items-center justify-center">
             <Button
               className="btn-block"
               onClick={() => handleOAuthSignIn('google')}
               loading={googleLoading}
-              disabled={googleLoading || loading}
+              disabled={googleLoading || loading || !isCaptchaLoaded}
               Icon={GoogleGIcon}>
               Continue with Google
             </Button>
@@ -151,7 +169,7 @@ const SingInForm = ({ ...props }) => {
               <Button
                 className="btn-neutral btn-block mt-4 text-white"
                 loading={isLoading || loading}
-                disabled={isLoading || loading || googleLoading}
+                disabled={isLoading || loading || googleLoading || !isCaptchaLoaded}
                 onClick={signInWithEmail}>
                 {btnSubmitText}
               </Button>
@@ -163,6 +181,20 @@ const SingInForm = ({ ...props }) => {
               </p>
             </form>
           </div>
+          <div className="mt-4 flex justify-center">
+            <Turnstile
+              siteKey={Config.app.turnstile.siteKey}
+              onSuccess={(token) => setCaptchaToken(token)}
+            />
+          </div>
+          {!isCaptchaLoaded && (
+            <div className="mt-2 flex items-center justify-center space-x-2">
+              <p className="text-sm text-gray-500">
+                Please wait for the security check to complete
+              </p>
+              <span className="loading loading-dots loading-xs ml-2 mt-2"></span>
+            </div>
+          )}
         </div>
         <div
           className={`${
@@ -183,4 +215,4 @@ const SingInForm = ({ ...props }) => {
   )
 }
 
-export default SingInForm
+export default SignInForm
