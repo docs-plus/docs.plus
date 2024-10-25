@@ -24,7 +24,8 @@
       "@api": ["api/index.ts"],
       "@toast": ["components/toast/index.ts"],
       "@enum": ["components/TipTap/enums.js"],
-      "@services/*": ["services/*"]
+      "@services/*": ["services/*"],
+      "@config": ["config/index.ts"]
     },
     "allowJs": true,
     "skipLibCheck": true,

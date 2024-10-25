@@ -3,11 +3,11 @@ import { Editor } from '@tiptap/react'
 
 type EditorSettings = {
   instance?: Editor
-  rendering?: boolean
-  loading?: boolean
+  providerSyncing: boolean
+  loading: boolean
   applyingFilters?: boolean
   selectionPos?: number
-  filterResult?: any
+  filterResult: { sortedSlugs: string[]; selectedNodes: any[] }
   isMobile?: boolean
   presentUsers?: any
   isEditable: boolean
@@ -21,6 +21,7 @@ type Workspace = {
   hocuspocusProvider?: any
   deviceDetect?: any
   isAuthServiceAvailable?: boolean
+  isTurnstileVerified?: boolean
 }
 
 export interface IWorkspaceStore {
@@ -40,15 +41,16 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
     broadcaster: undefined,
     editor: {
       instance: undefined,
-      rendering: true,
+      providerSyncing: true,
       loading: true,
       applyingFilters: false,
       selectionPos: 0,
-      filterResult: [],
+      filterResult: { sortedSlugs: [], selectedNodes: [] },
       presentUsers: [],
       isEditable: false
     },
-    hocuspocusProvider: undefined
+    hocuspocusProvider: undefined,
+    isTurnstileVerified: false
   },
   // Update a single setting
   setWorkspaceSetting: (key, value) => {
