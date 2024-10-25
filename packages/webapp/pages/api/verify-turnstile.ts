@@ -62,7 +62,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
   } catch (error) {
     // Improve error logging
-    console.error('Error verifying Turnstile token:', error.response?.data || error.message)
+    if (error instanceof Error) {
+      console.error('Error verifying Turnstile token:', error.message)
+    } else if (axios.isAxiosError(error) && error.response) {
+      console.error('Error verifying Turnstile token:', error.response.data)
+    } else {
+      console.error('Error verifying Turnstile token:', error)
+    }
     return res.status(500).json({ success: false, message: 'Internal server error.' })
   }
 }
