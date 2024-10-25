@@ -3,6 +3,7 @@ import { Turnstile } from '@marsidev/react-turnstile'
 import { useStore } from '@stores'
 import Config from '@config'
 import { SiCloudflare } from 'react-icons/si'
+import axios from 'axios'
 
 interface TurnstilePageProps {
   showTurnstile: boolean
@@ -21,21 +22,17 @@ const TurnstilePage: React.FC<TurnstilePageProps> = ({ showTurnstile }) => {
     if (!token) return
 
     try {
-      const response = await fetch(Config.app.turnstile.verifyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ token })
-      })
+      const response = await axios.post(
+        Config.app.turnstile.verifyUrl,
+        { token },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      )
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('Cloudflare error response:', errorText)
-        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`)
-      }
-
-      const data: { success: boolean } = await response.json()
+      const data = response.data
 
       if (data.success) {
         setWorkspaceSetting('isTurnstileVerified', true)
@@ -43,7 +40,11 @@ const TurnstilePage: React.FC<TurnstilePageProps> = ({ showTurnstile }) => {
         setError('Verification failed. Please try again.')
       }
     } catch (err) {
-      console.error('Verification error:', err)
+      if (axios.isAxiosError(err)) {
+        console.error('Verification error:', err.response?.data || err.message)
+      } else {
+        console.error('Verification error:', err)
+      }
       setError('An error occurred during verification. Please try again.')
     }
   }
