@@ -1,5 +1,5 @@
 import { GetServerSidePropsContext } from 'next'
-import React, { useEffect } from 'react'
+import React from 'react'
 import MobileDetect from 'mobile-detect'
 import { fetchDocument } from '@utils/fetchDocument'
 import HeadSeo from '@components/HeadSeo'
@@ -9,7 +9,6 @@ import { LoadingDots } from '@components/LoadingDots'
 import { useStore } from '@stores'
 import * as cookie from 'cookie'
 import TurnstilePage from '@components/TurnstilePage'
-import { useRouter } from 'next/router'
 import useAddDeviceTypeHtmlClass from '@components/pages/document/hooks/useAddDeviceTypeHtmlClass'
 import dynamic from 'next/dynamic'
 
@@ -23,15 +22,9 @@ const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPa
 })
 
 const Document = ({ docMetadata, isMobile, channels, showTurnstile }: any) => {
-  const router = useRouter()
   const { isTurnstileVerified } = useStore((state) => state.settings)
 
   useAddDeviceTypeHtmlClass(isMobile)
-
-  // we need a soflt reload in order to refresh the secourity footprint
-  useEffect(() => {
-    if (isTurnstileVerified) router.push(router.asPath)
-  }, [isTurnstileVerified])
 
   if (!isTurnstileVerified) {
     return (

@@ -36,6 +36,7 @@ const TurnstilePage: React.FC<TurnstilePageProps> = ({ showTurnstile }) => {
 
       if (data.success) {
         setWorkspaceSetting('isTurnstileVerified', true)
+        window.location.reload()
       } else {
         setError('Verification failed. Please try again.')
       }
@@ -50,7 +51,6 @@ const TurnstilePage: React.FC<TurnstilePageProps> = ({ showTurnstile }) => {
   }
 
   const handleError = (error: string) => {
-    console.log({ error })
     setError(error)
   }
 
@@ -64,7 +64,7 @@ const TurnstilePage: React.FC<TurnstilePageProps> = ({ showTurnstile }) => {
   }
 
   return (
-    <div className="flex size-full h-dvh items-center justify-center">
+    <div className="flex size-full h-dvh flex-col items-center justify-center">
       {error && (
         <div className="flex flex-col items-center">
           <p className="mb-4 text-red-600"> {error}</p>
@@ -76,10 +76,10 @@ const TurnstilePage: React.FC<TurnstilePageProps> = ({ showTurnstile }) => {
       )}
 
       {!error && (
-        <>
+        <div className="flex flex-row items-center">
           <span>Quick security check in progress</span>
           <span className="loading loading-dots loading-xs ml-2 mt-2"></span>
-        </>
+        </div>
       )}
       <Turnstile
         ref={ref}
