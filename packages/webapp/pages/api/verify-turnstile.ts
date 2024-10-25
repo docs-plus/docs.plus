@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import axios from 'axios'
-import cookie from 'cookie'
+import { serialize } from 'cookie'
 import Config from '@config'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -18,7 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(500).json({ success: false, message: 'Server configuration error.' })
     }
 
-    const siteverifyUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
+    const verifyEndpoint = 'https://challenges.cloudflare.com/turnstile/v0/siteverify'
 
     const params = new URLSearchParams()
     params.append('secret', secretKey)
@@ -28,31 +28,31 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       params.append('remoteip', ip.toString())
     }
 
-    const response = await axios.post(siteverifyUrl, params, {
+    const response = await fetch(verifyEndpoint, {
+      method: 'POST',
+      body: `secret=${encodeURIComponent(secretKey)}&response=${encodeURIComponent(token)}`,
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
+        'content-type': 'application/x-www-form-urlencoded'
       }
     })
 
-    const data = response.data
-
+    const data = await response.json()
     // Add more detailed logging
-    console.log('Turnstile verification response:', data)
 
     if (data.success) {
       // Set a cookie to indicate verification success
       res.setHeader(
         'Set-Cookie',
-        cookie.serialize('turnstileVerified', 'true', {
+        serialize('turnstileVerified', 'true', {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict', // Prevent the cookie from being sent with cross-site requests
+          sameSite: 'strict',
           maxAge: Config.app.turnstile.expireTime,
           path: '/'
         })
       )
 
-      return res.status(200).json({ success: true })
+      return res.status(200).json(data)
     } else {
       // Log the error codes if available
       if (data['error-codes']) {
