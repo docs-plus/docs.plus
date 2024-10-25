@@ -17,11 +17,11 @@ const Breadcrumb = () => {
   const [headingPath, setHeadingPath] = useState<any>([])
 
   const {
-    editor: { instance: editor, rendering, loading }
+    editor: { instance: editor, providerSyncing, loading }
   } = useStore((state) => state.settings)
 
   useEffect(() => {
-    if (!editor || rendering) return
+    if (!editor || providerSyncing) return
 
     let posAtDOM = getPostAtDOM(editor, headingId)
     if (posAtDOM === -1) {
@@ -55,7 +55,7 @@ const Breadcrumb = () => {
 
     updateChatRoom('headingPath', headingAddress)
     setHeadingPath(headingAddress)
-  }, [headingId, editor, rendering, loading])
+  }, [headingId, editor, providerSyncing, loading])
 
   if (!headingPath.length || !headingId) return null
 

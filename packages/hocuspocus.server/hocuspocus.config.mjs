@@ -58,17 +58,10 @@ const getServerName = () =>
   })}`
 
 const generateDefaultState = () => {
-  const html = `<h1>&shy;</h1>
-  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>
-  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>
-  <p></p><p></p><p></p><p></p><p></p><p></p><p></p><p></p>
-  `
-
-  const json = generateJSON(html, [Document, Paragraph, Text])
-
-  const defaultDoc = TiptapTransformer.toYdoc(json)
-
-  return Y.encodeStateAsUpdate(defaultDoc)
+  const ydoc = new Y.Doc()
+  const ymeta = ydoc.getMap('metadata')
+  ymeta.set('needsInitialization', true)
+  return Y.encodeStateAsUpdate(ydoc)
 }
 
 const configureExtensions = () => {
@@ -116,7 +109,8 @@ const configureExtensions = () => {
             where: { documentId: documentName },
             orderBy: { id: 'desc' }
           })
-          return doc?.data || generateDefaultState()
+
+          return !doc ? generateDefaultState() : doc.data
         } catch (err) {
           console.error('Error fetching data:', err)
           await prisma.$disconnect()

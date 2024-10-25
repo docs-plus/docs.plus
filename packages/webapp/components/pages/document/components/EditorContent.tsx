@@ -17,7 +17,7 @@ const RenderLoader = ({ className }: { className?: string }) => {
 
 const EditorContent = ({ className }: { className?: string }) => {
   const {
-    editor: { instance: editor, loading, rendering, applyingFilters }
+    editor: { instance: editor, loading, providerSyncing, applyingFilters }
   } = useStore((state) => state.settings)
   const editorElement = useRef<HTMLDivElement>(null)
 
@@ -32,7 +32,7 @@ const EditorContent = ({ className }: { className?: string }) => {
     setAttributes()
   }, [editor])
 
-  if (loading || rendering || !editor) {
+  if (loading || providerSyncing || !editor) {
     return <RenderLoader className={className} />
   }
 

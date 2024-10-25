@@ -52,7 +52,7 @@ function createCrinkleNode(prob) {
     if (!heading.classList.contains('closed')) return
 
     const headingId = heading.getAttribute('data-id')
-    const open = heading.classList.contains('open')
+    const open = heading.classList.contains('open') || true
 
     PubSub.publish(ENUMS.EVENTS.FOLD_AND_UNFOLD, { headingId, open: open })
   })

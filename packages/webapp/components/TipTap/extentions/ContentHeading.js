@@ -393,148 +393,148 @@ const HeadingsTitle = Node.create({
             console.info('destroy handleHeadingToggle')
           })
         }
-      }),
-      // TODO: refactor this plugin
-      new Plugin({
-        key: new PluginKey('headingTitleListener'),
-        state: {
-          init() {
-            const docMetadata = useStore.getState().settings.metadata
-            // Bind 'this' to saveTitle
-            this.spec.saveTitle = this.spec.saveTitle.bind(this)
-
-            return {
-              listening: docMetadata.title.length === 0 ? false : true,
-              title: docMetadata.title,
-              headingId: docMetadata.documentId
-            }
-          },
-          apply(tr, value, oldState, newState) {
-            const { selection } = newState
-            const { $from } = selection
-            const pos = $from.pos
-
-            if (pos === 2 && $from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
-              return {
-                listening: true,
-                title: $from.parent.textContent,
-                headingId: $from.parent.attrs.id
-              }
-            }
-
-            if (value.listening) {
-              if (tr.docChanged) {
-                return { ...value, title: $from.parent.textContent }
-              }
-
-              if (
-                tr.selectionSet &&
-                (pos > 2 || $from.parent.type.name !== ENUMS.NODES.CONTENT_HEADING_TYPE)
-              ) {
-                this.spec.saveTitle(newState, value.title)
-                return { listening: false, title: '', headingId: null }
-              }
-            }
-
-            return value
-          }
-        },
-        props: {
-          handleDOMEvents: {
-            blur(view, event) {
-              const { $from } = view.state.selection
-              const nodeType = $from.parent.type.name
-              const title = $from.parent.textContent
-
-              if (nodeType === ENUMS.NODES.CONTENT_HEADING_TYPE) {
-                this.spec.saveTitle(view.state, title)
-              }
-            }
-          },
-
-          handleKeyDown(view, event) {
-            const { listening: listeningState, title } = this.getState(view.state)
-            if (!listeningState) return
-
-            const { $from } = view.state.selection
-            const nodeType = $from.parent.type.name
-            const key = event.key
-
-            if (nodeType === ENUMS.NODES.CONTENT_HEADING_TYPE && key === 'Enter') {
-              this.spec.saveTitle(view.state, title)
-            }
-          }
-        },
-        async saveTitle(state, title) {
-          const pluginState = this.getState(state)
-          if (!pluginState || !pluginState.listening) return
-
-          try {
-            const documentId = useStore.getState().settings.metadata.documentId
-            const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentId}`
-
-            const body = {
-              title
-            }
-
-            const response = await fetch(url, {
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json'
-              },
-              body: JSON.stringify(body)
-            })
-
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`)
-            }
-
-            const result = await response.json()
-
-            const hocuspocusProvider = useStore.getState().settings.hocuspocusProvider
-
-            // broadcast the new title to the hocuspocus provider
-            hocuspocusProvider.sendStateless(
-              JSON.stringify({ type: 'docTitle', state: result.data })
-            )
-
-            toast.Success('Document title changed successfully')
-          } catch (error) {
-            console.error('[ContentHeading] Error saving content to database:', error)
-            toast.Error('Failed to change document title')
-          }
-          return true
-        },
-        view(editorView) {
-          const contentEditableDiv = document.querySelector('.pad.tiptap [contenteditable]')
-
-          const updateContentEditableDiv = (title) => {
-            if (!contentEditableDiv) return
-            contentEditableDiv.textContent = title
-          }
-
-          const handleBlur = () => {
-            const pluginState = this.key.getState(editorView.state)
-            if (!pluginState.listening) return
-
-            this.spec.saveTitle(editorView.state, pluginState.title)
-          }
-
-          contentEditableDiv.addEventListener('blur', handleBlur)
-
-          return {
-            update: (view, prevState) => {
-              const pluginState = this.key.getState(view.state)
-              if (pluginState.listening) {
-                updateContentEditableDiv(pluginState.title)
-              }
-            },
-            destroy: () => {
-              contentEditableDiv.removeEventListener('blur', handleBlur)
-            }
-          }
-        }
       })
+      // // TODO: refactor this plugin
+      // new Plugin({
+      //   key: new PluginKey('headingTitleListener'),
+      //   state: {
+      //     init() {
+      //       const docMetadata = useStore.getState().settings.metadata
+      //       // Bind 'this' to saveTitle
+      //       this.spec.saveTitle = this.spec.saveTitle.bind(this)
+
+      //       return {
+      //         listening: docMetadata.title.length === 0 ? false : true,
+      //         title: docMetadata.title,
+      //         headingId: docMetadata.documentId
+      //       }
+      //     },
+      //     apply(tr, value, oldState, newState) {
+      //       const { selection } = newState
+      //       const { $from } = selection
+      //       const pos = $from.pos
+
+      //       if (pos === 2 && $from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+      //         return {
+      //           listening: true,
+      //           title: $from.parent.textContent,
+      //           headingId: $from.parent.attrs.id
+      //         }
+      //       }
+
+      //       if (value.listening) {
+      //         if (tr.docChanged) {
+      //           return { ...value, title: $from.parent.textContent }
+      //         }
+
+      //         if (
+      //           tr.selectionSet &&
+      //           (pos > 2 || $from.parent.type.name !== ENUMS.NODES.CONTENT_HEADING_TYPE)
+      //         ) {
+      //           this.spec.saveTitle(newState, value.title)
+      //           return { listening: false, title: '', headingId: null }
+      //         }
+      //       }
+
+      //       return value
+      //     }
+      //   },
+      //   props: {
+      //     handleDOMEvents: {
+      //       blur(view, event) {
+      //         const { $from } = view.state.selection
+      //         const nodeType = $from.parent.type.name
+      //         const title = $from.parent.textContent
+
+      //         if (nodeType === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+      //           this.spec.saveTitle(view.state, title)
+      //         }
+      //       }
+      //     },
+
+      //     handleKeyDown(view, event) {
+      //       const { listening: listeningState, title } = this.getState(view.state)
+      //       if (!listeningState) return
+
+      //       const { $from } = view.state.selection
+      //       const nodeType = $from.parent.type.name
+      //       const key = event.key
+
+      //       if (nodeType === ENUMS.NODES.CONTENT_HEADING_TYPE && key === 'Enter') {
+      //         this.spec.saveTitle(view.state, title)
+      //       }
+      //     }
+      //   },
+      //   async saveTitle(state, title) {
+      //     const pluginState = this.getState(state)
+      //     if (!pluginState || !pluginState.listening) return
+
+      //     try {
+      //       const documentId = useStore.getState().settings.metadata.documentId
+      //       const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentId}`
+
+      //       const body = {
+      //         title
+      //       }
+
+      //       const response = await fetch(url, {
+      //         method: 'PUT',
+      //         headers: {
+      //           'Content-Type': 'application/json'
+      //         },
+      //         body: JSON.stringify(body)
+      //       })
+
+      //       if (!response.ok) {
+      //         throw new Error(`HTTP error! status: ${response.status}`)
+      //       }
+
+      //       const result = await response.json()
+
+      //       const hocuspocusProvider = useStore.getState().settings.hocuspocusProvider
+
+      //       // broadcast the new title to the hocuspocus provider
+      //       hocuspocusProvider.sendStateless(
+      //         JSON.stringify({ type: 'docTitle', state: result.data })
+      //       )
+
+      //       toast.Success('Document title changed successfully')
+      //     } catch (error) {
+      //       console.error('[ContentHeading] Error saving content to database:', error)
+      //       toast.Error('Failed to change document title')
+      //     }
+      //     return true
+      //   },
+      //   view(editorView) {
+      //     const contentEditableDiv = document.querySelector('.pad.tiptap [contenteditable]')
+
+      //     const updateContentEditableDiv = (title) => {
+      //       if (!contentEditableDiv) return
+      //       contentEditableDiv.textContent = title
+      //     }
+
+      //     const handleBlur = () => {
+      //       const pluginState = this.key.getState(editorView.state)
+      //       if (!pluginState.listening) return
+
+      //       this.spec.saveTitle(editorView.state, pluginState.title)
+      //     }
+
+      //     contentEditableDiv.addEventListener('blur', handleBlur)
+
+      //     return {
+      //       update: (view, prevState) => {
+      //         const pluginState = this.key.getState(view.state)
+      //         if (pluginState.listening) {
+      //           updateContentEditableDiv(pluginState.title)
+      //         }
+      //       },
+      //       destroy: () => {
+      //         contentEditableDiv.removeEventListener('blur', handleBlur)
+      //       }
+      //     }
+      //   }
+      // })
     ]
   }
 })

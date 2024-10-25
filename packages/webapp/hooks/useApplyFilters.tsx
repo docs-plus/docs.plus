@@ -9,7 +9,7 @@ const useApplyFilters = () => {
   const { slugs } = router.query as { slugs: string[] }
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const {
-    editor: { rendering, loading, instance: editor }
+    editor: { loading, instance: editor, filterResult }
   } = useStore((state) => state.settings)
 
   const [isDocumentReady, setIsDocumentReady] = useState(false)
@@ -32,7 +32,7 @@ const useApplyFilters = () => {
     if (!isDocumentReady) return
     if (!slugs) return
     // if slugs is empty, then remove all filters data set
-    if (slugs.length === 1) {
+    if (slugs.length === 1 && filterResult.selectedNodes.length > 0) {
       setWorkspaceEditorSetting('filterResult', { sortedSlugs: [], selectedNodes: [] })
       setWorkspaceEditorSetting('applyingFilters', true)
       localStorage.setItem('headingMap', JSON.stringify([]))
@@ -42,7 +42,7 @@ const useApplyFilters = () => {
       }, 500)
       return
     }
-    if (!editor || rendering || loading || slugs.length === 1) return
+    if (!editor || loading || slugs.length === 1) return
 
     // remove the document slug from the slugs array
     slugs.shift()
@@ -84,7 +84,7 @@ const useApplyFilters = () => {
       setWorkspaceEditorSetting('filterResult', { sortedSlugs, selectedNodes })
       setWorkspaceEditorSetting('applyingFilters', false)
     }, 300)
-  }, [rendering, loading, isDocumentReady, slugs])
+  }, [loading, isDocumentReady, slugs])
 }
 
 export default useApplyFilters

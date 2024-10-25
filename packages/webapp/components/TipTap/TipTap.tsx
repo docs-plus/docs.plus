@@ -4,6 +4,7 @@ import { createLowlight } from 'lowlight'
 import ShortUniqueId from 'short-unique-id'
 import ENUMS from './enums'
 import { useStore } from '@stores'
+import authStore from 'stores/authStore'
 
 // Collaboration
 import Collaboration, { isChangeOrigin } from '@tiptap/extension-collaboration'
@@ -147,36 +148,14 @@ const generatePlaceholderText = (data: any) => {
 }
 
 // TODO: editor extensions should be dynamic
-const Editor = ({ provider, ydoc, spellcheck = false, user }: any): Partial<EditorOptions> => {
+const Editor = ({ provider, spellcheck = false }: any): Partial<EditorOptions> => {
   const {
     settings: {
       editor: { isMobile }
     }
-  } = useStore((state) => state)
+  } = useStore.getState() //useStore((state) => state)
 
-  if (!provider) {
-    return {
-      // @ts-ignore
-      immediatelyRender: false,
-      shouldRerenderOnTransaction: false,
-      extensions: [
-        Document,
-        Bold,
-        Italic,
-        BulletList,
-        Strike,
-        HardBreak,
-        Gapcursor,
-        Paragraph,
-        Text,
-        ListItem,
-        OrderedList,
-        Heading.configure(),
-        ContentHeading,
-        ContentWrapper
-      ]
-    }
-  }
+  if (!provider) return {}
 
   const CollaborationCursorConfig = {
     provider,
@@ -187,6 +166,8 @@ const Editor = ({ provider, ydoc, spellcheck = false, user }: any): Partial<Edit
   } as unknown as CollaborationCursorOptions
 
   if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    const user = authStore.getState().profile
+
     const newUser = {
       display_name: user?.display_name || user?.username || user?.email || 'anonymous',
       id: user?.id || user?.email || 'anonymous',

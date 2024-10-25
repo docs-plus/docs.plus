@@ -6,12 +6,12 @@ import { useTypingIndicator } from '@components/chat/hooks/useTypingIndicator'
 
 const TOC = ({ className = '' }: any) => {
   const {
-    editor: { loading, applyingFilters, rendering, instance: editor }
+    editor: { loading, applyingFilters, providerSyncing, instance: editor }
   } = useStore((state) => state.settings)
 
   useTypingIndicator()
 
-  if (loading || !editor || applyingFilters || rendering) {
+  if (loading || !editor || applyingFilters || providerSyncing) {
     return (
       <div>
         <TableOfcontentLoader className="mt-6" />
