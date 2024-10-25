@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Turnstile } from '@marsidev/react-turnstile'
 import { useStore } from '@stores'
 import Config from '@config'
@@ -10,12 +10,12 @@ interface TurnstilePageProps {
 
 const TurnstilePage: React.FC<TurnstilePageProps> = ({ showTurnstile }) => {
   const [error, setError] = useState<string | null>(null)
-  const ref = React.useRef() as any
+  const ref = useRef<any>(null)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
 
   useEffect(() => {
     setWorkspaceSetting('isTurnstileVerified', !showTurnstile)
-  }, [showTurnstile])
+  }, [showTurnstile, setWorkspaceSetting])
 
   const handleVerification = async (token: string | null) => {
     if (!token) return
@@ -26,8 +26,14 @@ const TurnstilePage: React.FC<TurnstilePageProps> = ({ showTurnstile }) => {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ token: token })
+        body: JSON.stringify({ token })
       })
+
+      if (!response.ok) {
+        const errorText = await response.text()
+        console.error('Cloudflare error response:', errorText)
+        throw new Error(`HTTP error! status: ${response.status}, body: ${errorText}`)
+      }
 
       const data: { success: boolean } = await response.json()
 
@@ -83,7 +89,7 @@ const TurnstilePage: React.FC<TurnstilePageProps> = ({ showTurnstile }) => {
       />
       <div className="absolute bottom-4 right-4 flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700">
         <SiCloudflare size={20} className="mr-2 text-[#f38020]" />
-        Powered by Cloudflare
+        Security by Cloudflare
       </div>
     </div>
   )
