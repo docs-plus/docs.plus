@@ -20,7 +20,6 @@ const Heading = Node.create({
     return {
       levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       persist: false,
-      openClassName: 'opend',
       id: 1,
       HTMLAttributes: {
         class: ENUMS.NODES.HEADING_TYPE,
@@ -79,9 +78,6 @@ const Heading = Node.create({
           if (!prevHeadingId.length && newHeadingId) {
             dom.setAttribute('data-id', newHeadingId)
             content.setAttribute('data-id', newHeadingId)
-            console.log('update the node', {
-              newHeadingId
-            })
 
             // Update the node's ID
             if (this.editor && this.editor.state) {

@@ -5,8 +5,8 @@ import { RenderTocs } from './RenderTocs'
 
 const TableOfContents = ({ className }: any) => {
   const { headingId } = useChatStore((state) => state.chatRoom)
-  const { items } = useHandelTocUpdate()
   const [renderedTocs, setRenderedTocs] = useState([])
+  const { items } = useHandelTocUpdate()
 
   useEffect(() => {
     if (!items.length) return

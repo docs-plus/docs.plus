@@ -39,7 +39,7 @@ const GearButton = () => {
 
 const ToolbarDesktop = () => {
   const {
-    editor: { instance: editor, loading, rendering }
+    editor: { instance: editor, loading, providerSyncing }
   } = useStore((state) => state.settings)
   const { isAuthServiceAvailable } = useStore((state) => state.settings)
   const [isModalOpen, setModalOpen] = useState(false)
@@ -47,7 +47,7 @@ const ToolbarDesktop = () => {
   const { createComment } = useTurnSelectedTextIntoComment()
 
   // TODO: skeleton loading
-  if (loading || rendering || !editor) return <ToolbarSkeleton />
+  if (loading || providerSyncing || !editor) return <ToolbarSkeleton />
 
   return (
     <>

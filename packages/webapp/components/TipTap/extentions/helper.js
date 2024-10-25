@@ -266,12 +266,13 @@ export const copyToClipboard = (text, callback) => {
 }
 
 export const getNodeState = (headingId) => {
-  const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
-  const nodeState = headingMap.find((h) => h.headingId === headingId) || {
-    crinkleOpen: true
+  try {
+    const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
+    return headingMap.find((h) => h.headingId === headingId) || { crinkleOpen: true }
+  } catch (error) {
+    console.error('Error parsing headingMap from localStorage:', error)
+    return { crinkleOpen: true }
   }
-
-  return nodeState
 }
 
 export const getPrevHeadingPos = (doc, startPos, endPos) => {

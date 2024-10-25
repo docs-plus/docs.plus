@@ -1,89 +1,125 @@
 import { GetServerSidePropsContext } from 'next'
 import React, { useEffect } from 'react'
 import MobileDetect from 'mobile-detect'
-import useDocumentMetadata from '@hooks/useDocumentMetadata'
 import { fetchDocument } from '@utils/fetchDocument'
 import HeadSeo from '@components/HeadSeo'
-import useMapDocumentAndWorkspace from '@hooks/useMapDocumentAndWorkspace'
-import useInitiateDocumentAndWorkspace from '@hooks/useInitiateDocumentAndWorkspace'
 import { upsertWorkspace, getChannelsByWorkspaceAndUserids } from '@api'
 import { createPagesServerClient } from '@supabase/auth-helpers-nextjs'
 import { LoadingDots } from '@components/LoadingDots'
-import useYdocAndProvider from '@hooks/useYdocAndProvider'
 import { useStore } from '@stores'
-import DocumentLayouts from '@components/pages/document/layouts/DocumentLayouts'
+import * as cookie from 'cookie'
+import TurnstilePage from '@components/TurnstilePage'
+import { useRouter } from 'next/router'
+import useAddDeviceTypeHtmlClass from '@components/pages/document/hooks/useAddDeviceTypeHtmlClass'
+import dynamic from 'next/dynamic'
 
-const Document = ({ slugs, docMetadata, isMobile, channels }: any) => {
-  useDocumentMetadata(slugs, docMetadata)
-  useInitiateDocumentAndWorkspace(docMetadata)
-  const { loading } = useMapDocumentAndWorkspace(docMetadata, channels)
-  const { editor: editorSetting } = useStore((state) => state.settings)
+const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPage'), {
+  ssr: false,
+  loading: () => (
+    <LoadingDots>
+      <span>Hang tight! Document is loading</span>
+    </LoadingDots>
+  )
+})
 
-  // initialize the editor and its provider!
-  useYdocAndProvider()
+const Document = ({ docMetadata, isMobile, channels, showTurnstile }: any) => {
+  const router = useRouter()
+  const { isTurnstileVerified } = useStore((state) => state.settings)
 
+  useAddDeviceTypeHtmlClass(isMobile)
+
+  // we need a soflt reload in order to refresh the secourity footprint
   useEffect(() => {
-    document?.querySelector('html')?.classList.add(isMobile ? 'm_mobile' : 'm_desktop')
-  }, [isMobile])
+    if (isTurnstileVerified) router.push(router.asPath)
+  }, [isTurnstileVerified])
 
-  if (loading && editorSetting.loading) {
+  if (!isTurnstileVerified) {
     return (
       <>
         <HeadSeo />
-        <LoadingDots>
-          <span>Hang tight! content is loading</span>
-        </LoadingDots>
+        <TurnstilePage showTurnstile={showTurnstile} />
       </>
     )
   }
 
-  return <DocumentLayouts isMobile={isMobile} />
+  return <DocumentPage docMetadata={docMetadata} isMobile={isMobile} channels={channels} />
 }
 
 export default Document
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
-  const slug = context.query.slugs?.at(0)
+  // first part
+  const { req, query } = context
+  const cookies = cookie.parse(req.headers.cookie || '') as { turnstileVerified?: string }
+
+  // Check if TURNSTILE_SECRET_KEY exists and verify cookie accordingly
+  const isTurnstileVerified = process.env.TURNSTILE_SECRET_KEY
+    ? cookies.turnstileVerified === 'true'
+    : true
+
+  const userAgent = context.req.headers['user-agent'] || ''
+  const device = new MobileDetect(userAgent)
+
+  if (!isTurnstileVerified) {
+    return {
+      props: {
+        showTurnstile: true,
+        isMobile: device.mobile()
+      }
+    }
+  }
+
+  // second part
+  const documentSlug = query.slugs?.at(0)
   const supabase = createPagesServerClient(context)
 
   try {
     const { data, error } = await supabase.auth.getSession()
-    const docMetadata = await fetchDocument(slug, data.session)
-    const device = new MobileDetect(context.req.headers['user-agent'] || '')
+    const docMetadata = await fetchDocument(documentSlug, data.session)
     let channels: any = null
 
     if (error) console.error('error:', error)
 
     if (data.session?.user) {
-      await upsertWorkspace({
-        id: docMetadata.documentId,
-        name: docMetadata.title,
-        description: docMetadata.description,
-        slug: docMetadata.slug,
-        created_by: data.session.user.id
-      })
+      const [upsertResult, channelsResult] = await Promise.allSettled([
+        upsertWorkspace({
+          id: docMetadata.documentId,
+          name: docMetadata.title,
+          description: docMetadata.description,
+          slug: docMetadata.slug,
+          created_by: data.session.user.id
+        }),
+        getChannelsByWorkspaceAndUserids(docMetadata.documentId, data.session.user.id)
+      ])
 
-      channels = await getChannelsByWorkspaceAndUserids(
-        docMetadata.documentId,
-        data.session.user.id
-      )
+      if (upsertResult.status === 'rejected') {
+        throw new Error('Failed to upsert workspace', { cause: upsertResult.reason })
+      }
+
+      if (channelsResult.status === 'rejected') {
+        throw new Error('Failed to get channels', { cause: channelsResult.reason })
+      }
+
+      channels = channelsResult.value
+
       // TODO: need db function to get all channels by workspaceId and not thread
       channels =
         channels?.data
           .filter((x: any) => x.workspace?.type && x.workspace?.type !== 'THREAD')
-          .map((x: any) => ({ ...x, ...x.workspace })) || [] //data || [];
+          .map((x: any) => ({ ...x, ...x.workspace })) || []
     }
 
     return {
       props: {
         channels: channels || null,
         docMetadata,
-        isMobile: device.mobile(),
-        slugs: context.query.slugs
+        showTurnstile: false,
+        isMobile: device.mobile()
       }
     }
   } catch (error: any) {
-    console.error('getServerSideProps error:', error)
+    console.error('[getServerSideProps error]:', error)
+
     const message = error.message.includes("(reading 'isPrivate')")
       ? `Something went wrong on our server side. We're looking into it!`
       : error.message

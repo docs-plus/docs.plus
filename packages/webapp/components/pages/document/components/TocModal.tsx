@@ -9,10 +9,10 @@ import TableOfContents from '@components/TipTap/tableOfContents/mobile'
 
 const TocModal = () => {
   const {
-    editor: { loading, applyingFilters, rendering, instance: editor }
+    editor: { loading, applyingFilters, providerSyncing, instance: editor }
   } = useStore((state) => state.settings)
 
-  if (loading || !editor || applyingFilters || rendering) {
+  if (loading || !editor || applyingFilters || providerSyncing) {
     return null
   }
 
