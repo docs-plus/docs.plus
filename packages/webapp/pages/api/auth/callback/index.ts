@@ -1,13 +1,17 @@
 import { NextApiHandler } from 'next'
-import { createPagesServerClient } from '@supabase/auth-helpers-nextjs'
 import { URL } from 'url'
 import { parse } from 'querystring'
+import createClient from '@utils/supabase/api'
 
 // Type definition for query parameters
 type TQuery = {
   code?: string
   next?: string
   open_heading_chat?: string
+  // OAuth google
+  error?: string
+  error_code?: string
+  error_description?: string
 }
 
 // Function to validate URL path
@@ -18,11 +22,55 @@ const isValidPath = (path: string): boolean => {
 
 const handler: NextApiHandler = async (req, res) => {
   try {
-    const { code, next, open_heading_chat } = parse(req.url?.split('?')[1] || '') as TQuery
+    // const { searchParams, origin } = new URL(request.url)
+
+    const { code, next, open_heading_chat, error, error_code, error_description } = parse(
+      req.url?.split('?')[1] || ''
+    ) as TQuery
+
+    if (error) {
+      console.error('OAuth error:', { error, error_code, error_description })
+
+      // Construct error page URL
+      const errorUrl = new URL(
+        '/auth/error',
+        `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host}`
+      )
+
+      // Add error parameters
+      errorUrl.searchParams.append('error', String(error))
+      if (error_description) {
+        errorUrl.searchParams.append('error_description', String(error_description))
+      }
+      if (error_code) {
+        errorUrl.searchParams.append('error_code', String(error_code))
+      }
+
+      return res.redirect(errorUrl.toString())
+    }
 
     if (code) {
-      const supabase = createPagesServerClient({ req, res })
-      await supabase.auth.exchangeCodeForSession(String(code))
+      // const supabase = await createClient()
+      const supabase = createClient(req, res)
+
+      const { error, data } = await supabase.auth.exchangeCodeForSession(code)
+      console.log({
+        error,
+        data
+      })
+
+      if (!error) {
+        // const forwardedHost = req.headers.get('x-forwarded-host') // original origin before load balancer
+        // const isLocalEnv = process.env.NODE_ENV === 'development'
+        // if (isLocalEnv) {
+        //   // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
+        //   return res.redirect(`${origin}${next}`)
+        // } else if (forwardedHost) {
+        //   return res.redirect(`https://${forwardedHost}${next}`)
+        // } else {
+        //   return res.redirect(`${origin}${next}`)
+        // }
+      }
     }
 
     // Validate and sanitize the next URL
@@ -38,6 +86,20 @@ const handler: NextApiHandler = async (req, res) => {
     if (open_heading_chat) {
       url.searchParams.append('open_heading_chat', String(open_heading_chat))
     }
+
+    // Forward the cookie from request to response
+    // const cookie = req.headers.cookie
+    // if (cookie) {
+    //   console.log('yeyyeyeyeyyeyeyeyyeyeyyeyeyyeyeyye11111', { cookie })
+    //   res.setHeader('Set-Cookie', cookie)
+    // }
+
+    console.log({
+      url,
+      // cookie,
+      code,
+      headers: req.headers
+    })
 
     // Redirect to the modified URL
     res.redirect(url.toString())

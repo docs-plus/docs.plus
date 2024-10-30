@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
 import { useStore, useAuthStore, useChatStore } from '@stores'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { dbChannelsListner } from '@components/chat/hooks/listner/dbChannelsListner'
+import { createClient } from '@utils/supabase/component'
 
 export const useCatchUserPresences = () => {
-  const supabaseClient = createClientComponentClient()
+  const supabaseClient = createClient()
 
   const profile = useAuthStore((state) => state.profile)
   const { workspaceId } = useStore((state) => state.settings)

@@ -7,9 +7,8 @@ import Loading from '@components/ui/Loading'
 import { LuLogOut } from 'react-icons/lu'
 import { RiShieldCheckLine, RiArrowRightSLine } from 'react-icons/ri'
 import { LuBell } from 'react-icons/lu'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import * as toast from '@components/toast'
-
+import { createClient } from '@utils/supabase/component'
 const ProfileTab = dynamic(() => import('./ProfileTab'), {
   loading: () => <Loading />
 })
@@ -25,7 +24,7 @@ const ProfilePanel = () => {
   const [activeTab, setActiveTab] = useState('profile')
   const displayName = useAuthStore((state) => state.profile?.display_name)
   const user = useAuthStore((state) => state.profile)
-  const supabaseClient = createClientComponentClient()
+  const supabaseClient = createClient()
 
   const signOut = async () => {
     setLoadSignOut(true)
@@ -43,7 +42,7 @@ const ProfilePanel = () => {
   return (
     <>
       <div className="relative w-4/12 p-4 px-6">
-        <ul className="menu flex space-y-2  pl-0">
+        <ul className="menu flex space-y-2 pl-0">
           <li
             onClick={() => {
               changeTab('profile')
@@ -63,7 +62,7 @@ const ProfilePanel = () => {
             onClick={() => {
               changeTab('security')
             }}>
-            <a href="#" className={`${activeTab === 'security' ? 'active ' : ''}`}>
+            <a href="#" className={`${activeTab === 'security' ? 'active' : ''}`}>
               <RiShieldCheckLine size={22} className="mr-2" />
               Security
               <RiArrowRightSLine size={20} className="ml-auto" />
@@ -81,7 +80,7 @@ const ProfilePanel = () => {
           </li>
         </ul>
         <div className="divider"></div>
-        <div className=" flex flex-col rounded-md">
+        <div className="flex flex-col rounded-md">
           <ul className="menu">
             <li>
               <a href="#" target="_blank" className="mt-2">
