@@ -2,6 +2,7 @@ import React from 'react'
 import PadTitle from '@components/TipTap/pad-title-section/PadTitle'
 import DesktopEditor from '../components/DesktopEditor'
 import { useStore } from '@stores'
+import GoogleOneTapAuth from '@components/GoogleOneTapAuth'
 
 const DesktopLayout = () => {
   const {
@@ -14,6 +15,7 @@ const DesktopLayout = () => {
 
   return (
     <div className={`pad tiptap flex flex-col border-solid ${deviceClass}`}>
+      <GoogleOneTapAuth />
       <PadTitle />
       <DesktopEditor />
     </div>
