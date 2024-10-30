@@ -1,15 +1,14 @@
 // pages/api/updateUserStatus.ts
 
 import { type NextApiRequest, type NextApiResponse } from 'next'
-import { createPagesServerClient } from '@supabase/auth-helpers-nextjs'
-
+import createClient from '@utils/supabase/api'
 interface UpdateUserStatusRequestBody {
   userId: string
   status: string
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  const supabase = createPagesServerClient({ req, res })
+  const supabase = createClient(req, res)
 
   if (req.method === 'POST') {
     const { userId, status } = req.body as UpdateUserStatusRequestBody

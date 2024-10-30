@@ -1,16 +1,16 @@
-import { GetServerSidePropsContext } from 'next'
+import { type GetServerSidePropsContext } from 'next'
 import React from 'react'
 import MobileDetect from 'mobile-detect'
 import { fetchDocument } from '@utils/fetchDocument'
 import HeadSeo from '@components/HeadSeo'
 import { upsertWorkspace, getChannelsByWorkspaceAndUserids } from '@api'
-import { createPagesServerClient } from '@supabase/auth-helpers-nextjs'
 import { LoadingDots } from '@components/LoadingDots'
 import { useStore } from '@stores'
 import * as cookie from 'cookie'
 import TurnstilePage from '@components/TurnstilePage'
 import useAddDeviceTypeHtmlClass from '@components/pages/document/hooks/useAddDeviceTypeHtmlClass'
 import dynamic from 'next/dynamic'
+import { createClient } from '@utils/supabase/server-props'
 
 const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPage'), {
   ssr: false,
@@ -42,8 +42,20 @@ export default Document
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
   // first part
-  const { req, query } = context
+  const { req, res, query } = context
   const cookies = cookie.parse(req.headers.cookie || '') as { turnstileVerified?: string }
+
+  // console.log('=====--=-==--=-=-=>>>>', {
+  //   cookies,
+  //   req
+  // })
+
+  // if (req.headers.cookie) {
+  //   res.setHeader(
+  //     'Set-Cookie',
+  //     req.headers.cookie.split(';').map((cookie) => `${cookie.trim()}`)
+  //   )
+  // }
 
   // Check if TURNSTILE_SECRET_KEY exists and verify cookie accordingly
   const isTurnstileVerified = process.env.TURNSTILE_SECRET_KEY
@@ -52,6 +64,12 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 
   const userAgent = context.req.headers['user-agent'] || ''
   const device = new MobileDetect(userAgent)
+
+  // console.log({
+  //   isTurnstileVerified,
+  //   userAgent,
+  //   device
+  // })
 
   if (!isTurnstileVerified) {
     return {
@@ -64,7 +82,7 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
 
   // second part
   const documentSlug = query.slugs?.at(0)
-  const supabase = createPagesServerClient(context)
+  const supabase = createClient(context)
 
   try {
     const { data, error } = await supabase.auth.getSession()
@@ -72,6 +90,10 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
     let channels: any = null
 
     if (error) console.error('error:', error)
+
+    // console.log({
+    //   data
+    // })
 
     if (data.session?.user) {
       const [upsertResult, channelsResult] = await Promise.allSettled([

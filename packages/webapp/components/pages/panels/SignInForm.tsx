@@ -3,13 +3,11 @@ import { useState, useEffect } from 'react'
 import Button from '@components/ui/Button'
 import { useMutation } from '@tanstack/react-query'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { signInWithOAuth } from '@api'
 import { useSupabase } from '@hooks/useSupabase'
 import { Provider } from '@supabase/supabase-js'
 import * as toast from '@components/toast'
-import { Turnstile } from '@marsidev/react-turnstile'
-import Config from '@config'
+import { createClient } from '@utils/supabase/component'
 
 const SignInForm = ({ ...props }) => {
   const [magicLinkEmail, setMagicLinkEmail] = useState('')
@@ -18,26 +16,16 @@ const SignInForm = ({ ...props }) => {
   const [loading, setLoading] = useState(false)
   const [btnSubmitText, setBtnSubmitText] = useState('Send magic link')
   const [emailSent, setEmailSent] = useState(false)
-  const [captchaToken, setCaptchaToken] = useState<string>('')
-  const [isCaptchaLoaded, setIsCaptchaLoaded] = useState(false)
 
-  const supabaseClient = createClientComponentClient()
+  const supabaseClient = createClient()
   const {
     loading: googleLoading,
     request,
     setLoading: setGoogleLoading
   } = useSupabase(signInWithOAuth, null, false)
 
-  useEffect(() => {
-    setIsCaptchaLoaded(!!captchaToken)
-  }, [captchaToken])
-
   // Handle authentication with OAuth
   const handleOAuthSignIn = async (provider: Provider) => {
-    if (!isCaptchaLoaded) {
-      toast.Error('Please wait for the security check to complete')
-      return
-    }
     try {
       const currentUrl = new URL(location.href)
       const authCallbackURL = new URL(`${currentUrl.origin}/api/auth/callback`)
@@ -51,10 +39,7 @@ const SignInForm = ({ ...props }) => {
       await request({
         provider,
         options: {
-          redirectTo: authCallbackURL.href,
-          queryParams: {
-            captchaToken
-          }
+          redirectTo: authCallbackURL.href
         }
       })
       setGoogleLoading(true)
@@ -96,11 +81,6 @@ const SignInForm = ({ ...props }) => {
 
   const signInWithEmail = async (e: any) => {
     e.preventDefault()
-
-    if (!isCaptchaLoaded) {
-      toast.Error('Please wait for the security check to complete')
-      return
-    }
 
     if (magicLinkEmail.length === 0) return
 
@@ -148,7 +128,7 @@ const SignInForm = ({ ...props }) => {
               className="btn-block"
               onClick={() => handleOAuthSignIn('google')}
               loading={googleLoading}
-              disabled={googleLoading || loading || !isCaptchaLoaded}
+              disabled={googleLoading || loading}
               Icon={GoogleGIcon}>
               Continue with Google
             </Button>
@@ -169,7 +149,7 @@ const SignInForm = ({ ...props }) => {
               <Button
                 className="btn-neutral btn-block mt-4 text-white"
                 loading={isLoading || loading}
-                disabled={isLoading || loading || googleLoading || !isCaptchaLoaded}
+                disabled={isLoading || loading || googleLoading}
                 onClick={signInWithEmail}>
                 {btnSubmitText}
               </Button>
@@ -181,20 +161,6 @@ const SignInForm = ({ ...props }) => {
               </p>
             </form>
           </div>
-          <div className="mt-4 flex justify-center">
-            <Turnstile
-              siteKey={Config.app.turnstile.siteKey}
-              onSuccess={(token) => setCaptchaToken(token)}
-            />
-          </div>
-          {!isCaptchaLoaded && (
-            <div className="mt-2 flex items-center justify-center space-x-2">
-              <p className="text-sm text-gray-500">
-                Please wait for the security check to complete
-              </p>
-              <span className="loading loading-dots loading-xs ml-2 mt-2"></span>
-            </div>
-          )}
         </div>
         <div
           className={`${
