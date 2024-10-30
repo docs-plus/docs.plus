@@ -53,6 +53,7 @@ module.exports = withPWA({
       '*.supabase.co',
       '*.docs.plus',
       '*.localhost',
+      'https://accounts.google.com',
       'https://challenges.cloudflare.com', // Added Cloudflare Turnstile domain
       process.env.NEXT_PUBLIC_RESTAPI_URL || '',
       process.env.NEXT_PUBLIC_PROVIDER_URL || '',

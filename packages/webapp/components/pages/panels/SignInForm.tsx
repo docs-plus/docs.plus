@@ -1,5 +1,5 @@
 import { GoogleGIcon, Sparkles, OpenEnvelope } from '@icons'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import Button from '@components/ui/Button'
 import { useMutation } from '@tanstack/react-query'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
@@ -28,13 +28,11 @@ const SignInForm = ({ ...props }) => {
   const handleOAuthSignIn = async (provider: Provider) => {
     try {
       const currentUrl = new URL(location.href)
-      const authCallbackURL = new URL(`${currentUrl.origin}/api/auth/callback`)
+      const authCallbackURL = new URL(`${currentUrl.origin}${currentUrl.pathname}`)
 
       currentUrl.searchParams.forEach((value, key) => {
         authCallbackURL.searchParams.append(key, value)
       })
-
-      authCallbackURL.searchParams.append('next', currentUrl.pathname)
 
       await request({
         provider,
