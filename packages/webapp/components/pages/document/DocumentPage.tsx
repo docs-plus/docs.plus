@@ -7,6 +7,7 @@ import DocumentLayouts from '@components/pages/document/layouts/DocumentLayouts'
 import useDocumentMetadata from '@hooks/useDocumentMetadata'
 import { useStore } from '@stores'
 import { useRouter } from 'next/router'
+import { GoogleOneTapLayout } from '@layouts'
 
 type DocumentPageProps = {
   docMetadata: any
@@ -39,7 +40,11 @@ const DocumentPage = ({ docMetadata, isMobile, channels }: DocumentPageProps) =>
     )
   }
 
-  return <DocumentLayouts isMobile={isMobile} />
+  return (
+    <GoogleOneTapLayout>
+      <DocumentLayouts isMobile={isMobile} />
+    </GoogleOneTapLayout>
+  )
 }
 
 export default DocumentPage

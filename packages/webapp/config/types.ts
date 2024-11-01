@@ -3,6 +3,7 @@ interface AppConfig {
     siteKey: string
     verifyUrl: string
     expireTime: number
+    isEnabled: boolean
   }
 }
 
