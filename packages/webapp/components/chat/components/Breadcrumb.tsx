@@ -1,10 +1,12 @@
-import React, { useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { useChatStore, useStore } from '@stores'
 import { IoMdGitBranch } from 'react-icons/io'
 import { RiArrowRightSLine } from 'react-icons/ri'
 import slugify from 'slugify'
 import ENUMS from '@enum'
 import { useRouter } from 'next/router'
+import PubSub from 'pubsub-js'
+import { CHAT_OPEN } from '@services/eventsHub'
 
 const getPostAtDOM = (editor: any, id: string = '1') => {
   return editor?.view?.posAtDOM(document.querySelector(`.heading[data-id="${id}"]`), 0)
@@ -57,6 +59,16 @@ const Breadcrumb = () => {
     setHeadingPath(headingAddress)
   }, [headingId, editor, providerSyncing, loading])
 
+  const openChatContainerHandler = useCallback((e: any, heading: any) => {
+    e.preventDefault()
+    window.history.pushState({}, '', heading.url)
+
+    PubSub.publish(CHAT_OPEN, {
+      headingId: heading.id,
+      scroll2Heading: true
+    })
+  }, [])
+
   if (!headingPath.length || !headingId) return null
 
   return (
@@ -75,7 +87,11 @@ const Breadcrumb = () => {
                   {headingPath.length - 1 === index ? (
                     <span className="">{heading.text}</span>
                   ) : (
-                    <a href={heading.url} target="_blank" className="">
+                    <a
+                      onClick={(e) => openChatContainerHandler(e, heading)}
+                      href={heading.url}
+                      target="_blank"
+                      className="">
                       {heading.text}
                     </a>
                   )}
