@@ -3,6 +3,7 @@ import type { Config } from './types'
 const config: Config = {
   app: {
     turnstile: {
+      isEnabled: process.env.TURNSTILE_SECRET_KEY ? true : false,
       siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '',
       verifyUrl: '/api/verify-turnstile',
       expireTime: 60 * 60 * 24 * 2 // 2 days
