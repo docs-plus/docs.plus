@@ -13,6 +13,19 @@ type TChatCommentData = {
   headingId: string
 }
 
+type TOpenChatData = {
+  headingId: string
+  scroll2Heading?: boolean
+}
+
+// Helpers
+const scrollToHeading = (headingId: string) => {
+  const headingSection = document.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
+  if (headingSection) {
+    headingSection.scrollIntoView({ behavior: 'smooth' })
+  }
+}
+
 export const eventsHub = () => {
   console.info('eventsHub initialized')
 
@@ -41,8 +54,8 @@ export const eventsHub = () => {
     if (workspaceId) setChatRoom(headingId, workspaceId, [], user)
   })
 
-  PubSub.subscribe(CHAT_OPEN, (msg, data) => {
-    const { headingId } = data
+  PubSub.subscribe(CHAT_OPEN, (msg, data: TOpenChatData) => {
+    const { headingId, scroll2Heading = false } = data
 
     if (!headingId) return
 
@@ -61,5 +74,7 @@ export const eventsHub = () => {
 
     // TODO: change naming => open chatroom
     if (workspaceId) setChatRoom(headingId, workspaceId, [], user)
+
+    if (scroll2Heading) scrollToHeading(headingId)
   })
 }
