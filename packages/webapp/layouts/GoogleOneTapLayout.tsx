@@ -5,7 +5,7 @@ type Props = {
 }
 export default function GoogleOneTapLayout({ children }: Props) {
   return (
-    <div>
+    <div className="h-full">
       {children}
       <GoogleOneTapAuth />
     </div>
