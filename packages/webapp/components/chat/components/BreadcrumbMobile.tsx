@@ -15,7 +15,8 @@ const BreadcrumbMobile = () => {
           return (
             <React.Fragment key={index}>
               {index === 0 ? (
-                <IoMdGitBranch size={18} className="mr-1" />
+                // <IoMdGitBranch size={18} className="mr-1" />
+                ''
               ) : (
                 <RiArrowRightSLine size={20} />
               )}
