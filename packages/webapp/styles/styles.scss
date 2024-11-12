@@ -248,6 +248,10 @@ $bg-root: #f8f9fa;
     flex-direction: row-reverse;
     align-items: stretch;
 
+    &:hover > .title .btnOpenChatBox {
+      visibility: visible;
+    }
+
     .title {
       flex: 1;
       padding-left: 60px;
@@ -256,8 +260,30 @@ $bg-root: #f8f9fa;
       z-index: 1;
       min-width: 100%;
 
-      &:hover ~ .buttonWrapper {
-        // visibility: visible;
+      &:hover .btnOpenChatBox {
+        visibility: visible;
+      }
+
+      > span {
+        width: calc(100% + 60px);
+        display: inline-block;
+        position: relative;
+        &:hover ~ .btnOpenChatBox {
+          visibility: visible;
+        }
+      }
+
+      .btnOpenChatBox {
+        visibility: hidden;
+        position: absolute;
+        left: calc(100% + 20px);
+        overflow: hidden;
+        top: calc(50%);
+        transform: translateY(-50%);
+        svg {
+          position: relative;
+          top: 1px;
+        }
       }
     }
 
