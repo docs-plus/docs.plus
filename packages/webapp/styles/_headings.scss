@@ -141,3 +141,33 @@ body.h1SectionBreak {
     }
   }
 }
+
+.heading-container {
+  position: relative;
+
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+
+    .content {
+      flex: 1;
+    }
+
+    .btnOpenChatBox {
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.2s;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+  }
+
+  &:hover {
+    .btnOpenChatBox {
+      opacity: 0.5;
+    }
+  }
+}

@@ -10,8 +10,6 @@ import PubSub from 'pubsub-js'
 import ENUMS from '../enums'
 import { ChatLeftSVG, ArrowDownSVG } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
-import { useStore } from '@stores'
-import * as toast from '@components/toast'
 
 let isProcessing = false
 
@@ -55,17 +53,21 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
   const buttonWrapper = document.createElement('div')
   const btnToggleHeading = document.createElement('button')
   const btnChatBox = document.createElement('button')
+  const btnDesktopChatBox = document.createElement('button')
 
   buttonWrapper.classList.add('buttonWrapper')
+  btnDesktopChatBox.classList.add('btnDesktopChatBox')
 
   btnChatBox.setAttribute('class', 'btn_openChatBox')
   btnChatBox.setAttribute('type', 'button')
   btnToggleHeading.classList.add('btnFold')
   btnToggleHeading.setAttribute('type', 'button')
 
-  btnChatBox.innerHTML =
-    ChatLeftSVG({ size: 20, className: 'chatLeft' }) +
-    ArrowDownSVG({ size: 20, className: 'arrowDown' })
+  const chatLeftSvg = ChatLeftSVG({ size: 20, className: 'chatLeft' })
+  const arrowDownSvg = ArrowDownSVG({ size: 20, className: 'arrowDown' })
+
+  btnChatBox.innerHTML = chatLeftSvg + arrowDownSvg
+  btnDesktopChatBox.innerHTML = chatLeftSvg
 
   btnChatBox.addEventListener('click', (e) => {
     e.preventDefault()
@@ -79,9 +81,6 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
       .focus(from + node.nodeSize - 1)
       .run()
   })
-
-  buttonWrapper.append(btnToggleHeading)
-  buttonWrapper.append(btnChatBox)
 
   // copy the link to clipboard
   const href = document.createElement('span')
@@ -104,7 +103,8 @@ const buttonWrapper = (editor, { headingId, from, node }) => {
       .run()
   })
   href.contenteditable = false
-  buttonWrapper.append(href)
+
+  buttonWrapper.append(href, btnDesktopChatBox, btnToggleHeading, btnChatBox)
 
   return buttonWrapper
 }
@@ -262,19 +262,60 @@ const HeadingsTitle = Node.create({
       attrs: { level }
     }))
   },
-  renderHTML(state) {
-    const { node, HTMLAttributes } = state
-    const hasLevel = this.options.levels.includes(node.attrs.level)
-    const level = hasLevel ? node.attrs.level : this.options.levels[0]
 
-    return [
-      `h${level}`,
-      mergeAttributes(this.options.HTMLAttributes, {
-        ...HTMLAttributes,
-        level
-      }),
-      0
-    ]
+  addNodeView() {
+    return ({ node, getPos, editor, HTMLAttributes, attributes }) => {
+      const dom = document.createElement(`h${node.attrs.level}`)
+      dom.classList.add('title')
+
+      // Create content span
+      const contentSpan = document.createElement('span')
+
+      // Create chat button span
+      const chatBtn = document.createElement('button')
+      chatBtn.classList.add('btnOpenChatBox')
+      chatBtn.classList.add('btn', 'btn-circle', 'btn-primary', 'size-12', 'min-h-10', 'shadow-md')
+
+      chatBtn.setAttribute('type', 'button')
+
+      chatBtn.style.userSelect = 'none'
+      chatBtn.style.webkitUserSelect = 'none'
+      chatBtn.style.msUserSelect = 'none'
+
+      chatBtn.innerHTML = ChatLeftSVG({ size: 20, className: 'chatLeft', fill: '#fff' })
+
+      // Add click handler for chat button
+      chatBtn.addEventListener('click', (e) => {
+        e.preventDefault()
+        // get parent node with getPos
+        const parentNode = editor.state.doc.nodeAt(getPos() - 1)
+
+        if (!parentNode.attrs.id) {
+          console.warn('[ContentHeading]: no id found')
+          return
+        }
+
+        PubSub.publish(CHAT_OPEN, {
+          headingId: parentNode.attrs.id
+        })
+      })
+
+      // Assemble the elements
+      dom.append(contentSpan, chatBtn)
+
+      return {
+        dom,
+        contentDOM: contentSpan,
+        update: (updatedNode) => {
+          return true
+        },
+        destroy: () => {}
+      }
+    }
+  },
+
+  renderHTML(state) {
+    return [`div`, {}, 0]
   },
   addKeyboardShortcuts() {
     return {
