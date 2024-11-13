@@ -36,7 +36,9 @@ const config = {
   ],
   plugins: [
     autoExternal({
-      packagePath: './package.json'
+      packagePath: './package.json',
+      dependencies: true,
+      peerDependencies: true
     }),
     sourcemaps(),
     resolve(),
@@ -45,7 +47,6 @@ const config = {
       babelHelpers: 'bundled',
       exclude: '../../node_modules/**'
     }),
-    sizes(),
     typescript({
       tsconfig: '../../tsconfig.json',
       tsconfigOverride: {
@@ -60,7 +61,17 @@ const config = {
       include: ['./**/*.ts', './**/*.tsx']
     }),
     json(),
-    terser({ output: { comments: false } })
+    terser({
+      output: { comments: false },
+      compress: {
+        pure_getters: true,
+        unsafe: true,
+        unsafe_comps: true
+      }
+    }),
+    sizes({
+      details: true
+    })
   ]
 }
 
