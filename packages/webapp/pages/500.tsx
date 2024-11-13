@@ -1,11 +1,19 @@
 import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 
 function Custom500() {
+  const [error, setError] = useState<string | null>(null)
   const router = useRouter()
-  const { error } = router.query
+
+  useEffect(() => {
+    if (router.query.error) {
+      setError(router.query.error as string)
+    } else {
+      router.push('/')
+    }
+  }, [router])
 
   if (!error) {
-    router.push('/')
     return null
   }
 
