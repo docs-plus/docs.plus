@@ -17,8 +17,8 @@ jobs:
     if: contains(github.event.head_commit.message, 'build')
     strategy:
       matrix:
-        # This matrix configuration will run the job on the Long Term Support (LTS) version of Node.js.
-        node-version: ['lts/*']
+        # This matrix configuration will run the job on the specific version of Node.js.
+        node-version: ['20.16.0']
     steps:
       # This step checks out your repository under $GITHUB_WORKSPACE so your job can access it.
       - name: Check out code
