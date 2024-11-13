@@ -12,6 +12,8 @@ import { MdOutlineKeyboardArrowDown } from 'react-icons/md'
 import { useStore } from '@stores'
 import FilterBar from '../pad-title-section/FilterBar'
 import { TbFilter, TbFilterX, TbFilterCheck } from 'react-icons/tb'
+import PubSub from 'pubsub-js'
+import { RESET_FILTER } from '@services/eventsHub'
 
 const ToggleSection = ({ name, className, description, value, checked, onChange }: any) => {
   const containerClasses = twMerge('flex flex-col p-2 antialiased', className)
@@ -101,12 +103,9 @@ const FilterModal = ({ totalHeading = 0, className = '' }) => {
     highlightTocHeadings([])
   }
 
-  const resetFilterHandler = () => {
-    const url = new URL(window.location.href)
-    const documentSlug = url.pathname.split('/').at(1)
-    router.push(`/${documentSlug}`, undefined, { shallow: true })
-    setWorkspaceEditorSetting('applyingFilters', true)
-  }
+  const resetFilterHandler = useCallback(() => {
+    PubSub.publish(RESET_FILTER, {})
+  }, [])
 
   return (
     <div className={twMerge('gearModal text-neutral', className)}>
@@ -133,7 +132,7 @@ const FilterModal = ({ totalHeading = 0, className = '' }) => {
             className="input input-md join-item input-bordered h-[2.4rem] w-full"
             value={filterInput}
             onKeyUp={handleSearch}
-            onChange={(e: any) => setFilterInput(e.target.value)}
+            onChange={(e: any) => setFilterInput(e.target.value.trim())}
             placeholder="Find in document"
             list={datalist.length > 0 ? 'filterSearchBox-datalist' : undefined}
           />

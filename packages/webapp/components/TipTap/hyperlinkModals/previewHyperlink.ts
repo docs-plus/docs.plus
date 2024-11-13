@@ -3,7 +3,9 @@ import { EditorView } from '@tiptap/pm/view'
 import { editeHyperlinkHandler } from './editeHyperlink'
 import { Copy, LinkSlash, Pencil } from './icons'
 import { Tooltip } from '@docs.plus/extension-hyperlink'
-import { copyToClipboard } from '@utils/index'
+import { copyToClipboard, scrollToHeading } from '@utils/index'
+import PubSub from 'pubsub-js'
+import { APPLY_FILTER, CHAT_OPEN } from '@services/eventsHub'
 
 type HyperlinkModalOptions = {
   editor: Editor
@@ -51,13 +53,36 @@ const fetchMetadata = (href: string, hrefTitle: HTMLAnchorElement, newBubble: HT
     })
 }
 
-const hrefEventHandller = (href: string) => (event: MouseEvent) => {
+const hrefEventHandller = (href: string, tippy: Tooltip) => (event: MouseEvent) => {
   event.preventDefault()
   const newUrl = new URL(href)
-  const slugs = newUrl.pathname.split('/').slice(1)
+  const slugs = location.pathname.split('/').slice(1)
 
-  if (newUrl.pathname.startsWith(`/${slugs[0]}`)) {
-    return (window.location.href = href)
+  const headingId = newUrl.searchParams.get('id')
+  const isSameDoc = newUrl.pathname.startsWith(`/${slugs[0]}`)
+  const newUrlSlugs = newUrl.pathname.split('/').slice(1)
+  const chatroomId = newUrl.searchParams.get('chatroom')
+
+  // if the new url belong to the current document
+  if (isSameDoc) {
+    // if there are more than one slug, it means it is a filter, so apply filter
+    if (newUrlSlugs.length > 1) {
+      tippy.hide()
+      // drop the first slug, which is the document name (e.g. /doc-name/slug1/slug2)
+      PubSub.publish(APPLY_FILTER, { slugs: newUrlSlugs.slice(1), href })
+      return true
+    }
+
+    // if it is a chatroom, open chatroom
+    if (chatroomId) {
+      PubSub.publish(CHAT_OPEN, { headingId: chatroomId, scroll2Heading: true })
+      return true
+    }
+
+    // otherwise, scroll to heading
+    if (headingId) {
+      return scrollToHeading(headingId)
+    }
   }
 
   return window.open(href, '_blank')
@@ -81,7 +106,7 @@ export default function previewHyperlink(options: HyperlinkModalOptions) {
     innerText: href
   }) as HTMLAnchorElement
 
-  hrefTitle.addEventListener('click', hrefEventHandller(href))
+  hrefTitle.addEventListener('click', hrefEventHandller(href, tippy))
 
   newBubble.append(hrefTitle)
 

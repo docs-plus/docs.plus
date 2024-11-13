@@ -256,7 +256,7 @@ const Editor = ({ provider, spellcheck = false }: any): Partial<EditorOptions> =
       ...(isMobile ? [] : [ChatCommentExtension]),
       Hyperlink.configure({
         protocols: ['ftp', 'mailto'],
-        hyperlinkOnPaste: false,
+        hyperlinkOnPaste: true,
         modals: {
           previewHyperlink: (data: any) => {
             return previewHyperlinkModal(data)
