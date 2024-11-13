@@ -46,7 +46,12 @@ export default function SendMessage() {
 
   const user = useAuthStore((state) => state.profile)
   const { workspaceId } = useChatStore((state) => state.workspaceSettings)
-  const channelSettings = useChatStore((state) => state.workspaceSettings.channels.get(channelId))
+  const chatChannels = useChatStore((state) => state.workspaceSettings.channels)
+  const channelSettings = useMemo(
+    () => chatChannels.get(channelId) ?? {},
+    [chatChannels, channelId]
+  )
+
   const { replayMessageMemory, editMessageMemory, commentMessageMemory } = channelSettings || {}
 
   const setOrUpdateUserPresence = useChatStore((state: any) => state.setOrUpdateUserPresence)

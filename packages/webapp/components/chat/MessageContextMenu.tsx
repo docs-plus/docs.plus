@@ -20,9 +20,9 @@ export const MessageContextMenu = forwardRef<
   { messageData: any; className: string; parrentRef: any }
 >(({ messageData, className, parrentRef }, ref) => {
   const { channelId, settings } = useChannel()
-  const channelSettings = useChatStore((state: any) =>
-    state.workspaceSettings.channels.get(messageData.channel_id)
-  )
+
+  const channels = useChatStore((state) => state.workspaceSettings.channels)
+  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
 
   // const openModal = useForwardMessageModalStore((state: any) => state.openModal)
   const addChannelPinnedMessage = useChatStore((state) => state.addChannelPinnedMessage)

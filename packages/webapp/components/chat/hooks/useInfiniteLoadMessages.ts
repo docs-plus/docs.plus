@@ -1,4 +1,4 @@
-import { useState, useEffect, MutableRefObject } from 'react'
+import { useState, useEffect, MutableRefObject, useMemo } from 'react'
 import { groupedMessages } from '@utils/index'
 import { useChatStore } from '@stores'
 import { fetchMessagesPaginated } from '@api'
@@ -24,9 +24,9 @@ export const useInfiniteLoadMessages = (
   const [hasMoreMessages, setHasMoreMessages] = useState<boolean>(true)
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false)
 
-  const channelSettings = useChatStore((state: any) =>
-    state.workspaceSettings.channels.get(channelId)
-  )
+  const channels = useChatStore((state) => state.workspaceSettings.channels)
+  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
+
   const { scrollPage: currentPage = 2, scrollPageOffset } = channelSettings || {}
 
   const replaceMessages = useChatStore((state: any) => state.replaceMessages)

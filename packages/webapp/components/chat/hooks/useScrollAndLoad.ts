@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+
 import { useAuthStore, useChatStore } from '@stores'
 import { useChannel } from '../context/ChannelProvider'
 
@@ -15,9 +16,9 @@ export const useScrollAndLoad = (
   const [loading, setLoading] = useState(msgLength === 0 ? false : true)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
-  const channelSettings = useChatStore(
-    (state) => state.workspaceSettings.channels.get(channelId) ?? {}
-  )
+  const channels = useChatStore((state) => state.workspaceSettings.channels)
+  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
+
   const { userPickingEmoji, lastReadMessageId } = channelSettings || {}
   const messagesByChannel = useChatStore((state: any) => state.messagesByChannel)
   const messages = messagesByChannel.get(channelId)
