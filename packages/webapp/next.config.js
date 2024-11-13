@@ -14,8 +14,14 @@ const withPWA = require('next-pwa')({
 })
 
 module.exports = withPWA({
+  // sassOptions: {
+  //   // includePaths: [path.join(__dirname, 'styles')]
+  //   scss: {
+  //     api: 'moder-compiler'
+  //   }
+  // },
   sassOptions: {
-    includePaths: [path.join(__dirname, 'styles')]
+    silenceDeprecations: ['legacy-js-api']
   },
   images: {
     remotePatterns: [

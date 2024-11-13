@@ -3,6 +3,7 @@ import { IoCloseOutline } from 'react-icons/io5'
 import { RiPencilFill } from 'react-icons/ri'
 import { useChatStore } from '@stores'
 import { useChannel } from '../../context/ChannelProvider'
+import { useMemo } from 'react'
 
 type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: number }
 
@@ -17,9 +18,9 @@ const IconButton = twx.button<BtnIcon>((props) =>
 export const EditeMessageIndicator = () => {
   const { channelId } = useChannel()
   const setEditMessageMemory = useChatStore((state) => state.setEditMessageMemory)
-  const channelSettings = useChatStore((state: any) =>
-    state.workspaceSettings.channels.get(channelId)
-  )
+  const channels = useChatStore((state) => state.workspaceSettings.channels)
+  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
+
   const { editMessageMemory } = channelSettings || {}
 
   const handleCloseEditeMessage = () => {
@@ -33,12 +34,12 @@ export const EditeMessageIndicator = () => {
   if (editMessageMemory.channel_id !== channelId) return null
 
   return (
-    <div className="flex w-full  items-center justify-between px-4 py-2 text-base-content">
+    <div className="flex w-full items-center justify-between px-4 py-2 text-base-content">
       <RiPencilFill size={24} />
       <div className="flex w-full flex-col justify-start pl-3 text-base text-base-content">
         <span className="font-semibold text-primary antialiased">
           Edite message
-          <span className=" ml-1 font-normal">{replyToUser}</span>
+          <span className="ml-1 font-normal">{replyToUser}</span>
         </span>
         <span className="text-sm">{editMessageMemory?.content}</span>
       </div>

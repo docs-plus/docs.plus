@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import SendMessage from './send-message/SendMessage'
 import JoinBroadcastChannel from './JoinBroadcastChannel'
 import JoinGroupChannel from './JoinGroupChannel'
@@ -11,9 +12,12 @@ export const ChannelActionBar = () => {
   const { channelId } = useChannel()
   const user = useAuthStore((state: any) => state.profile)
 
-  const channelSettings = useChatStore((state: any) =>
-    state.workspaceSettings.channels.get(channelId)
+  const chatChannels = useChatStore((state) => state.workspaceSettings.channels)
+  const channelSettings = useMemo(
+    () => chatChannels.get(channelId) ?? {},
+    [chatChannels, channelId]
   )
+
   const { isUserChannelMember, isUserChannelOwner, isUserChannelAdmin, channelInfo } =
     channelSettings || {}
 

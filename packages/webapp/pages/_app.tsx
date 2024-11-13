@@ -38,7 +38,7 @@ const Header = () => {
       <link rel="mask-icon" href="/icons/maskable_icon.png" color="#FFFFFF" />
 
       {/* Sets whether a web application runs in full-screen mode. See: https://developer.apple.com/library/safari/documentation/AppleApplications/Reference/SafariHTMLRef/Articles/MetaTags.html#//apple_ref/doc/uid/TP40008193-SW3 */}
-      <meta name="apple-mobile-web-app-capable" content="yes" />
+      <meta name="mobile-web-app-capable" content="yes" />
       {/* Web clip icon for Android homescreen shortcuts. Available since Chrome 31+ for Android.See: https://developers.google.com/chrome/mobile/docs/installtohomescreen */}
       <link rel="shortcut icon" sizes="192x192" href="/icons/android-chrome-192x192.png" />
 

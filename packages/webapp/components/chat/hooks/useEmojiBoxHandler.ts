@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useState, useCallback, useEffect, useMemo } from 'react'
 import { emojiReaction } from '@api'
 import { useStore, useChatStore } from '@stores'
 import { useChannel } from '../context/ChannelProvider'
@@ -11,7 +11,8 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
   const [selectedMessage, setSelectedMessage] = useState(null)
   const [eventTypes, setEventTypes] = useState(null)
   const [editor, setEditor] = useState<any>(null)
-  const channelSettings = useChatStore((state) => state.workspaceSettings.channels.get(channelId))
+  const channels = useChatStore((state) => state.workspaceSettings.channels)
+  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
 
   const { userPickingEmoji } = channelSettings || {}
 
