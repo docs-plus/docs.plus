@@ -20,34 +20,34 @@
   "author": "Hossein Marzban",
   "type": "module",
   "devDependencies": {
-    "prisma": "5.19.1"
+    "prisma": "5.22.0"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.654.0",
-    "@hocuspocus/extension-database": "^2.13.6",
-    "@hocuspocus/extension-logger": "^2.13.6",
-    "@hocuspocus/extension-redis": "^2.13.6",
-    "@hocuspocus/extension-throttle": "^2.13.6",
-    "@hocuspocus/server": "^2.13.6",
-    "@hocuspocus/transformer": "^2.13.6",
-    "@prisma/client": "5.19.1",
-    "@supabase/supabase-js": "^2.45.4",
-    "@tiptap/extension-document": "^2.7.2",
-    "@tiptap/extension-paragraph": "^2.7.2",
-    "@tiptap/extension-text": "^2.7.2",
-    "@tiptap/html": "^2.7.2",
+    "@aws-sdk/client-s3": "^3.689.0",
+    "@hocuspocus/extension-database": "^2.13.7",
+    "@hocuspocus/extension-logger": "^2.13.7",
+    "@hocuspocus/extension-redis": "^2.13.7",
+    "@hocuspocus/extension-throttle": "^2.13.7",
+    "@hocuspocus/server": "^2.13.7",
+    "@hocuspocus/transformer": "^2.13.7",
+    "@prisma/client": "5.22.0",
+    "@supabase/supabase-js": "^2.46.1",
+    "@tiptap/extension-document": "^2.9.1",
+    "@tiptap/extension-paragraph": "^2.9.1",
+    "@tiptap/extension-text": "^2.9.1",
+    "@tiptap/html": "^2.9.1",
     "ajv": "^6.12.5",
     "body-parser": "^1.20.3",
-    "bull": "^4.16.3",
+    "bull": "^4.16.4",
     "chalk": "^5.3.0",
-    "cookie-parser": "^1.4.6",
+    "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "crypto-random-string": "^5.0.0",
     "dotenv-flow": "^4.1.0",
-    "express": "^4.21.0",
+    "express": "^4.21.1",
     "express-fileupload": "^1.5.1",
     "express-ws": "^5.0.2",
-    "helmet": "^7.1.0",
+    "helmet": "^8.0.0",
     "jwt-decode": "^4.0.0",
     "lodash": "^4.17.21",
     "mime": "^4.0.4",
@@ -56,10 +56,10 @@
     "pm2": "^5.4.2",
     "short-unique-id": "^5.2.0",
     "slugify": "^1.6.6",
-    "uuid": "^10.0.0"
+    "uuid": "^11.0.3"
   },
   "optionalDependencies": {
     "bufferutil": "^4.0.8",
-    "utf-8-validate": "^6.0.4"
+    "utf-8-validate": "^6.0.5"
   }
 }
