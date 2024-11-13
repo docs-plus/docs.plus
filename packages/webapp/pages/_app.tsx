@@ -12,6 +12,7 @@ import { eventsHub } from '@services/eventsHub'
 
 import '../styles/styles.scss'
 import '../styles/globals.scss'
+import { useRouter } from 'next/router'
 
 // Create a client
 const queryClient = new QueryClient()
@@ -64,6 +65,8 @@ const Header = () => {
 }
 
 export default function MyApp({ Component, pageProps }: any) {
+  const router = useRouter()
+
   const isMobileInitial = pageProps.isMobile || false
   useServiceWorker()
   useOnAuthStateChange()
@@ -72,7 +75,7 @@ export default function MyApp({ Component, pageProps }: any) {
   useHandleUserStatus()
   useInitialSteps(isMobileInitial)
   useEffect(() => {
-    eventsHub()
+    eventsHub(router)
   }, [])
 
   return (

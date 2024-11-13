@@ -1,8 +1,10 @@
-import { useRouter } from 'next/router'
+import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useStore } from '@stores'
 import { IoCloseSharp } from 'react-icons/io5'
-import { TbFilter, TbFilterX, TbFilterCheck } from 'react-icons/tb'
+import { TbFilterX } from 'react-icons/tb'
+import PubSub from 'pubsub-js'
+import { RESET_FILTER, REMOVE_FILTER } from '@services/eventsHub'
 
 const CloseButton = ({ onClick }: any) => (
   <button onClick={onClick}>
@@ -14,10 +16,6 @@ const CloseButton = ({ onClick }: any) => (
 )
 
 const Chip = ({ type, text, onMouseEnter, onMouseLeave }: any) => {
-  const router = useRouter()
-  const { slugs } = router.query
-  const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
-
   const colorMap = {
     child: 'text-gray-700 bg-gray-100 border-gray-300',
     parent: 'text-blue-700 bg-blue-100 border-blue-300',
@@ -25,12 +23,7 @@ const Chip = ({ type, text, onMouseEnter, onMouseLeave }: any) => {
   }
 
   const removeFilterHandler = (slug: any) => {
-    const newSlug = Array.isArray(slugs) ? slugs.filter((s) => s !== slug).join('/') : ''
-    const newPath = `/${location.pathname.split('/').at(1)}/${newSlug}`
-    setWorkspaceEditorSetting('applyingFilters', true)
-    router.push(`${location.origin}${newPath}`, undefined, {
-      shallow: true
-    })
+    PubSub.publish(REMOVE_FILTER, { slug })
   }
 
   return (
@@ -56,14 +49,11 @@ const FilterBar = ({
   className?: string
   displayRestButton?: boolean
 }) => {
-  const router = useRouter()
-
   const {
     editor: {
       filterResult: { sortedSlugs, selectedNodes }
     }
   } = useStore((state) => state.settings)
-  const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
 
   if (!sortedSlugs) return null
 
@@ -89,12 +79,9 @@ const FilterBar = ({
     headings.forEach((header) => header.firstElementChild?.classList.remove('bg-yellow-100'))
   }
 
-  const resetFilterHandler = () => {
-    const url = new URL(window.location.href)
-    const documentSlug = url.pathname.split('/').at(1)
-    router.push(`/${documentSlug}`, undefined, { shallow: true })
-    setWorkspaceEditorSetting('applyingFilters', true)
-  }
+  const resetFilterHandler = useCallback(() => {
+    PubSub.publish(RESET_FILTER, {})
+  }, [])
 
   return (
     <div className={twMerge('group flex items-center align-middle', className)}>

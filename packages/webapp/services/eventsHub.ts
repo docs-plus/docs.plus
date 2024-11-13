@@ -1,11 +1,12 @@
 import PubSub from 'pubsub-js'
 import { useChatStore, useAuthStore, useStore } from '@stores'
-import { Database } from '@types'
-
-type TUser = Database['public']['Tables']['users']['Row']
-
+import { NextRouter } from 'next/router'
+import { scrollToHeading } from '@utils/index'
 export const CHAT_COMMENT = Symbol('chat.comment')
 export const CHAT_OPEN = Symbol('chat.open')
+export const APPLY_FILTER = Symbol('apply.filter')
+export const REMOVE_FILTER = Symbol('remove.filter')
+export const RESET_FILTER = Symbol('reset.filter')
 
 type TChatCommentData = {
   content: string
@@ -18,15 +19,16 @@ type TOpenChatData = {
   scroll2Heading?: boolean
 }
 
-// Helpers
-const scrollToHeading = (headingId: string) => {
-  const headingSection = document.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
-  if (headingSection) {
-    headingSection.scrollIntoView({ behavior: 'smooth' })
-  }
+type TApplyFilterData = {
+  slugs?: string[]
+  href?: string
+} & ({ slugs: string[] } | { href: string })
+
+type TRemoveFilterData = {
+  slug: string
 }
 
-export const eventsHub = () => {
+export const eventsHub = (router: NextRouter) => {
   console.info('eventsHub initialized')
 
   PubSub.subscribe(CHAT_COMMENT, (msg, data: TChatCommentData) => {
@@ -76,5 +78,51 @@ export const eventsHub = () => {
     if (workspaceId) setChatRoom(headingId, workspaceId, [], user)
 
     if (scroll2Heading) scrollToHeading(headingId)
+  })
+
+  PubSub.subscribe(APPLY_FILTER, (msg, data: TApplyFilterData) => {
+    const setWorkspaceEditorSetting = useStore.getState().setWorkspaceEditorSetting
+    const { slugs, href } = data
+
+    // if (!href || !slugs) {
+    //   console.error('[EventsHub]: apply filter: invalid data', data)
+    //   return
+    // }
+
+    const url = new URL(href || router.asPath, window.location.origin)
+    if (!href && slugs) url.pathname = `${url.pathname}/${encodeURIComponent(slugs.join('/'))}`
+
+    router.push(url.toString(), undefined, { shallow: true })
+
+    setWorkspaceEditorSetting('applyingFilters', true)
+  })
+
+  PubSub.subscribe(REMOVE_FILTER, (msg, data: TRemoveFilterData) => {
+    const setWorkspaceEditorSetting = useStore.getState().setWorkspaceEditorSetting
+    const { slug } = data
+
+    const url = new URL(router.asPath, window.location.origin)
+    const slugs = url.pathname.split('/').filter(Boolean)
+    const docSlug = slugs[0]
+    const filterSlugs = slugs.slice(1).filter((s) => s !== slug)
+
+    url.pathname = `/${docSlug}${filterSlugs.length ? '/' + filterSlugs.join('/') : ''}`
+
+    router.push(url.toString(), undefined, { shallow: true })
+    setWorkspaceEditorSetting('applyingFilters', true)
+  })
+
+  PubSub.subscribe(RESET_FILTER, (msg, data: string) => {
+    const setWorkspaceEditorSetting = useStore.getState().setWorkspaceEditorSetting
+    const url = new URL(router.asPath, window.location.origin)
+    const slugs = url.pathname.split('/').slice(1)
+
+    // Preserve the search parameters
+    const newUrl = `/${slugs.at(0)}${url.search}`
+
+    router.push(newUrl, undefined, { shallow: true })
+    setTimeout(() => {
+      setWorkspaceEditorSetting('applyingFilters', true)
+    }, 500)
   })
 }
