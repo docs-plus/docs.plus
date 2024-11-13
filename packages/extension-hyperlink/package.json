@@ -37,11 +37,12 @@
     "clean": "rm -rf dist",
     "build": "npm run clean && rollup -c",
     "ts": "tsc -p tsconfig.json",
-    "postbuild": "node ./scripts/flattenDeclarations.js"
+    "postbuild": "node ./scripts/flattenDeclarations.js",
+    "update:packages": "ncu -u"
   },
   "license": "MIT",
   "dependencies": {
-    "linkifyjs": "^4.1.1",
+    "linkifyjs": "^4.1.3",
     "tippy.js": "^6.3.7"
   },
   "peerDependencies": {
