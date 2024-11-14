@@ -1,5 +1,4 @@
 import HeadSeo from '@components/HeadSeo'
-import { LoadingDots } from '@components/LoadingDots'
 import useMapDocumentAndWorkspace from '@hooks/useMapDocumentAndWorkspace'
 import useInitiateDocumentAndWorkspace from '@hooks/useInitiateDocumentAndWorkspace'
 import useYdocAndProvider from '@hooks/useYdocAndProvider'
@@ -8,6 +7,7 @@ import useDocumentMetadata from '@hooks/useDocumentMetadata'
 import { useStore } from '@stores'
 import { useRouter } from 'next/router'
 import { GoogleOneTapLayout } from '@layouts'
+import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
 
 type DocumentPageProps = {
   docMetadata: any
@@ -32,10 +32,7 @@ const DocumentPage = ({ docMetadata, isMobile, channels }: DocumentPageProps) =>
     return (
       <>
         <HeadSeo />
-        <LoadingDots>
-          {loading && <span>Hang tight! Fetching profile data</span>}
-          {providerSyncing && <span>Hang tight! Provider is syncing</span>}
-        </LoadingDots>
+        <SlugPageLoader loading={loading} providerSyncing={providerSyncing} />
       </>
     )
   }
