@@ -42,7 +42,7 @@ export const SlugPageLoader = ({
           <TableOfcontentLoader className="mt-6" />
         </div>
       </div>
-      <div className="absolute bottom-4 right-4 flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700">
+      <div className="fixed bottom-4 right-4 flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700">
         {loading && <span>Hang tight! Fetching profile data</span>}
         {providerSyncing && <span>Hang tight! Provider is syncing</span>}
         {loadingPage && <span>Hang tight! Loading Components</span>}
