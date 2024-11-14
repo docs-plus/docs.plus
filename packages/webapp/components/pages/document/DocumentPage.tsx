@@ -26,7 +26,7 @@ const DocumentPage = ({ docMetadata, isMobile, channels }: DocumentPageProps) =>
 
   useDocumentMetadata(slugs, docMetadata)
   useInitiateDocumentAndWorkspace(docMetadata)
-  useYdocAndProvider()
+  const { provider } = useYdocAndProvider()
 
   if (loading || providerSyncing) {
     return (
@@ -39,7 +39,7 @@ const DocumentPage = ({ docMetadata, isMobile, channels }: DocumentPageProps) =>
 
   return (
     <GoogleOneTapLayout>
-      <DocumentLayouts isMobile={isMobile} />
+      <DocumentLayouts isMobile={isMobile} provider={provider} />
     </GoogleOneTapLayout>
   )
 }

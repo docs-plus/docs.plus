@@ -27,6 +27,7 @@ export const useInfiniteLoadMessages = (
   const channels = useChatStore((state) => state.workspaceSettings.channels)
   const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
 
+  //@ts-ignore
   const { scrollPage: currentPage = 2, scrollPageOffset } = channelSettings || {}
 
   const replaceMessages = useChatStore((state: any) => state.replaceMessages)

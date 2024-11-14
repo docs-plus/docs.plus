@@ -14,6 +14,7 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
   const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
 
+  //@ts-ignore
   const { userPickingEmoji } = channelSettings || {}
 
   useEffect(() => {

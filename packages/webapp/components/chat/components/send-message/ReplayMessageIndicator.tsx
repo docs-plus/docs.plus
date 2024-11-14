@@ -3,6 +3,7 @@ import { twx, cn } from '@utils/index'
 import { IoCloseOutline } from 'react-icons/io5'
 import { useChatStore } from '@stores'
 import { useChannel } from '../../context/ChannelProvider'
+import { useMemo } from 'react'
 
 type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: number }
 
@@ -18,9 +19,10 @@ export const ReplayMessageIndicator = () => {
   const { channelId } = useChannel()
 
   const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
-  const channelSettings = useChatStore(
-    (state) => state.workspaceSettings.channels.get(channelId) || {}
-  )
+  const channels = useChatStore((state) => state.workspaceSettings.channels)
+  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
+
+  //@ts-ignore
   const { replayMessageMemory } = channelSettings
 
   const handleCloseReplayMessage = () => {
@@ -35,12 +37,12 @@ export const ReplayMessageIndicator = () => {
   if (replayMessageMemory.channel_id !== channelId) return null
 
   return (
-    <div className="flex w-full  items-center justify-between px-4 py-2 text-base-content">
+    <div className="flex w-full items-center justify-between px-4 py-2 text-base-content">
       <FaReply size={24} />
       <div className="flex w-full flex-col justify-start pl-3 text-base text-base-content">
         <span className="font-semibold text-primary antialiased">
           Reply to
-          <span className=" ml-1 font-normal">{replyToUser}</span>
+          <span className="ml-1 font-normal">{replyToUser}</span>
         </span>
         <span className="text-sm">{replayMessageMemory?.content}</span>
       </div>

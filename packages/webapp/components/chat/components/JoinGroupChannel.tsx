@@ -1,5 +1,4 @@
-import { useCallback } from 'react'
-import { useStore } from '@stores'
+import { useCallback, useMemo } from 'react'
 import { useAuthStore, useChatStore } from '@stores'
 import { join2Channel } from '@api'
 import { useApi } from '@hooks/useApi'
@@ -11,7 +10,8 @@ export default function JoinGroupChannel() {
   const user = useAuthStore((state) => state.profile)
   const { loading, request: request2JoinChannel } = useApi(join2Channel, null, false)
   const setOrUpdateChannel = useChatStore((state) => state.setOrUpdateChannel)
-  const channel = useChatStore((state) => state.channels.get(channelId))
+  const channelChat = useChatStore((state) => state.channels)
+  const channel = useMemo(() => channelChat.get(channelId) ?? {}, [channelChat, channelId])
   const setWorkspaceChannelSetting = useChatStore((state: any) => state.setWorkspaceChannelSetting)
 
   // TODO: move to api layer
@@ -29,6 +29,7 @@ export default function JoinGroupChannel() {
         }
         setOrUpdateChannel(channelId, {
           ...data.channel,
+          //@ts-ignore
           member_count: (channel?.member_count ?? 0) + 1
         })
       }

@@ -18,6 +18,7 @@ export const ChannelActionBar = () => {
     [chatChannels, channelId]
   )
 
+  //@ts-ignore
   const { isUserChannelMember, isUserChannelOwner, isUserChannelAdmin, channelInfo } =
     channelSettings || {}
 

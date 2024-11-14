@@ -1,4 +1,5 @@
-import { EditorOptions, Node } from '@tiptap/core'
+import { Node } from '@tiptap/core'
+import { UseEditorOptions } from '@tiptap/react'
 import randomColor from 'randomcolor'
 import { createLowlight } from 'lowlight'
 import ShortUniqueId from 'short-unique-id'
@@ -148,7 +149,7 @@ const generatePlaceholderText = (data: any) => {
 }
 
 // TODO: editor extensions should be dynamic
-const Editor = ({ provider, spellcheck = false }: any): Partial<EditorOptions> => {
+const Editor = ({ provider, spellcheck = false }: any): Partial<UseEditorOptions> => {
   const {
     settings: {
       editor: { isMobile }
@@ -217,7 +218,6 @@ const Editor = ({ provider, spellcheck = false }: any): Partial<EditorOptions> =
         spellcheck
       }
     },
-    // @ts-ignore
     immediatelyRender: false,
     shouldRerenderOnTransaction: true,
     extensions: [

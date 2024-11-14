@@ -1,6 +1,7 @@
 import { immer } from 'zustand/middleware/immer'
 
 type TChannelSettings = {
+  name: any
   channelId?: string | null
   channelInfo?: any
   isUserChannelMember?: boolean

@@ -5,5 +5,8 @@ type TInsert = Database['public']['Tables']['workspaces']['Insert']
 type TRow = Database['public']['Tables']['workspaces']['Row']
 
 export const upsertWorkspace = async (workspace: TInsert): Promise<PostgrestResponse<TRow>> => {
-  return supabaseClient.from('workspaces').upsert(workspace).select()
+  return supabaseClient
+    .from('workspaces')
+    .upsert(workspace, { onConflict: 'id', ignoreDuplicates: false })
+    .select()
 }

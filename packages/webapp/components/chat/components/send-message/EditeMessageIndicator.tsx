@@ -21,6 +21,7 @@ export const EditeMessageIndicator = () => {
   const channels = useChatStore((state) => state.workspaceSettings.channels)
   const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
 
+  //@ts-ignore
   const { editMessageMemory } = channelSettings || {}
 
   const handleCloseEditeMessage = () => {
