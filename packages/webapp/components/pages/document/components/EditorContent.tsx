@@ -1,6 +1,6 @@
 import { EditorContent as TiptapEditor } from '@tiptap/react'
-import DocumentWithPictureLoader from '@components/DocumentWithPictureLoader'
-import DocumentSimpleLoader from '@components/DocumentSimpleLoader'
+import DocumentWithPictureLoader from '@components/skeleton/DocumentWithPictureLoader'
+import DocumentSimpleLoader from '@components/skeleton/DocumentSimpleLoader'
 import { useStore } from '@stores'
 import { twMerge } from 'tailwind-merge'
 import { useEffect, useMemo, useRef } from 'react'

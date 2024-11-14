@@ -1,5 +1,5 @@
 import TableOfContents from '@components/TipTap/tableOfContents'
-import TableOfcontentLoader from '@components/TableOfContentsLoader'
+import TableOfcontentLoader from '@components/skeleton/TableOfContentsLoader'
 import { useStore } from '@stores'
 
 import { useTypingIndicator } from '@components/chat/hooks/useTypingIndicator'

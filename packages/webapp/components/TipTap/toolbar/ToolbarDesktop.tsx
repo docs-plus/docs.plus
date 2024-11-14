@@ -10,7 +10,7 @@ import { useStore } from '@stores'
 import Dropdown from '@components/ui/Dropdown'
 import Loading from '@components/ui/Loading'
 import Modal from '@components/ui/Modal'
-import ToolbarSkeleton from './ToolbarSkeleton'
+import ToolbarSkeleton from '@components/skeleton/ToolbarLoader'
 import { MdAddComment } from 'react-icons/md'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 
