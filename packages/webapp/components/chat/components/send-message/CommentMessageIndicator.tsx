@@ -1,9 +1,9 @@
-import { FaReply } from 'react-icons/fa'
 import { twx, cn } from '@utils/index'
 import { IoCloseOutline } from 'react-icons/io5'
 import { useChatStore } from '@stores'
 import { useChannel } from '../../context/ChannelProvider'
 import { MdInsertComment } from 'react-icons/md'
+import { useMemo } from 'react'
 
 type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: number }
 
@@ -19,9 +19,10 @@ export const CommentMessageIndicator = () => {
   const { channelId } = useChannel()
 
   const setCommentMessageMemory = useChatStore((state) => state.setCommentMessageMemory)
-  const channelSettings = useChatStore(
-    (state) => state.workspaceSettings.channels.get(channelId) || {}
-  )
+  const channels = useChatStore((state) => state.workspaceSettings.channels)
+  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
+
+  //@ts-ignore
   const { commentMessageMemory } = channelSettings
 
   const handleCloseReplayMessage = () => {

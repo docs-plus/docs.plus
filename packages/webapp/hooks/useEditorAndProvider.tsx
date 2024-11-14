@@ -9,10 +9,8 @@ import useEditorReadOnly from './useEditorReadOnly'
 import useInitializeNewDocument from './useInitializeNewDocument'
 import useCheckUrlAndOpenHeadingChat from './useCheckUrlAndOpenHeadingChat'
 
-const useEditorAndProvider = () => {
-  const { editor: editorSetting, hocuspocusProvider: provider } = useStore(
-    (state) => state.settings
-  )
+const useEditorAndProvider = ({ provider }: { provider: any }) => {
+  const { editor: editorSetting } = useStore((state) => state.settings)
 
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const editor = useEditor(editorConfig({ provider }), [editorSetting?.applyingFilters])

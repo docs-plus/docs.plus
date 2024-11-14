@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useChatStore, useAuthStore } from '@stores'
 import { groupedMessages } from '@utils/index'
 import { fetchChannelInitialData, upsertChannel } from '@api'
@@ -22,7 +22,8 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
   const bulkSetMessages = useChatStore((state) => state.bulkSetMessages)
   const setWorkspaceChannelSetting = useChatStore((state) => state.setWorkspaceChannelSetting)
   const setLastMessage = useChatStore((state) => state.setLastMessage)
-  const currentChannel = useChatStore((state: any) => state.channels.get(channelId))
+  const channels = useChatStore((state) => state.workspaceSettings.channels)
+  const currentChannel = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
   const addChannelMember = useChatStore((state) => state.addChannelMember)
   const user = useAuthStore((state: any) => state.profile)
   const setOrUpdateChannel = useChatStore((state: any) => state.setOrUpdateChannel)
@@ -30,7 +31,6 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
   const processChannelData = async (channelId: string) => {
     if (!currentChannel && workspaceId && user) {
       let newChannelId = channelId
-      if ('' + newChannelId === '1') newChannelId = `1_${workspaceId}`
       await upsertChannel({
         id: newChannelId,
         workspace_id: workspaceId,

@@ -1,11 +1,13 @@
 import { useChatStore } from '@stores'
 import { Avatar } from '@components/ui/Avatar'
 import { useChannel } from './context/ChannelProvider'
+import { useMemo } from 'react'
 
 export const MessageHeader = () => {
   const { channelId } = useChannel()
 
-  const channel = useChatStore((state: any) => state.channels.get(channelId))
+  const channels = useChatStore((state) => state.workspaceSettings.channels)
+  const channel = useMemo<any>(() => channels.get(channelId) ?? {}, [channels, channelId])
 
   return (
     <div className="flex w-full flex-row items-center justify-start border-b bg-base-200 p-4">

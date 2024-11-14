@@ -1,3 +1,4 @@
+import { upsertWorkspace, getChannels } from '@api'
 import { useAuthStore, useChatStore } from '@stores'
 import { useEffect, useState } from 'react'
 
@@ -19,7 +20,24 @@ const useMapDocumentAndWorkspace = (docMetadata: any, channels: any) => {
     if (authLoading || setUpsertWorkspace) return
     const checkworkspace = async () => {
       setLoading(true)
-      setUpsertWorkspace = true
+      try {
+        await upsertWorkspace({
+          id: docMetadata.documentId,
+          name: docMetadata.title,
+          description: docMetadata.description,
+          slug: docMetadata.slug,
+          created_by: user.id
+        })
+
+        const { data: channels } = await getChannels(docMetadata.documentId)
+        if (channels) bulkSetChannels(channels)
+      } catch (error) {
+        console.error('check workspace error:', error)
+      } finally {
+        setUpsertWorkspace = true
+        setLoading(false)
+      }
+      // setUpsertWorkspace = true
       setLoading(false)
     }
     if (user) checkworkspace()

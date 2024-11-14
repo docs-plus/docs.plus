@@ -4,7 +4,7 @@
     1.
         Trigger: trigger_add_creator_as_admin
         Description: Trigger that invokes add_channel_creator_as_admin function
-                     to add the channel creator as an admin in channel_members table 
+                     to add the channel creator as an admin in channel_members table
                      after a new channel is created.
     -----------------------------------------
     -----------------------------------------
@@ -42,15 +42,15 @@ RETURNS TRIGGER AS $$
 BEGIN
     INSERT INTO public.messages (channel_id, type, user_id, content, metadata)
     VALUES (
-        NEW.id, 
-        'notification', 
-        '992bb85e-78f8-4747-981a-fd63d9317ff1', 
-        'Channel created', 
+        NEW.id,
+        'notification',
+        '992bb85e-78f8-4747-981a-fd63d9317ff1',
+        'Channel created',
         jsonb_build_object(
             'type', 'channel_created'
         )
     );
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -93,17 +93,17 @@ BEGIN
     IF OLD.name IS DISTINCT FROM NEW.name THEN
         INSERT INTO public.messages (channel_id, type, user_id, content, metadata)
         VALUES (
-            NEW.id, 
-            'notification', 
-            '992bb85e-78f8-4747-981a-fd63d9317ff1', 
-            'Channel name was changed to "' || NEW.name || '"', 
+            NEW.id,
+            'notification',
+            '992bb85e-78f8-4747-981a-fd63d9317ff1',
+            'Channel name was changed to "' || NEW.name || '"',
             jsonb_build_object(
-                'type', 'channel_name_changed', 
+                'type', 'channel_name_changed',
                 'name', NEW.name
             )
         );
     END IF;
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -133,16 +133,16 @@ BEGIN
 
     INSERT INTO public.messages (user_id, channel_id, type, content, metadata)
     VALUES (
-        NEW.member_id, 
-        NEW.channel_id, 
-        'notification', 
-        joining_username || ' joined the channel', 
+        NEW.member_id,
+        NEW.channel_id,
+        'notification',
+        joining_username || ' joined the channel',
         jsonb_build_object(
-            'type', 'user_join_channel', 
+            'type', 'user_join_channel',
             'user_name', joining_username
         )
     );
-    
+
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -166,18 +166,21 @@ DECLARE
 BEGIN
     SELECT username INTO leaving_username FROM public.users WHERE id = OLD.member_id;
 
-    INSERT INTO public.messages (user_id, channel_id, type, content, metadata)
-    VALUES (
-        OLD.member_id, 
-        OLD.channel_id, 
-        'notification', 
-        leaving_username || ' left the channel', 
-        jsonb_build_object(
-            'type', 'user_leave_channel', 
-            'user_name', leaving_username
-        )
-    );
-    
+  -- Check if the channel still exists
+    IF EXISTS (SELECT 1 FROM public.channels WHERE id = OLD.channel_id) THEN
+      INSERT INTO public.messages (user_id, channel_id, type, content, metadata)
+      VALUES (
+          OLD.member_id,
+          OLD.channel_id,
+          'notification',
+          leaving_username || ' left the channel',
+          jsonb_build_object(
+              'type', 'user_leave_channel',
+              'user_name', leaving_username
+          )
+      );
+    END IF;
+
     RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
