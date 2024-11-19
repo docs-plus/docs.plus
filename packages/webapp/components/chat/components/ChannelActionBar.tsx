@@ -7,14 +7,15 @@ import JoinDirectChannel from './JoinPrivateChannel'
 import { useAuthStore, useChatStore } from '@stores'
 import { useChannel } from '../context/ChannelProvider'
 import SignInToJoinChannel from './SignInToJoinChannel'
+import { TChannelSettings } from '@types'
 
 export const ChannelActionBar = () => {
   const { channelId } = useChannel()
   const user = useAuthStore((state: any) => state.profile)
 
   const chatChannels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo(
-    () => chatChannels.get(channelId) ?? {},
+  const channelSettings = useMemo<TChannelSettings>(
+    () => chatChannels.get(channelId) ?? null,
     [chatChannels, channelId]
   )
 

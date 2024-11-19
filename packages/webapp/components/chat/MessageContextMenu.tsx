@@ -14,6 +14,7 @@ import { ContextMenu, MenuItem } from './components/ui/ContextMenu'
 import { useAuthStore, useChatStore } from '@stores'
 import { BiSolidMessageDetail } from 'react-icons/bi'
 import { useChannel } from './context/ChannelProvider'
+import { TChannelSettings } from '@types'
 
 export const MessageContextMenu = forwardRef<
   HTMLUListElement,
@@ -22,8 +23,10 @@ export const MessageContextMenu = forwardRef<
   const { channelId, settings } = useChannel()
 
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
-
+  const channelSettings = useMemo<TChannelSettings>(
+    () => channels.get(channelId) ?? null,
+    [channels, channelId]
+  )
   // const openModal = useForwardMessageModalStore((state: any) => state.openModal)
   const addChannelPinnedMessage = useChatStore((state) => state.addChannelPinnedMessage)
   const removeChannelPinnedMessage = useChatStore((state) => state.removeChannelPinnedMessage)

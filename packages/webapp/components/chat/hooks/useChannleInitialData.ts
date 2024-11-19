@@ -4,6 +4,7 @@ import { groupedMessages } from '@utils/index'
 import { fetchChannelInitialData, upsertChannel } from '@api'
 import { useChannel } from '../context/ChannelProvider'
 import slugify from 'slugify'
+import { TChannelSettings } from '@types'
 
 interface UseChannelInitialData {
   initialMessagesLoading: boolean
@@ -23,7 +24,10 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
   const setWorkspaceChannelSetting = useChatStore((state) => state.setWorkspaceChannelSetting)
   const setLastMessage = useChatStore((state) => state.setLastMessage)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const currentChannel = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
+  const currentChannel = useMemo<TChannelSettings>(
+    () => channels.get(channelId) ?? null,
+    [channels, channelId]
+  )
   const addChannelMember = useChatStore((state) => state.addChannelMember)
   const user = useAuthStore((state: any) => state.profile)
   const setOrUpdateChannel = useChatStore((state: any) => state.setOrUpdateChannel)

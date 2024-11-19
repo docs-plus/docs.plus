@@ -6,12 +6,18 @@ DECLARE
 BEGIN
     -- Only proceed if this message is a reply
     IF NEW.reply_to_message_id IS NOT NULL THEN
-        -- Retrieve the content of the original message
+        -- Retrieve the content of the original message, only if not deleted
         SELECT content INTO originalMessageContent FROM public.messages
-        WHERE id = NEW.reply_to_message_id;
+        WHERE id = NEW.reply_to_message_id AND deleted_at IS NULL;
 
-        -- Update the replied_message_preview of the new message
-        NEW.replied_message_preview := truncate_content(originalMessageContent) truncatedContent;
+        IF FOUND THEN
+            -- Truncate and set the replied_message_preview
+            truncatedContent := truncate_content(originalMessageContent);
+            NEW.replied_message_preview := truncatedContent;
+        ELSE
+            -- Original message does not exist or has been deleted
+            NEW.replied_message_preview := 'The original message is not available.';
+        END IF;
     END IF;
 
     -- Proceed with the insert operation
@@ -50,27 +56,29 @@ BEGIN
             NEW.id := uuid_generate_v4();
         END IF;
 
-        -- Retrieve the current metadata of the original message
+        -- Retrieve the current metadata of the original message, only if not deleted
         SELECT metadata INTO currentMetadata FROM public.messages
-        WHERE id = NEW.reply_to_message_id;
+        WHERE id = NEW.reply_to_message_id AND deleted_at IS NULL;
 
-        -- Initialize metadata if null
-        IF currentMetadata IS NULL THEN
-            currentMetadata := '{}'::jsonb;
+        IF FOUND THEN
+            -- Initialize metadata if null
+            IF currentMetadata IS NULL THEN
+                currentMetadata := '{}'::jsonb;
+            END IF;
+
+            -- Check if the 'replied' key exists, if not initialize it as an empty array
+            IF NOT (currentMetadata ? 'replied') THEN
+                currentMetadata := currentMetadata || jsonb_build_object('replied', '[]'::jsonb);
+            END IF;
+
+            -- Append the new message ID to the 'replied' array
+            currentMetadata := jsonb_set(currentMetadata, '{replied}', (currentMetadata->'replied') || to_jsonb(NEW.id::text));
+
+            -- Update the original message's metadata
+            UPDATE public.messages
+            SET metadata = currentMetadata
+            WHERE id = NEW.reply_to_message_id;
         END IF;
-
-        -- Check if the 'replied' key exists, if not initialize it as an empty array
-        IF NOT (currentMetadata ? 'replied') THEN
-            currentMetadata := currentMetadata || jsonb_build_object('replied', '[]'::jsonb);
-        END IF;
-
-        -- Append the new message ID to the 'replied' array
-        currentMetadata := jsonb_set(currentMetadata, '{replied}', (currentMetadata->'replied') || to_jsonb(NEW.id::text));
-
-        -- Update the original message's metadata
-        UPDATE public.messages
-        SET metadata = currentMetadata
-        WHERE id = NEW.reply_to_message_id;
 
     END IF;
 
@@ -100,13 +108,15 @@ BEGIN
     -- Check if the message is part of a thread. If it is, don't update the channel preview.
     IF NEW.thread_id IS NULL THEN
         -- Update the last message preview in the channel with the new message content
-        -- Note: We can also add truncation logic here if required
         truncated_content := truncate_content(NEW.content);
 
-        UPDATE public.channels
-        SET last_message_preview = truncated_content,
-            last_activity_at = NOW()
-        WHERE id = NEW.channel_id;
+        -- Check if the channel exists before updating
+        IF EXISTS (SELECT 1 FROM public.channels WHERE id = NEW.channel_id) THEN
+            UPDATE public.channels
+            SET last_message_preview = truncated_content,
+                last_activity_at = timezone('utc', now())
+            WHERE id = NEW.channel_id;
+        END IF;
     END IF;
 
     RETURN NEW;

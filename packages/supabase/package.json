@@ -8,14 +8,14 @@
     "start": "dotenv -- supabase start",
     "stop": "dotenv -- supabase stop",
     "status": "dotenv -- supabase status",
-    "db:reset": "dotenv -- supabase db reset",
+    "db:reset": "dotenv -- supabase db reset --debug",
     "supabase:types": "dotenv -- npx supabase gen types typescript --local > ../webapp/types/supabase.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "dotenv-cli": "^7.4.2",
-    "supabase": "^1.219.2"
+    "dotenv-cli": "^7.4.3",
+    "supabase": "^1.223.10"
   }
 }

@@ -2,13 +2,16 @@ import { useChatStore } from '@stores'
 import { Avatar } from '@components/ui/Avatar'
 import { useChannel } from './context/ChannelProvider'
 import { useMemo } from 'react'
+import { TChannelSettings } from '@types'
 
 export const MessageHeader = () => {
   const { channelId } = useChannel()
 
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channel = useMemo<any>(() => channels.get(channelId) ?? {}, [channels, channelId])
-
+  const channel = useMemo<TChannelSettings>(
+    () => channels.get(channelId) ?? null,
+    [channels, channelId]
+  )
   return (
     <div className="flex w-full flex-row items-center justify-start border-b bg-base-200 p-4">
       <div className="size-10">

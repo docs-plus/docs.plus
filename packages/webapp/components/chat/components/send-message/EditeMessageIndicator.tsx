@@ -4,6 +4,7 @@ import { RiPencilFill } from 'react-icons/ri'
 import { useChatStore } from '@stores'
 import { useChannel } from '../../context/ChannelProvider'
 import { useMemo } from 'react'
+import { TChannelSettings } from '@types'
 
 type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: number }
 
@@ -19,7 +20,10 @@ export const EditeMessageIndicator = () => {
   const { channelId } = useChannel()
   const setEditMessageMemory = useChatStore((state) => state.setEditMessageMemory)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
+  const channelSettings = useMemo<TChannelSettings>(
+    () => channels.get(channelId) ?? null,
+    [channels, channelId]
+  )
 
   //@ts-ignore
   const { editMessageMemory } = channelSettings || {}

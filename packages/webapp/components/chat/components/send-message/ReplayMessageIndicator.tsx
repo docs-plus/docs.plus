@@ -4,6 +4,7 @@ import { IoCloseOutline } from 'react-icons/io5'
 import { useChatStore } from '@stores'
 import { useChannel } from '../../context/ChannelProvider'
 import { useMemo } from 'react'
+import { TChannelSettings } from '@types'
 
 type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: number }
 
@@ -20,7 +21,10 @@ export const ReplayMessageIndicator = () => {
 
   const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
+  const channelSettings = useMemo<TChannelSettings>(
+    () => channels.get(channelId) ?? null,
+    [channels, channelId]
+  )
 
   //@ts-ignore
   const { replayMessageMemory } = channelSettings

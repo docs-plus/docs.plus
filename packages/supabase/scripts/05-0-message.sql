@@ -10,8 +10,8 @@ CREATE TABLE public.messages (
     content                TEXT CHECK (length(content) <= 3000),  -- The actual text content of the message.
     html                   TEXT CHECK (length(html) <= 3000), -- The actual HTML content of the message.
     medias                 JSONB, -- Stores URLs to media (images, videos, etc.) associated with the message.
-    user_id                UUID NOT NULL REFERENCES public.users, -- The ID of the user who sent the message.
-    channel_id             VARCHAR(36) NOT NULL REFERENCES public.channels ON DELETE SET NULL, -- The ID of the channel where the message was sent.
+    user_id                UUID NOT NULL REFERENCES public.users(id), -- The ID of the user who sent the message.
+    channel_id             VARCHAR(36) NOT NULL REFERENCES public.channels(id) ON DELETE CASCADE, -- The ID of the channel where the message was sent.
     reactions              JSONB, -- JSONB field storing user reactions to the message.
     type                   message_type DEFAULT 'text', -- Enumerated type of the message (text, image, video, etc.).
     metadata               JSONB, -- Additional metadata about the message in JSONB format.
@@ -21,7 +21,7 @@ CREATE TABLE public.messages (
     thread_id              UUID REFERENCES public.messages(id) ON DELETE SET NULL, -- ID of the thread this message belongs to.
     thread_depth           INT DEFAULT 0, -- Depth of the message in the thread.
     is_thread_root         BOOLEAN DEFAULT false, -- Indicates if the message is the root of a thread.
-    thread_owner_id        UUID REFERENCES public.users ON DELETE SET NULL, -- ID of the user who owns/opens the thread.
+    thread_owner_id        UUID REFERENCES public.users(id) ON DELETE SET NULL, -- ID of the user who owns/opens the thread.
     readed_at              TIMESTAMP WITH TIME ZONE -- Timestamp for when the message was read by a user.
 );
 

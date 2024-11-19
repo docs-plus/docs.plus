@@ -1,3 +1,6 @@
+-- First drop the existing publication if it exists
+DROP PUBLICATION IF EXISTS supabase_realtime;
+
 -- Create a new publication named 'supabase_realtime'
 -- This publication will include the specified tables
 -- and will track 'insert', 'update', and 'delete' events

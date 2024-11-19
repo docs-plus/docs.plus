@@ -21,31 +21,35 @@ BEGIN
         SET replied_message_preview = 'The message has been deleted'
         WHERE reply_to_message_id = OLD.id;
 
-        -- Update last message preview in the channel
-        WITH last_msg AS (
-            SELECT id, content
-            FROM public.messages
-            WHERE channel_id = OLD.channel_id AND deleted_at IS NULL AND id <> OLD.id
-            ORDER BY created_at DESC
-            LIMIT 1
-        )
-        UPDATE public.channels
-        SET last_message_preview = truncated_content,
-            last_activity_at = NOW()
-        WHERE id = OLD.channel_id;
+        -- Update last message preview in the channel if it exists
+        IF OLD.channel_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.channels WHERE id = OLD.channel_id) THEN
+            WITH last_msg AS (
+                SELECT id, content
+                FROM public.messages
+                WHERE channel_id = OLD.channel_id AND deleted_at IS NULL AND id <> OLD.id
+                ORDER BY created_at DESC
+                LIMIT 1
+            )
+            UPDATE public.channels
+            SET last_message_preview = truncated_content,
+                last_activity_at = NOW()
+            WHERE id = OLD.channel_id;
+        END IF;
 
-                -- Remove the reply from the metadata of the original message
-        SELECT metadata INTO currentMetadata FROM public.messages
-        WHERE id = NEW.reply_to_message_id;
-
-        IF currentMetadata IS NOT NULL THEN
-            -- Remove the deleted message ID from the 'replied' array
-            currentMetadata := jsonb_set(currentMetadata, '{replied}', (currentMetadata->'replied') - NEW.id::text);
-
-            -- Update the original message's metadata
-            UPDATE public.messages
-            SET metadata = currentMetadata
+        -- Remove the reply from the metadata of the original message
+        IF NEW.reply_to_message_id IS NOT NULL THEN
+            SELECT metadata INTO currentMetadata FROM public.messages
             WHERE id = NEW.reply_to_message_id;
+
+            IF currentMetadata IS NOT NULL THEN
+                -- Remove the deleted message ID from the 'replied' array
+                currentMetadata := jsonb_set(currentMetadata, '{replied}', (currentMetadata->'replied') - NEW.id::text);
+
+                -- Update the original message's metadata
+                UPDATE public.messages
+                SET metadata = currentMetadata
+                WHERE id = NEW.reply_to_message_id;
+            END IF;
         END IF;
 
         RETURN NEW;
@@ -78,7 +82,6 @@ RETURNS TRIGGER AS $$
 DECLARE
     truncated_content TEXT; -- Declaration of the variable
 BEGIN
-
     truncated_content := truncate_content(NEW.content);
 
     -- Update unread notification preview
@@ -97,7 +100,7 @@ BEGIN
     WHERE origin_message_id = NEW.id;
 
     -- Update last message preview in the channel of the edited message
-    IF NEW.thread_id IS NULL THEN
+    IF NEW.thread_id IS NULL AND NEW.channel_id IS NOT NULL AND EXISTS (SELECT 1 FROM public.channels WHERE id = NEW.channel_id) THEN
         UPDATE public.channels
         SET last_message_preview = truncated_content
         WHERE id = NEW.channel_id;

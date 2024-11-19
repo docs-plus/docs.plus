@@ -6,9 +6,10 @@ CREATE TABLE public.workspaces (
     slug              TEXT NOT NULL UNIQUE CHECK (length(slug) <= 100), -- Unique slug for the workspace, used for user-friendly URLs, limited to 100 characters.
     description       TEXT CHECK (length(description) <= 1000), -- Optional description of the workspace, limited to 1000 characters.
     metadata          JSONB DEFAULT '{}'::jsonb, -- Optional metadata about the workspace in JSONB format.
-    created_by        UUID NOT NULL REFERENCES public.users, -- The ID of the user who created the workspace, referencing the users table.
+    created_by        UUID REFERENCES public.users(id) ON DELETE SET NULL, -- The ID of the user who created the workspace.
     created_at        TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL, -- The timestamp when the workspace was created, set to the current UTC time.
-    updated_at        TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) -- The timestamp when the workspace was last updated, set to the current UTC time.
+    updated_at        TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()), -- The timestamp when the workspace was last updated, set to the current UTC time.
+    deleted_at        TIMESTAMP WITH TIME ZONE -- The timestamp when the workspace was soft deleted, NULL if not deleted.
 );
 
 -- Constraint: check_slug_format
