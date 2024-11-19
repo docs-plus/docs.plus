@@ -23,7 +23,7 @@ export const MessageContextMenu = forwardRef<
   const { channelId, settings } = useChannel()
 
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo<TChannelSettings>(
+  const channelSettings = useMemo<TChannelSettings | null>(
     () => channels.get(channelId) ?? null,
     [channels, channelId]
   )

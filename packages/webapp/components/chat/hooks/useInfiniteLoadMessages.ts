@@ -26,7 +26,7 @@ export const useInfiniteLoadMessages = (
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false)
 
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo<TChannelSettings>(
+  const channelSettings = useMemo<TChannelSettings | null>(
     () => channels.get(channelId) ?? null,
     [channels, channelId]
   )

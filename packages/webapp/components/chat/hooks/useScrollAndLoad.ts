@@ -18,7 +18,7 @@ export const useScrollAndLoad = (
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo<TChannelSettings>(
+  const channelSettings = useMemo<TChannelSettings | null>(
     () => channels.get(channelId) ?? null,
     [channels, channelId]
   )

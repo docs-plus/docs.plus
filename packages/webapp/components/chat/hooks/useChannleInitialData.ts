@@ -24,7 +24,7 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
   const setWorkspaceChannelSetting = useChatStore((state) => state.setWorkspaceChannelSetting)
   const setLastMessage = useChatStore((state) => state.setLastMessage)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const currentChannel = useMemo<TChannelSettings>(
+  const currentChannel = useMemo<TChannelSettings | null>(
     () => channels.get(channelId) ?? null,
     [channels, channelId]
   )
@@ -33,7 +33,7 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
   const setOrUpdateChannel = useChatStore((state: any) => state.setOrUpdateChannel)
 
   const processChannelData = async (channelId: string) => {
-    if (!currentChannel && workspaceId && user) {
+    if (currentChannel === null && workspaceId && user) {
       let newChannelId = channelId
       await upsertChannel({
         id: newChannelId,

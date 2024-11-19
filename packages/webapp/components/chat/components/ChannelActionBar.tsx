@@ -14,7 +14,7 @@ export const ChannelActionBar = () => {
   const user = useAuthStore((state: any) => state.profile)
 
   const chatChannels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo<TChannelSettings>(
+  const channelSettings = useMemo<TChannelSettings | null>(
     () => chatChannels.get(channelId) ?? null,
     [chatChannels, channelId]
   )

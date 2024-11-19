@@ -13,7 +13,7 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
   const [eventTypes, setEventTypes] = useState(null)
   const [editor, setEditor] = useState<any>(null)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo<TChannelSettings>(
+  const channelSettings = useMemo<TChannelSettings | null>(
     () => channels.get(channelId) ?? null,
     [channels, channelId]
   )

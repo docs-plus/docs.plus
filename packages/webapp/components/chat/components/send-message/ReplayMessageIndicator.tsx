@@ -21,7 +21,7 @@ export const ReplayMessageIndicator = () => {
 
   const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo<TChannelSettings>(
+  const channelSettings = useMemo<TChannelSettings | null>(
     () => channels.get(channelId) ?? null,
     [channels, channelId]
   )
