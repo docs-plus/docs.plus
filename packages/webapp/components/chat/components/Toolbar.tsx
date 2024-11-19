@@ -5,8 +5,8 @@ import { useStore, useChatStore } from '@stores'
 import AvatarStack from '@components/AvatarStack'
 import { useEffect, useState } from 'react'
 import { IoCloseSharp } from 'react-icons/io5'
-import { MdContentCopy } from 'react-icons/md'
 import * as toast from '@components/toast'
+import { MdLink } from 'react-icons/md'
 
 const CloseButton = ({ onClick }: any) => (
   <button className="btn btn-circle btn-xs ml-auto" onClick={onClick}>
@@ -87,7 +87,7 @@ const Toolbar = () => {
           className="btn btn-circle btn-ghost btn-xs mr-2"
           onClick={handleCopyUrl}
           title="Copy chat URL">
-          <MdContentCopy size={16} />
+          <MdLink size={20} className="rotate-45" />
         </button>
 
         <CloseButton onClick={handelCloseChatRoom} />
