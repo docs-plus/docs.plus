@@ -4,6 +4,7 @@ import { useChatStore } from '@stores'
 import { useChannel } from '../../context/ChannelProvider'
 import { MdInsertComment } from 'react-icons/md'
 import { useMemo } from 'react'
+import { TChannelSettings } from '@types'
 
 type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: number }
 
@@ -20,7 +21,10 @@ export const CommentMessageIndicator = () => {
 
   const setCommentMessageMemory = useChatStore((state) => state.setCommentMessageMemory)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
+  const channelSettings = useMemo<TChannelSettings>(
+    () => channels.get(channelId) ?? null,
+    [channels, channelId]
+  )
 
   //@ts-ignore
   const { commentMessageMemory } = channelSettings

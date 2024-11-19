@@ -1,16 +1,20 @@
 import { supabaseClient } from '@utils/supabase'
 import { useEffect, useState, useCallback, useMemo } from 'react'
-import { useStore, useAuthStore, useChatStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 import { join2Channel } from '@api'
 import { useApi } from '@hooks/useApi'
 import { useChannel } from '../context/ChannelProvider'
+import { TChannelSettings } from '@types'
 
 export default function JoinBroadcastChannel() {
   const { channelId } = useChannel()
 
   const [mute, setMute] = useState(false)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
+  const channelSettings = useMemo<TChannelSettings>(
+    () => channels.get(channelId) ?? null,
+    [channels, channelId]
+  )
   // @ts-ignore
   const { isUserChannelMember } = channelSettings || {}
   const user = useAuthStore((state) => state.profile)

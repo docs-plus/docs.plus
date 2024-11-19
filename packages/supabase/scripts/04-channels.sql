@@ -3,12 +3,12 @@
 -- Channels have attributes like privacy settings, member limits, activity timestamps, and user interaction settings.
 CREATE TABLE public.channels (
     id                              VARCHAR(36) DEFAULT uuid_generate_v4() NOT NULL PRIMARY KEY,
-    workspace_id                    VARCHAR(36) NOT NULL REFERENCES public.workspaces,
+    workspace_id                    VARCHAR(36) NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
     created_at                      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL,
     updated_at                      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL,
     slug                            TEXT NOT NULL UNIQUE,
     name                            TEXT NOT NULL CHECK (length(name) <= 100),
-    created_by                      UUID NOT NULL REFERENCES public.users,
+    created_by                      UUID REFERENCES public.users(id) ON DELETE SET NULL,
     description                     TEXT CHECK (length(description) <= 1000),
     member_limit                    INT,
     last_activity_at                TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL,
@@ -18,7 +18,8 @@ CREATE TABLE public.channels (
     mute_in_app_notifications       BOOLEAN DEFAULT false, -- Indicates if notifications are muted for the channel.
     type                            channel_type DEFAULT 'PUBLIC'::public.channel_type,
     metadata                        JSONB DEFAULT '{}'::jsonb,
-    member_count                    INT DEFAULT 0 NOT NULL -- The number of members in the channel.
+    member_count                    INT DEFAULT 0 NOT NULL, -- The number of members in the channel.
+    deleted_at                      TIMESTAMP WITH TIME ZONE -- Tracks when the channel was soft deleted
 );
 
 -- Constraint: check_slug_format

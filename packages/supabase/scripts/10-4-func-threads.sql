@@ -107,6 +107,12 @@ BEGIN
 
         -- Retrieve current metadata or initialize if null
         SELECT metadata INTO current_metadata FROM public.messages WHERE id = root_id;
+
+        -- If the root message does not exist, exit the function
+        IF NOT FOUND THEN
+            RETURN NEW;
+        END IF;
+
         IF current_metadata IS NULL THEN
             current_metadata := '{}'::jsonb;
         END IF;
@@ -117,7 +123,7 @@ BEGIN
         END IF;
 
         -- Increment the message_count
-        current_metadata := jsonb_set(current_metadata, '{thread, message_count}', 
+        current_metadata := jsonb_set(current_metadata, '{thread, message_count}',
             ((current_metadata->'thread'->>'message_count')::int + 1)::text::jsonb, true);
 
         -- Update the root message's metadata
@@ -141,15 +147,21 @@ EXECUTE FUNCTION increment_thread_message_count();
 CREATE OR REPLACE FUNCTION decrement_thread_message_count()
 RETURNS TRIGGER AS $$
 DECLARE
-    root_id VARCHAR;
+    root_id UUID;
     current_metadata JSONB;
 BEGIN
     -- Check for the root message ID from the thread_id of the message being deleted or soft-deleted
-    IF OLD.thread_id IS NOT NULL AND OLD.deleted_at IS NOT NULL THEN
-        root_id := NEW.thread_id;
-        
-        -- Retrieve current metadata or initialize if null
+    IF OLD.thread_id IS NOT NULL AND NEW.deleted_at IS NOT NULL THEN
+        root_id := OLD.thread_id;
+
+        -- Retrieve current metadata
         SELECT metadata INTO current_metadata FROM public.messages WHERE id = root_id;
+
+        -- If the root message does not exist, exit the function
+        IF NOT FOUND THEN
+            RETURN OLD;
+        END IF;
+
         IF current_metadata IS NULL THEN
             current_metadata := '{}'::jsonb;
         END IF;
@@ -160,7 +172,7 @@ BEGIN
         END IF;
 
         -- Decrement the message_count but do not go below zero
-        current_metadata := jsonb_set(current_metadata, '{thread, message_count}', 
+        current_metadata := jsonb_set(current_metadata, '{thread, message_count}',
             GREATEST((current_metadata->'thread'->>'message_count')::int - 1, 0)::text::jsonb, true);
 
         -- Update the root message's metadata
@@ -187,16 +199,11 @@ EXECUTE FUNCTION decrement_thread_message_count();
 CREATE OR REPLACE FUNCTION soft_delete_thread_root_messages()
 RETURNS TRIGGER AS $$
 BEGIN
-    -- Check if the updated message is a soft-delete and the user is the owner
-    IF NEW.thread_owner_id = auth.uid() THEN
-        -- Delete all messages in the same thread
-        DELETE FROM public.messages WHERE thread_id = NEW.thread_id;
-
+    -- Check if the updated message is a soft-delete, is the thread root, and the user is the owner
+    IF NEW.deleted_at IS NOT NULL AND NEW.is_thread_root AND NEW.thread_owner_id = auth.uid() THEN
         -- Delete the channel associated with this thread
         DELETE FROM public.channels WHERE id = NEW.thread_id;
-
-        -- Delete all notifications related to the channel
-        DELETE FROM public.notifications WHERE channel_id = NEW.thread_id;
+        -- Deleting the channel will cascade delete messages and notifications due to ON DELETE CASCADE
     END IF;
     RETURN NEW;
 END;
@@ -204,10 +211,10 @@ $$ LANGUAGE plpgsql;
 
 -- Create the trigger
 CREATE TRIGGER trigger_soft_delete_thread_root_messages
-AFTER UPDATE ON public.messages
+AFTER UPDATE OF deleted_at ON public.messages
 FOR EACH ROW
-WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL )
-EXECUTE PROCEDURE soft_delete_thread_root_messages();
+WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
+EXECUTE FUNCTION soft_delete_thread_root_messages();
 
 
 

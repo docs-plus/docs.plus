@@ -17,6 +17,7 @@ import { useChannel } from '../../context/ChannelProvider'
 import { messageInsert } from '../../hooks/listner/helpers'
 import * as toast from '@components/toast'
 import { CommentMessageIndicator } from './CommentMessageIndicator'
+import { TChannelSettings } from '@types'
 
 type BtnIcon = React.ComponentProps<'button'> & {
   $active?: boolean
@@ -47,8 +48,8 @@ export default function SendMessage() {
   const user = useAuthStore((state) => state.profile)
   const { workspaceId } = useChatStore((state) => state.workspaceSettings)
   const chatChannels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo(
-    () => chatChannels.get(channelId) ?? {},
+  const channelSettings = useMemo<TChannelSettings>(
+    () => chatChannels.get(channelId) ?? null,
     [chatChannels, channelId]
   )
 

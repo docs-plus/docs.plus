@@ -20,7 +20,7 @@
       "@tiptapEditor": ["components/tiptap/*"],
       "@pages": ["components/pages/*"],
       "@stores": ["stores/index.ts"],
-      "@types": ["types/supabase.ts"],
+      "@types": ["types/index.ts"],
       "@api": ["api/index.ts"],
       "@toast": ["components/toast/index.ts"],
       "@enum": ["components/TipTap/enums.js"],

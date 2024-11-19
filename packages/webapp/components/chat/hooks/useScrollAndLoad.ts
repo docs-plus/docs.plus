@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 
 import { useAuthStore, useChatStore } from '@stores'
 import { useChannel } from '../context/ChannelProvider'
+import { TChannelSettings } from '@types'
 
 const SCROLL_TIMEOUT_DELAY = 500
 const CLOSE_TO_BOTTOM_THRESHOLD = 100
@@ -17,7 +18,10 @@ export const useScrollAndLoad = (
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
+  const channelSettings = useMemo<TChannelSettings>(
+    () => channels.get(channelId) ?? null,
+    [channels, channelId]
+  )
 
   //@ts-ignore
   const { userPickingEmoji, lastReadMessageId } = channelSettings || {}

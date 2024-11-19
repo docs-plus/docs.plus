@@ -3,6 +3,7 @@ import { groupedMessages } from '@utils/index'
 import { useChatStore } from '@stores'
 import { fetchMessagesPaginated } from '@api'
 import { useChannel } from '../context/ChannelProvider'
+import { TChannelSettings } from '@types'
 
 const PAGE_SIZE = 20
 
@@ -25,7 +26,10 @@ export const useInfiniteLoadMessages = (
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false)
 
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo(() => channels.get(channelId) ?? {}, [channels, channelId])
+  const channelSettings = useMemo<TChannelSettings>(
+    () => channels.get(channelId) ?? null,
+    [channels, channelId]
+  )
 
   //@ts-ignore
   const { scrollPage: currentPage = 2, scrollPageOffset } = channelSettings || {}

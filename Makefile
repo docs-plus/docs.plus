@@ -18,6 +18,23 @@ supabase_stop:
 supabase_status:
 	cd packages/supabase && npm run status
 
+# Prepare seed.sql by concatenating all SQL files from scripts directory
+prepare-seed:
+	@echo "Preparing seed.sql file..."
+	@cd packages/supabase && \
+	if [ -f seed.sql ]; then \
+		echo "" > seed.sql; \
+		echo "Cleared existing seed.sql"; \
+	fi; \
+	for file in scripts/*.sql; do \
+		if [ -f "$$file" ]; then \
+			echo "\n-- Including $$file" >> seed.sql; \
+			cat "$$file" >> seed.sql; \
+			echo "Added $$file to seed.sql"; \
+		fi; \
+	done; \
+	echo "Seed preparation completed."
+
 # Resets the local database to a clean state.
 supabase-reset:
 	@echo "Resetting the database..."
