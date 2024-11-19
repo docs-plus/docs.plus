@@ -8,10 +8,12 @@ export const MessageHeader = () => {
   const { channelId } = useChannel()
 
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channel = useMemo<TChannelSettings>(
+  const channel = useMemo<TChannelSettings | null>(
     () => channels.get(channelId) ?? null,
     [channels, channelId]
   )
+
+  if (!channel) return null
   return (
     <div className="flex w-full flex-row items-center justify-start border-b bg-base-200 p-4">
       <div className="size-10">
@@ -23,8 +25,8 @@ export const MessageHeader = () => {
       </div>
 
       <div className="ml-3 flex flex-col">
-        <h6 className="m-0 font-semibold">{channel?.name}</h6>
-        <span className="text-xs text-base-content">{channel?.member_count} subscribers</span>
+        <h6 className="m-0 font-semibold">{channel.name}</h6>
+        <span className="text-xs text-base-content">{channel.member_count} subscribers</span>
       </div>
     </div>
   )

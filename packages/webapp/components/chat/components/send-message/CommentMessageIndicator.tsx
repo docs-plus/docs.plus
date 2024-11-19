@@ -21,7 +21,7 @@ export const CommentMessageIndicator = () => {
 
   const setCommentMessageMemory = useChatStore((state) => state.setCommentMessageMemory)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo<TChannelSettings>(
+  const channelSettings = useMemo<TChannelSettings | null>(
     () => channels.get(channelId) ?? null,
     [channels, channelId]
   )

@@ -11,7 +11,7 @@ export default function JoinBroadcastChannel() {
 
   const [mute, setMute] = useState(false)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const channelSettings = useMemo<TChannelSettings>(
+  const channelSettings = useMemo<TChannelSettings | null>(
     () => channels.get(channelId) ?? null,
     [channels, channelId]
   )
