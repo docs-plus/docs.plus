@@ -22,9 +22,8 @@ export const useScrollAndLoad = (
     () => channels.get(channelId) ?? null,
     [channels, channelId]
   )
+  const { userPickingEmoji, lastReadMessageId } = channelSettings ?? {}
 
-  //@ts-ignore
-  const { userPickingEmoji, lastReadMessageId } = channelSettings || {}
   const messagesByChannel = useChatStore((state: any) => state.messagesByChannel)
   const messages = messagesByChannel.get(channelId)
 

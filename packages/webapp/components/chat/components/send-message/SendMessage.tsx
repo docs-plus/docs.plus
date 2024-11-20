@@ -53,7 +53,6 @@ export default function SendMessage() {
     [chatChannels, channelId]
   )
 
-  //@ts-ignore
   const { replayMessageMemory, editMessageMemory, commentMessageMemory } = channelSettings || {}
 
   const setOrUpdateUserPresence = useChatStore((state: any) => state.setOrUpdateUserPresence)

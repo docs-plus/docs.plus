@@ -1,7 +1,9 @@
 import { immer } from 'zustand/middleware/immer'
 import { Database } from '@types'
 
-export type TChannel = Database['public']['Tables']['channels']['Row']
+export type TChannel = Database['public']['Tables']['channels']['Row'] & {
+  member_count?: number
+}
 
 export interface IChannelStore {
   channels: Map<string, TChannel>

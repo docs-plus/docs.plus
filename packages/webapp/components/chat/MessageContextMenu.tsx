@@ -129,8 +129,7 @@ export const MessageContextMenu = forwardRef<
   if (!channelId) return null
 
   // Do not show context menu if user is not a member of the channel
-  //@ts-ignore
-  if (!channelSettings.isUserChannelMember) return
+  if (!channelSettings?.isUserChannelMember) return
 
   return (
     <ContextMenu className={className} parrentRef={parrentRef} ref={ref}>
