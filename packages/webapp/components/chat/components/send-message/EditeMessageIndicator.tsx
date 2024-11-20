@@ -25,8 +25,7 @@ export const EditeMessageIndicator = () => {
     [channels, channelId]
   )
 
-  //@ts-ignore
-  const { editMessageMemory } = channelSettings || {}
+  const { editMessageMemory } = channelSettings ?? {}
 
   const handleCloseEditeMessage = () => {
     setEditMessageMemory(channelId, null)

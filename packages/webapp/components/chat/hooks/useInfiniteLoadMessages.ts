@@ -31,8 +31,7 @@ export const useInfiniteLoadMessages = (
     [channels, channelId]
   )
 
-  //@ts-ignore
-  const { scrollPage: currentPage = 2, scrollPageOffset } = channelSettings || {}
+  const { scrollPage: currentPage = 2, scrollPageOffset } = channelSettings ?? {}
 
   const replaceMessages = useChatStore((state: any) => state.replaceMessages)
   const messagesByChannel = useChatStore((state: any) => state.messagesByChannel)

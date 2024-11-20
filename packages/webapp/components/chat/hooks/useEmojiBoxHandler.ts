@@ -17,8 +17,8 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
     () => channels.get(channelId) ?? null,
     [channels, channelId]
   )
-  //@ts-ignore
-  const { userPickingEmoji } = channelSettings || {}
+
+  const { userPickingEmoji } = channelSettings ?? {}
 
   useEffect(() => {
     const toggelEmojiPickerHandler = (e: any) => {

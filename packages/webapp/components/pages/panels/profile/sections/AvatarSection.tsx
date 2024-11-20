@@ -58,7 +58,6 @@ const AvatarSection = () => {
         await uploadAvatarToStorage(supabaseClient, AVATARS, filePath, avatarFile)
         const bucketAddress = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${user?.id}.png`
 
-        //@ts-ignore
         PubSub.publish(AVATAR_URL_CHANNEL_NAME, `${bucketAddress}?${Date.now().toString()}`)
 
         await updateAvatarInDB(supabaseClient, PROFILES, bucketAddress, user?.id)
@@ -81,7 +80,6 @@ const AvatarSection = () => {
     try {
       await updateAvatarInDB(supabaseClient, PROFILES, null, user?.id)
 
-      //@ts-ignore
       PubSub.publish(AVATAR_URL_CHANNEL_NAME, googleAvatar)
 
       await removeAvatarFromStorage(supabaseClient, AVATARS, `${PUBLIC}/${user?.id}.png`)
@@ -95,7 +93,7 @@ const AvatarSection = () => {
 
   return (
     <div
-      className="avatar-uploader relative mt-4 size-32 rounded-xl border drop-shadow-sm "
+      className="avatar-uploader relative mt-4 size-32 rounded-xl border drop-shadow-sm"
       onClick={handleClick}>
       <div
         className={` ${
@@ -118,10 +116,10 @@ const AvatarSection = () => {
       />
       {isProfileAvatar && (
         <button
-          className="changeAvatarToDefault absolute -bottom-1 -right-1 flex size-5  items-center justify-around rounded-full bg-white drop-shadow-lg"
+          className="changeAvatarToDefault absolute -bottom-1 -right-1 flex size-5 items-center justify-around rounded-full bg-white drop-shadow-lg"
           onClick={changeAvatarToDefault}
           title="Change to default avatar">
-          <CircleUser size={18} className=" z-10 size-5 rounded-full bg-white drop-shadow-lg" />
+          <CircleUser size={18} className="z-10 size-5 rounded-full bg-white drop-shadow-lg" />
         </button>
       )}
     </div>

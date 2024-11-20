@@ -26,8 +26,7 @@ export const CommentMessageIndicator = () => {
     [channels, channelId]
   )
 
-  //@ts-ignore
-  const { commentMessageMemory } = channelSettings
+  const { commentMessageMemory } = channelSettings ?? {}
 
   const handleCloseReplayMessage = () => {
     setCommentMessageMemory(channelId, null)

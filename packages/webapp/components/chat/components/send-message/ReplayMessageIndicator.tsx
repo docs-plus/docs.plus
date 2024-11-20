@@ -26,8 +26,7 @@ export const ReplayMessageIndicator = () => {
     [channels, channelId]
   )
 
-  //@ts-ignore
-  const { replayMessageMemory } = channelSettings
+  const { replayMessageMemory } = channelSettings ?? {}
 
   const handleCloseReplayMessage = () => {
     setReplayMessageMemory(channelId, null)
