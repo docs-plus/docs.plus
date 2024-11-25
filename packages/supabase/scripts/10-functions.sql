@@ -311,9 +311,31 @@ DECLARE
     email TEXT;
     new_channel JSONB;
     existing_channel JSONB;
-    current_user_id UUID := auth.uid();
+    current_user_id UUID;
     new_channel_id UUID := uuid_generate_v4();
 BEGIN
+    -- Ensure user_id (the other user) is not NULL
+    IF user_id IS NULL THEN
+        RAISE EXCEPTION 'Parameter user_id cannot be NULL.';
+    END IF;
+
+    -- Get current user ID from auth.uid(), or from app.current_user_id if auth.uid() is NULL
+    current_user_id := auth.uid();
+
+    IF current_user_id IS NULL THEN
+        -- Attempt to get current_user_id from session variable for testing purposes
+        BEGIN
+            SELECT current_setting('app.current_user_id', TRUE) INTO current_user_id;
+        EXCEPTION WHEN OTHERS THEN
+            RAISE EXCEPTION 'Current user ID is NULL or not set.';
+        END;
+    END IF;
+
+    -- Check if current_user_id is still NULL
+    IF current_user_id IS NULL THEN
+        RAISE EXCEPTION 'Current user ID is NULL.';
+    END IF;
+
     -- Check if the workspace exists and is not deleted
     IF NOT EXISTS (SELECT 1 FROM public.workspaces WHERE id = workspace_uid AND deleted_at IS NULL) THEN
         RAISE EXCEPTION 'Workspace % does not exist or has been deleted.', workspace_uid;
@@ -332,6 +354,11 @@ BEGIN
     -- Check if the current user exists and is not deleted
     IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = current_user_id) THEN
         RAISE EXCEPTION 'Current user % does not exist or has been deleted.', current_user_id;
+    END IF;
+
+    -- Prevent creating a channel with oneself
+    IF current_user_id = user_id THEN
+        RAISE EXCEPTION 'Cannot create a direct message channel with oneself.';
     END IF;
 
     -- Create display name based on the priority: display_name, full_name, username, email
@@ -359,8 +386,8 @@ BEGIN
     RETURNING to_jsonb(public.channels.*) INTO new_channel;
 
     -- Add current user to the channel
-    INSERT INTO public.channel_members (channel_id, member_id, joined_at)
-    VALUES (new_channel_id, current_user_id, now());
+    -- INSERT INTO public.channel_members (channel_id, member_id, joined_at)
+    -- VALUES (new_channel_id, current_user_id, now());
 
     -- Add the other user to the channel
     INSERT INTO public.channel_members (channel_id, member_id, joined_at)
