@@ -42,6 +42,29 @@ const LinkItem: React.FC<LinkItemProps> = ({
     : undefined
 
   const Icon = getLinkIcon(link.url, link.type, link.metadata)
+
+  const getFormattedHref = (link: ILinkItem): string => {
+    switch (link.type) {
+      case ELinkType.Email:
+        return link.url.startsWith('mailto:') ? link.url : `mailto:${link.url}`
+      case ELinkType.Phone:
+        return link.url.startsWith('tel:') ? link.url : `tel:${link.url}`
+      default:
+        return link.url.startsWith('http') ? link.url : `https://${link.url}`
+    }
+  }
+
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    if (link.type === ELinkType.Phone || link.type === ELinkType.Email) {
+      // Let the default behavior handle email and phone links
+      return
+    }
+
+    // For web links, ensure they open in a new tab
+    e.preventDefault()
+    window.open(getFormattedHref(link), '_blank', 'noopener,noreferrer')
+  }
+
   return (
     <div
       style={bgStyle}
@@ -55,7 +78,9 @@ const LinkItem: React.FC<LinkItemProps> = ({
                 style={{
                   color:
                     link.type === ELinkType.Social
-                      ? SOCIAL_MEDIA_ICONS[new URL(link.url).hostname.replace('www.', '')]?.color
+                      ? SOCIAL_MEDIA_ICONS[
+                          new URL(getFormattedHref(link)).hostname.replace('www.', '')
+                        ]?.color
                       : 'text-gray-200'
                 }}
               />
@@ -63,9 +88,8 @@ const LinkItem: React.FC<LinkItemProps> = ({
           )}
           <div className="ml-3 min-w-0 flex-1">
             <a
-              href={link.url}
-              target="_blank"
-              rel="noopener noreferrer"
+              href={getFormattedHref(link)}
+              onClick={handleClick}
               title={link.metadata?.title || link.url}
               className="block truncate font-medium text-gray-900 transition-colors hover:text-blue-600">
               {link.metadata?.title || link.url}
