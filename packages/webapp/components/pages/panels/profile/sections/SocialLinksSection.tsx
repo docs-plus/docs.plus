@@ -22,27 +22,6 @@ const Linktree: React.FC = () => {
   const { addLink, loading } = useAddLink()
   const { loading: updateLoading, handleSave } = useProfileUpdate()
 
-  // useEffect(() => {
-  //   console.log({
-  //     linkTree: user?.profile_data?.linkTree
-  //   })
-  //   if (!user) return
-  //   const linkTree = user.profile_data?.linkTree ?? []
-  //   const newLinkTree = [...linkTree, ...links]
-  //   const new_profile_data = {
-  //     ...(user.profile_data ?? {}),
-  //     linkTree: newLinkTree
-  //   }
-  //   setProfile({
-  //     ...user,
-  //     profile_data: new_profile_data
-  //   } as Profile)
-  // }, [links])
-
-  useEffect(() => {
-    console.log('links', { links, user })
-  }, [links, user])
-
   const handleAddLink = async () => {
     if (!user) return
     const { error, link } = await addLink(newLink)
@@ -60,11 +39,11 @@ const Linktree: React.FC = () => {
     setLinks((prev) => [...prev, link])
     setNewLink('')
     const newLinkTree = [...(user.profile_data?.linkTree ?? []), link]
-    console.log('newLinkTree', { newLinkTree })
     setProfile({
       ...user,
       profile_data: { ...user.profile_data, linkTree: newLinkTree }
     } as Profile)
+
     handleSave({ successToast: 'Link added successfully!' })
   }
 

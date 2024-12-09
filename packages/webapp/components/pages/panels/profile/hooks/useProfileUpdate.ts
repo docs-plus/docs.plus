@@ -24,7 +24,9 @@ export const useProfileUpdate = () => {
         return
       }
 
-      const { data, error } = await updateUser(user?.id, user)
+      const getProfileData = useAuthStore.getState().profile || {}
+
+      const { data, error } = await updateUser(user?.id, getProfileData)
       if (error) {
         console.error(error)
         toast.Error('Error updating profile!')
