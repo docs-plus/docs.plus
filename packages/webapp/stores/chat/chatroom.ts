@@ -1,10 +1,6 @@
 import { immer } from 'zustand/middleware/immer'
-import { Database } from '@types'
+import { Database, Profile } from '@types'
 import { useAuthStore, useStore } from '@stores'
-
-export type TProfile = Database['public']['Tables']['users']['Row'] & {
-  channelId?: string | null
-}
 
 type TChatRoom = {
   headingPath: Array<any>
@@ -23,7 +19,7 @@ interface IChatroomStore {
     headingId: string,
     documentId: string,
     headingPath: Array<any>,
-    user: TProfile | null
+    user: Profile | null
   ) => void
   updateChatRoom: (key: keyof TChatRoom, value: any) => void
   openChatRoom: () => void
@@ -37,7 +33,7 @@ const getWorkspaceId = (): string => {
   return useStore.getState().settings.workspaceId || ''
 }
 
-const join2Channel = (user: TProfile, channelId: string) => {
+const join2Channel = (user: Profile, channelId: string) => {
   if (!user) return
   useStore.getState().settings?.broadcaster.send({
     type: 'broadcast',
@@ -46,7 +42,7 @@ const join2Channel = (user: TProfile, channelId: string) => {
   })
 }
 
-const leaveChannel = (user: TProfile) => {
+const leaveChannel = (user: Profile) => {
   if (!user) return
   useStore.getState().settings.broadcaster.send({
     type: 'broadcast',

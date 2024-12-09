@@ -2,9 +2,8 @@ import TabTitle from '../components/TabTitle'
 import TabSection from '../components/TabSection'
 import Toggle from '../../../../ui/Toggle'
 import Checkbox from '../../../../ui/Checkbox'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import toast from 'react-hot-toast'
-import { supabaseClient } from '@utils/supabase'
 import { useAuthStore } from '@stores'
 
 const ToggleSection = ({ name, description, value, checked, onChange }: any) => {
@@ -28,7 +27,7 @@ const NotificationsTab = ({ goBack }: any) => {
   const [emailNotifications, setEmailNotifications] = useState(false)
   const [notificationNewActivity, setNotificationNewActivity] = useState(false)
 
-  const changePushNotifications = async (e) => {
+  const changePushNotifications = async (e: any) => {
     // setPushNotifications(e.target.checked)
 
     // const { error } = await supabaseClient
@@ -44,7 +43,7 @@ const NotificationsTab = ({ goBack }: any) => {
     // toast.success('Profile updated')
     toast.error('This feature is temporarily unavailable.')
   }
-  const changeEmailNotifications = async (e) => {
+  const changeEmailNotifications = async (e: any) => {
     // setEmailNotifications(e.target.checked)
 
     // const { error } = await supabaseClient

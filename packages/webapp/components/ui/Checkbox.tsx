@@ -1,7 +1,17 @@
 import { twMerge } from 'tailwind-merge'
 import { randstr } from '@utils/index'
+import { ChangeEvent } from 'react'
 
-const Checkbox = ({
+interface CheckboxProps {
+  label?: string
+  checked?: boolean
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void
+  disabled?: boolean
+  id?: string
+  className?: string
+}
+
+const Checkbox: React.FC<CheckboxProps> = ({
   label,
   checked = false,
   onChange = () => {},
@@ -21,11 +31,10 @@ const Checkbox = ({
       />
       {label && (
         <label
-          disabled={disabled}
           htmlFor={id}
           className={`ml-2 text-sm font-medium dark:text-gray-300 ${
             checked ? 'text-gray-500' : 'text-gray-900'
-          }`}>
+          } ${disabled ? 'opacity-50' : ''}`}>
           {label}
         </label>
       )}
