@@ -76,7 +76,7 @@ module.exports = withPWA({
               defaultSrc: ["'self'"],
               scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", ...allowAddress],
               styleSrc: ["'self'", "'unsafe-inline'", ...allowAddress],
-              imgSrc: [...allowAddress, '*'],
+              imgSrc: ["'self'", 'blob:', ...allowAddress, '*'],
               connectSrc: [...allowAddress, '*'],
               fontSrc: ["'self'", 'data:', '*'],
               objectSrc: ["'none'"],

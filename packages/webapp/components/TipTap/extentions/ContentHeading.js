@@ -267,6 +267,7 @@ const HeadingsTitle = Node.create({
     return ({ node, getPos, editor, HTMLAttributes, attributes }) => {
       const dom = document.createElement(`h${node.attrs.level}`)
       dom.classList.add('title')
+      dom.setAttribute('level', node.attrs.level)
 
       // Create content span
       const contentSpan = document.createElement('span')

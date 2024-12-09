@@ -15,7 +15,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "dotenv-cli": "^7.4.3",
-    "supabase": "^1.223.10"
+    "dotenv-cli": "^7.4.4",
+    "supabase": "^2.0.0"
   }
 }

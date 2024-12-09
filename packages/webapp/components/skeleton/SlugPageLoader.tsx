@@ -44,8 +44,8 @@ export const SlugPageLoader = ({
       </div>
       <div className="fixed bottom-4 right-4 flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700">
         {loading && <span>Hang tight! Fetching profile data</span>}
-        {providerSyncing && <span>Hang tight! Provider is syncing</span>}
-        {loadingPage && <span>Hang tight! Loading Components</span>}
+        {!loading && providerSyncing && <span>Hang tight! Provider is syncing</span>}
+        {!loading && !providerSyncing && loadingPage && <span>Hang tight! Loading Components</span>}
         <span className="loading loading-dots loading-xs ml-2 mt-2"></span>
       </div>
     </div>

@@ -11,7 +11,7 @@ const TextAreaOvelapLabel = ({
 }: any) => {
   id = id || randstr('textarea_')
   return (
-    <div className={`relative rounded-md border subpixel-antialiased ${props.className}`}>
+    <div className={`relative rounded-md subpixel-antialiased ${props.className}`}>
       <textarea
         id={id}
         value={value}

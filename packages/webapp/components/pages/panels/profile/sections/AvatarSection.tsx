@@ -1,20 +1,39 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react'
-import { Avatar, AVATAR_URL_CHANNEL_NAME } from '@components/ui/Avatar'
+import { Avatar } from '@components/ui/Avatar'
 import { Camera, Spinner, CircleUser } from '@icons'
-import { toast } from 'react-hot-toast'
-import PubSub from 'pubsub-js'
 import { supabaseClient } from '@utils/supabase'
 import { useAuthStore } from '@stores'
+import Config from '@config'
+import * as toast from '@components/toast'
+import { removeFileFromStorage, uploadFileToStorage } from '@api'
 
-import {
-  uploadAvatarToStorage,
-  updateAvatarInDB,
-  removeAvatarFromStorage
-} from './avatarUpload.service'
+// update avatart must be done step by step, in order to avoid race condition
+const updateAvatarInDB = async (avatarUrl: string | null, userId: string) => {
+  try {
+    const avatar_updated_at = avatarUrl ? new Date().toISOString() : null
 
-const AVATARS = 'avatars'
-const PROFILES = 'profiles'
-const PUBLIC = 'public'
+    const { data: dbData, error: dbError } = await supabaseClient
+      .from('users')
+      .update({ avatar_updated_at })
+      .match({ id: userId })
+
+    // await for 1 second
+    await new Promise((resolve) => setTimeout(resolve, 1000))
+
+    const { data: authData, error: authError } = await supabaseClient.auth.updateUser({
+      data: { avatar_updated_at, c_avatar_url: avatarUrl }
+    })
+
+    if (dbError || authError) {
+      throw dbError || authError
+    }
+
+    return true
+  } catch (error) {
+    console.error(error)
+    throw error
+  }
+}
 
 const AvatarSection = () => {
   const user = useAuthStore((state) => state.profile)
@@ -40,33 +59,38 @@ const AvatarSection = () => {
       const avatarFile = event.target.files[0]
 
       if (event.target?.files[0]?.size > 256000) {
-        toast.error('Avatar must be at least 256kb')
+        toast.Error('Avatar must be at least 256kb')
         return
       }
 
       if (!event.target?.files[0]?.type.includes('image')) {
-        toast.error('Avatar must be an image')
+        toast.Error('Avatar must be an image')
         return
       }
 
       setUploading(true)
 
       if (!avatarFile) return
+      if (!user) return
 
       try {
-        const filePath = `${PUBLIC}/${user?.id}.png`
-        await uploadAvatarToStorage(supabaseClient, AVATARS, filePath, avatarFile)
-        const bucketAddress = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public/avatars/public/${user?.id}.png`
+        const filePath = `public/${user?.id}.png`
+        const bucketAddress = Config.app.profile.getAvatarURL(user?.id, Date.now().toString())
 
-        PubSub.publish(AVATAR_URL_CHANNEL_NAME, `${bucketAddress}?${Date.now().toString()}`)
+        const [uploadResult, dbResult] = await Promise.allSettled([
+          uploadFileToStorage(Config.app.profile.avatarBucketName, filePath, avatarFile),
+          updateAvatarInDB(bucketAddress, user?.id)
+        ])
 
-        await updateAvatarInDB(supabaseClient, PROFILES, bucketAddress, user?.id)
+        if (uploadResult.status === 'rejected' || dbResult.status === 'rejected') {
+          toast.Error('Error uploading avatar, please try again.')
+        }
+
         setIsProfileAvatar(true)
-
-        toast.success('Avatar uploaded successfully!')
+        toast.Success('Avatar uploaded successfully!')
       } catch (error) {
         console.error(error)
-        toast.error('Error uploading avatar, please try again.')
+        toast.Error('Error uploading avatar, please try again.')
       } finally {
         setUploading(false)
       }
@@ -75,25 +99,29 @@ const AvatarSection = () => {
   )
 
   const changeAvatarToDefault = useCallback(async () => {
-    const googleAvatar = user?.avatar_url
-    // if (isAvatarDefault) return
+    if (!user) return
     try {
-      await updateAvatarInDB(supabaseClient, PROFILES, null, user?.id)
+      const [dbResult, storageResult] = await Promise.allSettled([
+        updateAvatarInDB(null, user?.id),
+        removeFileFromStorage(Config.app.profile.avatarBucketName, `public/${user?.id}.png`)
+      ])
 
-      PubSub.publish(AVATAR_URL_CHANNEL_NAME, googleAvatar)
+      if (dbResult.status === 'rejected' || storageResult.status === 'rejected') {
+        toast.Error('Error changing avatar, please try again.')
+      }
 
-      await removeAvatarFromStorage(supabaseClient, AVATARS, `${PUBLIC}/${user?.id}.png`)
       setIsProfileAvatar(false)
 
-      toast.success('Avatar changed successfully!')
+      toast.Success('Avatar changed successfully!')
     } catch (error) {
-      toast.error('Error changing avatar, please try again.')
+      console.error(error)
+      toast.Error('Error changing avatar, please try again.')
     }
   }, [supabaseClient, user])
 
   return (
     <div
-      className="avatar-uploader relative mt-4 size-32 rounded-xl border drop-shadow-sm"
+      className="avatar-uploader relative mt-4 flex size-28 items-center justify-center rounded-xl border drop-shadow-sm"
       onClick={handleClick}>
       <div
         className={` ${
@@ -104,6 +132,7 @@ const AvatarSection = () => {
       <Avatar
         id={user?.id}
         src={user?.avatar_url}
+        avatarUpdatedAt={user?.avatar_updated_at}
         alt={displayName}
         justImage={true}
         className="size-32"

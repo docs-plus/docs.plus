@@ -10,6 +10,9 @@ import Button from '@components/ui/Button'
 import { useAuthStore } from '@stores'
 import Loading from '@components/ui/Loading'
 import { MdCheck, MdMenu } from 'react-icons/md'
+import ProfilePanel from '@components/pages/panels/profile/ProfilePanel'
+import TabLayout from '@components/pages/TabLayout'
+import SignInPanel from '@components/pages/panels/SignInPanel'
 
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
   loading: () => <Loading />
@@ -48,6 +51,7 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
         data-tip="Profile">
         <Avatar
           id={user.id}
+          avatarUpdatedAt={user.avatar_updated_at}
           src={user.avatar_url}
           width={24}
           height={24}
@@ -73,35 +77,44 @@ const MobilePadTitle = () => {
   const [isProfileModalOpen, setProfileModalOpen] = useState(false)
 
   return (
-    <div className="docTitle sticky left-0 top-0 z-10 h-auto w-full bg-white">
-      <div className="relative z-10 flex min-h-12 w-full flex-col items-center border-b bg-white p-2">
-        <div className="flex w-full flex-row items-center justify-between">
-          <div className="flex w-[80%] items-center">
-            <EditableToggle isEditable={isEditable} />
+    <>
+      <div className="docTitle sticky left-0 top-0 z-10 h-auto w-full bg-white">
+        <div className="relative z-10 flex min-h-12 w-full flex-col items-center border-b bg-white p-2">
+          <div className="flex w-full flex-row items-center justify-between">
+            <div className="flex w-[80%] items-center">
+              <EditableToggle isEditable={isEditable} />
 
-            <div className="ml-2 w-[calc(100%-40px)] overflow-hidden">
-              <DocTitle className="truncate text-sm font-medium" />
+              <div className="ml-2 w-[calc(100%-40px)] overflow-hidden">
+                <DocTitle className="truncate text-sm font-medium" />
+              </div>
+            </div>
+
+            <div className="flex w-[20%] items-center justify-end">
+              <ReadOnlyIndicator />
+              <UserProfileButton user={user} onProfileClick={() => setProfileModalOpen(true)} />
             </div>
           </div>
-
-          <div className="flex w-[20%] items-center justify-end">
-            <ReadOnlyIndicator />
-            <UserProfileButton user={user} onProfileClick={() => setProfileModalOpen(true)} />
+          <div className="w-full">
+            <FilterBar />
           </div>
         </div>
-        <div className="w-full">
-          <FilterBar />
-        </div>
       </div>
-
       <Modal
         asAChild={false}
         id="modal_profile"
         isOpen={isProfileModalOpen}
         setIsOpen={setProfileModalOpen}>
-        <ControlCenter defaultTab="profile" />
+        {user ? (
+          <TabLayout name="profile" className="max-w-[64rem]">
+            <ProfilePanel />
+          </TabLayout>
+        ) : (
+          <TabLayout name="sign-in" footer={false} className="w-full p-6 sm:w-[28rem] sm:p-6">
+            <SignInPanel />
+          </TabLayout>
+        )}
       </Modal>
-    </div>
+    </>
   )
 }
 

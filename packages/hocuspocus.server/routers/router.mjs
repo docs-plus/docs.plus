@@ -119,6 +119,18 @@ router.get('/documents', async (req, res) => {
             { keywords: { search: searchQuery } },
             { description: { search: searchQuery } }
           ]
+        },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          description: true,
+          documentId: true,
+          keywords: true,
+          ownerId: true,
+          readOnly: true,
+          createdAt: true,
+          updatedAt: true
         }
       }),
       prisma.documentMetadata.count({
@@ -151,15 +163,33 @@ router.get('/documents', async (req, res) => {
     doc.keywords = doc.keywords.length === 0 ? [] : doc.keywords.split(',').map((k) => k.trim())
   })
 
-  const userIds = documents.filter((doc) => doc.ownerId && doc.ownerId).map((doc) => doc.ownerId)
-
-  // I need to check if has cookie token also
   if (process.env.SUPABASE_URL && process.env.SUPABASE_ANON_KEY) {
-    const ownerProfiles = await getOwnerProfiles(userIds)
-    documents = documents.map((doc) => {
-      const user = ownerProfiles?.find((profile) => profile.id === doc.ownerId)
-      return { ...doc, user }
-    })
+    const documentsWithOwners = documents.filter((doc) => doc.ownerId)
+
+    if (documentsWithOwners.length > 0) {
+      const ownerIds = documentsWithOwners.map((doc) => doc.ownerId)
+      const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY)
+      const { data: ownerProfiles } = await supabase
+        .from('users')
+        .select('avatar_url, id, full_name, display_name, email, status')
+        .in('id', ownerIds)
+
+      documents = documents.map((doc) => {
+        if (!doc.ownerId) return doc
+
+        const ownerProfile = ownerProfiles?.find((profile) => profile.id === doc.ownerId)
+        const displayName =
+          ownerProfile?.display_name || ownerProfile?.full_name || ownerProfile?.email
+        return {
+          ...doc,
+          owner: {
+            avatar_url: ownerProfile?.avatar_url,
+            displayName: displayName,
+            status: ownerProfile?.status
+          }
+        }
+      })
+    }
   }
 
   return { docs: documents, total }

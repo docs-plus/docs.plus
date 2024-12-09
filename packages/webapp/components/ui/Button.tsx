@@ -13,6 +13,7 @@ const Button = React.forwardRef(
       Icon,
       iconSize,
       iconFill,
+      loadingText = null,
       ...props
     }: any,
     ref
@@ -26,7 +27,14 @@ const Button = React.forwardRef(
       onClick={onClick}
       {...props}>
       {loading ? (
-        <span className="loading loading-spinner"></span>
+        loadingText ? (
+          <span className="flex items-center">
+            <span>{loadingText}</span>
+            <span className="loading loading-dots loading-xs ml-2 mt-2"></span>
+          </span>
+        ) : (
+          <span className="loading loading-spinner"></span>
+        )
       ) : (
         <>
           {Icon && (

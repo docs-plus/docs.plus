@@ -1,6 +1,6 @@
-const Loading = () => {
+const Loading = ({ className }: { className?: string }) => {
   return (
-    <div className="flex size-full items-center justify-center">
+    <div className={`flex size-full items-center justify-center ${className}`}>
       <span className="loading loading-spinner loading-md"></span>
     </div>
   )

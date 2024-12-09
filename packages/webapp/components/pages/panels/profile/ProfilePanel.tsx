@@ -1,126 +1,53 @@
 import { useState } from 'react'
-import Button from '@components/ui/Button'
-import { Avatar } from '@components/ui/Avatar'
 import dynamic from 'next/dynamic'
-import { useAuthStore } from '@stores'
 import Loading from '@components/ui/Loading'
-import { LuLogOut } from 'react-icons/lu'
-import { RiShieldCheckLine, RiArrowRightSLine } from 'react-icons/ri'
-import { LuBell } from 'react-icons/lu'
-import * as toast from '@components/toast'
-import { createClient } from '@utils/supabase/component'
-const ProfileTab = dynamic(() => import('./ProfileTab'), {
-  loading: () => <Loading />
+import LinksMenu from './components/LinksMenu'
+import SignOutButton from './components/SignOutButton'
+import TabsMenu from './components/TabsMenu'
+
+const ProfileTab = dynamic(() => import('./tabs/ProfileTab'), {
+  loading: () => <Loading className="size-56" />
 })
-const SecurityTab = dynamic(() => import('./SecurityTab'), {
-  loading: () => <Loading />
+const DocumentsPanel = dynamic(() => import('./tabs/DocumentsTab'), {
+  loading: () => <Loading className="size-56" />
 })
-const NotificationsTab = dynamic(() => import('./NotificationsTab'), {
-  loading: () => <Loading />
+const SecurityTab = dynamic(() => import('./tabs/SecurityTab'), {
+  loading: () => <Loading className="size-56" />
+})
+const NotificationsTab = dynamic(() => import('./tabs/NotificationsTab'), {
+  loading: () => <Loading className="size-56" />
 })
 
 const ProfilePanel = () => {
-  const [loadSignOut, setLoadSignOut] = useState(false)
   const [activeTab, setActiveTab] = useState('profile')
-  const displayName = useAuthStore((state) => state.profile?.display_name)
-  const user = useAuthStore((state) => state.profile)
-  const supabaseClient = createClient()
-
-  const signOut = async () => {
-    setLoadSignOut(true)
-    const { error } = await supabaseClient.auth.signOut()
-    if (error) {
-      toast.Error('Error signOut:' + error.message)
-    }
-    window.location.assign(window.location.pathname)
-  }
+  const [isPanelVisible, setIsPanelVisible] = useState(false)
 
   const changeTab = (tab: string) => {
     setActiveTab(tab)
+    setIsPanelVisible(true)
+  }
+
+  const goBack = () => {
+    setIsPanelVisible(false)
   }
 
   return (
     <>
-      <div className="relative w-4/12 p-4 px-6">
-        <ul className="menu flex space-y-2 pl-0">
-          <li
-            onClick={() => {
-              changeTab('profile')
-            }}>
-            <a href="#" className={`${activeTab === 'profile' ? 'active' : ''}`}>
-              <Avatar
-                id={user?.id}
-                src={user?.avatar_url}
-                alt={displayName}
-                className="mr-2 w-6 scale-125 rounded-full border"
-              />
-              Profile
-              <RiArrowRightSLine size={20} className="ml-auto" />
-            </a>
-          </li>
-          <li
-            onClick={() => {
-              changeTab('security')
-            }}>
-            <a href="#" className={`${activeTab === 'security' ? 'active' : ''}`}>
-              <RiShieldCheckLine size={22} className="mr-2" />
-              Security
-              <RiArrowRightSLine size={20} className="ml-auto" />
-            </a>
-          </li>
-          <li
-            onClick={() => {
-              changeTab('notifications')
-            }}>
-            <a href="#" className={`${activeTab === 'notifications' ? 'active' : ''}`}>
-              <LuBell size={22} className="mr-2" />
-              Notifications
-              <RiArrowRightSLine size={20} className="ml-auto" />
-            </a>
-          </li>
-        </ul>
+      <div
+        className={`relative h-full w-full flex-col overflow-auto p-4 px-6 md:w-4/12 ${isPanelVisible ? 'hidden md:flex' : 'flex'}`}>
+        <TabsMenu activeTab={activeTab} changeTab={changeTab} />
         <div className="divider"></div>
-        <div className="flex flex-col rounded-md">
-          <ul className="menu">
-            <li>
-              <a href="#" target="_blank" className="mt-2">
-                FAQ
-              </a>
-            </li>
-            <li>
-              <a href="#" target="_blank" className="mt-2">
-                Request a feature
-              </a>
-            </li>
-            <li>
-              <a href="#" target="_blank" className="mt-2">
-                Report an issue
-              </a>
-            </li>
-            <li>
-              <a href="#" target="_blank" className="mt-2">
-                Privacy policy
-              </a>
-            </li>
-            <li>
-              <a href="#" target="_blank" className="mt-2">
-                Terms of service
-              </a>
-            </li>
-          </ul>
-        </div>
-        <Button
-          onClick={signOut}
-          className="join-item btn-block mt-28 flex items-center justify-center"
-          loading={loadSignOut}>
-          <LuLogOut size={18} className="mr-auto" />
-          <span className="-ml-[24px] mr-auto">Sign-out</span>
-        </Button>
+        <LinksMenu />
+        <SignOutButton />
       </div>
-      <div className="w-8/12 p-4">
-        {activeTab === 'profile' && <ProfileTab />}
-        {activeTab === 'security' && <SecurityTab />}
-        {activeTab === 'notifications' && <NotificationsTab />}
+      <div
+        className={`relative w-full overflow-y-auto bg-base-100 p-4 pt-1 md:flex md:w-8/12 ${
+          isPanelVisible ? 'flex' : 'hidden'
+        }`}>
+        {activeTab === 'profile' && <ProfileTab goBack={goBack} />}
+        {activeTab === 'documents' && <DocumentsPanel goBack={goBack} />}
+        {activeTab === 'security' && <SecurityTab goBack={goBack} />}
+        {activeTab === 'notifications' && <NotificationsTab goBack={goBack} />}
       </div>
     </>
   )

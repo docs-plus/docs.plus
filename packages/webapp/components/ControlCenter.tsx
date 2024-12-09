@@ -6,7 +6,7 @@ import { twMerge } from 'tailwind-merge'
 import { useAuthStore } from '@stores'
 
 const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardLayout'))
-const DocumentsPanel = dynamic(() => import('@pages/panels/DocumentsPanel'))
+const DocumentsPanel = dynamic(() => import('@components/pages/panels/profile/tabs/DocumentsTab'))
 
 function TabLayout({ name, children, className, footer }: any) {
   return (

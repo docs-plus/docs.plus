@@ -17,9 +17,6 @@ const DashboardLayout = dynamic(() => import('@pages/document/layouts/DashboardL
 const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
   loading: () => <Loading />
 })
-const DocumentsPanel = dynamic(() => import('@pages/panels/DocumentsPanel'), {
-  loading: () => <Loading />
-})
 const ProfilePanel = dynamic(() => import('@pages/panels/profile/ProfilePanel'), {
   loading: () => <Loading />
 })
@@ -73,7 +70,6 @@ function Home({ hostname, isMobile }: { hostname: string; isMobile: boolean }) {
                 <DocsPlus size={26} />
               </div>
             </Tab>
-            {isUserSignedIn && <Tab name="documents">Documents</Tab>}
             {isAuthServiceAvailable && !user && (
               <Tab name="sign-in" className="ml-auto flex items-center">
                 <div className="tooltip tooltip-top" data-tip="Sign in">
@@ -85,6 +81,7 @@ function Home({ hostname, isMobile }: { hostname: string; isMobile: boolean }) {
               <Tab name="profile" className="ml-auto py-2">
                 <Avatar
                   src={user?.avatar_url}
+                  avatarUpdatedAt={user?.avatar_updated_at}
                   id={user?.id}
                   alt={displayName}
                   width={22}
@@ -98,11 +95,6 @@ function Home({ hostname, isMobile }: { hostname: string; isMobile: boolean }) {
             <TabLayout name="deck">
               <DeckPanel hostname={hostname} />
             </TabLayout>
-            {isUserSignedIn && (
-              <TabLayout name="documents">
-                <DocumentsPanel />
-              </TabLayout>
-            )}
             {isAuthServiceAvailable && !user && (
               <TabLayout name="sign-in" footer={false} className="w-full p-6 sm:w-[28rem] sm:p-6">
                 <SignInPanel />

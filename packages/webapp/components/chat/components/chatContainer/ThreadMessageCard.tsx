@@ -28,6 +28,7 @@ const ThreadMessageCard = React.forwardRef<HTMLDivElement, TThreadMessageCardPro
       <div ref={ref} className="msg_card group chat chat-start relative w-full">
         <Avatar
           src={data?.user_details?.avatar_url}
+          avatarUpdatedAt={data?.user_details?.avatar_updated_at}
           className="avatar chat-image w-10 cursor-pointer rounded-full transition-all hover:scale-105"
           style={{
             width: 40,

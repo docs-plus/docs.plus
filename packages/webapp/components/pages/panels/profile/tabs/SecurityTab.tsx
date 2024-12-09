@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useMutation } from '@tanstack/react-query'
 import { Envelope, AngleSmallLeft, Sparkles } from '@icons'
-import TabTitle from './components/TabTitle'
-import TabSection from './components/TabSection'
+import TabTitle from '../components/TabTitle'
+import TabSection from '../components/TabSection'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
 import Button from '@components/ui/Button'
 import toast from 'react-hot-toast'
 import useEmailValidation from '@hooks/useEmailValidation'
 import { supabaseClient } from '@utils/supabase'
 import { useAuthStore } from '@stores'
+import { RiArrowRightSLine } from 'react-icons/ri'
 
 const ChangeEmailSection = ({
   email,
@@ -16,24 +17,18 @@ const ChangeEmailSection = ({
   handleEmailChange,
   saveNewEmail,
   loading,
-  setLoading
-}) => (
-  <div className="h-full border-l">
-    <TabTitle className="flex">
-      <button
-        className="mr-4 flex size-7 items-center justify-center rounded-md transition-all hover:bg-slate-200"
-        onClick={() => setLoading(false)}>
-        <AngleSmallLeft size={24} className="" />
-      </button>
-      Change email
-    </TabTitle>
+  setLoading,
+  goBack
+}: any) => (
+  <div className="relative h-full w-full md:border-l">
+    <TabTitle className="flex" title="Change email" goBack={() => setLoading(false)}></TabTitle>
     <TabSection>
       <div className="flex flex-col">
         <InputOverlapLabel
           Icon={Envelope}
           size={18}
           label="Email"
-          className={`mt-4 ${emailError ? ' border-red-500' : ''}`}
+          className={`mt-4 ${emailError ? 'border-red-500' : ''}`}
           value={email}
           onChange={handleEmailChange}
         />
@@ -47,9 +42,9 @@ const ChangeEmailSection = ({
   </div>
 )
 
-const SecuritySection = ({ email, loading, acceptNewEmail, setLoading }) => (
-  <div className="h-full border-l">
-    <TabTitle>Security</TabTitle>
+const SecuritySection = ({ email, loading, acceptNewEmail, setLoading, goBack }: any) => (
+  <div className="relative h-full w-full md:border-l">
+    <TabTitle className="flex" goBack={goBack} title="Security"></TabTitle>
     <TabSection
       name="Account email"
       description="The email address associated with your docs.plus account">
@@ -80,7 +75,7 @@ const SecuritySection = ({ email, loading, acceptNewEmail, setLoading }) => (
   </div>
 )
 
-const SecurityTab = () => {
+const SecurityTab = ({ goBack }: any) => {
   const user = useAuthStore((state) => state.profile)
 
   const {
@@ -177,6 +172,7 @@ const SecurityTab = () => {
     />
   ) : (
     <SecuritySection
+      goBack={goBack}
       email={email}
       profileData={user}
       loading={displayChangeEmailSection}

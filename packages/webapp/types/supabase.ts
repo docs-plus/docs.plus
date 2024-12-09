@@ -111,7 +111,8 @@ export type Database = {
         Row: {
           allow_emoji_reactions: boolean | null
           created_at: string
-          created_by: string
+          created_by: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           is_avatar_set: boolean | null
@@ -130,7 +131,8 @@ export type Database = {
         Insert: {
           allow_emoji_reactions?: boolean | null
           created_at?: string
-          created_by: string
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_avatar_set?: boolean | null
@@ -149,7 +151,8 @@ export type Database = {
         Update: {
           allow_emoji_reactions?: boolean | null
           created_at?: string
-          created_by?: string
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           is_avatar_set?: boolean | null
@@ -372,7 +375,7 @@ export type Database = {
           id: string
           message_id: string
           pinned_at: string
-          pinned_by: string
+          pinned_by: string | null
         }
         Insert: {
           channel_id: string
@@ -380,7 +383,7 @@ export type Database = {
           id?: string
           message_id: string
           pinned_at?: string
-          pinned_by: string
+          pinned_by?: string | null
         }
         Update: {
           channel_id?: string
@@ -388,7 +391,7 @@ export type Database = {
           id?: string
           message_id?: string
           pinned_at?: string
-          pinned_by?: string
+          pinned_by?: string | null
         }
         Relationships: [
           {
@@ -416,67 +419,57 @@ export type Database = {
       }
       users: {
         Row: {
-          about: string | null
+          avatar_updated_at: string | null
           avatar_url: string | null
-          company: string | null
           created_at: string
+          deleted_at: string | null
           display_name: string | null
-          email: string | null
+          email: string
           full_name: string | null
           id: string
-          job_title: string | null
           online_at: string | null
-          status: Database["public"]["Enums"]["user_status"] | null
+          profile_data: Json
+          status: Database["public"]["Enums"]["user_status"]
           updated_at: string
           username: string
-          website: string | null
         }
         Insert: {
-          about?: string | null
+          avatar_updated_at?: string | null
           avatar_url?: string | null
-          company?: string | null
           created_at?: string
+          deleted_at?: string | null
           display_name?: string | null
-          email?: string | null
+          email: string
           full_name?: string | null
           id: string
-          job_title?: string | null
           online_at?: string | null
-          status?: Database["public"]["Enums"]["user_status"] | null
+          profile_data?: Json
+          status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
           username: string
-          website?: string | null
         }
         Update: {
-          about?: string | null
+          avatar_updated_at?: string | null
           avatar_url?: string | null
-          company?: string | null
           created_at?: string
+          deleted_at?: string | null
           display_name?: string | null
-          email?: string | null
+          email?: string
           full_name?: string | null
           id?: string
-          job_title?: string | null
           online_at?: string | null
-          status?: Database["public"]["Enums"]["user_status"] | null
+          profile_data?: Json
+          status?: Database["public"]["Enums"]["user_status"]
           updated_at?: string
           username?: string
-          website?: string | null
         }
-        Relationships: [
-          {
-            foreignKeyName: "users_id_fkey"
-            columns: ["id"]
-            isOneToOne: true
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       workspaces: {
         Row: {
           created_at: string
-          created_by: string
+          created_by: string | null
+          deleted_at: string | null
           description: string | null
           id: string
           metadata: Json | null
@@ -486,7 +479,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          created_by: string
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           metadata?: Json | null
@@ -496,7 +490,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          created_by?: string
+          created_by?: string | null
+          deleted_at?: string | null
           description?: string | null
           id?: string
           metadata?: Json | null
@@ -643,185 +638,6 @@ export type Database = {
       [_ in never]: never
     }
   }
-  storage: {
-    Tables: {
-      buckets: {
-        Row: {
-          allowed_mime_types: string[] | null
-          avif_autodetection: boolean | null
-          created_at: string | null
-          file_size_limit: number | null
-          id: string
-          name: string
-          owner: string | null
-          owner_id: string | null
-          public: boolean | null
-          updated_at: string | null
-        }
-        Insert: {
-          allowed_mime_types?: string[] | null
-          avif_autodetection?: boolean | null
-          created_at?: string | null
-          file_size_limit?: number | null
-          id: string
-          name: string
-          owner?: string | null
-          owner_id?: string | null
-          public?: boolean | null
-          updated_at?: string | null
-        }
-        Update: {
-          allowed_mime_types?: string[] | null
-          avif_autodetection?: boolean | null
-          created_at?: string | null
-          file_size_limit?: number | null
-          id?: string
-          name?: string
-          owner?: string | null
-          owner_id?: string | null
-          public?: boolean | null
-          updated_at?: string | null
-        }
-        Relationships: []
-      }
-      migrations: {
-        Row: {
-          executed_at: string | null
-          hash: string
-          id: number
-          name: string
-        }
-        Insert: {
-          executed_at?: string | null
-          hash: string
-          id: number
-          name: string
-        }
-        Update: {
-          executed_at?: string | null
-          hash?: string
-          id?: number
-          name?: string
-        }
-        Relationships: []
-      }
-      objects: {
-        Row: {
-          bucket_id: string | null
-          created_at: string | null
-          id: string
-          last_accessed_at: string | null
-          metadata: Json | null
-          name: string | null
-          owner: string | null
-          owner_id: string | null
-          path_tokens: string[] | null
-          updated_at: string | null
-          version: string | null
-        }
-        Insert: {
-          bucket_id?: string | null
-          created_at?: string | null
-          id?: string
-          last_accessed_at?: string | null
-          metadata?: Json | null
-          name?: string | null
-          owner?: string | null
-          owner_id?: string | null
-          path_tokens?: string[] | null
-          updated_at?: string | null
-          version?: string | null
-        }
-        Update: {
-          bucket_id?: string | null
-          created_at?: string | null
-          id?: string
-          last_accessed_at?: string | null
-          metadata?: Json | null
-          name?: string | null
-          owner?: string | null
-          owner_id?: string | null
-          path_tokens?: string[] | null
-          updated_at?: string | null
-          version?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "objects_bucketId_fkey"
-            columns: ["bucket_id"]
-            isOneToOne: false
-            referencedRelation: "buckets"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      can_insert_object: {
-        Args: {
-          bucketid: string
-          name: string
-          owner: string
-          metadata: Json
-        }
-        Returns: undefined
-      }
-      extension: {
-        Args: {
-          name: string
-        }
-        Returns: string
-      }
-      filename: {
-        Args: {
-          name: string
-        }
-        Returns: string
-      }
-      foldername: {
-        Args: {
-          name: string
-        }
-        Returns: string[]
-      }
-      get_size_by_bucket: {
-        Args: Record<PropertyKey, never>
-        Returns: {
-          size: number
-          bucket_id: string
-        }[]
-      }
-      search: {
-        Args: {
-          prefix: string
-          bucketname: string
-          limits?: number
-          levels?: number
-          offsets?: number
-          search?: string
-          sortcolumn?: string
-          sortorder?: string
-        }
-        Returns: {
-          name: string
-          id: string
-          updated_at: string
-          created_at: string
-          last_accessed_at: string
-          metadata: Json
-        }[]
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
 }
 
 type PublicSchema = Database[Extract<keyof Database, "public">]
@@ -904,5 +720,20 @@ export type Enums<
   ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
     ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof PublicSchema["CompositeTypes"]
+    | { schema: keyof Database },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
+  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
+    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
 
