@@ -1,10 +1,10 @@
 import { supabaseClient } from '@utils/supabase'
 import { PostgrestSingleResponse } from '@supabase/supabase-js'
-import { Profile } from '@types'
+import { ProfileUpdate } from '@types'
 
 export const updateUser = async (
   id: string,
-  update: Profile
+  update: ProfileUpdate
 ): Promise<PostgrestSingleResponse<null>> => {
   return supabaseClient
     .from('users')

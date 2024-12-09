@@ -1,9 +1,5 @@
 import { immer } from 'zustand/middleware/immer'
-import { Database } from '@types'
-
-export type TProfile = Database['public']['Tables']['users']['Row'] & {
-  channelId?: string | null
-}
+import { Profile as TProfile } from '@types'
 
 interface IUsersPresenceStore {
   usersPresence: Map<string, TProfile>

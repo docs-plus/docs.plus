@@ -83,7 +83,7 @@ const SecurityTab = ({ goBack }: any) => {
     setEmail,
     error: emailError,
     setError: setEmailError
-  } = useEmailValidation(user.email)
+  } = useEmailValidation(user?.email)
 
   const [displayChangeEmailSection, setDisplayChangeEmailSection] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -114,51 +114,51 @@ const SecurityTab = ({ goBack }: any) => {
     }
   )
 
-  const handleEmailChange = (e) => {
+  const handleEmailChange = (e: any) => {
     setEmail(e.target.value)
   }
 
-  const saveNewEmail = async (e) => {
+  const saveNewEmail = async (e: any) => {
     toast.error('This feature is temporarily unavailable.')
     return
-    e.preventDefault()
-    if (emailError) return
-    if (email.length === 0) return
+    // e.preventDefault()
+    // if (emailError) return
+    // if (email.length === 0) return
 
-    if (email === user.email) return toast.error('You are already using this email!')
+    // if (email === user?.email) return toast.error('You are already using this email!')
 
-    setLoading(true)
+    // setLoading(true)
 
-    try {
-      const { isValid } = await validateEmailMutation.mutateAsync(email)
-      if (!isValid) return toast.error('Invalid email provider or domain!')
+    // try {
+    //   const { isValid } = await validateEmailMutation.mutateAsync(email )
+    //   if (!isValid) return toast.error('Invalid email provider or domain!')
 
-      const pathname = window.location.pathname.split('/')
-      pathname.shift()
-      const redirectPathname = pathname.join('/')
+    //   const pathname = window.location.pathname.split('/')
+    //   pathname.shift()
+    //   const redirectPathname = pathname.join('/')
 
-      // const { error } = await supabaseClient.from('profiles').update({ email }).eq('id', user.id)
-      const { error } = await supabaseClient.auth.updateUser({
-        email,
-        options: {
-          emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT + redirectPathname
-        }
-      })
+    //   // const { error } = await supabaseClient.from('profiles').update({ email }).eq('id', user.id)
+    //   const { error } = await supabaseClient.auth.updateUser({
+    //     email,
+    //     options: {
+    //       emailRedirectTo: process.env.NEXT_PUBLIC_SUPABASE_OTP_EMAIL_REDIRECT + redirectPathname
+    //     }
+    //   })
 
-      if (error) {
-        console.error(error)
-        toast.error('Error updating your email: ' + error.message)
-      } else {
-        toast.success('Email updated initiated!')
-        setAcceptNewEmail(true)
-        setDisplayChangeEmailSection(false)
-      }
-    } catch (error) {
-      console.error(error)
-    } finally {
-      setLoading(false)
-      setEmail(user.email)
-    }
+    //   if (error) {
+    //     console.error(error)
+    //     toast.error('Error updating your email: ' + error.message)
+    //   } else {
+    //     toast.success('Email updated initiated!')
+    //     setAcceptNewEmail(true)
+    //     setDisplayChangeEmailSection(false)
+    //   }
+    // } catch (error) {
+    //   console.error(error)
+    // } finally {
+    //   setLoading(false)
+    //   setEmail(user.email)
+    // }
   }
 
   return displayChangeEmailSection ? (

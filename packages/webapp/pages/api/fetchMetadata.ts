@@ -56,6 +56,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const themeColor =
       metaTags['theme-color'] ||
       metaTags['msapplication-TileColor'] ||
+      // @ts-ignore
       result.customMetaTags?.find((tag: { name: string }) => tag.name === 'theme-color')?.content ||
       randomColor({ luminosity: 'light' })
 
@@ -87,9 +88,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (socialBannerUrl && !socialBannerUrl.match(/^https?:\/\//)) {
       socialBannerUrl = new URL(socialBannerUrl, formattedUrl.toString()).toString()
     }
-
     const metadata = {
+      // @ts-ignore
       title: result.ogTitle || result.title || '',
+      // @ts-ignore
       description: result.ogDescription || result.description || '',
       icon: iconUrl,
       socialBanner: socialBannerUrl,

@@ -28,3 +28,9 @@ export type Profile = Omit<Database['public']['Tables']['users']['Row'], 'profil
   profile_data?: ProfileData
   channelId?: string | null
 }
+export type ProfileUpdate = Omit<
+  Database['public']['Tables']['users']['Update'],
+  'profile_data'
+> & {
+  profile_data?: ProfileData
+}
