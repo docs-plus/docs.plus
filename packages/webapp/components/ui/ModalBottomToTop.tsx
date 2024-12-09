@@ -7,16 +7,24 @@ interface ModalBottomToTopProps {
   contentClassName?: string
   children: React.ReactNode
   onModalStateChange?: (isOpen: boolean) => void
+  defaultHeight?: number
 }
 
 export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
   (
-    { modalId = 'bottom_to_top_modal', className, children, onModalStateChange, contentClassName },
+    {
+      modalId = 'bottom_to_top_modal',
+      className,
+      children,
+      onModalStateChange,
+      contentClassName,
+      defaultHeight = 300
+    },
     ref
   ) => {
     const checkboxRef = React.useRef<HTMLInputElement>(null)
     const contentRef = React.useRef<HTMLDivElement>(null)
-    const [modalHeight, setModalHeight] = useState<number>(300)
+    const [modalHeight, setModalHeight] = useState<number>(defaultHeight)
     const [isDragging, setIsDragging] = useState<boolean>(false)
     const [startY, setStartY] = useState<number>(0)
     const [startHeight, setStartHeight] = useState<number>(0)
