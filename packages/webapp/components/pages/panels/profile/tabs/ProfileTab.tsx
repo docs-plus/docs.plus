@@ -13,7 +13,7 @@ const ProfileTab = ({ goBack }: { goBack: () => void }) => {
 
   return (
     <div className="relative overflow-auto md:border-l">
-      <TabTitle className="flex flex-row items-center" goBack={goBack} title="Profile">
+      <TabTitle className="flex flex-row items-center" goBack={goBack} title="">
         <Button
           className="btn btn-outline ml-auto md:hidden"
           loading={loading}
