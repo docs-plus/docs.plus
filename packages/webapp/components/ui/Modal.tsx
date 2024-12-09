@@ -41,9 +41,7 @@ const Modal = ({ isOpen, setIsOpen, children, id, asAChild = true }: TModal) => 
         }}
       />
       <div className="modal z-50 size-full bg-slate-300/20 backdrop-blur-sm" role="dialog">
-        <div className={`modal-box ${!asAChild ? 'max-h-fit max-w-fit p-0' : 'p-3'} `}>
-          {children}
-        </div>
+        <div className={`modal-box ${!asAChild ? 'max-w-fit p-0' : 'p-3'} `}>{children}</div>
         <label
           className="modal-backdrop size-full max-h-full max-w-full"
           htmlFor={modalId}
