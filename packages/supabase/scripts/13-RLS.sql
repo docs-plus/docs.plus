@@ -25,3 +25,31 @@
 
 -- 12. owner of the message just can access to the message metadata
 -- 13. owner of the channel can mention to everyone in the channel
+
+
+
+-- -- Enable Row Level Security on the users table
+-- ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
+
+-- -- Policy: Allow the user to select their own data.
+-- CREATE POLICY "Select_own" ON public.users
+-- FOR SELECT
+-- USING (auth.uid() = id);
+
+-- -- Policy: Allow the user to update their own data.
+-- CREATE POLICY "Update_own" ON public.users
+-- FOR UPDATE
+-- USING (auth.uid() = id);
+
+-- -- Policy: Allow insertion only if the inserted id matches the current auth.uid(),
+-- -- ensuring that users can only create their own row.
+-- CREATE POLICY "Insert_self" ON public.users
+-- FOR INSERT
+-- WITH CHECK (
+--   auth.uid() = id
+-- );
+
+-- -- Policy: Allow the user to delete only their own record.
+-- CREATE POLICY "Delete_own" ON public.users
+-- FOR DELETE
+-- USING (auth.uid() = id);

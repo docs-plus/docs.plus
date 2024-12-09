@@ -1,79 +1,61 @@
+import React, { useState, useCallback, useRef } from 'react'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
-import React, { useState, useCallback } from 'react'
-import { debounce } from 'lodash'
-import toast from 'react-hot-toast'
 import { At, CircleUser } from '@icons'
 import { useAuthStore } from '@stores'
-import { getSimilarUsername } from '@api'
+import { debounce } from 'lodash'
+import { useUsernameValidation } from '../hooks/useUsernameValidation'
+import * as toast from '@components/toast'
 
-// Defined constants
+const USERNAME_DEBOUNCE_MS = 2000
 
-const AccountInfoSection = () => {
-  const [errorBorderClass, setErrorBorderClass] = useState('')
+const AccountInfoSection: React.FC = () => {
   const user = useAuthStore((state) => state.profile)
   const setProfile = useAuthStore((state) => state.setProfile)
+  const [errorBorderClass, setErrorBorderClass] = useState('')
+  const [inputUsername, setInputUsername] = useState(user?.username || '')
+  const validationPromiseRef = useRef<Promise<boolean>>(Promise.resolve(false))
 
-  const checkUsername = useCallback(
-    debounce(
-      async (username: string) => {
-        if (!username) return
-        if (username === user?.username) {
-          setErrorBorderClass('border-green-500')
-          return true
+  const { validateUsername } = useUsernameValidation()
+
+  const debouncedValidate = useCallback(
+    debounce((username: string, resolve: (value: boolean) => void) => {
+      validateUsername(username).then(({ isValid, errorMessage }) => {
+        setErrorBorderClass(isValid ? 'border-green-500' : 'border-red-500')
+        if (errorMessage) {
+          toast.Error(errorMessage)
         }
-
-        if (username.length < 4) {
-          toast.error('Username must be at least 3 characters long.')
-          setErrorBorderClass('border-red-500')
-          return
-        }
-
-        // check usename must not contain spaces
-        if (username.indexOf(' ') >= 0) {
-          toast.error('Username must not contain spaces.')
-          setErrorBorderClass('border-red-500')
-          return
-        }
-
-        const { data, error } = await getSimilarUsername(username)
-
-        if (error) {
-          console.error(error)
-          toast.error('Error fetching user profile')
-          setErrorBorderClass('border-red-500')
-          return
-        }
-
-        if (data.length > 0) {
-          toast.error('Username already taken')
-          setErrorBorderClass('border-red-500')
-          return
-        }
-        setErrorBorderClass('border-green-500')
-        return true
-      },
-      650,
-      { leading: false, trailing: true }
-    ),
-    [user]
+        resolve(isValid)
+      })
+    }, USERNAME_DEBOUNCE_MS),
+    [validateUsername]
   )
 
-  const handleUsernameChange = (event: any) => {
-    const username = event.target.value
-    if (!username || !user) return
+  const handleUsernameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!user) return
+    const newUsername = e.target.value.toLowerCase()
+    setInputUsername(newUsername)
 
-    setProfile({ ...user, username })
-
-    if (username === '') {
+    if (newUsername === '') {
       setErrorBorderClass('')
       return
     }
-    checkUsername(username)
+
+    validationPromiseRef.current = new Promise((resolve) => {
+      debouncedValidate(newUsername, resolve)
+    })
+
+    const isValid = await validationPromiseRef.current
+    if (isValid) {
+      setProfile({ ...user, username: newUsername })
+    }
   }
 
-  const handelrFullName = (event: any) => {
+  const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user) return
-    setProfile({ ...user, full_name: event.target.value })
+    const newFullName = e.target.value
+    if (newFullName !== user.full_name) {
+      setProfile({ ...user, full_name: newFullName })
+    }
   }
 
   return (
@@ -82,15 +64,15 @@ const AccountInfoSection = () => {
         Icon={At}
         size={17}
         label="Full Name"
-        className={`mt-4`}
-        value={user?.full_name}
-        onChange={handelrFullName}
+        className="mt-4"
+        value={user?.full_name || ''}
+        onChange={handleFullNameChange}
       />
       <InputOverlapLabel
         Icon={CircleUser}
         label="Username"
         className={`mt-4 ${errorBorderClass}`}
-        value={user?.username}
+        value={inputUsername}
         onChange={handleUsernameChange}
       />
     </div>

@@ -20,6 +20,7 @@ const ProfileSection = () => {
           onClick={() => setModalOpen(true)}
           id={user.id}
           src={user.avatar_url}
+          avatarUpdatedAt={user.avatar_updated_at}
           width={24}
           height={24}
           className="size-11 cursor-pointer rounded-full border shadow-xl"

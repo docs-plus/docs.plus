@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, forwardRef } from 'react'
 import { createAvatar } from '@dicebear/core'
 import { lorelei, shapes, rings, initials } from '@dicebear/collection'
 import { twx, cn } from '@utils/twx'
+import Config from '@config'
 
 export const AVATAR_URL_CHANNEL_NAME = 'updateAvatarURL'
 
@@ -17,9 +18,11 @@ const AWrapper = twx.div`relative max-w-24 rounded-full bg-white`
 export const Avatar = forwardRef(
   (
     {
+      id,
       displayPresence = false,
       collection = 'lorelei',
       justImage = false,
+      avatarUpdatedAt,
       online,
       src,
       alt,
@@ -53,11 +56,18 @@ export const Avatar = forwardRef(
       })
 
       return URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }))
-    }, [collection, restProps.id, alt]) // dependencies
+    }, [collection, restProps.id, alt])
 
     useEffect(() => {
-      setImgSrc(src || generateDefaultAvatar())
-    }, [src, alt])
+      if (avatarUpdatedAt && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+        const bucketAddress = Config.app.profile.getAvatarURL(id, avatarUpdatedAt)
+        setImgSrc(bucketAddress)
+      } else if (src) {
+        setImgSrc(src)
+      } else {
+        setImgSrc(generateDefaultAvatar())
+      }
+    }, [src, alt, avatarUpdatedAt, id])
 
     const handleError = () => {
       setImgSrc(generateDefaultAvatar())

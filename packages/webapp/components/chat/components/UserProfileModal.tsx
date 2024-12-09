@@ -84,7 +84,7 @@ export const UserProfileModal = () => {
             </span>
           </div>
           <div className="ml-auto">
-            <button className="btn btn-circle  btn-sm" onClick={closeModal}>
+            <button className="btn btn-circle btn-sm" onClick={closeModal}>
               <IoCloseOutline className="size-6" />
             </button>
           </div>
@@ -94,6 +94,7 @@ export const UserProfileModal = () => {
             <Avatar
               displayPresence={true}
               src={userAvatarUrl}
+              avatarUpdatedAt={modalData?.avatar_updated_at}
               online={modalData.status}
               alt={`avatar_${modalData.id}`}
               id={modalData.id}
@@ -107,7 +108,7 @@ export const UserProfileModal = () => {
           </div>
         </div>
         <div className="divider"></div>
-        <div className="mb-4 ">
+        <div className="mb-4">
           <span className="mb-8">
             <b>Account Info</b>
           </span>

@@ -5,6 +5,7 @@ import { fetchChannelInitialData, upsertChannel } from '@api'
 import { useChannel } from '../context/ChannelProvider'
 import slugify from 'slugify'
 import { TChannelSettings } from '@types'
+import { join2Channel } from '@api'
 
 interface UseChannelInitialData {
   initialMessagesLoading: boolean
@@ -72,7 +73,7 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
       channelData?.total_messages_since_last_read
     )
 
-    updateChannelState(channelData)
+    await updateChannelState(channelData)
   }
 
   useEffect(() => {
@@ -93,14 +94,31 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
     fetchInitialData()
   }, [channelId])
 
-  const updateChannelState = (channelData: any) => {
+  const updateChannelState = async (channelData: any) => {
+    const userId = useAuthStore.getState()?.session?.id || ''
+
     if (channelData.channel_member_info) {
-      const userId = useAuthStore.getState()?.session?.id || ''
+      addChannelMember(channelId, {
+        ...channelData.channel_member_info,
+        id: userId
+      })
+    }
+    // TODO: refactor/revise needed
+    if (!channelData.is_user_channel_member) {
+      // join channel
+      await join2Channel({
+        channel_id: channelId,
+        member_id: userId
+      }).catch((error) => {
+        console.error('[useChannelInitialData] join2Channel error', error)
+        throw error
+      })
 
       addChannelMember(channelId, {
         ...channelData.channel_member_info,
         id: userId
       })
+      channelData.is_user_channel_member = true
     }
 
     setWorkspaceChannelSetting(

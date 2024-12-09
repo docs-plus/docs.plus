@@ -1,27 +1,81 @@
+-- -----------------------------------------------------------------------------
 -- Table: public.users
--- Description: This table holds essential information about each user within the application.
--- It includes user identification, personal and contact details, and system-related information.
+-- -----------------------------------------------------------------------------
+-- Description: Core user profile table that maintains essential user information,
+-- authentication linkage, and profile data. This table serves as the central
+-- reference for user management within the application.
+-- -----------------------------------------------------------------------------
+
 CREATE TABLE public.users (
-    id              UUID NOT NULL PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
-    username        TEXT NOT NULL UNIQUE,      -- The username chosen by the user, ensured to be unique across the system.
-    full_name       TEXT,                      -- Full name of the user.
-    display_name    TEXT,                      -- Display name of the user.
-    status          user_status DEFAULT 'OFFLINE'::public.user_status,  -- Current online/offline status of the user. Defaults to 'OFFLINE'.
-    updated_at      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL, -- Timestamp of the last update, automatically set to the current UTC time.
-    created_at      TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL, -- Timestamp of the user's creation, automatically set to the current UTC time.
-    avatar_url      TEXT,                      -- URL of the user's avatar image.
-    website         TEXT,                      -- User's personal or professional website.
-    email           TEXT UNIQUE,               -- User's email address.
-    job_title       TEXT,
-    company         TEXT,
-    about           TEXT,                      -- Brief description or bio of the user.
-    deleted_at      TIMESTAMP WITH TIME ZONE,  -- Timestamp when the user was soft deleted, null if active
-    CONSTRAINT username_length CHECK (char_length(username) >= 3), -- Ensures that usernames are at least 3 characters long.
-    online_at       TIMESTAMP WITH TIME ZONE   -- Timestamp of the last time the user was seen online.
+    -- Core Identity Fields
+    id              UUID NOT NULL PRIMARY KEY
+                    REFERENCES auth.users(id) ON DELETE CASCADE,
+    username        TEXT NOT NULL UNIQUE
+                    CHECK (
+                        username ~ '^[a-z][a-z0-9_-]{2,29}$' AND  -- Format validation
+                        username = lower(username)                 -- Enforce lowercase
+                    ),
+    email           TEXT UNIQUE NOT NULL,                         -- Required email address
+
+    -- Profile Information
+    full_name       TEXT,
+    display_name    TEXT,
+    avatar_url      TEXT CHECK (
+                        avatar_url IS NULL OR
+                        avatar_url ~ '^(https?://\S+|http://localhost(:[0-9]+)?/\S+)$'  -- Validate URL format including localhost
+                    ),
+    avatar_updated_at TIMESTAMP WITH TIME ZONE,                 -- New field for avatar updates
+    profile_data    JSONB DEFAULT '{}'::jsonb NOT NULL,         -- Structured profile data
+
+    -- Status Management
+    status          user_status NOT NULL
+                    DEFAULT 'OFFLINE'::public.user_status,
+    online_at       TIMESTAMP WITH TIME ZONE,
+    deleted_at      TIMESTAMP WITH TIME ZONE,                    -- Soft delete timestamp
+
+    -- Audit Timestamps
+    created_at      TIMESTAMP WITH TIME ZONE NOT NULL
+                    DEFAULT timezone('utc', now()),
+    updated_at      TIMESTAMP WITH TIME ZONE NOT NULL
+                    DEFAULT timezone('utc', now()),
+
+    -- Constraints
+    CONSTRAINT username_length
+        CHECK (char_length(username) >= 3),
+    CONSTRAINT valid_profile_data
+        CHECK (jsonb_typeof(profile_data) = 'object'),
+    CONSTRAINT valid_deletion
+        CHECK (
+            (deleted_at IS NULL) OR
+            (deleted_at > created_at)
+        )
 );
 
-COMMENT ON TABLE public.users IS 'Profile data for each user, including identification, personal info, and system timestamps.';
-COMMENT ON COLUMN public.users.id IS 'References the internal Supabase Auth user ID, ensuring linkage with authentication data.';
-COMMENT ON COLUMN public.users.username IS 'Unique username for each user, serving as a key identifier within the system.';
-COMMENT ON COLUMN public.users.status IS 'Represents the current online/offline status of the user, based on the user_status enum.';
-COMMENT ON COLUMN public.users.deleted_at IS 'Timestamp when the user was soft deleted. Null indicates an active user.';
+-- Table Comments
+COMMENT ON TABLE public.users IS 'Core user profiles table linking authentication with application user data';
+
+-- Column Comments
+COMMENT ON COLUMN public.users.id IS 'Primary key linked to auth.users, ensuring authentication system integration';
+COMMENT ON COLUMN public.users.username IS 'Unique username (3-30 chars, lowercase alphanumeric with underscore/hyphen, must start with letter)';
+COMMENT ON COLUMN public.users.email IS 'User''s verified email address';
+COMMENT ON COLUMN public.users.full_name IS 'User''s full display name';
+COMMENT ON COLUMN public.users.avatar_url IS 'URL to user''s profile picture (must be valid HTTP/HTTPS URL)';
+COMMENT ON COLUMN public.users.avatar_updated_at IS 'Timestamp of when the user''s avatar was last updated';
+COMMENT ON COLUMN public.users.profile_data IS 'Extensible JSON profile data including social links, bio, and preferences';
+COMMENT ON COLUMN public.users.status IS 'Current user online status (ONLINE/OFFLINE/AWAY/DND)';
+COMMENT ON COLUMN public.users.online_at IS 'Timestamp of user''s last online presence';
+COMMENT ON COLUMN public.users.deleted_at IS 'Soft deletion timestamp - null indicates active user';
+COMMENT ON COLUMN public.users.created_at IS 'Account creation timestamp (UTC)';
+COMMENT ON COLUMN public.users.updated_at IS 'Last profile update timestamp (UTC)';
+
+-- Profile Data Schema Documentation, it's just example, you can add more fields
+COMMENT ON COLUMN public.users.profile_data IS E'Expected schema:\n{
+  "job_title": string?,
+  "company": string?,
+  "about": string?,
+  "website": string?,
+  "social_links": [{
+    "url": string,
+    "type": "github" | "twitter" | "linkedin" | "other"
+  }]
+}';

@@ -2,9 +2,9 @@ import GitHubButton from 'react-github-btn'
 
 const Footer = () => {
   return (
-    <div className="md:flex-no-wrap mt-8 flex w-full flex-wrap border-t">
+    <div className="md:flex-no-wrap flex w-full flex-wrap border-t md:mt-8">
       <div className="w-full p-2 pl-0 md:w-3/4">
-        <p className=" text-center text-sm font-normal leading-8 text-gray-700 sm:text-left">
+        <p className="text-center text-sm font-normal leading-8 text-gray-700 sm:text-left">
           Start exploring our <span className="font-bold underline antialiased">open-source</span>{' '}
           project on
           <a href="https://github.com/docs-plus/docs.plus" rel="_blanck">
@@ -19,7 +19,7 @@ const Footer = () => {
         </p>
       </div>
       <div className="w-full p-2 pr-0 md:w-1/4">
-        <div className="ml-auto flex justify-around align-middle sm:justify-end ">
+        <div className="ml-auto flex justify-around align-middle sm:justify-end">
           <div className="mr-3">
             <GitHubButton
               aria-label="Star docs-plus/docs.plus on GitHub"

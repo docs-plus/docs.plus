@@ -1,5 +1,8 @@
 import type { Config } from './types'
 
+const PUBLIC_BUCKET_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public`
+const AVATARS_BUCKET_URL = `${PUBLIC_BUCKET_URL}/user_avatars`
+
 const config: Config = {
   app: {
     turnstile: {
@@ -7,6 +10,13 @@ const config: Config = {
       siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '',
       verifyUrl: '/api/verify-turnstile',
       expireTime: 60 * 60 * 24 * 2 // 2 days
+    },
+    profile: {
+      // "id" is user id, "avatarUpdatedAt" is the timestamp of the avatar update
+      getAvatarURL: (id: string, avatarUpdatedAt: string) => {
+        return `${AVATARS_BUCKET_URL}/public/${id}.png?${avatarUpdatedAt}`
+      },
+      avatarBucketName: 'user_avatars'
     }
   },
   editor: {

@@ -5,27 +5,53 @@
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
-  username text;
+  derived_username TEXT; -- Renamed variable to avoid ambiguity
+  suffix INT := 0;
 BEGIN
-  IF new.raw_user_meta_data->>'full_name' IS NULL THEN
-    username := new.email; 
+  -- If full_name is provided, use it as the base for the username
+  IF new.raw_user_meta_data->>'full_name' IS NOT NULL THEN
+    derived_username := lower(trim(new.raw_user_meta_data->>'full_name'));
   ELSE
-    username := new.raw_user_meta_data->>'full_name'; 
+    -- If full_name is not provided, derive username from the email before '@'
+    derived_username := lower(split_part(new.email, '@', 1));
   END IF;
 
+  -- Sanitize the username to ensure it conforms to the pattern
+  -- Replace invalid characters with underscores
+  derived_username := regexp_replace(derived_username, '[^a-z0-9_-]', '_', 'g');
+
+  -- Ensure the username starts with a letter; if not, prefix 'user_'
+  IF derived_username !~ '^[a-z]' THEN
+    derived_username := 'user_' || derived_username;
+  END IF;
+
+  -- Truncate username to a maximum of 30 characters
+  derived_username := left(derived_username, 30);
+
+  -- Ensure the username is at least 3 characters long by appending 'usr' if too short
+  IF char_length(derived_username) < 3 THEN
+    derived_username := derived_username || '_usr';
+  END IF;
+
+  -- Check for uniqueness and append a numeric suffix if the username already exists
+  WHILE EXISTS (SELECT 1 FROM public.users WHERE public.users.username = derived_username) LOOP
+    suffix := suffix + 1;
+    derived_username := left(derived_username || '_' || suffix::TEXT, 30);
+  END LOOP;
+
+  -- Insert the new user into the users table
   INSERT INTO public.users (id, full_name, avatar_url, email, username)
   VALUES (
     new.id,
     new.raw_user_meta_data->>'full_name',
     new.raw_user_meta_data->>'avatar_url',
     new.email,
-    username
+    derived_username
   );
 
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
-
 
 -- Trigger: on_auth_user_created
 -- Description: Executes handle_new_user function after a new user is created in auth.users table.

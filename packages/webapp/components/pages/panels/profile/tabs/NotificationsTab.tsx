@@ -1,15 +1,15 @@
-import TabTitle from './components/TabTitle'
-import TabSection from './components/TabSection'
-import Toggle from '../../../ui/Toggle'
-import Checkbox from '../../../ui/Checkbox'
+import TabTitle from '../components/TabTitle'
+import TabSection from '../components/TabSection'
+import Toggle from '../../../../ui/Toggle'
+import Checkbox from '../../../../ui/Checkbox'
 import { useState, useEffect } from 'react'
 import toast from 'react-hot-toast'
 import { supabaseClient } from '@utils/supabase'
 import { useAuthStore } from '@stores'
 
-const ToggleSection = ({ name, description, value, checked, onChange }) => {
+const ToggleSection = ({ name, description, value, checked, onChange }: any) => {
   return (
-    <div className="flex flex-col p-4 antialiased ">
+    <div className="flex flex-col p-4 antialiased">
       <p className="text-lg font-bold">{name}</p>
       <div className="flex flex-row items-center align-middle">
         <p className="text-base text-gray-400">{description}</p>
@@ -21,7 +21,7 @@ const ToggleSection = ({ name, description, value, checked, onChange }) => {
   )
 }
 
-const NotificationsTab = () => {
+const NotificationsTab = ({ goBack }: any) => {
   const user = useAuthStore((state) => state.profile)
 
   const [pushNotifications, setPushNotifications] = useState(false)
@@ -62,7 +62,7 @@ const NotificationsTab = () => {
     toast.error('This feature is temporarily unavailable.')
   }
 
-  const changeNotificationNewActivity = async (e) => {
+  const changeNotificationNewActivity = async (e: any) => {
     // setNotificationNewActivity(e.target.checked)
 
     // const { error } = await supabaseClient
@@ -80,8 +80,8 @@ const NotificationsTab = () => {
   }
 
   return (
-    <div className="h-full border-l">
-      <TabTitle>Notifications</TabTitle>
+    <div className="relative h-full md:border-l">
+      <TabTitle goBack={goBack} title="Notifications"></TabTitle>
 
       <ToggleSection
         value="pushNotifications"

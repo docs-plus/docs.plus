@@ -1,14 +1,6 @@
 import createSelectors from '@utils/zustand'
 import { create } from 'zustand'
-import { Database } from '@types'
-
-type TProfile = Database['public']['Tables']['users']['Row'] & {
-  channelId?: string | null
-  company?: string
-  job_title?: string
-  twitter?: string
-  facebook?: string
-}
+import { Database, Profile as TProfile } from '@types'
 
 export interface IAuthStore {
   session: any | null

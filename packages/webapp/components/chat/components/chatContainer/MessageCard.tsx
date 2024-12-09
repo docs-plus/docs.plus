@@ -75,6 +75,7 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
         <div className="avatar chat-image">
           <Avatar
             src={data?.user_details?.avatar_url}
+            avatarUpdatedAt={data?.user_details?.avatar_updated_at}
             className="avatar chat-image w-10 cursor-pointer rounded-full transition-all hover:scale-105"
             style={{
               width: 40,

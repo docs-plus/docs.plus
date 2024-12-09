@@ -1,3 +1,8 @@
+interface ProfileConfig {
+  getAvatarURL: (id: string, avatarUpdatedAt: string) => string
+  avatarBucketName: string
+}
+
 interface AppConfig {
   turnstile: {
     siteKey: string
@@ -5,6 +10,7 @@ interface AppConfig {
     expireTime: number
     isEnabled: boolean
   }
+  profile: ProfileConfig
 }
 
 interface EditorConfig {

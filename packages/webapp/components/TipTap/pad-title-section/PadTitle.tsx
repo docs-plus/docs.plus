@@ -15,6 +15,9 @@ import { useAuthStore } from '@stores'
 import ShareModal from './ShareModal'
 import { PrivateShare } from '@icons'
 import Loading from '@components/ui/Loading'
+import ProfilePanel from '@components/pages/panels/profile/ProfilePanel'
+import TabLayout from '@components/pages/TabLayout'
+import SignInPanel from '@components/pages/panels/SignInPanel'
 
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
   loading: () => <Loading />
@@ -61,6 +64,7 @@ const PadTitle = () => {
                     <Avatar
                       id={user.id}
                       src={user.avatar_url}
+                      avatarUpdatedAt={user.avatar_updated_at}
                       width={24}
                       height={24}
                       className="size-11 cursor-pointer rounded-full border shadow-xl"
@@ -89,7 +93,15 @@ const PadTitle = () => {
         id="modal_profile"
         isOpen={isProfileModalOpen}
         setIsOpen={setProfileModalOpen}>
-        <ControlCenter defaultTab="profile" />
+        {user ? (
+          <TabLayout name="profile" className="max-w-[64rem]">
+            <ProfilePanel />
+          </TabLayout>
+        ) : (
+          <TabLayout name="sign-in" footer={false} className="w-full p-6 sm:w-[28rem] sm:p-6">
+            <SignInPanel />
+          </TabLayout>
+        )}
       </Modal>
     </>
   )

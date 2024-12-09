@@ -1,99 +1,124 @@
+import React, { useState, useEffect } from 'react'
 import InputOverlapLabel from '@components/ui/InputOverlapLabel'
-import React, { useState } from 'react'
-import { LinkAlt, Facebook, Twitter } from '@icons'
+import Button from '@components/ui/Button'
 import { useAuthStore } from '@stores'
+import { ILinkItem } from '../types'
+import { useAddLink } from '../hooks/useAddLink'
+import LinkItems from '../components/LinkItems'
+import { Profile } from '@types'
+import * as toast from '@components/toast'
+import { useProfileUpdate } from '../hooks/useProfileUpdate'
 
-const SocialLinksSection = () => {
+const Linktree: React.FC = () => {
   const user = useAuthStore((state) => state.profile)
   const setProfile = useAuthStore((state) => state.setProfile)
 
-  const [twitterError, setTwitterError] = useState<string | null>(null)
-  const [facebookError, setFacebookError] = useState<string | null>(null)
-  const [websiteError, setWebsiteError] = useState<string | null>(null)
+  const [links, setLinks] = useState<ILinkItem[]>(
+    (user?.profile_data?.linkTree ?? []) as ILinkItem[]
+  )
+  const [newLink, setNewLink] = useState<string>('')
+  const [showDescription, setShowDescription] = useState<{ [key: string]: boolean }>({})
 
-  const validateWebsite = (url: string) => {
-    if (url === '') return setWebsiteError(null) // If empty, don't show error
-    const urlRegex = /^((http|https):\/\/)?(www.)?[a-z0-9]+\.[a-z]+(\/[a-zA-Z0-9#]+\/?)*$/
-    if (!urlRegex.test(url)) {
-      setWebsiteError('Invalid URL format!')
-    } else {
-      setWebsiteError(null)
-    }
-  }
+  const { addLink, loading } = useAddLink()
+  const { loading: updateLoading, handleSave } = useProfileUpdate()
 
-  const validateTwitter = (username: string) => {
-    if (username === '') return setTwitterError(null) // If empty, don't show error
-    const usernameRegex = /^@?(\w){1,15}$/
-    if (!usernameRegex.test(username)) {
-      setTwitterError(
-        "Invalid Twitter handle. It must be 15 characters or less and can't contain special characters except '_'."
-      )
-    } else {
-      setTwitterError(null)
-    }
-  }
+  // useEffect(() => {
+  //   console.log({
+  //     linkTree: user?.profile_data?.linkTree
+  //   })
+  //   if (!user) return
+  //   const linkTree = user.profile_data?.linkTree ?? []
+  //   const newLinkTree = [...linkTree, ...links]
+  //   const new_profile_data = {
+  //     ...(user.profile_data ?? {}),
+  //     linkTree: newLinkTree
+  //   }
+  //   setProfile({
+  //     ...user,
+  //     profile_data: new_profile_data
+  //   } as Profile)
+  // }, [links])
 
-  const validateFacebook = (username: string) => {
-    if (username === '') return setFacebookError(null) // If empty, don't show error
-    const usernameRegex = /^[a-z\d.]{5,}$/i
-    if (!usernameRegex.test(username)) {
-      setFacebookError(
-        'Invalid Facebook username. It must be 5 characters or more and can contain alphabets, numbers and periods.'
-      )
-    } else {
-      setFacebookError(null)
-    }
-  }
+  useEffect(() => {
+    console.log('links', { links, user })
+  }, [links, user])
 
-  const handleTwitterChange = (e: any) => {
+  const handleAddLink = async () => {
     if (!user) return
-    const username = e.target.value
-    if (!twitterError) setProfile({ ...user, twitter: username })
-    validateTwitter(username)
+    const { error, link } = await addLink(newLink)
+    if (error) {
+      toast.Error('Add link failed: ' + error)
+      console.error(error)
+      return
+    }
+    if (!link) return
+    // check if the link is already in the list
+    if (links.some((l) => l.url === link.url)) {
+      toast.Warning('Link already exists!')
+      return
+    }
+    setLinks((prev) => [...prev, link])
+    setNewLink('')
+    const newLinkTree = [...(user.profile_data?.linkTree ?? []), link]
+    console.log('newLinkTree', { newLinkTree })
+    setProfile({
+      ...user,
+      profile_data: { ...user.profile_data, linkTree: newLinkTree }
+    } as Profile)
+    handleSave({ successToast: 'Link added successfully!' })
   }
 
-  const handleFacebookChange = (e: any) => {
+  const handleRemoveLink = (url: string) => {
     if (!user) return
-    const username = e.target.value
-    if (!facebookError) setProfile({ ...user, facebook: username })
-    validateFacebook(username)
+    const newLinkTree = links.filter((link) => link.url !== url)
+    setLinks(newLinkTree)
+    setProfile({
+      ...user,
+      profile_data: { ...user.profile_data, linkTree: newLinkTree }
+    } as Profile)
+    handleSave({ successToast: 'Link removed successfully!' })
   }
 
-  const handleWebsiteChange = (e: any) => {
-    if (!user) return
-    const url = e.target.value
-    if (!websiteError) setProfile({ ...user, website: url })
-    validateWebsite(url)
+  const toggleDescription = (url: string) => {
+    setShowDescription((prev) => ({
+      ...prev,
+      [url]: !prev[url]
+    }))
   }
 
   return (
     <div className="flex flex-col">
-      <InputOverlapLabel
-        Icon={Twitter}
-        label="Twitter"
-        className={`mt-4 ${twitterError ? ' border-red-500' : ''}`}
-        value={user?.twitter}
-        onChange={handleTwitterChange}
+      <div className="mt-4">
+        <InputOverlapLabel
+          label="Add URL, social media, or phone number"
+          value={newLink}
+          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewLink(e.target.value)}
+          disabled={loading || updateLoading}
+        />
+        <Button
+          className="btn-outline btn-block mt-2"
+          onClick={handleAddLink}
+          loading={loading || updateLoading}
+          disabled={loading || updateLoading}
+          loadingText={loading ? 'fetching url metadata' : updateLoading ? 'saving link' : ''}>
+          Add Link
+        </Button>
+      </div>
+
+      <div className="my-8 flex items-center">
+        <div className="h-px flex-1 bg-gray-200"></div>
+        <span className="mx-4 text-sm font-medium text-gray-500">Your Links</span>
+        <div className="h-px flex-1 bg-gray-200"></div>
+      </div>
+
+      <LinkItems
+        links={links}
+        showDescription={showDescription}
+        toggleDescription={toggleDescription}
+        handleRemoveLink={handleRemoveLink}
       />
-      {twitterError && <p className="mt-2 text-xs font-semibold text-red-500">{twitterError}</p>}
-      <InputOverlapLabel
-        Icon={Facebook}
-        label="Facebook"
-        className={`mt-4 ${facebookError ? ' border-red-500' : ''}`}
-        value={user?.facebook}
-        onChange={handleFacebookChange}
-      />
-      {facebookError && <p className="mt-2 text-xs font-semibold text-red-500">{facebookError}</p>}
-      <InputOverlapLabel
-        Icon={LinkAlt}
-        label="Website"
-        className={`mt-4 ${websiteError ? ' border-red-500' : ''}`}
-        value={user?.website}
-        onChange={handleWebsiteChange}
-      />
-      {websiteError && <p className="mt-2 text-xs font-semibold text-red-500">{websiteError}</p>}
     </div>
   )
 }
 
-export default SocialLinksSection
+export default Linktree

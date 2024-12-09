@@ -11,17 +11,29 @@ const OneTapComponent = () => {
   const handleCredentialResponse = useCallback(
     async (response: CredentialResponse) => {
       try {
-        const { data, error } = await supabase.auth.signInWithIdToken({
-          provider: 'google',
-          token: response.credential
-        })
+        if (!response?.credential) {
+          console.error('Invalid credential response')
+          return
+        }
 
-        if (error) throw error
+        const { data, error } = await supabase.auth
+          .signInWithIdToken({
+            provider: 'google',
+            token: response.credential
+          })
+          .catch((err) => {
+            throw new Error(`Authentication failed: ${err.message}`)
+          })
+
+        if (error) {
+          console.error('Supabase auth error:', error.message)
+          throw error
+        }
 
         console.info('Successfully logged in with Google One Tap')
-        router.reload()
+        await router.reload()
       } catch (error) {
-        console.error('Error logging in with Google One Tap', error)
+        console.error('Error logging in with Google One Tap:', error)
       }
     },
     [supabase.auth, router]
