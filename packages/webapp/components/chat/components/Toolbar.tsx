@@ -5,8 +5,7 @@ import { useStore, useChatStore } from '@stores'
 import AvatarStack from '@components/AvatarStack'
 import { useEffect, useState } from 'react'
 import { IoCloseSharp } from 'react-icons/io5'
-import * as toast from '@components/toast'
-import { MdLink } from 'react-icons/md'
+import { CopyUrlButton } from './CopyUrlButton'
 
 const CloseButton = ({ onClick }: any) => (
   <button className="btn btn-circle btn-xs ml-auto" onClick={onClick}>
@@ -47,23 +46,11 @@ const Toolbar = () => {
     destroyChatRoom()
   }
 
-  const handleCopyUrl = () => {
-    if (!chatRoom?.headingId) return
-
+  const getChatRoomUrl = () => {
+    if (!chatRoom?.headingId) return ''
     const newUrl = new URL(window.location.href)
     newUrl.searchParams.set('chatroom', chatRoom.headingId)
-    const url = newUrl.toString()
-    console.log('url', { newUrl, chatRoom })
-
-    navigator.clipboard
-      .writeText(url)
-      .then(() => {
-        toast.Success('Chat room Address copied to clipboard')
-      })
-      .catch((err) => {
-        console.error('Failed to copy URL:', err)
-        toast.Error('Failed to copy URL')
-      })
+    return newUrl.toString()
   }
 
   return (
@@ -83,12 +70,7 @@ const Toolbar = () => {
           <AvatarStack size={8} users={presentUsers} tooltipPosition="tooltip-left" />
         </div>
 
-        <button
-          className="btn btn-circle btn-ghost btn-xs mr-2"
-          onClick={handleCopyUrl}
-          title="Copy chat URL">
-          <MdLink size={20} className="rotate-45" />
-        </button>
+        <CopyUrlButton url={getChatRoomUrl()} className="btn btn-circle btn-ghost btn-xs mr-2" />
 
         <CloseButton onClick={handelCloseChatRoom} />
       </div>

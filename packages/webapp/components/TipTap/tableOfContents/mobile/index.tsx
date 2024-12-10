@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react'
-import { useChatStore } from '@stores'
+import { useChatStore, useStore } from '@stores'
 import useHandelTocUpdate from '../hooks/useHandelTocUpdate'
 import { RenderTocs } from './RenderTocs'
+import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
 
 const TableOfContents = ({ className }: any) => {
   const { headingId } = useChatStore((state) => state.chatRoom)
@@ -20,6 +21,7 @@ const TableOfContents = ({ className }: any) => {
   return (
     <div className={`${className}`}>
       <ul className="toc__list menu p-0">{renderedTocs}</ul>
+      <AppendHeadingButton className="mt-4" />
     </div>
   )
 }

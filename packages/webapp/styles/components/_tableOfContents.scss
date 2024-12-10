@@ -4,6 +4,18 @@ $bg-root: #f8f9fa;
   .btnChat {
     opacity: 1 !important;
   }
+  .toc__item {
+    // padding-left: 30px;
+    > a {
+      line-height: 2 !important;
+    }
+    .btnFold {
+      opacity: 1 !important;
+      left: -16px !important;
+      padding-right: 4px;
+      width: 21px !important;
+    }
+  }
 }
 
 .tiptap__toc {

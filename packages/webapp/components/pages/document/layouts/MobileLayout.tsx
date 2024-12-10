@@ -6,19 +6,13 @@ import { useStore } from '@stores'
 import TocModal from '@components/pages/document/components/TocModal'
 import ChatContainerMobile from '@components/pages/document/components/chat/ChatContainerMobile'
 import BigPencilBtn from '@components/pages/document/components/BigPencilBtn'
+import { ModalLeftToRight } from '@components/ui/ModalLeftToRight'
 
 const MobileLeftSidePanel = () => {
   return (
-    <div className="drawer z-30 w-full">
-      <input id="mobile_left_side_panel" type="checkbox" className="drawer-toggle" />
-      <div className="drawer-side">
-        <label
-          htmlFor="mobile_left_side_panel"
-          aria-label="close sidebar"
-          className="drawer-overlay"></label>
-        <TocModal />
-      </div>
-    </div>
+    <ModalLeftToRight modalId="mobile_left_side_panel" width={80}>
+      <TocModal />
+    </ModalLeftToRight>
   )
 }
 
