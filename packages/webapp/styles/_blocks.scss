@@ -129,7 +129,7 @@ $bg-root: #f8f9fa;
 
   :is(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10) {
     font-weight: bold;
-    @apply mb-2 mt-0 font-medium;
+    @apply mb-2 mt-0 font-bold;
   }
 
   h1 {
