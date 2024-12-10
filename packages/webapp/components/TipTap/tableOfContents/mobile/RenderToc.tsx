@@ -8,8 +8,11 @@ import useOpenChatContainer from '../hooks/useOpenChatContainer'
 import useUnreadMessage from '../hooks/useUnreadMessage'
 
 import { MdOutlineArrowDropDown } from 'react-icons/md'
+import { useModal } from '@components/ui/ModalLeftToRight'
 
 export const RenderToc = ({ childItems, item, renderTocs }: any) => {
+  const { close: closeModal } = useModal()
+
   const { headingId } = useChatStore((state) => state.chatRoom)
   const {
     editor: { instance: editor }
@@ -42,8 +45,11 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
       data-id={item.id}
       data-offsettop={item.offsetTop}>
       <a
-        className={`relative !py-2 ${activeHeading === item.id ? 'active overflow-hidden' : ''} `}
-        onClick={(e) => handelScroll2Header(e, editor, setActiveHeading)}
+        className={`relative !py-2 ${item.level === 1 ? 'ml-3' : ''} ${activeHeading === item.id ? 'active overflow-hidden' : ''} `}
+        onClick={(e) => {
+          handelScroll2Header(e, editor, setActiveHeading)
+          closeModal()
+        }}
         href={`?${item.id}`}
         data-id={item.id}>
         <span
@@ -57,7 +63,10 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
         <span className="block w-8 pl-8"></span>
         <span
           className="btn_openChatBox flex items-center justify-end overflow-hidden bg-neutral text-neutral-content"
-          onClick={() => openChatContainerHandler(item)}
+          onClick={() => {
+            openChatContainerHandler(item)
+            closeModal()
+          }}
           data-unread-count={unreadMessage > 0 ? unreadMessage : ''}>
           <ChatLeft
             className={`chatLeft fill-neutral-content ${headingId === item.id && '!fill-accent'}`}
