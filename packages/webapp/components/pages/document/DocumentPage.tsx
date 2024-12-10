@@ -39,6 +39,7 @@ const DocumentPage = ({ docMetadata, isMobile, channels }: DocumentPageProps) =>
 
   return (
     <GoogleOneTapLayout>
+      <HeadSeo />
       <DocumentLayouts isMobile={isMobile} provider={provider} />
     </GoogleOneTapLayout>
   )
