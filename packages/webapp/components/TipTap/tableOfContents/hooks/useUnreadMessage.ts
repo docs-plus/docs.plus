@@ -1,14 +1,18 @@
 import { useMemo } from 'react'
 import { useChatStore } from '@stores'
 
-const useUnreadMessage = (item: any) => {
+type Props = {
+  id: string
+}
+
+const useUnreadMessage = ({ id }: Props) => {
   const channels = useChatStore((state) => state.channels)
 
   const unreadMessage = useMemo(() => {
     // @ts-ignore
-    const unreadMessage = channels.get(item.id)?.unread_message_count
+    const unreadMessage = channels.get(id)?.unread_message_count
     return unreadMessage > 99 ? '99+' : unreadMessage
-  }, [channels, item.id])
+  }, [channels, id])
 
   return unreadMessage
 }

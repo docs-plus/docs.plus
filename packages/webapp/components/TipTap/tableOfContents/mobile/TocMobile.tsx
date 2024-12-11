@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
-import { useChatStore, useStore } from '@stores'
+import { useChatStore } from '@stores'
 import useHandelTocUpdate from '../hooks/useHandelTocUpdate'
 import { RenderTocs } from './RenderTocs'
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
+import { DocTitleChatRoomMobile } from '../components/DocTitleChatRoom'
 
-const TableOfContents = ({ className }: any) => {
+const TocMobile = ({ className }: any) => {
   const { headingId } = useChatStore((state) => state.chatRoom)
   const { items } = useHandelTocUpdate()
   const [renderedTocs, setRenderedTocs] = useState([])
@@ -20,10 +21,11 @@ const TableOfContents = ({ className }: any) => {
 
   return (
     <div className={`${className}`}>
+      <DocTitleChatRoomMobile />
       <ul className="toc__list menu p-0">{renderedTocs}</ul>
       <AppendHeadingButton className="mt-4" />
     </div>
   )
 }
 
-export default React.memo(TableOfContents)
+export default React.memo(TocMobile)

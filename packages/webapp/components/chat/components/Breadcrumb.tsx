@@ -19,11 +19,14 @@ const Breadcrumb = () => {
   const [headingPath, setHeadingPath] = useState<any>([])
 
   const {
+    workspaceId,
+    metadata,
     editor: { instance: editor, providerSyncing, loading }
   } = useStore((state) => state.settings)
 
   useEffect(() => {
     if (!editor || providerSyncing) return
+    if (headingId === workspaceId) return
 
     let posAtDOM = getPostAtDOM(editor, headingId)
     if (posAtDOM === -1) {
@@ -69,6 +72,8 @@ const Breadcrumb = () => {
     })
   }, [])
 
+  // Document Root
+  if (headingId === workspaceId) return <>{metadata.title}</>
   if (!headingPath.length || !headingId) return null
 
   return (
