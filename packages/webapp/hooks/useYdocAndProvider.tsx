@@ -69,18 +69,15 @@ const useYdocAndProvider = () => {
 
     if (!providerRef.current || destroyed) {
       createProvider()
+      if (!hocuspocusProvider && providerRef.current) {
+        setWorkspaceSetting('hocuspocusProvider', providerRef.current)
+      }
     }
 
     return () => {
       providerRef.current?.destroy()
     }
   }, [documentId])
-
-  useEffect(() => {
-    if (!hocuspocusProvider && providerRef.current) {
-      setWorkspaceSetting('hocuspocusProvider', providerRef.current)
-    }
-  }, [providerRef.current])
 
   // NOTE: This is not working yet, I need reconsider for offline mode
   // Store the Y document in the browser
