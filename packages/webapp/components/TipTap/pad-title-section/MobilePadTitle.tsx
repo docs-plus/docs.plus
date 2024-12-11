@@ -105,7 +105,7 @@ const MobilePadTitle = () => {
         isOpen={isProfileModalOpen}
         setIsOpen={setProfileModalOpen}>
         {user ? (
-          <TabLayout name="profile" className="max-w-[64rem]">
+          <TabLayout name="profile" className="h-full max-h-[37rem] max-w-[64rem]">
             <ProfilePanel />
           </TabLayout>
         ) : (
