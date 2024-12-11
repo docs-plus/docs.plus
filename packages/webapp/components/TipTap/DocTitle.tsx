@@ -8,6 +8,7 @@ const DocTitle = ({ className }: { className?: string }) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
   const [title, setTitle] = useState<string | undefined>('')
   const { hocuspocusProvider, metadata: docMetadata } = useStore((state) => state.settings)
+  const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
 
   useEffect(() => {
     if (docMetadata?.title) {
@@ -42,16 +43,57 @@ const DocTitle = ({ className }: { className?: string }) => {
   }, [])
 
   const handleInput = useCallback((e: React.FormEvent<HTMLDivElement>) => {
-    const sanitizedContent = DOMPurify.sanitize(e.currentTarget.innerHTML)
-    e.currentTarget.innerHTML = sanitizedContent
-
-    // Move cursor to the end of the content
-    const range = document.createRange()
+    const { currentTarget } = e
     const selection = window.getSelection()
-    range.selectNodeContents(e.currentTarget)
-    range.collapse(false)
-    selection?.removeAllRanges()
-    selection?.addRange(range)
+    if (!selection || selection.rangeCount === 0) return
+
+    // Save current selection range
+    const range = selection.getRangeAt(0)
+
+    // Calculate current caret position by counting text length before the caret
+    const preCaretPosition = (() => {
+      const tempRange = range.cloneRange()
+      tempRange.selectNodeContents(currentTarget)
+      tempRange.setEnd(range.startContainer, range.startOffset)
+      return tempRange.toString().length
+    })()
+
+    // Sanitize content
+    const sanitizedContent = DOMPurify.sanitize(currentTarget.innerHTML)
+    currentTarget.innerHTML = sanitizedContent
+
+    // Restore selection
+    const newSelection = window.getSelection()
+    if (!newSelection) return
+    newSelection.removeAllRanges()
+
+    // Use a TreeWalker to find the correct position for the caret
+    const walker = document.createTreeWalker(currentTarget, NodeFilter.SHOW_TEXT, null, false)
+    let node: Node | null = null
+    let charCount = 0
+
+    while (walker.nextNode()) {
+      const currentNode = walker.currentNode
+      const nodeLength = currentNode.nodeValue?.length || 0
+
+      if (charCount + nodeLength >= preCaretPosition) {
+        node = currentNode
+        const offset = preCaretPosition - charCount
+        const newRange = document.createRange()
+        newRange.setStart(node, offset)
+        newRange.collapse(true)
+        newSelection.addRange(newRange)
+        return
+      }
+
+      charCount += nodeLength
+    }
+
+    // If we can't find exact spot, place the caret at the end
+    const fallbackRange = document.createRange()
+    fallbackRange.selectNodeContents(currentTarget)
+    fallbackRange.collapse(false)
+    newSelection.addRange(fallbackRange)
   }, [])
 
   useEffect(() => {
@@ -61,6 +103,8 @@ const DocTitle = ({ className }: { className?: string }) => {
       const msg = JSON.parse(payload)
       if (msg.type === 'docTitle') {
         setTitle(msg.state.title)
+        // also update the docMetadata in the store
+        setWorkspaceSetting('metadata', { ...docMetadata, title: msg.state.title })
       }
     }
 
@@ -77,7 +121,7 @@ const DocTitle = ({ className }: { className?: string }) => {
       hocuspocusProvider.sendStateless(JSON.stringify({ type: 'docTitle', state: data.data }))
       toast.Success('Document title changed successfully')
     }
-  }, [isSuccess, data, hocuspocusProvider])
+  }, [hocuspocusProvider, isSuccess, data])
 
   if (isLoading) return <div>Loading...</div>
 
