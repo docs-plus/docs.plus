@@ -43,6 +43,7 @@ const ChatContainerMobile = () => {
 
   return (
     <ModalBottomToTop
+      showBackdrop={false}
       ref={modalRef}
       onModalStateChange={modalStateChange}
       modalId="chatBottomPannel"
