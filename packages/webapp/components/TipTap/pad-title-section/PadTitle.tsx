@@ -14,14 +14,9 @@ import Button from '@components/ui/Button'
 import { useAuthStore } from '@stores'
 import ShareModal from './ShareModal'
 import { PrivateShare } from '@icons'
-import Loading from '@components/ui/Loading'
 import ProfilePanel from '@components/pages/panels/profile/ProfilePanel'
 import TabLayout from '@components/pages/TabLayout'
 import SignInPanel from '@components/pages/panels/SignInPanel'
-
-const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
-  loading: () => <Loading />
-})
 
 const PadTitle = () => {
   const user = useAuthStore((state) => state.profile)

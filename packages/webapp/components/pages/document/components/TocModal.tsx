@@ -5,7 +5,7 @@ import { DocsPlus } from '@icons'
 import { useStore } from '@stores'
 import { IoClose } from 'react-icons/io5'
 import { MdFilterAlt } from 'react-icons/md'
-import TableOfContents from '@components/TipTap/tableOfContents/mobile'
+import TableOfContents from '@components/TipTap/tableOfContents/mobile/TocMobile'
 import { useModal } from '@components/ui/ModalLeftToRight'
 
 const TocModal = () => {
