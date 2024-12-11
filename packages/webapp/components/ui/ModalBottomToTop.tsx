@@ -8,6 +8,7 @@ interface ModalBottomToTopProps {
   children: React.ReactNode
   onModalStateChange?: (isOpen: boolean) => void
   defaultHeight?: number
+  showBackdrop?: boolean
 }
 
 export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
@@ -18,7 +19,8 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
       children,
       onModalStateChange,
       contentClassName,
-      defaultHeight = 300
+      defaultHeight = 300,
+      showBackdrop = true
     },
     ref
   ) => {
@@ -106,15 +108,37 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
           onChange={handleCheckboxChange}
         />
 
-        <div className="modal-overlay pointer-events-none absolute inset-0 z-50 flex h-full flex-col items-center justify-end opacity-0 transition-all duration-300 peer-checked:pointer-events-auto peer-checked:opacity-100">
-          <label
-            htmlFor={modalId}
-            className="modal-backdrop absolute inset-0 h-full bg-[#0006]"></label>
-
+        {showBackdrop ? (
+          <div className="modal-overlay pointer-events-none absolute inset-0 z-50 flex h-full flex-col items-center justify-end opacity-0 transition-all duration-300 peer-checked:pointer-events-auto peer-checked:opacity-100">
+            <label
+              htmlFor={modalId}
+              className="modal-backdrop absolute inset-0 h-full bg-[#0006]"
+            />
+            <div
+              ref={contentRef}
+              className={twMerge(
+                'modal-content sticky bottom-0 w-full max-w-md translate-y-full rounded-t-2xl bg-white shadow-lg transition-transform duration-300 ease-in-out peer-checked:translate-y-0',
+                contentClassName
+              )}
+              style={{ height: modalHeight ? `${modalHeight}px` : '300px', maxHeight: '100%' }}>
+              <div
+                className={twMerge(
+                  'gripper group sticky top-0 z-10 mx-auto flex h-6 w-full cursor-row-resize items-center justify-center pt-1 transition-all',
+                  isTouched ? 'scale-110' : ''
+                )}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}>
+                <div className="h-2 w-24 rounded-md bg-neutral group-hover:drop-shadow-md" />
+              </div>
+              {children}
+            </div>
+          </div>
+        ) : (
           <div
             ref={contentRef}
             className={twMerge(
-              'modal-content sticky bottom-0 w-full max-w-md translate-y-full rounded-t-2xl bg-white shadow-lg transition-transform duration-300 ease-in-out peer-checked:translate-y-0',
+              'modal-content fixed bottom-0 left-0 right-0 z-50 w-full max-w-md translate-y-full rounded-t-2xl bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-in-out peer-checked:translate-y-0',
               contentClassName
             )}
             style={{ height: modalHeight ? `${modalHeight}px` : '300px', maxHeight: '100%' }}>
@@ -126,22 +150,22 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}>
-              <div className="h-2 w-24 rounded-md bg-neutral group-hover:drop-shadow-md"></div>
+              <div className="h-2 w-24 rounded-md bg-neutral group-hover:drop-shadow-md" />
             </div>
             {children}
           </div>
-        </div>
+        )}
 
         <style>{`
-        #${modalId}:checked ~ .modal-overlay {
-          opacity: 1;
-          pointer-events: auto;
-        }
+          #${modalId}:checked ~ .modal-overlay {
+            opacity: 1;
+            pointer-events: auto;
+          }
 
-        #${modalId}:checked ~ .modal-overlay > .modal-content {
-          transform: translateY(0);
-        }
-      `}</style>
+          #${modalId}:checked ~ .modal-overlay > .modal-content {
+            transform: translateY(0);
+          }
+        `}</style>
       </div>
     )
   }
