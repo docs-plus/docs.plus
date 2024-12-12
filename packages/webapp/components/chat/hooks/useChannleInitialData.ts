@@ -104,7 +104,7 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
       })
     }
     // TODO: refactor/revise needed
-    if (!channelData.is_user_channel_member) {
+    if (userId && !channelData.is_user_channel_member) {
       // join channel
       await join2Channel({
         channel_id: channelId,
