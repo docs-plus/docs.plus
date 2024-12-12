@@ -257,66 +257,113 @@ const HeadingsTitle = Node.create({
     }
   },
   parseHTML() {
+    // Add priority to ensure proper parsing order
     return this.options.levels.map((level) => ({
       tag: `h${level}`,
-      attrs: { level }
+      attrs: { level },
+      priority: 50 + level // Higher priority for more specific matches
     }))
   },
 
   addNodeView() {
-    return ({ node, getPos, editor, HTMLAttributes, attributes }) => {
-      const dom = document.createElement(`h${node.attrs.level}`)
-      dom.classList.add('title')
-      dom.setAttribute('level', node.attrs.level)
+    return ({ node, getPos, editor }) => {
+      // Create elements using a more maintainable approach
+      const dom = createElement('heading', node.attrs.level)
+      const contentSpan = createElement('content')
+      const chatBtn = createChatButton()
 
-      // Create content span
-      const contentSpan = document.createElement('span')
-
-      // Create chat button span
-      const chatBtn = document.createElement('button')
-      chatBtn.classList.add('btnOpenChatBox')
-      chatBtn.classList.add('btn', 'btn-circle', 'btn-primary', 'size-12', 'min-h-10', 'shadow-md')
-
-      chatBtn.setAttribute('type', 'button')
-
-      chatBtn.style.userSelect = 'none'
-      chatBtn.style.webkitUserSelect = 'none'
-      chatBtn.style.msUserSelect = 'none'
-
-      chatBtn.innerHTML = ChatLeftSVG({ size: 20, className: 'chatLeft', fill: '#fff' })
-
-      // Add click handler for chat button
+      // Add event listener with proper error handling
       chatBtn.addEventListener('click', (e) => {
         e.preventDefault()
-        // get parent node with getPos
-        const parentNode = editor.state.doc.nodeAt(getPos() - 1)
+        try {
+          const pos = getPos()
+          if (typeof pos !== 'number') return
 
-        if (!parentNode.attrs.id) {
-          console.warn('[ContentHeading]: no id found')
-          return
+          const parentNode = editor.state.doc.nodeAt(pos - 1)
+          if (!parentNode?.attrs.id) {
+            console.warn('[ContentHeading]: No heading ID found')
+            return
+          }
+
+          PubSub.publish(CHAT_OPEN, { headingId: parentNode.attrs.id })
+        } catch (error) {
+          console.error('[ContentHeading]: Error handling chat button click', error)
         }
-
-        PubSub.publish(CHAT_OPEN, {
-          headingId: parentNode.attrs.id
-        })
       })
 
-      // Assemble the elements
       dom.append(contentSpan, chatBtn)
 
       return {
         dom,
         contentDOM: contentSpan,
-        update: (updatedNode) => {
+        // Proper update handling
+        update: (updatedNode, decorations, innerDecorations) => {
+          if (updatedNode.type.name !== node.type.name) return false
+          if (updatedNode.attrs.level !== node.attrs.level) return false
           return true
         },
-        destroy: () => {}
+        // Add destroy method for cleanup
+        destroy: () => {
+          // chatBtn.removeEventListener('click')
+        }
       }
     }
-  },
 
-  renderHTML(state) {
-    return [`div`, {}, 0]
+    // Helper functions
+    function createElement(type, level) {
+      const element =
+        type === 'heading' ? document.createElement(`h${level}`) : document.createElement('span')
+
+      if (type === 'heading') {
+        element.classList.add('title')
+        element.setAttribute('level', level)
+      }
+
+      return element
+    }
+
+    function createChatButton() {
+      const btn = document.createElement('button')
+      btn.classList.add(
+        'btnOpenChatBox',
+        'btn',
+        'btn-circle',
+        'btn-primary',
+        'size-12',
+        'min-h-10',
+        'shadow-md'
+      )
+      btn.setAttribute('type', 'button')
+
+      // Apply user-select styles more efficiently
+      Object.assign(btn.style, {
+        userSelect: 'none',
+        webkitUserSelect: 'none',
+        msUserSelect: 'none'
+      })
+
+      btn.innerHTML = ChatLeftSVG({
+        size: 20,
+        className: 'chatLeft',
+        fill: '#fff'
+      })
+
+      return btn
+    }
+  },
+  renderHTML({ node, HTMLAttributes }) {
+    const level = this.options.levels.includes(node.attrs.level)
+      ? node.attrs.level
+      : this.options.levels[0]
+
+    return [
+      `h${level}`,
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        level,
+        class: 'heading-content'
+      }),
+      0
+    ]
   },
   addKeyboardShortcuts() {
     return {
