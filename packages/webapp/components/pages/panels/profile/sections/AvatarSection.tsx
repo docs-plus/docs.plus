@@ -38,7 +38,7 @@ const updateAvatarInDB = async (avatarUrl: string | null, userId: string) => {
 const AvatarSection = () => {
   const user = useAuthStore((state) => state.profile)
   const displayName = useAuthStore((state) => state.displayName)
-  const fileInputRef = useRef() as any
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [isProfileAvatar, setIsProfileAvatar] = useState(false)
 

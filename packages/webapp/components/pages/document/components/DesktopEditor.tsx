@@ -17,6 +17,7 @@ const DesktopEditor = () => {
 
   const chatRoom = useChatStore((state) => state.chatRoom)
 
+  // @ts-ignore
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
 
   const editorWrapperClassNames = clsx(

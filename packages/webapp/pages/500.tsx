@@ -47,5 +47,4 @@ function Custom500() {
     </div>
   )
 }
-
 export default Custom500

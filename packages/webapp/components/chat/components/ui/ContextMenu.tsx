@@ -49,6 +49,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
     const listItemsRef = useRef<Array<HTMLUListElement | null>>([])
     const listContentRef = useRef(
       Children.map(children, (child) =>
+        // @ts-ignore
         isValidElement(child) ? child.props.label : null
       ) as Array<string | null>
     )
@@ -158,10 +159,12 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
                         listItemsRef.current[index] = node
                       },
                       onClick() {
+                        // @ts-ignore
                         child.props.onClick?.()
                         setIsOpen(false)
                       },
                       onMouseUp() {
+                        //@ts-ignore
                         child.props.onClick?.()
                         setIsOpen(false)
                       }

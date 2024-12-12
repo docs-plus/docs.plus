@@ -17,7 +17,7 @@ const socialSharingMap = {
 }
 
 const ShareModal = ({ setIsOpen }: any) => {
-  const urlRef = useRef() as any
+  const urlRef = useRef<HTMLInputElement>(null)
   const [href, setHref] = useState('')
   const { metadata: docMetadata } = useStore((state) => state.settings)
 
