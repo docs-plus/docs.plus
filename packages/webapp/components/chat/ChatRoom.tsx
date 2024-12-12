@@ -38,7 +38,7 @@ export const ChatRoom = forwardRef(
     const [channelUsersPresence, setChannelUsersPresence] = useState(new Map())
     const [error, setError] = useState(null)
     const emojiPickerRef = useRef<HTMLDivElement | null>(null)
-    const messageContainerRef = useRef<HTMLDivElement | null>(null)
+    const messageContainerRef = useRef<HTMLDivElement>(null) as any
 
     const { initialMessagesLoading, msgLength } = useChannelInitialData(setError)
     const { initialSubscribeLoading } = useMessageSubscription()

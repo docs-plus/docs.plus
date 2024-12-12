@@ -6,7 +6,7 @@ import { useCheckReadMessage } from '../../hooks'
 import { useChannel } from '../../context/ChannelProvider'
 
 interface MessagesDisplayProps {
-  messageContainerRef: React.RefObject<HTMLDivElement>
+  messageContainerRef: React.RefObject<HTMLDivElement | null>
   messagesEndRef: React.RefObject<HTMLDivElement>
   toggleEmojiPicker: any
   selectedEmoji: any // Update the type based on your emoji implementation

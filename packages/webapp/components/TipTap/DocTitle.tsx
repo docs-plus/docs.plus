@@ -68,7 +68,7 @@ const DocTitle = ({ className }: { className?: string }) => {
     newSelection.removeAllRanges()
 
     // Use a TreeWalker to find the correct position for the caret
-    const walker = document.createTreeWalker(currentTarget, NodeFilter.SHOW_TEXT, null, false)
+    const walker = document.createTreeWalker(currentTarget, NodeFilter.SHOW_TEXT, null)
     let node: Node | null = null
     let charCount = 0
 
@@ -80,6 +80,7 @@ const DocTitle = ({ className }: { className?: string }) => {
         node = currentNode
         const offset = preCaretPosition - charCount
         const newRange = document.createRange()
+        // @ts-ignore
         newRange.setStart(node, offset)
         newRange.collapse(true)
         newSelection.addRange(newRange)

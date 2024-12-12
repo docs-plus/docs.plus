@@ -4,7 +4,7 @@ import { IoClose } from 'react-icons/io5'
 import { ModalBottomToTop } from '@components/ui/ModalBottomToTop'
 
 const FilterModal = () => {
-  const filterSearchRef: RefObject<HTMLInputElement> = useRef(null)
+  const filterSearchRef = useRef<HTMLInputElement>(null)
   const [totalHeading, setTotalHeading] = useState(0)
   const [totalSearch, setTotalSearch] = useState(0)
   const [search, setSearch] = useState('')

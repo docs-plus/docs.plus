@@ -17,6 +17,7 @@ const Editor = () => {
 
   const isKeyboardOpen = useDetectKeyboardOpen() || false
 
+  // @ts-ignore
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
 
   useEditableDocControl()

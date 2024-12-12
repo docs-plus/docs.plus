@@ -3,7 +3,7 @@ import toast, { ToastOptions } from 'react-hot-toast'
 export type TToastOpt = ToastOptions & {
   displayBtnClose: boolean
   displayIcon: boolean
-  icon: JSX.Element
+  icon: React.ReactNode
   iconClassName: string
   textColor: string
 }
@@ -21,7 +21,7 @@ export const ToastNotification = (message: string, options?: Partial<TToastOpt>)
   const opts: TToastOpt = { ...defaultOpts, ...options }
 
   return toast.custom(
-    (t) => (
+    (t: any) => (
       <div
         className={`${
           t.visible ? 'animate-fadeIn' : 'animate-fadeOut'
