@@ -313,8 +313,10 @@ export const findPrevBlock = (mapHPost, headingLevel) => {
   const prevBlock = mapHPost.findLast((x) => x.le <= headingLevel)
 
   if (!prevBlock) {
+    const shouldNested = mapHPost[0].le < headingLevel
+
     // If no suitable block found, return the first block
-    return { prevBlock: mapHPost[0], shouldNested: true }
+    return { prevBlock: mapHPost[0], shouldNested }
   }
 
   const shouldNested = prevBlock.le < headingLevel
