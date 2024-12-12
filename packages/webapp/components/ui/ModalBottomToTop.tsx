@@ -138,7 +138,7 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
           <div
             ref={contentRef}
             className={twMerge(
-              'modal-content fixed bottom-0 left-0 right-0 z-50 w-full max-w-md translate-y-full rounded-t-2xl bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-in-out peer-checked:translate-y-0',
+              'modal-content sticky bottom-0 left-0 right-0 z-50 w-full max-w-md translate-y-full rounded-t-2xl bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-in-out peer-checked:translate-y-0',
               contentClassName
             )}
             style={{ height: modalHeight ? `${modalHeight}px` : '300px', maxHeight: '100%' }}>

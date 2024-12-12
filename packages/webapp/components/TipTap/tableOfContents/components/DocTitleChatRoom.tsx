@@ -44,7 +44,7 @@ export const DocTitleChatRoomMobile = ({ className }: { className?: string }) =>
 
   return (
     <div className={`${className} border-b`}>
-      <div className="group flex items-center justify-between">
+      <div className="group relative flex items-center justify-between">
         <span className="text-lg font-bold">{docMetadata?.title}</span>
         <span
           className="btn_openChatBox flex items-center justify-end overflow-hidden bg-neutral text-neutral-content"
