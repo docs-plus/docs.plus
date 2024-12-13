@@ -19,6 +19,9 @@ const config: Config = {
       avatarBucketName: 'user_avatars'
     }
   },
+  chat: {
+    systemUserId: '992bb85e-78f8-4747-981a-fd63d9317ff1'
+  },
   editor: {
     defaultContent: `<h1>Welcome to Your New Document</h1>
       <p>This is the default content for your new document. Feel free to start editing!</p>
