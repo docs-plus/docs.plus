@@ -1,7 +1,7 @@
 import { upsertWorkspace, getChannels } from '@api'
 import { useAuthStore, useChatStore } from '@stores'
 import { useEffect, useState } from 'react'
-
+import Config from '@config'
 let setUpsertWorkspace = false
 
 const useMapDocumentAndWorkspace = (docMetadata: any, channels: any) => {
@@ -26,7 +26,7 @@ const useMapDocumentAndWorkspace = (docMetadata: any, channels: any) => {
           name: docMetadata.title,
           description: docMetadata.description,
           slug: docMetadata.slug,
-          created_by: user.id
+          created_by: user?.id || Config.chat.systemUserId
         })
 
         const { data: channels } = await getChannels(docMetadata.documentId)
@@ -37,11 +37,8 @@ const useMapDocumentAndWorkspace = (docMetadata: any, channels: any) => {
         setUpsertWorkspace = true
         setLoading(false)
       }
-      // setUpsertWorkspace = true
-      setLoading(false)
     }
-    if (user) checkworkspace()
-    else setLoading(false)
+    checkworkspace()
   }, [authLoading, user])
 
   return { loading }

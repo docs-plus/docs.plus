@@ -6,7 +6,7 @@ import { useChannel } from '../context/ChannelProvider'
 import slugify from 'slugify'
 import { TChannelSettings } from '@types'
 import { join2Channel } from '@api'
-
+import Config from '@config'
 interface UseChannelInitialData {
   initialMessagesLoading: boolean
   msgLength: number
@@ -34,12 +34,13 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
   const setOrUpdateChannel = useChatStore((state: any) => state.setOrUpdateChannel)
 
   const processChannelData = async (channelId: string) => {
-    if (currentChannel === null && workspaceId && user) {
+    if (currentChannel === null && workspaceId) {
       let newChannelId = channelId
+      const userId = user?.id || Config.chat.systemUserId
       await upsertChannel({
         id: newChannelId,
         workspace_id: workspaceId,
-        created_by: user.id,
+        created_by: userId,
         name: newChannelId,
         slug: 'c' + slugify(newChannelId, { strict: true, lower: true })
       })

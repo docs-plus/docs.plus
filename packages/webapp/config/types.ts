@@ -18,9 +18,14 @@ interface EditorConfig {
   getDefaultContent: (Heading: string) => string
 }
 
+interface ChatConfig {
+  systemUserId: string
+}
+
 interface Config {
   app: AppConfig
   editor: EditorConfig
+  chat: ChatConfig
 }
 
 export type { Config }
