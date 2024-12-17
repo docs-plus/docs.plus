@@ -2,6 +2,7 @@ import { NextApiHandler } from 'next'
 import { URL } from 'url'
 import { parse } from 'querystring'
 import createClient from '@utils/supabase/api'
+import type { NextApiRequest, NextApiResponse } from 'next'
 
 // Type definition for query parameters
 type TQuery = {
@@ -20,13 +21,27 @@ const isValidPath = (path: string): boolean => {
   return regex.test(path)
 }
 
-const handler: NextApiHandler = async (req, res) => {
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
     // const { searchParams, origin } = new URL(request.url)
+
+    if (req.method !== 'GET') {
+      res.status(405).appendHeader('Allow', 'GET').end()
+      return
+    }
 
     const { code, next, open_heading_chat, error, error_code, error_description } = parse(
       req.url?.split('?')[1] || ''
     ) as TQuery
+
+    console.log('====-=-=-=-=-=-=-=-=-=-=-=-=->>>>>', {
+      code,
+      next,
+      open_heading_chat,
+      error,
+      error_code,
+      error_description
+    })
 
     if (error) {
       console.error('OAuth error:', { error, error_code, error_description })
@@ -54,6 +69,7 @@ const handler: NextApiHandler = async (req, res) => {
       const supabase = createClient(req, res)
 
       const { error, data } = await supabase.auth.exchangeCodeForSession(code)
+
       console.log({
         error,
         data
@@ -108,5 +124,3 @@ const handler: NextApiHandler = async (req, res) => {
     res.status(500).json({ error: 'Internal Server Error' })
   }
 }
-
-export default handler
