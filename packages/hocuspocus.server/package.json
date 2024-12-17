@@ -23,7 +23,7 @@
     "prisma": "6.0.1"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.709.0",
+    "@aws-sdk/client-s3": "^3.713.0",
     "@hocuspocus/extension-database": "^2.15.0",
     "@hocuspocus/extension-logger": "^2.15.0",
     "@hocuspocus/extension-redis": "^2.15.0",
@@ -31,7 +31,7 @@
     "@hocuspocus/server": "^2.15.0",
     "@hocuspocus/transformer": "^2.15.0",
     "@prisma/client": "6.0.1",
-    "@supabase/supabase-js": "^2.47.6",
+    "@supabase/supabase-js": "^2.47.8",
     "@tiptap/extension-document": "^2.10.3",
     "@tiptap/extension-paragraph": "^2.10.3",
     "@tiptap/extension-text": "^2.10.3",
