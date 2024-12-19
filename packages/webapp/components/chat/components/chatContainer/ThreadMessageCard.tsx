@@ -1,6 +1,5 @@
 import React from 'react'
 import { TMessageWithUser } from '@api'
-import { useUserProfileModalStore } from '../UserProfileModal'
 import { Avatar } from '@components/ui/Avatar'
 import ThreadMessageFooter from './ThreadMessageFooter'
 import MessageHeader from './MessageHeader'
@@ -13,17 +12,6 @@ type TThreadMessageCardProps = {
 
 const ThreadMessageCard = React.forwardRef<HTMLDivElement, TThreadMessageCardProps>(
   ({ data }, ref) => {
-    const openModal = useUserProfileModalStore((state) => state.openModal)
-    const modalOpen = useUserProfileModalStore((state) => state.modalOpen)
-    const closeModal = useUserProfileModalStore((state) => state.closeModal)
-
-    const handleAvatarClick = () => {
-      if (modalOpen) closeModal()
-      else {
-        openModal('userProfileModal', data.user_details)
-      }
-    }
-
     return (
       <div ref={ref} className="msg_card group chat chat-start relative w-full">
         <Avatar
@@ -37,7 +25,6 @@ const ThreadMessageCard = React.forwardRef<HTMLDivElement, TThreadMessageCardPro
           }}
           id={data?.user_details?.id}
           alt={`avatar_${data?.user_details?.id}`}
-          onClick={handleAvatarClick}
         />
         {isOnlyEmoji(data?.content) ? (
           <div className="w-full">

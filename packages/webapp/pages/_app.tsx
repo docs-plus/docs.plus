@@ -13,6 +13,7 @@ import { eventsHub } from '@services/eventsHub'
 import '../styles/styles.scss'
 import '../styles/globals.scss'
 import { useRouter } from 'next/router'
+import { UserModalProvider } from '@context/UserModalContext'
 
 // Create a client
 const queryClient = new QueryClient()
@@ -82,7 +83,9 @@ export default function MyApp({ Component, pageProps }: any) {
     <div id="root">
       <Header />
       <QueryClientProvider client={queryClient}>
-        <Component {...pageProps} />
+        <UserModalProvider>
+          <Component {...pageProps} />
+        </UserModalProvider>
       </QueryClientProvider>
       <Toaster />
     </div>

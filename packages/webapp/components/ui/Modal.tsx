@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 type TModal = {
   isOpen: boolean
@@ -7,9 +8,10 @@ type TModal = {
   id?: string
   [x: string]: any
   asAChild?: boolean
+  className?: string
 }
 
-const Modal = ({ isOpen, setIsOpen, children, id, asAChild = true }: TModal) => {
+const Modal = ({ isOpen, setIsOpen, children, id, asAChild = true, className }: TModal) => {
   const modalId = `modal_${Math.random().toString(36).substr(2, 9)}` || id
 
   useEffect(() => {
@@ -41,7 +43,9 @@ const Modal = ({ isOpen, setIsOpen, children, id, asAChild = true }: TModal) => 
         }}
       />
       <div className="modal z-50 size-full bg-slate-300/20 backdrop-blur-sm" role="dialog">
-        <div className={`modal-box ${!asAChild ? 'max-w-fit p-0' : 'p-3'} `}>{children}</div>
+        <div className={twMerge('modal-box', !asAChild ? 'max-w-fit p-0' : 'p-3', className)}>
+          {children}
+        </div>
         <label
           className="modal-backdrop size-full max-h-full max-w-full"
           htmlFor={modalId}
