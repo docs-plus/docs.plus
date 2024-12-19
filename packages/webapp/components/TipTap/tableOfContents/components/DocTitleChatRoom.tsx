@@ -4,15 +4,18 @@ import useOpenChatContainer from '../hooks/useOpenChatContainer'
 import { useModal } from '@components/ui/ModalLeftToRight'
 import { MdOutlineArrowDropDown } from 'react-icons/md'
 import useUnreadMessageEffect from '../hooks/useUnreadMessageEffect'
+import usePresentUsers from '../hooks/usePresentUsers'
+import AvatarStack from '@components/AvatarStack'
 
 export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) => {
   const { metadata: docMetadata, workspaceId } = useStore((state) => state.settings)
   const { headingId } = useChatStore((state) => state.chatRoom)
   const unreadMessage = useUnreadMessageEffect(workspaceId || '')
   const openChatContainerHandler = useOpenChatContainer()
+  const presentUsers = usePresentUsers(workspaceId || '')
 
   return (
-    <div className={`${className} border-b pb-1`}>
+    <div className={`${className} relative border-b pb-1`}>
       <div className="group flex cursor-pointer items-center justify-between rounded-md p-1 px-2 pr-3 hover:bg-gray-300 hover:bg-opacity-50">
         <span className="text-lg font-bold">{docMetadata?.title}</span>
         <span
@@ -29,6 +32,11 @@ export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) =
             size={16}
           />
         </span>
+        <div className="absolute -right-9">
+          {presentUsers.length > 0 && (
+            <AvatarStack size={8} users={presentUsers} tooltipPosition="tooltip-left" />
+          )}
+        </div>
       </div>
     </div>
   )
