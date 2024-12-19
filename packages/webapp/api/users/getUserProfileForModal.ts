@@ -15,9 +15,7 @@ export const getUserProfileForModal = async (
 ): Promise<PostgrestSingleResponse<UserProfileModal>> => {
   return supabaseClient
     .from('users')
-    .select(
-      'id, full_name, avatar_url, avatar_updated_at, username, avatar_updated_at, profile_data'
-    )
+    .select('id, full_name, avatar_url, avatar_updated_at, username, profile_data')
     .eq('id', userId)
     .single()
 }

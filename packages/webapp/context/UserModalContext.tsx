@@ -21,6 +21,7 @@ export function UserModalProvider({ children }: { children: React.ReactNode }) {
     loading,
     request,
     setData
+    // @ts-ignore
   } = useSupabase(getUserProfileForModal, null, false)
   const [isModalOpen, setIsModalOpen] = useState(false)
 
