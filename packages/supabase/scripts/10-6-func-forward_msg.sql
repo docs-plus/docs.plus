@@ -48,7 +48,8 @@ BEGIN
           'id', forwarding_user.id,
           'username', forwarding_user.username,
           'full_name', forwarding_user.full_name,
-          'avatar_url', forwarding_user.avatar_url
+          'avatar_url', forwarding_user.avatar_url,
+          'avatar_updated_at', forwarding_user.avatar_updated_at
       );
 
       -- Initialize NEW.metadata if NULL

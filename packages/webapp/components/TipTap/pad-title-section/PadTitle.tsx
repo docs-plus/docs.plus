@@ -1,13 +1,11 @@
 import Link from 'next/link'
-import useDetectKeyboardOpen from 'use-detect-keyboard-open'
-import { DocsPlus, Hamburger, Check } from '@icons'
+import { DocsPlus } from '@icons'
 import DocTitle from '../DocTitle'
 import PresentUsers from './PresentUsers'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
 import FilterBar from './FilterBar'
 import { useStore } from '@stores'
 import Modal from '@components/ui/Modal'
-import dynamic from 'next/dynamic'
 import React, { useState } from 'react'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
@@ -62,6 +60,7 @@ const PadTitle = () => {
                       avatarUpdatedAt={user.avatar_updated_at}
                       width={24}
                       height={24}
+                      clickable={false}
                       className="size-11 cursor-pointer rounded-full border shadow-xl"
                     />
                   </Button>

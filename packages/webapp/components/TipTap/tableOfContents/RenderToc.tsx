@@ -15,7 +15,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
     editor: { instance: editor }
   } = useStore((state) => state.settings)
 
-  const presentUsers = usePresentUsers(item)
+  const presentUsers = usePresentUsers(item.id)
   const [activeHeading, setActiveHeading] = useActiveHeading()
   const unreadMessage = useUnreadMessage(item)
   const openChatContainerHandler = useOpenChatContainer()

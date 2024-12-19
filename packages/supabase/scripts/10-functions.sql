@@ -99,7 +99,8 @@ BEGIN
                 'id', u.id,
                 'username', u.username,
                 'fullname', u.full_name,
-                'avatar_url', u.avatar_url
+                'avatar_url', u.avatar_url,
+                'avatar_updated_at', u.avatar_updated_at
             ) AS user_details,
             CASE
                 WHEN m.reply_to_message_id IS NOT NULL THEN
@@ -112,7 +113,8 @@ BEGIN
                                 'id', ru.id,
                                 'username', ru.username,
                                 'fullname', ru.full_name,
-                                'avatar_url', ru.avatar_url
+                                'avatar_url', ru.avatar_url,
+                                'avatar_updated_at', ru.avatar_updated_at
                             )
                         )
                      FROM public.messages rm
@@ -261,7 +263,8 @@ BEGIN
                 'id', u.id,
                 'username', u.username,
                 'fullname', u.full_name,
-                'avatar_url', u.avatar_url
+                'avatar_url', u.avatar_url,
+                'avatar_updated_at', u.avatar_updated_at
             ) AS user_details,
             CASE
                 WHEN m.reply_to_message_id IS NOT NULL THEN
@@ -274,7 +277,8 @@ BEGIN
                                 'id', ru.id,
                                 'username', ru.username,
                                 'fullname', ru.full_name,
-                                'avatar_url', ru.avatar_url
+                                'avatar_url', ru.avatar_url,
+                                'avatar_updated_at', ru.avatar_updated_at
                             )
                         ) FROM public.messages rm
                         LEFT JOIN public.users ru ON ru.id = rm.user_id
