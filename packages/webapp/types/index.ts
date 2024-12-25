@@ -23,7 +23,15 @@ interface ProfileData {
 
 export type { TChannelSettings } from './stores'
 export type { Database }
-export type Channel = Database['public']['Tables']['channels']['Row'] | null
+export type Channel =
+  | (Database['public']['Tables']['channels']['Row'] & {
+      member_count?: number
+      unread_message_count?: number
+      count?: {
+        message_count: number
+      }
+    })
+  | null
 export type Profile = Omit<Database['public']['Tables']['users']['Row'], 'profile_data'> & {
   profile_data?: ProfileData
   channelId?: string | null

@@ -107,6 +107,39 @@ export type Database = {
           },
         ]
       }
+      channel_message_counts: {
+        Row: {
+          channel_id: string
+          message_count: number
+          workspace_id: string
+        }
+        Insert: {
+          channel_id: string
+          message_count?: number
+          workspace_id: string
+        }
+        Update: {
+          channel_id?: string
+          message_count?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_message_counts_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: true
+            referencedRelation: "channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_message_counts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       channels: {
         Row: {
           allow_emoji_reactions: boolean | null
@@ -184,6 +217,21 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      cron_test_runs: {
+        Row: {
+          id: number
+          run_at: string | null
+        }
+        Insert: {
+          id?: number
+          run_at?: string | null
+        }
+        Update: {
+          id?: number
+          run_at?: string | null
+        }
+        Relationships: []
       }
       messages: {
         Row: {
@@ -562,6 +610,10 @@ export type Database = {
           p_channel_id: string
           p_message_id: string
         }
+        Returns: undefined
+      }
+      message_counter_batch_worker: {
+        Args: Record<PropertyKey, never>
         Returns: undefined
       }
       truncate_content: {

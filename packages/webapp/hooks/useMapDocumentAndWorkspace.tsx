@@ -1,7 +1,8 @@
-import { upsertWorkspace, getChannels } from '@api'
+import { upsertWorkspace, getChannels, getChannelsWithMessageCounts } from '@api'
 import { useAuthStore, useChatStore } from '@stores'
 import { useEffect, useState } from 'react'
 import Config from '@config'
+import { Channel } from '@types'
 let setUpsertWorkspace = false
 
 const useMapDocumentAndWorkspace = (docMetadata: any, channels: any) => {
@@ -29,7 +30,16 @@ const useMapDocumentAndWorkspace = (docMetadata: any, channels: any) => {
           created_by: user?.id || Config.chat.systemUserId
         })
 
-        const { data: channels } = await getChannels(docMetadata.documentId)
+        let channels: Channel[] = []
+        if (!user) {
+          const { data: channelMessageCounts } = await getChannelsWithMessageCounts(
+            docMetadata.documentId
+          )
+          channels = channelMessageCounts || []
+        } else {
+          const { data } = await getChannels(docMetadata.documentId)
+          channels = data || []
+        }
         if (channels) bulkSetChannels(channels)
       } catch (error) {
         console.error('check workspace error:', error)

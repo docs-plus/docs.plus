@@ -1,10 +1,6 @@
 import { supabaseClient } from '@utils/supabase'
-import { Database } from '@types'
+import { Channel as TChannel } from '@types'
 import { PostgrestResponse } from '@supabase/supabase-js'
-
-export type TChannel = Database['public']['Tables']['channels']['Row'] & {
-  unread_message_count: number
-}
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 export const getChannels = async (workspaceId: string): Promise<PostgrestResponse<any>> => {
@@ -14,6 +10,18 @@ export const getChannels = async (workspaceId: string): Promise<PostgrestRespons
     .eq('workspace_id', workspaceId)
     .neq('type', 'THREAD')
     .order('last_activity_at', { ascending: false })
+    .returns<TChannel[]>()
+    .throwOnError()
+}
+
+export const getChannelsWithMessageCounts = async (
+  workspaceId: string
+): Promise<PostgrestResponse<any>> => {
+  return supabaseClient
+    .from('channels')
+    .select('*, count:channel_message_counts(message_count)::int')
+    .eq('workspace_id', workspaceId)
+    .neq('type', 'THREAD')
     .returns<TChannel[]>()
     .throwOnError()
 }

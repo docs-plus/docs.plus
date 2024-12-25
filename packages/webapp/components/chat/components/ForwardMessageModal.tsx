@@ -17,7 +17,7 @@ export const useForwardMessageModalStore = create((set) => ({
 const ForwardMessageModal = () => {
   const { modalOpen, modalData, closeModal }: any = useForwardMessageModalStore()
   const triggerRef = useRef<HTMLInputElement | null>(null)
-  const channels = useChatStore((state) => state.channels)
+  const channels = useChatStore((state) => state.channels) as any
   const user = useAuthStore((state) => state.profile)
   const { request } = useApi(forwardMessage, null, false)
 
@@ -39,7 +39,6 @@ const ForwardMessageModal = () => {
   }
 
   if (!modalOpen) return null
-
   return (
     <ModalContainer
       id="forward_message_modal"
@@ -50,7 +49,7 @@ const ForwardMessageModal = () => {
           Forward to ...
         </h2>
         <div className="mt-8 font-semibold">Channels:</div>
-        <ul className="menu rounded-box bg-base-100 ">
+        <ul className="menu rounded-box bg-base-100">
           {[...channels.values()].map((channel) => (
             <li key={channel.id} onClick={() => submitHandler(channel)}>
               <a>{channel.name}</a>

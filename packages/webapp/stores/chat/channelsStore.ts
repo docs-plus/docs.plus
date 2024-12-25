@@ -1,9 +1,5 @@
 import { immer } from 'zustand/middleware/immer'
-import { Database } from '@types'
-
-export type TChannel = Database['public']['Tables']['channels']['Row'] & {
-  member_count?: number
-}
+import { Channel as TChannel } from '@types'
 
 export interface IChannelStore {
   channels: Map<string, TChannel>
@@ -68,6 +64,7 @@ const channelsStore = immer<IChannelStore>((set) => ({
     set((state) => {
       state.channels = new Map()
       channels.forEach((channel) => {
+        // @ts-ignore
         state.channels.set(channel.id, channel)
       })
     })
