@@ -1,6 +1,9 @@
 import { useEffect } from 'react'
 import { useStore, useAuthStore, useChatStore } from '@stores'
-import { dbChannelsListner } from '@components/chat/hooks/listner/dbChannelsListner'
+import {
+  dbChannelsListner,
+  dbChannelMessageCountsListner
+} from '@components/chat/hooks/listner/dbChannelsListner'
 import { createClient } from '@utils/supabase/component'
 
 export const useCatchUserPresences = () => {
@@ -25,7 +28,28 @@ export const useCatchUserPresences = () => {
   }
 
   useEffect(() => {
-    if (!workspaceId || !profile) return
+    if (!workspaceId) return
+
+    if (!profile) {
+      supabaseClient
+        .channel(`workspace_${workspaceId}`, {
+          config: {
+            broadcast: { self: true }
+          }
+        })
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'channel_message_counts',
+            filter: `workspace_id=eq.${workspaceId}`
+          },
+          dbChannelMessageCountsListner
+        )
+        .subscribe()
+      return
+    }
 
     const messageSubscription = supabaseClient
       .channel(`workspace_${workspaceId}`, {

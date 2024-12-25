@@ -1,4 +1,4 @@
-import { channelUpdate, channelInsert } from './helpers'
+import { channelUpdate, channelInsert, channelMessageCountsInsert } from './helpers'
 
 export const dbChannelsListner = (payload: any) => {
   if (payload.eventType === 'INSERT') {
@@ -6,5 +6,12 @@ export const dbChannelsListner = (payload: any) => {
   }
   if (payload.eventType === 'UPDATE') {
     channelUpdate(payload)
+  }
+}
+
+export const dbChannelMessageCountsListner = (payload: any) => {
+  console.log('dbChannelMessageCountsListner', { payload })
+  if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+    channelMessageCountsInsert(payload)
   }
 }

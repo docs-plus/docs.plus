@@ -46,7 +46,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
           data-tip="Chat Room">
           {unreadMessage > 0 && (
             <div className="badge badge-accent badge-sm absolute -right-[12px] -top-[6px] z-[1] scale-90 border p-1 shadow">
-              {unreadMessage}
+              {unreadMessage > 99 ? '99+' : unreadMessage}
             </div>
           )}
           <ChatLeft
