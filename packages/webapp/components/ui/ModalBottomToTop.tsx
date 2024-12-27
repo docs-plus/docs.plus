@@ -43,11 +43,13 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
 
     const handleTouchStart = useCallback(
       (e: React.TouchEvent) => {
-        // e.preventDefault()
         setIsDragging(true)
         setStartY(e.touches[0].clientY)
         setStartHeight(modalHeight)
         setIsTouched(true)
+
+        // Dispatch custom event to close emoji picker, if it is open
+        document.dispatchEvent(new CustomEvent('closeEmojiPicker'))
       },
       [modalHeight]
     )

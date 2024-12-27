@@ -22,6 +22,7 @@ import { useChannel } from './context/ChannelProvider'
 const MessageWrapper = twx.div`relative flex h-full items-center justify-center bg-base-300`
 
 import { ChannelErrorPropmpt, ChannelLoadingPrompt } from './components/prompts'
+import { useStore } from '@stores'
 
 type ChatRoomProps = {
   children?: React.ReactNode
@@ -34,6 +35,12 @@ export const ChatRoom = forwardRef(
     const {
       settings: { displayChannelBar, pickEmoji }
     } = useChannel()
+
+    const {
+      settings: {
+        editor: { isMobile }
+      }
+    } = useStore((state) => state)
 
     const [channelUsersPresence, setChannelUsersPresence] = useState(new Map())
     const [error, setError] = useState(null)
@@ -73,7 +80,7 @@ export const ChatRoom = forwardRef(
 
     return (
       <div className={`flex size-full flex-col overflow-y-auto ${className}`} ref={ref}>
-        <MessageWrapper style={style} className="flex-1 flex-col overflow-hidden pr-1">
+        <MessageWrapper style={style} className="flex-1 flex-col overflow-hidden">
           {displayChannelBar && <MessageHeader />}
           <PinnedMessagesDisplay loading={loading} />
           <LoadingOverlay loading={loading} />
@@ -84,17 +91,20 @@ export const ChatRoom = forwardRef(
             selectedEmoji={selectedEmoji}
             isLoadingMore={isLoadingMore}
           />
-          {pickEmoji && (
-            <EmojiPickerWrapper
-              isEmojiBoxOpen={isEmojiBoxOpen}
-              emojiPickerPosition={emojiPickerPosition}
-              closeEmojiPicker={closeEmojiPicker}
-              handleEmojiSelect={handleEmojiSelect}
-              ref={emojiPickerRef}
-            />
-          )}
 
-          <ActionBar />
+          <div className="flex w-full flex-col items-center justify-center">
+            {(!isMobile || (isMobile && !isEmojiBoxOpen)) && <ActionBar />}
+            {pickEmoji && (
+              <EmojiPickerWrapper
+                isEmojiBoxOpen={isEmojiBoxOpen}
+                emojiPickerPosition={emojiPickerPosition}
+                closeEmojiPicker={closeEmojiPicker}
+                handleEmojiSelect={handleEmojiSelect}
+                ref={emojiPickerRef}
+              />
+            )}
+          </div>
+
           <ScrollToBottomButton messagesContainer={messageContainerRef} />
           {children}
         </MessageWrapper>
