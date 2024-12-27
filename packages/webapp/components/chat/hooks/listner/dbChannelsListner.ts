@@ -10,7 +10,6 @@ export const dbChannelsListner = (payload: any) => {
 }
 
 export const dbChannelMessageCountsListner = (payload: any) => {
-  console.log('dbChannelMessageCountsListner', { payload })
   if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
     channelMessageCountsInsert(payload)
   }
