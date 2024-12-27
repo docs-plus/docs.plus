@@ -33,8 +33,7 @@
     }
 
     .btn_openChatBox {
-      padding: 2px 0 2px 8px;
-      @apply absolute right-1 flex items-center justify-center overflow-hidden rounded-lg bg-docsy fill-white text-neutral-content;
+      @apply absolute right-2 flex size-8 items-center justify-center overflow-hidden rounded-xl bg-docsy fill-white p-2 text-neutral-content;
       svg {
         // width: 14px;
         // height: 14px;
@@ -59,6 +58,8 @@
       &::before {
         content: attr(data-unread-count);
         color: #fff;
+        margin-top: 3px;
+        font-weight: 600;
       }
     }
   }
