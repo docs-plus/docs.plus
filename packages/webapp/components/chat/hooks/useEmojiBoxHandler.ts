@@ -145,6 +145,16 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
     [isEmojiBoxOpen]
   )
 
+  useEffect(() => {
+    const handleCloseEmojiPicker = () => closeEmojiPicker()
+
+    document.addEventListener('closeEmojiPicker', handleCloseEmojiPicker)
+
+    return () => {
+      document.removeEventListener('closeEmojiPicker', handleCloseEmojiPicker)
+    }
+  }, [])
+
   return {
     isEmojiBoxOpen,
     openEmojiPicker,

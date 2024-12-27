@@ -16,6 +16,15 @@
     width: 100%;
   }
 
+  em-emoji-picker {
+    width: 100%;
+    max-width: 100%;
+    min-width: 100%;
+    background: #000;
+    --category-icon-size: 24px;
+    --border-radius: 18px 18px 0 0;
+  }
+
   .tiptap__toc {
     .toc__list {
       flex-wrap: nowrap !important;

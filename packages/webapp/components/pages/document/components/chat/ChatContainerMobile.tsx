@@ -7,7 +7,7 @@ import { useEffect, useRef } from 'react'
 
 const initSettings = {
   displayChannelBar: false,
-  pickEmoji: false,
+  pickEmoji: true,
   textEditor: {
     toolbar: false,
     emojiPicker: false,
@@ -47,8 +47,8 @@ const ChatContainerMobile = () => {
       ref={modalRef}
       onModalStateChange={modalStateChange}
       modalId="chatBottomPannel"
-      contentClassName="h-[460px] overflow-hidden"
-      defaultHeight={460}>
+      contentClassName="h-[60%] overflow-hidden"
+      defaultHeight={560}>
       <div
         style={{ height: 'calc(100% - 24px)' }}
         className="flex flex-col justify-start overflow-hidden">
