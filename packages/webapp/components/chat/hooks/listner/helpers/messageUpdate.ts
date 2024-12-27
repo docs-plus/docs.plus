@@ -37,7 +37,8 @@ export const messageUpdate = (payload: any) => {
   } else {
     const newMessage = {
       ...updatedMessage,
-      user_details: userdata,
+      user_details: userdata || message.user_details,
+
       replied_message_details: reply_to_message_id && {
         message: reply_to_message_id,
         user: reply_to_message_id?.user_details
