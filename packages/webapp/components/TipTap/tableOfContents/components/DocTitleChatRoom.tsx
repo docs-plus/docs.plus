@@ -65,7 +65,7 @@ export const DocTitleChatRoomMobile = ({ className }: { className?: string }) =>
             className={`chatLeft fill-neutral-content ${headingId === workspaceId && '!fill-accent'}`}
             size={14}
           />
-          <MdOutlineArrowDropDown size={20} className="arrowDown" />
+          {/* <MdOutlineArrowDropDown size={20} className="arrowDown" /> */}
         </span>
       </div>
     </div>

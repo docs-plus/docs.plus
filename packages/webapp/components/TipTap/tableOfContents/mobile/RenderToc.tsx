@@ -72,7 +72,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
             className={`chatLeft fill-neutral-content ${headingId === item.id && '!fill-accent'}`}
             size={14}
           />
-          <MdOutlineArrowDropDown size={20} className="arrowDown" />
+          {/* <MdOutlineArrowDropDown size={20} className="arrowDown" /> */}
         </span>
       </a>
 
