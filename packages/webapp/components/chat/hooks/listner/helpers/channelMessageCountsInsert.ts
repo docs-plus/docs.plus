@@ -1,12 +1,14 @@
 import { useChatStore } from '@stores'
+
 export const channelMessageCountsInsert = (payload: any) => {
-  console.log('channelMessageCountsInsert', payload)
   const updateChannelRow = useChatStore.getState().updateChannelRow
-  const channel = useChatStore.getState().channels.get(payload.new.channel_id)
-  console.log({ payload, channel })
-  // @ts-ignore
-  updateChannelRow(payload.new.channel_id, {
+  const channelId = payload.new.channel_id
+  const channel = useChatStore.getState().channels.get(channelId)
+
+  if (!channel) return
+
+  updateChannelRow(channelId, {
     ...channel,
-    count: { message_count: payload.new.message_count }
+    unread_message_count: payload.new.message_count
   })
 }

@@ -3,24 +3,66 @@ import { useAuthStore, useChatStore } from '@stores'
 import { useEffect, useState } from 'react'
 import Config from '@config'
 import { Channel } from '@types'
-let setUpsertWorkspace = false
 
-const useMapDocumentAndWorkspace = (docMetadata: any, channels: any) => {
+interface DocMetadata {
+  documentId: string
+  title: string
+  description: string
+  slug: string
+}
+
+interface UseMapDocumentAndWorkspaceResult {
+  loading: boolean
+  error: Error | null
+}
+
+const useMapDocumentAndWorkspace = (
+  docMetadata: DocMetadata,
+  initialChannels?: Channel[]
+): UseMapDocumentAndWorkspaceResult => {
+  const [isWorkspaceUpserted, setIsWorkspaceUpserted] = useState(false)
   const [loading, setLoading] = useState(true)
-  const bulkSetChannels = useChatStore((state: any) => state.bulkSetChannels)
-  const user = useAuthStore((state: any) => state.profile)
+  const [error, setError] = useState<Error | null>(null)
+
+  const bulkSetChannels = useChatStore((state) => state.bulkSetChannels)
+  const user = useAuthStore((state) => state.profile)
   const authLoading = useAuthStore((state) => state.loading)
   const clearAndInitialChannels = useChatStore((state) => state.clearAndInitialChannels)
 
+  // Handle initial channels
   useEffect(() => {
-    if (!channels) return
-    clearAndInitialChannels(channels)
-  }, [channels])
+    if (!initialChannels) return
+    clearAndInitialChannels(initialChannels)
+  }, [initialChannels])
+
+  const fetchChannels = async (documentId: string): Promise<Channel[]> => {
+    if (!user) {
+      const { data: channelMessageCounts } = await getChannelsWithMessageCounts(documentId)
+      return (
+        channelMessageCounts?.map((channel: Channel) =>
+          channel
+            ? {
+                ...channel,
+                unread_message_count: channel.count?.message_count || 0
+              }
+            : channel
+        ) || []
+      )
+    }
+
+    const { data } = await getChannels(documentId)
+    return data || []
+  }
 
   useEffect(() => {
-    if (authLoading || setUpsertWorkspace) return
-    const checkworkspace = async () => {
+    if (authLoading || isWorkspaceUpserted) return
+
+    let isMounted = true
+
+    const initializeWorkspace = async () => {
       setLoading(true)
+      setError(null)
+
       try {
         await upsertWorkspace({
           id: docMetadata.documentId,
@@ -30,28 +72,28 @@ const useMapDocumentAndWorkspace = (docMetadata: any, channels: any) => {
           created_by: user?.id || Config.chat.systemUserId
         })
 
-        let channels: Channel[] = []
-        if (!user) {
-          const { data: channelMessageCounts } = await getChannelsWithMessageCounts(
-            docMetadata.documentId
-          )
-          channels = channelMessageCounts || []
-        } else {
-          const { data } = await getChannels(docMetadata.documentId)
-          channels = data || []
+        const channels = await fetchChannels(docMetadata.documentId)
+        if (isMounted && channels) {
+          bulkSetChannels(channels)
+          setIsWorkspaceUpserted(true)
         }
-        if (channels) bulkSetChannels(channels)
-      } catch (error) {
-        console.error('check workspace error:', error)
+      } catch (err) {
+        console.error('[Workspace initialization error]:', err)
+        if (isMounted)
+          setError(err instanceof Error ? err : new Error('Failed to initialize workspace'))
       } finally {
-        setUpsertWorkspace = true
-        setLoading(false)
+        if (isMounted) setLoading(false)
       }
     }
-    checkworkspace()
+
+    initializeWorkspace()
+
+    return () => {
+      isMounted = false
+    }
   }, [authLoading, user])
 
-  return { loading }
+  return { loading, error }
 }
 
 export default useMapDocumentAndWorkspace
