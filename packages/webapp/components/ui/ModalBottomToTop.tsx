@@ -34,11 +34,19 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
 
     const handleCheckboxChange = useCallback(
       (event: React.ChangeEvent<HTMLInputElement>) => {
+        if (event.target.checked) {
+          window.history.pushState({ modal: modalId }, '')
+        } else {
+          if (window.history.state?.modal === modalId) {
+            window.history.back()
+          }
+        }
+
         if (onModalStateChange) {
           onModalStateChange(event.target.checked)
         }
       },
-      [onModalStateChange]
+      [onModalStateChange, modalId]
     )
 
     const handleTouchStart = useCallback(
@@ -82,6 +90,20 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
         document.removeEventListener('touchmove', handleTouchMoveGlobal)
       }
     }, [isDragging])
+
+    useEffect(() => {
+      const handlePopState = () => {
+        if (checkboxRef.current?.checked) {
+          checkboxRef.current.checked = false
+          handleCheckboxChange({
+            target: { checked: false }
+          } as React.ChangeEvent<HTMLInputElement>)
+        }
+      }
+
+      window.addEventListener('popstate', handlePopState)
+      return () => window.removeEventListener('popstate', handlePopState)
+    }, [handleCheckboxChange])
 
     useImperativeHandle(ref, () => ({
       check: () => {
