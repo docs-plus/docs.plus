@@ -21,10 +21,8 @@ jobs:
 
   # The "setup" job is responsible for setting up the environment and preparing for the build processes.
   setup:
-    # The runner that the job will run on. 'stage.docs.plus' is expected to be a self-hosted runner.
     runs-on: prod.docs.plus
-    # The job will only run if the commit message contains the word 'build'.
-    if: contains(github.event.head_commit.message, 'build')
+    if: contains(github.event.head_commit.message, 'build') &&!contains(github.event.head_commit.message, 'uptime-kuma')
     strategy:
       matrix:
         # This matrix configuration will run the job on the specific version of Node.js.
