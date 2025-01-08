@@ -16,8 +16,18 @@ jobs:
     steps:
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          # Only fetch the latest commit to minimize checkout time
+          fetch-depth: 1
+          # Preserve existing files
+          clean: false
       - name: Deploy Uptime Kuma
-        run: make build_uptime_kuma
+        run: |
+          # Create or navigate to specific directory for Uptime Kuma
+          mkdir -p uptime-kuma
+          cd uptime-kuma
+          # Run your build command here
+          make build_uptime_kuma
 
   # The "setup" job is responsible for setting up the environment and preparing for the build processes.
   setup:
