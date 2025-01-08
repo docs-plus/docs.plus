@@ -1,3 +1,4 @@
+import express from 'express'
 import * as Y from 'yjs'
 import cryptoRandomString from 'crypto-random-string'
 import { PrismaClient } from '@prisma/client'
@@ -12,6 +13,8 @@ import { Redis } from '@hocuspocus/extension-redis'
 import { Logger } from '@hocuspocus/extension-logger'
 import { checkEnvBolean } from './utils/index.mjs'
 import Queue from 'bull'
+import { HealthCheck } from './extensions/health.extension.mjs'
+import { Server } from 'http'
 
 const StoreDocument = new Queue('store documents changes', {
   redis: {
@@ -28,17 +31,10 @@ StoreDocument.process(async function (job, done) {
   const { data } = job
   try {
     console.time(`Store Data, jobId:${job.id}`)
-
     return await prisma.documents.create({
       data: {
         documentId: data.documentName,
         data: Buffer.from(data.state, 'base64')
-        // collaborators: {
-        //   create: {
-        //     userId: id,
-        //     email: email
-        //   }
-        // }
       }
     })
   } catch (err) {
@@ -63,6 +59,8 @@ const generateDefaultState = () => {
   ymeta.set('needsInitialization', true)
   return Y.encodeStateAsUpdate(ydoc)
 }
+
+const healthCheck = new HealthCheck()
 
 const configureExtensions = () => {
   const extensions = []
@@ -109,8 +107,7 @@ const configureExtensions = () => {
             where: { documentId: documentName },
             orderBy: { id: 'desc' }
           })
-
-          return !doc ? generateDefaultState() : doc.data
+          return doc ? doc.data : generateDefaultState()
         } catch (err) {
           console.error('Error fetching data:', err)
           await prisma.$disconnect()
@@ -131,15 +128,62 @@ const configureExtensions = () => {
     })
   )
 
+  extensions.push(healthCheck)
+
   return extensions
 }
 
 export default () => {
+  const app = express()
+  const httpServer = new Server(app)
+
   return {
     name: getServerName(),
     port: process.env.HOCUSPOCUS_PORT,
     extensions: configureExtensions(),
     debounce: 1000,
+    server: httpServer,
+    async onListen(data) {
+      healthCheck.onConfigure({ ...data, extensions: configureExtensions() })
+    },
+    onRequest(data) {
+      return new Promise((resolve, reject) => {
+        const { request, response } = data
+
+        console.log('request.url', request.url)
+
+        if (request.url === '/health') {
+          const health = healthCheck.getHealth()
+          response.writeHead(200, { 'Content-Type': 'application/json' })
+          response.end(JSON.stringify(health))
+          return reject()
+        }
+
+        if (request.url === '/health/websocket') {
+          const wsHealth = healthCheck.status.websocket
+          response.writeHead(200, { 'Content-Type': 'application/json' })
+          response.end(JSON.stringify(wsHealth))
+          return reject()
+        }
+
+        if (request.url === '/health/database') {
+          const dbHealth = healthCheck.getDatabaseStatus()
+          response.writeHead(200, { 'Content-Type': 'application/json' })
+          response.end(JSON.stringify(dbHealth))
+          return reject()
+        }
+
+        if (request.url === '/health/redis') {
+          const redisHealth = healthCheck.getRedisStatus()
+          response.writeHead(200, { 'Content-Type': 'application/json' })
+          response.end(JSON.stringify(redisHealth))
+          return reject()
+        }
+
+        resolve()
+      })
+    },
+
     async onStateless({ payload, document, connection }) {
       document.broadcastStateless(payload)
     }

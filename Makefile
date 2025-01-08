@@ -94,9 +94,26 @@ down_stage:
 
 # Build, stop and remove the existing production container, and run a new production container
 build_hocuspocus.server_prod: down_prod
+	@echo "Checking for existing containers..."
+	@if docker ps | grep -q "prod-docsplus"; then \
+		echo "Found running containers. Stopping gracefully..."; \
+		docker-compose -p prod-docsplus stop || true; \
+	fi
+	@echo "Building and starting new containers..."
 	cd packages/hocuspocus.server && env ENVIRONMENT=prod docker-compose -p prod-docsplus build --no-cache
 	cd packages/hocuspocus.server && env ENVIRONMENT=prod docker-compose -p prod-docsplus up -d
+	@echo "Deployment completed successfully."
 
 # Stop and remove the production container, and remove the local production image
 down_prod:
 	cd packages/hocuspocus.server && env ENVIRONMENT=prod docker-compose -p prod-docsplus down --rmi local
+
+# Build and run Uptime Kuma
+build_uptime_kuma:
+	docker compose -f docker-compose.uptime-kuma.yml down
+	docker compose -f docker-compose.uptime-kuma.yml pull
+	docker compose -f docker-compose.uptime-kuma.yml up -d
+
+# Stop and remove Uptime Kuma
+down_uptime_kuma:
+	docker compose -f docker-compose.uptime-kuma.yml down
