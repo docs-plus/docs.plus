@@ -9,6 +9,16 @@ on:
     branches: [main]
 
 jobs:
+  # This job builds and runs Uptime Kuma.
+  build-uptime-kuma:
+    runs-on: prod.docs.plus
+    if: contains(github.event.head_commit.message, 'uptime-kuma')
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Deploy Uptime Kuma
+        run: make build_uptime_kuma
+
   # The "setup" job is responsible for setting up the environment and preparing for the build processes.
   setup:
     # The runner that the job will run on. 'stage.docs.plus' is expected to be a self-hosted runner.
@@ -67,17 +77,6 @@ jobs:
       # This step runs the build command for the back-end.
       - name: Build Back-end
         run: make build_hocuspocus.server_prod
-
-  # This job builds and runs Uptime Kuma.
-  build-uptime-kuma:
-    needs: setup
-    runs-on: prod.docs.plus
-    if: contains(github.event.head_commit.message, 'uptime-kuma')
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-      - name: Deploy Uptime Kuma
-        run: make build_uptime_kuma
 # -----------------------------------------------------------------------
 # EXAMPLE USAGE:
 # 1) To run setup + build-front:
