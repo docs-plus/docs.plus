@@ -84,7 +84,7 @@ jobs:
 #    git commit -m "Fix backend (build back)"
 #
 # 3) To run setup + build-uptime-kuma:
-#    git commit -m "Add Uptime Kuma config (build uptime-kuma)"
+#    git commit -m "build uptime-kuma"
 #
 # 4) To run multiple pipelines together:
 #    git commit -m "Update everything (build front back uptime-kuma)"
