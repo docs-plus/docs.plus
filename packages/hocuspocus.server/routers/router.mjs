@@ -13,6 +13,10 @@ import { checkEnvBolean } from '../utils/index.mjs'
 import * as localStorage from './storage/storage.local.mjs'
 import * as AWSS3Storage from './storage/storage.AWS.S3.mjs'
 import { extractFileType } from './storage/fileType.mjs'
+import healthRouter from './health/index.mjs'
+import databaseHealthRouter from './health/database.health.mjs'
+import redisHealthRouter from './health/redis.health.mjs'
+import supabaseHealthRouter from './health/supabase.health.mjs'
 
 const prisma = new PrismaClient()
 const router = expressRouter()
@@ -284,5 +288,11 @@ router.expressRouter.post('/plugins/hypermultimedia/:documentId', async (req, re
 
   return req.send(true)
 })
+
+// Add health check routes
+router.expressRouter.use('/health', healthRouter)
+router.expressRouter.use('/health/database', databaseHealthRouter)
+router.expressRouter.use('/health/redis', redisHealthRouter)
+router.expressRouter.use('/health/supabase', supabaseHealthRouter)
 
 export default router.expressRouter

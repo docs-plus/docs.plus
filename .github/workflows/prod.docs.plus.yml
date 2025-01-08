@@ -67,3 +67,31 @@ jobs:
       # This step runs the build command for the back-end.
       - name: Build Back-end
         run: make build_hocuspocus.server_prod
+
+  # This job builds and runs Uptime Kuma.
+  build-uptime-kuma:
+    needs: setup
+    runs-on: prod.docs.plus
+    if: contains(github.event.head_commit.message, 'uptime-kuma')
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Deploy Uptime Kuma
+        run: make build_uptime_kuma
+# -----------------------------------------------------------------------
+# EXAMPLE USAGE:
+# 1) To run setup + build-front:
+#    git commit -m "Add feature (build front)"
+#
+# 2) To run setup + build-back:
+#    git commit -m "Fix backend (build back)"
+#
+# 3) To run setup + build-uptime-kuma:
+#    git commit -m "Add Uptime Kuma config (build uptime-kuma)"
+#
+# 4) To run multiple pipelines together:
+#    git commit -m "Update everything (build front back uptime-kuma)"
+#
+# Then push to the 'main' branch (or open a pull request):
+#    git push origin main
+# -----------------------------------------------------------------------

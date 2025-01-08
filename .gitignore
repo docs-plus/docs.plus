@@ -119,3 +119,5 @@ packages/web/dev-dist
 # packaged files
 packages/**/*.tgz
 packages/**/dist
+
+uptime-kuma-data

@@ -38,3 +38,30 @@ content-type: application/json
 
 ###
 GET http://localhost:2300/api/documents?title=cats
+
+
+###
+GET http://localhost:2300/api/health
+
+###
+GET http://localhost:2300/api/health/supabase
+
+###
+GET http://localhost:2300/api/health/redis
+
+###
+GET http://localhost:2300/api/health/database
+
+### Hocuspocus Health Check
+GET http://localhost:1234/health
+
+
+### Hocuspocus Health Check
+GET http://localhost:1234/health/websocket
+
+### Hocuspocus Health Check
+GET http://localhost:1234/health/database
+
+### Hocuspocus Health Check
+GET http://localhost:1234/health/redis
+
