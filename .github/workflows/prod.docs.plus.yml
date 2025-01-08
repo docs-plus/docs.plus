@@ -23,9 +23,6 @@ jobs:
           clean: false
       - name: Deploy Uptime Kuma
         run: |
-          # Create or navigate to specific directory for Uptime Kuma
-          mkdir -p uptime-kuma
-          cd uptime-kuma
           # Run your build command here
           make build_uptime_kuma
 
