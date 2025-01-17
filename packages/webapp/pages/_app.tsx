@@ -15,6 +15,14 @@ import '../styles/globals.scss'
 import { useRouter } from 'next/router'
 import { UserModalProvider } from '@context/UserModalContext'
 
+import { init as initApm } from '@elastic/apm-rum'
+
+initApm({
+  serviceName: 'webapp_rum',
+  serverUrl: process.env.ELASTIC_APM_SERVER_URL,
+  environment: process.env.NODE_ENV
+})
+
 // Create a client
 const queryClient = new QueryClient()
 
