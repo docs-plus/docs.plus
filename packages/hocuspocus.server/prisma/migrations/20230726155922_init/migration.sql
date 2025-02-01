@@ -8,7 +8,7 @@ CREATE TABLE "Documents" (
     "data" BYTEA NOT NULL,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-
+    "version" INTEGER NOT NULL DEFAULT 1,
     CONSTRAINT "Documents_pkey" PRIMARY KEY ("id")
 );
 
@@ -45,6 +45,9 @@ CREATE UNIQUE INDEX "DocumentMetadata_slug_key" ON "DocumentMetadata"("slug");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "DocumentMetadata_documentId_key" ON "DocumentMetadata"("documentId");
+
+-- CreateIndex
+CREATE INDEX "Documents_documentId_version_idx" ON "Documents"("documentId", "version");
 
 -- AddForeignKey
 ALTER TABLE "Documents" ADD CONSTRAINT "Documents_documentId_fkey" FOREIGN KEY ("documentId") REFERENCES "DocumentMetadata"("documentId") ON DELETE RESTRICT ON UPDATE CASCADE;
