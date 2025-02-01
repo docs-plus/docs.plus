@@ -58,4 +58,14 @@
   .heading[level='1']:first-of-type {
     margin: inherit;
   }
+
+  .history_editor {
+    .toolbar,
+    .sidebar {
+      display: none;
+    }
+    .mainWrapper {
+      width: 100% !important;
+    }
+  }
 }

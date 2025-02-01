@@ -44,6 +44,7 @@
     "cors": "^2.8.5",
     "crypto-random-string": "^5.0.0",
     "dotenv-flow": "^4.1.0",
+    "elastic-apm-node": "^4.10.0",
     "express": "^4.21.2",
     "express-fileupload": "^1.5.1",
     "express-rate-limit": "^7.5.0",

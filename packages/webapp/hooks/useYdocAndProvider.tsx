@@ -30,8 +30,15 @@ const useYdocAndProvider = () => {
           },
           onSynced: (data) => {
             console.log('++onSynced', data)
+
             if (data?.state) setWorkspaceEditorSetting('providerSyncing', false)
+
+            // in case of renew provider, set the provider to the store
+            if (data?.state && !hocuspocusProvider && providerRef.current) {
+              setWorkspaceSetting('hocuspocusProvider', providerRef.current)
+            }
           },
+
           // documentUpdateHandler: (update) => {
           // console.log('documentUpdateHandler', update)
           // },

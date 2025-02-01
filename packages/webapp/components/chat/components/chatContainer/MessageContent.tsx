@@ -3,6 +3,8 @@ import DOMPurify from 'dompurify'
 import { isOnlyEmoji, splitEmojis } from '@utils/index'
 import { getEmojiDataFromNative } from 'emoji-mart'
 import { useAuthStore } from '@stores'
+import { useUserModal } from '@context/UserModalContext'
+
 interface MessageContentProps {
   data: {
     content: string
@@ -15,6 +17,7 @@ interface MessageContentProps {
 
 const MessageContent: React.FC<MessageContentProps> = ({ data }) => {
   const user = useAuthStore((state) => state.profile)
+  const { openUserModal } = useUserModal()
   const sanitizedHtml = useMemo(() => {
     return data.html ? DOMPurify.sanitize(data.html) : data.content
   }, [data.html, data.content])
@@ -39,10 +42,19 @@ const MessageContent: React.FC<MessageContentProps> = ({ data }) => {
     if (contentIsOnlyEmoji) loadEmojiTitles()
   }, [data.content, contentIsOnlyEmoji])
 
+  const handleMentionClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = e.target as HTMLElement
+
+    if (target.matches('.mention[data-id]')) {
+      const userId = target.dataset.id
+      if (userId) openUserModal(userId)
+    }
+  }
+
   // Check if the content is only emoji outside of JSX for readability.
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col" onClick={handleMentionClick}>
       {contentIsOnlyEmoji ? (
         <div
           className={`flex ${data?.user_details?.id === user?.id ? 'justify-end' : 'justify-start'}`}>
@@ -58,7 +70,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ data }) => {
         </div>
       ) : (
         <div
-          className="message--card__content prose-slate prose-invert text-wrap"
+          className="message--card__content prose-slate prose-invert max-w-full overflow-hidden whitespace-pre-wrap text-wrap break-words"
           dir="auto"
           dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />

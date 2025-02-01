@@ -13,7 +13,9 @@ const useEditorAndProvider = ({ provider }: { provider: any }) => {
   const { editor: editorSetting } = useStore((state) => state.settings)
 
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
-  const editor = useEditor(editorConfig({ provider }), [editorSetting?.applyingFilters])
+  const editor = useEditor(editorConfig({ provider, spellcheck: false }), [
+    editorSetting?.applyingFilters
+  ])
 
   // Set initial content if the document is new
   useInitializeNewDocument({ editor, provider })

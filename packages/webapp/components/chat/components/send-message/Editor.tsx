@@ -14,8 +14,8 @@ import json from 'highlight.js/lib/languages/json'
 // import bash from "highlight.js/lib/languages/bash";
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
-// import Mention from "@tiptap/extension-mention";
-// import suggestion from "./suggestion";
+import Mention from '@tiptap/extension-mention'
+import suggestion from './suggestion'
 
 // load all highlight.js languages
 import { createLowlight } from 'lowlight'
@@ -53,12 +53,12 @@ export const useTiptapEditor = ({ loading }: any) => {
         CodeBlockLowlight.configure({
           lowlight
         }),
-        // Mention.configure({
-        //   HTMLAttributes: {
-        //     class: "mention",
-        //   },
-        //   suggestion,
-        // }),
+        Mention.configure({
+          HTMLAttributes: {
+            class: 'mention'
+          },
+          suggestion
+        }),
         Placeholder.configure({
           placeholder: 'Write a message...',
           showOnlyWhenEditable: false
@@ -78,10 +78,19 @@ export const useTiptapEditor = ({ loading }: any) => {
       shouldRerenderOnTransaction: false,
       editorProps: {
         handleKeyDown: (view, event) => {
-          // if key is Enter and shift is not pressed
           if (event.key === 'Enter' && !event.shiftKey) {
-            if (text.length) handleTypingIndicator(TypingIndicatorType.SentMsg)
-            return true // Indicates that this key event was handled
+            const tippyInstance = document.querySelector('[data-tippy-root]')
+            const isPopupVisible =
+              tippyInstance && window.getComputedStyle(tippyInstance).visibility === 'visible'
+
+            if (isPopupVisible) {
+              event.preventDefault()
+              event.stopPropagation()
+              return false
+            } else {
+              if (text.length) handleTypingIndicator(TypingIndicatorType.SentMsg)
+              return false // Indicates that this key event was handled
+            }
           }
           if (event.key === 'Enter' && event.metaKey) {
             return true // Indicates that this key event was handled

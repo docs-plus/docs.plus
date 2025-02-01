@@ -400,3 +400,352 @@ BEGIN
     RETURN new_channel;
 END;
 $$ LANGUAGE plpgsql;
+
+
+---------------------
+CREATE OR REPLACE FUNCTION public.notifications_summary(
+    _workspace_id VARCHAR(36) DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_unread_count          BIGINT;
+    v_unread_mention_count  BIGINT;
+    v_last_unread           JSONB;
+    v_last_unread_mention   JSONB;
+BEGIN
+    /*
+       If _workspace_id is not NULL, filter notifications by channels in that workspace.
+       Otherwise, no workspace filter.
+    */
+
+    -- 1) Count all unread notifications
+    SELECT COUNT(*)
+    INTO v_unread_count
+    FROM public.notifications AS n
+    JOIN public.channels      AS c ON c.id = n.channel_id
+    WHERE n.receiver_user_id = auth.uid()
+      AND n.readed_at IS NULL
+      AND (
+          _workspace_id IS NULL
+          OR c.workspace_id = _workspace_id
+      );
+
+    -- 2) Count all unread "mention" notifications
+    SELECT COUNT(*)
+    INTO v_unread_mention_count
+    FROM public.notifications AS n
+    JOIN public.channels      AS c ON c.id = n.channel_id
+    WHERE n.receiver_user_id = auth.uid()
+      AND n.type = 'mention'
+      AND n.readed_at IS NULL
+      AND (
+          _workspace_id IS NULL
+          OR c.workspace_id = _workspace_id
+      );
+
+    -- 3) Last 6 unread notifications (with embedded sender data)
+    SELECT JSONB_AGG(to_jsonb(sub.*))
+    INTO v_last_unread
+    FROM (
+        SELECT
+            n.id,
+            n.type,
+            n.message_id,
+            n.channel_id,
+            n.message_preview,
+            n.created_at,
+            JSON_BUILD_OBJECT(
+                'id',               u.id,
+                'username',         u.username,
+                'full_name',        u.full_name,
+                'avatar_url',       u.avatar_url,
+                'display_name',     u.display_name,
+                'avatar_updated_at',u.avatar_updated_at
+            ) AS sender
+        FROM public.notifications AS n
+        JOIN public.channels      AS c ON c.id = n.channel_id
+        LEFT JOIN public.users    AS u ON u.id = n.sender_user_id
+        WHERE n.receiver_user_id = auth.uid()
+          AND n.readed_at IS NULL
+          AND (
+              _workspace_id IS NULL
+              OR c.workspace_id = _workspace_id
+          )
+        ORDER BY n.created_at DESC
+        LIMIT 6
+    ) AS sub;
+
+    -- 4) Last 6 unread "mention" notifications (with embedded sender data)
+    SELECT JSONB_AGG(to_jsonb(sub.*))
+    INTO v_last_unread_mention
+    FROM (
+        SELECT
+            n.id,
+            n.type,
+            n.message_id,
+            n.channel_id,
+            n.message_preview,
+            n.created_at,
+            JSON_BUILD_OBJECT(
+                'id',               u.id,
+                'username',         u.username,
+                'full_name',        u.full_name,
+                'avatar_url',       u.avatar_url,
+                'display_name',     u.display_name,
+                'avatar_updated_at',u.avatar_updated_at
+            ) AS sender
+        FROM public.notifications AS n
+        JOIN public.channels      AS c ON c.id = n.channel_id
+        LEFT JOIN public.users    AS u ON u.id = n.sender_user_id
+        WHERE n.receiver_user_id = auth.uid()
+          AND n.type = 'mention'
+          AND n.readed_at IS NULL
+          AND (
+              _workspace_id IS NULL
+              OR c.workspace_id = _workspace_id
+          )
+        ORDER BY n.created_at DESC
+        LIMIT 6
+    ) AS sub;
+
+    RETURN JSONB_BUILD_OBJECT(
+        'unread_count',         v_unread_count,
+        'unread_mention_count', v_unread_mention_count,
+        'last_unread',         COALESCE(v_last_unread, '[]'::JSONB),
+        'last_unread_mention', COALESCE(v_last_unread_mention, '[]'::JSONB)
+    );
+END;
+$$;
+
+---------------------
+CREATE OR REPLACE FUNCTION public.notifications_summary(
+    _workspace_id VARCHAR(36) DEFAULT NULL
+)
+RETURNS JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_unread_count          BIGINT;
+    v_unread_mention_count  BIGINT;
+    v_last_unread           JSONB;
+    v_last_unread_mention   JSONB;
+BEGIN
+    /*
+       If _workspace_id is not NULL, we join notifications to channels
+       and filter on workspace_id. Otherwise, we do no workspace filtering.
+     */
+
+    -- 1) Count all unread notifications
+    SELECT COUNT(*)
+    INTO v_unread_count
+    FROM public.notifications AS n
+    JOIN public.channels     AS c ON c.id = n.channel_id
+    WHERE n.receiver_user_id = auth.uid()
+      AND n.readed_at IS NULL
+      AND (
+          _workspace_id IS NULL
+          OR c.workspace_id = _workspace_id
+      );
+
+    -- 2) Count all unread "mention" notifications
+    SELECT COUNT(*)
+    INTO v_unread_mention_count
+    FROM public.notifications AS n
+    JOIN public.channels     AS c ON c.id = n.channel_id
+    WHERE n.receiver_user_id = auth.uid()
+      AND n.type = 'mention'
+      AND n.readed_at IS NULL
+      AND (
+          _workspace_id IS NULL
+          OR c.workspace_id = _workspace_id
+      );
+
+    -- 3) Last 6 unread notifications
+    SELECT JSONB_AGG(to_jsonb(sub.*))
+    INTO v_last_unread
+    FROM (
+        SELECT n.*
+        FROM public.notifications AS n
+        JOIN public.channels     AS c ON c.id = n.channel_id
+        WHERE n.receiver_user_id = auth.uid()
+          AND n.readed_at IS NULL
+          AND (
+              _workspace_id IS NULL
+              OR c.workspace_id = _workspace_id
+          )
+        ORDER BY n.created_at DESC
+        LIMIT 6
+    ) AS sub;
+
+    -- 4) Last 6 unread "mention" notifications
+    SELECT JSONB_AGG(to_jsonb(sub.*))
+    INTO v_last_unread_mention
+    FROM (
+        SELECT n.*
+        FROM public.notifications AS n
+        JOIN public.channels     AS c ON c.id = n.channel_id
+        WHERE n.receiver_user_id = auth.uid()
+          AND n.type = 'mention'
+          AND n.readed_at IS NULL
+          AND (
+              _workspace_id IS NULL
+              OR c.workspace_id = _workspace_id
+          )
+        ORDER BY n.created_at DESC
+        LIMIT 6
+    ) AS sub;
+
+    RETURN JSONB_BUILD_OBJECT(
+        'unread_count',          v_unread_count,
+        'unread_mention_count',  v_unread_mention_count,
+        'last_unread',           COALESCE(v_last_unread, '[]'::JSONB),
+        'last_unread_mention',   COALESCE(v_last_unread_mention, '[]'::JSONB)
+    );
+END;
+$$;
+-----------------------------------
+
+CREATE OR REPLACE FUNCTION public.get_unread_notifications_paginated(
+    _workspace_id VARCHAR(36) DEFAULT NULL,
+    _type         TEXT        DEFAULT NULL,
+    _page         INT         DEFAULT 1,
+    _page_size    INT         DEFAULT 6
+)
+RETURNS SETOF JSONB
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_offset INT := (_page - 1) * _page_size;
+BEGIN
+    RETURN QUERY
+        SELECT to_jsonb(sub.*)
+        FROM (
+            SELECT
+                n.id,
+                n.type,
+                n.message_id,
+                n.channel_id,
+                n.message_preview,
+                n.created_at,
+                JSON_BUILD_OBJECT(
+                    'id',               u.id,
+                    'username',         u.username,
+                    'full_name',        u.full_name,
+                    'avatar_url',       u.avatar_url,
+                    'display_name',     u.display_name,
+                    'avatar_updated_at',u.avatar_updated_at
+                ) AS sender
+            FROM public.notifications AS n
+            JOIN public.channels      AS c ON c.id = n.channel_id
+            LEFT JOIN public.users    AS u ON u.id = n.sender_user_id
+            WHERE n.receiver_user_id = auth.uid()
+              AND n.readed_at IS NULL
+              -- If _type is NULL, allow any type. Otherwise, match it.
+              AND (
+                _type IS NULL
+                OR n.type::text = _type
+              )
+              -- If _workspace_id is NULL, no workspace filter; otherwise match.
+              AND (
+                _workspace_id IS NULL
+                OR c.workspace_id = _workspace_id
+              )
+            ORDER BY n.created_at DESC
+            LIMIT _page_size
+            OFFSET v_offset
+        ) AS sub;
+END;
+$$;
+
+
+
+-------------------------
+
+CREATE OR REPLACE FUNCTION public.fetch_mentioned_users(
+  _workspace_id VARCHAR,
+  _username TEXT
+)
+RETURNS TABLE (
+  id UUID,
+  username TEXT,
+  full_name TEXT,
+  display_name TEXT,
+  avatar_url TEXT,
+  avatar_updated_at TIMESTAMPTZ,
+  created_at TIMESTAMPTZ
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  IF _username IS NULL OR _username = '' THEN
+    -- If no username is provided, return the 6 most recent users
+    RETURN QUERY
+      SELECT DISTINCT
+             u.id,
+             u.username,
+             u.full_name,
+             u.display_name,
+             u.avatar_url,
+             u.avatar_updated_at,
+             u.created_at
+        FROM public.users u
+        JOIN public.channel_members cm ON cm.member_id = u.id
+        JOIN public.channels c        ON c.id = cm.channel_id
+       WHERE c.workspace_id = _workspace_id
+         AND u.deleted_at IS NULL
+       ORDER BY u.created_at DESC
+       LIMIT 6;
+
+  ELSE
+    -- If a username is provided, perform a partial match
+    RETURN QUERY
+      SELECT DISTINCT
+             u.id,
+             u.username,
+             u.full_name,
+             u.display_name,
+             u.avatar_url,
+             u.avatar_updated_at,
+             u.created_at
+        FROM public.users u
+        JOIN public.channel_members cm ON cm.member_id = u.id
+        JOIN public.channels c        ON c.id = cm.channel_id
+       WHERE c.workspace_id = _workspace_id
+         AND u.deleted_at IS NULL
+         AND u.username ILIKE '%' || _username || '%'
+       ORDER BY u.username
+       LIMIT 10;
+  END IF;
+END;
+$$;
+
+
+-----------------------------------
+CREATE OR REPLACE FUNCTION public.get_unread_notif_count(
+    _workspace_id VARCHAR(36) DEFAULT NULL
+)
+RETURNS BIGINT
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_unread_count BIGINT;
+BEGIN
+    SELECT COUNT(*)
+    INTO v_unread_count
+    FROM public.notifications AS n
+    JOIN public.channels AS c ON c.id = n.channel_id
+    WHERE n.receiver_user_id = auth.uid()
+      AND n.readed_at IS NULL
+      AND (
+          _workspace_id IS NULL
+          OR c.workspace_id = _workspace_id
+      );
+
+    RETURN v_unread_count;
+END;
+$$;
+
+ALTER FUNCTION public.get_unread_notif_count(VARCHAR(36))
+SET parallel_safe = true;

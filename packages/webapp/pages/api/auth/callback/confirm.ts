@@ -34,15 +34,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       req.url?.split('?')[1] || ''
     ) as TQuery
 
-    console.log('====-=-=-=-=-=-=-=-=-=-=-=-=->>>>>', {
-      code,
-      next,
-      open_heading_chat,
-      error,
-      error_code,
-      error_description
-    })
-
     if (error) {
       console.error('OAuth error:', { error, error_code, error_description })
 
@@ -69,11 +60,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const supabase = createClient(req, res)
 
       const { error, data } = await supabase.auth.exchangeCodeForSession(code)
-
-      console.log({
-        error,
-        data
-      })
 
       if (!error) {
         // const forwardedHost = req.headers.get('x-forwarded-host') // original origin before load balancer
@@ -102,21 +88,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (open_heading_chat) {
       url.searchParams.append('open_heading_chat', String(open_heading_chat))
     }
-
-    // Forward the cookie from request to response
-    // const cookie = req.headers.cookie
-    // if (cookie) {
-    //   console.log('yeyyeyeyeyyeyeyeyyeyeyyeyeyyeyeyye11111', { cookie })
-    //   res.setHeader('Set-Cookie', cookie)
-    // }
-
-    console.log({
-      url,
-      // cookie,
-      code,
-      headers: req.headers
-    })
-
     // Redirect to the modified URL
     res.redirect(url.toString())
   } catch (error) {

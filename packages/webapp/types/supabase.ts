@@ -105,6 +105,13 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "channel_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_users"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
       channel_message_counts: {
@@ -208,6 +215,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channels_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workspace_users"
+            referencedColumns: ["user_id"]
           },
           {
             foreignKeyName: "channels_workspace_id_fkey"
@@ -340,11 +354,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "messages_thread_owner_id_fkey"
+            columns: ["thread_owner_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_users"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "messages_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "messages_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_users"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -408,11 +436,25 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "notifications_receiver_user_id_fkey"
+            columns: ["receiver_user_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_users"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "notifications_sender_user_id_fkey"
             columns: ["sender_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_sender_user_id_fkey"
+            columns: ["sender_user_id"]
+            isOneToOne: false
+            referencedRelation: "workspace_users"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -462,6 +504,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pinned_messages_pinned_by_fkey"
+            columns: ["pinned_by"]
+            isOneToOne: false
+            referencedRelation: "workspace_users"
+            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -555,11 +604,38 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "workspaces_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "workspace_users"
+            referencedColumns: ["user_id"]
+          },
         ]
       }
     }
     Views: {
-      [_ in never]: never
+      workspace_users: {
+        Row: {
+          avatar_updated_at: string | null
+          avatar_url: string | null
+          display_name: string | null
+          full_name: string | null
+          joined_at: string | null
+          user_id: string | null
+          username: string | null
+          workspace_id: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channels_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       create_direct_message_channel: {
@@ -577,6 +653,34 @@ export type Database = {
           p_workspace_id: string
         }
         Returns: undefined
+      }
+      fetch_mentioned_users: {
+        Args: {
+          _workspace_id: string
+          _username: string
+        }
+        Returns: {
+          id: string
+          username: string
+          full_name: string
+          display_name: string
+          avatar_url: string
+          avatar_updated_at: string
+          created_at: string
+        }[]
+      }
+      fetch_workspace_users: {
+        Args: {
+          _workspace_id: string
+          _search_term: string
+        }
+        Returns: {
+          username: string
+          full_name: string
+          display_name: string
+          avatar_url: string
+          avatar_updated_at: string
+        }[]
       }
       get_channel_aggregate_data: {
         Args: {
@@ -605,6 +709,41 @@ export type Database = {
           messages: Json
         }[]
       }
+      get_unread_count: {
+        Args: {
+          _workspace_id?: string
+        }
+        Returns: number
+      }
+      get_unread_notif_count: {
+        Args: {
+          _workspace_id?: string
+        }
+        Returns: number
+      }
+      get_unread_notifications_paginated: {
+        Args: {
+          _workspace_id?: string
+          _type?: string
+          _page?: number
+          _page_size?: number
+        }
+        Returns: Json[]
+      }
+      get_workspace_users: {
+        Args: {
+          workspace_id_param: string
+        }
+        Returns: {
+          user_id: string
+          username: string
+          full_name: string
+          display_name: string
+          avatar_url: string
+          avatar_updated_at: string
+          joined_at: string
+        }[]
+      }
       mark_messages_as_read: {
         Args: {
           p_channel_id: string
@@ -615,6 +754,12 @@ export type Database = {
       message_counter_batch_worker: {
         Args: Record<PropertyKey, never>
         Returns: undefined
+      }
+      notifications_summary: {
+        Args: {
+          _workspace_id?: string
+        }
+        Returns: Json
       }
       truncate_content: {
         Args: {

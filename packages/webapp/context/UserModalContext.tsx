@@ -133,10 +133,6 @@ export function UserModalProvider({ children }: { children: React.ReactNode }) {
     )
   }
 
-  useEffect(() => {
-    console.log('userData', { userData })
-  }, [userData])
-
   return (
     <UserModalContext.Provider value={{ openUserModal, closeUserModal }}>
       {children}

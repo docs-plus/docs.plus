@@ -93,7 +93,7 @@ const OneTapComponent = () => {
       <Script
         src="https://accounts.google.com/gsi/client"
         strategy="afterInteractive"
-        onLoad={() => console.log('Google script loaded')}
+        onLoad={() => console.info('Google script loaded')}
         onError={(e) => console.error('Error loading Google script:', e)}
       />
       <div id="oneTap" className="fixed right-0 top-0 z-[100]" />

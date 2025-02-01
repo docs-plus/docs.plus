@@ -79,6 +79,17 @@ $bg-root: #f8f9fa;
 .ProseMirror {
   // buttons in heading
 
+  .mention {
+    background-color: rgba(111, 0, 255, 0.1);
+    border-radius: 0.4rem;
+    box-decoration-break: clone;
+    color: rgb(111, 0, 255);
+    padding: 0.1rem 0.3rem;
+    &::after {
+      content: '\200B';
+    }
+  }
+
   a {
     font-weight: 500;
     color: #646cff;
@@ -481,5 +492,55 @@ $bg-root: #f8f9fa;
   .tippy-svg-arrow {
     top: -12px !important;
     fill: #aaa;
+  }
+
+  .dropdown-menu {
+    background: white;
+    border: 1px solid #dadce0;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    overflow: auto;
+    padding: 0.5rem;
+    position: relative;
+    min-width: 180px;
+
+    button {
+      align-items: center;
+      background-color: transparent;
+      display: flex;
+      gap: 0.5rem;
+      text-align: left;
+      width: 100%;
+      padding: 0.5rem 0.75rem;
+      border-radius: 4px;
+      color: #333;
+      font-size: 0.9rem;
+
+      &:hover,
+      &:hover.is-selected {
+        background-color: #f1f3f4;
+      }
+
+      &.is-selected {
+        background-color: #e8f0fe;
+        color: #1a73e8;
+      }
+    }
+  }
+}
+
+.message--card__content {
+  .mention {
+    // background-color: rgba(111, 0, 255, 0.1);
+    border-radius: 0.4rem;
+    box-decoration-break: clone;
+    color: rgb(111, 0, 255);
+    padding: 0.1rem 0.3rem;
+    &::after {
+      content: '\200B';
+    }
   }
 }

@@ -41,7 +41,6 @@ const SystemNotifyChip = ({ message }: any) => {
   const cardRef = useRef<any>(null)
 
   useEffect(() => {
-    // console.log(message);
     // we need for check message readed or not
     // Attach the message.id to the cardRef directly
     if (cardRef.current) {

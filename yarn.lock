@@ -4448,6 +4448,11 @@
   resolved "https://registry.yarnpkg.com/@tiptap/extension-list-item/-/extension-list-item-2.10.3.tgz#a35c10a579acff63bb46a2fa9491b5f4edf00188"
   integrity sha512-9sok81gvZfSta2K1Dwrq5/HSz1jk4zHBpFqCx0oydzodGslx6X1bNxdca+eXJpXZmQIWALK7zEr4X8kg3WZsgw==
 
+"@tiptap/extension-mention@^2.11.3":
+  version "2.11.3"
+  resolved "https://registry.yarnpkg.com/@tiptap/extension-mention/-/extension-mention-2.11.3.tgz#2bf8a484b326325a7f08c6434b28d7a4e54087e2"
+  integrity sha512-RcnEWv1wryMOeFlYL3RMw1rSyJsBd9xiyZeibQK8pDENc//7Awu8arFsQvj9pYp752EWQnSS/j0dzZmS/5CHXw==
+
 "@tiptap/extension-ordered-list@^2.10.3":
   version "2.10.3"
   resolved "https://registry.yarnpkg.com/@tiptap/extension-ordered-list/-/extension-ordered-list-2.10.3.tgz#5ee0feb2f06a59c50e413160840f244215cc4026"
@@ -4606,6 +4611,11 @@
     "@tiptap/extension-text" "^2.10.3"
     "@tiptap/extension-text-style" "^2.10.3"
     "@tiptap/pm" "^2.10.3"
+
+"@tiptap/suggestion@^2.11.3":
+  version "2.11.3"
+  resolved "https://registry.yarnpkg.com/@tiptap/suggestion/-/suggestion-2.11.3.tgz#ac22180cabf678905fa53294bcd362cede20b289"
+  integrity sha512-w3zTPAYGbUxrgA1kUjhCZ4H6Js5RhbAjHqvNV9zJzREC8A/aiAYfQXCwhA5pYwRNedmQx6l4AVwtHxiCHfwtwA==
 
 "@tootallnate/once@2":
   version "2.0.0"
@@ -7444,7 +7454,7 @@ dotenv-flow@^4.1.0:
   dependencies:
     dotenv "^16.0.0"
 
-dotenv@^16.0.0, dotenv@^16.3.0, dotenv@^16.4.5, dotenv@~16.4.5:
+dotenv@^16.0.0, dotenv@^16.3.0, dotenv@^16.4.5, dotenv@^16.4.7, dotenv@~16.4.5:
   version "16.4.7"
   resolved "https://registry.yarnpkg.com/dotenv/-/dotenv-16.4.7.tgz#0e20c5b82950140aa99be360a8a5f52335f53c26"
   integrity sha512-47qPchRCykZC03FhkYAhrvwU4xDBFIj1QPqaarj6mdM/hgUzfPHcpkHJOn3mJAufFeeAxAzeGsr5X0M4k6fLZQ==

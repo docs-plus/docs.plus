@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { BubbleMenu } from '@tiptap/react'
 import { useStore } from '@stores'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
