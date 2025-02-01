@@ -70,7 +70,6 @@ export const Avatar = forwardRef(
     useEffect(() => {
       if (avatarUpdatedAt && process.env.NEXT_PUBLIC_SUPABASE_URL) {
         const bucketAddress = Config.app.profile.getAvatarURL(id, avatarUpdatedAt)
-        console.log('bucketAddress', { bucketAddress })
         setImgSrc(bucketAddress)
       } else if (src) {
         setImgSrc(src)

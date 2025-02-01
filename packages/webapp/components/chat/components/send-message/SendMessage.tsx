@@ -238,9 +238,21 @@ export default function SendMessage() {
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
+      if (!editor) return
+      // Check if popup exists and is visible
+      const tippyInstance = document.querySelector('[data-tippy-root]')
+      const isPopupVisible =
+        tippyInstance && window.getComputedStyle(tippyInstance).visibility === 'visible'
+
+      if (isPopupVisible) {
+        e.preventDefault()
+        return
+      }
+
       e.preventDefault()
       submit(e)
     }
+    return
   }
 
   useEffect(() => {
@@ -275,9 +287,7 @@ export default function SendMessage() {
         style={{ display: showEditorToolbar ? 'flex' : 'none' }}
       />
 
-      <div
-        className={`my-2 mt-1 w-full px-2${showEditorToolbar ? 0 : 2}`}
-        onKeyDown={(e) => handleKeyDown(e)}>
+      <div className={`my-2 mt-1 w-full px-2${showEditorToolbar ? 0 : 2}`}>
         <div className="flex w-full flex-col rounded-md bg-base-300 px-2 sm:px-3">
           <div className="flex items-center py-1 text-base sm:py-2">
             {settings?.textEditor?.attachmentButton && (
@@ -286,6 +296,7 @@ export default function SendMessage() {
               </IconButton>
             )}
             <EditorContent
+              onKeyDown={(e) => handleKeyDown(e)}
               ref={editorElement}
               className="max-h-52 w-full overflow-auto"
               editor={editor}

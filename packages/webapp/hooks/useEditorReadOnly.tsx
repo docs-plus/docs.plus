@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect } from 'react'
 import { useAuthStore, useStore } from '@stores'
 import { toast } from 'react-hot-toast'
@@ -16,6 +17,8 @@ const useEditorReadOnly = () => {
     if (!provider || !editor) return
 
     const statelessHandler = ({ payload }: any) => {
+      // TODO: remove this
+      return
       const payloadData = JSON.parse(payload)
 
       if (payloadData.type === 'readOnly') {

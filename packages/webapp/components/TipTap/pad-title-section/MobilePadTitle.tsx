@@ -3,27 +3,24 @@ import ReadOnlyIndicator from './ReadOnlyIndicator'
 import FilterBar from './FilterBar'
 import { useStore } from '@stores'
 import Modal from '@components/ui/Modal'
-import dynamic from 'next/dynamic'
 import React, { useState } from 'react'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { useAuthStore } from '@stores'
-import Loading from '@components/ui/Loading'
-import { MdCheck, MdMenu } from 'react-icons/md'
+import { MdMenu, MdInsertComment } from 'react-icons/md'
 import ProfilePanel from '@components/pages/panels/profile/ProfilePanel'
 import TabLayout from '@components/pages/TabLayout'
 import SignInPanel from '@components/pages/panels/SignInPanel'
-
-const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
-  loading: () => <Loading />
-})
+import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
+import { BiCheck, BiUndo, BiRedo } from 'react-icons/bi'
+import { useNotificationCount } from '@hooks/useNotificationCount'
 
 const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
   if (isEditable) {
     return (
-      <label className="flex size-10 shrink-0 items-center justify-center">
-        <MdCheck size={22} />
-      </label>
+      <ToolbarButton className="size-12 text-docsy">
+        <BiCheck size={32} />
+      </ToolbarButton>
     )
   }
 
@@ -52,6 +49,7 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
         <Avatar
           id={user.id}
           avatarUpdatedAt={user.avatar_updated_at}
+          clickable={false}
           src={user.avatar_url}
           width={24}
           height={24}
@@ -68,11 +66,56 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
   )
 }
 
+interface NotificationButtonProps {
+  unreadCount: number
+}
+
+const NotificationButton = ({ unreadCount }: NotificationButtonProps) => {
+  return (
+    <Button
+      className="btn-ghost tooltip tooltip-bottom relative p-2"
+      data-tip="Notifications"
+      onClick={() => {
+        /* Add notification handler */
+      }}>
+      <MdInsertComment size={26} className="text-docsy" />
+      {unreadCount > 0 && (
+        <div className="absolute right-[2px] top-[2px] flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+          {unreadCount}
+        </div>
+      )}
+    </Button>
+  )
+}
+
+interface UndoRedoButtonsProps {
+  editor: any
+  className?: string
+}
+
+const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
+  return (
+    <div className={`flex items-center ${className}`}>
+      <div className="flex items-center gap-3">
+        <ToolbarButton onClick={() => editor?.commands.undo()} editor={editor} type="undo">
+          <BiUndo size={26} />
+        </ToolbarButton>
+        <ToolbarButton onClick={() => editor?.commands.redo()} editor={editor} type="redo">
+          <BiRedo size={26} />
+        </ToolbarButton>
+      </div>
+      <span className="divider divider-horizontal"></span>
+    </div>
+  )
+}
+
 const MobilePadTitle = () => {
+  const { workspaceId } = useStore((state) => state.settings)
+  const unreadCount = useNotificationCount({ workspaceId })
   const user = useAuthStore((state) => state.profile)
   const {
     isAuthServiceAvailable,
-    editor: { isEditable }
+    editor: { isEditable, instance: editor }
   } = useStore((state) => state.settings)
   const [isProfileModalOpen, setProfileModalOpen] = useState(false)
 
@@ -80,21 +123,26 @@ const MobilePadTitle = () => {
     <>
       <div className="docTitle sticky left-0 top-0 z-10 h-auto w-full bg-white">
         <div className="relative z-10 flex min-h-12 w-full flex-col items-center border-b bg-white p-2">
-          <div className="flex w-full flex-row items-center justify-between">
-            <div className="flex w-[80%] items-center">
+          <div className="flex w-full flex-row items-center justify-between gap-4">
+            <div className="flex w-[80%] items-center gap-2">
               <EditableToggle isEditable={isEditable} />
 
-              <div className="ml-2 w-[calc(100%-40px)] overflow-hidden">
-                <DocTitle className="truncate text-sm font-medium" />
-              </div>
+              {isEditable ? (
+                <UndoRedoButtons editor={editor} className="ml-4" />
+              ) : (
+                <div className="w-[calc(100%-40px)] overflow-hidden">
+                  <DocTitle className="truncate text-sm font-medium" />
+                </div>
+              )}
             </div>
 
-            <div className="flex w-[20%] items-center justify-end">
+            <div className="flex w-[20%] items-center justify-end gap-2">
               <ReadOnlyIndicator />
+              <NotificationButton unreadCount={unreadCount} />
               <UserProfileButton user={user} onProfileClick={() => setProfileModalOpen(true)} />
             </div>
           </div>
-          <div className="w-full">
+          <div className="mt-2 w-full">
             <FilterBar />
           </div>
         </div>

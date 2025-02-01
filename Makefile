@@ -104,7 +104,7 @@ build_hocuspocus.server_prod: down_prod
 	cd packages/hocuspocus.server && env ENVIRONMENT=prod docker-compose -p prod-docsplus up -d
 	@echo "Deployment completed successfully."
 
-# Stop and remove the production container, and remove the local production image
+# Stop and remove the production container, and remove the local production imageq
 down_prod:
 	cd packages/hocuspocus.server && env ENVIRONMENT=prod docker-compose -p prod-docsplus down --rmi local
 
@@ -117,3 +117,13 @@ build_uptime_kuma:
 # Stop and remove Uptime Kuma
 down_uptime_kuma:
 	docker compose -f docker-compose.uptime-kuma.yml down
+
+
+help: # Show available commands
+	@echo "Available commands:"
+	@grep -E '^[a-zA-Z0-9_-]+:.*?# .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?# "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
+.PHONY: help
+
+generate_supabase_types: # Generate Supabase TypeScript types
+	cd packages/supabase && yarn supabase:types

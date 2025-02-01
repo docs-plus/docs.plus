@@ -92,3 +92,12 @@ CREATE TYPE notification_category AS ENUM (
 -- COMMENT ON ENUM LABEL notification_category.'direct_message' IS 'For new direct messages received from other users, distinguishing these from general channel communications.';
 -- COMMENT ON ENUM LABEL notification_category.'invitation' IS 'Sent when a user receives an invitation to join a channel, group, or event.';
 -- COMMENT ON ENUM LABEL notification_category.'system_alert' IS 'Related to system-wide updates or changes, such as maintenance notices, security alerts, or policy updates.';
+
+-- Define the notification preferences for channels
+CREATE TYPE public.channel_notification_state AS ENUM (
+    'MENTIONS',  -- Only receive notifications for @mentions
+    'ALL',      -- Receive all notifications from the channel
+    'MUTED'     -- Receive no notifications from the channel
+);
+
+COMMENT ON TYPE public.channel_notification_state IS 'Defines the notification preferences for a user in a channel';

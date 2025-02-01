@@ -16,11 +16,15 @@ enum Role {
 model Documents {
   id            Int              @id @default(autoincrement())
   documentId    String
+  version       Int              @default(1) // Tracks version number
+  commitMessage String? // Optional commit message
   data          Bytes
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
   metadata      DocumentMetadata @relation(fields: [documentId], references: [documentId])
   collaborators DocumentUsers[]
+
+  @@index([documentId, version]) // Allows querying by version
 }
 
 model DocumentMetadata {

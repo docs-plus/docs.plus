@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { Editor } from '@tiptap/core'
 import { EditorView } from '@tiptap/pm/view'
 import { editeHyperlinkHandler } from './editeHyperlink'

@@ -216,7 +216,7 @@ EXECUTE FUNCTION update_edited_at();
 --         ORDER BY created_at;
 
 --         -- Perform batch insertion into message_reads table
---         INSERT INTO public.message_reads (channel_id, message_id, reader_id, read_at)
+--         INSERT INTO public.message_reads (channel_id, message_id, reader_id, readed_at)
 --         SELECT channel_id, unnest(messages_to_read), current_user_id, now()
 --         FROM unnest(messages_to_read)
 --         ON CONFLICT (channel_id, message_id, reader_id) DO NOTHING; -- Avoid duplicates

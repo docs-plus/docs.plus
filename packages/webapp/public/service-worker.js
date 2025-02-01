@@ -25,7 +25,7 @@ async function updateUser({ userId, status }) {
   })
     .then((response) => {
       if (response.ok) {
-        console.log("User status updated successfully!");
+        console.info("User status updated successfully!");
       } else {
         console.error("Failed to update user status");
       }

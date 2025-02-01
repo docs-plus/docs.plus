@@ -2,11 +2,6 @@ import express from 'express'
 import * as Y from 'yjs'
 import cryptoRandomString from 'crypto-random-string'
 import { PrismaClient } from '@prisma/client'
-import { generateJSON } from '@tiptap/html'
-import Document from '@tiptap/extension-document'
-import Paragraph from '@tiptap/extension-paragraph'
-import Text from '@tiptap/extension-text'
-import { TiptapTransformer } from '@hocuspocus/transformer'
 import { Database } from '@hocuspocus/extension-database'
 import { Throttle } from '@hocuspocus/extension-throttle'
 import { Redis } from '@hocuspocus/extension-redis'
@@ -15,6 +10,9 @@ import { checkEnvBolean } from './utils/index.mjs'
 import Queue from 'bull'
 import { HealthCheck } from './extensions/health.extension.mjs'
 import { Server } from 'http'
+export { Database }
+
+export const prisma = new PrismaClient()
 
 const StoreDocument = new Queue('store documents changes', {
   redis: {
@@ -31,9 +29,16 @@ StoreDocument.process(async function (job, done) {
   const { data } = job
   try {
     console.time(`Store Data, jobId:${job.id}`)
+    const currentDoc = await prisma.documents.findFirst({
+      where: { documentId: data.documentName },
+      orderBy: { version: 'desc' }
+    })
+    // Create a new version
     return await prisma.documents.create({
       data: {
         documentId: data.documentName,
+        commitMessage: data.commitMessage,
+        version: currentDoc ? currentDoc.version + 1 : 1,
         data: Buffer.from(data.state, 'base64')
       }
     })
@@ -44,8 +49,6 @@ StoreDocument.process(async function (job, done) {
     done()
   }
 })
-
-const prisma = new PrismaClient()
 
 const getServerName = () =>
   `${process.env.APP_NAME}_${cryptoRandomString({
@@ -101,6 +104,20 @@ const configureExtensions = () => {
 
   extensions.push(
     new Database({
+      async fetchDocument(documentName) {
+        const data = await this.fetch({ documentName })
+        const ydoc = new Y.Doc()
+        Y.applyUpdate(ydoc, data)
+        return ydoc
+      },
+
+      async storeDocument(documentName, update) {
+        await this.store({
+          documentName,
+          state: update,
+          context: {} // Add any needed context
+        })
+      },
       fetch: async ({ documentName, context }) => {
         try {
           const doc = await prisma.documents.findFirst({
@@ -116,10 +133,25 @@ const configureExtensions = () => {
       },
       store: async (data) => {
         const { documentName, state, context } = data
+        const ydoc = new Y.Doc()
+        Y.applyUpdate(ydoc, data.state)
+        const meta = ydoc.getMap('metadata')
+        const commitMessage = meta.get('commitMessage') || ''
+
+        meta.delete('commitMessage')
+
+        // Create a new Y.Doc to store the updated state
+        Y.applyUpdate(ydoc, state)
+        const newState = Y.encodeStateAsUpdate(ydoc)
+
+        const doooyy = new Y.Doc()
+        Y.applyUpdate(doooyy, newState)
+
         StoreDocument.add({
           documentName,
-          state: state.toString('base64'),
+          state: Buffer.from(newState).toString('base64'),
           context,
+          commitMessage,
           email: data.requestParameters.get('email'),
           userId: data.requestParameters.get('userId'),
           jwt: data.requestHeaders.cookie?.split(';')[0].split('=')[1]
@@ -141,16 +173,15 @@ export default () => {
     name: getServerName(),
     port: process.env.HOCUSPOCUS_PORT,
     extensions: configureExtensions(),
-    debounce: 1000,
+    debounce: 10 * 1000, // 10 seconds
     server: httpServer,
     async onListen(data) {
       healthCheck.onConfigure({ ...data, extensions: configureExtensions() })
     },
+
     onRequest(data) {
       return new Promise((resolve, reject) => {
         const { request, response } = data
-
-        console.log('request.url', request.url)
 
         if (request.url === '/health') {
           const health = healthCheck.getHealth()
@@ -182,10 +213,6 @@ export default () => {
 
         resolve()
       })
-    },
-
-    async onStateless({ payload, document, connection }) {
-      document.broadcastStateless(payload)
     }
   }
 }

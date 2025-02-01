@@ -1,8 +1,8 @@
 import dynamic from 'next/dynamic'
 import React, { useCallback, useState } from 'react'
 import { Link, Gear, ClearMark, Filter, Folder } from '@icons'
-import ToolbarButton from './ToolbarButton'
-import Icon from './Icon'
+import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
+import Icon from '@components/TipTap/toolbar/Icon'
 import FilterModal from './FilterModal'
 import SelectHeadingBox from './SelectHeadingBox'
 import InsertMultimediaButton from './InsertMultimediaButton'
@@ -13,6 +13,7 @@ import Modal from '@components/ui/Modal'
 import ToolbarSkeleton from '@components/skeleton/ToolbarLoader'
 import { MdAddComment } from 'react-icons/md'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
+import { FaDiscord } from 'react-icons/fa'
 
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
   loading: () => <Loading />
@@ -166,6 +167,14 @@ const ToolbarDesktop = () => {
         </ToolbarButton>
 
         <div className="!ml-auto flex items-center align-baseline">
+          <ToolbarButton
+            onClick={() => window.open('https://discord.gg/25JPG38J59', '_blank')}
+            tooltip="Join Discord Community">
+            <FaDiscord size={18} className="text-[#5865F2]" />
+          </ToolbarButton>
+
+          <div className="divided"></div>
+
           <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)">
             <Icon type="Printer" size={16} />
           </ToolbarButton>

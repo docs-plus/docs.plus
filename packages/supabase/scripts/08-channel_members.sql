@@ -10,6 +10,7 @@ CREATE TABLE public.channel_members (
     joined_at             TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL, -- Timestamp when the user joined the channel.
     left_at               TIMESTAMP WITH TIME ZONE, -- Timestamp when the user left the channel.
     mute_in_app_notifications BOOLEAN DEFAULT false, -- Indicates if notifications are muted for the channel.
+    notif_state           channel_notification_state DEFAULT 'MENTIONS'::public.channel_notification_state, -- User's notification preference for this channel
     channel_member_role   channel_member_role DEFAULT 'MEMBER'::public.channel_member_role, -- The role of the user in the channel (e.g., admin, moderator, member).
     unread_message_count  INT DEFAULT 0, -- The number of unread messages for the user in the channel.
     created_at            TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc', now()) NOT NULL, -- Timestamp when the membership record was created.

@@ -18,9 +18,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     try {
       formattedUrl = new URL(urlWithProtocol)
-      console.log({ url, formattedUrl })
     } catch {
-      console.log({ url, formattedUrl })
       return res.status(400).json({ error: 'Invalid URL format' })
     }
 

@@ -21,6 +21,7 @@ CREATE INDEX idx_channels_created_by ON public.channels (created_by);
 CREATE INDEX idx_channels_workspace_id ON public.channels (workspace_id);
 CREATE INDEX idx_channels_last_activity_at ON public.channels (last_activity_at DESC);
 
+
 -- Indexes on public.pinned_messages Table
 -- Optimizes query performance for channel_id and message_id.
 CREATE UNIQUE INDEX idx_pinned_messages_channel_id_message_id ON public.pinned_messages (channel_id, message_id);
@@ -31,10 +32,11 @@ CREATE UNIQUE INDEX idx_channel_members_channel_id_member_id ON public.channel_m
 
 -- Indexes on public.notifications Table
 -- Optimizes query performance for receiver_user_id and created_at.
+CREATE INDEX idx_notifications_channel ON public.notifications (channel_id);
 CREATE INDEX idx_notifications_receiver_user_id ON public.notifications (receiver_user_id);
 CREATE INDEX idx_notifications_created_at ON public.notifications (created_at);
 CREATE INDEX idx_notifications_receiver_user_id_created_at ON public.notifications (receiver_user_id, created_at DESC);
-
+CREATE INDEX idx_notifications_receiver_readed ON public.notifications (receiver_user_id, readed_at) WHERE readed_at IS NULL;
 -- Indexes on public.workspaces Table
 -- Optimizes query performance for created_by.
 CREATE INDEX idx_workspaces_slug ON public.workspaces (slug);

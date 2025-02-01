@@ -149,16 +149,150 @@ const generatePlaceholderText = (data: any) => {
 }
 
 // TODO: editor extensions should be dynamic
-const Editor = ({ provider, spellcheck = false }: any): Partial<UseEditorOptions> => {
+const Editor = ({
+  provider,
+  spellcheck = false,
+  editable = true
+}: {
+  provider?: any
+  spellcheck: boolean
+  editable?: boolean
+}): Partial<UseEditorOptions> => {
   const {
     settings: {
       editor: { isMobile }
     }
-  } = useStore.getState() //useStore((state) => state)
+  } = useStore.getState()
 
-  if (!provider) return {}
+  // Base extensions that don't require provider
+  const baseExtensions = [
+    UniqueID.configure({
+      types: [ENUMS.NODES.HEADING_TYPE, ENUMS.NODES.HYPERLINK_TYPE],
+      filterTransaction: (transaction: any) => !isChangeOrigin(transaction),
+      generateID: () => {
+        const uid = new ShortUniqueId()
+        return uid.stamp(16)
+      }
+    }),
+    Document,
+    Bold,
+    Italic,
+    BulletList,
+    Strike,
+    HardBreak,
+    Gapcursor,
+    Paragraph,
+    Text,
+    Indent,
+    ListItem,
+    OrderedList,
+    Heading.configure(),
+    CodeBlockLowlight.configure({
+      lowlight
+    }),
+    ContentHeading,
+    ContentWrapper,
+    Superscript,
+    Subscript,
+    Blockquote,
+    TextAlign,
+    Underline,
+    ...(isMobile ? [] : [ChatCommentExtension]),
+    Hyperlink.configure({
+      protocols: ['ftp', 'mailto'],
+      hyperlinkOnPaste: false,
+      modals: {
+        previewHyperlink: (data: any) => {
+          return previewHyperlinkModal(data)
+        },
+        setHyperlink: (data: any) => {
+          return setHyperlinks(data)
+        }
+      }
+    }),
+    HyperMultimediaKit.configure({
+      Image: {
+        modal: imageModal,
+        inline: true
+      },
+      Video: {
+        modal: youtubeModal,
+        inline: true
+      },
+      Audio: {
+        modal: twitterModal,
+        inline: true
+      },
+      Youtube: {
+        modal: youtubeModal,
+        inline: true
+      }
+    }),
+    TaskList,
+    TaskItem.configure({
+      nested: true,
+      HTMLAttributes: {
+        class: 'tasks-class'
+      }
+    }),
+    Highlight,
+    Typography,
+    Table.configure({
+      resizable: true
+    }),
+    TableRow,
+    TableHeader,
+    TableCell,
+    Placeholder.configure({
+      includeChildren: true,
+      placeholder: (data: any) => generatePlaceholderText(data) || ''
+    })
+  ]
 
-  const CollaborationCursorConfig = {
+  if (!provider) {
+    return {
+      editorProps: {
+        attributes: {
+          spellcheck: spellcheck.toString()
+        }
+      },
+      editable,
+      extensions: baseExtensions
+    }
+  }
+
+  // Configure collaboration cursor when provider exists
+  const CollaborationCursorConfig = getCollaborationCursorConfig(provider)
+
+  return {
+    onCreate: scrollDown,
+    enableContentCheck: true,
+    content: 'heading',
+    onContentError({ editor, error, disableCollaboration }) {
+      console.error('onContentError', error)
+    },
+    editorProps: {
+      attributes: {
+        spellcheck: spellcheck.toString()
+      }
+    },
+    immediatelyRender: false,
+    shouldRerenderOnTransaction: true,
+    editable,
+    extensions: [
+      ...baseExtensions,
+
+      Collaboration.configure({
+        document: provider.document
+      }),
+      CollaborationCursor.configure(CollaborationCursorConfig)
+    ]
+  }
+}
+
+// Helper function to get collaboration cursor config
+const getCollaborationCursorConfig = (provider: any): CollaborationCursorOptions => {
+  const config = {
     provider,
     user: {
       name: 'anonymous',
@@ -168,20 +302,18 @@ const Editor = ({ provider, spellcheck = false }: any): Partial<UseEditorOptions
 
   if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
     const user = authStore.getState().profile
-
     const newUser = {
       display_name: user?.display_name || user?.username || user?.email || 'anonymous',
       id: user?.id || user?.email || 'anonymous',
       color: randomColor()
     }
 
-    CollaborationCursorConfig.user = newUser
-    CollaborationCursorConfig.render = (user: Record<string, any>): HTMLElement => {
+    config.user = newUser
+    config.render = (user: Record<string, any>): HTMLElement => {
       const cursor = document.createElement('span')
       cursor.classList.add('collaboration-cursor__caret')
       cursor.setAttribute('style', `border-color: ${user.color};`)
 
-      // create a dive to display user avatar
       const avatar = document.createElement('div')
       avatar.classList.add('collaboration-cursor__avatar')
       avatar.setAttribute(
@@ -199,129 +331,7 @@ const Editor = ({ provider, spellcheck = false }: any): Partial<UseEditorOptions
     }
   }
 
-  return {
-    onCreate: () => {
-      scrollDown()
-      // console.log('onCreate')
-    },
-    onUpdate: ({ editor, transaction }) => {
-      // console.log('onUpdate')
-    },
-    enableContentCheck: true,
-    content: 'heading',
-    onContentError({ editor, error, disableCollaboration }) {
-      // your handler here
-      console.error('onContentError', error)
-    },
-    editorProps: {
-      attributes: {
-        spellcheck
-      }
-    },
-    immediatelyRender: false,
-    shouldRerenderOnTransaction: true,
-    extensions: [
-      UniqueID.configure({
-        types: [ENUMS.NODES.HEADING_TYPE, ENUMS.NODES.HYPERLINK_TYPE],
-        filterTransaction: (transaction: any) => !isChangeOrigin(transaction),
-        generateID: () => {
-          const uid = new ShortUniqueId()
-
-          return uid.stamp(16)
-        }
-      }),
-      Document,
-      Bold,
-      Italic,
-      BulletList,
-      Strike,
-      HardBreak,
-      Gapcursor,
-      Paragraph,
-      Text,
-      Indent,
-      ListItem,
-      OrderedList,
-      Heading.configure(),
-      CodeBlockLowlight.configure({
-        lowlight
-      }),
-      ContentHeading,
-      ContentWrapper,
-      Superscript,
-      Subscript,
-      Blockquote,
-      TextAlign,
-      Underline,
-      ...(isMobile ? [] : [ChatCommentExtension]),
-      Hyperlink.configure({
-        protocols: ['ftp', 'mailto'],
-        hyperlinkOnPaste: false,
-        modals: {
-          previewHyperlink: (data: any) => {
-            return previewHyperlinkModal(data)
-          },
-          setHyperlink: (data: any) => {
-            return setHyperlinks(data)
-          }
-        }
-      }),
-      HyperMultimediaKit.configure({
-        Image: {
-          modal: imageModal,
-          inline: true
-        },
-        Video: {
-          modal: youtubeModal,
-          inline: true
-        },
-        Audio: {
-          modal: twitterModal,
-          inline: true
-        },
-        Youtube: {
-          modal: youtubeModal,
-          inline: true
-        }
-        // Vimeo: {
-        //   modal: vimeoModal,
-        //   inline: true
-        // },
-        // SoundCloud: {
-        //   modal: soundCloudModal,
-        //   inline: true
-        // },
-        // Twitter: {
-        //   modal: twitterModal,
-        //   inline: true
-        // }
-      }),
-      TaskList,
-      TaskItem.configure({
-        nested: true,
-        HTMLAttributes: {
-          class: 'tasks-class'
-        }
-      }),
-      Highlight,
-      Typography,
-      Table.configure({
-        resizable: true
-      }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      Collaboration.configure({
-        document: provider.document
-        // document: ydoc
-      }),
-      CollaborationCursor.configure(CollaborationCursorConfig),
-      Placeholder.configure({
-        includeChildren: true,
-        placeholder: (data: any) => generatePlaceholderText(data) || ''
-      })
-    ]
-  }
+  return config
 }
 
 export default Editor
