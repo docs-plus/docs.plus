@@ -1,5 +1,6 @@
+import SidebarLoader from '@components/skeleton/SidebarLoader'
 import React from 'react'
-import { MdRestore } from 'react-icons/md'
+import { MdRestore, MdCalendarToday, MdAccessTime } from 'react-icons/md'
 
 interface HistoryItem {
   version: number
@@ -8,18 +9,61 @@ interface HistoryItem {
 }
 
 interface SidebarProps {
+  isLoading: boolean
   history: HistoryItem[]
   currentVersion: number | null
   watchVersionContent: (version: number) => void
-  groupHistoryByDay: (history: HistoryItem[]) => { [date: string]: HistoryItem[] }
+}
+
+interface GroupedHistory {
+  [date: string]: {
+    [hour: string]: HistoryItem[]
+  }
+}
+
+const groupHistoryByDay = (history: HistoryItem[]): GroupedHistory => {
+  return history.reduce((groups, item) => {
+    const date = new Date(item.createdAt)
+    const dayKey = date.toLocaleDateString(navigator.language, {
+      weekday: 'short',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    })
+    const hourKey = date.toLocaleTimeString(navigator.language, {
+      hour: 'numeric',
+      hour12: true
+    })
+
+    if (!groups[dayKey]) {
+      groups[dayKey] = {}
+    }
+    if (!groups[dayKey][hourKey]) {
+      groups[dayKey][hourKey] = []
+    }
+    groups[dayKey][hourKey].push(item)
+    return groups
+  }, {} as GroupedHistory)
 }
 
 const Sidebar: React.FC<SidebarProps> = ({
+  isLoading,
   history,
   currentVersion,
-  watchVersionContent,
-  groupHistoryByDay
+  watchVersionContent
 }) => {
+  // Add helper function to check if a group contains the current version
+  const groupContainsCurrentVersion = (items: HistoryItem[]) => {
+    return items.some((item) => item.version === currentVersion)
+  }
+
+  // Add helper function to check if any hour in a day contains the current version
+  const dayContainsCurrentVersion = (hourGroups: { [hour: string]: HistoryItem[] }) => {
+    return Object.values(hourGroups).some((items) => groupContainsCurrentVersion(items))
+  }
+
+  if (isLoading) return <SidebarLoader />
+
   return (
     <div className="sidebar h-full w-[25%] border-l border-gray-200 bg-base-100">
       <div className="flex h-full flex-col">
@@ -29,42 +73,46 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
         <div className="flex-1 overflow-y-auto px-4">
           <ul className="menu w-full rounded-box">
-            {Object.entries(groupHistoryByDay(history)).map(([date, items], index) => (
+            {Object.entries(groupHistoryByDay(history)).map(([date, hourGroups], dateIndex) => (
               <li key={date}>
-                <details open={index === 0}>
+                <details open={dayContainsCurrentVersion(hourGroups)}>
                   <summary className="font-medium">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      strokeWidth="1.5"
-                      stroke="currentColor"
-                      className="h-4 w-4">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5"
-                      />
-                    </svg>
+                    <MdCalendarToday className="h-4 w-4" />
                     {date}
                   </summary>
                   <ul>
-                    {items.map((item) => (
-                      <li key={item.version}>
-                        <button
-                          onClick={() => watchVersionContent(item.version)}
-                          className={`w-full p-3 ${currentVersion === item.version ? 'active text-primary' : ''}`}>
-                          <div className="flex flex-col">
-                            <span className="font-medium">Version {item.version}</span>
-                            <span
-                              className={`text-xs ${currentVersion === item.version ? 'text-primary' : 'text-base-content/60'}`}>
-                              {new Date(item.createdAt).toLocaleTimeString()}
-                            </span>
-                            {item.commitMessage && (
-                              <span className="mt-1 text-sm">{item.commitMessage}</span>
-                            )}
-                          </div>
-                        </button>
+                    {Object.entries(hourGroups).map(([hour, items], hourIndex) => (
+                      <li key={`${date}-${hour}`}>
+                        <details open={groupContainsCurrentVersion(items)}>
+                          <summary className="text-sm font-medium">
+                            <MdAccessTime className="h-4 w-4" />
+                            {hour}
+                          </summary>
+                          <ul>
+                            {items.map((item) => (
+                              <li key={item.version}>
+                                <button
+                                  onClick={() => watchVersionContent(item.version)}
+                                  className={`w-full p-3 ${currentVersion === item.version ? 'active text-primary' : ''}`}>
+                                  <div className="flex flex-col">
+                                    <span className="font-medium">Version {item.version}</span>
+                                    <span
+                                      className={`text-xs ${
+                                        currentVersion === item.version
+                                          ? 'text-primary'
+                                          : 'text-base-content/60'
+                                      }`}>
+                                      {new Date(item.createdAt).toLocaleTimeString()}
+                                    </span>
+                                    {item.commitMessage && (
+                                      <span className="mt-1 text-sm">{item.commitMessage}</span>
+                                    )}
+                                  </div>
+                                </button>
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
                       </li>
                     ))}
                   </ul>

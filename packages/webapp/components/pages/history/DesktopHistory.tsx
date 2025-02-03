@@ -1,41 +1,20 @@
-// @ts-nocheck
 import React, { useEffect, useState, useCallback } from 'react'
 import { useEditor } from '@tiptap/react'
 import { useStore } from '@stores'
 import * as Y from 'yjs'
 import { ProsemirrorTransformer } from '@hocuspocus/transformer'
 import editorConfig from '@components/TipTap/TipTap'
-
 import Toolbar from './Toolbar'
 import EditorContent from './EditorContent'
 import Sidebar from './Sidebar'
 import { useDocumentHistory } from './hooks/useDocumentHistory'
 import { useVersionContent } from './hooks/useVersionContent'
+import { useStatelessMessage } from './hooks/useStatelessMessage'
 
 interface HistoryItem {
   version: number
   createdAt: string
   commitMessage?: string
-}
-
-interface GroupedHistory {
-  [date: string]: HistoryItem[]
-}
-
-const groupHistoryByDay = (history: HistoryItem[]): GroupedHistory => {
-  return history.reduce((groups, item) => {
-    const date = new Date(item.createdAt).toLocaleDateString('en-US', {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    })
-    if (!groups[date]) {
-      groups[date] = []
-    }
-    groups[date].push(item)
-    return groups
-  }, {} as GroupedHistory)
 }
 
 export const getContentFromYdocObject = (content: string) => {
@@ -53,60 +32,27 @@ const DesktopHistory = () => {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [currentVersionContent, setCurrentVersionContent] = useState<string | null>(null)
-  const {
-    metadata: { documentId }
-  } = useStore((state) => state.settings)
 
   const editor = useEditor(editorConfig({ provider: null, spellcheck: false, editable: false }), [
     hocuspocusProvider
   ])
-
   const { fetchHistory } = useDocumentHistory()
-
   const { watchVersionContent } = useVersionContent(setCurrentVersion, setIsLoading)
-
-  const handleStatelessMessage = useCallback(
-    (event: { payload: string }) => {
-      const payloadData = JSON.parse(event.payload)
-
-      if (payloadData.msg === 'history.response') {
-        if (payloadData.type === 'history.list') {
-          setHistory(payloadData.response)
-          // pick the latest version
-          const latestVersion = payloadData.response[0]
-          setCurrentVersion(latestVersion.version)
-          watchVersionContent(latestVersion.version)
-        }
-
-        if (payloadData.type === 'history.watch') {
-          setIsLoading(true)
-          setCurrentVersionContent(payloadData.response.data)
-          try {
-            const prosemirrorJson = getContentFromYdocObject(payloadData.response.data)
-            if (prosemirrorJson && editor) {
-              setCurrentVersionContent(prosemirrorJson)
-              editor.commands.setContent(prosemirrorJson)
-            }
-          } catch (error) {
-            console.error('Error processing version:', error)
-            setError(error.message)
-          } finally {
-            setIsLoading(false)
-          }
-          setIsLoading(false)
-        }
-      }
-    },
-    [editor]
-  )
+  const { handleStatelessMessage } = useStatelessMessage({
+    editor,
+    setHistory,
+    setCurrentVersion,
+    watchVersionContent,
+    setIsLoading,
+    setCurrentVersionContent,
+    setError
+  })
 
   useEffect(() => {
     if (!hocuspocusProvider) return
-    // Set up event listener
     hocuspocusProvider.on('stateless', handleStatelessMessage)
-
     fetchHistory()
-    // Cleanup
+
     return () => {
       hocuspocusProvider.off('stateless', handleStatelessMessage)
     }
@@ -143,9 +89,7 @@ const DesktopHistory = () => {
     }
   }
 
-  if (!editor) {
-    return null
-  }
+  if (!editor) return null
 
   return (
     <div className="pad tiptap history_editor flex flex-col border-solid">
@@ -157,14 +101,14 @@ const DesktopHistory = () => {
             historyLength={history.length}
             onRestore={restoreThisVerisonHandler}
           />
-          <EditorContent isLoading={isLoading} editor={editor} />
+          <EditorContent editor={editor} isLoading={isLoading} />
         </div>
 
         <Sidebar
+          isLoading={isLoading}
           history={history}
           currentVersion={currentVersion}
           watchVersionContent={watchVersionContent}
-          groupHistoryByDay={groupHistoryByDay}
         />
       </div>
     </div>
