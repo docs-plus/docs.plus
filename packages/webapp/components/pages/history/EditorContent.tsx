@@ -1,6 +1,8 @@
 import React from 'react'
 import { EditorContent as TiptapEditorContent } from '@tiptap/react'
 import { Editor } from '@tiptap/core'
+import DocumentSimpleLoader from '@components/skeleton/DocumentSimpleLoader'
+import DocumentWithPictureLoader from '@components/skeleton/DocumentWithPictureLoader'
 
 interface EditorContentProps {
   isLoading: boolean
@@ -10,8 +12,12 @@ interface EditorContentProps {
 const EditorContent: React.FC<EditorContentProps> = ({ isLoading, editor }) => {
   if (isLoading) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <span className="loading loading-spinner loading-lg" />
+      <div className="editorWrapper flex h-full grow items-start justify-center overflow-y-auto border-t-0 p-6">
+        <div className="ProseMirror tiptap__editor">
+          <DocumentSimpleLoader className="heading !h-auto" level="1" />
+          <DocumentWithPictureLoader className="heading !h-auto" level="1" />
+          <DocumentSimpleLoader className="heading !h-auto" level="1" />
+        </div>
       </div>
     )
   }

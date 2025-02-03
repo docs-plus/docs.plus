@@ -30,8 +30,8 @@ const DATE_FORMAT_OPTIONS = {
 const formatVersionDate = (date: Date | string) => {
   const dateObj = new Date(date)
   return {
-    date: dateObj.toLocaleDateString('en-US', DATE_FORMAT_OPTIONS.date),
-    time: dateObj.toLocaleTimeString('en-US', DATE_FORMAT_OPTIONS.time)
+    date: dateObj.toLocaleDateString(navigator.language, DATE_FORMAT_OPTIONS.date),
+    time: dateObj.toLocaleTimeString(navigator.language, DATE_FORMAT_OPTIONS.time)
   }
 }
 
@@ -61,11 +61,11 @@ const Toolbar: React.FC<ToolbarProps> = ({
           aria-label="Back to Editor">
           <MdArrowBack size={18} />
         </button>
-        <div className="flex h-[38px] w-full items-center space-x-2">
+        <div className="flex h-[38px] w-full items-center space-x-3">
           <div className="ml-auto h-[38px] min-h-[38px]">
             {versionInfo && !versionInfo.isLatestVersion && (
               <button
-                className="btn btn-outline tooltip tooltip-bottom h-full bg-docsy text-white"
+                className="btn btn-outline tooltip tooltip-bottom h-[38px] min-h-[38px] bg-docsy text-white"
                 onClick={onRestore}
                 data-tip={`Restore document to ${versionInfo.version} version`}
                 aria-label="Restore this version">
