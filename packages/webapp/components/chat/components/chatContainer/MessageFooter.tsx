@@ -9,7 +9,7 @@ import { TMessageWithUser } from '@api'
 
 // Helper function to format date
 const formatDate = (dateString: string) => {
-  return new Date(dateString).toLocaleString('en-US', {
+  return new Date(dateString).toLocaleString(navigator.language, {
     hour: 'numeric',
     minute: 'numeric',
     hour12: true
@@ -25,7 +25,7 @@ const ReplyIndicator = ({ count }: { count: number | undefined }) =>
   ) : null
 
 const PinIndicator = ({ isPinned }: { isPinned?: boolean }) =>
-  isPinned ? <TbPinned className=" size-4 rotate-45 text-base-content" /> : null
+  isPinned ? <TbPinned className="size-4 rotate-45 text-base-content" /> : null
 
 const EditedIndicator = ({ isEdited }: { isEdited?: boolean }) =>
   isEdited ? <span className="text-xs text-base-content text-opacity-50">edited</span> : null
