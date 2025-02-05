@@ -7,13 +7,14 @@ import React, {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface ModalLeftToRightProps {
+interface ModalDrawerProps {
   modalId?: string
   className?: string
   contentClassName?: string
   children: React.ReactNode
   onModalStateChange?: (isOpen: boolean) => void
   width?: number // This will represent a percentage (e.g. 80 -> "80%")
+  position?: 'left' | 'right' // new prop
 }
 
 interface ModalContextType {
@@ -23,11 +24,14 @@ interface ModalContextType {
 export const ModalContext = createContext<ModalContextType | null>(null)
 export const useModal = () => {
   const context = useContext(ModalContext)
-  if (!context) throw new Error('useModal must be used within a ModalLeftToRight')
+  if (!context) {
+    console.warn('useModal must be used within a ModalDrawer')
+    return
+  }
   return context
 }
 
-export const ModalLeftToRight = forwardRef<unknown, ModalLeftToRightProps>(
+export const ModalDrawer = forwardRef<unknown, ModalDrawerProps>(
   (
     {
       modalId = 'left_to_right_modal',
@@ -35,7 +39,8 @@ export const ModalLeftToRight = forwardRef<unknown, ModalLeftToRightProps>(
       children,
       onModalStateChange,
       contentClassName,
-      width = 80 // default to 80%
+      width = 80, // default to 80%
+      position = 'left' // default to left
     },
     ref
   ) => {
@@ -79,7 +84,7 @@ export const ModalLeftToRight = forwardRef<unknown, ModalLeftToRightProps>(
     }
 
     return (
-      <div className="drawer z-30 w-full">
+      <div className={twMerge('drawer z-30 w-full', position === 'right' && 'drawer-end')}>
         <input
           id={modalId}
           type="checkbox"
@@ -96,4 +101,4 @@ export const ModalLeftToRight = forwardRef<unknown, ModalLeftToRightProps>(
   }
 )
 
-ModalLeftToRight.displayName = 'ModalLeftToRight'
+ModalDrawer.displayName = 'ModalDrawer'

@@ -2,16 +2,13 @@ import React, { useEffect } from 'react'
 import { CaretRight, ChatLeft } from '@icons'
 import { useStore, useChatStore } from '@stores'
 import { toggleHeadingSection, handelScroll2Header } from '../helper'
-
 import useActiveHeading from '../hooks/useActiveHeading'
 import useOpenChatContainer from '../hooks/useOpenChatContainer'
 import useUnreadMessage from '../hooks/useUnreadMessage'
-
-import { MdOutlineArrowDropDown } from 'react-icons/md'
-import { useModal } from '@components/ui/ModalLeftToRight'
+import { useModal } from '@components/ui/ModalDrawer'
 
 export const RenderToc = ({ childItems, item, renderTocs }: any) => {
-  const { close: closeModal } = useModal()
+  const { close: closeModal } = useModal() || {}
 
   const { headingId } = useChatStore((state) => state.chatRoom)
   const {
@@ -48,7 +45,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
         className={`relative !py-2 ${item.level === 1 ? 'ml-3' : ''} ${activeHeading === item.id ? 'active overflow-hidden' : ''} `}
         onClick={(e) => {
           handelScroll2Header(e, editor, setActiveHeading)
-          closeModal()
+          closeModal?.()
         }}
         href={`?${item.id}`}
         data-id={item.id}>
@@ -65,7 +62,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
           className="btn_openChatBox flex items-center justify-end overflow-hidden bg-neutral text-neutral-content"
           onClick={() => {
             openChatContainerHandler(item)
-            closeModal()
+            closeModal?.()
           }}
           data-unread-count={unreadMessage > 0 ? unreadMessage : ''}>
           <ChatLeft

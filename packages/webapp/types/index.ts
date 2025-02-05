@@ -1,5 +1,5 @@
 import { Database } from './supabase'
-
+export * from './history'
 interface LinkItem {
   url: string
   type: string

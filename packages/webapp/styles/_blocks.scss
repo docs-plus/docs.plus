@@ -24,8 +24,9 @@ $bg-root: #f8f9fa;
 
 .history_editor {
   .btnOpenChatBox,
+  .btn_openChatBox,
   .tippy-box {
-    display: none;
+    display: none !important;
   }
 
   a,

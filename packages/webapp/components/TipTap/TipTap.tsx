@@ -155,7 +155,7 @@ const Editor = ({
   editable = true
 }: {
   provider?: any
-  spellcheck: boolean
+  spellcheck?: boolean
   editable?: boolean
 }): Partial<UseEditorOptions> => {
   const {

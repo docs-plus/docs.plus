@@ -4,12 +4,12 @@ import DocTitle from '@components/TipTap/DocTitle'
 import { DocsPlus } from '@icons'
 import { useStore } from '@stores'
 import { IoClose } from 'react-icons/io5'
-import { MdFilterAlt } from 'react-icons/md'
+import { MdFilterAlt, MdHistory } from 'react-icons/md'
 import TableOfContents from '@components/TipTap/tableOfContents/mobile/TocMobile'
-import { useModal } from '@components/ui/ModalLeftToRight'
+import { useModal } from '@components/ui/ModalDrawer'
 
 const TocModal = () => {
-  const { close: closeModal } = useModal()
+  const { close: closeModal } = useModal() || {}
   const {
     editor: { loading, applyingFilters, providerSyncing, instance: editor }
   } = useStore((state) => state.settings)
@@ -28,15 +28,26 @@ const TocModal = () => {
             <DocsPlus size={70} />
           </Link>
           <DocTitle className="mt-0 w-8/12 overflow-hidden" />
-          <div className="ml-auto mr-3 flex w-4/12 flex-row items-center justify-end">
-            <label onClick={() => closeModal()} className="btn btn-circle btn-xs ml-2">
-              <MdFilterAlt size={18} />
+          <div className="ml-auto mr-3 flex w-4/12 flex-row items-center justify-end gap-3">
+            <label
+              htmlFor="mobile_history_panel"
+              aria-label="close sidebar"
+              className="btn btn-circle btn-sm"
+              onClick={() => {
+                closeModal?.()
+                window.location.hash = 'history'
+              }}>
+              <MdHistory size={22} />
+            </label>
+            <label onClick={() => closeModal?.()} className="btn btn-circle btn-sm">
+              <MdFilterAlt size={20} />
             </label>
             <label
-              htmlFor="mobile_left_side_panel"
+              onClick={() => closeModal?.()}
+              htmlFor="mobile_history_panel"
               aria-label="close sidebar"
-              className="btn btn-circle btn-xs ml-2">
-              <IoClose size={20} />
+              className="btn btn-circle btn-sm">
+              <IoClose size={24} />
             </label>
           </div>
         </div>

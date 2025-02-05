@@ -1,21 +1,19 @@
 import { useCallback } from 'react'
 import { useStore } from '@stores'
 
-export const useVersionContent = (
-  setCurrentVersion: (version: number) => void,
-  setIsLoading: (loading: boolean) => void
-) => {
+export const useVersionContent = () => {
   const {
     hocuspocusProvider,
     metadata: { documentId }
   } = useStore((state) => state.settings)
 
+  const { setLoadingHistory } = useStore((state) => state)
+
   const watchVersionContent = useCallback(
     (version: number) => {
       if (!hocuspocusProvider) return
 
-      setCurrentVersion(version)
-      setIsLoading(true)
+      setLoadingHistory(true)
 
       hocuspocusProvider.sendStateless(
         JSON.stringify({
@@ -26,7 +24,7 @@ export const useVersionContent = (
         })
       )
     },
-    [hocuspocusProvider, documentId, setCurrentVersion, setIsLoading]
+    [hocuspocusProvider, documentId]
   )
 
   return { watchVersionContent }

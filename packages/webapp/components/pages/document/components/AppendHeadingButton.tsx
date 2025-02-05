@@ -1,11 +1,11 @@
 import React, { useCallback } from 'react'
 import { FaPlus } from 'react-icons/fa6'
 import ENUMS from '@components/TipTap/enums'
-import { useModal } from '@components/ui/ModalLeftToRight'
+import { useModal } from '@components/ui/ModalDrawer'
 import { useStore } from '@stores'
 
 const AppendHeadingButton = ({ className }: { className: string }) => {
-  const { close: closeModal } = useModal()
+  const { close: closeModal } = useModal() || {}
   const {
     editor: { instance: editor }
   } = useStore((state) => state.settings)
