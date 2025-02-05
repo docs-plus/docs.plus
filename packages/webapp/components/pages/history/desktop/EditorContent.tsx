@@ -1,16 +1,13 @@
 import React from 'react'
 import { EditorContent as TiptapEditorContent } from '@tiptap/react'
-import { Editor } from '@tiptap/core'
 import DocumentSimpleLoader from '@components/skeleton/DocumentSimpleLoader'
 import DocumentWithPictureLoader from '@components/skeleton/DocumentWithPictureLoader'
+import { useStore } from '@stores'
 
-interface EditorContentProps {
-  isLoading: boolean
-  editor: Editor | null
-}
+const EditorContent = () => {
+  const { loadingHistory, editor } = useStore((state) => state)
 
-const EditorContent: React.FC<EditorContentProps> = ({ isLoading, editor }) => {
-  if (isLoading) {
+  if (loadingHistory || !editor) {
     return (
       <div className="editorWrapper flex h-full grow items-start justify-center overflow-y-auto border-t-0 p-6">
         <div className="ProseMirror tiptap__editor">

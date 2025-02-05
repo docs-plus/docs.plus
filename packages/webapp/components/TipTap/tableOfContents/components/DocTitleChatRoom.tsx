@@ -1,8 +1,7 @@
 import { ChatLeft } from '@icons'
 import { useChatStore, useStore } from '@stores'
 import useOpenChatContainer from '../hooks/useOpenChatContainer'
-import { useModal } from '@components/ui/ModalLeftToRight'
-import { MdOutlineArrowDropDown } from 'react-icons/md'
+import { useModal } from '@components/ui/ModalDrawer'
 import useUnreadMessageEffect from '../hooks/useUnreadMessageEffect'
 import usePresentUsers from '../hooks/usePresentUsers'
 import AvatarStack from '@components/AvatarStack'
@@ -48,7 +47,7 @@ export const DocTitleChatRoomMobile = ({ className }: { className?: string }) =>
   const unreadMessage = useUnreadMessageEffect(workspaceId || '')
   const openChatContainerHandler = useOpenChatContainer()
 
-  const { close: closeModal } = useModal()
+  const { close: closeModal } = useModal() || {}
 
   return (
     <div className={`${className} border-b`}>
@@ -58,7 +57,7 @@ export const DocTitleChatRoomMobile = ({ className }: { className?: string }) =>
           className="btn_openChatBox flex items-center justify-end overflow-hidden bg-neutral text-neutral-content"
           onClick={() => {
             openChatContainerHandler({ id: workspaceId })
-            closeModal()
+            closeModal?.()
           }}
           data-unread-count={unreadMessage > 0 ? unreadMessage : ''}>
           <ChatLeft

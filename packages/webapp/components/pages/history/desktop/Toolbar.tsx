@@ -2,54 +2,15 @@ import React from 'react'
 import { MdArrowBack } from 'react-icons/md'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import Icon from '@components/TipTap/toolbar/Icon'
+import { useStore } from '@stores'
+import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
+import { useVersionRestore } from '../hooks/useVersionRestore'
+import { formatVersionDate } from '../helpers'
 
-interface VersionInfo {
-  version: number
-  createdAt: string | Date
-  isLatestVersion: boolean
-}
-
-interface ToolbarProps {
-  getCurrentVersionInfo: () => VersionInfo | null
-  currentVersion: number | null
-  historyLength: number
-  onRestore: () => void
-}
-
-const DATE_FORMAT_OPTIONS = {
-  date: {
-    month: 'long',
-    day: 'numeric'
-  } as const,
-  time: {
-    hour: 'numeric',
-    minute: '2-digit'
-  } as const
-}
-
-const formatVersionDate = (date: Date | string) => {
-  const dateObj = new Date(date)
-  return {
-    date: dateObj.toLocaleDateString(navigator.language, DATE_FORMAT_OPTIONS.date),
-    time: dateObj.toLocaleTimeString(navigator.language, DATE_FORMAT_OPTIONS.time)
-  }
-}
-
-const VersionDisplay: React.FC<{ current: number; total: number }> = ({ current, total }) => (
-  <div className="text-sm text-base-content/60">{`Version ${current} of ${total}`}</div>
-)
-
-const Toolbar: React.FC<ToolbarProps> = ({
-  getCurrentVersionInfo,
-  currentVersion,
-  historyLength,
-  onRestore
-}) => {
-  const handleBackToEditor = () => {
-    window.location.hash = ''
-  }
-
-  const versionInfo = getCurrentVersionInfo()
+const Toolbar = () => {
+  const { activeHistory, historyList } = useStore((state) => state)
+  const { handleRestore } = useVersionRestore()
+  const versionInfo = useGetVersionInfo()()
 
   return (
     <div className="toolbar flex flex-col border-b border-gray-200 bg-base-100">
@@ -57,7 +18,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <button
           className="btn tooltip tooltip-right h-[38px] min-h-[38px]"
           data-tip="Back to the Editor"
-          onClick={handleBackToEditor}
+          onClick={() => (window.location.hash = '')}
           aria-label="Back to Editor">
           <MdArrowBack size={18} />
         </button>
@@ -66,7 +27,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
             {versionInfo && !versionInfo.isLatestVersion && (
               <button
                 className="btn btn-outline tooltip tooltip-bottom h-[38px] min-h-[38px] bg-docsy text-white"
-                onClick={onRestore}
+                onClick={handleRestore}
                 data-tip={`Restore document to ${versionInfo.version} version`}
                 aria-label="Restore this version">
                 Restore this version
@@ -89,7 +50,11 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <Icon type="Printer" size={16} />
         </ToolbarButton>
 
-        {currentVersion && <VersionDisplay current={currentVersion} total={historyLength} />}
+        {activeHistory && (
+          <div className="text-sm text-base-content/60">
+            {`Version ${activeHistory.version} of ${historyList.length}`}
+          </div>
+        )}
       </div>
     </div>
   )

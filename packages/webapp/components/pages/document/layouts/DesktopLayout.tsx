@@ -3,7 +3,7 @@ import PadTitle from '@components/TipTap/pad-title-section/PadTitle'
 import DesktopEditor from '../components/DesktopEditor'
 import { useStore } from '@stores'
 import { useHashRouter } from '@hooks/useHashRouter'
-import DesktopHistory from '@components/pages/history/DesktopHistory'
+import DesktopHistory from '@components/pages/history/desktop/DesktopHistory'
 
 const DesktopLayout = () => {
   const {

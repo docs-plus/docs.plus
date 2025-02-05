@@ -31,14 +31,17 @@ async function handleHistoryEvents(payload, context, document) {
     case 'history.watch': {
       const doc = await prisma.documents.findFirst({
         where: { documentId, version: payload.version },
-        select: { data: true }
+        select: { data: true, version: true, commitMessage: true, createdAt: true }
       })
 
       if (!doc) return null
 
       // Convert Buffer to Base64 string for transport
       return {
-        data: Buffer.from(doc.data).toString('base64')
+        data: Buffer.from(doc.data).toString('base64'),
+        version: doc.version,
+        commitMessage: doc.commitMessage,
+        createdAt: doc.createdAt
       }
     }
 
