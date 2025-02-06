@@ -37,7 +37,7 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
     const selectionPos = editor.state.doc.content.size
 
     editor.commands.insertContentAt(selectionPos, jsonNode)
-    closeModal()
+    closeModal?.()
 
     // make the editor editable
     const divProseMirror = document.querySelector('.tiptap.ProseMirror') as HTMLElement
