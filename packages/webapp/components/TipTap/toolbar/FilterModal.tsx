@@ -31,7 +31,7 @@ const ToggleSection = ({ name, className, description, value, checked, onChange 
   )
 }
 
-const FilterModal = ({ totalHeading = 0, className = '' }) => {
+const FilterModal = ({ totalHeading = 0, className = '' }: any) => {
   const router = useRouter()
   const { slugs } = router.query
 
