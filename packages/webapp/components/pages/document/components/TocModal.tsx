@@ -8,11 +8,15 @@ import { MdFilterAlt, MdHistory } from 'react-icons/md'
 import TableOfContents from '@components/TipTap/tableOfContents/mobile/TocMobile'
 import { useModal } from '@components/ui/ModalDrawer'
 
-const TocModal = () => {
+const TocModal = ({ filterModalRef }: any) => {
   const { close: closeModal } = useModal() || {}
   const {
     editor: { loading, applyingFilters, providerSyncing, instance: editor }
   } = useStore((state) => state.settings)
+
+  const handleFilterClick = useCallback(() => {
+    filterModalRef.current?.check()
+  }, [])
 
   if (loading || !editor || applyingFilters || providerSyncing) {
     return null
@@ -39,7 +43,13 @@ const TocModal = () => {
               }}>
               <MdHistory size={22} />
             </label>
-            <label onClick={() => closeModal?.()} className="btn btn-circle btn-sm">
+            <label
+              htmlFor="mobile_history_panel"
+              onClick={() => {
+                handleFilterClick()
+                closeModal?.()
+              }}
+              className="btn btn-circle btn-sm">
               <MdFilterAlt size={20} />
             </label>
             <label

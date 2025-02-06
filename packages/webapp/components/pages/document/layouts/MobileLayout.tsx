@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useRef } from 'react'
 import MobilePadTitle from '@components/TipTap/pad-title-section/MobilePadTitle'
 import FilterModal from '../components/FilterModal'
 import MobileEditor from '../components/MobileEditor'
@@ -9,10 +9,12 @@ import BigPencilBtn from '@components/pages/document/components/BigPencilBtn'
 import { ModalDrawer } from '@components/ui/ModalDrawer'
 import { useHashRouter } from '@hooks/useHashRouter'
 import MobileHistory from '@components/pages/history/mobile/MobileHistory'
-const MobileLeftSidePanel = () => {
+import { ModalBottomToTop } from '@components/ui/ModalBottomToTop'
+
+const MobileLeftSidePanel = ({ filterModalRef }: any) => {
   return (
     <ModalDrawer modalId="mobile_left_side_panel" width={80}>
-      <TocModal />
+      <TocModal filterModalRef={filterModalRef} />
     </ModalDrawer>
   )
 }
@@ -24,6 +26,7 @@ const MobileLayout = () => {
     }
   } = useStore((state) => state)
 
+  const filterModalRef = useRef<HTMLDivElement>(null)
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
 
   const isHistoryView = useHashRouter()
@@ -33,11 +36,13 @@ const MobileLayout = () => {
   return (
     <div className={`pad tiptap relative flex flex-col border-solid ${deviceClass}`}>
       <MobilePadTitle />
-      <MobileLeftSidePanel />
+      <MobileLeftSidePanel filterModalRef={filterModalRef} />
       <MobileEditor />
       <BigPencilBtn />
       <ChatContainerMobile />
-      <FilterModal />
+      <ModalBottomToTop modalId="filterModal" ref={filterModalRef} defaultHeight={300}>
+        <FilterModal />
+      </ModalBottomToTop>
     </div>
   )
 }
