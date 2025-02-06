@@ -64,7 +64,7 @@ const FilterModal = () => {
         </div>
         <div className="join w-full">
           <input
-            id="filterSearchBox"
+            id="filterModalBottom"
             className="input join-item input-bordered w-9/12"
             type="text"
             inputMode="text"

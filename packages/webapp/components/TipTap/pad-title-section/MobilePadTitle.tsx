@@ -3,7 +3,7 @@ import ReadOnlyIndicator from './ReadOnlyIndicator'
 import FilterBar from './FilterBar'
 import { useStore } from '@stores'
 import Modal from '@components/ui/Modal'
-import React, { useState } from 'react'
+import React, { useRef, useState } from 'react'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { useAuthStore } from '@stores'
@@ -14,6 +14,18 @@ import SignInPanel from '@components/pages/panels/SignInPanel'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import { BiCheck, BiUndo, BiRedo } from 'react-icons/bi'
 import { useNotificationCount } from '@hooks/useNotificationCount'
+import { ModalBottomToTop } from '@components/ui/ModalBottomToTop'
+import NotificationModal from '@components/notificationPanel/mobile/NotificationModal'
+
+interface UserProfileButtonProps {
+  user: any
+  onProfileClick: () => void
+}
+
+interface NotificationButtonProps {
+  unreadCount: number
+  modalRef: React.RefObject<any>
+}
 
 const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
   if (isEditable) {
@@ -32,11 +44,6 @@ const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
       <MdMenu size={30} />
     </label>
   )
-}
-
-interface UserProfileButtonProps {
-  user: any
-  onProfileClick: () => void
 }
 
 const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => {
@@ -66,18 +73,12 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
   )
 }
 
-interface NotificationButtonProps {
-  unreadCount: number
-}
-
-const NotificationButton = ({ unreadCount }: NotificationButtonProps) => {
+const NotificationButton = ({ unreadCount, modalRef }: NotificationButtonProps) => {
   return (
     <Button
       className="btn-ghost tooltip tooltip-bottom relative p-2"
       data-tip="Notifications"
-      onClick={() => {
-        /* Add notification handler */
-      }}>
+      onClick={() => modalRef.current?.check()}>
       <MdInsertComment size={26} className="text-docsy" />
       {unreadCount > 0 && (
         <div className="absolute right-[2px] top-[2px] flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
@@ -114,10 +115,10 @@ const MobilePadTitle = () => {
   const unreadCount = useNotificationCount({ workspaceId })
   const user = useAuthStore((state) => state.profile)
   const {
-    isAuthServiceAvailable,
     editor: { isEditable, instance: editor }
   } = useStore((state) => state.settings)
   const [isProfileModalOpen, setProfileModalOpen] = useState(false)
+  const notificationModalRef = useRef<any>(null!)
 
   return (
     <>
@@ -138,7 +139,7 @@ const MobilePadTitle = () => {
 
             <div className="flex w-[20%] items-center justify-end gap-2">
               <ReadOnlyIndicator />
-              <NotificationButton unreadCount={unreadCount} />
+              <NotificationButton unreadCount={unreadCount} modalRef={notificationModalRef} />
               <UserProfileButton user={user} onProfileClick={() => setProfileModalOpen(true)} />
             </div>
           </div>
@@ -147,6 +148,19 @@ const MobilePadTitle = () => {
           </div>
         </div>
       </div>
+
+      <ModalBottomToTop
+        modalId="notificationModal"
+        contentClassName="h-[60%] overflow-hidden"
+        ref={notificationModalRef}
+        defaultHeight={800}>
+        <div
+          style={{ height: 'calc(100% - 24px)' }}
+          className="flex flex-col justify-start overflow-hidden">
+          <NotificationModal />
+        </div>
+      </ModalBottomToTop>
+
       <Modal
         asAChild={false}
         id="modal_profile"

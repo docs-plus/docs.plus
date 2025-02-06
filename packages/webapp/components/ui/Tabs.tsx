@@ -14,7 +14,7 @@ export const Tab = ({ label, count, isActive, onClick }: TabProps) => {
       className={`tab flex flex-nowrap items-center gap-2 text-nowrap ${isActive ? 'bg-white shadow' : ''}`}
       onClick={onClick}>
       <span className={`mt-0.5 font-semibold ${isActive ? 'text-indigo-600' : ''}`}>{label}</span>
-      {count !== undefined && (
+      {count !== undefined && count > 0 && (
         <span
           className={`rounded-md bg-base-200 px-1 text-xs font-extrabold leading-5 ${
             isActive ? 'text-indigo-600' : 'bg-base-300'
@@ -27,7 +27,7 @@ export const Tab = ({ label, count, isActive, onClick }: TabProps) => {
 }
 
 interface TabListProps {
-  tabs: Array<{ label: string; count: number }>
+  tabs: Array<{ label: string; count?: number }>
   activeTab: string
   onTabChange: (tab: string) => void
   className?: string
