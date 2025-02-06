@@ -14,12 +14,37 @@ export const getLastReadedNotification = async (
     .select(
       `
       *,
-      sender:sender_user_id(avatar_updated_at, avatar_url, display_name, full_name, username)
+      sender:sender_user_id(id,avatar_updated_at, avatar_url, display_name, full_name, username)
     `
     )
     .eq('receiver_user_id', userId)
     .not('readed_at', 'is', null)
     .order('created_at', { ascending: false })
-    .limit(10)
+    .limit(6)
+    .throwOnError()
+}
+
+export const getPaginatedLastReadedNotifications = async (
+  userId: string,
+  page: number = 1,
+  pageSize: number = 10
+): Promise<
+  PostgrestResponse<TNotification & { sender: Database['public']['Tables']['users']['Row'] }>
+> => {
+  const from = (page - 1) * pageSize
+  const to = from + pageSize - 1
+
+  return supabaseClient
+    .from('notifications')
+    .select(
+      `
+      *,
+      sender:sender_user_id(id,avatar_updated_at, avatar_url, display_name, full_name, username)
+    `
+    )
+    .eq('receiver_user_id', userId)
+    .not('readed_at', 'is', null)
+    .order('created_at', { ascending: false })
+    .range(from, to)
     .throwOnError()
 }

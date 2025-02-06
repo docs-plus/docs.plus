@@ -7,10 +7,8 @@ import TocModal from '@components/pages/document/components/TocModal'
 import ChatContainerMobile from '@components/pages/document/components/chat/ChatContainerMobile'
 import BigPencilBtn from '@components/pages/document/components/BigPencilBtn'
 import { ModalDrawer } from '@components/ui/ModalDrawer'
-
 import { useHashRouter } from '@hooks/useHashRouter'
 import MobileHistory from '@components/pages/history/mobile/MobileHistory'
-
 const MobileLeftSidePanel = () => {
   return (
     <ModalDrawer modalId="mobile_left_side_panel" width={80}>

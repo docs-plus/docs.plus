@@ -42,3 +42,30 @@ export type ProfileUpdate = Omit<
 > & {
   profile_data?: ProfileData
 }
+
+export type TNotification = {
+  id: string
+  type: string
+  sender: {
+    id: string
+    username: string
+    full_name?: string | null
+    avatar_url: string | null
+    display_name?: string | null
+    avatar_updated_at: string | null
+  }
+  readed_at: string | null
+  channel_id: string
+  created_at: string
+  message_id: string
+  message_preview: string
+}
+
+export type TNotificationSummary = {
+  unread_count: number
+  unread_mention_count: number
+  last_unread: TNotification[]
+  last_unread_mention: TNotification[]
+}
+
+export type TTab = 'All' | 'Mentions' | 'Archived'
