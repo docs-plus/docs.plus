@@ -4,10 +4,9 @@ import Breadcrumb from './Breadcrumb'
 import { useStore, useChatStore } from '@stores'
 import AvatarStack from '@components/AvatarStack'
 import { useEffect, useState } from 'react'
-import { IoCloseSharp, IoNotifications, IoNotificationsOff } from 'react-icons/io5'
+import { IoCloseSharp } from 'react-icons/io5'
 import { CopyUrlButton } from './CopyUrlButton'
-import { FaAt } from 'react-icons/fa'
-import { RiAtLine } from 'react-icons/ri'
+import { NotificationToggle } from './NotificationToggle'
 
 const CloseButton = ({ onClick }: any) => (
   <button className="btn btn-ghost btn-xs" onClick={onClick}>
@@ -26,9 +25,6 @@ const Toolbar = () => {
   const setCommentMessageMemory = useChatStore((state) => state.setCommentMessageMemory)
   const setEditMessageMemory = useChatStore((state) => state.setEditMessageMemory)
   // const channel = useChatStore((state: any) => state.channels.get(channelId))
-  const [notificationState, setNotificationState] = useState<'All' | 'Mentions' | 'Muted'>(
-    'Mentions'
-  )
 
   useEffect(() => {
     if (!chatRoom) return
@@ -58,21 +54,6 @@ const Toolbar = () => {
     return newUrl.toString()
   }
 
-  const toggleNotification = () => {
-    setNotificationState((prev) => {
-      switch (prev) {
-        case 'All':
-          return 'Mentions'
-        case 'Mentions':
-          return 'Muted'
-        case 'Muted':
-          return 'All'
-        default:
-          return 'All'
-      }
-    })
-  }
-
   return (
     <div className="relative z-50 flex w-full items-center border-b border-gray-200 bg-white p-2">
       <div className="px-1">
@@ -95,17 +76,7 @@ const Toolbar = () => {
             <CopyUrlButton url={getChatRoomUrl()} className="btn btn-ghost btn-xs px-1" />
           </div>
 
-          <div
-            className="tooltip tooltip-left flex items-center"
-            data-tip={`Notifications: ${notificationState}`}>
-            <button
-              onClick={toggleNotification}
-              className="btn btn-ghost btn-xs px-1 hover:bg-indigo-500 hover:text-white">
-              {notificationState === 'All' && <IoNotifications size={18} />}
-              {notificationState === 'Mentions' && <RiAtLine size={18} />}
-              {notificationState === 'Muted' && <IoNotificationsOff size={18} />}
-            </button>
-          </div>
+          <NotificationToggle />
 
           <div
             className="tooltip tooltip-left flex items-center border-l border-gray-300 pl-1"

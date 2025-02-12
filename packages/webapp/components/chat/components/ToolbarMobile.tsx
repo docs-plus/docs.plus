@@ -2,6 +2,7 @@ import { useChatStore } from '@stores'
 import { IoCloseSharp } from 'react-icons/io5'
 import BreadcrumbMobile from './BreadcrumbMobile'
 import { CopyUrlButton } from './CopyUrlButton'
+import { NotificationToggle } from './NotificationToggle'
 
 const CloseButton = ({ onClick }: any) => (
   <button className="btn btn-circle btn-xs ml-auto" onClick={onClick}>
@@ -29,8 +30,9 @@ const ToolbarMobile = () => {
       <div className="min-w-0 flex-1">
         <BreadcrumbMobile />
       </div>
-      <div className="ml-2 shrink-0">
-        <CopyUrlButton url={getChatRoomUrl()} className="btn btn-circle btn-ghost btn-xs mr-2" />
+      <div className="flex items-center space-x-5 rounded-md p-1 px-2">
+        <CopyUrlButton url={getChatRoomUrl()} className="btn btn-circle btn-ghost btn-xs" />
+        <NotificationToggle />
         <CloseButton onClick={handelCloseChatRoom} />
       </div>
     </div>
