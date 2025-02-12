@@ -48,6 +48,9 @@ export type Database = {
           left_at: string | null
           member_id: string
           mute_in_app_notifications: boolean | null
+          notif_state:
+            | Database["public"]["Enums"]["channel_notification_state"]
+            | null
           unread_message_count: number | null
           updated_at: string | null
         }
@@ -64,6 +67,9 @@ export type Database = {
           left_at?: string | null
           member_id: string
           mute_in_app_notifications?: boolean | null
+          notif_state?:
+            | Database["public"]["Enums"]["channel_notification_state"]
+            | null
           unread_message_count?: number | null
           updated_at?: string | null
         }
@@ -80,6 +86,9 @@ export type Database = {
           left_at?: string | null
           member_id?: string
           mute_in_app_notifications?: boolean | null
+          notif_state?:
+            | Database["public"]["Enums"]["channel_notification_state"]
+            | null
           unread_message_count?: number | null
           updated_at?: string | null
         }
@@ -785,6 +794,7 @@ export type Database = {
         | "roles.delete"
       app_role: "admin" | "moderator" | "member" | "guest"
       channel_member_role: "MEMBER" | "ADMIN" | "MODERATOR" | "GUEST"
+      channel_notification_state: "MENTIONS" | "ALL" | "MUTED"
       channel_type:
         | "PUBLIC"
         | "PRIVATE"
