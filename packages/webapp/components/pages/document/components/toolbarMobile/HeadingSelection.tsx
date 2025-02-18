@@ -10,6 +10,18 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
   const [headingLevel, setHeadingLevel] = useState<number>(1)
 
   const updateActiveSectionType = useCallback(() => {
+    const { selection } = editor.state
+    const {
+      $from: { pos }
+    } = selection
+
+    // Get the DOM node at the current position
+    const domNode = editor.view.domAtPos(pos).node
+    // Find the closest parent with the ".heading" class
+    const closestHeadingLevel = +domNode?.parentElement?.closest('.heading')?.getAttribute('level')
+    // If the closest heading level is not a number, set the heading level to 1
+    setHeadingLevel(isNaN(closestHeadingLevel) ? 1 : closestHeadingLevel)
+
     for (let i = 1; i <= 9; i++) {
       if (editor.isActive('contentHeading', { level: i })) {
         setActiveSectionType('heading')
