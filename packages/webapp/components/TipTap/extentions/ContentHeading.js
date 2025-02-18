@@ -403,12 +403,12 @@ const HeadingsTitle = Node.create({
         const { selection, doc, schema } = state
         const { $from, $to } = selection
 
-        // Check if we're in a content heading
+        // Check if the caret in a content heading
         if ($from.parent.type.name !== ENUMS.NODES.CONTENT_HEADING_TYPE) {
           return false
         }
 
-        // Check if the cursor is in the middle of the node
+        // Check if the caret is in the middle of the node
         if ($from.parentOffset === 0 || $from.parentOffset === $from.parent.content.size) {
           return false
         }

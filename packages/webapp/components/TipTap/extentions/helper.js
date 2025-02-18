@@ -201,6 +201,7 @@ export const getHeadingsBlocksMap = (doc, start, end) => {
         depth,
         startBlockPos: pos,
         endBlockPos: pos + node.nodeSize,
+        endContentPos: pos + node.content.size,
         index
       })
     }
@@ -380,7 +381,7 @@ export const insertRemainingHeadings = ({
 }) => {
   if (!headings.length) {
     console.info('[Heading][insertRemainingHeadings] no headings to insert')
-    return false
+    return true
   }
 
   let mapHPost = getHeadingsBlocksMap(tr.doc, titleStartPos, titleEndPos)
