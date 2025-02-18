@@ -76,7 +76,7 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
       selection
     )
 
-    tr.delete(start, titleEndPos)
+    tr.delete(start + 1, titleEndPos)
 
     let titleHMap = getHeadingsBlocksMap(tr.doc, titleStartPos, tr.mapping.map(titleEndPos))
     const { prevHStartPos } = getPrevHeadingPos(tr.doc, titleStartPos, start)
@@ -88,7 +88,12 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
     const insertFirstNodes = prevBlock.endBlockPos - (shouldNested ? 2 : 0)
     tr.insert(insertFirstNodes, headingNode)
 
-    const updatedSelection = putTextSelectionEndNode(tr, insertFirstNodes, headingNode)
+    const targetPos = Math.min(
+      insertFirstNodes + headingNode[0].firstChild.nodeSize,
+      tr.doc.content.size - 1
+    )
+
+    const updatedSelection = new TextSelection(tr.doc.resolve(targetPos))
     tr.setSelection(updatedSelection)
 
     return insertRemainingHeadings({
@@ -140,14 +145,14 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
 
     const insertFirstNodesPos = tr.mapping.map(newStartPos)
 
-    tr.delete(insertFirstNodesPos, block.parent.end)
+    tr.delete(insertFirstNodesPos, $to.end(1))
     tr.insert(insertFirstNodesPos, newHeadingNode)
 
     const updatedSelection = putTextSelectionEndNode(tr, insertFirstNodesPos, newHeadingNode)
     tr.setSelection(updatedSelection)
 
     titleStartPos = newSelection ? $from.start(1) : $from.start(1) - 1
-    titleEndPos = newSelection ? tr.curSelection.$to.end(1) : $to.end(1)
+    titleEndPos = newSelection ? tr.curSelection.$to.end(1) : tr.mapping.map($to.end(1))
 
     try {
       insertRemainingHeadings({
@@ -160,7 +165,7 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
       })
       return true
     } catch (error) {
-      console.error('[Heading][wrapContentWithHeading]: error insertRemainingHeadings')
+      console.error('[Heading][wrapContentWithHeading]: error insertRemainingHeadings', error)
       return false
     }
   }
