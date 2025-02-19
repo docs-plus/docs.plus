@@ -3,10 +3,9 @@
 
 import { searchWorkspaceUsers } from '@api'
 import { useApi } from '@hooks/useApi'
-import React, { forwardRef, use, useEffect, useImperativeHandle, useState } from 'react'
-import { useChatStore, useStore } from '@stores'
-import { MdGroups } from 'react-icons/md'
-import { Avatar } from '@components/ui/Avatar'
+import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
+import { useStore } from '@stores'
+import MentionItem from './MentionItem'
 
 const everyoneOption = {
   id: 0,
@@ -14,6 +13,18 @@ const everyoneOption = {
   full_name: 'All Users',
   isEveryoneOption: true
 }
+
+const LoadingSkeleton = () => (
+  <div className="item flex items-center px-3 py-1">
+    <div className="flex items-center gap-4">
+      <div className="skeleton h-14 w-14 !rounded-full" />
+      <div className="flex flex-col gap-4">
+        <div className="skeleton h-4 w-28" />
+        <div className="skeleton h-4 w-20" />
+      </div>
+    </div>
+  </div>
+)
 
 export default forwardRef((props, ref) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
@@ -89,34 +100,21 @@ export default forwardRef((props, ref) => {
   }))
 
   return (
-    <div className="dropdown-menu !p-1">
-      {workspaceUsers.length ? (
+    <div className="dropdown-menu max-h-[300px] overflow-y-auto !p-1">
+      {searchWorkspaceUsersLoading ? (
+        <LoadingSkeleton />
+      ) : workspaceUsers.length ? (
         workspaceUsers.map((item, index) => (
-          <React.Fragment key={item.id}>
-            <button
-              className={`flex items-center ${index === selectedIndex ? 'is-selected' : ''}`}
-              onClick={() => selectItem(index)}>
-              {item.isEveryoneOption ? (
-                <MdGroups className="mr-2 size-8 text-gray-600" />
-              ) : (
-                <Avatar
-                  src={item.avatar_url}
-                  avatarUpdatedAt={item.avatar_updated_at}
-                  alt={item.full_name}
-                  size="sm"
-                  className="mr-2 size-8"
-                />
-              )}
-              <span className="flex flex-col justify-start text-sm">
-                {item.full_name}
-                <span className="text-muted text-xs text-gray-600">@{item.username}</span>
-              </span>
-            </button>
-            {index === 0 && <div className="divider m-0 h-2 p-0"></div>}
-          </React.Fragment>
+          <MentionItem
+            key={item.id}
+            item={item}
+            index={index}
+            selectedIndex={selectedIndex}
+            onSelect={selectItem}
+          />
         ))
       ) : (
-        <div className="item">No result</div>
+        <div className="item px-3 py-1 text-gray-500">No results found</div>
       )}
     </div>
   )
