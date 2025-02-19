@@ -2,9 +2,12 @@ import { markAllNotificationsAsRead } from '@api'
 import { useAuthStore, useStore } from '@stores'
 
 export const useMarkAllNotificationsAsRead = () => {
-  const { setNotificationActiveTab, emptyNotifications, setLoadingNotification } = useStore(
-    (state) => state
-  )
+  const {
+    setNotificationActiveTab,
+    emptyNotifications,
+    setLoadingNotification,
+    clearNotificationSummary
+  } = useStore((state) => state)
   const user = useAuthStore((state) => state.profile)
 
   const handleMarkAllAsRead = async () => {
@@ -19,6 +22,7 @@ export const useMarkAllNotificationsAsRead = () => {
       // Clear all notifications from the state
       emptyNotifications()
       setNotificationActiveTab('All')
+      clearNotificationSummary()
     } catch (error) {
       console.error('Error marking all notifications as read:', error)
     } finally {
