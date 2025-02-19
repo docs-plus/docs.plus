@@ -727,6 +727,7 @@ BEGIN
         JOIN public.channels c        ON c.id = cm.channel_id
        WHERE c.workspace_id = _workspace_id
          AND u.deleted_at IS NULL
+         AND u.username != 'system'
        ORDER BY u.created_at DESC
        LIMIT 6;
 
@@ -746,6 +747,7 @@ BEGIN
         JOIN public.channels c        ON c.id = cm.channel_id
        WHERE c.workspace_id = _workspace_id
          AND u.deleted_at IS NULL
+         AND u.username != 'system'
          AND u.username ILIKE '%' || _username || '%'
        ORDER BY u.username
        LIMIT 10;
