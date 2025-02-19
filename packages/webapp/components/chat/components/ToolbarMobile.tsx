@@ -14,10 +14,6 @@ const ToolbarMobile = () => {
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
   const chatRoom = useChatStore((state) => state.chatRoom)
 
-  const handelCloseChatRoom = () => {
-    destroyChatRoom()
-  }
-
   const getChatRoomUrl = () => {
     if (!chatRoom?.headingId) return ''
     const newUrl = new URL(window.location.href)
@@ -33,7 +29,7 @@ const ToolbarMobile = () => {
       <div className="flex items-center space-x-5 rounded-md p-1 px-2">
         <CopyUrlButton url={getChatRoomUrl()} className="btn btn-circle btn-ghost btn-xs" />
         <NotificationToggle />
-        <CloseButton onClick={handelCloseChatRoom} />
+        <CloseButton onClick={destroyChatRoom} />
       </div>
     </div>
   )

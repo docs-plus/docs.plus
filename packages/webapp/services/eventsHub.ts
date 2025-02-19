@@ -49,9 +49,7 @@ export const eventsHub = (router: NextRouter) => {
       user
     })
 
-    if (headingId === opendHeadingId) {
-      return destroyChatRoom()
-    }
+    if (headingId === opendHeadingId) return destroyChatRoom()
 
     if (workspaceId) setChatRoom(headingId, workspaceId, [], user)
   })
@@ -68,9 +66,7 @@ export const eventsHub = (router: NextRouter) => {
     const setChatRoom = useChatStore.getState().setChatRoom
     const destroyChatRoom = useChatStore.getState().destroyChatRoom
 
-    if (opendHeadingId === headingId) {
-      return destroyChatRoom()
-    }
+    if (opendHeadingId === headingId) return destroyChatRoom()
 
     destroyChatRoom()
 

@@ -42,13 +42,19 @@ const join2Channel = (user: Profile, channelId: string) => {
   })
 }
 
-const leaveChannel = (user: Profile) => {
+const leaveChannel = (user: Profile): void => {
   if (!user) return
-  useStore.getState().settings.broadcaster.send({
-    type: 'broadcast',
-    event: 'presence',
-    payload: { ...user, channelId: null }
-  })
+
+  const broadcaster = useStore.getState().settings?.broadcaster
+  try {
+    broadcaster?.send?.({
+      type: 'broadcast',
+      event: 'presence',
+      payload: { ...user, channelId: null }
+    })
+  } catch (error) {
+    console.error('Failed to leave channel:', error)
+  }
 }
 
 const chatRoom = immer<IChatroomStore>((set) => ({
@@ -118,8 +124,7 @@ const chatRoom = immer<IChatroomStore>((set) => ({
       }
     })
     const user = useAuthStore.getState().profile
-    if (!user) return
-    leaveChannel(user)
+    if (user) leaveChannel(user)
   }
 }))
 
