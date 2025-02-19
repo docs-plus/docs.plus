@@ -38,7 +38,7 @@ const useNotificationToggle = () => {
     fetchNotifState({
       _channel_id: chatRoom.headingId
     }).then(({ data }) => {
-      setNotificationState(data as NotificationState)
+      setNotificationState((data as NotificationState) ?? 'MENTIONS')
     })
   }, [chatRoom?.headingId, fetchNotifState])
 
