@@ -1,4 +1,3 @@
-
 CREATE OR REPLACE FUNCTION create_notifications_for_mentions()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -6,60 +5,70 @@ DECLARE
     is_channel_muted BOOLEAN;
     truncated_content TEXT;
 BEGIN
-    -- Check if the channel exists and notifications are not muted
-    SELECT mute_in_app_notifications INTO is_channel_muted
-    FROM public.channels
-    WHERE id = NEW.channel_id;
+    -- 1) Check if the channel exists and notifications are not globally muted on the channel
+    SELECT mute_in_app_notifications
+      INTO is_channel_muted
+      FROM public.channels
+     WHERE id = NEW.channel_id;
 
     IF NOT FOUND THEN
-        -- Channel does not exist, exit function
+        -- Channel does not exist
         RETURN NEW;
     END IF;
 
     IF is_channel_muted THEN
-        RETURN NEW; -- Exit if notifications are muted for the channel
+        -- Channel-level mute is enabled, no notifications
+        RETURN NEW;
     END IF;
 
-    -- Verify that the sender exists and is not deleted
-    IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = NEW.user_id) THEN
-        RETURN NEW; -- Sender does not exist or is deleted
+    -- 2) Verify that the sender exists (and is not deleted)
+    IF NOT EXISTS (
+        SELECT 1
+          FROM public.users
+         WHERE id = NEW.user_id
+    ) THEN
+        -- Sender does not exist
+        RETURN NEW;
     END IF;
 
+    -- 3) Truncate message content for preview
     truncated_content := truncate_content(NEW.content);
 
-    -- Find all mentioned usernames in the message
+    -- 4) For each mentioned username, attempt to create a notification
     FOR mentioned_user_id IN
         SELECT u.id
-        FROM public.users u
-        WHERE (NEW.content LIKE '%@' || u.username || ' %'
-            OR NEW.content LIKE '%@' || u.username || '%')
+          FROM public.users u
+         WHERE NEW.content LIKE ('%@' || u.username || ' %')
+            OR NEW.content LIKE ('%@' || u.username || '%')
     LOOP
-        -- Check if the mentioned user is a member of the channel
-        IF EXISTS (SELECT 1 FROM public.channel_members WHERE channel_id = NEW.channel_id AND member_id = mentioned_user_id) THEN
-            -- Check if the mentioned user has muted notifications
-            IF NOT (SELECT mute_in_app_notifications
-                    FROM public.channel_members
-                    WHERE channel_id = NEW.channel_id
-                      AND member_id = mentioned_user_id) THEN
-                INSERT INTO public.notifications (
-                    receiver_user_id,
-                    sender_user_id,
-                    type,
-                    message_id,
-                    channel_id,
-                    message_preview,
-                    created_at
-                )
-                VALUES (
-                    mentioned_user_id,
-                    NEW.user_id,
-                    'mention',
-                    NEW.id,
-                    NEW.channel_id,
-                    truncated_content,
-                    timezone('utc', now())
-                );
-            END IF;
+        -- Check membership in the channel AND notification settings
+        IF EXISTS (
+            SELECT 1
+              FROM public.channel_members
+             WHERE channel_id = NEW.channel_id
+               AND member_id  = mentioned_user_id
+               AND mute_in_app_notifications = false
+               AND notif_state != 'MUTED'
+        ) THEN
+            -- Insert the mention notification
+            INSERT INTO public.notifications (
+                receiver_user_id,
+                sender_user_id,
+                type,
+                message_id,
+                channel_id,
+                message_preview,
+                created_at
+            )
+            VALUES (
+                mentioned_user_id,
+                NEW.user_id,
+                'mention',
+                NEW.id,
+                NEW.channel_id,
+                truncated_content,
+                timezone('utc', now())
+            );
         END IF;
     END LOOP;
 
@@ -67,13 +76,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger remains the same
 CREATE TRIGGER trigger_on_new_message_for_mention_notifications
 AFTER INSERT ON public.messages
 FOR EACH ROW
 WHEN (NEW.content LIKE '%@%')
 EXECUTE FUNCTION create_notifications_for_mentions();
-
 
 --------------------------------------------------------
 --------------------------------------------------------
@@ -84,63 +91,61 @@ CREATE OR REPLACE FUNCTION create_notifications_for_everyone()
 RETURNS TRIGGER AS $$
 DECLARE
     channel_member_id UUID;
-    is_channel_muted BOOLEAN;
+    is_channel_muted  BOOLEAN;
     truncated_content TEXT;
 BEGIN
-    -- Check if the channel exists and notifications are not muted
-    SELECT mute_in_app_notifications INTO is_channel_muted
-    FROM public.channels
-    WHERE id = NEW.channel_id;
+    -- 1) Check if the channel exists and if it's globally muted
+    SELECT mute_in_app_notifications
+      INTO is_channel_muted
+      FROM public.channels
+     WHERE id = NEW.channel_id;
 
-    IF NOT FOUND THEN
-        -- Channel does not exist, exit function
-        RETURN NEW;
+    IF NOT FOUND OR is_channel_muted THEN
+        RETURN NEW; -- Channel either doesn't exist or is muted globally
     END IF;
 
-    IF is_channel_muted THEN
-        RETURN NEW; -- Exit if notifications are muted for the channel
+    -- 2) Verify the sender exists
+    IF NOT EXISTS (
+        SELECT 1
+          FROM public.users
+         WHERE id = NEW.user_id
+    ) THEN
+        RETURN NEW; -- Sender doesn't exist or is deleted
     END IF;
 
-    -- Verify that the sender exists and is not deleted
-    IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = NEW.user_id) THEN
-        RETURN NEW; -- Sender does not exist or is deleted
-    END IF;
-
+    -- 3) Truncate message content for preview
     truncated_content := truncate_content(NEW.content);
 
-    -- Handle '@everyone' mention, but exclude the sender
+    -- 4) Check if the message contains "@everyone"
     IF NEW.content LIKE '%@everyone%' THEN
+        -- 5) Loop over channel members (excluding sender) who have not muted notifications
         FOR channel_member_id IN
             SELECT cm.member_id
-            FROM public.channel_members cm
-            JOIN public.users u ON u.id = cm.member_id
-            WHERE cm.channel_id = NEW.channel_id
-              AND cm.member_id != NEW.user_id
+              FROM public.channel_members cm
+             WHERE cm.channel_id = NEW.channel_id
+               AND cm.member_id != NEW.user_id
+               AND cm.mute_in_app_notifications = false
+               AND cm.notif_state != 'MUTED'
         LOOP
-            -- Check if the channel member has muted notifications
-            IF NOT (SELECT mute_in_app_notifications
-                    FROM public.channel_members
-                    WHERE channel_id = NEW.channel_id
-                      AND member_id = channel_member_id) THEN
-                INSERT INTO public.notifications (
-                    receiver_user_id,
-                    sender_user_id,
-                    type,
-                    message_id,
-                    channel_id,
-                    message_preview,
-                    created_at
-                )
-                VALUES (
-                    channel_member_id,
-                    NEW.user_id,
-                    'channel_event',
-                    NEW.id,
-                    NEW.channel_id,
-                    truncated_content,
-                    timezone('utc', now())
-                );
-            END IF;
+            -- Insert the notification for each eligible member
+            INSERT INTO public.notifications (
+                receiver_user_id,
+                sender_user_id,
+                type,
+                message_id,
+                channel_id,
+                message_preview,
+                created_at
+            )
+            VALUES (
+                channel_member_id,
+                NEW.user_id,
+                'channel_event',
+                NEW.id,
+                NEW.channel_id,
+                truncated_content,
+                timezone('utc', now())
+            );
         END LOOP;
     END IF;
 
@@ -167,31 +172,32 @@ EXECUTE FUNCTION create_notifications_for_everyone();
 CREATE OR REPLACE FUNCTION create_notifications_for_regular_messages()
 RETURNS TRIGGER AS $$
 DECLARE
-    is_channel_muted BOOLEAN;
+    is_channel_muted  BOOLEAN;
     truncated_content TEXT;
 BEGIN
+    -- 1) Check if the channel exists and if it's globally muted
+    SELECT mute_in_app_notifications
+      INTO is_channel_muted
+      FROM public.channels
+     WHERE id = NEW.channel_id;
 
-    -- Check if the channel exists and notifications are not muted
-    SELECT mute_in_app_notifications INTO is_channel_muted
-    FROM public.channels
-    WHERE id = NEW.channel_id;
-
-    IF NOT FOUND THEN
-        RETURN NEW; -- Channel does not exist
+    IF NOT FOUND OR is_channel_muted THEN
+        RETURN NEW; -- Channel doesn't exist or is globally muted
     END IF;
 
-    IF is_channel_muted THEN
-        RETURN NEW; -- Exit if notifications are muted for the channel
+    -- 2) Verify the sender still exists
+    IF NOT EXISTS (
+        SELECT 1
+          FROM public.users
+         WHERE id = NEW.user_id
+    ) THEN
+        RETURN NEW; -- Sender doesn't exist or is deleted
     END IF;
 
-    -- Verify that the sender exists and is not deleted
-    IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = NEW.user_id) THEN
-        RETURN NEW; -- Sender does not exist or is deleted
-    END IF;
-
+    -- 3) Truncate message content for preview
     truncated_content := truncate_content(NEW.content);
 
-    -- Create notifications for channel members who have not muted notifications
+    -- 4) Create notifications only for members whose notif_state = 'ALL' and who are not online or the sender
     INSERT INTO public.notifications (
         receiver_user_id,
         sender_user_id,
@@ -217,9 +223,10 @@ BEGIN
     JOIN public.users u ON u.id = cm.member_id
     LEFT JOIN public.messages m ON m.id = NEW.reply_to_message_id
     WHERE cm.channel_id = NEW.channel_id
+      AND cm.member_id  != NEW.user_id
       AND (u.status IS NULL OR u.status != 'ONLINE')
-      AND cm.member_id != NEW.user_id
-      AND cm.mute_in_app_notifications = FALSE;
+      AND cm.mute_in_app_notifications = FALSE
+      AND cm.notif_state = 'ALL';
 
     RETURN NEW;
 END;
@@ -239,40 +246,73 @@ EXECUTE FUNCTION create_notifications_for_regular_messages();
 CREATE OR REPLACE FUNCTION create_notifications_for_new_unique_reactions()
 RETURNS TRIGGER AS $$
 DECLARE
-    old_reactions JSONB;
-    new_reactions JSONB;
-    reaction_key TEXT;
-    new_reaction JSONB;
-    sender_user_id UUID;
+    old_reactions     JSONB;
+    new_reactions     JSONB;
+    reaction_key      TEXT;
+    new_reaction      JSONB;
+    sender_user_id    UUID;
+    is_channel_muted  BOOLEAN;
 BEGIN
-    -- Extract the old and new reactions into separate variables
+    -- 1) Check if the channel is valid and if it's globally muted
+    SELECT mute_in_app_notifications
+      INTO is_channel_muted
+      FROM public.channels
+     WHERE id = NEW.channel_id;
+
+    IF NOT FOUND OR is_channel_muted THEN
+        RETURN NEW; -- Channel doesn't exist or is globally muted
+    END IF;
+
+    -- 2) Verify the receiver (message owner) still exists
+    IF NOT EXISTS (
+        SELECT 1
+          FROM public.users
+         WHERE id = OLD.user_id
+    ) THEN
+        RETURN NEW; -- Receiver doesn't exist or is deleted
+    END IF;
+
+    -- 3) Ensure the message owner (receiver) has notif_state = 'ALL' and isn't muted in this channel
+    IF NOT EXISTS (
+        SELECT 1
+          FROM public.channel_members cm
+         WHERE cm.channel_id = NEW.channel_id
+           AND cm.member_id  = OLD.user_id
+           AND cm.mute_in_app_notifications = FALSE
+           AND cm.notif_state = 'ALL'
+    ) THEN
+        RETURN NEW; -- User isn't configured to receive reaction notifications
+    END IF;
+
+    -- 4) Compare old and new reactions
     old_reactions := COALESCE(OLD.reactions, '{}'::jsonb);
     new_reactions := NEW.reactions;
 
-    -- Verify that the receiver (message owner) exists and is not deleted
-    IF NOT EXISTS (SELECT 1 FROM public.users WHERE id = OLD.user_id) THEN
-        RETURN NEW; -- Receiver does not exist or is deleted
-    END IF;
-
-    -- Loop through each reaction type key in the new reactions JSONB
-    FOR reaction_key IN SELECT jsonb_object_keys(new_reactions)
+    -- 5) Loop through each reaction type in the new reactions JSONB
+    FOR reaction_key IN
+        SELECT jsonb_object_keys(new_reactions)
     LOOP
-        -- Loop through each new reaction for the current key
-        FOR new_reaction IN SELECT jsonb_array_elements(new_reactions -> reaction_key)
+        -- Loop through each new reaction for the current reaction_key
+        FOR new_reaction IN
+            SELECT jsonb_array_elements(new_reactions -> reaction_key)
         LOOP
-            -- Extract the sender_user_id
+            -- Extract the sender ID from the reaction
             sender_user_id := (new_reaction ->> 'user_id')::UUID;
 
-            -- Check if the new reaction exists in the old reactions
-            IF (old_reactions ? reaction_key) AND
-               (old_reactions -> reaction_key) @> jsonb_build_array(new_reaction)
+            -- Check if this exact reaction was already present
+            IF (old_reactions ? reaction_key)
+               AND (old_reactions -> reaction_key) @> jsonb_build_array(new_reaction)
             THEN
                 -- Reaction already exists, skip
                 CONTINUE;
             ELSE
-                -- Verify that the sender exists and is not deleted
-                IF EXISTS (SELECT 1 FROM public.users WHERE id = sender_user_id) THEN
-                    -- Create a new notification
+                -- Verify that the sender exists
+                IF EXISTS (
+                    SELECT 1
+                      FROM public.users
+                     WHERE id = sender_user_id
+                ) THEN
+                    -- Create a new reaction notification for the message owner
                     INSERT INTO public.notifications (
                         receiver_user_id,
                         sender_user_id,

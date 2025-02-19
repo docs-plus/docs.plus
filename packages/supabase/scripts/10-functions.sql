@@ -783,3 +783,25 @@ $$;
 
 ALTER FUNCTION public.get_unread_notif_count(VARCHAR(36))
 SET parallel_safe = true;
+
+
+-----------------------------------
+CREATE OR REPLACE FUNCTION public.get_channel_notif_state(
+  _channel_id VARCHAR(36)
+)
+RETURNS public.channel_notification_state
+LANGUAGE plpgsql
+AS $$
+DECLARE
+    v_notif_state public.channel_notification_state;
+BEGIN
+    SELECT notif_state
+    INTO v_notif_state
+    FROM public.channel_members cm
+   WHERE cm.channel_id = _channel_id
+     AND cm.member_id = auth.uid()
+   LIMIT 1;
+
+    RETURN v_notif_state;
+END;
+$$;
