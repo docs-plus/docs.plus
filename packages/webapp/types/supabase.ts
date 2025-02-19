@@ -718,6 +718,12 @@ export type Database = {
           messages: Json
         }[]
       }
+      get_channel_notif_state: {
+        Args: {
+          _channel_id: string
+        }
+        Returns: Database["public"]["Enums"]["channel_notification_state"]
+      }
       get_unread_count: {
         Args: {
           _workspace_id?: string
