@@ -1,11 +1,10 @@
 import { useAuthStore, useChatStore } from '@stores'
 import { IoNotifications, IoNotificationsOff } from 'react-icons/io5'
 import { RiAtLine } from 'react-icons/ri'
-import { updateChannelNotifState } from '@api'
+import { updateChannelNotifState, getChannelNotifState } from '@api'
 import { useApi } from '@hooks/useApi'
 import Button from '@components/ui/Button'
-import { useState, useCallback } from 'react'
-
+import { useState, useCallback, useEffect } from 'react'
 type NotificationState = 'ALL' | 'MENTIONS' | 'MUTED'
 
 const getNextNotificationState = (current: NotificationState): NotificationState => {
@@ -21,7 +20,27 @@ const useNotificationToggle = () => {
   const chatRoom = useChatStore((state) => state.chatRoom)
   const user = useAuthStore((state) => state.profile)
   const [notificationState, setNotificationState] = useState<NotificationState>('MENTIONS')
-  const { request, loading, error } = useApi(updateChannelNotifState, null, false)
+
+  const {
+    request: updateNotifState,
+    loading: updateLoading,
+    error: updateError
+  } = useApi(updateChannelNotifState, null, false)
+  const {
+    request: fetchNotifState,
+    loading: fetchLoading,
+    error: fetchError
+  } = useApi(getChannelNotifState, null, false)
+
+  useEffect(() => {
+    if (!chatRoom?.headingId) return
+
+    fetchNotifState({
+      _channel_id: chatRoom.headingId
+    }).then(({ data }) => {
+      setNotificationState(data as NotificationState)
+    })
+  }, [chatRoom?.headingId, fetchNotifState])
 
   const handleToggle = useCallback(async () => {
     if (!chatRoom?.headingId || !user?.id) return
@@ -29,23 +48,22 @@ const useNotificationToggle = () => {
     const nextState = getNextNotificationState(notificationState)
     setNotificationState(nextState)
 
-    const { error: apiError } = await request({
+    const { error: apiError } = await updateNotifState({
       channelId: chatRoom.headingId,
       memberId: user.id,
       notifState: nextState
     })
 
     if (apiError) {
-      // Revert state if API call fails
       setNotificationState(notificationState)
       console.error('Failed to update notification state:', apiError)
     }
-  }, [chatRoom?.headingId, user?.id, notificationState, request])
+  }, [chatRoom?.headingId, user?.id, notificationState, updateNotifState])
 
   return {
     notificationState,
-    loading,
-    error,
+    loading: fetchLoading || updateLoading,
+    error: fetchError || updateError,
     handleToggle
   }
 }
