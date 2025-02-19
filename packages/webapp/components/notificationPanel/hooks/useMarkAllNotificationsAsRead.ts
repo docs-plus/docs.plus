@@ -6,7 +6,7 @@ export const useMarkAllNotificationsAsRead = () => {
     setNotificationActiveTab,
     emptyNotifications,
     setLoadingNotification,
-    clearNotificationSummary
+    clearNotifications
   } = useStore((state) => state)
   const user = useAuthStore((state) => state.profile)
 
@@ -22,7 +22,7 @@ export const useMarkAllNotificationsAsRead = () => {
       // Clear all notifications from the state
       emptyNotifications()
       setNotificationActiveTab('All')
-      clearNotificationSummary()
+      clearNotifications()
     } catch (error) {
       console.error('Error marking all notifications as read:', error)
     } finally {
