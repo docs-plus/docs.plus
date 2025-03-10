@@ -78,6 +78,10 @@ const deleteSelectedRange = (editor) => {
   const { state } = editor
   const { selection, doc, tr } = state
   const { $from, $to, from, to, $anchor, $head } = selection
+  const docSize = doc.content.size
+
+  // if the selection is the whole document, then let default behavior
+  if (docSize === $to.pos && $from.pos === 0) return false
 
   const blockRange = $from.blockRange($to)
   const titleStartPos = $from.start(1) - 1
