@@ -370,7 +370,17 @@ export const extractParagraphsAndHeadings = (clipboardContents) => {
   return [paragraphs, headings]
 }
 
-// TODO: range of node number must be reconsidered, it has long range for iteration
+/**
+ * Inserts remaining headings from clipboard content into the document
+ * @param {Object} params - The parameters object
+ * @param {Object} params.state - The editor state
+ * @param {Object} params.tr - The current transaction being built
+ * @param {Array<Node>} params.headings - Array of heading nodes to insert
+ * @param {number} params.titleStartPos - Start position of the title/document section
+ * @param {number} params.titleEndPos - End position of the title/document section
+ * @param {number} params.prevHStartPos - Start position of the previous heading
+ * @returns {void} - This function modifies the transaction directly and doesn't return a value
+ */
 export const insertRemainingHeadings = ({
   state,
   tr,
@@ -453,7 +463,7 @@ export const getEndPosSelection = (doc, state) => {
 }
 
 // This is a temporary fix for detecting multiple selections.
-// I haven’t found a better solution yet.
+// I haven't found a better solution yet.
 // Heads-up: selecting text by dragging the cursor works differently than double-clicking or tapping on a line.
 export const isMultipleSelection = (doc, start, end) => {
   const textBetween = doc.textBetween(start, end, '-/||/-')
@@ -683,7 +693,7 @@ export const getSelectionRangeSlice = (doc, state, start, end) => {
     }
   })
 
-  if (sResolve.parentOffset > 0) {
+  if (sResolve.parentOffset > 0 && selectedContents.length) {
     let firstNode = selectedContents.at(0)
     const newposfor = newStart + sResolve.parentOffset
     const newContent = firstNode.node.cut(newposfor - firstNode.startBlockPos)
@@ -692,4 +702,164 @@ export const getSelectionRangeSlice = (doc, state, start, end) => {
   }
 
   return selectedContents
+}
+
+/**
+ * Creates a ProseMirror node from a JSON representation using the provided schema
+ *
+ * @param {Object} node - JSON representation of a node
+ * @param {Object} schema - ProseMirror schema to use for node creation
+ * @returns {Node} - ProseMirror node instance
+ */
+export const createNodeFromJSON = (node, schema) => schema.nodeFromJSON(node)
+
+/**
+ * Flattens heading nodes into a single array
+ *
+ * Takes heading nodes that have a nested structure and extracts:
+ * 1. The title node (content[0])
+ * 2. All child content nodes (content[1].content)
+ *
+ * Returns them as a flat array in sequential order.
+ *
+ * @param {Array} headings - Heading nodes to flatten
+ * @returns {Array} - Flat array of all nodes
+ */
+export const linearizeHeadingNodes = (headings) => {
+  const flatHeadings = []
+
+  headings.forEach((heading) => {
+    const headingTitleNode = heading.content.at(0)
+    const contentWrapperNodes = heading.content.at(1).content
+
+    flatHeadings.push(headingTitleNode)
+    flatHeadings.push(...contentWrapperNodes)
+  })
+
+  return flatHeadings
+}
+
+/**
+ * Transforms clipboard content into structured document format
+ *
+ * Takes raw clipboard nodes and organizes them into paragraphs and properly
+ * structured heading hierarchies according to the DocsPlus schema.
+ *
+ * @param {Array} clipboardContents - Raw nodes from clipboard
+ * @param {Object} options - Options object
+ * @param {Object} options.schema - ProseMirror schema for node creation
+ * @returns {Array} - Array containing [paragraphs, headings]
+ */
+export const transformClipboardToStructured = (clipboardContents, { schema }) => {
+  const paragraphs = []
+  const headings = []
+  let currentHeading = null
+
+  // Iterate through clipboard contents and categorize nodes as paragraphs or headings
+  clipboardContents.forEach((node) => {
+    // If no heading is found and the node is not a heading type, treat it as a paragraph
+    if (!currentHeading && node.type !== ENUMS.NODES.CONTENT_HEADING_TYPE) {
+      paragraphs.push(createNodeFromJSON(node, schema))
+    } else if (node.type === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+      // If a new heading is found, push the previous heading into the heading list and reset the heading
+      if (currentHeading) {
+        headings.push(createNodeFromJSON(currentHeading, schema))
+      }
+      currentHeading = {
+        type: ENUMS.NODES.HEADING_TYPE,
+        attrs: { ...node?.attrs, id: null },
+        content: [
+          node,
+          {
+            type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
+            content: []
+          }
+        ]
+      }
+    } else {
+      // If the node is not a heading, append it to the current heading's content
+      currentHeading?.content[1].content.push(node)
+    }
+  })
+
+  // Push the last heading into the headings array if it exists
+  if (currentHeading) {
+    headings.push(createNodeFromJSON(currentHeading, schema))
+  }
+
+  return [paragraphs, headings]
+}
+
+/**
+ * Inserts heading nodes into the document at their appropriate positions
+ *
+ * This function places each heading in the correct location within the document structure,
+ * maintaining proper hierarchical relationships between headings of different levels.
+ * It determines insertion positions by analyzing existing heading blocks and their levels,
+ * handling nesting appropriately, and updating position references after each insertion.
+ *
+ * @param {Transaction} tr - The ProseMirror transaction to modify
+ * @param {Array} headings - Array of heading nodes to insert
+ * @param {number} lastBlockPos - Position of the last block in the document
+ * @param {Object} lastH1Inserted - Reference to track the last H1 heading inserted
+ * @param {number} lastH1Inserted.startBlockPos - Start position of the last H1 heading
+ * @param {number} lastH1Inserted.endBlockPos - End position of the last H1 heading
+ * @param {number} from - Original cursor position
+ * @param {number} titleStartPos - Start position of the document title
+ * @param {number} prevHStartPos - Start position of the previous heading
+ * @returns {Object} - Updated position references {lastBlockPos, prevHStartPos}
+ */
+export const insertHeadingsByNodeBlocks = (
+  tr,
+  headings,
+  lastBlockPos,
+  lastH1Inserted,
+  from,
+  titleStartPos,
+  prevHStartPos
+) => {
+  let mapHPost = {}
+
+  // Iterate over each heading and insert it into the correct position
+  headings.forEach((heading) => {
+    const comingLevel = heading.attrs.level || heading.content.firstChild.attrs.level
+    const startBlock =
+      lastH1Inserted.startBlockPos === 0 ? tr.mapping.map(from) : lastH1Inserted.startBlockPos
+    const endBlock =
+      lastH1Inserted.endBlockPos === 0
+        ? tr.mapping.map(from)
+        : tr.doc.nodeAt(lastH1Inserted.startBlockPos).content.size + lastH1Inserted.startBlockPos
+
+    // Get the map of headings blocks within the specified range
+    mapHPost = getHeadingsBlocksMap(tr.doc, startBlock, endBlock).filter(
+      (x) => x.startBlockPos >= (comingLevel === 1 ? titleStartPos : prevHStartPos)
+    )
+
+    // Find the previous block and determine if it should be nested
+    let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
+
+    // Find the last occurrence of the previous block level if there are duplicates
+    const robob = mapHPost.filter((x) => prevBlock?.le === x?.le)
+    if (robob.length > 1) {
+      prevBlock = robob.at(-1)
+    }
+
+    lastBlockPos = prevBlock?.endBlockPos
+
+    // Update the previous heading start position if the previous block is at depth 2
+    if (prevBlock && prevBlock.depth === 2) {
+      prevHStartPos = prevBlock.startBlockPos
+    }
+
+    // Insert the heading at the appropriate position
+    tr.insert(lastBlockPos - (shouldNested ? 2 : 0), heading)
+
+    // Update the position of the last H1 heading inserted
+    if (comingLevel === 1) {
+      lastH1Inserted.startBlockPos = lastBlockPos
+      lastH1Inserted.endBlockPos = tr.mapping.map(lastBlockPos + heading.content.size)
+    }
+  })
+
+  return { lastBlockPos, prevHStartPos }
 }
