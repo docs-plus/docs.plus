@@ -88,6 +88,7 @@
     "eslint-config-next": "^15.2.1",
     "google-one-tap": "^1.0.6",
     "immer": "^10.1.1",
+    "jquery": "^3.7.1",
     "js-cookie": "^3.0.5",
     "lorem-ipsum": "^2.0.8",
     "lowlight": "^3.3.0",
