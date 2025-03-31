@@ -3,7 +3,8 @@ import {
   getRangeBlocks,
   getPrevHeadingList,
   findPrevBlock,
-  getSelectionRangeBlocks
+  getSelectionRangeBlocks,
+  convertHeadingsToParagraphs
 } from '../helper'
 import ENUMS from '../../enums'
 
@@ -45,15 +46,6 @@ const normalizeHeading = (heading) => {
   return heading
 }
 
-// Convert selected content blocks to paragraphs if they are headings
-const convertHeadingsToParagraphs = (contentBlocks) => {
-  return contentBlocks.map((contentBlock) =>
-    contentBlock.level
-      ? { ...contentBlock, type: 'paragraph', content: contentBlock.content }
-      : contentBlock
-  )
-}
-
 // Separate content blocks into paragraphs and headings
 const partitionContentBlocks = (contentBlocks) => {
   const paragraphs = contentBlocks.filter((block) => block.type !== ENUMS.NODES.HEADING_TYPE)
@@ -65,6 +57,11 @@ const onHeading = (args) => {
   const { editor, state, tr, backspaceAction } = args
   const { selection, doc } = state
   const { $from, $to, from, to } = selection
+
+  if ($from.pos - $from.textOffset === 2) {
+    console.warn('[NormalText]: First heading title, skipping')
+    return
+  }
 
   // Calculate the position at the end of the title section
   const titleSectionEndPos = $to.end(1)

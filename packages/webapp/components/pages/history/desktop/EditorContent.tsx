@@ -23,7 +23,7 @@ const EditorContent = () => {
     <div className="editorWrapper flex h-full grow items-start justify-center overflow-y-auto border-t-0 p-0 sm:py-4">
       <TiptapEditorContent
         editor={editor}
-        className="tiptap__editor mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8"
+        className="tiptap__editor docy_editor mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8"
       />
     </div>
   )

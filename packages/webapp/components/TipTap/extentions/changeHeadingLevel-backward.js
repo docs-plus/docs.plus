@@ -1,4 +1,3 @@
-import { TextSelection } from '@tiptap/pm/state'
 import ENUMS from '../enums'
 import {
   getRangeBlocks,
@@ -66,8 +65,8 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
   tr.setSelection(updatedSelection)
 
   const lastH1Inserted = {
-    startBlockPos: 0,
-    endBlockPos: 0
+    startBlockPos: Math.min(tr.mapping.map(titleStartPos), tr.doc.content.size),
+    endBlockPos: Math.min(tr.mapping.map(titleEndPos), tr.doc.content.size)
   }
 
   let totalNodeSize = 0
@@ -77,7 +76,8 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
 
   if (comingLevel === 1) {
     lastH1Inserted.startBlockPos = insertPos
-    lastH1Inserted.endBlockPos = insertPos + totalNodeSize
+    lastH1Inserted.endBlockPos =
+      tr.doc.nodeAt(lastH1Inserted.startBlockPos).content.size + lastH1Inserted.startBlockPos
   }
 
   insertRemainingHeadings({

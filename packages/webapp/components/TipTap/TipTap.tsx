@@ -66,6 +66,8 @@ import TableCell from '@tiptap/extension-table-cell'
 import TableHeader from '@tiptap/extension-table-header'
 import TableRow from '@tiptap/extension-table-row'
 
+import History from '@tiptap/extension-history'
+
 import { Indent } from './extentions/indent'
 
 import ChatCommentExtension from './extentions/ChatCommentExtension'
@@ -79,6 +81,9 @@ import {
   twitterModal
 } from '@docs.plus/extension-hypermultimedia'
 // import Placeholders from './placeholders'
+
+import * as Y from 'yjs'
+import { IndexeddbPersistence } from 'y-indexeddb'
 
 const lowlight = createLowlight()
 lowlight.register('html', html)
@@ -152,11 +157,15 @@ const generatePlaceholderText = (data: any) => {
 const Editor = ({
   provider,
   spellcheck = false,
-  editable = true
+  editable = true,
+  localPersistence = false,
+  docName = 'example-document'
 }: {
   provider?: any
   spellcheck?: boolean
   editable?: boolean
+  localPersistence?: boolean
+  docName?: string
 }): Partial<UseEditorOptions> => {
   const {
     settings: {
@@ -213,7 +222,8 @@ const Editor = ({
     HyperMultimediaKit.configure({
       Image: {
         modal: imageModal,
-        inline: true
+        inline: true,
+        allowBase64: true
       },
       Video: {
         modal: youtubeModal,
@@ -250,14 +260,34 @@ const Editor = ({
   ]
 
   if (!provider) {
+    // Create local persistence if enabled
+    const extensions = [
+      ...baseExtensions,
+      History.configure({
+        depth: 5
+      })
+    ]
+
+    if (localPersistence && docName) {
+      const ydoc = new Y.Doc()
+      new IndexeddbPersistence(docName, ydoc)
+
+      extensions.push(
+        Collaboration.configure({
+          document: ydoc
+        })
+      )
+    }
+
     return {
       editorProps: {
         attributes: {
           spellcheck: spellcheck.toString()
         }
       },
+      immediatelyRender: false,
       editable,
-      extensions: baseExtensions
+      extensions
     }
   }
 
@@ -267,7 +297,6 @@ const Editor = ({
   return {
     onCreate: scrollDown,
     enableContentCheck: true,
-    content: 'heading',
     onContentError({ editor, error, disableCollaboration }) {
       console.error('onContentError', error)
     },
