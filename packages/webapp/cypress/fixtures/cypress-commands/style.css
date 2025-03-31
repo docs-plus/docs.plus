@@ -1,0 +1,57 @@
+body {
+  font-family: sans-serif;
+  margin: 0;
+  padding: 20px;
+}
+
+.tiptap__editor {
+  border: 1px solid #ccc;
+  padding: 20px;
+  border-radius: 4px;
+  margin: auto;
+  width: 80%;
+}
+
+.heading {
+  margin-bottom: 10px;
+}
+
+.title {
+  margin: 0;
+}
+
+.contentWrapper {
+  padding-left: 20px;
+}
+
+.contents {
+  margin-top: 10px;
+}
+
+p {
+  margin: 5px 0;
+}
+
+.codeBlock {
+  background-color: #f0f0f0;
+  padding: 10px;
+  border-radius: 4px;
+}
+
+.codeBlock pre {
+  margin: 0;
+}
+
+.codeBlock code {
+  font-family: monospace;
+}
+
+.codeBlock pre {
+  margin: 0;
+}
+
+.heading[level='1'] {
+  border: 2px solid orangered;
+  padding: 10px;
+  border-radius: 4px;
+}

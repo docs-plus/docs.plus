@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Complex Formatting Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      line-height: 1.6;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    #content-to-copy {
+      border: 1px solid #ccc;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      margin-bottom: 20px;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    .code-block {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      font-family: monospace;
+      white-space: pre;
+      overflow-x: auto;
+      margin-bottom: 20px;
+    }
+
+    blockquote {
+      border-left: 4px solid #ccc;
+      padding-left: 15px;
+      color: #666;
+      font-style: italic;
+    }
+
+    .image-container {
+      text-align: center;
+      margin: 20px 0;
+    }
+
+    .image-container img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    .caption {
+      font-size: 0.9em;
+      color: #666;
+      text-align: center;
+    }
+
+    .definition-list dt {
+      font-weight: bold;
+    }
+
+    .definition-list dd {
+      margin-left: 20px;
+      margin-bottom: 10px;
+    }
+
+    .controller {
+      margin-top: 20px;
+      padding: 10px;
+      background-color: #f2f2f2;
+      border-radius: 5px;
+    }
+
+    button {
+      padding: 8px 12px;
+      margin-right: 10px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="content-to-copy">
+    <h1>Complex Formatting Test</h1>
+    <p>This page contains complex HTML formatting for testing paste functionality.</p>
+
+    <div>
+      <h2>Advanced Document Structure</h2>
+
+      <p>This document demonstrates various <strong>formatting features</strong> that should be preserved when pasted
+        into
+        the editor.</p>
+
+      <h3>Data Comparison Table</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th>Priority</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Tables</td>
+            <td>Support for complex table structures</td>
+            <td>Implemented</td>
+            <td>High</td>
+          </tr>
+          <tr>
+            <td>Lists</td>
+            <td>Nested ordered and unordered lists</td>
+            <td>Implemented</td>
+            <td>High</td>
+          </tr>
+          <tr>
+            <td>Code blocks</td>
+            <td>Syntax highlighting for code</td>
+            <td>In progress</td>
+            <td>Medium</td>
+          </tr>
+          <tr>
+            <td>Images</td>
+            <td>Support for embedded images with captions</td>
+            <td>Implemented</td>
+            <td>Medium</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>Nested List Structures</h3>
+      <p>The following demonstrates complex list nesting:</p>
+
+      <h4>Feature Categories</h4>
+      <ul>
+        <li>Text Formatting
+          <ul>
+            <li><em>Italic text</em> for emphasis</li>
+            <li><strong>Bold text</strong> for strong emphasis</li>
+            <li><u>Underlined text</u> for highlighting</li>
+            <li><code>Inline code</code> for technical terms</li>
+          </ul>
+        </li>
+        <li>Block Elements
+          <ul>
+            <li>Paragraphs with proper spacing</li>
+            <li>Blockquotes for citations
+              <blockquote>This is a nested blockquote that should be preserved with its formatting intact.</blockquote>
+            </li>
+            <li>Code blocks for multi-line code
+
+            </li>
+          </ul>
+        </li>
+      </ul>
+
+      <h4>Implementation Steps</h4>
+      <ol>
+        <li>Define the document structure
+          <ol type="a">
+            <li>Identify key components</li>
+            <li>Create schema definitions</li>
+            <li>Implement validation rules</li>
+          </ol>
+        </li>
+        <li>Develop the rendering engine
+          <ol type="a">
+            <li>Create component hierarchy</li>
+            <li>Implement styling system</li>
+            <li>Add interactive behaviors
+              <ol type="i">
+                <li>Click handlers</li>
+                <li>Keyboard navigation</li>
+                <li>Drag and drop support</li>
+              </ol>
+            </li>
+          </ol>
+        </li>
+        <li>Test across platforms
+          <ul>
+            <li>Desktop browsers</li>
+            <li>Mobile devices</li>
+            <li>Screen readers for accessibility</li>
+          </ul>
+        </li>
+      </ol>
+
+
+
+      <p>The system architecture combines several <a href="#components">components</a> working together:</p>
+      <pre class="code-block">
+        <code>function example()</code>
+      </pre>
+      <p>For more information, see the <a href="https://example.com/docs">documentation</a>.</p>
+    </div>
+  </div>
+  <div class="controller" style="display: none;">
+    <button id="btn_selectContents">Select Contents</button>
+    <button id="btn_copyContents">Copy Contents</button>
+  </div>
+  <script src="script.js"></script>
+</body>
+
+</html>
