@@ -25,10 +25,21 @@ import {
 const insertParagraphsAtPosition = (tr, paragraphs, state, from) => {
   if (paragraphs.length === 0) return
 
+  // Create content array, ensuring TextNodes are properly wrapped
+  const contentArray = [...paragraphs]
+    .map((node) => {
+      // If it's a TextNode, wrap it in a paragraph
+      if (node.type === 'text' || node.type?.name === 'text') {
+        return state.schema.nodes.paragraph.create(null, [node])
+      }
+      return node
+    })
+    .map((p) => p.toJSON())
+
   // Create a proper slice from the paragraphs
   const fragment = state.schema.nodeFromJSON({
     type: 'doc',
-    content: [...paragraphs].map((p) => p.toJSON())
+    content: contentArray
   }).content
 
   const slice = new Slice(fragment, 1, 1) // openStart=1, openEnd=1 to allow merging
@@ -106,7 +117,14 @@ const clipboardPaste = (slice, editor) => {
   const [paragraphs, headings] = transformClipboardToStructured(aggregatedContent, state)
 
   // If there are no headings to paste, return the original slice simple content will be handel in contentWrapper node
-  if (headings.length === 0) return slice
+  if (headings.length === 0) {
+    if (paragraphs.length) {
+      insertParagraphsAtPosition(tr, paragraphs, state, from)
+    }
+    tr.setMeta('paste', true)
+    view.dispatch(tr)
+    return Slice.empty
+  }
 
   // Delete all content from the caret to the end of the document
   tr.delete(from, titleEndPos)
@@ -116,12 +134,13 @@ const clipboardPaste = (slice, editor) => {
   }
 
   let lastBlockPos = paragraphs.length === 0 ? from : tr.mapping.map(from)
+
   const { prevHStartPos } = getPrevHeadingPos(tr.doc, titleStartPos, lastBlockPos)
 
   // Initialize the position of the last H1 heading inserted
   let lastH1Inserted = {
-    startBlockPos: tr.mapping.map(titleStartPos),
-    endBlockPos: tr.mapping.map(titleEndPos)
+    startBlockPos: Math.min(tr.mapping.map(titleStartPos), tr.doc.content.size),
+    endBlockPos: Math.min(tr.mapping.map(titleEndPos), tr.doc.content.size)
   }
 
   try {

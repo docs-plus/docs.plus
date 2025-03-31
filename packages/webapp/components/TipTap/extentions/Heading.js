@@ -71,6 +71,12 @@ const Heading = Node.create({
         update: (updatedNode) => {
           if (updatedNode.type.name !== this.name) return false
 
+          // Update the level attribute when it changes
+          const newLevel = updatedNode.firstChild?.attrs.level
+          if (newLevel && dom.getAttribute('level') !== newLevel.toString()) {
+            dom.setAttribute('level', newLevel)
+          }
+
           const prevHeadingId = dom.getAttribute('data-id')
           const newHeadingId = updatedNode.attrs.id
 
@@ -141,6 +147,12 @@ const Heading = Node.create({
         if ($anchor?.pos === $head?.pos) return false
 
         console.info('[Heading] Delete key pressed')
+
+        // Check if selection covers entire document content
+        // Due to document schema hierarchy, content starts at position 2 and ends at docSize - 3
+        const docSize = this.editor.state.doc.content.size
+        const isEntireDocument = $anchor.pos === 2 && $head.pos === docSize - 3
+        if (isEntireDocument) return false
 
         // if user select a range of content, then hit any key, remove the selected content
         return deleteSelectedRange(this.editor)
@@ -220,7 +232,9 @@ const Heading = Node.create({
           }
         }),
         {}
-      )
+      ),
+      // Add shortcut for normal text (level 0)
+      'Mod-Alt-0': () => this.editor.commands.normalText()
     }
   },
   addInputRules() {
@@ -254,23 +268,25 @@ const Heading = Node.create({
   addProseMirrorPlugins() {
     let domeEvent
     return [
-      new Plugin({
-        key: new PluginKey('ensureContentWrapperPlugin'),
-        appendTransaction: (transactions, oldState, newState) => {
-          let tr = newState.tr
-          let modified = false
+      // new Plugin({
+      //   key: new PluginKey('ensureContentWrapperPlugin'),
+      //   appendTransaction: (transactions, oldState, newState) => {
+      //     console.log('ensureContentWrapperPlugin running, doc size:', newState.doc.nodeSize)
+      //     let tr = newState.tr
+      //     let modified = false
 
-          newState.doc.descendants((node, pos) => {
-            if (node.type.name === ENUMS.NODES.HEADING_TYPE && !node.childCount) {
-              const contentWrapper = newState.schema.nodes.contentWrapper.create()
-              tr = tr.insert(pos + node.nodeSize, contentWrapper)
-              modified = true
-            }
-          })
+      //     newState.doc.descendants((node, pos) => {
+      //       if (node.type.name === ENUMS.NODES.HEADING_TYPE && !node.childCount) {
+      //         console.log('Empty heading found at pos:', pos, 'Adding contentWrapper')
+      //         const contentWrapper = newState.schema.nodes.contentWrapper.create()
+      //         tr = tr.insert(pos + node.nodeSize, contentWrapper)
+      //         modified = true
+      //       }
+      //     })
 
-          return modified ? tr : null
-        }
-      }),
+      //     return modified ? tr : null
+      //   }
+      // }),
       // https://github.com/pageboard/pagecut/blob/bd91a17986978d560cc78642e442655f4e09ce06/src/editor.js#L234-L241
       new Plugin({
         key: new PluginKey('copy&pasteHeading'),
@@ -285,7 +301,7 @@ const Heading = Node.create({
             }
           },
           // INFO: Div turn confuses the schema service;
-          // INFO:if there is a div in the clipboard, the docsplus schema will not serialize as a must.
+          // INFO: if there is a div in the clipboard, the docsplus schema will not serialize as a must.
           transformPastedHTML: (html) => html.replace(/div/g, 'span'),
           transformPasted: (slice) => clipboardPast(slice, this.editor),
           transformCopied: () => {

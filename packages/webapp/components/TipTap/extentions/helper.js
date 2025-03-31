@@ -191,7 +191,9 @@ export const getRangeBlocks = (doc, start, end) => {
 export const getHeadingsBlocksMap = (doc, start, end) => {
   const titleHMap = []
 
-  doc.nodesBetween(start, end, function (node, pos, parent, index) {
+  const newEnd = Math.min(end, doc.content.size)
+
+  doc.nodesBetween(start, newEnd, function (node, pos, parent, index) {
     if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
       const headingLevel = node.firstChild?.attrs?.level
       const depth = doc.resolve(pos).depth
@@ -280,10 +282,11 @@ export const getPrevHeadingPos = (doc, startPos, endPos) => {
   let prevHStartPos = 0
   let prevHEndPos = 0
 
-  doc.nodesBetween(startPos, endPos, function (node, pos) {
+  // Ensure endPos doesn't exceed document size
+  const newEndPos = Math.min(endPos, doc.content.size)
+  doc?.nodesBetween(startPos, newEndPos, function (node, pos) {
     if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
       const depth = doc.resolve(pos).depth
-
       // INFO: this the trick I've looking for
       if (depth === 2) {
         prevHStartPos = pos
@@ -410,7 +413,7 @@ export const insertRemainingHeadings = ({
       mapHPost.at(0).startBlockPos,
       mapHPost.length === 1 && mapHPost.at(0).le === 1
         ? mapHPost.at(0).endBlockPos
-        : tr.mapping.map(mapHPost.at(0).endBlockPos)
+        : Math.max(tr.mapping.map(mapHPost.at(0).endBlockPos), mapHPost.at(0).endBlockPos)
     )
 
     const prevHBlock = getPrevHeadingPos(tr.doc, titleStartPos, tr.mapping.map(titleEndPos))
@@ -823,8 +826,7 @@ export const insertHeadingsByNodeBlocks = (
   // Iterate over each heading and insert it into the correct position
   headings.forEach((heading) => {
     const comingLevel = heading.attrs.level || heading.content.firstChild.attrs.level
-    const startBlock =
-      lastH1Inserted.startBlockPos === 0 ? tr.mapping.map(from) : lastH1Inserted.startBlockPos
+    const startBlock = lastH1Inserted.startBlockPos
     const endBlock =
       lastH1Inserted.endBlockPos === 0
         ? tr.mapping.map(from)
@@ -840,10 +842,8 @@ export const insertHeadingsByNodeBlocks = (
 
     // Find the last occurrence of the previous block level if there are duplicates
     const robob = mapHPost.filter((x) => prevBlock?.le === x?.le)
-    if (robob.length > 1) {
-      prevBlock = robob.at(-1)
-    }
 
+    if (robob.length > 1) prevBlock = robob.at(-1)
     lastBlockPos = prevBlock?.endBlockPos
 
     // Update the previous heading start position if the previous block is at depth 2
@@ -862,4 +862,27 @@ export const insertHeadingsByNodeBlocks = (
   })
 
   return { lastBlockPos, prevHStartPos }
+}
+
+const removeBoldMark = (node) => {
+  if (!node.marks) return node
+  return {
+    ...node,
+    marks: node.marks.filter((mark) => mark.type !== 'bold')
+  }
+}
+
+const convertContentBlockToParagraph = (contentBlock) => {
+  if (!contentBlock.level) return contentBlock
+
+  return {
+    ...contentBlock,
+    type: 'paragraph',
+    content: contentBlock.content?.map(removeBoldMark) || contentBlock.content
+  }
+}
+
+export const convertHeadingsToParagraphs = (contentBlocks) => {
+  if (!Array.isArray(contentBlocks)) return []
+  return contentBlocks.map(convertContentBlockToParagraph)
 }

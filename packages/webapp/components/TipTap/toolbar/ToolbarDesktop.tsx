@@ -92,7 +92,7 @@ const ToolbarDesktop = () => {
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleStrike().run()}
           editor={editor}
-          tooltip="Strike (⌘+S)"
+          tooltip="Strike (⌘+⇧+S)"
           type="strike">
           <Icon type="Stric" size={14} />
         </ToolbarButton>

@@ -285,6 +285,13 @@ const ContentWrapper = Node.create({
           ) {
             return false
           }
+
+          // Check if selection covers entire document content
+          // Due to document schema hierarchy, content starts at position 2 and ends at docSize - 3
+          const docSize = editor.state.doc.content.size
+          const isEntireDocument = $anchor.pos === 2 && $head.pos === docSize - 3
+          if (isEntireDocument) return false
+
           return deleteSelectedRange(editor)
         }
 

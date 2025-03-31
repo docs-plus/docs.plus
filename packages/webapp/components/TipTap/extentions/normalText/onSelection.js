@@ -2,7 +2,8 @@ import { TextSelection } from '@tiptap/pm/state'
 import {
   getSelectionRangeBlocks,
   extractParagraphsAndHeadings,
-  insertRemainingHeadings
+  insertRemainingHeadings,
+  convertHeadingsToParagraphs
 } from '../helper'
 import onHeading from './onHeading'
 
@@ -30,7 +31,7 @@ const onSelection = ({ state, tr, editor }) => {
   const [paragraphs, headings] = extractParagraphsAndHeadings(restSelectionContents)
 
   const newConent = [
-    ...selectedContents.map((node) => state.schema.nodeFromJSON(node)),
+    ...convertHeadingsToParagraphs(selectedContents).map((node) => state.schema.nodeFromJSON(node)),
     ...paragraphs.map((node) => state.schema.nodeFromJSON(node))
   ]
 
