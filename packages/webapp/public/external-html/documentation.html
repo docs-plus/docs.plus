@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MDN Documentation Sample</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      max-width: 800px;
+      margin: 20px auto;
+      line-height: 1.5;
+    }
+
+    .documentation {
+      padding: 20px;
+    }
+
+    pre {
+      background-color: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+    }
+
+    code {
+      font-family: monospace;
+      background-color: #f5f5f5;
+      padding: 2px 4px;
+      border-radius: 3px;
+    }
+
+    h2,
+    h3 {
+      margin-top: 25px;
+    }
+
+    .summary {
+      background-color: #f9f9f9;
+      padding: 10px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+
+<body>
+  <div id="content-to-copy" class="documentation">
+    <h1>Array.prototype.map()</h1>
+    <div class="summary">
+      <p>The <code>map()</code> method <strong>creates a new array</strong> populated with the results of calling a
+        provided function on every element in the calling array.</p>
+    </div>
+    <h2>Syntax</h2>
+    <pre><code>// Arrow function
+map((element) => { /* ... */ })
+map((element, index) => { /* ... */ })
+map((element, index, array) => { /* ... */ })
+
+// Callback function
+map(callbackFn)
+map(callbackFn, thisArg)</code></pre>
+    <h2>Examples</h2>
+    <h3>Mapping an array of numbers</h3>
+    <pre><code>const numbers = [1, 4, 9, 16];
+const roots = numbers.map(Math.sqrt);
+// roots is now [1, 2, 3, 4]
+// numbers is still [1, 4, 9, 16]</code></pre>
+    <h3>Using map to reformat objects in an array</h3>
+    <pre><code>const kvArray = [
+  { key: 1, value: 10 },
+  { key: 2, value: 20 },
+  { key: 3, value: 30 }
+];
+
+const reformattedArray = kvArray.map(({ key, value}) => ({ [key]: value }));
+
+console.log(reformattedArray); // [{ 1: 10 }, { 2: 20 }, { 3: 30 }]</code></pre>
+  </div>
+  <div class="controller" style="display: none;">
+    <button id="btn_selectContents">Select Contents</button>
+    <button id="btn_copyContents">Copy Contents</button>
+  </div>
+  <script src="script.js"></script>
+
+</body>
+
+</html>

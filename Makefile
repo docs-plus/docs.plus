@@ -54,6 +54,13 @@ front_dev:
 local:
 	make -j 4 supabase_start back_dev back_ws front_dev
 
+# Run Cypress tests
+cypress_open:
+	cd packages/webapp && npm run cypress:open
+
+cypress_run:
+	cd packages/webapp && npm run cypress:run
+
 # Start editor development server
 dev_editor:
 	cd packages/webapp && npm run dev

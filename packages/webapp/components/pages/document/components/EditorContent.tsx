@@ -42,7 +42,7 @@ const EditorContent = ({ className }: { className?: string }) => {
       <TiptapEditor
         ref={editorElement}
         className={twMerge(
-          `tiptap__editor relative ${!applyingFilters ? 'block' : 'hidden'}`,
+          `tiptap__editor docy_editor relative ${!applyingFilters ? 'block' : 'hidden'}`,
           className
         )}
         editor={editor}
