@@ -30,7 +30,7 @@ const useHandelTocUpdate = () => {
           level: node.attrs?.level,
           text: node?.textContent,
           id: headingId,
-          open: headingSection?.classList.contains('opend') || true,
+          open: headingSection?.classList.contains('opend') || false,
           offsetTop: offsetTop
         })
       }
