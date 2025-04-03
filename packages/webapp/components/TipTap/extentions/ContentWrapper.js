@@ -286,6 +286,11 @@ const ContentWrapper = Node.create({
             return false
           }
 
+          // check if the ancher and heading are in the same node
+          if ($anchor.parent.type.name === $head.parent.type.name) {
+            return false
+          }
+
           // Check if selection covers entire document content
           // Due to document schema hierarchy, content starts at position 2 and ends at docSize - 3
           const docSize = editor.state.doc.content.size
