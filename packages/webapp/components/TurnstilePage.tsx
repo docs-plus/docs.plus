@@ -51,6 +51,7 @@ const TurnstilePage: React.FC<TurnstilePageProps> = ({ showTurnstile }) => {
   }
 
   const handleError = (error: string) => {
+    console.error('[TurnstilePage][handleError]', error)
     setError(error)
   }
 
@@ -87,6 +88,10 @@ const TurnstilePage: React.FC<TurnstilePageProps> = ({ showTurnstile }) => {
         onSuccess={handleVerification}
         onError={handleError}
         onExpire={handleError}
+        options={{
+          retry: 'auto',
+          refreshExpired: 'auto'
+        }}
       />
       <div className="absolute bottom-4 right-4 flex items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700">
         <SiCloudflare size={20} className="mr-2 text-[#f38020]" />
