@@ -192,7 +192,10 @@ const Editor = ({
     Gapcursor,
     Paragraph,
     Text,
-    Indent,
+    Indent.configure({
+      indentChars: '\t',
+      enabled: true
+    }),
     ListItem,
     OrderedList,
     Heading.configure(),
