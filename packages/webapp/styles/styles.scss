@@ -252,6 +252,10 @@ $bg-root: #f8f9fa;
     }
   }
 
+  .heading:hover > .title .btnOpenChatBox {
+    visibility: visible;
+  }
+
   .wrapBlock {
     height: 100%;
     display: flex;
@@ -259,9 +263,9 @@ $bg-root: #f8f9fa;
     flex-direction: row-reverse;
     align-items: stretch;
 
-    &:hover > .title .btnOpenChatBox {
-      visibility: visible;
-    }
+    // &:hover > .title .btnOpenChatBox {
+    //   visibility: visible;
+    // }
 
     .title {
       flex: 1;
