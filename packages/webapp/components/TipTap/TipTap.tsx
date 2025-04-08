@@ -68,7 +68,7 @@ import TableRow from '@tiptap/extension-table-row'
 
 import History from '@tiptap/extension-history'
 
-import { Indent } from './extentions/indent'
+import { Indent } from '@docs.plus/extension-indent'
 
 import ChatCommentExtension from './extentions/ChatCommentExtension'
 
