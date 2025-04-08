@@ -1,6 +1,6 @@
 {
   "name": "@docs.plus/extension-indent",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "A Tiptap extension for managing text indentation in documents",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
@@ -11,7 +11,8 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "url": "https://github.com/docs-plus/docsy"
+    "url": "https://github.com/docs-plus/docs.plus",
+    "directory": "packages/extension-indent"
   },
   "scripts": {
     "build": "tsup --dts",
