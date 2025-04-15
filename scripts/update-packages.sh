@@ -2,17 +2,19 @@
 
 echo "🔄 Updating root package dependencies..."
 # Update root package dependencies
-ncu -u
+npx npm-check-updates
 
 echo "📦 Updating individual package dependencies..."
 echo "  ↳ Updating @docs.plus/webapp..."
-npx lerna exec --scope=@docs.plus/webapp -- ncu -u
+npx lerna exec --scope=@docs.plus/webapp -- npx npm-check-updates
 echo "  ↳ Updating @docs.plus/supabase_back..."
-npx lerna exec --scope=@docs.plus/supabase_back -- ncu -u
+npx lerna exec --scope=@docs.plus/supabase_back -- npx npm-check-updates
 echo "  ↳ Updating @docs.plus/hocuspocus..."
-npx lerna exec --scope=@docs.plus/hocuspocus -- ncu -u
+npx lerna exec --scope=@docs.plus/hocuspocus -- npx npm-check-updates
 echo "  ↳ Updating @docs.plus/extension-hyperlink..."
-npx lerna exec --scope=@docs.plus/extension-hyperlink -- ncu -u
+npx lerna exec --scope=@docs.plus/extension-hyperlink -- npx npm-check-updates
+echo "  ↳ Updating @docs.plus/extension-indent..."
+npx lerna exec --scope=@docs.plus/extension-indent -- npx npm-check-updates
 
 echo "✨ All packages updated successfully!"
 echo ""
