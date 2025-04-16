@@ -9,15 +9,16 @@ enabled = true
 # Port to use for the API URL.
 port = 54321
 # Schemas to expose in your API. Tables, views and stored procedures in this schema will get API
-# endpoints. `public` is always included.
+# endpoints. `public` and `graphql_public` schemas are included by default.
 schemas = ["public", "graphql_public"]
-# Extra schemas to add to the search_path of every request. `public` is always included.
+# Extra schemas to add to the search_path of every request.
 extra_search_path = ["public", "extensions"]
 # The maximum number of rows returns from a view, table, or stored procedure. Limits payload size
 # for accidental or malicious requests.
 max_rows = 1000
 
 [api.tls]
+# Enable HTTPS endpoints locally using a self-signed certificate.
 enabled = false
 
 [db]
@@ -41,13 +42,20 @@ default_pool_size = 20
 # Maximum number of client connections allowed.
 max_client_conn = 100
 
+# [db.vault]
+# secret_key = "env(SECRET_VALUE)"
+
+[db.migrations]
+# Specifies an ordered list of schema files that describe your database.
+# Supports glob patterns relative to supabase directory: "./schemas/*.sql"
+schema_paths = []
+
 [db.seed]
 # If enabled, seeds the database after migrations during a db reset.
 enabled = true
 # Specifies an ordered list of seed files to load during db reset.
-# Supports glob patterns relative to supabase directory. For example:
-# sql_paths = ['./seeds/*.sql', '../project-src/seeds/*-load-testing.sql']
-sql_paths = ['./seed.sql']
+# Supports glob patterns relative to supabase directory: "./seeds/*.sql"
+sql_paths = ["./seed.sql"]
 
 [realtime]
 enabled = true
@@ -82,6 +90,7 @@ enabled = true
 # The maximum file size allowed (e.g. "5MB", "500KB").
 file_size_limit = "50MiB"
 
+# Image transformation API is available to Supabase Pro plan.
 [storage.image_transformation]
 enabled = true
 
@@ -118,6 +127,26 @@ minimum_password_length = 6
 # are: `letters_digits`, `lower_upper_letters_digits`, `lower_upper_letters_digits_symbols`
 password_requirements = ""
 
+[auth.rate_limit]
+# Number of emails that can be sent per hour. Requires auth.email.smtp to be enabled.
+email_sent = 2
+# Number of SMS messages that can be sent per hour. Requires auth.sms to be enabled.
+sms_sent = 30
+# Number of anonymous sign-ins that can be made per hour per IP address. Requires enable_anonymous_sign_ins = true.
+anonymous_users = 30
+# Number of sessions that can be refreshed in a 5 minute interval per IP address.
+token_refresh = 150
+# Number of sign up and sign-in requests that can be made in a 5 minute interval per IP address (excludes anonymous users).
+sign_in_sign_ups = 30
+# Number of OTP / Magic link verifications that can be made in a 5 minute interval per IP address.
+token_verifications = 30
+
+# Configure one of the supported captcha providers: `hcaptcha`, `turnstile`.
+# [auth.captcha]
+# enabled = true
+# provider = "hcaptcha"
+# secret = ""
+
 [auth.email]
 # Allow/disallow new user signups via email to your project.
 enable_signup = true
@@ -137,6 +166,7 @@ otp_expiry = 3600
 
 # Use a production-ready SMTP server
 # [auth.email.smtp]
+# enabled = true
 # host = "smtp.sendgrid.net"
 # port = 587
 # user = "apikey"
@@ -183,16 +213,17 @@ message_service_sid = ""
 # DO NOT commit your Twilio auth token to git. Use environment variable substitution instead:
 auth_token = "env(SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN)"
 
+# Multi-factor-authentication is available to Supabase Pro plan.
 [auth.mfa]
 # Control how many MFA factors can be enrolled at once per user.
 max_enrolled_factors = 10
 
-# Control use of MFA via App Authenticator (TOTP)
+# Control MFA via App Authenticator (TOTP)
 [auth.mfa.totp]
-enroll_enabled = true
-verify_enabled = true
+enroll_enabled = false
+verify_enabled = false
 
-# Configure Multi-factor-authentication via Phone Messaging
+# Configure MFA via Phone Messaging
 [auth.mfa.phone]
 enroll_enabled = false
 verify_enabled = false
@@ -200,7 +231,7 @@ otp_length = 6
 template = "Your code is {{ .Code }}"
 max_frequency = "5s"
 
-# Configure Multi-factor-authentication via WebAuthn
+# Configure MFA via WebAuthn
 # [auth.mfa.web_authn]
 # enroll_enabled = true
 # verify_enabled = true
@@ -245,6 +276,12 @@ enabled = false
 # user_pool_id = "my-user-pool-id"
 # user_pool_region = "us-east-1"
 
+# Use Clerk as a third-party provider alongside Supabase Auth.
+[auth.third_party.clerk]
+enabled = false
+# Obtain from https://clerk.com/setup/supabase
+# domain = "example.clerk.accounts.dev"
+
 [edge_runtime]
 enabled = true
 # Configure one of the supported request policies: `oneshot`, `per_worker`.
@@ -252,15 +289,11 @@ enabled = true
 policy = "oneshot"
 # Port to attach the Chrome inspector for debugging edge functions.
 inspector_port = 8083
+# The Deno major version to use.
+deno_version = 1
 
-# Use these configurations to customize your Edge Function.
-# [functions.MY_FUNCTION_NAME]
-# enabled = true
-# verify_jwt = true
-# import_map = "./functions/MY_FUNCTION_NAME/deno.json"
-# Uncomment to specify a custom file path to the entrypoint.
-# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
-# entrypoint = "./functions/MY_FUNCTION_NAME/index.ts"
+# [edge_runtime.secrets]
+# secret_key = "env(SECRET_VALUE)"
 
 [analytics]
 enabled = true
