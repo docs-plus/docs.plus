@@ -2,7 +2,7 @@
   "name": "@docs.plus/hocuspocus",
   "version": "2.0.0-beta.103",
   "private": true,
-  "description": "Hocuspocus is a suite of tools to bring collaboration to your application. It’s based on Y.js (by Kevin Jahns), which is amazing to sync and merge changes from clients in real-time. But you can also use it to build offline-first apps, and sync changes later. We’ll make sure to resolve conflicts and keep everything in sync, always.",
+  "description": "Hocuspocus is a suite of tools to bring collaboration to your application. It's based on Y.js (by Kevin Jahns), which is amazing to sync and merge changes from clients in real-time. But you can also use it to build offline-first apps, and sync changes later. We'll make sure to resolve conflicts and keep everything in sync, always.",
   "main": "index.js",
   "scripts": {
     "prisma:init:migrations": "prisma migrate dev --name init",
@@ -14,13 +14,14 @@
     "lint:fix": "standard *.mjs *.js --fix | snazzy",
     "update:packages": "npx npm-check-updates -u",
     "pm2:stage": "pm2 reload pm2.config.cjs --env production --only stage_rest,stage_ws",
-    "pm2:prod": "pm2 reload pm2.config.cjs --env production --only prod_rest,prod_ws"
+    "pm2:prod": "pm2 reload pm2.config.cjs --env production --only prod_rest,prod_ws",
+    "prisma:generate": "npx prisma generate --schema=./prisma/schema.prisma"
   },
   "keywords": [],
   "author": "Hossein Marzban",
   "type": "module",
   "devDependencies": {
-    "prisma": "6.6.0"
+    "prisma": "^6.6.0"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.787.0",
@@ -30,7 +31,8 @@
     "@hocuspocus/extension-throttle": "^2.15.2",
     "@hocuspocus/server": "^2.15.2",
     "@hocuspocus/transformer": "^2.15.2",
-    "@prisma/client": "6.6.0",
+    "@prisma/adapter-pg": "^6.6.0",
+    "@prisma/client": "^6.6.0",
     "@supabase/supabase-js": "^2.49.4",
     "@tiptap/extension-document": "^2.11.7",
     "@tiptap/extension-paragraph": "^2.11.7",
