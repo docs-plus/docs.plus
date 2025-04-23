@@ -7,7 +7,7 @@
   ],
   "scripts": {
     "start": "sh ./scripts/run_dev.sh",
-    "update:packages": "ncu -u",
+    "update:packages": "npx npm-check-updates -u",
     "start:webapp": "cd packages/webapp && npm run start",
     "dev": "npx lerna run dev --scope=@docs.plus/webapp",
     "build": "npx lerna run build",

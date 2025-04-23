@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "update:packages": "ncu -u",
+    "update:packages": "npx npm-check-updates -u",
     "start": "dotenv -- supabase start",
     "stop": "dotenv -- supabase stop",
     "status": "dotenv -- supabase status",

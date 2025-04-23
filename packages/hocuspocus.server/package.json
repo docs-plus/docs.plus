@@ -12,7 +12,7 @@
     "start:production:rest": "NODE_ENV=production npx prisma migrate deploy && node index.js",
     "start:production:ws": "NODE_ENV=production node -r dotenv/config hocuspocus.server.js",
     "lint:fix": "standard *.mjs *.js --fix | snazzy",
-    "update:packages": "ncu -u",
+    "update:packages": "npx npm-check-updates -u",
     "pm2:stage": "pm2 reload pm2.config.cjs --env production --only stage_rest,stage_ws",
     "pm2:prod": "pm2 reload pm2.config.cjs --env production --only prod_rest,prod_ws"
   },
