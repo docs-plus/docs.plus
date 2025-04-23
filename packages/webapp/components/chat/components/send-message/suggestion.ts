@@ -29,7 +29,8 @@ export default {
           showOnCreate: true,
           interactive: true,
           trigger: 'manual',
-          placement: 'bottom-start'
+          placement: 'bottom-start',
+          zIndex: 9999
         })
       },
 
@@ -46,18 +47,34 @@ export default {
       },
 
       onKeyDown(props) {
+        if (!component || !component.ref) {
+          return false
+        }
+
         if (props.event.key === 'Escape') {
           popup[0].hide()
-
           return true
         }
 
-        return component.ref?.onKeyDown(props)
+        if (['ArrowUp', 'ArrowDown', 'Enter'].includes(props.event.key)) {
+          const result = component.ref.onKeyDown(props)
+
+          if (result) {
+            props.event.preventDefault()
+            return true
+          }
+        }
+
+        return false
       },
 
       onExit() {
-        popup[0].destroy()
-        component.destroy()
+        if (popup && popup[0]) {
+          popup[0].destroy()
+        }
+        if (component) {
+          component.destroy()
+        }
       },
 
       parseHTML: () => [

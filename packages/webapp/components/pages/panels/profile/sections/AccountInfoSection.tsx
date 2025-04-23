@@ -5,23 +5,25 @@ import { useAuthStore } from '@stores'
 import { debounce } from 'lodash'
 import { useUsernameValidation } from '../hooks/useUsernameValidation'
 import * as toast from '@components/toast'
+import { MdAlternateEmail, MdAccountCircle, MdPerson } from 'react-icons/md'
 
-const USERNAME_DEBOUNCE_MS = 2000
+const USERNAME_DEBOUNCE_MS = 1000
 
 const AccountInfoSection: React.FC = () => {
   const user = useAuthStore((state) => state.profile)
   const setProfile = useAuthStore((state) => state.setProfile)
-  const [errorBorderClass, setErrorBorderClass] = useState('')
+  const [usernameError, setUsernameError] = useState<boolean | undefined>(undefined)
   const [inputUsername, setInputUsername] = useState(user?.username || '')
   const validationPromiseRef = useRef<Promise<boolean>>(Promise.resolve(false))
+  const latestUsernameRef = useRef<string>('')
 
   const { validateUsername } = useUsernameValidation()
 
   const debouncedValidate = useCallback(
     debounce((username: string, resolve: (value: boolean) => void) => {
       validateUsername(username).then(({ isValid, errorMessage }) => {
-        setErrorBorderClass(isValid ? 'border-green-500' : 'border-red-500')
-        if (errorMessage) {
+        setUsernameError(isValid ? false : true)
+        if (errorMessage && username === latestUsernameRef.current) {
           toast.Error(errorMessage)
         }
         resolve(isValid)
@@ -34,9 +36,10 @@ const AccountInfoSection: React.FC = () => {
     if (!user) return
     const newUsername = e.target.value.toLowerCase()
     setInputUsername(newUsername)
+    latestUsernameRef.current = newUsername
 
     if (newUsername === '') {
-      setErrorBorderClass('')
+      setUsernameError(undefined)
       return
     }
 
@@ -61,19 +64,21 @@ const AccountInfoSection: React.FC = () => {
   return (
     <div className="flex flex-col">
       <InputOverlapLabel
-        Icon={At}
-        size={17}
+        Icon={MdAccountCircle}
+        size={20}
         label="Full Name"
         className="mt-4"
         value={user?.full_name || ''}
         onChange={handleFullNameChange}
       />
       <InputOverlapLabel
-        Icon={CircleUser}
+        Icon={MdAlternateEmail}
+        size={20}
         label="Username"
-        className={`mt-4 ${errorBorderClass}`}
+        className="mt-4"
         value={inputUsername}
         onChange={handleUsernameChange}
+        error={usernameError}
       />
     </div>
   )

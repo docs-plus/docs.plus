@@ -54,9 +54,9 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
 
   return (
     <div
-      className={`group/msgcard ${
+      className={`group/msgcard chat my-0.5 ${
         ownerMsg ? 'owner chat-end ml-auto' : 'chat-start mr-auto'
-      } msg_card chat relative w-fit min-w-[80%] max-w-[90%] sm:min-w-[250px] ${isGroupEnd ? 'chat_group-end !mb-2' : 'chat_group-start'}`}
+      } msg_card relative w-fit max-w-[90%] min-w-[80%] sm:min-w-[250px] ${isGroupEnd ? 'chat_group-end !mb-2' : 'chat_group-start'}`}
       ref={cardRef}
       onDoubleClick={handleDoubleClick}>
       {!ownerMsg && (
@@ -80,7 +80,7 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
       <MessageHeader data={data} ownerMsg={ownerMsg} />
 
       {isOnlyEmoji(data?.content) ? (
-        <div className="mb-4 min-w-full max-w-[70%]">
+        <div className="mb-4 max-w-[70%] min-w-full">
           {data.reply_to_message_id && <MsgReplyTo data={data} />}
 
           <MessageContent data={data} />
@@ -88,7 +88,7 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
         </div>
       ) : (
         <div
-          className={`chat-bubble !mt-0 flex w-full flex-col px-2 text-base-content ${ownerMsg ? 'bg-bg-chatBubble-owner' : 'bg-white drop-shadow'} ${
+          className={`chat-bubble !mt-0 flex w-full flex-col border-2 border-transparent p-2 ${ownerMsg ? 'bg-chatBubble-owner' : 'bg-white drop-shadow'} ${
             isGroupEnd ? 'bubble_group-end' : 'bubble_group-start !rounded-ee-xl !rounded-es-xl'
           }`}>
           {data.metadata?.comment && <MsgComment data={data} />}
@@ -108,7 +108,7 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
       <MessageContextMenu
         parrentRef={cardRef}
         messageData={data}
-        className="menu z-20 m-0 w-48 rounded-lg bg-base-100 p-2 shadow outline-none"
+        className="menu bg-base-100 z-20 m-0 w-48 rounded-lg p-2 shadow outline-none"
       />
     </div>
   )

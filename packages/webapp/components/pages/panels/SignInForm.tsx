@@ -115,7 +115,7 @@ const SignInForm = ({ ...props }) => {
 
   return (
     <div {...props}>
-      <div className={`${!emailSent && 'border p-5'} rounded-md`}>
+      <div className={`${!emailSent && 'border p-5'} rounded-md border-gray-300`}>
         <div className={`${emailSent ? 'hidden' : 'block'}`}>
           {/* <p className="text-base antialiased text-center font-bold">
             Your journey with Docs.plus begins now!
@@ -136,12 +136,16 @@ const SignInForm = ({ ...props }) => {
             <form onSubmit={signInWithEmail}>
               {/* <input type="email" placeholder="Enter your Email" /> */}
 
-              <InputOverlapLabel
-                className={` ${highlightEmailInput ? 'border-red-600' : ''}`}
-                label="Enter your Email"
-                value={magicLinkEmail}
-                onChange={(e: any) => setMagicLinkEmail(e.target.value)}
-              />
+              <label className="floating-label">
+                <span>Enter your Email</span>
+                <input
+                  className={`${highlightEmailInput} input input-md w-full`}
+                  type="text"
+                  placeholder="mail@site.com"
+                  value={magicLinkEmail}
+                  onChange={(e: any) => setMagicLinkEmail(e.target.value)}
+                />
+              </label>
 
               {emailError && <p className="mt-2 text-red-600">{emailError}</p>}
               <Button

@@ -1,5 +1,14 @@
 .Dialog-overlay {
-  @apply w-full h-full flex align-middle items-center justify-center absolute z-50 backdrop-blur-sm bg-slate-300/20;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  vertical-align: middle;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  z-index: 50;
+  backdrop-filter: blur(4px);
+  background-color: rgb(203 213 225 / 0.2);
 }
 
 .Dialog {

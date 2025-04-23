@@ -26,7 +26,6 @@ const PadTitle = () => {
   const { isAuthServiceAvailable } = useStore((state) => state.settings)
   const [isProfileModalOpen, setProfileModalOpen] = useState(false)
   const [isShareModalOpen, setShareModalOpen] = useState(false)
-  const [isNotificationModalOpen, setNotificationModalOpen] = useState(false)
   const { workspaceId } = useStore((state) => state.settings)
 
   const unreadCount = useNotificationCount({ workspaceId })
@@ -48,7 +47,7 @@ const PadTitle = () => {
 
           <ReadOnlyIndicator />
 
-          <div className="ml-auto mr-3 flex items-center justify-center space-x-4">
+          <div className="mr-3 ml-auto flex items-center justify-center space-x-4">
             {isAuthServiceAvailable && <PresentUsers />}
 
             <Button
@@ -71,14 +70,14 @@ const PadTitle = () => {
 
             {isAuthServiceAvailable && (
               <Dropdown
+                className="dropdown-bottom dropdown-end"
                 button={
                   <Button
-                    onClick={() => setNotificationModalOpen(true)}
                     className="btn-circle btn-ghost btn-outline tooltip tooltip-bottom relative h-[42px] min-h-[42px] w-[42px] border-gray-200"
                     data-tip="Notifications">
                     <FaRegBell size={20} fill="currentColor" className="text-primary" />
                     {unreadCount > 0 && (
-                      <div className="badge badge-sm absolute -right-2 -top-1 rounded-md border-0 bg-docsy text-white">
+                      <div className="badge badge-sm bg-docsy absolute -top-1 -right-2 rounded-md border-0 text-white">
                         {unreadCount}
                       </div>
                     )}
@@ -101,7 +100,7 @@ const PadTitle = () => {
                       width={24}
                       height={24}
                       clickable={false}
-                      className="h-[42px] min-h-[42px] w-[42px] cursor-pointer rounded-full border shadow-md"
+                      className="h-[42px] min-h-[42px] w-[42px] cursor-pointer rounded-full border border-gray-300 shadow-md"
                     />
                   </Button>
                 ) : (

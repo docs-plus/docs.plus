@@ -1,15 +1,29 @@
 export async function fetchDocument(slug, session) {
-  let baseAPIUrl = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${slug}`
-  const url = session ? `${baseAPIUrl}?userId=${session.user.id}` : baseAPIUrl
-  const fetchOptions = session ? { headers: { token: session.access_token || '' } } : {}
+  if (!slug) return null
 
-  const documentMetadata = await fetch(url, fetchOptions).catch(console.error)
-  const { data } = await documentMetadata.json().catch(console.error)
+  try {
+    const baseAPIUrl = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${slug}`
+    const url = session ? `${baseAPIUrl}?userId=${session.user.id}` : baseAPIUrl
+    const headers = session?.access_token ? { token: session.access_token } : {}
 
-  const docClientId = `${data && data.isPrivate ? 'private' : 'public'}.${data.documentId}`
+    const response = await fetch(url, { headers })
 
-  return {
-    ...data,
-    docClientId
+    if (!response.ok) {
+      console.error(`Document fetch failed: ${response.status} ${response.statusText}`)
+      return null
+    }
+
+    const { data } = await response.json()
+
+    if (!data) return null
+
+    // Use optional chaining and nullish coalescing for safety
+    const visibility = data?.isPrivate ? 'private' : 'public'
+    const docClientId = `${visibility}.${data.documentId}`
+
+    return { ...data, docClientId }
+  } catch (error) {
+    console.error('fetchDocument error:', error)
+    return null
   }
 }

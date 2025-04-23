@@ -1,20 +1,36 @@
 /*
-Helper functions
-*/
+ * Helper Functions
+ * This file contains utility functions used throughout the application.
+ */
 
-CREATE OR REPLACE FUNCTION truncate_content(input_content TEXT, max_length INT DEFAULT NULL) RETURNS TEXT AS $$
-DECLARE
+/**
+ * Function: truncate_content
+ * Description: Truncates text content to a specified maximum length, adding ellipsis if needed.
+ * Parameters:
+ *   - input_content: The text content to truncate
+ *   - max_length: Maximum length of the output text (optional, defaults to 80)
+ * Returns: Truncated text with ellipsis appended if truncation occurred
+ * Usage: Used for generating preview text throughout the application
+ */
+create or replace function truncate_content(
+    input_content text,
+    max_length int default null
+) returns text as $$
+declare
     -- Define a constant for the default max length
-    DEFAULT_MAX_LENGTH CONSTANT INT := 80;
-BEGIN
+    default_max_length constant int := 80;
+begin
     -- Use the provided max_length or the default if not provided
-    IF max_length IS NULL THEN
-        max_length := DEFAULT_MAX_LENGTH;
-    END IF;
+    if max_length is null then
+        max_length := default_max_length;
+    end if;
 
-    RETURN CASE
-        WHEN LENGTH(input_content) > max_length THEN LEFT(input_content, max_length - 3) || '...'
-        ELSE input_content
-    END;
-END;
-$$ LANGUAGE plpgsql;
+    return case
+        when length(input_content) > max_length then left(input_content, max_length - 3) || '...'
+        else input_content
+    end;
+end;
+$$ language plpgsql;
+
+comment on function truncate_content(text, int) is
+'Utility function to truncate text content to a specified length with ellipsis, used for preview text generation.';

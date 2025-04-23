@@ -14,9 +14,7 @@ let hasStartedTyping = false
 const displayTypingIndicator = (type: TypingIndicatorType) => {
   const { broadcaster } = useStore.getState().settings
   const { headingId: channelId } = useChatStore.getState().chatRoom
-
   const profile = useAuthStore.getState().profile
-  const displayName = useAuthStore.getState().displayName
 
   // Broadcasting typing indicator event.
   broadcaster
@@ -28,7 +26,7 @@ const displayTypingIndicator = (type: TypingIndicatorType) => {
         activeChannelId: channelId,
         user: {
           id: profile?.id,
-          displayName
+          displayName: profile?.display_name
         }
       }
     })

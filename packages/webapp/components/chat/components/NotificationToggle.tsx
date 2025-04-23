@@ -68,7 +68,7 @@ const useNotificationToggle = () => {
   }
 }
 
-export const NotificationToggle = () => {
+export const NotificationToggle = ({ className }: { className?: string }) => {
   const { notificationState, loading, handleToggle } = useNotificationToggle()
 
   const notificationIcons = {
@@ -79,12 +79,9 @@ export const NotificationToggle = () => {
 
   return (
     <div
-      className="tooltip tooltip-left flex items-center"
+      className={`tooltip tooltip-left flex items-center`}
       data-tip={`Notifications: ${notificationState}`}>
-      <Button
-        loading={loading}
-        onClick={handleToggle}
-        className="btn btn-ghost btn-xs px-1 hover:bg-indigo-500 hover:text-white">
+      <Button loading={loading} onClick={handleToggle} className={`btn btn-sm ${className}`}>
         {notificationIcons[notificationState]}
       </Button>
     </div>

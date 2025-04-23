@@ -26,7 +26,6 @@ export const useLoadMoreNotifications = () => {
       e.preventDefault()
       e.stopPropagation()
       e.nativeEvent.stopImmediatePropagation()
-      console.log('loadMore', { loadingNotification })
       if (loadingNotification) return
       setLoadingNotification(true)
 

@@ -25,7 +25,7 @@ import { useChannel } from '../context/ChannelProvider'
 export const useMessageSubscription = () => {
   const { channelId } = useChannel()
 
-  const [initialSubscribeLoading, setInitialSubscribeLoading] = useState(true)
+  const [isDbSubscriptionReady, setIsDbSubscriptionReady] = useState(false)
   const { documentId: workspaceId } = useChatStore((state) => state.chatRoom)
 
   const user = useAuthStore((state) => state.profile)
@@ -43,7 +43,7 @@ export const useMessageSubscription = () => {
       )
       .subscribe(async (status) => {
         if (status !== 'SUBSCRIBED') return
-        setInitialSubscribeLoading(false)
+        setIsDbSubscriptionReady(true)
       })
 
     return () => {
@@ -51,5 +51,5 @@ export const useMessageSubscription = () => {
     }
   }, [channelId, workspaceId, user])
 
-  return { initialSubscribeLoading }
+  return { isDbSubscriptionReady }
 }

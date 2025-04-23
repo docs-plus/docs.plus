@@ -4,13 +4,13 @@ import BreadcrumbMobile from './BreadcrumbMobile'
 import { CopyUrlButton } from './CopyUrlButton'
 import { NotificationToggle } from './NotificationToggle'
 
-const CloseButton = ({ onClick }: any) => (
-  <button className="btn btn-circle btn-xs ml-auto" onClick={onClick}>
+const CloseButton = ({ onClick, className }: any) => (
+  <button className={`btn btn-sm ${className}`} onClick={onClick}>
     <IoCloseSharp size={20} />
   </button>
 )
 
-const ToolbarMobile = () => {
+const ToolbarMobile = ({ className }: { className?: string }) => {
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
   const chatRoom = useChatStore((state) => state.chatRoom)
 
@@ -22,14 +22,14 @@ const ToolbarMobile = () => {
   }
 
   return (
-    <div className="relative z-50 flex w-full items-center bg-white p-2">
+    <div className={`relative z-50 flex w-full items-center bg-white p-2 ${className}`}>
       <div className="min-w-0 flex-1">
         <BreadcrumbMobile />
       </div>
-      <div className="flex items-center space-x-5 rounded-md p-1 px-2">
-        <CopyUrlButton url={getChatRoomUrl()} className="btn btn-circle btn-ghost btn-xs" />
-        <NotificationToggle />
-        <CloseButton onClick={destroyChatRoom} />
+      <div className="join flex items-center rounded-md p-1 px-2">
+        <CopyUrlButton url={getChatRoomUrl()} className="btn join-item btn-sm" />
+        <NotificationToggle className="join-item btn-sm" />
+        <CloseButton onClick={destroyChatRoom} className="join-item btn-sm" />
       </div>
     </div>
   )

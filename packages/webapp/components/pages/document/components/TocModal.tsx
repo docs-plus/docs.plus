@@ -23,25 +23,25 @@ const TocModal = ({ filterModalRef }: any) => {
   }
 
   return (
-    <div className="z-30 h-full w-full min-w-[80%] max-w-[80%] bg-base-200 text-base-content">
+    <div className="bg-base-200 text-base-content z-30 h-full w-full max-w-[80%] min-w-[80%]">
       <div className="modalWrapper z-30 size-full overflow-hidden overflow-y-auto">
-        <div className="sticky top-0 z-20 flex w-full justify-center overflow-hidden border-b bg-base-100 py-3 align-middle">
+        <div className="bg-base-100 sticky top-0 z-20 flex w-full justify-center overflow-hidden border-b border-gray-300 py-3 align-middle">
           <Link
             href="/"
             className="ml-1 flex size-8 justify-center align-middle text-black outline-0">
             <DocsPlus size={70} />
           </Link>
           <DocTitle className="mt-0 w-8/12 overflow-hidden" />
-          <div className="ml-auto mr-3 flex w-4/12 flex-row items-center justify-end gap-3">
+          <div className="join mr-3 ml-auto flex w-4/12 flex-row items-center justify-end">
             <label
               htmlFor="mobile_history_panel"
               aria-label="close sidebar"
-              className="btn btn-circle btn-sm"
+              className="btn btn-sm join-item"
               onClick={() => {
                 closeModal?.()
                 window.location.hash = 'history'
               }}>
-              <MdHistory size={22} />
+              <MdHistory size={20} />
             </label>
             <label
               htmlFor="mobile_history_panel"
@@ -49,15 +49,15 @@ const TocModal = ({ filterModalRef }: any) => {
                 handleFilterClick()
                 closeModal?.()
               }}
-              className="btn btn-circle btn-sm">
-              <MdFilterAlt size={20} />
+              className="btn btn-sm join-item">
+              <MdFilterAlt size={18} />
             </label>
             <label
               onClick={() => closeModal?.()}
               htmlFor="mobile_history_panel"
               aria-label="close sidebar"
-              className="btn btn-circle btn-sm">
-              <IoClose size={24} />
+              className="btn btn-sm join-item">
+              <IoClose size={22} />
             </label>
           </div>
         </div>

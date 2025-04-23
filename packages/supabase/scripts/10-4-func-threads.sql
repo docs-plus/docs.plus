@@ -1,7 +1,20 @@
------------------------------------------
------------------------------------------
+/*
+ * Thread Management Functions
+ * This file contains functions and triggers related to message threads:
+ * - Thread depth tracking
+ * - Thread message creation and management
+ * - Thread message count maintenance
+ * - Thread deletion handling
+ */
 
-CREATE OR REPLACE FUNCTION handle_set_thread_depth()
+/**
+ * Function: set_message_thread_depth
+ * Description: Sets the thread depth for messages in a thread
+ * Trigger: Executes before INSERT on public.messages
+ * Action: Sets the thread_depth based on the parent message's thread_depth + 1
+ * Returns: The modified NEW record
+ */
+CREATE OR REPLACE FUNCTION set_message_thread_depth()
 RETURNS TRIGGER AS $$
 DECLARE
     parent_thread_depth INT;
@@ -18,14 +31,22 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_set_thread_depth
+CREATE TRIGGER set_thread_depth
 BEFORE INSERT ON public.messages
 FOR EACH ROW
 WHEN (NEW.thread_id IS NOT NULL)
-EXECUTE FUNCTION handle_set_thread_depth();
+EXECUTE FUNCTION set_message_thread_depth();
 
------------------------------------------
------------------------------------------
+/**
+ * Function: create_thread_message
+ * Description: Creates or adds a message to a thread, handling thread channel creation
+ * Parameters:
+ *   - p_content: The message content
+ *   - p_html: The HTML content of the message
+ *   - p_thread_id: The ID of the thread/root message
+ *   - p_workspace_id: The workspace ID for the thread
+ * Returns: VOID
+ */
 CREATE OR REPLACE FUNCTION create_thread_message(
     p_content TEXT,
     p_html TEXT,
@@ -92,9 +113,13 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
------------------------------------------
------------------------------------------
-
+/**
+ * Function: increment_thread_message_count
+ * Description: Increments the message count in a thread's metadata
+ * Trigger: Executes before INSERT on public.messages
+ * Action: Updates the thread root message's metadata to increment message_count
+ * Returns: The NEW record
+ */
 CREATE OR REPLACE FUNCTION increment_thread_message_count()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -136,14 +161,18 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
-CREATE TRIGGER trigger_increment_thread_message_count
+CREATE TRIGGER increment_thread_count
 BEFORE INSERT ON public.messages
 FOR EACH ROW
 EXECUTE FUNCTION increment_thread_message_count();
 
------------------------------------------
------------------------------------------
+/**
+ * Function: decrement_thread_message_count
+ * Description: Decrements the message count in a thread's metadata when a message is deleted
+ * Trigger: Executes after UPDATE of deleted_at on public.messages
+ * Action: Updates the thread root message's metadata to decrement message_count
+ * Returns: The OLD record
+ */
 CREATE OR REPLACE FUNCTION decrement_thread_message_count()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -185,18 +214,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-
-CREATE TRIGGER trigger_decrement_thread_message_count
+CREATE TRIGGER decrement_thread_count
 AFTER UPDATE OF deleted_at ON public.messages
 FOR EACH ROW
 WHEN (OLD.thread_id IS NOT NULL AND NEW.deleted_at IS NOT NULL)
 EXECUTE FUNCTION decrement_thread_message_count();
 
------------------------------------------
------------------------------------------
-
--- Create the trigger function
-CREATE OR REPLACE FUNCTION soft_delete_thread_root_messages()
+/**
+ * Function: delete_thread_root_and_channel
+ * Description: Deletes the thread channel when thread root message is soft-deleted by its owner
+ * Trigger: Executes after UPDATE of deleted_at on public.messages
+ * Action: Deletes the channel associated with the thread if message is a thread root and user is owner
+ * Returns: The NEW record
+ * Note: Deleting the channel will cascade delete messages and notifications due to ON DELETE CASCADE
+ */
+CREATE OR REPLACE FUNCTION delete_thread_root_and_channel()
 RETURNS TRIGGER AS $$
 BEGIN
     -- Check if the updated message is a soft-delete, is the thread root, and the user is the owner
@@ -209,15 +241,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Create the trigger
-CREATE TRIGGER trigger_soft_delete_thread_root_messages
+CREATE TRIGGER delete_thread_on_root_deletion
 AFTER UPDATE OF deleted_at ON public.messages
 FOR EACH ROW
 WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
-EXECUTE FUNCTION soft_delete_thread_root_messages();
-
-
-
------------------------------------------
------------------------------------------
------------------------------------------
+EXECUTE FUNCTION delete_thread_root_and_channel();

@@ -1,6 +1,6 @@
 import { immer } from 'zustand/middleware/immer'
 import { Database, Profile } from '@types'
-import { useAuthStore, useStore } from '@stores'
+import { useAuthStore, useChatStore, useStore } from '@stores'
 
 type TChatRoom = {
   headingPath: Array<any>
@@ -11,6 +11,7 @@ type TChatRoom = {
   userPickingEmoji?: any
   replayMessageMemory?: any
   editeMessageMemory?: any
+  fetchMsgsFromId?: string
 }
 
 interface IChatroomStore {
@@ -19,7 +20,8 @@ interface IChatroomStore {
     headingId: string,
     documentId: string,
     headingPath: Array<any>,
-    user: Profile | null
+    user: Profile | null,
+    fetchMsgsFromId?: string
   ) => void
   updateChatRoom: (key: keyof TChatRoom, value: any) => void
   openChatRoom: () => void
@@ -27,6 +29,7 @@ interface IChatroomStore {
   destroyChatRoom: () => void
   setOrUpdateChatPannelHeight: (height: number) => void
   setOrUpdateChatRoom: (key: keyof TChatRoom, value: any) => void
+  switchChatRoom: (channelId: string) => void
 }
 
 const getWorkspaceId = (): string => {
@@ -57,6 +60,21 @@ const leaveChannel = (user: Profile): void => {
   }
 }
 
+const switchChannel = (user: Profile, newChannelId: string): void => {
+  if (!user) return
+
+  const broadcaster = useStore.getState().settings?.broadcaster
+  try {
+    broadcaster?.send?.({
+      type: 'broadcast',
+      event: 'presence',
+      payload: { ...user, channelId: newChannelId }
+    })
+  } catch (error) {
+    console.error('Failed to leave channel:', error)
+  }
+}
+
 const chatRoom = immer<IChatroomStore>((set) => ({
   chatRoom: {
     headingId: undefined,
@@ -67,7 +85,8 @@ const chatRoom = immer<IChatroomStore>((set) => ({
     userPickingEmoji: undefined,
     replayMessageMemory: undefined,
     editeMessageMemory: undefined,
-    commentMessageMemory: undefined
+    commentMessageMemory: undefined,
+    fetchMsgsFromId: undefined
   },
 
   updateChatRoom: (key, value) => {
@@ -77,12 +96,13 @@ const chatRoom = immer<IChatroomStore>((set) => ({
     })
   },
 
-  setChatRoom: (headingId, documentId, headingPath, user) => {
+  setChatRoom: (headingId, documentId, headingPath, user, fetchMsgsFromId) => {
     let newHeadingId: string = headingId
     set((state) => {
       state.chatRoom.headingId = newHeadingId
       state.chatRoom.documentId = documentId
       state.chatRoom.headingPath = headingPath
+      state.chatRoom.fetchMsgsFromId = fetchMsgsFromId
     })
 
     if (user) join2Channel(user, newHeadingId)
@@ -111,6 +131,13 @@ const chatRoom = immer<IChatroomStore>((set) => ({
     set((state) => {
       state.chatRoom.open = false
     })
+  },
+
+  switchChatRoom: (channelId) => {
+    const updateChatRoom = useChatStore.getState().updateChatRoom
+    updateChatRoom('headingId', channelId)
+    const user = useAuthStore.getState().profile
+    if (user) switchChannel(user, channelId)
   },
 
   destroyChatRoom: () => {

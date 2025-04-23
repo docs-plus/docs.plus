@@ -34,7 +34,7 @@ const MobileLayout = () => {
   if (isHistoryView) return <MobileHistory />
 
   return (
-    <div className={`pad tiptap relative flex flex-col border-solid ${deviceClass}`}>
+    <div className={`tiptap relative flex h-full flex-col ${deviceClass}`}>
       <MobilePadTitle />
       <MobileLeftSidePanel filterModalRef={filterModalRef} />
       <MobileEditor />

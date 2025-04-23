@@ -15,7 +15,7 @@ type DivProps = React.ComponentProps<'div'> & {
 
 const AContainer = twx.div<DivProps>((props) =>
   cn(
-    `avatar`,
+    `avatar border-gray-300`,
     props.$presence && (props.$online ? `online` : `offline`),
     props.$clickable ? 'cursor-pointer' : 'cursor-default'
   )

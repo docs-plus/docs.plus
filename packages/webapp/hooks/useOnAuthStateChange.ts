@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useState } from 'react'
 import { useAuthStore } from '@stores'
 import { getUserById } from '@api'
 import { useApi } from '@hooks/useApi'
@@ -12,14 +12,6 @@ export const useOnAuthStateChange = () => {
   const getUserProfile = useCallback(async (user: any) => {
     const { data, error } = (await getUserByIdRequest(user.id)) as any
     if (error) throw error
-    // set display name, we have to read diplay name from auth store
-    const displayName =
-      data?.display_name ||
-      data?.username ||
-      data?.email.split('@')[0] ||
-      user?.email?.split('@')[0]
-
-    useAuthStore.getState().setDisplayName(displayName)
     useAuthStore.getState().setProfile({ ...data, status: 'ONLINE' })
     setLoading(false)
   }, [])

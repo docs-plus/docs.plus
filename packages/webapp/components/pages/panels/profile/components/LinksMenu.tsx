@@ -1,7 +1,7 @@
 const LinksMenu = () => {
   return (
-    <div className="mb-8 flex flex-col rounded-lg border">
-      <ul className="menu menu-sm">
+    <div className="mb-8 flex w-full flex-col rounded-lg border border-gray-300">
+      <ul className="menu menu-sm w-full">
         <li>
           <a href="#" target="_blank" className="mt-2">
             FAQ

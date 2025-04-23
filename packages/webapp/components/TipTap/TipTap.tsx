@@ -222,25 +222,25 @@ const Editor = ({
         }
       }
     }),
-    HyperMultimediaKit.configure({
-      Image: {
-        modal: imageModal,
-        inline: true,
-        allowBase64: true
-      },
-      Video: {
-        modal: youtubeModal,
-        inline: true
-      },
-      Audio: {
-        modal: twitterModal,
-        inline: true
-      },
-      Youtube: {
-        modal: youtubeModal,
-        inline: true
-      }
-    }),
+    // HyperMultimediaKit.configure({
+    //   Image: {
+    //     modal: imageModal,
+    //     inline: true,
+    //     allowBase64: true
+    //   },
+    //   Video: {
+    //     modal: youtubeModal,
+    //     inline: true
+    //   },
+    //   Audio: {
+    //     modal: twitterModal,
+    //     inline: true
+    //   },
+    //   Youtube: {
+    //     modal: youtubeModal,
+    //     inline: true
+    //   }
+    // }),
     TaskList,
     TaskItem.configure({
       nested: true,

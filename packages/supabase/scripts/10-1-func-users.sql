@@ -1,57 +1,75 @@
 /*
-  Function: handle_new_user
-  Description: Inserts a new user row and assigns roles based on provided meta-data.
-*/
+ * User Management Functions
+ * This file contains functions and triggers related to user account management.
+ */
+
+/**
+ * Function: handle_new_user
+ * Description: Creates a new user record in public.users when a new auth user is registered.
+ * Trigger: Executes after INSERT on auth.users
+ * Action: Generates a username based on name or email, sanitizes it, ensures uniqueness,
+ *         and creates the public user profile with data from auth metadata.
+ * Returns: The NEW record (trigger standard)
+ */
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS TRIGGER AS $$
 DECLARE
-  derived_username TEXT; -- Renamed variable to avoid ambiguity
-  suffix INT := 0;
+  raw_username TEXT;
+  sanitized_username TEXT;
+  final_username TEXT;
+  name_suffix INT := 0;
 BEGIN
-  -- If full_name is provided, use it as the base for the username
+  -- Extract initial username from meta-data or email
   IF new.raw_user_meta_data->>'full_name' IS NOT NULL THEN
-    derived_username := lower(trim(new.raw_user_meta_data->>'full_name'));
+    raw_username := lower(trim(new.raw_user_meta_data->>'full_name'));
   ELSE
-    -- If full_name is not provided, derive username from the email before '@'
-    derived_username := lower(split_part(new.email, '@', 1));
+    raw_username := lower(split_part(new.email, '@', 1));
   END IF;
 
-  -- Sanitize the username to ensure it conforms to the pattern
-  -- Replace invalid characters with underscores
-  derived_username := regexp_replace(derived_username, '[^a-z0-9_-]', '_', 'g');
+  -- Sanitize username: replace invalid chars with underscores
+  sanitized_username := regexp_replace(raw_username, '[^a-z0-9_-]', '_', 'g');
 
-  -- Ensure the username starts with a letter; if not, prefix 'user_'
-  IF derived_username !~ '^[a-z]' THEN
-    derived_username := 'user_' || derived_username;
+  -- Ensure username starts with a letter
+  IF sanitized_username !~ '^[a-z]' THEN
+    sanitized_username := 'user_' || sanitized_username;
   END IF;
 
-  -- Truncate username to a maximum of 30 characters
-  derived_username := left(derived_username, 30);
+  -- Apply length constraints (max 30 chars)
+  sanitized_username := left(sanitized_username, 30);
 
-  -- Ensure the username is at least 3 characters long by appending 'usr' if too short
-  IF char_length(derived_username) < 3 THEN
-    derived_username := derived_username || '_usr';
+  -- Ensure minimum length requirement (3 chars)
+  IF char_length(sanitized_username) < 3 THEN
+    sanitized_username := sanitized_username || '_usr';
   END IF;
 
-  -- Check for uniqueness and append a numeric suffix if the username already exists
-  WHILE EXISTS (SELECT 1 FROM public.users WHERE public.users.username = derived_username) LOOP
-    suffix := suffix + 1;
-    derived_username := left(derived_username || '_' || suffix::TEXT, 30);
+  -- Ensure username uniqueness
+  final_username := sanitized_username;
+  WHILE EXISTS (SELECT 1 FROM public.users WHERE public.users.username = final_username) LOOP
+    name_suffix := name_suffix + 1;
+    final_username := left(sanitized_username || '_' || name_suffix::TEXT, 30);
   END LOOP;
 
-  -- Insert the new user into the users table
-  INSERT INTO public.users (id, full_name, avatar_url, email, username)
+  -- Insert user record with all required fields
+  INSERT INTO public.users (
+    id,
+    full_name,
+    avatar_url,
+    email,
+    username
+  )
   VALUES (
     new.id,
     new.raw_user_meta_data->>'full_name',
     new.raw_user_meta_data->>'avatar_url',
     new.email,
-    derived_username
+    final_username
   );
 
   RETURN new;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
+
+COMMENT ON FUNCTION handle_new_user() IS 'Trigger function that creates a user record in public.users when a new authentication user is created, generating an appropriate username.';
 
 -- Trigger: on_auth_user_created
 -- Description: Executes handle_new_user function after a new user is created in auth.users table.
@@ -60,11 +78,19 @@ AFTER INSERT ON auth.users
 FOR EACH ROW
 EXECUTE PROCEDURE public.handle_new_user();
 
+COMMENT ON TRIGGER on_auth_user_created ON auth.users IS 'Automatically creates a corresponding public user profile when a new auth user is created.';
+
 ----------------------------------------------------
 ----------------------------------------------------
 
-
-CREATE OR REPLACE FUNCTION update_online_at()
+/**
+ * Function: update_user_online_at
+ * Description: Updates the online_at timestamp when a user's status changes
+ * Trigger: Executes before UPDATE of status on public.users
+ * Action: Sets the online_at timestamp to current UTC time when status changes
+ * Returns: The modified NEW record
+ */
+CREATE OR REPLACE FUNCTION update_user_online_at()
 RETURNS TRIGGER AS $$
 BEGIN
     -- Check if the 'status' column is being updated
@@ -76,7 +102,11 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_update_online_at
+COMMENT ON FUNCTION update_user_online_at() IS 'Updates the online_at timestamp whenever a user status changes, for tracking user activity.';
+
+CREATE TRIGGER trigger_update_user_online_at
 BEFORE UPDATE OF status ON public.users
 FOR EACH ROW
-EXECUTE FUNCTION update_online_at();
+EXECUTE FUNCTION update_user_online_at();
+
+COMMENT ON TRIGGER trigger_update_user_online_at ON public.users IS 'Automatically updates the online_at timestamp when a user status changes.';

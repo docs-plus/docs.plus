@@ -5,7 +5,11 @@
   .divided {
     display: inline-block;
     height: 24px;
-    @apply mx-[10px] my-[6px] border-l;
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+    border-left-width: 1px;
   }
 
   button {
@@ -37,12 +41,19 @@
 }
 
 .tiptap__toolbar {
-  @apply border-b border-t;
+  border-bottom-width: 1px;
+  border-top-width: 1px;
+  border-color: #e0e0e0;
 
   .divided {
     display: inline-block;
     height: 20px;
-    @apply mx-[10px] my-[6px] border-l;
+    margin-left: 10px;
+    margin-right: 10px;
+    margin-top: 6px;
+    margin-bottom: 6px;
+    border-left-width: 1px;
+    border-color: #e0e0e0;
   }
 
   button {

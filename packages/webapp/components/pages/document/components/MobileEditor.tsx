@@ -31,7 +31,7 @@ const Editor = () => {
       <div className="editor relative flex size-full w-full max-w-full flex-col justify-around align-top">
         <div
           ref={editorWrapperRef}
-          className="editorWrapper flex h-full grow items-start justify-center overflow-hidden overflow-y-auto border-t-0 p-0"
+          className="editorWrapper flex h-full grow items-start justify-center overflow-hidden overflow-y-auto p-0"
           onScroll={scrollHeadingSelection}>
           <MobileBubbleMenu />
           <EditorContent />
@@ -39,7 +39,7 @@ const Editor = () => {
       </div>
 
       <div
-        className={`toolbars sticky inset-x-0 bottom-0 z-10 w-full bg-base-100 ${
+        className={`toolbars bg-base-100 sticky inset-x-0 bottom-0 z-10 w-full ${
           isKeyboardOpen && !chatRoom?.headingId ? 'block' : 'hidden'
         }`}>
         <ToolbarMobile />

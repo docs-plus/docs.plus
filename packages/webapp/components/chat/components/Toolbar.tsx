@@ -8,8 +8,11 @@ import { IoCloseSharp } from 'react-icons/io5'
 import { CopyUrlButton } from './CopyUrlButton'
 import { NotificationToggle } from './NotificationToggle'
 
-const CloseButton = ({ onClick }: any) => (
-  <button className="btn btn-ghost btn-xs" onClick={onClick}>
+const CloseButton = ({ onClick, dataTip, className }: any) => (
+  <button
+    className={`btn btn-ghost btn-sm btn-square ${className}`}
+    onClick={onClick}
+    data-tip={dataTip}>
     <IoCloseSharp size={20} />
   </button>
 )
@@ -55,7 +58,7 @@ const Toolbar = () => {
   }
 
   return (
-    <div className="relative z-50 flex w-full items-center border-b border-gray-200 bg-white p-2">
+    <div className="relative z-50 flex w-full items-center border-b border-gray-300 bg-white p-2">
       <div className="px-1">
         <Breadcrumb />
         {/* <div className="flex items-center justify-start space-x-2 ">
@@ -66,23 +69,25 @@ const Toolbar = () => {
           </div>
         </div> */}
       </div>
-      <div className="ml-auto flex items-center space-x-2">
-        <div className="flex h-8 items-center">
-          <AvatarStack size={8} users={presentUsers} tooltipPosition="tooltip-bottom" />
+      <div className="ml-auto flex items-center gap-3">
+        <div className="flex h-9 items-center">
+          <AvatarStack size={9} users={presentUsers} tooltipPosition="tooltip-bottom" />
         </div>
 
-        <div className="flex items-center space-x-2 rounded-md bg-base-200 px-1 py-0.5">
-          <div className="tooltip tooltip-left flex items-center" data-tip="Copy chat room URL">
-            <CopyUrlButton url={getChatRoomUrl()} className="btn btn-ghost btn-xs px-1" />
-          </div>
+        <div className="join bg-base-300 rounded-md">
+          <CopyUrlButton
+            url={getChatRoomUrl()}
+            dataTip="Copy chat room URL"
+            className="join-item btn btn-ghost btn-sm btn-square tooltip tooltip-left"
+          />
 
-          <NotificationToggle />
+          <NotificationToggle className="join-item" />
 
-          <div
-            className="tooltip tooltip-left flex items-center border-l border-gray-300 pl-1"
-            data-tip="Close chat room">
-            <CloseButton onClick={handelCloseChatRoom} />
-          </div>
+          <CloseButton
+            className="join-item tooltip tooltip-left"
+            onClick={handelCloseChatRoom}
+            dataTip="Close chat room"
+          />
         </div>
       </div>
     </div>

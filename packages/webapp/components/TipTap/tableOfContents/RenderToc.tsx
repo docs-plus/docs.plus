@@ -45,12 +45,12 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
           onClick={() => openChatContainerHandler(item)}
           data-tip="Chat Room">
           {unreadMessage > 0 && (
-            <div className="badge badge-accent badge-sm absolute -right-[12px] -top-[6px] z-[1] scale-90 border p-1 shadow">
+            <div className="badge badge-docsy badge-sm bg-docsy border-docsy absolute -top-[6px] -right-[12px] z-[1] scale-90 border border-none px-1 text-white shadow">
               {unreadMessage > 99 ? '99+' : unreadMessage}
             </div>
           )}
           <ChatLeft
-            className={`btnChat ${unreadMessage > 0 ? '!opacity-100' : 'opacity-0'} ${headingId === item.id && 'fill-docsy !opacity-100'} cursor-pointer transition-all hover:fill-indigo-900 group-hover:fill-docsy`}
+            className={`btnChat ${unreadMessage > 0 ? '!opacity-100' : 'opacity-0'} ${headingId === item.id && 'fill-docsy !opacity-100'} group-hover:fill-docsy cursor-pointer transition-all hover:fill-indigo-900`}
             size={18}
           />
         </span>

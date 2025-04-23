@@ -28,7 +28,8 @@ const MobileHistory = () => {
   useHocuspocusStateless()
 
   return (
-    <div className={`pad tiptap history_editor relative flex flex-col border-solid`}>
+    <div
+      className={`pad tiptap history_editor relative flex flex-col border-solid border-gray-300`}>
       <Toolbar />
       <EditorContent />
       <MobileLeftSidePanel />

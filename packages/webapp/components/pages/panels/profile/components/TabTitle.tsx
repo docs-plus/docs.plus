@@ -1,9 +1,8 @@
 import { RiArrowRightSLine } from 'react-icons/ri'
-import { twMerge } from 'tailwind-merge'
 
 const TabTitle = ({ children, className, goBack, title }: any) => {
   return (
-    <div className="flex w-full flex-row items-center border-b py-2 md:px-4">
+    <div className="flex w-full flex-row items-center border-b border-gray-300 py-2 md:px-4">
       {goBack && (
         <button onClick={goBack} className="btn btn-ghost mr-2 flex items-center md:hidden">
           <RiArrowRightSLine size={22} className="rotate-180" />

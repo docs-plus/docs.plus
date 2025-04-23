@@ -30,7 +30,7 @@ interface NotificationButtonProps {
 const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
   if (isEditable) {
     return (
-      <ToolbarButton className="size-12 text-docsy">
+      <ToolbarButton className="text-docsy size-12">
         <BiCheck size={32} />
       </ToolbarButton>
     )
@@ -60,7 +60,7 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
           src={user.avatar_url}
           width={24}
           height={24}
-          className="size-10 cursor-pointer rounded-full border bg-base-300 shadow-md"
+          className="bg-base-300 size-10 cursor-pointer rounded-full border shadow-md"
         />
       </Button>
     )
@@ -81,7 +81,7 @@ const NotificationButton = ({ unreadCount, modalRef }: NotificationButtonProps) 
       onClick={() => modalRef.current?.check()}>
       <MdInsertComment size={26} className="text-docsy" />
       {unreadCount > 0 && (
-        <div className="absolute right-[2px] top-[2px] flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+        <div className="absolute top-[2px] right-[2px] flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
           {unreadCount}
         </div>
       )}
@@ -122,8 +122,8 @@ const MobilePadTitle = () => {
 
   return (
     <>
-      <div className="docTitle sticky left-0 top-0 z-10 h-auto w-full bg-white">
-        <div className="relative z-10 flex min-h-12 w-full flex-col items-center border-b bg-white p-2">
+      <div className="docTitle sticky top-0 left-0 z-10 h-auto w-full bg-white">
+        <div className="relative z-10 flex min-h-12 w-full flex-col items-center border-b border-gray-300 bg-white p-2">
           <div className="flex w-full flex-row items-center justify-between gap-4">
             <div className="flex w-[80%] items-center gap-2">
               <EditableToggle isEditable={isEditable} />
@@ -143,7 +143,7 @@ const MobilePadTitle = () => {
               <UserProfileButton user={user} onProfileClick={() => setProfileModalOpen(true)} />
             </div>
           </div>
-          <div className="mt-2 w-full">
+          <div className="w-full">
             <FilterBar />
           </div>
         </div>
@@ -167,7 +167,7 @@ const MobilePadTitle = () => {
         isOpen={isProfileModalOpen}
         setIsOpen={setProfileModalOpen}>
         {user ? (
-          <TabLayout name="profile" className="h-full max-h-[37rem] max-w-[64rem]">
+          <TabLayout name="profile" className="h-full max-h-[94%] max-w-[64rem]">
             <ProfilePanel />
           </TabLayout>
         ) : (

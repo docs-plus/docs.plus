@@ -10,8 +10,8 @@ import useServiceWorker from '@hooks/useServiceWorker'
 import { useHandleUserStatus } from '@hooks/useHanelUserStatus'
 import { eventsHub } from '@services/eventsHub'
 
-import '../styles/styles.scss'
 import '../styles/globals.scss'
+import '../styles/styles.scss'
 import { useRouter } from 'next/router'
 import { UserModalProvider } from '@context/UserModalContext'
 
@@ -68,13 +68,16 @@ const Header = () => {
 }
 
 export default function MyApp({ Component, pageProps }: any) {
+  const isMobileInitial = pageProps.isMobile || false
+
   const router = useRouter()
 
-  const isMobileInitial = pageProps.isMobile || false
   useServiceWorker()
   useOnAuthStateChange()
   useCatchUserPresences()
+  // pinnedMessage, typingIndicator broadcaster
   useBroadcastListner()
+  // service worker side
   useHandleUserStatus()
   useInitialSteps(isMobileInitial)
   useEffect(() => {

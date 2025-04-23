@@ -6,13 +6,15 @@ interface CopyUrlButtonProps {
   className?: string
   successMessage?: string
   errorMessage?: string
+  dataTip?: string
 }
 
 export const CopyUrlButton = ({
   url,
   className = 'btn btn-circle btn-ghost btn-xs',
   successMessage = 'URL copied to clipboard',
-  errorMessage = 'Failed to copy URL'
+  errorMessage = 'Failed to copy URL',
+  dataTip = 'Copy URL'
 }: CopyUrlButtonProps) => {
   const handleCopyUrl = () => {
     if (!url) return
@@ -29,7 +31,7 @@ export const CopyUrlButton = ({
   }
 
   return (
-    <button className={className} onClick={handleCopyUrl} title="Copy URL">
+    <button className={className} onClick={handleCopyUrl} data-tip={dataTip}>
       <MdLink size={20} className="rotate-45" />
     </button>
   )

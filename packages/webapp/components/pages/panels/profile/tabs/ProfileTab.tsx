@@ -12,7 +12,7 @@ const ProfileTab = ({ goBack }: { goBack: () => void }) => {
   const { loading, handleSave } = useProfileUpdate()
 
   return (
-    <div className="relative overflow-auto md:border-l">
+    <div className="relative overflow-auto border-gray-300 md:border-l">
       <TabTitle className="flex flex-row items-center" goBack={goBack} title="">
         <Button
           className="btn btn-outline ml-auto md:hidden"
@@ -38,7 +38,7 @@ const ProfileTab = ({ goBack }: { goBack: () => void }) => {
           <SocialLinksSection />
         </TabSection>
       </div>
-      <div className="sticky bottom-0 z-10 hidden flex-row-reverse border-t bg-white pt-4 md:flex">
+      <div className="sticky bottom-0 z-10 hidden flex-row-reverse border-t border-gray-300 bg-white pt-4 md:flex">
         <Button className="btn-primary !w-40 text-white" loading={loading} onClick={handleSave}>
           Submit
         </Button>

@@ -14,7 +14,7 @@ interface ToolbarButtonProps {
   isActive?: boolean
 }
 
-const ToolbarButton = React.forwardRef<HTMLSpanElement, ToolbarButtonProps>(
+const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   (
     { type, editor, onClick, onTouchEnd, children, tooltip, position, className, isActive },
     ref
@@ -22,20 +22,19 @@ const ToolbarButton = React.forwardRef<HTMLSpanElement, ToolbarButtonProps>(
     const buttonClass = isActive || editor?.isActive(type) ? 'is-active' : ''
 
     return (
-      <span ref={ref}>
-        <Button
-          className={twMerge(
-            'btn-ghost btn-sm tooltip tooltip-bottom size-8 p-0 outline-none',
-            buttonClass,
-            position,
-            className
-          )}
-          onClick={onClick}
-          onTouchEnd={onTouchEnd}
-          data-tip={tooltip}>
-          {children}
-        </Button>
-      </span>
+      <Button
+        ref={ref}
+        className={twMerge(
+          'btn-ghost btn-sm tooltip tooltip-bottom size-8 p-0 outline-none',
+          buttonClass,
+          position,
+          className
+        )}
+        onClick={onClick}
+        onTouchEnd={onTouchEnd}
+        data-tip={tooltip}>
+        {children}
+      </Button>
     )
   }
 )

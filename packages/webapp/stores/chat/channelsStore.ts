@@ -40,6 +40,7 @@ const channelsStore = immer<IChannelStore>((set) => ({
       const channel = state.channels.get(channelId)
       if (!channel) return
 
+      // @ts-ignore
       state.channels.set(channelId, {
         ...channel,
         ...channelData,

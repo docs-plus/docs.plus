@@ -13,8 +13,6 @@ export const useStatelessMessage = () => {
 
       if (payloadData.msg !== 'history.response') return
 
-      console.log('payloadData', payloadData)
-
       if (payloadData.type === 'history.list') {
         // pick the latest version
         const latestVersion = payloadData.response.at(0)

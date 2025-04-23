@@ -7,8 +7,8 @@ const Toolbar = () => {
   const versionInfo = useGetVersionInfo()()
 
   return (
-    <div className="docTitle sticky left-0 top-0 z-10 h-auto w-full bg-white">
-      <div className="relative z-10 flex min-h-12 w-full flex-col items-center border-b bg-white p-2">
+    <div className="docTitle sticky top-0 left-0 z-10 h-auto w-full bg-white">
+      <div className="relative z-10 flex min-h-12 w-full flex-col items-center border-b border-gray-300 bg-white p-2">
         <div className="flex w-full flex-row items-center justify-between gap-1">
           <button
             className="btn btn-ghost btn-sm tooltip tooltip-right"

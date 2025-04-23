@@ -1,8 +1,32 @@
-import { forwardRef, useEffect, useState } from 'react'
+import { forwardRef, useEffect, useState, InputHTMLAttributes } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { randstr } from '@utils/index'
 
-const InputOverlapLabel = forwardRef(
+export interface InputOverlapLabelProps
+  extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
+  /** Label text for the input */
+  label?: string
+  /** Current input value */
+  value?: string
+  /** Custom ID for the input (generated if not provided) */
+  id?: string
+  /** Icon component to display */
+  Icon?: React.ComponentType<{ size?: number; fill?: string }>
+  /** Fill color for the icon */
+  fill?: string
+  /** Size of the icon */
+  size?: number
+  /** Additional CSS classes */
+  className?: string
+  /** Change handler for the input */
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void
+  /** Options for datalist */
+  datalist?: string[]
+  /** Error state for validation */
+  error?: boolean
+}
+
+const InputOverlapLabel = forwardRef<HTMLInputElement, InputOverlapLabelProps>(
   (
     {
       label = '',
@@ -14,51 +38,82 @@ const InputOverlapLabel = forwardRef(
       className = '',
       onChange = () => {},
       datalist = [],
+      error,
       ...props
-    }: any,
+    },
     ref
   ) => {
     const [id, setId] = useState(_id)
 
     useEffect(() => {
       if (!_id) setId(randstr('input-'))
-    }, [])
+    }, [_id])
 
-    const containerClasses = twMerge(
-      `relative border subpixel-antialiased rounded-md flex align-middle justify-start ${
-        !Icon ? 'pl-2' : ''
-      }`,
-      className
-    )
+    // Using Daisy UI classes
+    const containerClasses = twMerge('form-control relative', className)
 
-    const iconContainerClasses = `border-r rounded-l-md w-12 flex align-middle justify-center items-center ${
-      props.disabled
-        ? 'bg-slate-200 dark:bg-slate-800 border-gray-400'
-        : 'bg-white dark:bg-slate-900'
-    }`
-
-    const labelClasses = `cursor-text inline-block absolute text-sm text-gray-500 dark:text-gray-400 duration-300 transform -translate-y-4 scale-75 top-2 z-10 origin-[0] bg-white dark:bg-gray-900 px-2 peer-focus:px-2 peer-focus:text-blue-600 peer-focus:dark:text-blue-500 peer-placeholder-shown:scale-100 peer-placeholder-shown:-translate-y-1/2 peer-placeholder-shown:top-1/2 peer-focus:top-2 peer-focus:scale-75 peer-focus:-translate-y-[1.1rem] left-1 ${
-      Icon ? 'ml-10' : ''
-    }`
+    // Determine border and outline colors based on error state
+    const borderColorClasses =
+      error === true
+        ? 'border-red-500 focus:border-red-500 focus:outline-red-500 group-focus-within:border-red-500 group-focus-within:outline-red-500'
+        : error === false
+          ? 'border-green-500 focus:border-green-500 focus:outline-green-500 group-focus-within:border-green-500 group-focus-within:outline-green-500'
+          : 'border-gray-300 focus:border-primary focus:outline-primary group-focus-within:border-primary group-focus-within:outline-primary'
 
     return (
       <div className={containerClasses}>
-        {Icon && (
-          <span className={iconContainerClasses}>
-            <Icon size={size} fill={fill} />
-          </span>
+        {Icon ? (
+          <div className="join group relative w-full">
+            <label
+              htmlFor={id}
+              className={twMerge(
+                'join-item flex items-center justify-center border border-r-0 px-3',
+                borderColorClasses,
+                props.disabled ? 'bg-base-200' : 'bg-base-100',
+                !props.disabled && 'cursor-pointer'
+              )}>
+              <Icon size={size} fill={fill} />
+            </label>
+            <label className="floating-label join-item flex-1">
+              <span className="text-black">{label}</span>
+              <input
+                ref={ref}
+                id={id}
+                type="text"
+                value={value || ''}
+                onChange={onChange}
+                placeholder=" "
+                list={datalist.length > 0 ? `${id}-datalist` : undefined}
+                className={twMerge(
+                  'input input-md w-full',
+                  borderColorClasses,
+                  'rounded-l-none',
+                  props.disabled ? 'input-disabled' : ''
+                )}
+                {...props}
+              />
+            </label>
+          </div>
+        ) : (
+          <label className="floating-label w-full">
+            <span>{label}</span>
+            <input
+              ref={ref}
+              id={id}
+              type="text"
+              value={value || ''}
+              onChange={onChange}
+              placeholder=" "
+              list={datalist.length > 0 ? `${id}-datalist` : undefined}
+              className={twMerge(
+                'input input-md w-full',
+                borderColorClasses,
+                props.disabled ? 'input-disabled' : ''
+              )}
+              {...props}
+            />
+          </label>
         )}
-        <input
-          ref={ref}
-          id={id}
-          type="text"
-          value={value || ''}
-          onChange={onChange}
-          placeholder=" "
-          list={datalist.length > 0 ? `${id}-datalist` : undefined}
-          className="border-1 peer block w-full appearance-none rounded-lg border-gray-300 bg-transparent p-2 pt-4 text-sm text-gray-900 focus:border-blue-600 focus:outline-none focus:ring-0 disabled:rounded-none disabled:bg-slate-200 dark:border-gray-600 dark:text-white dark:focus:border-blue-500"
-          {...props}
-        />
 
         {datalist.length > 0 && (
           <datalist id={`${id}-datalist`}>
@@ -67,10 +122,6 @@ const InputOverlapLabel = forwardRef(
             ))}
           </datalist>
         )}
-
-        <label htmlFor={id} className={labelClasses}>
-          {label}
-        </label>
       </div>
     )
   }

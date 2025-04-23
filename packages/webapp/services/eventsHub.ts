@@ -17,6 +17,8 @@ type TChatCommentData = {
 type TOpenChatData = {
   headingId: string
   scroll2Heading?: boolean
+  toggleRoom?: boolean
+  fetchMsgsFromId?: string
 }
 
 type TApplyFilterData = {
@@ -55,7 +57,7 @@ export const eventsHub = (router: NextRouter) => {
   })
 
   PubSub.subscribe(CHAT_OPEN, (msg, data: TOpenChatData) => {
-    const { headingId, scroll2Heading = false } = data
+    const { headingId, scroll2Heading = false, toggleRoom = true, fetchMsgsFromId } = data
 
     if (!headingId) return
 
@@ -65,15 +67,18 @@ export const eventsHub = (router: NextRouter) => {
 
     const setChatRoom = useChatStore.getState().setChatRoom
     const destroyChatRoom = useChatStore.getState().destroyChatRoom
+    const switchChatRoom = useChatStore.getState().switchChatRoom
 
-    if (opendHeadingId === headingId) return destroyChatRoom()
+    if (opendHeadingId === headingId && toggleRoom) return destroyChatRoom()
 
-    destroyChatRoom()
+    switchChatRoom(headingId)
 
-    // TODO: change naming => open chatroom
-    if (workspaceId) setChatRoom(headingId, workspaceId, [], user)
+    setTimeout(() => {
+      // TODO: change naming => open chatroom
+      if (workspaceId) setChatRoom(headingId, workspaceId, [], user, fetchMsgsFromId)
 
-    if (scroll2Heading) scrollToHeading(headingId)
+      if (scroll2Heading) scrollToHeading(headingId)
+    }, 200)
   })
 
   PubSub.subscribe(APPLY_FILTER, (msg, data: TApplyFilterData) => {

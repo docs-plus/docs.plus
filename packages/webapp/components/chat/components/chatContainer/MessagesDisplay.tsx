@@ -7,10 +7,11 @@ import { useChannel } from '../../context/ChannelProvider'
 
 interface MessagesDisplayProps {
   messageContainerRef: React.RefObject<HTMLDivElement | null>
-  messagesEndRef: React.RefObject<HTMLDivElement>
+  messagesEndRef: React.RefObject<HTMLDivElement | null>
   toggleEmojiPicker: any
   selectedEmoji: any // Update the type based on your emoji implementation
   isLoadingMore: boolean
+  loadingMoreDirection: 'older' | 'newer' | null
 }
 
 const isNewDay = (currentMessageDate: string, previousMessageDate: string) => {
@@ -21,7 +22,7 @@ const DateChip: React.FC<{ date: string; isScrollingUp: boolean }> = ({ date, is
   <div
     className="date_chip relative z-10 my-2 flex w-full justify-center pt-2"
     style={{ position: isScrollingUp ? 'sticky' : 'relative', top: isScrollingUp ? 0 : undefined }}>
-    <div className="badge relative z-10 bg-base-100">{format(parseISO(date), 'MMMM do, yyyy')}</div>
+    <div className="badge bg-base-100 relative z-10">{format(parseISO(date), 'MMMM do, yyyy')}</div>
   </div>
 )
 
@@ -32,7 +33,7 @@ const NoMessagesDisplay = () => (
 )
 
 const LoadingSpinner = () => (
-  <div className="flex justify-center pt-2">
+  <div className="mt-4 flex justify-center pt-2">
     <span className="loading loading-spinner text-primary"></span>
   </div>
 )
@@ -52,7 +53,7 @@ const SystemNotifyChip = ({ message }: any) => {
 
   return (
     <div className="msg_card chat my-4 flex justify-center pb-1" ref={cardRef}>
-      <div className="badge border-none bg-bg-chatBubble-owner">{message.content}</div>
+      <div className="badge bg-bg-chatBubble-owner border-none">{message.content}</div>
     </div>
   )
 }
@@ -61,7 +62,7 @@ const generateMessageElements = (
   channelId: string,
   messages: Map<string, any>,
   isScrollingUp: boolean,
-  messagesEndRef: React.RefObject<HTMLDivElement>,
+  messagesEndRef: React.RefObject<HTMLDivElement | null>,
   toggleEmojiPicker: any,
   selectedEmoji: string,
   displaySystemNotifyChip: boolean
@@ -118,7 +119,8 @@ export const MessagesDisplay: React.FC<MessagesDisplayProps> = ({
   messagesEndRef,
   toggleEmojiPicker,
   selectedEmoji,
-  isLoadingMore
+  isLoadingMore,
+  loadingMoreDirection
 }) => {
   const {
     channelId,
@@ -160,7 +162,7 @@ export const MessagesDisplay: React.FC<MessagesDisplayProps> = ({
       <div
         className="msg_wrapper relative flex w-full grow flex-col overflow-y-auto px-4 pt-1"
         ref={messageContainerRef}>
-        {isLoadingMore && <LoadingSpinner />}
+        {isLoadingMore && loadingMoreDirection === 'older' && <LoadingSpinner />}
         {generateMessageElements(
           channelId,
           messages,
@@ -170,6 +172,7 @@ export const MessagesDisplay: React.FC<MessagesDisplayProps> = ({
           selectedEmoji,
           displaySystemNotifyChip
         )}
+        {isLoadingMore && loadingMoreDirection === 'newer' && <LoadingSpinner />}
       </div>
     </>
   )
