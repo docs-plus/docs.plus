@@ -18,7 +18,7 @@ const DesktopLayout = () => {
   if (isHistoryView) return <DesktopHistory />
 
   return (
-    <div className={`pad tiptap flex flex-col border-solid ${deviceClass}`}>
+    <div className={`pad tiptap relative flex h-full flex-col border-solid ${deviceClass}`}>
       <PadTitle />
       <DesktopEditor />
     </div>
