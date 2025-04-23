@@ -38,7 +38,7 @@
     "build": "npm run clean && rollup -c",
     "ts": "tsc -p tsconfig.json",
     "postbuild": "node ./scripts/flattenDeclarations.js",
-    "update:packages": "ncu -u"
+    "update:packages": "npx npm-check-updates -u"
   },
   "license": "MIT",
   "dependencies": {
