@@ -37,7 +37,6 @@ const updateAvatarInDB = async (avatarUrl: string | null, userId: string) => {
 
 const AvatarSection = () => {
   const user = useAuthStore((state) => state.profile)
-  const displayName = useAuthStore((state) => state.displayName)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [uploading, setUploading] = useState(false)
   const [isProfileAvatar, setIsProfileAvatar] = useState(false)
@@ -121,7 +120,7 @@ const AvatarSection = () => {
 
   return (
     <div
-      className="avatar-uploader relative mt-4 flex size-28 items-center justify-center rounded-xl border drop-shadow-sm"
+      className="avatar-uploader relative mt-4 flex size-28 items-center justify-center rounded-xl border border-gray-300 drop-shadow-sm"
       onClick={handleClick}>
       <div
         className={` ${
@@ -133,7 +132,7 @@ const AvatarSection = () => {
         id={user?.id}
         src={user?.avatar_url}
         avatarUpdatedAt={user?.avatar_updated_at}
-        alt={displayName}
+        alt={user?.display_name}
         justImage={true}
         className="size-32"
       />
@@ -145,7 +144,7 @@ const AvatarSection = () => {
       />
       {isProfileAvatar && (
         <button
-          className="changeAvatarToDefault absolute -bottom-1 -right-1 flex size-5 items-center justify-around rounded-full bg-white drop-shadow-lg"
+          className="changeAvatarToDefault absolute -right-1 -bottom-1 flex size-5 items-center justify-around rounded-full bg-white drop-shadow-lg"
           onClick={changeAvatarToDefault}
           title="Change to default avatar">
           <CircleUser size={18} className="z-10 size-5 rounded-full bg-white drop-shadow-lg" />

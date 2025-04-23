@@ -25,7 +25,7 @@ const DesktopEditor = () => {
   )
 
   const tableOfContentsClassNames = clsx(
-    chatRoom.headingId ? 'border-r border-gray-200 dark:border-gray-700' : '',
+    chatRoom.headingId ? 'border-r border-gray-300' : '',
     'tableOfContents h-full max-h-full w-[22%]'
   )
 

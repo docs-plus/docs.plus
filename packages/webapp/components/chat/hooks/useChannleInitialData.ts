@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react'
-import { useChatStore, useAuthStore } from '@stores'
+import { useEffect, useMemo, useState, useCallback } from 'react'
+import { useChatStore, useAuthStore, useStore } from '@stores'
 import { groupedMessages } from '@utils/index'
 import { fetchChannelInitialData, upsertChannel } from '@api'
 import { useChannel } from '../context/ChannelProvider'
@@ -7,21 +7,27 @@ import slugify from 'slugify'
 import { TChannelSettings } from '@types'
 import { join2Channel } from '@api'
 import Config from '@config'
+import debounce from 'lodash/debounce'
+
 interface UseChannelInitialData {
-  initialMessagesLoading: boolean
+  isChannelDataLoaded: boolean
   msgLength: number
 }
 
 export const useChannelInitialData = (setError: (error: any) => void): UseChannelInitialData => {
   const { channelId } = useChannel()
 
-  const [initialMessagesLoading, setInitialMessagesLoading] = useState<boolean>(true)
+  const [isChannelDataLoaded, setIsChannelDataLoaded] = useState<boolean>(false)
   const [msgLength, setMsgLength] = useState<number>(0)
-  const { documentId: workspaceId } = useChatStore((state) => state.chatRoom)
+  const {
+    metadata: { documentId: workspaceId }
+  } = useStore((state) => state.settings)
+
   const bulkSetChannelPinnedMessages = useChatStore(
     (state: any) => state.bulkSetChannelPinnedMessages
   )
   const bulkSetMessages = useChatStore((state) => state.bulkSetMessages)
+  const clearChannelMessages = useChatStore((state) => state.clearChannelMessages)
   const setWorkspaceChannelSetting = useChatStore((state) => state.setWorkspaceChannelSetting)
   const setLastMessage = useChatStore((state) => state.setLastMessage)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
@@ -45,10 +51,21 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
         slug: 'c' + slugify(newChannelId, { strict: true, lower: true })
       })
     }
-    const { data: channelData, error: channelError } = await fetchChannelInitialData({
-      input_channel_id: channelId,
-      message_limit: 20
-    })
+
+    let fetchArgs: any = { input_channel_id: channelId, message_limit: 20 }
+
+    const startMsgId =
+      useChatStore.getState().chatRoom.fetchMsgsFromId ||
+      new URLSearchParams(location.search).get('msg_id')
+
+    if (startMsgId) {
+      fetchArgs = {
+        ...fetchArgs,
+        anchor_message_id: startMsgId
+      }
+    }
+
+    const { data: channelData, error: channelError } = await fetchChannelInitialData(fetchArgs)
 
     if (channelError) throw new Error(channelError.message)
 
@@ -77,22 +94,34 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
     await updateChannelState(channelData)
   }
 
+  const fetchInitialData = async () => {
+    setIsChannelDataLoaded(false)
+    try {
+      await processChannelData(channelId)
+    } catch (error) {
+      console.error(error)
+      setError(error)
+    } finally {
+      setIsChannelDataLoaded(true)
+    }
+  }
+
+  // Use lodash debounce
+  const debouncedFetchData = useCallback(
+    debounce(() => {
+      fetchInitialData()
+    }, 300),
+    [channelId]
+  )
+
   useEffect(() => {
     if (!channelId) return
 
-    async function fetchInitialData() {
-      setInitialMessagesLoading(true)
-      try {
-        await processChannelData(channelId)
-      } catch (error) {
-        console.error(error)
-        setError(error)
-      } finally {
-        setInitialMessagesLoading(false)
-      }
-    }
+    debouncedFetchData()
 
-    fetchInitialData()
+    return () => {
+      debouncedFetchData.cancel()
+    }
   }, [channelId])
 
   const updateChannelState = async (channelData: any) => {
@@ -137,6 +166,10 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
     }
 
     if (channelData.last_messages) {
+      // TODO: if the channel is already loaded with anchor messages, we need to clear the channel messages
+      // TODO: and then set the new messages // Refactor needed
+
+      clearChannelMessages(channelId)
       const newMessages = groupedMessages(channelData.last_messages.reverse())
       const lastMessage = newMessages.at(-1)
       setLastMessage(channelId, lastMessage)
@@ -148,7 +181,7 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
   }
 
   return {
-    initialMessagesLoading,
+    isChannelDataLoaded,
     msgLength
   }
 }

@@ -68,7 +68,7 @@ const LinkItem: React.FC<LinkItemProps> = ({
   return (
     <div
       style={bgStyle}
-      className="group mb-3 w-full max-w-full rounded-lg border border-gray-200 bg-white/80 p-2 px-4 shadow-sm backdrop-blur-sm transition-all hover:border-gray-300 hover:shadow-md">
+      className="group mb-3 w-full max-w-full rounded-lg border border-gray-200 bg-white/80 p-2 px-4 shadow-sm transition-all hover:border-gray-300 hover:shadow-md">
       <div className="flex w-full items-center justify-between">
         <div className="flex min-w-0 flex-1 items-center">
           {Icon && (
@@ -102,7 +102,7 @@ const LinkItem: React.FC<LinkItemProps> = ({
                   {showDescription[link.url] ? 'Hide' : 'Show'} Description
                 </button>
                 {showDescription[link.url] && (
-                  <p className="mt-2 break-words text-sm text-gray-600">
+                  <p className="mt-2 text-sm break-words text-gray-600">
                     {link.metadata?.description}
                   </p>
                 )}
@@ -111,7 +111,7 @@ const LinkItem: React.FC<LinkItemProps> = ({
           </div>
         </div>
         <button
-          className="ml-4 flex-shrink-0 rounded-full p-2 text-gray-400 transition-all hover:bg-red-50 hover:text-red-500 group-hover:opacity-100 sm:opacity-100"
+          className="ml-4 flex-shrink-0 rounded-full p-2 text-gray-400 transition-all group-hover:opacity-100 hover:bg-red-50 hover:text-red-500 sm:opacity-100"
           onClick={() => handleRemoveLink(link.url)}
           title="Remove link">
           <FaTrash className="size-4" />

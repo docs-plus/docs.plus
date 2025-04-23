@@ -1,9 +1,6 @@
 $bg-root: #f8f9fa;
 
 .pad {
-  position: relative;
-  @apply h-full;
-
   .editor {
     background-color: $bg-root;
     overflow: auto;
@@ -13,9 +10,10 @@ $bg-root: #f8f9fa;
     }
 
     .tiptap__editor {
-      @apply w-full max-w-4xl;
+      width: 100%;
+      max-width: 56rem;
 
-      .heading {
+      .heading[level='1'] {
         background-color: #fff;
       }
     }
@@ -147,36 +145,38 @@ $bg-root: #f8f9fa;
 
   :is(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10) {
     font-weight: bold;
-    @apply mb-2 mt-0 font-bold;
+    margin-bottom: 0.5rem;
+    margin-top: 0;
+    font-weight: bold;
   }
 
   h1 {
-    @apply text-6xl;
+    font-size: 3.75rem;
     padding-top: 13.8pt; /* Half of 27.6pt */
   }
 
   h2 {
-    @apply text-5xl;
+    font-size: 3rem;
     padding-top: 12pt; /* Half of 24pt */
   }
 
   h3 {
-    @apply text-4xl;
+    font-size: 2.25rem;
     padding-top: 10.8pt; /* Half of 21.6pt */
   }
 
   h4 {
-    @apply text-3xl;
+    font-size: 1.875rem;
     padding-top: 10pt; /* Half of 20pt */
   }
 
   h5 {
-    @apply text-2xl;
+    font-size: 1.5rem;
     padding-top: 9.1pt; /* Half of 18.2pt */
   }
 
   :is(h6, h7, h8, h9, h10) {
-    @apply text-xl;
+    font-size: 1.25rem;
     padding-top: 8.4pt; /* Half of 16.8pt */
   }
 

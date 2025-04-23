@@ -38,7 +38,8 @@ $bg-root: #f8f9fa;
       margin-bottom: 0.1rem;
       &:active {
         .btnChat {
-          @apply bg-transparent fill-base-300;
+          background-color: transparent;
+          fill: var(--base-300);
         }
       }
       &.active {
@@ -49,13 +50,14 @@ $bg-root: #f8f9fa;
         }
         .btnChat {
           opacity: 1;
-          @apply bg-transparent fill-base-300;
+          background-color: transparent;
+          fill: var(--base-300);
         }
 
         .btnFold {
           opacity: 1;
           > svg {
-            @apply fill-base-300;
+            fill: var(--base-300);
           }
         }
       }
@@ -107,11 +109,11 @@ $bg-root: #f8f9fa;
       }
 
       .btn_chat:hover {
-        @apply fill-neutral-content;
+        fill: var(--neutral-content);
       }
 
       a:not(:active, .active):hover .btnChat {
-        @apply bg-base-300;
+        background-color: var(--base-300);
       }
 
       &:hover > a > span > .btnChat {
@@ -191,7 +193,9 @@ $bg-root: #f8f9fa;
 
       &--1 {
         > a {
-          @apply text-base font-semibold text-black;
+          font-size: 1rem;
+          font-weight: 600;
+          color: black;
         }
       }
     }

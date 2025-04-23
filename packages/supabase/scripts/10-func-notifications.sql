@@ -1,4 +1,21 @@
-CREATE OR REPLACE FUNCTION create_notifications_for_mentions()
+/*
+ * Notification Management Functions
+ * This file contains functions and triggers related to system notifications:
+ * - Mention notifications (@user)
+ * - Group notifications (@everyone)
+ * - Regular message notifications
+ * - Reaction notifications
+ * - Unread message count tracking
+ */
+
+/**
+ * Function: create_mention_notifications
+ * Description: Creates notifications for users mentioned in a message with @username
+ * Trigger: Executes after INSERT on public.messages when content contains '@'
+ * Action: Creates notifications for each mentioned user who is a member of the channel
+ * Returns: The NEW record (trigger standard)
+ */
+CREATE OR REPLACE FUNCTION create_mention_notifications()
 RETURNS TRIGGER AS $$
 DECLARE
     mentioned_user_id UUID;
@@ -76,18 +93,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trigger_on_new_message_for_mention_notifications
+COMMENT ON FUNCTION create_mention_notifications() IS 'Creates notifications for users who are mentioned with @username in a message.';
+
+-- Trigger: create_mention_notifications
+CREATE TRIGGER create_mention_notifications
 AFTER INSERT ON public.messages
 FOR EACH ROW
 WHEN (NEW.content LIKE '%@%')
-EXECUTE FUNCTION create_notifications_for_mentions();
+EXECUTE FUNCTION create_mention_notifications();
 
---------------------------------------------------------
---------------------------------------------------------
---------------------------------------------------------
+COMMENT ON TRIGGER create_mention_notifications ON public.messages IS 'Creates notifications for users mentioned with @username in a message.';
 
--- Function to handle '@everyone' notifications
-CREATE OR REPLACE FUNCTION create_notifications_for_everyone()
+/**
+ * Function: create_everyone_notifications
+ * Description: Creates notifications for all channel members when @everyone is used
+ * Trigger: Executes after INSERT on public.messages when content contains '@everyone'
+ * Action: Creates notifications for all channel members except sender
+ * Returns: The NEW record (trigger standard)
+ */
+CREATE OR REPLACE FUNCTION create_everyone_notifications()
 RETURNS TRIGGER AS $$
 DECLARE
     channel_member_id UUID;
@@ -153,23 +177,29 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
---------------------------------------------------------
---------------------------------------------------------
---------------------------------------------------------
+COMMENT ON FUNCTION create_everyone_notifications() IS 'Creates notifications for all channel members when @everyone is used in a message.';
 
-CREATE TRIGGER trigger_on_new_message_for_everyone_notifications
+-- Trigger: create_everyone_notifications
+CREATE TRIGGER create_everyone_notifications
 AFTER INSERT ON public.messages
 FOR EACH ROW
 WHEN (NEW.content LIKE '%@everyone%')
-EXECUTE FUNCTION create_notifications_for_everyone();
+EXECUTE FUNCTION create_everyone_notifications();
 
--- Function to handle regular message notifications
--- Description: Creates a notification for each member of the channel, excluding the sender,
---              only if the channel is not muted, the member has not muted notifications,
---              and the member is not currently online.
---              If the user is online, they do not need a notification for the current and other channels;
---              instead, they only need the unread count and mention notifications.
-CREATE OR REPLACE FUNCTION create_notifications_for_regular_messages()
+COMMENT ON TRIGGER create_everyone_notifications ON public.messages IS 'Creates notifications for all channel members when @everyone is used.';
+
+/**
+ * Function: create_regular_message_notifications
+ * Description: Creates notifications for regular messages based on user preferences
+ * Trigger: Executes after INSERT on public.messages
+ * Action: Creates notifications for channel members who:
+ *   - Have notifications enabled (notif_state = 'ALL')
+ *   - Are not the sender
+ *   - Are not currently online
+ *   - Have not muted the channel
+ * Returns: The NEW record (trigger standard)
+ */
+CREATE OR REPLACE FUNCTION create_regular_message_notifications()
 RETURNS TRIGGER AS $$
 DECLARE
     is_channel_muted  BOOLEAN;
@@ -232,18 +262,25 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger remains the same
-CREATE TRIGGER trigger_on_new_message_for_regular_notifications
+COMMENT ON FUNCTION create_regular_message_notifications() IS 'Creates notifications for regular messages based on user notification preferences.';
+
+-- Trigger: create_regular_message_notifications
+CREATE TRIGGER create_regular_message_notifications
 AFTER INSERT ON public.messages
 FOR EACH ROW
 WHEN (NEW.content NOT LIKE '%@%' OR NEW.content NOT LIKE '%@everyone%')
-EXECUTE FUNCTION create_notifications_for_regular_messages();
+EXECUTE FUNCTION create_regular_message_notifications();
 
---------------------------------------------------------
---------------------------------------------------------
---------------------------------------------------------
+COMMENT ON TRIGGER create_regular_message_notifications ON public.messages IS 'Creates notifications for regular messages that don''t contain mentions.';
 
-CREATE OR REPLACE FUNCTION create_notifications_for_new_unique_reactions()
+/**
+ * Function: create_reaction_notifications
+ * Description: Creates notifications for new reactions on messages
+ * Trigger: Executes after UPDATE of reactions on public.messages
+ * Action: Creates notifications for message owners when their messages receive reactions
+ * Returns: The NEW record (trigger standard)
+ */
+CREATE OR REPLACE FUNCTION create_reaction_notifications()
 RETURNS TRIGGER AS $$
 DECLARE
     old_reactions     JSONB;
@@ -340,55 +377,96 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
--- Trigger remains the same
-CREATE TRIGGER trigger_on_reaction_update_for_notifications
+COMMENT ON FUNCTION create_reaction_notifications() IS 'Creates notifications for message owners when their messages receive new reactions.';
+
+-- Trigger: create_reaction_notifications
+CREATE TRIGGER create_reaction_notifications
 AFTER UPDATE OF reactions ON public.messages
 FOR EACH ROW
 WHEN (OLD.reactions IS DISTINCT FROM NEW.reactions)
-EXECUTE FUNCTION create_notifications_for_new_unique_reactions();
+EXECUTE FUNCTION create_reaction_notifications();
 
+COMMENT ON TRIGGER create_reaction_notifications ON public.messages IS 'Creates notifications when a message receives new reactions.';
 
-/*
-    --------------------------------------------------------
-    Function: increment_unread_count_on_new_message
-    Description: Increments the unread message count for each channel member when a new message is posted.
-                 The count is incremented only for members who have not read messages up to the time of the new message.
-    --------------------------------------------------------
-*/
-
+/**
+ * Function: increment_unread_count_on_new_message
+ * Description: Increments unread message count for all workspace members
+ * Trigger: Executes after INSERT on public.messages
+ * Action: Increments unread_message_count for ALL workspace members except the message sender
+ * Returns: The NEW record (trigger standard)
+ */
 CREATE OR REPLACE FUNCTION increment_unread_count_on_new_message() RETURNS TRIGGER AS $$
+DECLARE
+    workspace_id_var VARCHAR(36);
 BEGIN
-    -- Increment unread message count for all channel members who have not read up to this new message
-    UPDATE public.channel_members
-    SET unread_message_count = unread_message_count + 1
-    WHERE channel_id = NEW.channel_id
-      AND member_id != NEW.user_id
-      AND last_read_update_at < NEW.created_at;
+    -- Get the workspace ID for the channel where the message was posted
+    SELECT workspace_id INTO workspace_id_var
+    FROM public.channels
+    WHERE id = NEW.channel_id;
 
-    RETURN NEW; -- Return the new message record
+    -- If channel doesn't exist or has no workspace, exit early
+    IF workspace_id_var IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    -- First, ensure all workspace members have a channel_members entry
+    -- If they don't, create one with unread_message_count = 1
+    INSERT INTO public.channel_members (channel_id, member_id, unread_message_count, last_read_update_at)
+    SELECT
+        NEW.channel_id,
+        wm.member_id,
+        1,
+        COALESCE((SELECT created_at FROM public.messages
+                 WHERE channel_id = NEW.channel_id
+                 ORDER BY created_at DESC
+                 LIMIT 1 OFFSET 1),
+                 timezone('utc', now()) - interval '1 second')
+    FROM public.workspace_members wm
+    WHERE wm.workspace_id = workspace_id_var
+      AND wm.left_at IS NULL
+      AND wm.member_id != NEW.user_id
+      AND NOT EXISTS (
+          SELECT 1
+          FROM public.channel_members cm
+          WHERE cm.channel_id = NEW.channel_id
+            AND cm.member_id = wm.member_id
+      )
+    ON CONFLICT (channel_id, member_id) DO NOTHING;
+
+    -- Then, increment unread message count for all existing channel members
+    -- who are also active workspace members (excluding the sender)
+    UPDATE public.channel_members cm
+    SET unread_message_count = unread_message_count + 1
+    FROM public.workspace_members wm
+    WHERE cm.channel_id = NEW.channel_id
+      AND cm.member_id != NEW.user_id
+      AND wm.workspace_id = workspace_id_var
+      AND wm.member_id = cm.member_id
+      AND wm.left_at IS NULL
+      AND cm.last_read_update_at < NEW.created_at;
+
+    RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION increment_unread_count_on_new_message() IS 'Function to increment unread message count for channel members upon the insertion of a new message, optimized to perform a single update for all eligible members.';
+COMMENT ON FUNCTION increment_unread_count_on_new_message() IS 'Increments unread message count for ALL workspace members (even non-channel members) upon insertion of a new message.';
 
-/*
-    --------------------------------------------------------
-    Trigger: increment_unread_count_after_new_message
-    Description: Triggered after a new message is inserted. Calls the
-                 increment_unread_count_on_new_message function to update unread message counts
-                 for members in the message's channel.
-    --------------------------------------------------------
-*/
-
-CREATE TRIGGER increment_unread_count_after_new_message
+-- Trigger: increment_unread_count
+CREATE TRIGGER increment_unread_count
 AFTER INSERT ON public.messages
 FOR EACH ROW
 EXECUTE FUNCTION increment_unread_count_on_new_message();
 
-COMMENT ON TRIGGER increment_unread_count_after_new_message ON public.messages IS 'Trigger to increment unread message count for channel members in the channel_members table after a new message is posted.';
+COMMENT ON TRIGGER increment_unread_count ON public.messages IS 'Increments the unread message count for all workspace members when a new message is posted.';
 
-
-CREATE OR REPLACE FUNCTION decrement_unread_message_count() RETURNS TRIGGER AS $$
+/**
+ * Function: update_unread_count_on_message_delete
+ * Description: Updates unread message counts when messages are deleted
+ * Trigger: Executes after UPDATE of deleted_at or DELETE on public.messages
+ * Action: Recalculates unread message counts based on remaining unread notifications
+ * Returns: NULL (not used for AFTER triggers)
+ */
+CREATE OR REPLACE FUNCTION update_unread_count_on_message_delete() RETURNS TRIGGER AS $$
 DECLARE
     channel_id_used VARCHAR(36);
 BEGIN
@@ -414,17 +492,21 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+COMMENT ON FUNCTION update_unread_count_on_message_delete() IS 'Updates unread message counts when messages are deleted, ensuring counts stay accurate.';
 
-CREATE TRIGGER decrement_unread_message_count_trigger_soft_delete
+-- Trigger: update_unread_count_on_soft_delete
+CREATE TRIGGER update_unread_count_on_soft_delete
 AFTER UPDATE OF deleted_at ON public.messages
 FOR EACH ROW
 WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
-EXECUTE FUNCTION decrement_unread_message_count();
+EXECUTE FUNCTION update_unread_count_on_message_delete();
 
-CREATE TRIGGER decrement_unread_message_count_trigger_hard_delete
+COMMENT ON TRIGGER update_unread_count_on_soft_delete ON public.messages IS 'Updates unread message counts when a message is soft-deleted.';
+
+-- Trigger: update_unread_count_on_hard_delete
+CREATE TRIGGER update_unread_count_on_hard_delete
 AFTER DELETE ON public.messages
 FOR EACH ROW
-EXECUTE FUNCTION decrement_unread_message_count();
+EXECUTE FUNCTION update_unread_count_on_message_delete();
 
---- in decrement unread message count, I have to listen to update channel_member table
---- in order if the
+COMMENT ON TRIGGER update_unread_count_on_hard_delete ON public.messages IS 'Updates unread message counts when a message is hard-deleted.';

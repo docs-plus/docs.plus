@@ -1,9 +1,58 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@use 'tailwindcss';
+@plugin "daisyui";
+
+@plugin "daisyui/theme" {
+  name: 'docsyLight';
+  default: true;
+  prefersdark: false;
+  color-scheme: 'dark';
+  --color-base-100: oklch(100% 0 0);
+  --color-base-200: oklch(98% 0 0);
+  --color-base-300: oklch(95% 0 0);
+  --color-base-content: oklch(21% 0.006 285.885);
+  --color-primary: #2778ff;
+  --color-primary-content: oklch(93% 0.034 272.788);
+  --color-secondary: oklch(65% 0.241 354.308);
+  --color-secondary-content: oklch(94% 0.028 342.258);
+  --color-accent: oklch(77% 0.152 181.912);
+  --color-accent-content: oklch(38% 0.063 188.416);
+  --color-neutral: oklch(14% 0.005 285.823);
+  --color-neutral-content: oklch(92% 0.004 286.32);
+  --color-info: oklch(74% 0.16 232.661);
+  --color-info-content: oklch(29% 0.066 243.157);
+  --color-success: oklch(76% 0.177 163.223);
+  --color-success-content: oklch(37% 0.077 168.94);
+  --color-warning: oklch(82% 0.189 84.429);
+  --color-warning-content: oklch(41% 0.112 45.904);
+  --color-error: oklch(71% 0.194 13.428);
+  --color-error-content: oklch(27% 0.105 12.094);
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 0.5rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 1;
+  --noise: 1;
+}
+
+@theme {
+  --color-docsy: #2778ff;
+  --bg-docy: #2778ff;
+}
+
+:root {
+  --font-family: 'Helvetica, Arial, sans-serif';
+}
 
 * {
-  @apply box-border font-sans;
+  box-sizing: border-box;
+  font-family: Helvetica, Arial, sans-serif;
+}
+
+input {
+  outline-offset: 0px !important;
+  outline-width: 1px !important;
 }
 
 // body {
@@ -17,20 +66,29 @@
 // }
 
 .ProseMirror {
-  @apply h-full outline-none;
+  height: 100%;
+  outline: none;
 }
 
 html:not(.m_mobile) {
-  @apply m-0 h-full max-h-full min-h-full p-0;
+  margin: 0;
+  height: 100%;
+  max-height: 100%;
+  min-height: 100%;
+  padding: 0;
 
   body {
-    @apply m-0 h-full max-h-full min-h-full p-0;
+    margin: 0;
+    height: 100%;
+    max-height: 100%;
+    min-height: 100%;
+    padding: 0;
   }
 }
 
 #root,
 #__next {
-  @apply h-full;
+  height: 100%;
   //   min-height: 100vh;
   // /* mobile viewport bug fix */
   // min-height: -webkit-fill-available;
@@ -256,7 +314,9 @@ html:not(.m_mobile) {
     }
 
     select {
-      @apply rounded-md border-gray-300 px-2 py-2;
+      border-radius: 0.375rem;
+      border-color: #d1d5db;
+      padding: 0.5rem 0.5rem;
       &:hover {
         background-color: #eee;
       }
@@ -310,14 +370,14 @@ ol {
 
 /* styles.css */
 .bubble_group-end::before {
-  @apply block;
+  display: block;
   content: '';
 
   /* Define other properties for your before element here */
 }
 
 .bubble_group-start::before {
-  @apply hidden;
+  display: none;
   content: '';
   /* Define other properties for your before element if needed */
 }
@@ -683,4 +743,106 @@ ol {
   background-size: 200% auto;
   background-repeat: no-repeat;
   background-position-x: -50%;
+}
+
+.bg-chatBubble-owner {
+  background-color: #a6c5fa;
+}
+
+@keyframes bg-ping-animation {
+  0%,
+  100% {
+    background-color: #eef2ff;
+  }
+  50% {
+    background-color: #c7d2fe;
+  }
+}
+
+.bg-ping {
+  position: relative;
+  animation: bg-ping-animation 2s ease-in-out infinite;
+}
+
+/* Primary color variant */
+.bg-ping-primary {
+  position: relative;
+  animation: bg-ping-primary 2s ease-in-out infinite;
+}
+
+@keyframes bg-ping-primary {
+  0%,
+  100% {
+    background-color: rgba(39, 120, 255, 0.1);
+  }
+  50% {
+    background-color: rgba(39, 120, 255, 0.3);
+  }
+}
+
+/* Border ping animation - shiny version */
+@keyframes border-ping-animation {
+  0%,
+  100% {
+    border-color: #c7d2fe;
+    box-shadow: 0 0 5px rgba(129, 140, 248, 0.1);
+  }
+  50% {
+    border-color: #818cf8;
+    box-shadow: 0 0 8px rgba(129, 140, 248, 0.5);
+  }
+}
+
+.border-ping {
+  position: relative;
+  border-width: 2px;
+  border-style: solid;
+  animation: border-ping-animation 2s ease-in-out infinite;
+  transition: all 0.3s ease;
+}
+
+/* Primary color border variant - shiny version */
+.border-ping-primary {
+  position: relative;
+  border-width: 2px;
+  border-style: solid;
+  animation: border-ping-primary 2s ease-in-out infinite;
+  transition: all 0.3s ease;
+}
+
+@keyframes border-ping-primary {
+  0%,
+  100% {
+    border-color: rgba(39, 120, 255, 0.4);
+    box-shadow: 0 0 5px rgba(39, 120, 255, 0.1);
+  }
+  50% {
+    border-color: rgba(39, 120, 255, 0.9);
+    box-shadow:
+      0 0 12px rgba(39, 120, 255, 0.3),
+      0 0 5px rgba(39, 120, 255, 0.5);
+  }
+}
+
+/* Extra shiny version with glow */
+.border-ping-glow {
+  position: relative;
+  border-width: 2px;
+  border-style: solid;
+  animation: border-ping-glow 2.5s ease-in-out infinite;
+  transition: all 0.3s ease;
+}
+
+@keyframes border-ping-glow {
+  0%,
+  100% {
+    border-color: #93c5fd;
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.2);
+  }
+  50% {
+    border-color: #3b82f6;
+    box-shadow:
+      0 0 15px rgba(59, 130, 246, 0.6),
+      0 0 5px rgba(59, 130, 246, 0.8);
+  }
 }

@@ -42,7 +42,7 @@ const Modal = ({ isOpen, setIsOpen, children, id, asAChild = true, className }: 
           console.info('clik')
         }}
       />
-      <div className="modal z-50 size-full bg-slate-300/20 backdrop-blur-sm" role="dialog">
+      <div className="modal z-50 size-full bg-slate-300/20" role="dialog">
         <div className={twMerge('modal-box', !asAChild ? 'max-w-fit p-0' : 'p-3', className)}>
           {children}
         </div>

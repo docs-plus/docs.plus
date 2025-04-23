@@ -114,13 +114,6 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "channel_members_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "workspace_users"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
       channel_message_counts: {
@@ -226,13 +219,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "channels_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "workspace_users"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "channels_workspace_id_fkey"
             columns: ["workspace_id"]
             isOneToOne: false
@@ -240,21 +226,6 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      cron_test_runs: {
-        Row: {
-          id: number
-          run_at: string | null
-        }
-        Insert: {
-          id?: number
-          run_at?: string | null
-        }
-        Update: {
-          id?: number
-          run_at?: string | null
-        }
-        Relationships: []
       }
       messages: {
         Row: {
@@ -363,25 +334,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "messages_thread_owner_id_fkey"
-            columns: ["thread_owner_id"]
-            isOneToOne: false
-            referencedRelation: "workspace_users"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "messages_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "messages_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "workspace_users"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -445,25 +402,11 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "notifications_receiver_user_id_fkey"
-            columns: ["receiver_user_id"]
-            isOneToOne: false
-            referencedRelation: "workspace_users"
-            referencedColumns: ["user_id"]
-          },
-          {
             foreignKeyName: "notifications_sender_user_id_fkey"
             columns: ["sender_user_id"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "notifications_sender_user_id_fkey"
-            columns: ["sender_user_id"]
-            isOneToOne: false
-            referencedRelation: "workspace_users"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -513,13 +456,6 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "pinned_messages_pinned_by_fkey"
-            columns: ["pinned_by"]
-            isOneToOne: false
-            referencedRelation: "workspace_users"
-            referencedColumns: ["user_id"]
           },
         ]
       }
@@ -571,6 +507,51 @@ export type Database = {
         }
         Relationships: []
       }
+      workspace_members: {
+        Row: {
+          created_at: string
+          id: string
+          joined_at: string
+          left_at: string | null
+          member_id: string
+          updated_at: string | null
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          member_id: string
+          updated_at?: string | null
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          joined_at?: string
+          left_at?: string | null
+          member_id?: string
+          updated_at?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       workspaces: {
         Row: {
           created_at: string
@@ -613,45 +594,15 @@ export type Database = {
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "workspaces_created_by_fkey"
-            columns: ["created_by"]
-            isOneToOne: false
-            referencedRelation: "workspace_users"
-            referencedColumns: ["user_id"]
-          },
         ]
       }
     }
     Views: {
-      workspace_users: {
-        Row: {
-          avatar_updated_at: string | null
-          avatar_url: string | null
-          display_name: string | null
-          full_name: string | null
-          joined_at: string | null
-          user_id: string | null
-          username: string | null
-          workspace_id: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "channels_workspace_id_fkey"
-            columns: ["workspace_id"]
-            isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
+      [_ in never]: never
     }
     Functions: {
       create_direct_message_channel: {
-        Args: {
-          workspace_uid: string
-          user_id: string
-        }
+        Args: { workspace_uid: string; user_id: string }
         Returns: Json
       }
       create_thread_message: {
@@ -664,10 +615,7 @@ export type Database = {
         Returns: undefined
       }
       fetch_mentioned_users: {
-        Args: {
-          _workspace_id: string
-          _username: string
-        }
+        Args: { _workspace_id: string; _username: string }
         Returns: {
           id: string
           username: string
@@ -678,23 +626,11 @@ export type Database = {
           created_at: string
         }[]
       }
-      fetch_workspace_users: {
-        Args: {
-          _workspace_id: string
-          _search_term: string
-        }
-        Returns: {
-          username: string
-          full_name: string
-          display_name: string
-          avatar_url: string
-          avatar_updated_at: string
-        }[]
-      }
       get_channel_aggregate_data: {
         Args: {
           input_channel_id: string
           message_limit?: number
+          anchor_message_id?: string
         }
         Returns: {
           channel_info: Json
@@ -711,29 +647,21 @@ export type Database = {
       get_channel_messages_paginated: {
         Args: {
           input_channel_id: string
-          page: number
-          page_size?: number
+          limit_count?: number
+          cursor_timestamp?: string
+          direction?: string
         }
         Returns: {
           messages: Json
+          pagination_cursors: Json
         }[]
       }
       get_channel_notif_state: {
-        Args: {
-          _channel_id: string
-        }
+        Args: { _channel_id: string }
         Returns: Database["public"]["Enums"]["channel_notification_state"]
       }
-      get_unread_count: {
-        Args: {
-          _workspace_id?: string
-        }
-        Returns: number
-      }
       get_unread_notif_count: {
-        Args: {
-          _workspace_id?: string
-        }
+        Args: { _workspace_id?: string }
         Returns: number
       }
       get_unread_notifications_paginated: {
@@ -745,25 +673,12 @@ export type Database = {
         }
         Returns: Json[]
       }
-      get_workspace_users: {
-        Args: {
-          workspace_id_param: string
-        }
-        Returns: {
-          user_id: string
-          username: string
-          full_name: string
-          display_name: string
-          avatar_url: string
-          avatar_updated_at: string
-          joined_at: string
-        }[]
+      join_workspace: {
+        Args: { _workspace_id: string }
+        Returns: boolean
       }
       mark_messages_as_read: {
-        Args: {
-          p_channel_id: string
-          p_message_id: string
-        }
+        Args: { p_channel_id: string; p_message_id: string }
         Returns: undefined
       }
       message_counter_batch_worker: {
@@ -771,17 +686,16 @@ export type Database = {
         Returns: undefined
       }
       notifications_summary: {
-        Args: {
-          _workspace_id?: string
-        }
+        Args: { _workspace_id?: string }
         Returns: Json
       }
       truncate_content: {
-        Args: {
-          input_content: string
-          max_length?: number
-        }
+        Args: { input_content: string; max_length?: number }
         Returns: string
+      }
+      user_details_json: {
+        Args: { u: Database["public"]["Tables"]["users"]["Row"] }
+        Returns: Json
       }
     }
     Enums: {
@@ -853,27 +767,29 @@ export type Database = {
   }
 }
 
-type PublicSchema = Database[Extract<keyof Database, "public">]
+type DefaultSchema = Database[Extract<keyof Database, "public">]
 
 export type Tables<
-  PublicTableNameOrOptions extends
-    | keyof (PublicSchema["Tables"] & PublicSchema["Views"])
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
     | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-        Database[PublicTableNameOrOptions["schema"]]["Views"])
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[PublicTableNameOrOptions["schema"]]["Tables"] &
-      Database[PublicTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : PublicTableNameOrOptions extends keyof (PublicSchema["Tables"] &
-        PublicSchema["Views"])
-    ? (PublicSchema["Tables"] &
-        PublicSchema["Views"])[PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -881,20 +797,22 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -902,20 +820,22 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  PublicTableNameOrOptions extends
-    | keyof PublicSchema["Tables"]
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
     | { schema: keyof Database },
-  TableName extends PublicTableNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicTableNameOrOptions["schema"]]["Tables"]
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
-> = PublicTableNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : PublicTableNameOrOptions extends keyof PublicSchema["Tables"]
-    ? PublicSchema["Tables"][PublicTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -923,21 +843,23 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  PublicEnumNameOrOptions extends
-    | keyof PublicSchema["Enums"]
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
     | { schema: keyof Database },
-  EnumName extends PublicEnumNameOrOptions extends { schema: keyof Database }
-    ? keyof Database[PublicEnumNameOrOptions["schema"]]["Enums"]
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof Database
+  }
+    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
-> = PublicEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : PublicEnumNameOrOptions extends keyof PublicSchema["Enums"]
-    ? PublicSchema["Enums"][PublicEnumNameOrOptions]
+> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
+  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof PublicSchema["CompositeTypes"]
+    | keyof DefaultSchema["CompositeTypes"]
     | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof Database
@@ -946,7 +868,83 @@ export type CompositeTypes<
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
   ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof PublicSchema["CompositeTypes"]
-    ? PublicSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
     : never
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {
+      app_permission: [
+        "channels.create",
+        "channels.delete",
+        "channels.edit",
+        "messages.create",
+        "messages.delete",
+        "messages.edit",
+        "users.view",
+        "users.edit",
+        "users.delete",
+        "roles.create",
+        "roles.edit",
+        "roles.delete",
+      ],
+      app_role: ["admin", "moderator", "member", "guest"],
+      channel_member_role: ["MEMBER", "ADMIN", "MODERATOR", "GUEST"],
+      channel_notification_state: ["MENTIONS", "ALL", "MUTED"],
+      channel_type: [
+        "PUBLIC",
+        "PRIVATE",
+        "BROADCAST",
+        "ARCHIVE",
+        "DIRECT",
+        "GROUP",
+        "THREAD",
+      ],
+      message_type: [
+        "text",
+        "image",
+        "video",
+        "audio",
+        "link",
+        "giphy",
+        "file",
+        "notification",
+      ],
+      notification_category: [
+        "mention",
+        "message",
+        "reply",
+        "reaction",
+        "thread_message",
+        "channel_event",
+        "direct_message",
+        "invitation",
+        "system_alert",
+      ],
+      notification_type: [
+        "message",
+        "channel_invite",
+        "mention",
+        "reply",
+        "thread_update",
+        "channel_update",
+        "member_join",
+        "member_leave",
+        "user_activity",
+        "task_assignment",
+        "event_reminder",
+        "system_update",
+        "security_alert",
+        "like_reaction",
+        "feedback_request",
+        "performance_insight",
+      ],
+      user_status: ["ONLINE", "OFFLINE", "AWAY", "BUSY", "INVISIBLE"],
+    },
+  },
+} as const
 

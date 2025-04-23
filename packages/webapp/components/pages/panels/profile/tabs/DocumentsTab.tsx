@@ -141,7 +141,7 @@ const DocumentsPanel = ({ goBack }: any) => {
   }
 
   return (
-    <div className="relative h-full w-full md:border-l">
+    <div className="relative h-full w-full border-gray-300 md:border-l">
       <TabTitle className="flex" title="Documents" goBack={goBack} />
 
       <TabSection>

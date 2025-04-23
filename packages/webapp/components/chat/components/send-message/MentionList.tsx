@@ -3,7 +3,7 @@
 
 import { searchWorkspaceUsers } from '@api'
 import { useApi } from '@hooks/useApi'
-import React, { forwardRef, useEffect, useImperativeHandle, useState } from 'react'
+import React, { forwardRef, useEffect, useImperativeHandle, useState, useRef } from 'react'
 import { useStore } from '@stores'
 import MentionItem from './MentionItem'
 
@@ -30,6 +30,7 @@ export default forwardRef((props, ref) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [workspaceUsers, setWorkspaceUsers] = useState([])
   const { workspaceId } = useStore((state) => state.settings)
+  const listRef = useRef(null)
 
   const { request: searchWorkspaceUsersRequest, loading: searchWorkspaceUsersLoading } = useApi(
     searchWorkspaceUsers,
@@ -46,9 +47,23 @@ export default forwardRef((props, ref) => {
       }
 
       setWorkspaceUsers([everyoneOption, ...data])
+      // Ensure first item is selected by default
+      setSelectedIndex(0)
     }
     fetchWorkspaceUsers()
   }, [workspaceId])
+
+  // Scroll selected item into view when it changes
+  useEffect(() => {
+    if (listRef.current && workspaceUsers.length > 0) {
+      const selectedElement = listRef.current.querySelector(
+        `.mention-item:nth-child(${selectedIndex + 1})`
+      )
+      if (selectedElement) {
+        selectedElement.scrollIntoView({ block: 'nearest' })
+      }
+    }
+  }, [selectedIndex, workspaceUsers.length])
 
   const selectItem = (index) => {
     const item = workspaceUsers[index]
@@ -69,29 +84,30 @@ export default forwardRef((props, ref) => {
     selectItem(selectedIndex)
   }
 
-  useEffect(() => setSelectedIndex(0), [workspaceUsers])
+  // Reset selection index whenever the user list changes
+  useEffect(() => {
+    setSelectedIndex(0)
+  }, [workspaceUsers])
 
   useImperativeHandle(ref, () => ({
-    onKeyDown: ({ event }) => {
-      // Check if popup exists and is visible
-      const tippyInstance = document.querySelector('[data-tippy-root]')
-      const isPopupVisible =
-        tippyInstance && window.getComputedStyle(tippyInstance).visibility === 'visible'
+    onKeyDown: (props) => {
+      const { event } = props
 
       if (event.key === 'ArrowUp') {
         upHandler()
+        event.preventDefault()
         return true
       }
 
       if (event.key === 'ArrowDown') {
         downHandler()
+        event.preventDefault()
         return true
       }
 
-      if (event.key === 'Enter' && isPopupVisible) {
-        event.preventDefault()
-        event.stopPropagation()
+      if (event.key === 'Enter') {
         enterHandler()
+        event.preventDefault()
         return true
       }
 
@@ -100,7 +116,7 @@ export default forwardRef((props, ref) => {
   }))
 
   return (
-    <div className="dropdown-menu max-h-[300px] overflow-y-auto !p-1">
+    <div className="dropdown-menu max-h-[300px] overflow-y-auto !p-1" ref={listRef}>
       {searchWorkspaceUsersLoading ? (
         <LoadingSkeleton />
       ) : workspaceUsers.length ? (

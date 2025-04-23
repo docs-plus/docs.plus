@@ -34,7 +34,7 @@ const Chip = ({ type, text, onMouseEnter, onMouseLeave }: any) => {
       )}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}>
-      <div className="max-w-full flex-initial text-xs font-normal leading-none">{text}</div>
+      <div className="max-w-full flex-initial text-xs leading-none font-normal">{text}</div>
       <div className="flex flex-auto flex-row-reverse">
         <CloseButton onClick={() => removeFilterHandler(text)} />
       </div>
@@ -51,6 +51,7 @@ const FilterBar = ({
 }) => {
   const {
     editor: {
+      isMobile,
       filterResult: { sortedSlugs, selectedNodes }
     }
   } = useStore((state) => state.settings)
@@ -84,7 +85,11 @@ const FilterBar = ({
   }, [])
 
   return (
-    <div className={twMerge('group flex items-center align-middle', className)}>
+    <div
+      className={twMerge(
+        `group flex items-center align-middle ${sortedSlugs.length && isMobile && 'mt-2'}`,
+        className
+      )}>
       {sortedSlugs.map((slug: any, index: number) => (
         <Chip
           key={index}

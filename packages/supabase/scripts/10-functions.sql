@@ -1,8 +1,34 @@
 -- Test
 -- SELECT * FROM get_channel_aggregate_data('99634205-5238-4ffc-90ec-c64be3ad25cf');
+
+-- Helper function to get standardized user details as JSON
+CREATE OR REPLACE FUNCTION user_details_json(u public.users)
+RETURNS JSONB AS $$
+BEGIN
+  RETURN json_build_object(
+    'id', u.id,
+    'username', u.username,
+    'fullname', u.full_name,
+    'avatar_url', u.avatar_url,
+    'avatar_updated_at', u.avatar_updated_at
+  );
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
+COMMENT ON FUNCTION user_details_json(public.users) IS
+'Returns a standardized JSON object with user details. Immutable function
+for consistent user representation across different contexts.';
+
+DROP FUNCTION IF EXISTS get_channel_aggregate_data(
+  VARCHAR(36),
+  INT,
+  UUID
+);
+
 CREATE OR REPLACE FUNCTION get_channel_aggregate_data(
     input_channel_id VARCHAR(36),
-    message_limit INT DEFAULT 20
+    message_limit INT DEFAULT 20,
+    anchor_message_id UUID DEFAULT NULL
 )
 RETURNS TABLE(
     channel_info JSONB,
@@ -25,6 +51,8 @@ DECLARE
     last_read_message_id UUID;
     last_read_message_timestamp TIMESTAMP WITH TIME ZONE;
     unread_message BOOLEAN := FALSE;
+    anchor_message_timestamp TIMESTAMP WITH TIME ZONE;
+    half_limit INT;
 BEGIN
     -- Check if the channel exists and is not deleted
     SELECT json_build_object(
@@ -91,50 +119,158 @@ BEGIN
         unread_message := TRUE;
     END IF;
 
-    -- Query for the last messages with user details, including replied message details
-    SELECT json_agg(t) INTO messages_result
-    FROM (
-        SELECT m.*,
-            json_build_object(
-                'id', u.id,
-                'username', u.username,
-                'fullname', u.full_name,
-                'avatar_url', u.avatar_url,
-                'avatar_updated_at', u.avatar_updated_at
-            ) AS user_details,
-            CASE
-                WHEN m.reply_to_message_id IS NOT NULL THEN
-                    (SELECT json_build_object(
-                            'message', json_build_object(
-                                'id', rm.id,
-                                'created_at', rm.created_at
-                            ),
-                            'user', json_build_object(
-                                'id', ru.id,
-                                'username', ru.username,
-                                'fullname', ru.full_name,
-                                'avatar_url', ru.avatar_url,
-                                'avatar_updated_at', ru.avatar_updated_at
-                            )
-                        )
-                     FROM public.messages rm
-                     LEFT JOIN public.users ru ON rm.user_id = ru.id
-                     WHERE rm.id = m.reply_to_message_id AND rm.deleted_at IS NULL)
-                ELSE NULL
-            END AS replied_message_details
-        FROM public.messages m
-        LEFT JOIN public.users u ON m.user_id = u.id
-        WHERE m.channel_id = input_channel_id
-            AND m.deleted_at IS NULL
-            AND (
+    -- If anchor_message_id is provided, get its timestamp
+    IF anchor_message_id IS NOT NULL THEN
+        SELECT created_at INTO anchor_message_timestamp
+        FROM public.messages
+        WHERE id = anchor_message_id AND channel_id = input_channel_id AND deleted_at IS NULL;
+
+        IF anchor_message_timestamp IS NULL THEN
+            RAISE EXCEPTION 'Anchor message % does not exist or has been deleted.', anchor_message_id;
+        END IF;
+    END IF;
+
+    -- Query for the messages with user details, including replied message details
+    -- Logic differs based on whether anchor_message_id is provided
+    IF anchor_message_id IS NULL THEN
+        -- Standard logic without anchor (unchanged)
+        SELECT json_agg(t) INTO messages_result
+        FROM (
+            SELECT m.*,
+                json_build_object(
+                    'id', u.id,
+                    'username', u.username,
+                    'fullname', u.full_name,
+                    'avatar_url', u.avatar_url,
+                    'avatar_updated_at', u.avatar_updated_at
+                ) AS user_details,
                 CASE
-                    WHEN total_messages_since_last_read < 20 THEN TRUE
-                    ELSE m.created_at >= COALESCE(last_read_message_timestamp, 'epoch'::timestamp)
-                END
-            )
-        ORDER BY m.created_at DESC
-        LIMIT message_limit
-    ) t;
+                    WHEN m.reply_to_message_id IS NOT NULL THEN
+                        (SELECT json_build_object(
+                                'message', json_build_object(
+                                    'id', rm.id,
+                                    'created_at', rm.created_at
+                                ),
+                                'user', json_build_object(
+                                    'id', ru.id,
+                                    'username', ru.username,
+                                    'fullname', ru.full_name,
+                                    'avatar_url', ru.avatar_url,
+                                    'avatar_updated_at', ru.avatar_updated_at
+                                )
+                            )
+                         FROM public.messages rm
+                         LEFT JOIN public.users ru ON rm.user_id = ru.id
+                         WHERE rm.id = m.reply_to_message_id AND rm.deleted_at IS NULL)
+                    ELSE NULL
+                END AS replied_message_details
+            FROM public.messages m
+            LEFT JOIN public.users u ON m.user_id = u.id
+            WHERE m.channel_id = input_channel_id
+                AND m.deleted_at IS NULL
+                AND (
+                    CASE
+                        WHEN total_messages_since_last_read < 20 THEN TRUE
+                        ELSE m.created_at >= COALESCE(last_read_message_timestamp, 'epoch'::timestamp)
+                    END
+                )
+            ORDER BY m.created_at DESC
+            LIMIT message_limit
+        ) t;
+    ELSE
+        -- Anchor-based logic: get messages around the anchor message
+        -- Split the limit to get messages before and after the anchor
+        half_limit := GREATEST(message_limit / 2, 1);
+
+        WITH messages_before AS (
+            -- Get messages before or at the anchor
+            SELECT m.*,
+                json_build_object(
+                    'id', u.id,
+                    'username', u.username,
+                    'fullname', u.full_name,
+                    'avatar_url', u.avatar_url,
+                    'avatar_updated_at', u.avatar_updated_at
+                ) AS user_details,
+                CASE
+                    WHEN m.reply_to_message_id IS NOT NULL THEN
+                        (SELECT json_build_object(
+                                'message', json_build_object(
+                                    'id', rm.id,
+                                    'created_at', rm.created_at
+                                ),
+                                'user', json_build_object(
+                                    'id', ru.id,
+                                    'username', ru.username,
+                                    'fullname', ru.full_name,
+                                    'avatar_url', ru.avatar_url,
+                                    'avatar_updated_at', ru.avatar_updated_at
+                                )
+                            )
+                         FROM public.messages rm
+                         LEFT JOIN public.users ru ON rm.user_id = ru.id
+                         WHERE rm.id = m.reply_to_message_id AND rm.deleted_at IS NULL)
+                    ELSE NULL
+                END AS replied_message_details
+            FROM public.messages m
+            LEFT JOIN public.users u ON m.user_id = u.id
+            WHERE m.channel_id = input_channel_id
+                AND m.deleted_at IS NULL
+                AND m.created_at <= anchor_message_timestamp
+            ORDER BY m.created_at DESC
+            LIMIT half_limit
+        ),
+        messages_after AS (
+            -- Get messages after the anchor
+            SELECT m.*,
+                json_build_object(
+                    'id', u.id,
+                    'username', u.username,
+                    'fullname', u.full_name,
+                    'avatar_url', u.avatar_url,
+                    'avatar_updated_at', u.avatar_updated_at
+                ) AS user_details,
+                CASE
+                    WHEN m.reply_to_message_id IS NOT NULL THEN
+                        (SELECT json_build_object(
+                                'message', json_build_object(
+                                    'id', rm.id,
+                                    'created_at', rm.created_at
+                                ),
+                                'user', json_build_object(
+                                    'id', ru.id,
+                                    'username', ru.username,
+                                    'fullname', ru.full_name,
+                                    'avatar_url', ru.avatar_url,
+                                    'avatar_updated_at', ru.avatar_updated_at
+                                )
+                            )
+                         FROM public.messages rm
+                         LEFT JOIN public.users ru ON rm.user_id = ru.id
+                         WHERE rm.id = m.reply_to_message_id AND rm.deleted_at IS NULL)
+                    ELSE NULL
+                END AS replied_message_details
+            FROM public.messages m
+            LEFT JOIN public.users u ON m.user_id = u.id
+            WHERE m.channel_id = input_channel_id
+                AND m.deleted_at IS NULL
+                AND m.created_at > anchor_message_timestamp
+            ORDER BY m.created_at ASC
+            LIMIT message_limit - half_limit
+        ),
+        combined_messages AS (
+            -- Combine the before and after messages
+            SELECT * FROM messages_before
+            UNION ALL
+            SELECT * FROM (SELECT * FROM messages_after ORDER BY created_at DESC) as sorted_after
+        )
+        SELECT json_agg(cm) INTO messages_result
+        FROM (
+            SELECT * FROM combined_messages
+            ORDER BY created_at DESC
+            LIMIT message_limit
+        ) cm;
+    END IF;
 
     -- Query for the pinned messages
     SELECT json_agg(pm) INTO pinned_result
@@ -153,9 +289,164 @@ BEGIN
         COALESCE(total_messages_since_last_read, 0),
         unread_message,
         last_read_message_id,
-        last_read_message_timestamp;
+        last_read_message_timestamp,
+        anchor_message_timestamp;
 END;
 $$ LANGUAGE plpgsql;
+
+
+
+
+--------------------------------------------------
+
+CREATE OR REPLACE FUNCTION get_channel_messages_paginated(
+    input_channel_id   VARCHAR(36),
+    limit_count        INT                DEFAULT 20,
+    cursor_timestamp   TIMESTAMPTZ        DEFAULT NULL,
+    direction          VARCHAR(10)        DEFAULT 'older'  -- 'older' or 'newer'
+)
+RETURNS TABLE(
+    messages            JSONB,
+    pagination_cursors  JSONB
+) AS $$
+BEGIN
+    -- 1) Validation
+    IF limit_count <= 0 THEN
+        RAISE EXCEPTION 'limit_count must be > 0';
+    END IF;
+    IF direction NOT IN ('older','newer') THEN
+        RAISE EXCEPTION 'direction must be "older" or "newer"';
+    END IF;
+    IF NOT EXISTS (
+        SELECT 1
+          FROM public.channels
+         WHERE id = input_channel_id
+           AND deleted_at IS NULL
+    ) THEN
+        RAISE EXCEPTION 'Channel % does not exist or is deleted', input_channel_id;
+    END IF;
+
+    -- 2) Branch on direction for ordering & cursor logic
+    IF direction = 'older' THEN
+
+        WITH paged AS (
+            SELECT
+              m.id,
+              m.content,
+              m.html,
+              m.medias,
+              m.created_at,
+              user_details_json(u) AS user_details,
+              CASE
+                WHEN rm.id IS NOT NULL THEN
+                  json_build_object(
+                    'message', json_build_object(
+                                  'id',         rm.id,
+                                  'created_at', rm.created_at
+                                ),
+                    'user',    user_details_json(ru)
+                  )
+              END AS replied_message_details
+            FROM public.messages m
+            JOIN public.users  u  ON u.id = m.user_id
+            LEFT JOIN public.messages rm ON rm.id = m.reply_to_message_id
+                                      AND rm.deleted_at IS NULL
+            LEFT JOIN public.users  ru ON ru.id = rm.user_id
+            WHERE
+              m.channel_id = input_channel_id
+              AND m.deleted_at IS NULL
+              AND ( cursor_timestamp IS NULL OR m.created_at < cursor_timestamp )
+            ORDER BY m.created_at DESC, m.id DESC
+            LIMIT limit_count
+        )
+        SELECT
+          COALESCE(jsonb_agg(to_jsonb(paged)), '[]'::jsonb) AS messages,
+          jsonb_build_object(
+            'older_cursor', MIN(created_at),
+            'newer_cursor', MAX(created_at),
+            'has_more_older',
+              EXISTS(
+                SELECT 1
+                  FROM public.messages
+                 WHERE channel_id = input_channel_id
+                   AND deleted_at IS NULL
+                   AND created_at < MIN(paged.created_at)
+              ),
+            'has_more_newer',
+              EXISTS(
+                SELECT 1
+                  FROM public.messages
+                 WHERE channel_id = input_channel_id
+                   AND deleted_at IS NULL
+                   AND created_at > MAX(paged.created_at)
+              )
+          ) AS pagination_cursors
+        INTO messages, pagination_cursors
+        FROM paged;
+
+    ELSE  -- direction = 'newer'
+
+        WITH paged AS (
+            SELECT
+              m.id,
+              m.content,
+              m.html,
+              m.medias,
+              m.created_at,
+              user_details_json(u) AS user_details,
+              CASE
+                WHEN rm.id IS NOT NULL THEN
+                  json_build_object(
+                    'message', json_build_object(
+                                  'id',         rm.id,
+                                  'created_at', rm.created_at
+                                ),
+                    'user',    user_details_json(ru)
+                  )
+              END AS replied_message_details
+            FROM public.messages m
+            JOIN public.users  u  ON u.id = m.user_id
+            LEFT JOIN public.messages rm ON rm.id = m.reply_to_message_id
+                                      AND rm.deleted_at IS NULL
+            LEFT JOIN public.users  ru ON ru.id = rm.user_id
+            WHERE
+              m.channel_id = input_channel_id
+              AND m.deleted_at IS NULL
+              AND ( cursor_timestamp IS NULL OR m.created_at > cursor_timestamp )
+            ORDER BY m.created_at  ASC, m.id  ASC
+            LIMIT limit_count
+        )
+        SELECT
+          COALESCE(jsonb_agg(to_jsonb(paged)), '[]'::jsonb) AS messages,
+          jsonb_build_object(
+            'older_cursor', MIN(created_at),
+            'newer_cursor', MAX(created_at),
+            'has_more_older',
+              EXISTS(
+                SELECT 1
+                  FROM public.messages
+                 WHERE channel_id = input_channel_id
+                   AND deleted_at IS NULL
+                   AND created_at < MIN(paged.created_at)
+              ),
+            'has_more_newer',
+              EXISTS(
+                SELECT 1
+                  FROM public.messages
+                 WHERE channel_id = input_channel_id
+                   AND deleted_at IS NULL
+                   AND created_at > MAX(paged.created_at)
+              )
+          ) AS pagination_cursors
+        INTO messages, pagination_cursors
+        FROM paged;
+
+    END IF;
+
+    RETURN NEXT;
+END;
+$$ LANGUAGE plpgsql STABLE;
+
 
 -------------------------------------------------
 -- p_message_id =: is the last message inserted in the channel
@@ -232,74 +523,6 @@ BEGIN
     WHERE channel_id = p_channel_id AND member_id = auth.uid();
 END;
 $$ LANGUAGE plpgsql VOLATILE SECURITY DEFINER;
-
-
---------------------------------------------------
-
-CREATE OR REPLACE FUNCTION get_channel_messages_paginated(
-    input_channel_id VARCHAR(36),
-    page INT,
-    page_size INT DEFAULT 20
-)
-RETURNS TABLE(
-    messages JSONB
-) AS $$
-DECLARE
-    message_offset INT; -- Renamed 'offset' to 'message_offset' to avoid keyword conflict
-BEGIN
-    -- Check if the channel exists and is not deleted
-    IF NOT EXISTS (SELECT 1 FROM public.channels WHERE id = input_channel_id AND deleted_at IS NULL) THEN
-        RAISE EXCEPTION 'Channel % does not exist or has been deleted.', input_channel_id;
-    END IF;
-
-    -- Calculate the message_offset based on the page number and page size
-    message_offset := (page - 1) * page_size;
-
-    -- Query to fetch messages with pagination
-    SELECT json_agg(t) INTO messages
-    FROM (
-        SELECT m.*,
-            json_build_object(
-                'id', u.id,
-                'username', u.username,
-                'fullname', u.full_name,
-                'avatar_url', u.avatar_url,
-                'avatar_updated_at', u.avatar_updated_at
-            ) AS user_details,
-            CASE
-                WHEN m.reply_to_message_id IS NOT NULL THEN
-                    (SELECT json_build_object(
-                            'message', json_build_object(
-                                'id', rm.id,
-                                'created_at', rm.created_at
-                            ),
-                            'user', json_build_object(
-                                'id', ru.id,
-                                'username', ru.username,
-                                'fullname', ru.full_name,
-                                'avatar_url', ru.avatar_url,
-                                'avatar_updated_at', ru.avatar_updated_at
-                            )
-                        ) FROM public.messages rm
-                        LEFT JOIN public.users ru ON ru.id = rm.user_id
-                        WHERE rm.id = m.reply_to_message_id AND rm.deleted_at IS NULL)
-                ELSE NULL
-            END AS replied_message_details
-        FROM public.messages m
-        LEFT JOIN public.users u ON m.user_id = u.id
-        WHERE m.channel_id = input_channel_id
-            AND m.deleted_at IS NULL
-        ORDER BY m.created_at DESC
-        LIMIT page_size OFFSET message_offset
-    ) t;
-
-    RETURN QUERY SELECT messages;
-END;
-$$ LANGUAGE plpgsql;
-
--- TEST
---- SELECT * FROM get_channel_messages_paginated('<channel_id>', 2, 10);
-
 
 -------------------------------
 -------------------------------
@@ -691,8 +914,6 @@ BEGIN
 END;
 $$;
 
-
-
 -------------------------
 
 CREATE OR REPLACE FUNCTION public.fetch_mentioned_users(
@@ -781,9 +1002,8 @@ BEGIN
 END;
 $$;
 
-ALTER FUNCTION public.get_unread_notif_count(VARCHAR(36))
-SET parallel_safe = true;
-
+-- ALTER FUNCTION public.get_unread_notif_count(VARCHAR(36))
+-- SET parallel_safe = true;
 
 -----------------------------------
 CREATE OR REPLACE FUNCTION public.get_channel_notif_state(
@@ -805,3 +1025,52 @@ BEGIN
     RETURN v_notif_state;
 END;
 $$;
+
+-----------------------------------
+-- Function to add the current user to a workspace
+CREATE OR REPLACE FUNCTION join_workspace(
+    _workspace_id VARCHAR(36)
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    user_id UUID;
+BEGIN
+    -- Get the current user ID
+    user_id := auth.uid();
+
+    -- Check if the user ID is valid
+    IF user_id IS NULL THEN
+        RAISE EXCEPTION 'Authentication required. User ID is NULL.';
+    END IF;
+
+    -- Check if the workspace exists and is not deleted
+    IF NOT EXISTS (
+        SELECT 1 FROM public.workspaces
+        WHERE id = _workspace_id AND deleted_at IS NULL
+    ) THEN
+        RAISE EXCEPTION 'Workspace % does not exist or has been deleted.', _workspace_id;
+    END IF;
+
+    -- Check if user is already a member of this workspace
+    IF EXISTS (
+        SELECT 1 FROM public.workspace_members
+        WHERE workspace_id = _workspace_id AND member_id = user_id
+    ) THEN
+        -- Return true if the user is already a member
+        RETURN TRUE;
+    END IF;
+
+    -- Insert new workspace member record
+    INSERT INTO public.workspace_members (workspace_id, member_id)
+    VALUES (_workspace_id, user_id);
+
+    RETURN TRUE;
+END;
+$$;
+
+COMMENT ON FUNCTION join_workspace(VARCHAR(36)) IS
+'Adds the currently authenticated user to the specified workspace.
+Returns TRUE if successful or if user is already a member.';

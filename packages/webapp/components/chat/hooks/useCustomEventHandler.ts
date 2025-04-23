@@ -4,9 +4,7 @@ import { useChannel } from '../context/ChannelProvider'
 
 export const useCustomEventHandler = (
   channelUsersPresence: Map<string, any>,
-  setChannelUsersPresence: Dispatch<SetStateAction<Map<string, any>>>,
-  messageContainerRef: MutableRefObject<HTMLElement | null>,
-  messagesEndRef: MutableRefObject<HTMLElement | null>
+  setChannelUsersPresence: Dispatch<SetStateAction<Map<string, any>>>
 ) => {
   const { channelId } = useChannel()
 

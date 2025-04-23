@@ -14,18 +14,18 @@ const AvatarStack = ({ users = [], size = 9, tooltipPosition = 'tooltip-bottom' 
           <Avatar
             key={index}
             avatarUpdatedAt={user?.avatar_updated_at}
-            className={`rounded-full border shadow-xl${size} size-${size} tooltip ${tooltipPosition}`}
+            className={`rounded-full border border-gray-300 shadow-xl${size} size-${size} tooltip ${tooltipPosition}`}
             id={user?.id}
             src={user?.avatar_url}
-            alt={user.displayName}
-            data-tip={user.displayName || user.full_nam || user.username || 'anonymous'}
+            alt={user.display_name}
+            data-tip={user.display_name || 'anonymous'}
           />
         )
       })}
 
       {remainingUsers > 0 && (
         <a
-          className="w-${size} h-${size} flex items-center justify-center rounded-full border-2 border-white bg-gray-700 text-xs font-medium text-white hover:bg-gray-600 dark:border-gray-800"
+          className="w-${size} h-${size} flex items-center justify-center rounded-full border-2 border-white bg-gray-700 text-xs font-medium text-white hover:bg-gray-600"
           href="#">
           +{remainingUsers}
         </a>

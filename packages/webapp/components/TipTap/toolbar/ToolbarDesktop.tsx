@@ -185,12 +185,12 @@ const ToolbarDesktop = () => {
           )}
           <div className="divided"></div>
 
-          <Dropdown button={<GearButton />}>
-            <GearModal className="z-50" />
+          <Dropdown button={<GearButton />} className="dropdown-bottom dropdown-end">
+            <GearModal className="z-50 p-2" />
           </Dropdown>
 
-          <Dropdown button={<FilterButton />}>
-            <FilterModal className="z-50" />
+          <Dropdown button={<FilterButton />} className="dropdown-bottom dropdown-end">
+            <FilterModal className="z-50 p-2" />
           </Dropdown>
         </div>
       </div>

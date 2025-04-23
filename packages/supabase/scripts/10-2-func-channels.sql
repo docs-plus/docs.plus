@@ -1,140 +1,187 @@
 /*
-    -----------------------------------------
-    -----------------------------------------
-    1.
-        Trigger: trigger_add_creator_as_admin
-        Description: Trigger that invokes add_channel_creator_as_admin function
-                     to add the channel creator as an admin in channel_members table
-                     after a new channel is created.
-    -----------------------------------------
-    -----------------------------------------
-*/
+ * Channel Management Functions
+ * This file contains functions and triggers related to channel operations:
+ * - Channel creation and membership
+ * - Channel notifications
+ * - Member counts and activity tracking
+ */
 
--- Function: add_channel_creator_as_admin()
-CREATE OR REPLACE FUNCTION add_channel_creator_as_admin() RETURNS TRIGGER AS $$
-BEGIN
-    -- Insert the channel creator as an admin into the channel_members table.
-    -- This function is automatically triggered after a new channel is created.
-    -- It ensures that the creator of the channel is immediately added as an admin member of the channel.
-    INSERT INTO public.channel_members (channel_id, member_id, channel_member_role, joined_at)
-    VALUES (NEW.id, NEW.created_by, 'ADMIN', NOW());
+/**
+ * Function: add_channel_creator_as_admin
+ * Description: Adds the creator of a new channel as an admin member
+ * Trigger: Executes after INSERT on public.channels
+ * Action: Inserts a record into channel_members with ADMIN role for the creator
+ * Returns: The NEW record (trigger standard)
+ */
+create or replace function add_channel_creator_as_admin()
+returns trigger as $$
+begin
+    -- Insert the channel creator as an admin member
+    insert into public.channel_members (
+        channel_id,
+        member_id,
+        channel_member_role,
+        joined_at
+    )
+    values (
+        new.id,
+        new.created_by,
+        'ADMIN',
+        now()
+    );
 
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+    return new;
+end;
+$$ language plpgsql;
 
-COMMENT ON FUNCTION add_channel_creator_as_admin() IS 'Trigger function that adds the creator of a new channel as an admin in the channel_members table.';
+comment on function add_channel_creator_as_admin() is
+'Adds the creator of a new channel as an admin member in the channel_members table.';
 
--- Trigger: trigger_add_creator_as_admin
-CREATE TRIGGER trigger_add_creator_as_admin
-AFTER INSERT ON public.channels
-FOR EACH ROW
-EXECUTE FUNCTION add_channel_creator_as_admin();
+-- Trigger: channel_creator_as_admin
+create trigger channel_creator_as_admin
+after insert on public.channels
+for each row
+execute function add_channel_creator_as_admin();
 
-COMMENT ON TRIGGER trigger_add_creator_as_admin ON public.channels IS 'Trigger that invokes add_channel_creator_as_admin function to add the channel creator as an admin in channel_members table after a new channel is created.';
+comment on trigger channel_creator_as_admin on public.channels is
+'Automatically adds the channel creator as an admin member when a new channel is created.';
 
-----------------------------------------------------------------------------------
-
--- Function to create a notification message when a new channel is created
--- For multilingual and other purposes, you can gather more information from the metadata.
-CREATE OR REPLACE FUNCTION public.notify_new_channel_creation()
-RETURNS TRIGGER AS $$
-BEGIN
-    INSERT INTO public.messages (channel_id, type, user_id, content, metadata)
-    VALUES (
-        NEW.id,
+/**
+ * Function: create_channel_notification
+ * Description: Creates a system notification message when a new channel is created
+ * Trigger: Executes after INSERT on public.channels
+ * Action: Creates a notification message in the new channel
+ * Returns: The NEW record (trigger standard)
+ */
+create or replace function create_channel_notification()
+returns trigger as $$
+begin
+    insert into public.messages (
+        channel_id,
+        type,
+        user_id,
+        content,
+        metadata
+    )
+    values (
+        new.id,
         'notification',
-        '992bb85e-78f8-4747-981a-fd63d9317ff1',
+        '992bb85e-78f8-4747-981a-fd63d9317ff1', -- System user ID
         'Channel created',
         jsonb_build_object(
             'type', 'channel_created'
         )
     );
 
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+    return new;
+end;
+$$ language plpgsql;
 
+comment on function create_channel_notification() is
+'Creates a system notification message when a new channel is created.';
 
--- Trigger to invoke the function when a new channel is created
-CREATE TRIGGER trigger_new_channel_creation
-AFTER INSERT ON public.channels
-FOR EACH ROW
-EXECUTE FUNCTION public.notify_new_channel_creation();
+-- Trigger: notify_channel_creation
+create trigger notify_channel_creation
+after insert on public.channels
+for each row
+execute function create_channel_notification();
 
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
+comment on trigger notify_channel_creation on public.channels is
+'Creates a notification message when a new channel is created.';
 
+/* Legacy code - kept for reference but commented out
+create or replace function update_last_read_time()
+returns trigger as $$
+begin
+    -- Update the last_read_update_at if there's a change in last_read_message_id
+    if old.last_read_message_id is distinct from new.last_read_message_id then
+        new.last_read_update_at := timezone('utc', now());
+    end if;
+    return new;
+end;
+$$ language plpgsql;
 
--- CREATE OR REPLACE FUNCTION update_last_read_time()
--- RETURNS TRIGGER AS $$
--- BEGIN
---     -- Update the last_read_update_at if there's a change in last_read_message_id
---     IF OLD.last_read_message_id IS DISTINCT FROM NEW.last_read_message_id THEN
---         NEW.last_read_update_at := timezone('utc', now());
---     END IF;
---     RETURN NEW;
--- END;
--- $$ LANGUAGE plpgsql;
+create trigger trigger_update_last_read_time
+before update on public.channel_members
+for each row
+execute function update_last_read_time();
+*/
 
--- CREATE TRIGGER trigger_update_last_read_time
--- BEFORE UPDATE ON public.channel_members
--- FOR EACH ROW
--- EXECUTE FUNCTION update_last_read_time();
-
-----------------------------------------------------------------------------------
-
-
--- Function to create a notification message when a channel's name is changed
--- For multilingual and other purposes, you can gather more information from the metadata.
-CREATE OR REPLACE FUNCTION public.notify_channel_name_change()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF OLD.name IS DISTINCT FROM NEW.name THEN
-        INSERT INTO public.messages (channel_id, type, user_id, content, metadata)
-        VALUES (
-            NEW.id,
+/**
+ * Function: notify_channel_name_change
+ * Description: Creates a system notification when a channel's name is changed
+ * Trigger: Executes after UPDATE of name on public.channels
+ * Action: Creates a notification message with the new channel name
+ * Returns: The NEW record (trigger standard)
+ */
+create or replace function notify_channel_name_change()
+returns trigger as $$
+begin
+    if old.name is distinct from new.name then
+        insert into public.messages (
+            channel_id,
+            type,
+            user_id,
+            content,
+            metadata
+        )
+        values (
+            new.id,
             'notification',
-            '992bb85e-78f8-4747-981a-fd63d9317ff1',
-            'Channel name was changed to "' || NEW.name || '"',
+            '992bb85e-78f8-4747-981a-fd63d9317ff1', -- System user ID
+            'Channel name was changed to "' || new.name || '"',
             jsonb_build_object(
                 'type', 'channel_name_changed',
-                'name', NEW.name
+                'name', new.name
             )
         );
-    END IF;
+    end if;
 
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+    return new;
+end;
+$$ language plpgsql;
 
+comment on function notify_channel_name_change() is
+'Creates a system notification message when a channel name is changed.';
 
--- Trigger to invoke the function when a channel's name is changed
-CREATE TRIGGER trigger_channel_name_change
-AFTER UPDATE OF name ON public.channels
-FOR EACH ROW
-WHEN (OLD.name IS DISTINCT FROM NEW.name)
-EXECUTE FUNCTION public.notify_channel_name_change();
+-- Trigger: notify_on_channel_name_change
+create trigger notify_on_channel_name_change
+after update of name on public.channels
+for each row
+when (old.name is distinct from new.name)
+execute function notify_channel_name_change();
 
+comment on trigger notify_on_channel_name_change on public.channels is
+'Creates a notification when a channel name is changed.';
 
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
+/**
+ * Function: notify_user_join_channel
+ * Description: Creates a notification message when a user joins a channel
+ * Trigger: Executes after INSERT on public.channel_members
+ * Action: Creates a notification message showing who joined
+ * Returns: The NEW record (trigger standard)
+ */
+create or replace function notify_user_join_channel()
+returns trigger as $$
+declare
+    joining_username text;
+begin
+    -- Get the username of the joining member
+    select username into joining_username
+    from public.users
+    where id = new.member_id;
 
-
-
--- Function to create a notification message card when a user joins a channel
--- For multilingual and other purposes, you can gather more information from the metadata.
-CREATE OR REPLACE FUNCTION public.notify_user_join_channel()
-RETURNS TRIGGER AS $$
-DECLARE
-    joining_username TEXT;
-BEGIN
-    SELECT username INTO joining_username FROM public.users WHERE id = NEW.member_id;
-
-    INSERT INTO public.messages (user_id, channel_id, type, content, metadata)
-    VALUES (
-        NEW.member_id,
-        NEW.channel_id,
+    -- Create the notification message
+    insert into public.messages (
+        user_id,
+        channel_id,
+        type,
+        content,
+        metadata
+    )
+    values (
+        new.member_id,
+        new.channel_id,
         'notification',
         joining_username || ' joined the channel',
         jsonb_build_object(
@@ -143,113 +190,172 @@ BEGIN
         )
     );
 
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+    return new;
+end;
+$$ language plpgsql;
 
--- Trigger to invoke  the function when a user join a channel
-CREATE TRIGGER trigger_user_join_channel
-AFTER INSERT ON public.channel_members
-FOR EACH ROW
-EXECUTE FUNCTION public.notify_user_join_channel();
+comment on function notify_user_join_channel() is
+'Creates a notification message when a user joins a channel.';
 
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
+-- Trigger: notify_on_user_join
+create trigger notify_on_user_join
+after insert on public.channel_members
+for each row
+execute function notify_user_join_channel();
 
+comment on trigger notify_on_user_join on public.channel_members is
+'Creates a notification when a user joins a channel.';
 
--- Function to create a notification message when a user leaves a channel
--- For multilingual and other purposes, you can gather more information from the metadata.
-CREATE OR REPLACE FUNCTION public.notify_user_leave_channel()
-RETURNS TRIGGER AS $$
-DECLARE
-    leaving_username TEXT;
-BEGIN
-    SELECT username INTO leaving_username FROM public.users WHERE id = OLD.member_id;
+/**
+ * Function: notify_user_leave_channel
+ * Description: Creates a notification message when a user leaves a channel
+ * Trigger: Executes after DELETE on public.channel_members
+ * Action: Creates a notification message showing who left
+ * Returns: The OLD record (trigger standard)
+ */
+create or replace function notify_user_leave_channel()
+returns trigger as $$
+declare
+    leaving_username text;
+begin
+    -- Get the username of the leaving member
+    select username into leaving_username
+    from public.users
+    where id = old.member_id;
 
-  -- Check if the channel still exists
-    IF EXISTS (SELECT 1 FROM public.channels WHERE id = OLD.channel_id) THEN
-      INSERT INTO public.messages (user_id, channel_id, type, content, metadata)
-      VALUES (
-          OLD.member_id,
-          OLD.channel_id,
-          'notification',
-          leaving_username || ' left the channel',
-          jsonb_build_object(
-              'type', 'user_leave_channel',
-              'user_name', leaving_username
-          )
-      );
-    END IF;
+    -- Check if the channel still exists before creating notification
+    if exists (select 1 from public.channels where id = old.channel_id) then
+        insert into public.messages (
+            user_id,
+            channel_id,
+            type,
+            content,
+            metadata
+        )
+        values (
+            old.member_id,
+            old.channel_id,
+            'notification',
+            leaving_username || ' left the channel',
+            jsonb_build_object(
+                'type', 'user_leave_channel',
+                'user_name', leaving_username
+            )
+        );
+    end if;
 
-    RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
+    return old;
+end;
+$$ language plpgsql;
 
+comment on function notify_user_leave_channel() is
+'Creates a notification message when a user leaves a channel.';
 
--- Trigger to invoke the function when a user leaves a channel
-CREATE TRIGGER trigger_user_leave_channel
-AFTER DELETE ON public.channel_members
-FOR EACH ROW
-EXECUTE FUNCTION public.notify_user_leave_channel();
+-- Trigger: notify_on_user_leave
+create trigger notify_on_user_leave
+after delete on public.channel_members
+for each row
+execute function notify_user_leave_channel();
 
+comment on trigger notify_on_user_leave on public.channel_members is
+'Creates a notification when a user leaves a channel.';
 
+/**
+ * Function: increment_channel_member_count
+ * Description: Increments the member_count of a channel when a new member is added
+ * Trigger: Executes after INSERT on public.channel_members
+ * Action: Updates the member_count in channels table by adding 1
+ * Returns: The NEW record (trigger standard)
+ * Note: Will be rolled back automatically if the transaction is rolled back
+ */
+create or replace function increment_channel_member_count()
+returns trigger as $$
+begin
+    update public.channels
+    set member_count = member_count + 1
+    where id = new.channel_id;
 
+    return new;
+end;
+$$ language plpgsql;
 
-----------------------------------------------------------------------------------
-----------------------------------------------------------------------------------
--- In case transactions involving member addition or removal are rolled back,
--- the triggers will automatically handle the increment and decrement operations as the INSERT and DELETE on channel_members will be rolled back as well.
-----------------------------------------------------------------------------------
--- Since your member records are deleted when a user is deleted (due to the ON DELETE CASCADE),
--- the delete trigger on channel_members will also handle decrementing the member_count when a user is deleted.
+comment on function increment_channel_member_count() is
+'Increments the member count of a channel when a new member is added.';
 
-CREATE OR REPLACE FUNCTION increment_member_count()
-RETURNS TRIGGER AS $$
-BEGIN
-    UPDATE public.channels SET member_count = member_count + 1
-    WHERE id = NEW.channel_id;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+-- Trigger: increment_member_count
+create trigger increment_member_count
+after insert on public.channel_members
+for each row
+execute function increment_channel_member_count();
 
-CREATE OR REPLACE FUNCTION decrement_member_count()
-RETURNS TRIGGER AS $$
-BEGIN
-    UPDATE public.channels SET member_count = member_count - 1
-    WHERE id = OLD.channel_id;
-    RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
+comment on trigger increment_member_count on public.channel_members is
+'Automatically increments the member count when a new member is added to a channel.';
 
-CREATE TRIGGER trg_increment_member_count
-AFTER INSERT ON public.channel_members
-FOR EACH ROW
-EXECUTE FUNCTION increment_member_count();
+/**
+ * Function: decrement_channel_member_count
+ * Description: Decrements the member_count of a channel when a member is removed
+ * Trigger: Executes after DELETE on public.channel_members
+ * Action: Updates the member_count in channels table by subtracting 1
+ * Returns: The OLD record (trigger standard)
+ * Note: Will handle member removal from both explicit leave and cascade delete when a user is deleted
+ */
+create or replace function decrement_channel_member_count()
+returns trigger as $$
+begin
+    update public.channels
+    set member_count = member_count - 1
+    where id = old.channel_id;
 
-CREATE TRIGGER trg_decrement_member_count
-AFTER DELETE ON public.channel_members
-FOR EACH ROW
-EXECUTE FUNCTION decrement_member_count();
+    return old;
+end;
+$$ language plpgsql;
 
+comment on function decrement_channel_member_count() is
+'Decrements the member count of a channel when a member is removed.';
 
---------------------------------------------
---------------------------------------------
-CREATE OR REPLACE FUNCTION prevent_duplicate_channel_member()
-RETURNS TRIGGER AS $$
-BEGIN
+-- Trigger: decrement_member_count
+create trigger decrement_member_count
+after delete on public.channel_members
+for each row
+execute function decrement_channel_member_count();
+
+comment on trigger decrement_member_count on public.channel_members is
+'Automatically decrements the member count when a member is removed from a channel.';
+
+/**
+ * Function: prevent_duplicate_channel_member
+ * Description: Prevents adding the same user to a channel multiple times
+ * Trigger: Executes before INSERT on public.channel_members
+ * Action: Checks if the user is already a member of the channel and raises exception if true
+ * Returns: The NEW record (trigger standard) if the user is not already a member
+ */
+create or replace function prevent_duplicate_channel_member()
+returns trigger as $$
+begin
     -- Check if a record already exists with the same channel_id and member_id
-    IF EXISTS (
-        SELECT 1 FROM public.channel_members
-        WHERE channel_id = NEW.channel_id AND member_id = NEW.member_id
-    ) THEN
+    if exists (
+        select 1
+        from public.channel_members
+        where channel_id = new.channel_id
+        and member_id = new.member_id
+    ) then
         -- If exists, raise an exception
-        RAISE EXCEPTION 'This user is already a member of the channel.';
-    END IF;
-    -- If not, allow the insertion
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+        raise exception 'This user is already a member of the channel.';
+    end if;
 
-CREATE TRIGGER check_duplicate_member
-BEFORE INSERT ON public.channel_members
-FOR EACH ROW EXECUTE FUNCTION prevent_duplicate_channel_member();
+    -- If not, allow the insertion
+    return new;
+end;
+$$ language plpgsql;
+
+comment on function prevent_duplicate_channel_member() is
+'Prevents adding the same user to a channel multiple times.';
+
+-- Trigger: check_duplicate_member
+create trigger check_duplicate_member
+before insert on public.channel_members
+for each row
+execute function prevent_duplicate_channel_member();
+
+comment on trigger check_duplicate_member on public.channel_members is
+'Ensures a user cannot be added to the same channel multiple times.';

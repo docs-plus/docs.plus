@@ -8,7 +8,7 @@ const getDisplayText = (users: any, dataMsg: string) => {
     return `${users.length} users are typing...`
   }
   if (users.length > 0) {
-    return `${users.map((user: any) => user.displayName).join(', ')} is typing...`
+    return `${users.map((user: any) => user.display_name).join(', ')} is typing...`
   }
   return dataMsg || ''
 }

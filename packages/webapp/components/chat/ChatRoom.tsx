@@ -1,4 +1,4 @@
-import React, { useState, useRef, forwardRef } from 'react'
+import React, { useState, useRef, forwardRef, useEffect } from 'react'
 import { MessageHeader } from './MessageHeader'
 import ScrollToBottomButton from './components/chatContainer/ScrollToBottomButton' // Import the new component
 import {
@@ -45,14 +45,20 @@ export const ChatRoom = forwardRef(
     const [channelUsersPresence, setChannelUsersPresence] = useState(new Map())
     const [error, setError] = useState(null)
     const emojiPickerRef = useRef<HTMLDivElement | null>(null)
-    const messageContainerRef = useRef<HTMLDivElement>(null) as any
+    const messageContainerRef = useRef<HTMLDivElement>(null)
 
-    const { initialMessagesLoading, msgLength } = useChannelInitialData(setError)
-    const { initialSubscribeLoading } = useMessageSubscription()
-    const { loading, messagesEndRef } = useScrollAndLoad(
-      initialMessagesLoading,
+    const { isChannelDataLoaded } = useChannelInitialData(setError)
+    // subscribe to channel, and listen to channel and message postgres_changes
+    const { isDbSubscriptionReady } = useMessageSubscription()
+
+    // pagination
+    const { isLoadingMore, loadingMoreDirection } = useInfiniteLoadMessages(messageContainerRef)
+
+    const { isReadyToDisplayMessages, messagesEndRef } = useScrollAndLoad(
+      isChannelDataLoaded,
+      isDbSubscriptionReady,
       messageContainerRef,
-      msgLength
+      isLoadingMore
     )
 
     const {
@@ -64,32 +70,26 @@ export const ChatRoom = forwardRef(
       toggleEmojiPicker
     } = useEmojiBoxHandler(emojiPickerRef, messageContainerRef)
 
-    useCustomEventHandler(
-      channelUsersPresence,
-      setChannelUsersPresence,
-      messageContainerRef,
-      messagesEndRef
-    )
-
-    // pagination
-    const { isLoadingMore } = useInfiniteLoadMessages(messageContainerRef)
+    // custom event handler for users presence
+    useCustomEventHandler(channelUsersPresence, setChannelUsersPresence)
 
     if (error) return <ChannelErrorPropmpt />
-    if (initialSubscribeLoading || initialMessagesLoading)
-      return <ChannelLoadingPrompt loading={true} />
 
     return (
       <div className={`flex size-full flex-col overflow-y-auto ${className}`} ref={ref}>
         <MessageWrapper style={style} className="flex-1 flex-col overflow-hidden">
           {displayChannelBar && <MessageHeader />}
-          <PinnedMessagesDisplay loading={loading} />
-          <LoadingOverlay loading={loading} />
+          <PinnedMessagesDisplay loading={!isReadyToDisplayMessages} />
+          <LoadingOverlay
+            loading={!isDbSubscriptionReady || !isChannelDataLoaded || !isReadyToDisplayMessages}
+          />
           <MessagesDisplay
             messageContainerRef={messageContainerRef}
             messagesEndRef={messagesEndRef}
             toggleEmojiPicker={toggleEmojiPicker}
             selectedEmoji={selectedEmoji}
             isLoadingMore={isLoadingMore}
+            loadingMoreDirection={loadingMoreDirection}
           />
 
           <div className="flex w-full flex-col items-center justify-center">

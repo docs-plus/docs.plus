@@ -25,7 +25,7 @@ const NotificationModal = () => {
       <div className="mt-4" style={{ height: 'calc(100% - 56px)' }}>
         <NotificationFilters />
         <div
-          className="mt-2 flex h-[93%] flex-col overflow-auto border-b-2 border-t-2 pb-3"
+          className="mt-2 flex h-[93%] flex-col overflow-auto border-t-2 border-b-2 border-gray-300 pb-3"
           style={{ height: 'calc(100% - 30px)' }}>
           <LoadingSpinner show={loadingNotification} />
           <EmptyNotificationState show={!loadingNotification && activeTabNotifList.length === 0} />

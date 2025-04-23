@@ -32,5 +32,11 @@ const Document = ({ docMetadata, isMobile, channels, showTurnstile }: any) => {
 export default Document
 
 export async function getServerSideProps(context: GetServerSidePropsContext) {
-  return documentServerSideProps(context)
+  const result = await documentServerSideProps(context).catch((error) => {
+    console.error('Error in getServerSideProps:', error)
+    return {
+      props: {}
+    }
+  })
+  return result
 }

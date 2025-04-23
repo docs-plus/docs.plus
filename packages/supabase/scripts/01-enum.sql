@@ -46,8 +46,7 @@ create type public.notification_type as enum (
 -- Description: Enumeration of different types of channels supported in the application.
 -- Each type defines the purpose and accessibility of the channel.
 
-CREATE TYPE public.channel_type AS ENUM
-(
+create type public.channel_type as enum (
     'PUBLIC',     -- PUBLIC: Open for all users. Any user of the application can join and participate.
     'PRIVATE',    -- PRIVATE: Restricted access. Users can join only by invitation or approval.
     'BROADCAST',  -- BROADCAST: One-way communication channel where selected users can post, but all users can view.
@@ -57,21 +56,21 @@ CREATE TYPE public.channel_type AS ENUM
     'THREAD'      -- THREAD: A channel created for a specific thread or conversation, often temporary or focused on a specific topic.
 );
 
-COMMENT ON TYPE public.channel_type IS 'Defines the types of channels available in the application, each with specific accessibility and interaction rules.';
+comment on type public.channel_type is 'Defines the types of channels available in the application, each with specific accessibility and interaction rules.';
 
 -- Type: public.channel_member_role
 -- Description: Enumeration of different roles that a member can have within a channel.
-CREATE TYPE public.channel_member_role AS ENUM (
+create type public.channel_member_role as enum (
     'MEMBER',    -- Regular member with standard privileges.
     'ADMIN',     -- Administrator with elevated privileges like managing channel settings and members.
     'MODERATOR', -- Moderator with privileges like moderating content and managing user interactions.
     'GUEST'      -- Guest with limited privileges, typically read-only access.
 );
 
-COMMENT ON TYPE public.channel_member_role IS 'Defines the roles of channel members, determining their privileges and access within the channel.';
+comment on type public.channel_member_role is 'Defines the roles of channel members, determining their privileges and access within the channel.';
 
 -- Create the enumeration type for notification categories
-CREATE TYPE notification_category AS ENUM (
+create type notification_category as enum (
     'mention',
     'message',
     'reply',
@@ -94,10 +93,10 @@ CREATE TYPE notification_category AS ENUM (
 -- COMMENT ON ENUM LABEL notification_category.'system_alert' IS 'Related to system-wide updates or changes, such as maintenance notices, security alerts, or policy updates.';
 
 -- Define the notification preferences for channels
-CREATE TYPE public.channel_notification_state AS ENUM (
+create type public.channel_notification_state as enum (
     'MENTIONS',  -- Only receive notifications for @mentions
     'ALL',      -- Receive all notifications from the channel
     'MUTED'     -- Receive no notifications from the channel
 );
 
-COMMENT ON TYPE public.channel_notification_state IS 'Defines the notification preferences for a user in a channel';
+comment on type public.channel_notification_state is 'Defines the notification preferences for a user in a channel';

@@ -9,7 +9,8 @@ export const fetchChannelInitialData = (arg: TAgChannelDataArg) =>
   supabaseClient
     .rpc('get_channel_aggregate_data', {
       input_channel_id: arg.input_channel_id,
-      message_limit: arg.message_limit || 20
+      message_limit: arg.message_limit || 20,
+      anchor_message_id: arg.anchor_message_id || null
     })
     .single()
     .then((res) => ({

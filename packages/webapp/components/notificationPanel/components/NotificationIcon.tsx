@@ -3,8 +3,8 @@ import { BsReply, BsMegaphone } from 'react-icons/bs'
 import { MdAlternateEmail, MdGroup, MdEmojiEmotions, MdMessage } from 'react-icons/md'
 import { AiOutlineAlert } from 'react-icons/ai'
 
-const NotificationIcon = ({ type }: { type: string }) => {
-  const iconProps = { size: 16, className: 'text-gray-600 rounded-md size-5' }
+const NotificationIcon = ({ type, size = 16 }: { type: string; size?: number }) => {
+  const iconProps = { size, className: 'text-gray-600 rounded-md' }
   switch (type) {
     case 'mention':
       return (

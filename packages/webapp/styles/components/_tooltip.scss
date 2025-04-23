@@ -1,3 +1,12 @@
 .Tooltip {
-  @apply bg-black text-xs px-2 py-1 subpixel-antialiased text-white rounded-md;
+  background-color: black;
+  font-size: 0.75rem;
+  padding-left: 0.5rem;
+  padding-right: 0.5rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  color: white;
+  border-radius: 0.375rem;
 }

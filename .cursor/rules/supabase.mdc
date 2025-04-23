@@ -1,0 +1,175 @@
+---
+description: 
+globs: **/*.sql
+alwaysApply: false
+---
+# PostgreSQL & Supabase SQL Style Guide
+
+A simple, clear set of rules for writing `.sql` files for PostgreSQL and Supabase projects.
+
+---
+
+## 📌 General Rules
+
+- Always use `snake_case` for all identifiers.
+- SQL keywords: lowercase (`select`, `from`, etc).
+- Use `--` for single-line comments and `/* ... */` for multi-line.
+- Keep lines under 120 chars when possible.
+- Use ISO 8601 for dates: `'YYYY-MM-DDTHH:MM:SS'`.
+- One statement per line unless it’s very short.
+
+---
+
+## 🧱 Table Naming
+
+- Tables: plural nouns (e.g., `users`, `orders`).
+- No prefixes like `tbl_`.
+- Schema: use `public` unless specified.
+- Avoid reserved keywords.
+- Table names must be unique across DB.
+- Add a comment for every table.
+
+```sql
+create table users (
+  id bigint generated always as identity primary key,
+  username text not null
+);
+
+comment on table users is 'Stores registered user info.';
+```
+
+---
+
+## 📄 Column Naming
+
+- Use `snake_case`, singular names.
+- For foreign keys: use `{referenced_table}_id`, e.g., `user_id`.
+- No generic names like `name`, `id` (unless it's the PK).
+- Add comments to complex or key columns.
+
+---
+
+## 🔑 Primary & Foreign Keys
+
+- Always use `bigint generated always as identity` for PKs.
+- Foreign key: use `references` with `on delete cascade` if deletion should cascade.
+
+```sql
+create table posts (
+  id bigint generated always as identity primary key,
+  user_id bigint not null references users(id) on delete cascade,
+  content text not null
+);
+```
+
+---
+
+## ✅ Constraints
+
+- Use `check` constraints to enforce rules.
+- Add `not null` where possible.
+
+```sql
+check (age >= 0)
+```
+
+---
+
+## 🚀 Triggers & Functions
+
+- Triggers: use `snake_case`, describe action (`set_updated_at`, `prevent_delete_if_linked`).
+- Trigger functions: return `trigger`, no side effects.
+- Always add `if not exists` to creation.
+- Add comments for what the trigger does.
+
+```sql
+create or replace function set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
+
+create trigger update_timestamp
+before update on users
+for each row
+execute function set_updated_at();
+```
+
+---
+
+## 📂 Views
+
+- Views: use `snake_case`, prefix with `v_` if needed.
+- Add comments.
+- Keep read-only unless really needed.
+
+---
+
+## 📊 Indexes
+
+- Name format: `{table}_{column}_idx`.
+- Use `btree` unless otherwise needed.
+
+```sql
+create index users_username_idx on users (username);
+```
+
+---
+
+## 🧩 CTEs & Queries
+
+- Use CTEs for readability.
+- Name CTEs clearly.
+- Break down complex logic.
+- Prefer `join` over subqueries.
+
+```sql
+with recent_users as (
+  select * from users where created_at > now() - interval '30 days'
+)
+select * from recent_users where active = true;
+```
+
+---
+
+## 📦 Supabase Specific
+
+- Auth tables (`auth.users`, etc.): never modify structure directly.
+- Use `rpc` for custom logic, and document with comments.
+- `storage` policies: use `bucket_{name}` convention.
+- Always create policies using `auth.uid()` or `current_setting('request.jwt.claims', true)`.
+
+---
+
+## 🔒 Security & Policies
+
+- Use row-level security (RLS) on all tables.
+- Always enable `row level security`.
+- Write least-permission policies first, then expand.
+
+```sql
+alter table users enable row level security;
+
+create policy "Users can view their own data"
+  on users
+  for select
+  using (auth.uid() = id);
+```
+
+---
+
+## ☑️ Optional Helpers
+
+- Add UUID default generator if required:
+```sql
+id uuid primary key default gen_random_uuid()
+```
+- Use `now()` for timestamps.
+- Default status columns to enums or safe values.
+
+---
+
+Use this guide to keep SQL predictable, maintainable, and safe. All features used in PostgreSQL and Supabase should follow this format to ensure clarity and ease of maintenance.
+

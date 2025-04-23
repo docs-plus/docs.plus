@@ -50,7 +50,7 @@ const useMapDocumentAndWorkspace = (
       )
     }
 
-    const { data } = await getChannels(documentId)
+    const { data } = await getChannels(documentId, user.id)
     return data || []
   }
 

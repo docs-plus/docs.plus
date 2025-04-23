@@ -3,7 +3,7 @@ import { useAuthStore, useStore } from '@stores'
 import randomColor from 'randomcolor'
 
 // Helper functions
-const getCursorUser = (user: any, displayName: string | null | undefined) => {
+const getCursorUser = (user: any) => {
   let bucketAddress = user?.avatar_url || null //'/assets/avatar.svg'
 
   if (!user) {
@@ -16,8 +16,8 @@ const getCursorUser = (user: any, displayName: string | null | undefined) => {
   }
 
   return {
-    name: displayName || user?.username,
-    displayName: displayName || user?.username,
+    name: user?.display_name,
+    displayName: user?.display_name,
     avatar_url: bucketAddress,
     id: user.id,
     color: randomColor()
@@ -27,7 +27,6 @@ const getCursorUser = (user: any, displayName: string | null | undefined) => {
 const useProviderAwarness = () => {
   const user = useAuthStore((state) => state.profile)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
-  const displayName = useAuthStore((state) => state.displayName)
   const {
     hocuspocusProvider: provider,
     editor: { instance: editor }
@@ -36,13 +35,13 @@ const useProviderAwarness = () => {
   // update user awareness
   useEffect(() => {
     if (!editor) return
-    if (editor.commands.updateUser) editor.commands.updateUser(getCursorUser(user, displayName))
-  }, [editor, user, displayName])
+    if (editor.commands.updateUser) editor.commands.updateUser(getCursorUser(user))
+  }, [editor, user])
 
   useEffect(() => {
     if (!provider) return
-    provider.setAwarenessField('user', getCursorUser(user, displayName))
-  }, [provider, user, displayName])
+    provider.setAwarenessField('user', getCursorUser(user))
+  }, [provider, user])
 
   //awarenessUpdate handler
   useEffect(() => {

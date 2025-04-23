@@ -1,13 +1,21 @@
 {
   "compilerOptions": {
-    "target": "ES2019",
-    "baseUrl": ".",
-      "plugins": [
-      {
-        "name": "next"
-      }
-    ],
+    "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
+    "baseUrl": ".",
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "maxNodeModuleJsDepth": 10,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+    "incremental": true,
     "paths": {
       "@utils/*": ["utils/*"],
       "@components/*": ["components/*"],
@@ -29,19 +37,7 @@
       "@layouts": ["layouts/index.ts"],
       "@helpers": ["Helpers/index.ts"]
     },
-    "allowJs": true,
-    "skipLibCheck": true,
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
-    "noEmit": true,
-    "esModuleInterop": true,
-    "maxNodeModuleJsDepth": 10,
-    "module": "esnext",
-    "moduleResolution": "bundler",
-    "resolveJsonModule": true,
-    "isolatedModules": true,
-    "jsx": "preserve",
-    "incremental": true
+
   },
   "include": [
     "next-env.d.ts",

@@ -10,18 +10,17 @@ interface TabsMenuProps {
 }
 
 const TabsMenu = ({ activeTab, changeTab }: TabsMenuProps) => {
-  const displayName = useAuthStore((state) => state.profile?.display_name)
   const user = useAuthStore((state) => state.profile)
 
   return (
-    <ul className="menu menu-md flex space-y-2 pl-0">
+    <ul className="menu menu-md flex w-full space-y-2 pl-0">
       <li onClick={() => changeTab('profile')}>
         <a href="#" className={`${activeTab === 'profile' ? 'active' : ''}`}>
           <Avatar
             id={user?.id}
             avatarUpdatedAt={user?.avatar_updated_at}
             src={user?.avatar_url}
-            alt={displayName}
+            alt={user?.display_name}
             className="mr-2 w-6 scale-125 rounded-full border"
           />
           Profile

@@ -2,6 +2,7 @@
   --app-height: 100%;
   --app-overFlow-y: auto;
   --app-position_b: 'fixed';
+  --bg-docy: #2778ff;
 }
 
 .m_mobile {
@@ -42,7 +43,19 @@
     }
 
     .btn_openChatBox {
-      @apply absolute right-2 flex size-8 items-center justify-center overflow-hidden rounded-xl bg-docsy fill-white p-2 text-neutral-content;
+      position: absolute;
+      right: 0.5rem;
+      display: flex;
+      width: 2rem;
+      height: 2rem;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 0.75rem;
+      background-color: var(--bg-docy);
+      fill: white;
+      padding: 0.5rem;
+      color: var(--neutral-content);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -102,7 +115,20 @@
         position: static;
         .btn_openChatBox {
           padding: 6px 0;
-          @apply absolute right-3 ml-auto flex items-center rounded-lg bg-docsy fill-white px-3 text-neutral-content shadow;
+          position: absolute;
+          right: 0.75rem;
+          margin-left: auto;
+          display: flex;
+          align-items: center;
+          border-radius: 0.5rem;
+          background-color: var(--bg-docy);
+          fill: white;
+          padding-left: 0.75rem;
+          padding-right: 0.75rem;
+          color: var(--neutral-content);
+          box-shadow:
+            0 1px 3px 0 rgba(0, 0, 0, 0.1),
+            0 1px 2px 0 rgba(0, 0, 0, 0.06);
           svg {
             width: 18px;
             height: 18px;

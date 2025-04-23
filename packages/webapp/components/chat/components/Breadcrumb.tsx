@@ -25,7 +25,7 @@ const Breadcrumb = () => {
   } = useStore((state) => state.settings)
 
   useEffect(() => {
-    if (!editor || providerSyncing) return
+    if (!editor || !headingId || providerSyncing) return
     if (headingId === workspaceId) return
 
     let posAtDOM = getPostAtDOM(editor, headingId)
@@ -89,7 +89,7 @@ const Breadcrumb = () => {
                 <RiArrowRightSLine size={20} />
               )}
               <li key={index} aria-current={headingPath.length - 1 === index ? 'page' : undefined}>
-                <div className="flex items-center whitespace-nowrap px-1">
+                <div className="flex items-center px-1.5 whitespace-nowrap">
                   {headingPath.length - 1 === index ? (
                     <span className="">{heading.text}</span>
                   ) : (

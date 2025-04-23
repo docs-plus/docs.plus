@@ -1,115 +1,147 @@
------------------------------------------
+/*
+ * Pinned Message Functions
+ * This file contains functions and triggers related to pinned messages:
+ * - Message pinning and unpinning
+ * - Message metadata updates for pinned status
+ * - Channel activity tracking for pin actions
+ */
 
--- Function to update message metadata
-CREATE OR REPLACE FUNCTION update_message_metadata_on_pin()
-RETURNS TRIGGER AS $$
-DECLARE
-    current_metadata JSONB;
-    message_content TEXT;
-BEGIN
-    -- Retrieve current metadata and content from the messages table for the given message_id, only if not deleted
-    SELECT metadata, content INTO current_metadata, message_content
-    FROM public.messages
-    WHERE id = NEW.message_id AND deleted_at IS NULL;
+/**
+ * Function: update_message_on_pin
+ * Description: Updates message metadata when a message is pinned
+ * Trigger: Executes before INSERT on public.pinned_messages
+ * Action: Sets pinned=true in message metadata and truncates content for pin record
+ * Returns: The modified NEW record
+ */
+create or replace function update_message_on_pin()
+returns trigger as $$
+declare
+    current_metadata jsonb;
+    message_content text;
+begin
+    -- Retrieve current metadata and content from the messages table for the given message_id
+    select metadata, content into current_metadata, message_content
+    from public.messages
+    where id = new.message_id and deleted_at is null;
 
-    -- Check if the message exists
-    IF NOT FOUND THEN
-        RAISE EXCEPTION 'Cannot pin message: Message with id % does not exist or has been deleted.', NEW.message_id;
-    END IF;
+    -- Check if the message exists and is not deleted
+    if not found then
+        raise exception 'Cannot pin message: Message with id % does not exist or has been deleted.', new.message_id;
+    end if;
 
-    -- Check if metadata is null and initialize it if necessary
-    IF current_metadata IS NULL THEN
-        current_metadata := '{}'::JSONB;
-    END IF;
+    -- Initialize metadata if null
+    if current_metadata is null then
+        current_metadata := '{}'::jsonb;
+    end if;
 
-    -- Update the metadata with "pinned": true
+    -- Set pinned status to true in metadata
     current_metadata := jsonb_set(current_metadata, '{pinned}', 'true');
 
-    -- Update the messages table with new metadata
-    UPDATE public.messages SET metadata = current_metadata WHERE id = NEW.message_id;
+    -- Update the message metadata
+    update public.messages
+    set metadata = current_metadata
+    where id = new.message_id;
 
-    -- Set the content of the pinned message
-    NEW.content := truncate_content(message_content);
+    -- Set the truncated content in the pinned message record
+    new.content := truncate_content(message_content);
 
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+    return new;
+end;
+$$ language plpgsql;
 
+comment on function update_message_on_pin() is
+'Updates message metadata when a message is pinned and creates a truncated content preview.';
 
--- Trigger on the pinned_messages table
-CREATE TRIGGER trigger_update_message_on_pin
-BEFORE INSERT ON public.pinned_messages
-FOR EACH ROW EXECUTE FUNCTION update_message_metadata_on_pin();
+-- Trigger: set_message_pinned_status
+create trigger set_message_pinned_status
+before insert on public.pinned_messages
+for each row
+execute function update_message_on_pin();
 
------------------------------------------
+comment on trigger set_message_pinned_status on public.pinned_messages is
+'Sets pinned status and prepares content preview when a message is pinned.';
 
--- Function to update message metadata when a pinned message is deleted
-CREATE OR REPLACE FUNCTION update_message_metadata_on_unpin()
-RETURNS TRIGGER AS $$
-DECLARE
-    current_metadata JSONB;
-BEGIN
+/**
+ * Function: update_message_on_unpin
+ * Description: Updates message metadata when a pinned message is unpinned
+ * Trigger: Executes after DELETE on public.pinned_messages
+ * Action: Sets pinned=false in message metadata
+ * Returns: The OLD record
+ */
+create or replace function update_message_on_unpin()
+returns trigger as $$
+declare
+    current_metadata jsonb;
+begin
     -- Retrieve current metadata from the messages table for the given message_id
-    SELECT metadata INTO current_metadata FROM public.messages WHERE id = OLD.message_id;
+    select metadata into current_metadata
+    from public.messages
+    where id = old.message_id;
 
     -- Check if the message exists
-    IF NOT FOUND THEN
+    if not found then
         -- Message does not exist; nothing to update
-        RETURN OLD;
-    END IF;
+        return old;
+    end if;
 
-    -- Check if metadata is null and initialize it if necessary
-    IF current_metadata IS NULL THEN
-        current_metadata := '{}'::JSONB;
-    END IF;
+    -- Initialize metadata if null
+    if current_metadata is null then
+        current_metadata := '{}'::jsonb;
+    end if;
 
-    -- Update the metadata with "pinned": false
+    -- Set pinned status to false in metadata
     current_metadata := jsonb_set(current_metadata, '{pinned}', 'false');
 
-    -- Update the messages table
-    UPDATE public.messages SET metadata = current_metadata WHERE id = OLD.message_id;
+    -- Update the message metadata
+    update public.messages
+    set metadata = current_metadata
+    where id = old.message_id;
 
-    RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
+    return old;
+end;
+$$ language plpgsql;
 
--- Trigger on the pinned_messages table for deletion
-CREATE TRIGGER trigger_update_message_on_unpin
-AFTER DELETE ON public.pinned_messages
-FOR EACH ROW EXECUTE FUNCTION update_message_metadata_on_unpin();
+comment on function update_message_on_unpin() is
+'Updates message metadata when a pinned message is unpinned by setting pinned=false.';
 
+-- Trigger: clear_message_pinned_status
+create trigger clear_message_pinned_status
+after delete on public.pinned_messages
+for each row
+execute function update_message_on_unpin();
 
-/*
-    --------------------------------------------------------
-    Trigger Function: update_channel_activity_on_pin
-    Description: Updates the last activity timestamp of a channel when a message is pinned to it.
-                 This helps in tracking the latest interactions within the channel.
-    --------------------------------------------------------
-*/
+comment on trigger clear_message_pinned_status on public.pinned_messages is
+'Clears pinned status in message metadata when a message is unpinned.';
 
-CREATE OR REPLACE FUNCTION update_channel_activity_on_pin() RETURNS TRIGGER AS $$
-BEGIN
+/**
+ * Function: update_channel_activity_on_pin
+ * Description: Updates channel last_activity_at when a message is pinned
+ * Trigger: Executes after INSERT on public.pinned_messages
+ * Action: Updates the channel's last_activity_at timestamp
+ * Returns: The NEW record
+ */
+create or replace function update_channel_activity_on_pin()
+returns trigger as $$
+begin
     -- Update the last_activity_at timestamp of the channel where the message is pinned
-    IF EXISTS (SELECT 1 FROM public.channels WHERE id = NEW.channel_id) THEN
-        UPDATE public.channels
-        SET last_activity_at = timezone('utc', now())
-        WHERE id = NEW.channel_id;
-    END IF;
+    if exists (select 1 from public.channels where id = new.channel_id) then
+        update public.channels
+        set last_activity_at = timezone('utc', now())
+        where id = new.channel_id;
+    end if;
 
-    RETURN NEW; -- Return the new pinned message record
-END;
-$$ LANGUAGE plpgsql;
+    return new;
+end;
+$$ language plpgsql;
 
+comment on function update_channel_activity_on_pin() is
+'Updates the channel last activity timestamp when a message is pinned.';
 
-/*
-    --------------------------------------------------------
-    Trigger: channel_activity_update_on_message_pin_trigger
-    Description: Triggered after a message is pinned. It invokes update_channel_activity_on_pin
-                 function to refresh the channel's last activity timestamp.
-    --------------------------------------------------------
-*/
+-- Trigger: track_channel_activity_on_pin
+create trigger track_channel_activity_on_pin
+after insert on public.pinned_messages
+for each row
+execute function update_channel_activity_on_pin();
 
-CREATE TRIGGER channel_activity_update_on_message_pin_trigger
-AFTER INSERT ON public.pinned_messages
-FOR EACH ROW
-EXECUTE FUNCTION update_channel_activity_on_pin();
+comment on trigger track_channel_activity_on_pin on public.pinned_messages is
+'Tracks channel activity by updating last_activity_at when a message is pinned.';

@@ -14,20 +14,20 @@ export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) =
   const presentUsers = usePresentUsers(workspaceId || '')
 
   return (
-    <div className={`${className} relative border-b pb-1`}>
-      <div className="group flex cursor-pointer items-center justify-between rounded-md p-1 px-2 pr-3 hover:bg-gray-300 hover:bg-opacity-50">
+    <div className={`${className} relative border-b border-gray-300 pb-1`}>
+      <div className="group hover:bg-opacity-50 flex cursor-pointer items-center justify-between rounded-md p-1 px-2 pr-3 hover:bg-gray-300">
         <span className="text-lg font-bold">{docMetadata?.title}</span>
         <span
           className="btn_chat tooltip tooltip-top relative ml-auto"
           onClick={() => openChatContainerHandler({ id: workspaceId })}
           data-tip="Chat Room">
           {unreadMessage > 0 && (
-            <div className="badge badge-accent badge-sm absolute -right-[12px] -top-[6px] z-[1] scale-90 border p-1 shadow">
+            <div className="badge badge-accent badge-sm absolute -top-[6px] -right-[12px] z-[1] scale-90 border p-1 shadow">
               {unreadMessage}
             </div>
           )}
           <ChatLeft
-            className={`btnChat ml-1 ${headingId === workspaceId && 'fill-docsy !opacity-100'} cursor-pointer transition-all hover:fill-indigo-900 group-hover:fill-docsy`}
+            className={`btnChat ml-1 ${headingId === workspaceId && 'fill-docsy !opacity-100'} group-hover:fill-docsy cursor-pointer transition-all hover:fill-indigo-900`}
             size={16}
           />
         </span>
@@ -50,11 +50,11 @@ export const DocTitleChatRoomMobile = ({ className }: { className?: string }) =>
   const { close: closeModal } = useModal() || {}
 
   return (
-    <div className={`${className} border-b`}>
-      <div className="group relative flex items-center justify-between">
+    <div className={`${className} border-b border-gray-300`}>
+      <div className="group relative flex items-center justify-between py-2">
         <span className="text-lg font-bold">{docMetadata?.title}</span>
         <span
-          className="btn_openChatBox flex items-center justify-end overflow-hidden bg-neutral text-neutral-content"
+          className="btn_openChatBox bg-neutral text-neutral-content flex items-center justify-end overflow-hidden"
           onClick={() => {
             openChatContainerHandler({ id: workspaceId })
             closeModal?.()
