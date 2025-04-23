@@ -19,11 +19,8 @@ COMMENT ON FUNCTION user_details_json(public.users) IS
 'Returns a standardized JSON object with user details. Immutable function
 for consistent user representation across different contexts.';
 
-DROP FUNCTION IF EXISTS get_channel_aggregate_data(
-  VARCHAR(36),
-  INT,
-  UUID
-);
+-- Drop the existing function first to allow changing the return type
+DROP FUNCTION IF EXISTS get_channel_aggregate_data(VARCHAR(36), INT, UUID);
 
 CREATE OR REPLACE FUNCTION get_channel_aggregate_data(
     input_channel_id VARCHAR(36),
@@ -39,7 +36,8 @@ RETURNS TABLE(
     total_messages_since_last_read INT,
     unread_message BOOLEAN,
     last_read_message_id UUID,
-    last_read_message_timestamp TIMESTAMP WITH TIME ZONE
+    last_read_message_timestamp TIMESTAMP WITH TIME ZONE,
+    anchor_message_timestamp TIMESTAMP WITH TIME ZONE
 ) AS $$
 DECLARE
     channel_result JSONB;
