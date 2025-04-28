@@ -1,6 +1,6 @@
 import GitHubButton from 'react-github-btn'
 
-const Footer = () => {
+export const Footer = () => {
   return (
     <div className="md:flex-no-wrap flex w-full flex-wrap border-t border-gray-300 md:mt-8">
       <div className="w-full p-2 pl-0 md:w-3/4">

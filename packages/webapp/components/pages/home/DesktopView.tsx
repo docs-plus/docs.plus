@@ -10,7 +10,7 @@ import { useAuthStore, useStore } from '@stores'
 import { useMemo } from 'react'
 import dynamic from 'next/dynamic'
 import Loading from '@components/ui/Loading'
-
+import { Footer } from '@components/pages/document/layouts/DashboardLayout'
 const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
   loading: () => <Loading />
 })

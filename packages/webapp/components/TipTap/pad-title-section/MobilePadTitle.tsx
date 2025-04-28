@@ -40,7 +40,7 @@ const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
     <label
       htmlFor="mobile_left_side_panel"
       aria-label="close sidebar"
-      className="btn btn-ghost drawer-button shrink-0 px-2">
+      className="btn drawer-button btn-ghost btn-square">
       <MdMenu size={30} />
     </label>
   )

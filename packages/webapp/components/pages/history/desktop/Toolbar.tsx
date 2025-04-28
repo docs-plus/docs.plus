@@ -13,20 +13,20 @@ const Toolbar = () => {
   const versionInfo = useGetVersionInfo()()
 
   return (
-    <div className="toolbar flex flex-col border-b border-gray-200 bg-base-100">
+    <div className="toolbar bg-base-100 flex flex-col border-b border-gray-200">
       <div className="flex items-center space-x-2 px-6 py-3">
         <button
-          className="btn tooltip tooltip-right h-[38px] min-h-[38px]"
+          className="btn btn-square tooltip tooltip-right"
           data-tip="Back to the Editor"
           onClick={() => (window.location.hash = '')}
           aria-label="Back to Editor">
           <MdArrowBack size={18} />
         </button>
-        <div className="flex h-[38px] w-full items-center space-x-3">
-          <div className="ml-auto h-[38px] min-h-[38px]">
+        <div className="flex w-full items-center space-x-3">
+          <div className="ml-auto">
             {versionInfo && !versionInfo.isLatestVersion && (
               <button
-                className="btn btn-outline tooltip tooltip-bottom h-[38px] min-h-[38px] bg-docsy text-white"
+                className="btn tooltip btn-primary tooltip-bottom text-white"
                 onClick={handleRestore}
                 data-tip={`Restore document to ${versionInfo.version} version`}
                 aria-label="Restore this version">
@@ -37,7 +37,7 @@ const Toolbar = () => {
           {versionInfo && (
             <div className="ml-auto text-sm">
               <span className="font-medium">{formatVersionDate(versionInfo.createdAt).date}</span>
-              <span className="ml-2 text-base-content/60">
+              <span className="text-base-content/60 ml-2">
                 {formatVersionDate(versionInfo.createdAt).time}
               </span>
             </div>
@@ -51,7 +51,7 @@ const Toolbar = () => {
         </ToolbarButton>
 
         {activeHistory && (
-          <div className="text-sm text-base-content/60">
+          <div className="text-base-content/60 text-sm">
             {`Version ${activeHistory.version} of ${historyList.length}`}
           </div>
         )}

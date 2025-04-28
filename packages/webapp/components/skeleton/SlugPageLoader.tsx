@@ -23,7 +23,7 @@ export const SlugPageLoader = ({
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
 
   return (
-    <div className={`pad tiptap flex flex-col border-solid ${deviceClass}`}>
+    <div className={`pad tiptap flex h-full flex-col border-solid ${deviceClass}`}>
       <div>
         <PadTitleLoader />
       </div>
@@ -46,7 +46,7 @@ export const SlugPageLoader = ({
         {loading && <span>Hang tight! Fetching profile data</span>}
         {!loading && providerSyncing && <span>Hang tight! Provider is syncing</span>}
         {!loading && !providerSyncing && loadingPage && <span>Hang tight! Loading Components</span>}
-        <span className="loading loading-dots loading-xs ml-2 mt-2"></span>
+        <span className="loading loading-dots loading-xs mt-2 ml-2"></span>
       </div>
     </div>
   )
