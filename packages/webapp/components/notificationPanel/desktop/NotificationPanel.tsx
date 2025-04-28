@@ -64,7 +64,7 @@ export const NotificationPanel = () => {
                 ref={setRadioRef(tab.label)}
                 onChange={() => setNotificationActiveTab(tab.label as TTab)}
               />
-              <div className="tab-content bg-base-100 border-base-300 pr-0 pl-3">
+              <div className="tab-content bg-base-100 border-base-300 p-3">
                 <div className="max-h-96 overflow-hidden overflow-y-auto">
                   <LoadingSpinner
                     show={loadingNotification && notificationActiveTab === tab.label}
