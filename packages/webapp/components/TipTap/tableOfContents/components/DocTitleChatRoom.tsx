@@ -22,7 +22,7 @@ export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) =
           onClick={() => openChatContainerHandler({ id: workspaceId })}
           data-tip="Chat Room">
           {unreadMessage > 0 && (
-            <div className="badge badge-accent badge-sm absolute -top-[6px] -right-[12px] z-[1] scale-90 border p-1 shadow">
+            <div className="badge badge-docsy badge-sm bg-docsy border-docsy absolute -top-[6px] -right-[12px] z-[1] scale-90 border border-none px-1 text-white shadow">
               {unreadMessage}
             </div>
           )}

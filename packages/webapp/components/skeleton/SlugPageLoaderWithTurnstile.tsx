@@ -97,7 +97,7 @@ const TurnstileModal = ({ showTurnstile }: Props) => {
       <div className="fixed bottom-4 left-4 flex w-fit items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700 md:right-4">
         <SiCloudflare size={20} className="mr-2 text-[#f38020]" />
         Security by Cloudflare
-        <span className="loading loading-dots loading-xs ml-2 mt-2"></span>
+        <span className="loading loading-dots loading-xs mt-2 ml-2"></span>
       </div>
     </div>
   )
