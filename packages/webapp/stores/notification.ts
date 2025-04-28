@@ -36,13 +36,13 @@ const notification = immer<INotificationStore>((set) => ({
   },
   notifications: new Map<TTab, TNotification[]>(),
   notificationTabs: [
-    { label: 'All', count: 0 },
+    { label: 'Unread', count: 0 },
     { label: 'Mentions', count: 0 },
-    { label: 'Archived' }
+    { label: 'Read' }
   ],
   totalNotificationUnreadCount: 0,
   loadingNotification: false,
-  notificationActiveTab: 'All',
+  notificationActiveTab: 'Unread',
   notificationPage: 1,
 
   setTotalNotificationUnreadCount: (count: number) => {

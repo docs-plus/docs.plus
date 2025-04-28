@@ -3,6 +3,7 @@ import { useApi } from '@hooks/useApi'
 import { getNotificationsSummary } from '@api'
 import { useAuthStore, useStore } from '@stores'
 import { TNotificationSummary } from '@types'
+import { useDropdown } from '@components/ui/Dropdown'
 
 export const useNotificationSummary = () => {
   const { workspaceId } = useStore((state) => state.settings)
@@ -15,6 +16,7 @@ export const useNotificationSummary = () => {
     setNotificationTab,
     setNotificationPage
   } = useStore((state) => state)
+  const { isOpen } = useDropdown()
 
   const { request: summaryRequest } = useApi(getNotificationsSummary, null, false)
 
@@ -26,6 +28,7 @@ export const useNotificationSummary = () => {
     const fetchNotificationSummary = async () => {
       try {
         const { data, error } = await summaryRequest({ workspaceId })
+
         if (error) throw error
         if (!data) throw new Error('No data returned from getNotificationsSummary')
 
@@ -36,9 +39,9 @@ export const useNotificationSummary = () => {
 
         const summaryData = Array.isArray(data) ? data[0] : data
         setNotificationSummary(summaryData as TNotificationSummary)
-        setNotifications('All', summaryData.last_unread)
+        setNotifications('Unread', summaryData.last_unread)
         setNotifications('Mentions', summaryData.last_unread_mention)
-        setNotificationTab('All', summaryData.unread_count)
+        setNotificationTab('Unread', summaryData.unread_count)
         setNotificationTab('Mentions', summaryData.unread_mention_count)
         setNotificationPage(1)
       } catch (error) {
@@ -49,5 +52,5 @@ export const useNotificationSummary = () => {
     }
 
     fetchNotificationSummary()
-  }, [user, workspaceId])
+  }, [user, workspaceId, isOpen])
 }

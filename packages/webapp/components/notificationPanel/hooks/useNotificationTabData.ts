@@ -21,7 +21,7 @@ export const useNotificationTabData = () => {
     const fetchNotifications = async () => {
       setLoadingNotification(true)
       switch (notificationActiveTab) {
-        case 'All':
+        case 'Unread':
           // setNotifications(lastUnread || [])
           // setNotifications('All', lastUnread)
           break
@@ -29,10 +29,10 @@ export const useNotificationTabData = () => {
           // setNotifications(lastUnreadMention || [])
           // setNotifications('Mentions', lastUnread)
           break
-        case 'Archived':
+        case 'Read':
           const { data: lastReadData } = await lastReadedRequest(user.id)
           // setNotifications(lastReadData || [])
-          setNotifications('Archived', lastReadData as any)
+          setNotifications('Read', lastReadData as any)
           break
         default:
           break

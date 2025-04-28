@@ -68,4 +68,4 @@ export type TNotificationSummary = {
   last_unread_mention: TNotification[]
 }
 
-export type TTab = 'All' | 'Mentions' | 'Archived'
+export type TTab = 'Unread' | 'Mentions' | 'Read'
