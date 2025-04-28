@@ -46,14 +46,12 @@ const SelectHeadingBox = ({ editor }: any) => {
 
   return (
     <div className="tooltip tooltip-bottom" data-tip="Styles (⌘+⌥+[0-9])">
-      <div className="!w-36 !max-w-36">
-        <SelectBox
-          options={options}
-          subOptions={subOptions}
-          value={getCurrentHeading(editor)}
-          onChange={onHeadingChange}
-        />
-      </div>
+      <SelectBox
+        options={options}
+        subOptions={subOptions}
+        value={getCurrentHeading(editor)}
+        onChange={onHeadingChange}
+      />
     </div>
   )
 }

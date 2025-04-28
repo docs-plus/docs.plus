@@ -1,11 +1,15 @@
 import React, { useRef, useState, useEffect, useCallback } from 'react'
-import { Facebook, Twitter, Linkedin, At, World } from '@icons'
 import { useStore } from '@stores'
-import { BsWhatsapp } from 'react-icons/bs'
 import { BsReddit } from 'react-icons/bs'
-import { FiCopy } from 'react-icons/fi'
 import { IoCloseSharp } from 'react-icons/io5'
 import * as toast from '@components/toast'
+import { FaFacebook } from 'react-icons/fa'
+import { FaSquareXTwitter } from 'react-icons/fa6'
+import { FaLinkedin } from 'react-icons/fa6'
+import { FaWhatsapp } from 'react-icons/fa6'
+import { MdOutlineAlternateEmail } from 'react-icons/md'
+import { FaEarthAfrica } from 'react-icons/fa6'
+import { MdContentCopy } from 'react-icons/md'
 
 const socialSharingMap = {
   facebook: `https://www.facebook.com/sharer.php?u=`,
@@ -66,37 +70,49 @@ const ShareModal = ({ setIsOpen }: any) => {
     <div className="flex flex-col p-3 pt-2">
       <div className="mb-6 flex">
         <p className="text-2xl font-semibold">Share</p>
-        <button className="btn btn-circle btn-xs ml-auto" onClick={() => setIsOpen(false)}>
+        <button className="btn btn-square btn-xs ml-auto" onClick={() => setIsOpen(false)}>
           <IoCloseSharp size={20} />
         </button>
       </div>
       <div className="flex justify-around space-x-4">
-        <button className="btn flex-1" onClick={() => handleShare('facebook')}>
-          <Facebook />
+        <button
+          className="btn btn-square btn-dash btn-outline text-docsy flex-1 hover:border-[#1877f2] hover:bg-[#1877f2] hover:text-white"
+          onClick={() => handleShare('facebook')}>
+          <FaFacebook size={24} />
         </button>
-        <button className="btn flex-1" onClick={() => handleShare('twitter')}>
-          <Twitter />
+        <button
+          className="btn btn-square btn-dash btn-outline text-docsy flex-1 hover:border-[#000000] hover:bg-[#000000] hover:text-white"
+          onClick={() => handleShare('twitter')}>
+          <FaSquareXTwitter size={24} />
         </button>
-        <button className="btn flex-1" onClick={() => handleShare('linkedin')}>
-          <Linkedin />
+        <button
+          className="btn btn-square btn-dash btn-outline text-docsy flex-1 hover:border-[#0a66c2] hover:bg-[#0a66c2] hover:text-white"
+          onClick={() => handleShare('linkedin')}>
+          <FaLinkedin size={24} />
         </button>
-        <button className="btn flex-1" onClick={() => handleShare('whatsapp')}>
-          <BsWhatsapp fontSize={24} color="rgb(104, 81, 255)" />
+        <button
+          className="btn btn-square btn-dash btn-outline text-docsy flex-1 hover:border-[#25d366] hover:bg-[#25d366] hover:text-white"
+          onClick={() => handleShare('whatsapp')}>
+          <FaWhatsapp fontSize={24} />
         </button>
-        <button className="btn flex-1" onClick={() => handleShare('reddit')}>
-          <BsReddit fontSize={24} color="rgb(104, 81, 255)" />
+        <button
+          className="btn btn-square btn-dash btn-outline text-docsy flex-1 hover:border-[#ff4500] hover:bg-[#ff4500] hover:text-white"
+          onClick={() => handleShare('reddit')}>
+          <BsReddit fontSize={24} />
         </button>
-        <button className="btn flex-1" onClick={() => handleShare('email')}>
-          <At />
+        <button
+          className="btn btn-square btn-dash btn-outline text-docsy flex-1 hover:border-[#2778ff] hover:bg-[#2778ff] hover:text-white"
+          onClick={() => handleShare('email')}>
+          <MdOutlineAlternateEmail size={24} />
         </button>
       </div>
 
-      <p className="mb-2 mt-6 font-semibold">Page Link</p>
+      <p className="mt-6 mb-2 font-semibold">Page Link</p>
       <div className="flex justify-between rounded-md" onClick={copyToClipboard}>
         <label className="input input-bordered flex w-full items-center gap-2">
           <input type="text" className="grow" ref={urlRef} value={href} readOnly />
           <button className="">
-            <FiCopy />
+            <MdContentCopy size={18} />
           </button>
         </label>
       </div>
@@ -108,7 +124,7 @@ const ShareModal = ({ setIsOpen }: any) => {
             <button
               className="btn btn-block flex items-center justify-center"
               onClick={webShareAPI}>
-              <World className="mr-auto" />
+              <FaEarthAfrica className="text-docsy mr-auto" size={20} />
               Web Share
             </button>
           </div>

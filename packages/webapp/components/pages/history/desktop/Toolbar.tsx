@@ -26,7 +26,7 @@ const Toolbar = () => {
           <div className="ml-auto">
             {versionInfo && !versionInfo.isLatestVersion && (
               <button
-                className="btn tooltip btn-primary tooltip-bottom text-white"
+                className="btn tooltip btn-primary tooltip-bottom font-normal text-white"
                 onClick={handleRestore}
                 data-tip={`Restore document to ${versionInfo.version} version`}
                 aria-label="Restore this version">
