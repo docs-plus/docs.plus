@@ -31,7 +31,7 @@ const BigPencilBtn = () => {
     <div className="relative z-10">
       <button
         onClick={toggleToolbar}
-        className={`btn_bigBluePencil btn btn-circle flex size-[68px] border-none bg-docsy shadow-md ${!isKeyboardOpen ? 'active block' : 'hidden'} fixed bottom-8 right-6 z-10`}>
+        className={`btn_bigBluePencil btn btn-circle border-docsy bg-docsy flex size-[68px] ${!isKeyboardOpen ? 'active block' : 'hidden'} fixed right-6 bottom-8 z-10`}>
         <Pencil size={32} />
       </button>
     </div>

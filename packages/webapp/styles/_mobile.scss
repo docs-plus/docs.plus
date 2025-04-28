@@ -203,10 +203,10 @@
 .btn_bigBluePencil {
   transition: all 0.3s linear 2s;
   transform: translateY(200%);
-  box-shadow:
-    0px 4px 8px rgba(0, 0, 0, 0.1),
-    0px 8px 16px rgba(0, 0, 0, 0.08),
-    0px 16px 24px rgba(0, 0, 0, 0.06);
+  // box-shadow:
+  //   0px 4px 8px rgba(0, 0, 0, 0.1),
+  //   0px 8px 16px rgba(0, 0, 0, 0.08),
+  //   0px 16px 24px rgba(0, 0, 0, 0.06);
   &.active {
     transform: translateY(0);
   }
