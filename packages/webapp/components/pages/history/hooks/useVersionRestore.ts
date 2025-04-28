@@ -1,5 +1,6 @@
 import { useStore } from '@stores'
 import { useCallback } from 'react'
+import { getContentFromYdocObject } from '../helpers'
 
 export const useVersionRestore = () => {
   const { hocuspocusProvider } = useStore((state) => state.settings)
@@ -11,17 +12,20 @@ export const useVersionRestore = () => {
     if (window.confirm(`Are you sure you want to revert to version ${activeHistory.version}?`)) {
       setLoadingHistory(true)
       const {
-        editor: { instance }
+        editor: { instance: editor }
       } = useStore.getState().settings
 
-      if (instance) {
+      if (editor) {
         const meta = hocuspocusProvider.configuration.document.getMap('metadata')
         meta.set('commitMessage', `Reverted to version ${activeHistory.version}`)
-        instance.commands.setContent(activeHistory.data)
+
+        const content = getContentFromYdocObject(activeHistory.data)
+
+        editor.commands.setContent(content)
         window.location.hash = ''
       }
     }
-  }, [hocuspocusProvider])
+  }, [hocuspocusProvider, activeHistory])
 
   return { handleRestore }
 }
