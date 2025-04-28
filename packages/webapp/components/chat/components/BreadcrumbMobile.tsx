@@ -4,10 +4,7 @@ import { RiArrowRightSLine } from 'react-icons/ri'
 import slugify from 'slugify'
 import ENUMS from '@enum'
 import { useRouter } from 'next/router'
-
-const getPostAtDOM = (editor: any, id: string = '1') => {
-  return editor?.view?.posAtDOM(document.querySelector(`.heading[data-id="${id}"]`), 0)
-}
+import { getPostAtDOM } from '@utils/index'
 
 const BreadcrumbMobile = () => {
   const { query } = useRouter()
@@ -75,7 +72,7 @@ const BreadcrumbMobile = () => {
                 <RiArrowRightSLine size={20} />
               )}
               <li key={index} aria-current={headingPath.length - 1 === index ? 'page' : undefined}>
-                <div className="flex items-center whitespace-nowrap px-1">
+                <div className="flex items-center px-1 whitespace-nowrap">
                   {headingPath.length - 1 === index ? (
                     <span className="">{heading.text}</span>
                   ) : (
