@@ -7,18 +7,13 @@ import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { MdAccountTree } from 'react-icons/md'
-
+import { getPostAtDOM } from '@utils/index'
 interface NotificationBreadcrumbProps {
   channelId: string
 }
 
-const getPostAtDOM = (editor: any, id: string = '1') => {
-  return editor?.view?.posAtDOM(document.querySelector(`.heading[data-id="${id}"]`), 0)
-}
-
 const NotificationBreadcrumb = ({ channelId }: NotificationBreadcrumbProps) => {
   const { query } = useRouter()
-  const updateChatRoom = useChatStore((state) => state.updateChatRoom)
   const [headingPath, setHeadingPath] = useState<any>([])
   const [visiblePath, setVisiblePath] = useState<any>([])
   const navRef = useRef<HTMLElement>(null)

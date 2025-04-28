@@ -48,6 +48,13 @@ export const copyToClipboard = async (text: string): Promise<boolean> => {
   }
 }
 
+//
+export const getPostAtDOM = (editor: any, id: string = '1') => {
+  const heading = document.querySelector(`.heading[data-id="${id}"]`)
+  if (!heading) return -1
+  return editor?.view?.posAtDOM(heading, 0)
+}
+
 export * from './twx'
 export * from './emojis'
 export * from './chunkHtmlContent'
