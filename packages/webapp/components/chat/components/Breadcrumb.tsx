@@ -7,10 +7,7 @@ import ENUMS from '@enum'
 import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 import { CHAT_OPEN } from '@services/eventsHub'
-
-const getPostAtDOM = (editor: any, id: string = '1') => {
-  return editor?.view?.posAtDOM(document.querySelector(`.heading[data-id="${id}"]`), 0)
-}
+import { getPostAtDOM } from '@utils/index'
 
 const Breadcrumb = () => {
   const { query } = useRouter()
@@ -25,13 +22,14 @@ const Breadcrumb = () => {
   } = useStore((state) => state.settings)
 
   useEffect(() => {
-    if (!editor || !headingId || providerSyncing) return
+    if (!editor || !headingId || providerSyncing || editor.isDestroyed) return
     if (headingId === workspaceId) return
 
     let posAtDOM = getPostAtDOM(editor, headingId)
     if (posAtDOM === -1) {
       posAtDOM = getPostAtDOM(editor, '1')
     }
+
     const nodePos = editor.view.state.doc.resolve(posAtDOM) as any
 
     const headingPath = nodePos.path
