@@ -9,6 +9,7 @@ import { useBroadcastListner } from '@hooks/useBroadcastListner'
 import useServiceWorker from '@hooks/useServiceWorker'
 import { useHandleUserStatus } from '@hooks/useHanelUserStatus'
 import { eventsHub } from '@services/eventsHub'
+import GoogleAnalytics from '@components/GoogleAnalytics'
 
 import '../styles/globals.scss'
 import '../styles/styles.scss'
@@ -88,6 +89,7 @@ export default function MyApp({ Component, pageProps }: any) {
   return (
     <div id="root">
       <Header />
+      <GoogleAnalytics />
       <QueryClientProvider client={queryClient}>
         <UserModalProvider>
           <Component {...pageProps} />
