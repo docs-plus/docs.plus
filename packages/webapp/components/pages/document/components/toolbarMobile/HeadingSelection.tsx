@@ -75,7 +75,6 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
   }, [headingLevel, editor, activeSectionType])
 
   useEffect(() => {
-    updateActiveSectionType()
     editor.on('selectionUpdate', updateActiveSectionType)
     editor.on('update', updateActiveSectionType)
     return () => {
