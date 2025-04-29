@@ -30,7 +30,7 @@ export const useLoadMoreNotifications = () => {
       setLoadingNotification(true)
 
       try {
-        if (notificationActiveTab === 'Archived') {
+        if (notificationActiveTab === 'Read') {
           const { data, error } = await getPaginatedLastReadedNotifications(
             user?.id || '',
             notificationPage + 1,
@@ -50,7 +50,7 @@ export const useLoadMoreNotifications = () => {
             workspaceId,
             page: notificationPage + 1,
             size: 6,
-            type: notificationActiveTab === 'All' ? null : 'mention'
+            type: notificationActiveTab === 'Unread' ? null : 'mention'
           })
 
           if (error) {

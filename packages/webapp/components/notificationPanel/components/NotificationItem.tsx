@@ -95,7 +95,7 @@ export const NotificationItem = ({ notification }: { notification: any }) => {
 
         <div className="mt-1 flex items-center gap-2">
           <span className="text-xs text-gray-500">{formatTimeAgo(notification.created_at)}</span>
-          {notificationActiveTab !== 'Archived' && (
+          {notificationActiveTab !== 'Read' && (
             <button
               onClick={(e) => handleMarkAsRead(e, notification.id)}
               className="btn btn-ghost btn-sm ml-auto flex items-center gap-1 text-xs text-blue-700 hover:text-blue-800">

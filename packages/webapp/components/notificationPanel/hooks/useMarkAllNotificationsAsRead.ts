@@ -21,7 +21,7 @@ export const useMarkAllNotificationsAsRead = () => {
       }
       // Clear all notifications from the state
       emptyNotifications()
-      setNotificationActiveTab('All')
+      setNotificationActiveTab('Unread')
       clearNotifications()
     } catch (error) {
       console.error('Error marking all notifications as read:', error)
