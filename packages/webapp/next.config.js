@@ -55,19 +55,19 @@ module.exports = withPWA({
     const allowAddress = [
       "'self'",
       'data:',
+      'blob:',
       '*.googleusercontent.com',
       '*.supabase.co',
       '*.docs.plus',
       '*.localhost',
-      'https://accounts.google.com',
-      'https://challenges.cloudflare.com',
-      'https://*.cloudflare.com',
-      'https://turnstile.cloudflare.com',
+      '*.googletagmanager.com',
+      '*.google.com',
+      '*.cloudflare.com',
       process.env.NEXT_PUBLIC_RESTAPI_URL || '',
       process.env.NEXT_PUBLIC_PROVIDER_URL || '',
       process.env.NEXT_PUBLIC_SUPABASE_URL || '',
       process.env.NEXT_PUBLIC_SUPABASE_WS_URL || ''
-    ].filter(Boolean) // Filters out any empty strings
+    ].filter(Boolean)
 
     return [
       {
@@ -78,12 +78,12 @@ module.exports = withPWA({
               defaultSrc: ["'self'"],
               scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", ...allowAddress],
               styleSrc: ["'self'", "'unsafe-inline'", ...allowAddress],
-              imgSrc: ["'self'", 'blob:', ...allowAddress, '*'],
-              connectSrc: [...allowAddress, '*'],
-              fontSrc: ["'self'", 'data:', '*'],
+              imgSrc: ["'self'", 'blob:', ...allowAddress],
+              connectSrc: [...allowAddress],
+              fontSrc: ["'self'", 'data:', ...allowAddress],
               objectSrc: ["'none'"],
               frameSrc: ["'self'", ...allowAddress],
-              frameAncestors: ["'self'", ...allowAddress],
+              frameAncestors: ["'self'"],
               formAction: ["'self'", ...allowAddress],
               upgradeInsecureRequests: []
             }
