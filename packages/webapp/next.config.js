@@ -62,6 +62,7 @@ module.exports = withPWA({
       '*.localhost',
       '*.googletagmanager.com',
       '*.google.com',
+      '*.google-analytics.com',
       '*.cloudflare.com',
       process.env.NEXT_PUBLIC_RESTAPI_URL || '',
       process.env.NEXT_PUBLIC_PROVIDER_URL || '',
