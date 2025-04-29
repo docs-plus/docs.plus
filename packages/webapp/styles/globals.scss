@@ -847,3 +847,22 @@ ol {
       0 0 5px rgba(59, 130, 246, 0.8);
   }
 }
+
+@keyframes avatar-typing {
+  0% {
+    transform: translateY(0);
+  }
+  25% {
+    transform: translateY(-2px);
+  }
+  75% {
+    transform: translateY(2px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+.avatar-typing {
+  animation: avatar-typing 0.8s ease-in-out infinite;
+}

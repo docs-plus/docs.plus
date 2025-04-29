@@ -201,28 +201,96 @@ const getNodeHLevel = (doc, pos) => {
   return doc.nodeAt(pos).attrs.level
 }
 
-const getPreviousHeadingPositions = (doc, $from, blockStartPos, currentHLevel) => {
-  let prevHStartPos = 0
-  let prevHEndPos = 0
+// Find title nodes and return their positions
+const findTitleNodes = (doc) => {
+  const result = []
+  let lastHeadingId = null
 
-  doc.nodesBetween($from.start(0), blockStartPos, (node, pos) => {
-    if (pos > blockStartPos) return
-
+  doc.descendants((node, pos) => {
     if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
-      const headingLevel = node.firstChild?.attrs?.level
+      lastHeadingId = node.attrs.id
+    }
+    if (node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+      const headingId = lastHeadingId || null
 
-      if (headingLevel === currentHLevel) {
-        prevHStartPos = pos
-        prevHEndPos = pos + node.content.size
-      }
+      result.push({ node, pos, to: pos + node.nodeSize, headingId })
     }
   })
 
-  return { prevHStartPos, prevHEndPos }
+  return result
 }
 
-const isTopLevelHeading = (currentHLevel, parentHeadingNode) => {
-  return currentHLevel === 1 && parentHeadingNode.attrs.level === 1
+// Create title button widget
+const createTitleButton = (editor, { headingId }) => {
+  return (view, getPos) => {
+    const button = document.createElement('button')
+    button.classList.add(
+      'btnOpenChatBox',
+      'btn',
+      'btn-circle',
+      'btn-primary',
+      'size-12',
+      'min-h-10',
+      'shadow-md'
+    )
+
+    button.setAttribute('type', 'button')
+
+    // Apply user-select styles more efficiently
+    Object.assign(button.style, {
+      userSelect: 'none',
+      webkitUserSelect: 'none',
+      msUserSelect: 'none'
+    })
+
+    button.innerHTML = ChatLeftSVG({
+      size: 20,
+      className: 'chatLeft',
+      fill: '#fff'
+    })
+
+    // Add event listener with proper error handling
+    button.addEventListener('click', function (e) {
+      //   e.preventDefault()
+      //   e.stopPropagation()
+      try {
+        // Check if getPos is a function and call it
+        const position = typeof getPos === 'function' ? getPos() : getPos
+        console.log('position', position)
+
+        if (typeof position !== 'number') return
+
+        if (!headingId) {
+          console.warn('[ContentHeading]: No heading ID found')
+          return
+        }
+
+        PubSub.publish(CHAT_OPEN, { headingId })
+      } catch (error) {
+        console.error('[ContentHeading]: Error handling chat button click', error)
+      }
+    })
+
+    return button
+  }
+}
+
+// Create decorations for title buttons
+const createTitleButtonDecorations = (doc, editor) => {
+  const decos = []
+  const titleNodes = findTitleNodes(doc)
+
+  titleNodes.forEach(({ pos, to, node, headingId }) => {
+    const decorationWidget = Decoration.widget(to - 1, createTitleButton(editor, { headingId }), {
+      side: -1,
+      key: `title-button-${pos}`,
+      ignoreSelection: true
+    })
+
+    decos.push(decorationWidget)
+  })
+
+  return DecorationSet.create(doc, decos)
 }
 
 // Tiptap Node
@@ -270,28 +338,8 @@ const HeadingsTitle = Node.create({
       // Create elements using a more maintainable approach
       const dom = createElement('heading', node.attrs.level)
       const contentSpan = createElement('content')
-      const chatBtn = createChatButton()
 
-      // Add event listener with proper error handling
-      chatBtn.addEventListener('click', (e) => {
-        e.preventDefault()
-        try {
-          const pos = getPos()
-          if (typeof pos !== 'number') return
-
-          const parentNode = editor.state.doc.nodeAt(pos - 1)
-          if (!parentNode?.attrs.id) {
-            console.warn('[ContentHeading]: No heading ID found')
-            return
-          }
-
-          PubSub.publish(CHAT_OPEN, { headingId: parentNode.attrs.id })
-        } catch (error) {
-          console.error('[ContentHeading]: Error handling chat button click', error)
-        }
-      })
-
-      dom.append(contentSpan, chatBtn)
+      dom.append(contentSpan)
 
       return {
         dom,
@@ -303,9 +351,7 @@ const HeadingsTitle = Node.create({
           return true
         },
         // Add destroy method for cleanup
-        destroy: () => {
-          // chatBtn.removeEventListener('click')
-        }
+        destroy: () => {}
       }
     }
 
@@ -320,35 +366,6 @@ const HeadingsTitle = Node.create({
       }
 
       return element
-    }
-
-    function createChatButton() {
-      const btn = document.createElement('button')
-      btn.classList.add(
-        'btnOpenChatBox',
-        'btn',
-        'btn-circle',
-        'btn-primary',
-        'size-12',
-        'min-h-10',
-        'shadow-md'
-      )
-      btn.setAttribute('type', 'button')
-
-      // Apply user-select styles more efficiently
-      Object.assign(btn.style, {
-        userSelect: 'none',
-        webkitUserSelect: 'none',
-        msUserSelect: 'none'
-      })
-
-      btn.innerHTML = ChatLeftSVG({
-        size: 20,
-        className: 'chatLeft',
-        fill: '#fff'
-      })
-
-      return btn
     }
   },
   renderHTML({ node, HTMLAttributes }) {
@@ -482,148 +499,24 @@ const HeadingsTitle = Node.create({
             console.info('destroy handleHeadingToggle')
           })
         }
+      }),
+
+      new Plugin({
+        key: new PluginKey('TitleButtons'),
+        state: {
+          init: (_, { doc }) => {
+            return createTitleButtonDecorations(doc, this.editor)
+          },
+          apply: (tr, oldState) => {
+            return tr.docChanged ? createTitleButtonDecorations(tr.doc, this.editor) : oldState
+          }
+        },
+        props: {
+          decorations(state) {
+            return this.getState(state)
+          }
+        }
       })
-      // // TODO: refactor this plugin
-      // new Plugin({
-      //   key: new PluginKey('headingTitleListener'),
-      //   state: {
-      //     init() {
-      //       const docMetadata = useStore.getState().settings.metadata
-      //       // Bind 'this' to saveTitle
-      //       this.spec.saveTitle = this.spec.saveTitle.bind(this)
-
-      //       return {
-      //         listening: docMetadata.title.length === 0 ? false : true,
-      //         title: docMetadata.title,
-      //         headingId: docMetadata.documentId
-      //       }
-      //     },
-      //     apply(tr, value, oldState, newState) {
-      //       const { selection } = newState
-      //       const { $from } = selection
-      //       const pos = $from.pos
-
-      //       if (pos === 2 && $from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
-      //         return {
-      //           listening: true,
-      //           title: $from.parent.textContent,
-      //           headingId: $from.parent.attrs.id
-      //         }
-      //       }
-
-      //       if (value.listening) {
-      //         if (tr.docChanged) {
-      //           return { ...value, title: $from.parent.textContent }
-      //         }
-
-      //         if (
-      //           tr.selectionSet &&
-      //           (pos > 2 || $from.parent.type.name !== ENUMS.NODES.CONTENT_HEADING_TYPE)
-      //         ) {
-      //           this.spec.saveTitle(newState, value.title)
-      //           return { listening: false, title: '', headingId: null }
-      //         }
-      //       }
-
-      //       return value
-      //     }
-      //   },
-      //   props: {
-      //     handleDOMEvents: {
-      //       blur(view, event) {
-      //         const { $from } = view.state.selection
-      //         const nodeType = $from.parent.type.name
-      //         const title = $from.parent.textContent
-
-      //         if (nodeType === ENUMS.NODES.CONTENT_HEADING_TYPE) {
-      //           this.spec.saveTitle(view.state, title)
-      //         }
-      //       }
-      //     },
-
-      //     handleKeyDown(view, event) {
-      //       const { listening: listeningState, title } = this.getState(view.state)
-      //       if (!listeningState) return
-
-      //       const { $from } = view.state.selection
-      //       const nodeType = $from.parent.type.name
-      //       const key = event.key
-
-      //       if (nodeType === ENUMS.NODES.CONTENT_HEADING_TYPE && key === 'Enter') {
-      //         this.spec.saveTitle(view.state, title)
-      //       }
-      //     }
-      //   },
-      //   async saveTitle(state, title) {
-      //     const pluginState = this.getState(state)
-      //     if (!pluginState || !pluginState.listening) return
-
-      //     try {
-      //       const documentId = useStore.getState().settings.metadata.documentId
-      //       const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents/${documentId}`
-
-      //       const body = {
-      //         title
-      //       }
-
-      //       const response = await fetch(url, {
-      //         method: 'PUT',
-      //         headers: {
-      //           'Content-Type': 'application/json'
-      //         },
-      //         body: JSON.stringify(body)
-      //       })
-
-      //       if (!response.ok) {
-      //         throw new Error(`HTTP error! status: ${response.status}`)
-      //       }
-
-      //       const result = await response.json()
-
-      //       const hocuspocusProvider = useStore.getState().settings.hocuspocusProvider
-
-      //       // broadcast the new title to the hocuspocus provider
-      //       hocuspocusProvider.sendStateless(
-      //         JSON.stringify({ type: 'docTitle', state: result.data })
-      //       )
-
-      //       toast.Success('Document title changed successfully')
-      //     } catch (error) {
-      //       console.error('[ContentHeading] Error saving content to database:', error)
-      //       toast.Error('Failed to change document title')
-      //     }
-      //     return true
-      //   },
-      //   view(editorView) {
-      //     const contentEditableDiv = document.querySelector('.pad.tiptap [contenteditable]')
-
-      //     const updateContentEditableDiv = (title) => {
-      //       if (!contentEditableDiv) return
-      //       contentEditableDiv.textContent = title
-      //     }
-
-      //     const handleBlur = () => {
-      //       const pluginState = this.key.getState(editorView.state)
-      //       if (!pluginState.listening) return
-
-      //       this.spec.saveTitle(editorView.state, pluginState.title)
-      //     }
-
-      //     contentEditableDiv.addEventListener('blur', handleBlur)
-
-      //     return {
-      //       update: (view, prevState) => {
-      //         const pluginState = this.key.getState(view.state)
-      //         if (pluginState.listening) {
-      //           updateContentEditableDiv(pluginState.title)
-      //         }
-      //       },
-      //       destroy: () => {
-      //         contentEditableDiv.removeEventListener('blur', handleBlur)
-      //       }
-      //     }
-      //   }
-      // })
     ]
   }
 })

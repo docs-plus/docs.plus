@@ -7,10 +7,14 @@ const ONLINE = 'ONLINE'
 const OFFLINE = 'OFFLINE'
 
 export const useHandleUserStatus = () => {
-  const user = useAuthStore((state) => state.profile)
+  // Add a null check in case the store isn't ready
+  const user = useAuthStore ? useAuthStore((state) => state?.profile) : null
 
   const updateUserStatus = async (newStatus: 'ONLINE' | 'OFFLINE') => {
-    const user = useAuthStore.getState().profile
+    // Safety check for the store
+    if (!useAuthStore || typeof useAuthStore.getState !== 'function') return
+
+    const user = useAuthStore.getState()?.profile
     if (!user) return
     const lastStatus = sessionStorage.getItem('userLastStatus')
 
@@ -42,6 +46,8 @@ export const useHandleUserStatus = () => {
   )
 
   const handleUnload = () => {
+    if (!user) return
+
     if ('serviceWorker' in navigator && 'SyncManager' in window) {
       navigator.serviceWorker.ready.then((registration) => {
         // @ts-ignore

@@ -71,7 +71,12 @@ const Toolbar = () => {
       </div>
       <div className="ml-auto flex items-center gap-3">
         <div className="flex h-9 items-center">
-          <AvatarStack size={9} users={presentUsers} tooltipPosition="tooltip-bottom" />
+          <AvatarStack
+            size={9}
+            users={presentUsers}
+            showStatus={true}
+            tooltipPosition="tooltip-bottom"
+          />
         </div>
 
         <div className="join bg-base-300 rounded-md">

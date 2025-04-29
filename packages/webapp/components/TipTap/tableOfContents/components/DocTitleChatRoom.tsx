@@ -33,7 +33,12 @@ export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) =
         </span>
         <div className="absolute -right-9">
           {presentUsers.length > 0 && (
-            <AvatarStack size={8} users={presentUsers} tooltipPosition="tooltip-left" />
+            <AvatarStack
+              size={8}
+              users={presentUsers}
+              showStatus={true}
+              tooltipPosition="tooltip-left"
+            />
           )}
         </div>
       </div>

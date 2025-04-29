@@ -11,13 +11,15 @@ type DivProps = React.ComponentProps<'div'> & {
   $online?: boolean
   $presence?: boolean
   $clickable?: boolean
+  $typing?: boolean
 }
 
 const AContainer = twx.div<DivProps>((props) =>
   cn(
     `avatar border-gray-300`,
     props.$presence && (props.$online ? `online` : `offline`),
-    props.$clickable ? 'cursor-pointer' : 'cursor-default'
+    props.$clickable ? 'cursor-pointer' : 'cursor-default',
+    props.$typing && 'avatar-typing'
   )
 )
 const AWrapper = twx.div`relative max-w-24 rounded-full bg-white`
@@ -34,6 +36,7 @@ export const Avatar = forwardRef(
       src,
       alt,
       size = 96,
+      status,
       clickable = true,
       ...restProps
     }: any,
@@ -98,6 +101,7 @@ export const Avatar = forwardRef(
         $presence={displayPresence}
         $online={online}
         $clickable={clickable}
+        $typing={status === 'TYPING'}
         {...restProps}
         onClick={handleClick}>
         <AWrapper className={avatarStyle}>

@@ -24,6 +24,7 @@ export const useBroadcastListner = () => {
 
   const setTypingIndicator = useChatStore((state) => state.setTypingIndicator)
   const removeTypingIndicator = useChatStore((state) => state.removeTypingIndicator)
+  const updateUserStatus = useStore((state) => state.updateUserStatus)
 
   useEffect(() => {
     if (!broadcaster) return
@@ -42,8 +43,12 @@ export const useBroadcastListner = () => {
         const payload = data.payload
         if (payload.type === 'startTyping') {
           setTypingIndicator(payload.activeChannelId, payload.user)
+          // @ts-ignore
+          updateUserStatus(payload.user.id, 'TYPING')
         } else if (payload.type === 'stopTyping') {
           removeTypingIndicator(payload.activeChannelId, payload.user)
+          // @ts-ignore
+          updateUserStatus(payload.user.id, 'ONLINE')
         }
       })
   }, [broadcaster])

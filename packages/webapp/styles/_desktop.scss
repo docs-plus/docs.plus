@@ -1,0 +1,51 @@
+// .m_desktop {
+//   .btn_openChatBox {
+//     position: absolute;
+//     left: 100%;
+//     display: flex;
+//     width: 2rem;
+//     height: 2rem;
+//     align-items: center;
+//     justify-content: center;
+//     overflow: hidden;
+//     border-radius: 0.75rem;
+//     background-color: var(--bg-docy);
+//     fill: white;
+//     padding: 0.5rem;
+//     color: var(--neutral-content);
+//     display: flex;
+//     align-items: center;
+//     justify-content: center;
+
+//     svg {
+//       fill: #fff;
+//       display: block;
+//       margin: auto;
+//     }
+
+//     .chatLeft {
+//       fill: #fff;
+//       position: relative;
+//       top: 1px;
+//       display: inline-flex;
+//       align-items: center;
+//       justify-content: center;
+//       margin: auto;
+//     }
+
+//     &[data-unread-count]:not([data-unread-count='']) {
+//       .chatLeft {
+//         display: none;
+//       }
+//     }
+
+//     &::before {
+//       content: attr(data-unread-count);
+//       color: #fff;
+//       font-weight: 600;
+//       display: flex;
+//       align-items: center;
+//       justify-content: center;
+//     }
+//   }
+// }
