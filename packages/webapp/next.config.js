@@ -64,6 +64,7 @@ module.exports = withPWA({
       '*.google.com',
       '*.google-analytics.com',
       '*.cloudflare.com',
+      'wss://*.supabase.co',
       process.env.NEXT_PUBLIC_RESTAPI_URL || '',
       process.env.NEXT_PUBLIC_PROVIDER_URL || '',
       process.env.NEXT_PUBLIC_SUPABASE_URL || '',
