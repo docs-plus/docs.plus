@@ -7,6 +7,7 @@ import { useStore, useChatStore } from '@stores'
 import ChatContainer from './chat/ChatContainer'
 import { scrollHeadingSelection } from '../helpers'
 import { useAdjustEditorSizeForChatRoom } from '../hooks'
+import useUpdateDocPageUnreadMsg from '../hooks/useUpdateDocPageUnreadMsg'
 
 const DesktopEditor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
@@ -19,6 +20,8 @@ const DesktopEditor = () => {
 
   // @ts-ignore
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
+
+  useUpdateDocPageUnreadMsg()
 
   const editorWrapperClassNames = clsx(
     'editorWrapper flex h-full grow items-start justify-center overflow-y-auto border-t-0 p-0 sm:py-4'

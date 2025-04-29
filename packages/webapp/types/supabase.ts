@@ -642,6 +642,7 @@ export type Database = {
           unread_message: boolean
           last_read_message_id: string
           last_read_message_timestamp: string
+          anchor_message_timestamp: string
         }[]
       }
       get_channel_messages_paginated: {
@@ -759,7 +760,13 @@ export type Database = {
         | "like_reaction"
         | "feedback_request"
         | "performance_insight"
-      user_status: "ONLINE" | "OFFLINE" | "AWAY" | "BUSY" | "INVISIBLE"
+      user_status:
+        | "ONLINE"
+        | "OFFLINE"
+        | "AWAY"
+        | "BUSY"
+        | "INVISIBLE"
+        | "TYPING"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -943,7 +950,7 @@ export const Constants = {
         "feedback_request",
         "performance_insight",
       ],
-      user_status: ["ONLINE", "OFFLINE", "AWAY", "BUSY", "INVISIBLE"],
+      user_status: ["ONLINE", "OFFLINE", "AWAY", "BUSY", "INVISIBLE", "TYPING"],
     },
   },
 } as const

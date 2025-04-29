@@ -1,41 +1,43 @@
-import { useEffect } from 'react'
-import { debounce } from 'lodash'
-import { useStore, useChatStore } from '@stores'
+import { useEffect, useCallback } from 'react'
+import debounce from 'lodash/debounce'
+import { useChatStore } from '@stores'
+import { Channel } from '@types'
 
 const useUpdateDocPageUnreadMsg = () => {
   const channels = useChatStore((state) => state.channels)
-  const {
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
 
-  // Debounced function for update logic
-  const debouncedUpdateLogic = debounce(() => {
-    channels.forEach((channel: any) => {
-      if (channel.unread_message_count) {
-        const element = document.querySelector(
-          `.wrapBlock[data-id="${channel.id}"] > .buttonWrapper .btn_openChatBox`
-        )
-        if (element && channel.unread_message_count > 0) {
-          element.setAttribute('data-unread-count', channel.unread_message_count.toString())
-        } else {
-          element?.removeAttribute('data-unread-count')
-        }
+  const updateUnreadIndicator = useCallback((channel: Channel) => {
+    if (!channel || channel.unread_message_count === undefined) return
+
+    const selectors = [
+      `.wrapBlock[data-id="${channel.id}"] > .title .btnOpenChatBox`,
+      `.wrapBlock[data-id="${channel.id}"] > .buttonWrapper .btn_openChatBox`
+    ]
+
+    selectors.forEach((selector) => {
+      const element = document.querySelector(selector)
+      if (!element) return
+
+      if (channel.unread_message_count && channel.unread_message_count > 0) {
+        element.setAttribute('data-unread-count', channel.unread_message_count.toString())
+      } else {
+        element.removeAttribute('data-unread-count')
       }
     })
-  }, 300) // Adjust the debounce delay (300ms in this example)
+  }, [])
 
-  // TODO: put this in a separate hook file
+  const updateAllUnreadIndicators = useCallback(
+    debounce(() => {
+      channels.forEach((channel, channelId) => {
+        updateUnreadIndicator(channel)
+      })
+    }, 1000),
+    [channels]
+  )
+
   useEffect(() => {
-    if (!editor) return
-
-    // Attach the debounced function to the 'update' event
-    editor.on('update', debouncedUpdateLogic)
-
-    // Cleanup function to remove the event listener
-    return () => {
-      editor.off('update', debouncedUpdateLogic)
-    }
-  }, [editor, channels, debouncedUpdateLogic])
+    updateAllUnreadIndicators()
+  }, [channels])
 }
 
 export default useUpdateDocPageUnreadMsg

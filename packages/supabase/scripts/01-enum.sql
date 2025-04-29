@@ -23,7 +23,7 @@ create type public.app_role as enum ('admin', 'moderator', 'member', 'guest');
 -- 'AWAY' signifies the user is temporarily away,
 -- 'BUSY' shows the user is occupied and might not respond promptly,
 -- 'INVISIBLE' allows users to use the app without appearing online.
-create type public.user_status as enum ('ONLINE', 'OFFLINE', 'AWAY', 'BUSY', 'INVISIBLE');
+create type public.user_status as enum ('ONLINE', 'OFFLINE', 'AWAY', 'BUSY', 'INVISIBLE', 'TYPING');
 
 -- Define the types of messages that can be sent.
 -- 'text' is a standard text message,
