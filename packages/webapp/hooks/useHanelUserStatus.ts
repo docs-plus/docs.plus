@@ -10,29 +10,31 @@ export const useHandleUserStatus = () => {
   // Add a null check in case the store isn't ready
   const user = useAuthStore ? useAuthStore((state) => state?.profile) : null
 
-  const updateUserStatus = async (newStatus: 'ONLINE' | 'OFFLINE') => {
-    // Safety check for the store
-    if (!useAuthStore || typeof useAuthStore.getState !== 'function') return
+  const updateUserStatus = useCallback(
+    async (newStatus: 'ONLINE' | 'OFFLINE') => {
+      if (!user) return
+      const lastStatus = sessionStorage.getItem('userLastStatus')
 
-    const user = useAuthStore.getState()?.profile
-    if (!user) return
-    const lastStatus = sessionStorage.getItem('userLastStatus')
-
-    if (newStatus !== lastStatus || user.status !== newStatus) {
-      try {
-        sessionStorage.setItem('userLastStatus', newStatus)
-        console.info(`Updated user status: ${newStatus}`)
-        await updateUser(user.id, {
-          status: newStatus
-        })
-      } catch (error) {
-        console.error('Failed to update user status', error)
+      if (newStatus !== lastStatus || user.status !== newStatus) {
+        try {
+          sessionStorage.setItem('userLastStatus', newStatus)
+          console.info(`Updated user status: ${newStatus}`)
+          await updateUser(user.id, {
+            status: newStatus
+          })
+        } catch (error) {
+          console.error('Failed to update user status', error)
+        }
       }
-    }
-  }
+    },
+    [user]
+  )
 
   // Debounced updateUserStatus function
-  const debouncedUpdateUserStatus = useMemo(() => debounce(updateUserStatus, 3000), [])
+  const debouncedUpdateUserStatus = useMemo(
+    () => debounce(updateUserStatus, 3000),
+    [updateUserStatus]
+  )
 
   // Handlers
   const handleOnline = useCallback(
@@ -63,7 +65,6 @@ export const useHandleUserStatus = () => {
   }
 
   useEffect(() => {
-    if (!user) return
     window.addEventListener('beforeunload', handleUnload)
 
     // first mount status
@@ -89,5 +90,5 @@ export const useHandleUserStatus = () => {
       // @ts-ignore
       debouncedUpdateUserStatus.cancel()
     }
-  }, [handleOnline, handleOffline, debouncedUpdateUserStatus, user])
+  }, [handleOnline, handleOffline, debouncedUpdateUserStatus])
 }

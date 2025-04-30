@@ -127,8 +127,6 @@ const generateMessageElements = (
       )
     }
 
-    console.log('message', message)
-
     if (message.type === 'notification') {
       if (!displaySystemNotifyChip) return
 

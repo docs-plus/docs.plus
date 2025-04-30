@@ -24,7 +24,7 @@ export default function useJoinWorkspace({ documentId, loading }: UseJoinWorkspa
     }).catch((error) => {
       console.error('[workspace], join2WorkspaceRequest!', error)
     })
-  }, [user, documentId, loading, join2WorkspaceRequest])
+  }, [user?.id, documentId, loading, join2WorkspaceRequest])
 
   return { join2WorkspaceLoading }
 }
