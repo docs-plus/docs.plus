@@ -4,6 +4,7 @@ import { isOnlyEmoji, splitEmojis } from '@utils/index'
 import { getEmojiDataFromNative } from 'emoji-mart'
 import { useAuthStore } from '@stores'
 import { useUserModal } from '@context/UserModalContext'
+import { useMentionClick } from '@components/chat/hooks'
 
 interface MessageContentProps {
   data: {
@@ -42,14 +43,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ data }) => {
     if (contentIsOnlyEmoji) loadEmojiTitles()
   }, [data.content, contentIsOnlyEmoji])
 
-  const handleMentionClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    const target = e.target as HTMLElement
-
-    if (target.matches('.mention[data-id]')) {
-      const userId = target.dataset.id
-      if (userId) openUserModal(userId)
-    }
-  }
+  const handleMentionClick = useMentionClick()
 
   // Check if the content is only emoji outside of JSX for readability.
 
@@ -70,7 +64,7 @@ const MessageContent: React.FC<MessageContentProps> = ({ data }) => {
         </div>
       ) : (
         <div
-          className="message--card__content prose-slate prose-invert max-w-full overflow-hidden whitespace-pre-wrap text-wrap break-words"
+          className="message--card__content prose-slate prose-invert max-w-full overflow-hidden text-wrap break-words whitespace-pre-wrap"
           dir="auto"
           dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
         />

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react'
 import MessageCard from './MessageCard'
 import { format, isSameDay, parseISO } from 'date-fns'
-import { useChatStore } from '@stores'
-import { useCheckReadMessage } from '../../hooks'
+import { useChatStore, useStore } from '@stores'
+import { useCheckReadMessage, useMentionClick } from '../../hooks'
 import { useChannel } from '../../context/ChannelProvider'
+import { DocsPlus } from '@icons'
 
 interface MessagesDisplayProps {
   messageContainerRef: React.RefObject<HTMLDivElement | null>
@@ -40,6 +41,11 @@ const LoadingSpinner = () => (
 
 const SystemNotifyChip = ({ message }: any) => {
   const cardRef = useRef<any>(null)
+  const {
+    settings: { metadata: docMetadata }
+  } = useStore((state) => state)
+
+  const handleMentionClick = useMentionClick()
 
   useEffect(() => {
     // we need for check message readed or not
@@ -50,6 +56,32 @@ const SystemNotifyChip = ({ message }: any) => {
       cardRef.current.createdAt = message.created_at
     }
   }, [message])
+
+  if (message.metadata?.type === 'user_join_workspace') {
+    return (
+      <div
+        className="msg_card chat my-4 flex justify-center pb-1"
+        ref={cardRef}
+        onClick={handleMentionClick}>
+        <div className="badge bg-bg-chatBubble-owner py-3">
+          <span
+            className="mention text-primary cursor-pointer !p-0 font-semibold"
+            data-type="mention"
+            data-id={message.user_id}
+            data-label={message?.user_details?.username}>
+            @{message?.user_details?.username}
+          </span>
+
+          <span>joined</span>
+
+          <span className="bg-bg-chatBubble-owner flex items-center gap-1 py-0.5">
+            <DocsPlus size={12} className="mb-1" />
+            <span className="font-medium underline">{docMetadata.title}</span>
+          </span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="msg_card chat my-4 flex justify-center pb-1" ref={cardRef}>
@@ -95,9 +127,12 @@ const generateMessageElements = (
       )
     }
 
+    console.log('message', message)
+
     if (message.type === 'notification') {
-      if (displaySystemNotifyChip)
-        elements.push(<SystemNotifyChip key={message.id} message={message} />)
+      if (!displaySystemNotifyChip) return
+
+      elements.push(<SystemNotifyChip key={message.id} message={message} />)
     } else {
       elements.push(
         <MessageCard

@@ -553,7 +553,8 @@ $bg-root: #f8f9fa;
   }
 }
 
-.message--card__content {
+.message--card__content,
+.msg_card {
   .mention {
     // background-color: rgba(111, 0, 255, 0.1);
     border-radius: 0.4rem;
