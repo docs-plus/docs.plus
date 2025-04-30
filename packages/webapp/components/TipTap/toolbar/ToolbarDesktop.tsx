@@ -6,7 +6,7 @@ import Icon from '@components/TipTap/toolbar/Icon'
 import FilterModal from './FilterModal'
 import SelectHeadingBox from './SelectHeadingBox'
 import InsertMultimediaButton from './InsertMultimediaButton'
-import { useStore } from '@stores'
+import { useAuthStore, useStore } from '@stores'
 import Dropdown from '@components/ui/Dropdown'
 import Loading from '@components/ui/Loading'
 import Modal from '@components/ui/Modal'
@@ -44,6 +44,7 @@ const ToolbarDesktop = () => {
   } = useStore((state) => state.settings)
   const { isAuthServiceAvailable } = useStore((state) => state.settings)
   const [isModalOpen, setModalOpen] = useState(false)
+  const user = useAuthStore((state) => state.profile)
 
   const { createComment } = useTurnSelectedTextIntoComment()
 
@@ -178,12 +179,13 @@ const ToolbarDesktop = () => {
           <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)">
             <Icon type="Printer" size={16} />
           </ToolbarButton>
-          {isAuthServiceAvailable && (
+          {isAuthServiceAvailable && user && (
             <ToolbarButton tooltip="Open" onClick={() => setModalOpen(true)}>
               <Folder fill="rgba(0,0,0,.7)" size={18} />
             </ToolbarButton>
           )}
-          <div className="divided"></div>
+
+          {user && <div className="divided"></div>}
 
           <Dropdown button={<GearButton />} className="dropdown-bottom dropdown-end">
             <GearModal className="z-50 p-2" />

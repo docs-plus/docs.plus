@@ -11,14 +11,13 @@ import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { useAuthStore } from '@stores'
 import ShareModal from './ShareModal'
-import { PrivateShare } from '@icons'
 import ProfilePanel from '@components/pages/panels/profile/ProfilePanel'
 import TabLayout from '@components/pages/TabLayout'
 import SignInPanel from '@components/pages/panels/SignInPanel'
 import { FaRegBell } from 'react-icons/fa'
 import { NotificationPanel } from '../../notificationPanel/desktop/NotificationPanel'
 import Dropdown from '@components/ui/Dropdown'
-import { MdHistory } from 'react-icons/md'
+import { MdHistory, MdGroup } from 'react-icons/md'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 
 const PadTitle = () => {
@@ -51,29 +50,30 @@ const PadTitle = () => {
             {isAuthServiceAvailable && <PresentUsers />}
 
             <Button
-              className="btn-primary tooltip tooltip-bottom flex h-[38px] min-h-[38px] items-center gap-2 text-white"
-              onClick={() => setShareModalOpen(true)}
-              data-tip="Share">
-              <div className="flex items-center gap-2">
-                <PrivateShare size={16} />
-                <div className="h-4 w-[1px] bg-white/20"></div>
+              className={`btn-primary flex items-center ${user && 'btn-outline'}`}
+              onClick={() => setShareModalOpen(true)}>
+              <div className="flex items-center gap-1">
+                <MdGroup size={20} />
+                <div className="h-4 w-[1px]"></div>
                 <span>Share</span>
               </div>
             </Button>
 
-            <Button
-              className="btn-circle btn-ghost btn-outline tooltip tooltip-bottom relative h-[42px] min-h-[42px] w-[42px] border-gray-200"
-              onClick={() => (window.location.hash = 'history')}
-              data-tip="History">
-              <MdHistory size={22} />
-            </Button>
+            {user && (
+              <Button
+                className="btn-circle btn-ghost btn-outline tooltip tooltip-bottom relative border-gray-300"
+                onClick={() => (window.location.hash = 'history')}
+                data-tip="History">
+                <MdHistory size={22} />
+              </Button>
+            )}
 
-            {isAuthServiceAvailable && (
+            {isAuthServiceAvailable && user && (
               <Dropdown
                 className="dropdown-bottom dropdown-end"
                 button={
                   <Button
-                    className="btn-circle btn-ghost btn-outline tooltip tooltip-bottom relative h-[42px] min-h-[42px] w-[42px] border-gray-200"
+                    className="btn-circle btn-ghost btn-outline tooltip tooltip-bottom relative border-gray-300"
                     data-tip="Notifications">
                     <FaRegBell size={20} fill="currentColor" className="text-primary" />
                     {unreadCount > 0 && (
@@ -86,11 +86,12 @@ const PadTitle = () => {
                 <NotificationPanel />
               </Dropdown>
             )}
+
             {isAuthServiceAvailable && (
               <div className="flex">
                 {user ? (
                   <Button
-                    className="btn-circle btn-ghost tooltip tooltip-bottom h-[42px] min-h-[42px] w-[42px]"
+                    className="btn-circle btn-ghost tooltip tooltip-bottom"
                     onClick={() => setProfileModalOpen(true)}
                     data-tip="Profile">
                     <Avatar
@@ -100,13 +101,13 @@ const PadTitle = () => {
                       width={24}
                       height={24}
                       clickable={false}
-                      className="h-[42px] min-h-[42px] w-[42px] cursor-pointer rounded-full border border-gray-300 shadow-md"
+                      className="w-[50px] cursor-pointer rounded-full border border-gray-300 shadow-md"
                     />
                   </Button>
                 ) : (
                   <Button
                     id="btn_signin"
-                    className="btn btn-neutral h-[2.6rem] min-h-[2.6rem]"
+                    className="btn btn-neutral"
                     onClick={() => setProfileModalOpen(true)}>
                     Signin
                   </Button>
