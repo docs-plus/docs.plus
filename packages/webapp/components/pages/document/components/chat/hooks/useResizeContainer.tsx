@@ -10,8 +10,8 @@ const useResizeContainer = () => {
   } = useStore((state) => state.settings)
 
   // Define maximum and minimum heights
-  const maxHeight = 600 // Example max height
-  const minHeight = 200 // Example min height
+  const maxHeight = 700 // Example max height
+  const minHeight = 300 // Example min height
 
   const handleMouseDown = (e: React.MouseEvent<HTMLInputElement>) => {
     if (!gripperRef.current) return
