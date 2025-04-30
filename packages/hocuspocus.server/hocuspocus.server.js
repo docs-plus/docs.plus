@@ -87,7 +87,7 @@ const statelessExtension = {
         console.error('Error handling history event:', error)
       }
     } else {
-      document.broadcastStateless(payload)
+      document.broadcastStateless(JSON.stringify(payload))
     }
   }
 }
