@@ -81,7 +81,7 @@ const chatRoom = immer<IChatroomStore>((set) => ({
     documentId: undefined,
     headingPath: [],
     open: false,
-    pannelHeight: 300,
+    pannelHeight: 410,
     userPickingEmoji: undefined,
     replayMessageMemory: undefined,
     editeMessageMemory: undefined,
