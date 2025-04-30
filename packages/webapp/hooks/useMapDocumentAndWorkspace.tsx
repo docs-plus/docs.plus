@@ -25,7 +25,6 @@ const useMapDocumentAndWorkspace = (
   const [error, setError] = useState<Error | null>(null)
 
   const bulkSetChannels = useChatStore((state) => state.bulkSetChannels)
-  const user = useAuthStore((state) => state.profile)
   const authLoading = useAuthStore((state) => state.loading)
   const clearAndInitialChannels = useChatStore((state) => state.clearAndInitialChannels)
 
@@ -35,8 +34,11 @@ const useMapDocumentAndWorkspace = (
     clearAndInitialChannels(initialChannels)
   }, [initialChannels])
 
-  const fetchChannels = async (documentId: string): Promise<Channel[]> => {
-    if (!user) {
+  const fetchChannels = async (
+    documentId: string,
+    userId: string | undefined
+  ): Promise<Channel[]> => {
+    if (!userId) {
       const { data: channelMessageCounts } = await getChannelsWithMessageCounts(documentId)
       return (
         channelMessageCounts?.map((channel: Channel) =>
@@ -50,7 +52,7 @@ const useMapDocumentAndWorkspace = (
       )
     }
 
-    const { data } = await getChannels(documentId, user.id)
+    const { data } = await getChannels(documentId, userId)
     return data || []
   }
 
@@ -63,6 +65,8 @@ const useMapDocumentAndWorkspace = (
       setLoading(true)
       setError(null)
 
+      const user = useAuthStore.getState().profile
+
       try {
         await upsertWorkspace({
           id: docMetadata.documentId,
@@ -72,7 +76,7 @@ const useMapDocumentAndWorkspace = (
           created_by: user?.id || Config.chat.systemUserId
         })
 
-        const channels = await fetchChannels(docMetadata.documentId)
+        const channels = await fetchChannels(docMetadata.documentId, user?.id)
         if (isMounted && channels) {
           bulkSetChannels(channels)
           setIsWorkspaceUpserted(true)
@@ -91,7 +95,7 @@ const useMapDocumentAndWorkspace = (
     return () => {
       isMounted = false
     }
-  }, [authLoading, user])
+  }, [authLoading])
 
   return { loading, error }
 }
