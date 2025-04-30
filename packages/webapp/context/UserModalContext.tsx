@@ -112,7 +112,7 @@ export function UserModalProvider({ children }: { children: React.ReactNode }) {
     return (
       <div
         key={link.url}
-        className="group mb-3 w-full rounded-lg p-3 transition-all hover:bg-opacity-30"
+        className="group hover:bg-opacity-30 mb-3 w-full rounded-lg p-3 transition-all"
         style={{ backgroundColor: `${link.metadata.themeColor}20` }}>
         <a
           href={href}
@@ -144,7 +144,7 @@ export function UserModalProvider({ children }: { children: React.ReactNode }) {
         ) : userData ? (
           <div className="flex max-h-[80vh] flex-col">
             {/* Sticky Header */}
-            <div className="sticky top-0 !-mt-3 bg-white p-6 shadow-sm">
+            <div className="sticky top-0 bg-white p-6 pb-0">
               <div className="flex items-center">
                 <div className="flex flex-1 items-center space-x-4">
                   <Avatar
@@ -161,14 +161,19 @@ export function UserModalProvider({ children }: { children: React.ReactNode }) {
                     <p className="text-gray-600">@{userData.username}</p>
                   </div>
                 </div>
-                <button className="btn btn-circle btn-xs" onClick={closeUserModal}>
+                <button className="btn btn-square btn-xs" onClick={closeUserModal}>
                   <IoCloseSharp size={20} />
                 </button>
               </div>
             </div>
 
+            {(userData.profile_data?.bio ||
+              (userData.profile_data?.linkTree && userData.profile_data.linkTree.length > 0)) && (
+              <div className="divider h-0"></div>
+            )}
+
             {/* Scrollable Content */}
-            <div className="flex-1 overflow-y-auto p-6">
+            <div className="flex-1 overflow-y-auto p-6 pt-0">
               {/* Bio Section */}
               {userData.profile_data?.bio && (
                 <div className="space-y-2">
