@@ -12,7 +12,7 @@ export const useNotificationTabData = () => {
     (state) => state
   )
   const user = useAuthStore((state) => state.profile)
-
+  const { workspaceId } = useStore((state) => state.settings)
   const { request: lastReadedRequest } = useApi(getLastReadedNotification, null, false)
 
   useEffect(() => {
@@ -30,7 +30,7 @@ export const useNotificationTabData = () => {
           // setNotifications('Mentions', lastUnread)
           break
         case 'Read':
-          const { data: lastReadData } = await lastReadedRequest(user.id)
+          const { data: lastReadData } = await lastReadedRequest(user.id, workspaceId)
           // setNotifications(lastReadData || [])
           setNotifications('Read', lastReadData as any)
           break

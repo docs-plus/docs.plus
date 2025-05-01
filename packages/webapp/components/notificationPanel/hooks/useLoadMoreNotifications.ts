@@ -33,6 +33,7 @@ export const useLoadMoreNotifications = () => {
         if (notificationActiveTab === 'Read') {
           const { data, error } = await getPaginatedLastReadedNotifications(
             user?.id || '',
+            workspaceId || '',
             notificationPage + 1,
             6
           )
@@ -68,7 +69,7 @@ export const useLoadMoreNotifications = () => {
         setLoadingNotification(false)
       }
     },
-    [workspaceId, user?.id, notificationPage, notificationActiveTab]
+    [workspaceId, user?.id, notificationPage, notificationActiveTab, workspaceId]
   )
 
   return {
