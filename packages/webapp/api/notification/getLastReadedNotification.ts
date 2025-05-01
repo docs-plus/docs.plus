@@ -5,27 +5,24 @@ import { Database } from '@types'
 type TNotification = Database['public']['Tables']['notifications']['Row']
 
 export const getLastReadedNotification = async (
-  userId: string
+  userId: string,
+  workspaceId: string
 ): Promise<
   PostgrestResponse<TNotification & { sender: Database['public']['Tables']['users']['Row'] }>
 > => {
   return supabaseClient
-    .from('notifications')
-    .select(
-      `
-      *,
-      sender:sender_user_id(id,avatar_updated_at, avatar_url, display_name, full_name, username)
-    `
-    )
-    .eq('receiver_user_id', userId)
-    .not('readed_at', 'is', null)
-    .order('created_at', { ascending: false })
-    .limit(6)
+    .rpc('get_workspace_notifications', {
+      p_user_id: userId,
+      p_workspace_id: workspaceId,
+      p_limit: 6,
+      p_is_read: true
+    })
     .throwOnError()
 }
 
 export const getPaginatedLastReadedNotifications = async (
   userId: string,
+  workspaceId: string,
   page: number = 1,
   pageSize: number = 10
 ): Promise<
@@ -35,16 +32,12 @@ export const getPaginatedLastReadedNotifications = async (
   const to = from + pageSize - 1
 
   return supabaseClient
-    .from('notifications')
-    .select(
-      `
-      *,
-      sender:sender_user_id(id,avatar_updated_at, avatar_url, display_name, full_name, username)
-    `
-    )
-    .eq('receiver_user_id', userId)
-    .not('readed_at', 'is', null)
-    .order('created_at', { ascending: false })
-    .range(from, to)
+    .rpc('get_workspace_notifications', {
+      p_user_id: userId,
+      p_workspace_id: workspaceId,
+      p_offset: from,
+      p_limit: pageSize,
+      p_is_read: true
+    })
     .throwOnError()
 }
