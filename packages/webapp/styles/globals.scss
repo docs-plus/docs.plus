@@ -866,3 +866,14 @@ ol {
 .avatar-typing {
   animation: avatar-typing 0.8s ease-in-out infinite;
 }
+
+.activeTocBorder::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -9.5px;
+  width: 4px;
+  height: 100%;
+  background-color: var(--color-docsy);
+  border-radius: 4px;
+}
