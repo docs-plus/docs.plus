@@ -61,7 +61,7 @@ const PadTitle = () => {
 
             {user && (
               <Button
-                className="btn-circle btn-ghost btn-outline tooltip tooltip-bottom relative border-gray-300"
+                className="btn-circle btn-ghost btn-outline tooltip tooltip-bottom text-docsy relative border-gray-300"
                 onClick={() => (window.location.hash = 'history')}
                 data-tip="History">
                 <MdHistory size={22} />
@@ -101,7 +101,7 @@ const PadTitle = () => {
                       width={24}
                       height={24}
                       clickable={false}
-                      className="w-[50px] cursor-pointer rounded-full border border-gray-300 shadow-md"
+                      className="min-h-[50px] min-w-[50px] cursor-pointer rounded-full border border-gray-300 shadow-md"
                     />
                   </Button>
                 ) : (
