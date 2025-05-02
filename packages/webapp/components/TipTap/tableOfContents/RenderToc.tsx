@@ -29,7 +29,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
       data-id={item.id}
       data-offsettop={item.offsetTop}>
       <a
-        className={`group relative ${activeHeading === item.id ? 'active' : ''}`}
+        className={`group relative ${activeHeading === item.id ? 'active' : ''} ${headingId === item.id && 'activeTocBorder bg-gray-300'}`}
         onClick={(e) => handelScroll2Header(e, editor, setActiveHeading)}
         href={`?${item.id}`}
         data-id={item.id}>
@@ -55,7 +55,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
           />
         </span>
 
-        <div className="absolute -right-9">
+        <div className="absolute relative -right-5">
           {presentUsers.length > 0 && (
             <AvatarStack
               size={8}

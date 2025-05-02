@@ -12,7 +12,7 @@ const AvatarStack = ({
   // const profile = useAuthStore((state: any) => state.profile)
 
   return (
-    <div className="flex -space-x-4">
+    <div className="avatar-group -space-x-5">
       {displayedUsers.map((user: any, index: number) => {
         // if (user?.id === profile?.id) return null
         return (
@@ -31,7 +31,7 @@ const AvatarStack = ({
 
       {remainingUsers > 0 && (
         <a
-          className="w-${size} h-${size} flex items-center justify-center rounded-full border-2 border-white bg-gray-700 text-xs font-medium text-white hover:bg-gray-600"
+          className="w-${size} h-${size} z-10 flex items-center justify-center rounded-full border-1 border-white bg-gray-700 text-xs font-medium text-white hover:bg-gray-600"
           href="#">
           +{remainingUsers}
         </a>

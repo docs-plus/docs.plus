@@ -15,7 +15,8 @@ export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) =
 
   return (
     <div className={`${className} relative border-b border-gray-300 pb-1`}>
-      <div className="group hover:bg-opacity-50 flex cursor-pointer items-center justify-between rounded-md p-1 px-2 pr-3 hover:bg-gray-300">
+      <div
+        className={`group hover:bg-opacity-50 flex cursor-pointer items-center justify-between rounded-md p-1 px-2 pr-3 hover:bg-gray-300 ${headingId === workspaceId && 'activeTocBorder bg-gray-300'}`}>
         <span className="text-lg font-bold">{docMetadata?.title}</span>
         <span
           className="btn_chat tooltip tooltip-top relative ml-auto"
