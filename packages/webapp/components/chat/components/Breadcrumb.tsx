@@ -76,7 +76,7 @@ const Breadcrumb = () => {
 
   return (
     <nav className="flex" aria-label="Breadcrumb">
-      <ul className="menu menu-horizontal menu-sm flex items-center p-0">
+      <ul className="menu menu-horizontal flex items-center p-0">
         {headingPath.map((heading: any, index: number) => {
           return (
             <React.Fragment key={index}>
