@@ -37,7 +37,7 @@ const createChatCommentButton = (view, selection) => {
   const { top: nodeTop } = view.coordsAtPos(from)
 
   const editorElement = view.dom.closest('.tiptap__editor')
-  const { top: editorTop } = editorElement.getBoundingClientRect()
+  const { top: editorTop, width: editorWidth } = editorElement.getBoundingClientRect()
 
   const offsetTop = nodeTop - editorTop
 
@@ -48,8 +48,21 @@ const createChatCommentButton = (view, selection) => {
   // Adjust the button position to be centered vertically relative to the node
   const adjustedTop = nodeHeight ? offsetTop + nodeHeight / 2 - 16 : offsetTop - 16
 
+  const isInContentHeading = selection.$anchor.parent.type.name === 'contentHeading'
+
   button.style.position = 'absolute'
-  button.style.right = '12px'
+
+  if (isInContentHeading) {
+    // For content headings, position from the right edge with a fixed offset
+    button.style.right = 'auto'
+
+    // Position 60px from the right edge of the editor
+    const rightOffset = 60
+    button.style.left = `${editorWidth - rightOffset - 50}px`
+  } else {
+    button.style.right = '9px'
+  }
+
   button.style.top = `${Math.round(adjustedTop)}px`
 
   button.classList.add('btn', 'btn-circle', 'btn-primary', 'size-12', 'min-h-10', 'shadow-md')
