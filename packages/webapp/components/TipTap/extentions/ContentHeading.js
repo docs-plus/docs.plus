@@ -333,41 +333,41 @@ const HeadingsTitle = Node.create({
     }))
   },
 
-  addNodeView() {
-    return ({ node, getPos, editor }) => {
-      // Create elements using a more maintainable approach
-      const dom = createElement('heading', node.attrs.level)
-      const contentSpan = createElement('content')
+  // addNodeView() {
+  //   return ({ node, getPos, editor }) => {
+  //     // Create elements using a more maintainable approach
+  //     const dom = createElement('heading', node.attrs.level)
+  //     const contentSpan = createElement('content')
 
-      dom.append(contentSpan)
+  //     dom.append(contentSpan)
 
-      return {
-        dom,
-        contentDOM: contentSpan,
-        // Proper update handling
-        update: (updatedNode, decorations, innerDecorations) => {
-          if (updatedNode.type.name !== node.type.name) return false
-          if (updatedNode.attrs.level !== node.attrs.level) return false
-          return true
-        },
-        // Add destroy method for cleanup
-        destroy: () => {}
-      }
-    }
+  //     return {
+  //       dom,
+  //       contentDOM: contentSpan,
+  //       // Proper update handling
+  //       update: (updatedNode, decorations, innerDecorations) => {
+  //         if (updatedNode.type.name !== node.type.name) return false
+  //         if (updatedNode.attrs.level !== node.attrs.level) return false
+  //         return true
+  //       },
+  //       // Add destroy method for cleanup
+  //       destroy: () => {}
+  //     }
+  //   }
 
-    // Helper functions
-    function createElement(type, level) {
-      const element =
-        type === 'heading' ? document.createElement(`h${level}`) : document.createElement('span')
+  //   // Helper functions
+  //   function createElement(type, level) {
+  //     const element =
+  //       type === 'heading' ? document.createElement(`h${level}`) : document.createElement('span')
 
-      if (type === 'heading') {
-        element.classList.add('title')
-        element.setAttribute('level', level)
-      }
+  //     if (type === 'heading') {
+  //       element.classList.add('title')
+  //       element.setAttribute('level', level)
+  //     }
 
-      return element
-    }
-  },
+  //     return element
+  //   }
+  // },
   renderHTML({ node, HTMLAttributes }) {
     const level = this.options.levels.includes(node.attrs.level)
       ? node.attrs.level
