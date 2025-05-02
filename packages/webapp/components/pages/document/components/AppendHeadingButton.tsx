@@ -3,6 +3,7 @@ import { FaPlus } from 'react-icons/fa6'
 import ENUMS from '@components/TipTap/enums'
 import { useModal } from '@components/ui/ModalDrawer'
 import { useStore } from '@stores'
+import { MdAdd } from 'react-icons/md'
 
 const AppendHeadingButton = ({ className }: { className: string }) => {
   const { close: closeModal } = useModal() || {}
@@ -52,9 +53,10 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
   }, [editor])
 
   return (
-    <div className={`flex justify-center p-3 ${className}`}>
-      <button className="btn btn-sm btn-block bg-docsy text-white" onClick={appendHeadingToEnd}>
-        <FaPlus size={22} />
+    <div className={`p-3 ${className}`}>
+      <button className="btn btn-sm btn-primary btn-outline btn-block" onClick={appendHeadingToEnd}>
+        <MdAdd size={20} />
+        <span className="">Add headings</span>
       </button>
     </div>
   )

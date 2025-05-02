@@ -3,6 +3,7 @@ import { useChatStore } from '@stores'
 import useHandelTocUpdate from './hooks/useHandelTocUpdate'
 import { RenderTocs } from './RenderTocs'
 import { DocTitleChatRoomDesktop } from './components/DocTitleChatRoom'
+import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
 
 const TOCDesktop = ({ className }: any) => {
   const { headingId } = useChatStore((state) => state.chatRoom)
@@ -22,6 +23,7 @@ const TOCDesktop = ({ className }: any) => {
     <div className={`${className}`}>
       <DocTitleChatRoomDesktop className="mt-1" />
       <ul className="toc__list menu p-0">{renderedTocs}</ul>
+      <AppendHeadingButton className="mt-4" />
     </div>
   )
 }
