@@ -81,6 +81,7 @@ import {
   twitterModal
 } from '@docs.plus/extension-hypermultimedia'
 // import Placeholders from './placeholders'
+// import { Placeholder } from './Placeholder'
 
 import * as Y from 'yjs'
 import { IndexeddbPersistence } from 'y-indexeddb'
@@ -258,6 +259,7 @@ const Editor = ({
     TableCell,
     Placeholder.configure({
       includeChildren: true,
+      showOnlyWhenEditable: false,
       placeholder: (data: any) => generatePlaceholderText(data) || ''
     })
   ]
