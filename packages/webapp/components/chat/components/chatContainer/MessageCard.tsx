@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useRef } from 'react'
 import { TMessageWithUser } from '@api'
 import { MessageContextMenu } from '../../MessageContextMenu'
-import MessageReaction from '../../MessageReaction'
 import { Avatar } from '@components/ui/Avatar'
-import { useAuthStore, useChatStore } from '@stores'
+import { useAuthStore, useChatStore, useStore } from '@stores'
 import MessageFooter from './MessageFooter'
 import MessageHeader from './MessageHeader'
 import MessageContent from './MessageContent'
@@ -18,17 +17,35 @@ type TMessageCardProps = {
   selectedEmoji: any
 }
 
+// Define the extended HTMLDivElement interface with our custom properties
+interface MessageCardElement extends HTMLDivElement {
+  msgId?: string
+  readedAt?: string | null
+  createdAt?: string | null
+}
+
 function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardProps, ref: any) {
   const { settings } = useChannel()
   const user = useAuthStore.use.profile()
   const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
-  const cardRef = useRef<any>(null)
+  const cardRef = useRef<MessageCardElement>(null)
 
+  const {
+    settings: {
+      editor: { isMobile }
+    }
+  } = useStore((state) => state)
+
+  const isGroupEnd = data.isGroupEnd
+  const isOwnerMessage = data?.user_details?.id === user?.id
+  const isEmojiOnlyMessage = isOnlyEmoji(data?.content)
+
+  // Attach ref and message data to DOM element
   useEffect(() => {
     if (ref) {
       ref.current = cardRef.current
     }
-    // Attach the data.id to the cardRef directly
+
     if (cardRef.current) {
       cardRef.current.msgId = data.id
       cardRef.current.readedAt = data.readed_at
@@ -38,73 +55,72 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
 
   const handleDoubleClick = useCallback(() => {
     if (!settings.contextMenue?.reply) return
+
     setReplayMessageMemory(data.channel_id, data)
-    // Triggering editor focus if needed
-    const event = new CustomEvent('editor:focus')
-    document.dispatchEvent(event)
-  }, [data])
 
-  const isGroupEnd = useMemo(() => {
-    return data.isGroupEnd
-  }, [data.isGroupEnd])
+    // Trigger editor focus
+    document.dispatchEvent(new CustomEvent('editor:focus'))
+  }, [data, settings.contextMenue?.reply, setReplayMessageMemory])
 
-  const ownerMsg = useMemo(() => {
-    return data?.user_details?.id === user?.id
-  }, [data?.user_details?.id, user])
+  const renderAvatar = () => {
+    // On desktop, always show avatar; on mobile, only show for non-owner messages
+    if (isMobile && isOwnerMessage) return null
+
+    return (
+      <div className="avatar chat-image">
+        <Avatar
+          src={data?.user_details?.avatar_url}
+          avatarUpdatedAt={data?.user_details?.avatar_updated_at}
+          className="avatar chat-image w-10 cursor-pointer rounded-full transition-all hover:scale-105"
+          style={{
+            width: 40,
+            height: 40,
+            cursour: 'pointer',
+            visibility: isGroupEnd ? 'visible' : 'hidden'
+          }}
+          id={data?.user_details?.id}
+          alt={`avatar_${data?.user_details?.id}`}
+        />
+      </div>
+    )
+  }
+
+  const renderMessageContent = () => {
+    if (isEmojiOnlyMessage) {
+      return (
+        <div className="mb-4 max-w-[70%] min-w-full">
+          {data.reply_to_message_id && <MsgReplyTo data={data} />}
+          <MessageContent data={data} />
+          <MessageFooter data={data} />
+        </div>
+      )
+    }
+
+    return (
+      <div
+        className={`chat-bubble !mt-0 flex w-full flex-col border-2 border-transparent p-2 ${
+          isOwnerMessage ? 'bg-chatBubble-owner' : 'bg-white drop-shadow'
+        } ${isGroupEnd ? 'bubble_group-end' : 'bubble_group-start !rounded-ee-xl !rounded-es-xl'}`}>
+        {data.metadata?.comment && <MsgComment data={data} />}
+        {data.reply_to_message_id && <MsgReplyTo data={data} />}
+        <MessageContent data={data} />
+        <MessageFooter data={data} />
+      </div>
+    )
+  }
 
   return (
     <div
       className={`group/msgcard chat my-0.5 ${
-        ownerMsg ? 'owner chat-end ml-auto' : 'chat-start mr-auto'
-      } msg_card relative w-fit max-w-[90%] min-w-[80%] sm:min-w-[250px] ${isGroupEnd ? 'chat_group-end !mb-2' : 'chat_group-start'}`}
+        isOwnerMessage && isMobile ? 'owner chat-end ml-auto' : 'chat-start mr-auto'
+      } msg_card relative w-fit max-w-[90%] min-w-[80%] sm:min-w-[250px] ${
+        isGroupEnd ? 'chat_group-end !mb-2' : 'chat_group-start'
+      }`}
       ref={cardRef}
       onDoubleClick={handleDoubleClick}>
-      {!ownerMsg && (
-        <div className="avatar chat-image">
-          <Avatar
-            src={data?.user_details?.avatar_url}
-            avatarUpdatedAt={data?.user_details?.avatar_updated_at}
-            className="avatar chat-image w-10 cursor-pointer rounded-full transition-all hover:scale-105"
-            style={{
-              width: 40,
-              height: 40,
-              cursour: 'pointer',
-              visibility: isGroupEnd ? 'visible' : 'hidden'
-            }}
-            id={data?.user_details?.id}
-            alt={`avatar_${data?.user_details?.id}`}
-          />
-        </div>
-      )}
-
-      <MessageHeader data={data} ownerMsg={ownerMsg} />
-
-      {isOnlyEmoji(data?.content) ? (
-        <div className="mb-4 max-w-[70%] min-w-full">
-          {data.reply_to_message_id && <MsgReplyTo data={data} />}
-
-          <MessageContent data={data} />
-          <MessageFooter data={data} />
-        </div>
-      ) : (
-        <div
-          className={`chat-bubble !mt-0 flex w-full flex-col border-2 border-transparent p-2 ${ownerMsg ? 'bg-chatBubble-owner' : 'bg-white drop-shadow'} ${
-            isGroupEnd ? 'bubble_group-end' : 'bubble_group-start !rounded-ee-xl !rounded-es-xl'
-          }`}>
-          {data.metadata?.comment && <MsgComment data={data} />}
-          {data.reply_to_message_id && <MsgReplyTo data={data} />}
-
-          <MessageContent data={data} />
-          <MessageFooter data={data} />
-        </div>
-      )}
-
-      <MessageReaction
-        message={data}
-        selectedEmoji={selectedEmoji}
-        toggleEmojiPicker={toggleEmojiPicker}
-      />
-
+      {renderAvatar()}
+      <MessageHeader data={data} ownerMsg={isOwnerMessage} />
+      {renderMessageContent()}
       <MessageContextMenu
         parrentRef={cardRef}
         messageData={data}
