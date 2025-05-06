@@ -147,7 +147,7 @@ const chatRoom = immer<IChatroomStore>((set) => ({
         documentId: undefined,
         headingPath: [],
         open: false,
-        pannelHeight: 300
+        pannelHeight: state.chatRoom.pannelHeight
       }
     })
     const user = useAuthStore.getState().profile
