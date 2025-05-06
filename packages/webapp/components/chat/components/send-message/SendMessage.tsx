@@ -277,7 +277,7 @@ export default function SendMessage() {
   if (!editor || !user) return null
 
   return (
-    <div className="flex w-full flex-col bg-base-200 p-1 px-2 pb-0">
+    <div className="bg-base-200 flex w-full flex-col p-1 px-2 pb-0">
       <CommentMessageIndicator />
       <ReplayMessageIndicator />
       <EditeMessageIndicator />
@@ -288,7 +288,7 @@ export default function SendMessage() {
       />
 
       <div className={`my-2 mt-1 w-full px-2${showEditorToolbar ? 0 : 2}`}>
-        <div className="flex w-full flex-col rounded-md bg-base-300 px-2 sm:px-3">
+        <div className="bg-base-300 flex w-full flex-col rounded-md px-2 sm:px-3">
           <div className="flex items-center py-1 text-base sm:py-2">
             {settings?.textEditor?.attachmentButton && (
               <IconButton $size={8}>

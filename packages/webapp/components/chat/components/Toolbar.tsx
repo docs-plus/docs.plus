@@ -86,7 +86,7 @@ const Toolbar = () => {
             className="join-item btn btn-ghost btn-sm btn-square tooltip tooltip-left"
           />
 
-          <NotificationToggle className="join-item btn-square" />
+          <NotificationToggle className="join-item" />
 
           <CloseButton
             className="join-item tooltip tooltip-left"
