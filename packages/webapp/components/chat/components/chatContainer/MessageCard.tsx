@@ -98,7 +98,7 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
 
     return (
       <div
-        className={`chat-bubble !mt-0 flex w-full flex-col border-2 border-transparent p-2 ${
+        className={`chat-bubble !mt-0 flex w-full flex-col p-2 ${
           isOwnerMessage ? 'bg-chatBubble-owner' : 'bg-white drop-shadow'
         } ${isGroupEnd ? 'bubble_group-end' : 'bubble_group-start !rounded-ee-xl !rounded-es-xl'}`}>
         {data.metadata?.comment && <MsgComment data={data} />}

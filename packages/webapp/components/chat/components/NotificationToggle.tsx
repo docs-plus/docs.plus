@@ -81,7 +81,7 @@ export const NotificationToggle = ({ className }: { className?: string }) => {
     <Button
       loading={loading}
       onClick={handleToggle}
-      className={`btn btn-sm tooltip tooltip-left flex items-center ${className} `}
+      className={`btn btn-sm btn-square btn-ghost tooltip tooltip-left flex items-center ${className} `}
       data-tip={`Notifications: ${notificationState}`}>
       {notificationIcons[notificationState]}
     </Button>
