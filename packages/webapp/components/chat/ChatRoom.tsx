@@ -19,7 +19,7 @@ import {
 import { twx } from '@utils/index'
 import { useChannel } from './context/ChannelProvider'
 
-const MessageWrapper = twx.div`relative flex h-full items-center justify-center bg-base-300`
+const MessageWrapper = twx.div`relative flex h-full items-center justify-center bg-white`
 
 import { ChannelErrorPropmpt, ChannelLoadingPrompt } from './components/prompts'
 import { useStore } from '@stores'
