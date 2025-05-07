@@ -65,7 +65,15 @@ const createChatCommentButton = (view, selection) => {
 
   button.style.top = `${Math.round(adjustedTop)}px`
 
-  button.classList.add('btn', 'btn-circle', 'btn-primary', 'size-12', 'min-h-10', 'shadow-md')
+  button.classList.add(
+    'btn',
+    'btn-circle',
+    'btn-primary',
+    'size-12',
+    'min-h-10',
+    'shadow-md',
+    'z-1'
+  )
 
   view.dom.parentNode.appendChild(button)
 }
