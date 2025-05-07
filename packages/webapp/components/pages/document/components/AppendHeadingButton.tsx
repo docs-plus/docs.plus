@@ -54,9 +54,12 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
 
   return (
     <div className={`p-3 ${className}`}>
-      <button className="btn btn-sm btn-primary btn-outline btn-block" onClick={appendHeadingToEnd}>
+      <button
+        className="btn btn-sm btn-primary btn-outline btn-block tooltip"
+        data-tip="Add headings"
+        onClick={appendHeadingToEnd}>
         <MdAdd size={20} />
-        <span className="">Add headings</span>
+        {/* <span className="">Add headings</span> */}
       </button>
     </div>
   )
