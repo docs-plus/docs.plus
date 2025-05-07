@@ -102,10 +102,14 @@ export const eventsHub = (router: NextRouter) => {
     const setWorkspaceEditorSetting = useStore.getState().setWorkspaceEditorSetting
     const { slug } = data
 
-    const url = new URL(router.asPath, window.location.origin)
-    const slugs = url.pathname.split('/').filter(Boolean)
-    const docSlug = slugs[0]
-    const filterSlugs = slugs.slice(1).filter((s) => s !== slug)
+    const url = new URL(location.href)
+    const segments = url.pathname.split('/').filter(Boolean)
+    if (segments.length === 0) return
+
+    const docSlug = segments[0]
+    const filterSlugs = segments.slice(1)
+    const idx = filterSlugs.indexOf(slug)
+    if (idx !== -1) filterSlugs.splice(idx, 1)
 
     url.pathname = `/${docSlug}${filterSlugs.length ? '/' + filterSlugs.join('/') : ''}`
 
