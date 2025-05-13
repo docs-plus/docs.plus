@@ -27,6 +27,33 @@ export const toggleHeadingSection = (item: any) => {
   PubSub.publish(ENUMS.EVENTS.FOLD_AND_UNFOLD, { headingId: item.id, open: !item.open })
 }
 
+export const handelScroll2Title = ({
+  workspaceId,
+  title,
+  openChatRoom
+}: {
+  workspaceId?: string
+  title: string
+  openChatRoom: boolean
+}) => {
+  document
+    .querySelector(`.tiptap__editor.docy_editor .heading`)
+    ?.scrollIntoView({ behavior: 'smooth' })
+
+  if (!workspaceId) return
+
+  const url = new URL(window.location.href)
+  url.searchParams.set('h', slugify(title.toLowerCase().trim()))
+  url.searchParams.set('id', workspaceId)
+  window.history.replaceState({}, '', url)
+
+  if (openChatRoom && workspaceId) {
+    PubSub.publish(CHAT_OPEN, {
+      headingId: workspaceId
+    })
+  }
+}
+
 export const handelScroll2Header = (
   e: any,
   editor: Editor,

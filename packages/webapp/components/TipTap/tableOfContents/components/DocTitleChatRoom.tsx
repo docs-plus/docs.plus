@@ -5,6 +5,7 @@ import { useModal } from '@components/ui/ModalDrawer'
 import useUnreadMessageEffect from '../hooks/useUnreadMessageEffect'
 import usePresentUsers from '../hooks/usePresentUsers'
 import AvatarStack from '@components/AvatarStack'
+import { handelScroll2Title } from '../helper'
 
 export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) => {
   const { metadata: docMetadata, workspaceId } = useStore((state) => state.settings)
@@ -16,11 +17,24 @@ export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) =
   return (
     <div className={`${className} relative border-b border-gray-300 pb-1`}>
       <div
-        className={`group hover:bg-opacity-50 flex cursor-pointer items-center justify-between rounded-md p-1 px-2 pr-3 hover:bg-gray-300 ${headingId === workspaceId && 'activeTocBorder bg-gray-300'}`}>
+        className={`group hover:bg-opacity-50 flex cursor-pointer items-center justify-between rounded-md p-1 px-2 pr-3 hover:bg-gray-300 ${headingId === workspaceId && 'activeTocBorder bg-gray-300'}`}
+        onClick={() => {
+          handelScroll2Title({
+            workspaceId,
+            title: docMetadata?.title,
+            openChatRoom: true
+          })
+        }}>
         <span className="text-lg font-bold">{docMetadata?.title}</span>
         <span
           className="btn_chat tooltip tooltip-top relative ml-auto"
-          onClick={() => openChatContainerHandler({ id: workspaceId })}
+          onClick={() => {
+            handelScroll2Title({
+              workspaceId,
+              title: docMetadata?.title,
+              openChatRoom: true
+            })
+          }}
           data-tip="Chat Room">
           {unreadMessage > 0 && (
             <div className="badge badge-docsy badge-sm bg-docsy border-docsy absolute -top-[6px] -right-[12px] z-[1] scale-90 border border-none px-1 text-white shadow">
