@@ -27,7 +27,7 @@ interface MessageCardElement extends HTMLDivElement {
 function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardProps, ref: any) {
   const { settings } = useChannel()
   const user = useAuthStore.use.profile()
-  const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
+  const setReplyMessageMemory = useChatStore((state) => state.setReplyMessageMemory)
   const cardRef = useRef<MessageCardElement>(null)
 
   const {
@@ -56,11 +56,11 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
   const handleDoubleClick = useCallback(() => {
     if (!settings.contextMenue?.reply) return
 
-    setReplayMessageMemory(data.channel_id, data)
+    setReplyMessageMemory(data.channel_id, data)
 
     // Trigger editor focus
     document.dispatchEvent(new CustomEvent('editor:focus'))
-  }, [data, settings.contextMenue?.reply, setReplayMessageMemory])
+  }, [data, settings.contextMenue?.reply, setReplyMessageMemory])
 
   const renderAvatar = () => {
     // On desktop, always show avatar; on mobile, only show for non-owner messages

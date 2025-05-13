@@ -28,7 +28,7 @@ export const CommentMessageIndicator = () => {
 
   const { commentMessageMemory } = channelSettings ?? {}
 
-  const handleCloseReplayMessage = () => {
+  const handleCloseReplyMessage = () => {
     setCommentMessageMemory(channelId, null)
   }
 
@@ -36,12 +36,12 @@ export const CommentMessageIndicator = () => {
   if (commentMessageMemory?.channel_id !== channelId) return null
 
   return (
-    <div className="flex w-full items-center justify-between px-4 py-2 text-base-content">
+    <div className="text-base-content flex w-full items-center justify-between px-4 py-2">
       <MdInsertComment size={24} />
-      <div className="flex w-full flex-col justify-start pl-3 text-base text-base-content">
+      <div className="text-base-content flex w-full flex-col justify-start pl-3 text-base">
         <span className="text-sm">{commentMessageMemory?.content}</span>
       </div>
-      <IconButton onClick={handleCloseReplayMessage}>
+      <IconButton onClick={handleCloseReplyMessage}>
         <IoCloseOutline size={22} />
       </IconButton>
     </div>

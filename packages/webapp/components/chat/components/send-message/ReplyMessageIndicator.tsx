@@ -16,28 +16,28 @@ const IconButton = twx.button<BtnIcon>((props) =>
   )
 )
 
-export const ReplayMessageIndicator = () => {
+export const ReplyMessageIndicator = () => {
   const { channelId } = useChannel()
 
-  const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
+  const setReplyMessageMemory = useChatStore((state) => state.setReplyMessageMemory)
   const channels = useChatStore((state) => state.workspaceSettings.channels)
   const channelSettings = useMemo<TChannelSettings | null>(
     () => channels.get(channelId) ?? null,
     [channels, channelId]
   )
 
-  const { replayMessageMemory } = channelSettings ?? {}
+  const { replyMessageMemory } = channelSettings ?? {}
 
-  const handleCloseReplayMessage = () => {
-    setReplayMessageMemory(channelId, null)
+  const handleCloseReplyMessage = () => {
+    setReplyMessageMemory(channelId, null)
   }
 
   const replyToUser =
-    replayMessageMemory?.user_details?.fullname || replayMessageMemory?.user_details?.username || ''
+    replyMessageMemory?.user_details?.fullname || replyMessageMemory?.user_details?.username || ''
 
-  if (!replayMessageMemory) return null
+  if (!replyMessageMemory) return null
 
-  if (replayMessageMemory.channel_id !== channelId) return null
+  if (replyMessageMemory.channel_id !== channelId) return null
 
   return (
     <div className="text-base-content flex w-full items-center justify-between px-4 py-2">
@@ -47,9 +47,9 @@ export const ReplayMessageIndicator = () => {
           Reply to
           <span className="ml-1 font-normal">{replyToUser}</span>
         </span>
-        <span className="text-sm">{replayMessageMemory?.content}</span>
+        <span className="text-sm">{replyMessageMemory?.content}</span>
       </div>
-      <IconButton onClick={handleCloseReplayMessage}>
+      <IconButton onClick={handleCloseReplyMessage}>
         <IoCloseSharp size={22} />
       </IconButton>
     </div>
