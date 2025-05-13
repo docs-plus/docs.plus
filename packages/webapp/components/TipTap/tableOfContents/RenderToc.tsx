@@ -30,7 +30,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
       data-offsettop={item.offsetTop}>
       <a
         className={`group relative ${activeHeading === item.id ? 'active' : ''} ${headingId === item.id && 'activeTocBorder bg-gray-300'}`}
-        onClick={(e) => handelScroll2Header(e, editor, setActiveHeading)}
+        onClick={(e) => handelScroll2Header(e, editor, setActiveHeading, true)}
         href={`?${item.id}`}
         data-id={item.id}>
         <span className="toc__link sm:line-clamp-3 sm:hover:line-clamp-5">{item.text}</span>

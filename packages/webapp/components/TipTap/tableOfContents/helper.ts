@@ -2,6 +2,7 @@ import PubSub from 'pubsub-js'
 import slugify from 'slugify'
 import ENUMS from '../enums'
 import { Editor } from '@tiptap/react'
+import { CHAT_OPEN } from '@services/eventsHub'
 
 export const getOffsetTop = (element: any): number =>
   element ? element.offsetTop + getOffsetTop(element.offsetParent) : 0
@@ -26,7 +27,12 @@ export const toggleHeadingSection = (item: any) => {
   PubSub.publish(ENUMS.EVENTS.FOLD_AND_UNFOLD, { headingId: item.id, open: !item.open })
 }
 
-export const handelScroll2Header = (e: any, editor: Editor, setActiveHeading: any) => {
+export const handelScroll2Header = (
+  e: any,
+  editor: Editor,
+  setActiveHeading: any,
+  openChatRoom: boolean = false
+) => {
   e.preventDefault()
 
   const isValidTarget =
@@ -71,4 +77,10 @@ export const handelScroll2Header = (e: any, editor: Editor, setActiveHeading: an
   window.history.replaceState({}, '', url)
 
   targetHeading?.scrollIntoView(true)
+
+  if (openChatRoom && id) {
+    PubSub.publish(CHAT_OPEN, {
+      headingId: id
+    })
+  }
 }
