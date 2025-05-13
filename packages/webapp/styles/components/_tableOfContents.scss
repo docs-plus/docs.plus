@@ -120,7 +120,7 @@ $bg-root: #f8f9fa;
         opacity: 1;
       }
 
-      &:hover > a {
+      & > a {
         padding-left: 30px;
       }
 
@@ -135,7 +135,7 @@ $bg-root: #f8f9fa;
         position: absolute;
         left: 6px;
         top: 50%;
-        opacity: 0;
+        opacity: 1;
         display: flex;
         align-items: center;
         justify-content: center;
