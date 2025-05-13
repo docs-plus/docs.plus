@@ -32,12 +32,12 @@ export const MessageContextMenu = forwardRef<
   const removeChannelPinnedMessage = useChatStore((state) => state.removeChannelPinnedMessage)
   const { workspaceBroadcaster } = useChatStore((state) => state.workspaceSettings)
   const setEditMessageMemory = useChatStore((state) => state.setEditMessageMemory)
-  const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
+  const setReplyMessageMemory = useChatStore((state) => state.setReplyMessageMemory)
   const user = useAuthStore((state) => state.profile)
 
-  const handleReplayMessage = useCallback(() => {
+  const handleReplyMessage = useCallback(() => {
     if (!messageData) return
-    setReplayMessageMemory(channelId, messageData)
+    setReplyMessageMemory(channelId, messageData)
     // Trigger editor focus
     const event = new CustomEvent('editor:focus')
     document.dispatchEvent(event)
@@ -89,9 +89,9 @@ export const MessageContextMenu = forwardRef<
 
   const messageButtonList = [
     {
-      title: 'Replay',
+      title: 'Reply',
       icon: <BsReplyFill size={20} />,
-      onClickFn: handleReplayMessage,
+      onClickFn: handleReplyMessage,
       display: settings.contextMenue?.reply ?? true
     },
     {

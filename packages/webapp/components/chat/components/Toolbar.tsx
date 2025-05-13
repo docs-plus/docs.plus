@@ -24,7 +24,7 @@ const Toolbar = () => {
   const usersPresence = useStore((state) => state.usersPresence)
   const [presentUsers, setPresentUsers] = useState<any>([])
   const chatRoom = useChatStore((state) => state.chatRoom)
-  const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
+  const setReplyMessageMemory = useChatStore((state) => state.setReplyMessageMemory)
   const setCommentMessageMemory = useChatStore((state) => state.setCommentMessageMemory)
   const setEditMessageMemory = useChatStore((state) => state.setEditMessageMemory)
   // const channel = useChatStore((state: any) => state.channels.get(channelId))
@@ -42,7 +42,7 @@ const Toolbar = () => {
   const handelCloseChatRoom = () => {
     // clear reply, comment, edit message memory
     if (chatRoom?.headingId) {
-      setReplayMessageMemory(chatRoom.headingId, null)
+      setReplyMessageMemory(chatRoom.headingId, null)
       setCommentMessageMemory(chatRoom.headingId, null)
       setEditMessageMemory(chatRoom.headingId, null)
     }

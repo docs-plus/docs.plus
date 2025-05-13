@@ -14,7 +14,7 @@ export type TChannelSettings = {
   isUserChannelOwner?: boolean
   isUserChannelAdmin?: boolean
   userPickingEmoji?: boolean
-  replayMessageMemory?: any
+  replyMessageMemory?: any
   commentMessageMemory?: commentMessageMemory
   editMessageMemory?: any
   forwardMessageMemory?: any

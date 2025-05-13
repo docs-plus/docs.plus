@@ -1,6 +1,6 @@
 import { EditorContent } from '@tiptap/react'
 import { EditorToolbar } from './EditorToolbar'
-import { ReplayMessageIndicator } from './ReplayMessageIndicator'
+import { ReplyMessageIndicator } from './ReplyMessageIndicator'
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { twx, cn } from '@utils/index'
 import { ImAttachment } from 'react-icons/im'
@@ -40,7 +40,7 @@ export default function SendMessage() {
 
   const [showEditorToolbar, setShowEditorToolbar] = useState(false)
   const setEditMessageMemory = useChatStore((state) => state.setEditMessageMemory)
-  const setReplayMessageMemory = useChatStore((state) => state.setReplayMessageMemory)
+  const setReplyMessageMemory = useChatStore((state) => state.setReplyMessageMemory)
   const setCommentMessageMemory = useChatStore((state) => state.setCommentMessageMemory)
   const startThreadMessage = useChatStore((state) => state.startThreadMessage)
   const channels = useChatStore((state) => state.channels)
@@ -53,7 +53,7 @@ export default function SendMessage() {
     [chatChannels, channelId]
   )
 
-  const { replayMessageMemory, editMessageMemory, commentMessageMemory } = channelSettings || {}
+  const { replyMessageMemory, editMessageMemory, commentMessageMemory } = channelSettings || {}
 
   const setOrUpdateUserPresence = useChatStore((state: any) => state.setOrUpdateUserPresence)
   const usersPresence = useStore((state: any) => state.usersPresence)
@@ -107,8 +107,8 @@ export default function SendMessage() {
       if (!html || !text || loading) return
       const { htmlChunks, textChunks } = chunkHtmlContent(html, 3000)
 
-      if (replayMessageMemory?.id) {
-        const user = replayMessageMemory.user_details
+      if (replyMessageMemory?.id) {
+        const user = replyMessageMemory.user_details
         if (!usersPresence.has(user.id)) setOrUpdateUserPresence(user.id, user)
       }
 
@@ -117,7 +117,7 @@ export default function SendMessage() {
         if (!usersPresence.has(user.id)) setOrUpdateUserPresence(user.id, user)
       }
 
-      const messageId = editMessageMemory?.id || replayMessageMemory?.id || null
+      const messageId = editMessageMemory?.id || replyMessageMemory?.id || null
 
       try {
         editor.commands.clearContent(true)
@@ -191,7 +191,7 @@ export default function SendMessage() {
         editor.commands.focus()
 
         // if it has reply or forward message, clear it
-        if (replayMessageMemory) setReplayMessageMemory(channelId, null)
+        if (replyMessageMemory) setReplyMessageMemory(channelId, null)
         if (editMessageMemory) setEditMessageMemory(channelId, null)
         if (commentMessageMemory) setCommentMessageMemory(channelId, null)
 
@@ -214,7 +214,7 @@ export default function SendMessage() {
   const handleEsc = useCallback(
     (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        if (replayMessageMemory) setReplayMessageMemory(channelId, null)
+        if (replyMessageMemory) setReplyMessageMemory(channelId, null)
         if (editMessageMemory) {
           setEditMessageMemory(channelId, null)
           editor?.commands.clearContent(true)
@@ -225,7 +225,7 @@ export default function SendMessage() {
         }
       }
     },
-    [replayMessageMemory, editMessageMemory]
+    [replyMessageMemory, editMessageMemory]
   )
 
   useEffect(() => {
@@ -279,7 +279,7 @@ export default function SendMessage() {
   return (
     <div className="bg-base-200 flex w-full flex-col p-1 px-2 pb-0">
       <CommentMessageIndicator />
-      <ReplayMessageIndicator />
+      <ReplyMessageIndicator />
       <EditeMessageIndicator />
       <EditorToolbar
         editor={editor}

@@ -9,7 +9,7 @@ type TChatRoom = {
   open: boolean
   pannelHeight: number
   userPickingEmoji?: any
-  replayMessageMemory?: any
+  replyMessageMemory?: any
   editeMessageMemory?: any
   fetchMsgsFromId?: string
 }
@@ -83,7 +83,7 @@ const chatRoom = immer<IChatroomStore>((set) => ({
     open: false,
     pannelHeight: 410,
     userPickingEmoji: undefined,
-    replayMessageMemory: undefined,
+    replyMessageMemory: undefined,
     editeMessageMemory: undefined,
     commentMessageMemory: undefined,
     fetchMsgsFromId: undefined
