@@ -29,7 +29,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
       data-id={item.id}
       data-offsettop={item.offsetTop}>
       <a
-        className={`group relative ${activeHeading === item.id ? 'active' : ''} ${headingId === item.id && 'activeTocBorder bg-gray-300'}`}
+        className={`group relative ${headingId === item.id ? 'active' : ''} ${headingId === item.id && 'activeTocBorder bg-gray-300'}`}
         onClick={(e) => handelScroll2Header(e, editor, setActiveHeading, true)}
         href={`?${item.id}`}
         data-id={item.id}>
@@ -45,12 +45,12 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
           onClick={() => openChatContainerHandler(item)}
           data-tip="Chat Room">
           {unreadMessage > 0 && (
-            <div className="badge badge-docsy badge-sm bg-docsy border-docsy absolute -top-[6px] -right-[12px] z-[1] scale-90 border border-none px-1 text-white shadow">
+            <div className="badge badge-docsy badge-sm bg-docsy border-docsy absolute top-1/2 z-[1] -translate-y-1/2 scale-90 border border-none text-white">
               {unreadMessage > 99 ? '99+' : unreadMessage}
             </div>
           )}
           <ChatLeft
-            className={`btnChat ${unreadMessage > 0 ? '!opacity-100' : 'opacity-0'} ${headingId === item.id && 'fill-docsy !opacity-100'} group-hover:fill-docsy cursor-pointer transition-all hover:fill-indigo-900`}
+            className={`btnChat ${unreadMessage > 0 && 'hidden'} group-hover:fill-docsy cursor-pointer transition-all hover:fill-indigo-900`}
             size={18}
           />
         </span>
