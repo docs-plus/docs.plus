@@ -240,7 +240,7 @@ const Heading = Node.create({
   addInputRules() {
     return this.options.levels.map((level) => {
       const config = {
-        find: new RegExp(`^(#{1,${level}})\\s$`),
+        find: new RegExp(`^(#{${Math.min(...this.options.levels)},${level}})\\s$`),
         type: this.type,
         getAttributes: {
           level
@@ -252,12 +252,6 @@ const Heading = Node.create({
           const { state, range, match } = data
           const $start = state.doc.resolve(range.from)
           const attributes = callOrReturn(config.getAttributes, undefined, match) || {}
-
-          if (
-            !$start.node(-1).canReplaceWith($start.index(-1), $start.indexAfter(-1), config.type)
-          ) {
-            return null
-          }
 
           state.tr.delete(range.from, range.to)
           return wrapContenWithHeading({ ...data, tr: state.tr }, attributes)
