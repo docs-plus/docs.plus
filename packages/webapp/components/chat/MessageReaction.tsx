@@ -31,7 +31,7 @@ type IconButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 
 const IconButton = twx.button<IconButtonProps>((prop) =>
   cn(
-    'btn btn-ghost btn-square w-8 h-8 btn-xs p-1 mr-2',
+    'badge bg-base-300 border-noun cursor-pointer !px-2',
     prop.$active && 'btn-active',
     prop.$size && `w-${prop.$size} h-${prop.$size}`
   )
@@ -69,10 +69,9 @@ export default function MessageReaction({ message, className }: MessageReactionP
   const dropdownPosition = isCurrentUserMessage && isMobile ? 'dropdown-left ' : 'dropdown-right '
 
   return (
-    <div
-      className={`dropdown dropdown-end dropdown-bottom ${dropdownPosition} invisible group-hover/msgcard:visible ${className}`}>
+    <div className={`dropdown dropdown-end dropdown-bottom ${dropdownPosition} ${className}`}>
       <IconButton onClick={openEmojiPicker}>
-        <MdOutlineAddReaction size={24} />
+        <MdOutlineAddReaction size={18} />
       </IconButton>
     </div>
   )

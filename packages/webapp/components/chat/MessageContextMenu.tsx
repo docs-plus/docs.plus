@@ -1,13 +1,6 @@
 import React, { forwardRef, useMemo, useCallback } from 'react'
 import { deleteMessage, pinMessage } from '@api'
-import {
-  BsReplyFill,
-  BsForwardFill,
-  BsFillPinFill,
-  BsFillTrashFill,
-  BsFillPinAngleFill
-} from 'react-icons/bs'
-import { RiPencilFill } from 'react-icons/ri'
+import { BsForwardFill, BsFillPinFill, BsFillPinAngleFill } from 'react-icons/bs'
 // import { useForwardMessageModalStore } from '@/components/messages/components/ForwardMessageModal'
 import toast from 'react-hot-toast'
 import { ContextMenu, MenuItem } from './components/ui/ContextMenu'
@@ -15,6 +8,8 @@ import { useAuthStore, useChatStore } from '@stores'
 import { BiSolidMessageDetail } from 'react-icons/bi'
 import { useChannel } from './context/ChannelProvider'
 import { TChannelSettings } from '@types'
+import { MdDeleteOutline, MdOutlineEdit } from 'react-icons/md'
+import { ReplyMD } from '@components/icons/Icons'
 
 export const MessageContextMenu = forwardRef<
   HTMLUListElement,
@@ -90,7 +85,7 @@ export const MessageContextMenu = forwardRef<
   const messageButtonList = [
     {
       title: 'Reply',
-      icon: <BsReplyFill size={20} />,
+      icon: <ReplyMD size={20} />,
       onClickFn: handleReplyMessage,
       display: settings.contextMenue?.reply ?? true
     },
@@ -108,13 +103,13 @@ export const MessageContextMenu = forwardRef<
     },
     {
       title: 'Edit',
-      icon: <RiPencilFill size={20} />,
+      icon: <MdOutlineEdit size={20} />,
       onClickFn: () => handleEdit(),
       display: settings.contextMenue?.edite ?? true
     },
     {
       title: 'Delete',
-      icon: <BsFillTrashFill size={20} />,
+      icon: <MdDeleteOutline size={20} />,
       onClickFn: () => handleDeleteMessage(),
       display: settings.contextMenue?.delete ?? true
     }
