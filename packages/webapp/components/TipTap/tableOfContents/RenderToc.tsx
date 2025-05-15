@@ -33,7 +33,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
         onClick={(e) => handelScroll2Header(e, editor, setActiveHeading, true)}
         href={`?${item.id}`}
         data-id={item.id}>
-        <span className="toc__link sm:line-clamp-3 sm:hover:line-clamp-5">{item.text}</span>
+        <span className="toc__link">{item.text}</span>
         <span
           className={`btnFold tooltip tooltip-top ${item.open ? 'opened' : 'closed'}`}
           onClick={() => toggleHeadingSection(item)}

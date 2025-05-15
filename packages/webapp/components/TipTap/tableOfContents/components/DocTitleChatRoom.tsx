@@ -42,7 +42,7 @@ export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) =
             </div>
           )}
           <ChatLeft
-            className={`btnChat ml-1 ${headingId === workspaceId && 'fill-docsy !opacity-100'} group-hover:fill-docsy cursor-pointer transition-all hover:fill-indigo-900`}
+            className={`btnChat ml-1 ${unreadMessage > 0 && 'hidden'} group-hover:fill-docsy cursor-pointer transition-all hover:fill-indigo-900`}
             size={16}
           />
         </span>
