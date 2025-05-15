@@ -161,10 +161,6 @@ const ActionsButtons = ({ className, message }: { className?: string; message: a
         ]
       }
 
-      console.log({
-        headingNode
-      })
-
       // Create transaction to insert new heading
       editor
         .chain()
@@ -183,13 +179,13 @@ const ActionsButtons = ({ className, message }: { className?: string; message: a
         // editor.commands.scrollIntoView()
         editor
           .chain()
-          .focus(+endPos + messageContent.length + 4) // +4 move on contentWrapper node
+          .focus(+(headingPos || 0) + messageContent.length + 4) // +4 move on contentWrapper node
           .scrollIntoView()
           .run()
       }, 100)
     } else if (headingPos === null) {
       // if heading not found, set pos end of document
-      if (headingPos === null) headingPos = doc.content.size
+      headingPos = doc.content.size || 0
 
       const jsonNode = {
         type: ENUMS.NODES.HEADING_TYPE,
@@ -206,11 +202,6 @@ const ActionsButtons = ({ className, message }: { className?: string; message: a
           }
         ]
       }
-
-      console.log({
-        doc,
-        headingPos
-      })
 
       // Create transaction to insert new heading
       editor
@@ -230,7 +221,7 @@ const ActionsButtons = ({ className, message }: { className?: string; message: a
         // editor.commands.scrollIntoView()
         editor
           .chain()
-          .focus(+headingPos + messageContent.length + 4) // +4 move on contentWrapper node
+          .focus(+(headingPos || 0) + messageContent.length + 4) // +4 move on contentWrapper node
           .scrollIntoView()
           .run()
       }, 100)
