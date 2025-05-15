@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import MessageCard from './MessageCard'
+import MessageCardDesktop from './MessageCardDesktop'
 import { format, isSameDay, parseISO } from 'date-fns'
 import { useChatStore, useStore } from '@stores'
 import { useCheckReadMessage, useMentionClick } from '../../hooks'
@@ -97,7 +98,8 @@ const generateMessageElements = (
   messagesEndRef: React.RefObject<HTMLDivElement | null>,
   toggleEmojiPicker: any,
   selectedEmoji: string,
-  displaySystemNotifyChip: boolean
+  displaySystemNotifyChip: boolean,
+  isMobile?: boolean
 ) => {
   const messagesArray = Array.from(messages.values())
   const channelSettings = useChatStore.getState().workspaceSettings.channels.get(channelId)
@@ -133,13 +135,23 @@ const generateMessageElements = (
       elements.push(<SystemNotifyChip key={message.id} message={message} />)
     } else {
       elements.push(
-        <MessageCard
-          key={message.id}
-          data={message}
-          ref={index === array.length - 1 ? messagesEndRef : null}
-          toggleEmojiPicker={toggleEmojiPicker}
-          selectedEmoji={selectedEmoji}
-        />
+        isMobile ? (
+          <MessageCard
+            key={message.id}
+            data={message}
+            ref={index === array.length - 1 ? messagesEndRef : null}
+            toggleEmojiPicker={toggleEmojiPicker}
+            selectedEmoji={selectedEmoji}
+          />
+        ) : (
+          <MessageCardDesktop
+            key={message.id}
+            data={message}
+            ref={index === array.length - 1 ? messagesEndRef : null}
+            toggleEmojiPicker={toggleEmojiPicker}
+            selectedEmoji={selectedEmoji}
+          />
+        )
       )
     }
 
@@ -163,6 +175,11 @@ export const MessagesDisplay: React.FC<MessagesDisplayProps> = ({
   const [isScrollingUp, setIsScrollingUp] = useState(false)
   const lastScrollTop = useRef(0)
   const messages = useChatStore((state: any) => state.messagesByChannel.get(channelId))
+  const {
+    settings: {
+      editor: { isMobile }
+    }
+  } = useStore((state) => state)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -193,7 +210,9 @@ export const MessagesDisplay: React.FC<MessagesDisplayProps> = ({
   return (
     <>
       <div
-        className="msg_wrapper relative flex w-full grow flex-col overflow-y-auto px-4 pt-1"
+        className={`msg_wrapper relative flex w-full grow flex-col overflow-y-auto ${
+          isMobile ? 'px-4 pt-1' : 'px-1 py-2'
+        }`}
         ref={messageContainerRef}>
         {isLoadingMore && loadingMoreDirection === 'older' && <LoadingSpinner />}
         {generateMessageElements(
@@ -203,7 +222,8 @@ export const MessagesDisplay: React.FC<MessagesDisplayProps> = ({
           messagesEndRef,
           toggleEmojiPicker,
           selectedEmoji,
-          displaySystemNotifyChip
+          displaySystemNotifyChip,
+          isMobile
         )}
         {isLoadingMore && loadingMoreDirection === 'newer' && <LoadingSpinner />}
       </div>

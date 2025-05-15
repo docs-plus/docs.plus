@@ -756,3 +756,17 @@ export const ArrowDownSVG = ({ size = 18, fill = '#fff', className = '' }) => {
       />
     </svg>`
 }
+
+export const ReplyMD = ({ size = 24, fill = 'black', className = '' }) => {
+  return (
+    <svg
+      className={className}
+      xmlns="http://www.w3.org/2000/svg"
+      height={size}
+      viewBox="0 -960 960 960"
+      width={size}
+      fill={fill}>
+      <path d="M760-200v-160q0-50-35-85t-85-35H273l144 144-57 56-240-240 240-240 57 56-144 144h367q83 0 141.5 58.5T840-360v160h-80Z" />
+    </svg>
+  )
+}
