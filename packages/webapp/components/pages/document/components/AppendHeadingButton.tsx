@@ -15,8 +15,7 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
     if (!editor) return
 
     const emptyParagraphs = Array(16).fill({
-      type: ENUMS.NODES.PARAGRAPH_TYPE,
-      content: [{ type: ENUMS.NODES.TEXT_TYPE, text: '\u00A0' }]
+      type: ENUMS.NODES.PARAGRAPH_TYPE
     })
 
     const jsonNode = {
@@ -25,7 +24,6 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
       content: [
         {
           type: ENUMS.NODES.CONTENT_HEADING_TYPE,
-          content: [{ type: ENUMS.NODES.TEXT_TYPE, text: '\u00A0' }],
           attrs: { level: 1 }
         },
         {
