@@ -90,7 +90,7 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
       return (
         <div className="mb-4 max-w-[70%] min-w-full">
           {data.reply_to_message_id && <MsgReplyTo data={data} />}
-          <MessageContent data={data} />
+          <MessageContent message={data} />
           <MessageFooter data={data} />
         </div>
       )
@@ -103,7 +103,7 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
         } ${isGroupEnd ? 'bubble_group-end' : 'bubble_group-start !rounded-ee-xl !rounded-es-xl'}`}>
         {data.metadata?.comment && <MsgComment data={data} />}
         {data.reply_to_message_id && <MsgReplyTo data={data} />}
-        <MessageContent data={data} />
+        <MessageContent message={data} />
         <MessageFooter data={data} />
       </div>
     )
