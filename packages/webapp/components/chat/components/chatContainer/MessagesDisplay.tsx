@@ -146,7 +146,7 @@ const generateMessageElements = (
         ) : (
           <MessageCardDesktop
             key={message.id}
-            data={message}
+            message={message}
             ref={index === array.length - 1 ? messagesEndRef : null}
             toggleEmojiPicker={toggleEmojiPicker}
             selectedEmoji={selectedEmoji}

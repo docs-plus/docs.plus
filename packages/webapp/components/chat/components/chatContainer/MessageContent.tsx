@@ -2,12 +2,11 @@ import React, { useEffect, useState, useMemo } from 'react'
 import DOMPurify from 'dompurify'
 import { isOnlyEmoji, splitEmojis } from '@utils/index'
 import { getEmojiDataFromNative } from 'emoji-mart'
-import { useAuthStore } from '@stores'
-import { useUserModal } from '@context/UserModalContext'
+import { useAuthStore, useStore } from '@stores'
 import { useMentionClick } from '@components/chat/hooks'
 
 interface MessageContentProps {
-  data: {
+  message: {
     content: string
     html?: string
     user_details: {
@@ -16,44 +15,76 @@ interface MessageContentProps {
   }
 }
 
-const MessageContent: React.FC<MessageContentProps> = ({ data }) => {
+const MessageContent: React.FC<MessageContentProps> = ({ message }) => {
   const user = useAuthStore((state) => state.profile)
-  const { openUserModal } = useUserModal()
+  const {
+    settings: {
+      editor: { isMobile }
+    }
+  } = useStore((state) => state)
   const sanitizedHtml = useMemo(() => {
-    return data.html ? DOMPurify.sanitize(data.html) : data.content
-  }, [data.html, data.content])
+    return message.html ? DOMPurify.sanitize(message.html) : message.content
+  }, [message.html, message.content])
 
   const [emojiTitles, setEmojiTitles] = useState<Record<number, string>>({})
+  const [emojiArray, setEmojiArray] = useState<string[]>([])
 
-  const contentIsOnlyEmoji = isOnlyEmoji(data.content)
+  const contentIsOnlyEmoji = useMemo(() => {
+    const result = isOnlyEmoji(message?.content || '')
+    if (result && message?.content) {
+      // If it's emoji-only content, prepare the emoji array
+      const emojis = splitEmojis(message.content)
+      setEmojiArray(emojis || [])
+    }
+    return result
+  }, [message?.content])
 
   useEffect(() => {
     const loadEmojiTitles = async () => {
+      if (!emojiArray.length) return
+
       const titles: Record<number, string> = {}
-      const emojis = splitEmojis(data.content)
-      if (emojis) {
-        for (let i = 0; i < emojis.length; i++) {
-          const emojiData = await getEmojiDataFromNative(emojis[i])
-          titles[i] = emojiData.name
+
+      for (let i = 0; i < emojiArray.length; i++) {
+        try {
+          // Use a timeout to avoid rate limiting
+          const emojiData = (await Promise.race([
+            getEmojiDataFromNative(emojiArray[i]),
+            new Promise((resolve) => setTimeout(() => resolve({ name: 'emoji' }), 500))
+          ])) as any
+
+          titles[i] = emojiData?.name || 'emoji'
+        } catch (error) {
+          console.error(`Error loading emoji data for ${emojiArray[i]}:`, error)
+          titles[i] = 'emoji'
         }
       }
+
       setEmojiTitles(titles)
     }
 
-    if (contentIsOnlyEmoji) loadEmojiTitles()
-  }, [data.content, contentIsOnlyEmoji])
+    if (contentIsOnlyEmoji && emojiArray.length > 0) {
+      loadEmojiTitles()
+    }
+  }, [emojiArray, contentIsOnlyEmoji])
 
   const handleMentionClick = useMentionClick()
 
-  // Check if the content is only emoji outside of JSX for readability.
+  // Render content based on type
+  if (!message?.content) {
+    return null
+  }
 
   return (
     <div className="flex flex-col" onClick={handleMentionClick}>
       {contentIsOnlyEmoji ? (
         <div
-          className={`flex ${data?.user_details?.id === user?.id ? 'justify-end' : 'justify-start'}`}>
-          {splitEmojis(data.content)?.map((emoji: string, index: number) => (
-            <div key={index} className="tooltip tooltip-bottom" data-tip={emojiTitles[index]}>
+          className={`flex w-full flex-wrap gap-1 ${message?.user_details?.id === user?.id && isMobile ? 'justify-end' : 'justify-start'}`}>
+          {emojiArray.map((emoji: string, index: number) => (
+            <div
+              key={index}
+              className="tooltip tooltip-bottom"
+              data-tip={emojiTitles[index] || 'emoji'}>
               {
                 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
                 // @ts-ignore
