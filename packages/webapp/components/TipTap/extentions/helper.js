@@ -245,13 +245,7 @@ export const createThisBlockMap = (state) => {
     depth,
     headingContent: caretSelectionTextBlock,
     empty: {
-      type: ENUMS.NODES.PARAGRAPH_TYPE,
-      content: [
-        {
-          type: ENUMS.NODES.TEXT_TYPE,
-          text: ' '
-        }
-      ]
+      type: ENUMS.NODES.PARAGRAPH_TYPE
     },
     paragraph: { type: ENUMS.NODES.PARAGRAPH_TYPE }
   }
