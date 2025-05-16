@@ -29,13 +29,13 @@ const ThreadMessageCard = React.forwardRef<HTMLDivElement, TThreadMessageCardPro
         {isOnlyEmoji(data?.content) ? (
           <div className="w-full">
             <MessageHeader data={{ ...data, isGroupStart: true }} />
-            <MessageContent data={data} />
+            <MessageContent message={data} />
             <ThreadMessageFooter data={data} />
           </div>
         ) : (
           <div className={`chat-bubble flex w-full flex-col`}>
             <MessageHeader data={{ ...data, isGroupStart: true }} />
-            <MessageContent data={data} />
+            <MessageContent message={data} />
             <ThreadMessageFooter data={data} />
           </div>
         )}
