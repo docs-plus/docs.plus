@@ -129,7 +129,7 @@ begin
             new.id,
             'notification',
             '992bb85e-78f8-4747-981a-fd63d9317ff1', -- System user ID
-            'Channel name was changed to "' || new.name || '"',
+            'Channel renamed to "' || new.name || '"',
             jsonb_build_object(
                 'type', 'channel_name_changed',
                 'name', new.name
@@ -165,7 +165,17 @@ create or replace function notify_user_join_channel()
 returns trigger as $$
 declare
     joining_username text;
+    channel_workspace_id varchar(36);
 begin
+    -- Skip if this is a workspace channel
+    select workspace_id into channel_workspace_id
+    from public.channels
+    where id = new.channel_id;
+
+    if channel_workspace_id = new.channel_id then
+        return new;
+    end if;
+
     -- Get the username of the joining member
     select username into joining_username
     from public.users
