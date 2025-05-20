@@ -399,6 +399,11 @@ CREATE OR REPLACE FUNCTION increment_unread_count_on_new_message() RETURNS TRIGG
 DECLARE
     workspace_id_var VARCHAR(36);
 BEGIN
+    -- Skip if message type is notification
+    IF NEW.type = 'notification' THEN
+        RETURN NEW;
+    END IF;
+
     -- Get the workspace ID for the channel where the message was posted
     SELECT workspace_id INTO workspace_id_var
     FROM public.channels
