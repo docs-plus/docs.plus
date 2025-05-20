@@ -30,7 +30,7 @@ const ChatContainer = () => {
       />
       <div
         onMouseDown={handleMouseDown}
-        className="active:bg-block absolute top-2 left-1/2 z-[52] h-1.5 w-22 -translate-x-1/2 cursor-ns-resize rounded-full bg-gray-400 transition-all duration-200 group-hover:opacity-100"
+        className="active:bg-block absolute top-2 left-1/2 z-[52] h-1.5 w-22 -translate-x-1/2 cursor-row-resize rounded-full bg-gray-400 transition-all duration-200 group-hover:opacity-100"
       />
       <div className="flex size-full flex-col justify-start">
         <Toolbar />
