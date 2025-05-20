@@ -7,10 +7,13 @@ export const useCheckReadMessage = ({ messageContainerRef, channelId, messages }
   const [visibleCount, setVisibleCount] = useState<string[]>([])
   const dCheckVisibility = useRef<any>(null)
   const setWorkspaceChannelSetting = useChatStore((state: any) => state.setWorkspaceChannelSetting)
+  const { channels } = useChatStore((state) => state.workspaceSettings)
+  const activeCahnnel = channels.get(channelId)
+  // const channelSettings = useChatStore.getState().workspaceSettings.channels.get(channelId)
+  const { lastReadMessageTimestamp } = activeCahnnel || { lastReadMessageTimestamp: 0 }
 
   const checkVisibility = () => {
     const container = messageContainerRef.current
-    // console.log("checkVisibility function", container);
     if (!container) return
 
     const visibleMessageIndexes: any = []
@@ -19,9 +22,10 @@ export const useCheckReadMessage = ({ messageContainerRef, channelId, messages }
     const paddingBottom = parseInt(containerStyles.paddingBottom, 10)
 
     const messageElements: HTMLElement[] = Array.from(container.querySelectorAll('.chat.msg_card'))
+
     // if the last message has readedAt, then all the messages are readed, so no need to check
     // @ts-ignore
-    if (messageElements.at(-1)?.readedAt) return
+    // if (messageElements.at(-1)?.readedAt) return
 
     messageElements.forEach((child) => {
       const childMarginTop = parseInt(window.getComputedStyle(child).marginTop, 10)
@@ -34,9 +38,13 @@ export const useCheckReadMessage = ({ messageContainerRef, channelId, messages }
 
       if (childBottom > viewportTop && childTop < viewportBottom) {
         //@ts-ignore
-        if (!child.readedAt) {
+        const lasReaded = new Date(lastReadMessageTimestamp).getTime()
+        //@ts-ignore
+        const msgCreatedAt = new Date(child?.createdAt || 0).getTime()
+
+        if (lasReaded < msgCreatedAt) {
           //@ts-ignore
-          visibleMessageIndexes.push({ id: child.msgId, createAt: child.createdAt })
+          visibleMessageIndexes.push({ id: child.msgId, createdAt: child.createdAt })
         }
       }
     })
@@ -60,7 +68,6 @@ export const useCheckReadMessage = ({ messageContainerRef, channelId, messages }
     // Include a small threshold (e.g., 5px) to account for fractional pixels in calculations
     const isScrolledToBottom = scrollHeight - scrollTop - clientHeight <= 100
 
-    // console.log("new message call", { scrollTop, isScrollable, isScrolledToBottom });
     if (isScrolledToBottom) {
       checkVisibility() // Call checkVisibility immediately
     }
@@ -83,17 +90,16 @@ export const useCheckReadMessage = ({ messageContainerRef, channelId, messages }
     const channelSettings = useChatStore.getState().workspaceSettings.channels.get(channelId)
     const { lastReadMessageTimestamp } = channelSettings || { lastReadMessageTimestamp: 0 }
 
-    // check the creation of the last message
     if (!lastMessage) return
     const lastReadTimestamp = new Date(lastReadMessageTimestamp || 0).getTime()
-    const lastVisibleTimestamp = new Date(lastMessage?.createAt).getTime()
+    const lastVisibleTimestamp = new Date(lastMessage?.createdAt).getTime()
 
-    // check if the last read message is greater than the last visible message
     if (lastReadTimestamp >= lastVisibleTimestamp) return
 
-    setWorkspaceChannelSetting(channelId, 'lastReadMessageTimestamp', lastMessage.createAt)
+    setWorkspaceChannelSetting(channelId, 'lastReadMessageTimestamp', lastMessage.createdAt)
 
     if (lastMessage.id === 'fake_id') return
+
     markReadMessages({ channelId, lastMessage: lastMessage.id }).then()
-  }, [visibleCount])
+  }, [visibleCount, channelId])
 }
