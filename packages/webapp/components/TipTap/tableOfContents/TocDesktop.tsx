@@ -20,7 +20,7 @@ const TOCDesktop = ({ className }: any) => {
   if (!items.length) return null
 
   return (
-    <div className={`${className}`}>
+    <div className={`${className}`} style={{ scrollbarGutter: 'stable' }}>
       <DocTitleChatRoomDesktop className="mt-1" />
       <ul className="toc__list menu p-0">{renderedTocs}</ul>
       <AppendHeadingButton className="mt-4" />

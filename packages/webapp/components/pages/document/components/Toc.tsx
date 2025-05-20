@@ -21,7 +21,7 @@ const TOC = ({ className = '' }: any) => {
 
   return (
     <TOCDesktop
-      className={`${className} tiptap__toc h-full !max-w-[19rem] overflow-hidden overflow-y-auto scroll-smooth pb-4 pr-10 hover:overscroll-contain sm:py-4 sm:pb-14`}
+      className={`${className} tiptap__toc h-full w-full overflow-hidden overflow-y-auto scroll-smooth pr-10 pb-4 hover:overscroll-contain sm:py-4 sm:pb-14`}
     />
   )
 }
