@@ -47,7 +47,7 @@ export const useChannelInitialData = (setError: (error: any) => void): UseChanne
         id: newChannelId,
         workspace_id: workspaceId,
         created_by: userId,
-        name: newChannelId,
+        name: slugify(newChannelId, { strict: true, lower: true }),
         slug: 'c' + slugify(newChannelId, { strict: true, lower: true })
       })
     }
