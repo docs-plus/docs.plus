@@ -58,6 +58,9 @@ const SystemNotifyChip = ({ message }: any) => {
     }
   }, [message])
 
+  // for now, do not render the join notif message
+  if (message.metadata.type === 'user_join_channel') return
+
   if (message.metadata?.type === 'user_join_workspace') {
     return (
       <div
