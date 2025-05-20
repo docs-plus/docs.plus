@@ -10,6 +10,7 @@ returns trigger as $$
 declare
     joining_username text;
     workspace_name text;
+    workspace_channel_id varchar(36);
 begin
     -- Get the username of the joining member
     select username into joining_username
@@ -21,6 +22,33 @@ begin
     from public.workspaces
     where id = new.workspace_id;
 
+    -- Check if channel exists for this workspace
+    select id into workspace_channel_id
+    from public.channels
+    where id = new.workspace_id
+    limit 1;
+
+    -- If no channel exists, create one
+    if workspace_channel_id is null then
+        insert into public.channels (
+            id,
+            workspace_id,
+            slug,
+            name,
+            created_by,
+            description,
+            type
+        ) values (
+            new.workspace_id,
+            new.workspace_id,
+            'c' || regexp_replace(lower(new.workspace_id), '[^a-z0-9]', '', 'g'),
+            regexp_replace(lower(new.workspace_id), '[^a-z0-9]', '', 'g'),
+            '992bb85e-78f8-4747-981a-fd63d9317ff1', -- System user ID
+            'Main workspace channel',
+            'PUBLIC'
+        ) returning id into workspace_channel_id;
+    end if;
+
     -- Create the notification message
     insert into public.messages (
         user_id,
@@ -31,7 +59,7 @@ begin
     )
     values (
         new.member_id,
-        new.workspace_id,
+        workspace_channel_id,
         'notification',
         '@' || joining_username || ' joined the workspace ',
         jsonb_build_object(
