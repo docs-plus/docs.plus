@@ -35,6 +35,9 @@ export type Channel =
 export type Profile = Omit<Database['public']['Tables']['users']['Row'], 'profile_data'> & {
   profile_data?: ProfileData
   channelId?: string | null
+  display_name?: string | null
+  avatar_url?: string | null
+  fullname?: string | null
 }
 export type ProfileUpdate = Omit<
   Database['public']['Tables']['users']['Update'],
