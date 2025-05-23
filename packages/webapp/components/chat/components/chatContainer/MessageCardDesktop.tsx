@@ -92,8 +92,8 @@ function MessageCardDesktop({ message }: TMessageCardDesktopProps, ref: any) {
           </time>
         </div>
         <div className={`!mt-0 flex w-full flex-col pl-2 text-[15px] font-normal antialiased`}>
-          {message.metadata?.comment && <MsgComment data={message} />}
-          {message.reply_to_message_id && <MsgReplyTo data={message} />}
+          {message.metadata?.comment && <MsgComment message={message} />}
+          {message.reply_to_message_id && <MsgReplyTo message={message} />}
           <MessageContent message={message} />
           <MessageIndicators message={message} />
           <ReactionsCard reactions={message.reactions} message={message} showReactionBtn={false} />

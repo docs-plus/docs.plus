@@ -1,4 +1,4 @@
-import { Database } from '@types'
+import { Database, Profile } from '@types'
 import { supabaseClient } from '@utils/supabase'
 
 export type TMessage = Database['public']['Tables']['messages']['Row']
@@ -36,6 +36,10 @@ export type TMessageWithUser = TMessage & {
     user_id: {
       username: string
     }
+  }
+  replied_message_details: {
+    message: TMessage
+    user: Profile
   }
   user_details: any | null
   replied_message_preview?: any
