@@ -3,7 +3,6 @@ import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import EditorContent from './EditorContent'
 import ToolbarMobile from './toolbarMobile/ToolbarMobile'
 import { useChatStore } from '@stores'
-import { scrollHeadingSelection } from '../helpers'
 import { useAdjustEditorSizeForChatRoom } from '../hooks'
 import useEditableDocControl from '@components/pages/document/hooks/useEditableDocControl'
 import usePageHeightAdjust from '@components/pages/document/hooks/usePageHeightAdjust'
@@ -31,8 +30,7 @@ const Editor = () => {
       <div className="editor relative flex size-full w-full max-w-full flex-col justify-around align-top">
         <div
           ref={editorWrapperRef}
-          className="editorWrapper flex h-full grow items-start justify-center overflow-hidden overflow-y-auto p-0"
-          onScroll={scrollHeadingSelection}>
+          className="editorWrapper flex h-full grow items-start justify-center overflow-hidden overflow-y-auto p-0">
           <MobileBubbleMenu />
           <EditorContent />
         </div>

@@ -2,14 +2,10 @@ import TOCDesktop from '@components/TipTap/tableOfContents/TocDesktop'
 import TableOfcontentLoader from '@components/skeleton/TableOfContentsLoader'
 import { useStore } from '@stores'
 
-import { useTypingIndicator } from '@components/chat/hooks/useTypingIndicator'
-
 const TOC = ({ className = '' }: any) => {
   const {
     editor: { loading, applyingFilters, providerSyncing, instance: editor }
   } = useStore((state) => state.settings)
-
-  useTypingIndicator()
 
   if (loading || !editor || applyingFilters || providerSyncing) {
     return (
