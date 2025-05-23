@@ -31,61 +31,29 @@ $bg-root: #f8f9fa;
   }
 
   .toc__item {
+    &.focusSight {
+      position: relative;
+      > a {
+        &::after {
+          content: '';
+          position: absolute;
+          top: -2px;
+          left: -9.5px;
+          width: 4px;
+          height: 100%;
+          background-color: var(--color-docsy);
+          border-radius: 4px;
+        }
+      }
+    }
     > a {
       padding: 0.3rem 0.4rem;
       position: relative;
       transition: all 0.2s ease-in-out;
       margin-bottom: 0.1rem;
-      &:active {
-        .btnChat {
-          background-color: transparent;
-          fill: var(--base-300);
-        }
-      }
-      &.active {
-        padding-left: 30px;
-        > a {
-          color: #fff;
-          font-weight: normal;
-        }
-        .btnChat {
-          opacity: 1;
-          background-color: transparent;
-          fill: var(--base-300);
-        }
-
-        .btnFold {
-          opacity: 1;
-          > svg {
-            fill: var(--base-300);
-          }
-        }
-      }
     }
   }
   .toc {
-    // background: rgba(black, 0.1);
-    // border-radius: 0.5rem;
-    // opacity: 0.75;
-    // padding: 0.75rem;
-    // min-width: 200px;
-    // text-align: left;
-    // line-height: 2rem;
-
-    &__list {
-      // list-style: none;
-
-      &::before {
-        // display: block;
-        // font-size: 0.75rem;
-        // font-weight: 700;
-        // letter-spacing: 0.025rem;
-        // opacity: 0.5;
-        // text-transform: uppercase;
-        // padding-bottom: 20px;
-      }
-    }
-
     &__item {
       .btn_chat {
         display: block;
