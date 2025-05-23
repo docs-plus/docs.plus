@@ -23,7 +23,7 @@ export const useOnAuthStateChange = () => {
       if (event === 'INITIAL_SESSION') {
         // if (!session?.user) router.push('/login')
       }
-      if (event === 'SIGNED_IN' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
+      if (/*event === 'SIGNED_IN' ||*/ event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
         if (!session?.user) {
           // when user does not login!
           setLoading(false)
@@ -31,7 +31,6 @@ export const useOnAuthStateChange = () => {
         }
         useAuthStore.getState().setSession(session?.user || null)
         if (session?.user) getUserProfile(session?.user)
-        setLoading(false)
       }
       if (event === 'SIGNED_OUT') {
         useAuthStore.getState().setSession(null)

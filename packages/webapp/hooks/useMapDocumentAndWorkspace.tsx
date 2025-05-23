@@ -23,7 +23,7 @@ const useMapDocumentAndWorkspace = (
   const [isWorkspaceUpserted, setIsWorkspaceUpserted] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<Error | null>(null)
-
+  const profile = useAuthStore((state) => state.profile)
   const bulkSetChannels = useChatStore((state) => state.bulkSetChannels)
   const authLoading = useAuthStore((state) => state.loading)
   const clearAndInitialChannels = useChatStore((state) => state.clearAndInitialChannels)
@@ -64,19 +64,17 @@ const useMapDocumentAndWorkspace = (
     const initializeWorkspace = async () => {
       setLoading(true)
       setError(null)
-
-      const user = useAuthStore.getState().profile
-
       try {
+        // move this to server side
         await upsertWorkspace({
           id: docMetadata.documentId,
           name: docMetadata.title,
           description: docMetadata.description,
           slug: docMetadata.slug,
-          created_by: user?.id || Config.chat.systemUserId
+          created_by: profile?.id || Config.chat.systemUserId
         })
 
-        const channels = await fetchChannels(docMetadata.documentId, user?.id)
+        const channels = await fetchChannels(docMetadata.documentId, profile?.id)
         if (isMounted && channels) {
           bulkSetChannels(channels)
           setIsWorkspaceUpserted(true)
@@ -95,7 +93,7 @@ const useMapDocumentAndWorkspace = (
     return () => {
       isMounted = false
     }
-  }, [authLoading])
+  }, [authLoading, profile])
 
   return { loading, error }
 }
