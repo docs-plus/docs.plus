@@ -580,8 +580,7 @@ export const createHeadingNodeFromSelection = (
       content: [
         {
           type: ENUMS.NODES.CONTENT_HEADING_TYPE,
-          // TODO: this is not correct, need to fix it, hint: the contnet could be multiple nodes like text, hyperlink and etc.
-          content: [block.headingContent],
+          content: [...doc.nodeAt(start).toJSON().content],
           attrs: {
             level: attributes.level
           }
