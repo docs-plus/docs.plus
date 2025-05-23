@@ -89,7 +89,9 @@ const Breadcrumb = () => {
               <li key={index} aria-current={headingPath.length - 1 === index ? 'page' : undefined}>
                 <div className="flex items-center px-1.5 whitespace-nowrap">
                   {headingPath.length - 1 === index ? (
-                    <span className="">{heading.text}</span>
+                    <span className={headingPath.length > 1 ? '!font-bold' : ''}>
+                      {heading.text}
+                    </span>
                   ) : (
                     <a
                       onClick={(e) => openChatContainerHandler(e, heading)}
