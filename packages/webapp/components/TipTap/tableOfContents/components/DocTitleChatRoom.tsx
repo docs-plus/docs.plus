@@ -11,7 +11,6 @@ export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) =
   const { metadata: docMetadata, workspaceId } = useStore((state) => state.settings)
   const { headingId } = useChatStore((state) => state.chatRoom)
   const unreadMessage = useUnreadMessageEffect(workspaceId || '')
-  const openChatContainerHandler = useOpenChatContainer()
   const presentUsers = usePresentUsers(workspaceId || '')
 
   return (
