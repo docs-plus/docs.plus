@@ -103,7 +103,7 @@ export const handelScroll2Header = (
   url.searchParams.set('id', id)
   window.history.replaceState({}, '', url)
 
-  targetHeading?.scrollIntoView(true)
+  targetHeading?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
   if (openChatRoom && id) {
     PubSub.publish(CHAT_OPEN, {
