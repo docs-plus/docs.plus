@@ -48,7 +48,7 @@ const ScrollToBottomButton = ({ messagesContainer }: any) => {
   return (
     <button
       onClick={scrollToBottomHandler}
-      className="btn btn-circle btn-primary fixed bottom-[90px] right-[20px]">
+      className="btn btn-circle btn-primary fixed right-[20px] bottom-[90px] z-20">
       <FaChevronDown size={23} color="#fff" />
     </button>
   )
