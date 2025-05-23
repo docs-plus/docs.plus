@@ -104,7 +104,7 @@ function MessageCardDesktop({ message }: TMessageCardDesktopProps, ref: any) {
 
   return (
     <div
-      className={`group/msgcard chat msg_card hover:bg-base-200 relative w-fit w-full rounded-md pl-3 transition-colors sm:min-w-[250px]`}
+      className={`group/msgcard chat msg_card hover:bg-base-200 relative w-fit w-full rounded-md pl-3 transition-colors`}
       ref={cardRef}
       onDoubleClick={handleDoubleClick}>
       <MessageActions

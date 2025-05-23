@@ -89,7 +89,7 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
     if (isEmojiOnlyMessage) {
       return (
         <div className="mb-4 max-w-[70%] min-w-full">
-          {data.reply_to_message_id && <MsgReplyTo data={data} />}
+          {data.reply_to_message_id && <MsgReplyTo message={data} />}
           <MessageContent message={data} />
           <MessageFooter data={data} />
         </div>
@@ -101,8 +101,8 @@ function MessageCard({ data, toggleEmojiPicker, selectedEmoji }: TMessageCardPro
         className={`chat-bubble !mt-0 flex w-full flex-col p-2 ${
           isOwnerMessage ? 'bg-chatBubble-owner' : 'bg-white drop-shadow'
         } ${isGroupEnd ? 'bubble_group-end' : 'bubble_group-start !rounded-ee-xl !rounded-es-xl'}`}>
-        {data.metadata?.comment && <MsgComment data={data} />}
-        {data.reply_to_message_id && <MsgReplyTo data={data} />}
+        {data.metadata?.comment && <MsgComment message={data} />}
+        {data.reply_to_message_id && <MsgReplyTo message={data} />}
         <MessageContent message={data} />
         <MessageFooter data={data} />
       </div>
