@@ -137,7 +137,7 @@ const generatePlaceholderText = (data: any) => {
 
   if (nodeType === ENUMS.NODES.CONTENT_HEADING_TYPE) {
     const level = node.attrs.level
-    return level - 1 === 0 ? 'Title' : `Heading ${level - 1}`
+    return level - 1 === 0 ? 'Heading 1' : `Heading ${level - 1}`
   } else if (nodeType === ENUMS.NODES.PARAGRAPH_TYPE) {
     // const msg = Placeholders
 
