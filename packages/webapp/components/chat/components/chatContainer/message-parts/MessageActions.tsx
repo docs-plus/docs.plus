@@ -13,9 +13,10 @@ import {
   MdOutlineEdit
 } from 'react-icons/md'
 import { ReplyMD } from '@components/icons/Icons'
+import { CHAT_OPEN } from '@services/eventsHub'
 
 // For reply in thread feature
-const emptyParagraphs = Array(16).fill({
+const emptyParagraphs = Array(5).fill({
   type: ENUMS.NODES.PARAGRAPH_TYPE
 })
 
@@ -129,14 +130,32 @@ export const MessageActions = ({ className, message }: MessageActionsProps) => {
     // Execute insert and scroll to new position
     insertAndUpdate()
 
-    // Scroll to the newly inserted heading
+    // After scrollIntoView and open Chatroom
     setTimeout(() => {
-      editor
-        .chain()
-        .focus(Number(insertPosition) + messageContent.length + 4) // +4 move on contentWrapper node
-        .scrollIntoView()
-        .run()
-    }, 100)
+      const { doc } = editor.state
+      let newHeadingId: string | null = null
+
+      // Search in a range around the insertion point
+      const searchStart = Math.max(0, insertPosition - 10)
+      const searchEnd = Math.min(doc.content.size, insertPosition + messageContent.length + 100)
+
+      doc.nodesBetween(searchStart, searchEnd, (node, pos) => {
+        if (
+          node.type.name === 'heading' &&
+          node.textContent.trim() === messageContent &&
+          node.attrs.id
+        ) {
+          newHeadingId = node.attrs.id
+          return false
+        }
+      })
+
+      if (newHeadingId) {
+        PubSub.publish(CHAT_OPEN, {
+          headingId: newHeadingId
+        })
+      }
+    }, 150)
   }, [message, editor])
 
   return (
