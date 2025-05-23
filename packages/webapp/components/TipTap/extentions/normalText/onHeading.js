@@ -120,6 +120,9 @@ const onHeading = (args) => {
 
   processHeadings(state, tr, [prevBlock], remainingHeadings)
 
+  // update TOC
+  tr.setMeta('renderTOC', true)
+
   if (backspaceAction && tr) editor.view.dispatch(tr)
   return
 }
