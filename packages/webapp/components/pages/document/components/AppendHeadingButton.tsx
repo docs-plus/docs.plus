@@ -14,7 +14,7 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
   const appendHeadingToEnd = useCallback(() => {
     if (!editor) return
 
-    const emptyParagraphs = Array(16).fill({
+    const emptyParagraphs = Array(5).fill({
       type: ENUMS.NODES.PARAGRAPH_TYPE
     })
 

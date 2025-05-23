@@ -21,9 +21,6 @@ const scrollHeadingSelection = (event: any) => {
       return thisOffsetTop <= scrollTop // && nextSiblingOffsetTop >= scrollTop
     })
 
-  console.log({
-    closest
-  })
   closest.at(-1)?.classList.add('focusSight')
 
   // Scroll with 10px padding from top using getBoundingClientRect
