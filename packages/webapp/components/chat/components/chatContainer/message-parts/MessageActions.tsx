@@ -10,7 +10,8 @@ import {
   MdDeleteOutline,
   MdOutlineEmojiEmotions,
   MdMoreVert,
-  MdOutlineEdit
+  MdOutlineEdit,
+  MdOutlineFileOpen
 } from 'react-icons/md'
 import { ReplyMD } from '@components/icons/Icons'
 import { CHAT_OPEN } from '@services/eventsHub'
@@ -20,7 +21,7 @@ const emptyParagraphs = Array(5).fill({
   type: ENUMS.NODES.PARAGRAPH_TYPE
 })
 
-const createJsonNode = (messageContent: string, headingLevel: number) => {
+const createHeadingNodeJson = (messageContent: string, headingLevel: number) => {
   return {
     type: ENUMS.NODES.HEADING_TYPE,
     attrs: { level: Math.min(headingLevel, 10) },
@@ -35,6 +36,53 @@ const createJsonNode = (messageContent: string, headingLevel: number) => {
         content: emptyParagraphs
       }
     ]
+  }
+}
+
+const createParagraphNodeJson = (message: TMsg) => {
+  const workspaceId = useStore.getState().settings.workspaceId
+  const documentSlug = location.pathname.split('/').pop()
+  const channelId = message.channel_id || workspaceId
+  const messageId = message.id
+  const messageUrl = `/${documentSlug}?act=ch&c_id=${channelId}&m_id=${messageId}`
+
+  const messageOwner = message.user_details.username || message.user_details.fullname
+  const messageContent = message.content.trim()
+  const messageCreatedAt = new Date(message.created_at)
+    .toLocaleString('sv-SE', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
+    .replace(' ', ' ')
+
+  const newContent = [
+    {
+      type: 'text',
+      marks: [
+        {
+          type: 'hyperlink',
+          attrs: {
+            id: null,
+            href: messageUrl,
+            target: '_blank',
+            class: null
+          }
+        }
+      ],
+      text: `💬 ${messageCreatedAt} ${messageOwner}: `
+    },
+    {
+      type: ENUMS.NODES.TEXT_TYPE,
+      text: messageContent
+    }
+  ]
+
+  return {
+    type: ENUMS.NODES.PARAGRAPH_TYPE,
+    content: newContent
   }
 }
 
@@ -117,7 +165,7 @@ export const MessageActions = ({ className, message }: MessageActionsProps) => {
         .focus()
         .insertContentAt(
           Number(insertPosition),
-          createJsonNode(messageContent, headingPos !== null ? headingLevel + 1 : 1),
+          createHeadingNodeJson(messageContent, headingPos !== null ? headingLevel + 1 : 1),
           { updateSelection: true }
         )
         .command(({ tr }) => {
@@ -158,6 +206,64 @@ export const MessageActions = ({ className, message }: MessageActionsProps) => {
     }, 150)
   }, [message, editor])
 
+  const handleCopyToDoc = useCallback(() => {
+    if (!message) return
+    if (!editor) return
+
+    const headingId = message.channel_id
+
+    // Find the heading with matching ID in the document
+    const { doc } = editor.state
+    let headingPos: number | null = null
+    let headingLevel = 1
+    let headingNode: any = null
+
+    let secondHeadingPos: number | null = null
+    let secondHeadingLevel: number | null = null
+    let secondHeadingNode: any = null
+
+    // Traverse the document to find the heading with matching ID
+    doc.descendants((node, pos) => {
+      // find end of contentWrapper node that after that pos heading node is found
+      if (headingPos != null && node.type.name === 'heading' && !secondHeadingPos) {
+        secondHeadingPos = pos
+        secondHeadingLevel = node.attrs.level
+        secondHeadingNode = node
+        return false // Stop traversal once found
+      }
+      if (node.type.name === 'heading' && node.attrs.id === headingId && !headingPos) {
+        headingPos = pos
+        headingLevel = node.attrs.level
+        headingNode = node
+      }
+    })
+
+    // Calculate position where content should be inserted
+    let insertPosition =
+      headingPos !== null && headingNode
+        ? headingPos + Number(headingNode.content.size) // End of current heading's content
+        : doc.content.size - 2 || 0 // End of document if heading not found
+
+    if (headingLevel === 1) {
+      insertPosition = secondHeadingPos !== null ? secondHeadingPos : insertPosition
+    }
+
+    // Insert content at calculated position
+    const insertAndUpdate = () => {
+      editor
+        .chain()
+        .focus()
+        .insertContentAt(insertPosition, createParagraphNodeJson(message))
+        .command(({ tr }) => {
+          tr.setMeta('copyToDoc', true)
+          return true
+        })
+        .run()
+    }
+
+    insertAndUpdate()
+  }, [message, editor])
+
   return (
     <div className={`join bg-base-300 rounded-md shadow-xs ${className}`}>
       <button
@@ -190,6 +296,24 @@ export const MessageActions = ({ className, message }: MessageActionsProps) => {
         <MdOutlineComment size={20} className="text-docsy" />
       </button>
 
+      {user && message.user_id !== user.id && (
+        <div className="dropdown dropdown-end">
+          <button tabIndex={0} role="button" className="btn btn-sm btn-square join-item btn-ghost">
+            <MdMoreVert size={20} className="text-gray-600" />
+          </button>
+          <ul
+            tabIndex={0}
+            className="dropdown-content menu bg-base-100 rounded-box z-1 w-52 !p-2 shadow-sm">
+            <li>
+              <a className="flex items-center gap-2" onClick={handleCopyToDoc}>
+                <MdOutlineFileOpen size={20} />
+                Copy to doc
+              </a>
+            </li>
+          </ul>
+        </div>
+      )}
+
       {user && message.user_id === user.id && (
         <div className="dropdown dropdown-end">
           <button tabIndex={0} role="button" className="btn btn-sm btn-square join-item btn-ghost">
@@ -205,6 +329,12 @@ export const MessageActions = ({ className, message }: MessageActionsProps) => {
               </a>
             </li>
             <li>
+              <a className="flex items-center gap-2" onClick={handleCopyToDoc}>
+                <MdOutlineFileOpen size={20} />
+                Copy to doc
+              </a>
+            </li>
+            <li className="!my-1 border-t border-gray-300 pt-1">
               <a className="text-error flex items-center gap-2" onClick={handleDeleteMessage}>
                 <MdDeleteOutline size={20} />
                 Delete Message

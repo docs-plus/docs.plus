@@ -63,6 +63,9 @@ const hrefEventHandller = (href: string, tippy: Tooltip) => (event: MouseEvent) 
   const isSameDoc = newUrl.pathname.startsWith(`/${slugs[0]}`)
   const newUrlSlugs = newUrl.pathname.split('/').slice(1)
   const chatroomId = newUrl.searchParams.get('chatroom')
+  const act = newUrl.searchParams.get('act')
+  const messageId = newUrl.searchParams.get('m_id')
+  const channelId = newUrl.searchParams.get('c_id')
 
   // if the new url belong to the current document
   if (isSameDoc) {
@@ -83,6 +86,17 @@ const hrefEventHandller = (href: string, tippy: Tooltip) => (event: MouseEvent) 
     // otherwise, scroll to heading
     if (headingId) {
       return scrollToHeading(headingId)
+    }
+
+    if (act === 'ch' && messageId && channelId) {
+      tippy.hide()
+
+      PubSub.publish(CHAT_OPEN, {
+        headingId: channelId,
+        scroll2Heading: true,
+        fetchMsgsFromId: messageId
+      })
+      return true
     }
   }
 
