@@ -1044,12 +1044,14 @@ BEGIN
         RAISE EXCEPTION 'Authentication required. User ID is NULL.';
     END IF;
 
-    -- Check if the workspace exists and is not deleted
+    -- Check if the workspace exists and is not deleted, create if it doesn't exist
     IF NOT EXISTS (
         SELECT 1 FROM public.workspaces
         WHERE id = _workspace_id AND deleted_at IS NULL
     ) THEN
-        RAISE EXCEPTION 'Workspace % does not exist or has been deleted.', _workspace_id;
+        -- Create the workspace with the given ID
+        INSERT INTO public.workspaces (id, name, slug, created_by)
+        VALUES (_workspace_id, _workspace_id, lower(_workspace_id), user_id);
     END IF;
 
     -- Check if user is already a member of this workspace
