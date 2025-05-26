@@ -572,6 +572,10 @@ export const createHeadingNodeFromSelection = (
       selectLastHeadingContent.push(...contentWrapper)
     }
   } else {
+    let node = doc.nodeAt(start)
+    if (!node || state.selection.toJSON().type === ENUMS.NODES.TEXT_TYPE) {
+      node = state.selection.$anchor.parent.toJSON()
+    }
     const jsonNode = {
       type: ENUMS.NODES.HEADING_TYPE,
       attrs: {
@@ -580,7 +584,7 @@ export const createHeadingNodeFromSelection = (
       content: [
         {
           type: ENUMS.NODES.CONTENT_HEADING_TYPE,
-          content: [...doc.nodeAt(start).toJSON().content],
+          content: [...node.content],
           attrs: {
             level: attributes.level
           }
