@@ -1,6 +1,6 @@
 import dynamic from 'next/dynamic'
-import React, { useCallback, useState } from 'react'
-import { Link, Gear, ClearMark, Filter, Folder } from '@icons'
+import React, { useState } from 'react'
+import { Link, ClearMark } from '@icons'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import Icon from '@components/TipTap/toolbar/Icon'
 import FilterModal from './FilterModal'
@@ -11,8 +11,16 @@ import Dropdown from '@components/ui/Dropdown'
 import Loading from '@components/ui/Loading'
 import Modal from '@components/ui/Modal'
 import ToolbarSkeleton from '@components/skeleton/ToolbarLoader'
-import { MdAddComment } from 'react-icons/md'
+import {
+  MdAddComment,
+  MdOutlineFileCopy,
+  MdOutlinePrint,
+  MdOutlineFolder,
+  MdOutlineSettings,
+  MdFilterAlt
+} from 'react-icons/md'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
+import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToClipboard'
 import { FaDiscord } from 'react-icons/fa'
 
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
@@ -25,7 +33,7 @@ const GearModal = dynamic(() => import('./GearModal'), {
 const FilterButton = () => {
   return (
     <ToolbarButton tooltip="Filter Document" position="tooltip-left">
-      <Filter fill="rgba(0,0,0,.7)" size={20} />
+      <MdFilterAlt fill="rgba(0,0,0,.7)" size={20} />
     </ToolbarButton>
   )
 }
@@ -33,7 +41,7 @@ const FilterButton = () => {
 const GearButton = () => {
   return (
     <ToolbarButton tooltip="Document Settings" position="tooltip-left">
-      <Gear fill="rgba(0,0,0,.7)" size={16} />
+      <MdOutlineSettings fill="rgba(0,0,0,.7)" size={20} />
     </ToolbarButton>
   )
 }
@@ -47,6 +55,7 @@ const ToolbarDesktop = () => {
   const user = useAuthStore((state) => state.profile)
 
   const { createComment } = useTurnSelectedTextIntoComment()
+  const { copyDocumentToClipboard } = useCopyDocumentToClipboard(editor ?? null)
 
   // TODO: skeleton loading
   if (loading || providerSyncing || !editor) return <ToolbarSkeleton />
@@ -175,13 +184,17 @@ const ToolbarDesktop = () => {
           </ToolbarButton>
 
           <div className="divided"></div>
+          <ToolbarButton tooltip="Copy Document" onClick={copyDocumentToClipboard}>
+            <MdOutlineFileCopy fill="rgba(0,0,0,.7)" size={18} />
+          </ToolbarButton>
 
           <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)">
-            <Icon type="Printer" size={16} />
+            <MdOutlinePrint fill="rgba(0,0,0,.7)" size={20} />
           </ToolbarButton>
+
           {isAuthServiceAvailable && user && (
             <ToolbarButton tooltip="Open" onClick={() => setModalOpen(true)}>
-              <Folder fill="rgba(0,0,0,.7)" size={18} />
+              <MdOutlineFolder fill="rgba(0,0,0,.7)" size={20} />
             </ToolbarButton>
           )}
 
