@@ -161,9 +161,13 @@ BEGIN
                          LEFT JOIN public.users ru ON rm.user_id = ru.id
                          WHERE rm.id = m.reply_to_message_id AND rm.deleted_at IS NULL)
                     ELSE NULL
-                END AS replied_message_details
+                END AS replied_message_details,
+                -- Bookmark information
+                (mb.id IS NOT NULL AND mb.archived_at IS NULL AND mb.marked_at IS NULL) AS is_bookmarked,
+                mb.id AS bookmark_id
             FROM public.messages m
             LEFT JOIN public.users u ON m.user_id = u.id
+            LEFT JOIN public.message_bookmarks mb ON m.id = mb.message_id AND mb.user_id = auth.uid()
             WHERE m.channel_id = input_channel_id
                 AND m.deleted_at IS NULL
                 AND (
@@ -209,9 +213,13 @@ BEGIN
                          LEFT JOIN public.users ru ON rm.user_id = ru.id
                          WHERE rm.id = m.reply_to_message_id AND rm.deleted_at IS NULL)
                     ELSE NULL
-                END AS replied_message_details
+                END AS replied_message_details,
+                -- Bookmark information
+                (mb.id IS NOT NULL AND mb.archived_at IS NULL AND mb.marked_at IS NULL) AS is_bookmarked,
+                mb.id AS bookmark_id
             FROM public.messages m
             LEFT JOIN public.users u ON m.user_id = u.id
+            LEFT JOIN public.message_bookmarks mb ON m.id = mb.message_id AND mb.user_id = auth.uid()
             WHERE m.channel_id = input_channel_id
                 AND m.deleted_at IS NULL
                 AND m.created_at <= anchor_message_timestamp
@@ -247,9 +255,13 @@ BEGIN
                          LEFT JOIN public.users ru ON rm.user_id = ru.id
                          WHERE rm.id = m.reply_to_message_id AND rm.deleted_at IS NULL)
                     ELSE NULL
-                END AS replied_message_details
+                END AS replied_message_details,
+                -- Bookmark information
+                (mb.id IS NOT NULL AND mb.archived_at IS NULL AND mb.marked_at IS NULL) AS is_bookmarked,
+                mb.id AS bookmark_id
             FROM public.messages m
             LEFT JOIN public.users u ON m.user_id = u.id
+            LEFT JOIN public.message_bookmarks mb ON m.id = mb.message_id AND mb.user_id = auth.uid()
             WHERE m.channel_id = input_channel_id
                 AND m.deleted_at IS NULL
                 AND m.created_at > anchor_message_timestamp
@@ -344,12 +356,16 @@ BEGIN
                                 ),
                     'user',    user_details_json(ru)
                   )
-              END AS replied_message_details
+              END AS replied_message_details,
+              -- Bookmark information
+              (mb.id IS NOT NULL AND mb.archived_at IS NULL AND mb.marked_at IS NULL) AS is_bookmarked,
+              mb.id AS bookmark_id
             FROM public.messages m
             JOIN public.users  u  ON u.id = m.user_id
             LEFT JOIN public.messages rm ON rm.id = m.reply_to_message_id
                                       AND rm.deleted_at IS NULL
             LEFT JOIN public.users  ru ON ru.id = rm.user_id
+            LEFT JOIN public.message_bookmarks mb ON m.id = mb.message_id AND mb.user_id = auth.uid()
             WHERE
               m.channel_id = input_channel_id
               AND m.deleted_at IS NULL
@@ -401,12 +417,20 @@ BEGIN
                                 ),
                     'user',    user_details_json(ru)
                   )
-              END AS replied_message_details
+              END AS replied_message_details,
+              -- Bookmark information
+              (mb.id IS NOT NULL AND mb.archived_at IS NULL AND mb.marked_at IS NULL) AS is_bookmarked,
+              mb.id AS bookmark_id,
+              mb.created_at AS bookmark_created_at,
+              mb.archived_at AS bookmark_archived_at,
+              mb.marked_at AS bookmark_marked_at,
+              mb.metadata AS bookmark_metadata
             FROM public.messages m
             JOIN public.users  u  ON u.id = m.user_id
             LEFT JOIN public.messages rm ON rm.id = m.reply_to_message_id
                                       AND rm.deleted_at IS NULL
             LEFT JOIN public.users  ru ON ru.id = rm.user_id
+            LEFT JOIN public.message_bookmarks mb ON m.id = mb.message_id AND mb.user_id = auth.uid()
             WHERE
               m.channel_id = input_channel_id
               AND m.deleted_at IS NULL
@@ -1074,3 +1098,62 @@ $$;
 COMMENT ON FUNCTION join_workspace(VARCHAR(36)) IS
 'Adds the currently authenticated user to the specified workspace.
 Returns TRUE if successful or if user is already a member.';
+
+-----------------------------------
+-- Function to get channel members by last read update timestamp
+CREATE OR REPLACE FUNCTION public.get_channel_members_by_last_read_update(
+    _channel_id VARCHAR(36),
+    _timestamp TIMESTAMP WITH TIME ZONE
+)
+RETURNS TABLE (
+    avatar_updated_at TIMESTAMP WITH TIME ZONE,
+    avatar_url TEXT,
+    display_name TEXT,
+    full_name TEXT,
+    last_read_update_at TIMESTAMP WITH TIME ZONE,
+    username TEXT,
+    user_id UUID
+)
+LANGUAGE plpgsql
+STABLE
+AS $$
+BEGIN
+    -- Validate input parameters
+    IF _channel_id IS NULL THEN
+        RAISE EXCEPTION 'channel_id cannot be NULL';
+    END IF;
+
+    IF _timestamp IS NULL THEN
+        RAISE EXCEPTION 'timestamp cannot be NULL';
+    END IF;
+
+    -- Check if channel exists and is not deleted
+    IF NOT EXISTS (
+        SELECT 1 FROM public.channels
+        WHERE id = _channel_id AND deleted_at IS NULL
+    ) THEN
+        RAISE EXCEPTION 'Channel % does not exist or has been deleted', _channel_id;
+    END IF;
+
+    RETURN QUERY
+    SELECT
+        u.avatar_updated_at,
+        u.avatar_url,
+        u.display_name,
+        u.full_name,
+        cm.last_read_update_at,
+        u.username,
+        u.id
+    FROM public.channel_members cm
+    JOIN public.users u ON u.id = cm.member_id
+    WHERE cm.channel_id = _channel_id
+      AND cm.last_read_update_at >= _timestamp
+      AND u.deleted_at IS NULL
+      AND cm.left_at IS NULL  -- Only active members
+    ORDER BY cm.last_read_update_at DESC, u.username ASC;
+END;
+$$;
+
+COMMENT ON FUNCTION public.get_channel_members_by_last_read_update(VARCHAR(36), TIMESTAMP WITH TIME ZONE) IS
+'Returns channel members whose last_read_update_at is equal to or greater than the specified timestamp.
+Only returns active members (not left) and non-deleted users.';

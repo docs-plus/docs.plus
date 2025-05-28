@@ -5,14 +5,16 @@ const AvatarStack = ({
   users = [],
   size = 9,
   tooltipPosition = 'tooltip-bottom',
-  showStatus = false
+  showStatus = false,
+  maxDisplay = 4,
+  className = ''
 }: any) => {
-  const displayedUsers = users?.slice(0, 4)
-  const remainingUsers = users.length - 4
+  const displayedUsers = users?.slice(0, maxDisplay)
+  const remainingUsers = users.length - maxDisplay
   // const profile = useAuthStore((state: any) => state.profile)
 
   return (
-    <div className="avatar-group -space-x-5">
+    <div className={`avatar-group -space-x-5 ${className}`}>
       {displayedUsers.map((user: any, index: number) => {
         // if (user?.id === profile?.id) return null
         return (

@@ -12,12 +12,16 @@ type TSettings = {
     attachmentButton?: boolean
   }
   contextMenue?: {
+    readStatus?: boolean
+    copyToDoc?: boolean
     replyInThread?: boolean
     reply?: boolean
     forward?: boolean
     pin?: boolean
     edite?: boolean
     delete?: boolean
+    bookmark?: boolean
+    reaction?: boolean
   }
 }
 
@@ -49,12 +53,16 @@ const defaultContextValue: ChannelContextValue = {
       attachmentButton: true
     },
     contextMenue: {
+      readStatus: true,
+      copyToDoc: true,
       replyInThread: true,
       reply: true,
       forward: true,
       pin: true,
       edite: true,
-      delete: true
+      delete: true,
+      bookmark: true,
+      reaction: true
     }
   },
   setSettings: () => {} // No-op function

@@ -227,6 +227,54 @@ export type Database = {
           },
         ]
       }
+      message_bookmarks: {
+        Row: {
+          archived_at: string | null
+          created_at: string
+          id: number
+          marked_at: string | null
+          message_id: string
+          metadata: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          archived_at?: string | null
+          created_at?: string
+          id?: never
+          marked_at?: string | null
+          message_id: string
+          metadata?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          archived_at?: string | null
+          created_at?: string
+          id?: never
+          marked_at?: string | null
+          message_id?: string
+          metadata?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_bookmarks_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "message_bookmarks_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       messages: {
         Row: {
           channel_id: string
@@ -601,6 +649,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      archive_bookmark: {
+        Args: { p_bookmark_id: number; p_archive?: boolean }
+        Returns: boolean
+      }
       create_direct_message_channel: {
         Args: { workspace_uid: string; user_id: string }
         Returns: Json
@@ -626,6 +678,14 @@ export type Database = {
           created_at: string
         }[]
       }
+      get_bookmark_count: {
+        Args: { p_workspace_id?: string; p_archived?: boolean }
+        Returns: number
+      }
+      get_bookmark_stats: {
+        Args: { p_workspace_id?: string }
+        Returns: Json
+      }
       get_channel_aggregate_data: {
         Args: {
           input_channel_id: string
@@ -643,6 +703,20 @@ export type Database = {
           last_read_message_id: string
           last_read_message_timestamp: string
           anchor_message_timestamp: string
+        }[]
+      }
+      get_channel_members_by_last_read_update: {
+        Args: { _channel_id: string; _timestamp: string }
+        Returns: {
+          id: string
+          username: string
+          full_name: string
+          display_name: string
+          avatar_url: string
+          avatar_updated_at: string
+          last_read_update_at: string
+          channel_member_role: Database["public"]["Enums"]["channel_member_role"]
+          joined_at: string
         }[]
       }
       get_channel_messages_paginated: {
@@ -674,8 +748,51 @@ export type Database = {
         }
         Returns: Json[]
       }
+      get_user_bookmarks: {
+        Args: {
+          p_workspace_id?: string
+          p_archived?: boolean
+          p_limit?: number
+          p_offset?: number
+        }
+        Returns: {
+          bookmark_id: number
+          bookmark_created_at: string
+          bookmark_updated_at: string
+          bookmark_archived_at: string
+          bookmark_marked_at: string
+          bookmark_metadata: Json
+          message_id: string
+          message_content: string
+          message_html: string
+          message_created_at: string
+          message_user_id: string
+          message_channel_id: string
+          message_type: Database["public"]["Enums"]["message_type"]
+          user_details: Json
+          channel_name: string
+          channel_slug: string
+          workspace_id: string
+          workspace_name: string
+          workspace_slug: string
+        }[]
+      }
+      get_workspace_notifications: {
+        Args: {
+          p_user_id: string
+          p_workspace_id: string
+          p_limit?: number
+          p_offset?: number
+          p_is_read?: boolean
+        }
+        Returns: Json[]
+      }
       join_workspace: {
         Args: { _workspace_id: string }
+        Returns: boolean
+      }
+      mark_bookmark_as_read: {
+        Args: { p_bookmark_id: number; p_mark_as_read?: boolean }
         Returns: boolean
       }
       mark_messages_as_read: {
@@ -688,6 +805,10 @@ export type Database = {
       }
       notifications_summary: {
         Args: { _workspace_id?: string }
+        Returns: Json
+      }
+      toggle_message_bookmark: {
+        Args: { p_message_id: string }
         Returns: Json
       }
       truncate_content: {

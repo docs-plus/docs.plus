@@ -72,3 +72,5 @@ export type TNotificationSummary = {
 }
 
 export type TTab = 'Unread' | 'Mentions' | 'Read'
+
+export type TFToggleMessageBookmark = Database['public']['Functions']['toggle_message_bookmark']

@@ -32,7 +32,10 @@ const channelMessagesStore = immer<ChannelMessagesState>((set) => ({
   setOrUpdateMessage: (channelId: string, messageId: string, messageData: any) => {
     set((state) => {
       const channelMessages = state.messagesByChannel.get(channelId) || new Map()
-      channelMessages.set(messageId, messageData)
+      channelMessages.set(messageId, {
+        ...(channelMessages.get(messageId) || {}),
+        ...messageData
+      })
       state.messagesByChannel.set(channelId, channelMessages)
     })
   },

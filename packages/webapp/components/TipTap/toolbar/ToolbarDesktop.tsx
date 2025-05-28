@@ -17,7 +17,8 @@ import {
   MdOutlinePrint,
   MdOutlineFolder,
   MdOutlineSettings,
-  MdFilterAlt
+  MdFilterAlt,
+  MdOutlineBookmarkBorder
 } from 'react-icons/md'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToClipboard'
@@ -29,10 +30,21 @@ const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
 const GearModal = dynamic(() => import('./GearModal'), {
   loading: () => <Loading />
 })
+const BookmarkModal = dynamic(() => import('./BookmarkModal'), {
+  loading: () => <Loading />
+})
+
+const BookmarkButton = () => {
+  return (
+    <ToolbarButton tooltip="Bookmarks" position="tooltip-bottom">
+      <MdOutlineBookmarkBorder fill="rgba(0,0,0,.7)" size={20} />
+    </ToolbarButton>
+  )
+}
 
 const FilterButton = () => {
   return (
-    <ToolbarButton tooltip="Filter Document" position="tooltip-left">
+    <ToolbarButton tooltip="Filter Document" position="tooltip-bottom">
       <MdFilterAlt fill="rgba(0,0,0,.7)" size={20} />
     </ToolbarButton>
   )
@@ -200,12 +212,17 @@ const ToolbarDesktop = () => {
 
           {user && <div className="divided"></div>}
 
-          <Dropdown button={<GearButton />} className="dropdown-bottom dropdown-end">
-            <GearModal className="z-50 p-2" />
+          <Dropdown button={<BookmarkButton />} className="dropdown-bottom dropdown-end">
+            <BookmarkModal className="z-50 p-2" />
           </Dropdown>
 
           <Dropdown button={<FilterButton />} className="dropdown-bottom dropdown-end">
             <FilterModal className="z-50 p-2" />
+          </Dropdown>
+          <div className="divided"></div>
+
+          <Dropdown button={<GearButton />} className="dropdown-bottom dropdown-end">
+            <GearModal className="z-50 p-2" />
           </Dropdown>
         </div>
       </div>

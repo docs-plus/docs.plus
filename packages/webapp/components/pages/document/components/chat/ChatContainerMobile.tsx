@@ -14,7 +14,7 @@ const initSettings = {
     attachmentButton: false
   },
   contextMenue: {
-    replyInThread: false,
+    replyInThread: true,
     forward: false,
     pin: false
   }
