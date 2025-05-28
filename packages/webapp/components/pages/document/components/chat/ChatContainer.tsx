@@ -7,7 +7,7 @@ import { ChatRoom } from '@components/chat/ChatRoom'
 const initSettings = {
   displayChannelBar: false,
   contextMenue: {
-    replyInThread: false,
+    replyInThread: true,
     forward: false,
     pin: false
   }

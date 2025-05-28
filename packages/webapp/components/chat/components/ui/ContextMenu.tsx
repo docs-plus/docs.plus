@@ -5,7 +5,9 @@ import {
   isValidElement,
   useEffect,
   useRef,
-  useState
+  useState,
+  createContext,
+  useContext
 } from 'react'
 import {
   useFloating,
@@ -22,6 +24,21 @@ import {
   FloatingFocusManager,
   FloatingOverlay
 } from '@floating-ui/react'
+
+interface ContextMenuContextType {
+  setIsOpen: (open: boolean) => void
+  isOpen: boolean
+}
+
+const ContextMenuContext = createContext<ContextMenuContextType | undefined>(undefined)
+
+export const useContextMenuContext = () => {
+  const context = useContext(ContextMenuContext)
+  if (!context) {
+    throw new Error('useContextMenuContext must be used within ContextMenuContext.Provider')
+  }
+  return context
+}
 
 export const MenuItem = forwardRef<HTMLLIElement, React.LiHTMLAttributes<HTMLLIElement>>(
   ({ children, ...props }, ref) => {
@@ -139,42 +156,44 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
     if (!isOpen) return
 
     return (
-      <FloatingPortal>
-        <FloatingOverlay lockScroll>
-          <FloatingFocusManager context={context} initialFocus={refs.floating}>
-            <ul
-              className={className}
-              ref={refs.setFloating || ref}
-              style={floatingStyles}
-              {...getFloatingProps()}>
-              {Children.map(
-                children,
-                (child, index) =>
-                  isValidElement(child) &&
-                  cloneElement(
-                    child,
-                    getItemProps({
-                      tabIndex: activeIndex === index ? 0 : -1,
-                      ref(node: HTMLUListElement) {
-                        listItemsRef.current[index] = node
-                      },
-                      onClick() {
-                        // @ts-ignore
-                        child.props.onClick?.()
-                        setIsOpen(false)
-                      },
-                      onMouseUp() {
-                        //@ts-ignore
-                        child.props.onClick?.()
-                        setIsOpen(false)
-                      }
-                    })
-                  )
-              )}
-            </ul>
-          </FloatingFocusManager>
-        </FloatingOverlay>
-      </FloatingPortal>
+      <ContextMenuContext.Provider value={{ setIsOpen, isOpen }}>
+        <FloatingPortal>
+          <FloatingOverlay lockScroll>
+            <FloatingFocusManager context={context} initialFocus={refs.floating}>
+              <ul
+                className={className}
+                ref={refs.setFloating || ref}
+                style={floatingStyles}
+                {...getFloatingProps()}>
+                {Children.map(
+                  children,
+                  (child, index) =>
+                    isValidElement(child) &&
+                    cloneElement(
+                      child,
+                      getItemProps({
+                        tabIndex: activeIndex === index ? 0 : -1,
+                        ref(node: HTMLUListElement) {
+                          listItemsRef.current[index] = node
+                        },
+                        onClick() {
+                          // @ts-ignore
+                          child.props.onClick?.()
+                          setIsOpen(false)
+                        },
+                        onMouseUp() {
+                          //@ts-ignore
+                          child.props.onClick?.()
+                          setIsOpen(false)
+                        }
+                      })
+                    )
+                )}
+              </ul>
+            </FloatingFocusManager>
+          </FloatingOverlay>
+        </FloatingPortal>
+      </ContextMenuContext.Provider>
     )
   }
 )

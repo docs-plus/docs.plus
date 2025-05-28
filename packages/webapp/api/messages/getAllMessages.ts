@@ -47,4 +47,11 @@ export type TMessageWithUser = TMessage & {
   isGroupEnd: boolean
   isGroupStart: boolean
   isNewGroupById: boolean
+  // Bookmark fields
+  is_bookmarked?: boolean
+  bookmark_id?: number | null
+  bookmark_created_at?: string | null
+  bookmark_archived_at?: string | null
+  bookmark_marked_at?: string | null
+  bookmark_metadata?: any | null
 }

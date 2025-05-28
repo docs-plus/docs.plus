@@ -4,6 +4,7 @@ import { MessageContextMenu } from '../../MessageContextMenu'
 import { useChatStore } from '@stores'
 import { isOnlyEmoji } from '@utils/index'
 import { useChannel } from '../../context/ChannelProvider'
+import { MdOutlineBookmark } from 'react-icons/md'
 
 // Component imports
 import MessageContent from './MessageContent'
@@ -104,20 +105,31 @@ function MessageCardDesktop({ message }: TMessageCardDesktopProps, ref: any) {
 
   return (
     <div
-      className={`group/msgcard chat msg_card hover:bg-base-200 relative w-fit w-full rounded-md pl-3 transition-colors`}
+      className={`group/msgcard chat msg_card ${
+        message.is_bookmarked || message.bookmark_id
+          ? 'my-1 bg-blue-50 hover:bg-blue-100'
+          : 'hover:bg-base-200'
+      } relative w-full rounded-md pl-3 transition-colors`}
       ref={cardRef}
       onDoubleClick={handleDoubleClick}>
+      {(message.is_bookmarked || message.bookmark_id) && (
+        <div className={`flex items-center gap-1 pt-1 pb-4 text-xs font-medium text-blue-600`}>
+          <MdOutlineBookmark size={16} />
+          <span>Saved for later</span>
+        </div>
+      )}
+
       <MessageActions
         className="absolute -top-4 right-2 hidden group-hover/msgcard:block"
         message={message}
       />
-      <div className="flex items-start gap-2">
+      <div className="flex w-full items-start gap-2">
         <div className="relative flex flex-col items-center space-y-2">
           <ProfilePic message={message} />
         </div>
 
         {isGroupStart && (
-          <div className="flex flex-col">
+          <div className="flex w-full flex-col">
             <MessageHeader message={message} />
 
             <div className={`!mt-0 flex w-full flex-col text-[15px] font-normal antialiased`}>

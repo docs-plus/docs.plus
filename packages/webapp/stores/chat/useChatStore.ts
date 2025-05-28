@@ -8,6 +8,7 @@ import channelMembersStore from './channelMembersStore'
 import channelMessagesStore from './channelMessagesStore'
 import workspaceSettingsStore from './workspaceSettingsStore'
 import channelPinnedMessagesStore from './channelPinnedMessagesStore'
+import bookmark from './bookmark'
 
 enableMapSet()
 
@@ -18,6 +19,7 @@ interface IStore
     ReturnType<typeof chatRoom>,
     ReturnType<typeof workspaceSettingsStore>,
     ReturnType<typeof threadStore>,
+    ReturnType<typeof bookmark>,
     ReturnType<typeof channelMessagesStore> {}
 
 export const useChatStore = create<IStore>((...props) => ({
@@ -27,5 +29,6 @@ export const useChatStore = create<IStore>((...props) => ({
   ...channelPinnedMessagesStore(...props),
   ...chatRoom(...props),
   ...channelsStore(...props),
-  ...threadStore(...props)
+  ...threadStore(...props),
+  ...bookmark(...props)
 }))

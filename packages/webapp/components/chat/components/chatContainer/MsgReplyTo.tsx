@@ -10,7 +10,7 @@ export const MsgReplyTo = ({ message }: { message: TMsg }) => {
   }, [message])
 
   return (
-    <div className="bg-base-200 text-base-content mb-1 w-full rounded border-l-4 border-cyan-400 p-1">
+    <div className="bg-base-200 text-base-content mb-1 w-[98%] rounded border-l-4 border-cyan-400 p-1">
       <div className="chat-header text-xs font-bold">
         <>
           <div className="text-xs font-bold">{userReplyTo}</div>
