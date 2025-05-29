@@ -28,6 +28,7 @@ import {
 interface ContextMenuContextType {
   setIsOpen: (open: boolean) => void
   isOpen: boolean
+  mouseEvent: MouseEvent | null
 }
 
 const ContextMenuContext = createContext<ContextMenuContextType | undefined>(undefined)
@@ -43,7 +44,7 @@ export const useContextMenuContext = () => {
 export const MenuItem = forwardRef<HTMLLIElement, React.LiHTMLAttributes<HTMLLIElement>>(
   ({ children, ...props }, ref) => {
     return (
-      <li {...props} role="menuitem" ref={ref}>
+      <li {...props} role="menuitem" ref={ref} onClick={props.onClick}>
         {children}
       </li>
     )
@@ -62,6 +63,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
   ({ children, parrentRef, className }, ref) => {
     const [activeIndex, setActiveIndex] = useState<number | null>(null)
     const [isOpen, setIsOpen] = useState(false)
+    const [mouseEvent, setMouseEvent] = useState<MouseEvent | null>(null)
 
     const listItemsRef = useRef<Array<HTMLUListElement | null>>([])
     const listContentRef = useRef(
@@ -113,6 +115,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
 
       function onContextMenu(e: MouseEvent) {
         e.preventDefault()
+        setMouseEvent(e)
 
         refs.setPositionReference({
           getBoundingClientRect() {
@@ -138,7 +141,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
         }, 300)
       }
 
-      function onMouseUp() {
+      function onMouseUp(e: MouseEvent) {
         if (allowMouseUpCloseRef.current) {
           setIsOpen(false)
         }
@@ -156,7 +159,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
     if (!isOpen) return
 
     return (
-      <ContextMenuContext.Provider value={{ setIsOpen, isOpen }}>
+      <ContextMenuContext.Provider value={{ setIsOpen, isOpen, mouseEvent }}>
         <FloatingPortal>
           <FloatingOverlay lockScroll>
             <FloatingFocusManager context={context} initialFocus={refs.floating}>
@@ -176,14 +179,14 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
                         ref(node: HTMLUListElement) {
                           listItemsRef.current[index] = node
                         },
-                        onClick() {
+                        onClick(e) {
                           // @ts-ignore
-                          child.props.onClick?.()
+                          child.props.onClick?.(e, mouseEvent)
                           setIsOpen(false)
                         },
-                        onMouseUp() {
+                        onMouseUp(e) {
                           //@ts-ignore
-                          child.props.onClick?.()
+                          child.props.onClick?.(e, mouseEvent)
                           setIsOpen(false)
                         }
                       })

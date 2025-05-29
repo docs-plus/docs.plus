@@ -26,6 +26,10 @@ import { ReplyMD } from '@components/icons/Icons'
 import AvatarStack from '@components/AvatarStack'
 import { useApi } from '@hooks/useApi'
 import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
+import { useBookmarkMessage } from '@components/pages/document/hooks/useBookmarkMessage'
+import { useReplyInThread } from '@hooks/useReplyInThread'
+import { useEmojiPicker } from '@hooks/useEmojiPicker'
+import { useCopyToDoc } from '@hooks/useCopyToDoc'
 
 const UserReadStatus = ({ messageData }: { messageData: any }) => {
   const { channelId } = useChannel()
@@ -94,6 +98,11 @@ export const MessageContextMenu = forwardRef<
   { messageData: any; className: string; parrentRef: any }
 >(({ messageData, className, parrentRef }, ref) => {
   const { channelId, settings } = useChannel()
+
+  const { handleBookmarkMessage, bookmarkLoading } = useBookmarkMessage()
+  const { handleReplyInThread } = useReplyInThread()
+  const { openEmojiPicker } = useEmojiPicker()
+  const { handleCopyToDoc } = useCopyToDoc()
 
   const channels = useChatStore((state) => state.workspaceSettings.channels)
   const channelSettings = useMemo<TChannelSettings | null>(
@@ -171,7 +180,14 @@ export const MessageContextMenu = forwardRef<
     {
       title: 'Add reaction',
       icon: <MdOutlineEmojiEmotions size={20} />,
-      onClickFn: () => {},
+      onClickFn: (e: React.MouseEvent, mouseEvent: MouseEvent | null) => {
+        if (mouseEvent) {
+          openEmojiPicker(
+            mouseEvent as unknown as React.MouseEvent<Element, MouseEvent>,
+            messageData
+          )
+        }
+      },
       display: settings.contextMenue?.reaction ?? true,
       className: 'border-b border-gray-300 pb-1 mb-1'
     },
@@ -183,21 +199,21 @@ export const MessageContextMenu = forwardRef<
         ) : (
           <MdOutlineBookmarkAdd size={20} />
         ),
-      onClickFn: () => {},
+      onClickFn: () => handleBookmarkMessage(messageData),
       display: settings.contextMenue?.bookmark ?? true,
       className: ''
     },
     {
       title: 'Copy to Doc',
       icon: <MdOutlineFileOpen size={20} />,
-      onClickFn: () => {},
+      onClickFn: () => handleCopyToDoc(messageData, channelId),
       display: settings.contextMenue?.copyToDoc ?? true,
       className: ''
     },
     {
       title: 'Reply in Thread',
       icon: <MdOutlineComment size={20} />,
-      onClickFn: () => handleThread(),
+      onClickFn: () => handleReplyInThread(messageData),
       display: settings.contextMenue?.replyInThread ?? true,
       className: 'text-docsy'
     },
@@ -256,7 +272,13 @@ export const MessageContextMenu = forwardRef<
       {messageButtonList.map(
         (item) =>
           item.display && (
-            <MenuItem key={item.title} onClick={item.onClickFn} className={`${item.className}`}>
+            <MenuItem
+              key={item.title}
+              //@ts-ignore
+              onClick={(e, mouseEvent) => {
+                item.onClickFn(e, mouseEvent)
+              }}
+              className={`${item.className}`}>
               <a href="#">
                 {item.icon}
                 {item.title}

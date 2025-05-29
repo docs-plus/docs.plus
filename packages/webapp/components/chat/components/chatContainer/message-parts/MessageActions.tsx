@@ -1,13 +1,17 @@
 import React, { useCallback, useEffect, useState } from 'react'
+import PubSub from 'pubsub-js'
 import {
   deleteMessage,
-  toggleMessageBookmark,
   TMessageWithUser as TMsg,
   getChannelMembersByLastReadUpdate,
   ChannelMemberReadUpdate
 } from '@api'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { useApi } from '@hooks/useApi'
+import { useBookmarkMessage } from '@components/pages/document/hooks/useBookmarkMessage'
+import { useReplyInThread } from '@hooks/useReplyInThread'
+import { useEmojiPicker } from '@hooks/useEmojiPicker'
+import { useCopyToDoc } from '@hooks/useCopyToDoc'
 import { useChannel } from '../../../context/ChannelProvider'
 import ENUMS from '@components/TipTap/enums'
 import * as toast from '@components/toast'
@@ -27,75 +31,6 @@ import { ReplyMD } from '@components/icons/Icons'
 import { CHAT_OPEN } from '@services/eventsHub'
 import Dropdown, { useDropdown } from '@components/ui/Dropdown'
 import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
-// For reply in thread feature
-const emptyParagraphs = Array(5).fill({
-  type: ENUMS.NODES.PARAGRAPH_TYPE
-})
-
-const createHeadingNodeJson = (messageContent: string, headingLevel: number) => {
-  return {
-    type: ENUMS.NODES.HEADING_TYPE,
-    attrs: { level: Math.min(headingLevel, 10) },
-    content: [
-      {
-        type: ENUMS.NODES.CONTENT_HEADING_TYPE,
-        content: [{ type: ENUMS.NODES.TEXT_TYPE, text: messageContent }],
-        attrs: { level: Math.min(headingLevel, 10) }
-      },
-      {
-        type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
-        content: emptyParagraphs
-      }
-    ]
-  }
-}
-
-const createParagraphNodeJson = (message: TMsg) => {
-  const workspaceId = useStore.getState().settings.workspaceId
-  const documentSlug = location.pathname.split('/').pop()
-  const channelId = message.channel_id || workspaceId
-  const messageId = message.id
-  const messageUrl = `/${documentSlug}?act=ch&c_id=${channelId}&m_id=${messageId}`
-
-  const messageOwner = message.user_details.username || message.user_details.fullname
-  const messageContent = message.content.trim()
-  const messageCreatedAt = new Date(message.created_at)
-    .toLocaleString('sv-SE', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    })
-    .replace(' ', ' ')
-
-  const newContent = [
-    {
-      type: 'text',
-      marks: [
-        {
-          type: 'hyperlink',
-          attrs: {
-            id: null,
-            href: messageUrl,
-            target: '_blank',
-            class: null
-          }
-        }
-      ],
-      text: `💬 ${messageCreatedAt} ${messageOwner}: `
-    },
-    {
-      type: ENUMS.NODES.TEXT_TYPE,
-      text: messageContent
-    }
-  ]
-
-  return {
-    type: ENUMS.NODES.PARAGRAPH_TYPE,
-    content: newContent
-  }
-}
 
 type MessageActionsProps = {
   className?: string
@@ -108,6 +43,7 @@ const DropdownContent = ({ message }: { message: TMsg }) => {
   const { channelId } = useChannel()
   const [readUsers, setReadUsers] = useState<ChannelMemberReadUpdate[]>([])
   const setEditMessageMemory = useChatStore((state) => state.setEditMessageMemory)
+  const { handleCopyToDoc } = useCopyToDoc()
 
   const {
     editor: { instance: editor }
@@ -133,64 +69,6 @@ const DropdownContent = ({ message }: { message: TMsg }) => {
     fetchData()
   }, [isOpen])
 
-  const handleCopyToDoc = useCallback(() => {
-    if (!message) return
-    if (!editor) return
-
-    const headingId = channelId
-
-    // Find the heading with matching ID in the document
-    const { doc } = editor.state
-    let headingPos: number | null = null
-    let headingLevel = 1
-    let headingNode: any = null
-
-    let secondHeadingPos: number | null = null
-    let secondHeadingLevel: number | null = null
-    let secondHeadingNode: any = null
-
-    // Traverse the document to find the heading with matching ID
-    doc.descendants((node, pos) => {
-      // find end of contentWrapper node that after that pos heading node is found
-      if (headingPos != null && node.type.name === 'heading' && !secondHeadingPos) {
-        secondHeadingPos = pos
-        secondHeadingLevel = node.attrs.level
-        secondHeadingNode = node
-        return false // Stop traversal once found
-      }
-      if (node.type.name === 'heading' && node.attrs.id === headingId && !headingPos) {
-        headingPos = pos
-        headingLevel = node.attrs.level
-        headingNode = node
-      }
-    })
-
-    // Calculate position where content should be inserted
-    let insertPosition =
-      headingPos !== null && headingNode
-        ? headingPos + Number(headingNode.content.size) // End of current heading's content
-        : doc.content.size - 2 || 0 // End of document if heading not found
-
-    if (headingLevel === 1) {
-      insertPosition = secondHeadingPos !== null ? secondHeadingPos : insertPosition
-    }
-
-    // Insert content at calculated position
-    const insertAndUpdate = () => {
-      editor
-        .chain()
-        .focus()
-        .insertContentAt(insertPosition, createParagraphNodeJson(message))
-        .command(({ tr }) => {
-          tr.setMeta('copyToDoc', true)
-          return true
-        })
-        .run()
-    }
-
-    insertAndUpdate()
-  }, [message, editor])
-
   const handleEdit = useCallback(() => {
     if (!message) return
     setEditMessageMemory(channelId, message)
@@ -207,7 +85,7 @@ const DropdownContent = ({ message }: { message: TMsg }) => {
   return (
     <ul className="menu bg-base-100 w-52 !p-1">
       <li>
-        <a className="flex items-center gap-2" onClick={handleCopyToDoc}>
+        <a className="flex items-center gap-2" onClick={() => handleCopyToDoc(message, channelId)}>
           <MdOutlineFileOpen size={20} />
           Copy to doc
         </a>
@@ -273,131 +151,18 @@ export const MessageActions = ({ className, message }: MessageActionsProps) => {
   const { channelId } = useChannel()
   const user = useAuthStore((state) => state.profile)
   const setReplyMessageMemory = useChatStore((state) => state.setReplyMessageMemory)
-  const setOrUpdateMessage = useChatStore((state) => state.setOrUpdateMessage)
+  const { handleBookmarkMessage, bookmarkLoading } = useBookmarkMessage()
+  const { handleReplyInThread } = useReplyInThread()
+  const { openEmojiPicker } = useEmojiPicker()
 
   const {
     editor: { instance: editor }
   } = useStore((state) => state.settings)
 
-  const { request: toggleBookmark, loading: bookmarkLoading } = useApi(
-    toggleMessageBookmark,
-    null,
-    false
-  )
-
   const handleReply = useCallback(() => {
     setReplyMessageMemory(message.channel_id, message)
     document.dispatchEvent(new CustomEvent('editor:focus'))
   }, [message, setReplyMessageMemory])
-
-  const openEmojiPicker = useCallback((event: React.MouseEvent, message: TMsg) => {
-    const customEvent = new CustomEvent('toggelEmojiPicker', {
-      detail: {
-        clickEvent: event,
-        message,
-        type: 'react2Message'
-      }
-    })
-    document.dispatchEvent(customEvent)
-  }, [])
-
-  const handleReplyInThread = useCallback(() => {
-    if (!editor) return
-
-    const messageContent = message.content.trim()
-    const headingId = message.channel_id
-
-    // Find the heading with matching ID in the document
-    const { doc } = editor.state
-    let headingPos: number | null = null
-    let headingLevel = 1
-    let headingNode: any = null
-
-    // Traverse the document to find the heading with matching ID
-    doc.descendants((node, pos) => {
-      if (node.type.name === 'heading' && node.attrs.id === headingId) {
-        headingPos = pos
-        headingLevel = node.attrs.level
-        headingNode = node
-        return false // Stop traversal once found
-      }
-    })
-
-    // Calculate position where content should be inserted
-    const insertPosition =
-      headingPos !== null && headingNode
-        ? headingPos + Number(headingNode.content.size) // End of current heading's content
-        : doc.content.size || 0 // End of document if heading not found
-
-    // Insert content at calculated position
-    const insertAndUpdate = () => {
-      editor
-        .chain()
-        .focus()
-        .insertContentAt(
-          Number(insertPosition),
-          createHeadingNodeJson(messageContent, headingPos !== null ? headingLevel + 1 : 1),
-          { updateSelection: true }
-        )
-        .command(({ tr }) => {
-          tr.setMeta('renderTOC', true)
-          return true
-        })
-        .run()
-    }
-
-    // Execute insert and scroll to new position
-    insertAndUpdate()
-
-    // After scrollIntoView and open Chatroom
-    setTimeout(() => {
-      const { doc } = editor.state
-      let newHeadingId: string | null = null
-
-      // Search in a range around the insertion point
-      const searchStart = Math.max(0, insertPosition - 10)
-      const searchEnd = Math.min(doc.content.size, insertPosition + messageContent.length + 100)
-
-      doc.nodesBetween(searchStart, searchEnd, (node, pos) => {
-        if (
-          node.type.name === 'heading' &&
-          node.textContent.trim() === messageContent &&
-          node.attrs.id
-        ) {
-          newHeadingId = node.attrs.id
-          return false
-        }
-      })
-
-      if (newHeadingId) {
-        PubSub.publish(CHAT_OPEN, {
-          headingId: newHeadingId
-        })
-      }
-    }, 150)
-  }, [message, editor])
-
-  const handleBookmarkMessage = useCallback(async () => {
-    if (!message) return
-
-    const { error, data } = await toggleBookmark({ messageId: message.id })
-
-    if (error) {
-      toast.Error('Failed to toggle bookmark')
-      return
-    }
-
-    if (data) {
-      setOrUpdateMessage(message.channel_id, message.id, {
-        // @ts-ignore
-        bookmark_id: data.action === 'added' ? data.bookmark_id : null,
-        // @ts-ignore
-        is_bookmarked: data.action === 'added' ? true : false
-      })
-    }
-    // @ts-ignore
-    toast.Success(data?.action === 'added' ? 'Bookmark added' : 'Bookmark removed')
-  }, [message, toggleBookmark])
 
   return (
     <div className={`join bg-base-300 rounded-md shadow-xs ${className}`}>
@@ -419,7 +184,7 @@ export const MessageActions = ({ className, message }: MessageActionsProps) => {
         className="btn btn-sm btn-square join-item btn-ghost tooltip tooltip-left"
         data-tip="Bookmark Message"
         disabled={bookmarkLoading}
-        onClick={handleBookmarkMessage}>
+        onClick={() => handleBookmarkMessage(message)}>
         {bookmarkLoading ? (
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />
         ) : message.is_bookmarked || message.bookmark_id ? (
@@ -432,7 +197,7 @@ export const MessageActions = ({ className, message }: MessageActionsProps) => {
       <button
         className="btn btn-sm btn-square join-item btn-ghost tooltip tooltip-left"
         data-tip="Reply in thread"
-        onClick={handleReplyInThread}>
+        onClick={() => handleReplyInThread(message)}>
         <MdOutlineComment size={20} className="text-docsy" />
       </button>
 
