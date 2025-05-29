@@ -37,7 +37,12 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
       const chatEditorHeight = 153
 
       // Use getBoundingClientRect if positioning relative to an element
-      const rect = event.currentTarget.getBoundingClientRect()
+      const rect =
+        event.currentTarget?.getBoundingClientRect() || event.target?.getBoundingClientRect()
+      if (!rect) {
+        console.error('rect is null')
+        return
+      }
       let newTop = rect.bottom + window.scrollY
       let newLeft = rect.left + window.scrollX
 
