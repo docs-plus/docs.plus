@@ -25,7 +25,8 @@ import {
   MdOutlineEdit,
   MdOutlineFileOpen,
   MdBookmarkRemove,
-  MdOutlineBookmarkAdd
+  MdOutlineBookmarkAdd,
+  MdLink
 } from 'react-icons/md'
 import { ReplyMD } from '@components/icons/Icons'
 import { CHAT_OPEN } from '@services/eventsHub'
@@ -60,9 +61,6 @@ const DropdownContent = ({ message }: { message: TMsg }) => {
       if (isOpen) {
         const { data } = await fetchReadUsers(channelId, message.created_at)
         setReadUsers(data as ChannelMemberReadUpdate[])
-        console.log({
-          readUsers
-        })
       }
     }
 
@@ -74,6 +72,25 @@ const DropdownContent = ({ message }: { message: TMsg }) => {
     setEditMessageMemory(channelId, message)
   }, [channelId, message, setEditMessageMemory])
 
+  const handleCopyUrl = useCallback(() => {
+    const messageId = message.id
+    const channelId = message.channel_id
+
+    const newURL = new URL(location.href)
+    newURL.searchParams.set('msg_id', messageId)
+    newURL.searchParams.set('chatroom', channelId)
+
+    navigator.clipboard
+      .writeText(newURL.toString())
+      .then(() => {
+        toast.Success('URL copied to clipboard')
+      })
+      .catch((err) => {
+        console.error('Failed to copy URL:', err)
+        toast.Error('Failed to copy URL')
+      })
+  }, [message, channelId])
+
   const handleDeleteMessage = useCallback(async () => {
     if (!message) return
     const { error } = await deleteMessage(message.channel_id, message.id)
@@ -84,6 +101,12 @@ const DropdownContent = ({ message }: { message: TMsg }) => {
 
   return (
     <ul className="menu bg-base-100 w-52 !p-1">
+      {/* <li>
+        <a href="#" className="flex items-center gap-2" onClick={handleCopyUrl}>
+          <MdLink size={20} className="-rotate-45" />
+          Copy Link
+        </a>
+      </li> */}
       <li>
         <a className="flex items-center gap-2" onClick={() => handleCopyToDoc(message, channelId)}>
           <MdOutlineFileOpen size={20} />
