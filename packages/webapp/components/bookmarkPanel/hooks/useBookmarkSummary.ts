@@ -2,9 +2,11 @@ import { useEffect } from 'react'
 import { useApi } from '@hooks/useApi'
 import { getBookmarkStats, getUserBookmarks } from '@api'
 import { useAuthStore, useChatStore, useStore } from '@stores'
+import { useDropdown } from '@components/ui/Dropdown'
 
 export const useBookmarkSummary = () => {
   const { workspaceId } = useStore((state) => state.settings)
+  const { isOpen } = useDropdown()
   const user = useAuthStore((state) => state.profile)
   const {
     setBookmarkSummary,
@@ -77,5 +79,5 @@ export const useBookmarkSummary = () => {
     }
 
     fetchBookmarkSummary()
-  }, [user, workspaceId])
+  }, [user, workspaceId, isOpen])
 }
