@@ -584,7 +584,6 @@ export const createHeadingNodeFromSelection = (
       content: [
         {
           type: ENUMS.NODES.CONTENT_HEADING_TYPE,
-          content: [...node.content],
           attrs: {
             level: attributes.level
           }
@@ -594,6 +593,10 @@ export const createHeadingNodeFromSelection = (
           content: contentWrapper
         }
       ]
+    }
+
+    if (node.content?.length) {
+      jsonNode.content.at(0).content = [...node.content]
     }
 
     headings.push(jsonNode)
