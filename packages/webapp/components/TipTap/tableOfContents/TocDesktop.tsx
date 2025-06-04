@@ -17,7 +17,12 @@ const TOCDesktop = ({ className }: any) => {
     setRenderedTocs(tocs)
   }, [items, headingId])
 
-  if (!items.length) return null
+  if (!items.length)
+    return (
+      <div className={`${className}`} style={{ scrollbarGutter: 'stable' }}>
+        <DocTitleChatRoomDesktop className="my-1" />
+      </div>
+    )
 
   return (
     <div className={`${className}`} style={{ scrollbarGutter: 'stable' }}>
