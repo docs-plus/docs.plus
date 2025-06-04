@@ -26,6 +26,8 @@ const useHandelTocUpdate = () => {
         let headingId = _parent.attrs?.id || node?.attrs.id
         let { headingSection, offsetTop } = getHeadingDetails(headingId)
 
+        if (!node?.textContent) return
+
         headings.push({
           level: node.attrs?.level,
           text: node?.textContent,
