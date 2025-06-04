@@ -287,9 +287,10 @@ const ContentWrapper = Node.create({
           }
 
           // check if the ancher and heading are in the same node
-          if ($anchor.parent.type.name === $head.parent.type.name) {
-            return false
-          }
+          // if ($anchor.parent.type.name === $head.parent.type.name) {
+          //   console.log('second')
+          //   return false
+          // }
 
           // Check if selection covers entire document content
           // Due to document schema hierarchy, content starts at position 2 and ends at docSize - 3
@@ -369,7 +370,7 @@ const ContentWrapper = Node.create({
 
         // Check if we're in a ContentWrapper
         const contentWrapper = $from.node($from.depth - 1)
-        if (contentWrapper.type.name !== ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
+        if (contentWrapper?.type?.name !== ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
           return false
         }
 
