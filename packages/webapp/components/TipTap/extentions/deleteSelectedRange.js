@@ -89,6 +89,14 @@ const deleteSelectedRange = (editor) => {
   const fromOffset = from - ($anchor?.textOffset || 0)
   const toOffset = to - ($head?.textOffset || 0)
 
+  if (doc.resolve(to).parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+    // TODO: handle this case later
+    // throw new Error('Selection starts within a content heading')
+    console.error(
+      '[delete Selected Range]: Selection starts within a content heading, not handdle '
+    )
+    return true
+  }
   try {
     const titleSelectionRange = getSelectionRangeSlice(doc, state, to, titleEndPos)
     const selectedContents = getSelectionRangeBlocks(doc, fromOffset, toOffset)
@@ -131,7 +139,7 @@ const deleteSelectedRange = (editor) => {
     return false
   } catch (error) {
     console.error('[heading][deleteSelectedRange] error', error)
-    return true
+    return false
   }
 }
 
