@@ -1,15 +1,15 @@
 import React, { useCallback } from 'react'
-import { FaPlus } from 'react-icons/fa6'
 import ENUMS from '@components/TipTap/enums'
 import { useModal } from '@components/ui/ModalDrawer'
 import { useStore } from '@stores'
 import { MdAdd } from 'react-icons/md'
 
 const AppendHeadingButton = ({ className }: { className: string }) => {
-  const { close: closeModal } = useModal() || {}
   const {
-    editor: { instance: editor }
+    editor: { instance: editor, isMobile }
   } = useStore((state) => state.settings)
+
+  const { close: closeModal } = isMobile ? useModal() || {} : {}
 
   const appendHeadingToEnd = useCallback(() => {
     if (!editor) return
@@ -36,19 +36,18 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
     const selectionPos = editor.state.doc.content.size
 
     editor.commands.insertContentAt(selectionPos, jsonNode)
-    closeModal?.()
+    isMobile && closeModal?.()
 
-    // make the editor editable
     const divProseMirror = document.querySelector('.tiptap.ProseMirror') as HTMLElement
     divProseMirror.setAttribute('contenteditable', 'true')
     useStore.getState().setWorkspaceEditorSetting('isEditable', true)
     editor?.setEditable(true)
     editor
       ?.chain()
-      .focus(selectionPos + 2) // focus on content wrapper not heading
+      .focus(selectionPos + 2)
       .scrollIntoView()
       .run()
-  }, [editor])
+  }, [editor, isMobile, closeModal])
 
   return (
     <div className={`p-3 ${className}`}>
@@ -57,7 +56,6 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
         data-tip="Add headings"
         onClick={appendHeadingToEnd}>
         <MdAdd size={20} />
-        {/* <span className="">Add headings</span> */}
       </button>
     </div>
   )
