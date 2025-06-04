@@ -10,6 +10,30 @@ import {
 } from './helper'
 
 /**
+ * Removes empty nodes from both the beginning and end of a content array
+ *
+ * Iteratively removes nodes that have no content from the start and end of the array
+ * until it encounters nodes with actual content. This helps clean up clipboard content
+ * by removing unnecessary empty paragraphs that could interfere with paste operations.
+ *
+ * @param {Array} contentArray - Array of node objects to trim
+ * @returns {Array} - Trimmed array with empty nodes removed from both ends
+ */
+const trimEmptyNodes = (contentArray) => {
+  // Remove empty nodes from the beginning
+  while (contentArray.length > 0 && !contentArray[0].content?.length) {
+    contentArray.shift()
+  }
+
+  // Remove empty nodes from the end
+  while (contentArray.length > 0 && !contentArray[contentArray.length - 1].content?.length) {
+    contentArray.pop()
+  }
+
+  return contentArray
+}
+
+/**
  * Inserts paragraphs at the current position and maintains cursor position
  *
  * Creates a proper slice from paragraph nodes and uses replaceRange to
@@ -107,8 +131,11 @@ const clipboardPaste = (slice, editor) => {
   const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
   const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
 
+  // Normalize the slice content by removing empty nodes from both ends
+  const sliceJsonContent = trimEmptyNodes([...slice.toJSON().content])
+
   const aggregatedContent = [
-    ...slice.toJSON().content,
+    ...sliceJsonContent,
     ...contentWrapperParagraphs,
     ...linearizeHeadingNodes(contentWrapperHeadings)
   ]
@@ -118,12 +145,9 @@ const clipboardPaste = (slice, editor) => {
 
   // If there are no headings to paste, return the original slice simple content will be handel in contentWrapper node
   if (headings.length === 0) {
-    if (paragraphs.length) {
-      insertParagraphsAtPosition(tr, paragraphs, state, from)
-    }
     tr.setMeta('paste', true)
     view.dispatch(tr)
-    return Slice.empty
+    return slice
   }
 
   // Delete all content from the caret to the end of the document
