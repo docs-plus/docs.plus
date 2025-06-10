@@ -1,18 +1,16 @@
 import { Node, mergeAttributes, InputRule, callOrReturn } from '@tiptap/core'
-import { Slice, Fragment } from '@tiptap/pm/model'
-import { Plugin, PluginKey } from '@tiptap/pm/state'
-import changeHeadingLevel from './changeHeadingLevel.js'
-import wrapContenWithHeading from './wrapContenWithHeading.js'
-import clipboardPast from './clipboardPast.js'
-import changeHeading2paragraphs from './changeHeading2paragraphs.js'
-import { getSelectionBlocks, getNodeState } from './helper.js'
-import deleteSelectedRange from './deleteSelectedRange.js'
-import ENUMS from '../enums.js'
+import changeHeadingLevel from '../extentions/changeHeadingLevel'
+import wrapContenWithHeading from '../extentions/wrapContenWithHeading'
+import changeHeading2paragraphs from '../extentions/changeHeading2paragraphs'
+import deleteSelectedRange from '../extentions/deleteSelectedRange'
+import { TIPTAP_NODES } from '@types'
+import { getNodeState } from '../extentions/helper'
+import { createCopyPastePlugin, createRangeSelectionPlugin } from '../extentions/plugins'
 
 const Heading = Node.create({
-  name: ENUMS.NODES.HEADING_TYPE,
+  name: TIPTAP_NODES.HEADING_TYPE,
   content: 'contentHeading contentWrapper',
-  group: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
+  group: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
   defining: true,
   isolating: true,
   allowGapCursor: false,
@@ -22,7 +20,7 @@ const Heading = Node.create({
       persist: false,
       id: 1,
       HTMLAttributes: {
-        class: ENUMS.NODES.HEADING_TYPE,
+        class: TIPTAP_NODES.HEADING_TYPE,
         level: 1
       }
     }
@@ -118,7 +116,7 @@ const Heading = Node.create({
         const { $anchor } = selection
 
         // if cursor is on the heading block, change the level of the heading
-        if ($anchor.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+        if ($anchor.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
           return changeHeadingLevel(arrg, attributes, dispatch)
         }
 
@@ -129,7 +127,7 @@ const Heading = Node.create({
         ({ tr, state, dispatch }) => {
           const { doc, schema } = state
           doc.descendants((node, pos) => {
-            if (node.type.name === ENUMS.NODES.HEADING_TYPE && !node.childCount) {
+            if (node.type.name === TIPTAP_NODES.HEADING_TYPE && !node.childCount) {
               const contentWrapper = schema.nodes.contentWrapper.create()
               tr.insert(pos + node.nodeSize, contentWrapper)
             }
@@ -189,7 +187,7 @@ const Heading = Node.create({
         // TODO: find better way for this 4
         if (
           parent?.content?.content.length === 1 ||
-          parent.lastChild?.firstChild?.type.name === ENUMS.NODES.HEADING_TYPE
+          parent.lastChild?.firstChild?.type.name === TIPTAP_NODES.HEADING_TYPE
         ) {
           // If there is not any contentWrapper
           // if first child of the heading is another heading
@@ -201,10 +199,10 @@ const Heading = Node.create({
             parent.lastChild?.firstChild?.content.size === 0
           ) {
             return editor.commands.insertContentAt($anchor.pos, {
-              type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
+              type: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
               content: [
                 {
-                  type: ENUMS.NODES.PARAGRAPH_TYPE
+                  type: TIPTAP_NODES.PARAGRAPH_TYPE
                 }
               ]
             })
@@ -260,7 +258,6 @@ const Heading = Node.create({
     })
   },
   addProseMirrorPlugins() {
-    let domeEvent
     return [
       // new Plugin({
       //   key: new PluginKey('ensureContentWrapperPlugin'),
@@ -282,79 +279,8 @@ const Heading = Node.create({
       //   }
       // }),
       // https://github.com/pageboard/pagecut/blob/bd91a17986978d560cc78642e442655f4e09ce06/src/editor.js#L234-L241
-      new Plugin({
-        key: new PluginKey('copy&pasteHeading'),
-        props: {
-          handleDOMEvents: {
-            cut: () => {
-              domeEvent = 'cut'
-              return false
-            },
-            copy: () => {
-              domeEvent = 'copy'
-            }
-          },
-          // INFO: Div turn confuses the schema service;
-          // INFO: if there is a div in the clipboard, the docsplus schema will not serialize as a must.
-          transformPastedHTML: (html) => html.replace(/div/g, 'span'),
-          transformPasted: (slice) => clipboardPast(slice, this.editor),
-          transformCopied: () => {
-            const { editor } = this
-            // Can be used to transform copied or cut content before it is serialized to the clipboard.
-            const { selection, doc } = this.editor.state
-            const { from, to } = selection
-
-            // TODO: this function retrive blocks level from the selection, I need to block characters level from the selection
-            const contentWrapper = getSelectionBlocks(doc.cut(from, to), null, null, true, true)
-
-            if (domeEvent === 'cut') {
-              // remove selection from the editor
-              deleteSelectedRange(editor)
-            }
-
-            // convert Json Block to Node Block
-            let serializeSelection = contentWrapper.map((x) =>
-              this.editor.state.schema.nodeFromJSON(x)
-            )
-
-            // convert Node Block to Fragment
-            serializeSelection = Fragment.fromArray(serializeSelection)
-
-            // convert Fragment to Slice and save it to clipboard
-            return Slice.maxOpen(serializeSelection)
-          }
-        }
-      }),
-      new Plugin({
-        key: new PluginKey('handleRangeSelection'),
-        props: {
-          handleTextInput: () => {
-            const { $anchor, $head } = this.editor.state.selection
-
-            // we need detect the selection
-            if ($anchor?.pos === $head?.pos) return false
-
-            const isAnchorInContentHeading =
-              $anchor.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE
-            const isHeadInContentHeading =
-              $head.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE
-
-            // TODO: Handle this case later
-            // if the $ancher parent is contentheading then return false
-            if (isAnchorInContentHeading) {
-              console.info(
-                '[Heading][RangeSelection]: contentHeading detected, we do not need to handle this'
-              )
-              // if both $anchor and $head parents are content headings, do nothing
-              return isHeadInContentHeading ? false : true
-            }
-
-            console.info('[Heading] Range selection delete')
-            // if user select a range of content, then hit any key, remove the selected content
-            return deleteSelectedRange(this.editor)
-          }
-        }
-      })
+      createCopyPastePlugin(this.editor),
+      createRangeSelectionPlugin(this.editor)
     ]
   }
 })

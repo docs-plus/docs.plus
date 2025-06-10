@@ -1,102 +1,9 @@
 import { Node, mergeAttributes } from '@tiptap/core'
-import { Plugin, PluginKey } from '@tiptap/pm/state'
-import { Decoration, DecorationSet } from '@tiptap/pm/view'
-import { getNodeState } from './helper.js'
-import PubSub from 'pubsub-js'
-import ENUMS from '../enums.js'
-import deleteSelectedRange from './deleteSelectedRange.js'
+import { getNodeState } from '../extentions/helper.js'
+import { TIPTAP_EVENTS, TIPTAP_NODES } from '@types'
+import deleteSelectedRange from '../extentions/deleteSelectedRange'
 import { TextSelection } from '@tiptap/pm/state'
-
-function extractContentWrapperBlocks(doc) {
-  const result = []
-  const record = (from, to, nodeSize, childCount, headingId) => {
-    result.push({ from, to, nodeSize, childCount, headingId })
-  }
-  let lastHeadingId
-
-  // For each node in the document
-  doc.descendants((node, pos) => {
-    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
-      lastHeadingId = node.attrs.id
-    }
-    if (node.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
-      const nodeSize = node.content.size
-      const childCount = node.childCount
-
-      record(pos, pos + nodeSize, nodeSize, childCount, lastHeadingId)
-    }
-  })
-
-  return result
-}
-
-function createCrinkleNode(prob) {
-  const foldEl = document.createElement('div')
-
-  foldEl.classList.add('foldWrapper')
-  const step = 2400
-  const lines = 2 + Math.floor(prob.nodeSize / step)
-  const clampedLines = Math.min(Math.max(lines, 2), 6)
-
-  for (let i = 0; i <= clampedLines; i++) {
-    const line = document.createElement('div')
-
-    line.classList.add('fold')
-    line.classList.add(`l${i}`)
-    foldEl.append(line)
-  }
-  foldEl.setAttribute('data-clampedLines', clampedLines + 1)
-
-  foldEl.addEventListener('click', (e) => {
-    const heading = e.target.closest('.heading')
-    if (!heading.classList.contains('closed')) return
-
-    const headingId = heading.getAttribute('data-id')
-    const open = heading.classList.contains('open') || true
-
-    PubSub.publish(ENUMS.EVENTS.FOLD_AND_UNFOLD, { headingId, open: open })
-  })
-
-  foldEl.addEventListener('mouseenter', (e) => {
-    const heading = e.target.closest('.heading')
-    const classList = heading.classList
-
-    if (classList.contains('opening') || classList.contains('closing')) return
-
-    const elem = e.target.closest('.foldWrapper')
-    elem.style.transitionTimingFunction = 'ease-in-out'
-    elem.style.height = '70px'
-  })
-
-  foldEl.addEventListener('mouseleave', (e) => {
-    const heading = e.target.closest('.heading')
-    const classList = heading.classList
-
-    if (classList.contains('opening') || classList.contains('closing')) return
-
-    const elem = e.target.closest('.foldWrapper')
-    elem.style.transitionTimingFunction = 'ease-in-out'
-    elem.style.height = '20px'
-  })
-
-  return foldEl
-}
-
-function buildDecorations(doc) {
-  const decos = []
-  const contentWrappers = extractContentWrapperBlocks(doc)
-
-  contentWrappers.forEach((prob) => {
-    const decorationWidget = Decoration.widget(prob.from, createCrinkleNode(prob), {
-      side: -1,
-      key: prob.headingId
-    })
-
-    decos.push(decorationWidget)
-  })
-
-  return DecorationSet.create(doc, decos)
-}
+import { createCrinklePlugin } from '../extentions/plugins'
 
 function expandElement(elem, collapseClass, headingId, open) {
   const startHeight = window.getComputedStyle(elem).height
@@ -152,7 +59,7 @@ function expandElement(elem, collapseClass, headingId, open) {
 }
 
 const ContentWrapper = Node.create({
-  name: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
+  name: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
   content: '(block)* heading*',
   defining: true,
   selectable: false,
@@ -230,7 +137,7 @@ const ContentWrapper = Node.create({
 
         tr.setMeta('addToHistory', false)
         // for trigger table of contents
-        tr.setMeta(ENUMS.EVENTS.FOLD_AND_UNFOLD, true)
+        tr.setMeta(TIPTAP_EVENTS.FOLD_AND_UNFOLD, true)
 
         const pos = getPos()
         const currentNode = tr.doc.nodeAt(pos)
@@ -280,8 +187,8 @@ const ContentWrapper = Node.create({
           console.info('[Heading][Backspace]: Delete selected range')
           // Check if both $anchor and $head parents are content headings
           if (
-            $anchor.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE &&
-            $head.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE
+            $anchor.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE &&
+            $head.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
           ) {
             return false
           }
@@ -324,9 +231,9 @@ const ContentWrapper = Node.create({
           // If there is no previous node in the selection (i.e., current node is the first node of the contentWrapper)
           if ($anchor.nodeBefore === null) {
             // If there's a text node following the current node
-            if ($anchor.nodeAfter?.type.name === ENUMS.NODES.TEXT_TYPE) {
+            if ($anchor.nodeAfter?.type.name === TIPTAP_NODES.TEXT_TYPE) {
               const paragraphContent = $anchor.path
-                .findLast((node) => node?.type?.name === ENUMS.NODES.PARAGRAPH_TYPE)
+                .findLast((node) => node?.type?.name === TIPTAP_NODES.PARAGRAPH_TYPE)
                 .content.toJSON()
 
               // Filter out the "hardBreak" nodes from the paragraph content
@@ -335,7 +242,7 @@ const ContentWrapper = Node.create({
               )
 
               const cloneCurrentNodeAsParagraph = {
-                type: ENUMS.NODES.PARAGRAPH_TYPE,
+                type: TIPTAP_NODES.PARAGRAPH_TYPE,
                 content: filteredContent
               }
 
@@ -370,21 +277,21 @@ const ContentWrapper = Node.create({
 
         // Check if we're in a ContentWrapper
         const contentWrapper = $from.node($from.depth - 1)
-        if (contentWrapper?.type?.name !== ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
+        if (contentWrapper?.type?.name !== TIPTAP_NODES.CONTENT_WRAPPER_TYPE) {
           return false
         }
 
         // Check if there's a heading before the cursor in this ContentWrapper
         let hasHeadingBefore = false
         contentWrapper.forEach((node, offset) => {
-          if (node.type.name === ENUMS.NODES.HEADING_TYPE && offset < $from.parentOffset) {
+          if (node.type.name === TIPTAP_NODES.HEADING_TYPE && offset < $from.parentOffset) {
             hasHeadingBefore = true
           }
         })
 
         if (hasHeadingBefore) {
           // If there's a heading before, only allow creating new headings
-          return this.editor.commands.setNode(ENUMS.NODES.HEADING_TYPE)
+          return this.editor.commands.setNode(TIPTAP_NODES.HEADING_TYPE)
         }
 
         // If no heading before, allow normal paragraph insertion
@@ -393,24 +300,7 @@ const ContentWrapper = Node.create({
     }
   },
   addProseMirrorPlugins() {
-    return [
-      new Plugin({
-        key: new PluginKey('crinkle'),
-        state: {
-          init(_, { doc }) {
-            return buildDecorations(doc)
-          },
-          apply(tr, old) {
-            return tr.docChanged ? buildDecorations(tr.doc) : old
-          }
-        },
-        props: {
-          decorations(state) {
-            return this.getState(state)
-          }
-        }
-      })
-    ]
+    return [createCrinklePlugin()]
   }
 })
 

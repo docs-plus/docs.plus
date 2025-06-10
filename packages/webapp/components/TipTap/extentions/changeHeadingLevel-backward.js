@@ -1,4 +1,4 @@
-import ENUMS from '../enums'
+import { TIPTAP_NODES } from '@types'
 import {
   getRangeBlocks,
   getHeadingsBlocksMap,
@@ -27,8 +27,10 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
   const startPos = getEndPosSelection(doc, state)
   const contentWrapper = getRangeBlocks(doc, startPos, titleEndPos)
 
-  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
-  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
+  const contentWrapperParagraphs = contentWrapper.filter(
+    (x) => x.type !== TIPTAP_NODES.HEADING_TYPE
+  )
+  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === TIPTAP_NODES.HEADING_TYPE)
 
   if (asWrapper && contentWrapperParagraphs.length === 0) {
     contentWrapperParagraphs.push(block.empty)

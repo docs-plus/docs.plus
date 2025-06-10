@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react'
 import { useChatStore, useStore } from '@stores'
 import { RiArrowRightSLine } from 'react-icons/ri'
 import slugify from 'slugify'
-import ENUMS from '@enum'
+import { TIPTAP_NODES } from '../../../types/tiptap'
 import { useRouter } from 'next/router'
 import { getPostAtDOM } from '@utils/index'
 
@@ -29,7 +29,7 @@ const BreadcrumbMobile = () => {
     const nodePos = editor.view.state.doc.resolve(posAtDOM) as any
 
     const headingPath = nodePos.path
-      .filter((x: any) => x?.type?.name === ENUMS.NODES.HEADING_TYPE)
+      .filter((x: any) => x?.type?.name === TIPTAP_NODES.HEADING_TYPE)
       .map((x: any) => {
         const text = x.firstChild.textContent.trim()
         return { text, id: x.attrs.id }

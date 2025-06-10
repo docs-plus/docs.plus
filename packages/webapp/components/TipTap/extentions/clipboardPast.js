@@ -1,6 +1,6 @@
 import { Slice } from '@tiptap/pm/model'
 import { TextSelection } from '@tiptap/pm/state'
-import ENUMS from '../enums'
+import { TIPTAP_NODES } from '@types'
 import {
   getSelectionRangeSlice,
   getPrevHeadingPos,
@@ -88,7 +88,7 @@ const clipboardPaste = (slice, editor) => {
 
   // Handle paste when cursor is inside a contentheading node
   if (
-    $from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE &&
+    $from.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE &&
     slice.content.content.length > 0
   ) {
     const firstNode = slice.content.content[0]
@@ -128,8 +128,10 @@ const clipboardPaste = (slice, editor) => {
   }
 
   const contentWrapper = getSelectionRangeSlice(tr.doc, state, to, titleEndPos)
-  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
-  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
+  const contentWrapperParagraphs = contentWrapper.filter(
+    (x) => x.type !== TIPTAP_NODES.HEADING_TYPE
+  )
+  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === TIPTAP_NODES.HEADING_TYPE)
 
   // Normalize the slice content by removing empty nodes from both ends
   const sliceJsonContent = trimEmptyNodes([...slice.toJSON().content])

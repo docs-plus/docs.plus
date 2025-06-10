@@ -1,6 +1,6 @@
 import PubSub from 'pubsub-js'
 import slugify from 'slugify'
-import ENUMS from '../enums'
+import { TIPTAP_EVENTS, TIPTAP_NODES } from '@types'
 import { Editor } from '@tiptap/react'
 import { CHAT_OPEN } from '@services/eventsHub'
 
@@ -24,7 +24,7 @@ export const toggleHeadingSection = (item: any) => {
   childrenWrapperElement?.classList.toggle('hidden')
 
   // @ts-ignore
-  PubSub.publish(ENUMS.EVENTS.FOLD_AND_UNFOLD, { headingId: item.id, open: !item.open })
+  PubSub.publish(TIPTAP_EVENTS.FOLD_AND_UNFOLD, { headingId: item.id, open: !item.open })
 }
 
 export const handelScroll2Title = ({
@@ -95,7 +95,7 @@ export const handelScroll2Header = (
   const nodePos = editor.view.state.doc?.resolve(editor?.view.posAtDOM(targetHeading, 0))
   //@ts-ignore
   const headingPath = nodePos.path
-    .filter((x: any) => x?.type?.name === ENUMS.NODES.HEADING_TYPE)
+    .filter((x: any) => x?.type?.name === TIPTAP_NODES.HEADING_TYPE)
     .map((x: any) => slugify(x.firstChild.textContent.toLowerCase().trim()))
 
   const url = new URL(window.location.href)
