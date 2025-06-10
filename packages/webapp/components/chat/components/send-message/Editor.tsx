@@ -17,6 +17,11 @@ import Placeholder from '@tiptap/extension-placeholder'
 import Mention from '@tiptap/extension-mention'
 import suggestion from './suggestion'
 
+// Links and Media
+import previewHyperlinkModal from '@components/TipTap/hyperlinkModals/previewHyperlink'
+import setHyperlinks from '@components/TipTap/hyperlinkModals/setHyperlink'
+import Hyperlink from '@docs.plus/extension-hyperlink'
+
 // load all highlight.js languages
 import { createLowlight } from 'lowlight'
 const lowlight = createLowlight()
@@ -62,6 +67,12 @@ export const useTiptapEditor = ({ loading }: any) => {
         Placeholder.configure({
           placeholder: 'Write a message...',
           showOnlyWhenEditable: false
+        }),
+        Hyperlink.configure({
+          protocols: ['ftp', 'mailto'],
+          hyperlinkOnPaste: true,
+          openOnClick: true,
+          autoHyperlink: true
         })
       ],
       onUpdate: ({ editor }) => {
