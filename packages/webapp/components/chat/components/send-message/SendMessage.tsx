@@ -296,7 +296,7 @@ export default function SendMessage() {
   if (!editor || !user) return null
 
   return (
-    <div className="bg-base-200 flex w-full flex-col p-1 px-2 pb-0">
+    <div className="chat_editor_container bg-base-200 flex w-full flex-col p-1 px-2 pb-0">
       <CommentMessageIndicator />
       <ReplyMessageIndicator />
       <EditeMessageIndicator />

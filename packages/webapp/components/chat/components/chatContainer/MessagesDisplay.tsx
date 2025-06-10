@@ -213,7 +213,7 @@ export const MessagesDisplay: React.FC<MessagesDisplayProps> = ({
   return (
     <>
       <div
-        className={`msg_wrapper relative flex w-full grow flex-col overflow-y-auto ${
+        className={`chat_msg_container relative flex w-full grow flex-col overflow-y-auto ${
           isMobile ? 'px-4 pt-1' : 'px-1 py-2'
         }`}
         ref={messageContainerRef}>
