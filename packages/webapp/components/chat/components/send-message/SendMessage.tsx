@@ -2,7 +2,7 @@ import { EditorContent } from '@tiptap/react'
 import { EditorToolbar } from './EditorToolbar'
 import { ReplyMessageIndicator } from './ReplyMessageIndicator'
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
-import { twx, cn } from '@utils/index'
+import { twx, cn, sanitizeMessageContent, sanitizeChunk } from '@utils/index'
 import { ImAttachment } from 'react-icons/im'
 import { IoSend } from 'react-icons/io5'
 import { MdFormatColorText } from 'react-icons/md'
@@ -105,7 +105,17 @@ export default function SendMessage() {
       editor.view.focus()
 
       if (!html || !text || loading) return
-      const { htmlChunks, textChunks } = chunkHtmlContent(html, 3000)
+
+      // Sanitize inputs to prevent XSS and injection attacks
+      const { sanitizedHtml, sanitizedText } = sanitizeMessageContent(html, text)
+
+      // Validate sanitized content
+      if (!sanitizedHtml || !sanitizedText) {
+        toast.Error('Invalid content detected')
+        return
+      }
+
+      const { htmlChunks, textChunks } = chunkHtmlContent(sanitizedHtml, 3000)
 
       if (replyMessageMemory?.id) {
         const user = replyMessageMemory.user_details
@@ -128,8 +138,8 @@ export default function SendMessage() {
         const fakemessage = {
           new: {
             id: 'fake_id',
-            content: text,
-            html: html,
+            content: sanitizedText,
+            html: sanitizedHtml,
             user_details: user,
             channel_id: channelId,
             user_id: user.id,
@@ -146,22 +156,22 @@ export default function SendMessage() {
               messageInsert(fakemessage)
             }
             postRequestThreadMessage({
-              p_content: text,
-              p_html: html,
+              p_content: sanitizedText,
+              p_html: sanitizedHtml,
               p_thread_id: threadId,
               p_workspace_id: workspaceId
             })
           } else if (editMessageMemory) {
-            editeRequestMessage(text, html, messageId)
+            editeRequestMessage(sanitizedText, sanitizedHtml, messageId)
           } else if (commentMessageMemory) {
-            commentRequestMessage(text, channelId, user.id, html, {
+            commentRequestMessage(sanitizedText, channelId, user.id, sanitizedHtml, {
               content: commentMessageMemory.content,
               html: commentMessageMemory.html
             })
           } else {
             messageInsert(fakemessage)
-            // postRequestMessage(text, channelId, user.id, html, messageId)
-            sendMessage(text, channelId, user.id, html, messageId)
+            // postRequestMessage(sanitizedText, channelId, user.id, sanitizedHtml, messageId)
+            sendMessage(sanitizedText, channelId, user.id, sanitizedHtml, messageId)
           }
           editor.view.focus() // Refocus the editor to keep the keyboard open on mobile
           editor.commands.focus()
@@ -169,17 +179,26 @@ export default function SendMessage() {
         }
 
         // INFO: order to send message is important
+        // Re-sanitize chunks to ensure each chunk is safe
         for (const [index, htmlChunk] of htmlChunks.entries()) {
           const textChunk = textChunks[index]
+          const { sanitizedHtmlChunk, sanitizedTextChunk } = sanitizeChunk(htmlChunk, textChunk)
+
           if (editMessageMemory) {
-            editeRequestMessage(textChunk, htmlChunk, messageId)
+            editeRequestMessage(sanitizedTextChunk, sanitizedHtmlChunk, messageId)
           } else if (commentMessageMemory) {
-            commentRequestMessage(textChunk, channelId, user.id, htmlChunk, {
+            commentRequestMessage(sanitizedTextChunk, channelId, user.id, sanitizedHtmlChunk, {
               content: commentMessageMemory.content,
               html: commentMessageMemory.html
             })
           } else {
-            postRequestMessage(textChunk, channelId, user.id, htmlChunk, messageId)
+            postRequestMessage(
+              sanitizedTextChunk,
+              channelId,
+              user.id,
+              sanitizedHtmlChunk,
+              messageId
+            )
           }
         }
       } catch (error: any) {
