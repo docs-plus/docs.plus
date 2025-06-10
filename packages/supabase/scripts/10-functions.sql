@@ -1091,6 +1091,44 @@ BEGIN
     INSERT INTO public.workspace_members (workspace_id, member_id)
     VALUES (_workspace_id, user_id);
 
+        -- For new workspace members, create channel_members entries for all channels in this workspace
+    -- Use a single INSERT with CTEs for optimal performance
+    INSERT INTO public.channel_members (
+        channel_id,
+        member_id,
+        unread_message_count,
+        last_read_message_id,
+        last_read_update_at
+    )
+    WITH channel_data AS (
+        SELECT
+            cmc.channel_id,
+            cmc.message_count,
+            c.created_at as channel_created_at
+        FROM public.channel_message_counts cmc
+        JOIN public.channels c ON c.id = cmc.channel_id
+        WHERE cmc.workspace_id = _workspace_id
+          AND c.deleted_at IS NULL
+    ),
+    first_messages AS (
+        SELECT DISTINCT ON (m.channel_id)
+            m.channel_id,
+            m.id as first_message_id
+        FROM public.messages m
+        WHERE m.channel_id IN (SELECT channel_id FROM channel_data)
+          AND m.deleted_at IS NULL
+        ORDER BY m.channel_id, m.created_at ASC
+    )
+    SELECT
+        cd.channel_id,
+        user_id,
+        cd.message_count,
+        fm.first_message_id,
+        cd.channel_created_at
+    FROM channel_data cd
+    LEFT JOIN first_messages fm ON fm.channel_id = cd.channel_id
+    ON CONFLICT (channel_id, member_id) DO NOTHING;
+
     RETURN TRUE;
 END;
 $$;
