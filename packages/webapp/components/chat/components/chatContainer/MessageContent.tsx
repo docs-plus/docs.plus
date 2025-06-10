@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import DOMPurify from 'dompurify'
-import { isOnlyEmoji, splitEmojis } from '@utils/index'
+import { isOnlyEmoji, sanitizeMessageContent, splitEmojis } from '@utils/index'
 import { getEmojiDataFromNative } from 'emoji-mart'
 import { useAuthStore, useStore } from '@stores'
 import { useMentionClick } from '@components/chat/hooks'
@@ -23,7 +23,9 @@ const MessageContent: React.FC<MessageContentProps> = ({ message }) => {
     }
   } = useStore((state) => state)
   const sanitizedHtml = useMemo(() => {
-    return message.html ? DOMPurify.sanitize(message.html) : message.content
+    if (!message.html) return message.content
+    const { sanitizedHtml, sanitizedText } = sanitizeMessageContent(message.html, message.content)
+    return sanitizedHtml || sanitizedText || message.content || ''
   }, [message.html, message.content])
 
   const [emojiTitles, setEmojiTitles] = useState<Record<number, string>>({})
