@@ -83,19 +83,13 @@ export default function SendMessage() {
 
   // set the editor content if it is a reply message
   useEffect(() => {
-    if (!editor) return
-    if (editMessageMemory?.channel_id !== channelId) return
+    if (!editor || !editMessageMemory || editMessageMemory.channel_id !== channelId) return
 
-    editor
-      .chain()
-      .insertContent(editMessageMemory?.html || editMessageMemory?.content || '', {
-        parseOptions: {
-          preserveWhitespace: false
-        }
-      })
-      .focus('end')
-      .run()
-  }, [editor, editMessageMemory])
+    const content = editMessageMemory.html || editMessageMemory.content
+    if (!content) return
+
+    editor.chain().setContent(content).focus('start').run()
+  }, [editor, editMessageMemory, channelId])
 
   const submit = useCallback(
     async (e: any) => {
@@ -116,6 +110,8 @@ export default function SendMessage() {
       }
 
       const { htmlChunks, textChunks } = chunkHtmlContent(sanitizedHtml, 3000)
+
+      console.log('htmlChunks', { sanitizedHtml, sanitizedText, htmlChunks, textChunks })
 
       if (replyMessageMemory?.id) {
         const user = replyMessageMemory.user_details
