@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import { TMessageWithUser as TMsg } from '@api'
 import { useStore } from '@stores'
-import ENUMS from '@components/TipTap/enums'
+import { TIPTAP_NODES } from '@types'
 
 const createParagraphNodeJson = (message: TMsg) => {
   const workspaceId = useStore.getState().settings.workspaceId
@@ -39,13 +39,13 @@ const createParagraphNodeJson = (message: TMsg) => {
       text: `💬 ${messageCreatedAt} ${messageOwner}: `
     },
     {
-      type: ENUMS.NODES.TEXT_TYPE,
+      type: TIPTAP_NODES.TEXT_TYPE,
       text: messageContent
     }
   ]
 
   return {
-    type: ENUMS.NODES.PARAGRAPH_TYPE,
+    type: TIPTAP_NODES.PARAGRAPH_TYPE,
     content: newContent
   }
 }

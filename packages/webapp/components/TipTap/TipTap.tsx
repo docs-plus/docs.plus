@@ -1,11 +1,18 @@
-import { Node } from '@tiptap/core'
 import { UseEditorOptions } from '@tiptap/react'
 import randomColor from 'randomcolor'
 import { createLowlight } from 'lowlight'
 import ShortUniqueId from 'short-unique-id'
-import ENUMS from './enums'
+import { TIPTAP_NODES } from '../../types/tiptap'
 import { useStore } from '@stores'
 import authStore from 'stores/authStore'
+
+// CustomNodes
+import Document from './nodes/Document'
+import Paragraph from './nodes/Paragraph'
+import Text from './nodes/Text'
+import Heading from './nodes/Heading'
+import ContentHeading from './nodes/ContentHeading'
+import ContentWrapper from './nodes/ContentWrapper'
 
 // Collaboration
 import Collaboration, { isChangeOrigin } from '@tiptap/extension-collaboration'
@@ -49,9 +56,6 @@ import bash from 'highlight.js/lib/languages/bash'
 
 // Typography
 import Typography from '@tiptap/extension-typography'
-import Heading from './extentions/Heading'
-import ContentHeading from './extentions/ContentHeading'
-import ContentWrapper from './extentions/ContentWrapper'
 
 // Other Nodes and Extensions
 import Blockquote from '@tiptap/extension-blockquote'
@@ -97,29 +101,6 @@ lowlight.register('yaml', yaml)
 lowlight.register('json', json)
 // lowlight.register('bash', bash)
 
-const Document = Node.create({
-  name: ENUMS.NODES.DOC_TYPE,
-  topNode: true,
-  content: 'heading+'
-})
-
-const Paragraph = Node.create({
-  name: ENUMS.NODES.PARAGRAPH_TYPE,
-  group: 'block',
-  content: 'inline*',
-  parseHTML() {
-    return [{ tag: 'p' }]
-  },
-  renderHTML({ HTMLAttributes }) {
-    return ['p', HTMLAttributes, 0]
-  }
-})
-
-const Text = Node.create({
-  name: ENUMS.NODES.TEXT_TYPE,
-  group: 'inline'
-})
-
 const scrollDown = () => {
   const url = new URL(window.location.href)
   const id = url.searchParams.get('id')
@@ -135,16 +116,16 @@ const generatePlaceholderText = (data: any) => {
   const nodeType = node.type.name
   if (!data.editor.isFocused) return null
 
-  if (nodeType === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+  if (nodeType === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
     const level = node.attrs.level
     return `Heading ${level}`
-  } else if (nodeType === ENUMS.NODES.PARAGRAPH_TYPE) {
+  } else if (nodeType === TIPTAP_NODES.PARAGRAPH_TYPE) {
     // const msg = Placeholders
 
     const { $head } = data.editor.view.state.selection
 
     const headingPath = $head.path
-      .filter((x: any) => x?.type?.name === ENUMS.NODES.HEADING_TYPE)
+      .filter((x: any) => x?.type?.name === TIPTAP_NODES.HEADING_TYPE)
       .map((x: any) => x.firstChild.textContent)
 
     // `${headingPath.join(' / ')}: ${msg[Math.floor(Math.random() * msg.length + 1)]}`
@@ -177,7 +158,7 @@ const Editor = ({
   // Base extensions that don't require provider
   const baseExtensions = [
     UniqueID.configure({
-      types: [ENUMS.NODES.HEADING_TYPE, ENUMS.NODES.HYPERLINK_TYPE],
+      types: [TIPTAP_NODES.HEADING_TYPE, TIPTAP_NODES.HYPERLINK_TYPE],
       filterTransaction: (transaction: any) => !isChangeOrigin(transaction),
       generateID: () => {
         const uid = new ShortUniqueId()

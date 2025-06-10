@@ -1,5 +1,5 @@
 import { TextSelection } from '@tiptap/pm/state'
-import ENUMS from '../enums'
+import { TIPTAP_NODES } from '@types'
 import changeHeadingLevelBackward from './changeHeadingLevel-backward'
 import {
   createThisBlockMap,
@@ -31,11 +31,11 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
   let newStartPos = start
 
   const fromParent = $from.parent.type.name
-  if (fromParent === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+  if (fromParent === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
     const headSelection = $from.blockRange($to)
     const headingLevel = headSelection.parent.attrs.level
 
-    if (headSelection.parent.type.name === ENUMS.NODES.HEADING_TYPE) {
+    if (headSelection.parent.type.name === TIPTAP_NODES.HEADING_TYPE) {
       // INFO: 2 is the offset of the heading node
       newStartPos = headSelection.$from.pos - headSelection.$from.parentOffset - 2
     }
@@ -53,12 +53,12 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
     const startPos = getEndPosSelection(doc, state)
     const contents = getRangeBlocks(doc, startPos, titleEndPos)
 
-    let paragraphs = contents.filter((x) => x.type === ENUMS.NODES.PARAGRAPH_TYPE)
-    const headings = contents.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
+    let paragraphs = contents.filter((x) => x.type === TIPTAP_NODES.PARAGRAPH_TYPE)
+    const headings = contents.filter((x) => x.type === TIPTAP_NODES.HEADING_TYPE)
 
     paragraphs = paragraphs.length === 0 ? [block.paragraph] : paragraphs
 
-    if (doc?.nodeAt(start)?.type?.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
+    if (doc?.nodeAt(start)?.type?.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE) {
       console.error(
         '[Heading][wrapContentWithHeading]: Cannot wrap content - content wrapper already exists at this position'
       )
@@ -113,7 +113,7 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
     const startPos = getEndPosSelection(doc, state)
     const rangeBlocks = getRangeBlocks(doc, $from.pos, end)
     const hasLevelOneHeading = rangeBlocks.some(
-      (block) => block.type === ENUMS.NODES.HEADING_TYPE && block.attrs.level === 1
+      (block) => block.type === TIPTAP_NODES.HEADING_TYPE && block.attrs.level === 1
     )
 
     if (hasLevelOneHeading) {
@@ -128,9 +128,11 @@ const wrapContentWithHeading = (arrg, attributes, newSelection = null) => {
 
     const contentWrapper = getRangeBlocks(doc, startPos, titleEndPos)
     const contentWrapperParagraphs = contentWrapper.filter(
-      (x) => x.type !== ENUMS.NODES.HEADING_TYPE
+      (x) => x.type !== TIPTAP_NODES.HEADING_TYPE
     )
-    const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
+    const contentWrapperHeadings = contentWrapper.filter(
+      (x) => x.type === TIPTAP_NODES.HEADING_TYPE
+    )
 
     const newHeadingNode = createHeadingNodeFromSelection(
       doc,

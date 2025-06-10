@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react'
 import { getHeadingDetails } from '../helper'
-import ENUMS from '../../enums'
+import { TIPTAP_EVENTS, TIPTAP_NODES } from '@types'
 import { useStore } from '@stores'
 
 type Theading = {
@@ -22,7 +22,7 @@ const useHandelTocUpdate = () => {
     const editorDoc = doc.editor?.state?.doc || doc.state.doc
 
     editorDoc?.descendants((node: any, _pos: any, _parent: any) => {
-      if (node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+      if (node.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
         let headingId = _parent.attrs?.id || node?.attrs.id
         let { headingSection, offsetTop } = getHeadingDetails(headingId)
 
@@ -47,7 +47,7 @@ const useHandelTocUpdate = () => {
     let trTimer: ReturnType<typeof setTimeout>
 
     editor.on('transaction', (tr: any) => {
-      if (tr.transaction.selection.$anchor.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+      if (tr.transaction.selection.$anchor.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
         handleUpdate(tr)
       }
 

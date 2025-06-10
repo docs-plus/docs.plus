@@ -31,7 +31,7 @@
       "@types": ["types/index.ts"],
       "@api": ["api/index.ts"],
       "@toast": ["components/toast/index.ts"],
-      "@enum": ["components/TipTap/enums.js"],
+
       "@services/*": ["services/*"],
       "@config": ["config/index.ts"],
       "@layouts": ["layouts/index.ts"],

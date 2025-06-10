@@ -1,4 +1,4 @@
-import ENUMS from '../enums'
+import { TIPTAP_NODES } from '@types'
 import {
   getRangeBlocks,
   getHeadingsBlocksMap,
@@ -28,9 +28,9 @@ const changeHeadingLevelForward = (arrg, attributes) => {
   let newStartPos = start
 
   const fromParent = $from.parent.type.name
-  if (fromParent === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+  if (fromParent === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
     const headSelection = $from.blockRange($to)
-    if (headSelection.parent.type.name === ENUMS.NODES.HEADING_TYPE) {
+    if (headSelection.parent.type.name === TIPTAP_NODES.HEADING_TYPE) {
       // INFO: 2 is the offset of the heading node
       newStartPos = headSelection.$from.pos - headSelection.$from.parentOffset - 2
     }
@@ -39,8 +39,10 @@ const changeHeadingLevelForward = (arrg, attributes) => {
   const startPos = getEndPosSelection(doc, state)
   const contentWrapper = getRangeBlocks(doc, startPos, titleEndPos)
 
-  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
-  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
+  const contentWrapperParagraphs = contentWrapper.filter(
+    (x) => x.type !== TIPTAP_NODES.HEADING_TYPE
+  )
+  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === TIPTAP_NODES.HEADING_TYPE)
 
   const newHeadingNode = createHeadingNodeFromSelection(
     doc,

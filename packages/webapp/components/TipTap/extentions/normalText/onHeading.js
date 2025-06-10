@@ -6,7 +6,7 @@ import {
   getSelectionRangeBlocks,
   convertHeadingsToParagraphs
 } from '../helper'
-import ENUMS from '../../enums'
+import { TIPTAP_NODES } from '@types'
 
 const processHeadings = (state, tr, headingPositions, headings) => {
   // Process each heading
@@ -48,8 +48,8 @@ const normalizeHeading = (heading) => {
 
 // Separate content blocks into paragraphs and headings
 const partitionContentBlocks = (contentBlocks) => {
-  const paragraphs = contentBlocks.filter((block) => block.type !== ENUMS.NODES.HEADING_TYPE)
-  const headings = contentBlocks.filter((block) => block.type === ENUMS.NODES.HEADING_TYPE)
+  const paragraphs = contentBlocks.filter((block) => block.type !== TIPTAP_NODES.HEADING_TYPE)
+  const headings = contentBlocks.filter((block) => block.type === TIPTAP_NODES.HEADING_TYPE)
   return { paragraphs, headings }
 }
 

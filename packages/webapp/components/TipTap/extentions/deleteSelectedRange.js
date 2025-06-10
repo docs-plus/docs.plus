@@ -1,5 +1,5 @@
 import { TextSelection } from '@tiptap/pm/state'
-import ENUMS from '../enums'
+import { HTML_ENTITIES, TIPTAP_NODES } from '@types'
 import { getSelectionRangeBlocks, insertRemainingHeadings, getSelectionRangeSlice } from './helper'
 
 const handleHeadingBlock = ({ tr, state, selectedContents, titleEndPos, paragraphs }) => {
@@ -13,17 +13,17 @@ const handleHeadingBlock = ({ tr, state, selectedContents, titleEndPos, paragrap
   const attrLevel = blockRange.parent.attrs.level || blockRange.$from.parent.attrs.level
 
   let jsonNode = {
-    type: ENUMS.NODES.HEADING_TYPE,
+    type: TIPTAP_NODES.HEADING_TYPE,
     attrs: {
       level: attrLevel
     },
     content: [
       {
-        type: ENUMS.NODES.CONTENT_HEADING_TYPE,
+        type: TIPTAP_NODES.CONTENT_HEADING_TYPE,
         content: [
           blockRange.$from?.nodeBefore?.toJSON() || {
-            type: ENUMS.NODES.TEXT_TYPE,
-            text: ENUMS.HTML_ENTITIES.NBSP
+            type: TIPTAP_NODES.TEXT_TYPE,
+            text: HTML_ENTITIES.NBSP
           }
         ],
         attrs: {
@@ -31,7 +31,7 @@ const handleHeadingBlock = ({ tr, state, selectedContents, titleEndPos, paragrap
         }
       },
       {
-        type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
+        type: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
         content: [...paragraphs]
       }
     ]
@@ -61,8 +61,8 @@ const handleNonHeadingBlock = ({
   if (blockRange?.$to?.nodeBefore) {
     // trick to match the insert postion
     const emptyTextJson = {
-      type: ENUMS.NODES.TEXT_TYPE,
-      text: ENUMS.HTML_ENTITIES.NBSP.repeat(blockRange?.$to?.nodeAfter?.nodeSize || 1)
+      type: TIPTAP_NODES.TEXT_TYPE,
+      text: HTML_ENTITIES.NBSP.repeat(blockRange?.$to?.nodeAfter?.nodeSize || 1)
     }
     const emptyTextNode = state.schema.nodeFromJSON(emptyTextJson)
     tr.insert(from, emptyTextNode)
@@ -89,7 +89,7 @@ const deleteSelectedRange = (editor) => {
   const fromOffset = from - ($anchor?.textOffset || 0)
   const toOffset = to - ($head?.textOffset || 0)
 
-  if (doc.resolve(to).parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+  if (doc.resolve(to).parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
     // TODO: handle this case later
     // throw new Error('Selection starts within a content heading')
     console.error(
@@ -103,9 +103,9 @@ const deleteSelectedRange = (editor) => {
     const restSelectionContents = getSelectionRangeSlice(doc, state, to, titleEndPos)
 
     const paragraphs = restSelectionContents.filter(
-      (node) => node.type !== ENUMS.NODES.HEADING_TYPE
+      (node) => node.type !== TIPTAP_NODES.HEADING_TYPE
     )
-    const headings = titleSelectionRange.filter((node) => node.type === ENUMS.NODES.HEADING_TYPE)
+    const headings = titleSelectionRange.filter((node) => node.type === TIPTAP_NODES.HEADING_TYPE)
 
     // If only one block is selected, retain default behavior
     if (selectedContents.length === 1) return false
@@ -117,7 +117,7 @@ const deleteSelectedRange = (editor) => {
 
     const newContent = [...selectedNodes, ...paragraphNodes]
 
-    if (blockRange.$from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+    if (blockRange.$from.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
       handleHeadingBlock({ tr, state, titleEndPos, selectedContents, paragraphs })
     } else {
       handleNonHeadingBlock({ tr, state, titleEndPos, selectedContents, newContent, paragraphs })

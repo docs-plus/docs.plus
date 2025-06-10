@@ -1,5 +1,4 @@
-import { TextSelection } from '@tiptap/pm/state'
-import ENUMS from '../enums'
+import { TIPTAP_NODES } from '@types'
 import {
   createThisBlockMap,
   getHeadingsBlocksMap,
@@ -36,20 +35,22 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   const contentWrapper = getRangeBlocks(doc, titleStartPos + 1, titleEndPos)
 
   // TODO: handel this case later
-  if ($from.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE && $from.pos !== $to.pos) {
+  if ($from.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE && $from.pos !== $to.pos) {
     console.error(
       '[Heading]: Cannot change heading level when content is selected within a heading'
     )
     return false
   }
 
-  const contentWrapperParagraphs = contentWrapper.filter((x) => x.type !== ENUMS.NODES.HEADING_TYPE)
-  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === ENUMS.NODES.HEADING_TYPE)
+  const contentWrapperParagraphs = contentWrapper.filter(
+    (x) => x.type !== TIPTAP_NODES.HEADING_TYPE
+  )
+  const contentWrapperHeadings = contentWrapper.filter((x) => x.type === TIPTAP_NODES.HEADING_TYPE)
 
   doc.nodesBetween($from.start(0), start - 1, function (node, pos) {
     if (pos > start - 1) return
 
-    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
+    if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
       const headingLevel = node.firstChild?.attrs?.level
 
       if (headingLevel === currentHLevel) {

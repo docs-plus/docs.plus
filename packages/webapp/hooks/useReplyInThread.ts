@@ -3,25 +3,25 @@ import PubSub from 'pubsub-js'
 import { TMessageWithUser as TMsg } from '@api'
 import { useStore } from '@stores'
 import { CHAT_OPEN } from '@services/eventsHub'
-import ENUMS from '@components/TipTap/enums'
+import { TIPTAP_NODES } from '@types'
 
 // For reply in thread feature
 const emptyParagraphs = Array(5).fill({
-  type: ENUMS.NODES.PARAGRAPH_TYPE
+  type: TIPTAP_NODES.PARAGRAPH_TYPE
 })
 
 const createHeadingNodeJson = (messageContent: string, headingLevel: number) => {
   return {
-    type: ENUMS.NODES.HEADING_TYPE,
+    type: TIPTAP_NODES.HEADING_TYPE,
     attrs: { level: Math.min(headingLevel, 10) },
     content: [
       {
-        type: ENUMS.NODES.CONTENT_HEADING_TYPE,
-        content: [{ type: ENUMS.NODES.TEXT_TYPE, text: messageContent }],
+        type: TIPTAP_NODES.CONTENT_HEADING_TYPE,
+        content: [{ type: TIPTAP_NODES.TEXT_TYPE, text: messageContent }],
         attrs: { level: Math.min(headingLevel, 10) }
       },
       {
-        type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
+        type: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
         content: emptyParagraphs
       }
     ]

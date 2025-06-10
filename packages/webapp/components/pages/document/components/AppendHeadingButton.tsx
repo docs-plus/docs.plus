@@ -1,5 +1,5 @@
 import React, { useCallback } from 'react'
-import ENUMS from '@components/TipTap/enums'
+import { TIPTAP_NODES } from '@types'
 import { useModal } from '@components/ui/ModalDrawer'
 import { useStore } from '@stores'
 import { MdAdd } from 'react-icons/md'
@@ -15,19 +15,19 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
     if (!editor) return
 
     const emptyParagraphs = Array(5).fill({
-      type: ENUMS.NODES.PARAGRAPH_TYPE
+      type: TIPTAP_NODES.PARAGRAPH_TYPE
     })
 
     const jsonNode = {
-      type: ENUMS.NODES.HEADING_TYPE,
+      type: TIPTAP_NODES.HEADING_TYPE,
       attrs: { level: 1 },
       content: [
         {
-          type: ENUMS.NODES.CONTENT_HEADING_TYPE,
+          type: TIPTAP_NODES.CONTENT_HEADING_TYPE,
           attrs: { level: 1 }
         },
         {
-          type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
+          type: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
           content: emptyParagraphs
         }
       ]

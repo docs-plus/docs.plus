@@ -1,5 +1,6 @@
 import { Database } from './supabase'
 export * from './history'
+export * from './tiptap'
 interface LinkItem {
   url: string
   type: string

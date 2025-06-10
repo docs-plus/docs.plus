@@ -1,4 +1,4 @@
-import ENUMS from '../enums'
+import { TIPTAP_NODES } from '@types'
 import { TextSelection } from '@tiptap/pm/state'
 
 /**
@@ -22,7 +22,7 @@ export const getPrevHeadingList = (tr, start, from, startPos = 0) => {
   try {
     tr.doc.nodesBetween(start, from, function (node, pos) {
       if (startPos > 0 && pos < startPos) return
-      if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
+      if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
         const headingLevel = node.firstChild?.attrs?.level
         const depth = tr.doc.resolve(pos).depth
 
@@ -61,10 +61,10 @@ export const getSelectionBlocks = (
   const selectedContents = []
   const processNode = (node, pos, parent) => {
     const depth = doc.resolve(pos).depth
-    const isContentWrapper = parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
-    const isContentHeading = node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE
+    const isContentWrapper = parent.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE
+    const isContentHeading = node.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
 
-    if (isContentWrapper && node.type.name !== ENUMS.NODES.HEADING_TYPE) {
+    if (isContentWrapper && node.type.name !== TIPTAP_NODES.HEADING_TYPE) {
       selectedContents.push({
         depth,
         startBlockPos: pos,
@@ -78,7 +78,7 @@ export const getSelectionBlocks = (
         attrs: includeContentHeading ? node.attrs : {},
         startBlockPos: pos,
         endBlockPos: pos + node.nodeSize,
-        type: includeContentHeading ? node.type.name : ENUMS.NODES.PARAGRAPH_TYPE,
+        type: includeContentHeading ? node.type.name : TIPTAP_NODES.PARAGRAPH_TYPE,
         content: node.toJSON().content
       })
     }
@@ -102,10 +102,10 @@ export const getSelectionRangeBlocks = (doc, start, end, includeContentHeading =
 
   const processNode = (node, pos, parent) => {
     if (!node.isBlock) return
-    const isContentWrapper = parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
-    const isContentHeading = node.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE
+    const isContentWrapper = parent.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE
+    const isContentHeading = node.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
 
-    if (node.type.name !== ENUMS.NODES.HEADING_TYPE && isContentWrapper) {
+    if (node.type.name !== TIPTAP_NODES.HEADING_TYPE && isContentWrapper) {
       selectedContents.push({
         depth: doc.resolve(pos).depth,
         startBlockPos: pos,
@@ -119,7 +119,7 @@ export const getSelectionRangeBlocks = (doc, start, end, includeContentHeading =
         attrs: includeContentHeading ? node.attrs : {},
         startBlockPos: pos,
         endBlockPos: pos + node.nodeSize,
-        type: includeContentHeading ? node.type.name : ENUMS.NODES.PARAGRAPH_TYPE,
+        type: includeContentHeading ? node.type.name : TIPTAP_NODES.PARAGRAPH_TYPE,
         content: node.toJSON().content
       })
     }
@@ -146,8 +146,8 @@ export const getRangeBlocks = (doc, start, end) => {
     if (pos < start) return
 
     const nodeType = node.type.name
-    const isContentWrapper = parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
-    const isHeadingNode = nodeType === ENUMS.NODES.HEADING_TYPE
+    const isContentWrapper = parent.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE
+    const isHeadingNode = nodeType === TIPTAP_NODES.HEADING_TYPE
 
     if (firstHEading && !isHeadingNode && isContentWrapper) {
       selectedContents.push({
@@ -194,7 +194,7 @@ export const getHeadingsBlocksMap = (doc, start, end) => {
   const newEnd = Math.min(end, doc.content.size)
 
   doc.nodesBetween(start, newEnd, function (node, pos, parent, index) {
-    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
+    if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
       const headingLevel = node.firstChild?.attrs?.level
       const depth = doc.resolve(pos).depth
 
@@ -245,9 +245,9 @@ export const createThisBlockMap = (state) => {
     depth,
     headingContent: caretSelectionTextBlock,
     empty: {
-      type: ENUMS.NODES.PARAGRAPH_TYPE
+      type: TIPTAP_NODES.PARAGRAPH_TYPE
     },
-    paragraph: { type: ENUMS.NODES.PARAGRAPH_TYPE }
+    paragraph: { type: TIPTAP_NODES.PARAGRAPH_TYPE }
   }
 }
 
@@ -279,7 +279,7 @@ export const getPrevHeadingPos = (doc, startPos, endPos) => {
   // Ensure endPos doesn't exceed document size
   const newEndPos = Math.min(endPos, doc.content.size)
   doc?.nodesBetween(startPos, newEndPos, function (node, pos) {
-    if (node.type.name === ENUMS.NODES.HEADING_TYPE) {
+    if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
       const depth = doc.resolve(pos).depth
       // INFO: this the trick I've looking for
       if (depth === 2) {
@@ -341,16 +341,16 @@ export const extractParagraphsAndHeadings = (clipboardContents) => {
         endBlockPos: node.endBlockPos,
         startBlockPos: node.startBlockPos,
         level: node.level,
-        type: ENUMS.NODES.HEADING_TYPE,
+        type: TIPTAP_NODES.HEADING_TYPE,
         attrs: { level: node.level },
         content: [
           {
-            type: ENUMS.NODES.CONTENT_HEADING_TYPE,
+            type: TIPTAP_NODES.CONTENT_HEADING_TYPE,
             attrs: { level: node.level },
             content: node.content
           },
           {
-            type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
+            type: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
             content: []
           }
         ]
@@ -441,7 +441,7 @@ export const putTextSelectionEndNode = (tr, insertPos, headingNode) => {
  */
 const findParagraphs = (currentNode, newContent) => {
   currentNode.forEach((childNode) => {
-    if (childNode.type.name === ENUMS.NODES.PARAGRAPH_TYPE) {
+    if (childNode.type.name === TIPTAP_NODES.PARAGRAPH_TYPE) {
       newContent.push(childNode.toJSON())
     } else if (childNode.childCount > 0) {
       findParagraphs(childNode, newContent)
@@ -500,7 +500,7 @@ export const createHeadingNodeFromSelection = (
     let contentWrapperPos = mResolve.pos
     while (contentWrapperPos > 0) {
       const node = doc.nodeAt(contentWrapperPos)
-      if (node && node.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
+      if (node && node.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE) {
         break
       }
       contentWrapperPos--
@@ -524,35 +524,35 @@ export const createHeadingNodeFromSelection = (
         if (
           !(
             node.isBlock &&
-            parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE &&
-            node.type.name !== ENUMS.NODES.HEADING_TYPE
+            parent.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE &&
+            node.type.name !== TIPTAP_NODES.HEADING_TYPE
           )
         )
           return
 
         let newContent = []
-        if (node.type.name !== ENUMS.NODES.PARAGRAPH_TYPE) {
+        if (node.type.name !== TIPTAP_NODES.PARAGRAPH_TYPE) {
           findParagraphs(node, newContent)
         }
 
         const newHeading = {
-          type: ENUMS.NODES.HEADING_TYPE,
+          type: TIPTAP_NODES.HEADING_TYPE,
           attrs: {
             level: attributes.level
           },
           content: [
             {
-              type: ENUMS.NODES.CONTENT_HEADING_TYPE,
+              type: TIPTAP_NODES.CONTENT_HEADING_TYPE,
               content: newContent.length ? newContent : node.content.toJSON(),
               attrs: {
                 level: attributes.level
               }
             },
             {
-              type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
+              type: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
               content: [
                 {
-                  type: ENUMS.NODES.PARAGRAPH_TYPE
+                  type: TIPTAP_NODES.PARAGRAPH_TYPE
                 }
               ]
             }
@@ -573,23 +573,23 @@ export const createHeadingNodeFromSelection = (
     }
   } else {
     let node = doc.nodeAt(start)
-    if (!node || state.selection.toJSON().type === ENUMS.NODES.TEXT_TYPE) {
+    if (!node || state.selection.toJSON().type === TIPTAP_NODES.TEXT_TYPE) {
       node = state.selection.$anchor.parent.toJSON()
     }
     const jsonNode = {
-      type: ENUMS.NODES.HEADING_TYPE,
+      type: TIPTAP_NODES.HEADING_TYPE,
       attrs: {
         level: attributes.level
       },
       content: [
         {
-          type: ENUMS.NODES.CONTENT_HEADING_TYPE,
+          type: TIPTAP_NODES.CONTENT_HEADING_TYPE,
           attrs: {
             level: attributes.level
           }
         },
         {
-          type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
+          type: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
           content: contentWrapper
         }
       ]
@@ -610,7 +610,7 @@ export const getSelectionTextNode = (state) => {
   const { $from, $to, $anchor } = selection
 
   return {
-    type: ENUMS.NODES.TEXT_TYPE,
+    type: TIPTAP_NODES.TEXT_TYPE,
     text:
       doc.textBetween($from.pos, $to.pos, ' ') ||
       doc?.nodeAt($anchor.pos)?.text ||
@@ -632,7 +632,7 @@ export const getSelectionRangeSlice = (doc, state, start, end) => {
   const selectedContents = []
   const sResolve = doc.resolve(start)
 
-  if (sResolve.parent.type.name === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+  if (sResolve.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
     // TODO: handle this case later
     throw new Error('Selection starts within a content heading')
   }
@@ -642,7 +642,7 @@ export const getSelectionRangeSlice = (doc, state, start, end) => {
   let contentWrapperPos = sResolve.pos
   while (contentWrapperPos > 0) {
     const node = doc.nodeAt(contentWrapperPos)
-    if (node && node.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE) {
+    if (node && node.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE) {
       break
     }
     contentWrapperPos--
@@ -662,10 +662,10 @@ export const getSelectionRangeSlice = (doc, state, start, end) => {
     if (pos < contentWrapperPos) return
     if (!node.isBlock) return
 
-    const isContentWrapper = parent.type.name === ENUMS.NODES.CONTENT_WRAPPER_TYPE
+    const isContentWrapper = parent.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE
     const nodeType = node.type.name
 
-    if (firstHEading && isContentWrapper && nodeType !== ENUMS.NODES.HEADING_TYPE) {
+    if (firstHEading && isContentWrapper && nodeType !== TIPTAP_NODES.HEADING_TYPE) {
       let contentObject = {
         depth: doc.resolve(pos).depth,
         startBlockPos: pos,
@@ -675,7 +675,7 @@ export const getSelectionRangeSlice = (doc, state, start, end) => {
       }
 
       selectedContents.push(contentObject)
-    } else if (nodeType === ENUMS.NODES.HEADING_TYPE) {
+    } else if (nodeType === TIPTAP_NODES.HEADING_TYPE) {
       firstHEading = false
       const headingLevel = node.firstChild?.attrs?.level
       const depth = doc.resolve(pos).depth
@@ -761,20 +761,20 @@ export const transformClipboardToStructured = (clipboardContents, { schema }) =>
   // Iterate through clipboard contents and categorize nodes as paragraphs or headings
   clipboardContents.forEach((node) => {
     // If no heading is found and the node is not a heading type, treat it as a paragraph
-    if (!currentHeading && node.type !== ENUMS.NODES.CONTENT_HEADING_TYPE) {
+    if (!currentHeading && node.type !== TIPTAP_NODES.CONTENT_HEADING_TYPE) {
       paragraphs.push(createNodeFromJSON(node, schema))
-    } else if (node.type === ENUMS.NODES.CONTENT_HEADING_TYPE) {
+    } else if (node.type === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
       // If a new heading is found, push the previous heading into the heading list and reset the heading
       if (currentHeading) {
         headings.push(createNodeFromJSON(currentHeading, schema))
       }
       currentHeading = {
-        type: ENUMS.NODES.HEADING_TYPE,
+        type: TIPTAP_NODES.HEADING_TYPE,
         attrs: { ...node?.attrs, id: null },
         content: [
           node,
           {
-            type: ENUMS.NODES.CONTENT_WRAPPER_TYPE,
+            type: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
             content: []
           }
         ]
