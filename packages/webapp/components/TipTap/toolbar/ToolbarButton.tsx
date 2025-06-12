@@ -12,11 +12,23 @@ interface ToolbarButtonProps {
   position?: string
   className?: string
   isActive?: boolean
+  disabled?: boolean
 }
 
 const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   (
-    { type, editor, onClick, onTouchEnd, children, tooltip, position, className, isActive },
+    {
+      type,
+      editor,
+      onClick,
+      onTouchEnd,
+      children,
+      tooltip,
+      position,
+      className,
+      isActive,
+      disabled
+    },
     ref
   ) => {
     const buttonClass = isActive || editor?.isActive(type) ? 'is-active' : ''
@@ -32,7 +44,8 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
         )}
         onClick={onClick}
         onTouchEnd={onTouchEnd}
-        data-tip={tooltip}>
+        data-tip={tooltip}
+        disabled={disabled}>
         {children}
       </Button>
     )
