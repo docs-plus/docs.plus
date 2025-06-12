@@ -1,0 +1,42 @@
+{
+  "name": "@docs.plus/extension-inlinecode",
+  "version": "0.1.1",
+  "description": "A Tiptap extension for inline code formatting",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "umd": "dist/index.umd.js",
+  "types": "dist/index.d.ts",
+  "author": "Hossein Marzban",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/docs-plus/docs.plus",
+    "directory": "packages/extension-inlinecode"
+  },
+  "scripts": {
+    "build": "tsup --dts",
+    "dev": "tsup --watch --dts",
+    "lint": "eslint . --ext .ts",
+    "test": "jest"
+  },
+  "keywords": [
+    "tiptap",
+    "tiptap extension",
+    "inline code",
+    "code",
+    "text editor",
+    "rich text",
+    "prosemirror",
+    "docs.plus"
+  ],
+  "peerDependencies": {
+    "@tiptap/core": "^2.11.5",
+    "@tiptap/pm": "^2.11.5"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "tsup": "^7.2.0",
+    "eslint": "^8.50.0"
+  }
+}
