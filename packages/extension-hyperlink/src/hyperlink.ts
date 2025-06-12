@@ -13,7 +13,7 @@ export interface LinkProtocolOptions {
 
 export interface HyperlinkOptions {
   /**
-   * If enabled, it adds links as you type.
+   * If enabled, it adds links as you type, default is true.
    */
   autoHyperlink: boolean
   /**
@@ -21,11 +21,11 @@ export interface HyperlinkOptions {
    */
   protocols: Array<LinkProtocolOptions | string>
   /**
-   * If enabled, links will be opened on click.
+   * If enabled, links will be opened on click, default is true.
    */
   openOnClick: boolean
   /**
-   * Adds a link to the current selection if the pasted content only contains an url.
+   * Adds a link to the current selection if the pasted content only contains an url, default is true.
    */
   hyperlinkOnPaste: boolean
   /**
@@ -131,6 +131,9 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
       },
       target: {
         default: this.options.HTMLAttributes.target
+      },
+      rel: {
+        default: this.options.HTMLAttributes.rel
       },
       class: {
         default: this.options.HTMLAttributes.class
