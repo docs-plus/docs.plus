@@ -102,6 +102,15 @@ export const useTiptapEditor = ({ loading }: any) => {
       shouldRerenderOnTransaction: false,
       editorProps: {
         handleKeyDown: (view, event) => {
+          if (event.key === 'Enter' && event.shiftKey) {
+            // Create a new paragraph instead of hard break
+            view.dispatch(
+              view.state.tr
+                .replaceSelectionWith(view.state.schema.nodes.paragraph.create())
+                .scrollIntoView()
+            )
+            return true // We handled this event
+          }
           if (event.key === 'Enter' && !event.shiftKey) {
             const tippyInstance = document.querySelector('[data-tippy-root]')
             const isPopupVisible =
@@ -113,11 +122,12 @@ export const useTiptapEditor = ({ loading }: any) => {
               return false
             } else {
               if (text.length) handleTypingIndicator(TypingIndicatorType.SentMsg)
-              return false // Indicates that this key event was handled
+              event.preventDefault() // Prevent the new line
+              return true // We handled this event
             }
           }
           if (event.key === 'Enter' && event.metaKey) {
-            return true // Indicates that this key event was handled
+            return false // Let TipTap handle Cmd+Enter
           }
           // Return false to let other keydown handlers (or TipTap defaults) process the event
           return false
