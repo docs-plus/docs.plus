@@ -1,5 +1,5 @@
 {
-  "name": "@docs.plus/extension-inlinecode",
+  "name": "@docs.plus/extension-inline-code",
   "version": "0.1.1",
   "description": "A Tiptap extension for inline code formatting",
   "main": "dist/index.cjs",
@@ -12,7 +12,7 @@
   "repository": {
     "type": "git",
     "url": "https://github.com/docs-plus/docs.plus",
-    "directory": "packages/extension-inlinecode"
+    "directory": "packages/extension-inline-code"
   },
   "scripts": {
     "build": "tsup --dts",
