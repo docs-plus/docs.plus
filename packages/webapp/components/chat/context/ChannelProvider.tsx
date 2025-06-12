@@ -10,6 +10,7 @@ type TSettings = {
     toolbar?: boolean
     sendButton?: boolean
     attachmentButton?: boolean
+    mentionsomeone?: boolean
   }
   contextMenue?: {
     readStatus?: boolean
@@ -50,7 +51,8 @@ const defaultContextValue: ChannelContextValue = {
       emojiPicker: true,
       toolbar: true,
       sendButton: true,
-      attachmentButton: true
+      attachmentButton: true,
+      mentionsomeone: true
     },
     contextMenue: {
       readStatus: true,

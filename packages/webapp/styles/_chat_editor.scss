@@ -43,4 +43,41 @@
     color: #646cff;
     text-decoration: inherit;
   }
+
+  p.is-empty::before {
+    color: #adb5bd;
+    content: attr(data-placeholder);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  blockquote {
+    border-left: 3px solid var(--gray-3);
+    margin: 1.5rem 0;
+    padding-left: 1rem;
+  }
+
+  /* List styles */
+  ul,
+  ol {
+    padding: 0 1rem;
+    margin: 1.25rem 1rem 1.25rem 0.4rem;
+
+    li p {
+      margin-top: 0.25em;
+      margin-bottom: 0.25em;
+    }
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid var(--gray-2);
+    cursor: pointer;
+    margin: 2rem 0;
+
+    &.ProseMirror-selectednode {
+      border-top: 1px solid var(--purple);
+    }
+  }
 }
