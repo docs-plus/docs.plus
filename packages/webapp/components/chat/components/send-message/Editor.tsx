@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useEditor, Editor } from '@tiptap/react'
+import { TextSelection } from 'prosemirror-state'
 
 // Code and Syntax Highlighting
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
@@ -16,7 +17,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Mention from '@tiptap/extension-mention'
 import suggestion from './suggestion'
-
+import ListItem from '@tiptap/extension-list-item'
 // Links and Media
 import previewHyperlinkModal from '@components/TipTap/hyperlinkModals/previewHyperlink'
 import setHyperlinks from '@components/TipTap/hyperlinkModals/setHyperlink'
@@ -63,6 +64,7 @@ export const useTiptapEditor = ({ loading }: any) => {
         CodeBlockLowlight.configure({
           lowlight
         }),
+        ListItem,
         Mention.configure({
           HTMLAttributes: {
             class: 'mention'
@@ -103,12 +105,54 @@ export const useTiptapEditor = ({ loading }: any) => {
       editorProps: {
         handleKeyDown: (view, event) => {
           if (event.key === 'Enter' && event.shiftKey) {
-            // Create a new paragraph instead of hard break
-            view.dispatch(
-              view.state.tr
-                .replaceSelectionWith(view.state.schema.nodes.paragraph.create())
-                .scrollIntoView()
-            )
+            // Check if the current selection is inside a list item
+            const { $from } = view.state.selection
+
+            // Check if we're inside a list item
+            const inList = $from.node(2)?.type.name === 'listItem'
+            if (inList) {
+              // Create a new list item by splitting the current one
+              editor?.commands.splitListItem('listItem') //
+
+              return true // We handled this event
+            }
+
+            const isEmptyParagraph =
+              $from.parent.type.name === 'paragraph' && $from.parent.content.size === 0
+
+            // Create a new paragraph
+            let tr
+            let newPos
+
+            if (isEmptyParagraph) {
+              // For empty paragraphs, we need to insert a new node after the current one
+              const pos = $from.after()
+              const newNode = view.state.schema.nodes.paragraph.create()
+              tr = view.state.tr.insert(pos, newNode)
+              newPos = pos + 1 // Position inside the new paragraph
+            } else {
+              // For non-empty paragraphs, replace selection with new paragraph
+              const newNode = view.state.schema.nodes.paragraph.create()
+              tr = view.state.tr.replaceSelectionWith(newNode)
+              newPos = $from.pos + 1 // Position inside the new paragraph
+            }
+
+            // Apply the transaction and scroll into view
+            tr = tr.scrollIntoView()
+
+            // Set the selection to the beginning of the new paragraph
+            const resolvedPos = tr.doc.resolve(newPos)
+            tr = tr.setSelection(TextSelection.create(tr.doc, newPos))
+
+            view.dispatch(tr)
+
+            // Ensure focus is maintained after the operation
+            setTimeout(() => {
+              if (editor) {
+                editor.commands.focus('end')
+              }
+            }, 0)
+
             return true // We handled this event
           }
           if (event.key === 'Enter' && !event.shiftKey) {
@@ -119,9 +163,14 @@ export const useTiptapEditor = ({ loading }: any) => {
             if (isPopupVisible) {
               event.preventDefault()
               event.stopPropagation()
+
               return false
             } else {
               if (text.length) handleTypingIndicator(TypingIndicatorType.SentMsg)
+              event.preventDefault() // Prevent the new line
+              // Dispatch a custom event that SendMessage will listen for
+              document.dispatchEvent(new CustomEvent('editor:submit'))
+
               event.preventDefault() // Prevent the new line
               return true // We handled this event
             }

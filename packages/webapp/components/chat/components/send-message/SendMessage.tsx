@@ -255,24 +255,35 @@ export default function SendMessage() {
     }
   }, [handleEsc])
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      if (!editor) return
-      // Check if popup exists and is visible
-      const tippyInstance = document.querySelector('[data-tippy-root]')
-      const isPopupVisible =
-        tippyInstance && window.getComputedStyle(tippyInstance).visibility === 'visible'
-
-      if (isPopupVisible) {
-        e.preventDefault()
-        return
-      }
-
-      e.preventDefault()
-      submit(e)
+  useEffect(() => {
+    const handleEditorSubmit = () => {
+      submit({ preventDefault: () => {} })
     }
-    return
-  }
+
+    document.addEventListener('editor:submit', handleEditorSubmit)
+    return () => {
+      document.removeEventListener('editor:submit', handleEditorSubmit)
+    }
+  }, [submit])
+
+  // const handleKeyDown = (e: React.KeyboardEvent) => {
+  //   if (e.key === 'Enter' && !e.shiftKey) {
+  //     if (!editor) return
+  //     // Check if popup exists and is visible
+  //     const tippyInstance = document.querySelector('[data-tippy-root]')
+  //     const isPopupVisible =
+  //       tippyInstance && window.getComputedStyle(tippyInstance).visibility === 'visible'
+
+  //     if (isPopupVisible) {
+  //       e.preventDefault()
+  //       return
+  //     }
+
+  //     e.preventDefault()
+  //     submit(e)
+  //   }
+  //   return
+  // }
 
   useEffect(() => {
     // TODO: this is temporary
@@ -316,7 +327,6 @@ export default function SendMessage() {
             )} */}
             <div className="flex-1 px-1 py-2 text-base sm:px-2">
               <EditorContent
-                onKeyDown={(e) => handleKeyDown(e)}
                 ref={editorElement}
                 className="max-h-52 w-full overflow-auto"
                 editor={editor}
