@@ -76,6 +76,7 @@ import { Indent } from '@docs.plus/extension-indent'
 
 import ChatCommentExtension from './extentions/ChatCommentExtension'
 
+import { InlineCode } from '@docs.plus/extension-inline-code'
 import {
   HyperMultimediaKit,
   imageModal,
@@ -184,6 +185,7 @@ const Editor = ({
     CodeBlockLowlight.configure({
       lowlight
     }),
+    InlineCode,
     ContentHeading,
     ContentWrapper,
     Superscript,

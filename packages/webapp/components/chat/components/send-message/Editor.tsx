@@ -24,7 +24,7 @@ import setHyperlinks from '@components/TipTap/hyperlinkModals/setHyperlink'
 import Hyperlink from '@docs.plus/extension-hyperlink'
 
 // Custom Extensions
-import { InlineCode } from '../../../../../extension-inline-code/dist'
+import { InlineCode } from '@docs.plus/extension-inline-code'
 import { Indent } from '@docs.plus/extension-indent'
 // load all highlight.js languages
 import { createLowlight } from 'lowlight'
