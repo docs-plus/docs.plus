@@ -18,6 +18,9 @@ import { messageInsert } from '../../hooks/listner/helpers'
 import * as toast from '@components/toast'
 import { CommentMessageIndicator } from './CommentMessageIndicator'
 import { TChannelSettings } from '@types'
+import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
+import { RiAtLine } from 'react-icons/ri'
+import { MdOutlineEmojiEmotions } from 'react-icons/md'
 
 type BtnIcon = React.ComponentProps<'button'> & {
   $active?: boolean
@@ -301,40 +304,55 @@ export default function SendMessage() {
 
       <div className={`my-2 mt-1 w-full px-2${showEditorToolbar ? 0 : 2}`}>
         <div className="bg-base-300 flex w-full flex-col rounded-md px-2 sm:px-3">
-          <div className="flex items-center gap-1 py-1 text-base sm:py-2">
-            {settings?.textEditor?.attachmentButton && (
+          <div className="flex flex-col gap-1 py-1 text-base sm:py-2">
+            {/* {settings?.textEditor?.attachmentButton && (
               <IconButton $size={8}>
                 <ImAttachment size={20} />
               </IconButton>
-            )}
-            <EditorContent
-              onKeyDown={(e) => handleKeyDown(e)}
-              ref={editorElement}
-              className="max-h-52 w-full overflow-auto"
-              editor={editor}
-              dir="auto"
-            />
-            {settings?.textEditor?.toolbar && (
-              <IconButton
-                $size={8}
-                className={showEditorToolbar ? 'btn-active' : ''}
-                onClick={() => setShowEditorToolbar(!showEditorToolbar)}>
-                <MdFormatColorText size={24} />
-              </IconButton>
-            )}
-            {settings?.textEditor?.emojiPicker && (
-              <IconButton $size={8} onClick={openEmojiPicker}>
-                <BsFillEmojiSmileFill size={22} />
-              </IconButton>
-            )}
-            <IconButton
-              $size={8}
-              onClick={submit}
-              $className="sm:mr-2 !mr-0"
-              type="submit"
-              disabled={loading || editor.isEmpty}>
-              <IoSend size={22} />
-            </IconButton>
+            )} */}
+            <div className="flex-1 py-0.5">
+              <EditorContent
+                onKeyDown={(e) => handleKeyDown(e)}
+                ref={editorElement}
+                className="max-h-52 w-full overflow-auto"
+                editor={editor}
+                dir="auto"
+              />
+            </div>
+            <div className="bg-base-300 flex items-center gap-1">
+              {settings?.textEditor?.toolbar && (
+                <ToolbarButton
+                  className={`tooltip-top ${showEditorToolbar ? 'btn-active' : ''}`}
+                  tooltip="Toolbar"
+                  onClick={() => setShowEditorToolbar(!showEditorToolbar)}>
+                  <MdFormatColorText size={20} />
+                </ToolbarButton>
+              )}
+              {settings?.textEditor?.emojiPicker && (
+                <ToolbarButton onClick={openEmojiPicker} className="tooltip-top" tooltip="Emoji">
+                  <MdOutlineEmojiEmotions size={20} />
+                </ToolbarButton>
+              )}
+
+              {settings?.textEditor?.mentionsomeone && (
+                <ToolbarButton
+                  onClick={() => editor.chain().focus().insertContent('@').run()}
+                  editor={editor}
+                  type="mention"
+                  tooltip="Mention someone"
+                  className="tooltip-top">
+                  <RiAtLine size={20} />
+                </ToolbarButton>
+              )}
+
+              <ToolbarButton
+                onClick={submit}
+                type="submit"
+                disabled={loading || editor.isEmpty}
+                className="btn-docy btn-primary !mr-0 ml-auto p-1.5 hover:border-none sm:mr-2">
+                <IoSend size={24} />
+              </ToolbarButton>
+            </div>
           </div>
         </div>
       </div>

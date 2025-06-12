@@ -22,6 +22,9 @@ import previewHyperlinkModal from '@components/TipTap/hyperlinkModals/previewHyp
 import setHyperlinks from '@components/TipTap/hyperlinkModals/setHyperlink'
 import Hyperlink from '@docs.plus/extension-hyperlink'
 
+// Custom Extensions
+import { InlineCode } from '../../../../../extension-inline-code/dist'
+import { Indent } from '@docs.plus/extension-indent'
 // load all highlight.js languages
 import { createLowlight } from 'lowlight'
 const lowlight = createLowlight()
@@ -45,7 +48,7 @@ export const useTiptapEditor = ({ loading }: any) => {
     {
       extensions: [
         StarterKit.configure({
-          codeBlock: false,
+          code: false, // Disable default code to use our custom InlineCode extension
           bulletList: {
             keepMarks: true,
             keepAttributes: false // TODO : Making this as `false` becase marks are not preserved when I try to preserve attrs, awaiting a bit of help
@@ -55,6 +58,8 @@ export const useTiptapEditor = ({ loading }: any) => {
             keepAttributes: false // TODO : Making this as `false` becase marks are not preserved when I try to preserve attrs, awaiting a bit of help
           }
         }),
+        InlineCode,
+        Indent,
         CodeBlockLowlight.configure({
           lowlight
         }),
@@ -72,7 +77,15 @@ export const useTiptapEditor = ({ loading }: any) => {
           protocols: ['ftp', 'mailto'],
           hyperlinkOnPaste: true,
           openOnClick: true,
-          autoHyperlink: true
+          autoHyperlink: true,
+          modals: {
+            previewHyperlink: (data: any) => {
+              return previewHyperlinkModal(data)
+            },
+            setHyperlink: (data: any) => {
+              return setHyperlinks(data)
+            }
+          }
         })
       ],
       onUpdate: ({ editor }) => {
