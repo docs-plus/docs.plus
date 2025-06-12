@@ -26,7 +26,7 @@ export const EditorToolbar = ({ editor, className }: { editor: Editor; className
   }, [editor])
 
   const toolbarStyle = twMerge(
-    'chatroom__toolbar border-none flex h-9 w-full flex-row items-center justify-start bg-base-200 gap-1',
+    'chatroom__toolbar border-none flex h-9 w-full flex-row items-center justify-start bg-base-300 gap-1',
     className
   )
 
@@ -102,14 +102,6 @@ export const EditorToolbar = ({ editor, className }: { editor: Editor; className
         type="codeBlock"
         tooltip="Code Block (⌘+⇧+⌥+c)">
         <RiCodeBlock size={20} />
-      </ToolbarButton>
-
-      <ToolbarButton
-        onClick={() => editor.chain().focus().insertContent('@').run()}
-        editor={editor}
-        type="mention"
-        tooltip="Mention someone">
-        <RiAtLine size={20} />
       </ToolbarButton>
     </div>
   )

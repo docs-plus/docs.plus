@@ -92,7 +92,7 @@ export const ChatRoom = forwardRef(
             loadingMoreDirection={loadingMoreDirection}
           />
 
-          <div className="flex w-full flex-col items-center justify-center">
+          <div className="flex w-full flex-col items-center justify-center bg-transparent">
             {(!isMobile || (isMobile && !isEmojiBoxOpen)) && <ActionBar />}
             {pickEmoji && (
               <EmojiPickerWrapper
