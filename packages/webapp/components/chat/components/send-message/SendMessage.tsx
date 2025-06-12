@@ -27,7 +27,7 @@ type BtnIcon = React.ComponentProps<'button'> & {
 
 const IconButton = twx.button<BtnIcon>((prop) =>
   cn(
-    'btn btn-ghost w-8 h-8 btn-xs p-1 ',
+    'btn btn-ghost btn-square p-1 ',
     prop.$active && 'btn-active',
     prop.$size && `w-${prop.$size} h-${prop.$size}`,
     prop.$className || ''
@@ -98,7 +98,10 @@ export default function SendMessage() {
       e.preventDefault()
       editor.view.focus()
 
-      if (!html || !text || loading) return
+      const isContentEmpty =
+        !html || !text || html.replace(/<[^>]*>/g, '').trim() === '' || text.trim() === ''
+
+      if (isContentEmpty || loading) return
 
       // Sanitize inputs to prevent XSS and injection attacks
       const { sanitizedHtml, sanitizedText } = sanitizeMessageContent(html, text)
@@ -110,8 +113,6 @@ export default function SendMessage() {
       }
 
       const { htmlChunks, textChunks } = chunkHtmlContent(sanitizedHtml, 3000)
-
-      console.log('htmlChunks', { sanitizedHtml, sanitizedText, htmlChunks, textChunks })
 
       if (replyMessageMemory?.id) {
         const user = replyMessageMemory.user_details
@@ -296,15 +297,11 @@ export default function SendMessage() {
       <CommentMessageIndicator />
       <ReplyMessageIndicator />
       <EditeMessageIndicator />
-      <EditorToolbar
-        editor={editor}
-        className="px-2"
-        style={{ display: showEditorToolbar ? 'flex' : 'none' }}
-      />
+      <EditorToolbar editor={editor} className={`px-2 ${showEditorToolbar ? 'flex' : 'hidden'}`} />
 
       <div className={`my-2 mt-1 w-full px-2${showEditorToolbar ? 0 : 2}`}>
         <div className="bg-base-300 flex w-full flex-col rounded-md px-2 sm:px-3">
-          <div className="flex items-center py-1 text-base sm:py-2">
+          <div className="flex items-center gap-1 py-1 text-base sm:py-2">
             {settings?.textEditor?.attachmentButton && (
               <IconButton $size={8}>
                 <ImAttachment size={20} />
@@ -320,7 +317,7 @@ export default function SendMessage() {
             {settings?.textEditor?.toolbar && (
               <IconButton
                 $size={8}
-                className={showEditorToolbar ? 'bg-secondary text-secondary-content' : ''}
+                className={showEditorToolbar ? 'btn-active' : ''}
                 onClick={() => setShowEditorToolbar(!showEditorToolbar)}>
                 <MdFormatColorText size={24} />
               </IconButton>
