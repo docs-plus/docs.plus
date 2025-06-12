@@ -296,21 +296,25 @@ export default function SendMessage() {
   if (!editor || !user) return null
 
   return (
-    <div className="chat_editor_container bg-base-200 flex w-full flex-col p-1 px-2 pb-0">
+    <div className="chat_editor_container mb-2 flex w-full flex-col bg-transparent">
       <CommentMessageIndicator />
       <ReplyMessageIndicator />
       <EditeMessageIndicator />
-      <EditorToolbar editor={editor} className={`px-2 ${showEditorToolbar ? 'flex' : 'hidden'}`} />
 
-      <div className={`my-2 mt-1 w-full px-2${showEditorToolbar ? 0 : 2}`}>
-        <div className="bg-base-300 flex w-full flex-col rounded-md px-2 sm:px-3">
-          <div className="flex flex-col gap-1 py-1 text-base sm:py-2">
+      <div className={`w-full`}>
+        <div className="flex w-full flex-col rounded-md border border-gray-300 shadow-md">
+          <EditorToolbar
+            editor={editor}
+            className={`rounded-tl-md rounded-tr-md border px-1 sm:px-2 ${showEditorToolbar ? 'flex' : 'hidden'}`}
+          />
+
+          <div className="flex flex-col gap-1 text-base">
             {/* {settings?.textEditor?.attachmentButton && (
               <IconButton $size={8}>
                 <ImAttachment size={20} />
               </IconButton>
             )} */}
-            <div className="flex-1 py-0.5">
+            <div className="flex-1 px-1 py-2 text-base sm:px-2">
               <EditorContent
                 onKeyDown={(e) => handleKeyDown(e)}
                 ref={editorElement}
@@ -319,7 +323,7 @@ export default function SendMessage() {
                 dir="auto"
               />
             </div>
-            <div className="bg-base-300 flex items-center gap-1">
+            <div className="flex items-center gap-1 px-1 pb-1 sm:px-2">
               {settings?.textEditor?.toolbar && (
                 <ToolbarButton
                   className={`tooltip-top ${showEditorToolbar ? 'btn-active' : ''}`}
