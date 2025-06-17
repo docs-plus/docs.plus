@@ -1,5 +1,5 @@
 import dotenvFlow from 'dotenv-flow'
-import { Hocuspocus } from '@hocuspocus/server'
+import { Server } from '@hocuspocus/server'
 import HocuspocusConfig, { prisma } from './hocuspocus.config.mjs'
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
@@ -9,11 +9,6 @@ dotenvFlow.config({
   node_env: process.env.NODE_ENV,
   silent: true
 })
-const Serverconfigure = HocuspocusConfig()
-
-// Configure the server …
-const server = new Hocuspocus(Serverconfigure)
-
 async function handleHistoryEvents(payload, context, document) {
   const { type, documentId } = payload
 
@@ -92,10 +87,15 @@ const statelessExtension = {
   }
 }
 
-// after creating the server
-server.configure({
-  extensions: [...server.configuration.extensions, statelessExtension]
-})
+// Get the base configuration and add our stateless extension
+const baseConfig = HocuspocusConfig()
+const serverConfig = {
+  ...baseConfig,
+  extensions: [...baseConfig.extensions, statelessExtension]
+}
+
+// Configure and start the server
+const server = new Server(serverConfig)
 
 // … and run it!
 server.listen()
