@@ -1,13 +1,25 @@
 {
   "name": "@docs.plus/extension-hyperlink",
-  "description": "Hyperlink component for docs.plus",
   "version": "2.0.0-beta.103",
+  "description": "Hyperlink component for docs.plus",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "umd": "dist/index.umd.js",
+  "types": "dist/index.d.ts",
   "author": "Hossein Marzban",
-  "homepage": "https://github.com/docs-plus/docs.plus",
+  "license": "MIT",
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/docs-plus/docs.plus",
     "directory": "packages/extension-hyperlink"
+  },
+  "scripts": {
+    "build": "tsup --dts",
+    "dev": "tsup --watch --dts",
+    "lint": "eslint . --ext .ts",
+    "test": "jest",
+    "update:packages": "npx npm-check-updates -u"
   },
   "keywords": [
     "tiptap",
@@ -17,39 +29,17 @@
     "docs.plus",
     "prosemirror"
   ],
-  "exports": {
-    ".": {
-      "types": "./dist/src/index.d.ts",
-      "import": "./dist/index.js",
-      "require": "./dist/index.cjs"
-    }
-  },
-  "type": "module",
-  "main": "dist/index.cjs",
-  "module": "dist/index.js",
-  "umd": "dist/index.umd.js",
-  "types": "dist/src/index.d.ts",
-  "files": [
-    "src",
-    "dist"
-  ],
-  "scripts": {
-    "clean": "rm -rf dist",
-    "build": "npm run clean && rollup -c",
-    "ts": "tsc -p tsconfig.json",
-    "postbuild": "node ./scripts/flattenDeclarations.js",
-    "update:packages": "npx npm-check-updates -u"
-  },
-  "license": "MIT",
   "dependencies": {
     "linkifyjs": "^4.3.1",
     "tippy.js": "^6.3.7"
   },
   "peerDependencies": {
-    "@tiptap/core": "^2.0.3",
-    "@tiptap/pm": "^2.0.3"
+    "@tiptap/core": "^2.11.5",
+    "@tiptap/pm": "^2.11.5"
   },
   "devDependencies": {
-    "rollup-plugin-sourcemaps": "^0.6.3"
+    "typescript": "^5.8.3",
+    "tsup": "^8.5.0",
+    "eslint": "^9.29.0"
   }
 }
