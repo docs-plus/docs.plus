@@ -1,0 +1,46 @@
+{
+  "name": "@docs.plus/extension-hypermultimedia",
+  "version": "1.4.0",
+  "description": "Insert embeded multimedia components for docs.plus",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "umd": "dist/index.umd.js",
+  "types": "dist/index.d.ts",
+  "author": "Hossein Marzban",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/docs-plus/docs.plus",
+    "directory": "packages/extension-hypermultimedia"
+  },
+  "scripts": {
+    "build": "tsup --dts",
+    "dev": "tsup --watch --dts",
+    "clean": "rm -rf dist",
+    "update:packages": "npx npm-check-updates -u"
+  },
+  "keywords": [
+    "tiptap",
+    "tiptap extension",
+    "insert Media",
+    "multimedia",
+    "youtube",
+    "vimeo",
+    "soundcloud",
+    "twitter",
+    "prosemirror",
+    "docs.plus"
+  ],
+  "peerDependencies": {
+    "@tiptap/core": "^2.11.5",
+    "@tiptap/pm": "^2.11.5"
+  },
+  "dependencies": {
+    "tippy.js": "^6.3.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.8.3",
+    "tsup": "^8.5.0"
+  }
+}
