@@ -18,7 +18,8 @@
     "build": "tsup --dts",
     "dev": "tsup --watch --dts",
     "lint": "eslint . --ext .ts",
-    "test": "jest"
+    "test": "jest",
+    "update:packages": "npx npm-check-updates -u"
   },
   "keywords": [
     "tiptap",
@@ -35,8 +36,8 @@
     "@tiptap/pm": "^2.11.5"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
-    "tsup": "^7.2.0",
-    "eslint": "^8.50.0"
+    "typescript": "^5.8.3",
+    "tsup": "^8.5.0",
+    "eslint": "^9.29.0"
   }
 }
