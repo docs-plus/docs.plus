@@ -16,7 +16,7 @@ export const useNotificationSummary = () => {
     setNotificationTab,
     setNotificationPage
   } = useStore((state) => state)
-  const { isOpen } = useDropdown()
+  const { isOpen } = useDropdown() || { isOpen: false }
 
   const { request: summaryRequest } = useApi(getNotificationsSummary, null, false)
 
