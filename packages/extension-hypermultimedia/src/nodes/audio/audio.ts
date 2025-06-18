@@ -1,58 +1,58 @@
-import { Node, mergeAttributes, nodeInputRule } from "@tiptap/core";
+import { Node, mergeAttributes, nodeInputRule } from '@tiptap/core'
 import {
   createTooltip,
   generateShortId,
   createStyleString,
   StyleLayoutOptions,
-  applyStyles,
-} from "../../utils/utils";
-import { inputRegex } from "./helper";
-import { MediaPlacement } from "../../utils/media-placement";
+  applyStyles
+} from '../../utils/utils'
+import { inputRegex } from './helper'
+import { MediaPlacement } from '../../utils/media-placement'
 
 interface AudioAttributes {
-  src?: string | null;
-  controls?: boolean;
-  autoplay?: boolean;
-  loop?: boolean;
-  muted?: boolean;
-  preload?: "none" | "metadata" | "auto";
-  volume?: number;
-  [key: string]: any; // Add an index signature
+  src?: string | null
+  controls?: boolean
+  autoplay?: boolean
+  loop?: boolean
+  muted?: boolean
+  preload?: 'none' | 'metadata' | 'auto'
+  volume?: number
+  [key: string]: any // Add an index signature
 }
 
 interface NodeOptions {
-  HTMLAttributes: Record<string, any>;
-  modal?: ((options: MediaPlacement) => HTMLElement | void | null) | null;
+  HTMLAttributes: Record<string, any>
+  modal?: ((options: MediaPlacement) => HTMLElement | void | null) | null
 }
 
 export interface AudioOptions extends StyleLayoutOptions, NodeOptions {
   // Node attributes
-  inline?: boolean;
+  inline?: boolean
 
   // Html attributes
-  controls?: boolean;
-  autoplay?: boolean;
-  loop?: boolean;
-  muted?: boolean;
-  preload?: "none" | "metadata" | "auto";
-  volume?: number;
-  src: string | null;
+  controls?: boolean
+  autoplay?: boolean
+  loop?: boolean
+  muted?: boolean
+  preload?: 'none' | 'metadata' | 'auto'
+  volume?: number
+  src: string | null
 }
 
 export type SetAudioOptions = {
-  src: string;
-} & StyleLayoutOptions;
+  src: string
+} & StyleLayoutOptions
 
-declare module "@tiptap/core" {
+declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     Audio: {
-      setAudio: (options: { src: string; title?: string; controls?: boolean }) => ReturnType;
-    };
+      setAudio: (options: { src: string; title?: string; controls?: boolean }) => ReturnType
+    }
   }
 }
 
 export const Audio = Node.create<AudioOptions>({
-  name: "Audio",
+  name: 'Audio',
   draggable: true,
 
   addOptions() {
@@ -60,85 +60,85 @@ export const Audio = Node.create<AudioOptions>({
       src: null,
       controls: true,
       modal: null,
-      margin: "0in",
-      clear: "none",
-      float: "unset",
-      display: "block",
-      justifyContent: "start",
+      margin: '0in',
+      clear: 'none',
+      float: 'unset',
+      display: 'block',
+      justifyContent: 'start',
       HTMLAttributes: {},
-      inline: false,
-    };
+      inline: false
+    }
   },
 
   inline() {
-    return this.options.inline;
+    return this.options.inline
   },
 
   group() {
-    return this.options.inline ? "inline" : "block";
+    return this.options.inline ? 'inline' : 'block'
   },
 
   addAttributes() {
     return {
       keyId: {
-        default: generateShortId(),
+        default: generateShortId()
       },
       src: {
-        default: null,
+        default: null
       },
       controls: {
-        default: this.options.controls,
+        default: this.options.controls
       },
       autoplay: {
-        default: false,
+        default: false
       },
       loop: {
-        default: false,
+        default: false
       },
       muted: {
-        default: false,
+        default: false
       },
       preload: {
-        default: "metadata", // Can be 'none', 'metadata', or 'auto'
+        default: 'metadata' // Can be 'none', 'metadata', or 'auto'
       },
       volume: {
-        default: 1.0,
+        default: 1.0
       },
       margin: {
-        default: this.options.margin,
+        default: this.options.margin
       },
       clear: {
-        default: this.options.clear,
+        default: this.options.clear
       },
       float: {
-        default: this.options.float,
+        default: this.options.float
       },
       display: {
-        default: this.options.display,
+        default: this.options.display
       },
       justifyContent: {
-        default: this.options.justifyContent,
+        default: this.options.justifyContent
       },
       width: {
-        default: null,
+        default: null
       },
       height: {
-        default: null,
-      },
-    };
+        default: null
+      }
+    }
   },
 
   addNodeView() {
     return ({ node, HTMLAttributes }) => {
-      const editor = this.editor;
-      const modal = this.options.modal;
-      const { tooltip, tippyModal } = createTooltip(editor);
+      const editor = this.editor
+      const modal = this.options.modal
+      const { tooltip, tippyModal } = createTooltip(editor)
 
-      const dom = document.createElement("div");
-      const content = document.createElement("div");
-      const audioTag = document.createElement("audio");
+      const dom = document.createElement('div')
+      const content = document.createElement('div')
+      const audioTag = document.createElement('audio')
 
-      dom.classList.add("hypermultimedia--audio__content");
+      dom.classList.add('hypermultimedia--audio__content')
 
       const styles = {
         display: node.attrs.display,
@@ -147,10 +147,10 @@ export const Audio = Node.create<AudioOptions>({
         float: node.attrs.float,
         clear: node.attrs.clear,
         margin: node.attrs.margin,
-        justifyContent: node.attrs.justifyContent,
-      };
+        justifyContent: node.attrs.justifyContent
+      }
 
-      applyStyles(dom, styles);
+      applyStyles(dom, styles)
 
       const htmlAttributes: AudioAttributes = {
         src: this.options.src || HTMLAttributes.src,
@@ -159,56 +159,56 @@ export const Audio = Node.create<AudioOptions>({
         loop: this.options.loop,
         muted: this.options.muted,
         preload: this.options.preload,
-        volume: this.options.volume,
-      };
+        volume: this.options.volume
+      }
 
       // loop through the attributes and remove any that are null or false
       // (since they're not needed)
       Object.keys(htmlAttributes).forEach((key) => {
         if (htmlAttributes[key] === null || htmlAttributes[key] === false) {
-          delete htmlAttributes[key];
+          delete htmlAttributes[key]
         }
-      });
+      })
 
       const attributes = mergeAttributes(htmlAttributes, {
-        "data-node-name": this.name,
-      });
+        'data-node-name': this.name
+      })
 
       if (modal) {
-        audioTag.addEventListener("mouseenter", (e) => {
+        audioTag.addEventListener('mouseenter', () => {
           if (tooltip && tippyModal) {
-            modal({ editor, tooltip, tippyModal, iframe: audioTag, wrapper: dom });
+            modal({ editor, tooltip, tippyModal, iframe: audioTag, wrapper: dom })
           }
-        });
+        })
       }
 
       Object.entries(attributes).forEach(
         ([key, value]) => value && audioTag.setAttribute(key, value)
-      );
+      )
 
-      content.append(audioTag);
-      dom.append(content);
+      content.append(audioTag)
+      dom.append(content)
 
       return {
         dom,
         contentDOM: content,
         ignoreMutation: (mutation) => {
-          return !dom.contains(mutation.target) || dom === mutation.target;
+          return !dom.contains(mutation.target) || dom === mutation.target
         },
         update: (updatedNode) => {
-          if (updatedNode.type.name !== this.name) return false;
-          return true;
-        },
-      };
-    };
+          if (updatedNode.type.name !== this.name) return false
+          return true
+        }
+      }
+    }
   },
 
   parseHTML() {
     return [
       {
-        tag: "div[data-audio] audio[src]",
-      },
-    ];
+        tag: 'div[data-audio] audio[src]'
+      }
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -217,8 +217,8 @@ export const Audio = Node.create<AudioOptions>({
       width: parseInt(HTMLAttributes.width),
       float: HTMLAttributes.float,
       clear: HTMLAttributes.clear,
-      margin: HTMLAttributes.margin,
-    });
+      margin: HTMLAttributes.margin
+    })
 
     const htmlAttributes: AudioAttributes = {
       src: this.options.src || HTMLAttributes.src,
@@ -227,26 +227,26 @@ export const Audio = Node.create<AudioOptions>({
       loop: this.options.loop,
       muted: this.options.muted,
       preload: this.options.preload,
-      volume: this.options.volume,
-    };
+      volume: this.options.volume
+    }
 
     // loop through the attributes and remove any that are null or false
     // (since they're not needed)
     Object.keys(htmlAttributes).forEach((key) => {
       if (htmlAttributes[key] === null || htmlAttributes[key] === false) {
-        delete htmlAttributes[key];
+        delete htmlAttributes[key]
       }
-    });
+    })
 
     return [
-      "div",
-      { "data-audio": "", class: "hypermultimedia--audio__content", style },
+      'div',
+      { 'data-audio': '', class: 'hypermultimedia--audio__content', style },
       [
-        "audio",
-        mergeAttributes(htmlAttributes, { class: "hypermultimedia--audio__content", style }),
-        0, // Zero indicates that this node can have content. For audio, it's usually empty.
-      ],
-    ];
+        'audio',
+        mergeAttributes(htmlAttributes, { class: 'hypermultimedia--audio__content', style }),
+        0 // Zero indicates that this node can have content. For audio, it's usually empty.
+      ]
+    ]
   },
 
   addInputRules() {
@@ -255,12 +255,12 @@ export const Audio = Node.create<AudioOptions>({
         find: inputRegex, // You'll need to define a regex for the audio similar to the video regex
         type: this.type,
         getAttributes: (match) => {
-          const [, , src, width, height] = match;
+          const [, , src, width, height] = match
 
-          return { src, width, height };
-        },
-      }),
-    ];
+          return { src, width, height }
+        }
+      })
+    ]
   },
 
   addCommands() {
@@ -269,14 +269,14 @@ export const Audio = Node.create<AudioOptions>({
         (options) =>
         ({ commands }) => {
           if (!options.src) {
-            throw new Error("Audio source is required");
+            throw new Error('Audio source is required')
           }
 
           return commands.insertContent({
             type: this.name,
-            attrs: options,
-          });
-        },
-    };
-  },
-});
+            attrs: options
+          })
+        }
+    }
+  }
+})

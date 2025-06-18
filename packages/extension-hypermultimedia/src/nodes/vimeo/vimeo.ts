@@ -1,65 +1,65 @@
-import { Node, mergeAttributes, nodePasteRule } from "@tiptap/core";
-import { getEmbedUrlFromVimeoUrl, isValidVimeoUrl, VIMEO_REGEX_GLOBAL } from "./helper";
-import { createTooltip, applyStyles, generateShortId } from "../../utils/utils";
-import { MediaPlacement } from "../../utils/media-placement";
+import { Node, mergeAttributes, nodePasteRule } from '@tiptap/core'
+import { getEmbedUrlFromVimeoUrl, isValidVimeoUrl, VIMEO_REGEX_GLOBAL } from './helper'
+import { createTooltip, applyStyles, generateShortId } from '../../utils/utils'
+import { MediaPlacement } from '../../utils/media-placement'
 
 interface LayoutOptions {
-  width?: number;
-  height?: number;
-  margin?: string;
-  clear?: string;
-  float?: string;
-  display?: string;
-  justifyContent?: string;
+  width?: number
+  height?: number
+  margin?: string
+  clear?: string
+  float?: string
+  display?: string
+  justifyContent?: string
 }
 
 interface NodeOptions {
-  inline: boolean;
-  addPasteHandler: boolean;
-  HTMLAttributes: Record<string, any>;
-  modal?: ((options: MediaPlacement) => HTMLElement | void | null) | null;
+  inline: boolean
+  addPasteHandler: boolean
+  HTMLAttributes: Record<string, any>
+  modal?: ((options: MediaPlacement) => HTMLElement | void | null) | null
 }
 
 export interface VimeoOptions extends LayoutOptions, NodeOptions {
   // URL Search Params attributes
-  autopause?: boolean;
-  autoplay?: boolean;
-  background?: boolean;
-  byline?: boolean | "site-default";
-  color?: string;
-  controls?: boolean;
-  dnt?: boolean;
-  keyboard?: boolean;
-  loop?: boolean;
-  muted?: boolean;
-  pip?: boolean;
-  playsinline?: boolean;
-  portrait?: boolean | "site-default";
-  quality?: "240p" | "360p" | "540p" | "720p" | "1080p" | "2k" | "4k" | "auto";
-  speed?: boolean;
-  startTime?: string;
-  texttrack?: string | false;
-  title?: boolean;
+  autopause?: boolean
+  autoplay?: boolean
+  background?: boolean
+  byline?: boolean | 'site-default'
+  color?: string
+  controls?: boolean
+  dnt?: boolean
+  keyboard?: boolean
+  loop?: boolean
+  muted?: boolean
+  pip?: boolean
+  playsinline?: boolean
+  portrait?: boolean | 'site-default'
+  quality?: '240p' | '360p' | '540p' | '720p' | '1080p' | '2k' | '4k' | 'auto'
+  speed?: boolean
+  startTime?: string
+  texttrack?: string | false
+  title?: boolean
 
   // Iframe html attributes
-  frameborder?: number; // false
-  allowfullscreen?: boolean; // true
+  frameborder?: number // false
+  allowfullscreen?: boolean // true
 }
 
 type SetVimeoOptions = {
-  src: string;
-} & LayoutOptions;
+  src: string
+} & LayoutOptions
 
-declare module "@tiptap/core" {
+declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     Vimeo: {
-      setVimeo: (options: SetVimeoOptions) => ReturnType;
-    };
+      setVimeo: (options: SetVimeoOptions) => ReturnType
+    }
   }
 }
 
 export const Vimeo = Node.create<VimeoOptions>({
-  name: "Vimeo",
+  name: 'Vimeo',
   draggable: true,
 
   addOptions() {
@@ -71,7 +71,7 @@ export const Vimeo = Node.create<VimeoOptions>({
       autoplay: false,
       background: false,
       byline: true,
-      color: "#00adef",
+      color: '#00adef',
       controls: true,
       dnt: false,
       keyboard: true,
@@ -80,76 +80,76 @@ export const Vimeo = Node.create<VimeoOptions>({
       pip: false,
       playsinline: false,
       portrait: true,
-      quality: "auto",
+      quality: 'auto',
       speed: false,
-      startTime: "0",
+      startTime: '0',
       texttrack: false,
       title: true,
       height: 480,
       width: 640,
-      justifyContent: "start",
-      margin: "0in",
-      clear: "none",
-      float: "unset",
-      display: "block",
-      inline: false,
-    };
+      justifyContent: 'start',
+      margin: '0in',
+      clear: 'none',
+      float: 'unset',
+      display: 'block',
+      inline: false
+    }
   },
 
   inline() {
-    return this.options.inline;
+    return this.options.inline
   },
 
   group() {
-    return this.options.inline ? "inline" : "block";
+    return this.options.inline ? 'inline' : 'block'
   },
 
   addAttributes() {
     return {
       keyId: {
-        default: generateShortId(),
+        default: generateShortId()
       },
       margin: {
-        default: this.options.margin,
+        default: this.options.margin
       },
       clear: {
-        default: this.options.clear,
+        default: this.options.clear
       },
       float: {
-        default: this.options.float,
+        default: this.options.float
       },
       display: {
-        default: this.options.display,
+        default: this.options.display
       },
       justifyContent: {
-        default: this.options.justifyContent,
+        default: this.options.justifyContent
       },
       src: {
-        default: null,
+        default: null
       },
       start: {
-        default: 0,
+        default: 0
       },
       width: {
-        default: this.options.width,
+        default: this.options.width
       },
       height: {
-        default: this.options.height,
-      },
-    };
+        default: this.options.height
+      }
+    }
   },
 
   addNodeView() {
     return ({ node, HTMLAttributes }) => {
-      const editor = this.editor;
-      const modal = this.options.modal;
-      const { tooltip, tippyModal } = createTooltip(editor);
+      const editor = this.editor
+      const modal = this.options.modal
+      const { tooltip, tippyModal } = createTooltip(editor)
 
-      const dom = document.createElement("div");
-      const content = document.createElement("div");
-      const iframe = document.createElement("iframe");
+      const dom = document.createElement('div')
+      const content = document.createElement('div')
+      const iframe = document.createElement('iframe')
 
-      dom.classList.add("hypermultimedia--vimeo__content");
+      dom.classList.add('hypermultimedia--vimeo__content')
 
       const styles = {
         display: node.attrs.display,
@@ -158,10 +158,10 @@ export const Vimeo = Node.create<VimeoOptions>({
         float: node.attrs.float,
         clear: node.attrs.clear,
         margin: node.attrs.margin,
-        justifyContent: node.attrs.justifyContent,
-      };
+        justifyContent: node.attrs.justifyContent
+      }
 
-      applyStyles(dom, styles);
+      applyStyles(dom, styles)
 
       const vimeoAttrs = {
         url: HTMLAttributes.src,
@@ -184,42 +184,42 @@ export const Vimeo = Node.create<VimeoOptions>({
         texttrack: this.options.texttrack,
         title: this.options.title,
         height: this.options.height,
-        width: this.options.width,
-      };
+        width: this.options.width
+      }
 
-      const embedUrl = getEmbedUrlFromVimeoUrl(vimeoAttrs) || "";
+      const embedUrl = getEmbedUrlFromVimeoUrl(vimeoAttrs) || ''
 
-      HTMLAttributes.src = embedUrl;
+      HTMLAttributes.src = embedUrl
 
       const attributes = mergeAttributes(this.options.HTMLAttributes, {
-        "data-node-name": this.name,
+        'data-node-name': this.name,
         width: node.attrs.width,
         height: node.attrs.height,
         frameborder: node.attrs.frameborder,
-        allowfullscreen: node.attrs.allowfullscreen,
-      });
+        allowfullscreen: node.attrs.allowfullscreen
+      })
 
       if (modal) {
-        iframe.addEventListener("mouseenter", (e) => {
+        iframe.addEventListener('mouseenter', () => {
           if (tooltip && tippyModal) {
-            modal({ editor, tooltip, tippyModal, iframe, wrapper: dom });
+            modal({ editor, tooltip, tippyModal, iframe, wrapper: dom })
           }
-        });
+        })
       }
 
-      iframe.setAttribute("src", embedUrl);
+      iframe.setAttribute('src', embedUrl)
 
-      Object.entries(attributes).forEach(([key, value]) => iframe.setAttribute(key, value));
+      Object.entries(attributes).forEach(([key, value]) => iframe.setAttribute(key, value))
 
-      content.append(iframe);
+      content.append(iframe)
 
-      dom.append(content);
+      dom.append(content)
 
       return {
         dom,
         contentDOM: content,
         ignoreMutation: (mutation) => {
-          return !dom.contains(mutation.target) || dom === mutation.target;
+          return !dom.contains(mutation.target) || dom === mutation.target
         },
         update: (updatedNode) => {
           if (
@@ -227,28 +227,28 @@ export const Vimeo = Node.create<VimeoOptions>({
             (updatedNode.attrs.height !== this.options.height ||
               updatedNode.attrs.width !== this.options.width)
           ) {
-            dom.style.height = `${updatedNode.attrs.height}px`;
-            iframe.style.height = `${updatedNode.attrs.height}px`;
-            dom.style.width = `${updatedNode.attrs.width}px`;
-            iframe.style.width = `${updatedNode.attrs.width}px`;
-            iframe.width = `${updatedNode.attrs.width}`;
-            iframe.height = `${updatedNode.attrs.height}`;
+            dom.style.height = `${updatedNode.attrs.height}px`
+            iframe.style.height = `${updatedNode.attrs.height}px`
+            dom.style.width = `${updatedNode.attrs.width}px`
+            iframe.style.width = `${updatedNode.attrs.width}px`
+            iframe.width = `${updatedNode.attrs.width}`
+            iframe.height = `${updatedNode.attrs.height}`
 
-            return true;
+            return true
           }
-          if (updatedNode.type.name !== this.name) return false;
-          return true;
-        },
-      };
-    };
+          if (updatedNode.type.name !== this.name) return false
+          return true
+        }
+      }
+    }
   },
 
   parseHTML() {
     return [
       {
-        tag: "div[data-vimeo-video] iframe",
-      },
-    ];
+        tag: 'div[data-vimeo-video] iframe'
+      }
+    ]
   },
 
   addCommands() {
@@ -256,14 +256,14 @@ export const Vimeo = Node.create<VimeoOptions>({
       setVimeo:
         (options: SetVimeoOptions) =>
         ({ commands }) => {
-          if (!isValidVimeoUrl(options.src)) return false;
+          if (!isValidVimeoUrl(options.src)) return false
 
           return commands.insertContent({
             type: this.name,
-            attrs: options,
-          });
-        },
-    };
+            attrs: options
+          })
+        }
+    }
   },
 
   renderHTML({ node, HTMLAttributes }) {
@@ -288,55 +288,55 @@ export const Vimeo = Node.create<VimeoOptions>({
       texttrack: this.options.texttrack,
       title: this.options.title,
       height: this.options.height,
-      width: this.options.width,
-    };
+      width: this.options.width
+    }
 
-    const embedUrl = getEmbedUrlFromVimeoUrl(vimeoAttrs);
-    HTMLAttributes.src = embedUrl;
+    const embedUrl = getEmbedUrlFromVimeoUrl(vimeoAttrs)
+    HTMLAttributes.src = embedUrl
 
-    const height = parseInt(HTMLAttributes.height);
-    const width = parseInt(HTMLAttributes.width);
-    const float = HTMLAttributes.float;
-    const clear = HTMLAttributes.clear;
-    const margin = HTMLAttributes.margin;
-    const display = HTMLAttributes.display;
+    const height = parseInt(HTMLAttributes.height)
+    const width = parseInt(HTMLAttributes.width)
+    const float = HTMLAttributes.float
+    const clear = HTMLAttributes.clear
+    const margin = HTMLAttributes.margin
+    const display = HTMLAttributes.display
 
-    const style = `display: ${display}; height:${height}px; width: ${width}px; float: ${float}; clear: ${clear}; margin: ${margin}`;
+    const style = `display: ${display}; height:${height}px; width: ${width}px; float: ${float}; clear: ${clear}; margin: ${margin}`
 
     return [
-      "div",
-      { "data-vimeo-video": "", class: "vimeo-video", style },
+      'div',
+      { 'data-vimeo-video': '', class: 'vimeo-video', style },
       [
-        "iframe",
+        'iframe',
         mergeAttributes(
           this.options.HTMLAttributes,
           {
             width: node.attrs.width,
             height: node.attrs.height,
             frameborder: node.attrs.frameborder,
-            allowfullscreen: node.attrs.allowfullscreen,
+            allowfullscreen: node.attrs.allowfullscreen
           },
           HTMLAttributes
-        ),
-      ],
-    ];
+        )
+      ]
+    ]
   },
 
   addPasteRules() {
-    if (!this.options.addPasteHandler) return [];
+    if (!this.options.addPasteHandler) return []
 
     return [
       nodePasteRule({
         find: VIMEO_REGEX_GLOBAL,
         type: this.type,
         getAttributes: (match) => {
-          return { src: match.input };
-        },
-      }),
-    ];
+          return { src: match.input }
+        }
+      })
+    ]
   },
 
   addProseMirrorPlugins() {
-    return [];
-  },
-});
+    return []
+  }
+})
