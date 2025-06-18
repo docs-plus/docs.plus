@@ -21,6 +21,7 @@
   "author": "Hossein Marzban",
   "type": "module",
   "devDependencies": {
+    "nodemon": "^3.1.10",
     "prisma": "^6.9.0"
   },
   "dependencies": {
