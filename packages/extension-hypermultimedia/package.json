@@ -18,6 +18,8 @@
     "build": "tsup --dts",
     "dev": "tsup --watch --dts",
     "clean": "rm -rf dist",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "update:packages": "npx npm-check-updates -u"
   },
   "keywords": [
@@ -41,6 +43,11 @@
   },
   "devDependencies": {
     "typescript": "^5.8.3",
-    "tsup": "^8.5.0"
+    "tsup": "^8.5.0",
+    "eslint": "^9.29.0",
+    "@eslint/js": "^9.29.0",
+    "globals": "^15.13.0",
+    "@typescript-eslint/eslint-plugin": "^8.34.1",
+    "@typescript-eslint/parser": "^8.34.1"
   }
 }

@@ -1,131 +1,131 @@
-import { mergeAttributes, Node, nodeInputRule } from "@tiptap/core";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
-import { inputRegex, imageClickHandler } from "./helper";
-import { createTooltip, generateShortId } from "../../utils/utils";
-import { MediaPlacement } from "../../utils/media-placement";
-import { EditorView } from "@tiptap/pm/view";
+import { mergeAttributes, Node, nodeInputRule } from '@tiptap/core'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { inputRegex, imageClickHandler } from './helper'
+import { createTooltip, generateShortId } from '../../utils/utils'
+import { MediaPlacement } from '../../utils/media-placement'
+import { EditorView } from '@tiptap/pm/view'
 
 interface LayoutOptions {
-  width?: number;
-  height?: number;
-  margin?: string;
-  clear?: string;
-  float?: string;
-  display?: string;
+  width?: number
+  height?: number
+  margin?: string
+  clear?: string
+  float?: string
+  display?: string
 }
 
 interface NodeOptions {
-  HTMLAttributes: Record<string, any>;
-  modal?: ((options: MediaPlacement) => HTMLElement | void | null) | null;
+  HTMLAttributes: Record<string, any>
+  modal?: ((options: MediaPlacement) => HTMLElement | void | null) | null
 }
 
 export interface ImageOptions extends LayoutOptions, NodeOptions {
-  allowBase64: boolean;
-  inline: boolean;
+  allowBase64: boolean
+  inline: boolean
 }
 
 export type SetImageOptions = {
-  src: string;
-  alt?: string;
-  title?: string;
-} & LayoutOptions;
+  src: string
+  alt?: string
+  title?: string
+} & LayoutOptions
 
-declare module "@tiptap/core" {
+declare module '@tiptap/core' {
   interface Commands<ReturnType> {
     image: {
-      setImage: (options: SetImageOptions) => ReturnType;
-    };
+      setImage: (options: SetImageOptions) => ReturnType
+    }
   }
 }
 
 export const Image = Node.create<ImageOptions>({
-  name: "Image",
+  name: 'Image',
   draggable: true,
 
   addOptions() {
     return {
       allowBase64: false,
       modal: null,
-      margin: "0in",
-      clear: "none",
-      float: "unset",
-      display: "block",
+      margin: '0in',
+      clear: 'none',
+      float: 'unset',
+      display: 'block',
       HTMLAttributes: {},
       inline: false,
       width: 250,
-      height: 160,
-    };
+      height: 160
+    }
   },
 
   inline() {
-    return this.options.inline;
+    return this.options.inline
   },
 
   group() {
-    return this.options.inline ? "inline" : "block";
+    return this.options.inline ? 'inline' : 'block'
   },
 
   addAttributes() {
     return {
       keyId: {
-        default: generateShortId(),
+        default: generateShortId()
       },
       margin: {
-        default: this.options.margin,
+        default: this.options.margin
       },
       clear: {
-        default: this.options.clear,
+        default: this.options.clear
       },
       float: {
-        default: this.options.float,
+        default: this.options.float
       },
       display: {
-        default: this.options.display,
+        default: this.options.display
       },
       transform: {
-        default: "rotate(0deg)",
+        default: 'rotate(0deg)'
       },
       width: {
-        default: this.options.width,
+        default: this.options.width
       },
       height: {
-        default: this.options.height,
+        default: this.options.height
       },
       src: {
-        default: null,
+        default: null
       },
       alt: {
-        default: null,
+        default: null
       },
       title: {
-        default: null,
-      },
-    };
+        default: null
+      }
+    }
   },
 
   parseHTML() {
     return [
       {
-        tag: this.options.allowBase64 ? "img[src]" : 'img[src]:not([src^="data:"])',
-      },
-    ];
+        tag: this.options.allowBase64 ? 'img[src]' : 'img[src]:not([src^="data:"])'
+      }
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
-    const height = parseInt(HTMLAttributes.height);
-    const width = parseInt(HTMLAttributes.width);
-    const float = HTMLAttributes.float;
-    const clear = HTMLAttributes.clear;
-    const margin = HTMLAttributes.margin;
+    const height = parseInt(HTMLAttributes.height)
+    const width = parseInt(HTMLAttributes.width)
+    const float = HTMLAttributes.float
+    const clear = HTMLAttributes.clear
+    const margin = HTMLAttributes.margin
 
     return [
-      "img",
+      'img',
       mergeAttributes(this.options.HTMLAttributes, {
         ...HTMLAttributes,
-        class: "hypermultimedia--image__content",
-        style: ` height:${height}px; width: ${width}px; float: ${float}; clear: ${clear}; margin: ${margin}`,
-      }),
-    ];
+        class: 'hypermultimedia--image__content',
+        style: ` height:${height}px; width: ${width}px; float: ${float}; clear: ${clear}; margin: ${margin}`
+      })
+    ]
   },
 
   addCommands() {
@@ -135,10 +135,10 @@ export const Image = Node.create<ImageOptions>({
         ({ commands }) => {
           return commands.insertContent({
             type: this.name,
-            attrs: options,
-          });
-        },
-    };
+            attrs: options
+          })
+        }
+    }
   },
 
   addInputRules() {
@@ -147,39 +147,39 @@ export const Image = Node.create<ImageOptions>({
         find: inputRegex,
         type: this.type,
         getAttributes: (match) => {
-          const [, , alt, src, title] = match;
+          const [, , alt, src, title] = match
 
-          return { src, alt, title };
-        },
-      }),
-    ];
+          return { src, alt, title }
+        }
+      })
+    ]
   },
 
   addProseMirrorPlugins() {
-    const { tooltip, tippyModal } = createTooltip(this.editor);
+    const { tooltip, tippyModal } = createTooltip(this.editor)
 
     const handleImageEvent = (view: EditorView, event: MouseEvent | TouchEvent) => {
-      this.editor.commands.blur();
+      // this.editor.commands.blur()
 
       imageClickHandler(view, event, {
         editor: this.editor,
         tooltip,
         tippyModal,
-        modal: this.options.modal || null,
-      });
-      return true;
-    };
+        modal: this.options.modal || null
+      })
+      return true
+    }
 
     return [
       new Plugin({
-        key: new PluginKey("ImageClickHandler"),
+        key: new PluginKey('ImageClickHandler'),
         props: {
           handleDOMEvents: {
             click: handleImageEvent,
-            touchend: handleImageEvent,
-          },
-        },
-      }),
-    ];
-  },
-});
+            touchend: handleImageEvent
+          }
+        }
+      })
+    ]
+  }
+})
