@@ -25,9 +25,9 @@ const useYdocAndProvider = () => {
           url: `${process.env.NEXT_PUBLIC_PROVIDER_URL}`,
           name: documentId,
           document: ydocRef.current,
-          onStatus: (data) => {
-            // console.log('onStatus', data)
-          },
+          // onStatus: (data) => {
+          //   console.log('onStatus', data)
+          // },
           onSynced: (data) => {
             console.log('++onSynced', data)
 
