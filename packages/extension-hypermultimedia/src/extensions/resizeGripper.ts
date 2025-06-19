@@ -1,38 +1,44 @@
-import { Extension } from "@tiptap/core";
-import { Plugin, PluginKey } from "@tiptap/pm/state";
-import { buildDecorations } from "./decoration";
+import { Extension } from '@tiptap/core'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { buildOptimizedDecorations } from './decoration'
+import {
+  createDecorationPluginState,
+  createDecorationPluginProps,
+  BuildDecorationsFunction
+} from './decorationHelpers'
 
-export const MediaResizeGripper = Extension.create({
-  name: "MediaResizeGripper",
+export interface MediaResizeGripperOptions {
+  acceptedNodes: string[]
+}
+
+export const MediaResizeGripper = Extension.create<MediaResizeGripperOptions>({
+  name: 'MediaResizeGripper',
+
   addOptions() {
     return {
-      acceptedNodes: ["Image"],
-    };
+      acceptedNodes: ['Image']
+    }
   },
+
   addProseMirrorPlugins() {
-    const { acceptedNodes } = this.options;
-    const editorView = this.editor.view;
-    const editor = this.editor;
+    const { acceptedNodes } = this.options
+    const editor = this.editor
+
+    // Create optimized decoration builder function
+    const buildDecorations: BuildDecorationsFunction = (doc: ProseMirrorNode) => {
+      return buildOptimizedDecorations(acceptedNodes, doc, editor)
+    }
 
     return [
       new Plugin({
-        key: new PluginKey("MediaResizeGripper"),
-        state: {
-          init(_, { doc }) {
-            return buildDecorations(acceptedNodes, doc, editorView, editor);
-          },
-          apply(tr, old) {
-            return tr.docChanged
-              ? buildDecorations(acceptedNodes, tr.doc, editorView, editor)
-              : old;
-          },
-        },
-        props: {
-          decorations(state) {
-            return this.getState(state);
-          },
-        },
-      }),
-    ];
-  },
-});
+        key: new PluginKey('MediaResizeGripper'),
+        state: createDecorationPluginState(buildDecorations, acceptedNodes, () => {
+          // Optional initialization callback
+          // console.log('MediaResizeGripper plugin initialized')
+        }),
+        props: createDecorationPluginProps()
+      })
+    ]
+  }
+})

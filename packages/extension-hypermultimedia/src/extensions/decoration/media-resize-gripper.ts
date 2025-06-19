@@ -1,8 +1,8 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
-
+import { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { Editor } from '@tiptap/core'
 import handleSideMove from './handleSideClampsMove'
 import handleCornerMove from './handleCornerClampsMove'
+import { MediaGripperInfo } from './index'
 
 enum ClampType {
   Left = 'media-resize-clamp--left',
@@ -40,8 +40,8 @@ function createClamps() {
   }
 }
 
-export function extractImageNode(nodeNames, doc) {
-  const result = []
+export function extractImageNode(nodeNames: string[], doc: ProseMirrorNode): MediaGripperInfo[] {
+  const result: MediaGripperInfo[] = []
   doc.descendants((node, pos) => {
     if (nodeNames.includes(node.type.name)) {
       const { size: nodeSize, childCount } = node.content
@@ -51,7 +51,10 @@ export function extractImageNode(nodeNames, doc) {
   return result
 }
 
-export const createMediaResizeGripper = (prob, editor) => {
+export const createMediaResizeGripper = (
+  prob: MediaGripperInfo,
+  editor: Editor
+): HTMLDivElement => {
   const gripper = document.createElement('div')
   gripper.classList.add('hypermultimedia__resize-gripper')
 
@@ -63,11 +66,9 @@ export const createMediaResizeGripper = (prob, editor) => {
     handleSideMove(clamp, gripper, editor, prob)
   })
 
-  for (const corner in clamps.corners) {
-    if (Object.prototype.hasOwnProperty.call(clamps.corners, corner)) {
-      handleCornerMove(clamps.corners[corner], corner, gripper, editor, prob)
-    }
-  }
+  Object.entries(clamps.corners).forEach(([corner, clampElement]) => {
+    handleCornerMove(clampElement, corner as keyof typeof clamps.corners, gripper, editor, prob)
+  })
 
   return gripper
 }
