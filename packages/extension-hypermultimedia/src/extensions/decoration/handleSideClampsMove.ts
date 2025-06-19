@@ -116,6 +116,7 @@ export default function resizableClamps(
 
       const node = state.doc.nodeAt(currentNodePos)
       if (node) {
+        // Update ProseMirror node attributes immediately
         tr.setNodeMarkup(currentNodePos, null, {
           ...node.attrs,
           width: finalWidth,
