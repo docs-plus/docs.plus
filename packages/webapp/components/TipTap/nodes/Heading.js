@@ -238,7 +238,7 @@ const Heading = Node.create({
   addInputRules() {
     return this.options.levels.map((level) => {
       const config = {
-        find: new RegExp(`^(#{${Math.min(...this.options.levels)},${level}})\\s$`),
+        find: new RegExp(`^(#{${Math.min(...this.options.levels)},${level}})\\s$`, 'g'),
         type: this.type,
         getAttributes: {
           level
