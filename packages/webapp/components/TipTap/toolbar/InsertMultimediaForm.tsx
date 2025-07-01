@@ -1,12 +1,10 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
-import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/Popover'
 import { useStore } from '@stores'
 import toast from 'react-hot-toast'
-import ToolbarButton from './ToolbarButton'
-import { ImageBox } from '@icons'
 import { MdCloudUpload, MdOutlineImage, MdAudiotrack } from 'react-icons/md'
 import { FaYoutube, FaVimeo, FaSoundcloud, FaXTwitter } from 'react-icons/fa6'
 import { FiFilm } from 'react-icons/fi'
+import { useDropdown } from '@components/ui/Dropdown'
 
 // Types and Interfaces
 type MediaType = 'Picture' | 'Video' | 'Audio' | 'Youtube' | 'Vimeo' | 'SoundCloud' | 'x.com'
@@ -336,6 +334,7 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
   const [mediaType, setMediaType] = useState<MediaType>('Picture')
   const inputRef = useRef<HTMLInputElement>(null)
   const { uploadFile } = useUploadManager(editor)
+  const { close: closeDropdown } = useDropdown()
 
   useEffect(() => {
     const timer = setTimeout(() => inputRef.current?.focus(), 300)
@@ -357,6 +356,7 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
     e.preventDefault()
     if (mediaURL.trim()) {
       onSubmit(mediaURL, mediaType)
+      closeDropdown()
     }
   }
 
@@ -364,64 +364,60 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
     const file = e.target.files?.[0]
     if (file && docMetadata) {
       uploadFile(file, docMetadata)
+      closeDropdown()
     }
   }
 
   const IconComponent = MEDIA_CONFIG[mediaType].icon
 
   return (
-    <div className="card bg-base-100 w-96 shadow-xl">
-      <div className="card-body p-4">
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {/* Media Type Selector */}
-          <div className="w-full">
-            <h3 className="label-text mb-2 font-medium">Media Type</h3>
-            <div className="join bg-base-300 relative z-1 flex rounded-md">
-              {Object.keys(MEDIA_CONFIG).map((type) => (
-                <MediaTypeButton
-                  key={type}
-                  type={type as MediaType}
-                  isActive={mediaType === type}
-                  onClick={() => setMediaType(type as MediaType)}
+    <div className="w-96 px-3 py-1 pt-0">
+      <form onSubmit={handleSubmit} className="space-y-4">
+        {/* Media Type Selector */}
+        <div className="w-full">
+          <h3 className="label-text mb-2 font-medium">Media Type</h3>
+          <div className="join bg-base-300 relative z-1 flex rounded-md">
+            {Object.keys(MEDIA_CONFIG).map((type) => (
+              <MediaTypeButton
+                key={type}
+                type={type as MediaType}
+                isActive={mediaType === type}
+                onClick={() => setMediaType(type as MediaType)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* URL Input */}
+        <div className="form-control">
+          <div className="join w-full">
+            <div className="w-full">
+              <label className="input validator join-item">
+                <IconComponent size={20} />
+                <input
+                  ref={inputRef}
+                  type="url"
+                  placeholder={`Enter ${mediaType} URL...`}
+                  value={mediaURL}
+                  onChange={handleURLChange}
                 />
-              ))}
+              </label>
+              <div className="validator-hint hidden">Enter valid URL</div>
             </div>
+            <button className="btn btn-neutral join-item" type="submit" disabled={!mediaURL.trim()}>
+              Insert
+            </button>
           </div>
+        </div>
 
-          {/* URL Input */}
-          <div className="form-control">
-            <div className="join w-full">
-              <div className="w-full">
-                <label className="input validator join-item">
-                  <IconComponent size={20} />
-                  <input
-                    ref={inputRef}
-                    type="url"
-                    placeholder={`Enter ${mediaType} URL...`}
-                    value={mediaURL}
-                    onChange={handleURLChange}
-                  />
-                </label>
-                <div className="validator-hint hidden">Enter valid URL</div>
-              </div>
-              <button
-                className="btn btn-neutral join-item"
-                type="submit"
-                disabled={!mediaURL.trim()}>
-                Insert
-              </button>
-            </div>
-          </div>
-
-          {/* File Upload */}
-          <UploadDropzone onFileUpload={handleFileUpload} />
-        </form>
-      </div>
+        {/* File Upload */}
+        <UploadDropzone onFileUpload={handleFileUpload} />
+      </form>
     </div>
   )
 }
 
-const InsertMultimediaButton: React.FC = () => {
+const InsertMultimediaForm = () => {
   const {
     editor: { instance: editor }
   } = useStore((state) => state.settings)
@@ -466,18 +462,7 @@ const InsertMultimediaButton: React.FC = () => {
     [editor]
   )
 
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <ToolbarButton tooltip="Insert Media">
-          <ImageBox fill="rgba(0,0,0,.7)" size={14} />
-        </ToolbarButton>
-      </PopoverTrigger>
-      <PopoverContent className="z-50 border-none bg-transparent p-0 shadow-none">
-        <MediaForm onSubmit={insertMedia} editor={editor} />
-      </PopoverContent>
-    </Popover>
-  )
+  return <MediaForm onSubmit={insertMedia} editor={editor} />
 }
 
-export default InsertMultimediaButton
+export default InsertMultimediaForm

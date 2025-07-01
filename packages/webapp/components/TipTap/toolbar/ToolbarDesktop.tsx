@@ -1,11 +1,10 @@
 import dynamic from 'next/dynamic'
 import React, { useState } from 'react'
-import { Link, ClearMark } from '@icons'
+import { Link, ClearMark, ImageBox } from '@icons'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import Icon from '@components/TipTap/toolbar/Icon'
 import FilterModal from './FilterModal'
 import SelectHeadingBox from './SelectHeadingBox'
-import InsertMultimediaButton from './InsertMultimediaButton'
 import { useAuthStore, useStore } from '@stores'
 import Dropdown from '@components/ui/Dropdown'
 import Loading from '@components/ui/Loading'
@@ -23,6 +22,10 @@ import {
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToClipboard'
 import { FaDiscord } from 'react-icons/fa'
+
+const InsertMultimediaForm = dynamic(() => import('./InsertMultimediaForm'), {
+  loading: () => <Loading />
+})
 
 const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
   loading: () => <Loading />
@@ -46,6 +49,14 @@ const FilterButton = () => {
   return (
     <ToolbarButton tooltip="Filter Document" position="tooltip-bottom">
       <MdFilterAlt fill="rgba(0,0,0,.7)" size={20} />
+    </ToolbarButton>
+  )
+}
+
+const InsertMedaiButton = () => {
+  return (
+    <ToolbarButton tooltip="Insert Media" position="tooltip-bottom">
+      <ImageBox fill="rgba(0,0,0,.7)" size={14} />
     </ToolbarButton>
   )
 }
@@ -147,7 +158,9 @@ const ToolbarDesktop = () => {
 
         <div className="divided"></div>
 
-        <InsertMultimediaButton />
+        <Dropdown button={<InsertMedaiButton />} className="dropdown-bottom dropdown-start">
+          <InsertMultimediaForm />
+        </Dropdown>
 
         <ToolbarButton
           onClick={() => createComment(editor)}
