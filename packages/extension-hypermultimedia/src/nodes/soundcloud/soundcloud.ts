@@ -8,7 +8,7 @@ interface LayoutOptions {
   height?: number
   margin?: string
   clear?: string
-  float?: string
+  float?: string | null
   display?: string
   justifyContent?: string
 }
@@ -71,9 +71,9 @@ export const SoundCloud = Node.create<SoundCloudOptions>({
       HTMLAttributes: {},
       modal: null,
       justifyContent: 'start',
-      margin: '0in',
+      margin: 'auto',
       clear: 'none',
-      float: 'unset',
+      float: null,
       display: 'block',
       inline: false
     }

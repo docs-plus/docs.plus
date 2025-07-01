@@ -8,7 +8,7 @@ interface LayoutOptions {
   height?: number
   margin?: string
   clear?: string
-  float?: string
+  float?: string | null
   display?: string
   justifyContent?: string
 }
@@ -88,9 +88,9 @@ export const Vimeo = Node.create<VimeoOptions>({
       height: 480,
       width: 640,
       justifyContent: 'start',
-      margin: '0in',
+      margin: 'auto',
       clear: 'none',
-      float: 'unset',
+      float: null,
       display: 'block',
       inline: false
     }

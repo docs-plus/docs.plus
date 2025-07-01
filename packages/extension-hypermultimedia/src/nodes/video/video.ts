@@ -58,7 +58,7 @@ export const Video = Node.create<VideoOptions>({
     return {
       src: null,
       modal: null,
-      margin: '0in',
+      margin: 'auto',
       clear: 'none',
       float: 'unset',
       display: 'block',
