@@ -11,7 +11,7 @@ import { MediaPlacement } from '../../utils/media-placement'
 interface LayoutOptions {
   margin?: string
   clear?: string
-  float?: string
+  float?: string | null
   display?: string
   justifyContent?: string
 }
@@ -62,9 +62,9 @@ export const Twitter = Node.create({
       addPasteHandler: true,
       HTMLAttributes: {},
       justifyContent: 'start',
-      margin: '0in',
+      margin: 'auto',
       clear: 'none',
-      float: 'unset',
+      float: null,
       display: 'block',
       inline: false
     }
