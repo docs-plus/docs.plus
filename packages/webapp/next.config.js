@@ -27,19 +27,19 @@ module.exports = withPWA({
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '*.googleusercontent.com',
-        port: '',
-        pathname: '/**'
-      },
-      {
-        protocol: 'https',
-        hostname: '*.supabase.co',
+        hostname: '**', // 🔥 Allow all HTTPS domains
         port: '',
         pathname: '/**'
       },
       {
         protocol: 'http',
         hostname: '*.localhost',
+        port: '',
+        pathname: '/**'
+      },
+      {
+        protocol: 'http',
+        hostname: '127.0.0.1',
         port: '',
         pathname: '/**'
       }
@@ -52,26 +52,53 @@ module.exports = withPWA({
     removeConsole: isProduction
   },
   async headers() {
-    const allowAddress = [
-      "'self'",
-      'data:',
-      'blob:',
-      '*.googleusercontent.com',
-      '*.supabase.co',
-      '*.docs.plus',
-      '*.localhost',
-      '*.127.0.0.1',
-      '*.googletagmanager.com',
-      '*.google.com',
-      '*.google-analytics.com',
-      '*.cloudflare.com',
-      'wss://*.supabase.co',
-      'http://127.0.0.1:2300',
-      process.env.NEXT_PUBLIC_RESTAPI_URL || '',
-      process.env.NEXT_PUBLIC_PROVIDER_URL || '',
-      process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-      process.env.NEXT_PUBLIC_SUPABASE_WS_URL || ''
+    // 🚀 Clean, modular CSP - only what each directive needs
+    // Reduces header size by 70%+ and makes maintenance easier
+    const envUrls = [
+      process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_PROVIDER_URL,
+      process.env.NEXT_PUBLIC_RESTAPI_URL
     ].filter(Boolean)
+
+    const devUrls = !isProduction
+      ? [
+          '*.localhost',
+          '*.127.0.0.1',
+          'http://127.0.0.1:2300',
+          'http://127.0.0.1:54321', // Supabase local
+          'ws://127.0.0.1:54321', // Supabase realtime WebSocket
+          'ws://127.0.0.1:1234' // Additional dev WebSocket
+        ]
+      : [] // Only in dev
+
+    // Each directive gets exactly what it needs - no bloat
+    const cspSources = {
+      script: [
+        "'self'",
+        "'unsafe-inline'",
+        "'unsafe-eval'",
+        '*.googletagmanager.com',
+        '*.google-analytics.com',
+        'accounts.google.com', // Google One Tap Auth
+        ...envUrls,
+        ...devUrls
+      ],
+      style: ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', ...envUrls, ...devUrls],
+      connect: [
+        "'self'",
+        '*.supabase.co',
+        'wss://*.supabase.co',
+        '*.google-analytics.com',
+        '*.googletagmanager.com',
+        ...envUrls,
+        ...devUrls
+      ],
+      font: ["'self'", 'data:', 'fonts.gstatic.com', ...envUrls],
+      image: ["'self'", 'data:', 'blob:', 'https:', ...devUrls], // 🔥 All HTTPS images
+      media: ["'self'", 'data:', 'blob:', 'https:', ...devUrls],
+      frame: ["'self'", ...envUrls, ...devUrls],
+      form: ["'self'", ...envUrls, ...devUrls]
+    }
 
     return [
       {
@@ -80,15 +107,16 @@ module.exports = withPWA({
           contentSecurityPolicy: {
             directives: {
               defaultSrc: ["'self'"],
-              scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", ...allowAddress],
-              styleSrc: ["'self'", "'unsafe-inline'", ...allowAddress],
-              imgSrc: ["'self'", 'blob:', ...allowAddress],
-              connectSrc: [...allowAddress],
-              fontSrc: ["'self'", 'data:', ...allowAddress],
+              scriptSrc: cspSources.script,
+              styleSrc: cspSources.style,
+              imgSrc: cspSources.image,
+              mediaSrc: cspSources.media,
+              connectSrc: cspSources.connect,
+              fontSrc: cspSources.font,
               objectSrc: ["'none'"],
-              frameSrc: ["'self'", ...allowAddress],
+              frameSrc: cspSources.frame,
               frameAncestors: ["'self'"],
-              formAction: ["'self'", ...allowAddress],
+              formAction: cspSources.form,
               upgradeInsecureRequests: []
             }
           },
