@@ -14,7 +14,7 @@ export interface InlineCodeOptions {
  * This ensures that any text between backticks is formatted as code,
  * regardless of the surrounding characters (exception being another backtick).
  */
-export const inputRegex = /(^|[^`])`([^`]+)`(?!`)/
+export const inputRegex = /(^|[^`])`([^`]+)`(?!`)/g
 
 /**
  * Matches inline code while pasting.
