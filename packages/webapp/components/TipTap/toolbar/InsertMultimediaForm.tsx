@@ -216,7 +216,7 @@ const useUploadManager = (editor: any) => {
         }
 
         // Replace placeholder with actual media
-        const mediaType = FILE_TYPE_MAP[result.fileType] || 'Image'
+        const mediaType = FILE_TYPE_MAP[result.fileType as keyof typeof FILE_TYPE_MAP] || 'Image'
         const { state } = editor
         let placeholderPos: number | null = null
 

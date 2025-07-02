@@ -3,6 +3,11 @@ import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { DecorationSet } from '@tiptap/pm/view'
 
 /**
+ * Metadata keys for transaction communication
+ */
+export const HIDE_RESIZE_GRIPPER_META = 'hideResizeGripper'
+
+/**
  * Helper functions for optimizing ProseMirror decorations performance
  */
 
@@ -20,6 +25,34 @@ export interface DecorationPluginProps {
 }
 
 /**
+ * Metadata helper functions
+ */
+
+/**
+ * Check if resize gripper should be hidden based on transaction metadata
+ */
+export function shouldHideResizeGripper(tr: Transaction): boolean {
+  return tr.getMeta(HIDE_RESIZE_GRIPPER_META) === true
+}
+
+/**
+ * Set metadata to hide resize gripper
+ */
+export function setHideResizeGripperMeta(tr: Transaction, hide: boolean = true): Transaction {
+  return tr.setMeta(HIDE_RESIZE_GRIPPER_META, hide)
+}
+
+/**
+ * Create a transaction with hide resize gripper metadata
+ */
+export function createHideResizeGripperTransaction(
+  state: EditorState,
+  hide: boolean = true
+): Transaction {
+  return setHideResizeGripperMeta(state.tr, hide)
+}
+
+/**
  * Creates an optimized apply function for decoration plugins
  * @param buildDecorationsFunc - Function that builds decorations from document
  * @param targetNodeTypes - Array of node type names to watch for changes
@@ -30,6 +63,12 @@ export function createOptimizedDecorationApply(
   targetNodeTypes: string[]
 ): PluginStateApplyFunction {
   return function (tr: Transaction, old: DecorationSet): DecorationSet {
+    // Check for resize gripper visibility metadata changes
+    const hideGripperMeta = tr.getMeta(HIDE_RESIZE_GRIPPER_META)
+    if (hideGripperMeta !== undefined) {
+      return buildDecorationsFunc(tr.doc)
+    }
+
     if (!tr.docChanged) return old
 
     // Map existing decorations to new document positions

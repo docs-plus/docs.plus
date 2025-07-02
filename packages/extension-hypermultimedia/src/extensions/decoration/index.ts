@@ -2,14 +2,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { Editor } from '@tiptap/core'
 import { createMediaResizeGripper, extractImageNode } from './media-resize-gripper'
-
-export interface MediaGripperInfo {
-  from: number
-  to: number
-  nodeSize: number
-  childCount: number
-  keyId: string
-}
+import { MediaGripperInfo } from './types'
 
 /**
  * Optimized decoration builder for media resize grippers
@@ -46,3 +39,6 @@ export function buildDecorations(
 ): DecorationSet {
   return buildOptimizedDecorations(nodeNames, doc, editor)
 }
+
+// Re-export types for external use
+export type { MediaGripperInfo } from './types'

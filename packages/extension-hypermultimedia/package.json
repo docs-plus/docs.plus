@@ -17,6 +17,7 @@
   "scripts": {
     "build": "tsup --dts",
     "dev": "tsup --watch --dts",
+    "watch": "tsup --watch --dts",
     "clean": "rm -rf dist",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
@@ -39,15 +40,16 @@
     "@tiptap/pm": "^2.11.5"
   },
   "dependencies": {
+    "@floating-ui/dom": "^1.7.2",
     "tippy.js": "^6.3.7"
   },
   "devDependencies": {
-    "typescript": "^5.8.3",
+    "@eslint/js": "^9.30.1",
+    "@typescript-eslint/eslint-plugin": "^8.35.1",
+    "@typescript-eslint/parser": "^8.35.1",
+    "eslint": "^9.30.1",
+    "globals": "^16.3.0",
     "tsup": "^8.5.0",
-    "eslint": "^9.29.0",
-    "@eslint/js": "^9.29.0",
-    "globals": "^15.13.0",
-    "@typescript-eslint/eslint-plugin": "^8.34.1",
-    "@typescript-eslint/parser": "^8.34.1"
+    "typescript": "^5.8.3"
   }
 }
