@@ -1,11 +1,11 @@
-import { mediaPlacement, MediaPlacement } from "../utils/media-placement";
+import { mediaPlacement, MediaPlacement } from '../utils/media-placement'
 
 export const imageModal = ({
   editor,
   tooltip,
   tippyModal,
   iframe,
-  wrapper,
+  wrapper
 }: MediaPlacement): void => {
-  mediaPlacement({ editor, tooltip, tippyModal, iframe, wrapper });
-};
+  mediaPlacement({ editor, tooltip, tippyModal, iframe, wrapper })
+}

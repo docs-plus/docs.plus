@@ -70,9 +70,6 @@ export const applyStyleAndAttributes = (
     })
     dispatch(transaction)
   }
-
-  // Hide the tooltip
-  tooltip.hide()
 }
 
 const updateNodeAttribute = (editor: Editor, nodePos: number, attribute: string, value: string) => {
@@ -239,7 +236,7 @@ export interface StyleLayoutOptions {
   height?: number | string
   margin?: string
   clear?: string
-  float?: string
+  float?: string | null
   display?: string
   justifyContent?: string
 }

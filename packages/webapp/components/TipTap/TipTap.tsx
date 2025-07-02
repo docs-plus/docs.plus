@@ -87,6 +87,7 @@ import {
 } from '@docs.plus/extension-hypermultimedia'
 // import Placeholders from './placeholders'
 // import { Placeholder } from './Placeholder'
+import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
 
 import * as Y from 'yjs'
 import { IndexeddbPersistence } from 'y-indexeddb'
@@ -208,23 +209,11 @@ const Editor = ({
     }),
     HyperMultimediaKit.configure({
       Image: {
-        modal: imageModal,
         inline: true,
         allowBase64: true
-      },
-      Video: {
-        modal: youtubeModal,
-        inline: true
-      },
-      Audio: {
-        modal: twitterModal,
-        inline: true
-      },
-      Youtube: {
-        modal: youtubeModal,
-        inline: true
       }
     }),
+    MediaUploadPlaceholder,
     TaskList,
     TaskItem.configure({
       nested: true,

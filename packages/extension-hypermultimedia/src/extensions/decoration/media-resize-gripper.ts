@@ -1,20 +1,8 @@
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { Editor } from '@tiptap/core'
-import handleSideMove from './handleSideClampsMove'
-import handleCornerMove from './handleCornerClampsMove'
-import { MediaGripperInfo } from './index'
-
-enum ClampType {
-  Left = 'media-resize-clamp--left',
-  Right = 'media-resize-clamp--right',
-  Top = 'media-resize-clamp--top',
-  Bottom = 'media-resize-clamp--bottom',
-  TopRight = 'media-resize-clamp--top-right',
-  TopLeft = 'media-resize-clamp--top-left',
-  BottomRight = 'media-resize-clamp--bottom-right',
-  BottomLeft = 'media-resize-clamp--bottom-left',
-  Rotate = 'media-resize-clamp--rotate'
-}
+import handleSideClampsMove from './handleSideClampsMove'
+import handleCornerClampsMove from './handleCornerClampsMove'
+import { MediaGripperInfo, ClampType } from './types'
 
 function createClamp(extraClass: ClampType): HTMLDivElement {
   const clamp = document.createElement('div')
@@ -45,14 +33,20 @@ export function extractImageNode(nodeNames: string[], doc: ProseMirrorNode): Med
   doc.descendants((node, pos) => {
     if (nodeNames.includes(node.type.name)) {
       const { size: nodeSize, childCount } = node.content
-      result.push({ from: pos, to: pos + nodeSize, nodeSize, childCount, keyId: node.attrs.keyId })
+      result.push({
+        from: pos,
+        to: pos + nodeSize,
+        nodeSize,
+        childCount,
+        keyId: node.attrs.keyId
+      })
     }
   })
   return result
 }
 
 export const createMediaResizeGripper = (
-  prob: MediaGripperInfo,
+  mediaInfo: MediaGripperInfo,
   editor: Editor
 ): HTMLDivElement => {
   const gripper = document.createElement('div')
@@ -61,13 +55,20 @@ export const createMediaResizeGripper = (
   const clamps = createClamps()
   gripper.append(/*clamps.rotate,*/ ...clamps.sides, ...Object.values(clamps.corners))
 
-  // handleRotateMove(clamps.rotate, gripper, editor, prob);
-  ;[...clamps.sides].forEach((clamp) => {
-    handleSideMove(clamp, gripper, editor, prob)
+  // Set up side clamps
+  clamps.sides.forEach((clamp) => {
+    handleSideClampsMove(clamp, gripper, editor, mediaInfo)
   })
 
+  // Set up corner clamps with aspect ratio support
   Object.entries(clamps.corners).forEach(([corner, clampElement]) => {
-    handleCornerMove(clampElement, corner as keyof typeof clamps.corners, gripper, editor, prob)
+    handleCornerClampsMove(
+      clampElement,
+      corner as keyof typeof clamps.corners,
+      gripper,
+      editor,
+      mediaInfo
+    )
   })
 
   return gripper

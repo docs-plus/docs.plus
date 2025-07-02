@@ -23,7 +23,6 @@
     "@docs.plus/extension-hyperlink": "^2.0.0-beta.103",
     "@docs.plus/extension-hypermultimedia": "^1.4.0",
     "@docs.plus/extension-indent": "^0.1.1",
-    "@docs.plus/extension-insert-media": "^2.0.0-beta.103",
     "@elastic/apm-rum": "^5.17.0",
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
