@@ -211,6 +211,12 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
     }
   },
 
+  addKeyboardShortcuts() {
+    return {
+      'Mod-k': () => this.editor.commands.setHyperlink()
+    }
+  },
+
   addPasteRules() {
     return [
       markPasteRule({
