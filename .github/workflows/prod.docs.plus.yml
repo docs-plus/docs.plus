@@ -144,8 +144,25 @@ jobs:
       - name: Copy .env files
         working-directory: build-temp
         run: |
-          cp ../.env packages/webapp
-          cp ../.env packages/hocuspocus.server
+          echo "🔍 Debugging .env file location..."
+          echo "Current directory: $(pwd)"
+          echo "Parent directory contents:"
+          ls -la ../
+          echo "Root project directory contents:"
+          ls -la /opt/projects/prod.docs.plus/
+
+          # Use absolute path to be 100% sure
+          if [ -f "/opt/projects/prod.docs.plus/.env" ]; then
+            echo "✅ Found .env file at /opt/projects/prod.docs.plus/.env"
+            cp /opt/projects/prod.docs.plus/.env packages/webapp
+            cp /opt/projects/prod.docs.plus/.env packages/hocuspocus.server
+            echo "✅ .env files copied successfully"
+          else
+            echo "❌ .env file not found at /opt/projects/prod.docs.plus/.env"
+            echo "Searching for .env files..."
+            find /opt/projects/prod.docs.plus -name ".env" -type f 2>/dev/null || echo "No .env files found"
+            exit 1
+          fi
       - name: Build monorepo packages
         working-directory: build-temp
         run: yarn build
