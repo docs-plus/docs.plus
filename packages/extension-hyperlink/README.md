@@ -91,18 +91,18 @@ Hyperlink.configure({
 })
 ```
 
-### Modals
+### Toolbars
 
-The modals configuration option lets you incorporate an interactive user interface similar to Google Docs for setting and previewing hyperlinks. This provides users with a more intuitive and interactive experience;
+The toolbars configuration option lets you incorporate an interactive user interface similar to Google Docs for setting and previewing hyperlinks. This provides users with a more intuitive and interactive experience;
 
 - [Dive into the code](https://github.com/HMarzban/extension-hyperlink/blob/4f37ffa18237f10d76c316844b1c2ab20b751fe9/packages/nextjs/src/components/Tiptap.tsx#L21-L28)
 - [Demo](https://github.com/HMarzban/extension-hyperlink#test-drive-with-our-demo-)
 
 <details>
-<summary>The `previewHyperlinkModal` function</summary>
+<summary>The `previewHyperlinkToolbar` function</summary>
 
 ```ts
-type HyperlinkModalOptions = {
+type HyperlinkToolbarOptions = {
   editor: Editor;
   validate?: (url: string) => boolean;
   view: EditorView;
@@ -112,9 +112,9 @@ type HyperlinkModalOptions = {
   tippy: Tooltip;
 };
 
-const previewHyperlink(options: HyperlinkModalOptions): HTMLElement {
+const previewHyperlink(options: HyperlinkToolbarOptions): HTMLElement {
   const href = options.link.href;
-  const hyperlinkLinkModal = document.createElement("div");
+  const hyperlinkLinkToolbar = document.createElement("div");
 
   const hrefTitle = document.createElement("a");
   hrefTitle.setAttribute("target", "_blank");
@@ -122,9 +122,9 @@ const previewHyperlink(options: HyperlinkModalOptions): HTMLElement {
   hrefTitle.setAttribute("href", href);
   hrefTitle.innerText = href;
 
-  hyperlinkLinkModal.append(hrefTitle);
+  hyperlinkLinkToolbar.append(hrefTitle);
 
-  return hyperlinkLinkModal;
+  return hyperlinkLinkToolbar;
 }
 ```
 
@@ -134,7 +134,7 @@ const previewHyperlink(options: HyperlinkModalOptions): HTMLElement {
 <summary>The `setHyperlinks` function</summary>
 
 ```ts
-type setHyperlinkModalOptions = {
+type setHyperlinkToolbarOptions = {
   editor: Editor;
   validate?: (url: string) => boolean;
   extentionName: string;
@@ -144,18 +144,18 @@ type setHyperlinkModalOptions = {
 let tooltip: Tooltip = undefined;
 
 
-const setHyperlink(options: setHyperlinkModalOptions): void {
+const setHyperlink(options: setHyperlinkToolbarOptions): void {
   // Create the tooltip instance
   if (!tooltip) tooltip = new Tooltip({ ...options, view: options.editor.view });
 
   // Initialize the tooltip
-  let { tippyModal } = tooltip.init();
+  let { tippyToolbar } = tooltip.init();
 
-  const hyperlinkLinkModal = document.createElement("div");
+  const hyperlinkLinkToolbar = document.createElement("div");
   const buttonsWrapper = document.createElement("div");
   const inputsWrapper = document.createElement("div");
 
-  hyperlinkLinkModal.classList.add("hyperlinkLinkModal");
+  hyperlinkLinkToolbar.classList.add("hyperlinkLinkToolbar");
 
   buttonsWrapper.classList.add("buttonsWrapper");
   inputsWrapper.classList.add("inputsWrapper");
@@ -174,10 +174,10 @@ const setHyperlink(options: setHyperlinkModalOptions): void {
   buttonsWrapper.append(button);
   form.append(inputsWrapper, buttonsWrapper);
 
-  hyperlinkLinkModal.append(form);
+  hyperlinkLinkToolbar.append(form);
 
-  tippyModal.innerHTML = "";
-  tippyModal.append(hyperlinkLinkModal);
+  tippyToolbar.innerHTML = "";
+  tippyToolbar.append(hyperlinkLinkToolbar);
 
     // event listenr for submit button
   form.addEventListener("submit", (event) => {
@@ -198,9 +198,9 @@ const setHyperlink(options: setHyperlinkModalOptions): void {
 
 ```ts
 Hyperlink.configure({
-  modals: {
+  toolbars: {
     previewHyperlink: (data) => {
-      return previewHyperlinkModal(data)
+      return previewHyperlinkToolbar(data)
     },
     setHyperlink: (data) => {
       return setHyperlinks(data)

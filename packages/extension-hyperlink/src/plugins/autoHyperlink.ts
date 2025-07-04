@@ -14,9 +14,9 @@ type AutoHyperlinkOptions = {
   validate?: (url: string) => boolean
 }
 
-export default function autoHyperlink(options: AutoHyperlinkOptions): Plugin {
+export default function AutoHyperlinkPlugin(options: AutoHyperlinkOptions): Plugin {
   return new Plugin({
-    key: new PluginKey('autoHyperlink'),
+    key: new PluginKey('HyperLinkAutolink'),
     appendTransaction: (transactions, oldState, newState) => {
       const docChanges =
         transactions.some((transaction) => transaction.docChanged) && !oldState.doc.eq(newState.doc)

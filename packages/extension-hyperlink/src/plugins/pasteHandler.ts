@@ -8,9 +8,9 @@ type PasteHandlerOptions = {
   type: MarkType
 }
 
-export function pasteHandler(options: PasteHandlerOptions): Plugin {
+export default function HyperLinkPasteHandlerPlugin(options: PasteHandlerOptions): Plugin {
   return new Plugin({
-    key: new PluginKey('handlePasteHyperlink'),
+    key: new PluginKey('HyperLinkPasteHandler'),
     props: {
       handlePaste: (view, event, slice) => {
         const { state } = view

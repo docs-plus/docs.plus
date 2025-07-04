@@ -1,7 +1,6 @@
 import { Hyperlink } from './hyperlink'
-import Tooltip from './helpers/tippyHelper'
-
-export { Tooltip }
+export * from './utils'
+export * from './popovers'
 export * from './hyperlink'
 
 export default Hyperlink

@@ -1,11 +1,10 @@
 import { Mark, markPasteRule, mergeAttributes } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
 import { find, registerCustomProtocol, reset } from 'linkifyjs'
-import autoHyperlink from './helpers/autoHyperlink'
-import clickHandler from './helpers/clickHandler'
-import { pasteHandler } from './helpers/pasteHandler'
+import AutoHyperlinkPlugin from './plugins/autoHyperlink'
+import HyperLinkClickHandlerPlugin from './plugins/clickHandler'
+import HyperLinkPasteHandlerPlugin from './plugins/pasteHandler'
 import editHyperlinkHelper from './helpers/editHyperlink'
-
 export interface LinkProtocolOptions {
   scheme: string
   optionalSlashes?: boolean
@@ -33,13 +32,13 @@ export interface HyperlinkOptions {
    */
   HTMLAttributes: Record<string, any>
   /**
-   * A list of modals to be rendered.
+   * A list of popovers to be rendered.
    * @default null
    * @example
    */
-  modals: {
+  popovers: {
     previewHyperlink?: ((options: any) => HTMLElement) | null
-    setHyperlink?: ((options: any) => void) | null
+    createHyperlink?: ((options: any) => void) | null
   }
   /**
    * A validation function that modifies link verification for the auto linker.
@@ -116,9 +115,9 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
         rel: 'noopener noreferrer nofollow',
         class: null
       },
-      modals: {
+      popovers: {
         previewHyperlink: null,
-        setHyperlink: null
+        createHyperlink: null
       },
       validate: undefined
     }
@@ -154,17 +153,17 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
       setHyperlink:
         (attributes) =>
         ({ editor, chain }) => {
-          if (!this.options.modals.setHyperlink) {
+          if (!this.options.popovers.createHyperlink) {
             return chain()
               .setMark(this.name, attributes)
               .setMeta('preventAutohyperlink', true)
               .run()
           } else {
-            this.options.modals.setHyperlink({
+            this.options.popovers.createHyperlink({
               editor,
               validate: this.options.validate,
               extentionName: this.name,
-              attributes
+              attributes: attributes || {}
             })
             return true
           }
@@ -248,7 +247,7 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
 
     if (this.options.autoHyperlink) {
       plugins.push(
-        autoHyperlink({
+        AutoHyperlinkPlugin({
           type: this.type,
           validate: this.options.validate
         })
@@ -257,19 +256,19 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
 
     if (this.options.openOnClick) {
       plugins.push(
-        clickHandler({
+        HyperLinkClickHandlerPlugin({
           type: this.type,
           editor: this.editor,
           validate: this.options.validate,
           view: this.editor.view,
-          modal: this.options.modals.previewHyperlink
+          popover: this.options.popovers.previewHyperlink
         })
       )
     }
 
     if (this.options.hyperlinkOnPaste) {
       plugins.push(
-        pasteHandler({
+        HyperLinkPasteHandlerPlugin({
           editor: this.editor,
           type: this.type
         })
