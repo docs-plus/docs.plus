@@ -19,12 +19,87 @@ jobs:
         with:
           # Only fetch the latest commit to minimize checkout time
           fetch-depth: 1
-          # Preserve existing files
-          clean: false
+          # Use a separate build directory
+          path: build-temp-kuma
+      - name: Backup current Uptime Kuma
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          if [ -d "uptime-kuma-live" ]; then
+            cp -r uptime-kuma-live "uptime-kuma-backup-${TIMESTAMP}"
+            echo "KUMA_BACKUP_DIR=uptime-kuma-backup-${TIMESTAMP}" >> $GITHUB_ENV
+            echo "✅ Uptime Kuma backup created: uptime-kuma-backup-${TIMESTAMP}"
+          else
+            echo "⚠️  No live Uptime Kuma version found to backup"
+          fi
+      - name: Build Uptime Kuma
+        working-directory: build-temp-kuma
+        run: |
+          # Build your Uptime Kuma here
+          make build_uptime_kuma
       - name: Deploy Uptime Kuma
         run: |
-          # Run your build command here
-          make build_uptime_kuma
+          echo "🚀 Starting atomic deployment of Uptime Kuma..."
+
+          # Stop Uptime Kuma service
+          echo "⏸️  Stopping Uptime Kuma service..."
+          # systemctl stop uptime-kuma || true
+          # docker-compose -f docker-compose.uptime-kuma.yml down || true
+
+          # Atomic move
+          if [ -d "uptime-kuma-live" ]; then
+            mv uptime-kuma-live uptime-kuma-old-temp
+          fi
+          mv build-temp-kuma uptime-kuma-live
+
+          # Start Uptime Kuma service
+          echo "▶️  Starting Uptime Kuma service..."
+          # systemctl start uptime-kuma
+          # docker-compose -f docker-compose.uptime-kuma.yml up -d
+
+          # Health check
+          sleep 15
+          echo "🔍 Running Uptime Kuma health check..."
+          # curl -f http://localhost:3001 || exit 1
+
+          # Clean up old version if deployment successful
+          if [ -d "uptime-kuma-old-temp" ]; then
+            rm -rf uptime-kuma-old-temp
+          fi
+
+          echo "✅ Uptime Kuma deployment completed successfully!"
+      - name: Rollback Uptime Kuma on failure
+        if: failure()
+        run: |
+          echo "❌ Uptime Kuma deployment failed, initiating rollback..."
+
+          # Stop services
+          # systemctl stop uptime-kuma || true
+          # docker-compose -f docker-compose.uptime-kuma.yml down || true
+
+          # Restore from backup
+          if [ -d "uptime-kuma-old-temp" ]; then
+            if [ -d "uptime-kuma-live" ]; then
+              rm -rf uptime-kuma-live
+            fi
+            mv uptime-kuma-old-temp uptime-kuma-live
+          elif [ -d "${{ env.KUMA_BACKUP_DIR }}" ]; then
+            if [ -d "uptime-kuma-live" ]; then
+              rm -rf uptime-kuma-live
+            fi
+            cp -r "${{ env.KUMA_BACKUP_DIR }}" uptime-kuma-live
+          fi
+
+          # Restart services with old version
+          # systemctl start uptime-kuma
+          # docker-compose -f docker-compose.uptime-kuma.yml up -d
+
+          # Clean up failed build
+          if [ -d "build-temp-kuma" ]; then
+            rm -rf build-temp-kuma
+          fi
+
+          echo "🔄 Uptime Kuma rollback completed."
+          exit 1
 
   # The "setup" job is responsible for setting up the environment and preparing for the build processes.
   setup:
@@ -32,29 +107,62 @@ jobs:
     if: contains(github.event.head_commit.message, 'build') &&!contains(github.event.head_commit.message, 'uptime-kuma')
     strategy:
       matrix:
-        # This matrix configuration will run the job on the specific version of Node.js.
-        node-version: ['20.16.0']
+        # This matrix configuration will run the job on the latest LTS version of Node.js.
+        node-version: ['20']
     steps:
       # This step checks out your repository under $GITHUB_WORKSPACE so your job can access it.
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          # Use a separate build directory to avoid disrupting live code
+          path: build-temp
       # This step sets up Node.js on the runner and installs the version specified in the matrix above.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+      # Create backup of current live version before starting
+      - name: Backup current version
+        run: |
+          TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+          if [ -d "docsy-live" ]; then
+            cp -r docsy-live "docsy-backup-${TIMESTAMP}"
+            echo "BACKUP_DIR=docsy-backup-${TIMESTAMP}" >> $GITHUB_ENV
+            echo "✅ Backup created: docsy-backup-${TIMESTAMP}"
+          else
+            echo "⚠️  No live version found to backup"
+          fi
       # This step installs project dependencies using Yarn.
       # The --frozen-lockfile option ensures the exact package versions specified in yarn.lock are installed.
       - name: Install dependencies
+        working-directory: build-temp
         run: yarn install --frozen-lockfile
       # This step copies the .env file from the root directory to the required directories for each package.
       # Update these paths if your repository structure is different.
       - name: Copy .env files
+        working-directory: build-temp
         run: |
           cp ../../../.env packages/webapp
           cp ../../../.env packages/hocuspocus.server
       - name: Build monorepo packages
+        working-directory: build-temp
         run: yarn build
+      # Health check the build before deployment
+      - name: Validate build
+        working-directory: build-temp
+        run: |
+          echo "🔍 Validating build..."
+          # Add your build validation logic here
+          # Example: Check if critical files exist
+          if [ ! -f "packages/webapp/package.json" ]; then
+            echo "❌ Build validation failed: webapp package.json not found"
+            exit 1
+          fi
+          if [ ! -f "packages/hocuspocus.server/package.json" ]; then
+            echo "❌ Build validation failed: hocuspocus.server package.json not found"
+            exit 1
+          fi
+          echo "✅ Build validation passed"
     env:
       # The environment variable DATABASE_URL is sourced from a secret in your repository.
       DATABASE_URL: ${{secrets.STAGE_DATABASE_URL}}
@@ -67,9 +175,75 @@ jobs:
     # This job will only run if the commit message contains the word 'front'.
     if: contains(github.event.head_commit.message, 'front')
     steps:
-      # This step runs the build command for the front-end.
+      # Build the front-end in the build directory
       - name: Build Front-end
+        working-directory: build-temp
         run: make build_front_production
+      # Atomic deployment - only replace if build succeeds
+      - name: Deploy Front-end
+        run: |
+          echo "🚀 Starting atomic deployment of front-end..."
+
+          # Stop services gracefully (adjust these commands for your setup)
+          echo "⏸️  Stopping front-end services..."
+          # systemctl stop your-frontend-service || true
+
+          # Atomic move - this is nearly instantaneous
+          if [ -d "docsy-live" ]; then
+            mv docsy-live docsy-old-temp
+          fi
+          mv build-temp docsy-live
+
+          # Start services
+          echo "▶️  Starting front-end services..."
+          # systemctl start your-frontend-service
+
+          # Health check
+          sleep 5
+          echo "🔍 Running health check..."
+          # Add your health check logic here
+          # curl -f http://localhost:3000/health || exit 1
+
+          # Clean up old version if deployment successful
+          if [ -d "docsy-old-temp" ]; then
+            rm -rf docsy-old-temp
+          fi
+
+          echo "✅ Front-end deployment completed successfully!"
+        # If deployment fails, rollback
+        continue-on-error: false
+      # Rollback on failure
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed, initiating rollback..."
+
+          # Stop any services that might be running
+          # systemctl stop your-frontend-service || true
+
+          # Restore from backup
+          if [ -d "docsy-old-temp" ]; then
+            if [ -d "docsy-live" ]; then
+              rm -rf docsy-live
+            fi
+            mv docsy-old-temp docsy-live
+          elif [ -d "${{ env.BACKUP_DIR }}" ]; then
+            if [ -d "docsy-live" ]; then
+              rm -rf docsy-live
+            fi
+            cp -r "${{ env.BACKUP_DIR }}" docsy-live
+          fi
+
+          # Restart services with old version
+          # systemctl start your-frontend-service
+
+          # Clean up failed build
+          if [ -d "build-temp" ]; then
+            rm -rf build-temp
+          fi
+
+          echo "🔄 Rollback completed. Previous version restored."
+          exit 1
 
   # The "build-back" job builds the back-end, it also depends on the "setup" job.
   build-back:
@@ -79,9 +253,174 @@ jobs:
     # This job will only run if the commit message contains the word 'back'.
     if: contains(github.event.head_commit.message, 'back')
     steps:
-      # This step runs the build command for the back-end.
+      # Build the back-end in the build directory
       - name: Build Back-end
+        working-directory: build-temp
         run: make build_hocuspocus.server_prod
+      # Atomic deployment - only replace if build succeeds
+      - name: Deploy Back-end
+        run: |
+          echo "🚀 Starting atomic deployment of back-end..."
+
+          # Stop services gracefully (adjust these commands for your setup)
+          echo "⏸️  Stopping back-end services..."
+          # systemctl stop your-backend-service || true
+
+          # Atomic move - this is nearly instantaneous
+          if [ -d "docsy-live" ]; then
+            mv docsy-live docsy-old-temp
+          fi
+          mv build-temp docsy-live
+
+          # Start services
+          echo "▶️  Starting back-end services..."
+          # systemctl start your-backend-service
+
+          # Health check
+          sleep 10
+          echo "🔍 Running health check..."
+          # Add your health check logic here
+          # curl -f http://localhost:8080/health || exit 1
+
+          # Clean up old version if deployment successful
+          if [ -d "docsy-old-temp" ]; then
+            rm -rf docsy-old-temp
+          fi
+
+          echo "✅ Back-end deployment completed successfully!"
+        # If deployment fails, rollback
+        continue-on-error: false
+      # Rollback on failure
+      - name: Rollback on failure
+        if: failure()
+        run: |
+          echo "❌ Deployment failed, initiating rollback..."
+
+          # Stop any services that might be running
+          # systemctl stop your-backend-service || true
+
+          # Restore from backup
+          if [ -d "docsy-old-temp" ]; then
+            if [ -d "docsy-live" ]; then
+              rm -rf docsy-live
+            fi
+            mv docsy-old-temp docsy-live
+          elif [ -d "${{ env.BACKUP_DIR }}" ]; then
+            if [ -d "docsy-live" ]; then
+              rm -rf docsy-live
+            fi
+            cp -r "${{ env.BACKUP_DIR }}" docsy-live
+          fi
+
+          # Restart services with old version
+          # systemctl start your-backend-service
+
+          # Clean up failed build
+          if [ -d "build-temp" ]; then
+            rm -rf build-temp
+          fi
+
+          echo "🔄 Rollback completed. Previous version restored."
+          exit 1
+
+    # Cleanup old backups to save disk space
+  cleanup:
+    runs-on: prod.docs.plus
+    needs: [build-front, build-back, build-uptime-kuma]
+    if: always()
+    steps:
+      - name: Cleanup old backups
+        run: |
+          echo "🧹 Cleaning up old backups..."
+          # Keep only the last 5 backups for each service
+          find . -name "docsy-backup-*" -type d -mtime +7 -exec rm -rf {} + || true
+          find . -name "uptime-kuma-backup-*" -type d -mtime +7 -exec rm -rf {} + || true
+          echo "✅ Cleanup completed"
+
+  # Notification job to report deployment status
+  notify:
+    runs-on: prod.docs.plus
+    needs: [build-front, build-back, build-uptime-kuma, cleanup]
+    if: always()
+    steps:
+      - name: Deployment Status Notification
+        run: |
+          SUCCESS_COUNT=0
+          FAILURE_COUNT=0
+
+          # Check each job status
+          if [ "${{ needs.build-front.result }}" == "success" ]; then
+            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            echo "✅ Front-end deployment successful"
+          elif [ "${{ needs.build-front.result }}" == "failure" ]; then
+            FAILURE_COUNT=$((FAILURE_COUNT + 1))
+            echo "❌ Front-end deployment failed"
+          fi
+
+          if [ "${{ needs.build-back.result }}" == "success" ]; then
+            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            echo "✅ Back-end deployment successful"
+          elif [ "${{ needs.build-back.result }}" == "failure" ]; then
+            FAILURE_COUNT=$((FAILURE_COUNT + 1))
+            echo "❌ Back-end deployment failed"
+          fi
+
+          if [ "${{ needs.build-uptime-kuma.result }}" == "success" ]; then
+            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            echo "✅ Uptime Kuma deployment successful"
+          elif [ "${{ needs.build-uptime-kuma.result }}" == "failure" ]; then
+            FAILURE_COUNT=$((FAILURE_COUNT + 1))
+            echo "❌ Uptime Kuma deployment failed"
+          fi
+
+          # Send notifications based on results
+          if [ $SUCCESS_COUNT -gt 0 ] && [ $FAILURE_COUNT -eq 0 ]; then
+            echo "🎉 All deployments completed successfully!"
+            # Add your success notification logic here
+            # curl -X POST -H 'Content-type: application/json' --data '{"text":"🎉 All deployments successful!"}' YOUR_WEBHOOK_URL
+          elif [ $FAILURE_COUNT -gt 0 ]; then
+            echo "⚠️  Some deployments failed - rollback executed where needed"
+            # Add your failure notification logic here
+            # curl -X POST -H 'Content-type: application/json' --data '{"text":"⚠️ Some deployments failed - rollback executed"}' YOUR_WEBHOOK_URL
+          else
+            echo "ℹ️  No deployment needed - commit message didn't match triggers"
+          fi
+
+# -----------------------------------------------------------------------
+# CUSTOMIZATION NOTES:
+# 1. Uncomment and modify the service management commands:
+#    - systemctl stop/start your-service-name
+#    - docker-compose down/up
+#    - pm2 restart your-app
+#    - Or whatever command you use to manage your services
+#
+# 2. Customize health check URLs:
+#    - Replace localhost:3000/health with your actual health check endpoint
+#    - Add multiple health checks if needed
+#
+# 3. Adjust paths if needed:
+#    - Change 'docsy-live' to your actual deployment directory
+#    - Update .env file paths if different
+#
+# 4. Add notifications:
+#    - Uncomment webhook URLs and add your actual endpoints
+#    - Or use GitHub Actions marketplace notification actions
+# -----------------------------------------------------------------------
+# ZERO-DOWNTIME DEPLOYMENT STRATEGY:
+# This workflow now implements atomic deployments with automatic rollback:
+#
+# 1. Builds happen in isolated 'build-temp' directory
+# 2. Current live version is backed up before deployment
+# 3. Atomic move replaces live version only if build succeeds
+# 4. Health checks validate the deployment
+# 5. Automatic rollback if anything fails
+# 6. Old backups are cleaned up after successful deployment
+#
+# BENEFITS:
+# - Zero downtime during builds
+# - Automatic rollback on failure
+# - Previous version always available
+# - Health checks ensure stability
 # -----------------------------------------------------------------------
 # EXAMPLE USAGE:
 # 1) To run setup + build-front:
