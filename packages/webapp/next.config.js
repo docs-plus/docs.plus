@@ -84,13 +84,21 @@ module.exports = withPWA({
         ...envUrls,
         ...devUrls
       ],
-      style: ["'self'", "'unsafe-inline'", 'fonts.googleapis.com', ...envUrls, ...devUrls],
+      style: [
+        "'self'",
+        "'unsafe-inline'",
+        'fonts.googleapis.com',
+        'accounts.google.com',
+        ...envUrls,
+        ...devUrls
+      ],
       connect: [
         "'self'",
         '*.supabase.co',
         'wss://*.supabase.co',
         '*.google-analytics.com',
         '*.googletagmanager.com',
+        'accounts.google.com',
         '*.cloudflare.com',
         ...envUrls,
         ...devUrls
