@@ -12475,7 +12475,7 @@ linkifyjs@^4.3.1:
 
 lint-staged@^16.1.2:
   version "16.1.2"
-  resolved "https://registry.npmjs.org/lint-staged/-/lint-staged-16.1.2.tgz"
+  resolved "https://registry.yarnpkg.com/lint-staged/-/lint-staged-16.1.2.tgz#8cb84daa844f39c7a9790dd2c0caa327125ef059"
   integrity sha512-sQKw2Si2g9KUZNY3XNvRuDq4UJqpHwF0/FQzZR2M7I5MvtpWvibikCjUVJzZdGE0ByurEl3KQNvsGetd1ty1/Q==
   dependencies:
     chalk "^5.4.1"
