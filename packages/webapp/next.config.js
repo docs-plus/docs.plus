@@ -80,7 +80,7 @@ module.exports = withPWA({
         '*.googletagmanager.com',
         '*.google-analytics.com',
         'accounts.google.com', // Google One Tap Auth
-        'challenges.cloudflare.com', // Cloudflare Turnstile
+        '*.cloudflare.com',
         ...envUrls,
         ...devUrls
       ],
@@ -91,13 +91,14 @@ module.exports = withPWA({
         'wss://*.supabase.co',
         '*.google-analytics.com',
         '*.googletagmanager.com',
+        '*.cloudflare.com',
         ...envUrls,
         ...devUrls
       ],
       font: ["'self'", 'data:', 'fonts.gstatic.com', ...envUrls],
       image: ["'self'", 'data:', 'blob:', 'https:', ...devUrls], // 🔥 All HTTPS images
       media: ["'self'", 'data:', 'blob:', 'https:', ...devUrls],
-      frame: ["'self'", 'challenges.cloudflare.com', ...envUrls, ...devUrls],
+      frame: ["'self'", '*.cloudflare.com', ...envUrls, ...devUrls],
       form: ["'self'", ...envUrls, ...devUrls]
     }
 
