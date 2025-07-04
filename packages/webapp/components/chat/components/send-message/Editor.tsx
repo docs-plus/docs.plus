@@ -19,9 +19,13 @@ import Mention from '@tiptap/extension-mention'
 import suggestion from './suggestion'
 import ListItem from '@tiptap/extension-list-item'
 // Links and Media
-import previewHyperlinkModal from '@components/TipTap/hyperlinkModals/previewHyperlink'
-import setHyperlinks from '@components/TipTap/hyperlinkModals/setHyperlink'
-import Hyperlink from '@docs.plus/extension-hyperlink'
+// import previewHyperlinkModal from '@components/TipTap/hyperlinkModals/previewHyperlink'
+// import setHyperlinks from '@components/TipTap/hyperlinkModals/setHyperlink'
+import {
+  Hyperlink,
+  createHyperlinkPopover,
+  previewHyperlinkPopover
+} from '@docs.plus/extension-hyperlink'
 
 // Custom Extensions
 import { InlineCode } from '@docs.plus/extension-inline-code'
@@ -80,13 +84,9 @@ export const useTiptapEditor = ({ loading }: any) => {
           hyperlinkOnPaste: true,
           openOnClick: true,
           autoHyperlink: true,
-          modals: {
-            previewHyperlink: (data: any) => {
-              return previewHyperlinkModal(data)
-            },
-            setHyperlink: (data: any) => {
-              return setHyperlinks(data)
-            }
+          popovers: {
+            previewHyperlink: previewHyperlinkPopover,
+            createHyperlink: createHyperlinkPopover
           }
         })
       ],
