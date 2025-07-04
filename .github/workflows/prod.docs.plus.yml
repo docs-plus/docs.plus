@@ -121,7 +121,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'yarn'
           check-latest: true
       # Create backup of current live version before starting
       - name: Backup current version
