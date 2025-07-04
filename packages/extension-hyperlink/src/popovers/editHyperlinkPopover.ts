@@ -53,9 +53,7 @@ export default function editHyperlinkPopover(options: EditHyperlinkModalOptions)
     value: link.href,
     placeholder: 'Enter URL',
     autocomplete: 'new-password',
-    spellcheck: false,
-    autocorrect: 'off' as any,
-    autocapitalize: 'off' as any
+    spellcheck: false
   })
   const hrefError = createHTMLElement('div', {
     className: 'error-message',
