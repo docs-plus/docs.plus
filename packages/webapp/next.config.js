@@ -80,6 +80,7 @@ module.exports = withPWA({
         '*.googletagmanager.com',
         '*.google-analytics.com',
         'accounts.google.com', // Google One Tap Auth
+        'challenges.cloudflare.com', // Cloudflare Turnstile
         ...envUrls,
         ...devUrls
       ],
