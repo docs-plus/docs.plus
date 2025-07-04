@@ -37,9 +37,13 @@ import OrderedList from '@tiptap/extension-ordered-list'
 import BulletList from '@tiptap/extension-bullet-list'
 
 // Links and Media
-import previewHyperlinkModal from './hyperlinkModals/previewHyperlink'
-import setHyperlinks from './hyperlinkModals/setHyperlink'
-import Hyperlink from '@docs.plus/extension-hyperlink'
+// import previewHyperlinkModal from './hyperlinkModals/previewHyperlink'
+// import setHyperlinks from './hyperlinkModals/setHyperlink'
+import {
+  createHyperlinkPopover,
+  previewHyperlinkPopover,
+  Hyperlink
+} from '@docs.plus/extension-hyperlink'
 
 // Code and Syntax Highlighting
 import Highlight from '@tiptap/extension-highlight'
@@ -198,13 +202,9 @@ const Editor = ({
     Hyperlink.configure({
       protocols: ['ftp', 'mailto'],
       hyperlinkOnPaste: false,
-      modals: {
-        previewHyperlink: (data: any) => {
-          return previewHyperlinkModal(data)
-        },
-        setHyperlink: (data: any) => {
-          return setHyperlinks(data)
-        }
+      popovers: {
+        previewHyperlink: previewHyperlinkPopover,
+        createHyperlink: createHyperlinkPopover
       }
     }),
     HyperMultimediaKit.configure({

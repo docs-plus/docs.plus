@@ -434,132 +434,275 @@ $bg-root: #f8f9fa;
   }
 }
 
-.tippy-box {
-  .hyperlinkLinkModal {
-    background-color: #fff;
-    border-radius: 10px;
-    border: 1px solid #dadce0;
+.hyperlinkCreatePopover,
+.hyperlinkPreviewPopover,
+.hyperlinkEditPopover {
+  background-color: white;
+  border: 1px solid #ddd;
+  border-radius: 0.375rem;
+  box-shadow: 0 0px 2px 0px rgba(0, 0, 0, 0.1);
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+
+  form {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 6px 6px;
-    box-shadow: 0 1px 3px 1px rgba(60, 64, 67, 0.15);
-    margin-top: -6px;
+    gap: 0.5rem;
+    margin: 0;
+    width: 100%;
+  }
 
-    .metadata {
-      width: 200px;
+  .inputsWrapper,
+  .hrefWrapper,
+  .textWrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 0.375rem;
+    padding: 0.375rem 0.5rem;
+    background-color: white;
+    transition:
+      border-color 0.15s ease-in-out,
+      box-shadow 0.15s ease-in-out;
+    position: relative;
+    width: 100%;
+
+    &:focus-within {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 1px #2563eb;
+    }
+
+    &.error {
+      border-color: #ef4444;
+      box-shadow: 0 0 0 1px #ef4444;
+
+      &:focus-within {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 1px #ef4444;
+      }
+    }
+
+    input {
+      border: none;
+      outline: none;
+      background: transparent;
+      font-size: 0.875rem;
+      flex: 1;
+      color: #1f2937;
+      padding: 0;
+
+      &::placeholder {
+        color: #9ca3af;
+      }
+    }
+
+    .search-icon {
+      color: #6b7280;
       display: flex;
       align-items: center;
-      justify-content: flex-end;
-      flex-direction: row-reverse;
-      a {
-        font-size: 0.9rem;
-        margin-right: 6px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      img {
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        margin-right: 8px;
-      }
+      flex-shrink: 0;
     }
 
-    .copy {
-      margin-left: auto;
-    }
+    .error-message {
+      color: #ef4444;
+      font-size: 11px;
+      font-weight: bold;
+      display: none;
+      position: absolute;
+      top: -8px;
+      background-color: white;
+      padding: 0px 2px;
+      border-radius: 0.375rem;
+      box-shadow: 0 0px 2px 0px rgba(0, 0, 0, 0.1);
+      left: 3px;
 
-    form {
-      display: flex;
-      align-items: flex-end;
-      width: 100%;
-      input {
-        border: 1px solid #dadce0;
-        border-radius: 6px;
-        padding: 0.4rem 0.8rem;
-        margin-bottom: 0.2rem;
-        width: 100%;
-        &:last-of-type {
-          margin-bottom: 0;
-        }
-      }
-      .buttonsWrapper {
-        margin-left: 8px;
-        button {
-          border-radius: 6px;
-          padding: 4px 14px;
-          width: 70px;
-          margin-bottom: 0.2rem;
-          color: #1a73e8;
-          &:hover {
-            background: rgba(26, 115, 232, 0.04);
-            color: #174ea6;
-          }
-        }
-      }
-    }
-
-    button {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      margin: 0 0.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background-color 0.1s ease-in-out;
-      &:hover {
-        background-color: #eee;
-      }
-
-      > svg {
-        width: 16px;
-        height: 16px;
+      &.show {
+        display: block;
       }
     }
   }
 
-  .tippy-svg-arrow {
-    top: -12px !important;
+  .buttonsWrapper {
+    flex-shrink: 0;
+
+    button[type='submit'],
+    .backButton {
+      background-color: transparent;
+      border: none;
+      border-radius: 0.25rem;
+      padding: 0.375rem 0.75rem;
+      font-size: 0.875rem;
+      font-family: Arial, Helvetica, sans-serif !important;
+      cursor: pointer;
+      transition: background-color 0.15s ease-in-out;
+      white-space: nowrap;
+      font-weight: bold;
+
+      &:hover {
+        background-color: #1d4ed8;
+        color: white;
+      }
+
+      &:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        color: #9ca3af;
+
+        &:hover {
+          background-color: transparent;
+          color: #9ca3af;
+        }
+      }
+    }
+  }
+
+  // Legacy styles for other popover variants
+  .metadata {
+    width: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-direction: row-reverse;
+    a {
+      font-size: 0.9rem;
+      margin-right: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    img {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      margin-right: 8px;
+    }
+  }
+
+  .copy {
+    margin-left: auto;
+  }
+}
+
+.hyperlinkPreviewPopover {
+  a {
+    max-width: 200px;
+    font-size: 0.9rem;
+    margin-right: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #646cff;
+    text-decoration: none;
+    font-weight: 500;
+    font-size: 0.9rem;
+    margin-right: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.1s ease-in-out;
+    cursor: pointer;
+    padding: 0.28rem;
+    border-radius: 0.25rem;
+    &:hover {
+      background-color: #eee;
+    }
+
+    > svg {
+      width: 18px;
+      height: 18px;
+    }
+  }
+  .linkCopyButton {
+    margin-left: auto;
+  }
+  .linkRemoveButton {
+    margin-left: 0.5rem;
+  }
+}
+
+.hyperlinkEditPopover {
+  align-items: flex-end;
+  .inputsWrapper {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+    border: none;
+    padding: 0;
+    background-color: transparent;
+    > div {
+      width: 100%;
+    }
+    &:focus-within {
+      border: none;
+      box-shadow: none;
+    }
+  }
+  .buttonsWrapper {
+    flex-direction: column;
+    display: flex;
+    justify-content: space-around;
+    align-items: flex-start;
+    gap: 0.7rem;
+    height: 100%;
+  }
+  .textWrapper {
+    svg {
+      width: 26px;
+      height: 26px;
+    }
+  }
+  svg {
     fill: #aaa;
   }
+}
 
-  .dropdown-menu {
-    background: white;
-    border: 1px solid #dadce0;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+.tippy-svg-arrow {
+  top: -12px !important;
+  fill: #aaa;
+}
+
+.dropdown-menu {
+  background: white;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow: auto;
+  padding: 0.5rem;
+  position: relative;
+  min-width: 180px;
+
+  button {
+    align-items: center;
+    background-color: transparent;
     display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-    overflow: auto;
-    padding: 0.5rem;
-    position: relative;
-    min-width: 180px;
+    gap: 0.5rem;
+    text-align: left;
+    width: 100%;
+    padding: 0.5rem 0.75rem;
+    border-radius: 4px;
+    color: #333;
+    font-size: 0.9rem;
 
-    button {
-      align-items: center;
-      background-color: transparent;
-      display: flex;
-      gap: 0.5rem;
-      text-align: left;
-      width: 100%;
-      padding: 0.5rem 0.75rem;
-      border-radius: 4px;
-      color: #333;
-      font-size: 0.9rem;
+    &:hover,
+    &:hover.is-selected {
+      background-color: #f1f3f4;
+    }
 
-      &:hover,
-      &:hover.is-selected {
-        background-color: #f1f3f4;
-      }
-
-      &.is-selected {
-        background-color: #e8f0fe;
-        color: #1a73e8;
-      }
+    &.is-selected {
+      background-color: #e8f0fe;
+      color: #1a73e8;
     }
   }
 }
