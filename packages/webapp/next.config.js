@@ -54,12 +54,23 @@ module.exports = withPWA({
   async headers() {
     // 🚀 Clean, modular CSP - only what each directive needs
     // Reduces header size by 70%+ and makes maintenance easier
+    // Extract domains from environment URLs (remove paths for CSP)
     const envUrls = [
       process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.NEXT_PUBLIC_SUPABASE_WS_URL,
       process.env.NEXT_PUBLIC_PROVIDER_URL,
       process.env.NEXT_PUBLIC_RESTAPI_URL
-    ].filter(Boolean)
+    ]
+      .filter(Boolean)
+      .map((url) => {
+        try {
+          // Extract just the origin (protocol + domain) from full URLs
+          const urlObj = new URL(url)
+          return urlObj.origin
+        } catch {
+          // If it's not a valid URL, return as-is
+          return url
+        }
+      })
 
     const devUrls = !isProduction
       ? [
