@@ -144,8 +144,8 @@ jobs:
       - name: Copy .env files
         working-directory: build-temp
         run: |
-          cp ../../../.env packages/webapp
-          cp ../../../.env packages/hocuspocus.server
+          cp ../.env packages/webapp
+          cp ../.env packages/hocuspocus.server
       - name: Build monorepo packages
         working-directory: build-temp
         run: yarn build
