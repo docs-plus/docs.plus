@@ -56,6 +56,7 @@ module.exports = withPWA({
     // Reduces header size by 70%+ and makes maintenance easier
     const envUrls = [
       process.env.NEXT_PUBLIC_SUPABASE_URL,
+      process.env.NEXT_PUBLIC_SUPABASE_WS_URL,
       process.env.NEXT_PUBLIC_PROVIDER_URL,
       process.env.NEXT_PUBLIC_RESTAPI_URL
     ].filter(Boolean)
