@@ -105,7 +105,7 @@ const TurnstileModal = ({ showTurnstile }: Props) => {
 
 export const SlugPageLoaderWithTurnstile = ({ showTurnstile }: Props) => {
   return (
-    <div>
+    <div className="h-full">
       <TurnstileModal showTurnstile={showTurnstile} />
       <SlugPageLoader />
     </div>
