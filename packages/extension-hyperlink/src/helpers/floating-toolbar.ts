@@ -304,7 +304,6 @@ class FloatingToolbarManager {
     // Create reference element (real or virtual)
     const resolvedReference = referenceElement || this.createVirtualReference(coordinates!)
     const contextElement = coordinates?.contextElement || document.body
-    const isCoordinateBased = !referenceElement && !!coordinates
 
     // Local cleanup tracker for this instance
     const instanceCleanup = new CleanupTracker()
@@ -316,42 +315,15 @@ class FloatingToolbarManager {
     toolbar.setAttribute('aria-label', 'Floating toolbar')
     toolbar.setAttribute('tabindex', '-1')
 
-    // Optimized base styles with CSS custom properties
-    const baseStyles = `
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: ${zIndex};
-      opacity: 0;
-      transform: scale(0.8) translateZ(0);
-      transition: opacity ${animationDuration}ms cubic-bezier(0.4, 0, 0.2, 1),
-                  transform ${animationDuration}ms cubic-bezier(0.4, 0, 0.2, 1);
-      pointer-events: none;
-      -webkit-tap-highlight-color: transparent;
-      touch-action: manipulation;
-      will-change: transform, opacity;
-      contain: layout style;
-    `
-
-    toolbar.style.cssText = baseStyles
+    // Apply z-index and animation duration from options
+    toolbar.style.zIndex = zIndex.toString()
+    toolbar.style.setProperty('--animation-duration', `${animationDuration}ms`)
 
     // Create arrow element if needed
     let arrowElement: HTMLElement | null = null
     if (showArrow) {
       arrowElement = document.createElement('div')
       arrowElement.className = 'floating-toolbar-arrow'
-      arrowElement.style.cssText = `
-        position: absolute;
-        background: white;
-        width: 10px;
-        height: 10px;
-        transform: rotate(45deg);
-        border: 1px solid #ddd;
-        border-right: none;
-        border-bottom: none;
-        pointer-events: none;
-        z-index: 1;
-      `
       toolbar.appendChild(arrowElement)
     }
 
@@ -419,9 +391,6 @@ class FloatingToolbarManager {
         document.body.appendChild(toolbar)
         isVisible = true
 
-        // Enable interactions
-        toolbar.style.pointerEvents = 'auto'
-
         // Start auto-updating position
         autoUpdateCleanup = autoUpdate(resolvedReference, toolbar, updatePosition)
         instanceCleanup.add(() => {
@@ -436,14 +405,13 @@ class FloatingToolbarManager {
 
         // Animate in with RAF for smooth animation
         animationFrame = requestAnimationFrame(() => {
-          toolbar.style.opacity = '1'
-          toolbar.style.transform = 'scale(1) translateZ(0)'
+          toolbar.classList.add('visible')
           animationFrame = null
         })
 
         // Setup auto-hide functionality
         if (autoHide) {
-          this.setupAutoHide(toolbar, contextElement, hide, instanceCleanup, isCoordinateBased)
+          this.setupAutoHide(toolbar, contextElement, hide, instanceCleanup)
         }
 
         // Setup keyboard handlers
@@ -480,8 +448,7 @@ class FloatingToolbarManager {
         }
 
         // Animate out
-        toolbar.style.opacity = '0'
-        toolbar.style.transform = 'scale(0.8) translateZ(0)'
+        toolbar.classList.remove('visible')
 
         // Remove from DOM after animation
         await new Promise<void>((resolve) => {
@@ -587,10 +554,16 @@ class FloatingToolbarManager {
     const middleware = [offset(offsetValue), flip(), shift({ padding: 8 })]
 
     if (arrowElement) {
+      console.log('arrowElement', arrowElement)
       middleware.push(arrow({ element: arrowElement }))
     }
 
-    const { x, y, middlewareData } = await computePosition(referenceElement, toolbar, {
+    const {
+      x,
+      y,
+      placement: actualPlacement,
+      middlewareData
+    } = await computePosition(referenceElement, toolbar, {
       placement,
       middleware
     })
@@ -603,12 +576,16 @@ class FloatingToolbarManager {
       // Position arrow
       if (arrowElement && middlewareData.arrow) {
         const { x: arrowX, y: arrowY } = middlewareData.arrow
+        const placementSide = actualPlacement.split('-')[0]
         const staticSide = {
           top: 'bottom',
           right: 'left',
           bottom: 'top',
           left: 'right'
-        }[placement.split('-')[0]] as string
+        }[placementSide] as string
+
+        // Add class based on placement
+        arrowElement.className = `floating-toolbar-arrow floating-toolbar-arrow-${placementSide}`
 
         Object.assign(arrowElement.style, {
           left: arrowX != null ? `${arrowX}px` : '',
@@ -625,23 +602,15 @@ class FloatingToolbarManager {
     toolbar: HTMLElement,
     contextElement: HTMLElement,
     hide: () => Promise<void>,
-    cleanupTracker: CleanupTracker,
-    isCoordinateBased: boolean
+    cleanupTracker: CleanupTracker
   ): void {
     const handleOutsideInteraction = (target: Node | null) => {
       if (!target || toolbar.contains(target)) {
         return // Don't hide if clicking on toolbar
       }
 
-      if (isCoordinateBased) {
-        // For coordinate-based positioning, hide on any click outside the toolbar
-        hide().catch((error) => Logger.error('Auto-hide failed', error))
-      } else {
-        // For element-based positioning, also check if click is outside the reference element
-        if (!contextElement.contains(target)) {
-          hide().catch((error) => Logger.error('Auto-hide failed', error))
-        }
-      }
+      // Hide on any click outside the toolbar
+      hide().catch((error) => Logger.error('Auto-hide failed', error))
     }
 
     // Mouse events
