@@ -90,16 +90,10 @@ const clickAndTouchHandler = (
 
   // Create floating toolbar with coordinate-based positioning
   const toolbar = createFloatingToolbar({
-    coordinates: {
-      x: linkCoords.x,
-      y: linkCoords.y,
-      width: linkCoords.width,
-      height: linkCoords.height,
-      contextElement: options.view.dom
-    },
+    referenceElement: link,
     content: hyperlinkPreview,
     placement: 'bottom',
-    offset: 10,
+    offset: 8,
     showArrow: true,
     enableKeyboardNav: true,
     onError: (error) => console.error('Hyperlink preview toolbar error:', error)
