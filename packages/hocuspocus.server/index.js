@@ -6,6 +6,9 @@ import routers from './routers/router.mjs'
 import middlewares from './middlewares/index.mjs'
 import { createClient as createRedisClient } from 'redis'
 import { PrismaClient } from '@prisma/client'
+import { checkDatabaseHealth } from './routers/health/database.health.mjs'
+import { checkRedisHealth } from './routers/health/redis.health.mjs'
+import { checkSupabaseHealth } from './routers/health/supabase.health.mjs'
 // import sseRouters from './routers/sse.mjs' // INFO: depricated
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
@@ -46,6 +49,28 @@ app.locals.prisma = prisma
 // A basic http route
 app.get('/', (_request, response) => {
   response.send({ message: 'Hello World!' })
+})
+
+// Health check using existing comprehensive system
+app.get('/health', async (request, response) => {
+  const { prisma, redis } = request.app.locals
+
+  const health = {
+    status: 'ok',
+    timestamp: new Date(),
+    services: {
+      database: await checkDatabaseHealth(prisma),
+      redis: await checkRedisHealth(redis),
+      supabase: await checkSupabaseHealth()
+    }
+  }
+
+  // If any service is unhealthy, mark overall status as degraded
+  if (Object.values(health.services).some((service) => service.status === 'unhealthy')) {
+    health.status = 'degraded'
+  }
+
+  response.status(health.status === 'ok' ? 200 : 503).json(health)
 })
 
 app.use('/api', routers)
