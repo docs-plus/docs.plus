@@ -587,21 +587,37 @@ $bg-root: #f8f9fa;
 }
 
 .hyperlinkPreviewPopover {
-  a {
-    max-width: 200px;
-    font-size: 0.9rem;
-    margin-right: 6px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    color: #646cff;
-    text-decoration: none;
-    font-weight: 500;
-    font-size: 0.9rem;
-    margin-right: 6px;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .metadata,
+  .metadata-fallback,
+  .metadata-loading {
+    a {
+      max-width: 200px;
+      font-size: 0.9rem;
+      margin-right: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #646cff;
+      text-decoration: none;
+      font-weight: 500;
+      font-size: 0.9rem;
+      margin-right: 6px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      display: block;
+    }
+    .metadata-special,
+    .metadata-content {
+      max-width: 200px;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      // .metadata-icon-special {
+      //   width: 20px;
+      //   height: 20px;
+      // }
+    }
   }
 
   button {
@@ -799,5 +815,71 @@ $bg-root: #f8f9fa;
     &:hover {
       background-color: #f9fafb;
     }
+  }
+}
+
+// Floating Toolbar Styles
+.floating-toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  opacity: 0;
+  transform: scale(0.8) translateZ(0);
+  transition:
+    opacity var(--animation-duration, 100ms) cubic-bezier(0.4, 0, 0.2, 1),
+    transform var(--animation-duration, 100ms) cubic-bezier(0.4, 0, 0.2, 1);
+  pointer-events: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  will-change: transform, opacity;
+  contain: layout style;
+
+  &.visible {
+    opacity: 1;
+    transform: scale(1) translateZ(0);
+    pointer-events: auto;
+  }
+
+  &-arrow {
+    position: absolute;
+    background: white;
+    width: 10px;
+    height: 10px;
+    transform: rotate(45deg);
+    pointer-events: none;
+    z-index: 3;
+
+    &-top {
+      border-top: none;
+      border-left: none;
+      border-right: 1px solid #ddd;
+      border-bottom: 1px solid #ddd;
+    }
+
+    &-bottom {
+      border-right: none;
+      border-bottom: none;
+      border-top: 1px solid #ddd;
+      border-left: 1px solid #ddd;
+    }
+
+    &-left {
+      border-top: none;
+      border-left: none;
+      border-right: 1px solid #ddd;
+      border-bottom: 1px solid #ddd;
+    }
+
+    &-right {
+      border-right: none;
+      border-bottom: none;
+      border-top: 1px solid #ddd;
+      border-left: 1px solid #ddd;
+    }
+  }
+
+  &-content {
+    position: relative;
+    z-index: 2;
   }
 }

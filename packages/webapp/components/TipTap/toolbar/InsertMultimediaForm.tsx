@@ -309,7 +309,7 @@ const UploadDropzone: React.FC<UploadDropzoneProps> = ({ onFileUpload }) => (
           <p className="mb-2 text-sm text-gray-500">
             <span className="font-semibold">Click to upload</span> or drag and drop
           </p>
-          <p className="text-xs text-gray-500">Picture, Video or Audio (MAX. 2MB)</p>
+          <p className="text-xs text-gray-500">Picture, Video or Audio (MAX. 4MB)</p>
         </div>
         <input
           id="dropzone-file"
