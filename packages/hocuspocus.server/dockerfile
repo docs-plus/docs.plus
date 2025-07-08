@@ -34,6 +34,9 @@ COPY --from=builder --chown=bun:bun /app/prisma ./prisma
 # Copy application code
 COPY --chown=bun:bun . .
 
+# Make scripts executable
+RUN chmod +x fix-migration.js start-production.js fix-docker.sh
+
 # Switch to bun user
 USER bun
 
@@ -43,7 +46,5 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 
 # Use dumb-init for proper signal handling
 ENTRYPOINT ["dumb-init", "--"]
-
-
 
 CMD ["bunx", "pm2-runtime", "pm2.config.cjs", "--only", "stage_rest,stage_ws"]
