@@ -76,6 +76,7 @@ const clickAndTouchHandler = (
 
   // Create hyperlink preview content
   const hyperlinkPreview = options.popover({
+    attrs,
     link,
     nodePos,
     linkCoords,
