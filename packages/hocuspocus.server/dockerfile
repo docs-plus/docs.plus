@@ -1,32 +1,47 @@
 # Build Stage
-FROM node:18.18 as builder
+FROM oven/bun:alpine AS builder
 
-ENV NODE_ENV=production
-
-# for Node-gyp and dependencies
-RUN corepack enable
-
-USER node
+# Install system dependencies needed for native modules
+RUN apk add --no-cache python3 make g++ git
 
 WORKDIR /app
 
-COPY package*.json ./
+# Copy dependency files first for better layer caching
+COPY package.json bun.lockb* ./
 COPY prisma ./prisma/
 
-RUN npm install && npx prisma generate && npm cache clean --force
+# Install dependencies and generate Prisma client
+RUN bun install --frozen-lockfile --production && \
+    bunx prisma generate && \
+    bun pm cache rm
 
 # Runtime Stage
-FROM node:18.18
+FROM oven/bun:alpine
 
 ARG ENVIRONMENT=stage
-
 ENV ENVIRONMENT=$ENVIRONMENT
+ENV NODE_ENV=production
+
+# Install runtime dependencies
+RUN apk add --no-cache dumb-init
 
 WORKDIR /app
 
-COPY --from=builder /app .
-COPY . .
+# Copy built dependencies from builder stage
+COPY --from=builder --chown=bun:bun /app/node_modules ./node_modules
+COPY --from=builder --chown=bun:bun /app/prisma ./prisma
 
-RUN npm install pm2 -g
+# Copy application code
+COPY --chown=bun:bun . .
 
-CMD pm2-runtime pm2.config.cjs --only ${ENVIRONMENT}_rest,${ENVIRONMENT}_ws
+USER bun
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD bun run healthcheck || exit 1
+
+# Use dumb-init for proper signal handling
+ENTRYPOINT ["dumb-init", "--"]
+
+# Run both processes - REST API first, then WebSocket server
+CMD ["sh", "-c", "bun run start:production:rest & bun run start:production:ws & wait"]
