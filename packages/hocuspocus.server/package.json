@@ -15,7 +15,8 @@
     "update:packages": "npx npm-check-updates -u",
     "pm2:stage": "pm2 reload pm2.config.cjs --env production --only stage_rest,stage_ws",
     "pm2:prod": "pm2 reload pm2.config.cjs --env production --only prod_rest,prod_ws",
-    "prisma:generate": "npx prisma generate --schema=./prisma/schema.prisma"
+    "prisma:generate": "npx prisma generate --schema=./prisma/schema.prisma",
+    "healthcheck": "curl -f http://localhost:3001/health || exit 1"
   },
   "keywords": [],
   "author": "Hossein Marzban",
