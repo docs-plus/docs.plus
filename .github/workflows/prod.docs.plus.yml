@@ -43,11 +43,6 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      # This step sets up Python v8 or greater on the runner.
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
       # This step installs project dependencies using Yarn.
       # The --frozen-lockfile option ensures the exact package versions specified in yarn.lock are installed.
       - name: Install dependencies
