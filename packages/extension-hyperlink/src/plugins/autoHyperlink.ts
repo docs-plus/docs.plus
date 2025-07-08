@@ -8,10 +8,59 @@ import {
 import { MarkType } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { find, test } from 'linkifyjs'
+import { validateURL } from '../utils/validateURL'
 
 type AutoHyperlinkOptions = {
   type: MarkType
   validate?: (url: string) => boolean
+}
+
+/**
+ * Simple regex to catch special URL schemes that linkifyjs misses
+ * Matches: scheme://... or scheme:content (no spaces)
+ */
+const SPECIAL_SCHEME_REGEX = /\b[a-zA-Z][a-zA-Z0-9+.-]*:[^\s]+/g
+
+/**
+ * Enhanced find function that combines linkifyjs with special scheme detection
+ */
+const findLinks = (text: string) => {
+  const links = []
+
+  // Get standard links from linkifyjs
+  const standardLinks = find(text).filter((link) => link.isLink)
+  links.push(...standardLinks)
+
+  // Find special scheme URLs that linkifyjs missed
+  const specialMatches = text.matchAll(SPECIAL_SCHEME_REGEX)
+  for (const match of specialMatches) {
+    const url = match[0]
+    const start = match.index!
+    const end = start + url.length
+
+    // Skip if already covered by linkifyjs
+    const alreadyCovered = standardLinks.some((link) => start >= link.start && end <= link.end)
+
+    if (!alreadyCovered && validateURL(url)) {
+      links.push({
+        href: url,
+        value: url,
+        start,
+        end,
+        isLink: true
+      })
+    }
+  }
+
+  return links
+}
+
+/**
+ * Enhanced test function that checks both linkifyjs and special schemes
+ */
+const testUrl = (text: string): boolean => {
+  if (test(text)) return true
+  return SPECIAL_SCHEME_REGEX.test(text) && validateURL(text)
 }
 
 export default function AutoHyperlinkPlugin(options: AutoHyperlinkOptions): Plugin {
@@ -34,7 +83,7 @@ export default function AutoHyperlinkPlugin(options: AutoHyperlinkOptions): Plug
       const changes = getChangedRanges(transform)
 
       changes.forEach(({ oldRange, newRange }) => {
-        // at first we check if we have to remove links
+        // Check if we need to remove links
         getMarksBetween(oldRange.from, oldRange.to, oldState.doc)
           .filter((item) => item.mark.type === options.type)
           .forEach((oldMark) => {
@@ -51,17 +100,16 @@ export default function AutoHyperlinkPlugin(options: AutoHyperlinkOptions): Plug
             const newMark = newMarks[0]
             const oldLinkText = oldState.doc.textBetween(oldMark.from, oldMark.to, undefined, ' ')
             const newLinkText = newState.doc.textBetween(newMark.from, newMark.to, undefined, ' ')
-            const wasLink = test(oldLinkText)
-            const isLink = test(newLinkText)
+            const wasLink = testUrl(oldLinkText)
+            const isLink = testUrl(newLinkText)
 
-            // remove only the link, if it was a link before too
-            // because we don’t want to remove links that were set manually
+            // Remove link if it's no longer valid
             if (wasLink && !isLink) {
               tr.removeMark(newMark.from, newMark.to, options.type)
             }
           })
 
-        // now let’s see if we can add new links
+        // Add new links
         const nodesInChangedRanges = findChildrenInRange(
           newState.doc,
           newRange,
@@ -109,7 +157,7 @@ export default function AutoHyperlinkPlugin(options: AutoHyperlinkOptions): Plug
             return false
           }
 
-          find(lastWordBeforeSpace)
+          findLinks(lastWordBeforeSpace)
             .filter((link) => link.isLink)
             .filter((link) => {
               if (options.validate) {
