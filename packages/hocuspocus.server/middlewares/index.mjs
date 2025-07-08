@@ -6,8 +6,8 @@ import cors from 'cors'
 import fileUpload from 'express-fileupload'
 import rateLimit from 'express-rate-limit'
 
-const TWO_MEG = 2 * 1024 * 1024
-const MAX_UPLOAD_SIZE = TWO_MEG //  maxFileSize
+const FOUR_MEG = 4 * 1024 * 1024
+const MAX_UPLOAD_SIZE = FOUR_MEG //  maxFileSize
 const RATE_LIMIT_WINDOW = 15 * 60 * 1000 // 15 minutes
 const RATE_LIMIT_MAX = process.env.RATE_LIMIT_MAX || 100
 
