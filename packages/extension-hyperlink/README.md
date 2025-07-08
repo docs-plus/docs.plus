@@ -10,6 +10,21 @@ In a real world application, you would probably add a more sophisticated user in
 
 > Pasted URLs will be transformed to links automatically.
 
+## ✨ Enhanced URL Support
+
+This extension provides comprehensive support for:
+
+- **Standard URLs**: `https://example.com`, `http://example.com`
+- **Communication**: `mailto:user@example.com`, `tel:+1234567890`, `sms:+1234567890`
+- **Social Media**: `whatsapp://send?text=hello`, `discord://user/123`, `tg://resolve?domain=username`
+- **Video Conferencing**: `zoommtg://zoom.us/join?confno=123`, `msteams://l/meetup-join/19:meeting`
+- **Development Tools**: `github://user/repo`, `vscode://file/path`, `figma://file/abc123`
+- **Apple Apps**: `maps://address`, `music://album/123`, `facetime://user@example.com`
+- **Entertainment**: `youtube://watch?v=abc123`, `spotify://track/123`, `twitch://stream/username`
+- **And 50+ more special schemes**
+
+All these URL types are automatically detected and converted to clickable links as you type!
+
 ## Installation
 
 ```sh
@@ -42,6 +57,8 @@ Hyperlink.configure({
   ]
 })
 ```
+
+**Note**: The extension automatically supports 50+ special URL schemes including `mailto:`, `tel:`, `whatsapp:`, `discord:`, `zoom:`, `github:`, `vscode:`, `spotify:`, and many more. You only need to configure additional protocols if you have custom schemes not already supported.
 
 ### autolink
 
@@ -275,12 +292,13 @@ this.editor.commands.unsetHyperlink()
 
 ## Keyboard shortcuts
 
-Doesn’t have a keyboard shortcut
-This extension doesn’t bind a specific keyboard shortcut. You would probably open your custom UI on `Mod-k` though.
+The extension provides a built-in keyboard shortcut:
+
+- **`Mod-k`** (Ctrl+k on Windows/Linux, Cmd+k on Mac): Opens a popover to create or edit a hyperlink for the current selection.
 
 ## Get the current value
 
-Did you know that you can use `getAttributes` to find out which attributes, for example which href, is currently set? Don’t confuse it with a <u>command</u> (which changes the state), it’s just a method. Here is how that could look like:
+Did you know that you can use `getAttributes` to find out which attributes, for example which href, is currently set? Don't confuse it with a <u>command</u> (which changes the state), it's just a method. Here is how that could look like:
 
 ```js
 this.editor.getAttributes('link').href
