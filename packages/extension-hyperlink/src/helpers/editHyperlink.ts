@@ -6,6 +6,8 @@ type EditHyperlinkOptions = {
   validate?: (url: string) => boolean
   newURL?: string
   newText?: string
+  title?: string
+  image?: string
 }
 
 export default function editHyperlink(options: EditHyperlinkOptions) {
@@ -49,7 +51,9 @@ export default function editHyperlink(options: EditHyperlinkOptions) {
         nodePos,
         options.editor.schema.text(text, [
           options.editor.schema.marks.hyperlink.create({
-            href: sanitizeURL?.href
+            href: sanitizeURL?.href,
+            title: options.title,
+            image: options.image
           })
         ])
       )
