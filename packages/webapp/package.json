@@ -99,7 +99,7 @@
     "metascraper-logo-favicon": "^5.49.1",
     "metascraper-title": "^5.49.1",
     "mobile-detect": "^1.4.5",
-    "next": "^15.3.3",
+    "next": "^15.3.5",
     "next-pwa": "^5.6.0",
     "next-secure-headers": "^2.2.0",
     "open-graph-scraper": "^6.10.0",
