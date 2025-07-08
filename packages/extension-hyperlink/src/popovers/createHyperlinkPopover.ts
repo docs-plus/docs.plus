@@ -1,6 +1,6 @@
 import { Editor } from '@tiptap/core'
 import { createFloatingToolbar, FloatingToolbarInstance } from '../helpers/floating-toolbar'
-import { createHTMLElement, Anchor, validateURL } from '../utils'
+import { createHTMLElement, Link, validateURL } from '../utils'
 
 type setHyperlinkModalOptions = {
   editor: Editor
@@ -57,7 +57,7 @@ const createHyperlinkElements = (): HyperlinkElements | null => {
     // Create search icon using utility
     const searchIcon = createHTMLElement('div', {
       className: 'search-icon',
-      innerHTML: Anchor({ size: 24, fill: '#e3e3e3' })
+      innerHTML: Link({ size: 24, fill: '#e3e3e3' })
     })
 
     // Assemble DOM

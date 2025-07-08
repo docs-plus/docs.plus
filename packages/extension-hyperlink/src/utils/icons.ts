@@ -19,18 +19,18 @@ export const LinkOff = ({ size = 24, fill = 'rgb(104, 81, 255)' }: IconProps = {
     `
 }
 
+export const Link = ({ size = 24, fill = 'rgb(104, 81, 255)' }: IconProps = {}) => {
+  return `
+       <svg xmlns="http://www.w3.org/2000/svg" height=${size} viewBox="0 -960 960 960" width=${size} fill=${fill}>
+        <path d="M440-280H280q-83 0-141.5-58.5T80-480q0-83 58.5-141.5T280-680h160v80H280q-50 0-85 35t-35 85q0 50 35 85t85 35h160v80ZM320-440v-80h320v80H320Zm200 160v-80h160q50 0 85-35t35-85q0-50-35-85t-85-35H520v-80h160q83 0 141.5 58.5T880-480q0 83-58.5 141.5T680-280H520Z"/>
+       </svg>
+    `
+}
+
 export const Pencil = ({ size = 24, fill = 'rgb(104, 81, 255)' }: IconProps = {}) => {
   return `
         <svg xmlns="http://www.w3.org/2000/svg" height=${size} viewBox="0 -960 960 960" width=${size} fill=${fill}>
           <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/>
-        </svg>
-    `
-}
-
-export const Anchor = ({ size = 24, fill = 'rgb(104, 81, 255)' }: IconProps = {}) => {
-  return `
-        <svg xmlns="http://www.w3.org/2000/svg" height=${size} viewBox="0 -960 960 960" width=${size} fill=${fill}>
-          <path d="M480-80q-61 0-125-22t-116-60q-52-38-85.5-89T120-360v-120l160 120-62 62q29 51 92 88t130 47v-357H320v-80h120v-47q-35-13-57.5-43.5T360-760q0-50 35-85t85-35q50 0 85 35t35 85q0 39-22.5 69.5T520-647v47h120v80H520v357q67-10 130-47t92-88l-62-62 160-120v120q0 58-33.5 109T721-162q-52 38-116 60T480-80Zm0-640q17 0 28.5-11.5T520-760q0-17-11.5-28.5T480-800q-17 0-28.5 11.5T440-760q0 17 11.5 28.5T480-720Z"/>
         </svg>
     `
 }
