@@ -1,14 +1,16 @@
 const generateConfig = (env) => [
   {
     name: `${env}_rest`,
-    script: 'npm run start:production:rest',
+    script: 'bun',
+    args: ['run', 'start:production:rest'],
     env_production: {
       NODE_ENV: 'production'
     }
   },
   {
     name: `${env}_ws`,
-    script: 'npm run start:production:ws',
+    script: 'bun',
+    args: ['run', 'start:production:ws'],
     env_production: {
       NODE_ENV: 'production'
     }
