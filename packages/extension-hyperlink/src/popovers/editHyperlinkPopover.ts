@@ -1,7 +1,7 @@
 import { Editor } from '@tiptap/core'
 import { EditorView } from '@tiptap/pm/view'
 import { createFloatingToolbar, hideCurrentToolbar } from '../helpers/floating-toolbar'
-import { createHTMLElement, Anchor, Title, validateURL } from '../utils'
+import { createHTMLElement, Link, Title, validateURL } from '../utils'
 
 type EditHyperlinkModalOptions = {
   editor: Editor
@@ -45,7 +45,7 @@ export default function editHyperlinkPopover(options: EditHyperlinkModalOptions)
   const hrefWrapper = createHTMLElement('div', { className: 'hrefWrapper' })
   const anchorIcon = createHTMLElement('div', {
     className: 'search-icon',
-    innerHTML: Anchor({ size: 24, fill: '#e3e3e3' })
+    innerHTML: Link({ size: 24, fill: '#e3e3e3' })
   })
   const hrefInput = createHTMLElement('input', {
     type: 'text',
@@ -90,7 +90,7 @@ export default function editHyperlinkPopover(options: EditHyperlinkModalOptions)
   // Event listeners
   linkTextInput.addEventListener('input', () => hideError(textWrapper, textError))
   hrefInput.addEventListener('input', () => hideError(hrefWrapper, hrefError))
-  backButton.addEventListener('click', () => link.click())
+  backButton.addEventListener('click', () => setTimeout(() => link.click(), 1))
 
   form.addEventListener('submit', (e) => {
     e.preventDefault()
