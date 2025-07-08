@@ -745,17 +745,6 @@ export const updateCurrentToolbarPosition = (
   }
 }
 
-// Event delegation for better performance
-document.addEventListener('click', async (event) => {
-  const target = event.target as HTMLElement
-  const action = target.getAttribute('data-action')
-
-  if (action) {
-    console.log(`Action: ${action}`)
-    await hideCurrentToolbar()
-  }
-})
-
 // Update toolbar position example
 // With new reference element:
 // updateCurrentToolbarPosition(newImageElement);
