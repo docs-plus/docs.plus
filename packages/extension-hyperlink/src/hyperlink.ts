@@ -64,7 +64,12 @@ declare module '@tiptap/core' {
       /**
        * Edit the hyperlink's
        */
-      editHyperlink: (attributes?: { newText?: string; newURL?: string }) => ReturnType
+      editHyperlink: (attributes?: {
+        newText?: string
+        newURL?: string
+        title?: string
+        image?: string
+      }) => ReturnType
 
       /**
        *  Set a hyperlink
@@ -136,6 +141,12 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
       },
       class: {
         default: this.options.HTMLAttributes.class
+      },
+      title: {
+        default: null
+      },
+      image: {
+        default: null
       }
     }
   },
