@@ -162,6 +162,12 @@ export interface FloatingToolbarInstance {
 
   /** Focus the first focusable element in the toolbar */
   focus: () => void
+
+  /** Update the reference element or coordinates for positioning */
+  updateReference: (
+    referenceElement?: HTMLElement,
+    coordinates?: FloatingToolbarOptions['coordinates']
+  ) => void
 }
 
 // Cleanup tracker for better memory management
@@ -302,7 +308,7 @@ class FloatingToolbarManager {
     }
 
     // Create reference element (real or virtual)
-    const resolvedReference = referenceElement || this.createVirtualReference(coordinates!)
+    let resolvedReference = referenceElement || this.createVirtualReference(coordinates!)
     const contextElement = coordinates?.contextElement || document.body
 
     // Local cleanup tracker for this instance
@@ -513,6 +519,17 @@ class FloatingToolbarManager {
       }
     }
 
+    // Update reference element or coordinates
+    const updateReference = (
+      referenceElement?: HTMLElement,
+      coordinates?: FloatingToolbarOptions['coordinates']
+    ) => {
+      if (referenceElement || coordinates) {
+        resolvedReference = referenceElement || this.createVirtualReference(coordinates!)
+        updatePosition()
+      }
+    }
+
     return {
       element: toolbar,
       show,
@@ -522,7 +539,8 @@ class FloatingToolbarManager {
       isVisible: () => isVisible,
       setContent,
       getReferenceElement: () => resolvedReference,
-      focus
+      focus,
+      updateReference
     }
   }
 
@@ -554,7 +572,6 @@ class FloatingToolbarManager {
     const middleware = [offset(offsetValue), flip(), shift({ padding: 8 })]
 
     if (arrowElement) {
-      console.log('arrowElement', arrowElement)
       middleware.push(arrow({ element: arrowElement }))
     }
 
@@ -704,6 +721,48 @@ export const destroyCurrentToolbar = async (): Promise<void> => {
   await FloatingToolbarManager.getInstance().destroyCurrentToolbar()
 }
 
+export const updateCurrentToolbarPosition = (
+  referenceElement?: HTMLElement,
+  coordinates?: FloatingToolbarOptions['coordinates']
+): void => {
+  const currentToolbar = FloatingToolbarManager.getInstance().getCurrentToolbar()
+
+  if (!currentToolbar) {
+    Logger.warn('No current toolbar to update')
+    return
+  }
+
+  if (!referenceElement && !coordinates) {
+    Logger.warn('No reference element or coordinates provided for update')
+    return
+  }
+
+  try {
+    currentToolbar.updateReference(referenceElement, coordinates)
+  } catch (error) {
+    Logger.error('Failed to update toolbar position', error)
+    throw error
+  }
+}
+
+// Event delegation for better performance
+document.addEventListener('click', async (event) => {
+  const target = event.target as HTMLElement
+  const action = target.getAttribute('data-action')
+
+  if (action) {
+    console.log(`Action: ${action}`)
+    await hideCurrentToolbar()
+  }
+})
+
+// Update toolbar position example
+// With new reference element:
+// updateCurrentToolbarPosition(newImageElement);
+
+// With new coordinates:
+// updateCurrentToolbarPosition(undefined, { x: 100, y: 200, width: 50, height: 30 });
+
 // Enhanced usage example with production best practices
 /*
 import { createFloatingToolbar } from './floating-toolbar';
@@ -749,4 +808,11 @@ document.addEventListener('click', async (event) => {
     await hideCurrentToolbar();
   }
 });
+
+// Update toolbar position example
+// With new reference element:
+// updateCurrentToolbarPosition(newImageElement);
+
+// With new coordinates:
+// updateCurrentToolbarPosition(undefined, { x: 100, y: 200, width: 50, height: 30 });
 */
