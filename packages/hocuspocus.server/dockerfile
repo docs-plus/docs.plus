@@ -1,5 +1,5 @@
 # Build Stage
-FROM oven/bun:alpine AS builder
+FROM oven/bun:1.2.18-alpine AS builder
 
 # Install system dependencies needed for native modules
 RUN apk add --no-cache python3 make g++ git
@@ -16,7 +16,7 @@ RUN bun install --frozen-lockfile --production && \
     bun pm cache rm
 
 # Runtime Stage
-FROM oven/bun:alpine
+FROM oven/bun:1.2.18-alpine
 
 ARG ENVIRONMENT=stage
 ENV ENVIRONMENT=$ENVIRONMENT
@@ -34,6 +34,7 @@ COPY --from=builder --chown=bun:bun /app/prisma ./prisma
 # Copy application code
 COPY --chown=bun:bun . .
 
+# Switch to bun user
 USER bun
 
 # Health check
@@ -43,5 +44,6 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
 # Use dumb-init for proper signal handling
 ENTRYPOINT ["dumb-init", "--"]
 
-# Run both processes - REST API first, then WebSocket server
-CMD ["sh", "-c", "bun run start:production:rest & bun run start:production:ws & wait"]
+
+
+CMD ["bunx", "pm2-runtime", "pm2.config.cjs", "--only", "stage_rest,stage_ws"]
