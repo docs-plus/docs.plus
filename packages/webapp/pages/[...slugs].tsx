@@ -1,8 +1,8 @@
 import { type GetServerSidePropsContext } from 'next'
 import React from 'react'
 import HeadSeo from '@components/HeadSeo'
-import { useStore } from '@stores'
 import useAddDeviceTypeHtmlClass from '@components/pages/document/hooks/useAddDeviceTypeHtmlClass'
+import { useHandleTurnstileVerficationState } from '@hooks/useHandleTurnstileVerficationState'
 import dynamic from 'next/dynamic'
 import { documentServerSideProps } from '@helpers'
 import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
@@ -13,11 +13,10 @@ const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPa
 })
 
 const Document = ({ docMetadata, isMobile, channels, showTurnstile }: any) => {
-  const { isTurnstileVerified } = useStore((state) => state.settings)
-
   useAddDeviceTypeHtmlClass(isMobile)
+  useHandleTurnstileVerficationState(showTurnstile)
 
-  if (!isTurnstileVerified) {
+  if (showTurnstile) {
     return (
       <>
         <HeadSeo />
@@ -38,5 +37,6 @@ export async function getServerSideProps(context: GetServerSidePropsContext) {
       props: {}
     }
   })
+
   return result
 }
