@@ -123,7 +123,7 @@ export const MessageContextMenu = forwardRef<
     // Trigger editor focus
     const event = new CustomEvent('editor:focus')
     document.dispatchEvent(event)
-  }, [channelId, messageData])
+  }, [channelId, messageData, setReplyMessageMemory])
 
   const handleDeleteMessage = useCallback(async () => {
     if (!messageData) return
@@ -133,7 +133,7 @@ export const MessageContextMenu = forwardRef<
     } else {
       toast.success('Message deleted')
     }
-  }, [messageData])
+  }, [messageData, setEditMessageMemory])
 
   const handlePinMessage = useCallback(async () => {
     if (!messageData) return
@@ -153,12 +153,12 @@ export const MessageContextMenu = forwardRef<
       //   payload: { message: messageData, actionType }
       // })
     }
-  }, [messageData])
+  }, [messageData, setEditMessageMemory])
 
   const handleEdit = useCallback(() => {
     if (!messageData) return
     setEditMessageMemory(channelId, messageData)
-  }, [channelId, messageData])
+  }, [channelId, messageData, setEditMessageMemory])
 
   const handleThread = useCallback(() => {
     if (!messageData) return

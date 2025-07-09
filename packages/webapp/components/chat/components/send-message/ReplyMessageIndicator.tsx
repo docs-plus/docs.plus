@@ -10,7 +10,7 @@ type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: num
 
 const IconButton = twx.button<BtnIcon>((props) =>
   cn(
-    'btn btn-square w-8 h-8 btn-xs p-1 ',
+    'btn btn-square w-8 h-8 btn-xs p-1',
     props.$active && 'btn-active',
     props.$size && `w-${props.$size} h-${props.$size}`
   )
