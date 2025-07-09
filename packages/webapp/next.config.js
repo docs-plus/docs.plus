@@ -119,7 +119,7 @@ module.exports = withPWA({
       font: ["'self'", 'data:', 'fonts.gstatic.com', ...envUrls],
       image: ["'self'", 'data:', 'blob:', 'https:', ...devUrls], // 🔥 All HTTPS images
       media: ["'self'", 'data:', 'blob:', 'https:', ...devUrls],
-      frame: ["'self'", '*.cloudflare.com', ...envUrls, ...devUrls],
+      frame: ["'self'", '*.cloudflare.com', 'accounts.google.com', ...envUrls, ...devUrls],
       form: ["'self'", ...envUrls, ...devUrls]
     }
 
