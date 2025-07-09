@@ -1,10 +1,8 @@
 import { upsertWorkspace, getChannelsByWorkspaceAndUserids } from '@api'
-import MobileDetect from 'mobile-detect'
 import { fetchDocument } from '@utils/fetchDocument'
-import * as cookie from 'cookie'
 import { createClient } from '@utils/supabase/server-props'
-import Config from '@config'
 import { type GetServerSidePropsContext } from 'next'
+import { getDeviceInfo, validateTurnstileAccess } from '@helpers'
 
 export async function handleUserSessionForServerProp(docMetadata: any, session: any) {
   if (!session?.user) return null
@@ -39,21 +37,18 @@ export async function handleUserSessionForServerProp(docMetadata: any, session: 
 }
 
 export const documentServerSideProps = async (context: GetServerSidePropsContext) => {
-  const { req, res, query } = context
-  const cookies = cookie.parse(req.headers.cookie || '') as { turnstileVerified?: string }
-  const userAgent = context.req.headers['user-agent'] || ''
-  const device = new MobileDetect(userAgent)
+  const { query } = context
   const documentSlug = query.slugs?.at(0)
 
-  const isTurnstileVerified = Config.app.turnstile.isEnabled
-    ? cookies.turnstileVerified === 'true'
-    : true
+  const { isMobile } = getDeviceInfo(context)
+
+  const isTurnstileVerified = validateTurnstileAccess(context)
 
   if (!isTurnstileVerified) {
     return {
       props: {
         showTurnstile: true,
-        isMobile: device.mobile()
+        isMobile
       }
     }
   }
@@ -74,7 +69,7 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
         channels: channels || null,
         docMetadata,
         showTurnstile: false,
-        isMobile: device.mobile()
+        isMobile
       }
     }
   } catch (error: any) {

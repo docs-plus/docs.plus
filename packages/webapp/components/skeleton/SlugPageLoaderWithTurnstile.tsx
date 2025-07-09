@@ -55,7 +55,9 @@ const TurnstileModal = ({ showTurnstile }: Props) => {
         if (data.success) {
           setState('success')
           setWorkspaceSetting('isTurnstileVerified', true)
-          // No page reload needed!
+
+          // TODO: I do not have any solution to reload the page without reloading the whole app
+          window.location.reload()
         } else {
           throw new Error(data.message || 'Verification failed')
         }
@@ -186,10 +188,6 @@ const TurnstileModal = ({ showTurnstile }: Props) => {
 }
 
 export const SlugPageLoaderWithTurnstile = ({ showTurnstile }: Props) => {
-  if (!showTurnstile) {
-    return <SlugPageLoader />
-  }
-
   return (
     <div className="h-full">
       <TurnstileModal showTurnstile={showTurnstile} />
