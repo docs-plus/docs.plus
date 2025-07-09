@@ -136,5 +136,5 @@ export const useCatchUserPresences = () => {
     return () => {
       messageSubscription?.unsubscribe()
     }
-  }, [profile, workspaceId])
+  }, [profile, workspaceId, setOrUpdateUserPresence])
 }

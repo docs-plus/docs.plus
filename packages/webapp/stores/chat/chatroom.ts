@@ -38,11 +38,16 @@ const getWorkspaceId = (): string => {
 
 const join2Channel = (user: Profile, channelId: string) => {
   if (!user) return
-  useStore.getState().settings?.broadcaster.send({
-    type: 'broadcast',
-    event: 'presence',
-    payload: { ...user, channelId }
-  })
+  const broadcaster = useStore.getState().settings?.broadcaster
+  try {
+    broadcaster?.send({
+      type: 'broadcast',
+      event: 'presence',
+      payload: { ...user, channelId }
+    })
+  } catch (error) {
+    console.error('Failed to join channel:', error)
+  }
 }
 
 const leaveChannel = (user: Profile): void => {

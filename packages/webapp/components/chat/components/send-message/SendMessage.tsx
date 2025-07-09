@@ -219,7 +219,7 @@ export default function SendMessage() {
 
       // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [user, text, html, editor, channelId, loading]
+    [user, text, html, editor, channelId, loading, setOrUpdateUserPresence]
   )
 
   const openEmojiPicker = (clickEvent: any) => {
