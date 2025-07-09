@@ -111,6 +111,7 @@ module.exports = withPWA({
         '*.google-analytics.com',
         '*.googletagmanager.com',
         'accounts.google.com',
+        '*.googleusercontent.com',
         '*.cloudflare.com',
         ...envUrls,
         ...devUrls
