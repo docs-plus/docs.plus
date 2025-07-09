@@ -6,7 +6,7 @@ const AVATARS_BUCKET_URL = `${PUBLIC_BUCKET_URL}/user_avatars`
 const config: Config = {
   app: {
     turnstile: {
-      isEnabled: process.env.TURNSTILE_SECRET_KEY ? true : false,
+      isEnabled: process.env.NEXT_PRIVATE_TURNSTILE_SECRET_KEY ? true : false,
       siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '',
       verifyUrl: '/api/verify-turnstile',
       expireTime: 60 * 60 * 24 * 2 // 2 days
