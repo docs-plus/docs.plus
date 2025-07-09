@@ -88,20 +88,20 @@ export const testEmojiDetection = () => {
     { input: '', expected: false }
   ]
 
-  console.log('Testing emoji detection:')
+  console.info('Testing emoji detection:')
   testCases.forEach(({ input, expected }) => {
     const result = isOnlyEmoji(input)
-    console.log(
+    console.info(
       `"${input}": ${result === expected ? '✅' : '❌'} (got ${result}, expected ${expected})`
     )
   })
 
   // Test emoji splitting
-  console.log('\nTesting emoji splitting:')
+  console.info('\nTesting emoji splitting:')
   const splitTestCases = ['😀', '👨‍🦰', '👨‍👩‍👧‍👦', '🇺🇸', '👍🏽', '👨‍🦰🫵🫶🚵‍♂️', '😀😂🤣']
 
   splitTestCases.forEach((input) => {
     const result = splitEmojis(input)
-    console.log(`"${input}" → ${result.length} emojis: [${result.join(', ')}]`)
+    console.info(`"${input}" → ${result.length} emojis: [${result.join(', ')}]`)
   })
 }
