@@ -17,10 +17,7 @@ import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Mention from '@tiptap/extension-mention'
 import suggestion from './suggestion'
-import ListItem from '@tiptap/extension-list-item'
 // Links and Media
-// import previewHyperlinkModal from '@components/TipTap/hyperlinkModals/previewHyperlink'
-// import setHyperlinks from '@components/TipTap/hyperlinkModals/setHyperlink'
 import {
   Hyperlink,
   createHyperlinkPopover,
@@ -54,6 +51,7 @@ export const useTiptapEditor = ({ loading }: any) => {
       extensions: [
         StarterKit.configure({
           code: false, // Disable default code to use our custom InlineCode extension
+          codeBlock: false,
           bulletList: {
             keepMarks: true,
             keepAttributes: false // TODO : Making this as `false` becase marks are not preserved when I try to preserve attrs, awaiting a bit of help
@@ -68,7 +66,6 @@ export const useTiptapEditor = ({ loading }: any) => {
         CodeBlockLowlight.configure({
           lowlight
         }),
-        ListItem,
         Mention.configure({
           HTMLAttributes: {
             class: 'mention'

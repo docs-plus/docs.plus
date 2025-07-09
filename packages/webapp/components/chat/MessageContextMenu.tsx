@@ -147,11 +147,11 @@ export const MessageContextMenu = forwardRef<
         ? addChannelPinnedMessage(messageData.channel_id, messageData)
         : removeChannelPinnedMessage(messageData.channel_id, messageData.id)
 
-      await workspaceBroadcaster.send({
-        type: 'broadcast',
-        event: 'pinnedMessage',
-        payload: { message: messageData, actionType }
-      })
+      // await workspaceBroadcaster.send({
+      //   type: 'broadcast',
+      //   event: 'pinnedMessage',
+      //   payload: { message: messageData, actionType }
+      // })
     }
   }, [messageData])
 
