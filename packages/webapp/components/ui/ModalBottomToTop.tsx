@@ -1,5 +1,6 @@
 import React, { useCallback, useImperativeHandle, forwardRef, useState, useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { useModalBottomToTopOptional } from './ModalBottomToTopContext'
 
 interface ModalBottomToTopProps {
   modalId?: string
@@ -32,9 +33,14 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
     const [startHeight, setStartHeight] = useState<number>(0)
     const [isTouched, setIsTouched] = useState<boolean>(false)
 
+    // Use context if available, otherwise rely on checkbox state
+    const modalContext = useModalBottomToTopOptional()
+
     const handleCheckboxChange = useCallback(
       (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.checked) {
+        const isChecked = event.target.checked
+
+        if (isChecked) {
           window.history.pushState({ modal: modalId }, '')
         } else {
           if (window.history.state?.modal === modalId) {
@@ -42,11 +48,20 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
           }
         }
 
+        // Update context if available
+        if (modalContext) {
+          if (isChecked) {
+            modalContext.openModal()
+          } else {
+            modalContext.closeModal()
+          }
+        }
+
         if (onModalStateChange) {
-          onModalStateChange(event.target.checked)
+          onModalStateChange(isChecked)
         }
       },
-      [onModalStateChange, modalId]
+      [onModalStateChange, modalId, modalContext]
     )
 
     const handleTouchStart = useCallback(
@@ -91,6 +106,13 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
       }
     }, [isDragging])
 
+    // Sync context state with checkbox
+    useEffect(() => {
+      if (modalContext && checkboxRef.current) {
+        checkboxRef.current.checked = modalContext.isOpen
+      }
+    }, [modalContext?.isOpen])
+
     useEffect(() => {
       const handlePopState = () => {
         if (checkboxRef.current?.checked) {
@@ -105,22 +127,32 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
       return () => window.removeEventListener('popstate', handlePopState)
     }, [handleCheckboxChange])
 
-    useImperativeHandle(ref, () => ({
-      check: () => {
-        if (checkboxRef.current) {
-          checkboxRef.current.checked = true
-          handleCheckboxChange({ target: { checked: true } } as React.ChangeEvent<HTMLInputElement>)
+    useImperativeHandle(
+      ref,
+      () => ({
+        check: () => {
+          if (modalContext) {
+            modalContext.openModal()
+          } else if (checkboxRef.current) {
+            checkboxRef.current.checked = true
+            handleCheckboxChange({
+              target: { checked: true }
+            } as React.ChangeEvent<HTMLInputElement>)
+          }
+        },
+        uncheck: () => {
+          if (modalContext) {
+            modalContext.closeModal()
+          } else if (checkboxRef.current) {
+            checkboxRef.current.checked = false
+            handleCheckboxChange({
+              target: { checked: false }
+            } as React.ChangeEvent<HTMLInputElement>)
+          }
         }
-      },
-      uncheck: () => {
-        if (checkboxRef.current) {
-          checkboxRef.current.checked = false
-          handleCheckboxChange({
-            target: { checked: false }
-          } as React.ChangeEvent<HTMLInputElement>)
-        }
-      }
-    }))
+      }),
+      [modalContext, handleCheckboxChange]
+    )
 
     return (
       <div className={twMerge('bottom-to-top-modal', className)}>
@@ -153,7 +185,7 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
                 onTouchStart={handleTouchStart}
                 onTouchMove={handleTouchMove}
                 onTouchEnd={handleTouchEnd}>
-                <div className="h-2 w-24 rounded-md bg-neutral group-hover:drop-shadow-md" />
+                <div className="bg-neutral h-2 w-24 rounded-md group-hover:drop-shadow-md" />
               </div>
               {children}
             </div>
@@ -162,7 +194,7 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
           <div
             ref={contentRef}
             className={twMerge(
-              'modal-content sticky bottom-0 left-0 right-0 z-50 w-full max-w-md translate-y-full rounded-t-2xl bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-in-out peer-checked:translate-y-0',
+              'modal-content sticky right-0 bottom-0 left-0 z-50 w-full max-w-md translate-y-full rounded-t-2xl bg-white shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] transition-transform duration-300 ease-in-out peer-checked:translate-y-0',
               contentClassName
             )}
             style={{ height: modalHeight ? `${modalHeight}px` : '300px', maxHeight: '100%' }}>
@@ -174,7 +206,7 @@ export const ModalBottomToTop = forwardRef<unknown, ModalBottomToTopProps>(
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}>
-              <div className="h-2 w-24 rounded-md bg-neutral group-hover:drop-shadow-md" />
+              <div className="bg-neutral h-2 w-24 rounded-md group-hover:drop-shadow-md" />
             </div>
             {children}
           </div>
