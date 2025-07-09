@@ -3,10 +3,8 @@ import { EditorToolbar } from './EditorToolbar'
 import { ReplyMessageIndicator } from './ReplyMessageIndicator'
 import { useState, useCallback, useEffect, useMemo, useRef } from 'react'
 import { twx, cn, sanitizeMessageContent, sanitizeChunk } from '@utils/index'
-import { ImAttachment } from 'react-icons/im'
 import { IoSend } from 'react-icons/io5'
-import { MdFormatColorText } from 'react-icons/md'
-import { BsFillEmojiSmileFill } from 'react-icons/bs'
+import { MdFormatColorText, MdOutlineEmojiEmotions } from 'react-icons/md'
 import { useStore, useAuthStore, useChatStore } from '@stores'
 import { sendMessage, updateMessage, create_thread_message, sendCommentMessage } from '@api'
 import { useApi } from '@hooks/useApi'
@@ -20,7 +18,6 @@ import { CommentMessageIndicator } from './CommentMessageIndicator'
 import { TChannelSettings } from '@types'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import { RiAtLine } from 'react-icons/ri'
-import { MdOutlineEmojiEmotions } from 'react-icons/md'
 
 type BtnIcon = React.ComponentProps<'button'> & {
   $active?: boolean
@@ -94,132 +91,255 @@ export default function SendMessage() {
     editor.chain().setContent(content).focus('start').run()
   }, [editor, editMessageMemory, channelId])
 
-  const submit = useCallback(
-    async (e: any) => {
-      if (!editor || !user) return
+  // Validation helpers
+  const validateSubmission = useCallback(() => {
+    if (!editor || !user) return { isValid: false, error: 'Editor or user not available' }
 
-      e.preventDefault()
-      editor.view.focus()
+    const isContentEmpty =
+      !html || !text || html.replace(/<[^>]*>/g, '').trim() === '' || text.trim() === ''
+    if (isContentEmpty) return { isValid: false, error: 'Content is empty' }
 
-      const isContentEmpty =
-        !html || !text || html.replace(/<[^>]*>/g, '').trim() === '' || text.trim() === ''
+    if (loading) return { isValid: false, error: 'Already loading' }
 
-      if (isContentEmpty || loading) return
+    return { isValid: true }
+  }, [editor, user, html, text, loading])
 
-      // Sanitize inputs to prevent XSS and injection attacks
-      const { sanitizedHtml, sanitizedText } = sanitizeMessageContent(html, text)
+  // Content preparation
+  const prepareContent = useCallback(() => {
+    const { sanitizedHtml, sanitizedText } = sanitizeMessageContent(html, text)
 
-      // Validate sanitized content
-      if (!sanitizedHtml || !sanitizedText) {
-        toast.Error('Invalid content detected')
-        return
+    if (!sanitizedHtml || !sanitizedText) {
+      throw new Error('Invalid content detected')
+    }
+
+    return {
+      sanitizedHtml,
+      sanitizedText,
+      chunks: chunkHtmlContent(sanitizedHtml, 3000)
+    }
+  }, [html, text])
+
+  // User presence management
+  const updateUserPresence = useCallback(() => {
+    const users = [replyMessageMemory?.user_details, editMessageMemory?.user_details]
+      .filter(Boolean)
+      .filter((user) => user && !usersPresence.has(user.id))
+
+    users.forEach((user) => user && setOrUpdateUserPresence(user.id, user))
+  }, [replyMessageMemory, editMessageMemory, usersPresence, setOrUpdateUserPresence])
+
+  // Message type handlers
+  const handleThreadMessage = useCallback(
+    async (content: string, html: string) => {
+      if (!startThreadMessage?.id || !user) return false
+
+      const threadId = startThreadMessage.id
+      if (!channels.has(threadId)) return false
+
+      const fakemessage = createFakeMessage(content, html, user, threadId)
+      messageInsert(fakemessage)
+
+      await postRequestThreadMessage({
+        p_content: content,
+        p_html: html,
+        p_thread_id: threadId,
+        p_workspace_id: workspaceId
+      })
+      return true
+    },
+    [startThreadMessage, channels, user, workspaceId, messageInsert, postRequestThreadMessage]
+  )
+
+  const handleEditMessage = useCallback(
+    async (content: string, html: string, messageId: string) => {
+      await editeRequestMessage(content, html, messageId)
+      return true
+    },
+    [editeRequestMessage]
+  )
+
+  const handleCommentMessage = useCallback(
+    async (content: string, html: string) => {
+      if (!commentMessageMemory || !user) return false
+
+      await commentRequestMessage(content, channelId, user.id, html, {
+        content: commentMessageMemory.content,
+        html: commentMessageMemory.html
+      })
+      return true
+    },
+    [commentMessageMemory, channelId, user, commentRequestMessage]
+  )
+
+  const handleRegularMessage = useCallback(
+    async (content: string, html: string, messageId: string | null) => {
+      if (!user) return false
+
+      const fakemessage = createFakeMessage(content, html, user, channelId)
+      messageInsert(fakemessage)
+
+      await sendMessage(content, channelId, user.id, html, messageId)
+      return true
+    },
+    [user, channelId, messageInsert, sendMessage]
+  )
+
+  // Message routing
+  const sendSingleMessage = useCallback(
+    async (content: string, html: string) => {
+      const messageId = editMessageMemory?.id || replyMessageMemory?.id || null
+
+      if (startThreadMessage?.id === channelId) {
+        return handleThreadMessage(content, html)
       }
 
-      const { htmlChunks, textChunks } = chunkHtmlContent(sanitizedHtml, 3000)
-
-      if (replyMessageMemory?.id) {
-        const user = replyMessageMemory.user_details
-        if (!usersPresence.has(user.id)) setOrUpdateUserPresence(user.id, user)
+      if (editMessageMemory) {
+        return handleEditMessage(content, html, messageId!)
       }
 
-      if (editMessageMemory?.id) {
-        const user = editMessageMemory.user_details
-        if (!usersPresence.has(user.id)) setOrUpdateUserPresence(user.id, user)
+      if (commentMessageMemory) {
+        return handleCommentMessage(content, html)
       }
+
+      return handleRegularMessage(content, html, messageId)
+    },
+    [
+      editMessageMemory,
+      replyMessageMemory,
+      startThreadMessage,
+      channelId,
+      commentMessageMemory,
+      handleThreadMessage,
+      handleEditMessage,
+      handleCommentMessage,
+      handleRegularMessage
+    ]
+  )
+
+  // Chunked message handling
+  const sendChunkedMessages = useCallback(
+    async (htmlChunks: string[], textChunks: string[]) => {
+      if (!user) return
 
       const messageId = editMessageMemory?.id || replyMessageMemory?.id || null
 
+      for (const [index, htmlChunk] of htmlChunks.entries()) {
+        const textChunk = textChunks[index]
+        const { sanitizedHtmlChunk, sanitizedTextChunk } = sanitizeChunk(htmlChunk, textChunk)
+
+        if (editMessageMemory) {
+          await editeRequestMessage(sanitizedTextChunk, sanitizedHtmlChunk, messageId!)
+        } else if (commentMessageMemory) {
+          await commentRequestMessage(sanitizedTextChunk, channelId, user.id, sanitizedHtmlChunk, {
+            content: commentMessageMemory.content,
+            html: commentMessageMemory.html
+          })
+        } else {
+          await postRequestMessage(
+            sanitizedTextChunk,
+            channelId,
+            user.id,
+            sanitizedHtmlChunk,
+            messageId
+          )
+        }
+      }
+    },
+    [
+      editMessageMemory,
+      replyMessageMemory,
+      commentMessageMemory,
+      channelId,
+      user,
+      editeRequestMessage,
+      commentRequestMessage,
+      postRequestMessage
+    ]
+  )
+
+  // Cleanup function
+  const cleanupAfterSubmit = useCallback(() => {
+    editor?.commands.clearContent(true)
+    editor?.view.focus()
+    editor?.commands.focus()
+
+    // Clear memory states
+    if (replyMessageMemory) setReplyMessageMemory(channelId, null)
+    if (editMessageMemory) setEditMessageMemory(channelId, null)
+    if (commentMessageMemory) setCommentMessageMemory(channelId, null)
+
+    document.dispatchEvent(new CustomEvent('messages:container:scroll:down'))
+  }, [
+    editor,
+    replyMessageMemory,
+    editMessageMemory,
+    commentMessageMemory,
+    channelId,
+    setReplyMessageMemory,
+    setEditMessageMemory,
+    setCommentMessageMemory
+  ])
+
+  // Helper to create fake message
+  const createFakeMessage = useCallback(
+    (content: string, html: string, user: any, channelId: string) => {
+      const currentDate = new Date().toISOString()
+      return {
+        new: {
+          id: 'fake_id',
+          content,
+          html,
+          user_details: user,
+          channel_id: channelId,
+          user_id: user.id,
+          created_at: currentDate,
+          updated_at: currentDate
+        }
+      }
+    },
+    []
+  )
+
+  // Main submit function - now clean and focused
+  const submit = useCallback(
+    async (e: any) => {
+      e.preventDefault()
+      editor?.view.focus()
+
+      // 1. Validate
+      const validation = validateSubmission()
+      if (!validation.isValid) return
+
       try {
-        editor.commands.clearContent(true)
+        // 2. Prepare content
+        const { sanitizedHtml, sanitizedText, chunks } = prepareContent()
+        const { htmlChunks, textChunks } = chunks
 
-        // first display fake message, then send the message
-        // in insert message, we will remove the fake message
-        const currentDate = new Date().toISOString()
-        const fakemessage = {
-          new: {
-            id: 'fake_id',
-            content: sanitizedText,
-            html: sanitizedHtml,
-            user_details: user,
-            channel_id: channelId,
-            user_id: user.id,
-            created_at: currentDate,
-            updated_at: currentDate
-          }
-        }
+        // 3. Update user presence
+        updateUserPresence()
 
+        // 4. Send message(s)
         if (htmlChunks.length === 0) {
-          if (!messageId && startThreadMessage && startThreadMessage.id === channelId) {
-            const threadId = startThreadMessage.id
-            fakemessage.new.channel_id = threadId
-            if (channels.has(threadId)) {
-              messageInsert(fakemessage)
-            }
-            postRequestThreadMessage({
-              p_content: sanitizedText,
-              p_html: sanitizedHtml,
-              p_thread_id: threadId,
-              p_workspace_id: workspaceId
-            })
-          } else if (editMessageMemory) {
-            editeRequestMessage(sanitizedText, sanitizedHtml, messageId)
-          } else if (commentMessageMemory) {
-            commentRequestMessage(sanitizedText, channelId, user.id, sanitizedHtml, {
-              content: commentMessageMemory.content,
-              html: commentMessageMemory.html
-            })
-          } else {
-            messageInsert(fakemessage)
-            // postRequestMessage(sanitizedText, channelId, user.id, sanitizedHtml, messageId)
-            sendMessage(sanitizedText, channelId, user.id, sanitizedHtml, messageId)
-          }
-          editor.view.focus() // Refocus the editor to keep the keyboard open on mobile
-          editor.commands.focus()
-          return
-        }
-
-        // INFO: order to send message is important
-        // Re-sanitize chunks to ensure each chunk is safe
-        for (const [index, htmlChunk] of htmlChunks.entries()) {
-          const textChunk = textChunks[index]
-          const { sanitizedHtmlChunk, sanitizedTextChunk } = sanitizeChunk(htmlChunk, textChunk)
-
-          if (editMessageMemory) {
-            editeRequestMessage(sanitizedTextChunk, sanitizedHtmlChunk, messageId)
-          } else if (commentMessageMemory) {
-            commentRequestMessage(sanitizedTextChunk, channelId, user.id, sanitizedHtmlChunk, {
-              content: commentMessageMemory.content,
-              html: commentMessageMemory.html
-            })
-          } else {
-            postRequestMessage(
-              sanitizedTextChunk,
-              channelId,
-              user.id,
-              sanitizedHtmlChunk,
-              messageId
-            )
-          }
+          await sendSingleMessage(sanitizedText, sanitizedHtml)
+        } else {
+          await sendChunkedMessages(htmlChunks, textChunks)
         }
       } catch (error: any) {
         toast.Error(error.message)
       } finally {
-        // clear the editor
-        // Refocus the editor to keep the keyboard open on mobile
-        editor.view.focus()
-        editor.commands.focus()
-
-        // if it has reply or forward message, clear it
-        if (replyMessageMemory) setReplyMessageMemory(channelId, null)
-        if (editMessageMemory) setEditMessageMemory(channelId, null)
-        if (commentMessageMemory) setCommentMessageMemory(channelId, null)
-
-        document.dispatchEvent(new CustomEvent('messages:container:scroll:down'))
+        // 5. Cleanup
+        cleanupAfterSubmit()
       }
-
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     },
-    [user, text, html, editor, channelId, loading, setOrUpdateUserPresence]
+    [
+      editor,
+      validateSubmission,
+      prepareContent,
+      updateUserPresence,
+      sendSingleMessage,
+      sendChunkedMessages,
+      cleanupAfterSubmit
+    ]
   )
 
   const openEmojiPicker = (clickEvent: any) => {
@@ -244,7 +364,7 @@ export default function SendMessage() {
         }
       }
     },
-    [replyMessageMemory, editMessageMemory]
+    [replyMessageMemory, editMessageMemory, commentMessageMemory, channelId]
   )
 
   useEffect(() => {

@@ -10,7 +10,7 @@ type BtnIcon = React.ComponentProps<'button'> & { $active?: boolean; $size?: num
 
 const IconButton = twx.button<BtnIcon>((props) =>
   cn(
-    'btn btn-circle w-8 h-8 btn-xs p-1 mr-2',
+    'btn btn-square w-8 h-8 btn-xs p-1',
     props.$active && 'btn-active',
     props.$size && `w-${props.$size} h-${props.$size}`
   )
@@ -38,10 +38,10 @@ export const EditeMessageIndicator = () => {
   if (editMessageMemory.channel_id !== channelId) return null
 
   return (
-    <div className="flex w-full items-center justify-between px-4 py-2 text-base-content">
+    <div className="text-base-content relative -bottom-1 flex w-full items-center justify-between rounded-t-lg border border-b-0 border-gray-200 px-4 py-2 shadow-[0_-2px_6px_-1px_rgba(0,0,0,0.1)]">
       <RiPencilFill size={24} />
-      <div className="flex w-full flex-col justify-start pl-3 text-base text-base-content">
-        <span className="font-semibold text-primary antialiased">
+      <div className="text-base-content flex w-full flex-col justify-start pl-3 text-base">
+        <span className="text-primary font-semibold antialiased">
           Edite message
           <span className="ml-1 font-normal">{replyToUser}</span>
         </span>
