@@ -127,7 +127,9 @@ export const useCatchUserPresences = () => {
       })
       .subscribe(async (status) => {
         if (status !== 'SUBSCRIBED') return
-        await messageSubscription.track(profile)
+        await messageSubscription.track(profile).catch((err) => {
+          console.error('Failed to track profile:', err)
+        })
         setWorkspaceSetting('broadcaster', messageSubscription)
       })
 
