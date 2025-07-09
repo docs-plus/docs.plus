@@ -1,10 +1,10 @@
 # Start backend development server with PostgreSQL
 back_dev:
-	cd packages/hocuspocus.server && npm run dev:pg --trace-deprecation
+	cd packages/hocuspocus.server && bun run dev:pg --trace-deprecation
 
 # Start backend WebSocket server
 back_ws:
-	cd packages/hocuspocus.server && npm run dev:ws --trace-deprecation
+	cd packages/hocuspocus.server && bun run dev:ws --trace-deprecation
 
 # Start Supabase development server
 supabase_start:
