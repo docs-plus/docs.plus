@@ -88,9 +88,13 @@ export const useCopyToDoc = () => {
       })
 
       // Calculate position where content should be inserted
+      // content should inster at the end of the contentWrapper node before heading node starts
       let insertPosition =
         headingPos !== null && headingNode
-          ? headingPos + Number(headingNode.content.size) // End of current heading's content
+          ? headingPos +
+            Number(headingNode.content.size) -
+            Number(secondHeadingNode.content.size) -
+            2 // End of current heading's content
           : doc.content.size - 2 || 0 // End of document if heading not found
 
       if (headingLevel === 1) {
