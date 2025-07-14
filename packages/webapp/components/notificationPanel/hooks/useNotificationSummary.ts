@@ -3,10 +3,8 @@ import { useApi } from '@hooks/useApi'
 import { getNotificationsSummary } from '@api'
 import { useAuthStore, useStore } from '@stores'
 import { TNotificationSummary } from '@types'
-import { useDropdown } from '@components/ui/Dropdown'
-import { useModalBottomToTopOptional } from '@components/ui'
 
-export const useNotificationSummary = ({ mobile = false }: { mobile: boolean }) => {
+export const useNotificationSummary = () => {
   const { workspaceId } = useStore((state) => state.settings)
   const user = useAuthStore((state) => state.profile)
   const {
@@ -17,9 +15,6 @@ export const useNotificationSummary = ({ mobile = false }: { mobile: boolean }) 
     setNotificationTab,
     setNotificationPage
   } = useStore((state) => state)
-  const modalContext = mobile ? useModalBottomToTopOptional() : null
-  const dropdownContext = mobile ? null : useDropdown()
-  const isOpen = modalContext?.isOpen || dropdownContext?.isOpen || false
 
   const { request: summaryRequest } = useApi(getNotificationsSummary, null, false)
 
@@ -55,5 +50,5 @@ export const useNotificationSummary = ({ mobile = false }: { mobile: boolean }) 
     }
 
     fetchNotificationSummary()
-  }, [user, workspaceId, isOpen])
+  }, [user, workspaceId])
 }

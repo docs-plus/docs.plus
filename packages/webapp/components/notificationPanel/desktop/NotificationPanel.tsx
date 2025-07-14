@@ -19,7 +19,7 @@ export const NotificationPanel = () => {
     setNotificationActiveTab
   } = useStore((state) => state)
 
-  useNotificationSummary({ mobile: false })
+  useNotificationSummary()
   useNotificationTabData()
 
   const activeTabNotifList = useMemo(() => {

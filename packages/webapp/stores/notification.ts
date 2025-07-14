@@ -44,6 +44,7 @@ const notification = immer<INotificationStore>((set) => ({
   loadingNotification: false,
   notificationActiveTab: 'Unread',
   notificationPage: 1,
+  isNotificationSheetOpen: false,
 
   setTotalNotificationUnreadCount: (count: number) => {
     set((state) => {

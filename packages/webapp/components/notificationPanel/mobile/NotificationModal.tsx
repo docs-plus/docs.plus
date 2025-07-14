@@ -12,7 +12,7 @@ import { useNotificationTabData } from '../hooks/useNotificationTabData'
 const NotificationModal = () => {
   const { loadingNotification, notifications, notificationActiveTab } = useStore((state) => state)
 
-  useNotificationSummary({ mobile: true })
+  useNotificationSummary()
   useNotificationTabData()
 
   const activeTabNotifList = useMemo(() => {
