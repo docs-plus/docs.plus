@@ -4,11 +4,24 @@ import { CredentialResponse } from 'google-one-tap'
 import { useRouter } from 'next/router'
 import { useEffect, useCallback, useRef } from 'react'
 
+// generate nonce to use for google id token sign-in
+const generateNonce = async (): Promise<string[]> => {
+  const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))))
+  const encoder = new TextEncoder()
+  const encodedNonce = encoder.encode(nonce)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encodedNonce)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  const hashedNonce = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
+
+  return [nonce, hashedNonce]
+}
+
 const OneTapComponent = () => {
   const supabase = createClient()
   const router = useRouter()
   const initializationRef = useRef(false)
   const abortControllerRef = useRef<AbortController | null>(null)
+  const nonceRef = useRef<string | null>(null)
 
   const handleCredentialResponse = useCallback(
     async (response: CredentialResponse) => {
@@ -18,27 +31,28 @@ const OneTapComponent = () => {
           return
         }
 
-        const { data, error } = await supabase.auth
-          .signInWithIdToken({
-            provider: 'google',
-            token: response.credential
-          })
-          .catch((err) => {
-            throw new Error(`Authentication failed: ${err.message}`)
-          })
-
-        if (error) {
-          console.error('Supabase auth error:', error.message)
-          throw error
+        if (!nonceRef.current) {
+          console.error('Nonce not available')
+          return
         }
 
-        console.info('Successfully logged in with Google One Tap')
-        await router.reload()
+        // send id token returned in response.credential to supabase
+        const { data, error } = await supabase.auth.signInWithIdToken({
+          provider: 'google',
+          token: response.credential,
+          nonce: nonceRef.current
+        })
+
+        if (error) throw error
+        console.log('Session data:', data)
+        console.log('Successfully logged in with Google One Tap')
+        // TODO: many states depend on profile auth, so silently updating the profile isn't enough. we need a better solution or a different call flow later.
+        router.reload()
       } catch (error) {
         console.error('Error logging in with Google One Tap:', error)
       }
     },
-    [supabase.auth, router]
+    [supabase.auth]
   )
 
   const initializeGoogleOneTap = useCallback(async () => {
@@ -66,6 +80,10 @@ const OneTapComponent = () => {
         console.error('NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set')
         return
       }
+
+      // Generate nonce
+      const [nonce, hashedNonce] = await generateNonce()
+      nonceRef.current = nonce
 
       // Wait for Google script with retry mechanism
       let attempts = 0
@@ -96,6 +114,7 @@ const OneTapComponent = () => {
       window.google.accounts.id.initialize({
         client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
         callback: handleCredentialResponse,
+        nonce: hashedNonce,
         auto_select: false,
         cancel_on_tap_outside: true,
         use_fedcm_for_prompt: true
