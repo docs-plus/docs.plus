@@ -2,11 +2,13 @@ import Script from 'next/script'
 import { createClient } from '@utils/supabase/component'
 import { CredentialResponse } from 'google-one-tap'
 import { useRouter } from 'next/router'
-import { useEffect, useCallback } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 
 const OneTapComponent = () => {
   const supabase = createClient()
   const router = useRouter()
+  const initializationRef = useRef(false)
+  const abortControllerRef = useRef<AbortController | null>(null)
 
   const handleCredentialResponse = useCallback(
     async (response: CredentialResponse) => {
@@ -39,64 +41,113 @@ const OneTapComponent = () => {
     [supabase.auth, router]
   )
 
-  useEffect(() => {
-    const initializeGoogleOneTap = async () => {
-      try {
-        // Check session first
-        const {
-          data: { session },
-          error: sessionError
-        } = await supabase.auth.getSession()
+  const initializeGoogleOneTap = useCallback(async () => {
+    // Prevent multiple initializations
+    if (initializationRef.current) return
 
-        if (sessionError) throw sessionError
-        if (session) return
+    try {
+      // Create AbortController for this operation
+      const abortController = new AbortController()
+      abortControllerRef.current = abortController
 
-        if (typeof window.google === 'undefined') {
-          console.error('Google script not loaded')
+      // Check if component is still mounted
+      if (abortController.signal.aborted) return
+
+      // Check session first
+      const {
+        data: { session },
+        error: sessionError
+      } = await supabase.auth.getSession()
+
+      if (sessionError) throw sessionError
+      if (session) return
+
+      if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+        console.error('NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set')
+        return
+      }
+
+      // Wait for Google script with retry mechanism
+      let attempts = 0
+      const maxAttempts = 20 // 4 seconds max wait
+
+      while (attempts < maxAttempts) {
+        if (abortController.signal.aborted) return
+
+        if (typeof window.google !== 'undefined' && window.google.accounts) {
+          break
+        }
+
+        attempts++
+        if (attempts >= maxAttempts) {
+          console.error('Google script failed to load after 4 seconds')
           return
         }
 
-        window.google.accounts.id.initialize({
-          client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
-          callback: handleCredentialResponse,
-          auto_select: false, // Don't auto select the account
-          cancel_on_tap_outside: true,
-          use_fedcm_for_prompt: true
-        })
-
-        window.google.accounts.id.prompt((notification: any) => {
-          if (notification.isNotDisplayed()) {
-            console.info('One Tap not displayed:', notification.getNotDisplayedReason())
-          } else if (notification.isSkippedMoment()) {
-            console.info('One Tap skipped:', notification.getSkippedReason())
-          }
-        })
-      } catch (error) {
-        console.error('Error initializing Google One Tap:', error)
+        await new Promise((resolve) => setTimeout(resolve, 200))
       }
+
+      // Check if still mounted before initializing
+      if (abortController.signal.aborted) return
+
+      // Mark as initialized to prevent multiple calls
+      initializationRef.current = true
+
+      window.google.accounts.id.initialize({
+        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true,
+        use_fedcm_for_prompt: true
+      })
+
+      window.google.accounts.id.prompt((notification: any) => {
+        if (notification.isNotDisplayed()) {
+          console.info('One Tap not displayed:', notification.getNotDisplayedReason())
+        } else if (notification.isSkippedMoment()) {
+          console.info('One Tap skipped:', notification.getSkippedReason())
+        }
+      })
+    } catch (error) {
+      console.error('Error initializing Google One Tap:', error)
+      initializationRef.current = false // Reset on error
     }
+  }, [supabase.auth, handleCredentialResponse])
 
-    // Small delay to ensure the script is loaded
-    const timeoutId = setTimeout(initializeGoogleOneTap, 1000)
-
+  useEffect(() => {
     return () => {
-      clearTimeout(timeoutId)
-      // Cleanup
+      // Abort any ongoing operations
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort()
+        abortControllerRef.current = null
+      }
+
+      // Cancel Google One Tap
       if (typeof window.google !== 'undefined') {
         window.google.accounts.id.cancel()
       }
+
+      // Reset initialization flag
+      initializationRef.current = false
     }
-  }, [handleCredentialResponse, router, supabase.auth])
+  }, [])
 
   return (
     <>
       <Script
         src="https://accounts.google.com/gsi/client"
         strategy="afterInteractive"
-        onLoad={() => console.info('Google script loaded')}
-        onError={(e) => console.error('Error loading Google script:', e)}
+        onLoad={() => {
+          // Initialize when script loads
+          initializeGoogleOneTap()
+        }}
+        onError={(e) => {
+          console.error('Failed to load Google One Tap script:', e)
+          // Reset initialization flag so we can try again if needed
+          initializationRef.current = false
+        }}
       />
-      <div id="oneTap" className="fixed right-0 top-0 z-[100]" />
+      <div id="oneTap" className="fixed top-0 right-0 z-[100]" />
     </>
   )
 }
