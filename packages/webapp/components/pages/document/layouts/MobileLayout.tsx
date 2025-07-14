@@ -1,4 +1,4 @@
-import React, { useRef } from 'react'
+import React, { useRef, useState } from 'react'
 import MobilePadTitle from '@components/TipTap/pad-title-section/MobilePadTitle'
 import FilterModal from '../components/FilterModal'
 import MobileEditor from '../components/MobileEditor'
@@ -9,12 +9,12 @@ import BigPencilBtn from '@components/pages/document/components/BigPencilBtn'
 import { ModalDrawer } from '@components/ui/ModalDrawer'
 import { useHashRouter } from '@hooks/useHashRouter'
 import MobileHistory from '@components/pages/history/mobile/MobileHistory'
-import { ModalBottomToTop } from '@components/ui/ModalBottomToTop'
+import { Sheet } from 'react-modal-sheet'
 
-const MobileLeftSidePanel = ({ filterModalRef }: any) => {
+const MobileLeftSidePanel = ({ filterModalRef, setIsFilterModalOpen }: any) => {
   return (
     <ModalDrawer modalId="mobile_left_side_panel" width={80}>
-      <TocModal filterModalRef={filterModalRef} />
+      <TocModal filterModalRef={filterModalRef} setIsFilterModalOpen={setIsFilterModalOpen} />
     </ModalDrawer>
   )
 }
@@ -26,6 +26,8 @@ const MobileLayout = () => {
     }
   } = useStore((state) => state)
 
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
+
   const filterModalRef = useRef<HTMLDivElement>(null)
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
 
@@ -36,13 +38,27 @@ const MobileLayout = () => {
   return (
     <div className={`tiptap relative flex h-full w-full flex-col ${deviceClass}`}>
       <MobilePadTitle />
-      <MobileLeftSidePanel filterModalRef={filterModalRef} />
+      <MobileLeftSidePanel
+        filterModalRef={filterModalRef}
+        setIsFilterModalOpen={setIsFilterModalOpen}
+      />
       <MobileEditor />
       <BigPencilBtn />
       <ChatContainerMobile />
-      <ModalBottomToTop modalId="filterModal" ref={filterModalRef} defaultHeight={300}>
-        <FilterModal />
-      </ModalBottomToTop>
+
+      <Sheet
+        isOpen={isFilterModalOpen}
+        onClose={() => setIsFilterModalOpen(false)}
+        snapPoints={[0.5, 0]}
+        modalEffectRootId="filter_sheet"
+        id="filter_sheet">
+        <Sheet.Container>
+          <Sheet.Content>
+            <FilterModal setIsFilterModalOpen={setIsFilterModalOpen} />
+          </Sheet.Content>
+        </Sheet.Container>
+        <Sheet.Backdrop />
+      </Sheet>
     </div>
   )
 }

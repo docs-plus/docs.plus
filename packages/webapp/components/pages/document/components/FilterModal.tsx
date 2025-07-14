@@ -1,8 +1,36 @@
 import React, { useState, useEffect, useRef, RefObject } from 'react'
 import { useRouter } from 'next/router'
 import { IoClose } from 'react-icons/io5'
+const FilterModalHeader = ({
+  setIsFilterModalOpen
+}: {
+  setIsFilterModalOpen: (isOpen: boolean) => void
+}) => {
+  return (
+    <>
+      <div className="flex w-full items-center justify-center">
+        <span className="drag-indicator h-1 w-14 rounded-full bg-gray-300"></span>
+      </div>
+      <div className="mb-3 flex w-full bg-white py-2 text-black">
+        <p className="w-2/3 text-lg font-semibold">Filters</p>
+        <div className="flex w-1/3 flex-row items-center justify-end justify-items-end">
+          <label
+            htmlFor="filterModalBottom"
+            className="btn btn-square btn-ghost btn-sm ml-2 text-black"
+            onClick={() => setIsFilterModalOpen(false)}>
+            <IoClose size={20} />
+          </label>
+        </div>
+      </div>
+    </>
+  )
+}
 
-const FilterModal = () => {
+const FilterModal = ({
+  setIsFilterModalOpen
+}: {
+  setIsFilterModalOpen: (isOpen: boolean) => void
+}) => {
   const filterSearchRef = useRef<HTMLInputElement>(null)
   const [totalHeading, setTotalHeading] = useState(0)
   const [totalSearch, setTotalSearch] = useState(0)
@@ -51,15 +79,8 @@ const FilterModal = () => {
   }
 
   return (
-    <div className="h-full max-h-96 w-full rounded-t-2xl bg-white p-4">
-      <div className="mb-3 flex w-full bg-white py-2 text-blue-600">
-        <p className="w-2/3">Filters</p>
-        <div className="flex w-1/3 flex-row items-center justify-end justify-items-end">
-          <label htmlFor="filterModalBottom" className="btn btn-circle btn-xs ml-2">
-            <IoClose size={20} />
-          </label>
-        </div>
-      </div>
+    <div className="h-full max-h-96 w-full rounded-t-lg bg-white p-4">
+      <FilterModalHeader setIsFilterModalOpen={setIsFilterModalOpen} />
       <div className="join w-full">
         <input
           id="filterModalBottom"
@@ -71,7 +92,7 @@ const FilterModal = () => {
           onKeyUp={searchThroughHeading}
           ref={filterSearchRef}
         />
-        <p className="join-item flex w-3/12 items-center justify-center rounded-r bg-base-300 text-sm">
+        <p className="join-item bg-base-300 flex w-3/12 items-center justify-center rounded-r text-sm">
           <span className="text-center">
             found <br /> {totalSearch} of {totalHeading}
           </span>

@@ -35,7 +35,6 @@ export const useOnAuthStateChange = () => {
       if (event === 'SIGNED_OUT') {
         useAuthStore.getState().setSession(null)
         useAuthStore.getState().setProfile(null)
-        // router.push('/login')
         setLoading(false)
       }
     })

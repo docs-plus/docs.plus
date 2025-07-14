@@ -75,7 +75,10 @@ export const eventsHub = (router: NextRouter) => {
 
     setTimeout(() => {
       // TODO: change naming => open chatroom
-      if (workspaceId) setChatRoom(headingId, workspaceId, [], user, fetchMsgsFromId)
+      if (workspaceId) {
+        setChatRoom(headingId, workspaceId, [], user, fetchMsgsFromId)
+        useChatStore.getState().openChatRoom()
+      }
 
       if (scroll2Heading) scrollToHeading(headingId)
     }, 200)

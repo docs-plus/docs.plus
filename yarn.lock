@@ -9168,6 +9168,15 @@ fraction.js@^4.3.7:
   resolved "https://registry.yarnpkg.com/fraction.js/-/fraction.js-4.3.7.tgz#06ca0085157e42fda7f9e726e79fefc4068840f7"
   integrity sha512-ZsDfxO51wGAXREY55a7la9LScWpwv9RxIrYABrlvOFBlH/ShPnrtsXeuUIfXKKOVicNxQ+o8JTbJvjS4M89yew==
 
+framer-motion@^12.23.3:
+  version "12.23.3"
+  resolved "https://registry.yarnpkg.com/framer-motion/-/framer-motion-12.23.3.tgz#c5b2548a755f52f789a218d0fc5cf96cf2fabc12"
+  integrity sha512-llmLkf44zuIZOPSrE4bl4J0UTg6bav+rlKEfMRKgvDMXqBrUtMg6cspoQeRVK3nqRLxTmAJhfGXk39UDdZD7Kw==
+  dependencies:
+    motion-dom "^12.23.2"
+    motion-utils "^12.23.2"
+    tslib "^2.4.0"
+
 fresh@^2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/fresh/-/fresh-2.0.0.tgz#8dd7df6a1b3a1b3a5cf186c05a5dd267622635a4"
@@ -12261,6 +12270,26 @@ morgan@^1.10.0:
     on-finished "~2.3.0"
     on-headers "~1.0.2"
 
+motion-dom@^12.23.2:
+  version "12.23.2"
+  resolved "https://registry.yarnpkg.com/motion-dom/-/motion-dom-12.23.2.tgz#4a808afda4cb657d4e05794ce1aec9b7bb294d32"
+  integrity sha512-73j6xDHX/NvVh5L5oS1ouAVnshsvmApOq4F3VZo5MkYSD/YVsVLal4Qp9wvVgJM9uU2bLZyc0Sn8B9c/MMKk4g==
+  dependencies:
+    motion-utils "^12.23.2"
+
+motion-utils@^12.23.2:
+  version "12.23.2"
+  resolved "https://registry.yarnpkg.com/motion-utils/-/motion-utils-12.23.2.tgz#93e13c5abd611bf270fa3da5e962a72f80158d2d"
+  integrity sha512-cIEXlBlXAOUyiAtR0S+QPQUM9L3Diz23Bo+zM420NvSd/oPQJwg6U+rT+WRTpp0rizMsBGQOsAwhWIfglUcZfA==
+
+motion@^12.23.3:
+  version "12.23.3"
+  resolved "https://registry.yarnpkg.com/motion/-/motion-12.23.3.tgz#e6d4cd1c091afad07a822deadcdf0951e2391aa3"
+  integrity sha512-7N0Q4c+Xms+wuq2o27rPONLYNOhQUsLRpMi8CcVxv9FFJhGAqRNjJ1hrBCxHh+Rx6B2W2WPbCOLQc+QJ3rw6Rw==
+  dependencies:
+    framer-motion "^12.23.3"
+    tslib "^2.4.0"
+
 ms@2.0.0:
   version "2.0.0"
   resolved "https://registry.yarnpkg.com/ms/-/ms-2.0.0.tgz#5608aeadfc00be6c2901df5f9861788de0d597c8"
@@ -14157,6 +14186,11 @@ react-is@^18.0.0, react-is@^18.3.1:
   version "18.3.1"
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-18.3.1.tgz#e83557dc12eae63a99e003a46388b1dcbb44db7e"
   integrity sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==
+
+react-modal-sheet@^4.4.0:
+  version "4.4.0"
+  resolved "https://registry.yarnpkg.com/react-modal-sheet/-/react-modal-sheet-4.4.0.tgz#f19cd4c1624ff779d4dcd3e556e3799cc64a23f2"
+  integrity sha512-ub42vR7iwjdM/2Zl6uZoH5M5Dcb6KTuVaOQ+uQCIlo10SdlYAhksb6u3eIFSLohFrX5q03rgFnR6Y0PKhjjl/Q==
 
 react-tag-input-component@^2.0.2:
   version "2.0.2"
