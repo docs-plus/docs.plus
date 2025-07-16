@@ -3,7 +3,7 @@ import ReadOnlyIndicator from './ReadOnlyIndicator'
 import FilterBar from './FilterBar'
 import { useStore } from '@stores'
 import Modal from '@components/ui/Modal'
-import React, { useRef, useState } from 'react'
+import React, { useState } from 'react'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { useAuthStore } from '@stores'
@@ -14,8 +14,7 @@ import SignInPanel from '@components/pages/panels/SignInPanel'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import { BiCheck, BiUndo, BiRedo } from 'react-icons/bi'
 import { useNotificationCount } from '@hooks/useNotificationCount'
-import NotificationModal from '@components/notificationPanel/mobile/NotificationModal'
-import { Sheet } from 'react-modal-sheet'
+import { useBottomSheet } from '@hooks/useBottomSheet'
 interface UserProfileButtonProps {
   user: any
   onProfileClick: () => void
@@ -24,11 +23,6 @@ interface UserProfileButtonProps {
 interface UndoRedoButtonsProps {
   editor: any
   className?: string
-}
-
-interface NotificationButtonProps {
-  unreadCount: number
-  setIsNotificationSheetOpen: (isOpen: boolean) => void
 }
 
 const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
@@ -77,15 +71,16 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
   )
 }
 
-const NotificationButton = ({
-  unreadCount,
-  setIsNotificationSheetOpen
-}: NotificationButtonProps) => {
+const NotificationButton = () => {
+  const { openNotifications } = useBottomSheet()
+  const { workspaceId } = useStore((state) => state.settings)
+  const unreadCount = useNotificationCount({ workspaceId })
+
   return (
     <Button
       className="btn-ghost tooltip tooltip-bottom relative p-2"
       data-tip="Notifications"
-      onClick={() => setIsNotificationSheetOpen(true)}>
+      onClick={openNotifications}>
       <MdInsertComment size={26} className="text-docsy" />
       {unreadCount > 0 && (
         <div className="absolute top-[2px] right-[2px] flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
@@ -113,16 +108,11 @@ const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
 }
 
 const MobilePadTitle = () => {
-  const { workspaceId } = useStore((state) => state.settings)
-  const unreadCount = useNotificationCount({ workspaceId })
   const user = useAuthStore((state) => state.profile)
   const {
     editor: { isEditable, instance: editor }
   } = useStore((state) => state.settings)
   const [isProfileModalOpen, setProfileModalOpen] = useState(false)
-  const notificationModalRef = useRef<any>(null!)
-  const [isNotificationSheetOpen, setIsNotificationSheetOpen] = useState(false)
-  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false)
 
   return (
     <>
@@ -143,10 +133,7 @@ const MobilePadTitle = () => {
 
             <div className="flex w-[20%] items-center justify-end gap-2">
               <ReadOnlyIndicator />
-              <NotificationButton
-                unreadCount={unreadCount}
-                setIsNotificationSheetOpen={setIsNotificationSheetOpen}
-              />
+              <NotificationButton />
               <UserProfileButton user={user} onProfileClick={() => setProfileModalOpen(true)} />
             </div>
           </div>
@@ -155,20 +142,6 @@ const MobilePadTitle = () => {
           </div>
         </div>
       </div>
-
-      <Sheet
-        id="notification_sheet"
-        modalEffectRootId="notification_sheet"
-        isOpen={isNotificationSheetOpen}
-        onClose={() => setIsNotificationSheetOpen(false)}>
-        <Sheet.Container>
-          <Sheet.Header />
-          <Sheet.Content>
-            <NotificationModal />
-          </Sheet.Content>
-        </Sheet.Container>
-        <Sheet.Backdrop />
-      </Sheet>
 
       <Modal
         asAChild={false}
