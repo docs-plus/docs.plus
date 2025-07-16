@@ -1,5 +1,5 @@
 import PubSub from 'pubsub-js'
-import { useChatStore, useAuthStore, useStore } from '@stores'
+import { useChatStore, useAuthStore, useStore, useSheetStore } from '@stores'
 import { NextRouter } from 'next/router'
 import { scrollToHeading } from '@utils/index'
 export const CHAT_COMMENT = Symbol('chat.comment')
@@ -78,6 +78,7 @@ export const eventsHub = (router: NextRouter) => {
       if (workspaceId) {
         setChatRoom(headingId, workspaceId, [], user, fetchMsgsFromId)
         useChatStore.getState().openChatRoom()
+        useSheetStore.getState().openSheet('chatroom', { headingId })
       }
 
       if (scroll2Heading) scrollToHeading(headingId)

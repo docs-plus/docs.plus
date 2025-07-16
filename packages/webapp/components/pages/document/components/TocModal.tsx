@@ -2,14 +2,15 @@ import React, { useCallback } from 'react'
 import Link from 'next/link'
 import DocTitle from '@components/TipTap/DocTitle'
 import { DocsPlus } from '@icons'
-import { useStore } from '@stores'
+import { useStore, useSheetStore } from '@stores'
 import { IoClose } from 'react-icons/io5'
 import { MdFilterAlt, MdHistory } from 'react-icons/md'
 import TableOfContents from '@components/TipTap/tableOfContents/mobile/TocMobile'
 import { useModal } from '@components/ui/ModalDrawer'
 
-const TocModal = ({ setIsFilterModalOpen }: any) => {
+const TocModal = ({ filterModalRef }: any) => {
   const { close: closeModal } = useModal() || {}
+  const { openSheet } = useSheetStore()
   const {
     editor: { loading, applyingFilters, providerSyncing, instance: editor }
   } = useStore((state) => state.settings)
@@ -42,7 +43,7 @@ const TocModal = ({ setIsFilterModalOpen }: any) => {
             <label
               htmlFor="mobile_history_panel"
               onClick={() => {
-                setIsFilterModalOpen(true)
+                openSheet('filters')
                 closeModal?.()
               }}
               className="btn btn-sm join-item">

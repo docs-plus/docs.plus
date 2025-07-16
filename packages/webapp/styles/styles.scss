@@ -883,3 +883,13 @@ $bg-root: #f8f9fa;
     z-index: 2;
   }
 }
+
+.react-modal-sheet-header {
+  padding-top: 4px !important;
+  height: 20px !important;
+
+  .react-modal-sheet-drag-indicator {
+    width: 30px !important;
+    background-color: oklch(87.2% 0.01 258.338) !important; // gray-300
+  }
+}

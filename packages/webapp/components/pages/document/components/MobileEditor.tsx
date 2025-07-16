@@ -1,5 +1,4 @@
-import { useRef } from 'react'
-import useDetectKeyboardOpen from 'use-detect-keyboard-open'
+import { useEffect, useRef, useState } from 'react'
 import EditorContent from './EditorContent'
 import ToolbarMobile from './toolbarMobile/ToolbarMobile'
 import { useChatStore } from '@stores'
@@ -8,13 +7,15 @@ import useEditableDocControl from '@components/pages/document/hooks/useEditableD
 import usePageHeightAdjust from '@components/pages/document/hooks/usePageHeightAdjust'
 import useUpdateDocPageUnreadMsg from '@components/pages/document/hooks/useUpdateDocPageUnreadMsg'
 import { MobileBubbleMenu } from './MobileBubbleMenu'
+import { animate, useMotionValue } from 'motion/react'
+import useKeyboardHeight from '@hooks/useKeyboardHeight'
 
 const Editor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
 
   const chatRoom = useChatStore((state) => state.chatRoom)
 
-  const isKeyboardOpen = useDetectKeyboardOpen() || false
+  const { isOpen: isKeyboardOpen, height: keyboardHeight, viewportHeight } = useKeyboardHeight()
 
   // @ts-ignore
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
@@ -27,17 +28,17 @@ const Editor = () => {
 
   return (
     <>
-      <div className="editor relative flex size-full w-full max-w-full flex-col justify-around align-top">
+      <div className="editor editorHeighttt relative flex size-full w-full max-w-full flex-col justify-around align-top">
         <div
           ref={editorWrapperRef}
-          className="editorWrapper flex h-full grow items-start justify-center overflow-hidden overflow-y-auto p-0">
+          className="editorWrapper flex h-full w-full justify-center overflow-hidden overflow-y-auto p-0">
           <MobileBubbleMenu />
           <EditorContent />
         </div>
       </div>
 
       <div
-        className={`toolbars bg-base-100 sticky inset-x-0 bottom-0 z-10 w-full ${
+        className={`toolbars bg-base-100 z-10 w-full ${
           isKeyboardOpen && !chatRoom?.headingId ? 'block' : 'hidden'
         }`}>
         <ToolbarMobile />

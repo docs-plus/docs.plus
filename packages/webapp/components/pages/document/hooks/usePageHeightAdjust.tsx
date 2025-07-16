@@ -29,7 +29,17 @@ const useVisualViewportHandler = () => {
 
         const viewportHeight = Math.round(viewport.height)
 
-        doc.style.setProperty('--app-height', `${Math.trunc(viewportHeight)}px`)
+        const docTitleHeight = document.querySelector('.docTitle')?.clientHeight || 0
+        const calculatedHeight = Math.trunc(viewportHeight) //- docTitleHeight
+
+        const rootElement = document.querySelector('.editorHeighttt') as HTMLElement
+        const toolbarEditorHeight =
+          document.querySelector('.tiptap-toolbar-mobile__main')?.clientHeight || 0
+        if (rootElement) {
+          rootElement.style.height = `${calculatedHeight - docTitleHeight - toolbarEditorHeight}px`
+        }
+
+        doc.style.setProperty('--app-height', `${calculatedHeight}px`)
 
         if (selection) {
           selection.scrollIntoView({
@@ -51,6 +61,11 @@ const useVisualViewportHandler = () => {
         if (offsetRef.current > 0) {
           window.scrollTo({ top: 0, left: 0, behavior: 'instant' })
           doc.style.setProperty('--app-position_b', `initial`)
+        }
+
+        const rootElement = document.querySelector('.editorHeighttt') as HTMLElement
+        if (rootElement) {
+          rootElement.style.height = `100%`
         }
 
         doc.style.setProperty('--app-height', `100%`)
