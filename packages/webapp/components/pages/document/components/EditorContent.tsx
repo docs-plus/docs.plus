@@ -7,7 +7,7 @@ import { useEffect, useMemo, useRef } from 'react'
 
 const RenderLoader = ({ className }: { className?: string }) => {
   return (
-    <div className={twMerge('ProseMirror tiptap__editor', className)}>
+    <div className={twMerge('ProseMirror tiptap__editor w-full', className)}>
       <DocumentSimpleLoader className="heading !h-auto" level="1" />
       <DocumentWithPictureLoader className="heading !h-auto" level="1" />
       <DocumentSimpleLoader className="heading !h-auto" level="1" />
