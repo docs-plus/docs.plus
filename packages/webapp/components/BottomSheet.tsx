@@ -5,7 +5,7 @@ import { useSheetStore, useChatStore } from '@stores'
 import FilterModal from '@components/pages/document/components/FilterModal'
 import NotificationModal from './notificationPanel/mobile/NotificationModal'
 import ChatContainerMobile from './pages/document/components/chat/ChatContainerMobile'
-import SheetHeader from './SheetHeader'
+import useKeyboardHeight from '@hooks/useKeyboardHeight'
 
 const BottomSheet = () => {
   const { activeSheet, sheetData, closeSheet } = useSheetStore()
@@ -13,6 +13,7 @@ const BottomSheet = () => {
   const closeChatRoom = useChatStore((state) => state.closeChatRoom)
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
   const containerRef = useRef<HTMLDivElement>(null)
+  const { height: keyboardHeight } = useKeyboardHeight()
 
   // Sync chat store with bottom sheet
   useEffect(() => {
@@ -55,6 +56,18 @@ const BottomSheet = () => {
     }
   }
 
+  const getSheetContentProps = () => {
+    switch (activeSheet) {
+      case 'filters':
+        return {
+          // Fix the bottom sheet height when keyboard is open
+          style: { paddingBottom: keyboardHeight }
+        }
+      default:
+        return {}
+    }
+  }
+
   const handleClose = () => {
     if (activeSheet === 'chatroom') {
       closeChatRoom()
@@ -73,7 +86,7 @@ const BottomSheet = () => {
       {...getSheetProps()}>
       <Sheet.Container ref={containerRef}>
         <Sheet.Header />
-        <Sheet.Content>{renderContent()}</Sheet.Content>
+        <Sheet.Content {...getSheetContentProps()}>{renderContent()}</Sheet.Content>
       </Sheet.Container>
       <Sheet.Backdrop onTap={handleClose} />
     </Sheet>
