@@ -18,6 +18,7 @@ import {
 } from './components/chatContainer'
 import { twx } from '@utils/index'
 import { useChannel } from './context/ChannelProvider'
+import { Sheet } from 'react-modal-sheet'
 
 const MessageWrapper = twx.div`relative flex h-full items-center justify-center bg-white`
 
@@ -83,14 +84,28 @@ export const ChatRoom = forwardRef(
           <LoadingOverlay
             loading={!isDbSubscriptionReady || !isChannelDataLoaded || !isReadyToDisplayMessages}
           />
-          <MessagesDisplay
-            messageContainerRef={messageContainerRef}
-            messagesEndRef={messagesEndRef}
-            toggleEmojiPicker={toggleEmojiPicker}
-            selectedEmoji={selectedEmoji}
-            isLoadingMore={isLoadingMore}
-            loadingMoreDirection={loadingMoreDirection}
-          />
+
+          {isMobile ? (
+            <Sheet.Scroller>
+              <MessagesDisplay
+                messageContainerRef={messageContainerRef}
+                messagesEndRef={messagesEndRef}
+                toggleEmojiPicker={toggleEmojiPicker}
+                selectedEmoji={selectedEmoji}
+                isLoadingMore={isLoadingMore}
+                loadingMoreDirection={loadingMoreDirection}
+              />
+            </Sheet.Scroller>
+          ) : (
+            <MessagesDisplay
+              messageContainerRef={messageContainerRef}
+              messagesEndRef={messagesEndRef}
+              toggleEmojiPicker={toggleEmojiPicker}
+              selectedEmoji={selectedEmoji}
+              isLoadingMore={isLoadingMore}
+              loadingMoreDirection={loadingMoreDirection}
+            />
+          )}
 
           <div className="flex w-full flex-col items-center justify-center bg-transparent">
             {(!isMobile || (isMobile && !isEmojiBoxOpen)) && <ActionBar />}
