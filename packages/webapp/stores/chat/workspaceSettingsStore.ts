@@ -17,6 +17,7 @@ export interface IWorkspaceSettingsStore {
   setWorkspaceSettings: (settings: WorkspaceSettings) => void
   setCommentMessageMemory: (channelId: string, message: any) => void
   setReplyMessageMemory: (channelId: string, message: any) => void
+  setMessageDraftMemory: (channelId: string, message: any) => void
   setEditMessageMemory: (channelId: string, message: any) => void
   setForwardMessageMemory: (channelId: string, message: any) => void
   setTypingIndicator: (channelId: string, user: any) => void
@@ -56,6 +57,13 @@ const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
   setWorkspaceSettings: (settings) => {
     set((state) => {
       Object.assign(state.workspaceSettings, settings)
+    })
+  },
+
+  setMessageDraftMemory: (channelId, message) => {
+    setMemory(set, 'messageDraftMemory', channelId, {
+      text: message.text,
+      html: message.html
     })
   },
 

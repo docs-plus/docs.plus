@@ -7,7 +7,7 @@ export const useMentionClick = () => {
   const handleMentionClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = e.target as HTMLElement
 
-    if (target.matches('.mention[data-id]')) {
+    if (target.matches('[data-type="mention"][data-id]')) {
       const userId = target.dataset.id
       if (userId) openUserModal(userId)
     }

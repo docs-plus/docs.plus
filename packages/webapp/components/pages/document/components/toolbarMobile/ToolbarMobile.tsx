@@ -29,7 +29,7 @@ const ToolbarMobile = () => {
     {
       name: 'hyperlink',
       icon: MdInsertLink,
-      action: 'toggleLink',
+      action: 'setHyperlink',
       size: 26,
       tooltip: 'Insert Link'
     },
@@ -66,7 +66,7 @@ const ToolbarMobile = () => {
   return (
     <div className="tiptap-toolbar-mobile relative" onTouchEnd={stayFocused}>
       <FormatSelection isVisible={isFormatSelectionVisible} editor={editor} />
-      <div className="tiptap-toolbar-mobile__main relative z-10 flex h-14 items-center justify-around gap-1 bg-base-100">
+      <div className="tiptap-toolbar-mobile__main bg-base-100 relative z-10 flex h-14 items-center justify-around gap-1">
         <HeadingSelection editor={editor} />
         {buttons.map(({ name, icon: Icon, action, size }) => (
           <ToolbarButton

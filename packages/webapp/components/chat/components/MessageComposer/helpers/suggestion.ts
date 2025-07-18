@@ -1,18 +1,15 @@
-/* eslint-disable */
-// @ts-nocheck
-
 import { ReactRenderer } from '@tiptap/react'
 import tippy from 'tippy.js'
 
-import MentionList from './MentionList.tsx'
+import MentionList from './MentionList'
 
 export default {
   render: () => {
-    let component
-    let popup
+    let component: any
+    let popup: any
 
     return {
-      onStart: (props) => {
+      onStart: (props: any) => {
         component = new ReactRenderer(MentionList, {
           props,
           editor: props.editor
@@ -34,7 +31,7 @@ export default {
         })
       },
 
-      onUpdate(props) {
+      onUpdate(props: any) {
         component.updateProps(props)
 
         if (!props.clientRect) {
@@ -46,7 +43,7 @@ export default {
         })
       },
 
-      onKeyDown(props) {
+      onKeyDown(props: any) {
         if (!component || !component.ref) {
           return false
         }
@@ -80,14 +77,14 @@ export default {
       parseHTML: () => [
         {
           tag: 'span[data-mention][data-id]',
-          getAttrs: (dom) => {
+          getAttrs: (dom: any) => {
             const id = dom.getAttribute('data-id')
             return { id }
           }
         }
       ],
 
-      renderHTML: ({ node }) => {
+      renderHTML: ({ node }: any) => {
         return [
           'span',
           {

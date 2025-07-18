@@ -1,6 +1,3 @@
-/* eslint-disable */
-// @ts-nocheck
-
 import { searchWorkspaceUsers } from '@api'
 import { useApi } from '@hooks/useApi'
 import React, { forwardRef, useEffect, useImperativeHandle, useState, useRef } from 'react'
@@ -46,6 +43,7 @@ export default forwardRef((props, ref) => {
         return
       }
 
+      // @ts-ignore
       setWorkspaceUsers([everyoneOption, ...data])
       // Ensure first item is selected by default
       setSelectedIndex(0)
@@ -56,6 +54,7 @@ export default forwardRef((props, ref) => {
   // Scroll selected item into view when it changes
   useEffect(() => {
     if (listRef.current && workspaceUsers.length > 0) {
+      //@ts-ignore
       const selectedElement = listRef.current.querySelector(
         `.mention-item:nth-child(${selectedIndex + 1})`
       )
@@ -65,9 +64,11 @@ export default forwardRef((props, ref) => {
     }
   }, [selectedIndex, workspaceUsers.length])
 
+  //@ts-ignore
   const selectItem = (index) => {
     const item = workspaceUsers[index]
     if (item) {
+      //@ts-ignore
       props.command({ id: item.id, label: item.username })
     }
   }
@@ -90,6 +91,7 @@ export default forwardRef((props, ref) => {
   }, [workspaceUsers])
 
   useImperativeHandle(ref, () => ({
+    //@ts-ignore
     onKeyDown: (props) => {
       const { event } = props
 
@@ -122,7 +124,6 @@ export default forwardRef((props, ref) => {
       ) : workspaceUsers.length ? (
         workspaceUsers.map((item, index) => (
           <MentionItem
-            key={item.id}
             item={item}
             index={index}
             selectedIndex={selectedIndex}

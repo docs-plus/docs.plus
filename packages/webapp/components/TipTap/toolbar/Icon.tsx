@@ -1,4 +1,7 @@
 import React from 'react'
+import { MdCode, MdFormatColorText, MdOutlineEmojiEmotions } from 'react-icons/md'
+import { RiAtLine, RiCodeBlock } from 'react-icons/ri'
+import { IoSend } from 'react-icons/io5'
 import {
   Bold,
   Italic,
@@ -17,6 +20,7 @@ import {
   Printer,
   Filter
 } from '@icons'
+import { TbBlockquote } from 'react-icons/tb'
 
 const icons: { [key: string]: React.ComponentType<{ size?: number; fill?: string }> } = {
   Bold,
@@ -34,7 +38,14 @@ const icons: { [key: string]: React.ComponentType<{ size?: number; fill?: string
   Undo,
   Redo,
   Printer,
-  Filter
+  Filter,
+  MdCode,
+  RiCodeBlock,
+  MdFormatColorText,
+  MdOutlineEmojiEmotions,
+  RiAtLine,
+  IoSend,
+  TbBlockquote
 }
 
 type TIcon = {

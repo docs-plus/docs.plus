@@ -20,7 +20,8 @@ export const sanitizeMessageContent = (html: string, text: string) => {
       'li',
       'blockquote',
       'code',
-      'pre'
+      'pre',
+      'span'
     ],
     ALLOWED_ATTR: ['href', 'target', 'rel']
   }).replace(/<p><\/p>$|<p\s*\/>$/g, '') // Remove empty p tags at the end
@@ -53,7 +54,8 @@ export const sanitizeChunk = (htmlChunk: string, textChunk: string) => {
       'li',
       'blockquote',
       'code',
-      'pre'
+      'pre',
+      'span'
     ],
     ALLOWED_ATTR: ['href', 'target', 'rel']
   }).replace(/<p><\/p>$|<p\s*\/>$/g, '') // Remove empty p tags at the end
