@@ -81,7 +81,8 @@ $bg-root: #f8f9fa;
 .ProseMirror {
   // buttons in heading
 
-  .mention {
+  .mention,
+  [data-type='mention'] {
     background-color: rgba(111, 0, 255, 0.1);
     border-radius: 0.4rem;
     box-decoration-break: clone;
@@ -748,7 +749,8 @@ $bg-root: #f8f9fa;
 
 .message--card__content,
 .msg_card {
-  .mention {
+  .mention,
+  [data-type='mention'] {
     // background-color: rgba(111, 0, 255, 0.1);
     border-radius: 0.4rem;
     box-decoration-break: clone;
@@ -757,6 +759,14 @@ $bg-root: #f8f9fa;
     &::after {
       content: '\200B';
     }
+  }
+}
+
+.message--card__content {
+  .mention,
+  [data-type='mention'] {
+    font-weight: 600;
+    cursor: pointer;
   }
 }
 

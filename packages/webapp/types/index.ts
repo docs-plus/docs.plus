@@ -22,6 +22,8 @@ interface ProfileData {
   linkTree?: LinkItem[]
 }
 
+export type TMsgRow = Database['public']['Tables']['messages']['Row']
+
 export type { TChannelSettings } from './stores'
 export type { Database }
 export type Channel =
@@ -75,3 +77,30 @@ export type TNotificationSummary = {
 export type TTab = 'Unread' | 'Mentions' | 'Read'
 
 export type TFToggleMessageBookmark = Database['public']['Functions']['toggle_message_bookmark']
+
+export type TSendMsgeArgs = {
+  content: TMsgRow['content']
+  channel_id: TMsgRow['channel_id']
+  user_id: TMsgRow['user_id']
+  html: TMsgRow['html']
+  reply_to_message_id: TMsgRow['reply_to_message_id']
+}
+
+export type TSendCommentArgs = {
+  content: TMsgRow['content']
+  channel_id: TMsgRow['channel_id']
+  user_id: TMsgRow['user_id']
+  html: TMsgRow['html']
+  comment: {
+    content: string
+    html: string
+  }
+}
+
+export type TUpdateMsgArgs = {
+  content: TMsgRow['content']
+  html: TMsgRow['html']
+  id: TMsgRow['id']
+}
+
+export type TSendThreadMsgArgs = Database['public']['Functions']['create_thread_message']['Args']

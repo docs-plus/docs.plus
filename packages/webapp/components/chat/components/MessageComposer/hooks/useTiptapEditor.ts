@@ -10,13 +10,13 @@ import ts from 'highlight.js/lib/languages/typescript'
 import html from 'highlight.js/lib/languages/xml'
 import md from 'highlight.js/lib/languages/markdown'
 import yaml from 'highlight.js/lib/languages/yaml'
-// import python from "highlight.js/lib/languages/python";
+import python from 'highlight.js/lib/languages/python'
 import json from 'highlight.js/lib/languages/json'
-// import bash from "highlight.js/lib/languages/bash";
+import bash from 'highlight.js/lib/languages/bash'
 import StarterKit from '@tiptap/starter-kit'
 import Placeholder from '@tiptap/extension-placeholder'
 import Mention from '@tiptap/extension-mention'
-import suggestion from './suggestion'
+import suggestion from '../helpers/suggestion'
 // Links and Media
 import {
   Hyperlink,
@@ -35,14 +35,20 @@ lowlight.register('css', css)
 lowlight.register('js', js)
 lowlight.register('ts', ts)
 lowlight.register('markdown', md)
-// lowlight.register("python", python);
+lowlight.register('python', python as any)
 lowlight.register('yaml', yaml)
 lowlight.register('json', json)
-// lowlight.register("bash", bash);
+lowlight.register('bash', bash as any)
 
-import { handleTypingIndicator, TypingIndicatorType } from './handelTypeingIndicator'
+import { handleTypingIndicator, TypingIndicatorType } from '../helpers/handelTypeingIndicator'
 
-export const useTiptapEditor = ({ loading }: any) => {
+export const useTiptapEditor = ({
+  loading,
+  onSubmit
+}: {
+  loading: boolean
+  onSubmit: () => void
+}) => {
   const [html, setHtml] = useState('')
   const [text, setText] = useState('')
 
@@ -166,7 +172,7 @@ export const useTiptapEditor = ({ loading }: any) => {
               if (text.length) handleTypingIndicator(TypingIndicatorType.SentMsg)
               event.preventDefault() // Prevent the new line
               // Dispatch a custom event that SendMessage will listen for
-              document.dispatchEvent(new CustomEvent('editor:submit'))
+              onSubmit()
 
               event.preventDefault() // Prevent the new line
               return true // We handled this event

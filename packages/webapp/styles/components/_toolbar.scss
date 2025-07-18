@@ -85,3 +85,15 @@
     }
   }
 }
+
+.chatroom__toolbar {
+  border: none;
+}
+
+button {
+  &[disabled] {
+    svg {
+      fill: #aaa;
+    }
+  }
+}

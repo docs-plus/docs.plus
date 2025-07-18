@@ -1,14 +1,12 @@
 import { supabaseClient } from '@utils/supabase'
-import { Database } from '@types'
-
-type TMessage = Database['public']['Tables']['messages']['Row']
+import { Database, TMsgRow, TSendMsgeArgs } from '@types'
 
 export const sendMessage = async (
-  content: TMessage['content'],
-  channel_id: TMessage['channel_id'],
-  user_id: TMessage['user_id'],
-  html: TMessage['html'],
-  reply_to_message_id: TMessage['reply_to_message_id']
+  content: TMsgRow['content'],
+  channel_id: TMsgRow['channel_id'],
+  user_id: TMsgRow['user_id'],
+  html: TMsgRow['html'],
+  reply_to_message_id: TMsgRow['reply_to_message_id']
 ) =>
   await supabaseClient
     .from('messages')
@@ -20,15 +18,15 @@ export const sendMessage = async (
       reply_to_message_id
     })
     .select()
-    .returns<TMessage[]>()
+    .returns<TMsgRow[]>()
     .throwOnError()
 
 export const sendThreadMessage = async (
-  content: TMessage['content'],
-  channel_id: TMessage['channel_id'],
-  user_id: TMessage['user_id'],
-  html: TMessage['html'],
-  thread_id: TMessage['thread_id']
+  content: TMsgRow['content'],
+  channel_id: TMsgRow['channel_id'],
+  user_id: TMsgRow['user_id'],
+  html: TMsgRow['html'],
+  thread_id: TMsgRow['thread_id']
 ) =>
   await supabaseClient
     .from('messages')
@@ -40,5 +38,5 @@ export const sendThreadMessage = async (
       thread_id
     })
     .select()
-    .returns<TMessage[]>()
+    .returns<TMsgRow[]>()
     .throwOnError()

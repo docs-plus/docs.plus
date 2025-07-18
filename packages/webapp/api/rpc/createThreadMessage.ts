@@ -3,7 +3,7 @@ import { Database } from '@types'
 
 type TCreateDirectMsgArg = Database['public']['Functions']['create_thread_message']['Args']
 
-export const create_thread_message = async (arg: TCreateDirectMsgArg) =>
+export const createThreadMessage = async (arg: TCreateDirectMsgArg) =>
   await supabaseClient.rpc('create_thread_message', {
     p_content: arg.p_content,
     p_html: arg.p_html,

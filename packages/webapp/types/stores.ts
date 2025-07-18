@@ -1,6 +1,7 @@
 export type commentMessageMemory = {
   content: string
   html: string
+  text: string
   channel_id: string
   workspace_id: string
   user: any
@@ -16,6 +17,7 @@ export type TChannelSettings = {
   userPickingEmoji?: boolean
   replyMessageMemory?: any
   commentMessageMemory?: commentMessageMemory
+  messageDraftMemory?: any
   editMessageMemory?: any
   forwardMessageMemory?: any
   unreadMessage?: boolean

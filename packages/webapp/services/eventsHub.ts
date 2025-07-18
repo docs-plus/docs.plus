@@ -42,6 +42,9 @@ export const eventsHub = (router: NextRouter) => {
     const setCommentMessageMemory = useChatStore.getState().setCommentMessageMemory
     const setChatRoom = useChatStore.getState().setChatRoom
     const destroyChatRoom = useChatStore.getState().destroyChatRoom
+    const switchChatRoom = useChatStore.getState().switchChatRoom
+
+    switchChatRoom(headingId)
 
     setCommentMessageMemory(headingId, {
       content,
@@ -53,7 +56,13 @@ export const eventsHub = (router: NextRouter) => {
 
     if (headingId === opendHeadingId) return destroyChatRoom()
 
-    if (workspaceId) setChatRoom(headingId, workspaceId, [], user)
+    setTimeout(() => {
+      if (workspaceId) {
+        setChatRoom(headingId, workspaceId, [], user)
+        useChatStore.getState().openChatRoom()
+        useSheetStore.getState().openSheet('chatroom', { headingId })
+      }
+    }, 200)
   })
 
   PubSub.subscribe(CHAT_OPEN, (msg, data: TOpenChatData) => {
