@@ -99,10 +99,10 @@ lowlight.register('css', css)
 lowlight.register('js', js)
 lowlight.register('ts', ts)
 lowlight.register('markdown', md)
-// lowlight.register('python', python)
+lowlight.register('python', python as any)
 lowlight.register('yaml', yaml)
 lowlight.register('json', json)
-// lowlight.register('bash', bash)
+lowlight.register('bash', bash as any)
 
 const scrollDown = () => {
   const url = new URL(window.location.href)

@@ -76,7 +76,6 @@ module.exports = withPWA({
       ? [
           '*.localhost',
           '*.127.0.0.1',
-          'ws://192.168.31.248:54321',
           'http://127.0.0.1:2300',
           'http://127.0.0.1:54321', // Supabase local
           'ws://127.0.0.1:54321', // Supabase realtime WebSocket
