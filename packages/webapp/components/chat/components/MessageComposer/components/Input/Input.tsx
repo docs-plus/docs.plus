@@ -6,7 +6,6 @@ export const Input = () => {
   const { editorRef, editor, messageDraftMemory } = useMessageComposer()
 
   useEffect(() => {
-    console.log('we are setting the content ======>>>>', messageDraftMemory)
     if (messageDraftMemory) {
       editor?.commands.setContent(messageDraftMemory.html)
     }

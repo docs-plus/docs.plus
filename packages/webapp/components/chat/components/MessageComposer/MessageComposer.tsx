@@ -127,8 +127,6 @@ const MessageComposer = ({
   const validateSubmission = useCallback(() => {
     if (!editor || !user) return { isValid: false, error: 'Editor or user not available' }
 
-    console.log('html-text', { html, text })
-
     const isContentEmpty =
       !html || !text || html.replace(/<[^>]*>/g, '').trim() === '' || text.trim() === ''
     if (isContentEmpty) return { isValid: false, error: 'Content is empty' }
@@ -141,10 +139,6 @@ const MessageComposer = ({
   // Content preparation
   const prepareContent = useCallback(() => {
     const { sanitizedHtml, sanitizedText } = sanitizeMessageContent(html, text)
-    console.log({
-      sanitizedHtml,
-      sanitizedText
-    })
 
     if (!sanitizedHtml || !sanitizedText) {
       throw new Error('Invalid content detected')
@@ -207,7 +201,8 @@ const MessageComposer = ({
       const fakemessage = createFakeMessage(content, html, user, channelId)
       messageInsert(fakemessage)
 
-      await sendMessage(content, channelId, user.id, html, messageId)
+      const { error } = await sendMessage(content, channelId, user.id, html, messageId)
+      if (error) console.error('[handleRegularMessage]', error)
       return true
     },
     [user, channelId, messageInsert, sendMessage]
@@ -319,6 +314,7 @@ const MessageComposer = ({
           user_details: user,
           channel_id: channelId,
           user_id: user.id,
+          user_details: user,
           created_at: currentDate,
           updated_at: currentDate
         }
