@@ -93,12 +93,16 @@ export const useCopyToDoc = () => {
         headingPos !== null && headingNode
           ? headingPos +
             Number(headingNode.content.size) -
-            Number(secondHeadingNode.content.size) -
+            Number(secondHeadingNode?.content.size) -
             2 // End of current heading's content
           : doc.content.size - 2 || 0 // End of document if heading not found
 
       if (headingLevel === 1) {
         insertPosition = secondHeadingPos !== null ? secondHeadingPos : insertPosition
+      }
+
+      if (!insertPosition) {
+        insertPosition = headingPos + headingNode?.firstChild?.content.size + 4
       }
 
       // Insert content at calculated position
