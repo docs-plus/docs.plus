@@ -314,7 +314,6 @@ const MessageComposer = ({
           user_details: user,
           channel_id: channelId,
           user_id: user.id,
-          user_details: user,
           created_at: currentDate,
           updated_at: currentDate
         }
