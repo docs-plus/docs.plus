@@ -1,7 +1,7 @@
 import React from 'react'
-import { MdCode, MdFormatColorText, MdOutlineEmojiEmotions } from 'react-icons/md'
+import { MdCode, MdFormatColorText, MdOutlineEmojiEmotions, MdOutlineAdd } from 'react-icons/md'
 import { RiAtLine, RiCodeBlock } from 'react-icons/ri'
-import { IoSend } from 'react-icons/io5'
+import { IoSend, IoCloseOutline as Close } from 'react-icons/io5'
 import {
   Bold,
   Italic,
@@ -45,7 +45,9 @@ const icons: { [key: string]: React.ComponentType<{ size?: number; fill?: string
   MdOutlineEmojiEmotions,
   RiAtLine,
   IoSend,
-  TbBlockquote
+  TbBlockquote,
+  Close,
+  MdOutlineAdd
 }
 
 type TIcon = {

@@ -8,11 +8,11 @@ import ChatContainerMobile from './pages/document/components/chat/ChatContainerM
 import useKeyboardHeight from '@hooks/useKeyboardHeight'
 
 const BottomSheet = () => {
-  const { activeSheet, sheetData, closeSheet } = useSheetStore()
+  const { activeSheet, closeSheet } = useSheetStore()
   const chatRoom = useChatStore((state) => state.chatRoom)
   const closeChatRoom = useChatStore((state) => state.closeChatRoom)
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
-  const containerRef = useRef<HTMLDivElement>(null)
+  const setSheetContainerRef = useSheetStore((state) => state.setSheetContainerRef)
   const { height: keyboardHeight } = useKeyboardHeight()
 
   // Sync chat store with bottom sheet
@@ -47,7 +47,8 @@ const BottomSheet = () => {
       case 'chatroom':
         return {
           id: 'chatroom_sheet',
-          snapPoints: [1, 0.5, 0]
+          detent: 'full-height' as SheetProps['detent'],
+          disableScrollLocking: true
         }
       default:
         return {
@@ -62,6 +63,12 @@ const BottomSheet = () => {
         return {
           // Fix the bottom sheet height when keyboard is open
           style: { paddingBottom: keyboardHeight }
+        }
+      case 'chatroom':
+        return {
+          style: {
+            paddingBottom: keyboardHeight
+          }
         }
       default:
         return {}
@@ -84,7 +91,7 @@ const BottomSheet = () => {
       isOpen={!!activeSheet}
       onClose={handleClose}
       {...getSheetProps()}>
-      <Sheet.Container ref={containerRef}>
+      <Sheet.Container ref={setSheetContainerRef}>
         <Sheet.Header />
         <Sheet.Content {...getSheetContentProps()}>{renderContent()}</Sheet.Content>
       </Sheet.Container>
