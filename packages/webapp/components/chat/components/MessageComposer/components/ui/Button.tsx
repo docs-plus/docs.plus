@@ -19,6 +19,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     { type, editor, onPress, children, tooltip, tooltipPosition, className, isActive, disabled },
     ref
   ) => {
+    const handleTouchEnd = (event: React.TouchEvent) => {
+      event.preventDefault() // Prevent subsequent click event
+      onPress?.(event)
+    }
+
     return (
       <button
         ref={ref}
@@ -29,7 +34,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           className
         )}
         onClick={onPress}
-        onTouchEnd={onPress}
+        onTouchEnd={handleTouchEnd}
         data-tip={tooltip}
         disabled={disabled}>
         {children}
