@@ -68,7 +68,9 @@ const BottomSheet = () => {
         return {
           style: {
             paddingBottom: keyboardHeight
-          }
+          },
+          disableDrag: true,
+          disableScrollLocking: true
         }
       default:
         return {}
