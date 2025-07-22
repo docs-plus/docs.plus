@@ -1,7 +1,7 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useMemo } from 'react'
 import { Sheet, SheetProps } from 'react-modal-sheet'
 
-import { useSheetStore, useChatStore } from '@stores'
+import { useSheetStore, useChatStore, useStore } from '@stores'
 import FilterModal from '@components/pages/document/components/FilterModal'
 import NotificationModal from './notificationPanel/mobile/NotificationModal'
 import ChatContainerMobile from './pages/document/components/chat/ChatContainerMobile'
@@ -14,6 +14,11 @@ const BottomSheet = () => {
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
   const setSheetContainerRef = useSheetStore((state) => state.setSheetContainerRef)
   const { height: keyboardHeight } = useKeyboardHeight()
+  const { deviceDetect } = useStore((state) => state.settings)
+
+  const isDeviceIOS = useMemo(() => {
+    return deviceDetect?.os() === 'iOS'
+  }, [deviceDetect])
 
   // Sync chat store with bottom sheet
   useEffect(() => {
@@ -62,12 +67,12 @@ const BottomSheet = () => {
       case 'filters':
         return {
           // Fix the bottom sheet height when keyboard is open
-          style: { paddingBottom: keyboardHeight }
+          style: { paddingBottom: isDeviceIOS ? keyboardHeight : 0 }
         }
       case 'chatroom':
         return {
           style: {
-            paddingBottom: keyboardHeight
+            paddingBottom: isDeviceIOS ? keyboardHeight : 0
           },
           disableDrag: true,
           disableScrollLocking: true

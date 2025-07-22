@@ -40,7 +40,7 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
   const { query } = context
   const documentSlug = query.slugs?.at(0)
 
-  const { isMobile } = getDeviceInfo(context)
+  const { isMobile, os } = getDeviceInfo(context)
 
   const isTurnstileVerified = validateTurnstileAccess(context)
 
@@ -48,7 +48,8 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
     return {
       props: {
         showTurnstile: true,
-        isMobile
+        isMobile,
+        os
       }
     }
   }
@@ -69,7 +70,8 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
         channels: channels || null,
         docMetadata,
         showTurnstile: false,
-        isMobile
+        isMobile,
+        os
       }
     }
   } catch (error: any) {
