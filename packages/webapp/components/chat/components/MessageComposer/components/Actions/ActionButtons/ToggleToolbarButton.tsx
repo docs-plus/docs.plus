@@ -1,23 +1,29 @@
 import Button from '../../ui/Button'
 import Icon from '@components/TipTap/toolbar/Icon'
 import { useMessageComposer } from '../../../hooks/useMessageComposer'
-type Props = React.HTMLAttributes<HTMLButtonElement> & {
-  className?: string
+
+interface Props extends React.ComponentProps<typeof Button> {
   size?: number
+  iconType?: string
 }
 
-export const ToggleToolbarButton = ({ className, size = 20, ...props }: Props) => {
-  const { toggleToolbar, setToggleToolbar } = useMessageComposer()
+export const ToggleToolbarButton = ({
+  className,
+  size = 20,
+  iconType = 'MdFormatColorText',
+  ...props
+}: Props) => {
+  const { isToolbarOpen, toggleToolbar } = useMessageComposer()
 
   return (
     <Button
       className={className}
-      onPress={() => setToggleToolbar(!toggleToolbar)}
+      onPress={toggleToolbar}
       tooltip="Toolbar"
       tooltipPosition="tooltip-top"
-      isActive={!toggleToolbar}
+      isActive={!isToolbarOpen}
       {...props}>
-      <Icon type="MdFormatColorText" size={size} />
+      <Icon type={iconType} size={size} />
     </Button>
   )
 }

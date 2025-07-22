@@ -6,7 +6,7 @@ interface ButtonProps {
   type?: string
   editor?: Editor | null
   onPress?: (event: React.MouseEvent | React.TouchEvent) => void
-  children: React.ReactNode
+  children?: React.ReactNode
   tooltip?: string
   tooltipPosition?: 'tooltip-top' | 'tooltip-bottom' | 'tooltip-left' | 'tooltip-right'
   className?: string

@@ -29,6 +29,7 @@ import { messageInsert } from '../../hooks/listner/helpers'
 
 import {
   Actions,
+  AttachmentButton,
   EmojiButton,
   MentionButton,
   SendButton,
@@ -40,6 +41,7 @@ import { twMerge } from 'tailwind-merge'
 import ReplyContext from './components/Context/ReplyContext'
 import EditContext from './components/Context/EditContext'
 import CommentContext from './components/Context/CommentContext'
+import { MobileWrapper } from './Mobile'
 
 const MessageComposer = ({
   children,
@@ -49,6 +51,7 @@ const MessageComposer = ({
   className?: string
 }) => {
   const { channelId } = useChannel()
+
   const user = useAuthStore((state) => state.profile)
   const setOrUpdateUserPresence = useChatStore((state: any) => state.setOrUpdateUserPresence)
   const usersPresence = useStore((state: any) => state.usersPresence)
@@ -56,8 +59,7 @@ const MessageComposer = ({
   const channels = useChatStore((state) => state.channels)
   const { workspaceId } = useChatStore((state) => state.workspaceSettings)
   const editorRef = useRef<HTMLDivElement | null>(null)
-
-  const [toggleToolbar, setToggleToolbar] = useState(() => toolbarStorage.get())
+  const [isToolbarOpen, setIsToolbarOpen] = useState(() => toolbarStorage.get())
 
   const setEditMsgMemory = useChatStore((state) => state.setEditMessageMemory)
   const setReplyMsgMemory = useChatStore((state) => state.setReplyMessageMemory)
@@ -388,11 +390,6 @@ const MessageComposer = ({
     setAttributes()
   }, [editor])
 
-  // Save toolbar toggle state to localStorage
-  useEffect(() => {
-    toolbarStorage.set(toggleToolbar)
-  }, [toggleToolbar])
-
   // Handle Draft Memory
   useEffect(() => {
     return () => {
@@ -427,6 +424,15 @@ const MessageComposer = ({
     }, 1000)
   }, [editor])
 
+  // Save toolbar toggle state to localStorage
+  useEffect(() => {
+    toolbarStorage.set(isToolbarOpen)
+  }, [isToolbarOpen])
+
+  const toggleToolbar = useCallback(() => {
+    setIsToolbarOpen(!isToolbarOpen)
+  }, [setIsToolbarOpen, isToolbarOpen])
+
   const contextValue = {
     sendMsg,
     sendComment,
@@ -448,8 +454,8 @@ const MessageComposer = ({
     setReplyMsgMemory,
     setCommentMsgMemory,
     contextType,
+    isToolbarOpen,
     toggleToolbar,
-    setToggleToolbar,
     submitMessage,
     editorRef
   }
@@ -490,6 +496,10 @@ MessageComposer.EmojiButton = EmojiButton
 MessageComposer.MentionButton = MentionButton
 MessageComposer.SendButton = SendButton
 MessageComposer.ToggleToolbarButton = ToggleToolbarButton
+MessageComposer.AttachmentButton = AttachmentButton
 
 // Input
 MessageComposer.Input = Input
+
+// Mobile
+MessageComposer.MobileWrapper = MobileWrapper

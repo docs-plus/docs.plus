@@ -1,4 +1,3 @@
-import { useChannel } from '@components/chat/context/ChannelProvider'
 import { useMessageComposer } from '../../hooks/useMessageComposer'
 import { twMerge } from 'tailwind-merge'
 
@@ -7,12 +6,12 @@ type Props = {
   children: React.ReactNode
 }
 export const Toolbar = ({ className, children }: Props) => {
-  const { toggleToolbar } = useMessageComposer()
+  const { isToolbarOpen } = useMessageComposer()
   return (
     <div
       className={twMerge(
         'chatroom__toolbar flex w-full flex-row items-center justify-start gap-1',
-        toggleToolbar && 'hidden',
+        isToolbarOpen && 'hidden',
         className
       )}>
       {children}

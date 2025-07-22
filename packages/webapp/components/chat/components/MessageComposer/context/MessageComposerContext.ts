@@ -29,8 +29,8 @@ export interface MessageComposerContextType {
   setReplyMsgMemory: (channelId: string, value: any) => void
   setCommentMsgMemory: (channelId: string, value: any) => void
   contextType: 'reply' | 'edit' | 'comment' | null
-  toggleToolbar: boolean
-  setToggleToolbar: (value: boolean) => void
+  isToolbarOpen: boolean
+  toggleToolbar: () => void
   submitMessage: (e?: any) => Promise<void>
   editorRef: React.RefObject<HTMLDivElement | null>
   messageDraftMemory: {
