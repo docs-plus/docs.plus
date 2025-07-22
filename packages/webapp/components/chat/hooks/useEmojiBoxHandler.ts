@@ -27,6 +27,7 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
       const message = e.detail?.message
       const type = e.detail.type
       const editor = e.detail?.editor
+      const coordinates = e.detail?.coordinates
       setEditor(editor)
       setEventTypes(type)
 
@@ -36,15 +37,23 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
       const emojiButtonWidth = 24
       const chatEditorHeight = 153
 
-      // Use getBoundingClientRect if positioning relative to an element
-      const rect =
-        event.currentTarget?.getBoundingClientRect() || event.target?.getBoundingClientRect()
-      if (!rect) {
-        console.error('rect is null')
-        return
+      let newTop, newLeft
+
+      if (coordinates) {
+        // Use provided coordinates
+        newTop = coordinates.y || coordinates.top
+        newLeft = coordinates.x || coordinates.left
+      } else {
+        // Fallback to DOM positioning
+        const rect =
+          event.currentTarget?.getBoundingClientRect() || event.target?.getBoundingClientRect()
+        if (!rect) {
+          console.error('rect is null')
+          return
+        }
+        newTop = rect.bottom + window.scrollY
+        newLeft = rect.left + window.scrollX
       }
-      let newTop = rect.bottom + window.scrollY
-      let newLeft = rect.left + window.scrollX
 
       // Adjust for right and bottom edges
       if (newLeft + clientWidth + emojiButtonWidth > window.innerWidth) {
