@@ -17,5 +17,8 @@
   "devDependencies": {
     "dotenv-cli": "^8.0.0",
     "supabase": "^2.30.4"
+  },
+  "dependencies": {
+    "supabase": "^2.31.8"
   }
 }
