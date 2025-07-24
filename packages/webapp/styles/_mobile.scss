@@ -21,9 +21,14 @@
     width: 100%;
     max-width: 100%;
     min-width: 100%;
-    background: #000;
     --category-icon-size: 24px;
-    --border-radius: 18px 18px 0 0;
+    --border-radius: 0 0 0 0;
+    --shadow: none;
+
+    // CSS custom properties that may work for hiding nav
+    --nav-display: none;
+    --category-tabs-display: none;
+    --category-nav-display: none;
   }
 
   .btnOpenChatBox {

@@ -60,6 +60,7 @@ const MessageComposer = ({
   const { workspaceId } = useChatStore((state) => state.workspaceSettings)
   const editorRef = useRef<HTMLDivElement | null>(null)
   const [isToolbarOpen, setIsToolbarOpen] = useState(() => toolbarStorage.get())
+  const setOrUpdateChatRoom = useChatStore((state) => state.setOrUpdateChatRoom)
 
   const setEditMsgMemory = useChatStore((state) => state.setEditMessageMemory)
   const setReplyMsgMemory = useChatStore((state) => state.setReplyMessageMemory)
@@ -371,25 +372,6 @@ const MessageComposer = ({
     submitRef.current = () => submitMessage()
   }, [submitMessage])
 
-  useEffect(() => {
-    // TODO: this is temporary
-    setTimeout(() => {
-      document.querySelector('.tiptap.ProseMirror')?.setAttribute('inputmode', 'text')
-      document.querySelector('.tiptap.ProseMirror')?.setAttribute('enterkeyhint', 'send')
-    }, 1000)
-  }, [editor])
-
-  useEffect(() => {
-    const setAttributes = () => {
-      const firstChild = editorRef.current?.firstChild as HTMLElement | null
-      if (firstChild) {
-        firstChild.setAttribute('inputmode', 'text')
-        firstChild.setAttribute('enterkeyhint', 'send')
-      }
-    }
-    setAttributes()
-  }, [editor])
-
   // Handle Draft Memory
   useEffect(() => {
     return () => {
@@ -416,14 +398,6 @@ const MessageComposer = ({
     setAttributes()
   }, [editor, editorRef])
 
-  useEffect(() => {
-    // TODO: this is temporary
-    setTimeout(() => {
-      document.querySelector('.tiptap.ProseMirror')?.setAttribute('inputmode', 'text')
-      document.querySelector('.tiptap.ProseMirror')?.setAttribute('enterkeyhint', 'send')
-    }, 1000)
-  }, [editor])
-
   // Save toolbar toggle state to localStorage
   useEffect(() => {
     toolbarStorage.set(isToolbarOpen)
@@ -432,6 +406,11 @@ const MessageComposer = ({
   const toggleToolbar = useCallback(() => {
     setIsToolbarOpen(!isToolbarOpen)
   }, [setIsToolbarOpen, isToolbarOpen])
+
+  useEffect(() => {
+    editor && setOrUpdateChatRoom('editorInstance', editor)
+    editorRef.current && setOrUpdateChatRoom('editorRef', editorRef.current)
+  }, [editor, editorRef])
 
   const contextValue = {
     sendMsg,

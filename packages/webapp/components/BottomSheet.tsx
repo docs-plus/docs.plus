@@ -6,16 +6,17 @@ import FilterModal from '@components/pages/document/components/FilterModal'
 import NotificationModal from './notificationPanel/mobile/NotificationModal'
 import ChatContainerMobile from './pages/document/components/chat/ChatContainerMobile'
 import useKeyboardHeight from '@hooks/useKeyboardHeight'
+import { EmojiPanel } from './chat/components/EmojiPanel'
+import { CHAT_OPEN } from '@services/eventsHub'
 
 const BottomSheet = () => {
-  const { activeSheet, closeSheet } = useSheetStore()
+  const { activeSheet, closeSheet, sheetData } = useSheetStore()
   const chatRoom = useChatStore((state) => state.chatRoom)
   const closeChatRoom = useChatStore((state) => state.closeChatRoom)
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
   const setSheetContainerRef = useSheetStore((state) => state.setSheetContainerRef)
   const { height: keyboardHeight } = useKeyboardHeight()
   const { deviceDetect } = useStore((state) => state.settings)
-
   const isDeviceIOS = useMemo(() => {
     return deviceDetect?.os() === 'iOS'
   }, [deviceDetect])
@@ -37,6 +38,12 @@ const BottomSheet = () => {
         return <NotificationModal />
       case 'filters':
         return <FilterModal />
+      case 'emojiPicker':
+        return (
+          <EmojiPanel variant="mobile">
+            <EmojiPanel.Selector />
+          </EmojiPanel>
+        )
       default:
         return null
     }
@@ -53,7 +60,13 @@ const BottomSheet = () => {
         return {
           id: 'chatroom_sheet',
           detent: 'full-height' as SheetProps['detent'],
-          disableScrollLocking: true
+          disableScrollLocking: true,
+          disableDrag: true
+        }
+      case 'emojiPicker':
+        return {
+          id: 'emoji_picker_sheet',
+          detent: 'content-height' as SheetProps['detent']
         }
       default:
         return {
@@ -73,9 +86,7 @@ const BottomSheet = () => {
         return {
           style: {
             paddingBottom: isDeviceIOS ? keyboardHeight : 0
-          },
-          disableDrag: true,
-          disableScrollLocking: true
+          }
         }
       default:
         return {}
@@ -86,11 +97,20 @@ const BottomSheet = () => {
     if (activeSheet === 'chatroom') {
       closeChatRoom()
       destroyChatRoom()
+    } else if (activeSheet === 'emojiPicker' && sheetData.chatRoomState) {
+      const { headingId } = sheetData.chatRoomState
+      closeSheet()
+      setTimeout(() => {
+        PubSub.publish(CHAT_OPEN, {
+          headingId: headingId,
+          focusEditor: true,
+          clearSheetState: true
+        })
+      }, 100)
+    } else {
+      closeSheet()
     }
-    closeSheet()
   }
-
-  if (!activeSheet) return null
 
   return (
     <Sheet

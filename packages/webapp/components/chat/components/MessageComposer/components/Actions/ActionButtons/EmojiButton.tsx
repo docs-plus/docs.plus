@@ -3,13 +3,14 @@ import Button from '../../ui/Button'
 import Icon from '@components/TipTap/toolbar/Icon'
 import { useMessageComposer } from '../../../hooks/useMessageComposer'
 import { Editor } from '@tiptap/react'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
+import { useChatStore, useSheetStore, useStore } from '@stores'
 type Props = React.HTMLAttributes<HTMLButtonElement> & {
   className?: string
   size?: number
 }
 
-const getCaretPositionWithScroll = (editor: Editor) => {
+const getCaretPosition = (editor: Editor) => {
   if (!editor) return null
 
   const { selection } = editor.state
@@ -19,36 +20,81 @@ const getCaretPositionWithScroll = (editor: Editor) => {
     x: coords.left + window.scrollX,
     y: coords.top + window.scrollY,
     bottom: coords.bottom + window.scrollY,
-    right: coords.right + window.scrollX
+    right: coords.right + window.scrollX,
+    top: coords.top + window.scrollY,
+    left: coords.left + window.scrollX
   }
 }
 
 export const EmojiButton = ({ className, size = 20, ...props }: Props) => {
   const { editor } = useMessageComposer()
+  const { toggleEmojiPicker } = useChatStore()
+  const { openSheet, closeSheet } = useSheetStore()
+  const { chatRoom } = useChatStore()
+  const {
+    settings: {
+      editor: { isMobile }
+    }
+  } = useStore((state) => state)
 
-  const openEmojiPicker = useCallback(
-    (clickEvent: any) => {
-      if (!editor) return
+  const calculatePickerPosition = (coordinates: any) => {
+    const { clientHeight, clientWidth } = document.querySelector('em-emoji-picker') as HTMLElement
 
-      const caretPosition = getCaretPositionWithScroll(editor)
+    // we need to pick up these dynamic values from the DOM
+    const emojiButtonWidth = 24
+    const chatEditorHeight = 153
 
-      const event = new CustomEvent('toggelEmojiPicker', {
-        detail: {
-          clickEvent: clickEvent,
-          editor,
-          type: 'inserEmojiToEditor',
-          coordinates: caretPosition
-        }
+    let newTop, newLeft
+
+    if (coordinates) {
+      newTop = coordinates.y || coordinates.top
+      newLeft = coordinates.x || coordinates.left
+
+      // Adjust for right and bottom edges
+      if (newLeft + clientWidth + emojiButtonWidth > window.innerWidth) {
+        newLeft = newLeft - clientWidth
+      }
+      if (newTop + clientHeight + chatEditorHeight > window.innerHeight) {
+        newTop = newTop - clientHeight
+      }
+
+      // Adjust for top and left edges
+      newTop = Math.max(0, newTop)
+      newLeft = Math.max(0, newLeft)
+
+      return {
+        top: newTop,
+        left: newLeft
+      }
+    }
+  }
+
+  const openEmojiPickerHandler = useCallback(() => {
+    if (!editor) return
+
+    const caretPosition = getCaretPosition(editor)
+    const pickerOpenPosition = calculatePickerPosition(caretPosition)
+
+    if (isMobile) {
+      closeSheet()
+      openSheet('emojiPicker', {
+        chatRoomState: { ...chatRoom }
       })
-      document.dispatchEvent(event)
-    },
-    [editor]
-  )
+    } else {
+      toggleEmojiPicker(
+        {
+          top: pickerOpenPosition?.top || 0,
+          left: pickerOpenPosition?.left || 0
+        },
+        'inserEmojiToEditor'
+      )
+    }
+  }, [editor, chatRoom])
 
   return (
     <Button
       className={className}
-      onPress={openEmojiPicker}
+      onPress={openEmojiPickerHandler}
       tooltip="Emoji"
       tooltipPosition="tooltip-top"
       {...props}>

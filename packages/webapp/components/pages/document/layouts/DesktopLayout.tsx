@@ -4,6 +4,7 @@ import DesktopEditor from '../components/DesktopEditor'
 import { useStore } from '@stores'
 import { useHashRouter } from '@hooks/useHashRouter'
 import DesktopHistory from '@components/pages/history/desktop/DesktopHistory'
+import { EmojiPanel } from '@components/chat/components/EmojiPanel'
 
 const DesktopLayout = () => {
   const {
@@ -21,6 +22,9 @@ const DesktopLayout = () => {
     <div className={`pad tiptap relative flex h-full flex-col border-solid ${deviceClass}`}>
       <PadTitle />
       <DesktopEditor />
+      <EmojiPanel variant="desktop">
+        <EmojiPanel.Selector />
+      </EmojiPanel>
     </div>
   )
 }
