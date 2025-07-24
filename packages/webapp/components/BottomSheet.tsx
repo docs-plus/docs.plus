@@ -88,6 +88,12 @@ const BottomSheet = () => {
             paddingBottom: isDeviceIOS ? keyboardHeight : 0
           }
         }
+      case 'emojiPicker':
+        return {
+          style: {
+            paddingBottom: isDeviceIOS ? keyboardHeight : 0
+          }
+        }
       default:
         return {}
     }
