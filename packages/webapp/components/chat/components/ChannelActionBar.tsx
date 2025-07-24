@@ -47,11 +47,9 @@ const MobileToolbar = () => {
             <MessageComposer.BoldButton size={10} className="snap-center" />
             <MessageComposer.ItalicButton size={10} className="snap-center" />
             <MessageComposer.StrikethroughButton size={14} className="snap-center" />
-            <div className="divided snap-center" />
             <MessageComposer.HyperlinkButton size={18} className="snap-center" />
             <MessageComposer.BulletListButton size={16} className="snap-center" />
             <MessageComposer.OrderedListButton size={16} className="snap-center" />
-            <div className="divided snap-center" />
             <MessageComposer.BlockquoteButton size={20} className="snap-center" />
             <MessageComposer.CodeButton size={20} className="snap-center" />
             <MessageComposer.CodeBlockButton size={20} className="snap-center" />
