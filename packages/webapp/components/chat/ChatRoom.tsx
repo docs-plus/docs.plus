@@ -109,20 +109,21 @@ export const ChatRoom = forwardRef(
 
           <div className="flex w-full flex-col items-center justify-center bg-transparent">
             {(!isMobile || (isMobile && !isEmojiBoxOpen)) && <ActionBar />}
-            {pickEmoji && (
-              <EmojiPickerWrapper
-                isEmojiBoxOpen={isEmojiBoxOpen}
-                emojiPickerPosition={emojiPickerPosition}
-                closeEmojiPicker={closeEmojiPicker}
-                handleEmojiSelect={handleEmojiSelect}
-                ref={emojiPickerRef}
-              />
-            )}
           </div>
 
           <ScrollToBottomButton messagesContainer={messageContainerRef} />
           {children}
         </MessageWrapper>
+
+        {/* {pickEmoji && ( */}
+        {/* <EmojiPickerWrapper
+          isEmojiBoxOpen={isEmojiBoxOpen}
+          emojiPickerPosition={emojiPickerPosition}
+          closeEmojiPicker={closeEmojiPicker}
+          handleEmojiSelect={handleEmojiSelect}
+          ref={emojiPickerRef}
+        /> */}
+        {/* )} */}
       </div>
     )
   }

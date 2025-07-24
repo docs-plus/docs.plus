@@ -23,7 +23,6 @@ export const EmojiPickerWrapper = React.forwardRef(
                 left: `${emojiPickerPosition.left}px`
               }),
           visibility: isEmojiBoxOpen ? 'visible' : 'hidden',
-          // display: isEmojiBoxOpen ? 'block' : 'none',
           zIndex: 999
         }}
         ref={ref}>

@@ -12,6 +12,8 @@ type TChatRoom = {
   replyMessageMemory?: any
   editeMessageMemory?: any
   fetchMsgsFromId?: string
+  editorInstance?: any
+  editorRef?: any
 }
 
 interface IChatroomStore {
@@ -92,7 +94,9 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     replyMessageMemory: undefined,
     editeMessageMemory: undefined,
     commentMessageMemory: undefined,
-    fetchMsgsFromId: undefined
+    fetchMsgsFromId: undefined,
+    editorInstance: undefined,
+    editorRef: undefined
   },
 
   updateChatRoom: (key, value) => {
@@ -161,7 +165,9 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
         documentId: undefined,
         headingPath: [],
         open: false,
-        pannelHeight: state.chatRoom.pannelHeight
+        pannelHeight: state.chatRoom.pannelHeight,
+        editorInstance: undefined,
+        editorRef: undefined
       }
     })
     const user = useAuthStore.getState().profile

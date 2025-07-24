@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 
-export type SheetType = 'chatroom' | 'notifications' | 'filters' | null
+export type SheetType = 'chatroom' | 'notifications' | 'filters' | 'emojiPicker' | null
 
 interface SheetState {
   activeSheet: SheetType
@@ -10,6 +10,7 @@ interface SheetState {
   closeSheet: () => void
   isSheetOpen: (sheet: string) => boolean
   setSheetContainerRef: (ref: HTMLDivElement | null) => void
+  clearSheetState: () => void
 }
 
 export const useSheetStore = create<SheetState>((set, get) => ({
@@ -22,6 +23,8 @@ export const useSheetStore = create<SheetState>((set, get) => ({
   openSheet: (sheet, data = {}) => set({ activeSheet: sheet, sheetData: data }),
 
   closeSheet: () => set({ activeSheet: null, sheetData: {} }),
+
+  clearSheetState: () => set({ sheetData: {} }),
 
   isSheetOpen: (sheet) => get().activeSheet === sheet
 }))

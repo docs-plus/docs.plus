@@ -9,6 +9,7 @@ import channelMessagesStore from './channelMessagesStore'
 import workspaceSettingsStore from './workspaceSettingsStore'
 import channelPinnedMessagesStore from './channelPinnedMessagesStore'
 import bookmark from './bookmark'
+import emojiPickerStore from './emojiPickerStore'
 
 enableMapSet()
 
@@ -20,7 +21,8 @@ interface IStore
     ReturnType<typeof workspaceSettingsStore>,
     ReturnType<typeof threadStore>,
     ReturnType<typeof bookmark>,
-    ReturnType<typeof channelMessagesStore> {}
+    ReturnType<typeof channelMessagesStore>,
+    ReturnType<typeof emojiPickerStore> {}
 
 export const useChatStore = create<IStore>((...props) => ({
   ...workspaceSettingsStore(...props),
@@ -30,5 +32,6 @@ export const useChatStore = create<IStore>((...props) => ({
   ...chatRoom(...props),
   ...channelsStore(...props),
   ...threadStore(...props),
-  ...bookmark(...props)
+  ...bookmark(...props),
+  ...emojiPickerStore(...props)
 }))

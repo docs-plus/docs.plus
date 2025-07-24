@@ -19,6 +19,9 @@ type TOpenChatData = {
   scroll2Heading?: boolean
   toggleRoom?: boolean
   fetchMsgsFromId?: string
+  focusEditor?: boolean
+  insertContent?: string | null
+  clearSheetState?: boolean
 }
 
 type TApplyFilterData = {
@@ -66,7 +69,15 @@ export const eventsHub = (router: NextRouter) => {
   })
 
   PubSub.subscribe(CHAT_OPEN, (msg, data: TOpenChatData) => {
-    const { headingId, scroll2Heading = false, toggleRoom = true, fetchMsgsFromId } = data
+    const {
+      headingId,
+      scroll2Heading = false,
+      toggleRoom = true,
+      fetchMsgsFromId,
+      focusEditor = false,
+      insertContent = null,
+      clearSheetState = false
+    } = data
 
     if (!headingId) return
 
@@ -92,6 +103,25 @@ export const eventsHub = (router: NextRouter) => {
 
       if (scroll2Heading) scrollToHeading(headingId)
     }, 200)
+
+    // TODO: use nimation transition to observe the sheet/modal is open and editor is ready
+    // make sure the sheet/modal is open and editor is ready
+
+    setTimeout(() => {
+      const { editorInstance } = useChatStore.getState().chatRoom
+      if (editorInstance && focusEditor) {
+        editorInstance.commands.focus()
+      }
+    }, 600)
+
+    setTimeout(() => {
+      const { editorInstance } = useChatStore.getState().chatRoom
+      if (editorInstance && insertContent) {
+        editorInstance.commands.insertContent(insertContent)
+      }
+    }, 600)
+
+    if (clearSheetState) useSheetStore.getState().clearSheetState()
   })
 
   PubSub.subscribe(APPLY_FILTER, (msg, data: TApplyFilterData) => {
