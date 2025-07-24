@@ -405,7 +405,8 @@ const MessageComposer = ({
 
   const toggleToolbar = useCallback(() => {
     setIsToolbarOpen(!isToolbarOpen)
-  }, [setIsToolbarOpen, isToolbarOpen])
+    editor?.commands.focus()
+  }, [setIsToolbarOpen, isToolbarOpen, editor])
 
   useEffect(() => {
     editor && setOrUpdateChatRoom('editorInstance', editor)
