@@ -72,15 +72,14 @@ export const EmojiButton = ({ className, size = 20, ...props }: Props) => {
   const openEmojiPickerHandler = useCallback(() => {
     if (!editor) return
 
-    const caretPosition = getCaretPosition(editor)
-    const pickerOpenPosition = calculatePickerPosition(caretPosition)
-
     if (isMobile) {
       closeSheet()
       openSheet('emojiPicker', {
         chatRoomState: { ...chatRoom }
       })
     } else {
+      const caretPosition = getCaretPosition(editor)
+      const pickerOpenPosition = calculatePickerPosition(caretPosition)
       toggleEmojiPicker(
         {
           top: pickerOpenPosition?.top || 0,
