@@ -19,22 +19,19 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     { type, editor, onPress, children, tooltip, tooltipPosition, className, isActive, disabled },
     ref
   ) => {
-    const handleTouchEnd = (event: React.TouchEvent) => {
-      event.preventDefault() // Prevent subsequent click event
-      onPress?.(event)
-    }
-
     return (
       <button
         ref={ref}
         className={twMerge(
-          'btn btn-ghost btn-sm tooltip tooltip-bottom flex size-8 cursor-pointer items-center justify-center border-0 p-0 antialiased outline-none',
+          'btn btn-ghost btn-sm tooltip tooltip-bottom flex size-8 cursor-pointer touch-manipulation items-center justify-center border-0 p-0 antialiased outline-none',
           (isActive || editor?.isActive(type || '')) && 'is-active btn-active',
           tooltipPosition,
           className
         )}
-        onClick={onPress}
-        onTouchEnd={handleTouchEnd}
+        onClick={(e) => {
+          e.preventDefault()
+          onPress?.(e)
+        }}
         data-tip={tooltip}
         disabled={disabled}>
         {children}

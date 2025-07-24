@@ -12,7 +12,10 @@ export const MentionButton = ({ className, size = 20, ...props }: Props) => {
   return (
     <Button
       className={className}
-      onPress={() => editor?.chain().focus().insertContent('@').run()}
+      onPress={(e) => {
+        e.preventDefault()
+        editor?.chain().focus().insertContent('@').run()
+      }}
       tooltip="Mention"
       tooltipPosition="tooltip-top"
       {...props}>
