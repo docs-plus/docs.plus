@@ -9,7 +9,7 @@ const config: Config = {
       isEnabled: process.env.NEXT_PRIVATE_TURNSTILE_SECRET_KEY ? true : false,
       siteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '',
       verifyUrl: '/api/verify-turnstile',
-      expireTime: 60 * 60 * 24 * 2 // 2 days
+      expireTime: 60 * 60 * 24 * 7 // 1 week
     },
     profile: {
       // "id" is user id, "avatarUpdatedAt" is the timestamp of the avatar update
