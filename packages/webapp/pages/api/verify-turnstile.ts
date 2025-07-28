@@ -41,8 +41,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
       method: 'POST',
       body: formData,
-      // Add timeout to prevent hanging
-      signal: AbortSignal.timeout(10000)
+      signal: AbortSignal.timeout(5000) // Reduced timeout
     })
 
     if (!response.ok) {
