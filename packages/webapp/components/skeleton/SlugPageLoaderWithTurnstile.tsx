@@ -47,7 +47,7 @@ const TurnstileModal = ({ showTurnstile }: Props) => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ token }),
-          signal: AbortSignal.timeout(15000)
+          signal: AbortSignal.timeout(8000) // Reduced from 15s to 8s
         })
 
         const data = await response.json()
@@ -62,20 +62,12 @@ const TurnstileModal = ({ showTurnstile }: Props) => {
           throw new Error(data.message || 'Verification failed')
         }
       } catch (err) {
-        let errorMessage = 'Verification failed. Please try again.'
-
-        if (err instanceof Error) {
-          if (err.name === 'TimeoutError') {
-            errorMessage = 'Verification timed out. Please try again.'
-          } else if (err.message.includes('fetch')) {
-            errorMessage = 'Network error. Please check your connection.'
-          } else {
-            errorMessage = err.message
-          }
-        }
-
         setState('error')
-        setError(errorMessage)
+        setError(
+          err instanceof Error && err.name === 'TimeoutError'
+            ? 'Verification timed out. Please try again.'
+            : 'Verification failed. Please try again.'
+        )
         console.error('Turnstile verification error:', err)
       }
     },
