@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import EditorContent from './EditorContent'
 import ToolbarMobile from './toolbarMobile/ToolbarMobile'
-import { useChatStore, useStore } from '@stores'
+import { useChatStore, useStore, useSheetStore } from '@stores'
 import { useAdjustEditorSizeForChatRoom } from '../hooks'
 import useEditableDocControl from '@components/pages/document/hooks/useEditableDocControl'
 import usePageHeightAdjust from '@components/pages/document/hooks/usePageHeightAdjust'
@@ -12,8 +12,9 @@ const Editor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
 
   const chatRoom = useChatStore((state) => state.chatRoom)
+  const { activeSheet, pendingSheet } = useSheetStore((state) => state)
 
-  const { isKeyboardOpen } = useStore((state) => state)
+  const { isKeyboardOpen, virtualKeyboardState } = useStore((state) => state)
 
   // @ts-ignore
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
@@ -37,7 +38,9 @@ const Editor = () => {
 
       <div
         className={`toolbars bg-base-100 z-10 w-full ${
-          isKeyboardOpen && !chatRoom?.headingId ? 'block' : 'hidden'
+          isKeyboardOpen && !chatRoom?.headingId && !activeSheet && !pendingSheet
+            ? 'block'
+            : 'hidden'
         }`}>
         <ToolbarMobile />
       </div>
