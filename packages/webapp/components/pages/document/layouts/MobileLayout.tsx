@@ -8,6 +8,7 @@ import { ModalDrawer } from '@components/ui/ModalDrawer'
 import { useHashRouter } from '@hooks/useHashRouter'
 import MobileHistory from '@components/pages/history/mobile/MobileHistory'
 import BottomSheet from '@components/BottomSheet'
+import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 
 const MobileLeftSidePanel = ({ filterModalRef }: any) => {
   return (
@@ -28,6 +29,7 @@ const MobileLayout = () => {
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
 
   const isHistoryView = useHashRouter()
+  useVirtualKeyboard()
 
   if (isHistoryView) return <MobileHistory />
 

@@ -29,7 +29,7 @@ const getCaretPosition = (editor: Editor) => {
 export const EmojiButton = ({ className, size = 20, ...props }: Props) => {
   const { editor } = useMessageComposer()
   const { toggleEmojiPicker } = useChatStore()
-  const { openSheet, closeSheet } = useSheetStore()
+  const { switchSheet } = useSheetStore()
   const { chatRoom } = useChatStore()
   const {
     settings: {
@@ -73,8 +73,7 @@ export const EmojiButton = ({ className, size = 20, ...props }: Props) => {
     if (!editor) return
 
     if (isMobile) {
-      closeSheet()
-      openSheet('emojiPicker', {
+      switchSheet('emojiPicker', {
         chatRoomState: { ...chatRoom }
       })
     } else {

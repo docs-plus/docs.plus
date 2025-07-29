@@ -19,7 +19,6 @@ export const EmojiSelector = () => {
 
       PubSub.publish(CHAT_OPEN, {
         headingId: headingId,
-        focusEditor: true,
         insertContent: emoji.native,
         clearSheetState: true
       })

@@ -1,6 +1,5 @@
 import React from 'react'
 import { useStore } from '@stores'
-import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import { Pencil } from '@icons'
 
 const BigPencilBtn = () => {
@@ -9,7 +8,7 @@ const BigPencilBtn = () => {
       editor: { isMobile, instance: editor, selectionPos }
     }
   } = useStore((state) => state)
-  const isKeyboardOpen = useDetectKeyboardOpen() || false
+  const { isKeyboardOpen } = useStore((state) => state)
 
   const toggleToolbar = () => {
     if (!isMobile) return

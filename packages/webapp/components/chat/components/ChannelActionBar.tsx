@@ -8,11 +8,10 @@ import { useChannel } from '../context/ChannelProvider'
 import SignInToJoinChannel from './SignInToJoinChannel'
 import { TChannelSettings } from '@types'
 import MessageComposer from './MessageComposer/MessageComposer'
-import useKeyboardHeight from '@hooks/useKeyboardHeight'
 import { useMessageComposer } from './MessageComposer/hooks/useMessageComposer'
 
 const MobileToolbar = () => {
-  const { isOpen: isKeyboardOpen } = useKeyboardHeight()
+  const { isKeyboardOpen } = useStore((state) => state)
   const { isToolbarOpen, toggleToolbar } = useMessageComposer()
 
   if (!isKeyboardOpen) return null

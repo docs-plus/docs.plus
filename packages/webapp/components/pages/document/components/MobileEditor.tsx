@@ -1,21 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import EditorContent from './EditorContent'
 import ToolbarMobile from './toolbarMobile/ToolbarMobile'
-import { useChatStore } from '@stores'
+import { useChatStore, useStore } from '@stores'
 import { useAdjustEditorSizeForChatRoom } from '../hooks'
 import useEditableDocControl from '@components/pages/document/hooks/useEditableDocControl'
 import usePageHeightAdjust from '@components/pages/document/hooks/usePageHeightAdjust'
 import useUpdateDocPageUnreadMsg from '@components/pages/document/hooks/useUpdateDocPageUnreadMsg'
 import { MobileBubbleMenu } from './MobileBubbleMenu'
-import { animate, useMotionValue } from 'motion/react'
-import useKeyboardHeight from '@hooks/useKeyboardHeight'
 
 const Editor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
 
   const chatRoom = useChatStore((state) => state.chatRoom)
 
-  const { isOpen: isKeyboardOpen, height: keyboardHeight, viewportHeight } = useKeyboardHeight()
+  const { isKeyboardOpen } = useStore((state) => state)
 
   // @ts-ignore
   useAdjustEditorSizeForChatRoom(editorWrapperRef)

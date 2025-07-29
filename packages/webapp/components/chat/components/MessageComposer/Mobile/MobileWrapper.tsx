@@ -1,6 +1,5 @@
 import { useSheetStore, useStore } from '@stores'
 import { useEffect } from 'react'
-import useKeyboardHeight from '@hooks/useKeyboardHeight'
 import { applyStyles } from '../helpers/domUtils'
 
 type Props = {
@@ -21,7 +20,7 @@ const SHEET_STYLES = {
 
 export const MobileWrapper = ({ children }: Props) => {
   const { sheetContainerRef } = useSheetStore()
-  const { isOpen: isKeyboardOpen } = useKeyboardHeight()
+  const { isKeyboardOpen } = useStore((state) => state)
   const {
     settings: {
       editor: { isMobile }
