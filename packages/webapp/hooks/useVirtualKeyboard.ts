@@ -1,17 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
+import { useStore } from '@stores'
 
-interface KeyboardState {
-  isOpen: boolean
-  height: number
-  viewportHeight: number
-}
-
-const useKeyboardHeight = (): KeyboardState => {
-  const [keyboardState, setKeyboardState] = useState<KeyboardState>({
-    isOpen: false,
-    height: 0,
-    viewportHeight: window.innerHeight
-  })
+const useVirtualKeyboard = () => {
+  const { setKeyboardOpen, setKeyboardHeight, setVirtualKeyboardState } = useStore((state) => state)
 
   useEffect(() => {
     const visualViewport = window.visualViewport
@@ -27,11 +18,9 @@ const useKeyboardHeight = (): KeyboardState => {
       const keyboardHeight = windowHeight - viewportHeight
       const isKeyboardOpen = keyboardHeight > 0
 
-      setKeyboardState({
-        isOpen: isKeyboardOpen,
-        height: keyboardHeight,
-        viewportHeight: viewportHeight
-      })
+      setKeyboardOpen(isKeyboardOpen)
+      setKeyboardHeight(keyboardHeight)
+      setVirtualKeyboardState(isKeyboardOpen ? 'open' : 'closed')
     }
 
     // Initial check
@@ -46,8 +35,6 @@ const useKeyboardHeight = (): KeyboardState => {
       visualViewport.removeEventListener('scroll', handleViewportChange)
     }
   }, [])
-
-  return keyboardState
 }
 
-export default useKeyboardHeight
+export default useVirtualKeyboard

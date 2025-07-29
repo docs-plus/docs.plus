@@ -1,7 +1,9 @@
 import PubSub from 'pubsub-js'
-import { useChatStore, useAuthStore, useStore, useSheetStore } from '@stores'
+import { useChatStore, useAuthStore, useStore, useSheetStore, SheetType } from '@stores'
 import { NextRouter } from 'next/router'
 import { scrollToHeading } from '@utils/index'
+import { retryWithBackoff } from '../utils/retryWithBackoff'
+
 export const CHAT_COMMENT = Symbol('chat.comment')
 export const CHAT_OPEN = Symbol('chat.open')
 export const APPLY_FILTER = Symbol('apply.filter')
@@ -22,6 +24,7 @@ type TOpenChatData = {
   focusEditor?: boolean
   insertContent?: string | null
   clearSheetState?: boolean
+  switchSheet?: SheetType
 }
 
 type TApplyFilterData = {
@@ -76,7 +79,8 @@ export const eventsHub = (router: NextRouter) => {
       fetchMsgsFromId,
       focusEditor = false,
       insertContent = null,
-      clearSheetState = false
+      clearSheetState = false,
+      switchSheet = null
     } = data
 
     if (!headingId) return
@@ -104,24 +108,64 @@ export const eventsHub = (router: NextRouter) => {
       if (scroll2Heading) scrollToHeading(headingId)
     }, 200)
 
-    // TODO: use nimation transition to observe the sheet/modal is open and editor is ready
-    // make sure the sheet/modal is open and editor is ready
+    if (insertContent) {
+      retryWithBackoff(
+        () => {
+          const { editorInstance } = useChatStore.getState().chatRoom
+          const { sheetState, isSheetOpen } = useSheetStore.getState()
 
-    setTimeout(() => {
-      const { editorInstance } = useChatStore.getState().chatRoom
-      if (editorInstance && focusEditor) {
-        editorInstance.commands.focus()
-      }
-    }, 600)
+          // Return false to retry, true when condition is met
+          if (sheetState === 'open' && editorInstance && insertContent && isSheetOpen('chatroom')) {
+            editorInstance.chain().focus().insertContent(insertContent).run()
+            return true
+          } else if (isSheetOpen('chatroom') && editorInstance) {
+            // make sure we insert the content in the editor
+            // if the sheetState goes wrong, change the sheetState to open
+            useSheetStore.getState().setSheetState('open')
+            return false // This will trigger a retry
+          }
 
-    setTimeout(() => {
-      const { editorInstance } = useChatStore.getState().chatRoom
-      if (editorInstance && insertContent) {
-        editorInstance.commands.insertContent(insertContent)
-      }
-    }, 600)
+          return false // This will trigger a retry
+        },
+        {
+          maxAttempts: 6,
+          initialDelayMs: 600,
+          maxDelayMs: 1000,
+          onRetry: (attempt, error) => {
+            console.info(`Attempt ${attempt} failed: ${error.message}. Retrying...`)
+          }
+        }
+      ).then((result) => {
+        // do nothing
+      })
+    }
 
-    if (clearSheetState) useSheetStore.getState().clearSheetState()
+    if (focusEditor) {
+      retryWithBackoff(
+        () => {
+          const { editorInstance } = useChatStore.getState().chatRoom
+          if (editorInstance && focusEditor) {
+            editorInstance.commands.focus()
+            return true
+          }
+          return false
+        },
+        {
+          maxAttempts: 6,
+          initialDelayMs: 600,
+          maxDelayMs: 1000,
+          onRetry: (attempt, error) => {
+            console.info(`Attempt ${attempt} failed: ${error.message}. Retrying...`)
+          }
+        }
+      )
+    }
+
+    if (switchSheet) {
+      useSheetStore.getState().switchSheet(switchSheet)
+    } else if (clearSheetState) {
+      useSheetStore.getState().clearSheetState()
+    }
   })
 
   PubSub.subscribe(APPLY_FILTER, (msg, data: TApplyFilterData) => {

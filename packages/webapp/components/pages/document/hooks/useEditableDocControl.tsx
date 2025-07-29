@@ -1,5 +1,4 @@
 import { useEffect } from 'react'
-import useDetectKeyboardOpen from 'use-detect-keyboard-open'
 import { useStore } from '@stores'
 
 const useEditableDocControl = () => {
@@ -8,7 +7,7 @@ const useEditableDocControl = () => {
     editor: { instance: editor, loading }
   } = useStore((state) => state.settings)
 
-  const isKeyboardOpen = useDetectKeyboardOpen() || false
+  const { isKeyboardOpen } = useStore((state) => state)
 
   useEffect(() => {
     if (!editor) return
