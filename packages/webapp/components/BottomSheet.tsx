@@ -14,6 +14,7 @@ const BottomSheet = () => {
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
   const setSheetContainerRef = useSheetStore((state) => state.setSheetContainerRef)
   const setSheetState = useSheetStore((state) => state.setSheetState)
+  const sheetState = useSheetStore((state) => state.sheetState)
   const { keyboardHeight, virtualKeyboardState } = useStore((state) => state)
   const { deviceDetect } = useStore((state) => state.settings)
   const sheetContentRef = useRef<HTMLDivElement>(null)
@@ -80,6 +81,7 @@ const BottomSheet = () => {
     if (activeSheet === 'chatroom') {
       closeChatRoom()
       destroyChatRoom()
+      closeSheet()
     } else if (activeSheet === 'emojiPicker' && sheetData.chatRoomState) {
       const { headingId } = sheetData.chatRoomState
       PubSub.publish(CHAT_OPEN, {
@@ -109,7 +111,7 @@ const BottomSheet = () => {
       default:
         return
     }
-  }, [sheetContentRef, activeSheet, keyboardHeight, isDeviceIOS, virtualKeyboardState])
+  }, [sheetContentRef, activeSheet, keyboardHeight, isDeviceIOS, virtualKeyboardState, sheetState])
 
   // NOTE: these events are more reliable than the other events for sheet state
   const onOpenEndHandler = () => setSheetState('closed')
