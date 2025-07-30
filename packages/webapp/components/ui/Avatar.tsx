@@ -4,6 +4,7 @@ import React, { useState, useEffect, useCallback, forwardRef } from 'react'
 import { createAvatar } from '@dicebear/core'
 import { lorelei, shapes, rings, initials } from '@dicebear/collection'
 import { twx, cn } from '@utils/twx'
+import { twMerge } from 'tailwind-merge'
 import Config from '@config'
 import { useUserModal } from '@context/UserModalContext'
 
@@ -22,7 +23,6 @@ const AContainer = twx.div<DivProps>((props) =>
     props.$typing && 'avatar-typing'
   )
 )
-const AWrapper = twx.div`relative max-w-24 rounded-full bg-white`
 
 export const Avatar = forwardRef(
   (
@@ -35,9 +35,9 @@ export const Avatar = forwardRef(
       online,
       src,
       alt,
-      size = 96,
       status,
       clickable = true,
+      asChild,
       ...restProps
     }: any,
     ref: any
@@ -91,23 +91,32 @@ export const Avatar = forwardRef(
       }
     }
 
-    const avatarStyle = `w-[${size}px] h-[${size}px] m-0 rounded-full object-contain`
+    const avatarStyle = `w-auto h-full m-0 object-contain relative rounded-full bg-white`
+
+    // Filter out DOM-invalid props that shouldn't reach styled components
+    const { asChild: _asChild, ...validDOMProps } = restProps
 
     if (justImage)
       return <img alt={alt} src={imgSrc} onError={handleError} className={avatarStyle} />
 
+    // Build container classes manually to avoid styled component prop issues
+    const containerClasses = twMerge(
+      'avatar border-gray-300',
+      displayPresence && (online ? 'online' : 'offline'),
+      clickable ? 'cursor-pointer' : 'cursor-default',
+      status === 'TYPING' && 'avatar-typing'
+    )
+
     return (
-      <AContainer
-        $presence={displayPresence}
-        $online={online}
-        $clickable={clickable}
-        $typing={status === 'TYPING'}
-        {...restProps}
-        onClick={handleClick}>
-        <AWrapper className={avatarStyle}>
-          <img alt={alt} src={imgSrc} onError={handleError} className={avatarStyle} ref={ref} />
-        </AWrapper>
-      </AContainer>
+      <div className={containerClasses} {...validDOMProps} onClick={handleClick}>
+        <img
+          alt={alt}
+          src={imgSrc}
+          onError={handleError}
+          className={twMerge(avatarStyle, 'h-full w-auto')}
+          ref={ref}
+        />
+      </div>
     )
   }
 )

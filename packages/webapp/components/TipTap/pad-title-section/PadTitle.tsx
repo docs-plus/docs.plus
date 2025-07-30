@@ -98,10 +98,8 @@ const PadTitle = () => {
                       id={user.id}
                       src={user.avatar_url}
                       avatarUpdatedAt={user.avatar_updated_at}
-                      width={24}
-                      height={24}
                       clickable={false}
-                      className="min-h-[50px] min-w-[50px] cursor-pointer rounded-full border border-gray-300 shadow-md"
+                      className="min-h-[46px] min-w-[46px] cursor-pointer rounded-full border border-gray-300 shadow-md"
                     />
                   </Button>
                 ) : (
