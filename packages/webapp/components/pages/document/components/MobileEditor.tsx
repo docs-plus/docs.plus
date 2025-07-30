@@ -16,13 +16,6 @@ const Editor = () => {
 
   const { isKeyboardOpen, virtualKeyboardState } = useStore((state) => state)
 
-  useEffect(() => {
-    console.log({
-      virtualKeyboardState,
-      isKeyboardOpen
-    })
-  }, [virtualKeyboardState, isKeyboardOpen])
-
   // @ts-ignore
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
 
