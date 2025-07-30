@@ -70,6 +70,14 @@ input {
 .ProseMirror {
   height: 100%;
   outline: none;
+
+  /* Ensure caret is always visible across all ProseMirror instances */
+  caret-color: #000;
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    caret-color: #000;
+  }
 }
 
 html:not(.m_mobile) {

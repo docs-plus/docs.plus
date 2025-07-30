@@ -15,6 +15,14 @@ $bg-root: #f8f9fa;
 
       .heading[level='1'] {
         background-color: #fff;
+
+        /* Fix caret visibility on white background */
+        caret-color: #000;
+
+        /* Ensure caret is visible in all child elements */
+        * {
+          caret-color: #000;
+        }
       }
     }
   }
@@ -48,6 +56,57 @@ $bg-root: #f8f9fa;
   text-align: left;
   outline: none;
   min-height: 800px;
+  scroll-padding-top: 100px;
+
+  /* Ensure caret is always visible */
+  caret-color: #000;
+
+  /* Dark mode support for caret */
+  @media (prefers-color-scheme: dark) {
+    caret-color: #000;
+  }
+
+  /* Ensure caret is visible on different backgrounds */
+  &.dark-theme {
+    caret-color: #000;
+  }
+
+  /* Fix caret visibility in all child elements */
+  .heading,
+  .contentWrapper,
+  .content,
+  div[data-type],
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  blockquote,
+  .task-item,
+  .task-list,
+  li,
+  table,
+  td,
+  th,
+  pre,
+  code {
+    caret-color: inherit;
+  }
+
+  /* Elements with white/light backgrounds need explicit black caret */
+  .heading[level='1'],
+  [style*='background-color: #fff'],
+  [style*='background-color: white'],
+  [style*='background: #fff'],
+  [style*='background: white'] {
+    caret-color: #000 !important;
+
+    * {
+      caret-color: #000 !important;
+    }
+  }
 
   .is-empty::before {
     content: attr(data-placeholder);
