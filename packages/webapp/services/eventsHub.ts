@@ -108,6 +108,16 @@ export const eventsHub = (router: NextRouter) => {
       if (scroll2Heading) scrollToHeading(headingId)
     }, 200)
 
+    const { isKeyboardOpen, settings } = useStore.getState()
+
+    // if the keyboard is open, unfocus the document editor
+    if (isKeyboardOpen) {
+      const proseMirrorEl = document.querySelector('.tiptap.ProseMirror') as HTMLElement
+      proseMirrorEl?.setAttribute('contenteditable', 'false')
+      useStore.getState().setWorkspaceEditorSetting('isEditable', false)
+      settings.editor.instance?.setEditable(false)
+    }
+
     if (insertContent) {
       retryWithBackoff(
         () => {
