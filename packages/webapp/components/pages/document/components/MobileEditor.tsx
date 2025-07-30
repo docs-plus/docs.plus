@@ -16,6 +16,13 @@ const Editor = () => {
 
   const { isKeyboardOpen, virtualKeyboardState } = useStore((state) => state)
 
+  useEffect(() => {
+    console.log({
+      virtualKeyboardState,
+      isKeyboardOpen
+    })
+  }, [virtualKeyboardState, isKeyboardOpen])
+
   // @ts-ignore
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
 
@@ -37,10 +44,12 @@ const Editor = () => {
       </div>
 
       <div
-        className={`toolbars bg-base-100 z-10 w-full ${
-          isKeyboardOpen && !chatRoom?.headingId && !activeSheet && !pendingSheet
-            ? 'block'
-            : 'hidden'
+        className={`toolbars bg-base-100 z-10 w-full transition-all duration-300 ease-in-out ${
+          virtualKeyboardState === 'closing'
+            ? 'pointer-events-none translate-y-4 opacity-0'
+            : isKeyboardOpen && !chatRoom?.headingId && !activeSheet && !pendingSheet
+              ? 'pointer-events-auto translate-y-0 opacity-100'
+              : 'pointer-events-none translate-y-4 opacity-0'
         }`}>
         <ToolbarMobile />
       </div>
