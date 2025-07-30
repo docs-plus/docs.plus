@@ -3,7 +3,8 @@ import DocumentWithPictureLoader from '@components/skeleton/DocumentWithPictureL
 import DocumentSimpleLoader from '@components/skeleton/DocumentSimpleLoader'
 import { useStore } from '@stores'
 import { twMerge } from 'tailwind-merge'
-import { useEffect, useMemo, useRef } from 'react'
+import { useRef, useCallback } from 'react'
+import useDoubleTap from '@hooks/useDoubleTap'
 
 const RenderLoader = ({ className }: { className?: string }) => {
   return (
@@ -19,18 +20,19 @@ const EditorContent = ({ className }: { className?: string }) => {
   const {
     editor: { instance: editor, loading, providerSyncing, applyingFilters }
   } = useStore((state) => state.settings)
+  const { isKeyboardOpen } = useStore((state) => state)
   const editorElement = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    const setAttributes = () => {
-      const firstChild = editorElement.current?.firstChild as HTMLElement | null
-      if (firstChild) {
-        firstChild.setAttribute('inputmode', 'text')
-        firstChild.setAttribute('enterkeyhint', 'enter')
-      }
-    }
-    setAttributes()
-  }, [editor])
+  // Focus handler
+  const handleFocus = useCallback(() => {
+    if (!editor) return
+    const btnBigBluePencil = document.querySelector('.btn_bigBluePencil') as HTMLButtonElement
+
+    if (btnBigBluePencil && !isKeyboardOpen) btnBigBluePencil.click()
+  }, [editor, isKeyboardOpen])
+
+  // Double tap handler
+  const handleDoubleTap = useDoubleTap(handleFocus)
 
   if (loading || providerSyncing || !editor) {
     return <RenderLoader className={className} />
@@ -40,12 +42,16 @@ const EditorContent = ({ className }: { className?: string }) => {
     <>
       <RenderLoader className={applyingFilters ? 'block' : 'hidden'} />
       <TiptapEditor
+        inputMode={'text'}
+        enterKeyHint={'enter'}
+        autoFocus={isKeyboardOpen}
         ref={editorElement}
         className={twMerge(
           `tiptap__editor docy_editor relative w-full ${!applyingFilters ? 'block' : 'hidden'}`,
           className
         )}
         editor={editor}
+        onTouchEnd={handleDoubleTap}
       />
     </>
   )
