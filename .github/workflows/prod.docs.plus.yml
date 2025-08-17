@@ -65,12 +65,10 @@ jobs:
       # Install dependencies with optimizations
       - name: Install dependencies
         run: |
-          # Use yarn with production optimizations
-          yarn install --frozen-lockfile --production=false --cache-folder ~/.yarn/cache
-          # Clean up dev dependencies in production
-          if [ "$NODE_ENV" = "production" ]; then
-            yarn install --frozen-lockfile --production=true --cache-folder ~/.yarn/cache
-          fi
+          # Install all dependencies (including dev deps needed for extension builds)
+          yarn install --frozen-lockfile --cache-folder ~/.yarn/cache
+          # Verify tsup is available
+          npx tsup --version || yarn add -W -D tsup
 
       # This step copies the .env file from the root directory to the required directories for each package.
       # Update these paths if your repository structure is different.
