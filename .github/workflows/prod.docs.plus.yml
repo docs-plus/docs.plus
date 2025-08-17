@@ -51,8 +51,7 @@ jobs:
 
       # Install dependencies with optimizations
       - name: Install dependencies
-        run: yarn install --frozen-lockfile --production=true
-
+        run: yarn install --frozen-lockfile
       # This step copies the .env file from the root directory to the required directories for each package.
       # Update these paths if your repository structure is different.
       - name: Copy .env files
