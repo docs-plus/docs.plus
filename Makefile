@@ -94,32 +94,16 @@ build_front_stage:
 
 # Deploy frontend to production (assumes build already done by lerna)
 build_front_production:
-	@echo "🚀 Starting production deployment..."
-	@echo "📊 Pre-deployment system check..."
+	@echo "🚀 Deploying frontend to production..."
 	@cd packages/webapp && \
-	echo "Memory usage:" && free -h && \
-	echo "Disk space:" && df -h . && \
-	echo "🔍 Verifying build exists..." && \
-	if [ ! -d ".next" ]; then \
-		echo "❌ No build found! Run 'npm run build' first" && exit 1; \
+	if [ ! -f .next/standalone/server.js ]; then \
+		echo "❌ No standalone server found! Build failed." && exit 1; \
 	fi && \
-	echo "📈 Build size analysis:" && \
-	du -sh .next/ && \
-	echo "🔍 Checking standalone server:" && \
-	if [ -f .next/standalone/server.js ]; then \
-		echo "✅ Standalone server found: .next/standalone/server.js"; \
-	else \
-		echo "⚠️  Standalone server not found, will use regular next start"; \
-	fi && \
-	echo "🔄 Starting PM2 deployment..." && \
+	echo "✅ Starting PM2..." && \
 	npm run pm2:start:prod && \
-	echo "⏳ Waiting for application startup..." && \
-	sleep 15 && \
-	echo "🩺 Running health check..." && \
-	curl -f http://localhost:3001/api/health || (echo "❌ Health check failed" && pm2 logs nextjs_production --lines 20 && exit 1) && \
-	echo "✅ Production deployment completed successfully!" && \
-	echo "📊 Final PM2 status:" && \
-	npm run pm2:status
+	sleep 10 && \
+	curl -f http://localhost:3001/api/health || (echo "❌ Health check failed" && exit 1) && \
+	echo "✅ Deployment successful!"
 
 # Build, stop and remove the existing stage container, and run a new stage container
 build_hocuspocus.server_stage: down_stage
