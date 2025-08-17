@@ -104,6 +104,12 @@ build_front_production:
 	echo "✅ Build completed successfully" && \
 	echo "📈 Build size analysis:" && \
 	du -sh .next/ && \
+	echo "🔍 Checking standalone server:" && \
+	if [ -f .next/standalone/server.js ]; then \
+		echo "✅ Standalone server found: .next/standalone/server.js"; \
+	else \
+		echo "⚠️  Standalone server not found, will use regular next start"; \
+	fi && \
 	echo "🔄 Starting PM2 deployment..." && \
 	npm run pm2:start:prod && \
 	echo "⏳ Waiting for application startup..." && \
