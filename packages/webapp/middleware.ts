@@ -1,6 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
 export async function middleware(request: NextRequest) {
+  const startTime = Date.now()
+  const requestId = crypto.randomUUID()
+
   // Check for error-related query parameters
   const searchParams = request.nextUrl.searchParams
   const hasError = searchParams.has('error')
@@ -21,6 +24,33 @@ export async function middleware(request: NextRequest) {
       headers: request.headers
     }
   })
+
+  // Add request tracking headers
+  response.headers.set('X-Request-ID', requestId)
+  response.headers.set('X-Response-Time', `${Date.now() - startTime}ms`)
+
+  // Log request in production (simplified middleware logging)
+  if (process.env.NODE_ENV === 'production') {
+    const logData = {
+      requestId,
+      method: request.method,
+      url: request.url,
+      userAgent: request.headers.get('user-agent'),
+      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown',
+      timestamp: new Date().toISOString(),
+      duration: Date.now() - startTime
+    }
+
+    // Log to console (PM2 will capture this)
+    console.log(
+      JSON.stringify({
+        level: 'info',
+        message: 'Request processed',
+        type: 'middleware_request',
+        ...logData
+      })
+    )
+  }
 
   return response
 }
