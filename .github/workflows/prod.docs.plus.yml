@@ -63,10 +63,8 @@ jobs:
         run: |
           cp ../../../.env packages/webapp
           cp ../../../.env packages/hocuspocus.server
-      - name: Build webapp
-        run: |
-          cd packages/webapp
-          npm run build
+      - name: Build monorepo packages
+        run: npm run build
     env:
       # The environment variable DATABASE_URL is sourced from a secret in your repository.
       DATABASE_URL: ${{secrets.STAGE_DATABASE_URL}}
