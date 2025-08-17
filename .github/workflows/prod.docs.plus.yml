@@ -38,26 +38,73 @@ jobs:
       # This step checks out your repository under $GITHUB_WORKSPACE so your job can access it.
       - name: Check out code
         uses: actions/checkout@v4
+        with:
+          # Only fetch the latest commit to minimize checkout time
+          fetch-depth: 1
+          # Preserve existing files for faster deploys
+          clean: false
+
+      # Cache node_modules for faster installs
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.yarn/cache
+            **/node_modules
+          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-yarn-
+
       # This step sets up Node.js on the runner and installs the version specified in the matrix above.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-      # This step installs project dependencies using Yarn.
-      # The --frozen-lockfile option ensures the exact package versions specified in yarn.lock are installed.
+          cache: 'yarn'
+
+      # Install dependencies with optimizations
       - name: Install dependencies
-        run: yarn install --frozen-lockfile
+        run: |
+          # Use yarn with production optimizations
+          yarn install --frozen-lockfile --production=false --cache-folder ~/.yarn/cache
+          # Clean up dev dependencies in production
+          if [ "$NODE_ENV" = "production" ]; then
+            yarn install --frozen-lockfile --production=true --cache-folder ~/.yarn/cache
+          fi
+
       # This step copies the .env file from the root directory to the required directories for each package.
       # Update these paths if your repository structure is different.
       - name: Copy .env files
         run: |
           cp ../../../.env packages/webapp
           cp ../../../.env packages/hocuspocus.server
+
+      # Pre-build health check
+      - name: Pre-build health check
+        run: |
+          # Check if essential services are running
+          make supabase_status || echo "Supabase not running, continuing..."
+
       - name: Build monorepo packages
-        run: yarn build
+        run: |
+          # Build with performance optimizations
+          NODE_ENV=production yarn build
+
+      # Post-build validation
+      - name: Validate build artifacts
+        run: |
+          # Check if critical build outputs exist
+          if [ -d "packages/webapp/.next" ]; then
+            echo "✓ Next.js build artifacts found"
+            ls -la packages/webapp/.next/
+          else
+            echo "✗ Next.js build failed - no .next directory"
+            exit 1
+          fi
     env:
       # The environment variable DATABASE_URL is sourced from a secret in your repository.
       DATABASE_URL: ${{secrets.STAGE_DATABASE_URL}}
+      NODE_ENV: production
 
   # The "build-front" job builds the front-end, it depends on the "setup" job.
   build-front:
@@ -67,9 +114,61 @@ jobs:
     # This job will only run if the commit message contains the word 'front'.
     if: contains(github.event.head_commit.message, 'front')
     steps:
+      # Pre-deployment health check
+      - name: Pre-deployment health check
+        run: |
+          # Check current PM2 status
+          pm2 list || echo "PM2 not running, will start fresh"
+          # Check disk space
+          df -h
+          # Check memory usage
+          free -h
+
+      # Backup current deployment for rollback
+      - name: Backup current deployment
+        run: |
+          # Create backup of current .next build if it exists
+          if [ -d "packages/webapp/.next" ]; then
+            mv packages/webapp/.next packages/webapp/.next.backup.$(date +%Y%m%d-%H%M%S)
+            echo "✓ Backup created"
+          fi
+
       # This step runs the build command for the front-end.
-      - name: Build Front-end
-        run: make build_front_production
+      - name: Build and Deploy Front-end
+        run: |
+          # Build with enhanced error handling
+          if ! make build_front_production; then
+            echo "✗ Build failed, attempting rollback..."
+            # Restore backup if build fails
+            if [ -d "packages/webapp/.next.backup.*" ]; then
+              LATEST_BACKUP=$(ls -t packages/webapp/.next.backup.* | head -n1)
+              mv "$LATEST_BACKUP" packages/webapp/.next
+              echo "✓ Rollback completed"
+            fi
+            exit 1
+          fi
+
+      # Post-deployment health check
+      - name: Post-deployment health check
+        run: |
+          # Wait for application to start
+          sleep 10
+
+          # Check if the application is responding
+          if curl -f http://localhost:3001/api/health; then
+            echo "✓ Application health check passed"
+          else
+            echo "✗ Application health check failed"
+            # Show PM2 logs for debugging
+            pm2 logs nextjs_production --lines 50
+            exit 1
+          fi
+
+      # Cleanup old backups (keep last 3)
+      - name: Cleanup old backups
+        run: |
+          # Remove old backup directories (keep last 3)
+          ls -t packages/webapp/.next.backup.* 2>/dev/null | tail -n +4 | xargs rm -rf || true
 
   # The "build-back" job builds the back-end, it also depends on the "setup" job.
   build-back:

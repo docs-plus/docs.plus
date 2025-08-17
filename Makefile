@@ -82,13 +82,37 @@ build:
 fastRun:
 	docker-compose -f docker-compose.prod.yml up
 
-# Build and run frontend in stage environment
+# Build and run frontend in stage environment with monitoring
 build_front_stage:
-	cd packages/webapp && npm run build && npm run pm2:start:stage
+	@echo "🏗️  Building and deploying to stage environment..."
+	@cd packages/webapp && \
+	NODE_ENV=production npm run build && \
+	npm run pm2:start:stage && \
+	sleep 10 && \
+	curl -f http://localhost:3000/api/health || (echo "❌ Stage health check failed" && pm2 logs nextjs_stage --lines 20 && exit 1) && \
+	echo "✅ Stage deployment completed!"
 
-# Build and run frontend in production environment
+# Build and run frontend in production environment with optimization
 build_front_production:
-	cd packages/webapp && npm run build && npm run pm2:start:prod
+	@echo "🚀 Starting production build and deployment..."
+	@echo "📊 Pre-build system check..."
+	@cd packages/webapp && \
+	echo "Memory usage before build:" && free -h && \
+	echo "Disk space:" && df -h . && \
+	echo "🏗️  Building Next.js application..." && \
+	NODE_ENV=production npm run build && \
+	echo "✅ Build completed successfully" && \
+	echo "📈 Build size analysis:" && \
+	du -sh .next/ && \
+	echo "🔄 Starting PM2 deployment..." && \
+	npm run pm2:start:prod && \
+	echo "⏳ Waiting for application startup..." && \
+	sleep 15 && \
+	echo "🩺 Running health check..." && \
+	curl -f http://localhost:3001/api/health || (echo "❌ Health check failed" && pm2 logs nextjs_production --lines 20 && exit 1) && \
+	echo "✅ Production deployment completed successfully!" && \
+	echo "📊 Final PM2 status:" && \
+	npm run pm2:status
 
 # Build, stop and remove the existing stage container, and run a new stage container
 build_hocuspocus.server_stage: down_stage
@@ -134,3 +158,58 @@ help: # Show available commands
 
 generate_supabase_types: # Generate Supabase TypeScript types
 	cd packages/supabase && yarn supabase:types
+
+# Frontend monitoring and troubleshooting commands
+pm2_status: # Show PM2 process status
+	cd packages/webapp && npm run pm2:status
+
+pm2_logs: # Show PM2 logs for production
+	cd packages/webapp && npm run pm2:logs:prod
+
+pm2_logs_error: # Show PM2 error logs only
+	cd packages/webapp && npm run pm2:logs:error
+
+pm2_restart: # Restart production frontend
+	cd packages/webapp && npm run pm2:restart
+
+pm2_reload: # Graceful reload production frontend
+	cd packages/webapp && npm run pm2:reload
+
+pm2_monitor: # Open PM2 monitoring dashboard
+	cd packages/webapp && npm run pm2:monitor
+
+health_check: # Manual health check
+	@echo "🩺 Running health check..."
+	@curl -s http://localhost:3001/api/health | jq '.' || echo "❌ Health check failed or jq not installed"
+
+system_info: # Show system information
+	@echo "📊 System Information:"
+	@echo "Memory usage:" && free -h
+	@echo "Disk usage:" && df -h
+	@echo "CPU usage:" && top -bn1 | grep "Cpu(s)"
+	@echo "PM2 processes:" && pm2 list
+
+cleanup_logs: # Clean up old log files
+	cd packages/webapp && npm run logs:cleanup && echo "✅ Log cleanup completed"
+
+# Production deployment with rollback capability
+deploy_production_safe: # Safe production deployment with auto-rollback
+	@echo "🚀 Starting safe production deployment..."
+	@cd packages/webapp && \
+	if [ -d ".next" ]; then \
+		echo "📦 Creating backup..." && \
+		cp -r .next .next.backup.$$(date +%Y%m%d-%H%M%S); \
+	fi && \
+	if make build_front_production; then \
+		echo "✅ Deployment successful!"; \
+	else \
+		echo "❌ Deployment failed, attempting rollback..." && \
+		if [ -d ".next.backup.*" ]; then \
+			LATEST_BACKUP=$$(ls -t .next.backup.* | head -n1) && \
+			rm -rf .next && \
+			mv $$LATEST_BACKUP .next && \
+			npm run pm2:restart && \
+			echo "🔄 Rollback completed"; \
+		fi && \
+		exit 1; \
+	fi

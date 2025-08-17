@@ -24,6 +24,15 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
+# PM2 and application logs
+/logs/*.log
+/logs/monitor.log
+.next.backup.*
+
+# PM2 ecosystem file logs
+pm2.log
+ecosystem.config.js.log
+
 # local env files
 .env*.local
 .env*.production
