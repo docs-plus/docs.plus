@@ -94,11 +94,14 @@ build_front_stage:
 
 # Build and run frontend in production environment with optimization
 build_front_production:
-	@echo "🚀 Starting production deployment..."
-	@echo "📊 Pre-deployment system check..."
+	@echo "🚀 Starting production build and deployment..."
+	@echo "📊 Pre-build system check..."
 	@cd packages/webapp && \
-	echo "Memory usage:" && free -h && \
+	echo "Memory usage before build:" && free -h && \
 	echo "Disk space:" && df -h . && \
+	echo "🏗️  Building Next.js application..." && \
+	NODE_ENV=production npm run build && \
+	echo "✅ Build completed successfully" && \
 	echo "📈 Build size analysis:" && \
 	du -sh .next/ && \
 	echo "🔄 Starting PM2 deployment..." && \
