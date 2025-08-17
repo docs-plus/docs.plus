@@ -11,10 +11,8 @@ module.exports = {
       env_development: {
         NODE_ENV: 'development'
       },
-      // Logging configuration for stage (in PM2 default logs directory)
-      log_file: '~/.pm2/logs/docsy-webapp-stage-combined.log',
-      out_file: '~/.pm2/logs/docsy-webapp-stage-out.log',
-      error_file: '~/.pm2/logs/docsy-webapp-stage-error.log',
+      // PM2 uses app name for log files by default
+      // Actual files: nextjs-stage-out.log, nextjs-stage-error.log
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
       // Auto restart configuration
@@ -39,10 +37,8 @@ module.exports = {
         // Enable source maps for better error tracking
         NEXT_TELEMETRY_DISABLED: 1
       },
-      // Advanced logging configuration (in PM2 default logs directory)
-      log_file: '~/.pm2/logs/docsy-webapp-production-combined.log',
-      out_file: '~/.pm2/logs/docsy-webapp-production-out.log',
-      error_file: '~/.pm2/logs/docsy-webapp-production-error.log',
+      // PM2 uses app name for log files by default
+      // Actual files: nextjs-production-out.log, nextjs-production-error.log
       log_date_format: 'YYYY-MM-DD HH:mm:ss Z',
       merge_logs: true,
       log_type: 'json', // Structured logging

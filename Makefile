@@ -92,16 +92,17 @@ build_front_stage:
 	curl -f http://localhost:3000/api/health || (echo "❌ Stage health check failed" && pm2 logs nextjs_stage --lines 20 && exit 1) && \
 	echo "✅ Stage deployment completed!"
 
-# Build and run frontend in production environment with optimization
+# Deploy frontend to production (assumes build already done by lerna)
 build_front_production:
-	@echo "🚀 Starting production build and deployment..."
-	@echo "📊 Pre-build system check..."
+	@echo "🚀 Starting production deployment..."
+	@echo "📊 Pre-deployment system check..."
 	@cd packages/webapp && \
-	echo "Memory usage before build:" && free -h && \
+	echo "Memory usage:" && free -h && \
 	echo "Disk space:" && df -h . && \
-	echo "🏗️  Building Next.js application..." && \
-	NODE_ENV=production npm run build && \
-	echo "✅ Build completed successfully" && \
+	echo "🔍 Verifying build exists..." && \
+	if [ ! -d ".next" ]; then \
+		echo "❌ No build found! Run 'npm run build' first" && exit 1; \
+	fi && \
 	echo "📈 Build size analysis:" && \
 	du -sh .next/ && \
 	echo "🔍 Checking standalone server:" && \
@@ -198,24 +199,3 @@ system_info: # Show system information
 cleanup_logs: # Clean up old log files
 	cd packages/webapp && npm run logs:cleanup && echo "✅ Log cleanup completed"
 
-# Production deployment with rollback capability
-deploy_production_safe: # Safe production deployment with auto-rollback
-	@echo "🚀 Starting safe production deployment..."
-	@cd packages/webapp && \
-	if [ -d ".next" ]; then \
-		echo "📦 Creating backup..." && \
-		cp -r .next .next.backup.$$(date +%Y%m%d-%H%M%S); \
-	fi && \
-	if make build_front_production; then \
-		echo "✅ Deployment successful!"; \
-	else \
-		echo "❌ Deployment failed, attempting rollback..." && \
-		if [ -d ".next.backup.*" ]; then \
-			LATEST_BACKUP=$$(ls -t .next.backup.* | head -n1) && \
-			rm -rf .next && \
-			mv $$LATEST_BACKUP .next && \
-			npm run pm2:restart && \
-			echo "🔄 Rollback completed"; \
-		fi && \
-		exit 1; \
-	fi
