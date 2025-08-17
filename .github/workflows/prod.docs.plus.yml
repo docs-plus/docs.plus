@@ -77,13 +77,6 @@ jobs:
     # This job will only run if the commit message contains the word 'front'.
     if: contains(github.event.head_commit.message, 'front')
     steps:
-      # Checkout code for deployment
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          clean: false
-
       # This step runs the build command for the front-end.
       - name: Build Front-end
         run: make build_front_production
