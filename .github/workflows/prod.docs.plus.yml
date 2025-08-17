@@ -51,13 +51,7 @@ jobs:
 
       # Install dependencies with optimizations
       - name: Install dependencies
-        run: |
-          # Use yarn with production optimizations
-          yarn install --frozen-lockfile --production=false
-          # Clean up dev dependencies in production
-          if [ "$NODE_ENV" = "production" ]; then
-            yarn install --frozen-lockfile --production=true
-          fi
+        run: yarn install --frozen-lockfile --production=true
 
       # This step copies the .env file from the root directory to the required directories for each package.
       # Update these paths if your repository structure is different.
@@ -65,17 +59,8 @@ jobs:
         run: |
           cp ../../../.env packages/webapp
           cp ../../../.env packages/hocuspocus.server
-
-      # Pre-build health check
-      - name: Pre-build health check
-        run: |
-          # Check if essential services are running
-          make supabase_status || echo "Supabase not running, continuing..."
-
       - name: Build monorepo packages
-        run: |
-          # Build with performance optimizations
-          NODE_ENV=production yarn build
+        run: yarn build
 
       # Post-build validation
       - name: Validate build artifacts
