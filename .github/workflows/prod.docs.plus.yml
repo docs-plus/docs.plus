@@ -38,11 +38,6 @@ jobs:
       # This step checks out your repository under $GITHUB_WORKSPACE so your job can access it.
       - name: Check out code
         uses: actions/checkout@v4
-        with:
-          # Only fetch the latest commit to minimize checkout time
-          fetch-depth: 1
-          # Preserve existing files for faster deploys
-          clean: false
       # This step sets up Node.js on the runner and installs the version specified in the matrix above.
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -63,7 +58,6 @@ jobs:
     env:
       # The environment variable DATABASE_URL is sourced from a secret in your repository.
       DATABASE_URL: ${{secrets.STAGE_DATABASE_URL}}
-      NODE_ENV: production
 
   # The "build-front" job builds the front-end, it depends on the "setup" job.
   build-front:
