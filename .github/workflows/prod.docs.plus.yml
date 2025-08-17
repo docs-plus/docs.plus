@@ -77,11 +77,6 @@ jobs:
     # This job will only run if the commit message contains the word 'front'.
     if: contains(github.event.head_commit.message, 'front')
     steps:
-      # Build webapp to ensure standalone server exists
-      - name: Build webapp
-        run: |
-          cd packages/webapp
-          npm run build
       # This step runs the build command for the front-end.
       - name: Build Front-end
         run: make build_front_production
