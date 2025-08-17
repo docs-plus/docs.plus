@@ -5,7 +5,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 export default defineConfig({
   entry: ['src/index.ts'],
   outDir: 'dist',
-  format: ['cjs', 'esm', 'iife'],
+  format: ['cjs', 'esm'],
   external: ['@tiptap/core', '@tiptap/pm'],
   dts: {
     entry: './src/index.ts',
