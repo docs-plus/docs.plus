@@ -19,8 +19,7 @@ module.exports = withPWA({
   generateEtags: false,
   compress: true,
 
-  // Build optimizations
-  swcMinify: true,
+  // Build optimizations (swcMinify is now default in Next.js 15)
   modularizeImports: {
     '@mui/icons-material': {
       transform: '@mui/icons-material/{{member}}'
@@ -32,20 +31,21 @@ module.exports = withPWA({
 
   // Experimental features for performance
   experimental: {
-    optimizePackageImports: ['@emoji-mart/react', '@tiptap/react', 'react-icons'],
-    turbo: {
-      rules: {
-        '*.svg': {
-          loaders: ['@svgr/webpack'],
-          as: '*.js'
-        }
-      }
-    },
-    // Enable static optimization
-    staticOptimization: true,
-    // Optimize server-side rendering
-    serverComponentsExternalPackages: ['@tiptap/pm']
+    optimizePackageImports: ['@emoji-mart/react', '@tiptap/react', 'react-icons']
   },
+
+  // Turbopack configuration (moved from experimental.turbo in Next.js 15)
+  turbopack: {
+    rules: {
+      '*.svg': {
+        loaders: ['@svgr/webpack'],
+        as: '*.js'
+      }
+    }
+  },
+
+  // Server external packages (moved from experimental in Next.js 15)
+  serverExternalPackages: ['@tiptap/pm'],
 
   // Bundle optimization
   webpack: (config, { dev, isServer }) => {
@@ -148,9 +148,7 @@ module.exports = withPWA({
         }
       : false,
     // Enable React optimizations
-    reactRemoveProperties: isProduction,
-    // Remove development-only code
-    removeCondition: isProduction
+    reactRemoveProperties: isProduction
   },
 
   // Production logging and monitoring
