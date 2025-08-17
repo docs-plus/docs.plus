@@ -5,9 +5,9 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
-    "start": "next start",
-    "start:prod": "next start -p 3001",
-    "start:stage": "next start -p 3000",
+    "start": "node .next/standalone/server.js",
+    "start:prod": "PORT=3001 node .next/standalone/server.js",
+    "start:stage": "PORT=3000 node .next/standalone/server.js",
     "pm2:start:stage": "pm2 reload pm2.config.js --env production --only nextjs_stage",
     "pm2:start:prod": "pm2 reload pm2.config.js --env production --only nextjs_production",
     "pm2:logs": "pm2 logs",
