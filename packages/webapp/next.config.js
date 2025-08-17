@@ -51,8 +51,6 @@ module.exports = withPWA({
     silenceDeprecations: ['legacy-js-api']
   },
 
-  // Output optimization
-  output: 'standalone',
   images: {
     remotePatterns: [
       {
