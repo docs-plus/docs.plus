@@ -15,9 +15,9 @@
     "directory": "packages/extension-hypermultimedia"
   },
   "scripts": {
-    "build": "tsup --dts",
-    "dev": "tsup --watch --dts",
-    "watch": "tsup --watch --dts",
+    "build": "bunx tsup --dts",
+    "dev": "bunx tsup --watch --dts",
+    "watch": "bunx tsup --watch --dts",
     "clean": "rm -rf dist",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",

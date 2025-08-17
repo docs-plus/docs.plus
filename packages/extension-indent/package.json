@@ -15,8 +15,8 @@
     "directory": "packages/extension-indent"
   },
   "scripts": {
-    "build": "tsup --dts",
-    "dev": "tsup --watch --dts",
+    "build": "bunx tsup --dts",
+    "dev": "bunx tsup --watch --dts",
     "lint": "eslint . --ext .ts",
     "test": "jest",
     "update:packages": "npx npm-check-updates -u"

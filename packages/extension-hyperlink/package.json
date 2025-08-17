@@ -15,12 +15,12 @@
     "directory": "packages/extension-hyperlink"
   },
   "scripts": {
-    "build": "tsup --dts",
-    "build:prod": "NODE_ENV=production tsup --dts",
-    "dev": "tsup --watch --dts",
+    "build": "bunx tsup --dts",
+    "build:prod": "NODE_ENV=production bunx tsup --dts",
+    "dev": "bunx tsup --watch --dts",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "watch": "tsup --watch --dts",
+    "watch": "bunx tsup --watch --dts",
     "update:packages": "npx npm-check-updates -u"
   },
   "keywords": [
