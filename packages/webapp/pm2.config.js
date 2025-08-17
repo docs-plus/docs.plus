@@ -77,7 +77,8 @@ module.exports = {
   // Global PM2 configuration
   deploy: {
     production: {
-      'post-deploy': 'pm2 reload ecosystem.config.js --env production && pm2 save'
+      'post-deploy':
+        'npm ci && npm run build && pm2 reload ecosystem.config.js --only nextjs_production --env production && pm2 save'
     }
   }
 }
