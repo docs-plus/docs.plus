@@ -47,69 +47,6 @@ module.exports = withPWA({
   // Server external packages (moved from experimental in Next.js 15)
   serverExternalPackages: ['@tiptap/pm'],
 
-  // Bundle optimization
-  webpack: (config, { dev, isServer }) => {
-    // Production optimizations
-    if (!dev) {
-      config.optimization = {
-        ...config.optimization,
-        moduleIds: 'deterministic',
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            // React core libraries (highest priority)
-            react: {
-              test: /[\\/]node_modules[\\/](react|react-dom)[\\/]/,
-              name: 'react',
-              priority: 30,
-              reuseExistingChunk: true
-            },
-            // TipTap editor packages
-            tiptap: {
-              test: /[\\/]node_modules[\\/]@tiptap[\\/]/,
-              name: 'tiptap',
-              priority: 25,
-              reuseExistingChunk: true
-            },
-            // Supabase packages
-            supabase: {
-              test: /[\\/]node_modules[\\/]@supabase[\\/]/,
-              name: 'supabase',
-              priority: 25,
-              reuseExistingChunk: true
-            },
-            // React Icons
-            reactIcons: {
-              test: /[\\/]node_modules[\\/]react-icons[\\/]/,
-              name: 'react-icons',
-              priority: 25,
-              reuseExistingChunk: true
-            },
-            // Y.js collaborative editing packages
-            yjs: {
-              test: /[\\/]node_modules[\\/](yjs|y-indexeddb|y-prosemirror|y-webrtc|y-websocket)[\\/]/,
-              name: 'yjs',
-              priority: 25,
-              reuseExistingChunk: true
-            },
-            // General vendor packages (lowest priority)
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              priority: 10,
-              reuseExistingChunk: true,
-              // Exclude packages that have their own chunks
-              exclude:
-                /[\\/]node_modules[\\/](@tiptap|@supabase|react-icons|react|react-dom|yjs|y-indexeddb|y-prosemirror|y-webrtc|y-websocket)[\\/]/
-            }
-          }
-        }
-      }
-    }
-
-    return config
-  },
-
   sassOptions: {
     silenceDeprecations: ['legacy-js-api']
   },
