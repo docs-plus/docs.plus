@@ -38,11 +38,21 @@ jobs:
       # This step checks out your repository under $GITHUB_WORKSPACE so your job can access it.
       - name: Check out code
         uses: actions/checkout@v4
-      # This step sets up Node.js on the runner and installs the version specified in the matrix above.
+        with:
+          # Only fetch the latest commit to minimize checkout time
+          fetch-depth: 1
+          # Preserve existing files for faster deploys
+          clean: false
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
+
+      # Setup Bun for bunx commands in extension packages
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
       # This step installs project dependencies using Yarn.
       # The --frozen-lockfile option ensures the exact package versions specified in yarn.lock are installed.
       - name: Install dependencies
@@ -67,6 +77,13 @@ jobs:
     # This job will only run if the commit message contains the word 'front'.
     if: contains(github.event.head_commit.message, 'front')
     steps:
+      # Checkout code for deployment
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          clean: false
+
       # This step runs the build command for the front-end.
       - name: Build Front-end
         run: make build_front_production
@@ -79,6 +96,13 @@ jobs:
     # This job will only run if the commit message contains the word 'back'.
     if: contains(github.event.head_commit.message, 'back')
     steps:
+      # Checkout code for deployment
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          clean: false
+
       # This step runs the build command for the back-end.
       - name: Build Back-end
         run: make build_hocuspocus.server_prod
