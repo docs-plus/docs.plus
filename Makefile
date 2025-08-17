@@ -96,7 +96,7 @@ build_front_stage:
 build_front_production:
 	@echo "🚀 Deploying frontend to production..."
 	@cd packages/webapp && \
-	if [ ! -f .next/standalone/server.js ]; then \
+	if [ ! -f .next/standalone/packages/webapp/server.js ]; then \
 		echo "❌ No standalone server found! Build failed." && exit 1; \
 	fi && \
 	echo "✅ Starting PM2..." && \
