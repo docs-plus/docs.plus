@@ -43,32 +43,21 @@ jobs:
           fetch-depth: 1
           # Preserve existing files for faster deploys
           clean: false
-
-      # Cache node_modules for faster installs
-      - name: Cache node modules
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.yarn/cache
-            **/node_modules
-          key: ${{ runner.os }}-yarn-${{ hashFiles('**/yarn.lock') }}
-          restore-keys: |
-            ${{ runner.os }}-yarn-
-
       # This step sets up Node.js on the runner and installs the version specified in the matrix above.
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'yarn'
 
       # Install dependencies with optimizations
       - name: Install dependencies
         run: |
-          # Install all dependencies (including dev deps needed for extension builds)
-          yarn install --frozen-lockfile --cache-folder ~/.yarn/cache
-          # Verify tsup is available
-          npx tsup --version || yarn add -W -D tsup
+          # Use yarn with production optimizations
+          yarn install --frozen-lockfile --production=false
+          # Clean up dev dependencies in production
+          if [ "$NODE_ENV" = "production" ]; then
+            yarn install --frozen-lockfile --production=true
+          fi
 
       # This step copies the .env file from the root directory to the required directories for each package.
       # Update these paths if your repository structure is different.
