@@ -64,8 +64,7 @@ jobs:
           cp ../../../.env packages/webapp
           cp ../../../.env packages/hocuspocus.server
       - name: Build monorepo packages (exclude webapp)
-        # webapp build in next pipeline
-        run: bunx lerna run build --ignore @docs.plus/webapp
+        run: bunx lerna run build
     env:
       # The environment variable DATABASE_URL is sourced from a secret in your repository.
       DATABASE_URL: ${{secrets.STAGE_DATABASE_URL}}

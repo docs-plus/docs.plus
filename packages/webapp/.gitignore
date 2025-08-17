@@ -57,3 +57,4 @@ next-env.d.ts
 /public/fallback-*.js
 
 .env
+.npmrc
