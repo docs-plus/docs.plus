@@ -17,7 +17,8 @@
     "lint:fix": "next lint --fix",
     "test": "jest",
     "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
+    "cypress:run": "cypress run",
+    "find-unused": "next-unused"
   },
   "dependencies": {
     "@dicebear/collection": "^9.2.3",
@@ -161,6 +162,7 @@
     "eslint-plugin-tailwindcss": "^3.18.0",
     "jest": "^30.0.4",
     "jest-environment-jsdom": "^30.0.4",
+    "next-unused": "^0.0.6",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
     "prettier-plugin-tailwindcss": "^0.6.14",

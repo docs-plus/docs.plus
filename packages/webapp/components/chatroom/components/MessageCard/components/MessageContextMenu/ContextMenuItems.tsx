@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { BsForwardFill, BsFillPinFill, BsFillPinAngleFill } from 'react-icons/bs'
-import { MenuItem } from '../../../../ui/ContextMenu'
+import { MenuItem } from '../../../ui/ContextMenu'
 import {
   MdDeleteOutline,
   MdOutlineBookmarkAdd,
@@ -23,16 +23,17 @@ import { DeleteMessageConfirmationDialog } from '@components/chatroom/components
 import { TMsgRow } from '@types'
 import { useContextMenuContext } from '@components/chatroom/components/ui/ContextMenu'
 import { useCopyMessageLinkHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageLinkHandler'
-import { useChatStore } from '@stores'
-import { calculateEmojiPickerPosition } from '../../../helpers'
+import { useAuthStore, useChatStore } from '@stores'
+import { calculateEmojiPickerPosition } from '../../helpers'
 type Props = {
   message?: TMsgRow | null
 }
 
-export const ContextMenuItems = ({ message }: Props) => {
+const ContextMenuItems = ({ message }: Props) => {
   if (!message) return null
 
   const { setIsOpen } = useContextMenuContext()
+  const { profile } = useAuthStore()
 
   const { replyInMessageHandler } = useReplyInMessageHandler()
   const { openEmojiPicker } = useChatStore()
@@ -43,6 +44,10 @@ export const ContextMenuItems = ({ message }: Props) => {
   const { editMessageHandler } = useEditMessageHandler()
   const { openDialog } = useChatroomContext()
   const { copyMessageLinkHandler } = useCopyMessageLinkHandler()
+
+  const isOwner = useMemo(() => {
+    return message?.user_id === profile?.id
+  }, [message, profile])
 
   const isPinned = useMemo(() => {
     return message?.metadata?.pinned
@@ -128,7 +133,7 @@ export const ContextMenuItems = ({ message }: Props) => {
       title: 'Edit',
       icon: <MdOutlineEdit size={20} />,
       onClickFn: () => editMessageHandler(message),
-      display: true, //settings.contextMenue?.edite ?? true,
+      display: isOwner, //true, //settings.contextMenue?.edite ?? true,
       className: 'border-t pt-1 mt-1 border-gray-300'
     },
     {
@@ -139,7 +144,7 @@ export const ContextMenuItems = ({ message }: Props) => {
           size: 'sm'
         })
       },
-      display: true, //settings.contextMenue?.delete ?? true,
+      display: isOwner, //true, //settings.contextMenue?.delete ?? true,
       className: 'text-red-500'
     }
   ]
@@ -167,3 +172,5 @@ export const ContextMenuItems = ({ message }: Props) => {
     </>
   )
 }
+
+export default ContextMenuItems

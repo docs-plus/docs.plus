@@ -3,14 +3,19 @@ import { useAuthStore } from '@stores'
 import { MdDeleteOutline } from 'react-icons/md'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { DeleteMessageConfirmationDialog } from '@components/chatroom/components/MessageCard/components/common/DeleteMessageConfirmationDialog'
+import { useMemo } from 'react'
 
 type Props = {}
 export const DeleteAction = ({}: Props) => {
   const { message } = useMessageCardContext()
-  const user = useAuthStore((state) => state.profile)
+  const profile = useAuthStore((state) => state.profile)
   const { openDialog } = useChatroomContext()
 
-  if (user && message.user_id !== user.id) return null
+  const isOwner = useMemo(() => {
+    return message?.user_id === profile?.id
+  }, [message, profile])
+
+  if (!isOwner) return null
 
   const handleDeleteClick = () => {
     openDialog(<DeleteMessageConfirmationDialog message={message} />, {
