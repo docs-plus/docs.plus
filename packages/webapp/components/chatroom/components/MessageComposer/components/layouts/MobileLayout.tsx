@@ -30,24 +30,37 @@ const MobileToolbar = () => {
         className={`absolute inset-0 transition-transform duration-300 ease-in-out ${
           isToolbarOpen ? 'translate-y-full' : 'translate-y-0'
         }`}>
-        <MsgComposer.Toolbar className="bg-base-200 h-full border-b p-2 px-1">
+        <MsgComposer.Toolbar className="bg-base-200 h-full border-b p-2">
           <MsgComposer.ToggleToolbarButton
             iconType="Close"
             onPress={toggleToolbar}
             size={22}
-            className="btn-square !bg-gray-200"
+            className="btn-square shrink-0 !bg-gray-200"
           />
-          <div className="divided m-0 w-0" />
-          <div className="flex snap-x items-center gap-1 overflow-x-scroll overflow-y-hidden">
-            <MsgComposer.BoldButton size={10} className="snap-center" />
-            <MsgComposer.ItalicButton size={10} className="snap-center" />
-            <MsgComposer.StrikethroughButton size={14} className="snap-center" />
-            <MsgComposer.HyperlinkButton size={18} className="snap-center" />
-            <MsgComposer.BulletListButton size={16} className="snap-center" />
-            <MsgComposer.OrderedListButton size={16} className="snap-center" />
-            <MsgComposer.BlockquoteButton size={20} className="snap-center" />
-            <MsgComposer.CodeButton size={20} className="snap-center" />
-            <MsgComposer.CodeBlockButton size={20} className="snap-center" />
+          <div className="mx-2 h-6 w-px shrink-0 bg-gray-300" />
+          <div className="flex-1 overflow-hidden">
+            <div
+              className="hide-scrollbar -mb-1 flex snap-x snap-mandatory items-center gap-3 overflow-x-auto overflow-y-hidden scroll-smooth pb-1"
+              style={{
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none'
+              }}>
+              <div className="flex snap-start items-center gap-1">
+                <MsgComposer.BoldButton size={12} className="h-8 min-w-[32px] shrink-0" />
+                <MsgComposer.ItalicButton size={12} className="h-8 min-w-[32px] shrink-0" />
+                <MsgComposer.StrikethroughButton size={16} className="h-8 min-w-[32px] shrink-0" />
+              </div>
+              <div className="flex snap-start items-center gap-1">
+                <MsgComposer.HyperlinkButton size={20} className="h-8 min-w-[32px] shrink-0" />
+                <MsgComposer.BulletListButton size={18} className="h-8 min-w-[32px] shrink-0" />
+                <MsgComposer.OrderedListButton size={18} className="h-8 min-w-[32px] shrink-0" />
+              </div>
+              <div className="flex snap-start items-center gap-1">
+                <MsgComposer.BlockquoteButton size={22} className="h-8 min-w-[32px] shrink-0" />
+                <MsgComposer.CodeButton size={22} className="h-8 min-w-[32px] shrink-0" />
+                <MsgComposer.CodeBlockButton size={20} className="h-8 min-w-[32px] shrink-0" />
+              </div>
+            </div>
           </div>
         </MsgComposer.Toolbar>
       </div>
@@ -81,7 +94,6 @@ export const MobileLayout = () => {
           <div className="flex flex-row items-end gap-2 px-2 py-1.5">
             <MsgComposer.AttachmentButton size={22} className="btn-square bg-gray-200" />
             <MsgComposer.Input className="py-0.5" />
-            <MsgComposer.SendButton size={22} className="" />
           </div>
           <MobileToolbar />
         </MsgComposer.MobileWrapper>

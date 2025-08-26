@@ -1,5 +1,5 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react'
-import { Sheet, SheetProps } from 'react-modal-sheet'
+import React, { useCallback, useEffect, useMemo, useRef } from 'react'
+import { Sheet, SheetProps, SheetRef } from 'react-modal-sheet'
 import { useSheetStore, useChatStore, useStore } from '@stores'
 import FilterModal from '@components/pages/document/components/FilterModal'
 import NotificationModal from './notificationPanel/mobile/NotificationModal'
@@ -18,7 +18,8 @@ const BottomSheet = () => {
   const { keyboardHeight, virtualKeyboardState } = useStore((state) => state)
   const { deviceDetect } = useStore((state) => state.settings)
   const sheetContentRef = useRef<HTMLDivElement>(null)
-  const [isOpen, setOpen] = useState(false)
+  const sheetRef = useRef<SheetRef>(null)
+
   const isDeviceIOS = useMemo(() => {
     return deviceDetect?.os() === 'iOS'
   }, [deviceDetect])
@@ -51,6 +52,29 @@ const BottomSheet = () => {
     }
   }
 
+  const onSnapHandler = useCallback(
+    (index: number) => {
+      const sheetContent = sheetContentRef.current
+      const sheetY = sheetRef.current?.y?.get()
+
+      if (!sheetContent || typeof sheetY !== 'number') return
+
+      // Immediate adjustment
+      sheetContent.style.paddingBottom = `${sheetY}px`
+
+      // Delayed fine-tuning for better UX
+      setTimeout(() => {
+        // retrieve new sheetY
+        const sheetY = sheetRef.current?.y?.get()
+        if (!sheetContent || typeof sheetY !== 'number') return
+
+        const padding = sheetY > 0 ? sheetY + 4 : 0
+        sheetContent.style.paddingBottom = `${padding}px`
+      }, 200)
+    },
+    [sheetContentRef, sheetRef]
+  )
+
   const getSheetProps = () => {
     switch (activeSheet) {
       case 'filters':
@@ -64,7 +88,9 @@ const BottomSheet = () => {
           id: 'chatroom_sheet',
           detent: 'full-height' as SheetProps['detent'],
           disableScrollLocking: true,
-          disableDrag: true
+          snapPoints: [1, 0.9, 0.8, 0.7],
+          modalEffectThreshold: 0.5,
+          onSnap: onSnapHandler
         }
       case 'emojiPicker':
         return {
@@ -119,10 +145,12 @@ const BottomSheet = () => {
   const onViewportEnterHandler = () => setSheetState('open')
   const onOpenStartHandler = () => setSheetState('opening')
   const onCloseStartHandler = () => setSheetState('closing')
+
   return (
     <div className="bottom-sheet-container relative">
       <Sheet
         className="bottom-sheet !z-10"
+        ref={sheetRef}
         isOpen={!!activeSheet}
         onClose={handleClose}
         onCloseStart={onCloseStartHandler}
