@@ -5,7 +5,7 @@ import { TMsgRow } from '@types'
 type Props = {
   message?: TMsgRow | null
 }
-export const UserReadStatus = ({ message }: Props) => {
+const UserReadStatus = ({ message }: Props) => {
   const { isOpen } = useContextMenuContext()
 
   if (!message) return null
@@ -19,3 +19,5 @@ export const UserReadStatus = ({ message }: Props) => {
     />
   )
 }
+
+export default UserReadStatus

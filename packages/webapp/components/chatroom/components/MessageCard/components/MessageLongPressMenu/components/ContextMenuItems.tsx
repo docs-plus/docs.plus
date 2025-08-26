@@ -21,7 +21,7 @@ import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { DeleteMessageConfirmationDialog } from '@components/chatroom/components/MessageCard/components/common/DeleteMessageConfirmationDialog'
 import { TMsgRow } from '@types'
 import { useCopyMessageLinkHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageLinkHandler'
-import { useChatStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 import { calculateEmojiPickerPosition } from '@components/chatroom/components/MessageCard/helpers'
 import { useMessageLongPressMenu } from '../MessageLongPressMenu'
 type Props = {
@@ -33,9 +33,9 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
   if (!message) return null
 
   const { hideMenu } = useMessageLongPressMenu()
+  const { profile } = useAuthStore()
 
   const { replyInMessageHandler } = useReplyInMessageHandler()
-  const { openEmojiPicker } = useChatStore()
   const { copyMessageToDocHandler } = useCopyMessageToDocHandler()
   const { bookmarkMessageHandler } = useBookmarkMessageHandler()
   const { replyInThreadHandler } = useReplyInThreadHandler()
@@ -43,6 +43,10 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
   const { editMessageHandler } = useEditMessageHandler()
   const { openDialog } = useChatroomContext()
   const { copyMessageLinkHandler } = useCopyMessageLinkHandler()
+
+  const isOwner = useMemo(() => {
+    return message?.user_id === profile?.id
+  }, [message, profile])
 
   const isPinned = useMemo(() => {
     return message?.metadata?.pinned
@@ -108,7 +112,7 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
       title: 'Edit',
       icon: <MdOutlineEdit size={20} />,
       onClickFn: () => editMessageHandler(message),
-      display: true, //settings.contextMenue?.edite ?? true,
+      display: isOwner, //true, //settings.contextMenue?.edite ?? true,
       className: 'border-t pt-1 mt-1 border-gray-300'
     },
     {
@@ -119,7 +123,7 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
           size: 'sm'
         })
       },
-      display: true, //settings.contextMenue?.delete ?? true,
+      display: isOwner, //true, //settings.contextMenue?.delete ?? true,
       className: 'text-red-500'
     }
   ]
