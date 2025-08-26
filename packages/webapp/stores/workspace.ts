@@ -22,6 +22,7 @@ type Workspace = {
   deviceDetect?: any
   isAuthServiceAvailable?: boolean
   isTurnstileVerified?: boolean
+  joined2Workspace?: boolean
 }
 
 export interface IWorkspaceStore {
@@ -50,7 +51,8 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
       isEditable: false
     },
     hocuspocusProvider: undefined,
-    isTurnstileVerified: false
+    isTurnstileVerified: false,
+    joined2Workspace: false
   },
   // Update a single setting
   setWorkspaceSetting: (key, value) => {

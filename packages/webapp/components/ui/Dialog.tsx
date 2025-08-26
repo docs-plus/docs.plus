@@ -1,7 +1,6 @@
 import * as React from 'react'
 import {
   useFloating,
-  useClick,
   useDismiss,
   useRole,
   useInteractions,
@@ -10,151 +9,108 @@ import {
   FloatingFocusManager,
   FloatingOverlay
 } from '@floating-ui/react'
+import { useId } from 'react'
 
-interface DialogOptions {
-  initialOpen?: boolean
-  open?: boolean
-  onOpenChange?: () => void
+interface ModalProps {
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
-export function useDialog({
-  initialOpen = false,
-  open: controlledOpen,
-  onOpenChange: setControlledOpen
-}: DialogOptions = {}) {
-  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(initialOpen)
-  const [labelId, setLabelId] = React.useState<string | undefined>()
-  const [descriptionId, setDescriptionId] = React.useState<string | undefined>()
+function useModal({ open, onOpenChange }: ModalProps) {
+  const [labelId, setLabelId] = React.useState<string>()
+  const [descriptionId, setDescriptionId] = React.useState<string>()
 
-  const open = controlledOpen ?? uncontrolledOpen
-  const setOpen = setControlledOpen ?? setUncontrolledOpen
-
-  const data = useFloating({
+  const { refs, context } = useFloating({
     open,
-    onOpenChange: setOpen
+    onOpenChange
   })
 
-  const context = data.context
-
-  const click = useClick(context, {
-    enabled: controlledOpen == null
-  })
   const dismiss = useDismiss(context, { outsidePressEvent: 'mousedown' })
   const role = useRole(context)
-
-  const interactions = useInteractions([click, dismiss, role])
+  const interactions = useInteractions([dismiss, role])
 
   return React.useMemo(
     () => ({
       open,
-      setOpen,
-      ...interactions,
-      ...data,
+      setOpen: onOpenChange,
+      refs,
+      context,
       labelId,
       descriptionId,
       setLabelId,
-      setDescriptionId
+      setDescriptionId,
+      ...interactions
     }),
-    [open, setOpen, interactions, data, labelId, descriptionId]
+    [open, onOpenChange, refs, context, interactions, labelId, descriptionId]
   )
 }
 
-type ContextType =
-  | (ReturnType<typeof useDialog> & {
-      setLabelId: React.Dispatch<React.SetStateAction<string | undefined>>
-      setDescriptionId: React.Dispatch<React.SetStateAction<string | undefined>>
-    })
-  | null
+type ModalContextType = ReturnType<typeof useModal> | null
 
-const DialogContext = React.createContext<ContextType>(null)
+const ModalContext = React.createContext<ModalContextType>(null)
 
-export const useDialogContext = () => {
-  const context = React.useContext(DialogContext)
-
-  if (context == null) {
-    throw new Error('Dialog components must be wrapped in <Dialog />')
+const useModalContext = () => {
+  const context = React.useContext(ModalContext)
+  if (!context) {
+    throw new Error('Modal components must be wrapped in <Modal />')
   }
-
   return context
 }
 
-export function Dialog({
+export function Modal({
   children,
-  ...options
+  open,
+  onOpenChange
 }: {
   children: React.ReactNode
-} & DialogOptions) {
-  const dialog = useDialog(options)
-  return <DialogContext.Provider value={dialog}>{children}</DialogContext.Provider>
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}) {
+  const modal = useModal({ open, onOpenChange })
+  return <ModalContext.Provider value={modal}>{children}</ModalContext.Provider>
 }
 
-interface DialogTriggerProps {
+type Props = {
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
+  className?: string
   children: React.ReactNode
-  asChild?: boolean
-}
+} & Omit<React.HTMLProps<HTMLDivElement>, 'size'>
 
-export const DialogTrigger = React.forwardRef<
-  HTMLElement,
-  React.HTMLProps<HTMLElement> & DialogTriggerProps
->(function DialogTrigger({ children, asChild = false, ...props }, propRef) {
-  const context = useDialogContext()
-  const childrenRef = (children as any).ref
-  const ref = useMergeRefs([context.refs.setReference, propRef, childrenRef])
-
-  // `asChild` allows the user to pass any element as the anchor
-  if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(
-      children,
-      context.getReferenceProps({
-        ref,
-        ...props,
-        // @ts-ignore
-        ...children.props,
-        'data-state': context.open ? 'open' : 'closed'
-      })
-    )
+export const ModalContent = function ModalContent({
+  size = 'md',
+  className = '',
+  ...props
+}: Props) {
+  const sizeClasses: Record<typeof size, string> = {
+    sm: 'w-full max-w-sm',
+    md: 'w-full max-w-md',
+    lg: 'w-full max-w-lg',
+    xl: 'w-full max-w-xl',
+    full: 'w-full max-w-[calc(100vw-2rem)] h-full max-h-[calc(100vh-2rem)]'
   }
+  const { open, refs, context, getFloatingProps } = useModalContext()
+  const ref = useMergeRefs([refs.setFloating])
+  const id = useId()
+
+  if (!open) return null
 
   return (
-    <button
-      ref={ref}
-      // The user can style the trigger based on the state
-      data-state={context.open ? 'open' : 'closed'}
-      {...context.getReferenceProps(props)}>
-      {children}
-    </button>
-  )
-})
-
-export const DialogContent = React.forwardRef<HTMLDivElement, React.HTMLProps<HTMLDivElement>>(
-  function DialogContent(props, propRef) {
-    const { context: floatingContext, ...context } = useDialogContext()
-    const ref = useMergeRefs([context.refs.setFloating, propRef])
-
-    if (!floatingContext.open) return null
-
-    return (
-      <FloatingPortal>
-        <FloatingOverlay className="Dialog-overlay" lockScroll>
-          <FloatingFocusManager context={floatingContext}>
+    <FloatingPortal>
+      <FloatingOverlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" lockScroll>
+        <div className="fixed inset-0 flex items-center justify-center p-4">
+          <FloatingFocusManager context={context}>
             <div
               ref={ref}
-              aria-labelledby={context.labelId}
-              aria-describedby={context.descriptionId}
-              {...context.getFloatingProps(props)}>
+              className={`animate-in fade-in-0 zoom-in-95 ${sizeClasses[size]} max-h-[90vh] overflow-y-auto rounded-lg bg-white shadow-xl duration-200 ${className}`}
+              aria-labelledby={id}
+              aria-describedby={id}
+              id={id}
+              {...getFloatingProps(props)}>
               {props.children}
             </div>
           </FloatingFocusManager>
-        </FloatingOverlay>
-      </FloatingPortal>
-    )
-  }
-)
-
-export const DialogClose = React.forwardRef<
-  HTMLButtonElement,
-  React.ButtonHTMLAttributes<HTMLButtonElement>
->(function DialogClose(props, ref) {
-  const { setOpen } = useDialogContext()
-  return <button type="button" {...props} ref={ref} onClick={() => setOpen(false)} />
-})
+        </div>
+      </FloatingOverlay>
+    </FloatingPortal>
+  )
+}

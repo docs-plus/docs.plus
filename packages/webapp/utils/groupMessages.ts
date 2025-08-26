@@ -1,4 +1,5 @@
 import { isSameDay, parseISO } from 'date-fns'
+import { useAuthStore } from '@stores'
 
 // Assuming a type for your messages, you can replace `any` with a more specific type
 interface Message {
@@ -26,12 +27,15 @@ export const groupedMessages = (messages: Message[]) =>
       message?.user_id !== nextMessage?.user_id ||
       isDifferentDay(message.created_at, nextMessage?.created_at)
 
+    const user = useAuthStore.getState().profile
+    const isOwner = message?.user_id === user?.id || false
     const isNewGroupById = message?.user_id !== prevMessage?.user_id
 
     return {
       ...message,
       isGroupStart,
       isGroupEnd,
-      isNewGroupById
+      isNewGroupById,
+      isOwner
     }
   })

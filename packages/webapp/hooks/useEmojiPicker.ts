@@ -1,8 +1,8 @@
 import { useCallback } from 'react'
-import { TMessageWithUser as TMsg } from '@api'
+import { TMsgRow } from '@types'
 
 export const useEmojiPicker = () => {
-  const openEmojiPicker = useCallback((event: React.MouseEvent, message: TMsg) => {
+  const openEmojiPicker = useCallback((event: React.MouseEvent, message: TMsgRow) => {
     const customEvent = new CustomEvent('toggelEmojiPicker', {
       detail: {
         clickEvent: event,

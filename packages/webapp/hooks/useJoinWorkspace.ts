@@ -10,6 +10,7 @@ type UseJoinWorkspaceParams = {
 
 export default function useJoinWorkspace({ documentId, loading }: UseJoinWorkspaceParams) {
   const user = useAuthStore((state) => state.profile)
+  const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
 
   const { request: join2WorkspaceRequest, loading: join2WorkspaceLoading } = useApi(
     join2Workspace,
@@ -25,6 +26,12 @@ export default function useJoinWorkspace({ documentId, loading }: UseJoinWorkspa
       console.error('[workspace], join2WorkspaceRequest!', error)
     })
   }, [user?.id, documentId, loading, join2WorkspaceRequest])
+
+  useEffect(() => {
+    if (!join2WorkspaceLoading) return
+
+    setWorkspaceSetting('joined2Workspace', true)
+  }, [join2WorkspaceLoading])
 
   return { join2WorkspaceLoading }
 }

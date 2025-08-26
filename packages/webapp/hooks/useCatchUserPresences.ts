@@ -3,7 +3,7 @@ import { useStore, useAuthStore, useChatStore } from '@stores'
 import {
   dbChannelsListner,
   dbChannelMessageCountsListner
-} from '@components/chat/hooks/listner/dbChannelsListner'
+} from '@components/chatroom/hooks/listner/dbChannelsListner'
 import { createClient } from '@utils/supabase/component'
 
 export const useCatchUserPresences = () => {

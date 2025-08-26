@@ -4,7 +4,7 @@ import DesktopEditor from '../components/DesktopEditor'
 import { useStore } from '@stores'
 import { useHashRouter } from '@hooks/useHashRouter'
 import DesktopHistory from '@components/pages/history/desktop/DesktopHistory'
-import { EmojiPanel } from '@components/chat/components/EmojiPanel'
+import { EmojiPanel } from '@components/chatroom/components/EmojiPanel'
 
 const DesktopLayout = () => {
   const {

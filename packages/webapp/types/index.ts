@@ -22,7 +22,23 @@ interface ProfileData {
   linkTree?: LinkItem[]
 }
 
-export type TMsgRow = Database['public']['Tables']['messages']['Row']
+export type TMsgRow = Database['public']['Tables']['messages']['Row'] & {
+  metadata: any | null
+  user_details: Profile | null
+  is_bookmarked?: boolean
+  bookmark_id?: number | null
+  bookmark_created_at?: string | null
+  bookmark_archived_at?: string | null
+  bookmark_marked_at?: string | null
+  bookmark_metadata?: any | null
+  isGroupEnd: boolean
+  isGroupStart: boolean
+  isNewGroupById: boolean
+  replied_message_details: {
+    message: TMsgRow
+    user: Profile
+  }
+}
 
 export type { TChannelSettings } from './stores'
 export type { Database }

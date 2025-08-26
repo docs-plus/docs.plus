@@ -6,6 +6,7 @@ import { retryWithBackoff } from '../utils/retryWithBackoff'
 
 export const CHAT_COMMENT = Symbol('chat.comment')
 export const CHAT_OPEN = Symbol('chat.open')
+export const CHAT_CLOSE = Symbol('chat.close')
 export const APPLY_FILTER = Symbol('apply.filter')
 export const REMOVE_FILTER = Symbol('remove.filter')
 export const RESET_FILTER = Symbol('reset.filter')
@@ -34,6 +35,10 @@ type TApplyFilterData = {
 
 type TRemoveFilterData = {
   slug: string
+}
+
+type TCloseChatData = {
+  headingId: string
 }
 
 export const eventsHub = (router: NextRouter) => {
@@ -176,6 +181,21 @@ export const eventsHub = (router: NextRouter) => {
     } else if (clearSheetState) {
       useSheetStore.getState().clearSheetState()
     }
+  })
+
+  PubSub.subscribe(CHAT_CLOSE, (msg, data: TCloseChatData) => {
+    const { headingId } = data
+    const destroyChatRoom = useChatStore.getState().destroyChatRoom
+    const setReplyMessageMemory = useChatStore.getState().setReplyMessageMemory
+    const setCommentMessageMemory = useChatStore.getState().setCommentMessageMemory
+    const setEditMessageMemory = useChatStore.getState().setEditMessageMemory
+
+    if (headingId) {
+      setReplyMessageMemory(headingId, null)
+      setCommentMessageMemory(headingId, null)
+      setEditMessageMemory(headingId, null)
+    }
+    destroyChatRoom()
   })
 
   PubSub.subscribe(APPLY_FILTER, (msg, data: TApplyFilterData) => {

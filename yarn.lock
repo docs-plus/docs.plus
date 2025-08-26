@@ -16406,6 +16406,11 @@ use-detect-keyboard-open@^0.4.0:
   resolved "https://registry.yarnpkg.com/use-detect-keyboard-open/-/use-detect-keyboard-open-0.4.0.tgz#a1d2cc6521abfabac558c19ff45ed975b7893a1c"
   integrity sha512-g26dzEDF9qh1VSwYT7ILOdzS0v9xPo5IF3R804HksW+NAOiNd2P2KYrmTfd/5ApfYixlrX2P7+PlsEgAx/lZ6w==
 
+use-long-press@^3.3.0:
+  version "3.3.0"
+  resolved "https://registry.yarnpkg.com/use-long-press/-/use-long-press-3.3.0.tgz#dc661c281722f5816b61c6cb337a6a9d0b105d2c"
+  integrity sha512-Yedz46ILxsb1BTS6kUzpV/wyEZPUlJDq+8Oat0LP1eOZQHbS887baJHJbIGENqCo8wTKNxmoTHLdY8lU/e+wvw==
+
 use-sync-external-store@^1, use-sync-external-store@^1.2.0:
   version "1.5.0"
   resolved "https://registry.yarnpkg.com/use-sync-external-store/-/use-sync-external-store-1.5.0.tgz#55122e2a3edd2a6c106174c27485e0fd59bcfca0"

@@ -21,7 +21,7 @@ const AvatarStack = ({
           <Avatar
             key={index}
             avatarUpdatedAt={user?.avatar_updated_at}
-            className={`rounded-full border border-gray-300 shadow-xl${size} size-${size} tooltip ${tooltipPosition}`}
+            className={`rounded-full border border-gray-300 bg-gray-300 shadow-xl${size} size-${size} tooltip ${tooltipPosition}`}
             id={user?.id}
             src={user?.avatar_url}
             alt={user.display_name}

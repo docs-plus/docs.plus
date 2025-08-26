@@ -1,10 +1,10 @@
-import React, { useEffect, useMemo, useRef } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { Sheet, SheetProps } from 'react-modal-sheet'
 import { useSheetStore, useChatStore, useStore } from '@stores'
 import FilterModal from '@components/pages/document/components/FilterModal'
 import NotificationModal from './notificationPanel/mobile/NotificationModal'
 import ChatContainerMobile from './pages/document/components/chat/ChatContainerMobile'
-import { EmojiPanel } from './chat/components/EmojiPanel'
+import { EmojiPanel } from './chatroom/components/EmojiPanel'
 import { CHAT_OPEN } from '@services/eventsHub'
 
 const BottomSheet = () => {
@@ -18,7 +18,7 @@ const BottomSheet = () => {
   const { keyboardHeight, virtualKeyboardState } = useStore((state) => state)
   const { deviceDetect } = useStore((state) => state.settings)
   const sheetContentRef = useRef<HTMLDivElement>(null)
-
+  const [isOpen, setOpen] = useState(false)
   const isDeviceIOS = useMemo(() => {
     return deviceDetect?.os() === 'iOS'
   }, [deviceDetect])
@@ -56,7 +56,8 @@ const BottomSheet = () => {
       case 'filters':
         return {
           id: 'filter_sheet',
-          detent: 'content-height' as SheetProps['detent']
+          detent: 'content-height' as SheetProps['detent'],
+          snapPoints: [0.5, 1]
         }
       case 'chatroom':
         return {
@@ -118,23 +119,24 @@ const BottomSheet = () => {
   const onViewportEnterHandler = () => setSheetState('open')
   const onOpenStartHandler = () => setSheetState('opening')
   const onCloseStartHandler = () => setSheetState('closing')
-
   return (
-    <Sheet
-      className="bottom-sheet"
-      isOpen={!!activeSheet}
-      onClose={handleClose}
-      onCloseStart={onCloseStartHandler}
-      onOpenStart={onOpenStartHandler}
-      onOpenEnd={onOpenEndHandler}
-      onViewportEnter={onViewportEnterHandler}
-      {...getSheetProps()}>
-      <Sheet.Container ref={setSheetContainerRef} onViewportEnter={onViewportEnterHandler}>
-        <Sheet.Header />
-        <Sheet.Content ref={sheetContentRef}>{renderContent()}</Sheet.Content>
-      </Sheet.Container>
-      <Sheet.Backdrop onTap={handleClose} />
-    </Sheet>
+    <div className="bottom-sheet-container relative">
+      <Sheet
+        className="bottom-sheet !z-10"
+        isOpen={!!activeSheet}
+        onClose={handleClose}
+        onCloseStart={onCloseStartHandler}
+        onOpenStart={onOpenStartHandler}
+        onOpenEnd={onOpenEndHandler}
+        onViewportEnter={onViewportEnterHandler}
+        {...getSheetProps()}>
+        <Sheet.Container ref={setSheetContainerRef} onViewportEnter={onViewportEnterHandler}>
+          <Sheet.Header />
+          <Sheet.Content ref={sheetContentRef}>{renderContent()}</Sheet.Content>
+        </Sheet.Container>
+        <Sheet.Backdrop onTap={handleClose} />
+      </Sheet>
+    </div>
   )
 }
 

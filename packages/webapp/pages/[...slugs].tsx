@@ -7,6 +7,12 @@ import dynamic from 'next/dynamic'
 import { documentServerSideProps } from '@helpers'
 import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
 import { SlugPageLoaderWithTurnstile } from '@components/skeleton/SlugPageLoaderWithTurnstile'
+import data from '@emoji-mart/data'
+import { init } from 'emoji-mart'
+
+// Initialize emoji-mart
+init({ data })
+
 const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPage'), {
   ssr: false,
   loading: () => <SlugPageLoader loadingPage={true} />

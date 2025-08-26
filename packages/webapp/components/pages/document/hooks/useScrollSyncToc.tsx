@@ -5,9 +5,6 @@ import { useEffect, RefObject } from 'react'
 const scrollHeadingSelection = (event: any) => {
   const scrollTop = event.currentTarget.scrollTop
 
-  const pannelHeight = useChatStore.getState().chatRoom.pannelHeight
-  const chatroomId = useChatStore.getState().chatRoom.headingId
-
   const toc = document.querySelector('.toc__list')
   if (!toc) return
   const tocLis = [...toc.querySelectorAll('.toc__item')]

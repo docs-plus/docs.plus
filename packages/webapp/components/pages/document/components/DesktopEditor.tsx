@@ -2,17 +2,12 @@ import { useRef } from 'react'
 import ToolbarDesktop from '@components/TipTap/toolbar/ToolbarDesktop'
 import EditorContent from './EditorContent'
 import TOC from './Toc'
-import { useStore } from '@stores'
-import ChatContainer from './chat/ChatContainer'
 import { useAdjustEditorSizeForChatRoom, useTOCResize, useScrollSyncToc } from '../hooks'
 import useUpdateDocPageUnreadMsg from '../hooks/useUpdateDocPageUnreadMsg'
+import { Chatroom } from '@components/chatroom'
 
 const DesktopEditor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
-
-  const {
-    editor: { isMobile }
-  } = useStore((state) => state.settings)
 
   // Hook for TOC resize functionality
   const { tocRef, tocWidth, handleMouseDown, editorContainerStyle } = useTOCResize()
@@ -22,7 +17,7 @@ const DesktopEditor = () => {
 
   useUpdateDocPageUnreadMsg()
 
-  // Use the custom hook for scroll sync
+  // Use the custom hook for scroll sync -> TOC
   useScrollSyncToc(editorWrapperRef)
 
   return (
@@ -37,7 +32,109 @@ const DesktopEditor = () => {
             className="editorWrapper flex h-full grow items-start justify-center overflow-y-auto border-t-0 p-0 sm:py-4">
             <EditorContent className="mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8" />
           </div>
-          <ChatContainer />
+          {/* <ChatContainer /> */}
+          <Chatroom variant="desktop">
+            <Chatroom.Toolbar className="relative z-50 flex w-full items-center border-b border-gray-300 bg-white p-2">
+              <Chatroom.Toolbar.Breadcrumb className="px-1" />
+              <div className="ml-auto flex items-center gap-3">
+                <Chatroom.Toolbar.ParticipantsList className="flex h-9 items-center" />
+                <div className="join bg-base-300 rounded-md">
+                  <Chatroom.Toolbar.ShareButton className="join-item" />
+                  <Chatroom.Toolbar.NotificationToggle className="join-item" />
+                  <Chatroom.Toolbar.CloseButton className="join-item" />
+                </div>
+              </div>
+            </Chatroom.Toolbar>
+
+            <Chatroom.MessageFeed showScrollToBottom={true}>
+              <Chatroom.MessageFeed.MessageList>
+                <Chatroom.MessageFeed.MessageList.Loop>
+                  {(message, index) => (
+                    <Chatroom.MessageFeed.MessageList.MessageCard message={message} index={index}>
+                      <Chatroom.MessageFeed.MessageList.MessageCard.Header.BookmarkIndicator />
+                      <Chatroom.MessageFeed.MessageList.MessageCard.Actions>
+                        <Chatroom.MessageFeed.MessageList.MessageCard.Actions.QuickActions>
+                          <Chatroom.MessageFeed.MessageList.MessageCard.Actions.EmojiReaction />
+                          <Chatroom.MessageFeed.MessageList.MessageCard.Actions.Reply />
+                          <Chatroom.MessageFeed.MessageList.MessageCard.Actions.Bookmark />
+                          <Chatroom.MessageFeed.MessageList.MessageCard.Actions.ReplyInThread />
+                          <Chatroom.MessageFeed.MessageList.MessageCard.Actions.MoreActions>
+                            <Chatroom.MessageFeed.MessageList.MessageCard.Actions.CopyToDoc />
+                            <Chatroom.MessageFeed.MessageList.MessageCard.Actions.CopyLink className="mb-1 border-b border-gray-300 pb-1" />
+                            <Chatroom.MessageFeed.MessageList.MessageCard.Actions.Delete />
+                            <Chatroom.MessageFeed.MessageList.MessageCard.Actions.Edit />
+                            <Chatroom.MessageFeed.MessageList.MessageCard.Actions.ReadStatus />
+                          </Chatroom.MessageFeed.MessageList.MessageCard.Actions.MoreActions>
+                        </Chatroom.MessageFeed.MessageList.MessageCard.Actions.QuickActions>
+                      </Chatroom.MessageFeed.MessageList.MessageCard.Actions>
+                      <div className="flex w-full items-start gap-2">
+                        {message.isGroupStart && (
+                          <div className="relative flex flex-col items-center space-y-2">
+                            <Chatroom.MessageFeed.MessageList.MessageCard.Header.UserAvatar />
+                          </div>
+                        )}
+                        {message.isGroupStart ? (
+                          <div className="flex w-full flex-col">
+                            <Chatroom.MessageFeed.MessageList.MessageCard.Header>
+                              <Chatroom.MessageFeed.MessageList.MessageCard.Header.Username />
+                              <Chatroom.MessageFeed.MessageList.MessageCard.Header.Timestamp />
+                            </Chatroom.MessageFeed.MessageList.MessageCard.Header>
+                            <div
+                              className={`!mt-0 flex w-full flex-col text-[15px] font-normal antialiased`}>
+                              <Chatroom.MessageFeed.MessageList.MessageCard.Content>
+                                <Chatroom.MessageFeed.MessageList.MessageCard.Content.ReplyReference />
+                                <Chatroom.MessageFeed.MessageList.MessageCard.Content.CommentReference />
+                                <Chatroom.MessageFeed.MessageList.MessageCard.Content.MessageBody />
+                              </Chatroom.MessageFeed.MessageList.MessageCard.Content>
+                              <Chatroom.MessageFeed.MessageList.MessageCard.Footer>
+                                <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators>
+                                  <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators.ReplyCount />
+                                  <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators.EditedBadge />
+                                </Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators>
+                                <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Reactions>
+                                  <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Reactions.AddReactionButton />
+                                  <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Reactions.ReactionList />
+                                </Chatroom.MessageFeed.MessageList.MessageCard.Footer.Reactions>
+                              </Chatroom.MessageFeed.MessageList.MessageCard.Footer>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex w-full flex-row items-center">
+                            <div className="relative ml-3 flex flex-col items-center space-y-2">
+                              <Chatroom.MessageFeed.MessageList.MessageCard.Header className="chat-header">
+                                <Chatroom.MessageFeed.MessageList.MessageCard.Header.Timestamp />
+                              </Chatroom.MessageFeed.MessageList.MessageCard.Header>
+                            </div>
+                            <div
+                              className={`!mt-0 flex w-full flex-col pl-2 text-[15px] font-normal antialiased`}>
+                              <Chatroom.MessageFeed.MessageList.MessageCard.Content>
+                                <Chatroom.MessageFeed.MessageList.MessageCard.Content.ReplyReference />
+                                <Chatroom.MessageFeed.MessageList.MessageCard.Content.CommentReference />
+                                <Chatroom.MessageFeed.MessageList.MessageCard.Content.MessageBody />
+                              </Chatroom.MessageFeed.MessageList.MessageCard.Content>
+                              <Chatroom.MessageFeed.MessageList.MessageCard.Footer>
+                                <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Reactions>
+                                  <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Reactions.AddReactionButton />
+                                  <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Reactions.ReactionList />
+                                  <div className="mt-auto ml-auto flex justify-end">
+                                    <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators>
+                                      <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators.ReplyCount />
+                                      <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators.EditedBadge />
+                                    </Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators>
+                                  </div>
+                                </Chatroom.MessageFeed.MessageList.MessageCard.Footer.Reactions>
+                              </Chatroom.MessageFeed.MessageList.MessageCard.Footer>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    </Chatroom.MessageFeed.MessageList.MessageCard>
+                  )}
+                </Chatroom.MessageFeed.MessageList.Loop>
+              </Chatroom.MessageFeed.MessageList>
+            </Chatroom.MessageFeed>
+            <Chatroom.ChannelComposer className="w-full" />
+          </Chatroom>
         </div>
         <div
           ref={tocRef}

@@ -14,6 +14,7 @@ type TChatRoom = {
   fetchMsgsFromId?: string
   editorInstance?: any
   editorRef?: any
+  isReadyToDisplayMessages?: boolean
 }
 
 interface IChatroomStore {
@@ -96,7 +97,8 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     commentMessageMemory: undefined,
     fetchMsgsFromId: undefined,
     editorInstance: undefined,
-    editorRef: undefined
+    editorRef: undefined,
+    isReadyToDisplayMessages: false
   },
 
   updateChatRoom: (key, value) => {
