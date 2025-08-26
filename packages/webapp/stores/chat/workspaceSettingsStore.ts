@@ -22,6 +22,7 @@ export interface IWorkspaceSettingsStore {
   setForwardMessageMemory: (channelId: string, message: any) => void
   setTypingIndicator: (channelId: string, user: any) => void
   removeTypingIndicator: (channelId: string, user: any) => void
+  clearMemoryStates: (channelId: string) => void
 }
 
 const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
@@ -103,12 +104,31 @@ const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
         typingIndicators[channelId].delete(user.id)
       }
     })
+  },
+
+  clearMemoryStates: (channelId) => {
+    set((state: any) => {
+      const channelSettings = state.workspaceSettings.channels.get(channelId) || {}
+      channelSettings.messageDraftMemory = null
+      channelSettings.replyMessageMemory = null
+      channelSettings.editMessageMemory = null
+      channelSettings.forwardMessageMemory = null
+      channelSettings.commentMessageMemory = null
+      state.workspaceSettings.channels.set(channelId, channelSettings)
+    })
   }
 }))
 
 function setMemory(set: any, memoryType: string, channelId: string, message: any) {
   set((state: any) => {
     const channelSettings = state.workspaceSettings.channels.get(channelId) || {}
+    // clear all memory states for the channel before setting the memory type to the message
+    channelSettings.messageDraftMemory = null
+    channelSettings.replyMessageMemory = null
+    channelSettings.editMessageMemory = null
+    channelSettings.forwardMessageMemory = null
+    channelSettings.commentMessageMemory = null
+    // set the memory type to the message
     channelSettings[memoryType] = message
     state.workspaceSettings.channels.set(channelId, channelSettings)
   })

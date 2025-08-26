@@ -1025,3 +1025,15 @@ ol {
   background-color: var(--color-docsy);
   border-radius: 4px;
 }
+
+/* Context menu active state for message cards */
+.msg_card.context-menu-active {
+  background-color: #f0f4ff !important;
+  // border-left: 3px solid #3b82f6 !important;
+  // transform: translateX(2px) !important;
+  // transition: all 0.2s ease-in-out !important;
+}
+
+.overflow-anchor-auto {
+  overflow-anchor: auto;
+}

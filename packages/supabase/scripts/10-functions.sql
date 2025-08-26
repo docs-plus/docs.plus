@@ -303,12 +303,9 @@ BEGIN
         anchor_message_timestamp;
 END;
 $$ LANGUAGE plpgsql;
-
-
-
-
 --------------------------------------------------
-
+--------------------------------------------------
+--------------------------------------------------
 CREATE OR REPLACE FUNCTION get_channel_messages_paginated(
     input_channel_id   VARCHAR(36),
     limit_count        INT                DEFAULT 20,
@@ -340,31 +337,39 @@ BEGIN
     IF direction = 'older' THEN
 
         WITH paged AS (
-            SELECT
-              m.id,
-              m.content,
-              m.html,
-              m.medias,
-              m.created_at,
-              user_details_json(u) AS user_details,
-              CASE
-                WHEN rm.id IS NOT NULL THEN
-                  json_build_object(
-                    'message', json_build_object(
-                                  'id',         rm.id,
-                                  'created_at', rm.created_at
+            SELECT m.*,
+                json_build_object(
+                    'id', u.id,
+                    'username', u.username,
+                    'fullname', u.full_name,
+                    'avatar_url', u.avatar_url,
+                    'avatar_updated_at', u.avatar_updated_at
+                ) AS user_details,
+                CASE
+                    WHEN m.reply_to_message_id IS NOT NULL THEN
+                        (SELECT json_build_object(
+                                'message', json_build_object(
+                                    'id', rm.id,
+                                    'created_at', rm.created_at
                                 ),
-                    'user',    user_details_json(ru)
-                  )
-              END AS replied_message_details,
-              -- Bookmark information
-              (mb.id IS NOT NULL AND mb.archived_at IS NULL AND mb.marked_at IS NULL) AS is_bookmarked,
-              mb.id AS bookmark_id
+                                'user', json_build_object(
+                                    'id', ru.id,
+                                    'username', ru.username,
+                                    'fullname', ru.full_name,
+                                    'avatar_url', ru.avatar_url,
+                                    'avatar_updated_at', ru.avatar_updated_at
+                                )
+                            )
+                         FROM public.messages rm
+                         LEFT JOIN public.users ru ON rm.user_id = ru.id
+                         WHERE rm.id = m.reply_to_message_id AND rm.deleted_at IS NULL)
+                    ELSE NULL
+                END AS replied_message_details,
+                -- Bookmark information
+                (mb.id IS NOT NULL AND mb.archived_at IS NULL AND mb.marked_at IS NULL) AS is_bookmarked,
+                mb.id AS bookmark_id
             FROM public.messages m
-            JOIN public.users  u  ON u.id = m.user_id
-            LEFT JOIN public.messages rm ON rm.id = m.reply_to_message_id
-                                      AND rm.deleted_at IS NULL
-            LEFT JOIN public.users  ru ON ru.id = rm.user_id
+            LEFT JOIN public.users u ON m.user_id = u.id
             LEFT JOIN public.message_bookmarks mb ON m.id = mb.message_id AND mb.user_id = auth.uid()
             WHERE
               m.channel_id = input_channel_id
@@ -401,35 +406,39 @@ BEGIN
     ELSE  -- direction = 'newer'
 
         WITH paged AS (
-            SELECT
-              m.id,
-              m.content,
-              m.html,
-              m.medias,
-              m.created_at,
-              user_details_json(u) AS user_details,
-              CASE
-                WHEN rm.id IS NOT NULL THEN
-                  json_build_object(
-                    'message', json_build_object(
-                                  'id',         rm.id,
-                                  'created_at', rm.created_at
+            SELECT m.*,
+                json_build_object(
+                    'id', u.id,
+                    'username', u.username,
+                    'fullname', u.full_name,
+                    'avatar_url', u.avatar_url,
+                    'avatar_updated_at', u.avatar_updated_at
+                ) AS user_details,
+                CASE
+                    WHEN m.reply_to_message_id IS NOT NULL THEN
+                        (SELECT json_build_object(
+                                'message', json_build_object(
+                                    'id', rm.id,
+                                    'created_at', rm.created_at
                                 ),
-                    'user',    user_details_json(ru)
-                  )
-              END AS replied_message_details,
-              -- Bookmark information
-              (mb.id IS NOT NULL AND mb.archived_at IS NULL AND mb.marked_at IS NULL) AS is_bookmarked,
-              mb.id AS bookmark_id,
-              mb.created_at AS bookmark_created_at,
-              mb.archived_at AS bookmark_archived_at,
-              mb.marked_at AS bookmark_marked_at,
-              mb.metadata AS bookmark_metadata
+                                'user', json_build_object(
+                                    'id', ru.id,
+                                    'username', ru.username,
+                                    'fullname', ru.full_name,
+                                    'avatar_url', ru.avatar_url,
+                                    'avatar_updated_at', ru.avatar_updated_at
+                                )
+                            )
+                         FROM public.messages rm
+                         LEFT JOIN public.users ru ON rm.user_id = ru.id
+                         WHERE rm.id = m.reply_to_message_id AND rm.deleted_at IS NULL)
+                    ELSE NULL
+                END AS replied_message_details,
+                -- Bookmark information
+                (mb.id IS NOT NULL AND mb.archived_at IS NULL AND mb.marked_at IS NULL) AS is_bookmarked,
+                mb.id AS bookmark_id
             FROM public.messages m
-            JOIN public.users  u  ON u.id = m.user_id
-            LEFT JOIN public.messages rm ON rm.id = m.reply_to_message_id
-                                      AND rm.deleted_at IS NULL
-            LEFT JOIN public.users  ru ON ru.id = rm.user_id
+            LEFT JOIN public.users u ON m.user_id = u.id
             LEFT JOIN public.message_bookmarks mb ON m.id = mb.message_id AND mb.user_id = auth.uid()
             WHERE
               m.channel_id = input_channel_id
@@ -468,9 +477,9 @@ BEGIN
     RETURN NEXT;
 END;
 $$ LANGUAGE plpgsql STABLE;
-
-
--------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
+--------------------------------------------------
 -- p_message_id =: is the last message inserted in the channel
 CREATE OR REPLACE FUNCTION mark_messages_as_read(
     p_channel_id VARCHAR(36),

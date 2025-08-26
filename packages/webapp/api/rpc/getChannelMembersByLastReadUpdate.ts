@@ -2,7 +2,7 @@ import { supabaseClient } from '@utils/supabase'
 import { PostgrestResponse } from '@supabase/supabase-js'
 
 export type ChannelMemberReadUpdate = {
-  id: string
+  user_id: string
   username: string
   full_name: string | null
   display_name: string

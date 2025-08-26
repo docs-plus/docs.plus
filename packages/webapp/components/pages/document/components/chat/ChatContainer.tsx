@@ -1,8 +1,8 @@
 import useResizeContainer from './hooks/useResizeContainer'
 import { useChatStore } from '@stores'
-import Toolbar from '@components/chat/components/Toolbar'
-import { ChannelProvider } from '@components/chat/context/ChannelProvider'
-import { ChatRoom } from '@components/chat/ChatRoom'
+import Toolbar from '@components/chatroom/components/Toolbar'
+import { ChannelProvider } from '@components/chatroom/context/ChannelProvider'
+// import { ChatRoom } from '@components/chatroom/____ChatRoom____OLDDDD'
 
 const initSettings = {
   displayChannelBar: false,
@@ -38,7 +38,10 @@ const ChatContainer = () => {
           key={chatRoom.headingId + chatRoom.fetchMsgsFromId + ''}
           initChannelId={chatRoom.headingId}
           initSettings={initSettings}>
-          <ChatRoom className="flex h-full flex-col overflow-auto"></ChatRoom>
+          <div>
+            <h1>ChatRoom</h1>
+          </div>
+          {/* <ChatRoom className="flex h-full flex-col overflow-auto"></ChatRoom> */}
         </ChannelProvider>
       </div>
     </div>

@@ -2,7 +2,7 @@ import { UseEditorOptions } from '@tiptap/react'
 import randomColor from 'randomcolor'
 import { createLowlight } from 'lowlight'
 import ShortUniqueId from 'short-unique-id'
-import { TIPTAP_NODES } from '../../types/tiptap'
+import { TIPTAP_NODES } from '@types'
 import { useStore } from '@stores'
 import authStore from 'stores/authStore'
 
