@@ -31,16 +31,10 @@ const AddReactionButton = ({ className }: Props) => {
     [message]
   )
 
-  const isCurrentUserMessage = useMemo(
-    () => message?.user_details?.id === user?.id,
-    [message, user]
-  )
-
   if (!canUserReact || Object.keys(message.reactions || {}).length === 0) return null
 
   return (
     <button
-      disabled={!isCurrentUserMessage}
       className="badge bg-base-300 border-noun cursor-pointer !px-2"
       onClick={openEmojiPickerHandler}>
       <MdOutlineAddReaction size={18} />
