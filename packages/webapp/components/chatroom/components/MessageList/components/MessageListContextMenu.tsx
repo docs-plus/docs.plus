@@ -105,7 +105,9 @@ export const MessageListContextMenu = ({ children, className }: Props) => {
         onBeforeShow={handleBeforeShow}
         onClose={handleContextMenuClose}>
         <ContextMenuItems message={contextMenuState?.message ?? null} />
-        <UserReadStatus message={contextMenuState?.message ?? null} />
+        <div className="mt-1 border-t border-gray-300 pt-1">
+          <UserReadStatus message={contextMenuState?.message ?? null} />
+        </div>
       </ContextMenu>
       {children}
     </div>

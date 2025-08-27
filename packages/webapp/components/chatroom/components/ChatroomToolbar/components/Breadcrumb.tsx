@@ -94,7 +94,7 @@ export const Breadcrumb = ({ className }: Props) => {
                 <RiArrowRightSLine size={20} />
               )}
               <li key={index} aria-current={headingPath.length - 1 === index ? 'page' : undefined}>
-                <div className="flex items-center px-1.5 whitespace-nowrap">
+                <div className="flex items-center px-1.5 wrap-anywhere">
                   {headingPath.length - 1 === index ? (
                     <span className={headingPath.length > 1 ? '!font-bold' : ''}>
                       {heading.text}
