@@ -22,7 +22,7 @@ export const HighlightedMessageCard = forwardRef<HTMLDivElement, HighlightedMess
           position: 'fixed',
           left: messageBounds.left,
           top: messageBounds.top,
-          width: messageBounds.width,
+          width: 'auto',
           height: messageBounds.height,
           zIndex: 60,
           opacity: isVisible ? 1 : 0,
