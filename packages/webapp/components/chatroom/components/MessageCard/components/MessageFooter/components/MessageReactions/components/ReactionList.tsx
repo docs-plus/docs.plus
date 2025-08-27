@@ -3,8 +3,11 @@ import { useMessageCardContext } from '@components/chatroom/components/MessageCa
 import { useAuthStore } from '@stores'
 import { useCallback, useMemo } from 'react'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
-type Props = {}
-const ReactionList = ({}: Props) => {
+import { twMerge } from 'tailwind-merge'
+type Props = {
+  className?: string
+}
+const ReactionList = ({ className }: Props) => {
   const { variant } = useChatroomContext()
   const { message } = useMessageCardContext()
   const currentUser = useAuthStore((state) => state.profile)
@@ -36,7 +39,13 @@ const ReactionList = ({}: Props) => {
         const currentUserReacted = isUserReaction(users)
         return (
           <span
-            className={`badge bg-base-300 relative flex items-center justify-center gap-0 !p-0 ${currentUserReacted ? 'border-docsy cursor-pointer border-1' : 'cursor-default'}`}
+            className={twMerge(
+              'badge bg-base-300 relative flex items-center justify-center gap-0 !p-0',
+              currentUserReacted
+                ? 'border-docsy cursor-pointer border-1'
+                : 'cursor-default border-gray-300',
+              className
+            )}
             key={index}
             onClick={() => variant !== 'mobile' && handleReactionClick(emoji)}>
             {/* @ts-ignore */}
