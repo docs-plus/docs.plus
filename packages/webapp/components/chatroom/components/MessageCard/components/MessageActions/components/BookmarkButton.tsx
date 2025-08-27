@@ -2,6 +2,7 @@ import { useMessageCardContext } from '../../../MessageCardContext'
 import { useBookmarkMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useBookmarkMessageHandler'
 import { twMerge } from 'tailwind-merge'
 import { MdBookmarkRemove, MdOutlineBookmarkAdd } from 'react-icons/md'
+import { useAuthStore } from '@stores'
 
 type Props = {
   className?: string
@@ -9,6 +10,7 @@ type Props = {
 export const BookmarkButton = ({ className }: Props) => {
   const { bookmarkMessageHandler, bookmarkLoading } = useBookmarkMessageHandler()
   const { message } = useMessageCardContext()
+  const profile = useAuthStore((state) => state.profile)
 
   return (
     <button
@@ -17,7 +19,7 @@ export const BookmarkButton = ({ className }: Props) => {
         className
       )}
       data-tip="Bookmark Message"
-      disabled={bookmarkLoading}
+      disabled={bookmarkLoading || !profile}
       onClick={() => bookmarkMessageHandler(message)}>
       {bookmarkLoading ? (
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600" />

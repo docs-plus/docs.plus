@@ -1,4 +1,4 @@
-import { useChatStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 import { MdOutlineEmojiEmotions } from 'react-icons/md'
 import { useMessageCardContext } from '../../../MessageCardContext'
 import { twMerge } from 'tailwind-merge'
@@ -13,6 +13,7 @@ export const EmojiReactionButton = ({ className }: Props) => {
   const { message } = useMessageCardContext()
   const ref = useRef<HTMLButtonElement>(null)
   const { openEmojiPicker } = useChatStore()
+  const profile = useAuthStore((state) => state.profile)
 
   const openEmojiPickerHandler = useCallback(() => {
     if (!message) return
@@ -38,6 +39,7 @@ export const EmojiReactionButton = ({ className }: Props) => {
         className
       )}
       data-tip="Add Reaction"
+      disabled={!profile}
       onClick={openEmojiPickerHandler}>
       <MdOutlineEmojiEmotions size={20} className="text-gray-600" />
     </button>

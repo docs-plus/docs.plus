@@ -12,7 +12,8 @@ import {
   ReplyButton,
   BookmarkButton,
   ReplyInThreadButton,
-  CopyLinkAction
+  CopyLinkAction,
+  GroupAuth
 } from './components'
 
 interface Props {
@@ -48,3 +49,6 @@ MessageActions.CopyToDoc = CopyToDocAction
 MessageActions.Delete = DeleteAction
 MessageActions.Edit = EditAction
 MessageActions.ReadStatus = ReadStatusDisplay
+
+// GroupAuth
+MessageActions.GroupAuth = GroupAuth
