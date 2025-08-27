@@ -7,19 +7,22 @@ import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
 import { IoCheckmarkDoneSharp, IoCheckmarkSharp } from 'react-icons/io5'
 import AvatarStack from '@components/AvatarStack'
 import { TMsgRow } from '@types'
+import { twMerge } from 'tailwind-merge'
 
 type Props = {
   message: TMsgRow
   isOpen: boolean
   wrapper?: 'li' | 'MenuItem'
   avatarLoaderRepeat?: number
+  className?: string
 }
 
 export const UserReadStatus = ({
   message,
   isOpen,
   wrapper = 'MenuItem',
-  avatarLoaderRepeat = 3
+  avatarLoaderRepeat = 3,
+  className
 }: Props) => {
   const { channelId } = useChatroomContext()
 
@@ -44,7 +47,7 @@ export const UserReadStatus = ({
   if (!message.readed_at) return null
 
   const content = (
-    <div className="flex items-center gap-2 py-0 pt-2">
+    <div className={twMerge('flex items-center gap-2 py-0 pt-2', className)}>
       <span className="text-xs text-gray-500">
         {!message.readed_at ? (
           <IoCheckmarkSharp className="text-base-content size-4 text-gray-400" />
@@ -85,8 +88,8 @@ export const UserReadStatus = ({
 
   const wrapperProps = {
     className: readUsersLoading
-      ? 'menu-disabled flex flex-row items-center gap-2 border-t border-gray-300'
-      : 'menu-disabled !my-1 border-t border-gray-300'
+      ? 'menu-disabled flex flex-row items-center gap-2 '
+      : 'menu-disabled'
   }
 
   if (wrapper === 'li') {

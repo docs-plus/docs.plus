@@ -61,11 +61,15 @@ const DesktopEditor = () => {
                           <Chatroom.MessageFeed.MessageList.MessageCard.Actions.MoreActions>
                             <Chatroom.MessageFeed.MessageList.MessageCard.Actions.CopyToDoc />
                             <Chatroom.MessageFeed.MessageList.MessageCard.Actions.CopyLink />
-                            <Chatroom.MessageFeed.MessageList.MessageCard.Actions.GroupAuth className="mt-1 border-b border-gray-300 pt-1">
+                            <Chatroom.MessageFeed.MessageList.MessageCard.Actions.GroupAuth
+                              checkMessageAuthor={true}
+                              className="mt-1 border-t border-gray-300 pt-1">
                               <Chatroom.MessageFeed.MessageList.MessageCard.Actions.Delete />
                               <Chatroom.MessageFeed.MessageList.MessageCard.Actions.Edit />
                             </Chatroom.MessageFeed.MessageList.MessageCard.Actions.GroupAuth>
-                            <Chatroom.MessageFeed.MessageList.MessageCard.Actions.ReadStatus />
+                            <div className="mt-1 border-t border-gray-300 pt-1">
+                              <Chatroom.MessageFeed.MessageList.MessageCard.Actions.ReadStatus />
+                            </div>
                           </Chatroom.MessageFeed.MessageList.MessageCard.Actions.MoreActions>
                         </Chatroom.MessageFeed.MessageList.MessageCard.Actions.QuickActions>
                       </Chatroom.MessageFeed.MessageList.MessageCard.Actions>
