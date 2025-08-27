@@ -23,25 +23,23 @@ const MessageList = ({ children, className }: Props) => {
   return (
     <MessageListProvider>
       <MessagesEmptyState>
-        <MessageListContextMenu>
-          <div
-            ref={messageContainerRef}
-            className={twMerge(
-              'message-list overflow-anchor-auto relative scroll-smooth',
-              className
-            )}>
-            {/* Loading spinners - absolute positioned within container */}
-            {isLoadingMore && (
-              <LoadingSpinner position={loadingMoreDirection === 'older' ? 'top' : 'bottom'} />
-            )}
+        <div
+          ref={messageContainerRef}
+          className={twMerge(
+            'message-list overflow-anchor-auto relative scroll-smooth',
+            className
+          )}>
+          {/* Loading spinners - absolute positioned within container */}
+          {isLoadingMore && (
+            <LoadingSpinner position={loadingMoreDirection === 'older' ? 'top' : 'bottom'} />
+          )}
 
-            {/* Top sentinel for Intersection Observer */}
-            <div id={topSentinelId} className="h-px w-full" />
-            {children}
-            {/* Bottom sentinel for Intersection Observer */}
-            <div id={bottomSentinelId} className="h-px w-full" />
-          </div>
-        </MessageListContextMenu>
+          {/* Top sentinel for Intersection Observer */}
+          <div id={topSentinelId} className="h-px w-full" />
+          {children}
+          {/* Bottom sentinel for Intersection Observer */}
+          <div id={bottomSentinelId} className="h-px w-full" />
+        </div>
       </MessagesEmptyState>
     </MessageListProvider>
   )
@@ -51,6 +49,7 @@ export default MessageList
 
 MessageList.Loop = MessageLoop
 MessageList.MessageCard = MessageCard
+MessageList.ContextMenu = MessageListContextMenu
 
 // <MessageList className="chat_msg_container">
 //   <MessageList.Loop>
