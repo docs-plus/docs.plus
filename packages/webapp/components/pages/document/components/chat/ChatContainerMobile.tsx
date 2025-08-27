@@ -42,7 +42,10 @@ const ChatContainerMobile = () => {
             <BreadcrumbMobile />
           </div>
           <Chatroom.MessageFeed showScrollToBottom={true}>
-            <Sheet.Scroller draggableAt="top">
+            <Sheet.Scroller
+              draggableAt="bottom"
+              disableScroll={chatRoom.disableScroll}
+              autoPadding={true}>
               <Chatroom.MessageFeed.MessageList>
                 <Chatroom.MessageFeed.MessageList.Loop>
                   {(message, index) => (
