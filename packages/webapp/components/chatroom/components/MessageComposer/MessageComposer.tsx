@@ -166,6 +166,9 @@ const MessageComposer = ({
       const fakemessage = createFakeMessage(content, html, user, threadId)
       messageInsert(fakemessage)
 
+      // clear the editor content and focus the start of the editor
+      editor?.chain().clearContent(true).focus('start').run()
+
       await createThreadMessage({
         p_content: content,
         p_html: html,
@@ -281,10 +284,6 @@ const MessageComposer = ({
 
   // Cleanup function
   const cleanupAfterSubmit = useCallback(() => {
-    editor?.commands.clearContent(true)
-    editor?.view.focus()
-    editor?.commands.focus()
-
     // Clear memory states
     if (replyMessageMemory) setReplyMsgMemory(channelId, null)
     if (editMessageMemory) setEditMsgMemory(channelId, null)
@@ -293,7 +292,7 @@ const MessageComposer = ({
       text: null,
       html: null
     })
-    document.dispatchEvent(new CustomEvent('messages:container:scroll:down'))
+    // document.dispatchEvent(new CustomEvent('messages:container:scroll:down'))
   }, [
     editor,
     replyMessageMemory,
