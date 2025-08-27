@@ -24,12 +24,10 @@ const initSettings = {
 
 const ChatContainerMobile = () => {
   const chatRoom = useChatStore((state) => state.chatRoom)
-  const [isOpen, setOpen] = useState(false)
   const { emojiPicker, closeEmojiPicker } = useChatStore()
 
   const handleEmojiPickerClose = () => {
     closeEmojiPicker()
-    setOpen(false)
   }
 
   if (!chatRoom?.headingId) return null
@@ -60,7 +58,7 @@ const ChatContainerMobile = () => {
                       )}
 
                       <div
-                        className={`chat-bubble ${message.isOwner && 'bg-chatBubble-owner before:content-[before:content-[]]'} ${!message.isGroupStart && 'ml-9 before:content-[before:content-[]]'}`}>
+                        className={`chat-bubble px-2.5 ${message.isOwner && 'bg-chatBubble-owner before:content-[before:content-[]]'} ${!message.isGroupStart && 'ml-9 before:content-[before:content-[]]'}`}>
                         <Chatroom.MessageFeed.MessageList.MessageCard.Header.BookmarkIndicator />
                         <Chatroom.MessageFeed.MessageList.MessageCard.Header className="chat-header">
                           {!message.isOwner && message.isGroupStart && (
@@ -78,10 +76,11 @@ const ChatContainerMobile = () => {
                           <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Reactions>
                             <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Reactions.ReactionList />
                           </Chatroom.MessageFeed.MessageList.MessageCard.Footer.Reactions>
-                          <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators>
-                            <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators.ReplyCount />
+                          <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators className="pr-0">
                             <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators.EditedBadge />
+                            <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators.ReplyCount />
                             <Chatroom.MessageFeed.MessageList.MessageCard.Header.Timestamp />
+                            <Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators.MessageSeen />
                           </Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators>
                         </Chatroom.MessageFeed.MessageList.MessageCard.Footer>
                       </div>

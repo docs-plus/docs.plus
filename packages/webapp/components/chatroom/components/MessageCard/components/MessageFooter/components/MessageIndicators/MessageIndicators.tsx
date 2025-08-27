@@ -1,6 +1,7 @@
 import { twMerge } from 'tailwind-merge'
 import { ReplyCount } from './components/ReplyCount'
 import { EditedBadge } from './components/EditedBadge'
+import MessageSeen from './components/MesageSeen'
 
 type Props = {
   className?: string
@@ -23,3 +24,4 @@ export default MessageIndicators
 
 MessageIndicators.ReplyCount = ReplyCount
 MessageIndicators.EditedBadge = EditedBadge
+MessageIndicators.MessageSeen = MessageSeen
