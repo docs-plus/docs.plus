@@ -1,9 +1,9 @@
-import { useRef, forwardRef } from 'react'
+import { forwardRef } from 'react'
 import { motion } from 'motion/react'
 import { MdAdd } from 'react-icons/md'
 import { useSheetStore, useChatStore } from '@stores'
 import { useMessageLongPressMenu } from '../MessageLongPressMenu'
-import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
+import { TMsgRow } from '@types'
 
 interface EmojiReaction {
   id: string
@@ -17,6 +17,7 @@ interface QuickReactionMenuProps {
   isInteractive?: boolean
   onReactionSelect: (nativeEmoji: string) => void
   className?: string
+  message: TMsgRow
 }
 
 const availableEmojiReactions: EmojiReaction[] = [
@@ -34,9 +35,7 @@ const availableEmojiReactions: EmojiReaction[] = [
 ]
 
 export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuProps>(
-  ({ position, isVisible, isInteractive = true, onReactionSelect, className }, ref) => {
-    const { message } = useMessageCardContext()
-
+  ({ position, isVisible, isInteractive = true, onReactionSelect, className, message }, ref) => {
     const { switchSheet } = useSheetStore()
     const { openEmojiPicker } = useChatStore()
     const { hideMenu } = useMessageLongPressMenu()

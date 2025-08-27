@@ -1,18 +1,18 @@
 import { forwardRef } from 'react'
 import { LongPressMenuItems } from './ContextMenuItems'
 import { UserReadStatus } from './UserReadStatus'
-import { useMessageCardContext } from '../../../MessageCardContext'
+import { TMsgRow } from '@types'
 
 interface ContextActionsMenuProps {
   position: { x: number; y: number }
   isVisible: boolean
   isInteractive?: boolean
   className?: string
+  message: TMsgRow
 }
 
 export const ContextActionsMenu = forwardRef<HTMLUListElement, ContextActionsMenuProps>(
-  ({ position, isVisible, isInteractive = true, className }, ref) => {
-    const { message } = useMessageCardContext()
+  ({ position, isVisible, isInteractive = true, className, message }, ref) => {
     return (
       <ul
         ref={ref}

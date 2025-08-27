@@ -1,5 +1,4 @@
 import { useCallback, createContext, useContext, useEffect } from 'react'
-import { useMessageCardContext } from '../../MessageCardContext'
 import { QuickReactionMenu } from '@components/chatroom/components/MessageCard/components/MessageLongPressMenu/components/QuickReactionMenu'
 import { ContextActionsMenu } from './components/ContextActionsMenu'
 import { HighlightedMessageCard } from './components/HighlightedMessageCard'
@@ -10,6 +9,7 @@ import {
   useLongPressInteraction
 } from '../../hooks'
 import { emojiReaction } from '@api'
+import { TMsgRow } from '@types'
 
 // Context for passing hideMenu to child components
 const MessageLongPressMenuContext = createContext<{ hideMenu: () => void } | null>(null)
@@ -24,11 +24,10 @@ export const useMessageLongPressMenu = () => {
 
 type Props = {
   children: React.ReactNode
+  message: TMsgRow
 }
 
-export const MessageLongPressMenu = ({ children }: Props) => {
-  const { message } = useMessageCardContext()
-
+export const MessageLongPressMenu = ({ children, message }: Props) => {
   // Initialize hooks in correct order
   const { isLongPressMenuVisible, isMenuEnterAnimationActive, showMenu, hideMenu } =
     useMenuVisibility()
@@ -146,6 +145,7 @@ export const MessageLongPressMenu = ({ children }: Props) => {
               isVisible={isMenuEnterAnimationActive}
               isInteractive={isLongPressCompleted}
               onReactionSelect={handleEmojiReaction}
+              message={message}
             />
             {/* Context Actions Menu - Below message */}
             <ContextActionsMenu
@@ -153,6 +153,7 @@ export const MessageLongPressMenu = ({ children }: Props) => {
               position={contextMenuPosition}
               isVisible={isMenuEnterAnimationActive}
               isInteractive={isLongPressCompleted}
+              message={message}
             />
           </div>
         )}

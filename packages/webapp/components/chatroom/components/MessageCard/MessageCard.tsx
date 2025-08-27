@@ -1,9 +1,10 @@
 import { MessageCardProvider } from './MessageCardContext'
 import { TMsgRow } from '@types'
 import MessageActions from './components/MessageActions'
-import MessageContent, { MessageBody, ReplyReference } from './components/MessageContent'
-import MessageHeader, { BookmarkIndicator, Timestamp, Username } from './components/MessageHeader'
+import MessageContent from './components/MessageContent'
+import MessageHeader from './components/MessageHeader'
 import MessageFooter from './components/MessageFooter/MessageFooter'
+import { MessageLongPressMenu } from './components/MessageLongPressMenu'
 
 type Props = {
   children: React.ReactNode
@@ -30,3 +31,6 @@ MessageCard.Content = MessageContent
 
 // Footer
 MessageCard.Footer = MessageFooter
+
+// LongPressMenu
+MessageCard.LongPressMenu = MessageLongPressMenu

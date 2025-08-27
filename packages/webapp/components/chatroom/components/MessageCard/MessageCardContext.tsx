@@ -91,28 +91,26 @@ export const MessageCardProvider: React.FC<{
 
   return (
     <MessageCardContext.Provider value={value}>
-      <MessageLongPressMenu>
-        <div
-          className={twMerge(
-            'message-card group/msgcard chat msg_card relative rounded-md pl-3 transition-colors',
-            variant !== 'mobile' && (message.is_bookmarked || message.bookmark_id)
-              ? 'my-1 bg-blue-50 hover:bg-blue-100'
-              : variant !== 'mobile' && 'hover:bg-base-200',
-            'transition-colors duration-150',
-            variant === 'mobile'
-              ? isOwnerMessage
-                ? 'chat-end owner ml-auto'
-                : 'chat-start mr-auto'
-              : 'w-full',
-            variant === 'mobile' && 'mt-1',
-            className
-          )}
-          onDoubleClick={handleDoubleClick}
-          data-message-id={message.id}
-          ref={cardRef}>
-          {children}
-        </div>
-      </MessageLongPressMenu>
+      <div
+        className={twMerge(
+          'message-card group/msgcard chat msg_card relative rounded-md pl-3 transition-colors',
+          variant !== 'mobile' && (message.is_bookmarked || message.bookmark_id)
+            ? 'my-1 bg-blue-50 hover:bg-blue-100'
+            : variant !== 'mobile' && 'hover:bg-base-200',
+          'transition-colors duration-150',
+          variant === 'mobile'
+            ? isOwnerMessage
+              ? 'chat-end owner ml-auto'
+              : 'chat-start mr-auto'
+            : 'w-full',
+          variant === 'mobile' && 'mt-1',
+          className
+        )}
+        onDoubleClick={handleDoubleClick}
+        data-message-id={message.id}
+        ref={cardRef}>
+        {children}
+      </div>
     </MessageCardContext.Provider>
   )
 }
