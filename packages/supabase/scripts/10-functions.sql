@@ -170,6 +170,7 @@ BEGIN
             LEFT JOIN public.message_bookmarks mb ON m.id = mb.message_id AND mb.user_id = auth.uid()
             WHERE m.channel_id = input_channel_id
                 AND m.deleted_at IS NULL
+                AND NOT (m.type = 'notification' AND m.metadata->>'type' = 'user_join_channel')
                 AND (
                     CASE
                         WHEN total_messages_since_last_read < 20 THEN TRUE
@@ -222,6 +223,7 @@ BEGIN
             LEFT JOIN public.message_bookmarks mb ON m.id = mb.message_id AND mb.user_id = auth.uid()
             WHERE m.channel_id = input_channel_id
                 AND m.deleted_at IS NULL
+                AND NOT (m.type = 'notification' AND m.metadata->>'type' = 'user_join_channel')
                 AND m.created_at <= anchor_message_timestamp
             ORDER BY m.created_at DESC
             LIMIT half_limit
@@ -264,6 +266,7 @@ BEGIN
             LEFT JOIN public.message_bookmarks mb ON m.id = mb.message_id AND mb.user_id = auth.uid()
             WHERE m.channel_id = input_channel_id
                 AND m.deleted_at IS NULL
+                AND NOT (m.type = 'notification' AND m.metadata->>'type' = 'user_join_channel')
                 AND m.created_at > anchor_message_timestamp
             ORDER BY m.created_at ASC
             LIMIT message_limit - half_limit
@@ -374,6 +377,7 @@ BEGIN
             WHERE
               m.channel_id = input_channel_id
               AND m.deleted_at IS NULL
+              AND NOT (m.type = 'notification' AND m.metadata->>'type' = 'user_join_channel')
               AND ( cursor_timestamp IS NULL OR m.created_at < cursor_timestamp )
             ORDER BY m.created_at DESC, m.id DESC
             LIMIT limit_count
@@ -389,6 +393,7 @@ BEGIN
                   FROM public.messages
                  WHERE channel_id = input_channel_id
                    AND deleted_at IS NULL
+                   AND NOT (type = 'notification' AND metadata->>'type' = 'user_join_channel')
                    AND created_at < MIN(paged.created_at)
               ),
             'has_more_newer',
@@ -397,6 +402,7 @@ BEGIN
                   FROM public.messages
                  WHERE channel_id = input_channel_id
                    AND deleted_at IS NULL
+                   AND NOT (type = 'notification' AND metadata->>'type' = 'user_join_channel')
                    AND created_at > MAX(paged.created_at)
               )
           ) AS pagination_cursors
@@ -443,6 +449,7 @@ BEGIN
             WHERE
               m.channel_id = input_channel_id
               AND m.deleted_at IS NULL
+              AND NOT (m.type = 'notification' AND m.metadata->>'type' = 'user_join_channel')
               AND ( cursor_timestamp IS NULL OR m.created_at > cursor_timestamp )
             ORDER BY m.created_at  ASC, m.id  ASC
             LIMIT limit_count
@@ -458,6 +465,7 @@ BEGIN
                   FROM public.messages
                  WHERE channel_id = input_channel_id
                    AND deleted_at IS NULL
+                   AND NOT (type = 'notification' AND metadata->>'type' = 'user_join_channel')
                    AND created_at < MIN(paged.created_at)
               ),
             'has_more_newer',
@@ -466,6 +474,7 @@ BEGIN
                   FROM public.messages
                  WHERE channel_id = input_channel_id
                    AND deleted_at IS NULL
+                   AND NOT (type = 'notification' AND metadata->>'type' = 'user_join_channel')
                    AND created_at > MAX(paged.created_at)
               )
           ) AS pagination_cursors
