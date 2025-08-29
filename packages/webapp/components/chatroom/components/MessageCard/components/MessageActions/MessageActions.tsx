@@ -15,6 +15,7 @@ import {
   CopyLinkAction,
   GroupAuth
 } from './components'
+import { HoverMenuActions } from './HoverMenuActions'
 
 interface Props {
   className?: string
@@ -52,3 +53,6 @@ MessageActions.ReadStatus = ReadStatusDisplay
 
 // GroupAuth
 MessageActions.GroupAuth = GroupAuth
+
+// HoverMenuActions
+MessageActions.HoverMenu = HoverMenuActions
