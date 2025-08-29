@@ -1,4 +1,4 @@
-import { useDropdown } from '@components/ui/Dropdown'
+import { useDropdownContext } from '@components/ui/HoverMenu'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
 import { UserReadStatus } from '@components/chatroom/components/MessageCard/components/common/UserReadStatus'
 
@@ -6,7 +6,7 @@ type Props = {
   className?: string
 }
 export const ReadStatusDisplay = ({ className }: Props) => {
-  const { isOpen } = useDropdown()
+  const { isOpen } = useDropdownContext()
   const { message } = useMessageCardContext()
 
   if (!message) return null
