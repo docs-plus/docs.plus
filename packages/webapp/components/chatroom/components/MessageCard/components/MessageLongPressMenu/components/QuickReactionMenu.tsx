@@ -66,7 +66,7 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
           top: position.y,
           transform: isVisible
             ? 'translateX(-50%) translateY(0) scale(1)'
-            : 'translateX(-50%) translateY(-10px) scale(0.9)',
+            : 'translateX(-50%) translateY(20px) scale(0.9)',
           opacity: isVisible ? 1 : 0,
           maxWidth: '380px',
           width: '88%',
