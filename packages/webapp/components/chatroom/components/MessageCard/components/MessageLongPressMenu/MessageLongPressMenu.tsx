@@ -54,7 +54,8 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
     quickReactionMenuRef,
     contextActionsMenuRef,
     setInitialPositions,
-    setFallbackPositions
+    setFallbackPositions,
+    adjustedMessageBounds
   } = useMenuPositioning(isLongPressMenuVisible, originalMessageBounds)
 
   const handleLongPressActivation = useCallback(
@@ -132,10 +133,10 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
               opacity: isMenuEnterAnimationActive ? 1 : 0
             }}
             onClick={closeLongPressMenu}>
-            {/* Highlighted Message Card - Fixed at original position */}
+            {/* Highlighted Message Card - Fixed at original or adjusted position */}
             <HighlightedMessageCard
               messageElement={highlightedMessageElement}
-              messageBounds={originalMessageBounds}
+              messageBounds={adjustedMessageBounds || originalMessageBounds}
               isVisible={isMenuEnterAnimationActive}
             />
             {/* Quick Reaction Menu - Above message */}
