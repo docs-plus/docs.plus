@@ -160,8 +160,8 @@ function useHoverMenu({
     middleware: [
       offset(offsetValue),
       flip({
-        crossAxis: placement.includes('-'),
-        fallbackAxisSideDirection: 'start',
+        crossAxis: false, // Prevent left-right flipping for consistent positioning
+        fallbackAxisSideDirection: 'end',
         padding: 5
       }),
       shift({ padding: 5 })
