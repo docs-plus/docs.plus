@@ -63,7 +63,7 @@ export const ScrollToBottom = () => {
   return (
     <button
       onClick={scrollToBottomHandler}
-      className={`btn btn-circle btn-primary absolute right-2 z-4 transition-all duration-300 ${
+      className={`btn btn-circle btn-primary absolute right-2 z-20 transition-all duration-300 ${
         showScrollButton
           ? 'bottom-3 opacity-100 delay-200'
           : 'pointer-events-none bottom-[-60px] opacity-0'
