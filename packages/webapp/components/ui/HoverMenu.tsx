@@ -52,6 +52,7 @@ interface HoverMenuOptions {
   offset?: number
   delay?: number | { open?: number; close?: number }
   disabled?: boolean
+  scrollParent?: HTMLElement | (() => HTMLElement | null) | null
 }
 
 interface HoverMenuContextType {
@@ -81,7 +82,8 @@ function useHoverMenu({
   placement = 'top',
   offset: offsetValue = 8,
   delay = { open: 200, close: 150 },
-  disabled = false
+  disabled = false,
+  scrollParent = null
 }: HoverMenuOptions = {}) {
   const [open, setOpen] = React.useState(false)
   const [openDropdownCount, setOpenDropdownCount] = React.useState(0)
@@ -104,6 +106,36 @@ function useHoverMenu({
       hoverMenuManager.unregister(id)
     }
   }, [])
+
+  // Close menu on scroll
+  React.useEffect(() => {
+    if (!open) return
+
+    const handleScroll = () => setOpen(false)
+
+    // Get scroll parent element
+    const getScrollElement = () => {
+      if (scrollParent === null) return null
+      if (typeof scrollParent === 'function') return scrollParent()
+      return scrollParent
+    }
+
+    const scrollElement = getScrollElement()
+
+    if (scrollElement) {
+      // Listen to specific parent element
+      scrollElement.addEventListener('scroll', handleScroll, { passive: true })
+      return () => scrollElement.removeEventListener('scroll', handleScroll)
+    } else {
+      // Fallback to window/document if no parent specified
+      window.addEventListener('scroll', handleScroll, { passive: true })
+      document.addEventListener('scroll', handleScroll, { passive: true })
+      return () => {
+        window.removeEventListener('scroll', handleScroll)
+        document.removeEventListener('scroll', handleScroll)
+      }
+    }
+  }, [open, scrollParent])
 
   const data = useFloating({
     placement,
