@@ -53,13 +53,14 @@ const DesktopEditor = () => {
                   <Chatroom.MessageFeed.MessageList.Loop>
                     {(message, index) => (
                       <Chatroom.MessageFeed.MessageList.MessageCard message={message} index={index}>
-                        <Chatroom.MessageFeed.MessageList.MessageCard.Header.BookmarkIndicator />
                         <HoverMenu
                           id="message-actions"
                           placement="top-end"
                           scrollParent={() => document.querySelector('.message-feed')}
                           offset={-10}
+                          className="w-full overflow-auto"
                           menu={<Chatroom.MessageFeed.MessageList.MessageCard.Actions.HoverMenu />}>
+                          <Chatroom.MessageFeed.MessageList.MessageCard.Header.BookmarkIndicator />
                           <div className="flex w-full items-start gap-2">
                             {message.isGroupStart && (
                               <div className="relative flex flex-col items-center space-y-2">
