@@ -57,6 +57,7 @@ const DesktopEditor = () => {
                         <HoverMenu
                           id="message-actions"
                           placement="top-end"
+                          scrollParent={() => document.querySelector('.message-feed')}
                           offset={-10}
                           menu={<Chatroom.MessageFeed.MessageList.MessageCard.Actions.HoverMenu />}>
                           <div className="flex w-full items-start gap-2">
