@@ -64,63 +64,59 @@ export const useCopyMessageToDocHandler = () => {
       const headingId = channelId
 
       // Find the heading with matching ID in the document
-      const { doc } = editor.state
+      const { doc, tr } = editor.state
       let headingPos: number | null = null
       let headingLevel = 1
       let headingNode: any = null
 
-      let secondHeadingPos: number | null = null
-      let secondHeadingLevel: number | null = null
-      let secondHeadingNode: any = null
-
       // Traverse the document to find the heading with matching ID
       doc.descendants((node, pos) => {
-        // find end of contentWrapper node that after that pos heading node is found
-        if (headingPos != null && node.type.name === 'heading' && !secondHeadingPos) {
-          secondHeadingPos = pos
-          secondHeadingLevel = node.attrs.level
-          secondHeadingNode = node
-          return false // Stop traversal once found
-        }
         if (node.type.name === 'heading' && node.attrs.id === headingId && !headingPos) {
           headingPos = pos
           headingLevel = node.attrs.level
           headingNode = node
+          return false
         }
       })
 
-      // Calculate position where content should be inserted
-      // content should inster at the end of the contentWrapper node before heading node starts
-      let insertPosition =
-        headingPos !== null && headingNode
-          ? headingPos +
-            Number(headingNode.content.size) -
-            Number(secondHeadingNode?.content.size) -
-            2 // End of current heading's content
-          : doc.content.size - 2 || 0 // End of document if heading not found
+      const headingContentNode = headingNode?.firstChild
+      const contentWrapperNode = headingNode?.lastChild
 
-      if (headingLevel === 1) {
-        insertPosition = secondHeadingPos !== null ? secondHeadingPos : insertPosition
-      }
+      let foundFirstHeading = false
+      let firstHeadingOffset = contentWrapperNode.content.size
 
-      if (!insertPosition) {
-        insertPosition = headingPos + headingNode?.firstChild?.content.size + 4
-      }
+      // find a first heading in the contentWrapper, if it deos not exsits,
+      // the end of the contentWrapper is the end pos
+      contentWrapperNode.content.forEach((child: any, offset: number) => {
+        if (child.type.name === 'heading' && !foundFirstHeading) {
+          foundFirstHeading = true
+          firstHeadingOffset = offset
+          return true
+        }
+      })
+
+      const insertPosition = headingPos + headingContentNode.nodeSize + 2 + firstHeadingOffset
+
+      tr.insert(insertPosition, editor.state.schema.nodeFromJSON(createParagraphNodeJson(message)))
+      editor.view.dispatch(tr)
 
       // Insert content at calculated position
       const insertAndUpdate = () => {
         editor
           .chain()
           .focus()
-          .insertContentAt(insertPosition, createParagraphNodeJson(message))
           .command(({ tr }) => {
             tr.setMeta('copyToDoc', true)
             return true
           })
+          .setTextSelection(insertPosition)
+          .scrollIntoView()
           .run()
       }
 
       insertAndUpdate()
+
+      return
     },
     [editor, channelId]
   )
