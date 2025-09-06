@@ -392,6 +392,24 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
   const { uploadFile } = useUploadManager(editor)
   const { close: closeDropdown } = useDropdown()
 
+  // Listen for clipboard file uploads from the extension
+  useEffect(() => {
+    const handleEditorFileUpload = (event: CustomEvent) => {
+      const { file, editor: eventEditor } = event.detail
+
+      // Only handle if this is for our editor instance
+      if (eventEditor === editor && file && docMetadata) {
+        uploadFile(file, docMetadata)
+      }
+    }
+
+    document.addEventListener('editorFileUpload', handleEditorFileUpload as EventListener)
+
+    return () => {
+      document.removeEventListener('editorFileUpload', handleEditorFileUpload as EventListener)
+    }
+  }, [editor, uploadFile, docMetadata])
+
   useEffect(() => {
     const timer = setTimeout(() => inputRef.current?.focus(), 300)
     return () => clearTimeout(timer)
