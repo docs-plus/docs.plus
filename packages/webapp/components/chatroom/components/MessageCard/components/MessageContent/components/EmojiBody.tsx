@@ -50,10 +50,7 @@ export const EmojiBody = () => {
   return (
     <div className={`flex w-full flex-wrap gap-1`}>
       {emojiArray.map((emoji: string, index: number) => (
-        <div
-          key={index}
-          className="tooltip tooltip-bottom"
-          data-tip={emojiTitles[index] || 'emoji'}>
+        <div key={index} className="tooltip tooltip-right" data-tip={emojiTitles[index] || 'emoji'}>
           {
             // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore

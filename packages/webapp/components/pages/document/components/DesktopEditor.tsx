@@ -74,7 +74,7 @@ const DesktopEditor = () => {
                                   <Chatroom.MessageFeed.MessageList.MessageCard.Header.Timestamp />
                                 </Chatroom.MessageFeed.MessageList.MessageCard.Header>
                                 <div
-                                  className={`!mt-0 flex w-full flex-col text-[15px] font-normal antialiased`}>
+                                  className={`!mt-0 flex w-full flex-col overflow-hidden text-[15px] font-normal antialiased`}>
                                   <Chatroom.MessageFeed.MessageList.MessageCard.Content>
                                     <Chatroom.MessageFeed.MessageList.MessageCard.Content.ReplyReference />
                                     <Chatroom.MessageFeed.MessageList.MessageCard.Content.CommentReference />
