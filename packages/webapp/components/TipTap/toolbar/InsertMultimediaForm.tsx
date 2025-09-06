@@ -294,34 +294,90 @@ const MediaTypeButton: React.FC<MediaTypeButtonProps> = ({ type, isActive, onCli
 }
 
 interface UploadDropzoneProps {
-  onFileUpload: (event: React.ChangeEvent<HTMLInputElement>) => void
+  onFileUpload: (file: File) => void
 }
 
-const UploadDropzone: React.FC<UploadDropzoneProps> = ({ onFileUpload }) => (
-  <>
-    <div className="divider m-1 text-sm text-gray-500">OR</div>
-    <div className="flex w-full items-center justify-center">
-      <label
-        htmlFor="dropzone-file"
-        className="flex h-36 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100">
-        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-          <MdCloudUpload size={30} className="mb-2 text-gray-500" />
-          <p className="mb-2 text-sm text-gray-500">
-            <span className="font-semibold">Click to upload</span> or drag and drop
-          </p>
-          <p className="text-xs text-gray-500">Picture, Video or Audio (MAX. 4MB)</p>
-        </div>
-        <input
-          id="dropzone-file"
-          type="file"
-          className="hidden"
-          onChange={onFileUpload}
-          accept="image/*,video/*,audio/*"
-        />
-      </label>
-    </div>
-  </>
-)
+const UploadDropzone: React.FC<UploadDropzoneProps> = ({ onFileUpload }) => {
+  const [isDragOver, setIsDragOver] = useState(false)
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(true)
+  }
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    // Only reset if actually leaving the container
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setIsDragOver(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragOver(false)
+
+    const files = Array.from(e.dataTransfer.files)
+    const file = files[0]
+
+    if (
+      file &&
+      (file.type.startsWith('image/') ||
+        file.type.startsWith('video/') ||
+        file.type.startsWith('audio/'))
+    ) {
+      onFileUpload(file)
+    } else {
+      toast.error('Please drop a valid image, video, or audio file')
+    }
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      onFileUpload(file)
+    }
+  }
+
+  return (
+    <>
+      <div className="divider m-1 text-sm text-gray-500">OR</div>
+      <div className="flex w-full items-center justify-center">
+        <label
+          htmlFor="dropzone-file"
+          className={`flex h-36 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors ${
+            isDragOver
+              ? 'border-blue-400 bg-blue-50'
+              : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+          }`}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}>
+          <div className="flex flex-col items-center justify-center pt-5 pb-6">
+            <MdCloudUpload
+              size={30}
+              className={`mb-2 ${isDragOver ? 'text-blue-500' : 'text-gray-500'}`}
+            />
+            <p className="mb-2 text-sm text-gray-500">
+              <span className="font-semibold">Click to upload</span> or drag and drop
+            </p>
+            <p className="text-xs text-gray-500">Picture, Video or Audio (MAX. 4MB)</p>
+          </div>
+          <input
+            id="dropzone-file"
+            type="file"
+            className="hidden"
+            onChange={handleFileInputChange}
+            accept="image/*,video/*,audio/*"
+          />
+        </label>
+      </div>
+    </>
+  )
+}
 
 interface MediaFormProps {
   onSubmit: (url: string, type: MediaType) => void
@@ -360,8 +416,7 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
     }
   }
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
+  const handleFileUpload = (file: File) => {
     if (file && docMetadata) {
       uploadFile(file, docMetadata)
       closeDropdown()
