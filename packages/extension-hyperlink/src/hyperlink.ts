@@ -1,4 +1,4 @@
-import { Mark, markPasteRule, mergeAttributes } from '@tiptap/core'
+import { Mark, markPasteRule, InputRule, mergeAttributes } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
 import { find, registerCustomProtocol, reset } from 'linkifyjs'
 import AutoHyperlinkPlugin from './plugins/autoHyperlink'
@@ -225,6 +225,32 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
     return {
       'Mod-k': () => this.editor.commands.setHyperlink()
     }
+  },
+
+  addInputRules() {
+    return [
+      new InputRule({
+        find: /(\[([^\]]+)\]\(([^)]+)\))$/,
+        handler: ({ state, range, match }) => {
+          const [fullMatch, , linkText, url] = match
+          const { tr } = state
+          const start = range.from
+          const end = range.to
+
+          // Normalize the URL - add https:// if no protocol
+          let normalizedUrl = url.trim()
+          if (!/^https?:\/\//.test(normalizedUrl) && !normalizedUrl.startsWith('//')) {
+            normalizedUrl = `https://${normalizedUrl}`
+          }
+
+          // Replace the markdown text with just the link text
+          tr.replaceWith(start, end, state.schema.text(linkText))
+
+          // Apply the hyperlink mark to the replaced text
+          tr.addMark(start, start + linkText.length, this.type.create({ href: normalizedUrl }))
+        }
+      })
+    ]
   },
 
   addPasteRules() {
