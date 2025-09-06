@@ -87,7 +87,7 @@ const MessageComposer = ({
   // Simple ref for the submit callback
   const submitRef = useRef<(() => void) | null>(null)
 
-  const { editor, text, html } = useTiptapEditor({
+  const { editor, text, html, isEmojiOnly } = useTiptapEditor({
     loading,
     onSubmit: () => submitRef.current?.()
   })
@@ -437,7 +437,8 @@ const MessageComposer = ({
     isToolbarOpen,
     toggleToolbar,
     submitMessage,
-    editorRef
+    editorRef,
+    isEmojiOnly
   }
 
   return (

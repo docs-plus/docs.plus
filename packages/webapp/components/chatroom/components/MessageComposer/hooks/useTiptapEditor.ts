@@ -41,6 +41,7 @@ lowlight.register('json', json)
 lowlight.register('bash', bash as any)
 
 import { handleTypingIndicator, TypingIndicatorType } from '../helpers/handelTypeingIndicator'
+import { isOnlyEmoji } from '@utils/emojis'
 
 export const useTiptapEditor = ({
   loading,
@@ -51,6 +52,7 @@ export const useTiptapEditor = ({
 }) => {
   const [html, setHtml] = useState('')
   const [text, setText] = useState('')
+  const [isEmojiOnly, setIsEmojiOnly] = useState(false)
 
   const editor: Editor | null = useEditor(
     {
@@ -97,6 +99,7 @@ export const useTiptapEditor = ({
         const text = editor?.getText()
         setHtml(editor?.getHTML())
         setText(editor?.getText())
+        setIsEmojiOnly(isOnlyEmoji(text))
         if (text.length) handleTypingIndicator(TypingIndicatorType.StartTyping)
       },
       onBlur: () => {
@@ -173,6 +176,7 @@ export const useTiptapEditor = ({
               event.preventDefault() // Prevent the new line
               // Dispatch a custom event that SendMessage will listen for
               onSubmit()
+              setIsEmojiOnly(false)
 
               event.preventDefault() // Prevent the new line
               return true // We handled this event
@@ -203,5 +207,5 @@ export const useTiptapEditor = ({
     editor.setEditable(!loading)
   }, [loading, editor])
 
-  return { editor, html, text }
+  return { editor, html, text, isEmojiOnly }
 }
