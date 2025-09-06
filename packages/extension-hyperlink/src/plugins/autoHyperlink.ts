@@ -52,7 +52,20 @@ const findLinks = (text: string) => {
     }
   }
 
-  return links
+  // Clean up trailing punctuation from all detected links
+  return links.map((link) => {
+    const originalValue = link.value || link.href
+    // Remove common trailing punctuation that's likely not part of the URL
+    const cleanValue = originalValue.replace(/[.,;:!?)\]}]+$/, '')
+    const lengthDiff = originalValue.length - cleanValue.length
+
+    return {
+      ...link,
+      href: cleanValue,
+      value: cleanValue,
+      end: link.end - lengthDiff
+    }
+  })
 }
 
 /**
@@ -171,6 +184,17 @@ export default function AutoHyperlinkPlugin(options: AutoHyperlinkOptions): Plug
               from: lastWordAndBlockOffset + link.start + 1,
               to: lastWordAndBlockOffset + link.end + 1
             }))
+            // Filter out URLs that are part of markdown syntax [text](url) or ![text](url)
+            .filter((link) => {
+              // Get context before the link to check for markdown patterns
+              const contextStart = Math.max(0, link.from - 10)
+              const beforeLink = newState.doc.textBetween(contextStart, link.from, ' ', ' ')
+
+              // Don't auto-link if URL is preceded by ]( which indicates markdown syntax
+              const isInsideMarkdownParens = beforeLink.endsWith('](')
+
+              return !isInsideMarkdownParens
+            })
             // add link mark
             .forEach((link) => {
               tr.addMark(
