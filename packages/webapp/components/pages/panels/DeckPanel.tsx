@@ -18,23 +18,9 @@ const DeckPanel = ({ hostname }: DeckPanelProps) => {
   const { isAuthServiceAvailable } = useStore((state) => state.settings)
 
   const [loadingDoc, setLoadingDoc] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
   const [documentName, setDocumentName] = useState<string>('')
   // @ts-ignore - TabsContext has a setActiveTab property
   const { setActiveTab } = useContext(TabsContext)
-
-  const validateDocName = (docSlug: string): [string | null, string] => {
-    const slug = slugify(docSlug, { lower: true, strict: true })
-    let errorMessage = null
-
-    if (docSlug.length < 3 || docSlug.length > 30) {
-      errorMessage = 'Document name must be 3 to 30 characters'
-    } else if (docSlug !== slug) {
-      errorMessage = 'Only lowercase letters, numbers and dashes are allowed'
-    }
-
-    return [errorMessage, slug]
-  }
 
   const enterToPad = (target: TargetType) => {
     setLoadingDoc(true)
@@ -44,14 +30,17 @@ const DeckPanel = ({ hostname }: DeckPanelProps) => {
       docSlug = (Math.random() + 1).toString(36).substring(2)
     }
 
-    const [error, slug] = validateDocName(docSlug)
-    if (error) {
-      setError(error)
-      setLoadingDoc(false)
-      return
+    // Auto-sanitize the slug behind the scenes
+    let sanitizedSlug = slugify(docSlug, { lower: true, strict: true })
+
+    // Handle length constraints automatically
+    if (sanitizedSlug.length < 3) {
+      sanitizedSlug = sanitizedSlug.padEnd(3, 'x')
+    } else if (sanitizedSlug.length > 30) {
+      sanitizedSlug = sanitizedSlug.substring(0, 30)
     }
 
-    window.location.href = `/${slug}`
+    window.location.href = `/${sanitizedSlug}`
   }
 
   const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
@@ -62,7 +51,6 @@ const DeckPanel = ({ hostname }: DeckPanelProps) => {
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setDocumentName(e.target.value)
-    setError(null)
   }
 
   return (
@@ -154,11 +142,6 @@ const DeckPanel = ({ hostname }: DeckPanelProps) => {
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
           />
-          {error && (
-            <span className="validator-hint text-error md: !m-0 text-xs font-bold">
-              Must be 3 to 30 characters containing only lowercase letters, numbers or dash
-            </span>
-          )}
 
           <button
             className="btn btn-primary btn-block"
