@@ -37,6 +37,7 @@ export interface MessageComposerContextType {
     text: string | null
     html: string | null
   } | null
+  isEmojiOnly: boolean
 }
 
 export const MessageComposerContext = createContext<MessageComposerContextType | undefined>(
