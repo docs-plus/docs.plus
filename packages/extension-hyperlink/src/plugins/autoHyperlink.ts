@@ -184,16 +184,16 @@ export default function AutoHyperlinkPlugin(options: AutoHyperlinkOptions): Plug
               from: lastWordAndBlockOffset + link.start + 1,
               to: lastWordAndBlockOffset + link.end + 1
             }))
-            // Filter out URLs that are part of markdown syntax [text](url) or ![text](url)
+            // Filter out URLs that are part of markdown IMAGE syntax ![text](url)
             .filter((link) => {
-              // Get context before the link to check for markdown patterns
-              const contextStart = Math.max(0, link.from - 10)
+              // Get context before the link to check for image markdown patterns
+              const contextStart = Math.max(0, link.from - 15)
               const beforeLink = newState.doc.textBetween(contextStart, link.from, ' ', ' ')
 
-              // Don't auto-link if URL is preceded by ]( which indicates markdown syntax
-              const isInsideMarkdownParens = beforeLink.endsWith('](')
+              // Don't auto-link if URL is preceded by !]( which indicates image markdown syntax
+              const isInsideImageMarkdown = beforeLink.includes('![') && beforeLink.endsWith('](')
 
-              return !isInsideMarkdownParens
+              return !isInsideImageMarkdown
             })
             // add link mark
             .forEach((link) => {

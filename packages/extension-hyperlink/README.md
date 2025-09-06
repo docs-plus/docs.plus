@@ -8,7 +8,7 @@ The Link extension adds support for `<a>` tags to the editor. The extension is h
 
 In a real world application, you would probably add a more sophisticated user interface.
 
-> Pasted URLs will be transformed to links automatically.
+> **Smart Auto-Linking**: URLs are automatically detected and converted to links, with intelligent markdown syntax protection and punctuation handling.
 
 ## ✨ Enhanced URL Support
 
@@ -24,6 +24,13 @@ This extension provides comprehensive support for:
 - **And 50+ more special schemes**
 
 All these URL types are automatically detected and converted to clickable links as you type!
+
+**Smart Features:**
+
+- 🧠 **Markdown-aware**: Converts `[text](url)` to links, protects `![image](url)` syntax
+- 🔗 **URL Normalization**: Automatically adds `https://` to URLs without protocols
+- 🧹 **Clean URLs**: Automatically removes trailing punctuation
+- ⚡ **Priority handling**: Works seamlessly with other extensions
 
 ## Installation
 
@@ -107,6 +114,48 @@ Hyperlink.configure({
   }
 })
 ```
+
+### Markdown-Aware Auto-Linking
+
+The extension intelligently respects markdown syntax and provides clean URL detection:
+
+#### Markdown Syntax Protection
+
+Auto-linking intelligently handles markdown syntax:
+
+```markdown
+![Alt text](https://example.com/image.jpg)  ❌ Won't auto-link (protected for image syntax)
+[Link text](https://example.com/page.html)  ✅ Converts to hyperlink (link syntax)
+Visit https://example.com                   ✅ Will auto-link (normal text)
+```
+
+**Markdown Link Syntax**: `[text](url)` is automatically converted to proper hyperlinks with the text as the display and url as the href.
+
+**URL Normalization**: URLs without protocols are automatically normalized:
+
+```markdown
+[Google](www.google.com)        → Becomes link to https://www.google.com
+[Example](example.com)          → Becomes link to https://example.com
+[Full URL](https://site.com)    → Becomes link to https://site.com (unchanged)
+```
+
+**Image Syntax Protection**: `![alt](url)` patterns are protected to allow image input rules to work correctly.
+
+#### Smart Punctuation Handling
+
+URLs are automatically cleaned of trailing punctuation that's not part of the actual URL:
+
+```
+Check out (https://example.com) for details.  → https://example.com
+Visit https://example.com!                    → https://example.com
+See https://example.com.                      → https://example.com
+```
+
+Cleaned punctuation includes: `. , ; : ! ? ) ] }`
+
+#### Priority Handling
+
+The extension works seamlessly with other TipTap extensions through intelligent priority management, ensuring markdown input rules and auto-linking coexist without conflicts.
 
 ### Toolbars
 
