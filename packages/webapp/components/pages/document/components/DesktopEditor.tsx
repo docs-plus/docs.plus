@@ -100,7 +100,7 @@ const DesktopEditor = () => {
                                   </Chatroom.MessageFeed.MessageList.MessageCard.Header>
                                 </div>
                                 <div
-                                  className={`!mt-0 flex w-full flex-col pl-2 text-[15px] font-normal antialiased`}>
+                                  className={`!mt-0 flex w-full flex-col overflow-hidden pl-2 text-[15px] font-normal antialiased`}>
                                   <Chatroom.MessageFeed.MessageList.MessageCard.Content>
                                     <Chatroom.MessageFeed.MessageList.MessageCard.Content.ReplyReference />
                                     <Chatroom.MessageFeed.MessageList.MessageCard.Content.CommentReference />
