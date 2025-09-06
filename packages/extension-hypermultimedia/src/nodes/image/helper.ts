@@ -3,9 +3,9 @@ import { createMediaToolbar } from '../../utils/media-toolbar'
 import { createFloatingToolbar } from '../../utils/floating-toolbar'
 import type { ImageClickHandlerOptions, ImageKeyDownHandlerOptions } from '../../types'
 
-// ![alt text](image_url)
+// ![alt text](image_url) or [alt text](image_url)
 export const inputRegex =
-  /(?:^|\s)(!\[([^\]]*)\]\(((?:https?:\/\/|\/\/).*\.(jpe?g|png|gif|webp|svg|bmp|ico|tiff|avif|heic|heif|jxl|webm)(?:\?.*)?(?:#.*)?)\))$/gi
+  /(?:^|\s)(!?\[([^\]]*)\]\(((?:https?:\/\/|\/\/).*\.(jpe?g|png|gif|webp|svg|bmp|ico|tiff|avif|heic|heif|jxl|webm)(?:\?.*)?(?:#.*)?)\))(?=\s|$)/gi
 
 // Image URL detection regex - matches common image extensions for HTTP(S) URLs
 const httpImageUrlRegex =

@@ -16,6 +16,7 @@ import type { ImageOptions } from '../../types'
 export const Image = Node.create<ImageOptions>({
   name: 'Image',
   draggable: true,
+  priority: 1100,
 
   addOptions() {
     return {
