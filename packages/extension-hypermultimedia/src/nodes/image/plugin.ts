@@ -43,10 +43,38 @@ export const HyperImagePastePlugin = (editor: Editor, options: { nodeName: strin
     key: new PluginKey('ImagePasteHandler'),
     props: {
       handlePaste: (view, event, slice) => {
-        // Get the pasted content
-        const content = slice.content
+        // First check for actual image files in clipboard
+        if (event.clipboardData?.files?.length) {
+          const files = Array.from(event.clipboardData.files)
+          const imageFile = files.find((file) => file.type.startsWith('image/'))
 
-        // Check if it's a single text node with an image URL
+          if (imageFile) {
+            event.preventDefault()
+
+            // Delegate to existing upload system
+            triggerFileUpload(imageFile, editor)
+            return true
+          }
+        }
+
+        // Check for image data in clipboard items (for screenshots)
+        if (event.clipboardData?.items?.length) {
+          const items = Array.from(event.clipboardData.items)
+          const imageItem = items.find((item) => item.type.startsWith('image/'))
+
+          if (imageItem) {
+            event.preventDefault()
+
+            const file = imageItem.getAsFile()
+            if (file) {
+              triggerFileUpload(file, editor)
+              return true
+            }
+          }
+        }
+
+        // Fallback: Check if it's a single text node with an image URL
+        const content = slice.content
         if (content.childCount === 1) {
           const firstChild = content.firstChild
 
@@ -82,4 +110,15 @@ export const HyperImagePastePlugin = (editor: Editor, options: { nodeName: strin
       }
     }
   })
+}
+
+// Helper function to trigger the existing upload system
+const triggerFileUpload = (file: File, editor: Editor) => {
+  // Create a custom event to communicate with the upload system
+  const uploadEvent = new CustomEvent('editorFileUpload', {
+    detail: { file, editor }
+  })
+
+  // Dispatch to document for global handling
+  document.dispatchEvent(uploadEvent)
 }
