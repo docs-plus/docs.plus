@@ -7,6 +7,7 @@ import chatRoom from './chat/chatroom'
 import history from './history'
 import notification from './notification'
 import virtualKeyboardStore from './virtualKeyboardStore'
+import dialogStore from './dialogStore'
 
 enableMapSet()
 
@@ -16,7 +17,8 @@ interface IStore
     ReturnType<typeof chatRoom>,
     ReturnType<typeof notification>,
     ReturnType<typeof history>,
-    ReturnType<typeof virtualKeyboardStore> {}
+    ReturnType<typeof virtualKeyboardStore>,
+    ReturnType<typeof dialogStore> {}
 
 export const useStore = create<IStore>((...props) => ({
   ...workspaceStore(...props),
@@ -24,5 +26,6 @@ export const useStore = create<IStore>((...props) => ({
   ...chatRoom(...props),
   ...history(...props),
   ...notification(...props),
-  ...virtualKeyboardStore(...props)
+  ...virtualKeyboardStore(...props),
+  ...dialogStore(...props)
 }))

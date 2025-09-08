@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { ContextMenu } from '../../ui/ContextMenu'
+import { ContextMenu } from '@components/ui/ContextMenu'
 import ContextMenuItems from '../../MessageCard/components/MessageContextMenu/ContextMenuItems'
 import UserReadStatus from '../../MessageCard/components/MessageContextMenu/UserReadStatus'
 import { useMessageListContext } from '../MessageListContext'

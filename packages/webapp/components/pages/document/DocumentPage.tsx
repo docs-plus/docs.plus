@@ -4,11 +4,12 @@ import useInitiateDocumentAndWorkspace from '@hooks/useInitiateDocumentAndWorksp
 import useYdocAndProvider from '@hooks/useYdocAndProvider'
 import DocumentLayouts from '@components/pages/document/layouts/DocumentLayouts'
 import useDocumentMetadata from '@hooks/useDocumentMetadata'
-import { useAuthStore, useStore } from '@stores'
+import { useStore } from '@stores'
 import { useRouter } from 'next/router'
 import { GoogleOneTapLayout } from '@layouts'
 import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
 import useJoinWorkspace from '@hooks/useJoinWorkspace'
+import { GlobalDialog } from '@components/ui/GlobalDialog'
 
 type DocumentPageProps = {
   docMetadata: any
@@ -45,6 +46,7 @@ const DocumentPage = ({ docMetadata, isMobile, channels }: DocumentPageProps) =>
     <GoogleOneTapLayout>
       <HeadSeo />
       <DocumentLayouts isMobile={isMobile} provider={provider} />
+      <GlobalDialog />
     </GoogleOneTapLayout>
   )
 }

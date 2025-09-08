@@ -8,6 +8,7 @@ import usePresentUsers from './hooks/usePresentUsers'
 import useActiveHeading from './hooks/useActiveHeading'
 import useOpenChatContainer from './hooks/useOpenChatContainer'
 import useUnreadMessage from './hooks/useUnreadMessage'
+import useOpenChatroomHandler from './hooks/useOpenChatroomHandler'
 
 export const RenderToc = ({ childItems, item, renderTocs }: any) => {
   const { headingId } = useChatStore((state) => state.chatRoom)

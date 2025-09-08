@@ -209,6 +209,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
           }
           // Call cleanup callback
           if (onClose) {
+            console.log('close context menu!!!')
             onClose()
           }
         }
@@ -237,9 +238,11 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
       }
     }, [externalIsOpen, mousePosition])
 
-    // useEffect(() => {
-    //   console.log('isOpen', { isOpen })
-    // }, [isOpen])
+    useEffect(() => {
+      if (!isOpen && onClose) {
+        onClose()
+      }
+    }, [isOpen])
 
     // If using external control and no parrentRef, we can still render
     // This check is moved after all hooks to comply with Rules of Hooks
@@ -286,6 +289,7 @@ export const ContextMenu = forwardRef<HTMLUListElement, Props & React.HTMLProps<
 
                           // Call cleanup callback
                           if (onClose) {
+                            console.log('close context menu!!!')
                             onClose()
                           }
                         }

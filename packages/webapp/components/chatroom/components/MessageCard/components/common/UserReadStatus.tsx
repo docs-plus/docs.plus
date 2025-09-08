@@ -1,6 +1,6 @@
 import { ChannelMemberReadUpdate, getChannelMembersByLastReadUpdate } from '@api'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
-import { MenuItem } from '@components/chatroom/components/ui/ContextMenu'
+import { MenuItem } from '@components/ui/ContextMenu'
 import { useApi } from '@hooks/useApi'
 import { useEffect, useState, ReactNode } from 'react'
 import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
