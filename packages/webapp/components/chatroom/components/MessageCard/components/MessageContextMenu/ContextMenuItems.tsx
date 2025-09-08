@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react'
 import { BsForwardFill, BsFillPinFill, BsFillPinAngleFill } from 'react-icons/bs'
-import { MenuItem } from '../../../ui/ContextMenu'
+import { MenuItem } from '../../../../../ui/ContextMenu'
 import {
   MdDeleteOutline,
   MdOutlineBookmarkAdd,
@@ -21,7 +21,7 @@ import { useEditMessageHandler } from '@components/chatroom/components/MessageCa
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { DeleteMessageConfirmationDialog } from '@components/chatroom/components/MessageCard/components/common/DeleteMessageConfirmationDialog'
 import { TMsgRow } from '@types'
-import { useContextMenuContext } from '@components/chatroom/components/ui/ContextMenu'
+import { useContextMenuContext } from '@components/ui/ContextMenu'
 import { useCopyMessageLinkHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageLinkHandler'
 import { useAuthStore, useChatStore } from '@stores'
 import { calculateEmojiPickerPosition } from '../../helpers'

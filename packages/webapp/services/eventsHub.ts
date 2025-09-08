@@ -41,6 +41,11 @@ type TCloseChatData = {
   headingId: string
 }
 
+type TResetFilterData = {
+  callback: () => void
+  applyFilters: boolean
+}
+
 export const eventsHub = (router: NextRouter) => {
   console.info('eventsHub initialized')
 
@@ -234,7 +239,8 @@ export const eventsHub = (router: NextRouter) => {
     setWorkspaceEditorSetting('applyingFilters', true)
   })
 
-  PubSub.subscribe(RESET_FILTER, (msg, data: string) => {
+  PubSub.subscribe(RESET_FILTER, (msg, data: TResetFilterData) => {
+    const { callback, applyFilters = true } = data
     const setWorkspaceEditorSetting = useStore.getState().setWorkspaceEditorSetting
     const url = new URL(router.asPath, window.location.origin)
     const slugs = url.pathname.split('/').slice(1)
@@ -244,7 +250,8 @@ export const eventsHub = (router: NextRouter) => {
 
     router.push(newUrl, undefined, { shallow: true })
     setTimeout(() => {
-      setWorkspaceEditorSetting('applyingFilters', true)
+      setWorkspaceEditorSetting('applyingFilters', applyFilters)
+      if (callback) callback()
     }, 500)
   })
 }
