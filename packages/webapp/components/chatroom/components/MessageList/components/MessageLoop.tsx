@@ -45,7 +45,7 @@ export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props)
       if (index === 0 || isNewDay(message.created_at, array[index - 1]?.created_at)) {
         elements.push(
           <DateChip
-            key={`date-${message.created_at}`}
+            key={`date-chip-${message.created_at}`}
             date={message.created_at}
             isScrollingUp={isScrollingUp}
           />
