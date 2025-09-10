@@ -70,8 +70,8 @@ const DesktopEditor = () => {
                             {message.isGroupStart ? (
                               <div className="flex w-full flex-col">
                                 <Chatroom.MessageFeed.MessageList.MessageCard.Header>
-                                  <Chatroom.MessageFeed.MessageList.MessageCard.Header.Username />
-                                  <Chatroom.MessageFeed.MessageList.MessageCard.Header.Timestamp />
+                                  <Chatroom.MessageFeed.MessageList.MessageCard.Header.Username className="text-sm" />
+                                  <Chatroom.MessageFeed.MessageList.MessageCard.Header.Timestamp className="ml-1" />
                                 </Chatroom.MessageFeed.MessageList.MessageCard.Header>
                                 <div
                                   className={`!mt-0 flex w-full flex-col overflow-hidden text-[15px] font-normal antialiased`}>
