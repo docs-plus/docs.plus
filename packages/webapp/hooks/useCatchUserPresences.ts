@@ -30,7 +30,7 @@ export const useCatchUserPresences = () => {
 
     if (!profile) {
       supabaseClient
-        .channel(`workspace_${workspaceId}`, {
+        .channel(`workspace:${workspaceId}`, {
           config: {
             broadcast: { self: true }
           }
@@ -50,7 +50,7 @@ export const useCatchUserPresences = () => {
     }
 
     const messageSubscription = supabaseClient
-      .channel(`workspace_${workspaceId}`, {
+      .channel(`workspace:${workspaceId}`, {
         config: {
           broadcast: { self: true }
         }
