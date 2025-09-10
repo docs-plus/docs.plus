@@ -4,11 +4,9 @@ import {
   dbChannelsListner,
   dbChannelMessageCountsListner
 } from '@components/chatroom/hooks/listner/dbChannelsListner'
-import { createClient } from '@utils/supabase/component'
+import { supabaseClient } from '@utils/supabase'
 
 export const useCatchUserPresences = () => {
-  const supabaseClient = createClient()
-
   const profile = useAuthStore((state) => state.profile)
   const { workspaceId } = useStore((state) => state.settings)
   const setOrUpdateUserPresence = useStore((state) => state.setOrUpdateUserPresence)
@@ -136,5 +134,5 @@ export const useCatchUserPresences = () => {
     return () => {
       messageSubscription?.unsubscribe()
     }
-  }, [profile, workspaceId, setOrUpdateUserPresence])
+  }, [profile, workspaceId, setOrUpdateUserPresence, supabaseClient])
 }
