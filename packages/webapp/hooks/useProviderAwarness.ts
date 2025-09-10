@@ -11,16 +11,18 @@ const getCursorUser = (user: any) => {
       name: 'Anonymous',
       displayName: 'Anonymous',
       id: 'anonymous',
-      color: randomColor()
+      color: randomColor({ luminosity: 'light' }),
+      avatarUpdatedAt: null
     }
   }
 
   return {
     name: user?.display_name,
     displayName: user?.display_name,
-    avatar_url: bucketAddress,
-    id: user.id,
-    color: randomColor()
+    avatarUrl: bucketAddress,
+    avatarUpdatedAt: user?.avatar_updated_at,
+    id: user?.id,
+    color: randomColor({ luminosity: 'light' })
   }
 }
 

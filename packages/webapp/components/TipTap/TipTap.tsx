@@ -5,6 +5,7 @@ import ShortUniqueId from 'short-unique-id'
 import { TIPTAP_NODES } from '@types'
 import { useStore } from '@stores'
 import authStore from 'stores/authStore'
+import Config from '@config'
 
 // CustomNodes
 import Document from './nodes/Document'
@@ -300,16 +301,18 @@ const getCollaborationCursorConfig = (provider: any): CollaborationCursorOptions
     provider,
     user: {
       name: 'anonymous',
-      color: randomColor()
+      color: randomColor({ luminosity: 'light' })
     }
   } as unknown as CollaborationCursorOptions
 
   if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    const user = authStore.getState().profile
+    const profile = authStore.getState().profile
     const newUser = {
-      display_name: user?.display_name || user?.username || user?.email || 'anonymous',
-      id: user?.id || user?.email || 'anonymous',
-      color: randomColor()
+      display_name: profile?.display_name || profile?.username || profile?.email || 'anonymous',
+      id: profile?.id || profile?.email || 'anonymous',
+      color: randomColor({ luminosity: 'light' }),
+      avatarUpdatedAt: profile?.avatar_updated_at || null,
+      avatarUrl: profile?.avatar_url || null
     }
 
     config.user = newUser
@@ -318,11 +321,15 @@ const getCollaborationCursorConfig = (provider: any): CollaborationCursorOptions
       cursor.classList.add('collaboration-cursor__caret')
       cursor.setAttribute('style', `border-color: ${user.color};`)
 
+      const avatarAddress = user.avatarUpdatedAt
+        ? Config.app.profile.getAvatarURL(user.id, user.avatarUpdatedAt)
+        : user.avatarUrl
+
       const avatar = document.createElement('div')
       avatar.classList.add('collaboration-cursor__avatar')
       avatar.setAttribute(
         'style',
-        `background-image: url(${user.avatar_url}); background-color:#ddd; border-color: ${user.color};`
+        `background-image: url(${avatarAddress}); background-color:#ddd; border-color: ${user.color};`
       )
 
       const label = document.createElement('div')
@@ -330,7 +337,7 @@ const getCollaborationCursorConfig = (provider: any): CollaborationCursorOptions
       label.setAttribute('style', `background-color: ${user.color}`)
       label.insertBefore(document.createTextNode(user.name), null)
       cursor.insertBefore(label, null)
-      if (user.avatar_url) cursor.insertBefore(avatar, null)
+      if (avatarAddress) cursor.insertBefore(avatar, null)
       return cursor
     }
   }
