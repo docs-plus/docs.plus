@@ -26,7 +26,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
   return (
     <li
       key={item.id}
-      className={`toc__item relative${item.level} ${item.open ? '' : 'closed'} `}
+      className={`toc__item relative w-full ${item.open ? '' : 'closed'} `}
       data-id={item.id}
       data-offsettop={item.offsetTop}>
       <a
@@ -34,7 +34,7 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
         onClick={(e) => handelScroll2Header(e, editor, setActiveHeading, true)}
         href={`?${item.id}`}
         data-id={item.id}>
-        <span className="toc__link">{item.text}</span>
+        <span className="toc__link wrap-anywhere">{item.text}</span>
         <span
           className={`btnFold tooltip tooltip-top ${item.open ? 'opened' : 'closed'}`}
           onClick={() => toggleHeadingSection(item)}

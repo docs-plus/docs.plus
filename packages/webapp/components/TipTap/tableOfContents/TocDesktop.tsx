@@ -64,7 +64,7 @@ const TOCDesktop = ({ className }: any) => {
   return (
     <div className={`${className}`} style={{ scrollbarGutter: 'stable' }} ref={contextMenuRef}>
       <DocTitleChatRoomDesktop className="my-1" />
-      <ul className="toc__list menu p-0">
+      <ul className="toc__list menu w-full p-0">
         <ContextMenu
           className="menu bg-base-100 absolute z-20 m-0 rounded-md p-2 shadow-md outline-none"
           parrentRef={contextMenuRef}
