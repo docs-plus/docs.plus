@@ -14,7 +14,7 @@ export const Timestamp = ({ className }: Props) => {
     return (
       <div
         className={twMerge(
-          'invisible flex items-center gap-1 text-xs whitespace-nowrap opacity-50',
+          'invisible text-xs opacity-50',
           isGroupStart ? 'visible' : 'group-hover/msgcard:visible',
           variant == 'mobile' && 'visible',
           className
@@ -26,7 +26,7 @@ export const Timestamp = ({ className }: Props) => {
   return (
     <time
       className={twMerge(
-        'invisible text-xs whitespace-nowrap opacity-50',
+        'invisible text-xs opacity-50',
         isGroupStart ? 'visible' : 'group-hover/msgcard:visible',
         variant == 'mobile' && 'visible',
         className
