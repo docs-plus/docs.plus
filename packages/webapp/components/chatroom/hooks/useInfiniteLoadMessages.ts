@@ -88,7 +88,10 @@ export const useInfiniteLoadMessages = (
       // @ts-ignore
       cursorTimestamp = String(currentTopElement?.createdAt)
     } else {
-      console.error('[chat]: no createdAt found for currentTopElement', currentTopElement)
+      console.warn('[chat]: no createdAt found for [top element]', currentTopElement)
+      setIsLoadingMore(false)
+      setLoadingMoreDirection(null)
+      return
     }
 
     try {
