@@ -1,10 +1,11 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useStore, useAuthStore, useChatStore } from '@stores'
 import {
   dbChannelsListner,
   dbChannelMessageCountsListner
 } from '@components/chatroom/hooks/listner/dbChannelsListner'
 import { supabaseClient } from '@utils/supabase'
+import { RealtimeChannel } from '@supabase/supabase-js'
 
 export const useCatchUserPresences = () => {
   const profile = useAuthStore((state) => state.profile)
@@ -15,6 +16,8 @@ export const useCatchUserPresences = () => {
   const updateChannelRow = useChatStore((state) => state.updateChannelRow)
   const addChannelMember = useChatStore((state) => state.addChannelMember)
   const channelMembers = useChatStore((state) => state.channelMembers)
+
+  const ananymousSubscription = useRef<RealtimeChannel | null>(null)
 
   const channelMemebrs = (payload: any) => {
     if (payload.table === 'channel_members') {
@@ -29,8 +32,8 @@ export const useCatchUserPresences = () => {
     if (!workspaceId) return
 
     if (!profile) {
-      supabaseClient
-        .channel(`workspace:${workspaceId}`, {
+      ananymousSubscription.current = supabaseClient
+        .channel(`anonymous:${workspaceId}`, {
           config: {
             broadcast: { self: true }
           }
@@ -125,6 +128,9 @@ export const useCatchUserPresences = () => {
       })
       .subscribe(async (status) => {
         if (status !== 'SUBSCRIBED') return
+        // close the anonymous subscription
+        ananymousSubscription.current?.unsubscribe()
+
         await messageSubscription.track(profile).catch((err) => {
           console.error('Failed to track profile:', err)
         })
@@ -132,7 +138,8 @@ export const useCatchUserPresences = () => {
       })
 
     return () => {
+      ananymousSubscription.current?.unsubscribe()
       messageSubscription?.unsubscribe()
     }
-  }, [profile, workspaceId, setOrUpdateUserPresence, supabaseClient])
+  }, [profile, workspaceId, setOrUpdateUserPresence, supabaseClient, ananymousSubscription.current])
 }
