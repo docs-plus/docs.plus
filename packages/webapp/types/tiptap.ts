@@ -18,7 +18,8 @@ import { Plugin } from '@tiptap/pm/state'
  * TipTap editor events
  */
 export const TIPTAP_EVENTS = {
-  FOLD_AND_UNFOLD: 'foldAndUnfold'
+  FOLD_AND_UNFOLD: 'foldAndUnfold',
+  NEW_HEADING_CREATED: 'newHeadingCreated'
 } as const
 
 /**
