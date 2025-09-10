@@ -54,7 +54,8 @@ const useHandelTocUpdate = () => {
       if (
         tr.transaction.meta?.foldAndunfold ||
         tr.transaction.meta?.renderTOC ||
-        tr.transaction.meta?.paste
+        tr.transaction.meta?.paste ||
+        tr.transaction.meta?.[TIPTAP_EVENTS.NEW_HEADING_CREATED]
       ) {
         trTimer = setTimeout(() => {
           handleUpdate(tr)

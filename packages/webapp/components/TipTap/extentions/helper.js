@@ -1,4 +1,4 @@
-import { TIPTAP_NODES } from '@types'
+import { TIPTAP_NODES, TIPTAP_EVENTS } from '@types'
 import { TextSelection } from '@tiptap/pm/state'
 
 /**
@@ -419,6 +419,9 @@ export const insertRemainingHeadings = ({
     const node = state.schema.nodeFromJSON(heading)
 
     tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
+
+    // notify that new heading was created, for update TOC
+    tr.setMeta(TIPTAP_EVENTS.NEW_HEADING_CREATED, true)
   }
 
   return true

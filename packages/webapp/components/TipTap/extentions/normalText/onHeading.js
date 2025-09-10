@@ -6,7 +6,7 @@ import {
   getSelectionRangeBlocks,
   convertHeadingsToParagraphs
 } from '../helper'
-import { TIPTAP_NODES } from '@types'
+import { TIPTAP_NODES, TIPTAP_EVENTS } from '@types'
 
 const processHeadings = (state, tr, headingPositions, headings) => {
   // Process each heading
@@ -122,6 +122,8 @@ const onHeading = (args) => {
 
   // update TOC
   tr.setMeta('renderTOC', true)
+  // notify that new heading was created, for update TOC
+  tr.setMeta(TIPTAP_EVENTS.NEW_HEADING_CREATED, true)
 
   if (backspaceAction && tr) editor.view.dispatch(tr)
   return
