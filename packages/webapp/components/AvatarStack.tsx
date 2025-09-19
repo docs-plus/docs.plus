@@ -2,12 +2,12 @@ import { Avatar } from './ui/Avatar'
 
 type props = {
   users: any[]
-  size: number
-  tooltipPosition: string
-  showStatus: boolean
-  clickable: boolean
-  maxDisplay: number
-  className: string
+  size?: number
+  tooltipPosition?: string
+  showStatus?: boolean
+  clickable?: boolean
+  maxDisplay?: number
+  className?: string
 }
 
 const AvatarStack = ({
