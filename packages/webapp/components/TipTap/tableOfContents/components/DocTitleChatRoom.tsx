@@ -36,8 +36,8 @@ export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) =
           }}
           data-tip="Chat Room">
           {unreadMessage > 0 && (
-            <div className="badge badge-docsy badge-sm bg-docsy border-docsy absolute -top-[6px] -right-[12px] z-[1] scale-90 border border-none px-1 text-white shadow">
-              {unreadMessage}
+            <div className="badge badge-docsy badge-sm bg-docsy border-docsy absolute top-1/2 z-[1] -translate-y-1/2 scale-90 border border-none text-white">
+              {unreadMessage > 99 ? '99+' : unreadMessage}
             </div>
           )}
           <ChatLeft
