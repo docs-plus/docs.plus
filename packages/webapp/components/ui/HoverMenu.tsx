@@ -1,4 +1,5 @@
 import * as React from 'react'
+import debounce from 'lodash/debounce'
 import {
   useFloating,
   autoUpdate,
@@ -47,12 +48,14 @@ class HoverMenuManager {
 
 const hoverMenuManager = new HoverMenuManager()
 
+type ScrollParentResolver = () => Element | Window | null
+
 interface HoverMenuOptions {
   placement?: Placement
   offset?: number
   delay?: number | { open?: number; close?: number }
   disabled?: boolean
-  scrollParent?: HTMLElement | (() => HTMLElement | null) | null
+  scrollParent?: Element | Window | ScrollParentResolver | null
 }
 
 interface HoverMenuContextType {
@@ -78,6 +81,21 @@ export const useHoverMenuContext = () => {
   return context
 }
 
+const resolveScrollTargets = (
+  scrollParent: HoverMenuOptions['scrollParent']
+): Array<Element | Window> => {
+  if (!scrollParent || typeof window === 'undefined') {
+    return []
+  }
+
+  if (typeof scrollParent === 'function') {
+    const resolved = scrollParent()
+    return resolved ? [resolved] : []
+  }
+
+  return [scrollParent]
+}
+
 function useHoverMenu({
   placement = 'top',
   offset: offsetValue = 8,
@@ -87,6 +105,7 @@ function useHoverMenu({
 }: HoverMenuOptions = {}) {
   const [open, setOpen] = React.useState(false)
   const [openDropdownCount, setOpenDropdownCount] = React.useState(0)
+  const [scrollLocked, setScrollLocked] = React.useState(false)
   const menuId = React.useRef(`hover-menu-${Math.random().toString(36).substr(2, 9)}`)
 
   const incrementDropdownCount = React.useCallback(() => {
@@ -107,39 +126,41 @@ function useHoverMenu({
     }
   }, [])
 
-  // Close menu on scroll
+  // Close menu on scroll and temporarily lock interactions
   React.useEffect(() => {
-    if (!open) return
+    if (typeof window === 'undefined') return
 
-    const handleScroll = () => setOpen(false)
+    const targets = resolveScrollTargets(scrollParent)
+    const fallbackTargets: Array<Element | Window | Document> = targets.length
+      ? targets
+      : [window, document]
 
-    // Get scroll parent element
-    const getScrollElement = () => {
-      if (scrollParent === null) return null
-      if (typeof scrollParent === 'function') return scrollParent()
-      return scrollParent
+    const releaseScrollLock = debounce(() => {
+      setScrollLocked(false)
+    }, 150)
+
+    const handleScroll = () => {
+      setScrollLocked(true)
+      hoverMenuManager.close(menuId.current)
+      setOpen(false)
+      releaseScrollLock()
     }
 
-    const scrollElement = getScrollElement()
+    fallbackTargets.forEach((target) => {
+      target.addEventListener('scroll', handleScroll, { passive: true })
+    })
 
-    if (scrollElement) {
-      // Listen to specific parent element
-      scrollElement.addEventListener('scroll', handleScroll, { passive: true })
-      return () => scrollElement.removeEventListener('scroll', handleScroll)
-    } else {
-      // Fallback to window/document if no parent specified
-      window.addEventListener('scroll', handleScroll, { passive: true })
-      document.addEventListener('scroll', handleScroll, { passive: true })
-      return () => {
-        window.removeEventListener('scroll', handleScroll)
-        document.removeEventListener('scroll', handleScroll)
-      }
+    return () => {
+      releaseScrollLock.cancel()
+      fallbackTargets.forEach((target) => {
+        target.removeEventListener('scroll', handleScroll)
+      })
     }
-  }, [open, scrollParent])
+  }, [scrollParent])
 
   const data = useFloating({
     placement,
-    open: open && !disabled,
+    open: open && !disabled && !scrollLocked,
     onOpenChange: (newOpen) => {
       // Don't close if any dropdown is open
       if (!newOpen && openDropdownCount > 0) {
@@ -172,7 +193,7 @@ function useHoverMenu({
 
   const hover = useHover(context, {
     move: false,
-    enabled: !disabled,
+    enabled: !disabled && !scrollLocked,
     delay,
     handleClose: safePolygon({
       buffer: 1
@@ -185,7 +206,7 @@ function useHoverMenu({
 
   return React.useMemo(
     () => ({
-      open: open && !disabled,
+      open: open && !disabled && !scrollLocked,
       setOpen,
       openDropdownCount,
       incrementDropdownCount,
@@ -201,7 +222,8 @@ function useHoverMenu({
       decrementDropdownCount,
       interactions,
       data,
-      disabled
+      disabled,
+      scrollLocked
     ]
   )
 }
