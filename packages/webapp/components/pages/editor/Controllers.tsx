@@ -53,7 +53,7 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
       document.execCommand('copy')
     }
 
-    console.log('[Controllers] Copy operation triggered')
+    console.info('[Controllers] Copy operation triggered')
   }
 
   // Paste from clipboard
@@ -70,7 +70,7 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
       document.execCommand('paste')
     }
 
-    console.log('[Controllers] Paste operation triggered')
+    console.info('[Controllers] Paste operation triggered')
   }
 
   // Select hierarchically and then copy
@@ -107,7 +107,7 @@ const Controllers = ({ editor, debug = false }: ControllersProps) => {
       : 'opacity-0 pointer-events-auto m-1'
 
   return (
-    <div className="controller-buttons absolute right-0 top-0 z-50 flex flex-col items-end">
+    <div className="controller-buttons absolute top-0 right-0 z-50 flex flex-col items-end">
       {/* Clipboard controls */}
       <div className="flex">
         <button

@@ -52,7 +52,6 @@ const createTitleButton = (editor: TipTapEditor, { headingId }: { headingId: str
       try {
         // Check if getPos is a function and call it
         const position = getPos?.()
-        console.log('position', position)
 
         if (typeof position !== 'number') return
 

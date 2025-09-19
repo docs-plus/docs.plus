@@ -24,7 +24,7 @@ export const useMessageHighlighting = (
     // Strategy 2: Use fallback card element from long press interaction
     if (!cardEl && fallbackCardElement) {
       cardEl = fallbackCardElement
-      console.log('Using fallback card element from long press interaction')
+      console.info('Using fallback card element from long press interaction')
     }
 
     if (!cardEl) {
