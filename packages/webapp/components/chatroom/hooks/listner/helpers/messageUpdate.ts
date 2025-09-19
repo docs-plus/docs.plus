@@ -35,15 +35,17 @@ export const messageUpdate = (payload: any) => {
 
     // TODO: if the message is the last message in a group (which have avatar), we need that group of messages
   } else {
+    const user_details = userdata || message?.user_details
+
     const newMessage = {
       ...updatedMessage,
-      user_details: userdata || message.user_details,
-
       replied_message_details: reply_to_message_id && {
         message: reply_to_message_id,
         user: reply_to_message_id?.user_details
       }
     }
+
+    if (user_details) newMessage.user_details = user_details
 
     setOrUpdateMessage(channelId, payload.new.id, newMessage)
   }
