@@ -91,8 +91,6 @@ export const useChannelInitialData = (
       channelData?.total_messages_since_last_read
     )
 
-    console.log({ channelData })
-
     await updateChannelState(channelData)
   }
 
@@ -180,8 +178,6 @@ export const useChannelInitialData = (
     } else {
       setMsgLength(0)
     }
-
-    console.log('finish updateChannelState')
   }
 
   return {

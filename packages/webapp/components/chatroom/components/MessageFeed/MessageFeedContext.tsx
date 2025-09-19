@@ -1,4 +1,4 @@
-import React, { createContext, useContext } from 'react'
+import React, { createContext, useContext, useRef, useCallback } from 'react'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import {
   useScrollAndLoad,
@@ -6,14 +6,16 @@ import {
   useAutoScrollForNewMessages,
   useHighlightMessage
 } from '@components/chatroom/hooks'
+import type { Virtualizer } from '@tanstack/react-virtual'
 
 interface MessageFeedContextValue {
-  messagesEndRef: React.RefObject<HTMLDivElement | null>
   isLoadingMore: boolean
   loadingMoreDirection: 'older' | 'newer' | null
   messageContainerRef: React.RefObject<HTMLDivElement | null>
   topSentinelId: string
   bottomSentinelId: string
+  virtualizerRef: React.MutableRefObject<Virtualizer<HTMLDivElement, HTMLElement> | null>
+  registerVirtualizer: (instance: Virtualizer<HTMLDivElement, HTMLElement> | null) => void
 }
 
 const MessageFeedContext = createContext<MessageFeedContextValue | null>(null)
@@ -31,32 +33,45 @@ export const MessageFeedProvider: React.FC<{
   messageContainerRef: React.RefObject<HTMLDivElement | null>
 }> = ({ children, messageContainerRef }) => {
   const { channelId } = useChatroomContext()
+  const virtualizerRef = useRef<Virtualizer<HTMLDivElement, HTMLElement> | null>(null)
+  const registerVirtualizer = useCallback(
+    (instance: Virtualizer<HTMLDivElement, HTMLElement> | null) => {
+      virtualizerRef.current = instance
+    },
+    []
+  )
 
   // pagination
   const { isLoadingMore, loadingMoreDirection, topSentinelId, bottomSentinelId } =
     useInfiniteLoadMessages(messageContainerRef)
 
-  const { messagesEndRef } = useScrollAndLoad(messageContainerRef)
+  useScrollAndLoad({
+    messageContainerRef,
+    virtualizerRef
+  })
 
   // highlight message in initial load
   const { highlightedMessageExists } = useHighlightMessage({
-    messageContainerRef
+    messageContainerRef,
+    virtualizerRef
   })
 
   // auto scroll for new messages when user send message or user is close to bottom
   useAutoScrollForNewMessages({
     isLoadingOlderMessages: isLoadingMore,
-    messageContainerRef,
-    highlightedMessageExists
+    highlightedMessageExists,
+    virtualizerRef,
+    loadingMoreDirection
   })
 
   const value: MessageFeedContextValue = {
-    messagesEndRef,
     isLoadingMore,
     loadingMoreDirection,
     messageContainerRef,
     topSentinelId,
-    bottomSentinelId
+    bottomSentinelId,
+    virtualizerRef,
+    registerVirtualizer
   }
 
   return (

@@ -1,41 +1,30 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
-import { useAuthStore, useChatStore } from '@stores'
-import { TChannelSettings } from '@types'
+import { useCallback, useEffect, useMemo } from 'react'
+import { useChatStore } from '@stores'
 import { useChatroomContext } from '../ChatroomContext'
-
-// Constants
-const SCROLL_TIMEOUT_MS = 300
-const DEBOUNCE_DELAY = 100
-
-// Types
-interface ScrollOptions {
-  behavior?: ScrollBehavior
-  block?: ScrollLogicalPosition
-}
+import type { Virtualizer } from '@tanstack/react-virtual'
+import { TChannelSettings } from '@types'
 
 interface UseScrollAndLoadReturn {
   isReadyToDisplayMessages: boolean
   messageContainerRef: React.RefObject<HTMLDivElement | null>
-  messagesEndRef: React.RefObject<HTMLDivElement | null>
 }
 
-export const useScrollAndLoad = (
+interface UseScrollAndLoadArgs {
   messageContainerRef: React.RefObject<HTMLDivElement | null>
-): UseScrollAndLoadReturn => {
+  virtualizerRef: React.MutableRefObject<Virtualizer<HTMLDivElement, HTMLElement> | null>
+}
+
+export const useScrollAndLoad = ({
+  messageContainerRef,
+  virtualizerRef
+}: UseScrollAndLoadArgs): UseScrollAndLoadReturn => {
   const { channelId, isChannelDataLoaded, isDbSubscriptionReady } = useChatroomContext()
 
-  // Store selectors
   const isReadyToDisplayMessages = useChatStore((state) => state.chatRoom.isReadyToDisplayMessages)
   const updateChatRoom = useChatStore((state) => state.updateChatRoom)
-  const user = useAuthStore((state) => state.profile)
-  const channels = useChatStore((state) => state.workspaceSettings.channels)
-  const messagesByChannel = useChatStore((state) => state.messagesByChannel)
+  const messageCount = useChatStore((state) => state.messagesByChannel.get(channelId)?.size ?? 0)
 
-  // Context and refs
-  const messagesEndRef = useRef<HTMLDivElement | null>(null)
-  const prevMessagesCountRef = useRef<number>(0)
-  const scrollTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
-  const observerRef = useRef<MutationObserver | undefined>(undefined)
+  const { channels } = useChatStore((state) => state.workspaceSettings)
 
   // Memoized selectors
   const channelSettings = useMemo<TChannelSettings | null>(
@@ -43,19 +32,12 @@ export const useScrollAndLoad = (
     [channels, channelId]
   )
 
-  const { userPickingEmoji, lastReadMessageId } = channelSettings ?? {}
+  const getMessagesArray = useCallback(() => {
+    const channelMessages = useChatStore.getState().messagesByChannel.get(channelId)
+    return channelMessages ? Array.from(channelMessages.values()) : []
+  }, [channelId])
 
-  // Cleanup helper
-  const cleanup = useCallback(() => {
-    if (scrollTimeoutRef.current) {
-      clearTimeout(scrollTimeoutRef.current)
-      scrollTimeoutRef.current = undefined
-    }
-    if (observerRef.current) {
-      observerRef.current.disconnect()
-      observerRef.current = undefined
-    }
-  }, [])
+  const { userPickingEmoji, lastReadMessageId, lastReadMessageTimestamp } = channelSettings ?? {}
 
   const getFetchMessageId = useCallback(() => {
     return (
@@ -64,110 +46,162 @@ export const useScrollAndLoad = (
     )
   }, [])
 
-  const findMessageElement = useCallback(
-    (container: HTMLElement, messageId: string): HTMLElement | null => {
-      const messageElements = container.querySelectorAll('.msg_card')
-      for (const element of messageElements) {
-        const typedElement = element as HTMLElement & { msgId?: string }
-        if (typedElement.msgId === messageId) {
-          return typedElement
-        }
-      }
-      return null
-    },
-    []
-  )
-
-  // Simple scroll completion handler - separated from scroll logic
-  const handleScrollComplete = useCallback(() => {
-    cleanup()
-    updateChatRoom('isReadyToDisplayMessages', true)
-  }, [cleanup, updateChatRoom])
-
-  // Simplified scroll to bottom
-  const scrollToBottom = useCallback(
-    (smooth = false) => {
-      if (userPickingEmoji || !messageContainerRef.current) return
-
+  const waitForScrollSettled = useCallback(
+    (onSettled: () => void) => {
       const container = messageContainerRef.current
-      cleanup() // Clear any existing operations
-
-      // Try to scroll to lastReadMessageId first, then fallback to bottom
-      let targetElement: HTMLElement | null = null
-      if (lastReadMessageId) {
-        targetElement = findMessageElement(container, lastReadMessageId)
+      if (!container) {
+        onSettled()
+        return () => {}
       }
 
-      if (targetElement) {
-        targetElement.scrollIntoView({
-          block: 'center',
-          behavior: smooth ? 'smooth' : 'auto'
-        })
-      } else {
-        container.scrollTo({
-          top: container.scrollHeight,
-          behavior: smooth ? 'smooth' : 'auto'
-        })
+      let rafId: number | null = null
+      let timeoutId: number | null = null
+      let stableFrames = 0
+      let previousTop = container.scrollTop
+      let resolved = false
+
+      const finish = () => {
+        if (resolved) return
+        resolved = true
+        if (rafId !== null) cancelAnimationFrame(rafId)
+        if (timeoutId !== null) window.clearTimeout(timeoutId)
+        onSettled()
       }
 
-      // Handle completion based on scroll type
-      if (smooth) {
-        // For smooth scroll, wait for completion
-        const onScrollEnd = () => {
-          container.removeEventListener('scrollend', onScrollEnd)
-          handleScrollComplete()
+      const detectStability = () => {
+        if (resolved) return
+        const currentTop = container.scrollTop
+
+        if (Math.abs(currentTop - previousTop) <= 1) {
+          stableFrames += 1
+        } else {
+          stableFrames = 0
+          previousTop = currentTop
         }
-        container.addEventListener('scrollend', onScrollEnd)
 
-        // Fallback timeout
-        scrollTimeoutRef.current = setTimeout(() => {
-          container.removeEventListener('scrollend', onScrollEnd)
-          handleScrollComplete()
-        }, SCROLL_TIMEOUT_MS)
-      } else {
-        // For instant scroll, complete immediately
-        handleScrollComplete()
+        if (stableFrames >= 5) {
+          finish()
+          return
+        }
+
+        rafId = requestAnimationFrame(detectStability)
+      }
+
+      rafId = requestAnimationFrame(detectStability)
+      timeoutId = window.setTimeout(finish, 700)
+
+      return () => {
+        resolved = true
+        if (rafId !== null) cancelAnimationFrame(rafId)
+        if (timeoutId !== null) window.clearTimeout(timeoutId)
       }
     },
-    [userPickingEmoji, lastReadMessageId, findMessageElement, cleanup, handleScrollComplete]
+    [messageContainerRef]
   )
 
-  // Initial setup effect - handles first load and specific message scrolling
-  useEffect(() => {
-    if (!isDbSubscriptionReady || !isChannelDataLoaded || isReadyToDisplayMessages) return
-
-    const fetchMsgsFromId = getFetchMessageId()
-    updateChatRoom('isReadyToDisplayMessages', false)
-
-    const scrollTimer = setTimeout(() => {
-      if (!fetchMsgsFromId) {
-        scrollToBottom()
+  const scrollToLastMessage = useCallback(
+    (behavior: 'auto' | 'smooth', onSettled: () => void) => {
+      const virtualizer = virtualizerRef.current
+      if (!virtualizer || messageCount === 0) {
+        onSettled()
+        return undefined
       }
-    }, DEBOUNCE_DELAY)
 
-    return () => clearTimeout(scrollTimer)
-  }, [
-    isChannelDataLoaded,
-    isDbSubscriptionReady,
-    isReadyToDisplayMessages,
-    getFetchMessageId,
-    scrollToBottom,
-    updateChatRoom
-  ])
+      const fetchMsgsFromId = getFetchMessageId()
+      if (fetchMsgsFromId) {
+        onSettled()
+        return undefined
+      }
 
-  // Channel change effect - reset state when switching channels
+      const scheduleScroll = (
+        targetIndex: number,
+        options: { align: 'start' | 'center' | 'end'; behavior: 'auto' | 'smooth' },
+        delayMs: number
+      ) => {
+        let cancelled = false
+        let stopWatching: (() => void) | null = null
+
+        const timeoutId = window.setTimeout(() => {
+          if (cancelled) return
+          virtualizer.scrollToIndex(targetIndex, options)
+          stopWatching = waitForScrollSettled(() => {
+            if (!cancelled) onSettled()
+          })
+        }, delayMs)
+
+        return () => {
+          cancelled = true
+          window.clearTimeout(timeoutId)
+          if (stopWatching) stopWatching()
+        }
+      }
+
+      if (lastReadMessageId) {
+        const messagesArray = getMessagesArray()
+        const targetIndex = messagesArray.findIndex((message) => message.id === lastReadMessageId)
+        if (targetIndex < 0) {
+          onSettled()
+          return undefined
+        }
+
+        return scheduleScroll(targetIndex, { align: 'center', behavior: 'auto' }, 500)
+      }
+
+      const virtualizerBehavior = behavior ?? 'auto'
+      return scheduleScroll(messageCount - 1, { align: 'end', behavior: virtualizerBehavior }, 100)
+    },
+    [
+      virtualizerRef,
+      messageCount,
+      getFetchMessageId,
+      waitForScrollSettled,
+      lastReadMessageId,
+      getMessagesArray
+    ]
+  )
+
   useEffect(() => {
     updateChatRoom('isReadyToDisplayMessages', false)
   }, [channelId, updateChatRoom])
 
-  // Cleanup effect
   useEffect(() => {
-    return cleanup
-  }, [cleanup])
+    if (!isDbSubscriptionReady || !isChannelDataLoaded) return
+    if (messageCount === 0) return
+    if (isReadyToDisplayMessages) return
+
+    let cancelScroll: (() => void) | undefined
+    let cancelled = false
+    let hasResolved = false
+
+    const markReady = () => {
+      if (cancelled || hasResolved) return
+      hasResolved = true
+      updateChatRoom('isReadyToDisplayMessages', true)
+    }
+
+    const frameId = requestAnimationFrame(() => {
+      cancelScroll = scrollToLastMessage('auto', markReady)
+      if (!cancelScroll) {
+        markReady()
+      }
+    })
+
+    return () => {
+      cancelled = true
+      cancelAnimationFrame(frameId)
+      if (cancelScroll) cancelScroll()
+    }
+  }, [
+    isDbSubscriptionReady,
+    isChannelDataLoaded,
+    messageCount,
+    isReadyToDisplayMessages,
+    scrollToLastMessage,
+    updateChatRoom
+  ])
 
   return {
     isReadyToDisplayMessages: isReadyToDisplayMessages ?? false,
-    messageContainerRef,
-    messagesEndRef
+    messageContainerRef
   }
 }

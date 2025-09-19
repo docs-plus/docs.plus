@@ -1,70 +1,83 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { FaChevronDown } from 'react-icons/fa6'
-import debounce from 'lodash/debounce'
 import { useMessageFeedContext } from '../MessageFeedContext'
 import { useChatStore } from '@stores'
+import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+
+const BOTTOM_THRESHOLD_PX = 64
 
 export const ScrollToBottom = () => {
-  const [showScrollButton, setShowScrollButton] = useState(false)
+  const [isVisible, setIsVisible] = useState(false)
+  const { channelId } = useChatroomContext()
+  const { messageContainerRef, virtualizerRef } = useMessageFeedContext()
   const isReadyToDisplayMessages = useChatStore((state) => state.chatRoom.isReadyToDisplayMessages)
+  const selectMessageCount = useCallback(
+    (state: any) => state.messagesByChannel.get(channelId)?.size ?? 0,
+    [channelId]
+  )
+  const messageCount = useChatStore(selectMessageCount)
 
-  // const { messageContainerRef } = useMessageFeedContext()
-  const messageContainerRef = useRef<HTMLDivElement>(null)
-  useEffect(() => {
-    messageContainerRef.current = document.querySelector('.message-feed') as HTMLDivElement
-  }, [])
-  // Handle scroll event: Determines whether to show or hide the button
-  // based on the scroll position relative to the last message height.
-  const handleScroll = useCallback(() => {
-    if (!messageContainerRef.current) return
-    const { scrollTop, scrollHeight, clientHeight } = document.querySelector(
-      '.message-feed'
-    ) as HTMLElement // messageContainerRef.current
+  const updateVisibility = useCallback(() => {
+    const container = messageContainerRef.current
+    const virtualizer = virtualizerRef.current
 
-    const lastChild = messageContainerRef.current.querySelector('.msg_card') as HTMLElement
-    const lastChildHeight = (lastChild?.lastChild as HTMLElement)?.offsetHeight || 0
-
-    if (scrollTop + clientHeight < scrollHeight - lastChildHeight) {
-      setShowScrollButton(true)
-    } else {
-      setShowScrollButton(false)
+    if (!container || !virtualizer || !isReadyToDisplayMessages || messageCount === 0) {
+      setIsVisible(false)
+      return
     }
-  }, [messageContainerRef])
 
-  // Debounced version of the scroll event handler to improve performance.
-  const debouncedHandleScroll = debounce(handleScroll, 200)
+    const virtualItems = virtualizer.getVirtualItems()
+    if (virtualItems.length === 0) {
+      setIsVisible(false)
+      return
+    }
 
-  // Effect to attach and detach the scroll event listener.
+    const lastItem = virtualItems[virtualItems.length - 1]
+    const totalCount = virtualizer.options.count ?? 0
+
+    const scrollOffset = virtualizer.scrollOffset ?? container.scrollTop ?? 0
+    const viewportBottom = scrollOffset + container.clientHeight
+    const shouldHideButton =
+      lastItem.index >= totalCount - 1 && lastItem.end <= viewportBottom + BOTTOM_THRESHOLD_PX
+
+    setIsVisible((prev) => {
+      const next = !shouldHideButton
+      return prev === next ? prev : next
+    })
+  }, [messageContainerRef, virtualizerRef, isReadyToDisplayMessages, messageCount])
+
   useEffect(() => {
-    const currentRef = messageContainerRef.current
-    if (!currentRef || !isReadyToDisplayMessages) return
+    updateVisibility()
+  }, [updateVisibility])
 
-    const newRef = document.querySelector('.message-feed') as HTMLElement
+  useEffect(() => {
+    const container = messageContainerRef.current
+    if (!container || !isReadyToDisplayMessages) return
 
-    newRef.addEventListener('scroll', debouncedHandleScroll)
+    const handleScroll = () => updateVisibility()
+    container.addEventListener('scroll', handleScroll, { passive: true })
 
     return () => {
-      newRef.removeEventListener('scroll', debouncedHandleScroll)
+      container.removeEventListener('scroll', handleScroll)
     }
-  }, [debouncedHandleScroll, messageContainerRef, isReadyToDisplayMessages])
+  }, [messageContainerRef, updateVisibility, isReadyToDisplayMessages])
 
-  // Handler to scroll to the bottom of the messages container.
   const scrollToBottomHandler = useCallback(() => {
-    const lastChild = document.querySelector('.message-list')?.lastChild as HTMLElement
-    if (lastChild) {
-      messageContainerRef.current?.scrollTo({
-        top: lastChild.offsetTop,
-        behavior: 'smooth'
-      })
-    }
-    setShowScrollButton(false)
-  }, [messageContainerRef])
+    const virtualizer = virtualizerRef.current
+    if (!virtualizer || messageCount === 0) return
+
+    const totalCount = virtualizer.options.count ?? 0
+    if (totalCount === 0) return
+
+    virtualizer.scrollToIndex(totalCount - 1, { align: 'end', behavior: 'smooth' })
+    setIsVisible(false)
+  }, [virtualizerRef, messageCount])
 
   return (
     <button
       onClick={scrollToBottomHandler}
       className={`btn btn-circle btn-primary absolute right-2 z-20 transition-all duration-300 ${
-        showScrollButton
+        isVisible
           ? 'bottom-3 opacity-100 delay-200'
           : 'pointer-events-none bottom-[-60px] opacity-0'
       }`}>

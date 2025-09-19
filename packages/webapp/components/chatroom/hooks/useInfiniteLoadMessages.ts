@@ -70,7 +70,14 @@ export const useInfiniteLoadMessages = (
   const loadOlderMessages = useCallback(async () => {
     const msgContainer = messageContainerRef.current
     // Comprehensive early returns to prevent race conditions
-    if (!msgContainer || isLoadingMore || !hasMoreOlder || loadingMoreDirection === 'newer') return
+    if (
+      !msgContainer ||
+      isLoadingMore ||
+      !hasMoreOlder ||
+      loadingMoreDirection === 'newer' ||
+      !isReadyToDisplayMessages
+    )
+      return
 
     setIsLoadingMore(true)
     // Store the first visible element and its position
@@ -145,7 +152,9 @@ export const useInfiniteLoadMessages = (
     isLoadingMore,
     hasMoreOlder,
     channelId,
-    adjustScrollPositionAfterLoad
+    adjustScrollPositionAfterLoad,
+    loadingMoreDirection,
+    isReadyToDisplayMessages
   ])
 
   const loadNewerMessages = useCallback(async () => {

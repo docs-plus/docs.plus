@@ -46,8 +46,7 @@ export const MessageListContextMenu = ({ children, className }: Props) => {
   const handleBeforeShow = useCallback(
     (e: MouseEvent, target: EventTarget | null): Element | null => {
       // Find the message card element from the target
-      const messageCard =
-        target instanceof Element ? target.closest('.msg_card[data-message-id]') : null
+      const messageCard = target instanceof Element ? target?.closest('.msg_card') : null
 
       if (!messageCard) return null
 
