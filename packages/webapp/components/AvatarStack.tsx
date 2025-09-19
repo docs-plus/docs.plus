@@ -43,11 +43,11 @@ const AvatarStack = ({
       })}
 
       {remainingUsers > 0 && (
-        <a
-          className="w-${size} h-${size} z-10 flex items-center justify-center rounded-full border-1 border-white bg-gray-700 text-xs font-medium text-white hover:bg-gray-600"
-          href="#">
-          +{remainingUsers}
-        </a>
+        <div className={`avatar avatar-placeholder size-${size} border-1`}>
+          <div className={`bg-neutral text-neutral-content text-sm !size-${size} `}>
+            +{remainingUsers}
+          </div>
+        </div>
       )}
     </div>
   )
