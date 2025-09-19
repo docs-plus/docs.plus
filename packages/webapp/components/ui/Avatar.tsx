@@ -96,7 +96,8 @@ export const Avatar = forwardRef(
 
     const avatarStyle = twMerge(
       `w-auto h-full m-0 object-contain relative rounded-full bg-white`,
-      clickable ? 'cursor-pointer' : 'cursor-default'
+      clickable ? 'cursor-pointer' : 'cursor-default',
+      status === 'TYPING' && 'avatar-typing'
     )
 
     // Filter out DOM-invalid props that shouldn't reach styled components
