@@ -247,9 +247,8 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
               src={isNonEmptyString(userData.avatar_url) ? userData.avatar_url : undefined}
               avatarUpdatedAt={userData.avatar_updated_at}
               alt={fullName}
-              size={64}
               clickable={false}
-              className="h-16 w-16 rounded-full object-cover"
+              className="size-[64px] rounded-full object-cover"
             />
             <div>
               <h2 className="text-xl font-bold">{fullName}</h2>

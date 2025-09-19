@@ -17,7 +17,6 @@ const MentionItem = ({ item, index, selectedIndex, onSelect }: any) => (
           avatarUpdatedAt={item.avatar_updated_at || null}
           alt={item.full_name || item.display_name || item.username}
           data-tip={item.display_name || 'anonymous'}
-          size="sm"
           className="mr-2 size-8"
         />
       )}
