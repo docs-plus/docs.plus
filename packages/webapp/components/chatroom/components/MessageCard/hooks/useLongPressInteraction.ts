@@ -36,7 +36,7 @@ export const useLongPressInteraction = () => {
   const handleLongPressCancel = useCallback((event: any) => {
     setIsMessagePressed(false)
     setIsLongPressCompleted(false) // Reset on cancel
-    console.log('Long press cancelled')
+    console.info('Long press cancelled')
 
     // Use stored reference first, fallback to closest
     const messageCardElement =

@@ -13,13 +13,13 @@ const fetchUserDetails = async (userId: string): Promise<Profile | null> => {
     const { data, error } = await getUserById(userId)
 
     if (error || !data) {
-      console.log('[UserDetails] - user not found', { userId, error })
+      console.info('[UserDetails] - user not found', { userId, error })
       return null
     }
 
     return data as Profile
   } catch (err) {
-    console.log('[UserDetails] - fetch failed', { userId, err })
+    console.info('[UserDetails] - fetch failed', { userId, err })
     return null
   }
 }
@@ -39,7 +39,6 @@ export const messageInsert = async (payload: any) => {
   const messages = getChannelMessages(channelId || '')
   let userdata = usersPresence.get(payload.new.user_id)
 
-  console.log('messageInsert', { usersPresence, userdata, payload })
   // Fetch user details if not in presence store
   // Mosty this must hanndle by useOnAuthStateChange or useCatchUserPresences hook in realtime
   if (!userdata) {
