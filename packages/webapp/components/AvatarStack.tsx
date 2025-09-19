@@ -1,14 +1,24 @@
-// import { useAuthStore } from '@stores'
 import { Avatar } from './ui/Avatar'
+
+type props = {
+  users: any[]
+  size: number
+  tooltipPosition: string
+  showStatus: boolean
+  clickable: boolean
+  maxDisplay: number
+  className: string
+}
 
 const AvatarStack = ({
   users = [],
   size = 9,
   tooltipPosition = 'tooltip-bottom',
   showStatus = false,
+  clickable = true,
   maxDisplay = 4,
   className = ''
-}: any) => {
+}: props) => {
   const displayedUsers = users?.slice(0, maxDisplay)
   const remainingUsers = users.length - maxDisplay
   // const profile = useAuthStore((state: any) => state.profile)
@@ -27,6 +37,7 @@ const AvatarStack = ({
             alt={user.display_name}
             data-tip={user.display_name || 'anonymous'}
             status={showStatus ? user?.status : undefined}
+            clickable={clickable}
           />
         )
       })}
