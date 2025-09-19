@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useCallback, useRef } from 'react'
 import ToolbarDesktop from '@components/TipTap/toolbar/ToolbarDesktop'
 import EditorContent from './EditorContent'
 import TOC from './Toc'
@@ -6,6 +6,24 @@ import { useAdjustEditorSizeForChatRoom, useTOCResize, useScrollSyncToc } from '
 import useUpdateDocPageUnreadMsg from '../hooks/useUpdateDocPageUnreadMsg'
 import { Chatroom } from '@components/chatroom'
 import { HoverMenu } from '@components/ui/HoverMenu'
+import { useMessageFeedContext } from '@components/chatroom/components/MessageFeed/MessageFeedContext'
+
+const MessageHoverMenu = (props: React.ComponentProps<typeof HoverMenu>) => {
+  const { virtualizerRef, messageContainerRef } = useMessageFeedContext()
+
+  const getScrollParent = useCallback(() => {
+    const virtualizer = virtualizerRef.current
+    const scrollElement = virtualizer?.scrollElement
+
+    if (scrollElement && 'nodeType' in scrollElement) {
+      return scrollElement as Element
+    }
+
+    return messageContainerRef.current ?? null
+  }, [virtualizerRef, messageContainerRef])
+
+  return <HoverMenu {...props} scrollParent={getScrollParent} />
+}
 
 const DesktopEditor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
@@ -53,10 +71,9 @@ const DesktopEditor = () => {
                   <Chatroom.MessageFeed.MessageList.Loop>
                     {(message, index) => (
                       <Chatroom.MessageFeed.MessageList.MessageCard message={message} index={index}>
-                        <HoverMenu
+                        <MessageHoverMenu
                           id="message-actions"
                           placement="top-end"
-                          scrollParent={() => document.querySelector('.message-feed')}
                           offset={-10}
                           className="w-full overflow-auto"
                           menu={<Chatroom.MessageFeed.MessageList.MessageCard.Actions.HoverMenu />}>
@@ -122,7 +139,7 @@ const DesktopEditor = () => {
                               </div>
                             )}
                           </div>
-                        </HoverMenu>
+                        </MessageHoverMenu>
                       </Chatroom.MessageFeed.MessageList.MessageCard>
                     )}
                   </Chatroom.MessageFeed.MessageList.Loop>

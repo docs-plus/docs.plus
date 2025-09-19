@@ -1,6 +1,7 @@
-import React, { useMemo } from 'react'
-import { format, isSameDay, parseISO } from 'date-fns'
-import { useStore, useChatStore } from '@stores'
+import React, { useCallback, useEffect } from 'react'
+import { isSameDay, parseISO } from 'date-fns'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { useChatStore } from '@stores'
 import { useMessageListContext } from '../MessageListContext'
 import { SystemNotifyChip } from './SystemNotifyChip'
 import { DateChip } from './DateChip'
@@ -16,12 +17,8 @@ const isNewDay = (currentMessageDate: string, previousMessageDate: string) => {
 }
 
 export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props) => {
-  const { messages, channelId, isScrollingUp, messagesEndRef } = useMessageListContext()
-
-  const messagesArray = useMemo(() => {
-    const array = messages ? Array.from(messages.values()) : []
-    return array
-  }, [messages])
+  const { messagesArray, channelId, isScrollingUp, messageContainerRef, registerVirtualizer } =
+    useMessageListContext()
 
   // Get channel settings for unread indicator
   const channelSettings = useChatStore((state: any) =>
@@ -32,63 +29,89 @@ export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props)
     totalMsgSincLastRead: 0
   }
 
-  const messageElements = useMemo(() => {
-    return messagesArray.flatMap((message, index, array) => {
-      const elements: React.ReactElement[] = []
+  const getItemKey = useCallback(
+    (index: number) => messagesArray[index]?.id ?? index,
+    [messagesArray]
+  )
 
-      // Unread messages divider
-      if (lastReadMessageId === message.id && (totalMsgSincLastRead ?? 0) >= 6) {
-        elements.push(<UnreadIndicatorLine index={index} />)
-      }
+  const estimateSize = useCallback(
+    (index: number) => {
+      const message = messagesArray[index]
+      if (!message) return 80
+      if (message.type === 'notification') return 56
+      return message.isGroupStart ? 128 : 96
+    },
+    [messagesArray]
+  )
 
-      // Date separator
-      if (index === 0 || isNewDay(message.created_at, array[index - 1]?.created_at)) {
-        elements.push(
-          <DateChip
-            key={`date-chip-${message.created_at}`}
-            date={message.created_at}
-            isScrollingUp={isScrollingUp}
-          />
-        )
-      }
+  const virtualizer = useVirtualizer({
+    count: messagesArray.length,
+    getScrollElement: () => messageContainerRef.current,
+    estimateSize,
+    getItemKey,
+    overscan: 10
+  })
 
-      // Message content
-      if (message.type === 'notification') {
-        if (displaySystemNotifyChip) {
-          elements.push(<SystemNotifyChip key={message.id} message={message} />)
+  const virtualItems = virtualizer.getVirtualItems()
+
+  useEffect(() => {
+    // @ts-ignore
+    registerVirtualizer(virtualizer)
+    return () => registerVirtualizer(null)
+  }, [virtualizer, registerVirtualizer])
+
+  return (
+    <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+      {virtualItems.map((virtualRow) => {
+        const message = messagesArray[virtualRow.index]
+        if (!message) return null
+
+        const previousMessage = messagesArray[virtualRow.index - 1]
+        const showDateSeparator =
+          virtualRow.index === 0 ||
+          (previousMessage && isNewDay(message.created_at, previousMessage.created_at))
+        const showUnreadIndicator =
+          lastReadMessageId === message.id && (totalMsgSincLastRead ?? 0) >= 6
+
+        const renderMessageContent = () => {
+          if (message.type === 'notification') {
+            if (!displaySystemNotifyChip) return null
+            return <SystemNotifyChip message={message} />
+          }
+
+          if (children) {
+            return children(message, virtualRow.index, messagesArray)
+          }
+
+          return <div className="message-item">{message.content}</div>
         }
-      } else {
-        // Use children render prop or default rendering
-        const messageElement = children ? (
-          children(message, index, array)
-        ) : (
-          <div key={message.id} className="message-item">
-            {message.content}
+
+        const content = renderMessageContent()
+
+        return (
+          <div
+            key={virtualRow.key}
+            data-index={virtualRow.index}
+            ref={(node) => {
+              virtualizer.measureElement(node)
+            }}
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              width: '100%',
+              transform: `translateY(${virtualRow.start}px)`
+            }}>
+            {showUnreadIndicator && <UnreadIndicatorLine index={virtualRow.index} />}
+            {showDateSeparator && (
+              <DateChip date={message.created_at} isScrollingUp={isScrollingUp} />
+            )}
+            {content}
           </div>
         )
-
-        // Add ref to last message
-        const isLastMessage = index === array.length - 1
-        elements.push(
-          <div key={message.id} ref={isLastMessage ? messagesEndRef : null}>
-            {messageElement}
-          </div>
-        )
-      }
-
-      return elements
-    })
-  }, [
-    messagesArray,
-    isScrollingUp,
-    lastReadMessageId,
-    totalMsgSincLastRead,
-    displaySystemNotifyChip,
-    children,
-    messagesEndRef
-  ])
-
-  return <>{messageElements}</>
+      })}
+    </div>
+  )
 }
 
 export default MessageLoop

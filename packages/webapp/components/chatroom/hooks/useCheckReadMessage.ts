@@ -1,131 +1,137 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import debounce from 'lodash/debounce'
 import { markReadMessages } from '@api'
 import { useChatStore } from '@stores'
 import { useMessageFeedContext } from '../components/MessageFeed/MessageFeedContext'
-
-interface Message {
-  id: string
-  createdAt: string
-}
-
-interface VisibleMessage {
-  createdAt: string
-  id: string
-}
+import type { Virtualizer } from '@tanstack/react-virtual'
 
 interface UseCheckReadMessageProps {
   channelId: string
-  messages: Message[]
+  messages: Map<string, any> | null
 }
 
 export const useCheckReadMessage = ({ channelId, messages }: UseCheckReadMessageProps) => {
-  const { messageContainerRef } = useMessageFeedContext()
-  const [visibleMessages, setVisibleMessages] = useState<VisibleMessage[]>([])
-  const debouncedCheckRef = useRef<ReturnType<typeof debounce> | null>(null)
-
+  const { messageContainerRef, virtualizerRef } = useMessageFeedContext()
   const setWorkspaceChannelSetting = useChatStore((state) => state.setWorkspaceChannelSetting)
   const { channels } = useChatStore((state) => state.workspaceSettings)
-  const activeChannel = channels.get(channelId)
-  const { lastReadMessageTimestamp = 0 } = activeChannel || {}
 
-  const checkVisibility = useCallback(() => {
-    const container = messageContainerRef.current
-    if (!container) return
+  const channelSettings = channels.get(channelId)
+  const lastReadMessageTimestamp = channelSettings?.lastReadMessageTimestamp ?? 0
 
-    const visibleMessageList: VisibleMessage[] = []
-    const containerStyles = window.getComputedStyle(container)
-    const paddingTop = parseInt(containerStyles.paddingTop, 10)
-    const paddingBottom = parseInt(containerStyles.paddingBottom, 10)
+  const lastReadTime = useMemo(
+    () => new Date(lastReadMessageTimestamp).getTime(),
+    [lastReadMessageTimestamp, channels]
+  )
 
-    const messageElements = Array.from(
-      container.querySelectorAll('.message-card.msg_card')
-    ) as HTMLElement[]
+  const messagesArray = useMemo(() => (messages ? Array.from(messages.values()) : []), [messages])
 
-    const lastReadTime = new Date(lastReadMessageTimestamp).getTime()
+  const resolveScrollElement = useCallback(
+    (virtualizer: Virtualizer<HTMLDivElement, HTMLElement> | null): Element | Window | null => {
+      if (!virtualizer) return messageContainerRef.current
+      const element = virtualizer.scrollElement
+      if (element && typeof element === 'object' && 'addEventListener' in element) {
+        return element as Element | Window
+      }
+      return messageContainerRef.current
+    },
+    [messageContainerRef]
+  )
 
-    messageElements.forEach((element) => {
-      const marginTop = parseInt(window.getComputedStyle(element).marginTop, 10)
-      const marginBottom = parseInt(window.getComputedStyle(element).marginBottom, 10)
+  const checkVisibleMessages = useCallback(() => {
+    const virtualizer = virtualizerRef.current
+    if (!virtualizer || messagesArray.length === 0) return
 
-      const elementTop = element.offsetTop - paddingTop - marginTop
-      const elementBottom = elementTop + element.offsetHeight + marginBottom
-      const viewportTop = container.scrollTop
-      const viewportBottom = viewportTop + container.clientHeight - paddingBottom
+    const scrollElement = resolveScrollElement(virtualizer)
 
-      const isVisible = elementBottom > viewportTop && elementTop < viewportBottom
+    let viewportOffset = virtualizer.scrollOffset ?? 0
+    let viewportHeight = 0
 
-      if (isVisible) {
-        //@ts-ignore
-        const msgId = element.msgId
-        //@ts-ignore
-        const createdAt = element.createdAt
+    if (scrollElement && 'scrollTop' in scrollElement && 'clientHeight' in scrollElement) {
+      viewportOffset = (scrollElement as HTMLElement).scrollTop
+      viewportHeight = (scrollElement as HTMLElement).clientHeight
+    } else if (typeof window !== 'undefined' && scrollElement === window) {
+      viewportOffset = window.scrollY
+      viewportHeight = window.innerHeight
+    } else if (messageContainerRef.current) {
+      viewportHeight = messageContainerRef.current.clientHeight
+    }
 
-        if (msgId && createdAt) {
-          const msgCreatedTime = new Date(createdAt).getTime()
+    if (viewportHeight === 0) return
 
-          if (lastReadTime < msgCreatedTime) {
-            visibleMessageList.push({ id: msgId, createdAt })
-          }
+    const viewportBottom = viewportOffset + viewportHeight
+    const virtualItems = virtualizer.getVirtualItems()
+
+    let newestVisibleMessage: { id: string; timestamp: string; message: any } | null = null
+
+    for (const item of virtualItems) {
+      const isVisible = item.end > viewportOffset && item.start < viewportBottom
+      if (!isVisible) continue
+
+      const message = messagesArray[item.index]
+      if (!message) continue
+
+      const messageId = message.id
+      const messageTimestamp = message.created_at || message.createdAt
+      if (!messageId || !messageTimestamp || messageId === 'fake_id') continue
+
+      const messageTime = new Date(messageTimestamp).getTime()
+
+      if (messageTime <= lastReadTime) continue
+
+      if (!newestVisibleMessage) {
+        newestVisibleMessage = { id: messageId, timestamp: messageTimestamp, message }
+      } else {
+        const currentNewestTime = new Date(newestVisibleMessage.timestamp).getTime()
+        if (messageTime > currentNewestTime) {
+          newestVisibleMessage = { id: messageId, timestamp: messageTimestamp, message }
         }
       }
-    })
-
-    setVisibleMessages(visibleMessageList)
-  }, [lastReadMessageTimestamp])
-
-  useEffect(() => {
-    // run for the first time
-    checkVisibility()
-  }, [checkVisibility])
-
-  useEffect(() => {
-    const container = messageContainerRef.current
-    if (!container) return
-
-    // Calculate the distance to the bottom of the scroll
-    // Include a small threshold (e.g., 100px) to account for fractional pixels in calculations
-    const { scrollTop, scrollHeight, clientHeight } = container
-    const isScrolledToBottom = scrollHeight - scrollTop - clientHeight <= 100
-
-    if (isScrolledToBottom) {
-      checkVisibility()
     }
-  }, [messages, checkVisibility])
+
+    if (!newestVisibleMessage) return
+
+    setWorkspaceChannelSetting(
+      channelId,
+      'lastReadMessageTimestamp',
+      newestVisibleMessage.timestamp
+    )
+
+    markReadMessages({ channelId, lastMessage: newestVisibleMessage.id }).catch(console.error)
+  }, [
+    channelId,
+    lastReadTime,
+    messagesArray,
+    resolveScrollElement,
+    setWorkspaceChannelSetting,
+    virtualizerRef,
+    messageContainerRef
+  ])
 
   useEffect(() => {
-    const container = messageContainerRef.current
-    if (!container) return
+    checkVisibleMessages()
+  }, [checkVisibleMessages, messagesArray.length])
 
-    debouncedCheckRef.current = debounce(checkVisibility, 700)
-    container.addEventListener('scroll', debouncedCheckRef.current)
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const timeoutId = window.setTimeout(() => {
+      checkVisibleMessages()
+    }, 150)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [checkVisibleMessages])
+
+  useEffect(() => {
+    const virtualizer = virtualizerRef.current
+    const scrollElement = resolveScrollElement(virtualizer)
+    if (!scrollElement) return
+
+    const handler = debounce(checkVisibleMessages, 120)
+    scrollElement.addEventListener('scroll', handler, { passive: true })
 
     return () => {
-      if (debouncedCheckRef.current) {
-        container.removeEventListener('scroll', debouncedCheckRef.current)
-        debouncedCheckRef.current.cancel()
-      }
+      handler.cancel()
+      scrollElement.removeEventListener('scroll', handler)
     }
-  }, [checkVisibility])
-
-  useEffect(() => {
-    if (!visibleMessages.length) return
-
-    const lastMessage = visibleMessages.at(-1)
-    if (!lastMessage) return
-
-    const channelSettings = useChatStore.getState().workspaceSettings.channels.get(channelId)
-    const currentLastRead = channelSettings?.lastReadMessageTimestamp || 0
-
-    const lastReadTime = new Date(currentLastRead).getTime()
-    const lastVisibleTime = new Date(lastMessage.createdAt).getTime()
-
-    if (lastReadTime >= lastVisibleTime) return
-
-    setWorkspaceChannelSetting(channelId, 'lastReadMessageTimestamp', lastMessage.createdAt)
-
-    if (lastMessage.id !== 'fake_id') {
-      markReadMessages({ channelId, lastMessage: lastMessage.id }).catch(console.error)
-    }
-  }, [visibleMessages, channelId, setWorkspaceChannelSetting])
+  }, [checkVisibleMessages, resolveScrollElement, virtualizerRef])
 }

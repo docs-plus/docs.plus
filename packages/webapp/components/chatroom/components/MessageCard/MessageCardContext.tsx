@@ -107,7 +107,6 @@ export const MessageCardProvider: React.FC<{
           className
         )}
         onDoubleClick={handleDoubleClick}
-        data-message-id={message.id}
         ref={cardRef}>
         {children}
       </div>

@@ -13,22 +13,12 @@ type Props = {
 }
 
 const MessageList = ({ children, className }: Props) => {
-  const {
-    messageContainerRef,
-    topSentinelId,
-    bottomSentinelId,
-    isLoadingMore,
-    loadingMoreDirection
-  } = useMessageFeedContext()
+  const { topSentinelId, bottomSentinelId, isLoadingMore, loadingMoreDirection } =
+    useMessageFeedContext()
   return (
     <MessageListProvider>
       <MessagesEmptyState>
-        <div
-          ref={messageContainerRef}
-          className={twMerge(
-            'message-list overflow-anchor-auto relative scroll-smooth',
-            className
-          )}>
+        <div className={twMerge('message-list overflow-anchor-auto relative scroll-smooth', className)}>
           {/* Loading spinners - absolute positioned within container */}
           {isLoadingMore && (
             <LoadingSpinner position={loadingMoreDirection === 'older' ? 'top' : 'bottom'} />
