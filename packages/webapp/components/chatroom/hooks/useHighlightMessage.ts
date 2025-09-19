@@ -43,6 +43,8 @@ export const useHighlightMessage = ({ messageContainerRef, virtualizerRef }: Pro
           `[data-index="${matchingItem.index}"] .msg_card`
         ) as HTMLElement | null
       }
+
+      return null
     },
     [messageContainerRef, virtualizerRef]
   )
