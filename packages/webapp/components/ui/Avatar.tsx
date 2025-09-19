@@ -52,7 +52,6 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>((props, ref) => 
     className,
     imageClassName,
     imageProps,
-    onClick: externalOnClick,
     ...restProps
   } = props
 
@@ -111,19 +110,19 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>((props, ref) => 
   const handleContainerClick = useCallback(
     (event: React.MouseEvent<HTMLDivElement>) => {
       openProfileDialog()
-      externalOnClick?.(event)
+      // externalOnClick?.(event)
     },
-    [externalOnClick, openProfileDialog]
+    [openProfileDialog]
   )
 
   const handleImageClick = useCallback(
     (event: React.MouseEvent<HTMLImageElement>) => {
-      event.stopPropagation()
+      // event.stopPropagation()
       openProfileDialog()
       imagePropsOnClick?.(event)
-      externalOnClick?.(event as unknown as React.MouseEvent<HTMLDivElement>)
+      // externalOnClick?.(event as unknown as React.MouseEvent<HTMLDivElement>)
     },
-    [externalOnClick, imagePropsOnClick, openProfileDialog]
+    [imagePropsOnClick, openProfileDialog]
   )
 
   const pointerClass = clickable ? 'cursor-pointer' : 'cursor-default'

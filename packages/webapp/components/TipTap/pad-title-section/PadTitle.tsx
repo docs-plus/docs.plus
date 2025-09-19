@@ -90,8 +90,8 @@ const PadTitle = () => {
             {isAuthServiceAvailable && (
               <div className="flex">
                 {user ? (
-                  <Button
-                    className="btn-circle btn-ghost tooltip tooltip-bottom"
+                  <button
+                    className="btn-circle btn-ghost tooltip tooltip-bottom size-[46px] !cursor-pointer"
                     onClick={() => setProfileModalOpen(true)}
                     data-tip="Profile">
                     <Avatar
@@ -99,9 +99,10 @@ const PadTitle = () => {
                       src={user.avatar_url}
                       avatarUpdatedAt={user.avatar_updated_at}
                       clickable={false}
-                      className="min-h-[46px] min-w-[46px] cursor-pointer rounded-full border border-gray-300 shadow-md"
+                      imageClassName={'cursor-pointer'}
+                      className="!size-[46px] rounded-full border border-gray-300 shadow-md"
                     />
-                  </Button>
+                  </button>
                 ) : (
                   <Button
                     id="btn_signin"

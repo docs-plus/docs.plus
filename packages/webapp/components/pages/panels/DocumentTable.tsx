@@ -30,8 +30,6 @@ const DocumentTable = ({ data }: any) => {
               <div className="flex items-center justify-start">
                 {row.ownerId ? (
                   <Avatar
-                    height={32}
-                    width={32}
                     src={row?.owner?.avatar_url || row?.user?.avatar_url}
                     avatarUpdatedAt={row?.owner?.avatar_updated_at || row?.user?.avatar_updated_at}
                     id={row?.user?.id}

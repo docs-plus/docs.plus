@@ -137,10 +137,8 @@ export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {
           id={bookmark.user_details.id}
           src={bookmark.user_details.avatar_url}
           avatarUpdatedAt={bookmark.user_details.avatar_updated_at}
-          width={42}
-          height={42}
           clickable={false}
-          className="h-[42px] min-h-[42px] w-[42px] cursor-pointer rounded-full border border-gray-300 shadow-md"
+          className="size-[42px] cursor-pointer rounded-full border border-gray-300 shadow-md"
         />
       </div>
 

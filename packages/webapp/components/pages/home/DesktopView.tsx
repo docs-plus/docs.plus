@@ -55,8 +55,6 @@ const DesktopView = ({ hostname }: { hostname: string }) => {
                   avatarUpdatedAt={user?.avatar_updated_at}
                   id={user?.id}
                   alt={user?.display_name}
-                  width={22}
-                  height={22}
                   clickable={false}
                   className="size-10 rounded-full border drop-shadow"
                 />
