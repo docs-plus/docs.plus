@@ -100,7 +100,7 @@ export const useAutoScrollForNewMessages = ({
     if (shouldScroll) {
       virtualizer.scrollToIndex(currentCount - 1, {
         align: 'end',
-        behavior: lastMessageId === 'fake_id' ? 'smooth' : 'auto'
+        behavior: 'smooth'
       })
     }
 
