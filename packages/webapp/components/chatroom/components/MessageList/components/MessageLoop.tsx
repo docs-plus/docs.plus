@@ -17,7 +17,7 @@ const isNewDay = (currentMessageDate: string, previousMessageDate: string) => {
 }
 
 export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props) => {
-  const { messagesArray, channelId, isScrollingUp, messageContainerRef, registerVirtualizer } =
+  const { messagesArray, channelId, messageContainerRef, registerVirtualizer } =
     useMessageListContext()
 
   // Get channel settings for unread indicator
@@ -61,7 +61,7 @@ export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props)
   }, [virtualizer, registerVirtualizer])
 
   return (
-    <div style={{ height: virtualizer.getTotalSize(), position: 'relative' }}>
+    <div style={{ height: `${virtualizer.getTotalSize()}px`, position: 'relative' }}>
       {virtualItems.map((virtualRow) => {
         const message = messagesArray[virtualRow.index]
         if (!message) return null
@@ -104,7 +104,7 @@ export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props)
             }}>
             {showUnreadIndicator && <UnreadIndicatorLine index={virtualRow.index} />}
             {showDateSeparator && message.metadata?.type !== 'channel_created' && (
-              <DateChip date={message.created_at} isScrollingUp={isScrollingUp} />
+              <DateChip date={message.created_at} />
             )}
             {content}
           </div>
