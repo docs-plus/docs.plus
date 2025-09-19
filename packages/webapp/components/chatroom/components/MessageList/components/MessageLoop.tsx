@@ -103,7 +103,7 @@ export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props)
               transform: `translateY(${virtualRow.start}px)`
             }}>
             {showUnreadIndicator && <UnreadIndicatorLine index={virtualRow.index} />}
-            {showDateSeparator && (
+            {showDateSeparator && message.metadata?.type !== 'channel_created' && (
               <DateChip date={message.created_at} isScrollingUp={isScrollingUp} />
             )}
             {content}

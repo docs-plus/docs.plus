@@ -3,6 +3,7 @@ import { useMessageListContext } from '../MessageListContext'
 import { DocsPlus } from '@icons'
 import { TMsgRow } from '@types'
 import { useEffect, useRef } from 'react'
+import { format, parseISO } from 'date-fns'
 
 export interface MessageCardDesktopElement extends HTMLDivElement {
   msgId?: string
@@ -58,6 +59,16 @@ export const SystemNotifyChip = ({ message }: Props) => {
             <DocsPlus size={12} className="mb-1" />
             <span className="font-medium underline">{docMetadata.title}</span>
           </span>
+        </div>
+      </div>
+    )
+  }
+
+  if (message.metadata?.type === 'channel_created') {
+    return (
+      <div className="msg_card chat my-4 flex justify-center pb-1" ref={cardRef}>
+        <div className="badge bg-bg-chatBubble-owner border-none">
+          Heading Created - {format(parseISO(message.created_at), 'MMMM do, yyyy')}
         </div>
       </div>
     )
