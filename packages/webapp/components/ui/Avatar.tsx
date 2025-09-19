@@ -1,131 +1,179 @@
 /* eslint-disable @next/next/no-img-element */
 
-import React, { useState, useEffect, useCallback, forwardRef } from 'react'
+import React, { useState, useEffect, useMemo, useCallback, forwardRef } from 'react'
 import { createAvatar } from '@dicebear/core'
 import { lorelei, shapes, rings, initials } from '@dicebear/collection'
-import { twx, cn } from '@utils/twx'
 import { twMerge } from 'tailwind-merge'
 import Config from '@config'
 import { useStore } from '@stores'
 import { UserProfileDialog } from '@components/ui/dialogs/UserProfileDialog'
 
-type DivProps = React.ComponentProps<'div'> & {
-  $online?: boolean
-  $presence?: boolean
-  $clickable?: boolean
-  $typing?: boolean
+type AvatarCollectionKey = 'lorelei' | 'shapes' | 'rings' | 'initials'
+
+type AvatarStatus = string | undefined
+
+const avatarCollections = {
+  lorelei,
+  shapes,
+  rings,
+  initials
+} as const
+
+const isKnownCollection = (value: unknown): value is AvatarCollectionKey =>
+  typeof value === 'string' && Object.prototype.hasOwnProperty.call(avatarCollections, value)
+
+export interface AvatarProps extends Omit<React.ComponentPropsWithoutRef<'div'>, 'children'> {
+  id?: string
+  displayPresence?: boolean
+  collection?: AvatarCollectionKey | string
+  justImage?: boolean
+  avatarUpdatedAt?: string | number | null
+  online?: boolean
+  src?: string | null
+  alt?: string | null
+  status?: AvatarStatus
+  clickable?: boolean
+  imageClassName?: string
+  imageProps?: React.ComponentPropsWithoutRef<'img'>
 }
 
-const AContainer = twx.div<DivProps>((props) =>
-  cn(
-    `avatar border-gray-300`,
-    props.$presence && (props.$online ? `online` : `offline`),
-    props.$clickable ? 'cursor-pointer' : 'cursor-default',
-    props.$typing && 'avatar-typing'
-  )
-)
+export const Avatar = forwardRef<HTMLImageElement, AvatarProps>((props, ref) => {
+  const {
+    id,
+    displayPresence = false,
+    collection = 'lorelei',
+    justImage = false,
+    avatarUpdatedAt,
+    online,
+    src,
+    alt,
+    status,
+    clickable = true,
+    className,
+    imageClassName,
+    imageProps,
+    onClick: externalOnClick,
+    ...restProps
+  } = props
 
-export const Avatar = forwardRef(
-  (
-    {
-      id,
-      displayPresence = false,
-      collection = 'lorelei',
-      justImage = false,
-      avatarUpdatedAt,
-      online,
-      src,
-      alt,
-      status,
-      clickable = true,
-      asChild,
-      ...restProps
-    }: any,
-    ref: any
-  ) => {
-    const [imgSrc, setImgSrc] = useState(src)
-    const openDialog = useStore((state) => state.openDialog)
+  const {
+    className: imagePropsClassName,
+    onClick: imagePropsOnClick,
+    ...restImageProps
+  } = imageProps ?? {}
 
-    const generateDefaultAvatar = useCallback(() => {
-      let collectionType
-      switch (collection) {
-        case 'shapes':
-          collectionType = shapes
-          break
-        case 'rings':
-          collectionType = rings
-          break
-        case 'initials':
-          collectionType = initials
-          break
-        default:
-          collectionType = lorelei
-      }
+  const openDialog = useStore((state) => state.openDialog)
 
-      const svg: any = createAvatar(collectionType, {
-        seed: restProps.id || alt, // Use alt as the seed for generating consistent avatars
-        backgroundType: ['solid']
-        // additional options can be added here
-      })
-
-      return URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }))
-    }, [collection, restProps.id, alt])
-
-    useEffect(() => {
-      if (avatarUpdatedAt && process.env.NEXT_PUBLIC_SUPABASE_URL) {
-        const bucketAddress = Config.app.profile.getAvatarURL(id, avatarUpdatedAt)
-        setImgSrc(bucketAddress)
-      } else if (src) {
-        setImgSrc(src)
-      } else {
-        setImgSrc(generateDefaultAvatar())
-      }
-    }, [src, alt, avatarUpdatedAt, id, generateDefaultAvatar])
-
-    const handleError = () => {
-      setImgSrc(generateDefaultAvatar())
+  const resolvedCollection = useMemo(() => {
+    if (isKnownCollection(collection)) {
+      return avatarCollections[collection]
     }
 
-    const handleClick = useCallback(() => {
-      if (!id || !clickable) return
+    return avatarCollections.lorelei
+  }, [collection])
 
-      openDialog(<UserProfileDialog userId={id} />, {
-        size: 'lg'
-      })
-    }, [id, clickable, openDialog])
+  const defaultAvatar = useMemo(() => {
+    const seed = id || alt || 'avatar'
+    const svg = createAvatar(resolvedCollection, {
+      seed,
+      backgroundType: ['solid']
+    }).toString()
 
-    const avatarStyle = twMerge(
-      `w-auto h-full m-0 object-contain relative rounded-full bg-white`,
-      clickable ? 'cursor-pointer' : 'cursor-default',
-      status === 'TYPING' && 'avatar-typing'
-    )
+    return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+  }, [alt, id, resolvedCollection])
 
-    // Filter out DOM-invalid props that shouldn't reach styled components
-    const { asChild: _asChild, ...validDOMProps } = restProps
+  const [imgSrc, setImgSrc] = useState<string>(src || defaultAvatar)
 
-    if (justImage)
-      return <img alt={alt} src={imgSrc} onError={handleError} className={avatarStyle} />
+  const altText = alt || 'User avatar'
+  const isTyping = status === 'TYPING'
 
-    // Build container classes manually to avoid styled component prop issues
-    const containerClasses = twMerge(
-      'avatar border-gray-300',
-      displayPresence && (online ? 'online' : 'offline'),
-      clickable ? 'cursor-pointer' : 'cursor-default',
-      status === 'TYPING' && 'avatar-typing'
-    )
+  useEffect(() => {
+    if (avatarUpdatedAt && id && process.env.NEXT_PUBLIC_SUPABASE_URL) {
+      const bucketAddress = Config.app.profile.getAvatarURL(id, avatarUpdatedAt.toString())
+      setImgSrc(bucketAddress)
+      return
+    }
 
+    if (src) return setImgSrc(src)
+
+    setImgSrc(defaultAvatar)
+  }, [avatarUpdatedAt, defaultAvatar, id, src])
+
+  const handleImageError = useCallback(() => {
+    setImgSrc(defaultAvatar)
+  }, [defaultAvatar])
+
+  const openProfileDialog = useCallback(() => {
+    if (!clickable || !id) return
+    openDialog(<UserProfileDialog userId={id} />, { size: 'lg' })
+  }, [clickable, id, openDialog])
+
+  const handleContainerClick = useCallback(
+    (event: React.MouseEvent<HTMLDivElement>) => {
+      openProfileDialog()
+      externalOnClick?.(event)
+    },
+    [externalOnClick, openProfileDialog]
+  )
+
+  const handleImageClick = useCallback(
+    (event: React.MouseEvent<HTMLImageElement>) => {
+      event.stopPropagation()
+      openProfileDialog()
+      imagePropsOnClick?.(event)
+      externalOnClick?.(event as unknown as React.MouseEvent<HTMLDivElement>)
+    },
+    [externalOnClick, imagePropsOnClick, openProfileDialog]
+  )
+
+  const pointerClass = clickable ? 'cursor-pointer' : 'cursor-default'
+  const typingClass = isTyping ? 'avatar-typing' : undefined
+  const presenceClass = displayPresence ? (online ? 'online' : 'offline') : undefined
+
+  const containerClassName = twMerge(
+    'avatar border border-gray-300 bg-white rounded-full',
+    presenceClass,
+    pointerClass,
+    typingClass,
+    className
+  )
+
+  const baseImageClass = twMerge(
+    'h-full w-full object-cover rounded-full bg-white',
+    pointerClass,
+    imageClassName,
+    justImage ? className : undefined,
+    imagePropsClassName
+  )
+
+  if (justImage) {
     return (
-      <div className={containerClasses} {...validDOMProps} onClick={handleClick}>
-        <img
-          alt={alt}
-          src={imgSrc}
-          onError={handleError}
-          className={twMerge(avatarStyle, 'h-full w-auto')}
-          ref={ref}
-        />
-      </div>
+      <img
+        {...(restProps as React.ComponentPropsWithoutRef<'img'>)}
+        {...restImageProps}
+        ref={ref}
+        alt={altText}
+        src={imgSrc}
+        onError={handleImageError}
+        onClick={handleImageClick}
+        className={baseImageClass}
+      />
     )
   }
-)
+
+  return (
+    <div {...restProps} className={containerClassName} onClick={handleContainerClick}>
+      <img
+        {...restImageProps}
+        ref={ref}
+        alt={altText}
+        src={imgSrc}
+        onError={handleImageError}
+        onClick={handleImageClick}
+        className={baseImageClass}
+      />
+    </div>
+  )
+})
 
 Avatar.displayName = 'Avatar'
