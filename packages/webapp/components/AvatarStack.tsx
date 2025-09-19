@@ -1,7 +1,18 @@
+import React from 'react'
+import { twMerge } from 'tailwind-merge'
+
 import { Avatar } from './ui/Avatar'
 
-type props = {
-  users: any[]
+type StackUser = {
+  id?: string
+  avatar_url?: string | null
+  avatar_updated_at?: string | number | null
+  display_name?: string | null
+  status?: string | null
+}
+
+type AvatarStackProps = {
+  users?: StackUser[]
   size?: number
   tooltipPosition?: string
   showStatus?: boolean
@@ -10,41 +21,44 @@ type props = {
   className?: string
 }
 
-const AvatarStack = ({
+const AvatarStack: React.FC<AvatarStackProps> = ({
   users = [],
   size = 9,
   tooltipPosition = 'tooltip-bottom',
   showStatus = false,
   clickable = true,
   maxDisplay = 4,
-  className = ''
-}: props) => {
-  const displayedUsers = users?.slice(0, maxDisplay)
-  const remainingUsers = users.length - maxDisplay
-  // const profile = useAuthStore((state: any) => state.profile)
+  className
+}) => {
+  const safeUsers = Array.isArray(users)
+    ? users.filter((user): user is StackUser => Boolean(user))
+    : []
+  const visibleUsers = safeUsers.slice(0, maxDisplay)
+  const remainingUsers = Math.max(safeUsers.length - maxDisplay, 0)
+
+  const groupClassName = twMerge('avatar-group -space-x-5', className)
+  const tooltipClasses = tooltipPosition ? `tooltip ${tooltipPosition}` : undefined
+  const sizeClass = `size-${size}`
 
   return (
-    <div className={`avatar-group -space-x-5 ${className}`}>
-      {displayedUsers.map((user: any, index: number) => {
-        // if (user?.id === profile?.id) return null
-        return (
-          <Avatar
-            key={index}
-            avatarUpdatedAt={user?.avatar_updated_at}
-            className={`rounded-full border border-gray-300 bg-gray-300 shadow-xl${size} size-${size} tooltip ${tooltipPosition}`}
-            id={user?.id}
-            src={user?.avatar_url}
-            alt={user.display_name}
-            data-tip={user.display_name || 'anonymous'}
-            status={showStatus ? user?.status : undefined}
-            clickable={clickable}
-          />
-        )
-      })}
+    <div className={groupClassName}>
+      {visibleUsers.map((user, index) => (
+        <Avatar
+          key={user?.id ?? `avatar-${index}`}
+          avatarUpdatedAt={user?.avatar_updated_at}
+          className={twMerge('bg-gray-300 shadow-xl', sizeClass, tooltipClasses)}
+          data-tip={user?.display_name || 'Anonymous'}
+          id={user?.id}
+          src={user?.avatar_url ?? undefined}
+          alt={user?.display_name ?? undefined}
+          status={showStatus ? user?.status ?? undefined : undefined}
+          clickable={clickable}
+        />
+      ))}
 
       {remainingUsers > 0 && (
-        <div className={`avatar avatar-placeholder size-${size} border-1`}>
-          <div className={`bg-neutral text-neutral-content text-sm !size-${size} `}>
+        <div className={twMerge('avatar avatar-placeholder border', sizeClass)}>
+          <div className={twMerge('bg-neutral text-neutral-content text-sm', sizeClass)}>
             +{remainingUsers}
           </div>
         </div>
