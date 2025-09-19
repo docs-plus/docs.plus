@@ -101,7 +101,7 @@ export const ModalContent = function ModalContent({
           <FloatingFocusManager context={context}>
             <div
               ref={ref}
-              className={`animate-in fade-in-0 zoom-in-95 ${sizeClasses[size]} max-h-[90vh] overflow-y-auto rounded-lg bg-white shadow-xl duration-200 ${className}`}
+              className={`animate-in fade-in-0 zoom-in-95 outline-none ${sizeClasses[size]} max-h-[90vh] overflow-y-auto rounded-lg bg-white shadow-xl duration-200 ${className}`}
               aria-labelledby={id}
               aria-describedby={id}
               id={id}
