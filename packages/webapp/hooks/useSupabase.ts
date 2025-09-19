@@ -2,16 +2,18 @@ import { useState, useCallback, useEffect } from "react";
 import { AuthError } from "@supabase/supabase-js";
 
 // Define a generic type for the Supabase function
-type SupabaseFunction<TData> = (...args: any) => Promise<{ data: TData; error: AuthError | null }>;
+type SupabaseFunction<TData, TError = AuthError | null> = (
+  ...args: any
+) => Promise<{ data: TData; error: TError }>;
 
-export const useSupabase = <TData = unknown>(
-  apiFunc: SupabaseFunction<TData>,
+export const useSupabase = <TData = unknown, TError = AuthError | null>(
+  apiFunc: SupabaseFunction<TData, TError>,
   initialArgs?: any | null,
   immediate: boolean = true,
 ) => {
   const [data, setData] = useState<TData | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<AuthError | null>(null);
+  const [error, setError] = useState<TError | null>(null);
 
   const request = useCallback(
     async (...args: any) => {
@@ -21,8 +23,10 @@ export const useSupabase = <TData = unknown>(
         response = await apiFunc(...args);
 
         setData(response.data);
+        const nextError = (response.error ?? null) as TError | null;
+        setError(nextError);
       } catch (err) {
-        setError(err as AuthError);
+        setError(err as TError);
         console.error({ apiFunc, error: err, args });
         throw err;
       } finally {
