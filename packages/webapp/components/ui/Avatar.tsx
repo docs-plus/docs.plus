@@ -6,7 +6,7 @@ import { lorelei, shapes, rings, initials } from '@dicebear/collection'
 import { twx, cn } from '@utils/twx'
 import { twMerge } from 'tailwind-merge'
 import Config from '@config'
-import { useUserModal } from '@context/UserModalContext'
+import { useStore } from '@stores'
 
 type DivProps = React.ComponentProps<'div'> & {
   $online?: boolean
@@ -43,7 +43,7 @@ export const Avatar = forwardRef(
     ref: any
   ) => {
     const [imgSrc, setImgSrc] = useState(src)
-    const { openUserModal } = useUserModal()
+    const openDialog = useStore((state) => state.openDialog)
 
     const generateDefaultAvatar = useCallback(() => {
       let collectionType
@@ -79,17 +79,25 @@ export const Avatar = forwardRef(
       } else {
         setImgSrc(generateDefaultAvatar())
       }
-    }, [src, alt, avatarUpdatedAt, id])
+    }, [src, alt, avatarUpdatedAt, id, generateDefaultAvatar])
 
     const handleError = () => {
       setImgSrc(generateDefaultAvatar())
     }
 
-    const handleClick = () => {
-      if (id && clickable) {
-        openUserModal(id)
-      }
-    }
+    const handleClick = useCallback(() => {
+      if (!id || !clickable) return
+
+      void import('@components/ui/dialogs/UserProfileDialog')
+        .then(({ UserProfileDialog }) => {
+          openDialog(<UserProfileDialog userId={id} />, {
+            size: 'lg'
+          })
+        })
+        .catch((error) => {
+          console.error('Failed to open user profile dialog', error)
+        })
+    }, [id, clickable, openDialog])
 
     const avatarStyle = `w-auto h-full m-0 object-contain relative rounded-full bg-white`
 

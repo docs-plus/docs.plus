@@ -14,7 +14,6 @@ import GoogleAnalytics from '@components/GoogleAnalytics'
 import '../styles/globals.scss'
 import '../styles/styles.scss'
 import { useRouter } from 'next/router'
-import { UserModalProvider } from '@context/UserModalContext'
 
 // import { initializeApm } from '@utils/elasticApm'
 
@@ -91,9 +90,7 @@ export default function MyApp({ Component, pageProps }: any) {
       <Header />
       <GoogleAnalytics />
       <QueryClientProvider client={queryClient}>
-        <UserModalProvider>
-          <Component {...pageProps} />
-        </UserModalProvider>
+        <Component {...pageProps} />
       </QueryClientProvider>
       <Toaster />
     </div>
