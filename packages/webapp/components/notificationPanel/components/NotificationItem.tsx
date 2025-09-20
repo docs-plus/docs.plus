@@ -56,13 +56,13 @@ export const NotificationItem = ({ notification }: { notification: any }) => {
     <div
       className="my-2 flex w-full items-start gap-4 rounded-lg border border-gray-300 p-3 hover:bg-gray-50"
       key={notification.id}>
-      <div className="size-[24px] flex-shrink-0">
+      <div className="size-12 flex-shrink-0">
         <Avatar
           id={notification.sender.id}
           src={notification.sender.avatar_url}
           avatarUpdatedAt={notification.sender.avatar_updated_at}
           clickable={false}
-          className="size-[24px] cursor-pointer rounded-full border border-gray-300 shadow-md"
+          className="size-12 cursor-pointer rounded-full border border-gray-300 shadow-md"
         />
       </div>
 

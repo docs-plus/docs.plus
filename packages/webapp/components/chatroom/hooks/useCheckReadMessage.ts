@@ -112,8 +112,6 @@ export const useCheckReadMessage = ({ channelId, messages }: UseCheckReadMessage
   }, [checkVisibleMessages, messagesArray.length])
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
     const timeoutId = window.setTimeout(() => {
       checkVisibleMessages()
     }, 150)

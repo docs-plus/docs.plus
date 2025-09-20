@@ -12,8 +12,6 @@ const useWindowWidth = () => {
   const [width, setWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 0)
 
   useEffect(() => {
-    if (typeof window === 'undefined') return
-
     const handleResize = _.debounce(() => {
       setWidth(window.innerWidth)
     }, 200)
