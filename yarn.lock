@@ -14724,10 +14724,12 @@ react-is@^18.0.0, react-is@^18.3.1:
   resolved "https://registry.yarnpkg.com/react-is/-/react-is-18.3.1.tgz#e83557dc12eae63a99e003a46388b1dcbb44db7e"
   integrity sha512-/LLMVyas0ljjAtoYiPqYiL8VWXzUUdThrmU5+n20DZv+a+ClRoevUzw5JxU+Ieh5/c87ytoTBV9G1FiKfNJdmg==
 
-react-modal-sheet@^4.4.0:
-  version "4.4.0"
-  resolved "https://registry.yarnpkg.com/react-modal-sheet/-/react-modal-sheet-4.4.0.tgz#f19cd4c1624ff779d4dcd3e556e3799cc64a23f2"
-  integrity sha512-ub42vR7iwjdM/2Zl6uZoH5M5Dcb6KTuVaOQ+uQCIlo10SdlYAhksb6u3eIFSLohFrX5q03rgFnR6Y0PKhjjl/Q==
+react-modal-sheet@^5.1.2:
+  version "5.1.2"
+  resolved "https://registry.yarnpkg.com/react-modal-sheet/-/react-modal-sheet-5.1.2.tgz#7c2282defb224751bfbf980cda6416d2e87ce6a9"
+  integrity sha512-urMCm9Yihouv4yaiJBucw3jLcK3o1tfgBQx2kOvniX8T//FpU+xMBD1nD3iCgnvANbEriSEMx18nLsJNdIcZvQ==
+  dependencies:
+    react-use-measure "2.1.7"
 
 react-tag-input-component@^2.0.2:
   version "2.0.2"
@@ -14741,6 +14743,11 @@ react-twc@^1.5.0:
   dependencies:
     "@radix-ui/react-slot" "^1.2.3"
     clsx "^2.1.1"
+
+react-use-measure@2.1.7:
+  version "2.1.7"
+  resolved "https://registry.yarnpkg.com/react-use-measure/-/react-use-measure-2.1.7.tgz#36b8a2e7fd2fa58109ab851b3addcb0aad66ad1d"
+  integrity sha512-KrvcAo13I/60HpwGO5jpW7E9DfusKyLPLvuHlUyP5zqnmAPhNc6qTRjUQrdTADl0lpPpDVU2/Gg51UlOGHXbdg==
 
 react@^19.1.0:
   version "19.1.0"

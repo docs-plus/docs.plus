@@ -52,28 +52,28 @@ const BottomSheet = () => {
     }
   }
 
-  const onSnapHandler = useCallback(
-    (index: number) => {
-      const sheetContent = sheetContentRef.current
-      const sheetY = sheetRef.current?.y?.get()
+  // const onSnapHandler = useCallback(
+  //   (index: number) => {
+  //     const sheetContent = sheetContentRef.current
+  //     const sheetY = sheetRef.current?.y?.get()
 
-      if (!sheetContent || typeof sheetY !== 'number') return
+  //     if (!sheetContent || typeof sheetY !== 'number') return
 
-      // Immediate adjustment
-      sheetContent.style.paddingBottom = `${sheetY}px`
+  //     // Immediate adjustment
+  //     sheetContent.style.paddingBottom = `${sheetY}px`
 
-      // Delayed fine-tuning for better UX
-      setTimeout(() => {
-        // retrieve new sheetY
-        const sheetY = sheetRef.current?.y?.get()
-        if (!sheetContent || typeof sheetY !== 'number') return
+  //     // Delayed fine-tuning for better UX
+  //     setTimeout(() => {
+  //       // retrieve new sheetY
+  //       const sheetY = sheetRef.current?.y?.get()
+  //       if (!sheetContent || typeof sheetY !== 'number') return
 
-        const padding = sheetY > 0 ? sheetY + 4 : 0
-        sheetContent.style.paddingBottom = `${padding}px`
-      }, 200)
-    },
-    [sheetContentRef, sheetRef]
-  )
+  //       const padding = sheetY > 0 ? sheetY + 4 : 0
+  //       sheetContent.style.paddingBottom = `${padding}px`
+  //     }, 200)
+  //   },
+  //   [sheetContentRef, sheetRef]
+  // )
 
   const getSheetProps = () => {
     switch (activeSheet) {
@@ -81,16 +81,16 @@ const BottomSheet = () => {
         return {
           id: 'filter_sheet',
           detent: 'content-height' as SheetProps['detent'],
-          snapPoints: [0.5, 1]
+          snapPoints: [1, 0.5]
         }
       case 'chatroom':
         return {
           id: 'chatroom_sheet',
-          detent: 'full-height' as SheetProps['detent'],
+          detent: 'default' as SheetProps['detent'],
           disableScrollLocking: true,
-          snapPoints: [1, 0.9, 0.8, 0.7],
-          modalEffectThreshold: 0.5,
-          onSnap: onSnapHandler
+          snapPoints: [0.7, 0.8, 0.9, 1],
+          modalEffectThreshold: 0.5
+          // onSnap: onSnapHandler
         }
       case 'emojiPicker':
         return {
@@ -122,23 +122,23 @@ const BottomSheet = () => {
     }
   }
 
-  useEffect(() => {
-    if (!sheetContentRef.current) return
+  // useEffect(() => {
+  //   if (!sheetContentRef.current) return
 
-    const paddingBottom = isDeviceIOS ? Math.round(keyboardHeight).toString() + 'px' : '0px'
+  //   const paddingBottom = isDeviceIOS ? Math.round(keyboardHeight).toString() + 'px' : '0px'
 
-    switch (activeSheet) {
-      case 'filters':
-        sheetContentRef.current.style.paddingBottom = paddingBottom
-      case 'chatroom':
-        sheetContentRef.current.style.paddingBottom = paddingBottom
-      case 'emojiPicker':
-        sheetContentRef.current.style.paddingBottom =
-          virtualKeyboardState === 'open' ? paddingBottom : '0px'
-      default:
-        return
-    }
-  }, [sheetContentRef, activeSheet, keyboardHeight, isDeviceIOS, virtualKeyboardState, sheetState])
+  //   switch (activeSheet) {
+  //     case 'filters':
+  //       sheetContentRef.current.style.paddingBottom = paddingBottom
+  //     // case 'chatroom':
+  //     // sheetContentRef.current.style.paddingBottom = paddingBottom
+  //     case 'emojiPicker':
+  //       // sheetContentRef.current.style.paddingBottom =
+  //       //   virtualKeyboardState === 'open' ? paddingBottom : '0px'
+  //     default:
+  //       return
+  //   }
+  // }, [sheetContentRef, activeSheet, keyboardHeight, isDeviceIOS, virtualKeyboardState, sheetState])
 
   // NOTE: these events are more reliable than the other events for sheet state
   const onOpenEndHandler = () => setSheetState('closed')
@@ -149,6 +149,7 @@ const BottomSheet = () => {
   return (
     <div className="bottom-sheet-container relative">
       <Sheet
+        avoidKeyboard={isDeviceIOS}
         className="bottom-sheet !z-10"
         ref={sheetRef}
         isOpen={!!activeSheet}
