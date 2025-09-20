@@ -86,7 +86,7 @@ const BottomSheet = () => {
       case 'chatroom':
         return {
           id: 'chatroom_sheet',
-          detent: 'full' as SheetProps['detent'],
+          detent: 'default' as SheetProps['detent'],
           disableScrollLocking: true,
           disableDismiss: true,
           snapPoints: [0, 0.7, 0.8, 0.9, 1],
