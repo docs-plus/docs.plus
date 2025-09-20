@@ -128,8 +128,6 @@ function useHoverMenu({
 
   // Close menu on scroll and temporarily lock interactions
   React.useEffect(() => {
-    if (typeof window === 'undefined') return
-
     const targets = resolveScrollTargets(scrollParent)
     const fallbackTargets: Array<Element | Window | Document> = targets.length
       ? targets

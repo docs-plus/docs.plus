@@ -56,7 +56,7 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
           avatarUpdatedAt={user.avatar_updated_at}
           clickable={false}
           src={user.avatar_url}
-          className="bg-base-300 size-[24px] cursor-pointer rounded-full border shadow-md"
+          className="bg-base-300 size-[42px] cursor-pointer rounded-full border shadow-md"
         />
       </Button>
     )
