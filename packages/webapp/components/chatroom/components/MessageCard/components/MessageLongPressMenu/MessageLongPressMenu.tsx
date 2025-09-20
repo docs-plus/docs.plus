@@ -1,4 +1,5 @@
-import { useCallback, createContext, useContext, useEffect } from 'react'
+import { useCallback, createContext, useContext, useEffect, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { QuickReactionMenu } from '@components/chatroom/components/MessageCard/components/MessageLongPressMenu/components/QuickReactionMenu'
 import { ContextActionsMenu } from './components/ContextActionsMenu'
 import { HighlightedMessageCard } from './components/HighlightedMessageCard'
@@ -97,6 +98,19 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
     setLongPressCompleted(false) // Reset completion state when menu closes
   }, [hideMenu, clearHighlighting, setLongPressCompleted])
 
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null)
+
+  useEffect(() => {
+    const element = document.createElement('div')
+    element.setAttribute('data-message-long-press-menu-portal', '')
+    document.body.appendChild(element)
+    setPortalContainer(element)
+
+    return () => {
+      document.body.removeChild(element)
+    }
+  }, [])
+
   // Trigger completion when menu animation becomes active
   useEffect(() => {
     if (isMenuEnterAnimationActive) setLongPressCompleted(true)
@@ -124,40 +138,43 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
           {children}
         </div>
 
-        {isLongPressMenuVisible && (
-          <div
-            className="fixed inset-0 z-50 overflow-auto transition-all duration-200 ease-out"
-            style={{
-              backdropFilter: 'blur(6px)',
-              backgroundColor: 'rgba(0,0,0,0.2)',
-              opacity: isMenuEnterAnimationActive ? 1 : 0
-            }}
-            onClick={closeLongPressMenu}>
-            {/* Highlighted Message Card - Fixed at original or adjusted position */}
-            <HighlightedMessageCard
-              messageElement={highlightedMessageElement}
-              messageBounds={adjustedMessageBounds || originalMessageBounds}
-              isVisible={isMenuEnterAnimationActive}
-            />
-            {/* Quick Reaction Menu - Above message */}
-            <QuickReactionMenu
-              ref={quickReactionMenuRef}
-              position={quickReactionMenuPosition}
-              isVisible={isMenuEnterAnimationActive}
-              isInteractive={isLongPressCompleted}
-              onReactionSelect={handleEmojiReaction}
-              message={message}
-            />
-            {/* Context Actions Menu - Below message */}
-            <ContextActionsMenu
-              ref={contextActionsMenuRef}
-              position={contextMenuPosition}
-              isVisible={isMenuEnterAnimationActive}
-              isInteractive={isLongPressCompleted}
-              message={message}
-            />
-          </div>
-        )}
+        {portalContainer &&
+          isLongPressMenuVisible &&
+          createPortal(
+            <div
+              className="fixed inset-0 z-50 overflow-auto transition-all duration-200 ease-out"
+              style={{
+                backdropFilter: 'blur(6px)',
+                backgroundColor: 'rgba(0,0,0,0.2)',
+                opacity: isMenuEnterAnimationActive ? 1 : 0
+              }}
+              onClick={closeLongPressMenu}>
+              {/* Highlighted Message Card - Fixed at original or adjusted position */}
+              <HighlightedMessageCard
+                messageElement={highlightedMessageElement}
+                messageBounds={adjustedMessageBounds || originalMessageBounds}
+                isVisible={isMenuEnterAnimationActive}
+              />
+              {/* Quick Reaction Menu - Above message */}
+              <QuickReactionMenu
+                ref={quickReactionMenuRef}
+                position={quickReactionMenuPosition}
+                isVisible={isMenuEnterAnimationActive}
+                isInteractive={isLongPressCompleted}
+                onReactionSelect={handleEmojiReaction}
+                message={message}
+              />
+              {/* Context Actions Menu - Below message */}
+              <ContextActionsMenu
+                ref={contextActionsMenuRef}
+                position={contextMenuPosition}
+                isVisible={isMenuEnterAnimationActive}
+                isInteractive={isLongPressCompleted}
+                message={message}
+              />
+            </div>,
+            portalContainer
+          )}
       </>
     </MessageLongPressMenuContext.Provider>
   )
