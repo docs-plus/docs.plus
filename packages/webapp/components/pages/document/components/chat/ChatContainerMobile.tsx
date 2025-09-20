@@ -40,7 +40,7 @@ const ChatContainerMobile = () => {
             <BreadcrumbMobile />
           </div>
           <Chatroom.MessageFeed showScrollToBottom={true}>
-            <Chatroom.MessageFeed.MessageList>
+            <Chatroom.MessageFeed.MessageList className="overflow-x-hidden">
               <Chatroom.MessageFeed.MessageList.Loop>
                 {(message, index) => (
                   <Chatroom.MessageFeed.MessageList.MessageCard.LongPressMenu message={message}>
