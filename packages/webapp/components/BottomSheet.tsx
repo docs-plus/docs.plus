@@ -80,22 +80,23 @@ const BottomSheet = () => {
       case 'filters':
         return {
           id: 'filter_sheet',
-          detent: 'content-height' as SheetProps['detent'],
-          snapPoints: [1, 0.5]
+          detent: 'content' as SheetProps['detent'],
+          snapPoints: [0, 0.5, 1]
         }
       case 'chatroom':
         return {
           id: 'chatroom_sheet',
-          detent: 'default' as SheetProps['detent'],
+          detent: 'full' as SheetProps['detent'],
           disableScrollLocking: true,
-          snapPoints: [0.7, 0.8, 0.9, 1],
+          disableDismiss: true,
+          snapPoints: [0, 0.7, 0.8, 0.9, 1],
           modalEffectThreshold: 0.5
           // onSnap: onSnapHandler
         }
       case 'emojiPicker':
         return {
           id: 'emoji_picker_sheet',
-          detent: 'content-height' as SheetProps['detent']
+          detent: 'content' as SheetProps['detent']
         }
       default:
         return {
