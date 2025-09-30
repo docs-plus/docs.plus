@@ -4346,10 +4346,10 @@
   dependencies:
     "@supabase/node-fetch" "^2.6.14"
 
-"@supabase/auth-js@2.71.1":
-  version "2.71.1"
-  resolved "https://registry.yarnpkg.com/@supabase/auth-js/-/auth-js-2.71.1.tgz#349802c3b8275d62437e755ba73bd0cd8c26cd93"
-  integrity sha512-mMIQHBRc+SKpZFRB2qtupuzulaUhFYupNyxqDj5Jp/LyPvcWvjaJzZzObv6URtL/O6lPxkanASnotGtNpS3H2Q==
+"@supabase/auth-js@2.72.0":
+  version "2.72.0"
+  resolved "https://registry.yarnpkg.com/@supabase/auth-js/-/auth-js-2.72.0.tgz#bee32b9f67b0bc568e1175be235ced70db51df94"
+  integrity sha512-4+bnUrtTDK1YD0/FCx2YtMiQH5FGu9Jlf4IQi5kcqRwRwqp2ey39V61nHNdH86jm3DIzz0aZKiWfTW8qXk1swQ==
   dependencies:
     "@supabase/node-fetch" "^2.6.14"
 
@@ -4360,10 +4360,10 @@
   dependencies:
     "@supabase/node-fetch" "^2.6.14"
 
-"@supabase/functions-js@2.4.6":
-  version "2.4.6"
-  resolved "https://registry.yarnpkg.com/@supabase/functions-js/-/functions-js-2.4.6.tgz#36e065df0c993fe9d2f01f442c54603da99c9608"
-  integrity sha512-bhjZ7rmxAibjgmzTmQBxJU6ZIBCCJTc3Uwgvdi4FewueUTAGO5hxZT1Sj6tiD+0dSXf9XI87BDdJrg12z8Uaew==
+"@supabase/functions-js@2.5.0":
+  version "2.5.0"
+  resolved "https://registry.yarnpkg.com/@supabase/functions-js/-/functions-js-2.5.0.tgz#4f74236a8451fecbe108f977f57a61cd42a13544"
+  integrity sha512-SXBx6Jvp+MOBekeKFu+G11YLYPeVeGQl23eYyAG9+Ro0pQ1aIP0UZNIBxHKNHqxzR0L0n6gysNr2KT3841NATw==
   dependencies:
     "@supabase/node-fetch" "^2.6.14"
 
@@ -4423,10 +4423,10 @@
   dependencies:
     cookie "^1.0.2"
 
-"@supabase/storage-js@2.12.1":
-  version "2.12.1"
-  resolved "https://registry.yarnpkg.com/@supabase/storage-js/-/storage-js-2.12.1.tgz#95c0e541e063c71585fd64a334ebf98c1f578320"
-  integrity sha512-QWg3HV6Db2J81VQx0PqLq0JDBn4Q8B1FYn1kYcbla8+d5WDmTdwwMr+EJAxNOSs9W4mhKMv+EYCpCrTFlTj4VQ==
+"@supabase/storage-js@2.12.2":
+  version "2.12.2"
+  resolved "https://registry.yarnpkg.com/@supabase/storage-js/-/storage-js-2.12.2.tgz#90f09fad86b18298a316bd020bf628422378ea7f"
+  integrity sha512-SiySHxi3q7gia7NBYpsYRu8gyI0NhFwSORMxbZIxJ/zAVkN6QpwDRan158CJ+UdzD4WB/rQMAGRqIJQP+7ccAQ==
   dependencies:
     "@supabase/node-fetch" "^2.6.14"
 
@@ -4449,17 +4449,17 @@
     "@supabase/realtime-js" "2.11.15"
     "@supabase/storage-js" "2.7.1"
 
-"@supabase/supabase-js@^2.57.4":
-  version "2.57.4"
-  resolved "https://registry.yarnpkg.com/@supabase/supabase-js/-/supabase-js-2.57.4.tgz#fccc541efaaabbf0b0fb5cb7dce5b686de7d3149"
-  integrity sha512-LcbTzFhHYdwfQ7TRPfol0z04rLEyHabpGYANME6wkQ/kLtKNmI+Vy+WEM8HxeOZAtByUFxoUTTLwhXmrh+CcVw==
+"@supabase/supabase-js@^2.58.0":
+  version "2.58.0"
+  resolved "https://registry.yarnpkg.com/@supabase/supabase-js/-/supabase-js-2.58.0.tgz#5f1c75243e1bc322a53ede388adc9f6712b2c8b2"
+  integrity sha512-Tm1RmQpoAKdQr4/8wiayGti/no+If7RtveVZjHR8zbO7hhQjmPW2Ok5ZBPf1MGkt5c+9R85AVMsTfSaqAP1sUg==
   dependencies:
-    "@supabase/auth-js" "2.71.1"
-    "@supabase/functions-js" "2.4.6"
+    "@supabase/auth-js" "2.72.0"
+    "@supabase/functions-js" "2.5.0"
     "@supabase/node-fetch" "2.6.15"
     "@supabase/postgrest-js" "1.21.4"
     "@supabase/realtime-js" "2.15.5"
-    "@supabase/storage-js" "2.12.1"
+    "@supabase/storage-js" "2.12.2"
 
 "@surma/rollup-plugin-off-main-thread@^2.2.3":
   version "2.2.3"
@@ -8013,10 +8013,10 @@ devtools-protocol@^0.0.1472835:
   resolved "https://registry.yarnpkg.com/devtools-protocol/-/devtools-protocol-0.0.1472835.tgz#9d0685b582e52ca15212db616c1579b904187d20"
   integrity sha512-DMYNG4+mYuxT9/tvGMmzlUI63DCtRhW0ct+wXz9QfBbBpLZDEzSsx+mejV2GGF6JJs8LdgsI2o7iQebtEs0SpA==
 
-dexie@^4.0.11:
-  version "4.0.11"
-  resolved "https://registry.yarnpkg.com/dexie/-/dexie-4.0.11.tgz#010a2c82dd35d40aa9a81c8d21951bfeb487b7d6"
-  integrity sha512-SOKO002EqlvBYYKQSew3iymBoN2EQ4BDw/3yprjh7kAfFzjBYkaMNa/pZvcA7HSWlcKSQb9XhPe3wKyQ0x4A8A==
+dexie@^4.2.0:
+  version "4.2.0"
+  resolved "https://registry.yarnpkg.com/dexie/-/dexie-4.2.0.tgz#c4df27c68f862dd833bf510415595bf4955148df"
+  integrity sha512-OSeyyWOUetDy9oFWeddJgi83OnRA3hSFh3RrbltmPgqHszE9f24eUCVLI4mPg0ifsWk0lQTdnS+jyGNrPMvhDA==
 
 diff-sequences@^29.6.3:
   version "29.6.3"
@@ -10260,10 +10260,10 @@ image-extensions@~1.1.0:
   resolved "https://registry.yarnpkg.com/image-extensions/-/image-extensions-1.1.0.tgz#b8e6bf6039df0056e333502a00b6637a3105d894"
   integrity sha512-P0t7ByhK8Jk9TU05ct/7+f7h8dNuXq5OY4m0IO/T+1aga/qHkpC0Wf472x3FLdq/zFDG17pgapCM3JDTxwZzow==
 
-immer@^10.1.1:
-  version "10.1.1"
-  resolved "https://registry.yarnpkg.com/immer/-/immer-10.1.1.tgz#206f344ea372d8ea176891545ee53ccc062db7bc"
-  integrity sha512-s2MPrmjovJcoMaHtx6K11Ra7oD05NT97w1IC5zpMkT6Atjr7H8LjaDd81iIxUYpMKSRRNMJE703M1Fhr/TctHw==
+immer@^10.1.3:
+  version "10.1.3"
+  resolved "https://registry.yarnpkg.com/immer/-/immer-10.1.3.tgz#e38a0b97db59949d31d9b381b04c2e441b1c3747"
+  integrity sha512-tmjF/k8QDKydUlm3mZU+tjM6zeq9/fFpPqH9SzWmBnVVKsPBg/V66qsMwb3/Bo90cgUN+ghdVBess+hPsxUyRw==
 
 immutable@^5.0.2:
   version "5.1.3"
@@ -12656,6 +12656,13 @@ minizlib@^3.0.1:
   version "3.0.2"
   resolved "https://registry.yarnpkg.com/minizlib/-/minizlib-3.0.2.tgz#f33d638eb279f664439aa38dc5f91607468cb574"
   integrity sha512-oG62iEk+CYt5Xj2YqI5Xi9xWUeZhDI8jjQmC5oThVH5JGCTgIjr7ciJDzC7MBzYd//WvR1OTmP5Q38Q8ShQtVA==
+  dependencies:
+    minipass "^7.1.2"
+
+minizlib@^3.1.0:
+  version "3.1.0"
+  resolved "https://registry.yarnpkg.com/minizlib/-/minizlib-3.1.0.tgz#6ad76c3a8f10227c9b51d1c9ac8e30b27f5a251c"
+  integrity sha512-KZxYo1BUkWD2TVFLr0MQoM8vUUigWD3LlD83a/75BqC+4qE0Hb1Vo5v1FgcfaNXvfXzr+5EhQ6ing/CaBijTlw==
   dependencies:
     minipass "^7.1.2"
 
@@ -16143,15 +16150,15 @@ supabase@^2.31.8:
     node-fetch "^3.3.2"
     tar "7.4.3"
 
-supabase@^2.40.7:
-  version "2.40.7"
-  resolved "https://registry.yarnpkg.com/supabase/-/supabase-2.40.7.tgz#cb1de287ba780794d2f0374fc7e8352f60f99448"
-  integrity sha512-59lNW92axdufcEUdctNQpEc4k6uTEpzIUbqVXNSdWEDS/A/2yLGLxPOQQ0OBCsaJRhrVMmYXlRwgJK2PAoVQnA==
+supabase@^2.47.2:
+  version "2.47.2"
+  resolved "https://registry.yarnpkg.com/supabase/-/supabase-2.47.2.tgz#1e7d3d9260eb9baa42a11bead161e8231a056938"
+  integrity sha512-YvjjJXt21GsYvMBBJN3aKoGZf8QkCWU3hX5So/KsLRweY1YDu9mcEsrMdWp3ZYKQhoEMl9jDHG58SEQuFWGUfg==
   dependencies:
     bin-links "^5.0.0"
     https-proxy-agent "^7.0.2"
     node-fetch "^3.3.2"
-    tar "7.4.3"
+    tar "7.5.1"
 
 supports-color@^5.3.0, supports-color@^5.5.0:
   version "5.5.0"
@@ -16259,6 +16266,17 @@ tar@7.4.3, tar@^7.4.3:
     minipass "^7.1.2"
     minizlib "^3.0.1"
     mkdirp "^3.0.1"
+    yallist "^5.0.0"
+
+tar@7.5.1:
+  version "7.5.1"
+  resolved "https://registry.yarnpkg.com/tar/-/tar-7.5.1.tgz#750a8bd63b7c44c1848e7bf982260a083cf747c9"
+  integrity sha512-nlGpxf+hv0v7GkWBK2V9spgactGOp0qvfWRxUMjqHyzrt3SgwE48DIv/FhqPHJYLHpgW1opq3nERbz5Anq7n1g==
+  dependencies:
+    "@isaacs/fs-minipass" "^4.0.0"
+    chownr "^3.0.0"
+    minipass "^7.1.2"
+    minizlib "^3.1.0"
     yallist "^5.0.0"
 
 temp-dir@1.0.0:
@@ -17766,7 +17784,7 @@ zeed-dom@^0.15.1:
     css-what "^6.1.0"
     entities "^5.0.0"
 
-zustand@^5.0.6:
-  version "5.0.6"
-  resolved "https://registry.yarnpkg.com/zustand/-/zustand-5.0.6.tgz#a2da43d8dc3d31e314279e5baec06297bea70a5c"
-  integrity sha512-ihAqNeUVhe0MAD+X8M5UzqyZ9k3FFZLBTtqo6JLPwV53cbRB/mJwBI0PxcIgqhBBHlEs8G45OTDTMq3gNcLq3A==
+zustand@^5.0.8:
+  version "5.0.8"
+  resolved "https://registry.yarnpkg.com/zustand/-/zustand-5.0.8.tgz#b998a0c088c7027a20f2709141a91cb07ac57f8a"
+  integrity sha512-gyPKpIaxY9XcO2vSMrLbiER7QMAMGOQZVRdJ6Zi782jkbzZygq5GI9nG8g+sMgitRtndwaBSl7uiqC49o1SSiw==
