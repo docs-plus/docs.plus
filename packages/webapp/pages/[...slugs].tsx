@@ -22,14 +22,14 @@ const Document = ({ docMetadata, isMobile, channels, showTurnstile, session }: a
   useAddDeviceTypeHtmlClass(isMobile)
   useHandleTurnstileVerficationState(showTurnstile)
 
-  if (showTurnstile) {
-    return (
-      <>
-        <HeadSeo />
-        <SlugPageLoaderWithTurnstile showTurnstile={showTurnstile} />
-      </>
-    )
-  }
+  // if (showTurnstile) {
+  //   return (
+  //     <>
+  //       <HeadSeo />
+  //       <SlugPageLoaderWithTurnstile showTurnstile={showTurnstile} />
+  //     </>
+  //   )
+  // }
 
   return (
     <DocumentPage
