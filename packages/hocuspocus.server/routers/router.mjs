@@ -57,6 +57,24 @@ const createNewDocument = async (slug, title, description = '', keywords = '', u
   return { ...doc, ownerProfile }
 }
 
+const createDraftDocument = async (slug) => {
+  const newSlug = slugify(slug.toLowerCase(), { lower: true, strict: true })
+  const uid = new ShortUniqueId()
+  const documentId = uid.stamp(19)
+
+  const newDocumentMeta = {
+    slug: newSlug,
+    title: newSlug,
+    description: newSlug,
+    documentId,
+    keywords: '',
+    ownerId: null,
+    email: null,
+    isPrivate: false
+  }
+  return newDocumentMeta
+}
+
 router.get('/documents/:docName', async (req, res) => {
   const docName = slugify(req.params.docName.toLowerCase(), { lower: true, strict: true })
   const { userId } = req.query
@@ -69,7 +87,7 @@ router.get('/documents/:docName', async (req, res) => {
     }
   })
 
-  if (doc === null) return createNewDocument(docName, null, null, null, user)
+  if (doc === null) return createDraftDocument(docName)
   if (doc.keywords)
     doc.keywords = doc.keywords.length === 0 ? [] : doc.keywords.split(',').map((k) => k.trim())
 
@@ -208,22 +226,27 @@ router.post('/documents', validator.body(CREATE_DOCUMENT), async (req, res) => {
 router.put('/documents/:docId', validator.body(UPDATE_DOCUMENT_METADATA), async (req, res) => {
   const { docId } = req.params
   const { title, description, keywords, readOnly } = req.body
-  const newMetaData = {
+  const updateData = {}
+  if (description) updateData.description = description
+  if (title) updateData.title = title
+  if (keywords) updateData.keywords = keywords.join(',')
+  updateData.readOnly = readOnly
+
+  const upsertedDoc = await prisma.documentMetadata.upsert({
     where: {
       documentId: docId
     },
-    data: {}
-  }
-  if (description) newMetaData.data.description = description
-  if (title) newMetaData.data.title = title
-  if (keywords) newMetaData.data.keywords = keywords.join(',')
-  newMetaData.data.readOnly = readOnly
+    update: updateData,
+    create: {
+      documentId: docId,
+      ...updateData
+    }
+  })
 
-  const updatedDoc = await prisma.documentMetadata.update(newMetaData)
-  updatedDoc.keywords =
-    updatedDoc.keywords.length === 0 ? [] : updatedDoc.keywords.split(',').map((k) => k.trim())
+  upsertedDoc.keywords =
+    upsertedDoc.keywords.length === 0 ? [] : upsertedDoc.keywords.split(',').map((k) => k.trim())
 
-  return updatedDoc
+  return upsertedDoc
 })
 
 router.expressRouter.get('/plugins/hypermultimedia/:documentId/:mediaId', (req, res) => {

@@ -15,9 +15,10 @@ type DocumentPageProps = {
   docMetadata: any
   isMobile: boolean
   channels: any
+  accessToken: string
 }
 
-const DocumentPage = ({ docMetadata, isMobile, channels }: DocumentPageProps) => {
+const DocumentPage = ({ docMetadata, isMobile, channels, accessToken }: DocumentPageProps) => {
   const router = useRouter()
   const slugs = (router.query.slugs as string[]) || []
   const { loading } = useMapDocumentAndWorkspace(docMetadata, channels)
@@ -27,7 +28,7 @@ const DocumentPage = ({ docMetadata, isMobile, channels }: DocumentPageProps) =>
 
   useDocumentMetadata(slugs, docMetadata)
   useInitiateDocumentAndWorkspace(docMetadata)
-  const { provider } = useYdocAndProvider()
+  const { provider } = useYdocAndProvider({ accessToken })
   const { join2WorkspaceLoading } = useJoinWorkspace({
     documentId: docMetadata.documentId,
     loading

@@ -18,7 +18,7 @@ const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPa
   loading: () => <SlugPageLoader loadingPage={true} />
 })
 
-const Document = ({ docMetadata, isMobile, channels, showTurnstile }: any) => {
+const Document = ({ docMetadata, isMobile, channels, showTurnstile, session }: any) => {
   useAddDeviceTypeHtmlClass(isMobile)
   useHandleTurnstileVerficationState(showTurnstile)
 
@@ -31,7 +31,14 @@ const Document = ({ docMetadata, isMobile, channels, showTurnstile }: any) => {
     )
   }
 
-  return <DocumentPage docMetadata={docMetadata} isMobile={isMobile} channels={channels} />
+  return (
+    <DocumentPage
+      docMetadata={docMetadata}
+      isMobile={isMobile}
+      channels={channels}
+      accessToken={session?.access_token}
+    />
+  )
 }
 
 export default Document

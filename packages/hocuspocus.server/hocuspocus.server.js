@@ -1,6 +1,7 @@
 import dotenvFlow from 'dotenv-flow'
 import { Server } from '@hocuspocus/server'
 import HocuspocusConfig, { prisma } from './hocuspocus.config.mjs'
+import { jwtDecode } from 'jwt-decode'
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 
@@ -91,7 +92,37 @@ const statelessExtension = {
 const baseConfig = HocuspocusConfig()
 const serverConfig = {
   ...baseConfig,
-  extensions: [...baseConfig.extensions, statelessExtension]
+  extensions: [...baseConfig.extensions, statelessExtension],
+  async onAuthenticate({ token, documentName }) {
+    if (!token) {
+      console.info('No token provided')
+      return {
+        user: null,
+        slug: newToken.slug,
+        documentId: documentName
+      }
+    }
+    const newToken = JSON.parse(token)
+
+    try {
+      // Verify and decode JWT
+      const decoded = jwtDecode(newToken.accessToken)
+
+      // Return user data - this will be available in context throughout
+      return {
+        user: decoded,
+        slug: newToken.slug,
+        documentId: documentName
+      }
+    } catch (error) {
+      console.error('JWT verification failed:', error.message)
+      return {
+        user: null,
+        slug: newToken.slug,
+        documentId: documentName
+      }
+    }
+  }
 }
 
 // Configure and start the server
