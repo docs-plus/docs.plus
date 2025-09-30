@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { db, TDocFilter } from '../db'
+import { db, TDocFilter } from '@db/headingCrinckleDB'
 import getHeadingsFilterMap from './helpers/filterLogic'
 import { useRouter } from 'next/router'
 import { useStore } from '@stores'

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react'
 import {
   ChatroomContextValue,
   ChatroomProps,
@@ -7,6 +7,7 @@ import {
 } from './types/chatroom.types'
 import { useChannelInitialData, useMessageSubscription } from '@components/chatroom/hooks'
 import { Modal, ModalContent } from '@components/ui/Dialog'
+import { useChatStore } from '@stores'
 
 const ChatroomContext = createContext<ChatroomContextValue | null>(null)
 
@@ -23,9 +24,8 @@ export const ChatroomProvider: React.FC<{
   variant: keyof ChatroomVariant
   children: React.ReactNode
 }> = ({ channelId, variant, children }) => {
-  const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
+  const { isReadyToDisplayMessages } = useChatStore((state) => state.chatRoom)
   // Dialog state
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [dialogContent, setDialogContent] = useState<React.ReactNode>(null)
@@ -53,16 +53,20 @@ export const ChatroomProvider: React.FC<{
     setDialogConfig({})
   }, [])
 
+  const initLoadMessages = useMemo(() => {
+    return !isDbSubscriptionReady || !isChannelDataLoaded || !isReadyToDisplayMessages
+  }, [isDbSubscriptionReady, isChannelDataLoaded, isReadyToDisplayMessages])
+
   const value: ChatroomContextValue = {
     channelId,
     variant,
-    isLoading,
     error,
     isChannelDataLoaded,
     isDbSubscriptionReady,
     openDialog,
     closeDialog,
-    isDialogOpen
+    isDialogOpen,
+    initLoadMessages
   }
 
   return (

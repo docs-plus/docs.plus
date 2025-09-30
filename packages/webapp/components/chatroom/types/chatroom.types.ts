@@ -18,7 +18,6 @@ export interface DialogConfig {
 export interface ChatroomContextValue {
   channelId: string
   variant: keyof ChatroomVariant
-  isLoading: boolean
   error: string | null
   isChannelDataLoaded: boolean
   isDbSubscriptionReady: boolean
@@ -26,6 +25,7 @@ export interface ChatroomContextValue {
   openDialog: (content: React.ReactNode, config?: DialogConfig) => void
   closeDialog: () => void
   isDialogOpen: boolean
+  initLoadMessages: boolean
 }
 
 // src/components/chatroom/types/message.types.ts

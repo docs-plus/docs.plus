@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useEditor, Editor } from '@tiptap/react'
 import { TextSelection } from 'prosemirror-state'
+import { setComposerStateDebounced } from '@db/messageComposerDB'
 
 // Code and Syntax Highlighting
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
@@ -45,10 +46,14 @@ import { isOnlyEmoji } from '@utils/emojis'
 
 export const useTiptapEditor = ({
   loading,
-  onSubmit
+  onSubmit,
+  workspaceId,
+  channelId
 }: {
   loading: boolean
   onSubmit: () => void
+  workspaceId?: string
+  channelId: string
 }) => {
   const [html, setHtml] = useState('')
   const [text, setText] = useState('')
@@ -97,10 +102,17 @@ export const useTiptapEditor = ({
       ],
       onUpdate: ({ editor }) => {
         const text = editor?.getText()
-        setHtml(editor?.getHTML())
-        setText(editor?.getText())
+        const html = editor?.getHTML()
+
+        setHtml(html)
+        setText(text)
         setIsEmojiOnly(isOnlyEmoji(text))
         if (text.length) handleTypingIndicator(TypingIndicatorType.StartTyping)
+
+        // Persist draft to IndexedDB with debouncing (500ms)
+        if (workspaceId && channelId && text && html) {
+          setComposerStateDebounced(workspaceId, channelId, { text, html })
+        }
       },
       onBlur: () => {
         if (text.length) handleTypingIndicator(TypingIndicatorType.StopTyping)

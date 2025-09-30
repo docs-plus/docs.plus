@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo } from 'react'
 import debounce from 'lodash/debounce'
 import { markReadMessages } from '@api'
-import { useChatStore } from '@stores'
+import { useAuthStore, useChatStore } from '@stores'
 import { useMessageFeedContext } from '../components/MessageFeed/MessageFeedContext'
 import type { Virtualizer } from '@tanstack/react-virtual'
 
@@ -14,6 +14,7 @@ export const useCheckReadMessage = ({ channelId, messages }: UseCheckReadMessage
   const { messageContainerRef, virtualizerRef } = useMessageFeedContext()
   const setWorkspaceChannelSetting = useChatStore((state) => state.setWorkspaceChannelSetting)
   const { channels } = useChatStore((state) => state.workspaceSettings)
+  const profile = useAuthStore((state) => state.profile)
 
   const channelSettings = channels.get(channelId)
   const lastReadMessageTimestamp = channelSettings?.lastReadMessageTimestamp ?? 0
@@ -39,7 +40,7 @@ export const useCheckReadMessage = ({ channelId, messages }: UseCheckReadMessage
 
   const checkVisibleMessages = useCallback(() => {
     const virtualizer = virtualizerRef.current
-    if (!virtualizer || messagesArray.length === 0) return
+    if (!virtualizer || messagesArray.length === 0 || !profile) return
 
     const scrollElement = resolveScrollElement(virtualizer)
 
@@ -104,7 +105,8 @@ export const useCheckReadMessage = ({ channelId, messages }: UseCheckReadMessage
     resolveScrollElement,
     setWorkspaceChannelSetting,
     virtualizerRef,
-    messageContainerRef
+    messageContainerRef,
+    profile
   ])
 
   useEffect(() => {
@@ -120,6 +122,8 @@ export const useCheckReadMessage = ({ channelId, messages }: UseCheckReadMessage
   }, [checkVisibleMessages])
 
   useEffect(() => {
+    if (!profile) return
+
     const virtualizer = virtualizerRef.current
     const scrollElement = resolveScrollElement(virtualizer)
     if (!scrollElement) return
@@ -131,5 +135,5 @@ export const useCheckReadMessage = ({ channelId, messages }: UseCheckReadMessage
       handler.cancel()
       scrollElement.removeEventListener('scroll', handler)
     }
-  }, [checkVisibleMessages, resolveScrollElement, virtualizerRef])
+  }, [checkVisibleMessages, resolveScrollElement, virtualizerRef, profile])
 }

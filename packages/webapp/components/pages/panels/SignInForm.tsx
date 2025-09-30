@@ -27,12 +27,7 @@ const SignInForm = ({ ...props }) => {
   // Handle authentication with OAuth
   const handleOAuthSignIn = async (provider: Provider) => {
     try {
-      const currentUrl = new URL(location.href)
-      const authCallbackURL = new URL(`${currentUrl.origin}${currentUrl.pathname}`)
-
-      currentUrl.searchParams.forEach((value, key) => {
-        authCallbackURL.searchParams.append(key, value)
-      })
+      const authCallbackURL = new URL(location.href)
 
       await request({
         provider,

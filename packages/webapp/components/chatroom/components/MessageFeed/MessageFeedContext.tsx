@@ -7,6 +7,7 @@ import {
   useHighlightMessage
 } from '@components/chatroom/hooks'
 import type { Virtualizer } from '@tanstack/react-virtual'
+import { useChatStore } from '@stores'
 
 interface MessageFeedContextValue {
   isLoadingMore: boolean

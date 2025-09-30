@@ -6,6 +6,8 @@ import { MessageComposerContext } from './context/MessageComposerContext'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { TChannelSettings } from '@types'
 import { toolbarStorage } from './helpers/toolbarStorage'
+import { getComposerState, clearComposerState, ComposerState } from '@db/messageComposerDB'
+import { SignInDialog } from '@components/ui/dialogs'
 
 import { EditorContent } from '@tiptap/react'
 import {
@@ -58,10 +60,11 @@ const MessageComposer = ({
   const usersPresence = useStore((state: any) => state.usersPresence)
   const startThreadMessage = useChatStore((state) => state.startThreadMessage)
   const channels = useChatStore((state) => state.channels)
-  const { workspaceId } = useChatStore((state) => state.workspaceSettings)
+  const { workspaceId } = useStore((state) => state.settings)
   const editorRef = useRef<HTMLDivElement | null>(null)
   const [isToolbarOpen, setIsToolbarOpen] = useState(() => toolbarStorage.get())
   const setOrUpdateChatRoom = useChatStore((state) => state.setOrUpdateChatRoom)
+  const openDialog = useStore((state) => state.openDialog)
 
   const setEditMsgMemory = useChatStore((state) => state.setEditMessageMemory)
   const setReplyMsgMemory = useChatStore((state) => state.setReplyMessageMemory)
@@ -89,7 +92,9 @@ const MessageComposer = ({
 
   const { editor, text, html, isEmojiOnly } = useTiptapEditor({
     loading,
-    onSubmit: () => submitRef.current?.()
+    onSubmit: () => submitRef.current?.(),
+    workspaceId,
+    channelId
   })
 
   const chatChannels = useChatStore((state) => state.workspaceSettings.channels)
@@ -117,6 +122,20 @@ const MessageComposer = ({
     users.forEach((user) => user && setOrUpdateUserPresence(user.id, user))
   }, [replyMessageMemory, editMessageMemory, usersPresence, setOrUpdateUserPresence])
 
+  // Load persisted draft from IndexedDB on mount or channel change
+  useEffect(() => {
+    if (!editor || !workspaceId || !channelId) return
+
+    // Don't load draft if we're editing/replying/commenting
+    if (editMessageMemory || replyMessageMemory || commentMessageMemory) return
+
+    getComposerState(workspaceId, channelId).then((draft: ComposerState | null) => {
+      if (draft?.html) {
+        editor.chain().setContent(draft.html).focus('end').run()
+      }
+    })
+  }, [editor, workspaceId, channelId, editMessageMemory, replyMessageMemory, commentMessageMemory])
+
   // set the editor content if it is a reply message
   useEffect(() => {
     if (!editor || !editMessageMemory || editMessageMemory.channel_id !== channelId) return
@@ -130,6 +149,8 @@ const MessageComposer = ({
   // Validation helpers
   const validateSubmission = useCallback(() => {
     if (!editor || !user) return { isValid: false, error: 'Editor or user not available' }
+    const html = editor?.getHTML()
+    const text = editor?.getText()
 
     const isContentEmpty =
       !html || !text || html.replace(/<[^>]*>/g, '').trim() === '' || text.trim() === ''
@@ -138,10 +159,14 @@ const MessageComposer = ({
     if (loading) return { isValid: false, error: 'Already loading' }
 
     return { isValid: true }
-  }, [editor, user, html, text, loading])
+  }, [editor, user, loading])
 
   // Content preparation
   const prepareContent = useCallback(() => {
+    const html = editor?.getHTML()
+    const text = editor?.getText()
+    if (!html || !text) return { sanitizedHtml: '', sanitizedText: '', chunks: [] }
+
     const { sanitizedHtml, sanitizedText } = sanitizeMessageContent(html, text)
 
     if (!sanitizedHtml || !sanitizedText) {
@@ -153,7 +178,7 @@ const MessageComposer = ({
       sanitizedText,
       chunks: chunkHtmlContent(sanitizedHtml, 3000)
     }
-  }, [html, text])
+  }, [editor])
 
   // Message type handlers
   const handleThreadMessage = useCallback(
@@ -292,13 +317,21 @@ const MessageComposer = ({
       text: null,
       html: null
     })
-    // document.dispatchEvent(new CustomEvent('messages:container:scroll:down'))
+
+    // Clear IndexedDB draft
+    if (workspaceId && channelId) {
+      clearComposerState(workspaceId, channelId)
+    }
+
+    // Clear editor content
+    editor?.chain().clearContent(true).focus('start').run()
   }, [
     editor,
     replyMessageMemory,
     editMessageMemory,
     commentMessageMemory,
     channelId,
+    workspaceId,
     setReplyMsgMemory,
     setEditMsgMemory,
     setCommentMsgMemory,
@@ -325,11 +358,26 @@ const MessageComposer = ({
     []
   )
 
+  const openSignInModalHandler = useCallback(() => {
+    // append search query to the URL, for when they back to the page they will be redirected to the channel
+    const url = new URL(window.location.href)
+    url.searchParams.set('open_heading_chat', channelId)
+    window.history.pushState({}, '', url.href)
+
+    openDialog(<SignInDialog />, { size: 'sm', dismissible: true })
+  }, [openDialog])
+
   // Main submit function - now clean and focused
   const submitMessage = useCallback(
     async (e?: any) => {
       e?.preventDefault()
       editor?.view.focus()
+
+      // 0. check if user is signed in
+      if (!user) {
+        openSignInModalHandler()
+        return
+      }
 
       // 1. Validate
       const validation = validateSubmission()
@@ -338,10 +386,10 @@ const MessageComposer = ({
       try {
         // 2. Prepare content
         const { sanitizedHtml, sanitizedText, chunks } = prepareContent()
-        const { htmlChunks, textChunks } = chunks
+        const { htmlChunks, textChunks } = chunks as { htmlChunks: string[]; textChunks: string[] }
 
-        // 3. Update user presence
-        updateUserPresence()
+        // 3. Update user presence // TODO: review this part, we do not need it anymore
+        // updateUserPresence()
 
         // 4. Send message(s)
         if (htmlChunks.length === 0) {
@@ -357,6 +405,7 @@ const MessageComposer = ({
       }
     },
     [
+      user,
       editor,
       validateSubmission,
       prepareContent,
@@ -371,21 +420,6 @@ const MessageComposer = ({
   useEffect(() => {
     submitRef.current = () => submitMessage()
   }, [submitMessage])
-
-  // Handle Draft Memory
-  useEffect(() => {
-    return () => {
-      // Save draft before unmounting
-      const html = editor?.getHTML()
-      const text = editor?.getText()
-      if (html && text) {
-        setMsgDraftMemory(channelId, {
-          text: text,
-          html: html
-        })
-      }
-    }
-  }, [editor, channelId, setMsgDraftMemory])
 
   useEffect(() => {
     const setAttributes = () => {
@@ -429,7 +463,7 @@ const MessageComposer = ({
     replyMessageMemory,
     editMessageMemory,
     commentMessageMemory,
-    messageDraftMemory,
+    messageDraftMemory: messageDraftMemory ?? null,
     setEditMsgMemory,
     setReplyMsgMemory,
     setCommentMsgMemory,
