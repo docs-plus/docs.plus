@@ -48,12 +48,14 @@ export const useTiptapEditor = ({
   loading,
   onSubmit,
   workspaceId,
-  channelId
+  channelId,
+  isToolbarOpen
 }: {
   loading: boolean
   onSubmit: () => void
   workspaceId?: string
   channelId: string
+  isToolbarOpen?: boolean
 }) => {
   const [html, setHtml] = useState('')
   const [text, setText] = useState('')
@@ -111,7 +113,11 @@ export const useTiptapEditor = ({
 
         // Persist draft to IndexedDB with debouncing (500ms)
         if (workspaceId && channelId && text && html) {
-          setComposerStateDebounced(workspaceId, channelId, { text, html })
+          setComposerStateDebounced(workspaceId, channelId, {
+            text,
+            html,
+            isToolbarOpen
+          })
         }
       },
       onBlur: () => {

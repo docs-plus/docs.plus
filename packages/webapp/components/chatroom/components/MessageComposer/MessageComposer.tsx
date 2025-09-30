@@ -5,8 +5,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { MessageComposerContext } from './context/MessageComposerContext'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { TChannelSettings } from '@types'
-import { toolbarStorage } from './helpers/toolbarStorage'
-import { getComposerState, clearComposerState, ComposerState } from '@db/messageComposerDB'
+import {
+  getComposerState,
+  clearComposerState,
+  setComposerStateDebounced,
+  ComposerState
+} from '@db/messageComposerDB'
 import { SignInDialog } from '@components/ui/dialogs'
 
 import { EditorContent } from '@tiptap/react'
@@ -62,7 +66,7 @@ const MessageComposer = ({
   const channels = useChatStore((state) => state.channels)
   const { workspaceId } = useStore((state) => state.settings)
   const editorRef = useRef<HTMLDivElement | null>(null)
-  const [isToolbarOpen, setIsToolbarOpen] = useState(() => toolbarStorage.get())
+  const [isToolbarOpen, setIsToolbarOpen] = useState(false)
   const setOrUpdateChatRoom = useChatStore((state) => state.setOrUpdateChatRoom)
   const openDialog = useStore((state) => state.openDialog)
 
@@ -94,7 +98,8 @@ const MessageComposer = ({
     loading,
     onSubmit: () => submitRef.current?.(),
     workspaceId,
-    channelId
+    channelId,
+    isToolbarOpen
   })
 
   const chatChannels = useChatStore((state) => state.workspaceSettings.channels)
@@ -133,6 +138,8 @@ const MessageComposer = ({
       if (draft?.html) {
         editor.chain().setContent(draft.html).focus('end').run()
       }
+      // Restore toolbar state
+      if (draft?.isToolbarOpen !== undefined) setIsToolbarOpen(draft.isToolbarOpen)
     })
   }, [editor, workspaceId, channelId, editMessageMemory, replyMessageMemory, commentMessageMemory])
 
@@ -432,15 +439,20 @@ const MessageComposer = ({
     setAttributes()
   }, [editor, editorRef])
 
-  // Save toolbar toggle state to localStorage
-  useEffect(() => {
-    toolbarStorage.set(isToolbarOpen)
-  }, [isToolbarOpen])
-
   const toggleToolbar = useCallback(() => {
     setIsToolbarOpen(!isToolbarOpen)
     editor?.commands.focus()
   }, [setIsToolbarOpen, isToolbarOpen, editor])
+
+  // Persist toolbar state when it changes independently
+  useEffect(() => {
+    if (!workspaceId || !channelId || !editor) return
+
+    const text = editor.getText() || ''
+    const html = editor.getHTML() || ''
+
+    setComposerStateDebounced(workspaceId, channelId, { text, html, isToolbarOpen })
+  }, [isToolbarOpen, workspaceId, channelId, editor])
 
   useEffect(() => {
     editor && setOrUpdateChatRoom('editorInstance', editor)

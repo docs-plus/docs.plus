@@ -47,6 +47,8 @@ export type ComposerState = {
   }>
   /** current caret/selection in the composer */
   selection?: { start: number; end: number }
+  /** toolbar open/close state - persisted per room */
+  isToolbarOpen?: boolean
   /** any editor-specific flags you want to persist without schema churn */
   meta?: Record<string, unknown>
 }
