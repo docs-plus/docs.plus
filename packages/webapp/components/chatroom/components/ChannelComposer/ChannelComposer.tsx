@@ -55,20 +55,14 @@ const AccessControl = () => {
 
   const channels = useChatStore((state: any) => state.channels)
 
-  // Early returns for special cases
-  if (!user) {
-    return <ChannelComposer.SignInPrompt />
-  }
-
-  if (!channelId) {
-    return null
-  }
+  if (!channelId) return null
 
   // Thread channels always allow messaging (no permission checks needed)
   if (
     (channels.has(channelId) && channels.get(channelId).type === 'THREAD') ||
     !channelInfo ||
-    channelInfo.type === 'THREAD'
+    channelInfo.type === 'THREAD' ||
+    !user
   ) {
     return <MsgComposer.Editor />
   }

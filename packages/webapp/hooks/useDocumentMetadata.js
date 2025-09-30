@@ -1,5 +1,5 @@
-import { useState, useEffect, useLayoutEffect } from 'react'
-import { db, initDB } from '../db'
+import { useEffect, useLayoutEffect } from 'react'
+import { db, initDB } from '@db/headingCrinckleDB'
 
 const canUseDOM = typeof window !== 'undefined'
 const useIsomorphicLayoutEffect = canUseDOM ? useLayoutEffect : useEffect

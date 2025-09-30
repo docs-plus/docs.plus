@@ -10,6 +10,7 @@ import useServiceWorker from '@hooks/useServiceWorker'
 import { useHandleUserStatus } from '@hooks/useHanelUserStatus'
 import { eventsHub } from '@services/eventsHub'
 import GoogleAnalytics from '@components/GoogleAnalytics'
+import { performMaintenanceCleanup } from '@db/messageComposerDB'
 
 import '../styles/globals.scss'
 import '../styles/styles.scss'
@@ -83,6 +84,13 @@ export default function MyApp({ Component, pageProps }: any) {
   useEffect(() => {
     eventsHub(router)
     // initializeApm()
+
+    // Run DB maintenance cleanup once per session (client-side only)
+    if (typeof window !== 'undefined') {
+      performMaintenanceCleanup().catch(() => {
+        // Silently fail - cleanup is best-effort
+      })
+    }
   }, [])
 
   return (

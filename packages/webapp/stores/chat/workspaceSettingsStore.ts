@@ -119,6 +119,7 @@ const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
   }
 }))
 
+// helper function to set memory for a channel
 function setMemory(set: any, memoryType: string, channelId: string, message: any) {
   set((state: any) => {
     const channelSettings = state.workspaceSettings.channels.get(channelId) || {}

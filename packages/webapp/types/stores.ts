@@ -15,11 +15,14 @@ export type TChannelSettings = {
   isUserChannelOwner?: boolean
   isUserChannelAdmin?: boolean
   userPickingEmoji?: boolean
-  replyMessageMemory?: any
-  commentMessageMemory?: commentMessageMemory
-  messageDraftMemory?: any
-  editMessageMemory?: any
-  forwardMessageMemory?: any
+  replyMessageMemory?: any | null
+  commentMessageMemory?: commentMessageMemory | null
+  messageDraftMemory?: {
+    text: string | null
+    html: string | null
+  } | null
+  editMessageMemory?: any | null
+  forwardMessageMemory?: any | null
   unreadMessage?: boolean
   scrollPage?: number
   scrollPageOffset?: number

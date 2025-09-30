@@ -7,7 +7,7 @@ import * as PubSub from 'pubsub-js'
 import { copyToClipboard } from '../helper'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { ChatLeftSVG, ArrowDownSVG } from '@icons'
-import { db } from '../../../../db'
+import { db } from '@db/headingCrinckleDB'
 
 // Plugin-specific types
 interface HeadingBlock {
