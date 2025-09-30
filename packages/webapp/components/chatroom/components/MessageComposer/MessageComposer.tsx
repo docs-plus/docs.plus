@@ -12,6 +12,7 @@ import {
   ComposerState
 } from '@db/messageComposerDB'
 import { SignInDialog } from '@components/ui/dialogs'
+import { isOnlyEmoji } from '@utils/emojis'
 
 import { EditorContent } from '@tiptap/react'
 import {
@@ -94,7 +95,7 @@ const MessageComposer = ({
   // Simple ref for the submit callback
   const submitRef = useRef<(() => void) | null>(null)
 
-  const { editor, text, html, isEmojiOnly } = useTiptapEditor({
+  const { editor, text, html, isEmojiOnly, setIsEmojiOnly } = useTiptapEditor({
     loading,
     onSubmit: () => submitRef.current?.(),
     workspaceId,
@@ -140,6 +141,8 @@ const MessageComposer = ({
       }
       // Restore toolbar state
       if (draft?.isToolbarOpen !== undefined) setIsToolbarOpen(draft.isToolbarOpen)
+
+      if (isOnlyEmoji(draft?.text ?? '')) setIsEmojiOnly(true)
     })
   }, [editor, workspaceId, channelId, editMessageMemory, replyMessageMemory, commentMessageMemory])
 
