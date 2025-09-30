@@ -7,6 +7,7 @@ import useProviderAwarness from './useProviderAwarness'
 import useEditorEditableState from './useEditorEditableState'
 import useEditorReadOnly from './useEditorReadOnly'
 import useInitializeNewDocument from './useInitializeNewDocument'
+import useHandleDraftOnFocus from './useHandleDraftOnFocus'
 import useCheckUrlAndOpenHeadingChat from './useCheckUrlAndOpenHeadingChat'
 import useApplyOpenChatAndFocusOnMessage from './useApplyOpenChatAndFocusOnMessage'
 
@@ -20,6 +21,7 @@ const useEditorAndProvider = ({ provider }: { provider: any }) => {
 
   // Set initial content if the document is new
   useInitializeNewDocument({ editor, provider })
+  useHandleDraftOnFocus({ editor, provider })
   useCheckUrlAndOpenHeadingChat()
 
   useProviderAwarness()

@@ -49,7 +49,8 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
       props: {
         showTurnstile: true,
         isMobile,
-        os
+        os,
+        session: null
       }
     }
   }
@@ -74,7 +75,8 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
         docMetadata,
         showTurnstile: false,
         isMobile,
-        os
+        os,
+        session: sessionData?.session
       }
     }
   } catch (error: any) {

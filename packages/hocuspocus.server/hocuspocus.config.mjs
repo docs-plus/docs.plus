@@ -27,12 +27,42 @@ const StoreDocument = new Queue('store documents changes', {
 
 StoreDocument.process(async function (job, done) {
   const { data } = job
+
   try {
     console.time(`Store Data, jobId:${job.id}`)
+
+    if (data.firstCreation) {
+      const context = data.context
+
+      await prisma.documentMetadata.upsert({
+        where: {
+          documentId: data.documentName
+        },
+        update: {
+          slug: data.context.slug,
+          title: data.context.slug,
+          description: data.context.slug,
+          ownerId: context.user?.sub,
+          email: context.user?.email,
+          keywords: ''
+        },
+        create: {
+          documentId: data.documentName,
+          slug: data.context.slug,
+          title: data.context.slug,
+          description: data.context.slug,
+          ownerId: context.user?.sub,
+          email: context.user?.email,
+          keywords: ''
+        }
+      })
+    }
+
     const currentDoc = await prisma.documents.findFirst({
       where: { documentId: data.documentName },
       orderBy: { version: 'desc' }
     })
+
     // Create a new version
     return await prisma.documents.create({
       data: {
@@ -60,6 +90,7 @@ const generateDefaultState = () => {
   const ydoc = new Y.Doc()
   const ymeta = ydoc.getMap('metadata')
   ymeta.set('needsInitialization', true)
+  ymeta.set('isDraft', true)
   return Y.encodeStateAsUpdate(ydoc)
 }
 
@@ -137,8 +168,17 @@ const configureExtensions = () => {
         Y.applyUpdate(ydoc, data.state)
         const meta = ydoc.getMap('metadata')
         const commitMessage = meta.get('commitMessage') || ''
+        const isDraft = meta.get('isDraft') || false
+        let firstCreation = false
 
         meta.delete('commitMessage')
+        // if the document is draft, don't store the data
+        // draft will change in client side
+        if (isDraft) return
+        if (meta.has('isDraft')) {
+          meta.delete('isDraft')
+          firstCreation = true
+        }
 
         // Create a new Y.Doc to store the updated state
         Y.applyUpdate(ydoc, state)
@@ -152,9 +192,7 @@ const configureExtensions = () => {
           state: Buffer.from(newState).toString('base64'),
           context,
           commitMessage,
-          email: data.requestParameters.get('email'),
-          userId: data.requestParameters.get('userId'),
-          jwt: data.requestHeaders.cookie?.split(';')[0].split('=')[1]
+          firstCreation
         })
       }
     })

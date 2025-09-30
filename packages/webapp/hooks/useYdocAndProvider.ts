@@ -4,10 +4,10 @@ import { IndexeddbPersistence } from 'y-indexeddb'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
 
-const useYdocAndProvider = () => {
+const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
   const {
     editor: { instance: editor },
-    metadata: { documentId }
+    metadata: { documentId, slug }
   } = useStore((state) => state.settings)
 
   const [destroyed, setDestroyed] = useState(false)
@@ -16,8 +16,11 @@ const useYdocAndProvider = () => {
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const { hocuspocusProvider } = useStore((state) => state.settings)
+
   useEffect(() => {
     if (!documentId) return
+
+    console.log('useYdocAndProvider', { accessToken, slug })
 
     const createProvider = () => {
       if (typeof window !== 'undefined') {
@@ -25,6 +28,7 @@ const useYdocAndProvider = () => {
           url: `${process.env.NEXT_PUBLIC_PROVIDER_URL}`,
           name: documentId,
           document: ydocRef.current,
+          token: JSON.stringify({ accessToken: accessToken || '', slug: slug }),
           // onStatus: (data) => {
           //   console.log('onStatus', data)
           // },
