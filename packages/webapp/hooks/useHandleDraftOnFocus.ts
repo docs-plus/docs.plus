@@ -20,7 +20,7 @@ const useHandleDraftOnFocus = ({ editor, provider }: UseHandleDraftOnFocusProps)
     const meta = provider.configuration.document.getMap('metadata')
     const isADraftDocument = meta.get('isDraft')
 
-    if (isADraftDocument) return
+    if (!isADraftDocument) return
 
     editor.on('focus', () => {
       const isDraft = meta.get('isDraft')

@@ -31,8 +31,6 @@ StoreDocument.process(async function (job, done) {
   try {
     console.time(`Store Data, jobId:${job.id}`)
 
-    console.log('context', { data, context: data.context })
-
     if (data.firstCreation) {
       const context = data.context
 

@@ -20,8 +20,6 @@ const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
   useEffect(() => {
     if (!documentId) return
 
-    console.log('useYdocAndProvider', { accessToken, slug })
-
     const createProvider = () => {
       if (typeof window !== 'undefined') {
         providerRef.current = new HocuspocusProvider({
