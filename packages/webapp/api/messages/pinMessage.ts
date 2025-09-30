@@ -2,9 +2,9 @@ import { supabaseClient } from '@utils/supabase'
 
 export const pinMessage = async (channelId: string, messageId: string, actionType: string) => {
   const {
-    data: { session: user },
+    data: { user },
     error
-  } = await supabaseClient.auth.getSession()
+  } = await supabaseClient.auth.getUser()
 
   if (error) {
     throw error
@@ -24,7 +24,7 @@ export const pinMessage = async (channelId: string, messageId: string, actionTyp
     .from('pinned_messages')
     .insert({
       channel_id: channelId,
-      pinned_by: user?.user.id,
+      pinned_by: user.id,
       message_id: messageId,
       pinned_at: new Date().toISOString()
     })

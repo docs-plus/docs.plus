@@ -22,11 +22,17 @@ export async function getSupabaseSession(context) {
       }
     )
 
-    const {
-      data: { session: sessionData }
-    } = await supabase.auth.getSession().catch(console.error)
+    // Verify user authentication first (server-validated)
+    const { data: userData, error: userError } = await supabase.auth.getUser().catch(console.error)
 
-    session = sessionData
+    if (userData?.user && !userError) {
+      // User is authenticated, safe to get session
+      const {
+        data: { session: sessionData }
+      } = await supabase.auth.getSession().catch(console.error)
+
+      session = sessionData
+    }
   }
 
   return session

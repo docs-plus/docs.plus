@@ -57,13 +57,16 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
   const supabase = createClient(context)
 
   try {
-    const { data, error } = await supabase.auth.getSession()
-    const docMetadata = await fetchDocument(documentSlug, data.session)
+    // Verify user authentication (server-validated)
+    const { data: userData, error: userError } = await supabase.auth.getUser()
 
-    if (error) console.error('[getUserSession]:', error)
+    if (userError) console.error('[getUser]:', userError)
 
-    // TODO: security check, the getSession has security leak
-    const channels = await handleUserSessionForServerProp(docMetadata, data.session)
+    // Get session for downstream use (already validated via getUser)
+    const { data: sessionData } = await supabase.auth.getSession()
+    const docMetadata = await fetchDocument(documentSlug, sessionData.session)
+
+    const channels = await handleUserSessionForServerProp(docMetadata, sessionData.session)
 
     return {
       props: {

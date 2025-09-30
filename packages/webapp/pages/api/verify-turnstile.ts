@@ -20,16 +20,16 @@ async function isUserAuthenticated(req: NextApiRequest, res: NextApiResponse): P
   try {
     const supabase = createClient(req, res)
     const {
-      data: { session },
+      data: { user },
       error
-    } = await supabase.auth.getSession()
+    } = await supabase.auth.getUser()
 
     if (error) {
       console.warn('Authentication check failed:', error.message)
       return false
     }
 
-    return !!session?.user
+    return !!user
   } catch (error) {
     console.warn('Error checking user authentication:', error)
     return false

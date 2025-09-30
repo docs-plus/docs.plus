@@ -67,13 +67,11 @@ const OneTapComponent = () => {
       // Check if component is still mounted
       if (abortController.signal.aborted) return
 
-      // Check session first
+      // Check if already logged in (client-side check, not auth decision)
       const {
-        data: { session },
-        error: sessionError
+        data: { session }
       } = await supabase.auth.getSession()
 
-      if (sessionError) throw sessionError
       if (session) return
 
       if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
