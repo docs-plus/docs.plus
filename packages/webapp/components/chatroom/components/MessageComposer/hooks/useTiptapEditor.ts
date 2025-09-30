@@ -225,5 +225,5 @@ export const useTiptapEditor = ({
     editor.setEditable(!loading)
   }, [loading, editor])
 
-  return { editor, html, text, isEmojiOnly }
+  return { editor, html, text, isEmojiOnly, setIsEmojiOnly }
 }
