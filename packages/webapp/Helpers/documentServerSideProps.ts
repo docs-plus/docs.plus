@@ -2,7 +2,7 @@ import { upsertWorkspace, getChannelsByWorkspaceAndUserids } from '@api'
 import { fetchDocument } from '@utils/fetchDocument'
 import { createClient } from '@utils/supabase/server-props'
 import { type GetServerSidePropsContext } from 'next'
-import { getDeviceInfo, validateTurnstileAccess } from '@helpers'
+import { getDeviceInfo } from '@helpers'
 
 export async function handleUserSessionForServerProp(docMetadata: any, session: any) {
   if (!session?.user) return null
@@ -42,19 +42,6 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
 
   const { isMobile, os } = getDeviceInfo(context)
 
-  const isTurnstileVerified = validateTurnstileAccess(context)
-
-  if (!isTurnstileVerified) {
-    return {
-      props: {
-        showTurnstile: true,
-        isMobile,
-        os,
-        session: null
-      }
-    }
-  }
-
   const supabase = createClient(context)
 
   try {
@@ -73,7 +60,6 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
       props: {
         channels: channels || null,
         docMetadata,
-        showTurnstile: false,
         isMobile,
         os,
         session: sessionData?.session

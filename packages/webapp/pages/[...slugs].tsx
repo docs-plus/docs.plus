@@ -1,12 +1,9 @@
 import { type GetServerSidePropsContext } from 'next'
 import React from 'react'
-import HeadSeo from '@components/HeadSeo'
 import useAddDeviceTypeHtmlClass from '@components/pages/document/hooks/useAddDeviceTypeHtmlClass'
-import { useHandleTurnstileVerficationState } from '@hooks/useHandleTurnstileVerficationState'
 import dynamic from 'next/dynamic'
 import { documentServerSideProps } from '@helpers'
 import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
-import { SlugPageLoaderWithTurnstile } from '@components/skeleton/SlugPageLoaderWithTurnstile'
 import data from '@emoji-mart/data'
 import { init } from 'emoji-mart'
 
@@ -18,18 +15,8 @@ const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPa
   loading: () => <SlugPageLoader loadingPage={true} />
 })
 
-const Document = ({ docMetadata, isMobile, channels, showTurnstile, session }: any) => {
+const Document = ({ docMetadata, isMobile, channels, session }: any) => {
   useAddDeviceTypeHtmlClass(isMobile)
-  useHandleTurnstileVerficationState(showTurnstile)
-
-  // if (showTurnstile) {
-  //   return (
-  //     <>
-  //       <HeadSeo />
-  //       <SlugPageLoaderWithTurnstile showTurnstile={showTurnstile} />
-  //     </>
-  //   )
-  // }
 
   return (
     <DocumentPage
