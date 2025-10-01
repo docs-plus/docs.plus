@@ -4,12 +4,6 @@ interface ProfileConfig {
 }
 
 interface AppConfig {
-  turnstile: {
-    siteKey: string
-    verifyUrl: string
-    expireTime: number
-    isEnabled: boolean
-  }
   profile: ProfileConfig
 }
 

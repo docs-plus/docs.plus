@@ -21,7 +21,6 @@ type Workspace = {
   hocuspocusProvider?: any
   deviceDetect?: any
   isAuthServiceAvailable?: boolean
-  isTurnstileVerified?: boolean
   joined2Workspace?: boolean
 }
 
@@ -51,7 +50,6 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
       isEditable: false
     },
     hocuspocusProvider: undefined,
-    isTurnstileVerified: false,
     joined2Workspace: false
   },
   // Update a single setting
