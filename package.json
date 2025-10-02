@@ -5,13 +5,18 @@
   "workspaces": [
     "packages/*"
   ],
+  "prettier": "./.prettierrc.json",
   "scripts": {
     "start": "sh ./scripts/run_dev.sh",
     "update:packages": "bunx npm-check-updates -u",
     "start:webapp": "cd packages/webapp && bun run start",
     "dev": "bun --filter @docs.plus/webapp run dev",
     "build": "bun run --filter '*' build",
-    "lint:fix": "bun run --filter '*' lint:fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "lint:packages": "bun run --filter '*' lint:fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "lint:staged": "lint-staged",
     "release": "bun run version",
     "release:major": "bun run version:major",
@@ -22,8 +27,6 @@
     "version:minor": "bunx changeset version --snapshot minor",
     "version:patch": "bunx changeset version --snapshot patch",
     "publish": "bun run build && bun run --filter '*' --if-present npm publish --tag latest --access public",
-    "lint": "eslint './packages/**/*.js*' --fix",
-    "format": "prettier --write './packages/**/*.{js,jsx,ts,tsx,json,md}'",
     "update:all-packages": "sh ./scripts/update-packages.sh",
     "reinstall:all-packages": "sh ./scripts/reinstall-packages.sh",
     "pre-push": "bun pre-push.js",
@@ -62,9 +65,11 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-prettier": "^5.5.4",
     "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "eslint-plugin-vue": "^10.5.0",
     "fs-extra": "^11.3.2",
+    "globals": "^16.4.0",
     "husky": "^9.1.7",
     "lint-staged": "^16.2.3",
     "minimist": "^1.2.8",
@@ -76,12 +81,5 @@
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",
     "webpack": "^5.102.0"
-  },
-  "lint-staged": {
-    "./packages/**/*.{js,jsx,ts,tsx}": [
-      "eslint --fix",
-      "prettier --write",
-      "git add"
-    ]
   }
 }

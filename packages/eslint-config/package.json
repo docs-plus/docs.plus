@@ -1,0 +1,25 @@
+{
+  "name": "@docs.plus/eslint-config",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Shared ESLint configuration for docs.plus monorepo",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "next.js",
+    "library.js"
+  ],
+  "peerDependencies": {
+    "eslint": "^9.0.0"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.36.0",
+    "@typescript-eslint/eslint-plugin": "^8.45.0",
+    "@typescript-eslint/parser": "^8.45.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.4",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^19.2.0",
+    "globals": "^16.4.0"
+  }
+}
