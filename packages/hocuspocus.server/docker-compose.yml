@@ -35,7 +35,7 @@ services:
    - "${EXPOSE_APP_PORT:-3001}:${APP_PORT:-3001}"
    - "${EXPOSE_HOCUSPOCUS_PORT:-3002}:${HOCUSPOCUS_PORT:-3002}"
   healthcheck:
-   test: ["CMD", "bun", "run", "healthcheck"]
+   test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
    interval: 30s
    timeout: 10s
    retries: 3
