@@ -1,12 +1,21 @@
 import { ReactRenderer } from '@tiptap/react'
-import tippy from 'tippy.js'
+import {
+  computePosition,
+  flip,
+  shift,
+  offset as floatingOffset,
+  autoUpdate,
+  size,
+  hide
+} from '@floating-ui/dom'
 
 import MentionList from './MentionList'
 
 export default {
   render: () => {
     let component: any
-    let popup: any
+    let popup: HTMLDivElement | null = null
+    let cleanup: (() => void) | null = null
 
     return {
       onStart: (props: any) => {
@@ -19,15 +28,60 @@ export default {
           return
         }
 
-        popup = tippy('body', {
-          getReferenceClientRect: props.clientRect,
-          appendTo: () => document.body,
-          content: component.element,
-          showOnCreate: true,
-          interactive: true,
-          trigger: 'manual',
-          placement: 'bottom-start',
-          zIndex: 9999
+        // Create popup element with proper styling
+        popup = document.createElement('div')
+        popup.className = 'mention-suggestion-popup'
+        popup.style.position = 'absolute'
+        popup.style.zIndex = '9999'
+        popup.style.maxHeight = '300px'
+        popup.style.overflow = 'auto'
+        popup.appendChild(component.element)
+        document.body.appendChild(popup)
+
+        // Virtual element for positioning
+        const virtualElement = {
+          getBoundingClientRect: props.clientRect
+        }
+
+        // Smart positioning with autoUpdate - automatically repositions on scroll/resize
+        cleanup = autoUpdate(virtualElement, popup, async () => {
+          if (!popup) return
+
+          const { x, y, placement, middlewareData } = await computePosition(virtualElement, popup, {
+            placement: 'bottom-start',
+            middleware: [
+              // Offset from the reference element
+              floatingOffset(8),
+              // Flip to opposite side if no space
+              flip({
+                fallbackPlacements: ['top-start', 'bottom-end', 'top-end'],
+                padding: 8
+              }),
+              // Shift along the axis to stay in viewport
+              shift({ padding: 8 }),
+              // Dynamically adjust size to fit viewport
+              size({
+                padding: 8,
+                apply({ availableHeight, elements }) {
+                  Object.assign(elements.floating.style, {
+                    maxHeight: `${Math.max(100, availableHeight)}px`
+                  })
+                }
+              }),
+              // Hide when reference element is not visible
+              hide({ padding: 8 })
+            ]
+          })
+
+          // Apply positioning
+          Object.assign(popup.style, {
+            left: `${x}px`,
+            top: `${y}px`,
+            visibility: middlewareData.hide?.referenceHidden === true ? 'hidden' : 'visible'
+          })
+
+          // Add data attribute for current placement (useful for styling)
+          popup.setAttribute('data-placement', placement)
         })
       },
 
@@ -38,9 +92,55 @@ export default {
           return
         }
 
-        popup[0].setProps({
-          getReferenceClientRect: props.clientRect
-        })
+        // Position updates automatically via autoUpdate
+        // Just update the virtual element's reference
+        if (popup) {
+          const virtualElement = {
+            getBoundingClientRect: props.clientRect
+          }
+
+          // Restart autoUpdate with new reference
+          if (cleanup) {
+            cleanup()
+          }
+
+          cleanup = autoUpdate(virtualElement, popup, async () => {
+            if (!popup) return
+
+            const { x, y, placement, middlewareData } = await computePosition(
+              virtualElement,
+              popup,
+              {
+                placement: 'bottom-start',
+                middleware: [
+                  floatingOffset(8),
+                  flip({
+                    fallbackPlacements: ['top-start', 'bottom-end', 'top-end'],
+                    padding: 8
+                  }),
+                  shift({ padding: 8 }),
+                  size({
+                    padding: 8,
+                    apply({ availableHeight, elements }) {
+                      Object.assign(elements.floating.style, {
+                        maxHeight: `${Math.max(100, availableHeight)}px`
+                      })
+                    }
+                  }),
+                  hide({ padding: 8 })
+                ]
+              }
+            )
+
+            Object.assign(popup.style, {
+              left: `${x}px`,
+              top: `${y}px`,
+              visibility: middlewareData.hide?.referenceHidden === true ? 'hidden' : 'visible'
+            })
+
+            popup.setAttribute('data-placement', placement)
+          })
+        }
       },
 
       onKeyDown(props: any) {
@@ -49,7 +149,13 @@ export default {
         }
 
         if (props.event.key === 'Escape') {
-          popup[0].hide()
+          if (cleanup) {
+            cleanup()
+            cleanup = null
+          }
+          if (popup) {
+            popup.remove()
+          }
           return true
         }
 
@@ -66,9 +172,19 @@ export default {
       },
 
       onExit() {
-        if (popup && popup[0]) {
-          popup[0].destroy()
+        // Clean up autoUpdate
+        if (cleanup) {
+          cleanup()
+          cleanup = null
         }
+
+        // Remove popup
+        if (popup) {
+          popup.remove()
+          popup = null
+        }
+
+        // Destroy component
         if (component) {
           component.destroy()
         }

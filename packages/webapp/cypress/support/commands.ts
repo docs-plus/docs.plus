@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { BulletList } from '@tiptap/extension-bullet-list'
+import { BulletList } from '@tiptap/extension-list'
 import cypress from 'cypress'
 /// <reference types="cypress" />
 // ***********************************************

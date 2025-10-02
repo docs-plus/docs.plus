@@ -15,12 +15,12 @@
     "directory": "packages/extension-hyperlink"
   },
   "scripts": {
-    "build": "bunx tsup --dts",
-    "build:prod": "NODE_ENV=production bunx tsup --dts",
-    "dev": "bunx tsup --watch --dts",
+    "build": "bunx tsup",
+    "build:prod": "NODE_ENV=production bunx tsup",
+    "dev": "bunx tsup --watch",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "watch": "bunx tsup --watch --dts",
+    "watch": "bunx tsup --watch",
     "update:packages": "npx npm-check-updates -u"
   },
   "keywords": [
@@ -36,8 +36,8 @@
     "linkifyjs": "^4.3.1"
   },
   "peerDependencies": {
-    "@tiptap/core": "^2.11.5",
-    "@tiptap/pm": "^2.11.5"
+    "@tiptap/core": "^3.6.2",
+    "@tiptap/pm": "^3.6.2"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",

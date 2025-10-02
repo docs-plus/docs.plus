@@ -1,5 +1,4 @@
-// @ts-nocheck
-import { BubbleMenu } from '@tiptap/react'
+import { BubbleMenu } from '@tiptap/react/menus'
 import { useStore } from '@stores'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 
@@ -16,10 +15,10 @@ export const MobileBubbleMenu = ({}: Props) => {
     <div>
       {editor && (
         <BubbleMenu
-          className="bubble-menu join rounded-[10px] bg-base-100 drop-shadow-lg"
-          tippyOptions={{
-            duration: 100,
-            hideOnClick: true
+          className="bubble-menu join bg-base-100 rounded-[10px] drop-shadow-lg"
+          options={{
+            placement: 'top',
+            offset: 6
           }}
           editor={editor}>
           <button

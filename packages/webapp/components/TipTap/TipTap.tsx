@@ -16,26 +16,20 @@ import ContentHeading from './nodes/ContentHeading'
 import ContentWrapper from './nodes/ContentWrapper'
 
 // Collaboration
-import Collaboration, { isChangeOrigin } from '@tiptap/extension-collaboration'
-import CollaborationCursor, {
-  CollaborationCursorOptions
-} from '@tiptap/extension-collaboration-cursor'
+import { Collaboration, isChangeOrigin } from '@tiptap/extension-collaboration'
+import { CollaborationCaret } from '@tiptap/extension-collaboration-caret'
 
 // Basic Formatting
-import Bold from '@tiptap/extension-bold'
-import Italic from '@tiptap/extension-italic'
-import Underline from '@tiptap/extension-underline'
-import Strike from '@tiptap/extension-strike'
-import Superscript from '@tiptap/extension-superscript'
-import Subscript from '@tiptap/extension-subscript'
-import TextAlign from '@tiptap/extension-text-align'
+import { Bold } from '@tiptap/extension-bold'
+import { Italic } from '@tiptap/extension-italic'
+import { Underline } from '@tiptap/extension-underline'
+import { Strike } from '@tiptap/extension-strike'
+import { Superscript } from '@tiptap/extension-superscript'
+import { Subscript } from '@tiptap/extension-subscript'
+import { TextAlign } from '@tiptap/extension-text-align'
 
 // Lists and Items
-import TaskItem from '@tiptap/extension-task-item'
-import TaskList from '@tiptap/extension-task-list'
-import ListItem from '@tiptap/extension-list-item'
-import OrderedList from '@tiptap/extension-ordered-list'
-import BulletList from '@tiptap/extension-bullet-list'
+import { BulletList, ListItem, OrderedList, TaskItem, TaskList } from '@tiptap/extension-list'
 
 // Links and Media
 // import previewHyperlinkModal from './hyperlinkModals/previewHyperlink'
@@ -44,8 +38,8 @@ import { createHyperlinkPopover, Hyperlink } from '@docs.plus/extension-hyperlin
 import previewHyperlink from './hyperlinkPopovers/previewHyperlink'
 
 // Code and Syntax Highlighting
-import Highlight from '@tiptap/extension-highlight'
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import { Highlight } from '@tiptap/extension-highlight'
+import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
 import css from 'highlight.js/lib/languages/css'
 import js from 'highlight.js/lib/languages/javascript'
 import ts from 'highlight.js/lib/languages/typescript'
@@ -57,22 +51,16 @@ import json from 'highlight.js/lib/languages/json'
 import bash from 'highlight.js/lib/languages/bash'
 
 // Typography
-import Typography from '@tiptap/extension-typography'
+import { Typography } from '@tiptap/extension-typography'
 
 // Other Nodes and Extensions
-import Blockquote from '@tiptap/extension-blockquote'
-import Placeholder from '@tiptap/extension-placeholder'
-import Gapcursor from '@tiptap/extension-gapcursor'
+import { Blockquote } from '@tiptap/extension-blockquote'
+import { Gapcursor, Placeholder, UndoRedo } from '@tiptap/extensions'
 import UniqueID from './extentions/UniqueId'
-import HardBreak from '@tiptap/extension-hard-break'
+import { HardBreak } from '@tiptap/extension-hard-break'
 
 // Table
-import Table from '@tiptap/extension-table'
-import TableCell from '@tiptap/extension-table-cell'
-import TableHeader from '@tiptap/extension-table-header'
-import TableRow from '@tiptap/extension-table-row'
-
-import History from '@tiptap/extension-history'
+import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
 
 import { Indent } from '@docs.plus/extension-indent'
 
@@ -239,7 +227,7 @@ const Editor = ({
     // Create local persistence if enabled
     const extensions = [
       ...baseExtensions,
-      History.configure({
+      UndoRedo.configure({
         depth: 5
       })
     ]
@@ -267,8 +255,8 @@ const Editor = ({
     }
   }
 
-  // Configure collaboration cursor when provider exists
-  const CollaborationCursorConfig = getCollaborationCursorConfig(provider)
+  // Configure collaboration caret when provider exists
+  const CollaborationCaretConfig = getCollaborationCaretConfig(provider)
 
   return {
     onCreate: scrollDown,
@@ -290,59 +278,50 @@ const Editor = ({
       Collaboration.configure({
         document: provider.document
       }),
-      CollaborationCursor.configure(CollaborationCursorConfig)
+      CollaborationCaret.configure(CollaborationCaretConfig)
     ]
   }
 }
 
-// Helper function to get collaboration cursor config
-const getCollaborationCursorConfig = (provider: any): CollaborationCursorOptions => {
-  const config = {
+// Helper function to get collaboration caret config
+const getCollaborationCaretConfig = (provider: any) => {
+  const profile = authStore.getState().profile
+  const user = {
+    name: profile?.display_name || profile?.username || profile?.email || 'anonymous',
+    id: profile?.id || profile?.email || 'anonymous',
+    color: randomColor({ luminosity: 'light' }),
+    avatarUpdatedAt: profile?.avatar_updated_at || null,
+    avatarUrl: profile?.avatar_url || null
+  }
+
+  return {
     provider,
-    user: {
-      name: 'anonymous',
-      color: randomColor({ luminosity: 'light' })
-    }
-  } as unknown as CollaborationCursorOptions
-
-  if (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    const profile = authStore.getState().profile
-    const newUser = {
-      display_name: profile?.display_name || profile?.username || profile?.email || 'anonymous',
-      id: profile?.id || profile?.email || 'anonymous',
-      color: randomColor({ luminosity: 'light' }),
-      avatarUpdatedAt: profile?.avatar_updated_at || null,
-      avatarUrl: profile?.avatar_url || null
-    }
-
-    config.user = newUser
-    config.render = (user: Record<string, any>): HTMLElement => {
+    user,
+    render: (caretUser: Record<string, any>): HTMLElement => {
       const cursor = document.createElement('span')
       cursor.classList.add('collaboration-cursor__caret')
-      cursor.setAttribute('style', `border-color: ${user.color};`)
+      cursor.setAttribute('style', `border-color: ${caretUser.color};`)
 
-      const avatarAddress = user.avatarUpdatedAt
-        ? Config.app.profile.getAvatarURL(user.id, user.avatarUpdatedAt)
-        : user.avatarUrl
+      const avatarAddress = caretUser.avatarUpdatedAt
+        ? Config.app.profile.getAvatarURL(caretUser.id, caretUser.avatarUpdatedAt)
+        : caretUser.avatarUrl
 
       const avatar = document.createElement('div')
       avatar.classList.add('collaboration-cursor__avatar')
       avatar.setAttribute(
         'style',
-        `background-image: url(${avatarAddress}); background-color:#ddd; border-color: ${user.color};`
+        `background-image: url(${avatarAddress}); background-color:#ddd; border-color: ${caretUser.color};`
       )
 
       const label = document.createElement('div')
       label.classList.add('collaboration-cursor__label')
-      label.setAttribute('style', `background-color: ${user.color}`)
-      label.insertBefore(document.createTextNode(user.name), null)
+      label.setAttribute('style', `background-color: ${caretUser.color}`)
+      label.insertBefore(document.createTextNode(caretUser.name), null)
       cursor.insertBefore(label, null)
       if (avatarAddress) cursor.insertBefore(avatar, null)
       return cursor
     }
   }
-
-  return config
 }
 
 export default Editor
