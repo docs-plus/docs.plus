@@ -36,8 +36,8 @@
     "docs.plus"
   ],
   "peerDependencies": {
-    "@tiptap/core": "^2.11.5",
-    "@tiptap/pm": "^2.11.5"
+    "@tiptap/core": "^3.6.2",
+    "@tiptap/pm": "^3.6.2"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.2",

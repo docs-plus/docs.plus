@@ -46,7 +46,7 @@ export const useReplyInThreadHandler = () => {
       let headingNode: any = null
 
       // Traverse the document to find the heading with matching ID
-      doc.descendants((node, pos) => {
+      doc.descendants((node: any, pos: any) => {
         if (node.type.name === 'heading' && node.attrs.id === headingId) {
           headingPos = pos
           headingLevel = node.attrs.level
@@ -90,7 +90,7 @@ export const useReplyInThreadHandler = () => {
         const searchStart = Math.max(0, insertPosition - 10)
         const searchEnd = Math.min(doc.content.size, insertPosition + messageContent.length + 100)
 
-        doc.nodesBetween(searchStart, searchEnd, (node, pos) => {
+        doc.nodesBetween(searchStart, searchEnd, (node: any, pos: any) => {
           if (
             node.type.name === 'heading' &&
             node.textContent.trim() === messageContent &&

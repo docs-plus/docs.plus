@@ -106,8 +106,9 @@ const ContentWrapper = Node.create({
       dom.appendChild(content)
 
       // get parent node
-      const parentNode = editor.state.doc?.resolve(getPos())
-      const headingId = parentNode.parent?.attrs.id
+      const pos = getPos()
+      const parentNode = pos !== undefined ? editor.state.doc?.resolve(pos) : null
+      const headingId = parentNode?.parent?.attrs.id
 
       const nodeState = getNodeState(headingId)
 
@@ -140,6 +141,7 @@ const ContentWrapper = Node.create({
         tr.setMeta(TIPTAP_EVENTS.FOLD_AND_UNFOLD, true)
 
         const pos = getPos()
+        if (pos === undefined) return false
         const currentNode = tr.doc.nodeAt(pos)
 
         if (

@@ -73,15 +73,30 @@ class Tooltip {
   private createTooltip() {
     if (!this.editor || !this.editor.options) return
     const { element: editorElement } = this.editor.options
-    const editorIsAttached = !!editorElement.parentElement
 
-    if (this.tippyInstance || !editorIsAttached) {
+    if (!editorElement) return
+
+    // Handle different types of editor element in Tiptap v3
+    let actualElement: Element | null = null
+    if (editorElement instanceof Element) {
+      actualElement = editorElement
+    } else if (typeof editorElement === 'object' && 'mount' in editorElement) {
+      actualElement = editorElement.mount
+    }
+
+    if (!actualElement || !actualElement.parentElement) {
       return
     }
 
-    let element = this.targetElement ? document.querySelector(this.targetElement) : editorElement
+    if (this.tippyInstance) {
+      return
+    }
 
-    if (!element) element = editorElement
+    let element: Element | null = this.targetElement
+      ? document.querySelector(this.targetElement)
+      : actualElement
+
+    if (!element) element = actualElement
 
     if (!element) {
       throw new Error('No element found for Tooltip')

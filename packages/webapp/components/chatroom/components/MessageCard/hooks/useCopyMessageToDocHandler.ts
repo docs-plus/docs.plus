@@ -70,7 +70,7 @@ export const useCopyMessageToDocHandler = () => {
       let headingNode: any = null
 
       // Traverse the document to find the heading with matching ID
-      doc.descendants((node, pos) => {
+      doc.descendants((node: any, pos: any) => {
         if (node.type.name === 'heading' && node.attrs.id === headingId && !headingPos) {
           headingPos = pos
           headingLevel = node.attrs.level

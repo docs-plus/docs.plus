@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useEditor, Editor } from '@tiptap/react'
-import { TextSelection } from 'prosemirror-state'
+import { TextSelection } from '@tiptap/pm/state'
 import { setComposerStateDebounced } from '@db/messageComposerDB'
 
+import { StarterKit } from '@tiptap/starter-kit'
+import { Placeholder } from '@tiptap/extensions'
+import { Mention } from '@tiptap/extension-mention'
+
 // Code and Syntax Highlighting
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
+import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
 import css from 'highlight.js/lib/languages/css'
 import js from 'highlight.js/lib/languages/javascript'
 import ts from 'highlight.js/lib/languages/typescript'
@@ -14,9 +18,6 @@ import yaml from 'highlight.js/lib/languages/yaml'
 import python from 'highlight.js/lib/languages/python'
 import json from 'highlight.js/lib/languages/json'
 import bash from 'highlight.js/lib/languages/bash'
-import StarterKit from '@tiptap/starter-kit'
-import Placeholder from '@tiptap/extension-placeholder'
-import Mention from '@tiptap/extension-mention'
 import suggestion from '../helpers/suggestion'
 // Links and Media
 import {
@@ -180,9 +181,10 @@ export const useTiptapEditor = ({
             return true // We handled this event
           }
           if (event.key === 'Enter' && !event.shiftKey) {
-            const tippyInstance = document.querySelector('[data-tippy-root]')
+            // Check if mention popup is visible (Floating UI)
+            const mentionPopup = document.querySelector('.mention-suggestion-popup')
             const isPopupVisible =
-              tippyInstance && window.getComputedStyle(tippyInstance).visibility === 'visible'
+              mentionPopup && window.getComputedStyle(mentionPopup).display !== 'none'
 
             if (isPopupVisible) {
               event.preventDefault()

@@ -46,9 +46,9 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
 
   try {
     // Verify user authentication (server-validated)
-    const { data: userData, error: userError } = await supabase.auth.getUser()
+    // const { data: userData, error: userError } = await supabase.auth.getUser()
 
-    if (userError) console.error('[getUser]:', userError)
+    // if (userError) console.error('[getUser]:', userError)
 
     // Get session for downstream use (already validated via getUser)
     const { data: sessionData } = await supabase.auth.getSession()
