@@ -27,15 +27,12 @@ jobs:
      run: make build_uptime_kuma
 
  # ============================================================
- # SETUP - Shared setup for front/back builds
+ # FRONTEND - Build and deploy Next.js app with PM2
  # ============================================================
- setup:
-  name: ⚙️ Setup & Build Extensions
+ build-front:
+  name: 🎨 Deploy Frontend
   runs-on: prod.docs.plus
-  if: |
-   contains(github.event.head_commit.message, 'build') &&
-   !contains(github.event.head_commit.message, 'uptime-kuma') &&
-   (contains(github.event.head_commit.message, 'front') || contains(github.event.head_commit.message, 'back'))
+  if: contains(github.event.head_commit.message, 'build') && contains(github.event.head_commit.message, 'front')
   steps:
    - name: 📦 Checkout code
      uses: actions/checkout@v4
@@ -51,39 +48,17 @@ jobs:
    - name: 📥 Install dependencies
      run: bun install --frozen-lockfile
 
-   - name: 🔐 Preserve .env files
+   - name: 🔐 Ensure .env exists
      run: |
-      # Copy .env to packages if it exists in the parent directories
       if [ -f "../../../.env" ]; then
         cp ../../../.env packages/webapp/.env
-        cp ../../../.env packages/hocuspocus.server/.env
-        echo "✅ .env files copied from ../../../.env"
       elif [ -f "../../.env" ]; then
         cp ../../.env packages/webapp/.env
-        cp ../../.env packages/hocuspocus.server/.env
-        echo "✅ .env files copied from ../../.env"
       elif [ -f ".env" ]; then
         cp .env packages/webapp/.env
-        cp .env packages/hocuspocus.server/.env
-        echo "✅ .env files copied from root"
-      else
-        echo "⚠️  Warning: No .env file found, using environment variables"
       fi
+     continue-on-error: true
 
-   - name: 🏗️ Build extension packages
-     run: bun run build
-     env:
-      DATABASE_URL: ${{ secrets.STAGE_DATABASE_URL }}
-
- # ============================================================
- # FRONTEND - Build and deploy Next.js app with PM2
- # ============================================================
- build-front:
-  name: 🎨 Deploy Frontend
-  needs: setup
-  runs-on: prod.docs.plus
-  if: contains(github.event.head_commit.message, 'build') && contains(github.event.head_commit.message, 'front')
-  steps:
    - name: 🚀 Build & Deploy Frontend
      run: make build_front_production
 
@@ -99,10 +74,23 @@ jobs:
  # ============================================================
  build-back:
   name: 🔧 Deploy Backend
-  needs: setup
   runs-on: prod.docs.plus
   if: contains(github.event.head_commit.message, 'build') && contains(github.event.head_commit.message, 'back')
   steps:
+   - name: 📦 Checkout code
+     uses: actions/checkout@v4
+     with:
+      fetch-depth: 1
+      clean: false
+
+   - name: 🥟 Setup Bun
+     uses: oven-sh/setup-bun@v2
+     with:
+      bun-version: latest
+
+   - name: 📥 Install dependencies
+     run: bun install --frozen-lockfile
+
    - name: 🔐 Ensure .env is available
      run: |
       if [ -f "../../../.env" ]; then
@@ -153,10 +141,10 @@ jobs:
 # 🔍 PIPELINE LOGIC
 # ============================================================
 #
-# - Uptime Kuma: Runs independently (no setup needed)
-# - Frontend/Backend: Share "setup" job to build extensions
-# - All use Bun.js for package management
+# - All jobs are independent and self-contained
+# - Each job installs Bun and dependencies
 # - .env files are preserved during deployment
 # - Health checks ensure successful deployments
+# - No shared state between jobs (simpler and more reliable)
 #
 # ============================================================
