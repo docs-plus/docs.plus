@@ -49,6 +49,7 @@
     "@babel/plugin-syntax-typescript": "^7.27.1",
     "@babel/preset-env": "^7.28.3",
     "@babel/preset-react": "^7.27.1",
+    "@types/minimatch": "^6.0.0",
     "@types/node": "^24.6.2",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
