@@ -93,10 +93,11 @@ build_front_stage:
 	curl -f http://localhost:3000/api/health || (echo "❌ Stage health check failed" && pm2 logs nextjs_stage --lines 20 && exit 1) && \
 	echo "✅ Stage deployment completed!"
 
-# Deploy frontend to production (assumes build already done)
+# Build and deploy frontend to production
 build_front_production:
-	@echo "🚀 Deploying frontend to production..."
+	@echo "🚀 Building and deploying frontend to production..."
 	@cd packages/webapp && \
+	NODE_ENV=production bun run build && \
 	echo "✅ Starting PM2..." && \
 	bun run pm2:start:prod && \
 	sleep 10 && \
