@@ -31,7 +31,7 @@ bunx pm2 start src/index.ts \
   --max-memory-restart 500M \
   --log logs/${REST_NAME}.log \
   --error logs/${REST_NAME}-error.log \
-  --out logs/${REST_NAME}-out.log
+  --output logs/${REST_NAME}-out.log
 
 # Start WebSocket with PM2
 echo "Starting WebSocket server..."
@@ -41,7 +41,7 @@ bunx pm2 start src/hocuspocus.server.ts \
   --max-memory-restart 1G \
   --log logs/${WS_NAME}.log \
   --error logs/${WS_NAME}-error.log \
-  --out logs/${WS_NAME}-out.log
+  --output logs/${WS_NAME}-out.log
 
 # Wait for processes to start
 sleep 2
