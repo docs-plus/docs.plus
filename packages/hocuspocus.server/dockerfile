@@ -12,7 +12,8 @@ COPY tsconfig.json bunfig.toml ./
 COPY prisma ./prisma/
 
 # Install dependencies and generate Prisma client
-RUN bun install --frozen-lockfile --production && \
+# Skip optional dependencies (utf-8-validate, bufferutil) to speed up build
+RUN bun install --frozen-lockfile --production --no-optional && \
     bunx prisma generate && \
     bun pm cache rm
 
