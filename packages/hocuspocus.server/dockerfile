@@ -2,12 +2,13 @@
 FROM oven/bun:1.2.18-alpine AS builder
 
 # Install system dependencies needed for native modules
-RUN apk add --no-cache python3 make g++ git
+RUN apk add --no-cache python3 make g++ git curl
 
 WORKDIR /app
 
 # Copy dependency files first for better layer caching
 COPY package.json bun.lockb* ./
+COPY tsconfig.json bunfig.toml ./
 COPY prisma ./prisma/
 
 # Install dependencies and generate Prisma client
@@ -23,7 +24,7 @@ ENV ENVIRONMENT=$ENVIRONMENT
 ENV NODE_ENV=production
 
 # Install runtime dependencies
-RUN apk add --no-cache dumb-init
+RUN apk add --no-cache dumb-init curl
 
 WORKDIR /app
 
@@ -31,20 +32,28 @@ WORKDIR /app
 COPY --from=builder --chown=bun:bun /app/node_modules ./node_modules
 COPY --from=builder --chown=bun:bun /app/prisma ./prisma
 
-# Copy application code
-COPY --chown=bun:bun . .
+# Copy application source code (src/ directory)
+COPY --chown=bun:bun src ./src
+COPY --chown=bun:bun package.json tsconfig.json bunfig.toml ./
+
+# Copy production scripts
+COPY --chown=bun:bun scripts ./scripts
 
 # Make scripts executable
-RUN chmod +x fix-migration.js start-production.js fix-docker.sh
+RUN chmod +x scripts/start-production.ts scripts/fix-migration.ts
 
 # Switch to bun user
 USER bun
 
+# Expose ports (REST API: 3001, WebSocket: 3002)
+EXPOSE 3001 3002
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD bun run healthcheck || exit 1
+    CMD curl -f http://localhost:3001/health || exit 1
 
 # Use dumb-init for proper signal handling
 ENTRYPOINT ["dumb-init", "--"]
 
-CMD ["bunx", "pm2-runtime", "pm2.config.cjs", "--only", "stage_rest,stage_ws"]
+# Run PM2 with both REST and WebSocket servers
+CMD ["bunx", "pm2-runtime", "scripts/pm2.config.ts", "--only", "stage_rest,stage_ws"]

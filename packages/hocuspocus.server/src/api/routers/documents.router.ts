@@ -1,0 +1,39 @@
+import { Hono } from 'hono'
+import { zValidator } from '@hono/zod-validator'
+import * as documentsController from '../controllers/documents.controller'
+import {
+  createDocumentSchema,
+  updateDocumentMetadataSchema,
+  documentQuerySchema,
+  userIdQuerySchema
+} from '../../schemas/document.schema'
+
+const documents = new Hono()
+
+// Get single document by slug
+documents.get(
+  '/:docName',
+  zValidator('query', userIdQuerySchema),
+  documentsController.getDocumentBySlug
+)
+
+// List documents with search
+documents.get('/', zValidator('query', documentQuerySchema), documentsController.listDocuments)
+
+// Create new document
+documents.post('/', zValidator('json', createDocumentSchema), documentsController.createDocument)
+
+// Update document metadata
+documents.put(
+  '/:docId',
+  zValidator('json', updateDocumentMetadataSchema),
+  documentsController.updateDocument
+)
+
+// Get media file
+documents.get('/plugins/hypermultimedia/:documentId/:mediaId', documentsController.getMedia)
+
+// Upload media file
+documents.post('/plugins/hypermultimedia/:documentId', documentsController.uploadMedia)
+
+export default documents

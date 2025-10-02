@@ -32,6 +32,7 @@
   },
   "engines": {
     "node": ">=18.15.0",
+    "bun": ">=1.2.23",
     "npm": "please-use-yarn",
     "yarn": ">= 1.22.19"
   },

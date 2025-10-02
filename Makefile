@@ -1,7 +1,7 @@
-# Start backend development server with PostgreSQL
+# Start backend REST API server (Hono + Bun)
 back_dev:
-	cd packages/hocuspocus.server && bun run dev:pg
-# Start backend WebSocket server
+	cd packages/hocuspocus.server && bun run dev:rest
+# Start backend WebSocket server (Hocuspocus)
 back_ws:
 	cd packages/hocuspocus.server && bun run dev:ws
 # Start Supabase development server
@@ -62,9 +62,9 @@ cypress_run:
 dev_editor:
 	cd packages/webapp && npm run dev
 
-# Start Hocus Pocus development server
+# Start Hocus Pocus development server (deprecated, use back_ws instead)
 dev_editor_hocuspocus:
-	cd packages/web && npm run hocuspocus:server
+	cd packages/hocuspocus.server && bun run dev:ws
 
 # Run editor and Hocus Pocus development servers concurrently
 editor:
@@ -72,8 +72,8 @@ editor:
 
 # Build the application
 build:
-	cd packages/web && rm -rf dist && npm run build
-	cd packages/hocuspocus.server && docker-compose -f docker-compose.prod.yml up
+	cd packages/webapp && npm run build
+	cd packages/hocuspocus.server && docker-compose -f docker-compose.yml up -d
 
 # Run the application without building
 fastRun:
