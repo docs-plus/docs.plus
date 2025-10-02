@@ -1,5 +1,5 @@
 # Dependencies
-node_modules
+node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -7,54 +7,93 @@ bun.lockb
 
 # Development
 .env
-.env.local
-.env.development
-.env.test
-.env.production
-
-# Testing
-coverage
-.nyc_output
-cypress/videos
-cypress/screenshots
-
-# Build outputs
-dist
-build
-.next
+.env.*
+!.env.example
+*.log
+logs/
 
 # IDE
-.vscode
-.idea
+.vscode/
+.idea/
 *.swp
 *.swo
-
-# OS
+*~
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+
+# Testing
+coverage/
+.nyc_output/
+*.test.ts
+*.spec.ts
+__tests__/
+test/
+
+# Build artifacts
+dist/
+build/
+*.tsbuildinfo
+
+# Documentation (exclude from Docker build)
+*.md
+!README.md
+docs/
 
 # Git
-.git
+.git/
 .gitignore
 .gitattributes
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
 
 # Docker
 Dockerfile*
 docker-compose*.yml
 .dockerignore
 
-# Logs
-logs
-*.log
-
 # Misc
-README.md
+temp/
+tmp/
+*.tmp
+.cache/
+
+# Scripts (keep production scripts)
+!scripts/
+scripts/setup.sh
+scripts/fix-docker.sh
+scripts/fix-prod.sh
+
+# Old migration files (if any remain)
+*.mjs
+migrations/
+!prisma/migrations/
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# PM2 (keep pm2.config.ts, exclude others)
+ecosystem.config.js
+ecosystem.config.cjs
+
+# Restapi examples
+restapi/
+
+# Development configs
+nodemon.json
 .eslintrc*
 .prettierrc*
-.editorconfig
-.github
+tsconfig.tsbuildinfo
+
+# Keep only necessary files
+!src/
+!prisma/schema.prisma
+!prisma/migrations/
+!package.json
+!bunfig.toml
+!tsconfig.json
+!scripts/start-production.ts
+!scripts/fix-migration.ts
+!scripts/pm2.config.ts

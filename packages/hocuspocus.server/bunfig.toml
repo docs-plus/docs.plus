@@ -1,0 +1,37 @@
+# Bun configuration file for optimal performance
+
+[install]
+# Use exact versions for production stability
+exact = true
+# Install packages in production mode by default in CI
+production = false
+
+[install.cache]
+# Cache downloaded packages
+dir = "~/.bun/install/cache"
+
+[run]
+# Automatically install missing dependencies when running
+bun = true
+# Silent mode for cleaner logs
+silent = false
+
+[test]
+# Test configuration
+coverage = true
+
+# Optimize runtime performance
+[loader]
+".node" = "napi"
+".png" = "file"
+".jpg" = "file"
+".jpeg" = "file"
+".svg" = "file"
+".gif" = "file"
+".webp" = "file"
+
+# Macros for compile-time optimizations
+[macros]
+
+# Define package aliases (if needed)
+[alias]
