@@ -5,7 +5,7 @@
 # Check if node_modules directory exists
 if [ ! -d "node_modules" ]; then
   echo "node_modules directory not found. Installing dependencies..."
-  yarn
+  bun install
   if [ $? -eq 0 ]; then
     echo "Dependencies installed successfully."
   else
@@ -57,31 +57,40 @@ else
   exit 1
 fi
 
-# Run npm prisma:init:migrations and wait until it's finished
-echo "Running npm run prisma:init:migrations"
-npm run prisma:init:migrations
+# Generate Prisma client first
+echo "Generating Prisma client..."
+bun run prisma:generate
+
+if [ $? -ne 0 ]; then
+    echo "bun run prisma:generate failed with error code $?"
+    exit $?
+fi
+
+# Run bun prisma:init:migrations and wait until it's finished
+echo "Running bun run prisma:init:migrations"
+bun run prisma:init:migrations
 
 # Ensure that the previous command was successful before continuing
 # If not, the script will exit with the error code from the last command
 if [ $? -ne 0 ]; then
-    echo "npm run prisma:init:migrations failed with error code $?"
+    echo "bun run prisma:init:migrations failed with error code $?"
     exit $?
 fi
 
 # Run prisma:migrate:dev in the current directory
 echo "Running prisma:migrate:dev"
-npm run prisma:migrate:dev
+bun run prisma:migrate:dev
 
 # Check if the prisma:migrate:dev was successful
 if [ $? -ne 0 ]; then
-    echo "npm run prisma:migrate:dev failed with error code $?"
+    echo "bun run prisma:migrate:dev failed with error code $?"
     exit $?
 fi
 
-# Run npm run dev and npm run dev:ws simultaneously in the background
-echo "Running npm run dev and npm run dev:ws"
-(npm run dev:pg &)
-(npm run dev:ws &)
+# Run bun run dev and bun run dev:ws simultaneously in the background
+echo "Running bun run dev and bun run dev:ws"
+(bun run dev:pg &)
+(bun run dev:ws &)
 
 # Wait for a while to let the backend server start
 # sleep 10
@@ -90,7 +99,7 @@ echo "Running npm run dev and npm run dev:ws"
 cd ../webapp
 
 # Run the frontend server
-echo "Running npm run dev for the frontend"
-npm run dev
+echo "Running bun run dev for the frontend"
+bun run dev
 
 # End of script

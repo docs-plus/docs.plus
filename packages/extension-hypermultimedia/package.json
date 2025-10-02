@@ -21,7 +21,7 @@
     "clean": "rm -rf dist",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "update:packages": "npx npm-check-updates -u"
+    "update:packages": "bunx npm-check-updates -u"
   },
   "keywords": [
     "tiptap",

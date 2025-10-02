@@ -21,7 +21,7 @@
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "watch": "bunx tsup --watch",
-    "update:packages": "npx npm-check-updates -u"
+    "update:packages": "bunx npm-check-updates -u"
   },
   "keywords": [
     "tiptap",

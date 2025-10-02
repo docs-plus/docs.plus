@@ -19,7 +19,7 @@
     "dev": "bunx tsup --watch --dts",
     "lint": "eslint . --ext .ts",
     "test": "jest",
-    "update:packages": "npx npm-check-updates -u"
+    "update:packages": "bunx npm-check-updates -u"
   },
   "keywords": [
     "tiptap",
