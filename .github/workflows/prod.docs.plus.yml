@@ -1,118 +1,162 @@
-# This workflow name appears in GitHub Actions UI.
-name: CI-Stage
+# Production CI/CD Pipeline for docs.plus
+name: CI-Production
 
-# Workflow will be triggered when code is pushed or a pull request is created on 'main' branch.
+# Triggered on push or pull request to main branch
 on:
-  push:
-    branches: [main]
-  pull_request:
-    branches: [main]
+ push:
+  branches: [main]
+ pull_request:
+  branches: [main]
 
 jobs:
-  # This job builds and runs Uptime Kuma.
-  build-uptime-kuma:
-    runs-on: prod.docs.plus
-    if: contains(github.event.head_commit.message, 'uptime-kuma')
-    steps:
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          # Only fetch the latest commit to minimize checkout time
-          fetch-depth: 1
-          # Preserve existing files
-          clean: false
-      - name: Deploy Uptime Kuma
-        run: |
-          # Run your build command here
-          make build_uptime_kuma
+ # ============================================================
+ # UPTIME KUMA - Independent pipeline (no dependencies)
+ # ============================================================
+ build-uptime-kuma:
+  name: 🔔 Deploy Uptime Kuma
+  runs-on: prod.docs.plus
+  if: contains(github.event.head_commit.message, 'build') && contains(github.event.head_commit.message, 'uptime-kuma')
+  steps:
+   - name: 📦 Checkout code
+     uses: actions/checkout@v4
+     with:
+      fetch-depth: 1
+      clean: false
 
-  # The "setup" job is responsible for setting up the environment and preparing for the build processes.
-  setup:
-    runs-on: prod.docs.plus
-    if: contains(github.event.head_commit.message, 'build') &&!contains(github.event.head_commit.message, 'uptime-kuma')
-    strategy:
-      matrix:
-        # This matrix configuration will run the job on the specific version of Node.js.
-        node-version: ['lts/*']
-    steps:
-      # This step checks out your repository under $GITHUB_WORKSPACE so your job can access it.
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          # Only fetch the latest commit to minimize checkout time
-          fetch-depth: 1
-          # Preserve existing files for faster deploys
-          clean: false
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
+   - name: 🚀 Deploy Uptime Kuma
+     run: make build_uptime_kuma
 
-      # Setup Bun for bunx commands in extension packages
-      - name: Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-      # This step installs project dependencies using Yarn.
-      # The --frozen-lockfile option ensures the exact package versions specified in yarn.lock are installed.
-      - name: Install dependencies
-        run: yarn install --frozen-lockfile
-      # This step copies the .env file from the root directory to the required directories for each package.
-      # Update these paths if your repository structure is different.
-      - name: Copy .env files
-        run: |
-          cp ../../../.env packages/webapp
-          cp ../../../.env packages/hocuspocus.server
-      - name: Build monorepo packages
-        run: npm run build
-    env:
-      # The environment variable DATABASE_URL is sourced from a secret in your repository.
-      DATABASE_URL: ${{secrets.STAGE_DATABASE_URL}}
+ # ============================================================
+ # SETUP - Shared setup for front/back builds
+ # ============================================================
+ setup:
+  name: ⚙️ Setup & Build Extensions
+  runs-on: prod.docs.plus
+  if: |
+   contains(github.event.head_commit.message, 'build') &&
+   !contains(github.event.head_commit.message, 'uptime-kuma') &&
+   (contains(github.event.head_commit.message, 'front') || contains(github.event.head_commit.message, 'back'))
+  steps:
+   - name: 📦 Checkout code
+     uses: actions/checkout@v4
+     with:
+      fetch-depth: 1
+      clean: false
 
-  # The "build-front" job builds the front-end, it depends on the "setup" job.
-  build-front:
-    # Specifies that this job depends on the 'setup' job.
-    needs: setup
-    runs-on: prod.docs.plus
-    # This job will only run if the commit message contains the word 'front'.
-    if: contains(github.event.head_commit.message, 'front')
-    steps:
-      # This step runs the build command for the front-end.
-      - name: Build Front-end
-        run: make build_front_production
+   - name: 🥟 Setup Bun
+     uses: oven-sh/setup-bun@v2
+     with:
+      bun-version: latest
 
-  # The "build-back" job builds the back-end, it also depends on the "setup" job.
-  build-back:
-    # Specifies that this job depends on the 'setup' job.
-    needs: setup
-    runs-on: prod.docs.plus
-    # This job will only run if the commit message contains the word 'back'.
-    if: contains(github.event.head_commit.message, 'back')
-    steps:
-      # Checkout code for deployment
-      - name: Check out code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-          clean: false
+   - name: 📥 Install dependencies
+     run: bun install --frozen-lockfile
 
-      # This step runs the build command for the back-end.
-      - name: Build Back-end
-        run: make build_hocuspocus.server_prod
-# -----------------------------------------------------------------------
-# EXAMPLE USAGE:
-# 1) To run setup + build-front:
-#    git commit -m "Add feature (build front)"
+   - name: 🔐 Preserve .env files
+     run: |
+      # Copy .env to packages if it exists in the parent directories
+      if [ -f "../../../.env" ]; then
+        cp ../../../.env packages/webapp/.env
+        cp ../../../.env packages/hocuspocus.server/.env
+        echo "✅ .env files copied from ../../../.env"
+      elif [ -f "../../.env" ]; then
+        cp ../../.env packages/webapp/.env
+        cp ../../.env packages/hocuspocus.server/.env
+        echo "✅ .env files copied from ../../.env"
+      elif [ -f ".env" ]; then
+        cp .env packages/webapp/.env
+        cp .env packages/hocuspocus.server/.env
+        echo "✅ .env files copied from root"
+      else
+        echo "⚠️  Warning: No .env file found, using environment variables"
+      fi
+
+   - name: 🏗️ Build extension packages
+     run: bun run build
+     env:
+      DATABASE_URL: ${{ secrets.STAGE_DATABASE_URL }}
+
+ # ============================================================
+ # FRONTEND - Build and deploy Next.js app with PM2
+ # ============================================================
+ build-front:
+  name: 🎨 Deploy Frontend
+  needs: setup
+  runs-on: prod.docs.plus
+  if: contains(github.event.head_commit.message, 'build') && contains(github.event.head_commit.message, 'front')
+  steps:
+   - name: 🚀 Build & Deploy Frontend
+     run: make build_front_production
+
+   - name: 🩺 Health check
+     run: |
+      echo "⏳ Waiting for app to be ready..."
+      sleep 15
+      curl -f http://localhost:3001/api/health || (echo "❌ Health check failed" && exit 1)
+      echo "✅ Frontend is healthy!"
+
+ # ============================================================
+ # BACKEND - Build and deploy Hocuspocus server with Docker
+ # ============================================================
+ build-back:
+  name: 🔧 Deploy Backend
+  needs: setup
+  runs-on: prod.docs.plus
+  if: contains(github.event.head_commit.message, 'build') && contains(github.event.head_commit.message, 'back')
+  steps:
+   - name: 🔐 Ensure .env is available
+     run: |
+      if [ -f "../../../.env" ]; then
+        cp ../../../.env packages/hocuspocus.server/.env
+      elif [ -f "../../.env" ]; then
+        cp ../../.env packages/hocuspocus.server/.env
+      elif [ -f ".env" ]; then
+        cp .env packages/hocuspocus.server/.env
+      fi
+     continue-on-error: true
+
+   - name: 🐳 Build & Deploy Backend
+     run: make build_hocuspocus.server_prod
+     env:
+      DATABASE_URL: ${{ secrets.STAGE_DATABASE_URL }}
+
+   - name: 📊 Check containers
+     run: |
+      echo "🔍 Checking running containers..."
+      docker ps | grep prod-docsplus || echo "⚠️  Warning: No prod-docsplus containers found"
+      echo "✅ Backend deployment completed!"
+
+# ============================================================
+# 📖 USAGE EXAMPLES
+# ============================================================
 #
-# 2) To run setup + build-back:
-#    git commit -m "Fix backend (build back)"
+# Trigger specific pipelines by including keywords in commit messages:
 #
-# 3) To run setup + build-uptime-kuma:
-#    git commit -m "build uptime-kuma"
+# 1️⃣  Frontend only:
+#    git commit -m "Feature: New UI component (build front)"
 #
-# 4) To run multiple pipelines together:
-#    git commit -m "Update everything (build front back uptime-kuma)"
+# 2️⃣  Backend only:
+#    git commit -m "Fix: WebSocket connection (build back)"
 #
-# Then push to the 'main' branch (or open a pull request):
+# 3️⃣  Uptime Kuma only:
+#    git commit -m "Update monitoring (build uptime-kuma)"
+#
+# 4️⃣  Frontend + Backend:
+#    git commit -m "Full deploy (build front back)"
+#
+# 5️⃣  Everything at once:
+#    git commit -m "Major release (build front back uptime-kuma)"
+#
+# Then push to main:
 #    git push origin main
-# -----------------------------------------------------------------------
+#
+# ============================================================
+# 🔍 PIPELINE LOGIC
+# ============================================================
+#
+# - Uptime Kuma: Runs independently (no setup needed)
+# - Frontend/Backend: Share "setup" job to build extensions
+# - All use Bun.js for package management
+# - .env files are preserved during deployment
+# - Health checks ensure successful deployments
+#
+# ============================================================
