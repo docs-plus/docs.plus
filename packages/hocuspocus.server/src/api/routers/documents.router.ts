@@ -30,10 +30,4 @@ documents.put(
   documentsController.updateDocument
 )
 
-// Get media file
-documents.get('/plugins/hypermultimedia/:documentId/:mediaId', documentsController.getMedia)
-
-// Upload media file
-documents.post('/plugins/hypermultimedia/:documentId', documentsController.uploadMedia)
-
 export default documents
