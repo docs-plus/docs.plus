@@ -7,6 +7,7 @@ import { setupMiddleware } from './middleware'
 import { createDocumentWorker } from './lib/queue'
 import healthRouter from './api/health'
 import documentsRouter from './api/documents'
+import hypermultimediaRouter from './api/hypermultimedia'
 import { checkEnvBolean } from './utils'
 
 // Load environment variables
@@ -50,6 +51,7 @@ app.get('/', (c) => {
 // Mount routers
 app.route('/health', healthRouter)
 app.route('/api/documents', documentsRouter)
+app.route('/api/plugins/hypermultimedia', hypermultimediaRouter)
 
 // Start BullMQ worker for document storage
 if (redis) {
