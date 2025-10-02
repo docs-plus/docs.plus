@@ -1,0 +1,80 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Install Dependencies",
+      "type": "shell",
+      "command": "bun install",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Lint",
+      "type": "shell",
+      "command": "bun run lint",
+      "problemMatcher": ["$eslint-stylish"],
+      "group": "test"
+    },
+    {
+      "label": "Lint & Fix",
+      "type": "shell",
+      "command": "bun run lint:fix",
+      "problemMatcher": ["$eslint-stylish"],
+      "group": "test"
+    },
+    {
+      "label": "Format",
+      "type": "shell",
+      "command": "bun run format",
+      "problemMatcher": [],
+      "group": "test"
+    },
+    {
+      "label": "Build All",
+      "type": "shell",
+      "command": "bun run build",
+      "problemMatcher": ["$tsc"],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      }
+    },
+    {
+      "label": "Start Dev (All Services)",
+      "type": "shell",
+      "command": "make local",
+      "problemMatcher": [],
+      "isBackground": true,
+      "group": "none"
+    },
+    {
+      "label": "Start Webapp",
+      "type": "shell",
+      "command": "bun run dev",
+      "problemMatcher": [],
+      "isBackground": true,
+      "group": "none"
+    },
+    {
+      "label": "Prisma Generate",
+      "type": "shell",
+      "command": "make prisma_generate",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Update Packages",
+      "type": "shell",
+      "command": "bun run update:all-packages",
+      "problemMatcher": [],
+      "group": "none"
+    },
+    {
+      "label": "Reinstall All",
+      "type": "shell",
+      "command": "bun run reinstall:all-packages",
+      "problemMatcher": [],
+      "group": "none"
+    }
+  ]
+}

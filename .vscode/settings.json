@@ -1,61 +1,193 @@
 {
+  // ============================================
+  // EDITOR SETTINGS
+  // ============================================
   "editor.tabSize": 2,
-  "editor.formatOnPaste": true,
+  "editor.insertSpaces": true,
+  "editor.detectIndentation": false,
   "editor.formatOnSave": true,
-  "diffEditor.codeLens": true,
-  "standard._legacyModuleResolve": false,
-  "standard.autoFixOnSave": true,
-  "standard.enableGlobally": true,
-  "tailwindCSS.includeLanguages": {
-    "html": "html",
-    "javascript": "javascript",
-    "css": "css"
+  "editor.formatOnPaste": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit",
+    "source.organizeImports": "never"
   },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
   "editor.quickSuggestions": {
     "strings": true
   },
-  "eslint.probe": [
-    "javascript",
-    "javascriptreact",
-    "typescript",
-    "typescriptreact"
-  ],
-    "eslint.validate": [
-    "javascript",
-    "javascriptreact",
-    "typescript",
-    "typescriptreact"
-  ],
-  "[javascript]": {
-    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "diffEditor.codeLens": true,
+
+  // ============================================
+  // FILE SETTINGS
+  // ============================================
+  "files.eol": "\n",
+  "files.insertFinalNewline": true,
+  "files.trimTrailingWhitespace": true,
+  "files.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.next": true,
+    "**/.turbo": true,
+    "**/coverage": true,
+    "**/*.log": true
   },
-  "deno.lint": true,
-  "deno.unstable": true,
+  "files.watcherExclude": {
+    "**/.git/objects/**": true,
+    "**/node_modules/**": true,
+    "**/dist/**": true,
+    "**/.next/**": true,
+    "**/.turbo/**": true
+  },
+
+  // ============================================
+  // TYPESCRIPT
+  // ============================================
+  "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "typescript.updateImportsOnFileMove.enabled": "always",
   "[typescript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode"
   },
-  "stylelint.enable": true,
+  "[typescriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // ============================================
+  // JAVASCRIPT
+  // ============================================
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "[javascript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[javascriptreact]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // ============================================
+  // JSON
+  // ============================================
+  "[json]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+  "[jsonc]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // ============================================
+  // MARKDOWN & OTHERS
+  // ============================================
+  "[markdown]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "files.trimTrailingWhitespace": false
+  },
+  "[yaml]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode"
+  },
+
+  // ============================================
+  // ESLINT
+  // ============================================
+  "eslint.enable": true,
+  "eslint.useFlatConfig": true,
+  "eslint.probe": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "eslint.validate": ["javascript", "javascriptreact", "typescript", "typescriptreact"],
+  "eslint.workingDirectories": [{ "mode": "auto" }],
+
+  // ============================================
+  // PRETTIER
+  // ============================================
+  "prettier.enable": true,
+  "prettier.requireConfig": true,
+  "prettier.configPath": ".prettierrc.json",
+
+  // ============================================
+  // TAILWIND CSS
+  // ============================================
+  "tailwindCSS.includeLanguages": {
+    "html": "html",
+    "javascript": "javascript",
+    "javascriptreact": "javascriptreact",
+    "typescript": "typescript",
+    "typescriptreact": "typescriptreact",
+    "css": "css"
+  },
+  "tailwindCSS.experimental.classRegex": [
+    "tw`([^`]*)",
+    "tw=\"([^\"]*)",
+    "tw={\"([^\"}]*)",
+    "tw\\.\\w+`([^`]*)",
+    ["clsx\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+    ["classnames\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"],
+    ["cn\\(([^)]*)\\)", "(?:'|\"|`)([^']*)(?:'|\"|`)"]
+  ],
+
+  // ============================================
+  // CSS/SCSS
+  // ============================================
   "css.validate": false,
   "less.validate": false,
-  "scss.validate": true,
-  "scss.format.spaceAroundSelectorSeparator": true,
-  "eslint.codeActionsOnSave.mode": "all",
-  "editor.codeActionsOnSave": {
-    "source.fixAll.eslint": "explicit"
+  "scss.validate": false,
+  "stylelint.enable": false,
+
+  // ============================================
+  // PRISMA
+  // ============================================
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
   },
+
+  // ============================================
+  // GIT
+  // ============================================
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "git.autofetch": true,
+
+  // ============================================
+  // CONVENTIONAL COMMITS
+  // ============================================
   "conventionalCommits.scopes": [
-    "core",
-    "demo",
-    "hocuspocus",
-    "extension-hyperlink",
+    "root",
     "webapp",
-    "filter",
-    "heading"
+    "hocuspocus.server",
+    "supabase",
+    "extension-hyperlink",
+    "extension-hypermultimedia",
+    "extension-indent",
+    "extension-inline-code",
+    "eslint-config",
+    "deps",
+    "ci",
+    "docs"
   ],
-  "tailwindCSS.experimental.classRegex": [
-    "tw`([^`]*)", // tw`...`
-    "tw\\([^)]*\\)", // tw(...)
-    "tw\\.\\w+\\(`([^`]*)`\\)", // tw.xxx(`...`)
-    "tw\\.\\w+\\(\\[([^)]*)\\]\\)" // tw.xxx([ ... ])
-  ]
+
+  // ============================================
+  // SEARCH
+  // ============================================
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/.next": true,
+    "**/build": true,
+    "**/.turbo": true,
+    "**/coverage": true,
+    "**/*.log": true,
+    "**/bun.lockb": true
+  },
+
+  // ============================================
+  // TERMINAL
+  // ============================================
+  "terminal.integrated.defaultProfile.osx": "zsh",
+  "terminal.integrated.env.osx": {
+    "PATH": "${env:HOME}/.bun/bin:${env:PATH}"
+  },
+
+  // ============================================
+  // BUN (if extension exists)
+  // ============================================
+  "bun.runtime": "${workspaceFolder}/node_modules/.bin/bun"
 }

@@ -1,11 +1,49 @@
 {
-  // See https://go.microsoft.com/fwlink/?LinkId=827846 to learn about workspace recommendations.
-  // Extension identifier format: ${publisher}.${name}. Example: vscode.csharp
-  // List of extensions which should be recommended for users of this workspace.
+  // ============================================
+  // REQUIRED EXTENSIONS (Core functionality)
+  // ============================================
   "recommendations": [
-    "prisma.prisma",
-    "standard.vscode-standard"
+    // Code Quality & Formatting
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode",
+
+    // Language Support
+    "Prisma.prisma",
+    "bradlc.vscode-tailwindcss",
+
+    // Framework Support
+    "ms-vscode.vscode-typescript-next",
+
+    // Git & Collaboration
+    "vivaxy.vscode-conventional-commits",
+    "eamodio.gitlens",
+
+    // Utilities
+    "christian-kohler.path-intellisense",
+    "streetsidesoftware.code-spell-checker",
+    "usernamehw.errorlens",
+
+    // Monorepo Support
+    "folke.vscode-monorepo-workspace",
+
+    // Productivity
+    "lokalise.i18n-ally",
+    "formulahendry.auto-rename-tag",
+    "formulahendry.auto-close-tag",
+
+    // Optional but Recommended
+    "oven.bun-vscode",
+    "ms-vscode.vscode-json-languageservice",
+    "redhat.vscode-yaml"
   ],
-  // List of extensions recommended by VS Code that should not be recommended for users of this workspace.
-  "unwantedRecommendations": []
+
+  // ============================================
+  // UNWANTED EXTENSIONS (Conflicts or deprecated)
+  // ============================================
+  "unwantedRecommendations": [
+    "standard.vscode-standard",
+    "hookyqr.beautify",
+    "dbaeumer.jshint",
+    "ms-vscode.vscode-typescript-tslint-plugin"
+  ]
 }
