@@ -1,11 +1,8 @@
 import { Editor } from '@tiptap/react'
 import { useCallback } from 'react'
-import jQuery from 'jquery'
 
-// Define JQuery interface
-interface JQuery<TElement = HTMLElement> extends Array<TElement> {
-  [index: number]: TElement
-}
+// Support array-like objects (e.g., Cypress returns jQuery-like objects)
+type ElementOrArrayLike = HTMLElement | ArrayLike<HTMLElement>
 
 type SelectionLevel = 'element' | 'parent' | 'section' | 'heading' | 'list' | 'document'
 
@@ -107,13 +104,13 @@ export const useHierarchicalSelection = (editor: Editor | null) => {
    * Select the content of the specified DOM element
    */
   const selectElement = useCallback(
-    (domElement: HTMLElement | JQuery<HTMLElement>) => {
+    (domElement: ElementOrArrayLike) => {
       if (!editor) return false
 
       try {
-        // Handle both DOM elements and Cypress/jQuery objects
+        // Handle both direct HTMLElements and array-like objects (Cypress)
         const element =
-          domElement instanceof HTMLElement ? domElement : (domElement as JQuery<HTMLElement>)[0]
+          domElement instanceof HTMLElement ? domElement : (domElement as ArrayLike<HTMLElement>)[0]
 
         if (!element) return false
 
