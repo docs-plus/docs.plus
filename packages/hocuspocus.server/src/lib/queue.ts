@@ -16,6 +16,14 @@ interface StoreDocumentData {
   firstCreation: boolean
 }
 
+async function generateUniqueSlug(baseSlug: string): Promise<string> {
+  const existing = await prisma.documentMetadata.findUnique({ where: { slug: baseSlug } })
+  if (!existing) return baseSlug
+
+  // If slug exists, append timestamp + random to make it unique
+  return `${baseSlug}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+}
+
 const connection = {
   host: process.env.REDIS_HOST || 'localhost',
   port: parseInt(process.env.REDIS_PORT || '6379', 10)
@@ -57,7 +65,7 @@ export const createDocumentWorker = () => {
               documentId: data.documentName
             },
             update: {
-              slug: context.slug || data.documentName,
+              // Don't update slug on existing documents to avoid conflicts
               title: context.slug || data.documentName,
               description: context.slug || data.documentName,
               ownerId: context.user?.sub,
@@ -66,7 +74,7 @@ export const createDocumentWorker = () => {
             },
             create: {
               documentId: data.documentName,
-              slug: context.slug || data.documentName,
+              slug: await generateUniqueSlug(context.slug || data.documentName),
               title: context.slug || data.documentName,
               description: context.slug || data.documentName,
               ownerId: context.user?.sub,
