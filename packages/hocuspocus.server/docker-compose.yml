@@ -1,50 +1,51 @@
 services:
-  redis:
-    image: redis:alpine
-    container_name: ${ENVIRONMENT:-dev}-redis-docsplus
-    restart: unless-stopped
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ['CMD', 'redis-cli', '--raw', 'incr', 'ping']
-      interval: 10s
-      timeout: 2s
-      retries: 3
-      start_period: 10s
-    networks:
-      - backend
+ redis:
+  image: redis:alpine
+  container_name: ${ENVIRONMENT:-dev}-redis-docsplus
+  restart: unless-stopped
+  volumes:
+   - redis_data:/data
+  healthcheck:
+   test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+   interval: 10s
+   timeout: 2s
+   retries: 3
+   start_period: 10s
+  networks:
+   - backend
 
-  backend:
-    env_file: .env
-    build:
-      context: .
-      dockerfile: dockerfile
-      args:
-        ENVIRONMENT: ${ENVIRONMENT:-dev}
-    image: hocuspocus-${ENVIRONMENT:-dev}
-    container_name: ${ENVIRONMENT:-dev}-back-docsplus
-    restart: always
-    depends_on:
-      redis:
-        condition: service_healthy
-    environment:
-      REDIS_HOST: redis
-      ENVIRONMENT: ${ENVIRONMENT}
-    ports:
-      - '${EXPOSE_APP_PORT:-3001}:${APP_PORT:-3001}'
-      - '${HOCUSPOCUS_PORT:-1234}:${HOCUSPOCUS_PORT:-1234}'
-    healthcheck:
-      test: ['CMD', 'bun', 'run', 'healthcheck']
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-    networks:
-      - backend
+ backend:
+  env_file: .env
+  build:
+   context: .
+   dockerfile: dockerfile
+   args:
+    ENVIRONMENT: ${ENVIRONMENT:-dev}
+  image: hocuspocus-${ENVIRONMENT:-dev}
+  container_name: ${ENVIRONMENT:-dev}-back-docsplus
+  restart: always
+  depends_on:
+   redis:
+    condition: service_healthy
+  environment:
+   REDIS_HOST: redis
+   ENVIRONMENT: ${ENVIRONMENT:-stage}
+   NODE_ENV: production
+  ports:
+   - "${EXPOSE_APP_PORT:-3001}:${APP_PORT:-3001}"
+   - "${EXPOSE_HOCUSPOCUS_PORT:-3002}:${HOCUSPOCUS_PORT:-3002}"
+  healthcheck:
+   test: ["CMD", "bun", "run", "healthcheck"]
+   interval: 30s
+   timeout: 10s
+   retries: 3
+   start_period: 30s
+  networks:
+   - backend
 
 networks:
-  backend:
-    driver: bridge
+ backend:
+  driver: bridge
 
 volumes:
-  redis_data:
+ redis_data:
