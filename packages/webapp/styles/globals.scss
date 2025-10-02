@@ -5,7 +5,7 @@
   name: 'docsyLight';
   default: true;
   prefersdark: false;
-  color-scheme: 'dark';
+  color-scheme: 'light';
   --color-base-100: oklch(100% 0 0);
   --color-base-200: oklch(98% 0 0);
   --color-base-300: oklch(95% 0 0);
@@ -33,7 +33,7 @@
   --size-field: 0.25rem;
   --border: 1px;
   --depth: 1;
-  --noise: 1;
+  --noise: 0;
 }
 
 @theme {

@@ -2,6 +2,7 @@
   "name": "@docs.plus/webapp",
   "version": "2.0.0-beta.103",
   "private": true,
+  "browserslist": "> 1%",
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
