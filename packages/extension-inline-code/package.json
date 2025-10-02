@@ -32,12 +32,13 @@
     "docs.plus"
   ],
   "peerDependencies": {
-    "@tiptap/core": "^2.11.5",
-    "@tiptap/pm": "^2.11.5"
+    "@tiptap/core": "^3.6.2",
+    "@tiptap/pm": "^3.6.2"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
+    "@types/minimatch": "^6.0.0",
+    "eslint": "^9.36.0",
     "tsup": "^8.5.0",
-    "eslint": "^9.36.0"
+    "typescript": "^5.9.3"
   }
 }
