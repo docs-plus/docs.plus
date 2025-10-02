@@ -1,3 +1,7 @@
+# Generate Prisma client
+prisma_generate:
+	cd packages/hocuspocus.server && bun run prisma:generate
+
 # Start backend REST API server (Hono + Bun)
 back_dev:
 	cd packages/hocuspocus.server && bun run dev:rest
@@ -6,15 +10,15 @@ back_ws:
 	cd packages/hocuspocus.server && bun run dev:ws
 # Start Supabase development server
 supabase_start:
-	cd packages/Supabase && npm run start
+	cd packages/supabase && bun run start
 
 # Stop Supabase server
 supabase_stop:
-	cd packages/Supabase && npm run stop
+	cd packages/supabase && bun run stop
 
 # Display Supabase status
 supabase_status:
-	cd packages/supabase && npm run status
+	cd packages/supabase && bun run status
 
 # Prepare seed.sql by concatenating all SQL files from scripts directory
 prepare-seed:
@@ -39,40 +43,40 @@ supabase-reset:
 	@read -p "Are you sure you want to reset the database? [y/N]: " confirm; \
 	if [ "$$confirm" = "y" ]; then \
 		make prepare-seed && \
-		cd packages/supabase && pnpm db:reset; \
+		cd packages/supabase && bun run db:reset; \
 	else \
 		echo "Database reset canceled."; \
 	fi
 
 # Start frontend development server
 front_dev:
-	cd packages/webapp && npm run dev
+	cd packages/webapp && bun run dev
 # Run backend, WebSocket and frontend development servers concurrently
-local:
+local: prisma_generate
 	make -j 4 supabase_start back_dev back_ws front_dev
 
 # Run Cypress tests
 cypress_open:
-	cd packages/webapp && npm run cypress:open
+	cd packages/webapp && bun run cypress:open
 
 cypress_run:
-	cd packages/webapp && npm run cypress:run
+	cd packages/webapp && bun run cypress:run
 
 # Start editor development server
 dev_editor:
-	cd packages/webapp && npm run dev
+	cd packages/webapp && bun run dev
 
 # Start Hocus Pocus development server (deprecated, use back_ws instead)
 dev_editor_hocuspocus:
 	cd packages/hocuspocus.server && bun run dev:ws
 
 # Run editor and Hocus Pocus development servers concurrently
-editor:
+editor: prisma_generate
 	make -j 2 dev_editor_hocuspocus dev_editor
 
 # Build the application
 build:
-	cd packages/webapp && npm run build
+	cd packages/webapp && bun run build
 	cd packages/hocuspocus.server && docker-compose -f docker-compose.yml up -d
 
 # Run the application without building
@@ -83,18 +87,18 @@ fastRun:
 build_front_stage:
 	@echo "🏗️  Building and deploying to stage environment..."
 	@cd packages/webapp && \
-	NODE_ENV=production npm run build && \
-	npm run pm2:start:stage && \
+	NODE_ENV=production bun run build && \
+	bun run pm2:start:stage && \
 	sleep 10 && \
 	curl -f http://localhost:3000/api/health || (echo "❌ Stage health check failed" && pm2 logs nextjs_stage --lines 20 && exit 1) && \
 	echo "✅ Stage deployment completed!"
 
-# Deploy frontend to production (assumes build already done by lerna)
+# Deploy frontend to production (assumes build already done)
 build_front_production:
 	@echo "🚀 Deploying frontend to production..."
 	@cd packages/webapp && \
 	echo "✅ Starting PM2..." && \
-	npm run pm2:start:prod && \
+	bun run pm2:start:prod && \
 	sleep 10 && \
 	curl -f http://localhost:3001/api/health || (echo "❌ Health check failed" && exit 1) && \
 	echo "✅ Deployment successful!"
@@ -142,26 +146,26 @@ help: # Show available commands
 .PHONY: help
 
 generate_supabase_types: # Generate Supabase TypeScript types
-	cd packages/supabase && yarn supabase:types
+	cd packages/supabase && bun run supabase:types
 
 # Frontend monitoring and troubleshooting commands
 pm2_status: # Show PM2 process status
-	cd packages/webapp && npm run pm2:status
+	cd packages/webapp && bun run pm2:status
 
 pm2_logs: # Show PM2 logs for production
-	cd packages/webapp && npm run pm2:logs:prod
+	cd packages/webapp && bun run pm2:logs:prod
 
 pm2_logs_error: # Show PM2 error logs only
-	cd packages/webapp && npm run pm2:logs:error
+	cd packages/webapp && bun run pm2:logs:error
 
 pm2_restart: # Restart production frontend
-	cd packages/webapp && npm run pm2:restart
+	cd packages/webapp && bun run pm2:restart
 
 pm2_reload: # Graceful reload production frontend
-	cd packages/webapp && npm run pm2:reload
+	cd packages/webapp && bun run pm2:reload
 
 pm2_monitor: # Open PM2 monitoring dashboard
-	cd packages/webapp && npm run pm2:monitor
+	cd packages/webapp && bun run pm2:monitor
 
 health_check: # Manual health check
 	@echo "🩺 Running health check..."
@@ -175,5 +179,5 @@ system_info: # Show system information
 	@echo "PM2 processes:" && pm2 list
 
 cleanup_logs: # Clean up old log files
-	cd packages/webapp && npm run logs:cleanup && echo "✅ Log cleanup completed"
+	cd packages/webapp && bun run logs:cleanup && echo "✅ Log cleanup completed"
 

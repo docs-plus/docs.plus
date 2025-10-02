@@ -13,12 +13,12 @@
     "pm2:logs:prod": "pm2 logs nextjs_production",
     "pm2:logs:error": "pm2 logs nextjs_production --err",
     "logs:cleanup": "find logs/ -name '*.log' -mtime +7 -delete",
-    "update:packages": "npx npm-check-updates -u",
+    "update:packages": "bunx npm-check-updates -u",
     "lint:fix": "next lint --fix",
     "test": "jest",
-    "cypress:open": "cypress open",
-    "cypress:run": "cypress run",
-    "find-unused": "next-unused"
+    "cypress:open": "bunx cypress open",
+    "cypress:run": "bunx cypress run",
+    "find-unused": "bunx next-unused"
   },
   "dependencies": {
     "@dicebear/collection": "^9.2.4",

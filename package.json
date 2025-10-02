@@ -7,34 +7,32 @@
   ],
   "scripts": {
     "start": "sh ./scripts/run_dev.sh",
-    "update:packages": "npx npm-check-updates -u",
-    "start:webapp": "cd packages/webapp && npm run start",
-    "dev": "npx lerna run dev --scope=@docs.plus/webapp",
-    "build": "npx lerna run build",
-    "lint:fix": "npx lerna run lint:fix",
+    "update:packages": "bunx npm-check-updates -u",
+    "start:webapp": "cd packages/webapp && bun run start",
+    "dev": "bun --filter @docs.plus/webapp run dev",
+    "build": "bun run --filter '*' build",
+    "lint:fix": "bun run --filter '*' lint:fix",
     "lint:staged": "lint-staged",
-    "release": "lerna version --no-push --force-publish",
-    "release:major": "lerna version major --no-push --no-git-tag-version --force-publish",
-    "release:major:pre": "lerna version premajor --no-push --no-git-tag-version --force-publish --preid rc",
-    "release:minor": "lerna version minor --no-push --no-git-tag-version --force-publish",
-    "release:minor:pre": "lerna version preminor --no-push --no-git-tag-version --force-publish --preid rc",
-    "release:patch": "lerna version patch --no-push --no-git-tag-version --force-publish",
-    "release:patch:pre": "lerna version prepatch --no-push --no-git-tag-version --force-publish --preid rc",
-    "release:pre": "lerna version prerelease --no-push --no-git-tag-version --force-publish --preid rc",
-    "publish": "npm run build && lerna exec --since --no-private -- npm publish --tag latest --access public",
+    "release": "bun run version",
+    "release:major": "bun run version:major",
+    "release:minor": "bun run version:minor",
+    "release:patch": "bun run version:patch",
+    "version": "bun run version:patch",
+    "version:major": "bunx changeset version --snapshot major",
+    "version:minor": "bunx changeset version --snapshot minor",
+    "version:patch": "bunx changeset version --snapshot patch",
+    "publish": "bun run build && bun run --filter '*' --if-present npm publish --tag latest --access public",
     "lint": "eslint './packages/**/*.js*' --fix",
     "format": "prettier --write './packages/**/*.{js,jsx,ts,tsx,json,md}'",
     "update:all-packages": "sh ./scripts/update-packages.sh",
     "reinstall:all-packages": "sh ./scripts/reinstall-packages.sh",
-    "pre-push": "node pre-push.js",
-    "cypress:open": "cypress open",
-    "cypress:run": "cypress run"
+    "pre-push": "bun pre-push.js",
+    "cypress:open": "bunx cypress open",
+    "cypress:run": "bunx cypress run"
   },
   "engines": {
     "node": ">=18.15.0",
-    "bun": ">=1.2.23",
-    "npm": "please-use-yarn",
-    "yarn": ">= 1.22.19"
+    "bun": ">=1.2.23"
   },
   "dependencies": {
     "bson": "^6.10.4",
@@ -55,6 +53,7 @@
     "@typescript-eslint/parser": "^8.45.0",
     "babel-loader": "^10.0.0",
     "babel-plugin-module-resolver": "^5.0.2",
+    "bun-types": "latest",
     "conventional-changelog-cli": "^5.0.0",
     "eslint": "^9.36.0",
     "eslint-config-airbnb-base": "^15.0.0",
@@ -67,7 +66,6 @@
     "eslint-plugin-vue": "^10.5.0",
     "fs-extra": "^11.3.2",
     "husky": "^9.1.7",
-    "lerna": "^9.0.0",
     "lint-staged": "^16.2.3",
     "minimist": "^1.2.8",
     "next-transpile-modules": "^10.0.1",
@@ -85,6 +83,5 @@
       "prettier --write",
       "git add"
     ]
-  },
-  "packageManager": "yarn@1.22.22+sha1.ac34549e6aa8e7ead463a7407e1c7390f61a6610"
+  }
 }

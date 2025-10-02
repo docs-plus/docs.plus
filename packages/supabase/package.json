@@ -4,12 +4,12 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "update:packages": "npx npm-check-updates -u",
+    "update:packages": "bunx npm-check-updates -u",
     "start": "dotenv -- supabase start",
     "stop": "dotenv -- supabase stop",
     "status": "dotenv -- supabase status",
     "db:reset": "dotenv -- supabase db reset --debug",
-    "supabase:types": "dotenv -- npx supabase gen types typescript --local > ../webapp/types/supabase.ts"
+    "supabase:types": "dotenv -- bunx supabase gen types typescript --local > ../webapp/types/supabase.ts"
   },
   "keywords": [],
   "author": "",

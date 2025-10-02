@@ -2,7 +2,7 @@ const { execSync } = require('child_process')
 
 try {
   console.log('Running Next.js build...')
-  execSync('npm run build', { stdio: 'inherit' })
+  execSync('bun run build', { stdio: 'inherit' })
   console.log('Build successful. Proceeding with push.')
   process.exit(0)
 } catch (error) {

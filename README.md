@@ -12,8 +12,7 @@
 
 Ensure you have the following installed:
 
-- **Node.js** (version `>=18.15.0`)
-- **Yarn** - [Installation Guide](https://yarnpkg.com/getting-started/install)
+- **Bun** (version `>=1.2.23`) - [Installation Guide](https://bun.sh/docs/installation)
 - **PostgreSQL** - Download from the [official PostgreSQL website](https://www.postgresql.org/download/) or run via Docker.
 - **Supabase** - You can choose between:
   - [Self-hosted](https://supabase.com/docs/guides/self-hosting/docker)
@@ -34,13 +33,13 @@ Follow these steps to set up your development environment:
 2. **Install Dependencies**
 
    ```bash
-   yarn
+   bun install
    ```
 
 3. **Build Dependencies**
 
    ```bash
-   yarn build
+   bun run build
    ```
 
 4. **Install Supabase CLI**

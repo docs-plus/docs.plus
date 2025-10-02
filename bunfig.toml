@@ -1,0 +1,20 @@
+# Bun workspace configuration
+# See: https://bun.sh/docs/runtime/bunfig
+
+[install]
+# Optional peer dependencies
+optional = true
+
+# Exact versions
+exact = false
+
+# Registry configuration
+registry = "https://registry.npmjs.org"
+
+[install.scopes]
+# Scoped registry configurations can be added here if needed
+# "@myorg" = { url = "https://registry.myorg.com", token = "$MY_TOKEN" }
+
+[test]
+# Test runner configuration
+preload = []
