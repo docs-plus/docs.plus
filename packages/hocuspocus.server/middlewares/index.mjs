@@ -4,7 +4,7 @@ import helmet from 'helmet'
 import chalk from 'chalk'
 import cors from 'cors'
 import fileUpload from 'express-fileupload'
-import rateLimit from 'express-rate-limit'
+import rateLimit, { ipKeyGenerator } from 'express-rate-limit'
 
 const FOUR_MEG = 4 * 1024 * 1024
 const MAX_UPLOAD_SIZE = FOUR_MEG //  maxFileSize
@@ -23,8 +23,10 @@ const createMiddleware = () => {
     legacyHeaders: false,
     skipSuccessfulRequests: false, // Count successful requests against limit
     keyGenerator: (req) => {
-      // Use both IP and user agent for better request identification
-      return `${req.ip}-${req.headers['user-agent']}`
+      // Use IPv6-aware key generator helper + user agent for better request identification
+      const ipKey = ipKeyGenerator(req)
+      const userAgent = req.headers['user-agent'] || 'unknown'
+      return `${ipKey}-${userAgent}`
     }
   })
 
