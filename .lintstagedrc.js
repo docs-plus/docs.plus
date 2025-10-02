@@ -1,3 +1,4 @@
 module.exports = {
-  "*": "yarn run lint:fix",
-};
+  'packages/**/*.{js,jsx,ts,tsx}': ['eslint --fix', 'prettier --write'],
+  'packages/**/*.{json,md,yml,yaml}': ['prettier --write']
+}

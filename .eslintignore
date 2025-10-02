@@ -1,1 +1,9 @@
-**/dist/**
+**/node_modules
+**/dist
+**/build
+**/.next
+**/.turbo
+**/coverage
+**/*.config.js
+**/*.config.ts
+**/next-env.d.ts
