@@ -166,8 +166,13 @@ export const useScrollAndLoad = ({
 
   useEffect(() => {
     if (!isDbSubscriptionReady || !isChannelDataLoaded) return
-    if (messageCount === 0) return
     if (isReadyToDisplayMessages) return
+
+    // If no messages, mark ready immediately
+    if (messageCount === 0) {
+      updateChatRoom('isReadyToDisplayMessages', true)
+      return
+    }
 
     let cancelScroll: (() => void) | undefined
     let cancelled = false
