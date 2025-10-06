@@ -132,7 +132,7 @@ BEGIN
     -- Logic differs based on whether anchor_message_id is provided
     IF anchor_message_id IS NULL THEN
         -- Standard logic without anchor (unchanged)
-        SELECT json_agg(t) INTO messages_result
+        SELECT COALESCE(json_agg(t), '[]'::json) INTO messages_result
         FROM (
             SELECT m.*,
                 json_build_object(
@@ -277,7 +277,7 @@ BEGIN
             UNION ALL
             SELECT * FROM (SELECT * FROM messages_after ORDER BY created_at DESC) as sorted_after
         )
-        SELECT json_agg(cm) INTO messages_result
+        SELECT COALESCE(json_agg(cm), '[]'::json) INTO messages_result
         FROM (
             SELECT * FROM combined_messages
             ORDER BY created_at DESC
@@ -286,7 +286,7 @@ BEGIN
     END IF;
 
     -- Query for the pinned messages
-    SELECT json_agg(pm) INTO pinned_result
+    SELECT COALESCE(json_agg(pm), '[]'::json) INTO pinned_result
     FROM public.pinned_messages pm
     JOIN public.messages m ON pm.message_id = m.id
     WHERE pm.channel_id = input_channel_id
