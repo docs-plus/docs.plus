@@ -230,8 +230,10 @@ export const eventsHub = (router: NextRouter) => {
 
     const [docSlug, ...filterSlugs] = segments
 
-    // Decode and compare to handle slugs with spaces/special chars
-    const updatedFilters = filterSlugs.filter((segment) => decodeURIComponent(segment) !== slug)
+    // Case-insensitive comparison to handle URL encoding and case differences
+    const updatedFilters = filterSlugs.filter(
+      (segment) => slug && decodeURIComponent(segment).toLowerCase() !== slug.toLowerCase()
+    )
 
     url.pathname = `/${docSlug}${updatedFilters.length ? '/' + updatedFilters.join('/') : ''}`
 
