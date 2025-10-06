@@ -31,7 +31,7 @@ const filterTreeDFS = (node: Node | null, filters: any[], result: ResultItem[]):
   if (!node) return
 
   for (const filter of filters) {
-    if (node.heading.toLowerCase().includes(filter.toLowerCase())) {
+    if (filter && node.heading.toLowerCase().includes(filter.toLowerCase())) {
       const weight = node.level * 10 + 100
       result.push({ ...node, weight, filterBy: filter })
     }
