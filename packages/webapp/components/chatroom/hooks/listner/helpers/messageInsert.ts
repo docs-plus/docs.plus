@@ -69,18 +69,22 @@ export const messageInsert = async (payload: any) => {
     return setOrUpdateMessage(channelId, payload.new.id, newMessage)
   }
 
-  const msgs = [...getChannelMessages(channelId)?.values()]
+  const msgs = [...(getChannelMessages(channelId)?.values() ?? [])]
 
   // get last message and check if the last message is from the same user
   const lastMessage0 = msgs.pop()
   const lastMessage1 = msgs.pop()
 
   // if the last message is from the same user, we need to group the messages
-  const newInstanceOfMessages = groupedMessages([lastMessage1, lastMessage0, newMessage])
+  const newInstanceOfMessages = groupedMessages(
+    [lastMessage1, lastMessage0, newMessage].filter(Boolean)
+  )
 
   // TODO: do we need anymore this?!/!
   setLastMessage(channelId, newInstanceOfMessages.at(-1))
 
-  setOrUpdateMessage(channelId, lastMessage0.id, newInstanceOfMessages.at(1))
-  setOrUpdateMessage(channelId, newMessage.id, newInstanceOfMessages.at(2))
+  if (lastMessage0) {
+    setOrUpdateMessage(channelId, lastMessage0.id, newInstanceOfMessages.at(lastMessage1 ? 1 : 0))
+  }
+  setOrUpdateMessage(channelId, newMessage.id, newInstanceOfMessages.at(-1))
 }
