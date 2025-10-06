@@ -23,7 +23,7 @@ const ToggleSection = ({ name, className, description, value, checked, onChange 
       <p className="text-base font-bold">{name}</p>
       <div className="flex w-full flex-row items-center justify-between align-middle">
         <p className="text-sm text-gray-500">{description}</p>
-        <div className="ml-2 mr-6 h-full flex-col border-l px-3 py-2">
+        <div className="mr-6 ml-2 h-full flex-col border-l px-3 py-2">
           <Toggle id={value} checked={checked} onChange={onChange} />
         </div>
       </div>
@@ -162,7 +162,7 @@ const FilterModal = ({ totalHeading = 0, className = '' }: any) => {
             isSectionOpen ? 'max-h-40' : 'max-h-0'
           }`}>
           <ToggleSection
-            className="rounded-md bg-base-200 px-2 py-1 shadow-inner"
+            className="bg-base-200 rounded-md px-2 py-1 shadow-inner"
             name="Filter Algorithm"
             description="Switch between relevant-only OR sequential heading filtering"
             checked={filterAlgorithm}
@@ -172,7 +172,7 @@ const FilterModal = ({ totalHeading = 0, className = '' }: any) => {
       </label>
 
       {sortedSlugs.length > 0 && (
-        <div className="mb-3 mt-2 py-2">
+        <div className="mt-2 mb-3 py-2">
           <div className="flex items-center text-sm">
             <p className="flex space-x-1 font-semibold">
               <TbFilterCheck size={16} fill="rgba(42,42,42)" />
@@ -190,12 +190,14 @@ const FilterModal = ({ totalHeading = 0, className = '' }: any) => {
       <div className="flex items-center pt-2">
         <button
           className="btn btn-sm w-3/12"
+          disabled={sortedSlugs.length === 0}
           onClick={() => {
             setFilterInput('')
             setTotalSearch(0)
             setTotalHeadings(totalHeading)
             setFilteredHeadings([])
             highlightTocHeadings([])
+            resetFilterHandler()
           }}>
           <span>Clear</span>
         </button>
