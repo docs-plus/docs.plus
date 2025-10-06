@@ -45,7 +45,7 @@ execute function add_channel_creator_as_admin();
 
 comment on trigger channel_creator_as_admin on public.channels is
 'Automatically adds the channel creator as an admin member when a new channel is created.';
-
+--INFO: Disable this trigger for now
 /**
  * Function: create_channel_notification
  * Description: Creates a system notification message when a new channel is created
@@ -53,41 +53,41 @@ comment on trigger channel_creator_as_admin on public.channels is
  * Action: Creates a notification message in the new channel
  * Returns: The NEW record (trigger standard)
  */
-create or replace function create_channel_notification()
-returns trigger as $$
-begin
-    insert into public.messages (
-        channel_id,
-        type,
-        user_id,
-        content,
-        metadata
-    )
-    values (
-        new.id,
-        'notification',
-        '992bb85e-78f8-4747-981a-fd63d9317ff1', -- System user ID
-        'Channel created',
-        jsonb_build_object(
-            'type', 'channel_created'
-        )
-    );
+-- create or replace function create_channel_notification()
+-- returns trigger as $$
+-- begin
+--     insert into public.messages (
+--         channel_id,
+--         type,
+--         user_id,
+--         content,
+--         metadata
+--     )
+--     values (
+--         new.id,
+--         'notification',
+--         '992bb85e-78f8-4747-981a-fd63d9317ff1', -- System user ID
+--         'Channel created',
+--         jsonb_build_object(
+--             'type', 'channel_created'
+--         )
+--     );
 
-    return new;
-end;
-$$ language plpgsql;
+--     return new;
+-- end;
+-- $$ language plpgsql;
 
-comment on function create_channel_notification() is
-'Creates a system notification message when a new channel is created.';
+-- comment on function create_channel_notification() is
+-- 'Creates a system notification message when a new channel is created.';
 
 -- Trigger: notify_channel_creation
-create trigger notify_channel_creation
-after insert on public.channels
-for each row
-execute function create_channel_notification();
+-- create trigger notify_channel_creation
+-- after insert on public.channels
+-- for each row
+-- execute function create_channel_notification();
 
-comment on trigger notify_channel_creation on public.channels is
-'Creates a notification message when a new channel is created.';
+-- comment on trigger notify_channel_creation on public.channels is
+-- 'Creates a notification message when a new channel is created.';
 
 /* Legacy code - kept for reference but commented out
 create or replace function update_last_read_time()
@@ -114,45 +114,46 @@ execute function update_last_read_time();
  * Action: Creates a notification message with the new channel name
  * Returns: The NEW record (trigger standard)
  */
-create or replace function notify_channel_name_change()
-returns trigger as $$
-begin
-    if old.name is distinct from new.name then
-        insert into public.messages (
-            channel_id,
-            type,
-            user_id,
-            content,
-            metadata
-        )
-        values (
-            new.id,
-            'notification',
-            '992bb85e-78f8-4747-981a-fd63d9317ff1', -- System user ID
-            'Channel renamed to "' || new.name || '"',
-            jsonb_build_object(
-                'type', 'channel_name_changed',
-                'name', new.name
-            )
-        );
-    end if;
+--INFO: Disable this trigger for now
+-- create or replace function notify_channel_name_change()
+-- returns trigger as $$
+-- begin
+--     if old.name is distinct from new.name then
+--         insert into public.messages (
+--             channel_id,
+--             type,
+--             user_id,
+--             content,
+--             metadata
+--         )
+--         values (
+--             new.id,
+--             'notification',
+--             '992bb85e-78f8-4747-981a-fd63d9317ff1', -- System user ID
+--             'Channel renamed to "' || new.name || '"',
+--             jsonb_build_object(
+--                 'type', 'channel_name_changed',
+--                 'name', new.name
+--             )
+--         );
+--     end if;
 
-    return new;
-end;
-$$ language plpgsql;
+--     return new;
+-- end;
+-- $$ language plpgsql;
 
-comment on function notify_channel_name_change() is
-'Creates a system notification message when a channel name is changed.';
+-- comment on function notify_channel_name_change() is
+-- 'Creates a system notification message when a channel name is changed.';
 
 -- Trigger: notify_on_channel_name_change
-create trigger notify_on_channel_name_change
-after update of name on public.channels
-for each row
-when (old.name is distinct from new.name)
-execute function notify_channel_name_change();
+-- create trigger notify_on_channel_name_change
+-- after update of name on public.channels
+-- for each row
+-- when (old.name is distinct from new.name)
+-- execute function notify_channel_name_change();
 
-comment on trigger notify_on_channel_name_change on public.channels is
-'Creates a notification when a channel name is changed.';
+-- comment on trigger notify_on_channel_name_change on public.channels is
+-- 'Creates a notification when a channel name is changed.';
 
 /**
  * Function: notify_user_join_channel
@@ -161,60 +162,61 @@ comment on trigger notify_on_channel_name_change on public.channels is
  * Action: Creates a notification message showing who joined
  * Returns: The NEW record (trigger standard)
  */
-create or replace function notify_user_join_channel()
-returns trigger as $$
-declare
-    joining_username text;
-    channel_workspace_id varchar(36);
-begin
-    -- Skip if this is a workspace channel
-    select workspace_id into channel_workspace_id
-    from public.channels
-    where id = new.channel_id;
+--INFO: Disable this trigger for now
+-- create or replace function notify_user_join_channel()
+-- returns trigger as $$
+-- declare
+--     joining_username text;
+--     channel_workspace_id varchar(36);
+-- begin
+--     -- Skip if this is a workspace channel
+--     select workspace_id into channel_workspace_id
+--     from public.channels
+--     where id = new.channel_id;
 
-    if channel_workspace_id = new.channel_id then
-        return new;
-    end if;
+--     if channel_workspace_id = new.channel_id then
+--         return new;
+--     end if;
 
-    -- Get the username of the joining member
-    select username into joining_username
-    from public.users
-    where id = new.member_id;
+--     -- Get the username of the joining member
+--     select username into joining_username
+--     from public.users
+--     where id = new.member_id;
 
-    -- Create the notification message
-    insert into public.messages (
-        user_id,
-        channel_id,
-        type,
-        content,
-        metadata
-    )
-    values (
-        new.member_id,
-        new.channel_id,
-        'notification',
-        joining_username || ' joined the channel',
-        jsonb_build_object(
-            'type', 'user_join_channel',
-            'user_name', joining_username
-        )
-    );
+--     -- Create the notification message
+--     insert into public.messages (
+--         user_id,
+--         channel_id,
+--         type,
+--         content,
+--         metadata
+--     )
+--     values (
+--         new.member_id,
+--         new.channel_id,
+--         'notification',
+--         joining_username || ' joined the channel',
+--         jsonb_build_object(
+--             'type', 'user_join_channel',
+--             'user_name', joining_username
+--         )
+--     );
 
-    return new;
-end;
-$$ language plpgsql;
+--     return new;
+-- end;
+-- $$ language plpgsql;
 
-comment on function notify_user_join_channel() is
-'Creates a notification message when a user joins a channel.';
+-- comment on function notify_user_join_channel() is
+-- 'Creates a notification message when a user joins a channel.';
 
 -- Trigger: notify_on_user_join
-create trigger notify_on_user_join
-after insert on public.channel_members
-for each row
-execute function notify_user_join_channel();
+-- create trigger notify_on_user_join
+-- after insert on public.channel_members
+-- for each row
+-- execute function notify_user_join_channel();
 
-comment on trigger notify_on_user_join on public.channel_members is
-'Creates a notification when a user joins a channel.';
+-- comment on trigger notify_on_user_join on public.channel_members is
+-- 'Creates a notification when a user joins a channel.';
 
 /**
  * Function: notify_user_leave_channel
@@ -223,52 +225,53 @@ comment on trigger notify_on_user_join on public.channel_members is
  * Action: Creates a notification message showing who left
  * Returns: The OLD record (trigger standard)
  */
-create or replace function notify_user_leave_channel()
-returns trigger as $$
-declare
-    leaving_username text;
-begin
-    -- Get the username of the leaving member
-    select username into leaving_username
-    from public.users
-    where id = old.member_id;
+--INFO: Disable this trigger for now
+-- create or replace function notify_user_leave_channel()
+-- returns trigger as $$
+-- declare
+--     leaving_username text;
+-- begin
+--     -- Get the username of the leaving member
+--     select username into leaving_username
+--     from public.users
+--     where id = old.member_id;
 
-    -- Check if the channel still exists before creating notification
-    if exists (select 1 from public.channels where id = old.channel_id) then
-        insert into public.messages (
-            user_id,
-            channel_id,
-            type,
-            content,
-            metadata
-        )
-        values (
-            old.member_id,
-            old.channel_id,
-            'notification',
-            leaving_username || ' left the channel',
-            jsonb_build_object(
-                'type', 'user_leave_channel',
-                'user_name', leaving_username
-            )
-        );
-    end if;
+--     -- Check if the channel still exists before creating notification
+--     if exists (select 1 from public.channels where id = old.channel_id) then
+--         insert into public.messages (
+--             user_id,
+--             channel_id,
+--             type,
+--             content,
+--             metadata
+--         )
+--         values (
+--             old.member_id,
+--             old.channel_id,
+--             'notification',
+--             leaving_username || ' left the channel',
+--             jsonb_build_object(
+--                 'type', 'user_leave_channel',
+--                 'user_name', leaving_username
+--             )
+--         );
+--     end if;
 
-    return old;
-end;
-$$ language plpgsql;
+--     return old;
+-- end;
+-- $$ language plpgsql;
 
-comment on function notify_user_leave_channel() is
-'Creates a notification message when a user leaves a channel.';
+-- comment on function notify_user_leave_channel() is
+-- 'Creates a notification message when a user leaves a channel.';
 
--- Trigger: notify_on_user_leave
-create trigger notify_on_user_leave
-after delete on public.channel_members
-for each row
-execute function notify_user_leave_channel();
+-- -- Trigger: notify_on_user_leave
+-- create trigger notify_on_user_leave
+-- after delete on public.channel_members
+-- for each row
+-- execute function notify_user_leave_channel();
 
-comment on trigger notify_on_user_leave on public.channel_members is
-'Creates a notification when a user leaves a channel.';
+-- comment on trigger notify_on_user_leave on public.channel_members is
+-- 'Creates a notification when a user leaves a channel.';
 
 /**
  * Function: increment_channel_member_count
