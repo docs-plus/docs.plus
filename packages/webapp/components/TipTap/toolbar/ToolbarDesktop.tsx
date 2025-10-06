@@ -6,7 +6,7 @@ import Icon from '@components/TipTap/toolbar/Icon'
 import FilterModal from './FilterModal'
 import SelectHeadingBox from './SelectHeadingBox'
 import { useAuthStore, useStore } from '@stores'
-import Dropdown from '@components/ui/Dropdown'
+import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/Popover'
 import Loading from '@components/ui/Loading'
 import Modal from '@components/ui/Modal'
 import ToolbarSkeleton from '@components/skeleton/ToolbarLoader'
@@ -158,9 +158,16 @@ const ToolbarDesktop = () => {
 
         <div className="divided"></div>
 
-        <Dropdown button={<InsertMedaiButton />} className="dropdown-bottom dropdown-start">
-          <InsertMultimediaForm />
-        </Dropdown>
+        <Popover placement="bottom-start">
+          <PopoverTrigger asChild>
+            <div>
+              <InsertMedaiButton />
+            </div>
+          </PopoverTrigger>
+          <PopoverContent className="bg-base-100 rounded-box border border-gray-300 p-2 shadow-md">
+            <InsertMultimediaForm />
+          </PopoverContent>
+        </Popover>
 
         <ToolbarButton
           onClick={() => createComment(editor)}
@@ -225,18 +232,39 @@ const ToolbarDesktop = () => {
 
           {user && <div className="divided"></div>}
 
-          <Dropdown button={<BookmarkButton />} className="dropdown-bottom dropdown-end">
-            <BookmarkModal className="z-50 p-2" />
-          </Dropdown>
+          <Popover placement="bottom-end">
+            <PopoverTrigger asChild>
+              <div>
+                <BookmarkButton />
+              </div>
+            </PopoverTrigger>
+            <PopoverContent className="bg-base-100 rounded-box z-50 w-[470px] border border-gray-300 p-2 shadow-md">
+              <BookmarkModal />
+            </PopoverContent>
+          </Popover>
 
-          <Dropdown button={<FilterButton />} className="dropdown-bottom dropdown-end">
-            <FilterModal className="z-50 p-2" />
-          </Dropdown>
+          <Popover placement="bottom-end">
+            <PopoverTrigger asChild>
+              <div>
+                <FilterButton />
+              </div>
+            </PopoverTrigger>
+            <PopoverContent className="bg-base-100 rounded-box z-50 w-96 border border-gray-300 p-2 shadow-md">
+              <FilterModal />
+            </PopoverContent>
+          </Popover>
           <div className="divided"></div>
 
-          <Dropdown button={<GearButton />} className="dropdown-bottom dropdown-end">
-            <GearModal className="z-50 p-2" />
-          </Dropdown>
+          <Popover placement="bottom-end">
+            <PopoverTrigger asChild>
+              <div>
+                <GearButton />
+              </div>
+            </PopoverTrigger>
+            <PopoverContent className="bg-base-100 rounded-box z-50 w-96 border border-gray-300 p-2 shadow-md">
+              <GearModal />
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
       <Modal asAChild={false} id="modal_profile" isOpen={isModalOpen} setIsOpen={setModalOpen}>

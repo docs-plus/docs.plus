@@ -2,11 +2,11 @@ import { useEffect } from 'react'
 import { useApi } from '@hooks/useApi'
 import { getBookmarkStats, getUserBookmarks } from '@api'
 import { useAuthStore, useChatStore, useStore } from '@stores'
-import { useDropdown } from '@components/ui/Dropdown'
+import { usePopoverState } from '@components/ui/Popover'
 
 export const useBookmarkSummary = () => {
   const { workspaceId } = useStore((state) => state.settings)
-  const { isOpen } = useDropdown()
+  const { isOpen } = usePopoverState()
   const user = useAuthStore((state) => state.profile)
   const {
     setBookmarkSummary,
@@ -19,7 +19,6 @@ export const useBookmarkSummary = () => {
   const { request: statsRequest } = useApi(getBookmarkStats, null, false)
   const { request: inProgressRequest } = useApi(getUserBookmarks, null, false)
   const { request: archivedRequest } = useApi(getUserBookmarks, null, false)
-  const { request: readRequest } = useApi(getUserBookmarks, null, false)
 
   useEffect(() => {
     if (!user || !workspaceId) return
@@ -38,8 +37,6 @@ export const useBookmarkSummary = () => {
           archived: false,
           limit: 20
         })
-
-        console.log('inProgressData', inProgressData)
 
         if (inProgressError) throw inProgressError
 
