@@ -4,7 +4,7 @@ import toast from 'react-hot-toast'
 import { MdCloudUpload, MdOutlineImage, MdAudiotrack } from 'react-icons/md'
 import { FaYoutube, FaVimeo, FaSoundcloud, FaXTwitter } from 'react-icons/fa6'
 import { FiFilm } from 'react-icons/fi'
-import { useDropdown } from '@components/ui/Dropdown'
+import { usePopoverState } from '@components/ui/Popover'
 
 // Types and Interfaces
 type MediaType = 'Picture' | 'Video' | 'Audio' | 'Youtube' | 'Vimeo' | 'SoundCloud' | 'x.com'
@@ -13,16 +13,6 @@ interface MediaConfig {
   icon: React.ComponentType<{ size?: number }>
   command: string
   regex: RegExp
-}
-
-interface UploadData {
-  uploadId: string
-  progress: number
-  fileName: string
-  fileType: string
-  width?: number
-  height?: number
-  localUrl?: string
 }
 
 interface ImageDimensions {
@@ -390,7 +380,7 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
   const [mediaType, setMediaType] = useState<MediaType>('Picture')
   const inputRef = useRef<HTMLInputElement>(null)
   const { uploadFile } = useUploadManager(editor)
-  const { close: closeDropdown } = useDropdown()
+  const { close } = usePopoverState()
 
   // Listen for clipboard file uploads from the extension
   useEffect(() => {
@@ -430,14 +420,14 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
     e.preventDefault()
     if (mediaURL.trim()) {
       onSubmit(mediaURL, mediaType)
-      closeDropdown()
+      close()
     }
   }
 
   const handleFileUpload = (file: File) => {
     if (file && docMetadata) {
       uploadFile(file, docMetadata)
-      closeDropdown()
+      close()
     }
   }
 
