@@ -61,8 +61,8 @@ const MessageComposer = ({
   const { channelId } = useChatroomContext()
 
   const user = useAuthStore((state) => state.profile)
-  const setOrUpdateUserPresence = useChatStore((state: any) => state.setOrUpdateUserPresence)
-  const usersPresence = useStore((state: any) => state.usersPresence)
+  // const setOrUpdateUserPresence = useChatStore((state: any) => state.setOrUpdateUserPresence)
+  // const usersPresence = useStore((state: any) => state.usersPresence)
   const startThreadMessage = useChatStore((state) => state.startThreadMessage)
   const channels = useChatStore((state) => state.channels)
   const { workspaceId } = useStore((state) => state.settings)
@@ -120,13 +120,13 @@ const MessageComposer = ({
   }, [replyMessageMemory, editMessageMemory, commentMessageMemory])
 
   // User presence management, keep users data update insted open a new portal (supabase realtime)
-  const updateUserPresence = useCallback(() => {
-    const users = [replyMessageMemory?.user_details, editMessageMemory?.user_details]
-      .filter(Boolean)
-      .filter((user) => user && !usersPresence.has(user.id))
+  // const updateUserPresence = useCallback(() => {
+  //   const users = [replyMessageMemory?.user_details, editMessageMemory?.user_details]
+  //     .filter(Boolean)
+  //     .filter((user) => user && !usersPresence.has(user.id))
 
-    users.forEach((user) => user && setOrUpdateUserPresence(user.id, user))
-  }, [replyMessageMemory, editMessageMemory, usersPresence, setOrUpdateUserPresence])
+  //   users.forEach((user) => user && setOrUpdateUserPresence(user.id, user))
+  // }, [replyMessageMemory, editMessageMemory, usersPresence, setOrUpdateUserPresence])
 
   // Load persisted draft from IndexedDB on mount or channel change
   useEffect(() => {
@@ -419,7 +419,7 @@ const MessageComposer = ({
       editor,
       validateSubmission,
       prepareContent,
-      updateUserPresence,
+      // updateUserPresence,
       sendSingleMessage,
       sendChunkedMessages,
       cleanupAfterSubmit
