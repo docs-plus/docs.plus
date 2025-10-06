@@ -226,14 +226,14 @@ export const eventsHub = (router: NextRouter) => {
 
     const url = new URL(location.href)
     const segments = url.pathname.split('/').filter(Boolean)
-    if (segments.length === 0) return
+    if (!segments.length) return
 
-    const docSlug = segments[0]
-    const filterSlugs = segments.slice(1)
-    const idx = filterSlugs.indexOf(slug)
-    if (idx !== -1) filterSlugs.splice(idx, 1)
+    const [docSlug, ...filterSlugs] = segments
 
-    url.pathname = `/${docSlug}${filterSlugs.length ? '/' + filterSlugs.join('/') : ''}`
+    // Decode and compare to handle slugs with spaces/special chars
+    const updatedFilters = filterSlugs.filter((segment) => decodeURIComponent(segment) !== slug)
+
+    url.pathname = `/${docSlug}${updatedFilters.length ? '/' + updatedFilters.join('/') : ''}`
 
     router.push(url.toString(), undefined, { shallow: true })
     setWorkspaceEditorSetting('applyingFilters', true)
