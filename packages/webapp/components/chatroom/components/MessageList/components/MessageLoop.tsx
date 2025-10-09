@@ -103,9 +103,11 @@ export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props)
               transform: `translateY(${virtualRow.start}px)`
             }}>
             {showUnreadIndicator && <UnreadIndicatorLine index={virtualRow.index} />}
-            {showDateSeparator && message.metadata?.type !== 'channel_created' && (
-              <DateChip date={message.created_at} />
-            )}
+            {showDateSeparator &&
+              message.metadata?.type !== 'channel_created' &&
+              message.metadata?.type !== 'user_join_workspace' && (
+                <DateChip date={message.created_at} />
+              )}
             {content}
           </div>
         )
