@@ -100,7 +100,7 @@ const FilterBar = ({
         />
       ))}
 
-      {displayRestButton && (
+      {displayRestButton && sortedSlugs.length > 0 && (
         <button
           className="btn btn-ghost btn-xs ml-3 text-xs font-medium opacity-0 transition-all group-hover:opacity-100"
           onClick={resetFilterHandler}>
