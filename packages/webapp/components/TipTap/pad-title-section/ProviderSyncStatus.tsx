@@ -1,5 +1,5 @@
 import { useStore } from '@stores'
-import { MdSync, MdCloudDone, MdCloudOff, MdCloudQueue } from 'react-icons/md'
+import { MdSync, MdCloudDone, MdCloudOff, MdCloudQueue, MdWifiOff, MdWifi } from 'react-icons/md'
 import { Tooltip } from '@components/ui/Tooltip'
 
 const ProviderSyncStatus = () => {
@@ -23,6 +23,18 @@ const ProviderSyncStatus = () => {
       text: '',
       tooltip: 'All changes saved to database',
       className: 'text-gray-600'
+    },
+    online: {
+      icon: <MdWifi size={18} />,
+      text: 'Online',
+      tooltip: 'Back online! Reconnecting...',
+      className: 'text-green-600'
+    },
+    offline: {
+      icon: <MdWifiOff size={18} />,
+      text: 'Offline',
+      tooltip: 'You are offline. Changes will sync when you reconnect.',
+      className: 'text-orange-500'
     },
     error: {
       icon: <MdCloudOff size={18} />,

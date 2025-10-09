@@ -59,7 +59,11 @@ const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
           // },
           onDisconnect: (data) => {
             isSyncedRef.current = false
-            if (data.event?.code && data.event.code !== 1000) {
+
+            // Check if browser is offline
+            if (typeof navigator !== 'undefined' && !navigator.onLine) {
+              setWorkspaceSetting('providerStatus', 'offline')
+            } else if (data.event?.code && data.event.code !== 1000) {
               // Non-normal closure, show error
               setWorkspaceSetting('providerStatus', 'error')
             }
@@ -129,6 +133,11 @@ const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
       // Only track local updates, ignore remote updates from provider
       if (origin === providerRef.current) return
 
+      // Don't change state if browser is offline
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        return
+      }
+
       setWorkspaceSetting('providerStatus', 'saving')
 
       // After 500ms of no typing → "synced" (synced to server memory)
@@ -143,6 +152,48 @@ const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
       setSyncedState.cancel() // Cancel pending debounced calls
     }
   }, [setSyncedState, setWorkspaceSetting])
+
+  // Track browser online/offline state
+  useEffect(() => {
+    let onlineTimeout: NodeJS.Timeout | null = null
+
+    const handleOnline = () => {
+      console.info('Browser is online')
+
+      // Show "online" status immediately
+      setWorkspaceSetting('providerStatus', 'online')
+
+      // After 1.5 seconds, transition to "synced"
+      onlineTimeout = setTimeout(() => {
+        if (providerRef.current) {
+          setWorkspaceSetting('providerStatus', 'synced')
+        }
+      }, 1500)
+    }
+
+    const handleOffline = () => {
+      console.info('Browser is offline')
+      setWorkspaceSetting('providerStatus', 'offline')
+
+      // Clear any pending online timeout
+      if (onlineTimeout) {
+        clearTimeout(onlineTimeout)
+      }
+    }
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('online', handleOnline)
+      window.addEventListener('offline', handleOffline)
+
+      return () => {
+        window.removeEventListener('online', handleOnline)
+        window.removeEventListener('offline', handleOffline)
+        if (onlineTimeout) {
+          clearTimeout(onlineTimeout)
+        }
+      }
+    }
+  }, [setWorkspaceSetting])
 
   // NOTE: This is not working yet, I need reconsider for offline mode
   // Store the Y document in the browser

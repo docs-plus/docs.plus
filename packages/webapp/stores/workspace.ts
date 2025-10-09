@@ -17,7 +17,7 @@ type Workspace = {
   workspaceId?: string
   metadata?: any
   broadcaster?: any
-  providerStatus: 'saved' | 'synced' | 'saving' | 'error'
+  providerStatus: 'saved' | 'synced' | 'saving' | 'error' | 'offline' | 'online'
   editor: EditorSettings
   hocuspocusProvider?: any
   deviceDetect?: any
