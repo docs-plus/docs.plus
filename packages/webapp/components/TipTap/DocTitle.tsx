@@ -169,7 +169,7 @@ const DocTitle = ({ className }: { className?: string }) => {
         />
       </Tooltip>
       <div
-        className={`mx-2 flex size-4 items-center ${isLoading || showSaved ? 'visible' : 'invisible'}`}>
+        className={`mx-2 flex size-4 items-center ${isLoading || showSaved ? 'flex' : 'hidden'}`}>
         <AiOutlineLoading3Quarters
           className={`${isLoading ? 'show' : 'hidden'} h-4 w-4 animate-spin text-blue-500`}
         />
