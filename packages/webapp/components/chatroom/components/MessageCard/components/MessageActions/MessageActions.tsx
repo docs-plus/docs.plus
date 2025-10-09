@@ -45,7 +45,6 @@ MessageActions.ReplyInThread = ReplyInThreadButton
 MessageActions.CopyLink = CopyLinkAction
 
 // MoreActionsDropdown
-MessageActions.MoreActions = MoreActionsDropdown
 MessageActions.CopyToDoc = CopyToDocAction
 MessageActions.Delete = DeleteAction
 MessageActions.Edit = EditAction

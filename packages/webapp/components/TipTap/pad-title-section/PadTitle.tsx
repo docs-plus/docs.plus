@@ -16,7 +16,7 @@ import TabLayout from '@components/pages/TabLayout'
 import SignInPanel from '@components/pages/panels/SignInPanel'
 import { FaRegBell } from 'react-icons/fa'
 import { NotificationPanel } from '../../notificationPanel/desktop/NotificationPanel'
-import Dropdown from '@components/ui/Dropdown'
+import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/Popover'
 import { MdHistory, MdGroup } from 'react-icons/md'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 
@@ -69,9 +69,8 @@ const PadTitle = () => {
             )}
 
             {isAuthServiceAvailable && user && (
-              <Dropdown
-                className="dropdown-bottom dropdown-end"
-                button={
+              <Popover placement="bottom-end">
+                <PopoverTrigger asChild>
                   <Button
                     className="btn-circle btn-ghost btn-outline tooltip tooltip-bottom relative border-gray-300"
                     data-tip="Notifications">
@@ -82,9 +81,11 @@ const PadTitle = () => {
                       </div>
                     )}
                   </Button>
-                }>
-                <NotificationPanel />
-              </Dropdown>
+                </PopoverTrigger>
+                <PopoverContent className="bg-base-100 rounded-box z-50 w-[480px] border border-gray-300 p-2 shadow-md">
+                  <NotificationPanel />
+                </PopoverContent>
+              </Popover>
             )}
 
             {isAuthServiceAvailable && (
