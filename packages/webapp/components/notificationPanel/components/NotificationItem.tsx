@@ -8,6 +8,7 @@ import { CHAT_OPEN } from '@services/eventsHub'
 import { MdLink } from 'react-icons/md'
 import * as toast from '@components/toast'
 import NotificationBreadcrumb from './NotificationBreadcrumb'
+import { usePopoverState } from '@components/ui/Popover'
 
 export const NotificationItem = ({ notification }: { notification: any }) => {
   const { handleMarkAsRead } = useMarkNotificationAsRead()
@@ -18,6 +19,7 @@ export const NotificationItem = ({ notification }: { notification: any }) => {
 
   const { headingId } = useChatStore((state) => state.chatRoom)
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
+  const { close: closePopover } = usePopoverState()
 
   const handleViewNotification = (id: string, notification: any) => {
     // put the channelId and also the messageId in the uil history in order to later use it for fetching the message
@@ -29,8 +31,11 @@ export const NotificationItem = ({ notification }: { notification: any }) => {
     PubSub.publish(CHAT_OPEN, {
       headingId: channelId,
       toggleRoom: false,
-      fetchMsgsFromId: messageId
+      fetchMsgsFromId: messageId,
+      scroll2Heading: true
     })
+
+    closePopover()
   }
 
   const handleCopyUrl = (notification: any) => {
@@ -102,7 +107,7 @@ export const NotificationItem = ({ notification }: { notification: any }) => {
           )}
           <button
             onClick={() => handleViewNotification(notification.message_id, notification)}
-            className="btn btn-sm rounded-md bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-100">
+            className="btn btn-sm ml-auto rounded-md bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-100">
             View
           </button>
         </div>

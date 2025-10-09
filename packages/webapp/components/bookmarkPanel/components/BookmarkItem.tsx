@@ -1,29 +1,25 @@
 import { Avatar } from '@components/ui/Avatar'
 import { formatTimeAgo } from '../../notificationPanel/helpers'
-import { useChatStore, useStore } from '@stores'
+import { useChatStore } from '@stores'
 import PubSub from 'pubsub-js'
 import { CHAT_OPEN } from '@services/eventsHub'
 import {
   MdLink,
-  MdArchive,
-  MdCheckCircle,
-  MdMoreVert,
-  MdOutlineBookmarkBorder,
   MdOutlineBookmarkAdded,
   MdOutlineVisibility,
   MdOutlineInventory2,
   MdOutlineBookmarkRemove
 } from 'react-icons/md'
-import { BsBookmarkFill } from 'react-icons/bs'
 import * as toast from '@components/toast'
 import { archiveBookmark, markBookmarkAsRead, toggleMessageBookmark } from '@api'
+import { usePopoverState } from '../../ui/Popover'
 
 export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {
   const { bookmarkActiveTab, removeBookmark, updateBookmarkStatus, moveBookmarkBetweenTabs } =
     useChatStore((state) => state)
   const { headingId } = useChatStore((state) => state.chatRoom)
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
-
+  const { close: closePopover } = usePopoverState()
   const handleViewBookmark = (bookmark: any) => {
     const messageId = bookmark.message_id
     const channelId = bookmark.message_channel_id
@@ -33,8 +29,11 @@ export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {
     PubSub.publish(CHAT_OPEN, {
       headingId: channelId,
       toggleRoom: false,
-      fetchMsgsFromId: messageId
+      fetchMsgsFromId: messageId,
+      scroll2Heading: true
     })
+
+    closePopover()
   }
 
   const handleCopyUrl = (bookmark: any) => {
