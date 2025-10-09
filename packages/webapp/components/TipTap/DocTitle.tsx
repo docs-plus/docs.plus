@@ -5,6 +5,7 @@ import DOMPurify from 'dompurify'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { IoCheckmarkCircle } from 'react-icons/io5'
 import { twMerge } from 'tailwind-merge'
+import { Tooltip } from '@components/ui/Tooltip'
 
 const SAVED_INDICATOR_DURATION = 2000 // ms
 
@@ -150,21 +151,23 @@ const DocTitle = ({ className }: { className?: string }) => {
 
   return (
     <div className={twMerge(className, 'flex items-center gap-1')}>
-      <div
-        dangerouslySetInnerHTML={{ __html: title || '' }}
-        contentEditable
-        className="truncate rounded-sm border border-transparent px-1 py-0 text-lg font-medium hover:border-slate-400"
-        style={{ flex: 1 }}
-        onBlur={saveData}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            e.preventDefault()
-            e.currentTarget.blur()
-          }
-        }}
-        onPaste={handlePaste}
-        onInput={handleInput}
-      />
+      <Tooltip title="Rename" placement="bottom">
+        <div
+          dangerouslySetInnerHTML={{ __html: title || '' }}
+          contentEditable
+          className="truncate rounded-sm border border-transparent px-1 py-0 text-lg font-medium hover:border-slate-400"
+          style={{ flex: 1 }}
+          onBlur={saveData}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              e.currentTarget.blur()
+            }
+          }}
+          onPaste={handlePaste}
+          onInput={handleInput}
+        />
+      </Tooltip>
       <div
         className={`mx-2 flex size-4 items-center ${isLoading || showSaved ? 'visible' : 'invisible'}`}>
         <AiOutlineLoading3Quarters
