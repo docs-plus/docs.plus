@@ -75,6 +75,7 @@ const DesktopEditor = () => {
                           id="message-actions"
                           placement="top-end"
                           offset={-10}
+                          scrollParent={document.querySelector('.message-feed') ?? null}
                           className="w-full overflow-auto"
                           menu={<Chatroom.MessageFeed.MessageList.MessageCard.Actions.HoverMenu />}>
                           <Chatroom.MessageFeed.MessageList.MessageCard.Header.BookmarkIndicator />

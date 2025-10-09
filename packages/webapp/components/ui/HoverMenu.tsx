@@ -1,4 +1,15 @@
-import * as React from 'react'
+import {
+  useState,
+  useEffect,
+  useRef,
+  useCallback,
+  useMemo,
+  useContext,
+  createContext,
+  type FC,
+  type ReactNode,
+  type CSSProperties
+} from 'react'
 import debounce from 'lodash/debounce'
 import {
   useFloating,
@@ -62,7 +73,7 @@ interface HoverMenuContextType {
   open: boolean
   setOpen: (open: boolean) => void
   refs: ReturnType<typeof useFloating>['refs']
-  floatingStyles: React.CSSProperties
+  floatingStyles: CSSProperties
   context: ReturnType<typeof useFloating>['context']
   getReferenceProps: ReturnType<typeof useInteractions>['getReferenceProps']
   getFloatingProps: ReturnType<typeof useInteractions>['getFloatingProps']
@@ -71,10 +82,10 @@ interface HoverMenuContextType {
   decrementDropdownCount: () => void
 }
 
-const HoverMenuContext = React.createContext<HoverMenuContextType | null>(null)
+const HoverMenuContext = createContext<HoverMenuContextType | null>(null)
 
 export const useHoverMenuContext = () => {
-  const context = React.useContext(HoverMenuContext)
+  const context = useContext(HoverMenuContext)
   if (!context) {
     throw new Error('HoverMenu components must be wrapped in <HoverMenu />')
   }
@@ -103,21 +114,22 @@ function useHoverMenu({
   disabled = false,
   scrollParent = null
 }: HoverMenuOptions = {}) {
-  const [open, setOpen] = React.useState(false)
-  const [openDropdownCount, setOpenDropdownCount] = React.useState(0)
-  const [scrollLocked, setScrollLocked] = React.useState(false)
-  const menuId = React.useRef(`hover-menu-${Math.random().toString(36).substr(2, 9)}`)
+  const [open, setOpen] = useState(false)
+  const [openDropdownCount, setOpenDropdownCount] = useState(0)
+  const [scrollLocked, setScrollLocked] = useState(false)
+  const [isInViewport, setIsInViewport] = useState(true)
+  const menuId = useRef(`hover-menu-${Math.random().toString(36).substr(2, 9)}`)
 
-  const incrementDropdownCount = React.useCallback(() => {
+  const incrementDropdownCount = useCallback(() => {
     setOpenDropdownCount((prev) => prev + 1)
   }, [])
 
-  const decrementDropdownCount = React.useCallback(() => {
+  const decrementDropdownCount = useCallback(() => {
     setOpenDropdownCount((prev) => Math.max(0, prev - 1))
   }, [])
 
   // Register with global manager
-  React.useEffect(() => {
+  useEffect(() => {
     const id = menuId.current
     hoverMenuManager.register(id, () => setOpen(false))
 
@@ -127,7 +139,7 @@ function useHoverMenu({
   }, [])
 
   // Close menu on scroll and temporarily lock interactions
-  React.useEffect(() => {
+  useEffect(() => {
     const targets = resolveScrollTargets(scrollParent)
     const fallbackTargets: Array<Element | Window | Document> = targets.length
       ? targets
@@ -158,8 +170,11 @@ function useHoverMenu({
 
   const data = useFloating({
     placement,
-    open: open && !disabled && !scrollLocked,
+    open: open && !disabled && !scrollLocked && isInViewport,
     onOpenChange: (newOpen) => {
+      // Don't open if element is outside viewport
+      if (newOpen && !isInViewport) return
+
       // Don't close if any dropdown is open
       if (!newOpen && openDropdownCount > 0) {
         return
@@ -191,7 +206,7 @@ function useHoverMenu({
 
   const hover = useHover(context, {
     move: false,
-    enabled: !disabled && !scrollLocked,
+    enabled: !disabled && !scrollLocked && isInViewport,
     delay,
     handleClose: safePolygon({
       buffer: 1
@@ -202,9 +217,65 @@ function useHoverMenu({
 
   const interactions = useInteractions([hover, dismiss, role])
 
-  return React.useMemo(
+  // Check if reference element is within viewport of scrollParent
+  useEffect(() => {
+    const targets = resolveScrollTargets(scrollParent)
+    if (!targets.length) {
+      setIsInViewport(true)
+      return
+    }
+
+    const scrollContainer = targets[0]
+
+    const checkVisibility = () => {
+      const referenceEl = data.refs.reference.current
+      if (!referenceEl || !(scrollContainer instanceof Element)) {
+        setIsInViewport(true)
+        return
+      }
+
+      const containerRect = scrollContainer.getBoundingClientRect()
+      const elementRect = referenceEl.getBoundingClientRect()
+
+      // Calculate visible area
+      const visibleTop = Math.max(elementRect.top, containerRect.top)
+      const visibleBottom = Math.min(elementRect.bottom, containerRect.bottom)
+      const visibleLeft = Math.max(elementRect.left, containerRect.left)
+      const visibleRight = Math.min(elementRect.right, containerRect.right)
+
+      const visibleHeight = Math.max(0, visibleBottom - visibleTop)
+      const visibleWidth = Math.max(0, visibleRight - visibleLeft)
+      const visibleArea = visibleHeight * visibleWidth
+
+      const totalHeight = elementRect.bottom - elementRect.top
+      const totalWidth = elementRect.right - elementRect.left
+      const totalArea = totalHeight * totalWidth
+
+      // Require at least 50% of the element to be visible
+      const visibilityThreshold = 0.5
+      const isVisible = totalArea > 0 && visibleArea / totalArea >= visibilityThreshold
+
+      setIsInViewport(isVisible)
+
+      if (!isVisible && open) setOpen(false)
+    }
+
+    // Check initially
+    checkVisibility()
+
+    // Check on scroll
+    scrollContainer.addEventListener('scroll', checkVisibility, { passive: true })
+    window.addEventListener('resize', checkVisibility, { passive: true })
+
+    return () => {
+      scrollContainer.removeEventListener('scroll', checkVisibility)
+      window.removeEventListener('resize', checkVisibility)
+    }
+  }, [scrollParent, data.refs.reference, open])
+
+  return useMemo(
     () => ({
-      open: open && !disabled && !scrollLocked,
+      open: open && !disabled && !scrollLocked && isInViewport,
       setOpen,
       openDropdownCount,
       incrementDropdownCount,
@@ -221,14 +292,15 @@ function useHoverMenu({
       interactions,
       data,
       disabled,
-      scrollLocked
+      scrollLocked,
+      isInViewport
     ]
   )
 }
 
 export interface HoverMenuProps extends HoverMenuOptions {
-  children: React.ReactNode
-  menu: React.ReactNode
+  children: ReactNode
+  menu: ReactNode
   className?: string
   id?: string
 }
@@ -251,10 +323,10 @@ export function HoverMenu({ children, menu, className, id, ...options }: HoverMe
 }
 
 interface HoverMenuContentProps {
-  children: React.ReactNode
+  children: ReactNode
 }
 
-const HoverMenuContent: React.FC<HoverMenuContentProps> = ({ children }) => {
+const HoverMenuContent: FC<HoverMenuContentProps> = ({ children }) => {
   const context = useHoverMenuContext()
 
   if (!context.open) return null
@@ -277,12 +349,12 @@ const HoverMenuContent: React.FC<HoverMenuContentProps> = ({ children }) => {
 }
 
 export interface HoverMenuItemProps {
-  children: React.ReactNode
+  children: ReactNode
   tooltip?: string
   className?: string
 }
 
-export const HoverMenuItem: React.FC<HoverMenuItemProps> = ({ children, tooltip, className }) => {
+export const HoverMenuItem: FC<HoverMenuItemProps> = ({ children, tooltip, className }) => {
   return (
     <div
       className={twMerge(
@@ -297,7 +369,7 @@ export const HoverMenuItem: React.FC<HoverMenuItemProps> = ({ children, tooltip,
 
 // Floating UI Dropdown Hook
 function useFloatingDropdown() {
-  const [open, setOpen] = React.useState(false)
+  const [open, setOpen] = useState(false)
 
   const data = useFloating({
     placement: 'bottom-end',
@@ -322,7 +394,7 @@ function useFloatingDropdown() {
 
   const interactions = useInteractions([click, dismiss, role])
 
-  return React.useMemo(
+  return useMemo(
     () => ({
       open,
       setOpen,
@@ -340,10 +412,10 @@ interface DropdownContextType {
   closeDropdown: () => void
 }
 
-const DropdownContext = React.createContext<DropdownContextType | null>(null)
+const DropdownContext = createContext<DropdownContextType | null>(null)
 
 export const useDropdownContext = () => {
-  const context = React.useContext(DropdownContext)
+  const context = useContext(DropdownContext)
   if (!context) {
     throw new Error('Dropdown context must be used within HoverMenuDropdown')
   }
@@ -352,15 +424,15 @@ export const useDropdownContext = () => {
 
 // HoverMenuDropdown - Wrapper that provides dropdown context
 export interface HoverMenuDropdownProps {
-  children: React.ReactNode
-  trigger: React.ReactNode
+  children: ReactNode
+  trigger: ReactNode
   tooltip?: string
   disabled?: boolean
   className?: string
   contentClassName?: string
 }
 
-export const HoverMenuDropdown: React.FC<HoverMenuDropdownProps> = ({
+export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
   children,
   trigger,
   tooltip,
@@ -372,7 +444,7 @@ export const HoverMenuDropdown: React.FC<HoverMenuDropdownProps> = ({
   const hoverMenuContext = useHoverMenuContext()
 
   // Track dropdown state in parent context
-  React.useEffect(() => {
+  useEffect(() => {
     if (dropdown.open) {
       hoverMenuContext.incrementDropdownCount()
       return () => hoverMenuContext.decrementDropdownCount()
@@ -380,13 +452,13 @@ export const HoverMenuDropdown: React.FC<HoverMenuDropdownProps> = ({
   }, [dropdown.open, hoverMenuContext])
 
   // Create context value
-  const dropdownContextValue = React.useMemo(
+  const dropdownContextValue = useMemo(
     () => ({
       isOpen: dropdown.open,
       setOpen: dropdown.setOpen,
       closeDropdown: () => dropdown.setOpen(false)
     }),
-    [dropdown.open, dropdown.setOpen]
+    [dropdown]
   )
 
   return (
@@ -433,13 +505,13 @@ export const HoverMenuDropdown: React.FC<HoverMenuDropdownProps> = ({
 
 // Helper component for dropdown items that need to close the dropdown on click
 export interface HoverMenuDropdownItemProps {
-  children: React.ReactNode
+  children: ReactNode
   onClick?: () => void
   disabled?: boolean
   className?: string
 }
 
-export const HoverMenuDropdownItem: React.FC<HoverMenuDropdownItemProps> = ({
+export const HoverMenuDropdownItem: FC<HoverMenuDropdownItemProps> = ({
   children,
   onClick,
   disabled,
