@@ -1,4 +1,4 @@
-import * as React from 'react'
+import { useState, cloneElement, isValidElement, ReactNode } from 'react'
 import {
   useFloating,
   autoUpdate,
@@ -10,148 +10,77 @@ import {
   useDismiss,
   useRole,
   useInteractions,
-  useMergeRefs,
   FloatingPortal,
   Placement
 } from '@floating-ui/react'
 
-interface TooltipOptions {
-  initialOpen?: boolean
+interface TooltipProps {
+  title: ReactNode
+  children: ReactNode
   placement?: Placement
-  open?: boolean
   showDelay?: number
   hideDelay?: number
-  onOpenChange?: () => void
+  className?: string
 }
 
-export function useTooltip({
-  initialOpen = false,
+export function Tooltip({
+  title,
+  children,
   placement = 'top',
-  open: controlledOpen,
   showDelay = 200,
   hideDelay = 0,
-  onOpenChange: setControlledOpen
-}: TooltipOptions = {}) {
-  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(initialOpen)
+  className = ''
+}: TooltipProps) {
+  const [isOpen, setIsOpen] = useState(false)
 
-  const open = controlledOpen ?? uncontrolledOpen
-  const setOpen = setControlledOpen ?? setUncontrolledOpen
-
-  const data = useFloating({
+  const { refs, floatingStyles, context } = useFloating({
     placement,
-    open,
-    onOpenChange: setOpen,
+    open: isOpen,
+    onOpenChange: setIsOpen,
     whileElementsMounted: autoUpdate,
     middleware: [
-      offset(5),
+      offset(8),
       flip({
         crossAxis: placement.includes('-'),
         fallbackAxisSideDirection: 'start',
-        padding: 5
+        padding: 8
       }),
-      shift({ padding: 5 })
+      shift({ padding: 8 })
     ]
   })
 
-  const context = data.context
-
   const hover = useHover(context, {
     move: false,
-    enabled: controlledOpen == null,
-    delay: showDelay,
-    restMs: hideDelay
+    delay: { open: showDelay, close: hideDelay }
   })
-  const focus = useFocus(context, {
-    enabled: controlledOpen == null
-  })
+  const focus = useFocus(context)
   const dismiss = useDismiss(context)
   const role = useRole(context, { role: 'tooltip' })
 
-  const interactions = useInteractions([hover, focus, dismiss, role])
+  const { getReferenceProps, getFloatingProps } = useInteractions([hover, focus, dismiss, role])
 
-  return React.useMemo(
-    () => ({
-      open,
-      setOpen,
-      ...interactions,
-      ...data
-    }),
-    [open, setOpen, interactions, data]
-  )
-}
-
-type ContextType = ReturnType<typeof useTooltip> | null
-
-const TooltipContext = React.createContext<ContextType>(null)
-
-export const useTooltipContext = () => {
-  const context = React.useContext(TooltipContext)
-
-  if (context == null) {
-    throw new Error('Tooltip components must be wrapped in <Tooltip />')
-  }
-
-  return context
-}
-
-export function Tooltip({ children, ...options }: { children: React.ReactNode } & TooltipOptions) {
-  // This can accept any props as options, e.g. `placement`,
-  // or other positioning options.
-  const tooltip = useTooltip(options)
-  return <TooltipContext.Provider value={tooltip}>{children}</TooltipContext.Provider>
-}
-
-export const TooltipTrigger = React.forwardRef<
-  HTMLElement,
-  React.HTMLProps<HTMLElement> & { asChild?: boolean }
->(function TooltipTrigger({ children, asChild = false, ...props }, propRef) {
-  const context = useTooltipContext()
-  const childrenRef = (children as any).ref
-  const ref = useMergeRefs([context.refs.setReference, propRef, childrenRef])
-
-  // `asChild` allows the user to pass any element as the anchor
-  if (asChild && React.isValidElement(children)) {
-    return React.cloneElement(
-      children,
-      context.getReferenceProps({
-        ref,
-        ...props,
-        // @ts-ignore
-        ...children.props,
-        'data-state': context.open ? 'open' : 'closed'
-      })
-    )
-  }
+  // Clone child element and attach ref + props
+  const trigger = isValidElement(children)
+    ? cloneElement(
+        children as React.ReactElement<any>,
+        getReferenceProps({ ref: refs.setReference })
+      )
+    : children
 
   return (
-    <button
-      ref={ref}
-      // The user can style the trigger based on the state
-      data-state={context.open ? 'open' : 'closed'}
-      {...context.getReferenceProps(props)}>
-      {children}
-    </button>
+    <>
+      {trigger}
+      {isOpen && (
+        <FloatingPortal>
+          <div
+            ref={refs.setFloating}
+            style={floatingStyles}
+            className={`z-50 rounded-md bg-gray-900 px-3 py-1.5 text-sm text-white shadow-lg ${className}`}
+            {...getFloatingProps()}>
+            {title}
+          </div>
+        </FloatingPortal>
+      )}
+    </>
   )
-})
-
-export const TooltipContent = React.forwardRef<HTMLDivElement, React.HTMLProps<HTMLDivElement>>(
-  function TooltipContent({ style, ...props }, propRef) {
-    const context = useTooltipContext()
-    const ref = useMergeRefs([context.refs.setFloating, propRef])
-
-    if (!context.open) return null
-
-    return (
-      <FloatingPortal>
-        <div
-          ref={ref}
-          style={{
-            ...context.floatingStyles,
-            ...style
-          }}
-          {...context.getFloatingProps(props)}
-        />
-      </FloatingPortal>
-    )
-  }
-)
+}
