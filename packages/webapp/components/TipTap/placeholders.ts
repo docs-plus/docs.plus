@@ -1,4 +1,4 @@
-const Placeholders = [
+const Placeholders: string[] = [
   'Type your thoughts here ...',
   'Start your writing here ...',
   "What's on your mind? ...",

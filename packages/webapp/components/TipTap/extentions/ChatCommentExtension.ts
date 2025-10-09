@@ -1,10 +1,11 @@
-import { Extension, isTextSelection } from '@tiptap/core'
-import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { Extension, isTextSelection, Editor } from '@tiptap/core'
+import { Plugin, PluginKey, EditorState, Selection } from '@tiptap/pm/state'
+import { EditorView } from '@tiptap/pm/view'
 import PubSub from 'pubsub-js'
 import { CHAT_COMMENT } from '@services/eventsHub'
 import { AddCommentMD } from '@icons'
 
-const shouldShow = (editor) => {
+const shouldShow = (editor: Editor): boolean => {
   const state = editor.state
   const view = editor.view
   const { from, to } = state.selection
@@ -25,7 +26,7 @@ const shouldShow = (editor) => {
   return true
 }
 
-const createChatCommentButton = (view, selection) => {
+const createChatCommentButton = (view: EditorView, selection: Selection): void => {
   const button = document.createElement('button')
   button.innerHTML = AddCommentMD({ size: 22, fill: '#fff' })
   button.classList.add('chat-comment-button')
@@ -36,13 +37,13 @@ const createChatCommentButton = (view, selection) => {
   const { from } = selection
   const { top: nodeTop } = view.coordsAtPos(from)
 
-  const editorElement = view.dom.closest('.tiptap__editor')
+  const editorElement = view.dom.closest('.tiptap__editor') as HTMLElement
   const { top: editorTop, width: editorWidth } = editorElement.getBoundingClientRect()
 
   const offsetTop = nodeTop - editorTop
 
   // Get the current node element height
-  const node = view.nodeDOM(from)
+  const node = view.nodeDOM(from) as HTMLElement
   const nodeHeight = node ? node.offsetHeight : 0
 
   // Adjust the button position to be centered vertically relative to the node
@@ -75,10 +76,10 @@ const createChatCommentButton = (view, selection) => {
     'z-1'
   )
 
-  view.dom.parentNode.appendChild(button)
+  view.dom.parentNode!.appendChild(button)
 }
 
-const openChatComment = (state) => {
+const openChatComment = (state: EditorState): void => {
   const { selection } = state
 
   // if no selection, do nothing
@@ -120,7 +121,7 @@ const ChatCommentExtension = Extension.create({
         key: new PluginKey('chatComment'),
         props: {
           handleDOMEvents: {
-            keydown: (view, event) => {
+            keydown: (view: EditorView, event: KeyboardEvent) => {
               //  keyCode 77 is for m key
               if (event.keyCode === 77 && event.altKey && event.metaKey) {
                 event.preventDefault()
@@ -128,13 +129,13 @@ const ChatCommentExtension = Extension.create({
               }
               return false
             },
-            mouseup: (view, event) => {
+            mouseup: (view: EditorView, event: MouseEvent) => {
               const state = this.editor.state
 
               if (shouldShow(this.editor)) {
                 createChatCommentButton(view, state.selection)
               } else {
-                const button = view.dom.parentNode.querySelector('.chat-comment-button')
+                const button = view.dom.parentNode!.querySelector('.chat-comment-button')
                 if (button) {
                   button.remove()
                 }
@@ -142,8 +143,8 @@ const ChatCommentExtension = Extension.create({
 
               return true
             },
-            mousedown: (view, event) => {
-              const button = view.dom.parentNode.querySelector('.chat-comment-button')
+            mousedown: (view: EditorView, event: MouseEvent) => {
+              const button = view.dom.parentNode!.querySelector('.chat-comment-button')
               if (button) {
                 button.remove()
               }

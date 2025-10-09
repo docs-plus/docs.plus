@@ -1,14 +1,21 @@
 import { Node, mergeAttributes } from '@tiptap/core'
-import { getNodeState } from '../extentions/helper.js'
+import { getNodeState } from '../extentions/helper'
 import { TIPTAP_EVENTS, TIPTAP_NODES } from '@types'
 import deleteSelectedRange from '../extentions/deleteSelectedRange'
 import { TextSelection } from '@tiptap/pm/state'
 import { createCrinklePlugin } from '../extentions/plugins'
+import { DOMOutputSpec } from '@tiptap/pm/model'
+import { ViewMutationRecord } from '@tiptap/pm/view'
 
-function expandElement(elem, collapseClass, headingId, open) {
+function expandElement(
+  elem: HTMLElement,
+  collapseClass: string,
+  headingId: string,
+  open: boolean
+): void {
   const startHeight = window.getComputedStyle(elem).height
-  const headingSection = document.querySelector(`.heading[data-id="${headingId}"]`)
-  const wrapperBlock = headingSection.querySelector('.foldWrapper')
+  const headingSection = document.querySelector(`.heading[data-id="${headingId}"]`) as HTMLElement
+  const wrapperBlock = headingSection.querySelector('.foldWrapper') as HTMLElement
 
   elem.style.height = ''
   elem.style.transition = 'none'
@@ -89,7 +96,7 @@ const ContentWrapper = Node.create({
       }
     }
   },
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ HTMLAttributes }): DOMOutputSpec {
     return [
       'div',
       mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
@@ -112,7 +119,7 @@ const ContentWrapper = Node.create({
 
       const nodeState = getNodeState(headingId)
 
-      dom.setAttribute('class', 'contentWrapper', nodeState)
+      dom.setAttribute('class', 'contentWrapper')
 
       const attrs = {
         'data-type': this.name
@@ -126,10 +133,10 @@ const ContentWrapper = Node.create({
         dom.classList.add('opend')
       }
 
-      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value))
+      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value as string))
 
-      dom.addEventListener('toggleHeadingsContent', ({ detail }) => {
-        const section = detail.el
+      dom.addEventListener('toggleHeadingsContent', ((event: CustomEvent) => {
+        const section = event.detail.el
         // editor.commands.focus()
 
         if (/*!editor.isEditable &&*/ typeof getPos !== 'function') return false
@@ -144,9 +151,7 @@ const ContentWrapper = Node.create({
         if (pos === undefined) return false
         const currentNode = tr.doc.nodeAt(pos)
 
-        if (
-          (currentNode === null || currentNode === void 0 ? void 0 : currentNode.type) !== this.type
-        ) {
+        if (currentNode?.type !== this.type) {
           return false
         }
 
@@ -154,17 +159,17 @@ const ContentWrapper = Node.create({
 
         editor.view.dispatch(tr)
 
-        expandElement(section, 'collapsed', detail.headingId, open)
-      })
+        expandElement(section, 'collapsed', event.detail.headingId, open)
+      }) as EventListener)
 
       return {
         dom,
         contentDOM: content,
-        ignoreMutation(mutation) {
+        ignoreMutation(mutation: ViewMutationRecord) {
           if (mutation.type === 'selection') {
             return false
           }
-          return !dom.contains(mutation.target) || dom === mutation.target
+          return !dom.contains(mutation.target as any) || dom === mutation.target
         },
         update: (updatedNode) => {
           if (updatedNode.type !== this.type) {
@@ -178,7 +183,7 @@ const ContentWrapper = Node.create({
   addKeyboardShortcuts() {
     return {
       //TODO: refactor needed
-      Backspace: () => {
+      Backspace: (): boolean => {
         const { editor } = this
         const { schema, selection, tr } = editor.state
         const { $anchor, $from, $head, $to } = selection
@@ -195,12 +200,6 @@ const ContentWrapper = Node.create({
             return false
           }
 
-          // check if the ancher and heading are in the same node
-          // if ($anchor.parent.type.name === $head.parent.type.name) {
-          //   console.log('second')
-          //   return false
-          // }
-
           // Check if selection covers entire document content
           // Due to document schema hierarchy, content starts at position 2 and ends at docSize - 3
           const docSize = editor.state.doc.content.size
@@ -214,33 +213,34 @@ const ContentWrapper = Node.create({
         // TODO: Revise this condition, maybe it's better to use "textOffset"
         if ($anchor.parentOffset !== 0) return false
 
-        const contentWrapper = $anchor.doc?.nodeAt($from?.before(blockRange.depth))
-        const nodeType = contentWrapper.type.name
+        const contentWrapper = $anchor.doc?.nodeAt($from?.before(blockRange!.depth))
+        const nodeType = contentWrapper!.type.name
 
         // If the Backspace is not in the contentWrapper, do nothing
         if (
           nodeType === schema.nodes.contentHeading.name ||
           nodeType !== schema.nodes.contentWrapper.name
         ) {
-          return
+          return false
         }
 
         // Get the contentWrapper node pos
         const contentWrapperPos = $from.before(2)
 
         // When cursor is in the first line of contentWrapper
-        if (blockRange.start - 1 === contentWrapperPos) {
+        if (blockRange!.start - 1 === contentWrapperPos) {
           // If there is no previous node in the selection (i.e., current node is the first node of the contentWrapper)
           if ($anchor.nodeBefore === null) {
             // If there's a text node following the current node
             if ($anchor.nodeAfter?.type.name === TIPTAP_NODES.TEXT_TYPE) {
-              const paragraphContent = $anchor.path
-                .findLast((node) => node?.type?.name === TIPTAP_NODES.PARAGRAPH_TYPE)
-                .content.toJSON()
+              const paragraphNode = ($anchor as any).path.findLast(
+                (node: any) => node?.type?.name === TIPTAP_NODES.PARAGRAPH_TYPE
+              )
+              const paragraphContent = paragraphNode.content.toJSON()
 
               // Filter out the "hardBreak" nodes from the paragraph content
               const filteredContent = paragraphContent.filter(
-                (node) => node.type.name !== 'hardBreak'
+                (node: any) => node.type.name !== 'hardBreak'
               )
 
               const cloneCurrentNodeAsParagraph = {
@@ -250,26 +250,30 @@ const ContentWrapper = Node.create({
 
               const newNode = editor.state.schema.nodeFromJSON(cloneCurrentNodeAsParagraph)
 
-              tr.delete(blockRange.start, blockRange.end)
+              tr.delete(blockRange!.start, blockRange!.end)
 
               // we can not append block node to contentHeading node, so we just append the inline node
-              tr.insert(blockRange.start - 2, newNode.content)
+              tr.insert(blockRange!.start - 2, newNode.content)
 
-              const newSelection = new TextSelection(tr.doc.resolve(blockRange.start - 2))
+              const newSelection = new TextSelection(tr.doc.resolve(blockRange!.start - 2))
               tr.setSelection(newSelection)
 
-              return editor.view.dispatch(tr)
+              editor.view.dispatch(tr)
+              return true
             } else {
               // If no text node is following, just delete the current node and move the cursor to the end of the heading
-              return this.editor
+              this.editor
                 .chain()
-                .deleteRange({ from: blockRange.start, to: blockRange.end })
-                .setTextSelection(blockRange.start - 2)
+                .deleteRange({ from: blockRange!.start, to: blockRange!.end })
+                .setTextSelection(blockRange!.start - 2)
                 .scrollIntoView()
                 .run()
+              return true
             }
           }
         }
+
+        return false
       },
       // Escape node on double enter
       Enter: () => {
