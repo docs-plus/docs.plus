@@ -1,25 +1,32 @@
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
 import { useStore } from '@stores'
-import * as toast from '@components/toast'
 import DOMPurify from 'dompurify'
+import { AiOutlineLoading3Quarters } from 'react-icons/ai'
+import { IoCheckmarkCircle } from 'react-icons/io5'
+import { twMerge } from 'tailwind-merge'
+
+const SAVED_INDICATOR_DURATION = 2000 // ms
 
 const DocTitle = ({ className }: { className?: string }) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
   const [title, setTitle] = useState<string | undefined>('')
+  const [showSaved, setShowSaved] = useState(false)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+
   const { hocuspocusProvider, metadata: docMetadata } = useStore((state) => state.settings)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
 
+  // Initialize title from metadata
   useEffect(() => {
-    if (docMetadata?.title) {
-      setTitle(docMetadata.title)
-    }
+    if (docMetadata?.title) setTitle(docMetadata.title)
   }, [docMetadata?.title])
 
   const saveData = useCallback(
     (e: React.FocusEvent<HTMLDivElement>) => {
       const newTitle = e.target.innerText
       if (newTitle === title) return
+      setTitle(newTitle)
 
       mutate({
         title: newTitle,
@@ -97,6 +104,7 @@ const DocTitle = ({ className }: { className?: string }) => {
     newSelection.addRange(fallbackRange)
   }, [])
 
+  // Update title from hocuspocus provider, through stateless event (websocket)
   useEffect(() => {
     if (!hocuspocusProvider) return
 
@@ -112,7 +120,7 @@ const DocTitle = ({ className }: { className?: string }) => {
     hocuspocusProvider.on('stateless', readOnlyStateHandler)
 
     return () => hocuspocusProvider.off('stateless', readOnlyStateHandler)
-  }, [hocuspocusProvider])
+  }, [hocuspocusProvider, docMetadata, setWorkspaceSetting])
 
   useEffect(() => {
     if (isSuccess && data) {
@@ -120,18 +128,33 @@ const DocTitle = ({ className }: { className?: string }) => {
       setTitle(data.data.title)
       // @ts-ignore
       hocuspocusProvider.sendStateless(JSON.stringify({ type: 'docTitle', state: data.data }))
-      toast.Success('Document title changed successfully')
-    }
-  }, [hocuspocusProvider, isSuccess, data])
 
-  if (isLoading) return <div>Loading...</div>
+      // Clear any existing timeout
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+
+      // Show saved indicator and hide after duration
+      setShowSaved(true)
+      timeoutRef.current = setTimeout(() => {
+        setShowSaved(false)
+        timeoutRef.current = null
+      }, SAVED_INDICATOR_DURATION)
+    }
+  }, [hocuspocusProvider, isSuccess, data, setTitle])
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current)
+    }
+  }, [])
 
   return (
-    <div className={className}>
+    <div className={twMerge(className, 'flex items-center gap-1')}>
       <div
         dangerouslySetInnerHTML={{ __html: title || '' }}
         contentEditable
-        className="w-full truncate rounded-sm border border-transparent px-2 py-0 text-lg font-medium hover:border-slate-300"
+        className="truncate rounded-sm border border-transparent px-1 py-0 text-lg font-medium hover:border-slate-400"
+        style={{ flex: 1 }}
         onBlur={saveData}
         onKeyDown={(e) => {
           if (e.key === 'Enter') {
@@ -142,6 +165,13 @@ const DocTitle = ({ className }: { className?: string }) => {
         onPaste={handlePaste}
         onInput={handleInput}
       />
+      <div
+        className={`mx-2 flex size-4 items-center ${isLoading || showSaved ? 'visible' : 'invisible'}`}>
+        <AiOutlineLoading3Quarters
+          className={`${isLoading ? 'show' : 'hidden'} h-4 w-4 animate-spin text-blue-500`}
+        />
+        <IoCheckmarkCircle className={`${showSaved ? 'show' : 'hidden'} h-4 w-4 text-green-600`} />
+      </div>
     </div>
   )
 }
