@@ -2,11 +2,7 @@ import { Chatroom } from '@components/chatroom'
 import { HoverMenuDropdown } from '@components/ui/HoverMenu'
 import { MdMoreVert } from 'react-icons/md'
 
-type Props = {
-  className?: string
-}
-
-export const HoverMenuActions = ({ className }: Props) => {
+export const HoverMenuActions = () => {
   return (
     <>
       <Chatroom.MessageFeed.MessageList.MessageCard.Actions.EmojiReaction />
