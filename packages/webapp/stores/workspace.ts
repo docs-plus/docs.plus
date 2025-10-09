@@ -17,6 +17,7 @@ type Workspace = {
   workspaceId?: string
   metadata?: any
   broadcaster?: any
+  providerStatus: 'saved' | 'synced' | 'saving' | 'error'
   editor: EditorSettings
   hocuspocusProvider?: any
   deviceDetect?: any
@@ -39,6 +40,7 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
       documentId: undefined
     },
     broadcaster: undefined,
+    providerStatus: 'saved',
     editor: {
       instance: undefined,
       providerSyncing: true,
