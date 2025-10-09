@@ -1,7 +1,6 @@
 export * from './Avatar'
 export * from './Button'
 export * from './Dialog'
-export * from './Dropdown'
 export * from './HoverMenu'
 export * from './Input'
 export * from './Popover'

@@ -5,7 +5,6 @@ import {
   CopyToDocAction,
   DeleteAction,
   EditAction,
-  MoreActionsDropdown,
   ReadStatusDisplay,
   QuickActions,
   EmojiReactionButton,
