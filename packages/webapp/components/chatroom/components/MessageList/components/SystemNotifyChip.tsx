@@ -43,7 +43,7 @@ export const SystemNotifyChip = ({ message }: Props) => {
   if (message.metadata?.type === 'user_join_workspace') {
     return (
       <div
-        className="msg_card chat my-4 flex justify-center pb-1"
+        className="msg_card chat my-2 flex justify-center pb-1"
         onClick={handleMentionClick}
         ref={cardRef}>
         <div className="badge bg-bg-chatBubble-owner py-3">
@@ -58,6 +58,10 @@ export const SystemNotifyChip = ({ message }: Props) => {
           <span className="bg-bg-chatBubble-owner flex items-center gap-1 py-0.5">
             <DocsPlus size={12} className="mb-1" />
             <span className="font-medium underline">{docMetadata.title}</span>
+            {'-'}{' '}
+            {formatDistanceToNow(new Date(message.created_at), {
+              addSuffix: true
+            })}
           </span>
         </div>
       </div>
