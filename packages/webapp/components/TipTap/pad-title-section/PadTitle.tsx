@@ -3,6 +3,7 @@ import { DocsPlus } from '@icons'
 import DocTitle from '../DocTitle'
 import PresentUsers from './PresentUsers'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
+import ProviderSyncStatus from './ProviderSyncStatus'
 import FilterBar from './FilterBar'
 import { useStore } from '@stores'
 import Modal from '@components/ui/Modal'
@@ -41,6 +42,7 @@ const PadTitle = () => {
 
           <div className="flex items-center justify-start align-middle">
             <DocTitle />
+            <ProviderSyncStatus />
             <FilterBar displayRestButton={true} />
           </div>
 

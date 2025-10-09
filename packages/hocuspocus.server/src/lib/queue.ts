@@ -1,5 +1,6 @@
 import { Queue, Worker, Job } from 'bullmq'
 import { prisma } from './prisma'
+import { getRedisClient } from './redis'
 import * as Y from 'yjs'
 
 interface StoreDocumentData {
@@ -49,6 +50,8 @@ export const StoreDocumentQueue = new Queue<StoreDocumentData>('store-documents'
 
 // Worker to process document storage jobs
 export const createDocumentWorker = () => {
+  const redisPublisher = getRedisClient()
+
   return new Worker<StoreDocumentData>(
     'store-documents',
     async (job: Job<StoreDocumentData>) => {
@@ -90,7 +93,7 @@ export const createDocumentWorker = () => {
         })
 
         // Create a new version
-        await prisma.documents.create({
+        const savedDoc = await prisma.documents.create({
           data: {
             documentId: data.documentName,
             commitMessage: data.commitMessage || '',
@@ -100,6 +103,18 @@ export const createDocumentWorker = () => {
         })
 
         console.timeEnd(`Store Data, jobId:${job.id}`)
+
+        // Publish save confirmation to document-specific Redis channel
+        if (redisPublisher) {
+          await redisPublisher.publish(
+            `doc:${data.documentName}:saved`,
+            JSON.stringify({
+              documentId: data.documentName,
+              version: savedDoc.version,
+              timestamp: Date.now()
+            })
+          )
+        }
       } catch (err) {
         console.error('Error storing data:', err)
         throw err // Re-throw to trigger retry
