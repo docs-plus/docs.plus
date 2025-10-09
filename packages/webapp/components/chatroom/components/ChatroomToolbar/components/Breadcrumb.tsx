@@ -77,6 +77,15 @@ export const Breadcrumb = ({ className }: Props) => {
     })
   }, [])
 
+  const scroll2Heading = (e: any, heading: any) => {
+    e.preventDefault()
+    PubSub.publish(CHAT_OPEN, {
+      headingId: heading.id,
+      scroll2Heading: true,
+      toggleRoom: false
+    })
+  }
+
   // Document Root
   if (headingId === workspaceId) return <>{metadata.title}</>
   if (!headingPath.length || !headingId) return null
@@ -96,7 +105,9 @@ export const Breadcrumb = ({ className }: Props) => {
               <li key={index} aria-current={headingPath.length - 1 === index ? 'page' : undefined}>
                 <div className="flex items-center px-1.5 wrap-anywhere">
                   {headingPath.length - 1 === index ? (
-                    <span className={headingPath.length > 1 ? '!font-bold' : ''}>
+                    <span
+                      className={headingPath.length > 1 ? '!font-bold' : ''}
+                      onClick={(e) => scroll2Heading(e, heading)}>
                       {heading.text}
                     </span>
                   ) : (
