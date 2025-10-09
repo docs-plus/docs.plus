@@ -9,7 +9,7 @@ import { FaLinkedin } from 'react-icons/fa6'
 import { FaWhatsapp } from 'react-icons/fa6'
 import { MdOutlineAlternateEmail } from 'react-icons/md'
 import { FaEarthAfrica } from 'react-icons/fa6'
-import { MdContentCopy } from 'react-icons/md'
+import { MdContentCopy, MdCheck } from 'react-icons/md'
 
 const socialSharingMap = {
   facebook: `https://www.facebook.com/sharer.php?u=`,
@@ -23,6 +23,7 @@ const socialSharingMap = {
 const ShareModal = ({ setIsOpen }: any) => {
   const urlRef = useRef<HTMLInputElement>(null)
   const [href, setHref] = useState('')
+  const [isCopied, setIsCopied] = useState(false)
   const { metadata: docMetadata } = useStore((state) => state.settings)
 
   useEffect(() => {
@@ -44,7 +45,8 @@ const ShareModal = ({ setIsOpen }: any) => {
   const copyToClipboard = useCallback(async () => {
     try {
       await navigator.clipboard.writeText(href)
-      toast.Success('Link copied to clipboard!')
+      setIsCopied(true)
+      setTimeout(() => setIsCopied(false), 2000)
     } catch (err) {
       console.error('Failed to copy the link to clipboard', err)
       toast.Error('Failed to copy the link. Please try again.')
@@ -108,11 +110,22 @@ const ShareModal = ({ setIsOpen }: any) => {
       </div>
 
       <p className="mt-6 mb-2 font-semibold">Page Link</p>
-      <div className="flex justify-between rounded-md" onClick={copyToClipboard}>
+      <div className="flex cursor-pointer justify-between rounded-md" onClick={copyToClipboard}>
         <label className="input input-bordered flex w-full items-center gap-2">
           <input type="text" className="grow" ref={urlRef} value={href} readOnly />
-          <button className="">
-            <MdContentCopy size={18} />
+          <button className="relative">
+            <MdContentCopy
+              size={18}
+              className={`transition-all duration-200 ease-in-out ${
+                isCopied ? 'scale-0 rotate-180 opacity-0' : 'scale-100 rotate-0 opacity-100'
+              }`}
+            />
+            <MdCheck
+              size={18}
+              className={`text-success absolute inset-0 transition-all duration-200 ease-in-out ${
+                isCopied ? 'scale-100 rotate-0 opacity-100' : 'scale-0 -rotate-180 opacity-0'
+              }`}
+            />
           </button>
         </label>
       </div>
