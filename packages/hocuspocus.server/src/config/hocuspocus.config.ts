@@ -7,6 +7,7 @@ import { Logger } from '@hocuspocus/extension-logger'
 import { checkEnvBolean, generateRandomId } from '../utils'
 import { StoreDocumentQueue } from '../lib/queue'
 import { HealthCheck } from '../extensions/health.extension'
+import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extension'
 
 export { Database }
 
@@ -113,6 +114,11 @@ const configureExtensions = () => {
   )
 
   extensions.push(healthCheck)
+
+  // Add Redis subscriber for save confirmations (requires Redis)
+  if (checkEnvBolean(process.env.REDIS)) {
+    extensions.push(new RedisSubscriberExtension())
+  }
 
   return extensions
 }
