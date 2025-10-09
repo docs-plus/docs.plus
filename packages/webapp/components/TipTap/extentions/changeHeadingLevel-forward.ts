@@ -10,12 +10,13 @@ import {
   getEndPosSelection,
   putTextSelectionEndNode
 } from './helper'
+import { CommandArgs, HeadingAttributes } from './types'
 
-const changeHeadingLevelForward = (arrg, attributes) => {
+const changeHeadingLevelForward = (arrg: CommandArgs, attributes: HeadingAttributes): boolean => {
   const { state, tr } = arrg
   const { selection, doc } = state
   const { $from, $to } = selection
-  const { start } = $from.blockRange($to)
+  const { start } = $from.blockRange($to)!
 
   console.info('[Heading]: change heading level forwarding')
 
@@ -29,7 +30,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
 
   const fromParent = $from.parent.type.name
   if (fromParent === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
-    const headSelection = $from.blockRange($to)
+    const headSelection = $from.blockRange($to)!
     if (headSelection.parent.type.name === TIPTAP_NODES.HEADING_TYPE) {
       // INFO: 2 is the offset of the heading node
       newStartPos = headSelection.$from.pos - headSelection.$from.parentOffset - 2
@@ -51,8 +52,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
     $to.pos,
     attributes,
     block,
-    contentWrapperParagraphs,
-    selection
+    contentWrapperParagraphs
   )
 
   tr.delete(newStartPos, titleEndPos)
@@ -64,7 +64,7 @@ const changeHeadingLevelForward = (arrg, attributes) => {
   )
   let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
 
-  const insertPos = prevBlock.endBlockPos - (shouldNested ? 2 : 0)
+  const insertPos = prevBlock!.endBlockPos - (shouldNested ? 2 : 0)
   tr.insert(insertPos, newHeadingNode)
 
   // set the cursor to the end of the heading

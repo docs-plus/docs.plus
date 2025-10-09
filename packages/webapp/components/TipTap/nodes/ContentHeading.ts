@@ -1,14 +1,15 @@
 // TODO: Refactor this file, it's too long and hard to understand
 
 import { Node, mergeAttributes } from '@tiptap/core'
-import onHeading from '../extentions/normalText/onHeading'
 import { TIPTAP_NODES } from '@types'
 import { createHeadingButtonsPlugin, createTitleButtonsPlugin } from '../extentions/plugins'
+import onHeading from '../extentions/normalText/onHeading'
+import { EditorState } from '@tiptap/pm/state'
+import { Node as ProseMirrorNode, DOMOutputSpec } from '@tiptap/pm/model'
 
 // Helpers
-
-const getNodeHLevel = (doc, pos) => {
-  return doc.nodeAt(pos).attrs.level
+const getNodeHLevel = (doc: ProseMirrorNode, pos: number): number => {
+  return doc.nodeAt(pos)!.attrs.level
 }
 
 // Tiptap Node
@@ -44,49 +45,14 @@ const HeadingsTitle = Node.create({
   },
   parseHTML() {
     // Add priority to ensure proper parsing order
-    return this.options.levels.map((level) => ({
+    return this.options.levels.map((level: number) => ({
       tag: `h${level}`,
       attrs: { level },
       priority: 50 + level // Higher priority for more specific matches
     }))
   },
 
-  // addNodeView() {
-  //   return ({ node, getPos, editor }) => {
-  //     // Create elements using a more maintainable approach
-  //     const dom = createElement('heading', node.attrs.level)
-  //     const contentSpan = createElement('content')
-
-  //     dom.append(contentSpan)
-
-  //     return {
-  //       dom,
-  //       contentDOM: contentSpan,
-  //       // Proper update handling
-  //       update: (updatedNode, decorations, innerDecorations) => {
-  //         if (updatedNode.type.name !== node.type.name) return false
-  //         if (updatedNode.attrs.level !== node.attrs.level) return false
-  //         return true
-  //       },
-  //       // Add destroy method for cleanup
-  //       destroy: () => {}
-  //     }
-  //   }
-
-  //   // Helper functions
-  //   function createElement(type, level) {
-  //     const element =
-  //       type === 'heading' ? document.createElement(`h${level}`) : document.createElement('span')
-
-  //     if (type === 'heading') {
-  //       element.classList.add('title')
-  //       element.setAttribute('level', level)
-  //     }
-
-  //     return element
-  //   }
-  // },
-  renderHTML({ node, HTMLAttributes }) {
+  renderHTML({ node, HTMLAttributes }): DOMOutputSpec {
     const level = this.options.levels.includes(node.attrs.level)
       ? node.attrs.level
       : this.options.levels[0]
@@ -102,13 +68,13 @@ const HeadingsTitle = Node.create({
   },
   addKeyboardShortcuts() {
     return {
-      Backspace: ({}) => {
+      Backspace: (): boolean => {
         const { editor } = this
         const { schema, selection, doc } = editor.state
         const { $anchor, from, $from } = selection
 
         // it mean first heading node
-        if (from === 2) return
+        if (from === 2) return false
 
         const blockStartPos = $from.start(1) - 1
         const currentHLevel = getNodeHLevel($from.doc, blockStartPos)
@@ -122,13 +88,14 @@ const HeadingsTitle = Node.create({
         // if the caret is not at the beginning of the content_heading node
         if ($anchor.parentOffset !== 0) return false
 
-        return onHeading({
+        onHeading({
           backspaceAction: true,
           editor,
           state: editor.state,
           tr: editor.state.tr,
           view: editor.view
         })
+        return true
       },
       Enter: () => {
         const {

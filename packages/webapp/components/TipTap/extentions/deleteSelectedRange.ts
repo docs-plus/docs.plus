@@ -1,16 +1,43 @@
 import { TextSelection } from '@tiptap/pm/state'
 import { HTML_ENTITIES, TIPTAP_NODES } from '@types'
+import { Editor } from '@tiptap/core'
+import { Transaction, EditorState } from '@tiptap/pm/state'
+import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { getSelectionRangeBlocks, insertRemainingHeadings, getSelectionRangeSlice } from './helper'
+import { SelectionBlock } from './types'
 
-const handleHeadingBlock = ({ tr, state, selectedContents, titleEndPos, paragraphs }) => {
+interface HandleHeadingBlockParams {
+  tr: Transaction
+  state: EditorState
+  selectedContents: SelectionBlock[]
+  titleEndPos: number
+  paragraphs: SelectionBlock[]
+}
+
+interface HandleNonHeadingBlockParams {
+  tr: Transaction
+  state: EditorState
+  selectedContents: SelectionBlock[]
+  titleEndPos: number
+  newContent: ProseMirrorNode[]
+  paragraphs: SelectionBlock[]
+}
+
+const handleHeadingBlock = ({
+  tr,
+  state,
+  selectedContents,
+  titleEndPos,
+  paragraphs
+}: HandleHeadingBlockParams): void => {
   const { $from, $to } = state.selection
   const blockRange = $from.blockRange($to)
 
-  const selectedFirstBlockPos = selectedContents.at(0).startBlockPos
+  const selectedFirstBlockPos = selectedContents.at(0)!.startBlockPos
 
   tr.deleteRange(selectedFirstBlockPos - 1, titleEndPos)
 
-  const attrLevel = blockRange.parent.attrs.level || blockRange.$from.parent.attrs.level
+  const attrLevel = blockRange!.parent.attrs.level || blockRange!.$from.parent.attrs.level
 
   let jsonNode = {
     type: TIPTAP_NODES.HEADING_TYPE,
@@ -21,7 +48,7 @@ const handleHeadingBlock = ({ tr, state, selectedContents, titleEndPos, paragrap
       {
         type: TIPTAP_NODES.CONTENT_HEADING_TYPE,
         content: [
-          blockRange.$from?.nodeBefore?.toJSON() || {
+          blockRange!.$from?.nodeBefore?.toJSON() || {
             type: TIPTAP_NODES.TEXT_TYPE,
             text: HTML_ENTITIES.NBSP
           }
@@ -50,12 +77,12 @@ const handleNonHeadingBlock = ({
   titleEndPos,
   newContent,
   paragraphs
-}) => {
+}: HandleNonHeadingBlockParams): void => {
   const { $from, $to, from, to } = state.selection
   const blockRange = $from.blockRange($to)
 
-  tr.deleteRange(selectedContents.at(0).startBlockPos, titleEndPos)
-  tr.insert(selectedContents.at(0).startBlockPos, newContent)
+  tr.deleteRange(selectedContents.at(0)!.startBlockPos, titleEndPos)
+  tr.insert(selectedContents.at(0)!.startBlockPos, newContent)
 
   tr.delete(from, tr.mapping.map(to))
   if (blockRange?.$to?.nodeBefore) {
@@ -74,7 +101,7 @@ const handleNonHeadingBlock = ({
   )
 }
 
-const deleteSelectedRange = (editor) => {
+const deleteSelectedRange = (editor: Editor): boolean => {
   const { state } = editor
   const { selection, doc, tr } = state
   const { $from, $to, from, to, $anchor, $head } = selection
@@ -117,7 +144,7 @@ const deleteSelectedRange = (editor) => {
 
     const newContent = [...selectedNodes, ...paragraphNodes]
 
-    if (blockRange.$from.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
+    if (blockRange!.$from.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
       handleHeadingBlock({ tr, state, titleEndPos, selectedContents, paragraphs })
     } else {
       handleNonHeadingBlock({ tr, state, titleEndPos, selectedContents, newContent, paragraphs })

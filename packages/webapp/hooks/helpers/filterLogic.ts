@@ -1,40 +1,60 @@
 import createTree from '@utils/treeStructure'
 import filterTreeDFS from '@utils/filterTreeDFS'
 
+// Types
+
+interface TreeNode {
+  id: string
+  level: number
+  heading: any
+  parent: TreeNode | null
+  children: TreeNode[]
+  filterBy?: string
+  weight?: number
+}
+
+interface SelectedNode extends TreeNode {
+  rootPath: Set<string>
+}
+
+interface SlugClassification {
+  type: 'parent' | 'child'
+  text: string
+  existsInParent: boolean
+}
+
+interface FilterResult {
+  headingIdsMap: Set<string>
+  sortedSlugs: SlugClassification[]
+  selectedNodes: SelectedNode[]
+}
+
 // Helpers
 
 /**
  * Retrieves the path from the given node to the root.
- *
- * @param {Node} node - The heading node from which the path starts.
- * @returns {Node[]} - An array of heading nodes  that representing the path from the given node to the root.
  */
-const getPathToRoot = (node) => (!node.parent ? [node] : [node, ...getPathToRoot(node.parent)])
+const getPathToRoot = (node: TreeNode): TreeNode[] =>
+  !node.parent ? [node] : [node, ...getPathToRoot(node.parent)]
 
 /**
  * Constructs a unique set of ids that represent the path from the headings to the root.
- *
- * @param {Node[]} headings - An array of heading nodes.
- * @returns {Set<string>} - A set containing unique ids representing the heading path to the root.
  */
-const createPathToRoot = (headings) => {
+const createPathToRoot = (headings: TreeNode[]): Set<string> => {
   const ids = headings
     .flatMap((heading) => getPathToRoot(heading).map((node) => node.id))
-    .filter((id) => id)
+    .filter((id): id is string => id !== undefined && id !== '')
   return new Set(ids)
 }
 
 /**
  * Maps headings to a flat structure.
- *
- * @param {HTMLElement[]} headings - An array of HTML heading elements.
- * @returns {Array} - An array of arrays containing level, text content, and data-id for each heading.
  */
-const mapHeadingsToFlatStructure = (headings) => {
+const mapHeadingsToFlatStructure = (headings: HTMLElement[]): [number, string, string][] => {
   return [...headings].map((heading) => {
-    const level = +heading.getAttribute('level')
-    const textContent = heading.textContent
-    const dataId = heading.closest('.wrapBlock').getAttribute('data-id')
+    const level = +heading.getAttribute('level')!
+    const textContent = heading.textContent || ''
+    const dataId = heading.closest('.wrapBlock')?.getAttribute('data-id') || ''
 
     return [level, textContent, dataId]
   })
@@ -42,44 +62,40 @@ const mapHeadingsToFlatStructure = (headings) => {
 
 /**
  * Sorts the slugs based on their levels and weights.
- *
- * @param {Map<string, number>} slugsWithWeight - A map with each slug as key and its weight as value.
- * @param {Node[]} filteredNodes - An array of filtered heading nodes.
- * @returns {string[]} - A sorted array of slugs.
  */
-const getSortedSlugs = (slugsWithWeight, filteredNodes) => {
+const getSortedSlugs = (slugsWithWeight: Map<string, number>, filteredNodes: any[]): string[] => {
   return [...slugsWithWeight.keys()].sort((a, b) => {
-    const levelA = filteredNodes.find((x) => x.filterBy === a).level
-    const levelB = filteredNodes.find((x) => x.filterBy === b).level
+    const levelA = filteredNodes.find((x) => x.filterBy === a)!.level
+    const levelB = filteredNodes.find((x) => x.filterBy === b)!.level
 
     // Sort primarily by level and secondarily by weight
-    return levelA - levelB || slugsWithWeight.get(b) - slugsWithWeight.get(a)
+    return levelA - levelB || slugsWithWeight.get(b)! - slugsWithWeight.get(a)!
   })
 }
 
-const filterTreeBySlugs = (tree, slugs) => {
-  const filteredNodes = []
+const filterTreeBySlugs = (tree: any, slugs: string[]): any[] => {
+  const filteredNodes: any[] = []
   filterTreeDFS(tree, slugs, filteredNodes)
   return filteredNodes
 }
 
-const handleSingleSlugCase = (filteredNodes, slugs) => {
+const handleSingleSlugCase = (filteredNodes: any[], slugs: string[]): FilterResult => {
   const pathToRoot = createPathToRoot(filteredNodes)
   return {
     headingIdsMap: new Set([...filteredNodes.map((x) => x.id), ...pathToRoot]),
-    sortedSlugs: slugs.map((slug) => ({ type: 'parent', text: slug, existsInParent: true })),
+    sortedSlugs: slugs.map((slug) => ({
+      type: 'parent' as const,
+      text: slug,
+      existsInParent: true
+    })),
     selectedNodes: filteredNodes.map((node) => ({ ...node, rootPath: createPathToRoot([node]) }))
   }
 }
 
 /**
  * Calculates the weight of each slug based on matching nodes.
- *
- * @param {string[]} slugs - An array of slugs to calculate weights for.
- * @param {Node[]} nodes - An array of nodes (headings) to compare against the slugs.
- * @returns {Map<string, number>} - A map of slugs and their respective weights.
  */
-const calculateSlugsWeight = (slugs, nodes) => {
+const calculateSlugsWeight = (slugs: string[], nodes: any[]): Map<string, number> => {
   // Initialize a map with slugs set to a weight of 0
   const slugsWithWeight = new Map(slugs.map((slug) => [slug, 0]))
 
@@ -88,7 +104,7 @@ const calculateSlugsWeight = (slugs, nodes) => {
     if (node.level !== 1 && slugsWithWeight.has(node.filterBy)) {
       // Increment weight of matching slug
       const currentWeight = slugsWithWeight.get(node.filterBy) || 0
-      slugsWithWeight.set(node.filterBy, currentWeight + node.weight)
+      slugsWithWeight.set(node.filterBy, currentWeight + (node.weight || 0))
     }
   })
 
@@ -97,13 +113,11 @@ const calculateSlugsWeight = (slugs, nodes) => {
 
 /**
  * Classifies slugs into categories based on their weights.
- *
- * @param {Map<string, number>} slugsWithWeight - A map of slugs and their weights.
- * @param {Object[]} filteredNodes - An array of filtered heading nodes.
- * @returns {Object} - An object containing arrays of selected parent slugs, sorted slugs by weight, and zero-weight slugs.
  */
-
-const classifySlugs = (slugsWithWeight, filteredNodes) => {
+const classifySlugs = (
+  slugsWithWeight: Map<string, number>,
+  filteredNodes: any[]
+): { parentSlugs: string[]; sortedSlugs: string[]; zeroWeightSlugs: string[] } => {
   const zeroWeightSlugs = [...slugsWithWeight.entries()]
     .filter(([_, weight]) => weight === 0)
     .map(([slug]) => slug)
@@ -115,8 +129,8 @@ const classifySlugs = (slugsWithWeight, filteredNodes) => {
   let sortedSlugs = getSortedSlugs(slugsWithWeight, filteredNodes)
 
   // Identify primary parent slug
-  const firstSlug = sortedSlugs.shift()
-  const firstSlugWeight = slugsWithWeight.get(firstSlug)
+  const firstSlug = sortedSlugs.shift()!
+  const firstSlugWeight = slugsWithWeight.get(firstSlug)!
 
   const parentSlugs = [
     firstSlug,
@@ -135,23 +149,22 @@ const classifySlugs = (slugsWithWeight, filteredNodes) => {
 
 /**
  * Refines filtered nodes based on the primary parent slugs.
- *
- * @param {string[]} sortedSlugs - An array of sorted slugs based on weight.
- * @param {Object} headingTree - The tree structure of headings.
- * @param {string[]} parentSlugs - An array of primary slugs.
- * @returns {Object} - An object containing arrays of parent slugs and new filtered nodes.
  */
-const refineFilterByPrimarySlugs = (headingTree, parentSlugs, sortedSlugs) => {
-  let refinedNodes = []
+const refineFilterByPrimarySlugs = (
+  headingTree: any,
+  parentSlugs: string[],
+  sortedSlugs: string[]
+): { refindParentNodes: any[]; refinedChildNodes: any[] } => {
+  let refinedNodes: any[] = []
   let isMirrorOfParent = sortedSlugs.length === 0
 
   filterTreeDFS(headingTree, parentSlugs, refinedNodes)
 
-  let refinedFilteredNodes = isMirrorOfParent ? refinedNodes : []
+  let refinedFilteredNodes: any[] = isMirrorOfParent ? refinedNodes : []
 
   if (!isMirrorOfParent) {
     for (let heading of refinedNodes) {
-      if (heading.children.length === 0) continue
+      if (heading.children && heading.children.length === 0) continue
       filterTreeDFS(heading, sortedSlugs, refinedFilteredNodes)
     }
   }
@@ -163,22 +176,21 @@ const refineFilterByPrimarySlugs = (headingTree, parentSlugs, sortedSlugs) => {
 
 /**
  * Constructs the sorted slugs result combining parent and children nodes.
- *
- * @param {Object[]} refinedChildNodes - The refined array of nodes.
- * @param {string[]} parentSlugs - An array of primary parent slugs.
- * @param {string[]} sortedSlugs - An array of sorted slugs based on weight.
- * @param {string[]} zeroWeightSlugs - An array of slugs with zero weight.
- * @returns {Object[]} - An array of sorted slugs with their types and existence status in parents.
  */
-const constructSortedSlugs = (refinedChildNodes, parentSlugs, sortedSlugs, zeroWeightSlugs) => {
+const constructSortedSlugs = (
+  refinedChildNodes: any[],
+  parentSlugs: string[],
+  sortedSlugs: string[],
+  zeroWeightSlugs: string[]
+): SlugClassification[] => {
   const parentMapSlugs = parentSlugs.map((slug) => ({
-    type: 'parent',
+    type: 'parent' as const,
     text: slug,
     existsInParent: true
   }))
 
   const childMapSlugs = [...sortedSlugs, ...zeroWeightSlugs].map((slug) => ({
-    type: 'child',
+    type: 'child' as const,
     text: slug,
     existsInParent: refinedChildNodes.some((childNode) => slug == childNode.filterBy)
   }))
@@ -186,13 +198,13 @@ const constructSortedSlugs = (refinedChildNodes, parentSlugs, sortedSlugs, zeroW
   return [...parentMapSlugs, ...childMapSlugs]
 }
 
-const handelLinearAlgorithm = (headingTree, slugs) => {
-  const refinedFilteredNodes = []
+const handelLinearAlgorithm = (headingTree: any, slugs: string[]): FilterResult => {
+  const refinedFilteredNodes: any[] = []
 
   filterTreeDFS(headingTree, slugs, refinedFilteredNodes)
 
   const sortedSlugsResult = [...slugs].map((slug) => ({
-    type: 'child',
+    type: 'child' as const,
     text: slug,
     existsInParent: refinedFilteredNodes.some((childNode) => slug == childNode.filterBy)
   }))
@@ -209,16 +221,15 @@ const handelLinearAlgorithm = (headingTree, slugs) => {
 /**
  * Filters and maps headings based on provided slugs.
  *
- * @param {string[]} slugs - An array of strings to be used for filtering.
- * @param {HTMLElement[]} headings - An array of HTML elements representing the headings.
+ * @param slugs - An array of strings to be used for filtering.
+ * @param headings - An array of HTML elements representing the headings.
  *
- * @returns {{
- *   headingIdsMap: Set<string>,
- *   sortedSlugs: {type: 'parent'|'child', text: string, exsistInParent: boolean}[],
- *   selectedNodes: {level: number, text: string, parent?: Node, id?: string|number, children?: Node[], filterBy?: string, weight?: number, rootPath: string|number[]}[]
- * }}
+ * @returns An object containing:
+ *   - headingIdsMap: Set of heading IDs
+ *   - sortedSlugs: Array of classified slugs with type and existence status
+ *   - selectedNodes: Array of selected nodes with their root paths
  */
-const getHeadingsFilterMap = (slugs, headings) => {
+const getHeadingsFilterMap = (slugs: string[], headings: HTMLElement[]): FilterResult => {
   // Convert slugs to lowercase
   slugs = slugs.map((slug) => slug.toLowerCase())
   const filterLinearAlgorithm = localStorage.getItem('setting.filterAlgorithm')

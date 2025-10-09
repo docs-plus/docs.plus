@@ -1,4 +1,5 @@
 import { TIPTAP_NODES } from '@types'
+import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import {
   getRangeBlocks,
   getHeadingsBlocksMap,
@@ -10,12 +11,17 @@ import {
   getEndPosSelection,
   putTextSelectionEndNode
 } from './helper'
+import { CommandArgs, HeadingAttributes } from './types'
 
-const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
+const changeHeadingLevelBackward = (
+  arrg: CommandArgs,
+  attributes: HeadingAttributes,
+  asWrapper: boolean = false
+): boolean => {
   const { state, tr } = arrg
   const { selection, doc } = state
   const { $from, $to } = selection
-  const { start, end } = $from.blockRange($to)
+  const { start, end } = $from.blockRange($to)!
 
   console.info('[Heading]: Backward process, comingLevel < currentHLevel')
 
@@ -33,7 +39,7 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
   const contentWrapperHeadings = contentWrapper.filter((x) => x.type === TIPTAP_NODES.HEADING_TYPE)
 
   if (asWrapper && contentWrapperParagraphs.length === 0) {
-    contentWrapperParagraphs.push(block.empty)
+    contentWrapperParagraphs.push(block.empty as any)
   }
 
   const node = createHeadingNodeFromSelection(
@@ -43,8 +49,7 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
     $to.pos,
     attributes,
     block,
-    contentWrapperParagraphs,
-    selection
+    contentWrapperParagraphs
   )
 
   tr.delete(start - 1, titleEndPos)
@@ -59,7 +64,9 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
 
   const { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
   const insertPos =
-    comingLevel === 1 ? titleHMap.at(0).endBlockPos : prevBlock.endBlockPos - (shouldNested ? 2 : 0)
+    comingLevel === 1
+      ? titleHMap.at(0)!.endBlockPos
+      : prevBlock!.endBlockPos - (shouldNested ? 2 : 0)
 
   tr.insert(insertPos, node)
 
@@ -72,14 +79,14 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
   }
 
   let totalNodeSize = 0
-  node.forEach((nodeItem) => {
+  node.forEach((nodeItem: ProseMirrorNode) => {
     totalNodeSize += nodeItem.nodeSize
   })
 
   if (comingLevel === 1) {
     lastH1Inserted.startBlockPos = insertPos
     lastH1Inserted.endBlockPos =
-      tr.doc.nodeAt(lastH1Inserted.startBlockPos).content.size + lastH1Inserted.startBlockPos
+      tr.doc.nodeAt(lastH1Inserted.startBlockPos)!.content.size + lastH1Inserted.startBlockPos
   }
 
   insertRemainingHeadings({
@@ -88,7 +95,8 @@ const changeHeadingLevelBackward = (arrg, attributes, asWrapper = false) => {
     headings: contentWrapperHeadings,
     titleStartPos: comingLevel === 1 ? lastH1Inserted.startBlockPos : titleStartPos,
     titleEndPos: comingLevel === 1 ? lastH1Inserted.endBlockPos : tr.mapping.map(titleEndPos),
-    prevHStartPos: comingLevel === 1 ? lastH1Inserted.startBlockPos : titleHMap.at(-1).startBlockPos
+    prevHStartPos:
+      comingLevel === 1 ? lastH1Inserted.startBlockPos : titleHMap.at(-1)!.startBlockPos
   })
 
   return true

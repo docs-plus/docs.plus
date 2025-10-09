@@ -1,4 +1,5 @@
 import { TIPTAP_NODES } from '@types'
+import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import {
   createThisBlockMap,
   getHeadingsBlocksMap,
@@ -8,12 +9,13 @@ import {
   createHeadingNodeFromSelection,
   putTextSelectionEndNode
 } from './helper'
+import { CommandArgs, HeadingAttributes } from './types'
 
-const changeHeadingLevelH1 = (arrg, attributes) => {
+const changeHeadingLevelH1 = (arrg: CommandArgs, attributes: HeadingAttributes): boolean => {
   const { state, tr } = arrg
   const { selection, doc } = state
   const { $from, $to, from } = selection
-  const { start } = $from.blockRange($to)
+  const { start } = $from.blockRange($to)!
 
   console.info('[Heading]: change heading Level h1')
 
@@ -24,7 +26,7 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
 
   const comingLevel = attributes.level
   const block = createThisBlockMap(state)
-  const currentHLevel = $from.doc.nodeAt(block.start).attrs.level
+  const currentHLevel = $from.doc.nodeAt(block.start)!.attrs.level
 
   let titleStartPos = $from.start(1) - 1
   let titleEndPos = $to.end(1)
@@ -47,7 +49,7 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
   )
   const contentWrapperHeadings = contentWrapper.filter((x) => x.type === TIPTAP_NODES.HEADING_TYPE)
 
-  doc.nodesBetween($from.start(0), start - 1, function (node, pos) {
+  doc.nodesBetween($from.start(0), start - 1, function (node: ProseMirrorNode, pos: number) {
     if (pos > start - 1) return
 
     if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
@@ -73,15 +75,14 @@ const changeHeadingLevelH1 = (arrg, attributes) => {
     titleStartPos,
     attributes,
     block,
-    contentWrapperParagraphs,
-    selection
+    contentWrapperParagraphs
   )
 
   // remove content from the current positon to the end of the heading
   tr.delete(titleStartPos, titleEndPos)
 
   // then add the new heading with the content
-  const insertPos = tr.mapping.map(prevBlock.endBlockPos - (shouldNested ? 2 : 0))
+  const insertPos = tr.mapping.map(prevBlock!.endBlockPos - (shouldNested ? 2 : 0))
 
   tr.insert(insertPos, newHeadingNode)
 

@@ -6,8 +6,9 @@ import {
   convertHeadingsToParagraphs
 } from '../helper'
 import onHeading from './onHeading'
+import { NormalTextArgs } from '../types'
 
-const onSelection = ({ state, tr, editor }) => {
+const onSelection = ({ state, tr, editor }: NormalTextArgs): boolean => {
   const { selection, doc } = state
   const { $from, $to, from, to } = selection
 
@@ -21,7 +22,7 @@ const onSelection = ({ state, tr, editor }) => {
   // check if the selected content start in contentheading/heading node
   if (selectedContents[0]?.level) {
     console.info('[Heading]: selected content start with heading node')
-    onHeading({ state, tr, editor })
+    onHeading({ state, tr, editor } as NormalTextArgs)
     return true
   }
 
@@ -35,8 +36,8 @@ const onSelection = ({ state, tr, editor }) => {
     ...paragraphs.map((node) => state.schema.nodeFromJSON(node))
   ]
 
-  tr.deleteRange(selectedContents.at(0).startBlockPos, titleEndPos)
-  tr.insert(selectedContents.at(0).startBlockPos, newConent)
+  tr.deleteRange(selectedContents.at(0)!.startBlockPos, titleEndPos)
+  tr.insert(selectedContents.at(0)!.startBlockPos, newConent)
 
   // update selection position
   const focusSelection = new TextSelection(tr.doc.resolve(from))

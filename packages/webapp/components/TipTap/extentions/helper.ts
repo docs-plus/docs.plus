@@ -1,23 +1,36 @@
 import { TIPTAP_NODES, TIPTAP_EVENTS } from '@types'
-import { TextSelection } from '@tiptap/pm/state'
+import { TextSelection, EditorState } from '@tiptap/pm/state'
+import { Node as ProseMirrorNode, Schema } from '@tiptap/pm/model'
+import { Transaction } from '@tiptap/pm/state'
+import {
+  HeadingBlockInfo,
+  SelectionBlock,
+  BlockMap,
+  PrevBlockResult,
+  NodeState,
+  HeadingPosition,
+  InsertHeadingsParams,
+  LastH1Inserted,
+  InsertHeadingsByNodeBlocksResult,
+  HeadingAttributes
+} from './types'
 
 /**
  * Get a list of previous headings within a specified range in the document.
- * @param {Object} tr - Transform object
- * @param {Number} start - Start position
- * @param {Number} from - End position
- * @param {Number} [startPos=0] - Optional starting position to filter results
- * @returns {Array} Array of heading objects
- * @throws {Error} If the 'from' position is less than the 'start' position
  */
-export const getPrevHeadingList = (tr, start, from, startPos = 0) => {
+export const getPrevHeadingList = (
+  tr: Transaction,
+  start: number,
+  from: number,
+  startPos: number = 0
+): HeadingBlockInfo[] => {
   if (from < start) {
     throw new Error(
       `[Heading]: Invalid position range. 'from' (${from}) is less than 'start' (${start}). startPos: ${startPos}`
     )
   }
 
-  const titleHMap = []
+  const titleHMap: HeadingBlockInfo[] = []
 
   try {
     tr.doc.nodesBetween(start, from, function (node, pos) {
@@ -44,22 +57,17 @@ export const getPrevHeadingList = (tr, start, from, startPos = 0) => {
 
 /**
  * Get selection blocks from a Prosemirror document.
- * @param {Object} doc - Prosemirror document
- * @param {Number} start - Start position
- * @param {Number} end - End position
- * @param {Boolean} [includeContentHeading=false] - Whether to include content heading
- * @param {Boolean} [range=false] - Whether to use range or nodesBetween
- * @returns {Array} Array of selection blocks
  */
 export const getSelectionBlocks = (
-  doc,
-  start,
-  end,
-  includeContentHeading = false,
-  range = false
-) => {
-  const selectedContents = []
-  const processNode = (node, pos, parent) => {
+  doc: ProseMirrorNode,
+  start: number,
+  end: number,
+  includeContentHeading: boolean = false,
+  range: boolean = false
+): SelectionBlock[] => {
+  const selectedContents: SelectionBlock[] = []
+  const processNode = (node: ProseMirrorNode, pos: number, parent: ProseMirrorNode | null) => {
+    if (!parent) return
     const depth = doc.resolve(pos).depth
     const isContentWrapper = parent.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE
     const isContentHeading = node.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
@@ -88,7 +96,7 @@ export const getSelectionBlocks = (
     doc.descendants(processNode)
   } else {
     doc.nodesBetween(start, end, (node, pos, parent) => {
-      if (pos >= start) {
+      if (pos >= start && parent) {
         processNode(node, pos, parent)
       }
     })
@@ -97,11 +105,16 @@ export const getSelectionBlocks = (
   return selectedContents
 }
 
-export const getSelectionRangeBlocks = (doc, start, end, includeContentHeading = false) => {
-  const selectedContents = []
+export const getSelectionRangeBlocks = (
+  doc: ProseMirrorNode,
+  start: number,
+  end: number,
+  includeContentHeading: boolean = false
+): SelectionBlock[] => {
+  const selectedContents: SelectionBlock[] = []
 
-  const processNode = (node, pos, parent) => {
-    if (!node.isBlock) return
+  const processNode = (node: ProseMirrorNode, pos: number, parent: ProseMirrorNode | null) => {
+    if (!node.isBlock || !parent) return
     const isContentWrapper = parent.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE
     const isContentHeading = node.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
 
@@ -131,19 +144,19 @@ export const getSelectionRangeBlocks = (doc, start, end, includeContentHeading =
 }
 
 /**
- *
- * @param {Object} doc prosemirror doc
- * @param {Number} start start pos
- * @param {Number} end end pos
- * @returns Array of Selection Block
+ * Get range blocks from a document
  */
-export const getRangeBlocks = (doc, start, end) => {
+export const getRangeBlocks = (
+  doc: ProseMirrorNode,
+  start: number,
+  end: number
+): SelectionBlock[] => {
   let firstHEading = true
   let prevDepth = 0
-  const selectedContents = []
+  const selectedContents: SelectionBlock[] = []
 
   doc.nodesBetween(start, end, (node, pos, parent) => {
-    if (pos < start) return
+    if (pos < start || !parent) return
 
     const nodeType = node.type.name
     const isContentWrapper = parent.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE
@@ -182,14 +195,13 @@ export const getRangeBlocks = (doc, start, end) => {
 
 /**
  * Returns a map of headings and the blocks that fall under them
- *
- * @param {Object} doc
- * @param {number} start
- * @param {number} end
- * @returns {Map<string, Object>}
  */
-export const getHeadingsBlocksMap = (doc, start, end) => {
-  const titleHMap = []
+export const getHeadingsBlocksMap = (
+  doc: ProseMirrorNode,
+  start: number,
+  end: number
+): HeadingBlockInfo[] => {
+  const titleHMap: HeadingBlockInfo[] = []
 
   const newEnd = Math.min(end, doc.content.size)
 
@@ -214,16 +226,11 @@ export const getHeadingsBlocksMap = (doc, start, end) => {
 
 /**
  * Creates a block map of the editor state.
- * @param {Object} $from - The current selection's start position in the editor state.
- * @param {number} depth - The current selection's depth.
- * @param {Object} caretSelectionTextBlock - The current selection's text block.
- * @returns {Object} blockMap - The current selection's block map.
  */
-
-export const createThisBlockMap = (state) => {
+export const createThisBlockMap = (state: EditorState): BlockMap => {
   const { selection } = state
   const { $from, $to } = selection
-  const { depth } = $from.blockRange($to)
+  const { depth } = $from.blockRange($to)!
 
   const caretSelectionTextBlock = getSelectionTextNode(state)
   return {
@@ -252,27 +259,29 @@ export const createThisBlockMap = (state) => {
 }
 
 /**
- * This method copies a text to clipboard
- * @param {string} text - the text to copy
- * @param {function} callback - a callback to execute after the text is copied
+ * Copy text to clipboard
  */
-export const copyToClipboard = (text, callback) => {
+export const copyToClipboard = (text: string, callback?: () => void): void => {
   navigator.clipboard.writeText(text).then(() => {
     if (callback) callback()
   })
 }
 
-export const getNodeState = (headingId) => {
+export const getNodeState = (headingId: string): NodeState => {
   try {
-    const headingMap = JSON.parse(localStorage.getItem('headingMap')) || []
-    return headingMap.find((h) => h.headingId === headingId) || { crinkleOpen: true }
+    const headingMap = JSON.parse(localStorage.getItem('headingMap') || '[]')
+    return headingMap.find((h: NodeState) => h.headingId === headingId) || { crinkleOpen: true }
   } catch (error) {
     console.error('Error parsing headingMap from localStorage:', error)
     return { crinkleOpen: true }
   }
 }
 
-export const getPrevHeadingPos = (doc, startPos, endPos) => {
+export const getPrevHeadingPos = (
+  doc: ProseMirrorNode,
+  startPos: number,
+  endPos: number
+): HeadingPosition => {
   let prevHStartPos = 0
   let prevHEndPos = 0
 
@@ -294,14 +303,11 @@ export const getPrevHeadingPos = (doc, startPos, endPos) => {
 
 /**
  * Finds the previous block based on the heading level and determines whether it should be nested.
- *
- * @param {Array} mapHPost - An array-like structure containing objects with 'le' property representing heading levels.
- * @param {number} headingLevel - A numeric value representing the level of the heading to find the previous block for.
- * @returns {Object} An object containing two properties:
- *   - prevBlock: The previous block found based on the conditions.
- *   - shouldNested: A boolean value indicating whether the block should be nested or not.
  */
-export const findPrevBlock = (mapHPost, headingLevel) => {
+export const findPrevBlock = (
+  mapHPost: HeadingBlockInfo[],
+  headingLevel: number
+): PrevBlockResult => {
   if (mapHPost.length === 0) {
     console.error('[Heading][findPrevBlock] no mapHPost')
     return { prevBlock: null, shouldNested: false }
@@ -322,10 +328,12 @@ export const findPrevBlock = (mapHPost, headingLevel) => {
   return { prevBlock, shouldNested }
 }
 
-export const extractParagraphsAndHeadings = (clipboardContents) => {
-  const paragraphs = []
-  const headings = []
-  let heading = null
+export const extractParagraphsAndHeadings = (
+  clipboardContents: SelectionBlock[]
+): [SelectionBlock[], any[]] => {
+  const paragraphs: SelectionBlock[] = []
+  const headings: any[] = []
+  let heading: any = null
 
   for (const node of clipboardContents) {
     if (!heading && !node.level) {
@@ -369,14 +377,6 @@ export const extractParagraphsAndHeadings = (clipboardContents) => {
 
 /**
  * Inserts remaining headings from clipboard content into the document
- * @param {Object} params - The parameters object
- * @param {Object} params.state - The editor state
- * @param {Object} params.tr - The current transaction being built
- * @param {Array<Node>} params.headings - Array of heading nodes to insert
- * @param {number} params.titleStartPos - Start position of the title/document section
- * @param {number} params.titleEndPos - End position of the title/document section
- * @param {number} params.prevHStartPos - Start position of the previous heading
- * @returns {void} - This function modifies the transaction directly and doesn't return a value
  */
 export const insertRemainingHeadings = ({
   state,
@@ -384,8 +384,8 @@ export const insertRemainingHeadings = ({
   headings,
   titleStartPos,
   titleEndPos,
-  prevHStartPos
-}) => {
+  prevHStartPos: _prevHStartPos
+}: InsertHeadingsParams): boolean => {
   if (!headings.length) {
     console.info('[Heading][insertRemainingHeadings] no headings to insert')
     return true
@@ -404,10 +404,10 @@ export const insertRemainingHeadings = ({
     const comingLevel = heading.level || heading.le || heading.content.at(0).level
     mapHPost = getPrevHeadingList(
       tr,
-      mapHPost.at(0).startBlockPos,
-      mapHPost.length === 1 && mapHPost.at(0).le === 1
-        ? mapHPost.at(0).endBlockPos
-        : Math.max(tr.mapping.map(mapHPost.at(0).endBlockPos), mapHPost.at(0).endBlockPos)
+      mapHPost.at(0)!.startBlockPos,
+      mapHPost.length === 1 && mapHPost.at(0)!.le === 1
+        ? mapHPost.at(0)!.endBlockPos
+        : Math.max(tr.mapping.map(mapHPost.at(0)!.endBlockPos), mapHPost.at(0)!.endBlockPos)
     )
 
     const prevHBlock = getPrevHeadingPos(tr.doc, titleStartPos, tr.mapping.map(titleEndPos))
@@ -418,7 +418,7 @@ export const insertRemainingHeadings = ({
 
     const node = state.schema.nodeFromJSON(heading)
 
-    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), node)
+    tr.insert(prevBlock!.endBlockPos - (shouldNested ? 2 : 0), node)
 
     // notify that new heading was created, for update TOC
     tr.setMeta(TIPTAP_EVENTS.NEW_HEADING_CREATED, true)
@@ -427,10 +427,14 @@ export const insertRemainingHeadings = ({
   return true
 }
 
-export const putTextSelectionEndNode = (tr, insertPos, headingNode) => {
+export const putTextSelectionEndNode = (
+  tr: Transaction,
+  insertPos: number,
+  headingNode: ProseMirrorNode[]
+): TextSelection => {
   const firstHeading = headingNode.at(0)
-  const firstHeadingChild = firstHeading.firstChild
-  const firstChildNodeSize = firstHeadingChild?.nodeSize
+  const firstHeadingChild = firstHeading?.firstChild
+  const firstChildNodeSize = firstHeadingChild?.nodeSize || 0
 
   const updatedSelection = new TextSelection(tr.doc.resolve(insertPos + firstChildNodeSize))
 
@@ -439,10 +443,8 @@ export const putTextSelectionEndNode = (tr, insertPos, headingNode) => {
 
 /**
  * Recursively finds paragraphs within a node and pushes them to the newContent array.
- * @param {Object} currentNode - The current node to search for paragraphs.
- * @param {Array} newContent - The array to push found paragraphs into.
  */
-const findParagraphs = (currentNode, newContent) => {
+const findParagraphs = (currentNode: ProseMirrorNode, newContent: any[]): void => {
   currentNode.forEach((childNode) => {
     if (childNode.type.name === TIPTAP_NODES.PARAGRAPH_TYPE) {
       newContent.push(childNode.toJSON())
@@ -452,12 +454,16 @@ const findParagraphs = (currentNode, newContent) => {
   })
 }
 
-export const getEndPosSelection = (doc, state) => {
+export const getEndPosSelection = (doc: ProseMirrorNode, state: EditorState): number => {
   const { $from, $to, from, to } = state.selection
-  const { start, end } = $from.blockRange($to)
+  const { start: _start, end } = $from.blockRange($to)!
 
   const startPos =
-    from === to ? end : isMultipleSelection(doc, from, to) ? end : from + doc?.nodeAt(from).nodeSize
+    from === to
+      ? end
+      : isMultipleSelection(doc, from, to)
+        ? end
+        : from + doc?.nodeAt(from)!.nodeSize
 
   return startPos
 }
@@ -465,39 +471,31 @@ export const getEndPosSelection = (doc, state) => {
 // This is a temporary fix for detecting multiple selections.
 // I haven't found a better solution yet.
 // Heads-up: selecting text by dragging the cursor works differently than double-clicking or tapping on a line.
-export const isMultipleSelection = (doc, start, end) => {
+export const isMultipleSelection = (doc: ProseMirrorNode, start: number, end: number): boolean => {
   const textBetween = doc.textBetween(start, end, '-/||/-')
   const textBetweenArray = textBetween.split('-/||/-').filter((item) => item.trim() !== '')
   return textBetweenArray.length > 1
 }
 
 /**
- *
- * @param {Object} doc
- * @param {Object} state
- * @param {Number} start
- * @param {Number} end
- * @param {Object} attributes
- * @param {Object} block
- * @param {Array} contentWrapper
- * @returns {Array}
+ * Create heading nodes from selection
  */
 export const createHeadingNodeFromSelection = (
-  doc,
-  state,
-  start,
-  end,
-  attributes,
-  block,
-  contentWrapper
-) => {
-  const headings = []
+  doc: ProseMirrorNode,
+  state: EditorState,
+  start: number,
+  end: number,
+  attributes: HeadingAttributes,
+  block: BlockMap,
+  contentWrapper: SelectionBlock[]
+): ProseMirrorNode[] => {
+  const headings: any[] = []
   const { $from, $to } = state.selection
 
   if (isMultipleSelection(doc, start, end)) {
     const mResolve = doc.resolve(start)
 
-    let { start: newStart } = $from.blockRange($to)
+    let { start: newStart } = $from.blockRange($to)!
 
     // find the contentWrapper node position of the current(start) selection
     let contentWrapperPos = mResolve.pos
@@ -525,6 +523,7 @@ export const createHeadingNodeFromSelection = (
       end,
       function (node, pos, parent) {
         if (
+          !parent ||
           !(
             node.isBlock &&
             parent.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE &&
@@ -533,7 +532,7 @@ export const createHeadingNodeFromSelection = (
         )
           return
 
-        let newContent = []
+        let newContent: any[] = []
         if (node.type.name !== TIPTAP_NODES.PARAGRAPH_TYPE) {
           findParagraphs(node, newContent)
         }
@@ -576,10 +575,13 @@ export const createHeadingNodeFromSelection = (
     }
   } else {
     let node = doc.nodeAt(start)
+    let nodeJson: any = null
     if (!node || state.selection.toJSON().type === TIPTAP_NODES.TEXT_TYPE) {
-      node = state.selection.$anchor.parent.toJSON()
+      nodeJson = state.selection.$anchor.parent.toJSON()
+    } else {
+      nodeJson = node.toJSON()
     }
-    const jsonNode = {
+    const jsonNode: any = {
       type: TIPTAP_NODES.HEADING_TYPE,
       attrs: {
         level: attributes.level
@@ -598,8 +600,8 @@ export const createHeadingNodeFromSelection = (
       ]
     }
 
-    if (node.content?.length) {
-      jsonNode.content.at(0).content = [...node.content]
+    if (nodeJson?.content && Array.isArray(nodeJson.content)) {
+      jsonNode.content.at(0)!.content = [...nodeJson.content]
     }
 
     headings.push(jsonNode)
@@ -608,7 +610,7 @@ export const createHeadingNodeFromSelection = (
   return headings.map((x) => state.schema.nodeFromJSON(x))
 }
 
-export const getSelectionTextNode = (state) => {
+export const getSelectionTextNode = (state: EditorState): { type: string; text: string } => {
   const { selection, doc } = state
   const { $from, $to, $anchor } = selection
 
@@ -623,16 +625,17 @@ export const getSelectionTextNode = (state) => {
 }
 
 /**
- *
- * @param {Object} doc prosemirror doc
- * @param {Number} start start pos
- * @param {Number} end end pos
- * @returns Array of Selection Block
+ * Get selection range slice
  */
-export const getSelectionRangeSlice = (doc, state, start, end) => {
+export const getSelectionRangeSlice = (
+  doc: ProseMirrorNode,
+  state: EditorState,
+  start: number,
+  end: number
+): SelectionBlock[] => {
   let firstHEading = true
   let prevDepth = 0
-  const selectedContents = []
+  const selectedContents: SelectionBlock[] = []
   const sResolve = doc.resolve(start)
 
   if (sResolve.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
@@ -661,15 +664,15 @@ export const getSelectionRangeSlice = (doc, state, start, end) => {
     }
   }
 
-  doc.nodesBetween(newStart, end, function (node, pos, parent, index) {
-    if (pos < contentWrapperPos) return
+  doc.nodesBetween(newStart, end, function (node, pos, parent, _index) {
+    if (pos < contentWrapperPos || !parent) return
     if (!node.isBlock) return
 
     const isContentWrapper = parent.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE
     const nodeType = node.type.name
 
     if (firstHEading && isContentWrapper && nodeType !== TIPTAP_NODES.HEADING_TYPE) {
-      let contentObject = {
+      let contentObject: SelectionBlock = {
         depth: doc.resolve(pos).depth,
         startBlockPos: pos,
         endBlockPos: pos + node.nodeSize,
@@ -700,11 +703,11 @@ export const getSelectionRangeSlice = (doc, state, start, end) => {
   })
 
   if (sResolve.parentOffset > 0 && selectedContents.length) {
-    let firstNode = selectedContents.at(0)
+    let firstNode = selectedContents.at(0)!
     const newposfor = newStart + sResolve.parentOffset
-    const newContent = firstNode.node.cut(newposfor - firstNode.startBlockPos)
-    selectedContents.at(0).content = newContent.content.toJSON()
-    selectedContents.at(0).startBlockPos = newStart
+    const newContent = firstNode.node!.cut(newposfor - firstNode.startBlockPos)
+    selectedContents.at(0)!.content = newContent.content.toJSON()
+    selectedContents.at(0)!.startBlockPos = newStart
   }
 
   return selectedContents
@@ -712,34 +715,22 @@ export const getSelectionRangeSlice = (doc, state, start, end) => {
 
 /**
  * Creates a ProseMirror node from a JSON representation using the provided schema
- *
- * @param {Object} node - JSON representation of a node
- * @param {Object} schema - ProseMirror schema to use for node creation
- * @returns {Node} - ProseMirror node instance
  */
-export const createNodeFromJSON = (node, schema) => schema.nodeFromJSON(node)
+export const createNodeFromJSON = (node: any, schema: Schema): ProseMirrorNode =>
+  schema.nodeFromJSON(node)
 
 /**
  * Flattens heading nodes into a single array
- *
- * Takes heading nodes that have a nested structure and extracts:
- * 1. The title node (content[0])
- * 2. All child content nodes (content[1].content)
- *
- * Returns them as a flat array in sequential order.
- *
- * @param {Array} headings - Heading nodes to flatten
- * @returns {Array} - Flat array of all nodes
  */
-export const linearizeHeadingNodes = (headings) => {
-  const flatHeadings = []
+export const linearizeHeadingNodes = (headings: ProseMirrorNode[]): ProseMirrorNode[] => {
+  const flatHeadings: ProseMirrorNode[] = []
 
   headings.forEach((heading) => {
-    const headingTitleNode = heading.content.at(0)
-    const contentWrapperNodes = heading.content.at(1).content
+    const headingTitleNode = heading.content.child(0)
+    const contentWrapperNodes = heading.content.child(1).content
 
     flatHeadings.push(headingTitleNode)
-    flatHeadings.push(...contentWrapperNodes)
+    contentWrapperNodes.forEach((node) => flatHeadings.push(node))
   })
 
   return flatHeadings
@@ -747,19 +738,14 @@ export const linearizeHeadingNodes = (headings) => {
 
 /**
  * Transforms clipboard content into structured document format
- *
- * Takes raw clipboard nodes and organizes them into paragraphs and properly
- * structured heading hierarchies according to the DocsPlus schema.
- *
- * @param {Array} clipboardContents - Raw nodes from clipboard
- * @param {Object} options - Options object
- * @param {Object} options.schema - ProseMirror schema for node creation
- * @returns {Array} - Array containing [paragraphs, headings]
  */
-export const transformClipboardToStructured = (clipboardContents, { schema }) => {
-  const paragraphs = []
-  const headings = []
-  let currentHeading = null
+export const transformClipboardToStructured = (
+  clipboardContents: any[],
+  { schema }: { schema: Schema }
+): [ProseMirrorNode[], ProseMirrorNode[]] => {
+  const paragraphs: ProseMirrorNode[] = []
+  const headings: ProseMirrorNode[] = []
+  let currentHeading: any = null
 
   // Iterate through clipboard contents and categorize nodes as paragraphs or headings
   clipboardContents.forEach((node) => {
@@ -798,42 +784,26 @@ export const transformClipboardToStructured = (clipboardContents, { schema }) =>
 
 /**
  * Inserts heading nodes into the document at their appropriate positions
- *
- * This function places each heading in the correct location within the document structure,
- * maintaining proper hierarchical relationships between headings of different levels.
- * It determines insertion positions by analyzing existing heading blocks and their levels,
- * handling nesting appropriately, and updating position references after each insertion.
- *
- * @param {Transaction} tr - The ProseMirror transaction to modify
- * @param {Array} headings - Array of heading nodes to insert
- * @param {number} lastBlockPos - Position of the last block in the document
- * @param {Object} lastH1Inserted - Reference to track the last H1 heading inserted
- * @param {number} lastH1Inserted.startBlockPos - Start position of the last H1 heading
- * @param {number} lastH1Inserted.endBlockPos - End position of the last H1 heading
- * @param {number} from - Original cursor position
- * @param {number} titleStartPos - Start position of the document title
- * @param {number} prevHStartPos - Start position of the previous heading
- * @returns {Object} - Updated position references {lastBlockPos, prevHStartPos}
  */
 export const insertHeadingsByNodeBlocks = (
-  tr,
-  headings,
-  lastBlockPos,
-  lastH1Inserted,
-  from,
-  titleStartPos,
-  prevHStartPos
-) => {
-  let mapHPost = {}
+  tr: Transaction,
+  headings: ProseMirrorNode[],
+  lastBlockPos: number,
+  lastH1Inserted: LastH1Inserted,
+  from: number,
+  titleStartPos: number,
+  prevHStartPos: number
+): InsertHeadingsByNodeBlocksResult => {
+  let mapHPost: HeadingBlockInfo[] = []
 
   // Iterate over each heading and insert it into the correct position
   headings.forEach((heading) => {
-    const comingLevel = heading.attrs.level || heading.content.firstChild.attrs.level
+    const comingLevel = heading.attrs.level || heading.content.firstChild!.attrs.level
     const startBlock = lastH1Inserted.startBlockPos
     const endBlock =
       lastH1Inserted.endBlockPos === 0
         ? tr.mapping.map(from)
-        : tr.doc.nodeAt(lastH1Inserted.startBlockPos).content.size + lastH1Inserted.startBlockPos
+        : tr.doc.nodeAt(lastH1Inserted.startBlockPos)!.content.size + lastH1Inserted.startBlockPos
 
     // Get the map of headings blocks within the specified range
     mapHPost = getHeadingsBlocksMap(tr.doc, startBlock, endBlock).filter(
@@ -846,8 +816,8 @@ export const insertHeadingsByNodeBlocks = (
     // Find the last occurrence of the previous block level if there are duplicates
     const robob = mapHPost.filter((x) => prevBlock?.le === x?.le)
 
-    if (robob.length > 1) prevBlock = robob.at(-1)
-    lastBlockPos = prevBlock?.endBlockPos
+    if (robob.length > 1) prevBlock = robob.at(-1)!
+    lastBlockPos = prevBlock?.endBlockPos || lastBlockPos
 
     // Update the previous heading start position if the previous block is at depth 2
     if (prevBlock && prevBlock.depth === 2) {
@@ -867,15 +837,15 @@ export const insertHeadingsByNodeBlocks = (
   return { lastBlockPos, prevHStartPos }
 }
 
-const removeBoldMark = (node) => {
+const removeBoldMark = (node: any): any => {
   if (!node.marks) return node
   return {
     ...node,
-    marks: node.marks.filter((mark) => mark.type !== 'bold')
+    marks: node.marks.filter((mark: any) => mark.type !== 'bold')
   }
 }
 
-const convertContentBlockToParagraph = (contentBlock) => {
+const convertContentBlockToParagraph = (contentBlock: SelectionBlock): SelectionBlock => {
   if (!contentBlock.level) return contentBlock
 
   return {
@@ -885,7 +855,7 @@ const convertContentBlockToParagraph = (contentBlock) => {
   }
 }
 
-export const convertHeadingsToParagraphs = (contentBlocks) => {
+export const convertHeadingsToParagraphs = (contentBlocks: SelectionBlock[]): SelectionBlock[] => {
   if (!Array.isArray(contentBlocks)) return []
   return contentBlocks.map(convertContentBlockToParagraph)
 }

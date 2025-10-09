@@ -6,6 +6,9 @@ import deleteSelectedRange from '../extentions/deleteSelectedRange'
 import { TIPTAP_NODES } from '@types'
 import { getNodeState } from '../extentions/helper'
 import { createCopyPastePlugin, createRangeSelectionPlugin } from '../extentions/plugins'
+import { DOMOutputSpec } from '@tiptap/pm/model'
+import { HeadingAttributes } from '../extentions/types'
+import { ViewMutationRecord } from '@tiptap/pm/view'
 
 const Heading = Node.create({
   name: TIPTAP_NODES.HEADING_TYPE,
@@ -48,7 +51,7 @@ const Heading = Node.create({
 
       const nodeState = getNodeState(headingId)
 
-      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value))
+      Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value as string))
 
       dom.classList.add(nodeState.crinkleOpen ? 'opend' : 'closed')
 
@@ -61,10 +64,10 @@ const Heading = Node.create({
       return {
         dom,
         contentDOM: content,
-        ignoreMutation: (mutation) => {
+        ignoreMutation: (mutation: ViewMutationRecord) => {
           if (mutation.type === 'selection') return false
 
-          return !dom.contains(mutation.target) || dom === mutation.target
+          return !dom.contains(mutation.target as globalThis.Node) || dom === mutation.target
         },
         update: (updatedNode) => {
           if (updatedNode.type.name !== this.name) return false
@@ -75,7 +78,7 @@ const Heading = Node.create({
             dom.setAttribute('level', newLevel)
           }
 
-          const prevHeadingId = dom.getAttribute('data-id')
+          const prevHeadingId = dom.getAttribute('data-id') || ''
           const newHeadingId = updatedNode.attrs.id
 
           // TODO: this is temporary solution, need to find better way for this
@@ -102,31 +105,37 @@ const Heading = Node.create({
   parseHTML() {
     return [{ tag: 'div' }]
   },
-  renderHTML({ HTMLAttributes }) {
+  renderHTML({ HTMLAttributes }): DOMOutputSpec {
     return ['div', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0]
   },
   addCommands() {
     return {
-      normalText: () => (arrg) => {
-        return changeHeading2paragraphs(arrg)
-      },
-      wrapBlock: (attributes) => (arrg) => {
-        const { dispatch, state } = arrg
-        const { selection } = state
-        const { $anchor } = selection
+      normalText:
+        () =>
+        ({ state, tr, dispatch, editor }: any) => {
+          changeHeading2paragraphs({ state, tr, dispatch, editor })
+          return true
+        },
+      wrapBlock:
+        (attributes: HeadingAttributes) =>
+        ({ state, tr, dispatch, editor }: any) => {
+          const { selection } = state
+          const { $anchor } = selection
 
-        // if cursor is on the heading block, change the level of the heading
-        if ($anchor.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
-          return changeHeadingLevel(arrg, attributes, dispatch)
-        }
+          // if cursor is on the heading block, change the level of the heading
+          if ($anchor.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
+            changeHeadingLevel({ state, tr, dispatch, editor }, attributes)
+            return true
+          }
 
-        return wrapContenWithHeading(arrg, attributes)
-      },
+          wrapContenWithHeading({ state, tr, dispatch, editor }, attributes)
+          return true
+        },
       ensureContentWrapper:
         () =>
-        ({ tr, state, dispatch }) => {
+        ({ tr, state, dispatch }: any) => {
           const { doc, schema } = state
-          doc.descendants((node, pos) => {
+          doc.descendants((node: any, pos: number) => {
             if (node.type.name === TIPTAP_NODES.HEADING_TYPE && !node.childCount) {
               const contentWrapper = schema.nodes.contentWrapper.create()
               tr.insert(pos + node.nodeSize, contentWrapper)
@@ -135,7 +144,7 @@ const Heading = Node.create({
           if (dispatch) dispatch(tr)
           return true
         }
-    }
+    } as any
   },
   addKeyboardShortcuts() {
     return {
@@ -166,13 +175,13 @@ const Heading = Node.create({
           return false
         }
 
-        const { end, depth } = $from.blockRange($to)
+        const { end, depth } = $from.blockRange($to)!
 
         // if a user Enter in the contentHeading block,
         // should go to the next block, which is contentWrapper
-        const parent = $head.path
-          .filter((x) => x?.type?.name)
-          .findLast((x) => x.type.name === this.name)
+        const parent = ($head as any).path
+          .filter((x: any) => x?.type?.name)
+          .findLast((x: any) => x.type.name === this.name)
 
         // INFO: if the content is hide, do not anything
         // ! this open in the Heading block is wrong and Have to change, It's opposite
@@ -220,11 +229,11 @@ const Heading = Node.create({
         return editor.chain().insertContentAt(nextLine, '<p></p>').scrollIntoView().run()
       },
       ...this.options.levels.reduce(
-        (items, level) => ({
+        (items: any, level: number) => ({
           ...items,
           ...{
             [`Mod-Alt-${level}`]: () =>
-              this.editor.commands.wrapBlock({
+              (this.editor.commands as any).wrapBlock({
                 level: level
               })
           }
@@ -232,11 +241,11 @@ const Heading = Node.create({
         {}
       ),
       // Add shortcut for normal text (level 0)
-      'Mod-Alt-0': () => this.editor.commands.normalText()
+      'Mod-Alt-0': () => (this.editor.commands as any).normalText()
     }
   },
   addInputRules() {
-    return this.options.levels.map((level) => {
+    return this.options.levels.map((level: number) => {
       const config = {
         find: new RegExp(`^(#{${Math.min(...this.options.levels)},${level}})\\s$`, 'g'),
         type: this.type,
@@ -252,36 +261,16 @@ const Heading = Node.create({
           const attributes = callOrReturn(config.getAttributes, undefined, match) || {}
 
           state.tr.delete(range.from, range.to)
-          return wrapContenWithHeading({ ...data, tr: state.tr }, attributes)
+          wrapContenWithHeading(
+            { ...data, tr: state.tr, editor: this.editor },
+            attributes as HeadingAttributes
+          )
         }
       })
     })
   },
   addProseMirrorPlugins() {
-    return [
-      // new Plugin({
-      //   key: new PluginKey('ensureContentWrapperPlugin'),
-      //   appendTransaction: (transactions, oldState, newState) => {
-      //     console.log('ensureContentWrapperPlugin running, doc size:', newState.doc.nodeSize)
-      //     let tr = newState.tr
-      //     let modified = false
-
-      //     newState.doc.descendants((node, pos) => {
-      //       if (node.type.name === ENUMS.NODES.HEADING_TYPE && !node.childCount) {
-      //         console.log('Empty heading found at pos:', pos, 'Adding contentWrapper')
-      //         const contentWrapper = newState.schema.nodes.contentWrapper.create()
-      //         tr = tr.insert(pos + node.nodeSize, contentWrapper)
-      //         modified = true
-      //       }
-      //     })
-
-      //     return modified ? tr : null
-      //   }
-      // }),
-      // https://github.com/pageboard/pagecut/blob/bd91a17986978d560cc78642e442655f4e09ce06/src/editor.js#L234-L241
-      createCopyPastePlugin(this.editor),
-      createRangeSelectionPlugin(this.editor)
-    ]
+    return [createCopyPastePlugin(this.editor), createRangeSelectionPlugin(this.editor)]
   }
 })
 

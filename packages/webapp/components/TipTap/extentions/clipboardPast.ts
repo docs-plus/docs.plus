@@ -1,6 +1,8 @@
-import { Slice } from '@tiptap/pm/model'
-import { TextSelection } from '@tiptap/pm/state'
+import { Slice, Fragment } from '@tiptap/pm/model'
+import { TextSelection, EditorState, Transaction } from '@tiptap/pm/state'
 import { TIPTAP_NODES } from '@types'
+import { Editor } from '@tiptap/core'
+import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import {
   getSelectionRangeSlice,
   getPrevHeadingPos,
@@ -15,11 +17,8 @@ import {
  * Iteratively removes nodes that have no content from the start and end of the array
  * until it encounters nodes with actual content. This helps clean up clipboard content
  * by removing unnecessary empty paragraphs that could interfere with paste operations.
- *
- * @param {Array} contentArray - Array of node objects to trim
- * @returns {Array} - Trimmed array with empty nodes removed from both ends
  */
-const trimEmptyNodes = (contentArray) => {
+const trimEmptyNodes = (contentArray: any[]): any[] => {
   // Remove empty nodes from the beginning
   while (contentArray.length > 0 && !contentArray[0].content?.length) {
     contentArray.shift()
@@ -39,21 +38,20 @@ const trimEmptyNodes = (contentArray) => {
  * Creates a proper slice from paragraph nodes and uses replaceRange to
  * insert them at the specified position, allowing for proper content merging.
  * The cursor position is preserved after insertion.
- *
- * @param {Transaction} tr - The ProseMirror transaction to modify
- * @param {Array} paragraphs - Array of paragraph nodes to insert
- * @param {Object} state - The editor state
- * @param {number} from - Position to insert paragraphs at
- * @returns {void} - Modifies the transaction directly
  */
-const insertParagraphsAtPosition = (tr, paragraphs, state, from) => {
+const insertParagraphsAtPosition = (
+  tr: Transaction,
+  paragraphs: ProseMirrorNode[],
+  state: EditorState,
+  from: number
+): void => {
   if (paragraphs.length === 0) return
 
   // Create content array, ensuring TextNodes are properly wrapped
   const contentArray = [...paragraphs]
     .map((node) => {
       // If it's a TextNode, wrap it in a paragraph
-      if (node.type === 'text' || node.type?.name === 'text') {
+      if (node.type.name === 'text') {
         return state.schema.nodes.paragraph.create(null, [node])
       }
       return node
@@ -77,7 +75,7 @@ const insertParagraphsAtPosition = (tr, paragraphs, state, from) => {
 }
 
 // Main function to handle pasting clipboard content
-const clipboardPaste = (slice, editor) => {
+const clipboardPaste = (slice: Slice, editor: Editor): Slice => {
   const { state, view } = editor
   const { tr } = state
   let { selection } = state
@@ -89,24 +87,29 @@ const clipboardPaste = (slice, editor) => {
   // Handle paste when cursor is inside a contentheading node
   if (
     $from.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE &&
-    slice.content.content.length > 0
+    slice.content.childCount > 0
   ) {
-    const firstNode = slice.content.content[0]
+    const firstNode = slice.content.child(0)
 
     // Insert text or content at cursor position
-    if (firstNode.content?.content) {
-      tr.insert(from, firstNode.content.content)
-    } else if (firstNode.text) {
+    if (firstNode.content?.childCount) {
+      const contentNodes: ProseMirrorNode[] = []
+      firstNode.content.forEach((child) => contentNodes.push(child))
+      tr.insert(from, contentNodes)
+    } else if (firstNode.isText && firstNode.text) {
       tr.insertText(firstNode.text, from)
     }
 
     // If there are multiple nodes in the slice, handle remaining content
-    if (slice.content.content.length > 1) {
-      const shiftedNode = slice.content.content.shift()
-      const shiftedNodeSize = shiftedNode.content?.size || 0
+    if (slice.content.childCount > 1) {
+      const shiftedNodeSize = slice.content.child(0).content?.size || 0
 
-      // Create new slice with remaining content
-      slice = new Slice(slice.content, slice.openStart, slice.openEnd)
+      // Create new slice with remaining content by removing the first child
+      const remainingContent: ProseMirrorNode[] = []
+      slice.content.forEach((node, offset, index) => {
+        if (index > 0) remainingContent.push(node)
+      })
+      slice = new Slice(Fragment.from(remainingContent), slice.openStart, slice.openEnd)
 
       // Move cursor to appropriate position for remaining content
       const contentWrapperPos = $from.after() + shiftedNodeSize
@@ -136,10 +139,12 @@ const clipboardPaste = (slice, editor) => {
   // Normalize the slice content by removing empty nodes from both ends
   const sliceJsonContent = trimEmptyNodes([...slice.toJSON().content])
 
+  const linearizedHeadings = linearizeHeadingNodes(contentWrapperHeadings as any)
+
   const aggregatedContent = [
     ...sliceJsonContent,
     ...contentWrapperParagraphs,
-    ...linearizeHeadingNodes(contentWrapperHeadings)
+    ...linearizedHeadings.map((node) => node.toJSON())
   ]
 
   // Extract paragraphs and aggrigated headings from the clipboard content

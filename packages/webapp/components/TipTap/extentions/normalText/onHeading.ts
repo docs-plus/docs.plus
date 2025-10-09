@@ -7,8 +7,15 @@ import {
   convertHeadingsToParagraphs
 } from '../helper'
 import { TIPTAP_NODES, TIPTAP_EVENTS } from '@types'
+import { NormalTextArgs } from '../types'
+import { HeadingBlockInfo, SelectionBlock } from '../types'
 
-const processHeadings = (state, tr, headingPositions, headings) => {
+const processHeadings = (
+  state: any,
+  tr: any,
+  headingPositions: HeadingBlockInfo[],
+  headings: any[]
+): boolean => {
   // Process each heading
   headings.forEach((heading) => {
     // Normalize heading structure
@@ -28,14 +35,14 @@ const processHeadings = (state, tr, headingPositions, headings) => {
     const { prevBlock, shouldNested } = findPrevBlock(headingPositions, normalizedHeading.le)
 
     // Insert the new node at the appropriate position
-    tr.insert(prevBlock.endBlockPos - (shouldNested ? 2 : 0), headingNode)
+    tr.insert(prevBlock!.endBlockPos - (shouldNested ? 2 : 0), headingNode)
   })
 
   return true
 }
 
 // Normalize the heading object by setting default values if necessary
-const normalizeHeading = (heading) => {
+const normalizeHeading = (heading: any): any => {
   if (!heading.le) {
     return {
       ...heading,
@@ -47,13 +54,15 @@ const normalizeHeading = (heading) => {
 }
 
 // Separate content blocks into paragraphs and headings
-const partitionContentBlocks = (contentBlocks) => {
+const partitionContentBlocks = (
+  contentBlocks: SelectionBlock[]
+): { paragraphs: SelectionBlock[]; headings: SelectionBlock[] } => {
   const paragraphs = contentBlocks.filter((block) => block.type !== TIPTAP_NODES.HEADING_TYPE)
   const headings = contentBlocks.filter((block) => block.type === TIPTAP_NODES.HEADING_TYPE)
   return { paragraphs, headings }
 }
 
-const onHeading = (args) => {
+const onHeading = (args: NormalTextArgs): void => {
   const { editor, state, tr, backspaceAction } = args
   const { selection, doc } = state
   const { $from, $to, from, to } = selection
@@ -80,7 +89,7 @@ const onHeading = (args) => {
   const selectedStartPos = selectedContents[0].startBlockPos
 
   // Determine the heading level of the selected content
-  const selectedHeadingLevel = doc.nodeAt(selectedStartPos).attrs.level
+  const selectedHeadingLevel = doc.nodeAt(selectedStartPos)!.attrs.level
 
   // Calculate the start position of the previous heading nodes
   const prevHeadingNodesStartPos = selectedHeadingLevel === 1 ? $from.start(0) : $from.start(1)
@@ -106,8 +115,8 @@ const onHeading = (args) => {
   prevHeadingNode = prevHeadingNodes.at(-1)
 
   // Find the previous block and determine if it should be nested
-  const { prevBlock, shouldNested } = findPrevBlock([prevHeadingNode], prevHeadingNode.le + 1)
-  const insertPos = prevBlock.endBlockPos - (shouldNested ? 2 : 0)
+  const { prevBlock, shouldNested } = findPrevBlock([prevHeadingNode!], prevHeadingNode!.le + 1)
+  const insertPos = prevBlock!.endBlockPos - (shouldNested ? 2 : 0)
 
   // Insert the new nodes at the calculated position
   tr.insert(insertPos, contentNodes)
@@ -118,7 +127,7 @@ const onHeading = (args) => {
 
   // Process the remaining headings
 
-  processHeadings(state, tr, [prevBlock], remainingHeadings)
+  processHeadings(state, tr, [prevBlock!], remainingHeadings)
 
   // update TOC
   tr.setMeta('renderTOC', true)

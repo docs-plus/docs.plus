@@ -1,15 +1,16 @@
 import changeHeadingLevelBackward from './changeHeadingLevel-backward'
 import changeHeadingLevelForward from './changeHeadingLevel-forward'
 import changeHeadingLevelForwardH1 from './changeHeadingLevel-h1'
+import { CommandArgs, HeadingAttributes } from './types'
 
-const changeHeadingLevel = (arrg, attributes) => {
+const changeHeadingLevel = (arrg: CommandArgs, attributes: HeadingAttributes): boolean => {
   const { state } = arrg
   const { selection } = state
   const { $from, $to } = selection
-  const { start } = $from.blockRange($to)
+  const { start } = $from.blockRange($to)!
 
   const comingLevel = attributes.level
-  const currentHLevel = $from.doc.nodeAt(start).attrs.level
+  const currentHLevel = $from.doc.nodeAt(start)!.attrs.level
 
   if (comingLevel === currentHLevel) {
     console.info('[heading]: comingLevel === nextSiblingLevel')
