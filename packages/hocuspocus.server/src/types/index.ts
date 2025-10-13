@@ -1,7 +1,7 @@
-// Re-export all types from centralized location
 export * from './redis.types'
 export * from './health.types'
 export * from './document.types'
 export * from './queue.types'
 export * from './storage.types'
 export * from './context.types'
+export * from './hono.types'
