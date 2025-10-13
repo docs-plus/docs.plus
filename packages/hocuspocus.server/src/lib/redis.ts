@@ -3,13 +3,6 @@ import type { RedisClient as RedisClientType } from '../types'
 
 let redis: RedisClientType | null = null
 
-/**
- * Get Bun's native Redis client (v1.2.9+)
- * - Blazing fast with zero overhead
- * - Auto-reconnection with exponential backoff
- * - Native RESP3 protocol support
- * - Automatic pipelining
- */
 export const getRedisClient = (): RedisClientType | null => {
   if (!process.env.REDIS_HOST || !process.env.REDIS_PORT) {
     console.warn('Redis configuration not found. Redis features will be disabled.')

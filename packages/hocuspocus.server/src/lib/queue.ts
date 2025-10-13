@@ -1,8 +1,7 @@
 import { Queue, Worker, Job } from 'bullmq'
 import { prisma } from './prisma'
 import { getRedisClient } from './redis'
-import type { StoreDocumentData, DeadLetterJobData } from '../types'
-import * as Y from 'yjs'
+import type { StoreDocumentData } from '../types'
 import Redis from 'ioredis'
 
 async function generateUniqueSlug(baseSlug: string): Promise<string> {
