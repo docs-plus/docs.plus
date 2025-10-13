@@ -1,24 +1,6 @@
 import type { PrismaClient } from '@prisma/client'
-import type Redis from 'ioredis'
 import { createClient } from '@supabase/supabase-js'
-
-type HealthStatus = 'healthy' | 'unhealthy' | 'disabled'
-
-interface HealthCheckResult {
-  status: HealthStatus
-  lastCheck: Date
-  error?: string
-}
-
-interface OverallHealthResult {
-  status: 'ok' | 'degraded'
-  timestamp: Date
-  services: {
-    database: HealthCheckResult
-    redis: HealthCheckResult
-    supabase: HealthCheckResult
-  }
-}
+import type { RedisClient, HealthCheckResult, OverallHealthResult } from '../../types'
 
 export const checkDatabaseHealth = async (prisma: PrismaClient): Promise<HealthCheckResult> => {
   try {
@@ -36,7 +18,7 @@ export const checkDatabaseHealth = async (prisma: PrismaClient): Promise<HealthC
   }
 }
 
-export const checkRedisHealth = async (redis: Redis | null): Promise<HealthCheckResult> => {
+export const checkRedisHealth = async (redis: RedisClient | null): Promise<HealthCheckResult> => {
   if (!redis) {
     return {
       status: 'disabled',
@@ -92,7 +74,7 @@ export const checkSupabaseHealth = async (): Promise<HealthCheckResult> => {
 
 export const checkAllServices = async (
   prisma: PrismaClient,
-  redis: Redis | null
+  redis: RedisClient | null
 ): Promise<OverallHealthResult> => {
   const services = {
     database: await checkDatabaseHealth(prisma),

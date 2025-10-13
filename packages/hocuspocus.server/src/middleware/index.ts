@@ -3,14 +3,14 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { secureHeaders } from 'hono/secure-headers'
 import chalk from 'chalk'
-import type { Redis } from 'ioredis'
+import type { RedisClient } from '../types'
 
 // Rate limiter middleware using Redis
 export const rateLimiter = (options: { max: number; window: number; keyPrefix?: string }) => {
   const { max, window, keyPrefix = 'rate-limit' } = options
 
   return async (c: Context, next: Next) => {
-    const redis = c.get('redis') as Redis | null
+    const redis = c.get('redis') as RedisClient | null
 
     if (!redis) {
       // If Redis is not available, skip rate limiting

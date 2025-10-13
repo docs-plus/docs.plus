@@ -1,23 +1,9 @@
-import dotenvFlow from 'dotenv-flow'
 import { Server } from '@hocuspocus/server'
 import HocuspocusConfig, { prisma } from './config/hocuspocus.config'
 import { jwtDecode } from 'jwt-decode'
+import type { HistoryPayload } from './types'
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
-
-dotenvFlow.config({
-  purge_dotenv: true,
-  node_env: process.env.NODE_ENV,
-  silent: true
-})
-
-interface HistoryPayload {
-  type: string
-  documentId: string
-  version?: number
-  currentVersion?: number
-  msg?: string
-}
 
 async function handleHistoryEvents(payload: HistoryPayload, context: any, document: any) {
   const { type, documentId } = payload
