@@ -3,46 +3,76 @@ import { cors } from 'hono/cors'
 import { logger } from 'hono/logger'
 import { secureHeaders } from 'hono/secure-headers'
 import chalk from 'chalk'
-import type { RedisClient } from '../types'
+import { RateLimiterRedis } from 'rate-limiter-flexible'
+import Redis from 'ioredis'
+import '../types' // For type augmentation
 
-// Rate limiter middleware using Redis
-export const rateLimiter = (options: { max: number; window: number; keyPrefix?: string }) => {
-  const { max, window, keyPrefix = 'rate-limit' } = options
+// Create dedicated Redis client for rate limiting
+const redisClient = new Redis({
+  host: process.env.REDIS_HOST || 'localhost',
+  port: parseInt(process.env.REDIS_PORT || '6379', 10),
+  password: process.env.REDIS_PASSWORD,
+  db: parseInt(process.env.REDIS_DB || '0', 10),
+  lazyConnect: true,
+  enableOfflineQueue: false
+})
+
+
+export const rateLimiter = (options: {
+  points: number // Number of requests allowed
+  duration: number // Time window in seconds
+  keyPrefix?: string
+  blockDuration?: number // Optional block duration after limit exceeded
+}) => {
+  const { points, duration, keyPrefix = 'rl', blockDuration } = options
+
+  // Create rate limiter instance
+  const limiter = new RateLimiterRedis({
+    storeClient: redisClient,
+    points, // Number of requests
+    duration, // Per duration in seconds
+    keyPrefix,
+    blockDuration, // Block for N seconds after limit exceeded
+    execEvenly: false, // Don't spread requests evenly
+    insuranceLimiter: undefined // Optional: in-memory fallback if Redis fails
+  })
 
   return async (c: Context, next: Next) => {
-    const redis = c.get('redis') as RedisClient | null
-
-    if (!redis) {
-      // If Redis is not available, skip rate limiting
-      return next()
-    }
-
+    // Get client identifier (IP + User-Agent for better uniqueness)
     const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
     const userAgent = c.req.header('user-agent') || 'unknown'
-    const key = `${keyPrefix}:${ip}:${userAgent}`
+    const key = `${ip}:${userAgent}`
 
     try {
-      const requests = await redis.incr(key)
+      // Consume 1 point
+      const rateLimiterRes = await limiter.consume(key, 1)
 
-      if (requests === 1) {
-        await redis.pexpire(key, window)
-      }
+      // Set standard rate limit headers
+      c.header('X-RateLimit-Limit', points.toString())
+      c.header('X-RateLimit-Remaining', rateLimiterRes.remainingPoints.toString())
+      c.header(
+        'X-RateLimit-Reset',
+        new Date(Date.now() + rateLimiterRes.msBeforeNext).toISOString()
+      )
 
-      const ttl = await redis.pttl(key)
+      return next()
+    } catch (rejRes: any) {
+      // Rate limit exceeded
+      const retryAfter = Math.ceil(rejRes.msBeforeNext / 1000) || duration
 
-      c.header('X-RateLimit-Limit', max.toString())
-      c.header('X-RateLimit-Remaining', Math.max(0, max - requests).toString())
-      c.header('X-RateLimit-Reset', new Date(Date.now() + ttl).toISOString())
+      c.header('X-RateLimit-Limit', points.toString())
+      c.header('X-RateLimit-Remaining', '0')
+      c.header('X-RateLimit-Reset', new Date(Date.now() + rejRes.msBeforeNext).toISOString())
+      c.header('Retry-After', retryAfter.toString())
 
-      if (requests > max) {
-        return c.json({ error: 'Too many requests, please try again later' }, 429)
-      }
-    } catch (error) {
-      console.error('Rate limiter error:', error)
-      // On error, allow the request to proceed
+      return c.json(
+        {
+          error: 'Too many requests, please try again later',
+          retryAfter
+        },
+        429
+      )
     }
-
-    return next()
   }
 }
 
@@ -135,8 +165,9 @@ export const setupMiddleware = (app: Hono) => {
     }
 
     return rateLimiter({
-      max: rateLimitMax,
-      window: 15 * 60 * 1000 // 15 minutes
+      points: rateLimitMax, // Number of requests allowed
+      duration: 15 * 60, // 15 minutes in seconds
+      keyPrefix: 'global'
     })(c, next)
   })
 }
