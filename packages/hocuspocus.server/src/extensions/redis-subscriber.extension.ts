@@ -4,55 +4,53 @@ import type { SaveConfirmation } from '../types'
 
 export class RedisSubscriberExtension implements Extension {
   private subscriber: any = null
-  private subscribedDocs = new Set<string>()
 
   async onConfigure({ instance }: any) {
-    this.subscriber = getRedisClient()
+    // Create a separate Redis client for subscriptions
+    // Note: Subscription mode takes over the connection, so we need a dedicated client
+    this.subscriber = getRedisClient()?.duplicate()
 
     if (!this.subscriber) {
       console.warn('Redis not available, save confirmations disabled')
       return
     }
 
-    // Use pattern subscription for document-specific channels
-    await this.subscriber.psubscribe('doc:*:saved', (err: Error | null) => {
-      if (err) {
-        console.error('Failed to subscribe to document channels:', err)
-      } else {
-        console.info('✅ Subscribed to document save channels (pattern: doc:*:saved)')
-      }
-    })
+    try {
+      // Bun's native Redis psubscribe for pattern matching
+      await this.subscriber.psubscribe('doc:*:saved', (message: string, channel: string) => {
+        try {
+          // Extract documentId from channel name: doc:abc123:saved -> abc123
+          const documentId = channel.split(':')[1]
+          const data: SaveConfirmation = JSON.parse(message)
 
-    // Handle incoming save confirmations
-    this.subscriber.on('pmessage', (pattern: string, channel: string, message: string) => {
-      try {
-        // Extract documentId from channel name: doc:abc123:saved -> abc123
-        const documentId = channel.split(':')[1]
-        const data: SaveConfirmation = JSON.parse(message)
-
-        // Only process if document is loaded on THIS server
-        const document = instance.documents.get(documentId)
-        if (document) {
-          document.broadcastStateless(
-            JSON.stringify({
-              msg: 'document:saved',
-              documentId: data.documentId,
-              version: data.version,
-              timestamp: data.timestamp
-            })
-          )
-          console.info(`📝 Broadcasted save confirmation for ${documentId} v${data.version}`)
+          // Only process if document is loaded on THIS server
+          const document = instance.documents.get(documentId)
+          if (document) {
+            document.broadcastStateless(
+              JSON.stringify({
+                msg: 'document:saved',
+                documentId: data.documentId,
+                version: data.version,
+                timestamp: data.timestamp
+              })
+            )
+            console.info(`📝 Broadcasted save confirmation for ${documentId} v${data.version}`)
+          }
+        } catch (err) {
+          console.error('Error processing save confirmation:', err)
         }
-      } catch (err) {
-        console.error('Error processing save confirmation:', err)
-      }
-    })
+      })
+
+      console.info('✅ Subscribed to document save channels (pattern: doc:*:saved)')
+    } catch (err) {
+      console.error('Failed to subscribe to document channels:', err)
+    }
   }
 
   async onDestroy() {
     if (this.subscriber) {
       await this.subscriber.punsubscribe('doc:*:saved')
-      await this.subscriber.quit()
+      this.subscriber.close()
       console.info('🔌 Unsubscribed from Redis channels')
     }
   }
