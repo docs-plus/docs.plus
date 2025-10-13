@@ -1,9 +1,0 @@
-node_modules
-volumes
-.env
-.env.development
-.env.production
-
-yarn-error.log
-
-temp

@@ -30,29 +30,61 @@ const connection = {
   port: parseInt(process.env.REDIS_PORT || '6379', 10)
 }
 
+// Main queue for storing documents
 export const StoreDocumentQueue = new Queue<StoreDocumentData>('store-documents', {
   connection,
   defaultJobOptions: {
-    attempts: 3,
+    attempts: 5, // Increased retry attempts for better reliability
     backoff: {
       type: 'exponential',
-      delay: 1000
+      delay: 2000 // Start with 2s delay
     },
     removeOnComplete: {
-      count: 100,
+      count: 1000, // Keep more completed jobs for debugging
       age: 24 * 3600 // 24 hours
     },
-    removeOnFail: {
-      age: 7 * 24 * 3600 // 7 days
+    removeOnFail: false // NEVER auto-remove failed jobs in production
+  }
+})
+
+// Dead Letter Queue for permanently failed jobs
+export const DeadLetterQueue = new Queue<StoreDocumentData>('store-documents-dlq', {
+  connection,
+  defaultJobOptions: {
+    removeOnComplete: {
+      count: 500,
+      age: 30 * 24 * 3600 // Keep for 30 days
     }
   }
+})
+
+// Event handlers for monitoring and alerting
+StoreDocumentQueue.on('failed', (job, err) => {
+  console.error(`❌ Job ${job?.id} failed after ${job?.attemptsMade} attempts:`, {
+    error: err.message,
+    documentName: job?.data.documentName,
+    stack: err.stack
+  })
+  // TODO: Send to external monitoring (Sentry, Datadog, etc.)
+})
+
+StoreDocumentQueue.on('error', (err) => {
+  console.error('❌ Queue error:', err)
+})
+
+StoreDocumentQueue.on('stalled', (jobId) => {
+  console.warn(`⚠️  Job ${jobId} has stalled and will be retried`)
+})
+
+StoreDocumentQueue.on('waiting', (jobId) => {
+  console.log(`⏳ Job ${jobId} is waiting to be processed`)
 })
 
 // Worker to process document storage jobs
 export const createDocumentWorker = () => {
   const redisPublisher = getRedisClient()
 
-  return new Worker<StoreDocumentData>(
+  const worker = new Worker<StoreDocumentData>(
     'store-documents',
     async (job: Job<StoreDocumentData>) => {
       const { data } = job
@@ -115,18 +147,56 @@ export const createDocumentWorker = () => {
             })
           )
         }
+
+        return { success: true, version: savedDoc.version }
       } catch (err) {
-        console.error('Error storing data:', err)
+        console.error(`❌ Error storing data for job ${job.id}:`, err)
+
+        // If this is the final attempt, move to dead letter queue
+        if (job.attemptsMade >= (job.opts.attempts || 5)) {
+          console.error(`💀 Job ${job.id} exhausted all retries. Moving to DLQ.`)
+          await DeadLetterQueue.add('failed-document', {
+            ...data,
+            originalJobId: job.id,
+            failureReason: err instanceof Error ? err.message : 'Unknown error',
+            failedAt: new Date().toISOString()
+          } as any)
+        }
+
         throw err // Re-throw to trigger retry
       }
     },
     {
       connection,
-      concurrency: 5,
+      concurrency: parseInt(process.env.BULLMQ_CONCURRENCY || '5', 10),
       limiter: {
-        max: 300,
-        duration: 1000
-      }
+        max: parseInt(process.env.BULLMQ_RATE_LIMIT_MAX || '300', 10),
+        duration: parseInt(process.env.BULLMQ_RATE_LIMIT_DURATION || '1000', 10)
+      },
+      // Auto-remove stalled jobs after timeout
+      stalledInterval: 30000, // Check every 30s
+      maxStalledCount: 3 // After 3 stalls, consider it failed
     }
   )
+
+  // Worker event handlers
+  worker.on('completed', (job) => {
+    console.log(`✅ Job ${job.id} completed successfully`)
+  })
+
+  worker.on('failed', (job, err) => {
+    if (job) {
+      console.error(`❌ Worker: Job ${job.id} failed:`, err.message)
+    }
+  })
+
+  worker.on('error', (err) => {
+    console.error('❌ Worker error:', err)
+  })
+
+  worker.on('stalled', (jobId) => {
+    console.warn(`⚠️  Worker: Job ${jobId} stalled`)
+  })
+
+  return worker
 }
