@@ -3,6 +3,7 @@ import { prisma } from './prisma'
 import { getRedisClient } from './redis'
 import type { StoreDocumentData, DeadLetterJobData } from '../types'
 import * as Y from 'yjs'
+import Redis from 'ioredis'
 
 async function generateUniqueSlug(baseSlug: string): Promise<string> {
   const existing = await prisma.documentMetadata.findUnique({ where: { slug: baseSlug } })
@@ -12,10 +13,16 @@ async function generateUniqueSlug(baseSlug: string): Promise<string> {
   return `${baseSlug}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
 }
 
-const connection = {
+// BullMQ requires ioredis - create dedicated connection for queues
+const connection = new Redis({
   host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379', 10)
-}
+  port: parseInt(process.env.REDIS_PORT || '6379', 10),
+  password: process.env.REDIS_PASSWORD,
+  db: parseInt(process.env.REDIS_DB || '0', 10),
+  maxRetriesPerRequest: null, // BullMQ requirement
+  enableReadyCheck: false,
+  enableOfflineQueue: false
+})
 
 // Main queue for storing documents
 export const StoreDocumentQueue = new Queue<StoreDocumentData>('store-documents', {

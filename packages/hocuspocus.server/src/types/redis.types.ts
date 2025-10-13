@@ -1,7 +1,6 @@
-import type Redis from 'ioredis'
-
-// Redis client type (using ioredis, required by BullMQ)
-export type RedisClient = Redis
+// Bun's native Redis client (v1.2.9+)
+// Re-export from bun types
+export type { RedisClient } from 'bun'
 
 // Redis save confirmation message
 export interface SaveConfirmation {

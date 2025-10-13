@@ -1,51 +1,59 @@
-import Redis from 'ioredis'
-import type { RedisClient } from '../types'
+import { RedisClient } from 'bun'
+import type { RedisClient as RedisClientType } from '../types'
 
-let redis: RedisClient | null = null
+let redis: RedisClientType | null = null
 
-export const getRedisClient = (): RedisClient | null => {
+/**
+ * Get Bun's native Redis client (v1.2.9+)
+ * - Blazing fast with zero overhead
+ * - Auto-reconnection with exponential backoff
+ * - Native RESP3 protocol support
+ * - Automatic pipelining
+ */
+export const getRedisClient = (): RedisClientType | null => {
   if (!process.env.REDIS_HOST || !process.env.REDIS_PORT) {
     console.warn('Redis configuration not found. Redis features will be disabled.')
     return null
   }
 
   if (!redis) {
-    // Using ioredis (required by BullMQ anyway)
-    redis = new Redis({
-      host: process.env.REDIS_HOST,
-      port: parseInt(process.env.REDIS_PORT, 10),
-      password: process.env.REDIS_PASSWORD,
-      db: parseInt(process.env.REDIS_DB || '0', 10),
-      maxRetriesPerRequest: 3,
-      enableReadyCheck: true,
+    // Build Redis URL
+    const password = process.env.REDIS_PASSWORD
+    const host = process.env.REDIS_HOST
+    const port = process.env.REDIS_PORT
+    const db = process.env.REDIS_DB || '0'
+
+    const url = password
+      ? `redis://:${password}@${host}:${port}/${db}`
+      : `redis://${host}:${port}/${db}`
+
+    // Create Bun's native Redis client
+    redis = new RedisClient(url, {
+      connectionTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || '10000', 10),
+      idleTimeout: parseInt(process.env.REDIS_IDLE_TIMEOUT || '30000', 10),
+      autoReconnect: true,
+      maxRetries: parseInt(process.env.REDIS_MAX_RETRIES || '10', 10),
       enableOfflineQueue: true,
-      connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || '10000', 10),
-      commandTimeout: parseInt(process.env.REDIS_COMMAND_TIMEOUT || '5000', 10),
-      keepAlive: parseInt(process.env.REDIS_KEEPALIVE || '30000', 10),
-      lazyConnect: true,
-      retryStrategy(times) {
-        const maxRetries = parseInt(process.env.REDIS_MAX_RETRIES || '10', 10)
-        if (times > maxRetries) {
-          console.error(`Redis: Max retry attempts (${maxRetries}) reached.`)
-          return null
-        }
-        const delay = Math.min(times * 100, 3000)
-        console.warn(`Redis: Retry attempt ${times}/${maxRetries} in ${delay}ms`)
-        return delay
-      },
-      reconnectOnError(err) {
-        const targetErrors = ['READONLY', 'ECONNRESET', 'ETIMEDOUT']
-        return targetErrors.some((targetError) => err.message.includes(targetError))
-      }
+      enableAutoPipelining: true
     })
 
-    redis.on('error', (err) => console.error('Redis Client Error:', err))
-    redis.on('connect', () => console.log('✅ Redis connected successfully'))
-    redis.on('ready', () => console.log('✅ Redis ready'))
-    redis.on('reconnecting', (delay: number) => console.warn(`🔄 Redis reconnecting in ${delay}ms`))
-    redis.on('close', () => console.warn('⚠️  Redis connection closed'))
+    // Connection event handlers
+    redis.onconnect = () => {
+      console.log('✅ Redis connected successfully')
+    }
 
-    redis.connect().catch((err) => console.error('Failed to connect to Redis:', err))
+    redis.onclose = (error?: Error) => {
+      if (error) {
+        console.error('⚠️  Redis connection closed with error:', error)
+      } else {
+        console.warn('⚠️  Redis connection closed')
+      }
+    }
+
+    // Connect
+    redis.connect().catch((err: Error) => {
+      console.error('Failed to connect to Redis:', err)
+    })
   }
 
   return redis
@@ -53,7 +61,7 @@ export const getRedisClient = (): RedisClient | null => {
 
 export const disconnectRedis = async () => {
   if (redis) {
-    await redis.quit()
+    redis.close()
     redis = null
   }
 }
