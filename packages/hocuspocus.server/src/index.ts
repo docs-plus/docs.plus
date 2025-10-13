@@ -1,4 +1,3 @@
-import dotenvFlow from 'dotenv-flow'
 import { Hono } from 'hono'
 import chalk from 'chalk'
 import { prisma } from './lib/prisma'
@@ -10,14 +9,7 @@ import documentsRouter from './api/documents'
 import hypermultimediaRouter from './api/hypermultimedia'
 import { checkEnvBolean } from './utils'
 
-// Load environment variables
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
-
-dotenvFlow.config({
-  purge_dotenv: true,
-  node_env: process.env.NODE_ENV,
-  silent: true
-})
 
 const {
   APP_PORT = '3001',

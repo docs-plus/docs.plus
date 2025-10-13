@@ -3,10 +3,11 @@ import { extractFileType } from './fileType'
 import path from 'path'
 import { mkdir } from 'fs/promises'
 import type { Context } from 'hono'
+import type { StorageUploadResponse } from '../../types'
 
 const PLUGIN_NAME = 'hypermultimedia'
 
-export const upload = async (documentId: string, file: File) => {
+export const upload = async (documentId: string, file: File): Promise<StorageUploadResponse> => {
   try {
     const format = mime.getExtension(file.type) || 'bin'
     const fileName = `${crypto.randomUUID()}.${format}`

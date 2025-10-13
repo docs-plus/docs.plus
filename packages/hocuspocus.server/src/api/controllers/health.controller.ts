@@ -1,11 +1,11 @@
 import type { Context } from 'hono'
 import type { PrismaClient } from '@prisma/client'
-import type Redis from 'ioredis'
+import type { RedisClient } from '../../types'
 import * as healthService from '../services/health.service'
 
 export const checkOverallHealth = async (c: any) => {
   const prisma = c.get('prisma') as PrismaClient
-  const redis = c.get('redis') as Redis | null
+  const redis = c.get('redis') as RedisClient | null
 
   const result = await healthService.checkAllServices(prisma, redis)
   const statusCode = result.status === 'ok' ? 200 : 503
@@ -22,7 +22,7 @@ export const checkDatabaseHealth = async (c: any) => {
 }
 
 export const checkRedisHealth = async (c: any) => {
-  const redis = c.get('redis') as Redis | null
+  const redis = c.get('redis') as RedisClient | null
   const result = await healthService.checkRedisHealth(redis)
   const statusCode = result.status === 'healthy' ? 200 : 503
 

@@ -2,30 +2,7 @@ import { PrismaClient } from '@prisma/client'
 import { createClient } from '@supabase/supabase-js'
 import ShortUniqueId from 'short-unique-id'
 import slugify from 'slugify'
-
-interface CreateDocumentParams {
-  slug: string
-  title: string
-  description?: string
-  keywords?: string[]
-  userId?: string
-  email?: string
-}
-
-interface UpdateDocumentParams {
-  title?: string
-  description?: string
-  keywords?: string[]
-  readOnly?: boolean
-}
-
-interface SearchDocumentsParams {
-  title?: string
-  keywords?: string
-  description?: string
-  limit: number
-  offset: number
-}
+import type { CreateDocumentParams, UpdateDocumentParams, SearchDocumentsParams } from '../../types'
 
 export const getOwnerProfile = async (userId: string) => {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) return null

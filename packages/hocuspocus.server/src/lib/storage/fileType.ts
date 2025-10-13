@@ -1,3 +1,5 @@
+import type { FileTypeCategory } from '../../types'
+
 const mimeTypeMap = {
   image: new Set([
     'image/jpeg',
@@ -27,12 +29,12 @@ const mimeTypeMap = {
   ])
 }
 
-export const extractFileType = (mimeType: string): string => {
+export const extractFileType = (mimeType: string): FileTypeCategory => {
   const normalized = mimeType.toLowerCase()
 
   for (const [category, mimeTypes] of Object.entries(mimeTypeMap)) {
     if (mimeTypes.has(normalized)) {
-      return category
+      return category as FileTypeCategory
     }
   }
 

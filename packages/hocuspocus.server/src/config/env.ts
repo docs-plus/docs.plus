@@ -1,13 +1,6 @@
-import dotenvFlow from 'dotenv-flow'
-
-// Load environment variables
+// Bun automatically loads .env files based on NODE_ENV
+// Loads: .env, .env.local, .env.{NODE_ENV}, .env.{NODE_ENV}.local
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
-
-dotenvFlow.config({
-  purge_dotenv: true,
-  node_env: process.env.NODE_ENV,
-  silent: true
-})
 
 export const config = {
   // Server

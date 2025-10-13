@@ -1,21 +1,8 @@
 import { Queue, Worker, Job } from 'bullmq'
 import { prisma } from './prisma'
 import { getRedisClient } from './redis'
+import type { StoreDocumentData, DeadLetterJobData } from '../types'
 import * as Y from 'yjs'
-
-interface StoreDocumentData {
-  documentName: string
-  state: string // base64 encoded
-  context: {
-    slug?: string
-    user?: {
-      sub?: string
-      email?: string
-    }
-  }
-  commitMessage?: string
-  firstCreation: boolean
-}
 
 async function generateUniqueSlug(baseSlug: string): Promise<string> {
   const existing = await prisma.documentMetadata.findUnique({ where: { slug: baseSlug } })
@@ -59,25 +46,9 @@ export const DeadLetterQueue = new Queue<StoreDocumentData>('store-documents-dlq
 })
 
 // Event handlers for monitoring and alerting
-StoreDocumentQueue.on('failed', (job, err) => {
-  console.error(`❌ Job ${job?.id} failed after ${job?.attemptsMade} attempts:`, {
-    error: err.message,
-    documentName: job?.data.documentName,
-    stack: err.stack
-  })
-  // TODO: Send to external monitoring (Sentry, Datadog, etc.)
-})
-
-StoreDocumentQueue.on('error', (err) => {
+// Note: Queue events are handled by Worker events below for better reliability
+StoreDocumentQueue.on('error', (err: Error) => {
   console.error('❌ Queue error:', err)
-})
-
-StoreDocumentQueue.on('stalled', (jobId) => {
-  console.warn(`⚠️  Job ${jobId} has stalled and will be retried`)
-})
-
-StoreDocumentQueue.on('waiting', (jobId) => {
-  console.log(`⏳ Job ${jobId} is waiting to be processed`)
 })
 
 // Worker to process document storage jobs
