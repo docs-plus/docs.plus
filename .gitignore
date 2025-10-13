@@ -126,3 +126,6 @@ uptime-kuma-data
 packages/webapp/cypress/videos/
 packages/webapp/cypress/screenshots/
 packages/webapp/cypress/downloads/
+
+# Hocuspocus temp files (uploaded media, cache, etc.)
+packages/hocuspocus.server/temp/
