@@ -1,41 +1,19 @@
 import type { FileTypeCategory } from '../../types'
 
-const mimeTypeMap = {
-  image: new Set([
-    'image/jpeg',
-    'image/png',
-    'image/gif',
-    'image/bmp',
-    'image/svg+xml',
-    'image/tiff',
-    'image/webp'
-  ]),
-  video: new Set([
-    'video/mp4',
-    'video/mpeg',
-    'video/quicktime',
-    'video/webm',
-    'video/x-msvideo',
-    'video/x-matroska'
-  ]),
-  audio: new Set([
-    'audio/mpeg',
-    'audio/ogg',
-    'audio/x-wav',
-    'audio/webm',
-    'audio/aac',
-    'audio/flac',
-    'audio/x-ms-wma'
-  ])
-}
-
+/**
+ * Extract file type category from MIME type
+ * MIME types follow the pattern: type/subtype (e.g., "image/jpeg", "video/mp4")
+ * This automatically handles ALL subtypes without maintaining a hardcoded list
+ */
 export const extractFileType = (mimeType: string): FileTypeCategory => {
-  const normalized = mimeType.toLowerCase()
+  if (!mimeType) return 'unknown'
 
-  for (const [category, mimeTypes] of Object.entries(mimeTypeMap)) {
-    if (mimeTypes.has(normalized)) {
-      return category as FileTypeCategory
-    }
+  // Parse the MIME type - first part is the category
+  const [type] = mimeType.toLowerCase().split('/')
+
+  // Return the type if it's one we care about
+  if (type === 'image' || type === 'video' || type === 'audio') {
+    return type
   }
 
   return 'unknown'
