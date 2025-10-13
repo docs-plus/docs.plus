@@ -79,14 +79,14 @@ console.info(`
 process.on('SIGINT', async () => {
   console.log('\n🛑 Shutting down gracefully...')
   await prisma.$disconnect()
-  if (redis) await redis.quit()
+  if (redis) await redis.close()
   process.exit(0)
 })
 
 process.on('SIGTERM', async () => {
   console.log('\n🛑 Shutting down gracefully...')
   await prisma.$disconnect()
-  if (redis) await redis.quit()
+  if (redis) await redis.close()
   process.exit(0)
 })
 
