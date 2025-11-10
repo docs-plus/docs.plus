@@ -3,40 +3,41 @@ name: "Discord: repo activity"
 on:
  push:
   branches: ["**"]
- pull_request:
-  types:
-   [
-    opened,
-    reopened,
-    synchronize,
-    closed,
-    edited,
-    converted_to_draft,
-    ready_for_review,
-   ]
- issues:
-  types: [opened, closed, edited, reopened]
- release:
-  types: [published, released]
- workflow_dispatch:
 
 jobs:
  notify:
   runs-on: ubuntu-latest
   steps:
-   - name: Post to Discord
+   - name: Build commit summary (for push)
+     id: build
+     run: |
+      EVENT='${{ toJSON(github.event) }}'
+      COUNT=$(jq -r '.commits | length' <<< "$EVENT")
+      REF=$(jq -r '.ref' <<< "$EVENT")
+      COMPARE=$(jq -r '.compare' <<< "$EVENT")
+
+      # List every commit (one line per commit)
+      COMMITS=$(jq -r '.commits[]
+        | "- " + (.message | gsub("\\r?\\n"; " "))
+        + " (" + .id[0:7] + ") by " + .author.name' <<< "$EVENT")
+
+      {
+        echo "COUNT=$COUNT"
+        echo "REF=$REF"
+        echo "COMPARE=$COMPARE"
+        echo 'COMMITS<<EOF'
+        echo "$COMMITS"
+        echo 'EOF'
+      } >> "$GITHUB_ENV"
+
+   - name: Post to Discord (with full commit list)
      uses: Ilshidur/action-discord@0.4.0
      env:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-      GITHUB_EVENT_NAME: ${{ github.event_name }}
-      GITHUB_ACTOR: ${{ github.actor }}
-      GITHUB_REF: ${{ github.ref }}
-      # Optional cosmetics:
-      # DISCORD_USERNAME: "GitHub Bot"
-      # DISCORD_AVATAR: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
      with:
-      # You can customize this message freely (supports interpolation)
       args: >
-       [{{ EVENT_PAYLOAD.repository.full_name }}] {{ GITHUB_EVENT_NAME }} by {{ GITHUB_ACTOR }}
-       • Ref: {{ GITHUB_REF }}
-       • Link: https://github.com/{{ EVENT_PAYLOAD.repository.full_name }}
+       [${{ github.repository }}] push by ${{ github.actor }}
+       • Ref: ${{ env.REF }}
+       • ${{ env.COUNT }} commit(s):
+       ${{ env.COMMITS }}
+       • Diff: ${{ env.COMPARE }}
