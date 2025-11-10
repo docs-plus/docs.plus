@@ -211,18 +211,18 @@ clean:
 	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
 		echo "🧹 Cleaning up (development)..."; \
 		docker-compose -f docker-compose.dev.yml --env-file .env.development down -v; \
-		docker rmi docsy-webapp:dev docsy-rest-api docsy-hocuspocus-server docsy-hocuspocus-worker 2>/dev/null || true; \
+		docker rmi docsy-webapp:dev 2>/dev/null || true; \
 		echo "✅ Development cleanup complete"; \
 	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
 		echo "🧹 Cleaning up (production)..."; \
 		docker-compose -f docker-compose.prod.yml --env-file .env.production down -v; \
 		docker rmi docsy-webapp:latest docsy-hocuspocus:latest 2>/dev/null || true; \
-		docker system prune -f; \
 		echo "✅ Production cleanup complete"; \
 	else \
-		echo "🧹 No running containers found. Cleaning up images and volumes..."; \
-		docker rmi docsy-webapp:dev docsy-webapp:latest docsy-rest-api docsy-hocuspocus-server docsy-hocuspocus-worker docsy-hocuspocus:latest 2>/dev/null || true; \
-		docker system prune -f; \
+		echo "🧹 No running containers found. Cleaning up project images..."; \
+		docker rmi docsy-webapp:dev docsy-webapp:latest docsy-hocuspocus:latest 2>/dev/null || true; \
+		docker volume rm docsy-postgres-dev docsy-redis-dev docsy-postgres-prod docsy-redis-prod 2>/dev/null || true; \
+		docker network rm docsy-network-dev docsy-network 2>/dev/null || true; \
 		echo "✅ Cleanup complete"; \
 	fi
 
