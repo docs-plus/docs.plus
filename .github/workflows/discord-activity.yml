@@ -21,7 +21,7 @@ jobs:
       COMMITS=$(jq -r --arg repo "$REPO_URL" '.commits | to_entries[] |
         (1 + .key | tostring) + ". " +
         (.value.message | gsub("\\r?\\n"; " ")) +
-        " [" + .value.id[0:7] + "](" + $repo + "/commit/" + .value.id + ") by " + .value.author.name' <<< "$EVENT")
+        " [" + .value.id[0:7] + "](" + $repo + "/commit/" + .value.id + ") by " + .value.author.name + "\n"' <<< "$EVENT")
 
       {
         echo "COUNT=$COUNT"
@@ -37,7 +37,7 @@ jobs:
      env:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
      with:
-      args: >
+      args: |
        🚀 **Push Event**
        📦 Repository: `${{ github.repository }}`
        👤 Author: `${{ github.actor }}`
