@@ -16,10 +16,12 @@ jobs:
       REF=$(jq -r '.ref' <<< "$EVENT" | sed 's|refs/heads/||')
       COMPARE=$(jq -r '.compare' <<< "$EVENT")
 
-      # List every commit (one line per commit)
-      COMMITS=$(jq -r '.commits[]
-        | "  • " + (.message | gsub("\\r?\\n"; " "))
-        + " [`" + .id[0:7] + "`] by " + .author.name' <<< "$EVENT")
+      # List every commit with numbered list and clickable commit hash
+      REPO_URL="https://github.com/${{ github.repository }}"
+      COMMITS=$(jq -r --arg repo "$REPO_URL" '.commits | to_entries[] |
+        (1 + .key | tostring) + ". " +
+        (.value.message | gsub("\\r?\\n"; " ")) +
+        " [" + .value.id[0:7] + "](" + $repo + "/commit/" + .value.id + ") by " + .value.author.name' <<< "$EVENT")
 
       {
         echo "COUNT=$COUNT"
