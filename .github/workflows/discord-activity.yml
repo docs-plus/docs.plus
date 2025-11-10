@@ -1,0 +1,42 @@
+name: "Discord: repo activity"
+
+on:
+ push:
+  branches: ["**"]
+ pull_request:
+  types:
+   [
+    opened,
+    reopened,
+    synchronize,
+    closed,
+    edited,
+    converted_to_draft,
+    ready_for_review,
+   ]
+ issues:
+  types: [opened, closed, edited, reopened]
+ release:
+  types: [published, released]
+ workflow_dispatch:
+
+jobs:
+ notify:
+  runs-on: ubuntu-latest
+  steps:
+   - name: Post to Discord
+     uses: Ilshidur/action-discord@0.4.0
+     env:
+      DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+      GITHUB_EVENT_NAME: ${{ github.event_name }}
+      GITHUB_ACTOR: ${{ github.actor }}
+      GITHUB_REF: ${{ github.ref }}
+      # Optional cosmetics:
+      # DISCORD_USERNAME: "GitHub Bot"
+      # DISCORD_AVATAR: "https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png"
+     with:
+      # You can customize this message freely (supports interpolation)
+      args: >
+       [{{ EVENT_PAYLOAD.repository.full_name }}] {{ GITHUB_EVENT_NAME }} by {{ GITHUB_ACTOR }}
+       • Ref: {{ GITHUB_REF }}
+       • Link: https://github.com/{{ EVENT_PAYLOAD.repository.full_name }}
