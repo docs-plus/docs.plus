@@ -13,13 +13,13 @@ jobs:
      run: |
       EVENT='${{ toJSON(github.event) }}'
       COUNT=$(jq -r '.commits | length' <<< "$EVENT")
-      REF=$(jq -r '.ref' <<< "$EVENT")
+      REF=$(jq -r '.ref' <<< "$EVENT" | sed 's|refs/heads/||')
       COMPARE=$(jq -r '.compare' <<< "$EVENT")
 
       # List every commit (one line per commit)
       COMMITS=$(jq -r '.commits[]
-        | "- " + (.message | gsub("\\r?\\n"; " "))
-        + " (" + .id[0:7] + ") by " + .author.name' <<< "$EVENT")
+        | "  • " + (.message | gsub("\\r?\\n"; " "))
+        + " [`" + .id[0:7] + "`] by " + .author.name' <<< "$EVENT")
 
       {
         echo "COUNT=$COUNT"
@@ -36,8 +36,13 @@ jobs:
       DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
      with:
       args: >
-       [${{ github.repository }}] push by ${{ github.actor }}
-       • Ref: ${{ env.REF }}
-       • ${{ env.COUNT }} commit(s):
+       🚀 **Push Event**
+       📦 Repository: `${{ github.repository }}`
+       👤 Author: `${{ github.actor }}`
+       🌿 Branch: `${{ env.REF }}`
+       📝 Commits: `${{ env.COUNT }}`
+
+       **Commit List:**
        ${{ env.COMMITS }}
-       • Diff: ${{ env.COMPARE }}
+
+       🔗 [View Diff](${{ env.COMPARE }})
