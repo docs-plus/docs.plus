@@ -50,7 +50,7 @@ Update `.env.development` with your configuration. See `.env.example` for all av
 ### 3️⃣ Initialize Supabase
 
 <details>
-<summary><strong>🗄️ Supabase Setup (One-time, ~5-10 min)</strong></summary>
+<summary><strong>🗄️ Option A: Local Supabase Setup (One-time, ~5-10 min)</strong></summary>
 
 **Step 1: Start Supabase** 🚀
 ```bash
@@ -72,6 +72,40 @@ First run downloads Docker images. Verify with `make supabase-status`.
 - [Queues](http://127.0.0.1:54323/project/default/integrations/queues/queues) → Select `message_counter` → Manage permissions
 - Enable Select/Insert/Update/Delete for: `authenticated`, `postgres`, `service_role`
 - Add RLS policy: "Allow anon and authenticated to access messages from queue"
+
+</details>
+
+<details>
+<summary><strong>☁️ Option B: Supabase Cloud Setup</strong></summary>
+
+If you prefer not to run Supabase locally, you can use a cloud project instead:
+
+**Step 1: Create Supabase Project** 🚀
+1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
+2. Create a new project
+3. Copy your project URL and anon key from **Settings → API**
+
+**Step 2: Update Environment Variables** ⚙️
+Update `.env.development` with your cloud project credentials:
+
+```bash
+# Server-side (containers → Supabase Cloud)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_ANON_KEY=your-anon-key-here
+
+# Client-side (browser → Supabase Cloud)
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_WS_URL=wss://your-project.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key-here
+```
+
+**Step 3: Configure Extensions & Migrations** 📊
+You still need to configure your cloud project:
+- Activate **pg_cron** and **pgmq (Queues)** extensions in the Dashboard
+- Run SQL scripts from `packages/supabase/scripts/` in order via SQL Editor
+- Configure queues and permissions (same as local setup)
+
+**Note:** Make sure your Supabase project allows connections from your Docker network or configure network settings accordingly.
 
 </details>
 
