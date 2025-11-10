@@ -1,8 +1,8 @@
 import { Queue, Worker, Job } from 'bullmq'
 import { prisma } from './prisma'
-import { getRedisClient } from './redis'
-import type { StoreDocumentData } from '../types'
-import Redis from 'ioredis'
+import { createRedisConnection, getRedisPublisher } from './redis'
+import { queueLogger } from './logger'
+import type { StoreDocumentData, DeadLetterJobData } from '../types'
 
 async function generateUniqueSlug(baseSlug: string): Promise<string> {
   const existing = await prisma.documentMetadata.findUnique({ where: { slug: baseSlug } })
@@ -13,15 +13,22 @@ async function generateUniqueSlug(baseSlug: string): Promise<string> {
 }
 
 // BullMQ requires ioredis - create dedicated connection for queues
-const connection = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379', 10),
-  password: process.env.REDIS_PASSWORD,
-  db: parseInt(process.env.REDIS_DB || '0', 10),
-  maxRetriesPerRequest: null, // BullMQ requirement
-  enableReadyCheck: false,
-  enableOfflineQueue: false
+// Use centralized Redis config with BullMQ-specific settings
+const connection = createRedisConnection({
+  maxRetriesPerRequest: null, // BullMQ requirement - allows unlimited retries
+  enableReadyCheck: true, // Enable to ensure connection is ready before sending commands
+  enableOfflineQueue: true, // Enable to prevent command timeouts during reconnection
+  // Explicit timeout for BullMQ operations (longer than default for heavy operations)
+  commandTimeout: parseInt(process.env.REDIS_COMMAND_TIMEOUT || '60000', 10),
+  // Connection pooling settings
+  connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || '30000', 10),
+  keepAlive: parseInt(process.env.REDIS_KEEPALIVE || '30000', 10)
 })
+
+if (!connection) {
+  queueLogger.error('Failed to create Redis connection for BullMQ')
+  throw new Error('Redis configuration required for queue operations')
+}
 
 // Main queue for storing documents
 export const StoreDocumentQueue = new Queue<StoreDocumentData>('store-documents', {
@@ -54,12 +61,12 @@ export const DeadLetterQueue = new Queue<StoreDocumentData>('store-documents-dlq
 // Event handlers for monitoring and alerting
 // Note: Queue events are handled by Worker events below for better reliability
 StoreDocumentQueue.on('error', (err: Error) => {
-  console.error('❌ Queue error:', err)
+  queueLogger.error({ err }, 'Queue error')
 })
 
 // Worker to process document storage jobs
 export const createDocumentWorker = () => {
-  const redisPublisher = getRedisClient()
+  const redisPublisher = getRedisPublisher()
 
   const worker = new Worker<StoreDocumentData>(
     'store-documents',
@@ -67,7 +74,7 @@ export const createDocumentWorker = () => {
       const { data } = job
 
       try {
-        console.time(`Store Data, jobId:${job.id}`)
+        const startTime = Date.now()
 
         if (data.firstCreation) {
           const context = data.context
@@ -111,7 +118,8 @@ export const createDocumentWorker = () => {
           }
         })
 
-        console.timeEnd(`Store Data, jobId:${job.id}`)
+        const duration = Date.now() - startTime
+        queueLogger.info({ jobId: job.id, duration: `${duration}ms` }, 'Document stored successfully')
 
         // Publish save confirmation to document-specific Redis channel
         if (redisPublisher) {
@@ -127,11 +135,11 @@ export const createDocumentWorker = () => {
 
         return { success: true, version: savedDoc.version }
       } catch (err) {
-        console.error(`❌ Error storing data for job ${job.id}:`, err)
+        queueLogger.error({ err, jobId: job.id }, 'Error storing data for job')
 
         // If this is the final attempt, move to dead letter queue
         if (job.attemptsMade >= (job.opts.attempts || 5)) {
-          console.error(`💀 Job ${job.id} exhausted all retries. Moving to DLQ.`)
+          queueLogger.error({ jobId: job.id }, 'Job exhausted all retries. Moving to DLQ')
           await DeadLetterQueue.add('failed-document', {
             ...data,
             originalJobId: job.id,
@@ -158,21 +166,21 @@ export const createDocumentWorker = () => {
 
   // Worker event handlers
   worker.on('completed', (job) => {
-    console.log(`✅ Job ${job.id} completed successfully`)
+    queueLogger.info({ jobId: job.id }, 'Job completed successfully')
   })
 
   worker.on('failed', (job, err) => {
     if (job) {
-      console.error(`❌ Worker: Job ${job.id} failed:`, err.message)
+      queueLogger.error({ jobId: job.id, err }, 'Worker: Job failed')
     }
   })
 
   worker.on('error', (err) => {
-    console.error('❌ Worker error:', err)
+    queueLogger.error({ err }, 'Worker error')
   })
 
   worker.on('stalled', (jobId) => {
-    console.warn(`⚠️  Worker: Job ${jobId} stalled`)
+    queueLogger.warn({ jobId }, 'Worker: Job stalled')
   })
 
   return worker

@@ -3,6 +3,8 @@ import { createClient } from '@supabase/supabase-js'
 import ShortUniqueId from 'short-unique-id'
 import slugify from 'slugify'
 import type { CreateDocumentParams, UpdateDocumentParams, SearchDocumentsParams } from '../../types'
+import { handlePrismaError, NotFoundError, ValidationError } from '../../lib/errors'
+import { documentsServiceLogger } from '../../lib/logger'
 
 export const getOwnerProfile = async (userId: string) => {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) return null
@@ -46,136 +48,170 @@ export const createDraftDocument = (slug: string) => {
 export const createDocument = async (prisma: PrismaClient, params: CreateDocumentParams) => {
   const { slug, title, description = '', keywords = [], userId, email } = params
 
-  const newSlug = slugify(slug.toLowerCase(), { lower: true, strict: true })
-  const uid = new ShortUniqueId()
-  const documentId = uid.stamp(19)
-
-  const newDocumentMeta = {
-    slug: newSlug,
-    title: title || newSlug,
-    description: description || newSlug,
-    documentId,
-    keywords: keywords.length > 0 ? keywords.join(', ') : '',
-    ownerId: userId || null,
-    email: email || null
+  if (!slug || slug.trim().length === 0) {
+    throw new ValidationError('Slug is required and cannot be empty')
   }
 
-  const doc = await prisma.documentMetadata.create({ data: newDocumentMeta })
-  const ownerProfile = userId ? await getOwnerProfile(userId) : null
+  try {
+    const newSlug = slugify(slug.toLowerCase(), { lower: true, strict: true })
+    const uid = new ShortUniqueId()
+    const documentId = uid.stamp(19)
 
-  return { ...doc, ownerProfile }
+    const newDocumentMeta = {
+      slug: newSlug,
+      title: title || newSlug,
+      description: description || newSlug,
+      documentId,
+      keywords: keywords.length > 0 ? keywords.join(', ') : '',
+      ownerId: userId || null,
+      email: email || null
+    }
+
+    const doc = await prisma.documentMetadata.create({ data: newDocumentMeta })
+    const ownerProfile = userId ? await getOwnerProfile(userId) : null
+
+    documentsServiceLogger.info({ documentId, slug: newSlug }, 'Document created successfully')
+    return { ...doc, ownerProfile }
+  } catch (error) {
+    documentsServiceLogger.error({ err: error, slug }, 'Error creating document')
+    throw handlePrismaError(error)
+  }
 }
 
 export const getDocumentBySlug = async (prisma: PrismaClient, slug: string) => {
-  const normalizedSlug = slugify(slug.toLowerCase(), { lower: true, strict: true })
+  if (!slug || slug.trim().length === 0) {
+    throw new ValidationError('Slug is required and cannot be empty')
+  }
 
-  const doc = await prisma.documentMetadata.findUnique({
-    where: { slug: normalizedSlug }
-  })
+  try {
+    const normalizedSlug = slugify(slug.toLowerCase(), { lower: true, strict: true })
 
-  if (!doc) return null
+    const doc = await prisma.documentMetadata.findUnique({
+      where: { slug: normalizedSlug }
+    })
 
-  const keywords = doc.keywords
-    ? doc.keywords
-        .split(',')
-        .map((k) => k.trim())
-        .filter(Boolean)
-    : []
+    if (!doc) return null
 
-  const ownerProfile = doc.ownerId ? await getOwnerProfile(doc.ownerId) : null
+    const keywords = doc.keywords
+      ? doc.keywords
+          .split(',')
+          .map((k: string) => k.trim())
+          .filter(Boolean)
+      : []
 
-  return { ...doc, keywords, ownerProfile }
+    const ownerProfile = doc.ownerId ? await getOwnerProfile(doc.ownerId) : null
+
+    return { ...doc, keywords, ownerProfile }
+  } catch (error) {
+    documentsServiceLogger.error({ err: error, slug }, 'Error fetching document by slug')
+    throw handlePrismaError(error)
+  }
 }
 
 export const searchDocuments = async (prisma: PrismaClient, params: SearchDocumentsParams) => {
   const { title, keywords: reqKeywords, description, limit, offset } = params
 
-  let docs
-  let total
-
-  if (title || reqKeywords || description) {
-    const searchTokens = [
-      ...(title ? decodeURIComponent(title).split(' ') : []),
-      ...(reqKeywords ? decodeURIComponent(reqKeywords).split(' ') : []),
-      ...(description ? decodeURIComponent(description).split(' ') : [])
-    ].filter((x) => x && x !== 'undefined')
-
-    const searchQuery = searchTokens.join(' & ')
-
-    ;[docs, total] = await Promise.all([
-      prisma.documentMetadata.findMany({
-        skip: offset,
-        take: limit,
-        where: {
-          OR: [
-            { title: { contains: searchQuery } },
-            { title: { search: searchQuery } },
-            { keywords: { search: searchQuery } },
-            { description: { search: searchQuery } }
-          ]
-        },
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          description: true,
-          documentId: true,
-          keywords: true,
-          ownerId: true,
-          readOnly: true,
-          createdAt: true,
-          updatedAt: true
-        }
-      }),
-      prisma.documentMetadata.count({
-        where: {
-          OR: [
-            { title: { contains: searchQuery } },
-            { title: { search: searchQuery } },
-            { keywords: { search: searchQuery } },
-            { description: { search: searchQuery } }
-          ]
-        }
-      })
-    ])
-  } else {
-    ;[docs, total] = await Promise.all([
-      prisma.documentMetadata.findMany({ skip: offset, take: limit }),
-      prisma.documentMetadata.count()
-    ])
+  // Validate pagination parameters
+  if (limit < 1 || limit > 100) {
+    throw new ValidationError('Limit must be between 1 and 100')
   }
 
-  const formattedDocs = docs.map((doc) => ({
-    ...doc,
-    keywords: doc.keywords
-      ? doc.keywords
-          .split(',')
-          .map((k) => k.trim())
-          .filter(Boolean)
-      : []
-  }))
+  if (offset < 0) {
+    throw new ValidationError('Offset must be non-negative')
+  }
 
-  // Enrich with owner profiles
-  const ownerIds = formattedDocs.filter((doc) => doc.ownerId).map((doc) => doc.ownerId!)
-  const ownerProfiles = await getOwnerProfiles(ownerIds)
+  try {
+    let docs
+    let total
 
-  const docsWithOwners = formattedDocs.map((doc) => {
-    if (!doc.ownerId) return doc
+    if (title || reqKeywords || description) {
+      const searchTokens = [
+        ...(title ? decodeURIComponent(title).split(' ') : []),
+        ...(reqKeywords ? decodeURIComponent(reqKeywords).split(' ') : []),
+        ...(description ? decodeURIComponent(description).split(' ') : [])
+      ].filter((x) => x && x !== 'undefined')
 
-    const ownerProfile = ownerProfiles.find((profile) => profile.id === doc.ownerId)
-    const displayName = ownerProfile?.display_name || ownerProfile?.full_name || ownerProfile?.email
+      const searchQuery = searchTokens.join(' & ')
 
-    return {
-      ...doc,
-      owner: {
-        avatar_url: ownerProfile?.avatar_url,
-        displayName,
-        status: ownerProfile?.status
-      }
+      ;[docs, total] = await Promise.all([
+        prisma.documentMetadata.findMany({
+          skip: offset,
+          take: limit,
+          where: {
+            OR: [
+              { title: { contains: searchQuery } },
+              { title: { search: searchQuery } },
+              { keywords: { search: searchQuery } },
+              { description: { search: searchQuery } }
+            ]
+          },
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            description: true,
+            documentId: true,
+            keywords: true,
+            ownerId: true,
+            readOnly: true,
+            createdAt: true,
+            updatedAt: true
+          }
+        }),
+        prisma.documentMetadata.count({
+          where: {
+            OR: [
+              { title: { contains: searchQuery } },
+              { title: { search: searchQuery } },
+              { keywords: { search: searchQuery } },
+              { description: { search: searchQuery } }
+            ]
+          }
+        })
+      ])
+    } else {
+      ;[docs, total] = await Promise.all([
+        prisma.documentMetadata.findMany({ skip: offset, take: limit }),
+        prisma.documentMetadata.count()
+      ])
     }
-  })
 
-  return { docs: docsWithOwners, total }
+    const formattedDocs = docs.map((doc: any) => ({
+      ...doc,
+      keywords: doc.keywords
+        ? doc.keywords
+            .split(',')
+            .map((k: string) => k.trim())
+            .filter(Boolean)
+        : []
+    }))
+
+    // Enrich with owner profiles
+    const ownerIds = formattedDocs.filter((doc: any) => doc.ownerId).map((doc: any) => doc.ownerId!)
+    const ownerProfiles = await getOwnerProfiles(ownerIds)
+
+    const docsWithOwners = formattedDocs.map((doc: any) => {
+      if (!doc.ownerId) return doc
+
+      const ownerProfile = ownerProfiles.find((profile: any) => profile.id === doc.ownerId)
+      const displayName = ownerProfile?.display_name || ownerProfile?.full_name || ownerProfile?.email
+
+      return {
+        ...doc,
+        owner: {
+          avatar_url: ownerProfile?.avatar_url,
+          displayName,
+          status: ownerProfile?.status
+        }
+      }
+    })
+
+    documentsServiceLogger.debug({ count: docsWithOwners.length, total }, 'Documents searched successfully')
+    return { docs: docsWithOwners, total }
+  } catch (error) {
+    documentsServiceLogger.error({ err: error, params }, 'Error searching documents')
+    throw handlePrismaError(error)
+  }
 }
 
 export const updateDocument = async (
@@ -185,32 +221,43 @@ export const updateDocument = async (
 ) => {
   const { title, description, keywords, readOnly } = params
 
-  const updateData: any = {}
-  if (description !== undefined) updateData.description = description
-  if (title !== undefined) updateData.title = title
-  if (keywords !== undefined) updateData.keywords = keywords.join(',')
-  if (readOnly !== undefined) updateData.readOnly = readOnly
+  if (!documentId || documentId.trim().length === 0) {
+    throw new ValidationError('Document ID is required and cannot be empty')
+  }
 
-  const upsertedDoc = await prisma.documentMetadata.upsert({
-    where: { documentId },
-    update: updateData,
-    create: {
-      documentId,
-      slug: title ? slugify(title.toLowerCase(), { lower: true, strict: true }) : documentId,
-      title: title || documentId,
-      description: description || '',
-      keywords: keywords ? keywords.join(',') : '',
-      ...updateData
+  try {
+    const updateData: any = {}
+    if (description !== undefined) updateData.description = description
+    if (title !== undefined) updateData.title = title
+    if (keywords !== undefined) updateData.keywords = keywords.join(',')
+    if (readOnly !== undefined) updateData.readOnly = readOnly
+
+    const upsertedDoc = await prisma.documentMetadata.upsert({
+      where: { documentId },
+      update: updateData,
+      create: {
+        documentId,
+        slug: title ? slugify(title.toLowerCase(), { lower: true, strict: true }) : documentId,
+        title: title || documentId,
+        description: description || '',
+        keywords: keywords ? keywords.join(',') : '',
+        ...updateData
+      }
+    })
+
+    documentsServiceLogger.info({ documentId }, 'Document updated successfully')
+
+    return {
+      ...upsertedDoc,
+      keywords: upsertedDoc.keywords
+        ? upsertedDoc.keywords
+            .split(',')
+            .map((k: string) => k.trim())
+            .filter(Boolean)
+        : []
     }
-  })
-
-  return {
-    ...upsertedDoc,
-    keywords: upsertedDoc.keywords
-      ? upsertedDoc.keywords
-          .split(',')
-          .map((k) => k.trim())
-          .filter(Boolean)
-      : []
+  } catch (error) {
+    documentsServiceLogger.error({ err: error, documentId }, 'Error updating document')
+    throw handlePrismaError(error)
   }
 }

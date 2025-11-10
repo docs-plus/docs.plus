@@ -1,8 +1,0 @@
-node_modules
-packages/**/node_modules
-.vscode
-.husky
-.github
-packages/webapp/.next
-packages/extension-hyperlink/dist
-packages/extension-insert-media/dist

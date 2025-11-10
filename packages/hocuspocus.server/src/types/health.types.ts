@@ -6,6 +6,7 @@ export interface HealthCheckResult {
   status: HealthStatus
   lastCheck: Date
   error?: string
+  metadata?: any // Additional metadata (e.g., pool stats, metrics, etc.)
 }
 
 // Overall health result

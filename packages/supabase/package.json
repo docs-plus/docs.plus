@@ -9,16 +9,14 @@
     "stop": "dotenv -- supabase stop",
     "status": "dotenv -- supabase status",
     "db:reset": "dotenv -- supabase db reset --debug",
-    "supabase:types": "dotenv -- bunx supabase gen types typescript --local > ../webapp/types/supabase.ts"
+    "supabase:types": "dotenv -- bunx supabase gen types typescript --local > ../webapp/types/supabase.ts",
+    "seed:generate": "bun generate-seed.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "dotenv-cli": "^10.0.0",
-    "supabase": "^2.48.3"
-  },
-  "dependencies": {
-    "supabase": "^2.48.3"
+    "supabase": "^2.54.11"
   }
 }

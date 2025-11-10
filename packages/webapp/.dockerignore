@@ -1,0 +1,101 @@
+# Dependencies
+node_modules
+**/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+bun.lockb
+
+# Build outputs
+.next
+**/.next
+dist
+**/dist
+out
+**/out
+build
+**/build
+.turbo
+**/.turbo
+
+# Testing
+coverage
+**/coverage
+.nyc_output
+**/.nyc_output
+cypress/screenshots
+cypress/videos
+cypress/downloads
+
+# Environment
+.env
+.env.local
+.env*.local
+**/.env
+**/.env.local
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+**/.DS_Store
+
+# Git
+.git
+.gitignore
+.gitattributes
+
+# CI/CD
+.github
+.gitlab-ci.yml
+.travis.yml
+
+# Documentation
+*.md
+!README.md
+docs
+**/docs
+
+# Misc
+*.log
+*.tsbuildinfo
+**/*.tsbuildinfo
+.cache
+**/.cache
+temp
+**/temp
+tmp
+**/tmp
+
+# Docker
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Keep these (needed for build)
+!package.json
+!bun.lock
+!tsconfig.json
+!.prettierrc.json
+!packages/*/package.json
+!packages/*/tsconfig.json
+!packages/*/tsup.config.ts
+!packages/webapp/next.config.js
+!packages/webapp/public
+!packages/webapp/src
+!packages/webapp/src/pages
+!packages/webapp/src/components
+!packages/webapp/src/api
+!packages/webapp/src/utils
+!packages/webapp/src/types
+!packages/webapp/src/config
+!packages/webapp/src/hooks
+!packages/webapp/src/stores
+!packages/webapp/src/styles
+!packages/webapp/src/middleware.ts
+!packages/extension-*/src
+!packages/eslint-config
+

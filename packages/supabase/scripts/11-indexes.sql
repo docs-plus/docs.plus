@@ -58,6 +58,6 @@ insert into auth.users (id, email)
 values ('992bb85e-78f8-4747-981a-fd63d9317ff1', 'system@system.com')
 on conflict (id) do nothing;
 
-comment on table auth.users is 'Auth users table - includes all users with auth accounts including system accounts';
-comment on column auth.users.id is 'Unique identifier for the auth user';
-comment on column auth.users.email is 'Email address associated with the auth user';
+-- comment on table auth.users is 'Auth users table - includes all users with auth accounts including system accounts';
+-- comment on column auth.users.id is 'Unique identifier for the auth user';
+-- comment on column auth.users.email is 'Email address associated with the auth user';

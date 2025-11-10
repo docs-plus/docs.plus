@@ -1,0 +1,176 @@
+# Multi-stage Dockerfile for Next.js webapp in monorepo
+# Build context should be monorepo root (../../)
+
+# ============================================================================
+# Stage 1: Base - Common setup
+# ============================================================================
+FROM oven/bun:1-alpine AS base
+
+# Install system dependencies
+# Note: Build tools (python3, make, g++) kept for potential native dependencies
+# Most dependencies are pure JS, but some packages may have optional native modules
+RUN apk add --no-cache \
+    libc6-compat \
+    python3 \
+    make \
+    g++ \
+    nodejs
+
+WORKDIR /app
+
+# ============================================================================
+# Stage 2: Dependencies - Install all workspace dependencies
+# ============================================================================
+FROM base AS deps
+
+# Copy root package files (workspace config)
+COPY package.json bun.lock* ./
+COPY packages/eslint-config ./packages/eslint-config
+
+# Copy package.json files for all packages (needed for workspace resolution)
+COPY packages/extension-hyperlink/package.json ./packages/extension-hyperlink/
+COPY packages/extension-hypermultimedia/package.json ./packages/extension-hypermultimedia/
+COPY packages/extension-indent/package.json ./packages/extension-indent/
+COPY packages/extension-inline-code/package.json ./packages/extension-inline-code/
+COPY packages/webapp/package.json ./packages/webapp/
+
+# Install all dependencies including devDependencies (needed for build)
+# Skip Cypress binary download to save time and network (environment variable)
+# Cypress package will be installed but won't download browser binaries
+# Note: This is only for build stage - final image excludes all node_modules anyway
+# Bun handles workspaces automatically
+ENV CYPRESS_INSTALL_BINARY=0
+RUN bun install --verbose
+
+# ============================================================================
+# Stage 3: Build Extensions - Build extension packages first
+# ============================================================================
+FROM base AS build-extensions
+
+WORKDIR /app
+
+# Copy dependencies from deps stage
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./package.json
+COPY --from=deps /app/bun.lock* ./
+
+# Copy extension source files
+COPY packages/extension-hyperlink ./packages/extension-hyperlink
+COPY packages/extension-hypermultimedia ./packages/extension-hypermultimedia
+COPY packages/extension-indent ./packages/extension-indent
+COPY packages/extension-inline-code ./packages/extension-inline-code
+
+# Build extension packages (required by webapp)
+RUN cd packages/extension-hyperlink && bun run build
+RUN cd packages/extension-hypermultimedia && bun run build
+RUN cd packages/extension-indent && bun run build
+RUN cd packages/extension-inline-code && bun run build
+
+# ============================================================================
+# Stage 4: Build Webapp - Build Next.js application
+# ============================================================================
+FROM base AS builder
+
+WORKDIR /app
+
+# Accept build args
+ARG BUILD_ID
+ARG GIT_HASH
+ARG NODE_ENV=production
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_PROVIDER_URL
+ARG NEXT_PUBLIC_RESTAPI_URL
+ARG NEXT_PUBLIC_SSE_URL
+ARG NEXT_PUBLIC_GA_ID
+
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    BUILD_ID=${BUILD_ID} \
+    GIT_HASH=${GIT_HASH} \
+    NODE_ENV=${NODE_ENV} \
+    NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL} \
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
+    NEXT_PUBLIC_PROVIDER_URL=${NEXT_PUBLIC_PROVIDER_URL} \
+    NEXT_PUBLIC_RESTAPI_URL=${NEXT_PUBLIC_RESTAPI_URL} \
+    NEXT_PUBLIC_SSE_URL=${NEXT_PUBLIC_SSE_URL} \
+    NEXT_PUBLIC_GA_ID=${NEXT_PUBLIC_GA_ID}
+
+# Copy dependencies and built extensions
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./package.json
+COPY --from=deps /app/bun.lock* ./
+# Copy all extension source files (needed for TypeScript type resolution during Next.js build)
+COPY --from=build-extensions /app/packages/extension-hyperlink ./packages/extension-hyperlink
+COPY --from=build-extensions /app/packages/extension-hypermultimedia ./packages/extension-hypermultimedia
+COPY --from=build-extensions /app/packages/extension-indent ./packages/extension-indent
+COPY --from=build-extensions /app/packages/extension-inline-code ./packages/extension-inline-code
+
+# Copy webapp source
+COPY packages/webapp ./packages/webapp
+
+# Copy shared config files needed for build
+COPY packages/eslint-config ./packages/eslint-config
+COPY .prettierrc.json ./
+COPY tsconfig.json ./
+
+# Build Next.js app (standalone output configured in next.config.js)
+WORKDIR /app/packages/webapp
+RUN bun run build
+
+# ============================================================================
+# Stage 5: Runner - Production runtime
+# ============================================================================
+FROM base AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000 \
+    HOSTNAME="0.0.0.0"
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+# Copy standalone build output to root (Next.js standalone expects to run from its own root)
+# Standalone already includes server.js, node_modules, and minimal dependencies
+# The standalone structure preserves monorepo paths: packages/webapp/server.js
+COPY --from=builder --chown=nextjs:nodejs /app/packages/webapp/.next/standalone ./
+
+# Copy static files and public directory (standalone doesn't include these automatically)
+# When server.js does process.chdir(__dirname), it changes to packages/webapp/
+# So static files must be at packages/webapp/.next/static (relative to where server.js runs)
+# Reference: https://github.com/HMarzban/nextjs-docker-production
+COPY --from=builder --chown=nextjs:nodejs /app/packages/webapp/.next/static ./packages/webapp/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/packages/webapp/public ./packages/webapp/public
+
+# Clean up unnecessary files and fix any nested static directories created by postbuild
+RUN rm -rf ./packages/webapp/.next/cache && \
+    rm -rf ./packages/webapp/.next/static/static && \
+    find ./packages/webapp -name "*.test.*" -type f -delete && \
+    find ./packages/webapp -name "*.spec.*" -type f -delete
+
+# Copy built extension packages (needed at runtime for workspace resolution)
+COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-hyperlink/dist ./packages/extension-hyperlink/dist
+COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-hypermultimedia/dist ./packages/extension-hypermultimedia/dist
+COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-indent/dist ./packages/extension-indent/dist
+COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-inline-code/dist ./packages/extension-inline-code/dist
+
+# Copy package.json files for workspace resolution (from build-extensions for consistency)
+COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-hyperlink/package.json ./packages/extension-hyperlink/
+COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-hypermultimedia/package.json ./packages/extension-hypermultimedia/
+COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-indent/package.json ./packages/extension-indent/
+COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-inline-code/package.json ./packages/extension-inline-code/
+
+USER nextjs
+
+EXPOSE 3000
+
+# Simple healthcheck - less overhead than fetch
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD bun -e "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+
+# Next.js standalone preserves monorepo structure, so server.js is at packages/webapp/server.js
+# After extracting standalone to root, the path is correct
+CMD ["bun", "packages/webapp/server.js"]

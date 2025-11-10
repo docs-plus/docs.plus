@@ -1,0 +1,84 @@
+# =============================================================================
+# Cursor Ignore - Files to exclude from Cursor indexing
+# Note: .env and .env.local are explicitly allowed (not ignored)
+# =============================================================================
+
+# Dependencies
+node_modules/
+**/node_modules/
+packages/**/node_modules/
+
+# Build outputs
+.next/
+.nuxt/
+dist/
+build/
+**/dist/
+**/build/
+packages/**/dist/
+packages/**/build/
+*.tsbuildinfo
+
+# Logs
+*.log
+logs/
+**/*.log
+
+# Cache
+.cache/
+**/.cache/
+.eslintcache
+.npm/
+.yarn/
+
+# OS files
+.DS_Store
+**/.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test coverage
+coverage/
+.nyc_output/
+**/coverage/
+
+# Temporary files
+temp/
+tmp/
+**/temp/
+**/tmp/
+packages/hocuspocus.server/temp/
+
+# Volumes and data
+volumes/
+**/volumes/
+uptime-kuma-data/
+
+# Uploads
+uploads/
+**/uploads/
+
+# Cypress
+packages/webapp/cypress/videos/
+packages/webapp/cypress/screenshots/
+packages/webapp/cypress/downloads/
+
+# Package files
+*.tgz
+packages/**/*.tgz
+
+# =============================================================================
+# Explicitly ALLOW .env files (negate any potential matches)
+# =============================================================================
+!.env
+!.env.*
+!**/.env
+!**/.env.local
+!**/.env.*
+

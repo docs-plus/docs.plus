@@ -1,9 +1,15 @@
 import { Server } from '@hocuspocus/server'
-import HocuspocusConfig, { prisma } from './config/hocuspocus.config'
-import { jwtDecode } from 'jwt-decode'
+import HocuspocusConfig from './config/hocuspocus.config'
+import { prisma, shutdownDatabase } from './lib/prisma'
+import { disconnectRedis } from './lib/redis'
+import { verifyJWT, decodeJWT } from './utils'
 import type { HistoryPayload } from './types'
+import { logger } from './lib/logger'
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
+
+// Create logger for WebSocket server
+const wsLogger = logger.child({ service: 'websocket' })
 
 async function handleHistoryEvents(payload: HistoryPayload, context: any, document: any) {
   const { type, documentId } = payload
@@ -69,7 +75,7 @@ const statelessExtension = {
           response
         })
       } catch (error) {
-        console.error('Error handling history event:', error)
+        wsLogger.error({ err: error }, 'Error handling history event')
       }
     } else {
       document.broadcastStateless(JSON.stringify(parsedPayload))
@@ -85,7 +91,7 @@ const serverConfig = {
 
   async onAuthenticate({ token, documentName }: any) {
     if (!token) {
-      console.info('No token provided')
+      wsLogger.debug({ documentName }, 'No token provided - allowing anonymous access')
       return {
         user: null,
         slug: '',
@@ -94,33 +100,57 @@ const serverConfig = {
     }
 
     try {
-      const newToken = JSON.parse(token)
+      const tokenData = JSON.parse(token)
 
-      // Verify and decode JWT
-      const decoded = jwtDecode(newToken.accessToken)
+      // Verify JWT signature if accessToken is provided
+      if (tokenData.accessToken) {
+        const verified = verifyJWT(tokenData.accessToken)
 
-      // Return user data - this will be available in context throughout
+        if (verified) {
+          wsLogger.debug({ userId: verified.sub, documentName }, 'JWT verified successfully')
+          return {
+            user: verified,
+            slug: tokenData.slug || '',
+            documentId: documentName
+          }
+        } else {
+          wsLogger.warn({ documentName }, 'JWT verification failed - invalid signature')
+
+          // In production, reject invalid tokens
+          if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET) {
+            throw new Error('Invalid authentication token')
+          }
+
+          // In development, allow access but log warning
+          wsLogger.warn('Allowing unauthenticated access in development mode')
+          return {
+            user: null,
+            slug: tokenData.slug || '',
+            documentId: documentName
+          }
+        }
+      }
+
+      // No accessToken provided, allow access with slug only
+      wsLogger.debug({ documentName }, 'No accessToken in token data')
       return {
-        user: decoded,
-        slug: newToken.slug,
+        user: null,
+        slug: tokenData.slug || '',
         documentId: documentName
       }
     } catch (error) {
-      console.error('JWT verification failed:', error instanceof Error ? error.message : error)
+      wsLogger.error({ err: error, documentName }, 'Error parsing authentication token')
 
-      try {
-        const fallbackToken = JSON.parse(token)
-        return {
-          user: null,
-          slug: fallbackToken.slug || '',
-          documentId: documentName
-        }
-      } catch {
-        return {
-          user: null,
-          slug: '',
-          documentId: documentName
-        }
+      // In production, reject malformed tokens
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('Malformed authentication token')
+      }
+
+      // In development, allow access
+      return {
+        user: null,
+        slug: '',
+        documentId: documentName
       }
     }
   }
@@ -132,19 +162,31 @@ const server = new Server(serverConfig)
 // Start listening
 server.listen()
 
-console.log(`🚀 Hocuspocus WebSocket Server running on port ${baseConfig.port}`)
+wsLogger.info({
+  msg: '🚀 WebSocket Server started successfully',
+  port: baseConfig.port,
+  environment: process.env.NODE_ENV,
+  url: `ws://localhost:${baseConfig.port}`
+})
 
 // Graceful shutdown
-process.on('SIGINT', async () => {
-  console.log('\n🛑 Shutting down Hocuspocus server...')
-  await server.destroy()
-  await prisma.$disconnect()
-  process.exit(0)
-})
+const shutdown = async () => {
+  wsLogger.info('Shutting down WebSocket server gracefully...')
 
-process.on('SIGTERM', async () => {
-  console.log('\n🛑 Shutting down Hocuspocus server...')
-  await server.destroy()
-  await prisma.$disconnect()
-  process.exit(0)
-})
+  try {
+    await server.destroy()
+    wsLogger.info('WebSocket server stopped')
+
+    await shutdownDatabase()
+    await disconnectRedis()
+
+    wsLogger.info('✅ WebSocket server shutdown complete')
+    process.exit(0)
+  } catch (err) {
+    wsLogger.error({ err }, '❌ Error during shutdown')
+    process.exit(1)
+  }
+}
+
+process.on('SIGINT', shutdown)
+process.on('SIGTERM', shutdown)

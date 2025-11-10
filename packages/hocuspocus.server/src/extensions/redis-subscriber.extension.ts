@@ -1,23 +1,34 @@
 import type { Extension } from '@hocuspocus/server'
-import { getRedisClient } from '../lib/redis'
-import type { SaveConfirmation } from '../types'
+import { getRedisSubscriber } from '../lib/redis'
+import { redisLogger } from '../lib/logger'
+import type { SaveConfirmation, RedisClient } from '../types'
 
 export class RedisSubscriberExtension implements Extension {
-  private subscriber: any = null
+  private subscriber: RedisClient | null = null
 
   async onConfigure({ instance }: any) {
-    // Create a separate Redis client for subscriptions
+    // Get dedicated Redis client for subscriptions (ioredis)
     // Note: Subscription mode takes over the connection, so we need a dedicated client
-    this.subscriber = getRedisClient()?.duplicate()
+    this.subscriber = getRedisSubscriber()
 
     if (!this.subscriber) {
-      console.warn('Redis not available, save confirmations disabled')
+      redisLogger.warn('Redis not available, save confirmations disabled')
       return
     }
 
     try {
-      // Bun's native Redis psubscribe for pattern matching
-      await this.subscriber.psubscribe('doc:*:saved', (message: string, channel: string) => {
+      // Subscribe to pattern: doc:*:saved
+      // ioredis psubscribe syntax
+      this.subscriber.psubscribe('doc:*:saved', (err, count) => {
+        if (err) {
+          redisLogger.error({ err }, 'Failed to psubscribe to doc:*:saved')
+        } else {
+          redisLogger.info({ count }, '✅ Subscribed to document save channels (pattern: doc:*:saved)')
+        }
+      })
+
+      // Handle pattern messages
+      this.subscriber.on('pmessage', (pattern: string, channel: string, message: string) => {
         try {
           // Extract documentId from channel name: doc:abc123:saved -> abc123
           const documentId = channel.split(':')[1]
@@ -34,24 +45,28 @@ export class RedisSubscriberExtension implements Extension {
                 timestamp: data.timestamp
               })
             )
-            console.info(`📝 Broadcasted save confirmation for ${documentId} v${data.version}`)
+            redisLogger.info(
+              { documentId, version: data.version },
+              '📝 Broadcasted save confirmation'
+            )
           }
         } catch (err) {
-          console.error('Error processing save confirmation:', err)
+          redisLogger.error({ err, channel }, 'Error processing save confirmation')
         }
       })
-
-      console.info('✅ Subscribed to document save channels (pattern: doc:*:saved)')
     } catch (err) {
-      console.error('Failed to subscribe to document channels:', err)
+      redisLogger.error({ err }, 'Failed to subscribe to document channels')
     }
   }
 
   async onDestroy() {
     if (this.subscriber) {
-      await this.subscriber.punsubscribe('doc:*:saved')
-      this.subscriber.close()
-      console.info('🔌 Unsubscribed from Redis channels')
+      try {
+        await this.subscriber.punsubscribe('doc:*:saved')
+        redisLogger.info('🔌 Unsubscribed from Redis channels')
+      } catch (err) {
+        redisLogger.error({ err }, 'Error unsubscribing from Redis channels')
+      }
     }
   }
 }

@@ -38,6 +38,6 @@
   "devDependencies": {
     "typescript": "^5.9.3",
     "tsup": "^8.5.0",
-    "eslint": "^9.36.0"
+    "eslint": "^9.38.0"
   }
 }

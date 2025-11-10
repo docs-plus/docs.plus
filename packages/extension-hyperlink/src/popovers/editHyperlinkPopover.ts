@@ -111,6 +111,7 @@ export default function editHyperlinkPopover(options: EditHyperlinkModalOptions)
 
     if (hasErrors) return
 
+    // @ts-ignore - editHyperlink is a valid command but TypeScript types aren't picking it up in Docker builds
     editor.chain().focus().extendMarkRange('hyperlink').editHyperlink({
       newURL: newHref,
       newText: newText
