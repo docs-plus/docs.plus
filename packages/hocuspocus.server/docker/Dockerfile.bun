@@ -1,0 +1,93 @@
+# =============================================================================
+# Multi-stage Dockerfile for Hocuspocus Server
+# Optimized for production with minimal image size
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Stage 1: Base - Install dependencies
+# -----------------------------------------------------------------------------
+FROM oven/bun:1-slim AS base
+WORKDIR /app
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    openssl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy package files
+COPY package.json bun.lock* bunfig.toml ./
+COPY prisma ./prisma/
+
+# Install dependencies (including prisma CLI for migrations)
+RUN bun install --frozen-lockfile --production
+
+# Pre-install Prisma CLI for runtime migrations (avoids slow downloads at container startup)
+# This ensures Prisma is available in node_modules/.bin for the entrypoint script
+RUN bun add -d prisma@latest --no-save || true
+
+# Generate Prisma client
+RUN bunx prisma generate
+
+# Copy and setup entrypoint script for development
+COPY scripts/docker-entrypoint.sh /app/scripts/docker-entrypoint.sh
+RUN chmod +x /app/scripts/docker-entrypoint.sh
+
+# -----------------------------------------------------------------------------
+# Stage 2: Production - Minimal runtime image
+# -----------------------------------------------------------------------------
+FROM oven/bun:1-slim AS production
+WORKDIR /app
+
+# Install runtime dependencies only
+RUN apt-get update && apt-get install -y \
+    ca-certificates \
+    openssl \
+    netcat-openbsd \
+    && rm -rf /var/lib/apt/lists/* \
+    && apt-get clean
+
+# Create non-root user for security
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+
+# Copy dependencies from base
+COPY --from=base /app/node_modules ./node_modules
+COPY --from=base /app/prisma ./prisma
+
+# Copy and setup entrypoint script (as root)
+COPY scripts/docker-entrypoint.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Pre-download Prisma CLI and make it available globally
+# bunx downloads to /tmp, so we'll install it properly for appuser to use
+RUN bunx --bun prisma@latest --version || echo "Prisma download failed" && \
+    PRISMA_PATH=$(find /tmp -name "prisma" -type f -executable 2>/dev/null | head -1) && \
+    if [ -n "$PRISMA_PATH" ]; then \
+      mkdir -p /usr/local/lib/prisma && \
+      cp -r $(dirname $(dirname "$PRISMA_PATH"))/* /usr/local/lib/prisma/ 2>/dev/null || true; \
+    fi
+
+# Copy source code
+COPY --chown=appuser:appuser . .
+
+# Create temp directory for file uploads
+RUN mkdir -p /app/temp/hypermultimedia && \
+    chown -R appuser:appuser /app
+
+# Switch to non-root user
+USER appuser
+
+# Expose ports for all services
+EXPOSE 4000 4001 4002
+
+# Health check (can be overridden per service)
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD bun --version || exit 1
+
+# Set entrypoint
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
+
+# Default command (will be overridden by docker-compose)
+CMD ["bun", "src/index.ts"]
+
+

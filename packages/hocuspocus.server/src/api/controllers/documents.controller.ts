@@ -1,20 +1,9 @@
-import type { Context } from 'hono'
 import type { PrismaClient } from '@prisma/client'
-import { jwtDecode } from 'jwt-decode'
+import { extractUserFromToken } from '../../utils'
 import * as documentsService from '../services/documents.service'
 import * as mediaService from '../services/media.service'
-
-const extractUser = (token?: string, userId?: string) => {
-  if (!token || !userId) return null
-
-  try {
-    const decoded = jwtDecode(token)
-    return { ...decoded, id: userId }
-  } catch (error) {
-    console.error('JWT decode error:', error)
-    return null
-  }
-}
+import { documentsControllerLogger } from '../../lib/logger'
+import { getErrorResponse, AppError } from '../../lib/errors'
 
 export const getDocumentBySlug = async (c: any) => {
   const prisma = c.get('prisma') as PrismaClient
@@ -22,7 +11,7 @@ export const getDocumentBySlug = async (c: any) => {
   const { userId } = c.req.valid('query')
   const token = c.req.header('token')
 
-  const user = extractUser(token, userId)
+  const user = extractUserFromToken(token, userId)
 
   try {
     const doc = await documentsService.getDocumentBySlug(prisma, docName)
@@ -33,8 +22,10 @@ export const getDocumentBySlug = async (c: any) => {
 
     return c.json({ Success: true, data: doc })
   } catch (error) {
-    console.error('Error fetching document:', error)
-    return c.json({ Success: false, Error: error }, 400)
+    documentsControllerLogger.error({ err: error, docName }, 'Error fetching document')
+
+    const statusCode = error instanceof AppError ? error.statusCode : 500
+    return c.json(getErrorResponse(error as Error), statusCode)
   }
 }
 
@@ -62,8 +53,10 @@ export const listDocuments = async (c: any) => {
 
     return c.json({ Success: true, data: result })
   } catch (error) {
-    console.error('Error listing documents:', error)
-    return c.json({ Success: false, Error: error }, 400)
+    documentsControllerLogger.error({ err: error }, 'Error listing documents')
+
+    const statusCode = error instanceof AppError ? error.statusCode : 500
+    return c.json(getErrorResponse(error as Error), statusCode)
   }
 }
 
@@ -81,8 +74,10 @@ export const createDocument = async (c: any) => {
 
     return c.json({ Success: true, data: doc })
   } catch (error) {
-    console.error('Error creating document:', error)
-    return c.json({ Success: false, Error: error }, 400)
+    documentsControllerLogger.error({ err: error, slug }, 'Error creating document')
+
+    const statusCode = error instanceof AppError ? error.statusCode : 500
+    return c.json(getErrorResponse(error as Error), statusCode)
   }
 }
 
@@ -101,8 +96,10 @@ export const updateDocument = async (c: any) => {
 
     return c.json({ Success: true, data: doc })
   } catch (error) {
-    console.error('Error updating document:', error)
-    return c.json({ Success: false, Error: error }, 400)
+    documentsControllerLogger.error({ err: error, docId }, 'Error updating document')
+
+    const statusCode = error instanceof AppError ? error.statusCode : 500
+    return c.json(getErrorResponse(error as Error), statusCode)
   }
 }
 
@@ -112,8 +109,10 @@ export const getMedia = async (c: any) => {
   try {
     return await mediaService.getMedia(documentId, mediaId, c)
   } catch (error) {
-    console.error('Error fetching media:', error)
-    return c.json({ error: 'Failed to fetch media' }, 500)
+    documentsControllerLogger.error({ err: error, documentId, mediaId }, 'Error fetching media')
+
+    const statusCode = error instanceof AppError ? error.statusCode : 500
+    return c.json(getErrorResponse(error as Error), statusCode)
   }
 }
 
@@ -131,7 +130,9 @@ export const uploadMedia = async (c: any) => {
     const result = await mediaService.uploadMedia(documentId, mediaFile)
     return c.json(result, 201)
   } catch (error) {
-    console.error('Error uploading file:', error)
-    return c.json({ error: 'Upload failed' }, 500)
+    documentsControllerLogger.error({ err: error, documentId }, 'Error uploading file')
+
+    const statusCode = error instanceof AppError ? error.statusCode : 500
+    return c.json(getErrorResponse(error as Error), statusCode)
   }
 }

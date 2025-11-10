@@ -1,21 +1,13 @@
 import { Hono, type Context, type Next } from 'hono'
 import { cors } from 'hono/cors'
-import { logger } from 'hono/logger'
 import { secureHeaders } from 'hono/secure-headers'
-import chalk from 'chalk'
 import { RateLimiterRedis } from 'rate-limiter-flexible'
-import Redis from 'ioredis'
+import { getRedisClient } from '../lib/redis'
+import { logger, httpLogger } from '../lib/logger'
 import '../types' // For type augmentation
 
-// Create dedicated Redis client for rate limiting
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379', 10),
-  password: process.env.REDIS_PASSWORD,
-  db: parseInt(process.env.REDIS_DB || '0', 10),
-  lazyConnect: true,
-  enableOfflineQueue: false
-})
+// Use centralized Redis client for rate limiting
+const redisClient = getRedisClient()
 
 
 export const rateLimiter = (options: {
@@ -25,6 +17,12 @@ export const rateLimiter = (options: {
   blockDuration?: number // Optional block duration after limit exceeded
 }) => {
   const { points, duration, keyPrefix = 'rl', blockDuration } = options
+
+  // Skip rate limiting if Redis is not available
+  if (!redisClient) {
+    httpLogger.warn('Redis not available, rate limiting disabled')
+    return async (c: Context, next: Next) => next()
+  }
 
   // Create rate limiter instance
   const limiter = new RateLimiterRedis({
@@ -41,6 +39,22 @@ export const rateLimiter = (options: {
     // Get client identifier (IP + User-Agent for better uniqueness)
     const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
     const userAgent = c.req.header('user-agent') || 'unknown'
+
+    // Skip rate limiting for internal Docker network requests (from webapp containers)
+    // Internal requests come from Docker network IPs (172.x.x.x, 10.x.x.x) or have internal headers
+    const isInternalRequest =
+      c.req.header('x-internal-request') === 'true' ||
+      (ip && (
+        ip.startsWith('172.') || // Docker default network range
+        ip.startsWith('10.') || // Private network range
+        ip === '127.0.0.1' ||
+        ip === '::1'
+      ))
+
+    if (isInternalRequest) {
+      return next()
+    }
+
     const key = `${ip}:${userAgent}`
 
     try {
@@ -89,25 +103,57 @@ export const uploadSizeLimit = (maxSize: number) => {
   }
 }
 
-// Custom logger with colors
-export const customLogger = () => {
+/**
+ * Logs all HTTP requests with:
+ * - Request details (method, path, headers, query)
+ * - Response details (status, duration)
+ * - Error tracking
+ * - Structured JSON in production, pretty print in development
+ */
+export const pinoLogger = () => {
   return async (c: Context, next: Next) => {
     const start = Date.now()
-    const path = c.req.path
     const method = c.req.method
+    const path = c.req.path
+    const userAgent = c.req.header('user-agent')
+    const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || 'unknown'
 
-    await next()
+    // Log incoming request
+    httpLogger.info({
+      msg: 'Incoming request',
+      method,
+      path,
+      ip,
+      userAgent
+    })
 
-    const elapsed = Date.now() - start
+    try {
+      await next()
+    } catch (err) {
+      // Log errors
+      httpLogger.error({
+        msg: 'Request error',
+        method,
+        path,
+        err
+      })
+      throw err
+    }
+
+    // Log response
+    const duration = Date.now() - start
     const status = c.res.status
 
-    let statusColor = chalk.green
-    if (status >= 400 && status < 500) statusColor = chalk.yellow
-    if (status >= 500) statusColor = chalk.red
+    const logLevel = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info'
 
-    console.log(
-      `${chalk.cyan('[hono]')} ${chalk.bold(method)} ${path} ${statusColor(status)} - ${chalk.gray(`${elapsed}ms`)}`
-    )
+    httpLogger[logLevel]({
+      msg: 'Request completed',
+      method,
+      path,
+      status,
+      duration: `${duration}ms`,
+      ip
+    })
   }
 }
 
@@ -153,8 +199,8 @@ export const setupMiddleware = (app: Hono) => {
     })
   )
 
-  // Custom colored logger
-  app.use('*', customLogger())
+  // Production-ready Pino logger
+  app.use('*', pinoLogger())
 
   // Rate limiting (global) - Skip OPTIONS requests
   const rateLimitMax = parseInt(process.env.RATE_LIMIT_MAX || '100', 10)

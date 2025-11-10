@@ -4,7 +4,7 @@ import path from 'path'
 import { mkdir } from 'fs/promises'
 import type { Context } from 'hono'
 import type { StorageUploadResponse } from '../../types'
-
+import { storageLocalLogger } from '../logger'
 const PLUGIN_NAME = 'hypermultimedia'
 
 export const upload = async (documentId: string, file: File): Promise<StorageUploadResponse> => {
@@ -22,6 +22,8 @@ export const upload = async (documentId: string, file: File): Promise<StorageUpl
     const buffer = await file.arrayBuffer()
     await Bun.write(filePath, buffer)
 
+    storageLocalLogger.info({ documentId, fileName, fileSize: file.size }, 'File uploaded to local storage')
+
     return {
       type: 'localStorage',
       error: false,
@@ -29,7 +31,7 @@ export const upload = async (documentId: string, file: File): Promise<StorageUpl
       fileType
     }
   } catch (error) {
-    console.error(`[hypermultimedia]: localUploadMedia`, error)
+    storageLocalLogger.error({ err: error, documentId }, 'Error uploading to local storage')
     throw error
   }
 }
@@ -51,13 +53,15 @@ export const get = async (documentId: string, mediaId: string, c: Context) => {
 
     const contentType = mime.getType(mediaId) || 'application/octet-stream'
 
+    storageLocalLogger.debug({ documentId, mediaId, fileSize: file.size }, 'File retrieved from local storage')
+
     return c.body(await file.arrayBuffer(), 200, {
       'Content-Type': contentType,
       'Content-Disposition': `inline; filename="${mediaId}"`,
       'Accept-Ranges': 'bytes'
     })
   } catch (error) {
-    console.error(`[hypermultimedia]: localGetMedia`, error)
+    storageLocalLogger.error({ err: error, documentId, mediaId }, 'Error retrieving file from local storage')
     return c.json({ error: 'Error retrieving file' }, 500)
   }
 }

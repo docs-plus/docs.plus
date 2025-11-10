@@ -1,114 +1,197 @@
 # 📚 docs.plus
 
-[![Generic badge](https://img.shields.io/badge/version-2.0.0-green.svg)](https://docs.plus)
-[![Apache License](https://img.shields.io/badge/License-Apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
+[![Version](https://img.shields.io/badge/version-2.0.0-green.svg)](https://docs.plus)
+[![License](https://img.shields.io/badge/License-Apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
 
-**docs.plus** is a free, real-time collaboration tool built on open-source technologies. It empowers communities to share and organize information logically and hierarchically, making teamwork and knowledge sharing straightforward and effective.
+docs.plus is a free, real-time collaboration tool built on open-source technologies. It empowers communities to share and organize information logically and hierarchically, making teamwork and knowledge sharing straightforward and effective.
+
+## 🏗️ Architecture
+
+**Monorepo Structure:**
+- 🌐 `packages/webapp` - Next.js frontend with TipTap editor
+- ⚡ `packages/hocuspocus.server` - REST API, WebSocket server, and background workers
+- 🗄️ `packages/supabase` - Database migrations and Supabase configuration
+- 🔌 `packages/extension-*` - TipTap extensions (hyperlink, multimedia, indent, inline-code)
+
+**Tech Stack:**
+- **Runtime**: 🚀 Bun 1.3.2+
+- **Frontend**: ⚛️ Next.js 15, React, TipTap, Tailwind CSS
+- **Backend**: 🔧 Hono, Hocuspocus (Y.js), Prisma ORM
+- **Database**: 🐘 PostgreSQL 17, 🔴 Redis
+- **Infrastructure**: 🐳 Docker Compose, Supabase
+- **Real-time**: 🔌 WebSocket (Hocuspocus), Supabase Realtime
+
+## 📋 Prerequisites
+
+- 🐳 **Docker** & **Docker Compose** v2+ - [Install](https://docs.docker.com/get-docker/)
+- 🚀 **Bun** >=1.3.2 - [Install](https://bun.sh/docs/installation)
+- 🗄️ **Supabase CLI** - [Install](https://supabase.com/docs/guides/cli/installation)
 
 ## 🚀 Quick Start
 
-### Prerequisites
-
-Ensure you have the following installed:
-
-- **Bun** (version `>=1.2.23`) - [Installation Guide](https://bun.sh/docs/installation)
-- **PostgreSQL** - Download from the [official PostgreSQL website](https://www.postgresql.org/download/) or run via Docker.
-- **Supabase** - You can choose between:
-  - [Self-hosted](https://supabase.com/docs/guides/self-hosting/docker)
-  - [Cloud-based](https://supabase.com/)
-  - [CLI Installation](https://supabase.com/docs/guides/cli/getting-started)
-
-### Development Environment Setup
-
-Follow these steps to set up your development environment:
-
-1. **Clone the Repository**
-
-   ```bash
-   git clone https://github.com/docs-plus/docs.plus.git
-   cd docs.plus
-   ```
-
-2. **Install Dependencies**
-
-   ```bash
-   bun install
-   ```
-
-3. **Build Dependencies**
-
-   ```bash
-   bun run build
-   ```
-
-4. **Install Supabase CLI**
-
-   ```bash
-   brew install supabase/tap/supabase
-   ```
-
-   > If you're using a different package manager, refer to the [Supabase CLI installation guide](https://supabase.com/docs/guides/cli/installation).
-
-### Environment Configuration
-
-Before starting the project, you need to create the `.env` files by following these steps:
-
-1. **Locate the Example Files**: You will find `.env.example` files in the following directories:
-
-   - `packages/webapp/.env.example`
-   - `packages/supabase/.env.example`
-   - `packages/hocuspocus.server/.env.example`
-
-2. **Create .env Files**: Copy each `.env.example` to a new `.env` file in the same directory.
-
-   ```bash
-   cp packages/webapp/.env.example packages/webapp/.env
-   cp packages/supabase/.env.example packages/supabase/.env
-   cp packages/hocuspocus.server/.env.example packages/hocuspocus.server/.env
-   ```
-
-3. **Update Configurations**: Edit the `.env` files to replace placeholders with your actual configuration values.
-
-### PostgreSQL Database Setup
-
-You can set up PostgreSQL in your development environment by running the following Docker command:
+### 1️⃣ Clone & Install
 
 ```bash
-docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgres
+git clone https://github.com/docs-plus/docs.plus.git
+cd docs.plus
+bun install
 ```
 
-For more information on the PostgreSQL Docker image, refer to the [official Docker documentation](https://docs.docker.com/samples/postgres/).
-
-### Running the Project
-
-After setting up the environment and configuring the `.env` files, you can start the project in development mode using:
+### 2️⃣ Environment Configuration
 
 ```bash
-make local
+cp .env.example .env.development
 ```
 
-This command will start the development server for the webapp, as well as the backend services (`hocuspocus` & `supabase`).
+Update `.env.development` with your configuration. See `.env.example` for all available variables.
 
-For more details on available commands, refer to the [Makefile](./Makefile).
+### 3️⃣ Initialize Supabase
 
-## 📫 Connect With Us
+<details>
+<summary><strong>🗄️ Supabase Setup (One-time, ~5-10 min)</strong></summary>
 
-We'd love to hear from you! You can reach out through the following channels:
+**Step 1: Start Supabase** 🚀
+```bash
+make supabase-start
+```
+First run downloads Docker images. Verify with `make supabase-status`.
 
-- **Twitter**: [@docsdotplus](https://twitter.com/docsdotplus)
-- **GitHub**: [docs.plus](https://github.com/nwspk/docs.plus)
-- **Slack**: [docsplus](https://docsplus.slack.com)
-- **Email**: [contact@newspeak.house](mailto:contact@newspeak.house)
+**Step 2: Activate Extensions** 🔌
+- Open [Supabase Studio](http://127.0.0.1:54323)
+- Go to [Integrations](http://127.0.0.1:54323/project/default/integrations)
+- Activate: **pg_cron** and **pgmq (Queues)**
 
-## 📜 License
+**Step 3: Run Migrations** 📊
+- Open [SQL Editor](http://127.0.0.1:54323/project/default/sql/1)
+- Execute scripts from `packages/supabase/scripts/` in order: `01-enum.sql` through `17-database-extensions.sql`
 
-docs.plus is licensed under the [Apache License v2](http://www.apache.org/licenses/LICENSE-2.0.html). You are free to use, modify, distribute, and even sell your modifications under the same terms.
+**Step 4: Configure Queues** ⚙️
+- [Queue Settings](http://127.0.0.1:54323/project/default/integrations/queues/settings) → Enable "Expose Queues via PostgREST"
+- [Queues](http://127.0.0.1:54323/project/default/integrations/queues/queues) → Select `message_counter` → Manage permissions
+- Enable Select/Insert/Update/Delete for: `authenticated`, `postgres`, `service_role`
+- Add RLS policy: "Allow anon and authenticated to access messages from queue"
 
-## 🙏 Support Our Project
+</details>
 
-docs.plus is a free and open-source project. To keep it running and continuously improving, we need your support. If you're able to contribute, we'd greatly appreciate it:
+### 4️⃣ Start Development Environment
 
-<a href="https://patreon.com/docsplus"><img src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Ddocsplus%26type%3Dpatrons&style=for-the-badge" /> </a>
+```bash
+make up-dev
+```
 
-Your support helps maintain our servers and enhances the platform for everyone's benefit. Thank you for your generosity!
+**Services:** 🎯
+- 🌐 Webapp: http://localhost:3000
+- 🔌 REST API: http://localhost:4000
+- ⚡ WebSocket: ws://localhost:4001
+- 👷 Worker: http://localhost:4002
+- 🐘 PostgreSQL: localhost:5432
+- 🔴 Redis: localhost:6379
+- 🗄️ Supabase Studio: http://127.0.0.1:54323
+
+## 🚀 Production Deployment
+
+Production-ready setup for **mid-level scale deployments** (small-medium teams, moderate traffic).
+
+**Architecture:** 🏗️
+- 📈 Horizontal scaling: REST API (2), WebSocket (3), Worker (2), Webapp (2)
+- 🔀 Nginx reverse proxy with load balancing
+- ⚡ Resource limits and health checks
+- 📊 Production-optimized logging and connection pooling
+
+### Setup
+
+1. **⚙️ Configure Environment**
+   ```bash
+   cp .env.example .env.production
+   ```
+   Update: database credentials, JWT secret, Supabase URLs, storage credentials, CORS origins.
+
+2. **🔨 Build & Deploy**
+   ```bash
+   make build
+   make up-prod
+   ```
+
+3. **📈 Scaling**
+   Adjust replicas in `.env.production`:
+   ```bash
+   REST_REPLICAS=2
+   WS_REPLICAS=3
+   WORKER_REPLICAS=2
+   WEBAPP_REPLICAS=2
+   ```
+
+**Production Recommendations:** 💡
+- 🗄️ Use managed database (AWS RDS, DigitalOcean, Supabase Cloud)
+- 🔒 Configure SSL/TLS certificates
+- 📊 Set up monitoring (Prometheus, Grafana)
+- 💾 Implement database backups
+- 🔐 Secure all secrets and credentials
+
+## 📖 Command Reference
+
+```bash
+# Building
+make build             # Production build
+make build-dev         # Development build
+
+# Running
+make up-prod           # Start production
+make up-dev            # Start development
+
+# Management
+make down              # Stop services (auto-detects env)
+make restart           # Restart services (auto-detects env)
+make logs              # All logs
+make logs-webapp       # Webapp logs
+make logs-backend      # Backend logs
+make ps                # Container status
+make stats             # Resource usage
+make clean             # Cleanup (auto-detects env)
+
+# Scaling (production)
+make scale-webapp      # Scale webapp to 3 replicas
+make scale-hocuspocus  # Scale backend services
+
+# Supabase
+make supabase-start    # Start local Supabase
+make supabase-stop     # Stop local Supabase
+make supabase-status   # Show Supabase status
+```
+
+Run `make help` for complete command list.
+
+## 📁 Project Structure
+
+```
+docs.plus/
+├── packages/
+│   ├── webapp/              # 🌐 Next.js frontend
+│   ├── hocuspocus.server/   # ⚡ REST API, WebSocket, Workers
+│   ├── supabase/            # 🗄️ Database migrations
+│   └── extension-*/         # 🔌 TipTap extensions
+├── docker-compose.dev.yml   # 🐳 Development orchestration
+├── docker-compose.prod.yml  # 🚀 Production orchestration
+├── Makefile                 # 🛠️ Build & deployment commands
+└── .env.example             # ⚙️ Environment template
+```
+
+## 🤝 Contributing
+
+PRs welcome! See [contributing guidelines](CONTRIBUTING.md) for details.
+
+## 📄 License
+
+Apache License 2.0 - See [LICENSE.md](LICENSE.md)
+
+## 💬 Support
+
+- 💬 **Discord**: [Join our server](https://discord.com/invite/25JPG38J59)
+- 🐦 **Twitter**: [@docsdotplus](https://twitter.com/docsdotplus)
+- 🐙 **GitHub**: [docs.plus](https://github.com/nwspk/docs.plus)
+- 📧 **Email**: [contact@newspeak.house](mailto:contact@newspeak.house)
+
+---
+
+<a href="https://patreon.com/docsplus"><img src="https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3Ddocsplus%26type%3Dpatrons&style=for-the-badge" /></a>

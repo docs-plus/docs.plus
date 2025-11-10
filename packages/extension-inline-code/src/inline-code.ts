@@ -1,5 +1,5 @@
 import { Mark, mergeAttributes, markInputRule, markPasteRule } from '@tiptap/core'
-import { TextSelection } from 'prosemirror-state'
+import { TextSelection } from '@tiptap/pm/state'
 
 export interface InlineCodeOptions {
   HTMLAttributes: Record<string, any>

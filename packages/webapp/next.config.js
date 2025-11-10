@@ -14,6 +14,9 @@ const withPWA = require('next-pwa')({
 })
 
 module.exports = withPWA({
+  // Production build optimization - standalone output for Docker
+  output: 'standalone',
+
   // Performance optimizations
   poweredByHeader: false,
   generateEtags: false,
@@ -48,7 +51,7 @@ module.exports = withPWA({
   serverExternalPackages: ['@tiptap/pm'],
 
   sassOptions: {
-    silenceDeprecations: ['legacy-js-api']
+    silenceDeprecations: ['legacy-js-api', 'import']
   },
 
   images: {
@@ -77,11 +80,12 @@ module.exports = withPWA({
     ignoreDuringBuilds: true
   },
   compiler: {
-    removeConsole: isProduction
-      ? {
-          exclude: ['error', 'warn']
-        }
-      : false,
+    removeConsole: false,
+    // removeConsole: isProduction
+    //   ? {
+    //       exclude: ['error', 'warn']
+    //     }
+    //   : false,
     // Enable React optimizations
     reactRemoveProperties: isProduction
   },
@@ -113,16 +117,31 @@ module.exports = withPWA({
         }
       })
 
+    // Always include localhost for Docker deployments
+    const localUrls = [
+      'localhost:*',
+      'http://localhost:*',
+      'ws://localhost:*',
+      'wss://localhost:*',
+      '127.0.0.1:*',
+      'http://127.0.0.1:*',
+      'ws://127.0.0.1:*',
+      'host.docker.internal:*',
+      'http://host.docker.internal:*',
+      'ws://host.docker.internal:*',
+      'wss://host.docker.internal:*'
+    ]
+
     const devUrls = !isProduction
       ? [
           '*.localhost',
           '*.127.0.0.1',
-          'http://127.0.0.1:2300',
           'http://127.0.0.1:54321', // Supabase local
           'ws://127.0.0.1:54321', // Supabase realtime WebSocket
-          'ws://127.0.0.1:1234' // Additional dev WebSocket
+          'ws://0.0.0.0:4001', // Hocuspocus WebSocket
+          'ws://127.0.0.1:4001' // Hocuspocus WebSocket alternative
         ]
-      : [] // Only in dev
+      : []
 
     // Each directive gets exactly what it needs - no bloat
     const cspSources = {
@@ -134,6 +153,7 @@ module.exports = withPWA({
         '*.google-analytics.com',
         'accounts.google.com', // Google One Tap Auth
         '*.cloudflare.com',
+        ...localUrls,
         ...envUrls,
         ...devUrls
       ],
@@ -142,6 +162,7 @@ module.exports = withPWA({
         "'unsafe-inline'",
         'fonts.googleapis.com',
         'accounts.google.com',
+        ...localUrls,
         ...envUrls,
         ...devUrls
       ],
@@ -154,14 +175,17 @@ module.exports = withPWA({
         'accounts.google.com',
         '*.googleusercontent.com',
         '*.cloudflare.com',
+        'api.github.com',
+        '*.githubusercontent.com',
+        ...localUrls,
         ...envUrls,
         ...devUrls
       ],
-      font: ["'self'", 'data:', 'fonts.gstatic.com', ...envUrls],
-      image: ["'self'", 'data:', 'blob:', 'https:', ...devUrls], // 🔥 All HTTPS images
-      media: ["'self'", 'data:', 'blob:', 'https:', ...devUrls],
-      frame: ["'self'", '*.cloudflare.com', 'accounts.google.com', ...envUrls, ...devUrls],
-      form: ["'self'", ...envUrls, ...devUrls]
+      font: ["'self'", 'data:', 'fonts.gstatic.com', ...localUrls, ...envUrls],
+      image: ["'self'", 'data:', 'blob:', 'https:', ...localUrls, ...devUrls], // 🔥 All HTTPS images
+      media: ["'self'", 'data:', 'blob:', 'https:', ...localUrls, ...devUrls],
+      frame: ["'self'", '*.cloudflare.com', 'accounts.google.com', ...localUrls, ...envUrls, ...devUrls],
+      form: ["'self'", ...localUrls, ...envUrls, ...devUrls]
     }
 
     return [

@@ -1,184 +1,267 @@
-# Generate Prisma client
-prisma_generate:
-	cd packages/hocuspocus.server && bun run prisma:generate
+# =============================================================================
+# Root Makefile - Full Stack Docker Orchestration
+# Manages: Hocuspocus Server + Webapp + Infrastructure
+# =============================================================================
 
-# Start backend REST API server (Hono + Bun)
-back_dev:
-	cd packages/hocuspocus.server && bun run dev:rest
-# Start backend WebSocket server (Hocuspocus)
-back_ws:
-	cd packages/hocuspocus.server && bun run dev:ws
-# Start Supabase development server
-supabase_start:
-	cd packages/supabase && bun run start
+.PHONY: help build build-dev up-prod up-dev down logs logs-webapp logs-backend restart clean scale scale-webapp scale-hocuspocus ps stats supabase-start supabase-stop supabase-status
 
-# Stop Supabase server
-supabase_stop:
-	cd packages/supabase && bun run stop
+help:
+	@echo "Docsplus Full Stack Docker Commands"
+	@echo ""
+	@echo "Building:"
+	@echo "  make build             - Build all services (production)"
+	@echo "  make build-dev         - Build all services (development)"
+	@echo ""
+	@echo "Running:"
+	@echo "  make up-prod           - Start all services (production)"
+	@echo "  make up-dev            - Start all services (development)"
+	@echo ""
+	@echo "Scaling (production only):"
+	@echo "  make scale-webapp      - Scale webapp to 3 replicas"
+	@echo "  make scale-hocuspocus  - Scale hocuspocus services"
+	@echo ""
+	@echo "Management:"
+	@echo "  make down              - Stop all services (auto-detects dev/prod)"
+	@echo "  make logs              - View all logs (auto-detects dev/prod)"
+	@echo "  make logs-webapp       - View webapp logs (auto-detects dev/prod)"
+	@echo "  make logs-backend      - View backend logs (rest-api, hocuspocus-server, worker) (auto-detects dev/prod)"
+	@echo "  make restart           - Restart all services (auto-detects dev/prod)"
+	@echo "  make clean             - Clean everything (auto-detects dev/prod)"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  make ps                - Show running containers (auto-detects dev/prod)"
+	@echo "  make stats             - Show resource usage"
+	@echo ""
+	@echo "Supabase:"
+	@echo "  make supabase-start    - Start Supabase local instance"
+	@echo "  make supabase-stop     - Stop Supabase local instance"
+	@echo "  make supabase-status   - Show Supabase local instance status"
 
-# Display Supabase status
-supabase_status:
-	cd packages/supabase && bun run status
+# =============================================================================
+# BUILD COMMANDS
+# =============================================================================
 
-# Prepare seed.sql by concatenating all SQL files from scripts directory
-prepare-seed:
-	@echo "Preparing seed.sql file..."
-	@cd packages/supabase && \
-	if [ -f seed.sql ]; then \
-		echo "" > seed.sql; \
-		echo "Cleared existing seed.sql"; \
-	fi; \
-	for file in scripts/*.sql; do \
-		if [ -f "$$file" ]; then \
-			echo "\n-- Including $$file" >> seed.sql; \
-			cat "$$file" >> seed.sql; \
-			echo "Added $$file to seed.sql"; \
-		fi; \
-	done; \
-	echo "Seed preparation completed."
-
-# Resets the local database to a clean state.
-supabase-reset:
-	@echo "Resetting the database..."
-	@read -p "Are you sure you want to reset the database? [y/N]: " confirm; \
-	if [ "$$confirm" = "y" ]; then \
-		make prepare-seed && \
-		cd packages/supabase && bun run db:reset; \
-	else \
-		echo "Database reset canceled."; \
-	fi
-
-# Start frontend development server
-front_dev:
-	cd packages/webapp && bun run dev
-# Run backend, WebSocket and frontend development servers concurrently
-local: prisma_generate
-	make -j 4 supabase_start back_dev back_ws front_dev
-
-# Run Cypress tests
-cypress_open:
-	cd packages/webapp && bun run cypress:open
-
-cypress_run:
-	cd packages/webapp && bun run cypress:run
-
-# Start editor development server
-dev_editor:
-	cd packages/webapp && bun run dev
-
-# Start Hocus Pocus development server (deprecated, use back_ws instead)
-dev_editor_hocuspocus:
-	cd packages/hocuspocus.server && bun run dev:ws
-
-# Run editor and Hocus Pocus development servers concurrently
-editor: prisma_generate
-	make -j 2 dev_editor_hocuspocus dev_editor
-
-# Build the application
 build:
-	cd packages/webapp && bun run build
-	cd packages/hocuspocus.server && docker-compose -f docker-compose.yml up -d
+	@echo "🏗️  Building all services (production)..."
+	@docker-compose -f docker-compose.prod.yml --env-file .env.production build
+	@echo "✅ All services built"
 
-# Run the application without building
-fastRun:
-	docker-compose -f docker-compose.prod.yml up
+build-dev:
+	@echo "🏗️  Building all services (development)..."
+	@docker-compose -f docker-compose.dev.yml --env-file .env.development build
+	@echo "✅ All services built"
 
-# Build and run frontend in stage environment with monitoring
-build_front_stage:
-	@echo "🏗️  Building and deploying to stage environment..."
-	@cd packages/webapp && \
-	NODE_ENV=production bun run build && \
-	bun run pm2:start:stage && \
-	sleep 10 && \
-	curl -f http://localhost:3000/api/health || (echo "❌ Stage health check failed" && pm2 logs nextjs_stage --lines 20 && exit 1) && \
-	echo "✅ Stage deployment completed!"
+# =============================================================================
+# RUN COMMANDS
+# =============================================================================
 
-# Build and deploy frontend to production
-build_front_production:
-	@echo "🚀 Building and deploying frontend to production..."
-	@cd packages/webapp && \
-	NODE_ENV=production bun run build && \
-	echo "✅ Starting PM2..." && \
-	bun run pm2:start:prod && \
-	sleep 10 && \
-	curl -f http://localhost:3001/api/health || (echo "❌ Health check failed" && exit 1) && \
-	echo "✅ Deployment successful!"
+up-prod: build
+	@echo "🚀 Starting full stack production environment..."
+	@echo ""
+	@echo "Services:"
+	@echo "  📦 PostgreSQL (port 5432)"
+	@echo "  🔴 Redis (port 6379)"
+	@echo "  🔌 REST API (port 4000) - 2 replicas"
+	@echo "  🌐 Hocuspocus WS (port 4001) - 3 replicas"
+	@echo "  ⚙️  Worker (port 4002) - 2 replicas"
+	@echo "  💻 Webapp (internal:3000) - 2 replicas"
+	@echo "  🌍 Nginx (ports 3000:80, 443:443)"
+	@echo ""
+	@docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
+	@echo ""
+	@echo "✅ Full stack started!"
+	@echo ""
+	@echo "Access points:"
+	@echo "  Webapp:     http://localhost:3000"
+	@echo "  REST API:   http://localhost:4000"
+	@echo "  WebSocket:  ws://localhost:4001"
+	@echo "  PostgreSQL: localhost:5432"
+	@echo "  Redis:      localhost:6379"
+	@echo ""
+	@echo "Common commands:"
+	@echo "  make logs              - View all logs (auto-detects dev/prod)"
+	@echo "  make logs-webapp       - View webapp logs (auto-detects dev/prod)"
+	@echo "  make logs-backend      - View backend logs (auto-detects dev/prod)"
+	@echo "  make ps                - Show running containers (auto-detects dev/prod)"
+	@echo "  make down              - Stop all services (auto-detects dev/prod)"
+	@echo "  make restart           - Restart all services (auto-detects dev/prod)"
 
-# Build, stop and remove the existing stage container, and run a new stage container
-build_hocuspocus.server_stage: down_stage
-	cd packages/hocuspocus.server && env ENVIRONMENT=stage docker-compose -p stage-docsplus build --no-cache
-	cd packages/hocuspocus.server && env ENVIRONMENT=stage docker-compose -p stage-docsplus up -d
-
-# Stop and remove the stage container, and remove the local stage image
-down_stage:
-	cd packages/hocuspocus.server && env ENVIRONMENT=stage docker-compose -p stage-docsplus down --rmi local
-
-# Build, stop and remove the existing production container, and run a new production container
-build_hocuspocus.server_prod: down_prod
-	@echo "Checking for existing containers..."
-	@if docker ps | grep -q "prod-docsplus"; then \
-		echo "Found running containers. Stopping gracefully..."; \
-		docker-compose -p prod-docsplus stop || true; \
+up-dev: build-dev
+	@echo "🚀 Starting full stack development environment..."
+	@echo "🧹 Cleaning up any existing containers..."
+	@docker-compose -f docker-compose.dev.yml --env-file .env.development down 2>/dev/null || true
+	@CONTAINERS=$$(docker ps -a -q --filter "name=docsy-" 2>/dev/null); \
+	if [ -n "$$CONTAINERS" ]; then \
+		echo "Removing stale containers..."; \
+		docker rm -f $$CONTAINERS 2>/dev/null || true; \
 	fi
-	@echo "Building and starting new containers..."
-	cd packages/hocuspocus.server && env ENVIRONMENT=prod docker-compose -p prod-docsplus build --no-cache
-	cd packages/hocuspocus.server && env ENVIRONMENT=prod docker-compose -p prod-docsplus up -d
-	@echo "Deployment completed successfully."
+	@echo ""
+	@if [ ! -f .env.development ]; then \
+		echo "⚠️  Warning: .env.development not found. Creating from template..."; \
+		cp .env .env.development 2>/dev/null || true; \
+	fi
+	@echo "Services:"
+	@echo "  📦 PostgreSQL (port 5432)"
+	@echo "  🔴 Redis (port 6379)"
+	@echo "  🔌 REST API (port 4000) - hot reload enabled"
+	@echo "  🌐 Hocuspocus WS (port 4001) - hot reload enabled"
+	@echo "  ⚙️  Worker (port 4002) - hot reload enabled"
+	@echo "  💻 Webapp (port 3000) - hot reload enabled"
+	@echo ""
+	@docker-compose -f docker-compose.dev.yml --env-file .env.development up -d
+	@echo ""
+	@echo "✅ Development environment started!"
+	@echo ""
+	@echo "Access points:"
+	@echo "  Webapp:     http://localhost:3000"
+	@echo "  REST API:   http://localhost:4000"
+	@echo "  WebSocket:  ws://localhost:4001"
+	@echo "  Worker:     http://localhost:4002"
+	@echo "  PostgreSQL: localhost:5432"
+	@echo "  Redis:      localhost:6379"
+	@echo ""
+	@echo "💡 Hot reload is enabled - code changes will auto-reload"
+	@echo ""
+	@echo "Common commands:"
+	@echo "  make logs              - View all logs (auto-detects dev/prod)"
+	@echo "  make logs-webapp       - View webapp logs (auto-detects dev/prod)"
+	@echo "  make logs-backend      - View backend logs (auto-detects dev/prod)"
+	@echo "  make ps                - Show running containers (auto-detects dev/prod)"
+	@echo "  make down              - Stop all services (auto-detects dev/prod)"
+	@echo "  make restart           - Restart all services (auto-detects dev/prod)"
 
-# Stop and remove the production container, and remove the local production imageq
-down_prod:
-	cd packages/hocuspocus.server && env ENVIRONMENT=prod docker-compose -p prod-docsplus down --rmi local
+# =============================================================================
+# SCALING COMMANDS
+# =============================================================================
 
-# Build and run Uptime Kuma
-build_uptime_kuma:
-	docker compose -f docker-compose.uptime-kuma.yml down
-	docker compose -f docker-compose.uptime-kuma.yml pull
-	docker compose -f docker-compose.uptime-kuma.yml up -d
+scale-webapp:
+	@echo "📈 Scaling webapp to 3 replicas..."
+	@docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --scale webapp=3
+	@echo "✅ Webapp scaled to 3 replicas"
 
-# Stop and remove Uptime Kuma
-down_uptime_kuma:
-	docker compose -f docker-compose.uptime-kuma.yml down
+scale-hocuspocus:
+	@echo "📈 Scaling hocuspocus services..."
+	@docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --scale rest-api=3 --scale hocuspocus-server=5 --scale hocuspocus-worker=3
+	@echo "✅ Hocuspocus services scaled"
 
+# =============================================================================
+# MANAGEMENT COMMANDS
+# =============================================================================
 
-help: # Show available commands
-	@echo "Available commands:"
-	@grep -E '^[a-zA-Z0-9_-]+:.*?# .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?# "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+down:
+	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+		echo "🛑 Stopping all services (development)..."; \
+		docker-compose -f docker-compose.dev.yml --env-file .env.development down; \
+		echo "✅ All services stopped"; \
+	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
+		echo "🛑 Stopping all services (production)..."; \
+		docker-compose -f docker-compose.prod.yml --env-file .env.production down; \
+		echo "✅ All services stopped"; \
+	else \
+		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
+	fi
 
-.PHONY: help
+logs:
+	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+		echo "📋 Detected development environment - showing all logs..."; \
+		docker-compose -f docker-compose.dev.yml --env-file .env.development logs -f; \
+	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
+		echo "📋 Detected production environment - showing all logs..."; \
+		docker-compose -f docker-compose.prod.yml --env-file .env.production logs -f; \
+	else \
+		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
+	fi
 
-generate_supabase_types: # Generate Supabase TypeScript types
-	cd packages/supabase && bun run supabase:types
+logs-webapp:
+	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q webapp 2>/dev/null | grep -q .; then \
+		docker-compose -f docker-compose.dev.yml --env-file .env.development logs -f webapp; \
+	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q webapp 2>/dev/null | grep -q .; then \
+		docker-compose -f docker-compose.prod.yml --env-file .env.production logs -f webapp; \
+	else \
+		echo "⚠️  Webapp container not found. Start services with 'make up-dev' or 'make up-prod'"; \
+	fi
 
-# Frontend monitoring and troubleshooting commands
-pm2_status: # Show PM2 process status
-	cd packages/webapp && bun run pm2:status
+logs-backend:
+	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q rest-api 2>/dev/null | grep -q .; then \
+		docker-compose -f docker-compose.dev.yml --env-file .env.development logs -f rest-api hocuspocus-server hocuspocus-worker; \
+	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q rest-api 2>/dev/null | grep -q .; then \
+		docker-compose -f docker-compose.prod.yml --env-file .env.production logs -f rest-api hocuspocus-server hocuspocus-worker; \
+	else \
+		echo "⚠️  Backend containers not found. Start services with 'make up-dev' or 'make up-prod'"; \
+	fi
 
-pm2_logs: # Show PM2 logs for production
-	cd packages/webapp && bun run pm2:logs:prod
+restart:
+	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+		echo "🔄 Restarting all services (development)..."; \
+		docker-compose -f docker-compose.dev.yml --env-file .env.development restart; \
+		echo "✅ All services restarted"; \
+	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
+		echo "🔄 Restarting all services (production)..."; \
+		docker-compose -f docker-compose.prod.yml --env-file .env.production restart; \
+		echo "✅ All services restarted"; \
+	else \
+		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
+	fi
 
-pm2_logs_error: # Show PM2 error logs only
-	cd packages/webapp && bun run pm2:logs:error
+# =============================================================================
+# CLEANUP COMMANDS
+# =============================================================================
 
-pm2_restart: # Restart production frontend
-	cd packages/webapp && bun run pm2:restart
+clean:
+	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+		echo "🧹 Cleaning up (development)..."; \
+		docker-compose -f docker-compose.dev.yml --env-file .env.development down -v; \
+		docker rmi docsy-webapp:dev docsy-rest-api docsy-hocuspocus-server docsy-hocuspocus-worker 2>/dev/null || true; \
+		echo "✅ Development cleanup complete"; \
+	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
+		echo "🧹 Cleaning up (production)..."; \
+		docker-compose -f docker-compose.prod.yml --env-file .env.production down -v; \
+		docker rmi docsy-webapp:latest docsy-hocuspocus:latest 2>/dev/null || true; \
+		docker system prune -f; \
+		echo "✅ Production cleanup complete"; \
+	else \
+		echo "🧹 No running containers found. Cleaning up images and volumes..."; \
+		docker rmi docsy-webapp:dev docsy-webapp:latest docsy-rest-api docsy-hocuspocus-server docsy-hocuspocus-worker docsy-hocuspocus:latest 2>/dev/null || true; \
+		docker system prune -f; \
+		echo "✅ Cleanup complete"; \
+	fi
 
-pm2_reload: # Graceful reload production frontend
-	cd packages/webapp && bun run pm2:reload
+# =============================================================================
+# UTILITY COMMANDS
+# =============================================================================
 
-pm2_monitor: # Open PM2 monitoring dashboard
-	cd packages/webapp && bun run pm2:monitor
+ps:
+	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+		docker-compose -f docker-compose.dev.yml --env-file .env.development ps; \
+	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
+		docker-compose -f docker-compose.prod.yml --env-file .env.production ps; \
+	else \
+		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
+	fi
 
-health_check: # Manual health check
-	@echo "🩺 Running health check..."
-	@curl -s http://localhost:3001/api/health | jq '.' || echo "❌ Health check failed or jq not installed"
+stats:
+	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+		docker stats $$(docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q); \
+	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
+		docker stats $$(docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q); \
+	else \
+		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
+	fi
 
-system_info: # Show system information
-	@echo "📊 System Information:"
-	@echo "Memory usage:" && free -h
-	@echo "Disk usage:" && df -h
-	@echo "CPU usage:" && top -bn1 | grep "Cpu(s)"
-	@echo "PM2 processes:" && pm2 list
+# =============================================================================
+# SUPABASE COMMANDS
+# =============================================================================
 
-cleanup_logs: # Clean up old log files
-	cd packages/webapp && bun run logs:cleanup && echo "✅ Log cleanup completed"
+supabase-start:
+	@echo "🚀 Starting Supabase local instance..."
+	@cd packages/supabase && bun run start
+	@echo "✅ Supabase started"
 
+supabase-stop:
+	@echo "🛑 Stopping Supabase local instance..."
+	@cd packages/supabase && bun run stop
+	@echo "✅ Supabase stopped"
+
+supabase-status:
+	@echo "📊 Supabase local instance status:"
+	@cd packages/supabase && bun run status

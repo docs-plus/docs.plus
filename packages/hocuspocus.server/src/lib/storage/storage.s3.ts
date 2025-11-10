@@ -1,6 +1,7 @@
 import { S3Client } from 'bun'
 import mime from 'mime'
 import type { Context } from 'hono'
+import { storageS3Logger } from '../logger'
 
 // Bun's native S3 client - blazing fast with zero overhead
 const s3Client = new S3Client({
@@ -15,7 +16,6 @@ const generateS3Key = (documentId: string, fileName: string): string => {
 }
 
 /**
- * Bun-native S3 upload - insanely fast with zero overhead
  * - Direct S3 write without intermediate buffers
  * - Automatic content-type detection
  * - Built-in caching headers
@@ -42,9 +42,12 @@ export const upload = async (
         ? fileContent.byteLength
         : fileContent.byteLength || fileContent.length
 
-    console.log(`✅ S3 Upload: ${key} (${(size / 1024).toFixed(2)} KB in ${duration.toFixed(2)}ms)`)
+    storageS3Logger.info(
+      { key, sizeKB: (size / 1024).toFixed(2), durationMs: duration.toFixed(2) },
+      'S3 upload successful'
+    )
   } catch (error) {
-    console.error(`❌ S3 Upload failed: ${key}`, error)
+    storageS3Logger.error({ err: error, key }, 'S3 upload failed')
     throw error
   }
 }
@@ -76,8 +79,9 @@ export const get = async (documentId: string, fileName: string, c: Context) => {
 
     const contentType = mime.getType(fileName) || 'application/octet-stream'
 
-    console.log(
-      `✅ S3 Download: ${key} (${(buffer.byteLength / 1024).toFixed(2)} KB in ${duration.toFixed(2)}ms)`
+    storageS3Logger.info(
+      { key, sizeKB: (buffer.byteLength / 1024).toFixed(2), durationMs: duration.toFixed(2) },
+      'S3 download successful'
     )
 
     return c.body(buffer, 200, {
@@ -88,7 +92,7 @@ export const get = async (documentId: string, fileName: string, c: Context) => {
       'Cache-Control': 'public, max-age=31536000, immutable'
     })
   } catch (err) {
-    console.error('Error getting file from S3:', err)
+    storageS3Logger.error({ err, key }, 'S3 download failed')
     return c.json({ error: 'Error retrieving file from storage' }, 500)
   }
 }

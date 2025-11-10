@@ -77,13 +77,13 @@ SELECT FROM pgmq.create('message_counter');
 CREATE OR REPLACE FUNCTION public.on_message_insert_queue()
 RETURNS TRIGGER AS $$
 BEGIN
-  PERFORM pgmq.send(
-    'message_counter',
-    jsonb_build_object(
-      'channel_id', NEW.channel_id,
-      'op', 'increment'
-    )
-  );
+    PERFORM pgmq.send(
+      'message_counter',
+      jsonb_build_object(
+        'channel_id', NEW.channel_id,
+        'op', 'increment'
+      )
+    );
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
@@ -98,13 +98,13 @@ EXECUTE FUNCTION public.on_message_insert_queue();
 CREATE OR REPLACE FUNCTION public.on_message_delete_queue()
 RETURNS TRIGGER AS $$
 BEGIN
-  PERFORM pgmq.send(
-    'message_counter',
-    jsonb_build_object(
-      'channel_id', OLD.channel_id,
-      'op', 'decrement'
-    )
-  );
+    PERFORM pgmq.send(
+      'message_counter',
+      jsonb_build_object(
+        'channel_id', OLD.channel_id,
+        'op', 'decrement'
+      )
+    );
   RETURN OLD;
 END;
 $$ LANGUAGE plpgsql;
@@ -210,9 +210,9 @@ $$;
 -- 9. Schedule the worker function to run every 10 seconds
 -- CREATE EXTENSION IF NOT EXISTS pg_cron;
 SELECT cron.schedule(
-    'message_counter_batch_job',      -- A job name for reference
-    '*/10 * * * * *',                 -- Run every 10 seconds (if supported)
+            'message_counter_batch_job',      -- A job name for reference
+            '*/10 * * * * *',                 -- Run every 10 seconds (if supported)
     $$
-    SELECT public.message_counter_batch_worker();
+            SELECT public.message_counter_batch_worker();
     $$
-);
+        );

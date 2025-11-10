@@ -43,6 +43,7 @@ export default function previewHyperlink(options: HyperlinkModalOptions) {
 
   removeButton.addEventListener('click', () => {
     hideCurrentToolbar()
+    // @ts-ignore - unsetHyperlink is a valid command but TypeScript types aren't picking it up in Docker builds
     return editor.chain().focus().unsetHyperlink().run()
   })
 

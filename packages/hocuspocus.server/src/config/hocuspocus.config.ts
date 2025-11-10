@@ -1,5 +1,4 @@
 import * as Y from 'yjs'
-import { PrismaClient } from '@prisma/client'
 import { Database } from '@hocuspocus/extension-database'
 import { Throttle } from '@hocuspocus/extension-throttle'
 import { Redis as RedisExtension } from '@hocuspocus/extension-redis'
@@ -8,10 +7,9 @@ import { checkEnvBolean, generateRandomId } from '../utils'
 import { StoreDocumentQueue } from '../lib/queue'
 import { HealthCheck } from '../extensions/health.extension'
 import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extension'
+import { prisma } from '../lib/prisma'
 
 export { Database }
-
-export const prisma = new PrismaClient()
 
 const getServerName = () => `${process.env.APP_NAME}_${generateRandomId(4)}`
 
@@ -54,12 +52,20 @@ const configureExtensions = () => {
   }
 
   if (process.env.NODE_ENV === 'production' && checkEnvBolean(process.env.REDIS)) {
-    extensions.push(
-      new RedisExtension({
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379', 10)
-      })
-    )
+    // Note: @hocuspocus/extension-redis creates its own Redis connection
+    // We configure it with the same settings as our centralized Redis
+    const redisOptions: any = {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379', 10)
+    }
+
+    if (process.env.REDIS_PASSWORD) {
+      redisOptions.options = {
+        password: process.env.REDIS_PASSWORD
+      }
+    }
+
+    extensions.push(new RedisExtension(redisOptions))
   }
 
   extensions.push(
@@ -126,7 +132,7 @@ const configureExtensions = () => {
 export default () => {
   return {
     name: getServerName(),
-    port: parseInt(process.env.HOCUSPOCUS_PORT || '3002', 10),
+    port: parseInt(process.env.HOCUSPOCUS_PORT || '4001', 10),
     extensions: configureExtensions(),
     debounce: 10_000, // 10 seconds
 

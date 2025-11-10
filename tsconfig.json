@@ -21,6 +21,7 @@
     "jsx": "preserve",
     "incremental": true,
     "sourceMap": true,
+    "skipLibCheck": true,
     "baseUrl": "./",
     "paths": {
       "@docs.plus/*": [

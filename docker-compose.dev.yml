@@ -1,0 +1,336 @@
+# =============================================================================
+# Root Docker Compose - Local Development
+# Orchestrates: Hocuspocus Server + Webapp (Development Mode)
+#
+# ENVIRONMENT VARIABLES:
+# Development environment variables are loaded from .env.development file
+# Use --env-file flag to specify the environment file
+#
+# USAGE:
+#   docker-compose -f docker-compose.dev.yml --env-file .env.development up
+#   docker-compose -f docker-compose.dev.yml --env-file .env.development up --build
+# =============================================================================
+
+services:
+ # ===========================================================================
+ # INFRASTRUCTURE - Shared Services
+ # ===========================================================================
+
+ # ---------------------------------------------------------------------------
+ # PostgreSQL Database (Shared by Hocuspocus)
+ # ---------------------------------------------------------------------------
+ postgres:
+  image: postgres:17-alpine
+  container_name: docsy-postgres-dev
+  restart: unless-stopped
+  environment:
+   POSTGRES_DB: docsplus
+   POSTGRES_USER: ${DB_USER:-docsplus}
+   POSTGRES_PASSWORD: ${DB_PASSWORD:-CHANGE_ME_STRONG_PASSWORD}
+   POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+  ports:
+   - "${DB_PORT:-5432}:5432"
+  volumes:
+   - postgres_data_dev:/var/lib/postgresql/data
+  healthcheck:
+   test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-docsplus}"]
+   interval: 5s
+   timeout: 3s
+   retries: 3
+   start_period: 5s
+  networks:
+   - docsy-network-dev
+
+ # ---------------------------------------------------------------------------
+ # Redis Cache & Pub/Sub (Shared by Hocuspocus)
+ # ---------------------------------------------------------------------------
+ redis:
+  image: redis:alpine
+  container_name: docsy-redis-dev
+  restart: unless-stopped
+  command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy noeviction
+  ports:
+   - "${REDIS_PORT:-6379}:6379"
+  volumes:
+   - redis_data_dev:/data
+  healthcheck:
+   test: ["CMD", "redis-cli", "ping"]
+   interval: 3s
+   timeout: 2s
+   retries: 3
+   start_period: 3s
+  networks:
+   - docsy-network-dev
+
+ # ===========================================================================
+ # HOCUSPOCUS SERVER SERVICES
+ # ===========================================================================
+
+ # ---------------------------------------------------------------------------
+ # REST API Service (Development - Single Instance)
+ # ---------------------------------------------------------------------------
+ rest-api:
+  build:
+   context: ./packages/hocuspocus.server
+   dockerfile: docker/Dockerfile.bun
+   target: base
+  restart: unless-stopped
+  entrypoint: ["/app/scripts/docker-entrypoint.sh"]
+  command: ["bun", "--watch", "src/index.ts"]
+  container_name: docsy-rest-api-dev
+  ports:
+   - "4000:4000"
+  # All environment variables loaded from .env.development file
+  environment:
+   NODE_ENV: development
+   APP_PORT: 4000
+   DATABASE_URL: postgresql://${DB_USER:-docsplus}:${DB_PASSWORD:-CHANGE_ME_STRONG_PASSWORD}@postgres:5432/docsplus?connection_limit=10&pool_timeout=10&sslmode=prefer
+   REDIS: true
+   REDIS_HOST: redis
+   REDIS_PORT: 6379
+   JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production}
+   SUPABASE_URL: ${SUPABASE_URL}
+   SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+   LOG_LEVEL: ${LOG_LEVEL:-debug}
+   REST_LOG_LEVEL: ${REST_LOG_LEVEL:-debug}
+   ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
+   RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-1000}
+   HOCUSPOCUS_LOGGER: true
+   HOCUSPOCUS_THROTTLE: false
+   DO_STORAGE_ENDPOINT: ${DO_STORAGE_ENDPOINT}
+   DO_STORAGE_REGION: ${DO_STORAGE_REGION}
+   DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
+   DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
+   DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
+  volumes:
+   - ./packages/hocuspocus.server/src:/app/src
+   - ./packages/hocuspocus.server/package.json:/app/package.json
+   - /app/node_modules
+  depends_on:
+   # Use started instead of healthy for faster dev startup
+   # Services handle connection failures gracefully
+   postgres:
+    condition: service_started
+   redis:
+    condition: service_started
+  healthcheck:
+   test:
+    [
+     "CMD",
+     "bun",
+     "-e",
+     "fetch('http://localhost:4000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
+    ]
+   interval: 10s
+   timeout: 5s
+   retries: 3
+   start_period: 15s
+  networks:
+   - docsy-network-dev
+
+ # ---------------------------------------------------------------------------
+ # Hocuspocus WebSocket Server (Development - Single Instance)
+ # ---------------------------------------------------------------------------
+ hocuspocus-server:
+  build:
+   context: ./packages/hocuspocus.server
+   dockerfile: docker/Dockerfile.bun
+   target: base
+  restart: unless-stopped
+  entrypoint: ["/app/scripts/docker-entrypoint.sh"]
+  command: ["bun", "--watch", "src/hocuspocus.server.ts"]
+  container_name: docsy-hocuspocus-server-dev
+  # All environment variables loaded from .env.development file
+  ports:
+   - "4001:4001"
+  environment:
+   NODE_ENV: development
+   HOCUSPOCUS_PORT: 4001
+   DATABASE_URL: postgresql://${DB_USER:-docsplus}:${DB_PASSWORD:-CHANGE_ME_STRONG_PASSWORD}@postgres:5432/docsplus?connection_limit=10&pool_timeout=10&sslmode=prefer
+   REDIS: true
+   REDIS_HOST: redis
+   REDIS_PORT: 6379
+   JWT_SECRET: ${JWT_SECRET:-dev-secret-key-change-in-production}
+   SUPABASE_URL: ${SUPABASE_URL}
+   SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+   LOG_LEVEL: ${LOG_LEVEL:-debug}
+   WS_LOG_LEVEL: ${WS_LOG_LEVEL:-debug}
+   HOCUSPOCUS_LOGGER: true
+   HOCUSPOCUS_THROTTLE: false
+   HOCUSPOCUS_THROTTLE_ATTEMPTS: ${HOCUSPOCUS_THROTTLE_ATTEMPTS:-100}
+   HOCUSPOCUS_THROTTLE_BANTIME: ${HOCUSPOCUS_THROTTLE_BANTIME:-60000}
+  volumes:
+   - ./packages/hocuspocus.server/src:/app/src
+   - ./packages/hocuspocus.server/package.json:/app/package.json
+   - /app/node_modules
+  depends_on:
+   # Use started instead of healthy for faster dev startup
+   # Services handle connection failures gracefully
+   postgres:
+    condition: service_started
+   redis:
+    condition: service_started
+  healthcheck:
+   test:
+    [
+     "CMD",
+     "bun",
+     "-e",
+     "fetch('http://localhost:4001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
+    ]
+   interval: 10s
+   timeout: 5s
+   retries: 3
+   start_period: 15s
+  networks:
+   - docsy-network-dev
+
+ # ---------------------------------------------------------------------------
+ # Hocuspocus Worker (Development - Single Instance)
+ # ---------------------------------------------------------------------------
+ hocuspocus-worker:
+  build:
+   context: ./packages/hocuspocus.server
+   dockerfile: docker/Dockerfile.bun
+   target: base
+  restart: unless-stopped
+  entrypoint: ["/app/scripts/docker-entrypoint.sh"]
+  command: ["bun", "--watch", "src/hocuspocus.worker.ts"]
+  container_name: docsy-hocuspocus-worker-dev
+  # All environment variables loaded from .env.development file
+  ports:
+   - "4002:4002"
+  environment:
+   NODE_ENV: development
+   WORKER_HEALTH_PORT: 4002
+   DATABASE_URL: postgresql://${DB_USER:-docsplus}:${DB_PASSWORD:-CHANGE_ME_STRONG_PASSWORD}@postgres:5432/docsplus?connection_limit=10&pool_timeout=10&sslmode=prefer
+   REDIS: true
+   REDIS_HOST: redis
+   REDIS_PORT: 6379
+   REDIS_CONNECT_TIMEOUT: ${REDIS_CONNECT_TIMEOUT:-30000}
+   REDIS_COMMAND_TIMEOUT: ${REDIS_COMMAND_TIMEOUT:-60000}
+   REDIS_KEEPALIVE: ${REDIS_KEEPALIVE:-30000}
+   REDIS_MAX_RETRIES: ${REDIS_MAX_RETRIES:-10}
+   LOG_LEVEL: ${LOG_LEVEL:-debug}
+   WORKER_LOG_LEVEL: ${WORKER_LOG_LEVEL:-debug}
+   BULLMQ_CONCURRENCY: ${BULLMQ_CONCURRENCY:-5}
+   BULLMQ_RATE_LIMIT_MAX: ${BULLMQ_RATE_LIMIT_MAX:-100}
+   BULLMQ_RATE_LIMIT_DURATION: ${BULLMQ_RATE_LIMIT_DURATION:-1000}
+   DO_STORAGE_ENDPOINT: ${DO_STORAGE_ENDPOINT}
+   DO_STORAGE_REGION: ${DO_STORAGE_REGION}
+   DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
+   DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
+   DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
+  volumes:
+   - ./packages/hocuspocus.server/src:/app/src
+   - ./packages/hocuspocus.server/package.json:/app/package.json
+   - /app/node_modules
+  depends_on:
+   # Use started instead of healthy for faster dev startup
+   # Services handle connection failures gracefully
+   postgres:
+    condition: service_started
+   redis:
+    condition: service_started
+  healthcheck:
+   test:
+    [
+     "CMD",
+     "bun",
+     "-e",
+     "fetch('http://localhost:4002/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
+    ]
+   interval: 10s
+   timeout: 5s
+   retries: 3
+   start_period: 15s
+  networks:
+   - docsy-network-dev
+
+ # ===========================================================================
+ # WEBAPP SERVICES
+ # ===========================================================================
+
+ # ---------------------------------------------------------------------------
+ # Next.js Webapp (Development - Single Instance with Hot Reload)
+ # ---------------------------------------------------------------------------
+ webapp:
+  build:
+   context: .
+   dockerfile: packages/webapp/docker/Dockerfile.bun
+   target: build-extensions
+   args:
+    NODE_ENV: development
+    NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL}
+    NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL}
+    NEXT_PUBLIC_SSE_URL: ${NEXT_PUBLIC_SSE_URL}
+    NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
+  image: docsy-webapp:dev
+  container_name: docsy-webapp-dev
+  ports:
+   - "3000:3000"
+  extra_hosts:
+   - "host.docker.internal:host-gateway"
+  environment:
+   NODE_ENV: development
+   PORT: 3000
+   HOSTNAME: "0.0.0.0"
+   NEXT_TELEMETRY_DISABLED: 1
+   # Webapp environment variables loaded from .env.development
+   NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+   # Server-side Supabase URL (for container → host)
+   SUPABASE_URL: http://host.docker.internal:54321
+   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+   NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL}
+   NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL}
+   NEXT_PUBLIC_SSE_URL: ${NEXT_PUBLIC_SSE_URL}
+   NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID:-}
+   # Server-side URLs (internal Docker network)
+   SERVER_RESTAPI_URL: ${SERVER_RESTAPI_URL:-http://rest-api:4000/api}
+  volumes:
+   # Mount entire packages directory for hot reload (monorepo structure)
+   # This includes extensions with their dist folders, webapp with .next, etc.
+   - ./packages:/app/packages
+   # Exclude root node_modules (use container's installed dependencies)
+   - /app/node_modules
+  command: bun run dev
+  working_dir: /app/packages/webapp
+  restart: unless-stopped
+  networks:
+   - docsy-network-dev
+  # Removed depends_on for faster startup in development
+  # Webapp handles connection failures gracefully with timeouts
+  # Dependencies will be available when webapp needs them
+  healthcheck:
+   test:
+    [
+     "CMD",
+     "bun",
+     "-e",
+     "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
+    ]
+   interval: 10s
+   timeout: 5s
+   start_period: 15s
+   retries: 3
+
+# =============================================================================
+# Volumes (Development - Separate from production)
+# =============================================================================
+volumes:
+ postgres_data_dev:
+  driver: local
+  name: docsy-postgres-dev
+ redis_data_dev:
+  driver: local
+  name: docsy-redis-dev
+
+# =============================================================================
+# Networks (Development - Separate from production)
+# =============================================================================
+networks:
+ docsy-network-dev:
+  driver: bridge
+  name: docsy-network-dev

@@ -1,13 +1,27 @@
 import type { PrismaClient } from '@prisma/client'
 import { createClient } from '@supabase/supabase-js'
 import type { RedisClient, HealthCheckResult, OverallHealthResult } from '../../types'
+import { getPoolStats } from '../../lib/prisma'
+import { checkRedisHealth as redisHealthCheck, getRedisStats } from '../../lib/redis'
 
 export const checkDatabaseHealth = async (prisma: PrismaClient): Promise<HealthCheckResult> => {
   try {
     await prisma.$queryRaw`SELECT 1`
+
+    // Get connection pool statistics
+    const poolStats = getPoolStats()
+
     return {
       status: 'healthy',
-      lastCheck: new Date()
+      lastCheck: new Date(),
+      metadata: {
+        pool: {
+          total: poolStats.total,
+          idle: poolStats.idle,
+          waiting: poolStats.waiting,
+          active: poolStats.total - poolStats.idle
+        }
+      }
     }
   } catch (error) {
     return {
@@ -27,10 +41,18 @@ export const checkRedisHealth = async (redis: RedisClient | null): Promise<Healt
   }
 
   try {
-    await redis.ping()
+    const healthy = await redisHealthCheck()
+    const stats = getRedisStats()
+
     return {
-      status: 'healthy',
-      lastCheck: new Date()
+      status: healthy ? 'healthy' : 'unhealthy',
+      lastCheck: new Date(),
+      metadata: stats ? {
+        status: stats.status,
+        connected: stats.connected,
+        commandQueueLength: stats.commandQueueLength,
+        offlineQueueLength: stats.offlineQueue
+      } : undefined
     }
   } catch (error) {
     return {
@@ -82,9 +104,13 @@ export const checkAllServices = async (
     supabase: await checkSupabaseHealth()
   }
 
-  const overallStatus = Object.values(services).some((s) => s.status === 'unhealthy')
-    ? 'degraded'
-    : 'ok'
+  // Only fail if critical services (database/redis) are unhealthy
+  // Supabase can be degraded without failing the whole health check
+  const criticalServicesHealthy =
+    services.database.status === 'healthy' &&
+    (services.redis.status === 'healthy' || services.redis.status === 'disabled')
+
+  const overallStatus = criticalServicesHealthy ? 'ok' : 'degraded'
 
   return {
     status: overallStatus,
