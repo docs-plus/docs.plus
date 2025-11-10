@@ -1,7 +1,7 @@
 # 📚 docs.plus
 
 [![Version](https://img.shields.io/badge/version-2.0.0-green.svg)](https://docs.plus)
-[![License](https://img.shields.io/badge/License-Apache-blue.svg)](http://www.apache.org/licenses/LICENSE-2.0.html)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
 [![Discord](https://img.shields.io/badge/Discord-5865F2?style=flat&logo=discord&logoColor=white)](https://discord.com/invite/25JPG38J59)
 
@@ -184,7 +184,7 @@ PRs welcome! See [contributing guidelines](CONTRIBUTING.md) for details.
 
 ## 📄 License
 
-Apache License 2.0 - See [LICENSE.md](LICENSE.md)
+MIT License - See [LICENSE.md](LICENSE.md)
 
 ## 💬 Support
 
