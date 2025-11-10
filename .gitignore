@@ -69,8 +69,19 @@ typings/
 .yarn-integrity
 
 # dotenv environment variables file
-# .env
+# Root .env files (keep .env.example)
+.env.development
+.env.production
 .env.test
+.env.local
+.env*.local
+
+# Package-level .env files (keep .env.example files)
+packages/**/.env
+packages/**/.env.local
+packages/**/.env.development
+packages/**/.env.production
+packages/**/.env.*.local
 
 # parcel-bundler cache (https://parceljs.org/)
 .cache
@@ -129,3 +140,6 @@ packages/webapp/cypress/downloads/
 
 # Hocuspocus temp files (uploaded media, cache, etc.)
 packages/hocuspocus.server/temp/
+
+# Development environment file
+.env.development
