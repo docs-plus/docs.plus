@@ -59,8 +59,7 @@ jobs:
           if [ $CHUNK_NUM -eq 1 ]; then
             MESSAGE="${HEADER}${CURRENT_CHUNK}"
           else
-            MESSAGE="**Commit List (continued ${CHUNK_NUM}):**
-      ${CURRENT_CHUNK}"
+            MESSAGE="${CURRENT_CHUNK}"
           fi
 
           curl -H "Content-Type: application/json" \
@@ -80,8 +79,7 @@ jobs:
         if [ $CHUNK_NUM -eq 1 ]; then
           MESSAGE="${HEADER}${CURRENT_CHUNK}"
         else
-          MESSAGE="**Commit List (continued ${CHUNK_NUM}):**
-      ${CURRENT_CHUNK}"
+          MESSAGE="${CURRENT_CHUNK}"
         fi
 
         curl -H "Content-Type: application/json" \
