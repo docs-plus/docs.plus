@@ -2,10 +2,21 @@
   "name": "@docs.plus/extension-indent",
   "version": "0.1.1",
   "description": "A Tiptap extension for managing text indentation in documents",
-  "main": "dist/index.cjs",
-  "module": "dist/index.js",
-  "umd": "dist/index.umd.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
@@ -15,12 +26,16 @@
     "directory": "packages/extension-indent"
   },
   "scripts": {
-    "build": "bunx tsup --dts",
-    "dev": "bunx tsup --watch --dts",
-    "lint": "eslint . --ext .ts",
-    "test": "jest",
+    "build": "NODE_ENV=production bunx tsup",
+    "build:dev": "bunx tsup",
+    "dev": "bunx tsup --watch",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
     "update:packages": "bunx npm-check-updates -u"
   },
+  "files": [
+    "dist"
+  ],
   "keywords": [
     "tiptap",
     "tiptap extension",
@@ -36,6 +51,8 @@
     "@tiptap/pm": "^3.6.2"
   },
   "devDependencies": {
+    "@tiptap/core": "^3.6.2",
+    "@tiptap/pm": "^3.6.2",
     "typescript": "^5.9.3",
     "tsup": "^8.5.0",
     "eslint": "^9.38.0"
