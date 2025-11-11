@@ -46,6 +46,7 @@ const poolConfig = {
   query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT || '30000', 10),
   // Allow pool to create connections on-demand (pg Pool doesn't support min, but this helps)
   // Connections are created lazily when needed and kept alive longer
+  // The pool automatically removes dead connections and creates new ones as needed
 }
 
 // Create PostgreSQL connection pool
@@ -81,8 +82,54 @@ pool.on('acquire', () => {
   }
 })
 
-pool.on('error', (err) => {
-  dbLogger.error({ err }, 'Unexpected database pool error')
+pool.on('error', (err: any) => {
+  // Handle specific PostgreSQL error codes
+  const errorCode = err.code
+
+  // 57P01: terminating connection due to administrator command
+  // This is normal during database restarts/maintenance - don't log as error
+  if (errorCode === '57P01') {
+    dbLogger.debug({
+      code: errorCode,
+      message: 'Database connection terminated (likely during maintenance/restart)'
+    }, 'Connection terminated by database - will be automatically replaced')
+    return
+  }
+
+  // 57P02: terminating connection due to administrator command (alternative)
+  if (errorCode === '57P02') {
+    dbLogger.debug({
+      code: errorCode,
+      message: 'Database connection terminated'
+    }, 'Connection terminated - will be automatically replaced')
+    return
+  }
+
+  // 57P03: cannot connect now (database startup/shutdown)
+  if (errorCode === '57P03') {
+    dbLogger.warn({
+      code: errorCode,
+      message: 'Database temporarily unavailable - connection will retry'
+    }, 'Database connection unavailable')
+    return
+  }
+
+  // Connection errors that are recoverable
+  const recoverableErrors = ['ECONNREFUSED', 'ETIMEDOUT', 'ENOTFOUND']
+  if (recoverableErrors.some(code => err.code === code || err.message?.includes(code))) {
+    dbLogger.warn({
+      code: err.code,
+      message: err.message
+    }, 'Database connection error - will retry automatically')
+    return
+  }
+
+  // Log other errors as actual errors
+  dbLogger.error({
+    err,
+    code: errorCode,
+    message: err.message
+  }, 'Unexpected database pool error')
 })
 
 pool.on('remove', () => {
