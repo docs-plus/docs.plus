@@ -1,5 +1,6 @@
 {
   "lockfileVersion": 1,
+  "configVersion": 0,
   "workspaces": {
     "": {
       "name": "docs.plus",
@@ -75,6 +76,8 @@
       },
       "devDependencies": {
         "@eslint/js": "^9.38.0",
+        "@tiptap/core": "^3.6.2",
+        "@tiptap/pm": "^3.6.2",
         "@typescript-eslint/eslint-plugin": "^8.46.1",
         "@typescript-eslint/parser": "^8.46.1",
         "eslint": "^9.38.0",
@@ -96,6 +99,8 @@
       },
       "devDependencies": {
         "@eslint/js": "^9.38.0",
+        "@tiptap/core": "^3.6.2",
+        "@tiptap/pm": "^3.6.2",
         "@types/minimatch": "^6.0.0",
         "@typescript-eslint/eslint-plugin": "^8.46.1",
         "@typescript-eslint/parser": "^8.46.1",
@@ -113,6 +118,8 @@
       "name": "@docs.plus/extension-indent",
       "version": "0.1.1",
       "devDependencies": {
+        "@tiptap/core": "^3.6.2",
+        "@tiptap/pm": "^3.6.2",
         "eslint": "^9.38.0",
         "tsup": "^8.5.0",
         "typescript": "^5.9.3",
@@ -126,6 +133,8 @@
       "name": "@docs.plus/extension-inline-code",
       "version": "0.1.1",
       "devDependencies": {
+        "@tiptap/core": "^3.6.2",
+        "@tiptap/pm": "^3.6.2",
         "@types/minimatch": "^6.0.0",
         "eslint": "^9.38.0",
         "tsup": "^8.5.0",

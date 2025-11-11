@@ -326,6 +326,15 @@ volumes:
  redis_data_dev:
   driver: local
   name: docsy-redis-dev
+ webapp_next_cache:
+  driver: local
+  name: docsy-webapp-next-cache-dev
+ webapp_node_modules:
+  driver: local
+  name: docsy-webapp-node-modules-dev
+ webapp_extension_modules:
+  driver: local
+  name: docsy-webapp-extension-modules-dev
 
 # =============================================================================
 # Networks (Development - Separate from production)
