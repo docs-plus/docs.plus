@@ -17,6 +17,25 @@ module.exports = withPWA({
   // Production build optimization - standalone output for Docker
   output: 'standalone',
 
+  // Dev mode optimizations (faster compilation, especially in Docker)
+  ...(process.env.NODE_ENV === 'development' && {
+    // Skip type checking during dev (Next.js handles it separately)
+    typescript: {
+      ignoreBuildErrors: false // Still check, but don't block compilation
+    },
+    // Faster refresh
+    reactStrictMode: true,
+    // Reduce logging in dev
+    logging: {
+      fetches: {
+        fullUrl: false
+      }
+    },
+    // Optimize for Docker/macOS volume performance
+    // Disable source maps in dev for faster compilation (can re-enable if needed for debugging)
+    productionBrowserSourceMaps: false
+  }),
+
   // Performance optimizations
   poweredByHeader: false,
   generateEtags: false,
@@ -34,7 +53,7 @@ module.exports = withPWA({
 
   // Experimental features for performance
   experimental: {
-    optimizePackageImports: ['@emoji-mart/react', '@tiptap/react', 'react-icons']
+    optimizePackageImports: ['@emoji-mart/react', '@tiptap/react', 'react-icons', '@supabase/supabase-js', '@supabase/ssr']
   },
 
   // Turbopack configuration (moved from experimental.turbo in Next.js 15)
