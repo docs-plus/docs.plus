@@ -5,7 +5,7 @@ const isProduction = process.env.NODE_ENV === 'production'
 export default defineConfig({
   entry: ['src/index.ts'],
   outDir: 'dist',
-  format: ['cjs', 'esm'],
+  format: ['esm', 'cjs'],
   external: ['@tiptap/core', '@tiptap/pm'],
   dts: {
     entry: './src/index.ts',
@@ -16,12 +16,10 @@ export default defineConfig({
   minify: isProduction,
   outExtension({ format }) {
     return {
-      js: format === 'esm' ? '.js' : format === 'cjs' ? '.cjs' : '.umd.js'
+      js: format === 'esm' ? '.js' : '.cjs'
     }
   },
   esbuildOptions(options) {
-    // Only preserve console logs in development
     options.drop = isProduction ? ['console'] : []
-  },
-  globalName: 'DocsplusExtensionHyperlink'
+  }
 })

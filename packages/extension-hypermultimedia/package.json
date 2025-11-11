@@ -2,10 +2,21 @@
   "name": "@docs.plus/extension-hypermultimedia",
   "version": "1.4.0",
   "description": "Insert embeded multimedia components for docs.plus",
-  "main": "dist/index.cjs",
-  "module": "dist/index.js",
-  "umd": "dist/index.umd.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
@@ -15,14 +26,16 @@
     "directory": "packages/extension-hypermultimedia"
   },
   "scripts": {
-    "build": "bunx tsup --dts",
-    "dev": "bunx tsup --watch --dts",
-    "watch": "bunx tsup --watch --dts",
-    "clean": "rm -rf dist",
+    "build": "NODE_ENV=production bunx tsup",
+    "build:dev": "bunx tsup",
+    "dev": "bunx tsup --watch",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
     "update:packages": "bunx npm-check-updates -u"
   },
+  "files": [
+    "dist"
+  ],
   "keywords": [
     "tiptap",
     "tiptap extension",
@@ -44,6 +57,8 @@
     "tippy.js": "^6.3.7"
   },
   "devDependencies": {
+    "@tiptap/core": "^3.6.2",
+    "@tiptap/pm": "^3.6.2",
     "@eslint/js": "^9.38.0",
     "@types/minimatch": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.46.1",

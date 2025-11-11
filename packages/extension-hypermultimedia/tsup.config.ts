@@ -16,12 +16,10 @@ export default defineConfig({
   minify: isProduction,
   outExtension({ format }) {
     return {
-      js: format === 'esm' ? '.js' : format === 'cjs' ? '.cjs' : '.umd.js'
+      js: format === 'esm' ? '.js' : '.cjs'
     }
   },
   esbuildOptions(options) {
-    // Only preserve console logs in development
     options.drop = isProduction ? ['console'] : []
-  },
-  globalName: 'DocsplusExtensionHypermultimedia'
+  }
 })

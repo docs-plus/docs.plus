@@ -149,7 +149,6 @@ export const InlineCode = Mark.create<InlineCodeOptions>({
 
           // Check if we're at the end of the document
           if (nextPos >= state.doc.content.size) {
-            console.log({})
             // Insert a space after the code tag and move cursor there
             const tr = state.tr
             tr.insertText(' ', pos)

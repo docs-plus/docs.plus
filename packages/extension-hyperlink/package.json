@@ -2,10 +2,21 @@
   "name": "@docs.plus/extension-hyperlink",
   "version": "3.0.0",
   "description": "Hyperlink component for docs.plus",
-  "main": "dist/index.cjs",
-  "module": "dist/index.js",
-  "umd": "dist/index.umd.js",
-  "types": "dist/index.d.ts",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
@@ -15,14 +26,16 @@
     "directory": "packages/extension-hyperlink"
   },
   "scripts": {
-    "build": "bunx tsup",
-    "build:prod": "NODE_ENV=production bunx tsup",
+    "build": "NODE_ENV=production bunx tsup",
+    "build:dev": "bunx tsup",
     "dev": "bunx tsup --watch",
     "lint": "eslint src --ext .ts,.tsx",
     "lint:fix": "eslint src --ext .ts,.tsx --fix",
-    "watch": "bunx tsup --watch",
     "update:packages": "bunx npm-check-updates -u"
   },
+  "files": [
+    "dist"
+  ],
   "keywords": [
     "tiptap",
     "tiptap extension",
@@ -40,6 +53,8 @@
     "@tiptap/pm": "^3.6.2"
   },
   "devDependencies": {
+    "@tiptap/core": "^3.6.2",
+    "@tiptap/pm": "^3.6.2",
     "@eslint/js": "^9.38.0",
     "@typescript-eslint/eslint-plugin": "^8.46.1",
     "@typescript-eslint/parser": "^8.46.1",
