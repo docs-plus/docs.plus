@@ -5,11 +5,8 @@ import { type GetServerSidePropsContext } from 'next'
 import { getDeviceInfo } from '@helpers'
 import { logger } from '@utils/logger'
 
-export async function handleUserSessionForServerProp(docMetadata: any, session: any) {
-  console.log('session', {
-    docMetadata,
-session
-})
+export async function handleUserSessionForServerProp(docMetadata: any, session: any, supabase: any) {
+
   if (!session?.user) return null
   const [upsertResult, channelsResult] = await Promise.allSettled([
     upsertWorkspace({
@@ -19,11 +16,9 @@ session
       slug: docMetadata.slug,
       created_by: session.user.id
     }),
-    getChannelsByWorkspaceAndUserids(docMetadata.documentId, session.user.id)
+    getChannelsByWorkspaceAndUserids(docMetadata.documentId, session.user.id, supabase)
   ])
 
-  console.log('upsertResult', {upsertResult})
-  console.log('channelsResult', {channelsResult})
 
   if (upsertResult.status === 'rejected') {
     throw new Error('Failed to upsert workspace', { cause: upsertResult.reason })
@@ -103,8 +98,7 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
     }
 
     const docMetadata = await fetchDocument(documentSlug, session)
-
-    const channels = await handleUserSessionForServerProp(docMetadata, session)
+    const channels = await handleUserSessionForServerProp(docMetadata, session, supabase)
 
     return {
       props: {

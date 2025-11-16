@@ -106,12 +106,13 @@ export const getChannelsWithMessageCounts = async (
 
 export const getChannelsByWorkspaceAndUserids = async (
   workspaceId: string,
-  userId: string
+  userId: string,
+  supabase: any
 ): Promise<PostgrestResponse<any>> => {
   // Query channel_members and join channels
   // Use simpler syntax - Supabase auto-detects foreign keys
   // Alias channels as 'workspace' to match expected response structure
-  const result = await supabaseClient
+  const result = await supabase
     .from('channel_members')
     .select(`
       *,

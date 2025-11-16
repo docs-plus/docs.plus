@@ -33,7 +33,12 @@ export const SignInDialog = () => {
       await request({
         provider,
         options: {
-          redirectTo: authCallbackURL.href
+          redirectTo: authCallbackURL.href,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+          scopes: 'https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile'
         }
       })
       setGoogleLoading(true)
