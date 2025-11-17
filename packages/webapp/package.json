@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "dev:local": "dotenv -e ../../.env.local -- next dev --turbopack",
-    "build": "next build",
+    "build": "dotenv -e ../../.env.production -- next build",
     "build:local": "dotenv -e ../../.env.local -- next build",
     "start": "node .next/standalone/packages/webapp/server.js",
     "start:local": "dotenv -e ../../.env.local -- node .next/standalone/packages/webapp/server.js",
