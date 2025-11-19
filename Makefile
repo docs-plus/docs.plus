@@ -191,7 +191,10 @@ dev-local:
 		echo "⚠️  Infrastructure not running. Starting it..."; \
 		$(MAKE) infra-up; \
 	fi
-	@echo ""
+	@if ! lsof -Pi :54321 -sTCP:LISTEN -t >/dev/null 2>&1; then \
+		echo "⚠️  Starting Supabase..."; \
+		cd packages/supabase && dotenv -e ../../.env.local -- supabase start > /dev/null 2>&1 || true; \
+	fi
 	@echo "🔧 Ensuring Prisma client is generated..."
 	@cd packages/hocuspocus.server && bun run prisma:generate > /dev/null 2>&1 || true
 	@echo "🔧 Ensuring database migrations are applied..."
