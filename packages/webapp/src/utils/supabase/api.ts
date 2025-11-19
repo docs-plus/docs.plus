@@ -1,5 +1,6 @@
 import { createServerClient, serializeCookieHeader } from '@supabase/ssr'
 import { type NextApiRequest, type NextApiResponse } from 'next'
+import { createSupabaseFetch } from './error-handler'
 
 // Use SUPABASE_URL for server-side (container → host) or fallback to NEXT_PUBLIC_SUPABASE_URL (browser)
 const getSupabaseUrl = () => {
@@ -12,6 +13,8 @@ const getSupabaseUrl = () => {
 };
 
 export default function createClient(req: NextApiRequest, res: NextApiResponse) {
+  const supabaseFetch = createSupabaseFetch()
+
   const supabase = createServerClient(
     getSupabaseUrl(),
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -31,15 +34,19 @@ export default function createClient(req: NextApiRequest, res: NextApiResponse) 
       },
       // Add timeout to prevent hanging requests during compilation/runtime
       global: {
-        fetch: (url, options = {}) => {
+        fetch: async (url, options = {}) => {
           const controller = new AbortController()
           // 10s timeout for API routes (longer than server-props since API routes might do more work)
           const timeoutId = setTimeout(() => controller.abort(), 10000)
 
-          return fetch(url, {
-            ...options,
-            signal: controller.signal
-          }).finally(() => clearTimeout(timeoutId))
+          try {
+            return await supabaseFetch(url, {
+              ...options,
+              signal: controller.signal
+            })
+          } finally {
+            clearTimeout(timeoutId)
+          }
         }
       }
     }

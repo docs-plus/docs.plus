@@ -1,10 +1,13 @@
 import { createBrowserClient } from '@supabase/ssr'
+import { createSupabaseFetch } from './error-handler'
 
 /**
  * Create Supabase browser client with offline handling
  * Prevents unnecessary requests when offline
  */
 export function createClient() {
+  const supabaseFetch = createSupabaseFetch()
+
   const supabase = createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -28,14 +31,12 @@ export function createClient() {
       },
       // Global fetch options to prevent requests when offline
       global: {
-        fetch: (url, options = {}) => {
+        fetch: async (url, options = {}) => {
           // Skip requests if offline (prevents retry spam)
-          // This callback only runs on client when Supabase makes HTTP requests
           if (!navigator.onLine) {
             return Promise.reject(new Error('Network offline'))
           }
-          // Use default fetch
-          return fetch(url, options)
+          return supabaseFetch(url, options)
         }
       }
     }
