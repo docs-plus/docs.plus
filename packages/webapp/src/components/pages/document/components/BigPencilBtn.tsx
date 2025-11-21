@@ -5,13 +5,14 @@ import { Pencil } from '@icons'
 const BigPencilBtn = () => {
   const { settings, isKeyboardOpen } = useStore()
   const { instance: editor, selectionPos } = settings.editor
+  const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
 
   const handleClick = useCallback(() => {
     // Enable editor if keyboard not open
     if (!isKeyboardOpen) {
       const proseMirrorEl = document.querySelector('.tiptap.ProseMirror') as HTMLElement
       proseMirrorEl?.setAttribute('contenteditable', 'true')
-      useStore.getState().setWorkspaceEditorSetting('isEditable', true)
+      setWorkspaceEditorSetting('isEditable', true)
       editor?.setEditable(true)
     }
 
