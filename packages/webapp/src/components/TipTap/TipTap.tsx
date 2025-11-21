@@ -65,6 +65,7 @@ import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table
 import { Indent } from '@docs.plus/extension-indent'
 
 import ChatCommentExtension from './extentions/ChatCommentExtension'
+import { createScrollCaretIntoViewPlugin } from './plugins/scrollCaretIntoViewPlugin'
 
 import { InlineCode } from '@docs.plus/extension-inline-code'
 import {
@@ -220,7 +221,9 @@ const Editor = ({
       includeChildren: true,
       showOnlyWhenEditable: false,
       placeholder: (data: any) => generatePlaceholderText(data) || ''
-    })
+    }),
+    // iOS Safari: Scroll caret into view when keyboard opens
+    ...(isMobile ? [createScrollCaretIntoViewPlugin()] : [])
   ]
 
   if (!provider) {

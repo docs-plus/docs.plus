@@ -9,6 +9,7 @@ import { useHashRouter } from '@hooks/useHashRouter'
 import MobileHistory from '@components/pages/history/mobile/MobileHistory'
 import BottomSheet from '@components/BottomSheet'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
+import ToolbarMobile from '../components/toolbarMobile/ToolbarMobile'
 
 const MobileLeftSidePanel = ({ filterModalRef }: any) => {
   return (
@@ -34,12 +35,23 @@ const MobileLayout = () => {
   if (isHistoryView) return <MobileHistory />
 
   return (
-    <div className={`tiptap relative flex h-full w-full flex-col ${deviceClass}`}>
-      <MobilePadTitle />
+
+
+    <div
+      className={`tiptap relative flex w-full flex-col ${deviceClass}`}
+      style={{
+        height: 'calc(var(--vh, 1vh) * 100)'
+      }}>
+      <div className="sticky top-0 z-20 w-full bg-white">
+        <MobilePadTitle />
+      </div>
       <MobileLeftSidePanel filterModalRef={filterModalRef} />
       <MobileEditor />
       <BigPencilBtn />
       <BottomSheet />
+      <div className="sticky mobileToolbarBottom bottom-0 left-0 z-20 w-full bg-white">
+        <ToolbarMobile />
+      </div>
     </div>
   )
 }

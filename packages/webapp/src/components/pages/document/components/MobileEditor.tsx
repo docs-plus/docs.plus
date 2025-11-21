@@ -1,10 +1,8 @@
-import { useEffect, useRef, useState } from 'react'
+import { useRef } from 'react'
 import EditorContent from './EditorContent'
-import ToolbarMobile from './toolbarMobile/ToolbarMobile'
 import { useChatStore, useStore, useSheetStore } from '@stores'
 import { useAdjustEditorSizeForChatRoom } from '../hooks'
 import useEditableDocControl from '@components/pages/document/hooks/useEditableDocControl'
-import usePageHeightAdjust from '@components/pages/document/hooks/usePageHeightAdjust'
 import useUpdateDocPageUnreadMsg from '@components/pages/document/hooks/useUpdateDocPageUnreadMsg'
 import { MobileBubbleMenu } from './MobileBubbleMenu'
 
@@ -21,19 +19,15 @@ const Editor = () => {
 
   useEditableDocControl()
 
-  usePageHeightAdjust()
-
   useUpdateDocPageUnreadMsg()
 
   return (
     <>
-      <div className="editor editorHeighttt relative flex size-full w-full max-w-full flex-col justify-around align-top">
-        <div
-          ref={editorWrapperRef}
-          className="editorWrapper flex h-full w-full justify-center overflow-hidden overflow-y-auto p-0">
-          <MobileBubbleMenu />
-          <EditorContent />
-        </div>
+      <div
+        ref={editorWrapperRef}
+        className="editor editorWrapper relative flex size-full w-full max-w-full flex-col justify-center overflow-y-auto p-0">
+        <MobileBubbleMenu />
+        <EditorContent />
       </div>
 
       <div
@@ -44,7 +38,6 @@ const Editor = () => {
               ? 'pointer-events-auto translate-y-0 opacity-100'
               : 'pointer-events-none translate-y-4 opacity-0'
         }`}>
-        <ToolbarMobile />
       </div>
     </>
   )
