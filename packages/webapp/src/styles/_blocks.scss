@@ -61,19 +61,15 @@ $bg-root: #f8f9fa;
   /* Ensure caret is always visible */
   caret-color: #000;
 
-  /* Dark mode support for caret */
-  @media (prefers-color-scheme: dark) {
-    caret-color: #000;
-  }
-
   /* Ensure caret is visible on different backgrounds */
   &.dark-theme {
-    caret-color: #000;
+    caret-color: #fff;
   }
 
   /* Fix caret visibility in all child elements */
   .heading,
   .contentWrapper,
+  .contents,
   .content,
   div[data-type],
   p,

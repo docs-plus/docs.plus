@@ -96,6 +96,7 @@
     "next-pwa": "^5.6.0",
     "next-secure-headers": "^2.2.0",
     "open-graph-scraper": "^6.10.0",
+    "postcss-viewport-height-correction": "^1.1.1",
     "pubsub-js": "^1.9.5",
     "randomcolor": "^0.6.2",
     "react": "^19.2.0",

@@ -8,9 +8,8 @@
 .m_mobile {
   html,
   body {
-    height: var(--app-height);
-    overflow-x: hidden;
-    overflow-y: var(--app-overFlow-y);
+    height: 100vh;
+    height: calc(var(--vh, 1vh) * 100);
     position: var(--app-position_b);
     top: 0;
     left: 0;
@@ -102,7 +101,54 @@
     }
   }
 
+  // Single scroll container for iOS Safari caret fix
+  .editorWrapper {
+    // Enable GPU acceleration for smoother scrolling and caret rendering
+    transform: translate3d(0, 0, 0);
+    -webkit-transform: translate3d(0, 0, 0);
+
+    // iOS Safari: Force scroll container to be the layout viewport
+    -webkit-overflow-scrolling: touch;
+
+    // Prevent nested overflow issues
+    overflow-x: hidden;
+  }
+
   .ProseMirror {
+    /* Critical: Ensure caret is visible on mobile browsers (especially iOS Safari) */
+    caret-color: #000 !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+
+    /* Ensure all editable content shows caret */
+    &[contenteditable='true'] {
+      caret-color: #000 !important;
+      -webkit-user-select: text !important;
+      user-select: text !important;
+    }
+
+    /* Fix caret visibility in nested elements - critical for deep heading nesting */
+    p,
+    h1,
+    h2,
+    h3,
+    h4,
+    h5,
+    h6,
+    li,
+    blockquote,
+    .heading,
+    .contentWrapper,
+    .contents,
+    .content,
+    div[data-type] {
+      caret-color: #000 !important;
+
+      // iOS Safari: Ensure nested elements don't clip caret
+      overflow: visible !important;
+    }
+
     .heading {
       &[level='1'] {
         border: none;
@@ -206,6 +252,25 @@
   }
   .btnDesktopChatBox {
     display: none;
+  }
+
+  /* Ensure tiptap editor has proper caret styling on mobile */
+  .tiptap__editor {
+    caret-color: #000 !important;
+    -webkit-user-select: text !important;
+    user-select: text !important;
+
+    &[contenteditable='true'] {
+      caret-color: #000 !important;
+      -webkit-user-select: text !important;
+      user-select: text !important;
+    }
+
+    .ProseMirror {
+      caret-color: #000 !important;
+      -webkit-user-select: text !important;
+      user-select: text !important;
+    }
   }
 }
 

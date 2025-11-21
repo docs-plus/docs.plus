@@ -1,6 +1,7 @@
 const config = {
   plugins: {
-    "@tailwindcss/postcss": {},
+    'postcss-viewport-height-correction': {},
+    '@tailwindcss/postcss': {},
   },
 };
 export default config;

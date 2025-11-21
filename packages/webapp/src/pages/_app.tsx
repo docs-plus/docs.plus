@@ -91,6 +91,35 @@ export default function MyApp({ Component, pageProps }: any) {
       performMaintenanceCleanup().catch(() => {
         // Silently fail - cleanup is best-effort
       })
+
+      // Viewport height correction
+      const customViewportCorrectionVariable = 'vh'
+      const setViewportProperty = (doc: HTMLElement) => {
+        let prevClientHeight: number | undefined
+        const customVar = '--' + (customViewportCorrectionVariable || 'vh')
+
+        function handleResize() {
+          let clientHeight = doc.clientHeight
+          // Use visualViewport if available to support virtual keyboards (iOS/Android)
+          if (window.visualViewport) {
+            clientHeight = window.visualViewport.height
+          }
+
+          if (clientHeight === prevClientHeight) return
+          requestAnimationFrame(function updateViewportHeight() {
+            doc.style.setProperty(customVar, clientHeight * 0.01 + 'px')
+            prevClientHeight = clientHeight
+          })
+        }
+        handleResize()
+        return handleResize
+      }
+
+      const onResize = setViewportProperty(document.documentElement)
+      window.addEventListener('resize', onResize)
+      if (window.visualViewport) {
+        window.visualViewport.addEventListener('resize', onResize)
+      }
     }
   }, [])
 
