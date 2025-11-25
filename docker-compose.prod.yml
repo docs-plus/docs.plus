@@ -153,7 +153,7 @@ services:
    args:
     DATABASE_URL: ${DATABASE_URL}
   restart: unless-stopped
-  command: bun /app/src/hocuspocus.ts
+  command: bun /app/src/hocuspocus.server.ts
   environment:
    NODE_ENV: production
    HOCUSPOCUS_PORT: 4001
@@ -211,7 +211,7 @@ services:
    args:
     DATABASE_URL: ${DATABASE_URL}
   restart: unless-stopped
-  command: bun /app/src/worker.ts
+  command: bun /app/src/hocuspocus.worker.ts
   environment:
    NODE_ENV: production
    WORKER_HEALTH_PORT: 4002
@@ -263,6 +263,11 @@ services:
    NODE_ENV: production
    PORT: 3000
    HOSTNAME: "0.0.0.0"
+   # NEXT_PUBLIC vars needed for runtime validation (also baked in at build time)
+   NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+   NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL}
+   NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL}
    # Server-side API URL (internal Docker network)
    SERVER_RESTAPI_URL: http://rest-api:4000/api
   networks:
