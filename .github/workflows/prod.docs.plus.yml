@@ -81,22 +81,75 @@ jobs:
 
       echo "✅ Images built"
 
-   - name: 🚀 Deploy Services
+   - name: 🚀 Deploy Services (Zero-Downtime Rolling Update)
      run: |
-      echo "🚀 Deploying services..."
-
-      # Deploy with rolling update
-      # Traefik automatically routes to healthy containers
+      echo "🚀 Starting zero-downtime deployment..."
+      
+      # Function to deploy a service with rolling update
+      deploy_service() {
+        local SERVICE=$1
+        local REPLICAS=$2
+        
+        echo "📦 Deploying $SERVICE..."
+        
+        # Get current container IDs before deployment
+        OLD_CONTAINERS=$(docker ps -q --filter "name=docsplus-${SERVICE}" 2>/dev/null || true)
+        
+        # Scale up to double (old + new containers)
+        DOUBLE=$((REPLICAS * 2))
+        docker-compose -f ${{ env.COMPOSE_FILE }} \
+          --env-file ${{ env.ENV_FILE }} \
+          up -d --no-recreate --scale ${SERVICE}=${DOUBLE} ${SERVICE} 2>/dev/null || \
+        docker-compose -f ${{ env.COMPOSE_FILE }} \
+          --env-file ${{ env.ENV_FILE }} \
+          up -d --scale ${SERVICE}=${DOUBLE} ${SERVICE}
+        
+        # Wait for new containers to be healthy
+        echo "⏳ Waiting for new ${SERVICE} containers to be healthy..."
+        for i in {1..60}; do
+          HEALTHY=$(docker ps --filter "name=docsplus-${SERVICE}" --filter "health=healthy" --format "{{.Names}}" | wc -l)
+          if [ "$HEALTHY" -ge "$REPLICAS" ]; then
+            echo "✅ ${SERVICE}: ${HEALTHY} healthy containers"
+            break
+          fi
+          if [ $i -eq 60 ]; then
+            echo "⚠️ ${SERVICE} health check timeout, continuing..."
+          fi
+          sleep 2
+        done
+        
+        # Scale back to target (removes oldest containers)
+        docker-compose -f ${{ env.COMPOSE_FILE }} \
+          --env-file ${{ env.ENV_FILE }} \
+          up -d --scale ${SERVICE}=${REPLICAS} ${SERVICE}
+        
+        echo "✅ ${SERVICE} deployed with ${REPLICAS} replicas"
+      }
+      
+      # Ensure network exists
+      docker network create docsplus-network 2>/dev/null || true
+      
+      # Deploy infrastructure first (Traefik + Redis)
+      echo "🔧 Deploying infrastructure..."
       docker-compose -f ${{ env.COMPOSE_FILE }} \
         --env-file ${{ env.ENV_FILE }} \
-        up -d \
-        --remove-orphans \
-        --scale webapp=2 \
-        --scale rest-api=2 \
-        --scale hocuspocus-server=2 \
-        --scale hocuspocus-worker=1
-
-      echo "✅ Services deployed"
+        up -d traefik redis
+      
+      # Wait for Traefik to be ready
+      sleep 10
+      
+      # Deploy each service with rolling update
+      deploy_service "rest-api" 2
+      deploy_service "hocuspocus-server" 2
+      deploy_service "hocuspocus-worker" 1
+      deploy_service "webapp" 2
+      
+      # Cleanup orphaned containers
+      docker-compose -f ${{ env.COMPOSE_FILE }} \
+        --env-file ${{ env.ENV_FILE }} \
+        up -d --remove-orphans
+      
+      echo "✅ All services deployed with zero-downtime"
 
    - name: ⏳ Wait for Health Checks
      run: |
