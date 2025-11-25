@@ -99,7 +99,7 @@ services:
   environment:
    NODE_ENV: production
    APP_PORT: 4000
-   DATABASE_URL: postgresql://${DB_USER:-docsplus}:${DB_PASSWORD:-CHANGE_ME_STRONG_PASSWORD}@postgres:5432/docsplus?connection_limit=20&pool_timeout=10&sslmode=prefer
+   DATABASE_URL: ${DATABASE_URL}
    REDIS: true
    REDIS_HOST: redis
    REDIS_PORT: 6379
@@ -167,7 +167,7 @@ services:
   environment:
    NODE_ENV: production
    HOCUSPOCUS_PORT: 4001
-   DATABASE_URL: postgresql://${DB_USER:-docsplus}:${DB_PASSWORD:-CHANGE_ME_STRONG_PASSWORD}@postgres:5432/docsplus?connection_limit=20&pool_timeout=10&sslmode=prefer
+   DATABASE_URL: ${DATABASE_URL}
    REDIS: true
    REDIS_HOST: redis
    REDIS_PORT: 6379
@@ -230,7 +230,7 @@ services:
   environment:
    NODE_ENV: production
    WORKER_HEALTH_PORT: 4002
-   DATABASE_URL: postgresql://${DB_USER:-docsplus}:${DB_PASSWORD:-CHANGE_ME_STRONG_PASSWORD}@postgres:5432/docsplus?connection_limit=20&pool_timeout=10&sslmode=prefer
+   DATABASE_URL: ${DATABASE_URL}
    REDIS: true
    REDIS_HOST: redis
    REDIS_PORT: 6379
