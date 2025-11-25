@@ -48,14 +48,14 @@ services:
   ports:
    - "80:80"
    - "443:443"
-   - "127.0.0.1:8080:8080"  # Dashboard on localhost only (security)
+   - "127.0.0.1:8080:8080" # Dashboard on localhost only (security)
   volumes:
    - /var/run/docker.sock:/var/run/docker.sock:ro
    - traefik-certs:/letsencrypt
   networks:
    - docsplus-network
   labels:
-   - "traefik.enable=false"  # Traefik doesn't route to itself
+   - "traefik.enable=false" # Traefik doesn't route to itself
   healthcheck:
    test: ["CMD", "traefik", "healthcheck"]
    interval: 30s
@@ -252,6 +252,9 @@ services:
     NEXT_PUBLIC_SUPABASE_WS_URL: ${NEXT_PUBLIC_SUPABASE_WS_URL}
     NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL}
     NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL}
+    NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+    NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
+    NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
   restart: unless-stopped
   environment:
    NODE_ENV: production
@@ -262,6 +265,9 @@ services:
    NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
    NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL}
    NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL}
+   NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+   NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
+   NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
    # Server-side API URL (internal Docker network)
    SERVER_RESTAPI_URL: http://rest-api:4000/api
   networks:
