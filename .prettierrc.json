@@ -11,8 +11,5 @@
   "proseWrap": "preserve",
   "quoteProps": "as-needed",
   "trailingComma": "none",
-  "plugins": [
-    "prettier-plugin-tailwindcss"
-  ],
-  "tailwindConfig": "packages/webapp/tailwind.config.js"
+  "plugins": ["prettier-plugin-tailwindcss"]
 }
