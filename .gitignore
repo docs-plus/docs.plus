@@ -148,3 +148,9 @@ packages/hocuspocus.server/temp/
 .github/workflows/sendnotif.sh
 
 Notes/
+
+# Sensitive documentation (contains env templates)
+QUICKSTART.md
+DEPLOYMENT.md
+ENV_SETUP.md
+DOCS_SUMMARY.md
