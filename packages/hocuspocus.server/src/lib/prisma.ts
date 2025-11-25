@@ -19,13 +19,23 @@ const globalForPrisma = globalThis as unknown as {
  * - Graceful shutdown
  */
 
-// Get DATABASE_URL - preserve full URL including query params (?sslmode=require, etc.)
+// Get DATABASE_URL - strip sslmode param to avoid conflicts with Pool's ssl config
 const getDatabaseUrl = (): string => {
   const url = process.env.DATABASE_URL
   if (!url) {
     throw new Error('DATABASE_URL environment variable is required')
   }
-  return url
+  // Remove sslmode from URL - we handle SSL explicitly via Pool config
+  // This prevents conflicts between URL's sslmode and Pool's ssl object
+  try {
+    const urlObj = new URL(url)
+    urlObj.searchParams.delete('sslmode')
+    urlObj.searchParams.delete('ssl')
+    return urlObj.toString()
+  } catch {
+    // If URL parsing fails, return as-is
+    return url
+  }
 }
 
 // Connection pool configuration
