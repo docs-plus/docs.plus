@@ -27,10 +27,10 @@ COPY prisma ./prisma/
 RUN bun install --frozen-lockfile --production
 
 # Pre-install Prisma CLI for runtime migrations (avoids slow downloads at container startup)
-# This ensures Prisma is available in node_modules/.bin for the entrypoint script
-RUN bun add -d prisma@latest --no-save || true
+# Pin to Prisma 6.x to match package.json - Prisma 7 has breaking changes
+RUN bun add -d prisma@^6.19.0 --no-save || true
 
-# Generate Prisma client (uses DATABASE_URL for schema validation only)
+# Generate Prisma client
 RUN bunx prisma generate
 
 # Copy and setup entrypoint script for development
@@ -64,7 +64,7 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
 # Pre-download Prisma CLI and make it available globally
 # bunx downloads to /tmp, so we'll install it properly for appuser to use
-RUN bunx --bun prisma@latest --version || echo "Prisma download failed" && \
+RUN bunx --bun prisma@^6.19.0 --version || echo "Prisma download failed" && \
     PRISMA_PATH=$(find /tmp -name "prisma" -type f -executable 2>/dev/null | head -1) && \
     if [ -n "$PRISMA_PATH" ]; then \
       mkdir -p /usr/local/lib/prisma && \
