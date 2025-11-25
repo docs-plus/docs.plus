@@ -171,8 +171,8 @@ services:
    - docsplus-network
   labels:
    - "traefik.enable=true"
-   # WebSocket routes (prodback.docs.plus/hocuspocus)
-   - "traefik.http.routers.hocuspocus.rule=Host(`prodback.docs.plus`) && PathPrefix(`/hocuspocus`)"
+   # WebSocket routes (prodback.docs.plus/websocket)
+   - "traefik.http.routers.hocuspocus.rule=Host(`prodback.docs.plus`) && PathPrefix(`/websocket`)"
    - "traefik.http.routers.hocuspocus.entrypoints=websecure"
    - "traefik.http.routers.hocuspocus.tls.certresolver=letsencrypt"
    - "traefik.http.routers.hocuspocus.service=hocuspocus"
