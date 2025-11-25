@@ -61,7 +61,7 @@ services:
   image: redis:alpine
   container_name: docsplus-redis
   restart: unless-stopped
-  command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+  command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy noeviction
   volumes:
    - redis-data:/data
   networks:
