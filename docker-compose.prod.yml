@@ -25,9 +25,9 @@ services:
   container_name: traefik
   restart: unless-stopped
   command:
-   # API & Dashboard
+   # API & Dashboard (insecure on port 8080 for internal access)
    - "--api.dashboard=true"
-   - "--api.insecure=false"
+   - "--api.insecure=true"
    # Docker provider
    - "--providers.docker=true"
    - "--providers.docker.exposedbydefault=false"
@@ -48,20 +48,14 @@ services:
   ports:
    - "80:80"
    - "443:443"
+   - "127.0.0.1:8080:8080"  # Dashboard on localhost only (security)
   volumes:
    - /var/run/docker.sock:/var/run/docker.sock:ro
    - traefik-certs:/letsencrypt
   networks:
    - docsplus-network
   labels:
-   # Dashboard (optional - access via traefik.docs.plus)
-   - "traefik.enable=true"
-   - "traefik.http.routers.dashboard.rule=Host(`traefik.docs.plus`)"
-   - "traefik.http.routers.dashboard.entrypoints=websecure"
-   - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
-   - "traefik.http.routers.dashboard.service=api@internal"
-   - "traefik.http.routers.dashboard.middlewares=dashboard-auth"
-   - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH:-admin:$$apr1$$xyz$$hash}"
+   - "traefik.enable=false"  # Traefik doesn't route to itself
   healthcheck:
    test: ["CMD", "traefik", "healthcheck"]
    interval: 30s
