@@ -6,8 +6,8 @@
 #   Traefik (SSL/LB) → Services (auto-discovered via Docker labels)
 #
 # Deployment Strategy:
-#   Rolling update - Traefik handles graceful traffic shifting
-#   New containers start → health check passes → old containers removed
+#   Blue-Green rolling: New containers start → health check passes → old removed
+#   Traefik automatically routes to healthy containers only
 #
 # ============================================================================
 
@@ -75,143 +75,197 @@ jobs:
       source ${{ env.ENV_FILE }}
       set +a
 
-      docker-compose -f ${{ env.COMPOSE_FILE }} \
+      docker compose -f ${{ env.COMPOSE_FILE }} \
         --env-file ${{ env.ENV_FILE }} \
         build --parallel
 
       echo "✅ Images built"
 
-   - name: 🚀 Deploy Services (Zero-Downtime Rolling Update)
+   - name: 🔧 Ensure Infrastructure (Traefik + Redis)
+     run: |
+      echo "🔧 Ensuring infrastructure is running..."
+
+      # Create network if not exists
+      docker network create docsplus-network 2>/dev/null || true
+
+      # Start Traefik and Redis with --no-recreate (don't restart if running)
+      # This prevents Traefik restart which causes downtime
+      docker compose -f ${{ env.COMPOSE_FILE }} \
+        --env-file ${{ env.ENV_FILE }} \
+        up -d --no-recreate traefik redis
+
+      # Only if Traefik is not running at all, start it
+      if ! docker ps --filter "name=traefik" --filter "status=running" | grep -q traefik; then
+        echo "⚠️ Traefik not running, starting..."
+        docker compose -f ${{ env.COMPOSE_FILE }} \
+          --env-file ${{ env.ENV_FILE }} \
+          up -d traefik
+        sleep 15
+      fi
+
+      # Wait for Traefik to be healthy
+      echo "⏳ Waiting for Traefik health..."
+      for i in {1..30}; do
+        if docker ps --filter "name=traefik" --filter "health=healthy" | grep -q traefik; then
+          echo "✅ Traefik is healthy"
+          break
+        fi
+        if [ $i -eq 30 ]; then
+          echo "⚠️ Traefik health timeout, but continuing..."
+        fi
+        sleep 2
+      done
+
+   - name: 🚀 Deploy Services (Zero-Downtime)
      run: |
       echo "🚀 Starting zero-downtime deployment..."
-      
-      # Function to deploy a service with rolling update
+
+      # Function to deploy a service with zero-downtime
+      # Strategy: Start new containers → Wait healthy → Remove old
       deploy_service() {
         local SERVICE=$1
-        local REPLICAS=$2
-        
-        echo "📦 Deploying $SERVICE..."
-        
-        # Get current container IDs before deployment
-        OLD_CONTAINERS=$(docker ps -q --filter "name=docsplus-${SERVICE}" 2>/dev/null || true)
-        
-        # Scale up to double (old + new containers)
-        DOUBLE=$((REPLICAS * 2))
-        docker-compose -f ${{ env.COMPOSE_FILE }} \
+        local TARGET_REPLICAS=$2
+
+        echo ""
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+        echo "📦 Deploying $SERVICE (target: $TARGET_REPLICAS replicas)"
+        echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+
+        # Get current container IDs (before deployment)
+        OLD_CONTAINERS=$(docker ps -q --filter "label=com.docker.compose.service=${SERVICE}" 2>/dev/null || true)
+        OLD_COUNT=$(echo "$OLD_CONTAINERS" | grep -c . 2>/dev/null || echo "0")
+        echo "📊 Current containers: $OLD_COUNT"
+
+        # Calculate total (old + new) - we want both running during transition
+        TOTAL=$((OLD_COUNT + TARGET_REPLICAS))
+        if [ "$TOTAL" -lt "$TARGET_REPLICAS" ]; then
+          TOTAL=$TARGET_REPLICAS
+        fi
+
+        # Scale UP to add new containers alongside old ones
+        echo "⬆️  Scaling to $TOTAL containers (old + new)..."
+        docker compose -f ${{ env.COMPOSE_FILE }} \
           --env-file ${{ env.ENV_FILE }} \
-          up -d --no-recreate --scale ${SERVICE}=${DOUBLE} ${SERVICE} 2>/dev/null || \
-        docker-compose -f ${{ env.COMPOSE_FILE }} \
+          up -d --no-deps --scale ${SERVICE}=${TOTAL} --no-recreate ${SERVICE} 2>/dev/null || \
+        docker compose -f ${{ env.COMPOSE_FILE }} \
           --env-file ${{ env.ENV_FILE }} \
-          up -d --scale ${SERVICE}=${DOUBLE} ${SERVICE}
-        
-        # Wait for new containers to be healthy
-        echo "⏳ Waiting for new ${SERVICE} containers to be healthy..."
-        for i in {1..60}; do
-          HEALTHY=$(docker ps --filter "name=docsplus-${SERVICE}" --filter "health=healthy" --format "{{.Names}}" | wc -l)
-          if [ "$HEALTHY" -ge "$REPLICAS" ]; then
-            echo "✅ ${SERVICE}: ${HEALTHY} healthy containers"
+          up -d --no-deps --scale ${SERVICE}=${TOTAL} ${SERVICE}
+
+        # Wait for NEW containers to become healthy
+        echo "⏳ Waiting for new containers to be healthy..."
+        HEALTHY_NEEDED=$TARGET_REPLICAS
+        for i in {1..90}; do
+          # Count healthy containers
+          HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" --filter "health=healthy" --format "{{.ID}}" 2>/dev/null | wc -l || echo "0")
+
+          if [ "$HEALTHY" -ge "$HEALTHY_NEEDED" ]; then
+            echo "✅ $SERVICE: $HEALTHY healthy containers (needed: $HEALTHY_NEEDED)"
             break
           fi
-          if [ $i -eq 60 ]; then
-            echo "⚠️ ${SERVICE} health check timeout, continuing..."
+
+          if [ $i -eq 90 ]; then
+            echo "⚠️ Health check timeout for $SERVICE (got $HEALTHY, needed $HEALTHY_NEEDED)"
+            echo "   Containers may still be starting..."
           fi
+
+          # Show progress every 10 seconds
+          if [ $((i % 5)) -eq 0 ]; then
+            echo "   ... waiting ($HEALTHY/$HEALTHY_NEEDED healthy, attempt $i/90)"
+          fi
+
           sleep 2
         done
-        
-        # Scale back to target (removes oldest containers)
-        docker-compose -f ${{ env.COMPOSE_FILE }} \
+
+        # Now we have healthy new containers, scale DOWN to remove old ones
+        # Docker Compose will remove the oldest containers when scaling down
+        echo "⬇️  Scaling down to $TARGET_REPLICAS containers..."
+        docker compose -f ${{ env.COMPOSE_FILE }} \
           --env-file ${{ env.ENV_FILE }} \
-          up -d --scale ${SERVICE}=${REPLICAS} ${SERVICE}
-        
-        echo "✅ ${SERVICE} deployed with ${REPLICAS} replicas"
+          up -d --no-deps --scale ${SERVICE}=${TARGET_REPLICAS} ${SERVICE}
+
+        # Verify final state
+        sleep 3
+        FINAL_COUNT=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" --format "{{.ID}}" | wc -l)
+        FINAL_HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" --filter "health=healthy" --format "{{.ID}}" | wc -l)
+        echo "✅ $SERVICE deployed: $FINAL_COUNT running, $FINAL_HEALTHY healthy"
       }
-      
-      # Ensure network exists
-      docker network create docsplus-network 2>/dev/null || true
-      
-      # Deploy infrastructure first (Traefik + Redis)
-      echo "🔧 Deploying infrastructure..."
-      docker-compose -f ${{ env.COMPOSE_FILE }} \
-        --env-file ${{ env.ENV_FILE }} \
-        up -d traefik redis
-      
-      # Wait for Traefik to be ready
-      sleep 10
-      
-      # Deploy each service with rolling update
+
+      # Deploy services in order (backend first, then frontend)
       deploy_service "rest-api" 2
       deploy_service "hocuspocus-server" 2
       deploy_service "hocuspocus-worker" 1
       deploy_service "webapp" 2
-      
-      # Cleanup orphaned containers
-      docker-compose -f ${{ env.COMPOSE_FILE }} \
-        --env-file ${{ env.ENV_FILE }} \
-        up -d --remove-orphans
-      
-      echo "✅ All services deployed with zero-downtime"
 
-   - name: ⏳ Wait for Health Checks
-     run: |
-      echo "⏳ Waiting for services to be healthy..."
-      sleep 30
-
-      # Check Traefik
-      if ! docker ps --filter "name=traefik" --filter "health=healthy" | grep -q traefik; then
-        echo "⚠️ Traefik not healthy yet, waiting..."
-        sleep 15
-      fi
-
-      echo "✅ Initial wait complete"
+      echo ""
+      echo "✅ All services deployed"
 
    - name: 🩺 Verify Deployment
      run: |
       echo "🩺 Verifying deployment..."
 
-      # Check all services are running
-      SERVICES="traefik docsplus-redis"
-      for svc in $SERVICES; do
-        if ! docker ps --filter "name=$svc" | grep -q "$svc"; then
-          echo "❌ $svc is not running"
-          docker logs $svc --tail 50 2>/dev/null || true
+      # Wait a bit for everything to stabilize
+      sleep 10
+
+      # Check all core services
+      echo "📊 Service Status:"
+      for svc in traefik docsplus-redis; do
+        if docker ps --filter "name=$svc" --filter "status=running" | grep -q "$svc"; then
+          echo "  ✅ $svc: running"
+        else
+          echo "  ❌ $svc: NOT running"
+          docker logs $svc --tail 30 2>/dev/null || true
           exit 1
         fi
       done
 
       # Check scaled services
       for svc in webapp rest-api hocuspocus-server hocuspocus-worker; do
-        COUNT=$(docker ps --filter "name=${svc}" --format "{{.Names}}" | wc -l)
-        if [ "$COUNT" -eq 0 ]; then
-          echo "❌ No $svc containers running"
+        RUNNING=$(docker ps --filter "label=com.docker.compose.service=${svc}" --filter "status=running" --format "{{.Names}}" | wc -l)
+        HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${svc}" --filter "health=healthy" --format "{{.Names}}" | wc -l)
+
+        if [ "$RUNNING" -gt 0 ]; then
+          echo "  ✅ $svc: $RUNNING running, $HEALTHY healthy"
+        else
+          echo "  ❌ $svc: NOT running"
           exit 1
         fi
-        echo "✅ $svc: $COUNT container(s) running"
       done
 
-      # Health check via Traefik
-      echo "🔍 Testing endpoints via Traefik..."
+      # Health check via Traefik endpoints
+      echo ""
+      echo "🔍 Testing endpoints..."
 
-      # Wait for SSL cert (first deploy might take a moment)
-      for i in {1..30}; do
-        if curl -sf -o /dev/null https://docs.plus/api/health 2>/dev/null; then
-          echo "✅ docs.plus is healthy"
+      # Test main site
+      for i in {1..20}; do
+        HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" https://docs.plus/ 2>/dev/null || echo "000")
+        if [ "$HTTP_CODE" = "200" ]; then
+          echo "  ✅ https://docs.plus/ → $HTTP_CODE"
           break
         fi
-        if [ $i -eq 30 ]; then
-          echo "⚠️ docs.plus health check timed out (may still be provisioning SSL)"
+        if [ $i -eq 20 ]; then
+          echo "  ⚠️ https://docs.plus/ → $HTTP_CODE (may still be provisioning)"
         fi
-        sleep 5
+        sleep 3
       done
 
+      # Test API health
+      HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" https://prodback.docs.plus/api/health 2>/dev/null || echo "000")
+      if [ "$HTTP_CODE" = "200" ]; then
+        echo "  ✅ https://prodback.docs.plus/api/health → $HTTP_CODE"
+      else
+        echo "  ⚠️ https://prodback.docs.plus/api/health → $HTTP_CODE"
+      fi
+
+      echo ""
       echo "✅ Deployment verified"
 
    - name: 🧹 Cleanup
      run: |
-      # Remove old images
-      docker image prune -f --filter "until=24h"
+      # Remove dangling images
+      docker image prune -f
 
-      # Remove unused volumes (careful!)
-      docker volume prune -f --filter "label!=keep"
+      # Remove old images (older than 24h)
+      docker image prune -f --filter "until=24h" 2>/dev/null || true
 
       echo "✅ Cleanup complete"
 
@@ -223,7 +277,7 @@ jobs:
       echo "Tag: ${{ env.DEPLOY_TAG }}"
       echo ""
       echo "Services:"
-      docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | head -20
+      docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | grep -E "(traefik|docsplus|webapp|rest-api|hocuspocus)" | head -15
       echo ""
       echo "URLs:"
       echo "  - https://docs.plus"
@@ -233,21 +287,17 @@ jobs:
    - name: 🚨 Rollback on Failure
      if: failure()
      run: |
-      echo "⚠️ Deployment failed - attempting rollback..."
+      echo "⚠️ Deployment failed - attempting recovery..."
 
-      # Get previous working tag (if any)
-      PREV_TAG=$(docker images docsy-webapp --format "{{.Tag}}" | grep -v "${{ env.DEPLOY_TAG }}" | head -1)
+      # Don't do aggressive rollback - just ensure services are running
+      # Traefik will route to whatever containers are healthy
 
-      if [ -n "$PREV_TAG" ] && [ "$PREV_TAG" != "latest" ]; then
-        echo "🔄 Rolling back to: $PREV_TAG"
-        sed -i "s/DEPLOY_TAG=.*/DEPLOY_TAG=$PREV_TAG/" "${{ env.ENV_FILE }}"
-        docker-compose -f ${{ env.COMPOSE_FILE }} \
-          --env-file ${{ env.ENV_FILE }} \
-          up -d --remove-orphans
-        echo "✅ Rollback complete"
-      else
-        echo "⚠️ No previous version to rollback to"
-      fi
+      docker compose -f ${{ env.COMPOSE_FILE }} \
+        --env-file ${{ env.ENV_FILE }} \
+        up -d --no-recreate 2>/dev/null || true
+
+      echo "📊 Current state:"
+      docker ps --format "table {{.Names}}\t{{.Status}}" | head -15
 
  # ===========================================================================
  # UPTIME KUMA (Monitoring)

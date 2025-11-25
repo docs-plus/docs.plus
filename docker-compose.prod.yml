@@ -5,62 +5,54 @@
 # Architecture:
 #   Internet → Traefik (SSL/LB) → Services (webapp, rest-api, hocuspocus)
 #
-# Features:
-#   - Auto SSL via Let's Encrypt
-#   - Auto service discovery via Docker labels
-#   - Built-in load balancing
-#   - Zero-downtime blue/green deployments
+# Configuration:
+#   - Traefik static config: ./scripts/traefik/traefik.yml
+#   - Dynamic routing: Docker labels (below)
+#
+# Zero-Downtime Strategy:
+#   Traefik only routes to HEALTHY containers. During deployment:
+#   1. New containers start alongside old ones
+#   2. Traefik waits for new containers to pass health checks
+#   3. Once healthy, Traefik routes traffic to new containers
+#   4. Old containers are removed
 #
 # Usage:
-#   docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
+#   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 #
 # =============================================================================
 
 services:
  # ===========================================================================
  # TRAEFIK - Reverse Proxy & SSL
+ # Static config:  ./scripts/traefik/traefik.yml
+ # Dynamic config: ./scripts/traefik/dynamic/
  # ===========================================================================
  traefik:
   image: traefik:v3.0
   container_name: traefik
   restart: unless-stopped
   command:
-   # API & Dashboard (insecure on port 8080 for internal access)
-   - "--api.dashboard=true"
-   - "--api.insecure=true"
-   # Docker provider
-   - "--providers.docker=true"
-   - "--providers.docker.exposedbydefault=false"
-   - "--providers.docker.network=docsplus-network"
-   # Entrypoints
-   - "--entrypoints.web.address=:80"
-   - "--entrypoints.websecure.address=:443"
-   # HTTP → HTTPS redirect
-   - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-   - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-   # Let's Encrypt
    - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@docs.plus}"
-   - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
-   - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
-   # Logging
-   - "--log.level=INFO"
-   - "--accesslog=true"
   ports:
    - "80:80"
    - "443:443"
-   - "127.0.0.1:8080:8080" # Dashboard on localhost only (security)
+   - "127.0.0.1:8080:8080"
   volumes:
+   - ./scripts/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+   - ./scripts/traefik/dynamic:/etc/traefik/dynamic:ro
    - /var/run/docker.sock:/var/run/docker.sock:ro
    - traefik-certs:/letsencrypt
+   - traefik-logs:/var/log/traefik
   networks:
    - docsplus-network
   labels:
-   - "traefik.enable=false" # Traefik doesn't route to itself
+   - "traefik.enable=false"
   healthcheck:
-   test: ["CMD", "traefik", "healthcheck"]
-   interval: 30s
+   test: ["CMD", "traefik", "healthcheck", "--ping"]
+   interval: 10s
    timeout: 3s
    retries: 3
+   start_period: 10s
 
  # ===========================================================================
  # REDIS - Shared Cache & Pub/Sub
@@ -69,7 +61,7 @@ services:
   image: redis:alpine
   container_name: docsplus-redis
   restart: unless-stopped
-  command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy noeviction
+  command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
   volumes:
    - redis-data:/data
   networks:
@@ -79,6 +71,12 @@ services:
    interval: 10s
    timeout: 5s
    retries: 5
+  deploy:
+   resources:
+    limits:
+     memory: 768M
+    reservations:
+     memory: 256M
 
  # ===========================================================================
  # REST API (Hocuspocus)
@@ -113,16 +111,23 @@ services:
    DO_STORAGE_MAX_FILE_SIZE: ${DO_STORAGE_MAX_FILE_SIZE:-52428800}
   networks:
    - docsplus-network
+  depends_on:
+   redis:
+    condition: service_healthy
   labels:
    - "traefik.enable=true"
-   # REST API routes (prodback.docs.plus/*)
+   # REST API routes (prodback.docs.plus/api/*)
    - "traefik.http.routers.rest-api.rule=Host(`prodback.docs.plus`) && PathPrefix(`/api`)"
    - "traefik.http.routers.rest-api.entrypoints=websecure"
    - "traefik.http.routers.rest-api.tls.certresolver=letsencrypt"
    - "traefik.http.routers.rest-api.service=rest-api"
+   # Middleware: rate limiting + retry
+   - "traefik.http.routers.rest-api.middlewares=rate-limit-api@file,retry@file"
    - "traefik.http.services.rest-api.loadbalancer.server.port=4000"
+   # Health check - only route to healthy containers
    - "traefik.http.services.rest-api.loadbalancer.healthcheck.path=/health"
-   - "traefik.http.services.rest-api.loadbalancer.healthcheck.interval=10s"
+   - "traefik.http.services.rest-api.loadbalancer.healthcheck.interval=5s"
+   - "traefik.http.services.rest-api.loadbalancer.healthcheck.timeout=3s"
   healthcheck:
    test:
     [
@@ -131,16 +136,19 @@ services:
      "-e",
      "fetch('http://localhost:4000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
     ]
-   interval: 30s
+   interval: 10s
    timeout: 5s
    retries: 3
-   start_period: 30s
+   start_period: 20s
   deploy:
    replicas: 2
    resources:
     limits:
-     cpus: "1"
-     memory: 1G
+     cpus: "0.5"
+     memory: 512M
+    reservations:
+     cpus: "0.25"
+     memory: 256M
 
  # ===========================================================================
  # HOCUSPOCUS WEBSOCKET SERVER
@@ -177,6 +185,9 @@ services:
    DO_STORAGE_MAX_FILE_SIZE: ${DO_STORAGE_MAX_FILE_SIZE:-52428800}
   networks:
    - docsplus-network
+  depends_on:
+   redis:
+    condition: service_healthy
   labels:
    - "traefik.enable=true"
    # WebSocket routes (prodback.docs.plus/websocket)
@@ -185,9 +196,13 @@ services:
    - "traefik.http.routers.hocuspocus.tls.certresolver=letsencrypt"
    - "traefik.http.routers.hocuspocus.service=hocuspocus"
    - "traefik.http.services.hocuspocus.loadbalancer.server.port=4001"
-   # Sticky sessions for WebSocket
+   # Sticky sessions for WebSocket connections
    - "traefik.http.services.hocuspocus.loadbalancer.sticky.cookie=true"
    - "traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.name=hocuspocus_sticky"
+   - "traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.httponly=true"
+   # Health check for load balancer
+   - "traefik.http.services.hocuspocus.loadbalancer.healthcheck.path=/health"
+   - "traefik.http.services.hocuspocus.loadbalancer.healthcheck.interval=5s"
   healthcheck:
    test:
     [
@@ -196,19 +211,22 @@ services:
      "-e",
      "fetch('http://localhost:4001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
     ]
-   interval: 30s
+   interval: 10s
    timeout: 5s
    retries: 3
-   start_period: 30s
+   start_period: 20s
   deploy:
    replicas: 2
    resources:
     limits:
-     cpus: "1"
-     memory: 1G
+     cpus: "0.5"
+     memory: 768M
+    reservations:
+     cpus: "0.25"
+     memory: 256M
 
  # ===========================================================================
- # HOCUSPOCUS WORKER
+ # HOCUSPOCUS WORKER (Background Jobs)
  # ===========================================================================
  hocuspocus-worker:
   image: docsy-hocuspocus:${DEPLOY_TAG:-latest}
@@ -237,7 +255,10 @@ services:
    DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
   networks:
    - docsplus-network
-  # Worker doesn't need Traefik labels (no external traffic)
+  depends_on:
+   redis:
+    condition: service_healthy
+  # Worker doesn't need Traefik labels (internal only)
   healthcheck:
    test:
     [
@@ -246,19 +267,22 @@ services:
      "-e",
      "fetch('http://localhost:4002/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
     ]
-   interval: 30s
+   interval: 10s
    timeout: 5s
    retries: 3
-   start_period: 30s
+   start_period: 20s
   deploy:
    replicas: 1
    resources:
     limits:
-     cpus: "2"
-     memory: 2G
+     cpus: "1"
+     memory: 1G
+    reservations:
+     cpus: "0.25"
+     memory: 256M
 
  # ===========================================================================
- # WEBAPP (Next.js)
+ # WEBAPP (Next.js Frontend)
  # ===========================================================================
  webapp:
   image: docsy-webapp:${DEPLOY_TAG:-latest}
@@ -280,7 +304,7 @@ services:
    NODE_ENV: production
    PORT: 3000
    HOSTNAME: "0.0.0.0"
-   # NEXT_PUBLIC vars needed for runtime validation (also baked in at build time)
+   # NEXT_PUBLIC vars for runtime
    NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
    NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
    NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL}
@@ -299,9 +323,13 @@ services:
    - "traefik.http.routers.webapp.entrypoints=websecure"
    - "traefik.http.routers.webapp.tls.certresolver=letsencrypt"
    - "traefik.http.routers.webapp.service=webapp"
+   # Middleware: rate limiting
+   - "traefik.http.routers.webapp.middlewares=rate-limit-global@file"
    - "traefik.http.services.webapp.loadbalancer.server.port=3000"
+   # Health check - Traefik only routes to healthy containers
    - "traefik.http.services.webapp.loadbalancer.healthcheck.path=/api/health"
-   - "traefik.http.services.webapp.loadbalancer.healthcheck.interval=10s"
+   - "traefik.http.services.webapp.loadbalancer.healthcheck.interval=5s"
+   - "traefik.http.services.webapp.loadbalancer.healthcheck.timeout=3s"
   healthcheck:
    test:
     [
@@ -310,7 +338,7 @@ services:
      "-e",
      "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
     ]
-   interval: 30s
+   interval: 10s
    timeout: 3s
    retries: 3
    start_period: 30s
@@ -318,14 +346,19 @@ services:
    replicas: 2
    resources:
     limits:
-     cpus: "1"
-     memory: 1G
+     cpus: "0.5"
+     memory: 768M
+    reservations:
+     cpus: "0.25"
+     memory: 256M
 
 # =============================================================================
 # VOLUMES
 # =============================================================================
 volumes:
  traefik-certs:
+  driver: local
+ traefik-logs:
   driver: local
  redis-data:
   driver: local

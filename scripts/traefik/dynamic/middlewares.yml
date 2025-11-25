@@ -1,0 +1,120 @@
+# =============================================================================
+# Traefik Dynamic Configuration - Middleware
+# =============================================================================
+# These middlewares are applied globally or per-route via Docker labels.
+# Changes are hot-reloaded (no restart required).
+# =============================================================================
+
+http:
+  middlewares:
+    # -------------------------------------------------------------------------
+    # Security Headers (OWASP Recommendations)
+    # -------------------------------------------------------------------------
+    security-headers:
+      headers:
+        # HSTS - Force HTTPS for 1 year
+        stsSeconds: 31536000
+        stsIncludeSubdomains: true
+        stsPreload: true
+
+        # Prevent clickjacking
+        frameDeny: true
+
+        # Prevent MIME sniffing
+        contentTypeNosniff: true
+
+        # XSS Protection
+        browserXssFilter: true
+
+        # Referrer Policy
+        referrerPolicy: 'strict-origin-when-cross-origin'
+
+        # Content Security Policy (adjust as needed)
+        # contentSecurityPolicy: "default-src 'self'"
+
+        # Permissions Policy
+        permissionsPolicy: 'camera=(), microphone=(), geolocation=()'
+
+        # Custom headers
+        customResponseHeaders:
+          X-Powered-By: '' # Remove server info
+          Server: ''
+
+    # -------------------------------------------------------------------------
+    # Compression (Gzip/Brotli)
+    # -------------------------------------------------------------------------
+    compress:
+      compress:
+        excludedContentTypes:
+          - text/event-stream
+
+    # -------------------------------------------------------------------------
+    # Rate Limiting - Global (adjust for your traffic)
+    # -------------------------------------------------------------------------
+    rate-limit-global:
+      rateLimit:
+        average: 100 # Requests per second
+        burst: 200 # Max burst
+        period: 1s
+        sourceCriterion:
+          ipStrategy:
+            depth: 1 # Use X-Forwarded-For if behind CDN
+
+    # -------------------------------------------------------------------------
+    # Rate Limiting - API (stricter)
+    # -------------------------------------------------------------------------
+    rate-limit-api:
+      rateLimit:
+        average: 50 # 50 req/s per IP
+        burst: 100
+        period: 1s
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
+
+    # -------------------------------------------------------------------------
+    # Rate Limiting - Auth endpoints (very strict)
+    # -------------------------------------------------------------------------
+    rate-limit-auth:
+      rateLimit:
+        average: 5 # 5 req/s per IP
+        burst: 10
+        period: 1s
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
+
+    # -------------------------------------------------------------------------
+    # Retry (for transient failures)
+    # -------------------------------------------------------------------------
+    retry:
+      retry:
+        attempts: 3
+        initialInterval: 100ms
+
+    # -------------------------------------------------------------------------
+    # Circuit Breaker (prevent cascade failures)
+    # -------------------------------------------------------------------------
+    circuit-breaker:
+      circuitBreaker:
+        expression: 'NetworkErrorRatio() > 0.5 || ResponseCodeRatio(500, 600, 0, 600) > 0.5'
+
+    # -------------------------------------------------------------------------
+    # In-Flight Requests Limit (prevent overload)
+    # -------------------------------------------------------------------------
+    inflight-limit:
+      inFlightReq:
+        amount: 100 # Max concurrent requests per service
+        sourceCriterion:
+          ipStrategy:
+            depth: 1
+
+    # -------------------------------------------------------------------------
+    # Request Buffering (for large uploads)
+    # -------------------------------------------------------------------------
+    buffering:
+      buffering:
+        maxRequestBodyBytes: 52428800 # 50MB
+        memRequestBodyBytes: 2097152 # 2MB in memory
+        maxResponseBodyBytes: 0 # No limit
+        retryExpression: 'IsNetworkError() && Attempts() < 2'
