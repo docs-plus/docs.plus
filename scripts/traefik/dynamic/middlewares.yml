@@ -1,54 +1,72 @@
 # =============================================================================
-# Traefik Dynamic Configuration - Middleware
+# Traefik Dynamic Configuration - Middlewares
 # =============================================================================
 
 http:
   middlewares:
-    # -------------------------------------------------------------------------
-    # Security Headers
-    # -------------------------------------------------------------------------
+    # =========================================================================
+    # Security Headers (OWASP Best Practices)
+    # =========================================================================
     security-headers:
       headers:
+        # HSTS - Force HTTPS for 1 year
         stsSeconds: 31536000
         stsIncludeSubdomains: true
         stsPreload: true
+        # Prevent clickjacking
         frameDeny: true
+        # Prevent MIME type sniffing
         contentTypeNosniff: true
+        # XSS Protection
         browserXssFilter: true
+        # Referrer Policy
         referrerPolicy: 'strict-origin-when-cross-origin'
+        # Remove server info
         customResponseHeaders:
           X-Powered-By: ''
           Server: ''
 
-    # -------------------------------------------------------------------------
-    # Compression
-    # -------------------------------------------------------------------------
+    # =========================================================================
+    # Compression (Gzip)
+    # =========================================================================
     compress:
       compress:
         excludedContentTypes:
           - text/event-stream
 
-    # -------------------------------------------------------------------------
-    # Rate Limiting - Global
-    # -------------------------------------------------------------------------
-    rate-limit-global:
+    # =========================================================================
+    # Rate Limiting - Web (Frontend)
+    # High limits for normal browsing
+    # =========================================================================
+    rate-limit-web:
       rateLimit:
-        average: 100
-        burst: 200
+        average: 900
+        burst: 2000
         period: 1s
 
-    # -------------------------------------------------------------------------
+    # =========================================================================
     # Rate Limiting - API
-    # -------------------------------------------------------------------------
+    # Moderate limits for API calls
+    # =========================================================================
     rate-limit-api:
       rateLimit:
-        average: 50
-        burst: 100
+        average: 800
+        burst: 900
         period: 1s
 
-    # -------------------------------------------------------------------------
-    # Retry
-    # -------------------------------------------------------------------------
+    # =========================================================================
+    # Rate Limiting - Auth endpoints
+    # Strict limits to prevent brute force
+    # =========================================================================
+    rate-limit-auth:
+      rateLimit:
+        average: 60
+        burst: 40
+        period: 1s
+
+    # =========================================================================
+    # Retry (for transient failures)
+    # =========================================================================
     retry:
       retry:
         attempts: 3

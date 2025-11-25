@@ -121,6 +121,7 @@ services:
    - "traefik.http.routers.rest-api.entrypoints=websecure"
    - "traefik.http.routers.rest-api.tls.certresolver=letsencrypt"
    - "traefik.http.routers.rest-api.service=rest-api"
+   - "traefik.http.routers.rest-api.middlewares=security-headers@file,rate-limit-api@file,retry@file"
    - "traefik.http.services.rest-api.loadbalancer.server.port=4000"
    # Health check - only route to healthy containers
    - "traefik.http.services.rest-api.loadbalancer.healthcheck.path=/health"
@@ -193,6 +194,7 @@ services:
    - "traefik.http.routers.hocuspocus.entrypoints=websecure"
    - "traefik.http.routers.hocuspocus.tls.certresolver=letsencrypt"
    - "traefik.http.routers.hocuspocus.service=hocuspocus"
+   - "traefik.http.routers.hocuspocus.middlewares=security-headers@file"
    - "traefik.http.services.hocuspocus.loadbalancer.server.port=4001"
    # Sticky sessions for WebSocket connections
    - "traefik.http.services.hocuspocus.loadbalancer.sticky.cookie=true"
@@ -321,6 +323,7 @@ services:
    - "traefik.http.routers.webapp.entrypoints=websecure"
    - "traefik.http.routers.webapp.tls.certresolver=letsencrypt"
    - "traefik.http.routers.webapp.service=webapp"
+   - "traefik.http.routers.webapp.middlewares=security-headers@file,compress@file,rate-limit-web@file"
    - "traefik.http.services.webapp.loadbalancer.server.port=3000"
    # Health check - Traefik only routes to healthy containers
    - "traefik.http.services.webapp.loadbalancer.healthcheck.path=/api/health"
