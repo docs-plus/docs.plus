@@ -120,8 +120,12 @@ jobs:
      run: |
       echo "🚀 Starting zero-downtime deployment..."
 
-      # Function to deploy a service with zero-downtime
-      # Strategy: Start new containers → Wait healthy → Remove old
+      # Function to deploy a service with true zero-downtime
+      # Strategy:
+      #   1. Start NEW containers (with new image)
+      #   2. Wait for them to be healthy
+      #   3. Traefik auto-routes to healthy containers
+      #   4. Stop OLD containers
       deploy_service() {
         local SERVICE=$1
         local TARGET_REPLICAS=$2
@@ -131,63 +135,63 @@ jobs:
         echo "📦 Deploying $SERVICE (target: $TARGET_REPLICAS replicas)"
         echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 
-        # Get current container IDs (before deployment)
-        OLD_CONTAINERS=$(docker ps -q --filter "label=com.docker.compose.service=${SERVICE}" 2>/dev/null || true)
-        OLD_COUNT=$(echo "$OLD_CONTAINERS" | grep -c . 2>/dev/null || echo "0")
+        # Get OLD container IDs (before deployment)
+        OLD_CONTAINERS=$(docker ps -q --filter "label=com.docker.compose.service=${SERVICE}" 2>/dev/null | tr '\n' ' ' || true)
+        OLD_COUNT=$(echo "$OLD_CONTAINERS" | wc -w | tr -d ' ')
         echo "📊 Current containers: $OLD_COUNT"
 
-        # Calculate total (old + new) - we want both running during transition
-        TOTAL=$((OLD_COUNT + TARGET_REPLICAS))
-        if [ "$TOTAL" -lt "$TARGET_REPLICAS" ]; then
-          TOTAL=$TARGET_REPLICAS
+        # Step 1: Scale UP - force new containers with new image
+        # Using --force-recreate would stop old first, so we scale to double instead
+        SCALE_UP=$((OLD_COUNT + TARGET_REPLICAS))
+        if [ "$SCALE_UP" -lt "$TARGET_REPLICAS" ]; then
+          SCALE_UP=$TARGET_REPLICAS
         fi
 
-        # Scale UP to add new containers alongside old ones
-        echo "⬆️  Scaling to $TOTAL containers (old + new)..."
+        echo "⬆️  Starting $TARGET_REPLICAS NEW containers (total will be $SCALE_UP)..."
         docker compose -f ${{ env.COMPOSE_FILE }} \
           --env-file ${{ env.ENV_FILE }} \
-          up -d --no-deps --scale ${SERVICE}=${TOTAL} --no-recreate ${SERVICE} 2>/dev/null || \
-        docker compose -f ${{ env.COMPOSE_FILE }} \
-          --env-file ${{ env.ENV_FILE }} \
-          up -d --no-deps --scale ${SERVICE}=${TOTAL} ${SERVICE}
+          up -d --no-deps --scale ${SERVICE}=${SCALE_UP} ${SERVICE}
 
-        # Wait for NEW containers to become healthy
-        echo "⏳ Waiting for new containers to be healthy..."
-        HEALTHY_NEEDED=$TARGET_REPLICAS
+        # Step 2: Wait for NEW containers to become healthy
+        echo "⏳ Waiting for healthy containers..."
         for i in {1..90}; do
-          # Count healthy containers
-          HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" --filter "health=healthy" --format "{{.ID}}" 2>/dev/null | wc -l || echo "0")
+          HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" --filter "health=healthy" -q 2>/dev/null | wc -l | tr -d ' ')
 
-          if [ "$HEALTHY" -ge "$HEALTHY_NEEDED" ]; then
-            echo "✅ $SERVICE: $HEALTHY healthy containers (needed: $HEALTHY_NEEDED)"
+          if [ "$HEALTHY" -ge "$TARGET_REPLICAS" ]; then
+            echo "✅ $SERVICE: $HEALTHY healthy containers"
             break
           fi
 
           if [ $i -eq 90 ]; then
-            echo "⚠️ Health check timeout for $SERVICE (got $HEALTHY, needed $HEALTHY_NEEDED)"
-            echo "   Containers may still be starting..."
+            echo "⚠️ Timeout waiting for healthy containers ($HEALTHY/$TARGET_REPLICAS)"
           fi
 
-          # Show progress every 10 seconds
           if [ $((i % 5)) -eq 0 ]; then
-            echo "   ... waiting ($HEALTHY/$HEALTHY_NEEDED healthy, attempt $i/90)"
+            echo "   ... ($HEALTHY/$TARGET_REPLICAS healthy, attempt $i/90)"
           fi
-
           sleep 2
         done
 
-        # Now we have healthy new containers, scale DOWN to remove old ones
-        # Docker Compose will remove the oldest containers when scaling down
-        echo "⬇️  Scaling down to $TARGET_REPLICAS containers..."
+        # Step 3: Remove OLD containers explicitly (they have old image)
+        if [ -n "$OLD_CONTAINERS" ] && [ "$OLD_COUNT" -gt 0 ]; then
+          echo "🗑️  Removing $OLD_COUNT old containers..."
+          for container in $OLD_CONTAINERS; do
+            docker stop "$container" --time 10 2>/dev/null || true
+            docker rm "$container" 2>/dev/null || true
+          done
+        fi
+
+        # Step 4: Ensure we have exactly TARGET_REPLICAS
+        echo "📏 Ensuring exactly $TARGET_REPLICAS replicas..."
         docker compose -f ${{ env.COMPOSE_FILE }} \
           --env-file ${{ env.ENV_FILE }} \
           up -d --no-deps --scale ${SERVICE}=${TARGET_REPLICAS} ${SERVICE}
 
-        # Verify final state
+        # Verify
         sleep 3
-        FINAL_COUNT=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" --format "{{.ID}}" | wc -l)
-        FINAL_HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" --filter "health=healthy" --format "{{.ID}}" | wc -l)
-        echo "✅ $SERVICE deployed: $FINAL_COUNT running, $FINAL_HEALTHY healthy"
+        FINAL=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" -q | wc -l | tr -d ' ')
+        FINAL_HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" --filter "health=healthy" -q | wc -l | tr -d ' ')
+        echo "✅ $SERVICE: $FINAL running, $FINAL_HEALTHY healthy"
       }
 
       # Deploy services in order (backend first, then frontend)
