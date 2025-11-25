@@ -1,73 +1,51 @@
-// eslint-disable-next-line @typescript-eslint/ban-ts-comment
-// @ts-nocheck
 import { useEffect } from 'react'
+
+declare global {
+  interface Window {
+    workbox?: {
+      addEventListener: (event: string, callback: () => void) => void
+      register: () => void
+    }
+  }
+}
 
 const useServiceWorker = () => {
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker
-        .register('/service-worker.js')
-        .then((registration) => console.info('scope is: ', registration.scope))
-        .catch((error) => {
-          console.info('Service worker registration failed:', error)
-        })
-    }
-  }, [])
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
 
-  useEffect(() => {
-    if (
-      typeof window !== 'undefined' &&
-      'serviceWorker' in navigator &&
-      window.workbox !== undefined
-    ) {
-      const wb = window.workbox
-
-      // Add event listeners
-      const handleInstall = (event) => {
-        // console.info(`Event ${event.type} is triggered.`, event)
-      }
-
-      const handleControlling = (event) => {
-        // console.info(`Event ${event.type} is triggered.`, event)
-      }
-
-      const handleActivated = (event) => {
-        // console.info(`Event ${event.type} is triggered.`, event)
-      }
-
-      const promptNewVersionAvailable = (event) => {
-        // Custom logic for prompting new version
-        // console.info(`Event ${event.type} is triggered.`, event)
-        // ...
-      }
-
-      const handleMessage = (event) => {
-        // Handle messages from service worker
-        // Always check for runtime.lastError to prevent console errors
-        if (typeof chrome !== 'undefined' && chrome.runtime?.lastError) {
-          // Silently ignore - common with browser extensions
-          return
+    // When new SW is waiting, activate it and reload
+    const handleNewVersion = () => {
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        if (reg?.waiting) {
+          reg.waiting.postMessage({ type: 'SKIP_WAITING' })
         }
-        // console.info(`Event ${event.type} is triggered.`, event)
-      }
+      })
+    }
 
-      wb.addEventListener('installed', handleInstall)
-      wb.addEventListener('controlling', handleControlling)
-      wb.addEventListener('activated', handleActivated)
-      wb.addEventListener('waiting', promptNewVersionAvailable)
-      wb.addEventListener('message', handleMessage)
+    // Reload when new SW takes control
+    let refreshing = false
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+      if (refreshing) return
+      refreshing = true
+      window.location.reload()
+    })
 
-      // Register the service worker
-      wb.register()
+    // Check for updates on focus (user returns to tab)
+    const checkForUpdates = () => {
+      navigator.serviceWorker.getRegistration().then((reg) => {
+        reg?.update()
+      })
+    }
+    window.addEventListener('focus', checkForUpdates)
 
-      // Cleanup function
-      return () => {
-        wb.removeEventListener('installed', handleInstall)
-        wb.removeEventListener('controlling', handleControlling)
-        wb.removeEventListener('activated', handleActivated)
-        wb.removeEventListener('waiting', promptNewVersionAvailable)
-        wb.removeEventListener('message', handleMessage)
-      }
+    // Workbox integration
+    if (window.workbox) {
+      window.workbox.addEventListener('waiting', handleNewVersion)
+      window.workbox.register()
+    }
+
+    return () => {
+      window.removeEventListener('focus', checkForUpdates)
     }
   }, [])
 }
