@@ -58,21 +58,17 @@ jobs:
       fi
       echo "✅ Environment prepared"
 
-   - name: 🔍 Ensure Redis
+   - name: 🧹 Cleanup Old Manual Redis
      run: |
-      docker network create ${{ env.DOCKER_NETWORK }} 2>/dev/null || true
-      if ! docker ps | grep -q "stage-docsplus-redis"; then
-        docker run -d \
-          --name stage-docsplus-redis \
-          --network ${{ env.DOCKER_NETWORK }} \
-          --restart unless-stopped \
-          -p 6379:6379 \
-          -v stage-redis-data:/data \
-          redis:alpine \
-          redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy noeviction
-        sleep 5
+      # Remove any manually-created Redis containers from old workflow
+      if docker ps -a --format '{{.Names}}' | grep -q "^stage-docsplus-redis$"; then
+        if ! docker inspect stage-docsplus-redis --format '{{index .Config.Labels "com.docker.compose.project"}}' 2>/dev/null | grep -q "stage-"; then
+          echo "🗑️ Removing manually-created Redis (compose will recreate it)"
+          docker stop stage-docsplus-redis 2>/dev/null || true
+          docker rm stage-docsplus-redis 2>/dev/null || true
+        fi
       fi
-      docker exec stage-docsplus-redis redis-cli ping | grep -q PONG && echo "✅ Redis healthy"
+      docker network create ${{ env.DOCKER_NETWORK }} 2>/dev/null || true
 
    - name: 🛑 Stop Current Stack
      run: |
@@ -81,19 +77,16 @@ jobs:
         -p stage-docsplus \
         down || true
 
-      - name: 🏗️ Build Docker Images
-        run: |
-          # Source all env vars so docker-compose can use them for build args
-          set -a
-          source ${{ env.ENV_FILE }}
-          set +a
-
-          echo "DATABASE_URL is set: ${DATABASE_URL:0:50}..."
-
-          docker-compose -f ${{ env.COMPOSE_FILE }} \
-            --env-file ${{ env.ENV_FILE }} \
-            -p stage-docsplus \
-            build
+   - name: 🏗️ Build Docker Images
+     run: |
+      set -a
+      source ${{ env.ENV_FILE }}
+      set +a
+      echo "DATABASE_URL is set: ${DATABASE_URL:0:50}..."
+      docker-compose -f ${{ env.COMPOSE_FILE }} \
+        --env-file ${{ env.ENV_FILE }} \
+        -p stage-docsplus \
+        build
 
    - name: 🚀 Deploy Stack
      run: |

@@ -84,46 +84,23 @@ jobs:
         echo "🆕 First deployment: BLUE 📘"
       fi
 
-   - name: 🔍 Ensure Redis is Running
+   - name: 🧹 Cleanup Old Manual Redis (One-time migration)
      run: |
-      docker network create ${{ env.DOCKER_NETWORK }} 2>/dev/null || true
+      # Remove any manually-created Redis containers from old workflow
+      # Compose will now manage Redis with the same container name
       if docker ps -a --format '{{.Names}}' | grep -q "^prod-docsplus-redis$"; then
-        if ! docker ps --format '{{.Names}}' | grep -q "^prod-docsplus-redis$"; then
-          echo "🔄 Starting existing Redis container..."
-          docker start prod-docsplus-redis
-          sleep 3
+        echo "🔄 Found old Redis container, checking if compose-managed..."
+        # If Redis was created by docker run (not compose), remove it
+        if ! docker inspect prod-docsplus-redis --format '{{index .Config.Labels "com.docker.compose.project"}}' 2>/dev/null | grep -q "prod-"; then
+          echo "🗑️ Removing manually-created Redis (compose will recreate it)"
+          docker stop prod-docsplus-redis 2>/dev/null || true
+          docker rm prod-docsplus-redis 2>/dev/null || true
+        else
+          echo "✅ Redis already managed by compose"
         fi
-        docker network connect ${{ env.DOCKER_NETWORK }} prod-docsplus-redis 2>/dev/null || true
-      else
-        if ss -tuln 2>/dev/null | grep -q ":6379 "; then
-          echo "⚠️ Port 6379 already in use"
-          if redis-cli ping 2>/dev/null | grep -q PONG; then
-            echo "✅ Existing Redis on port 6379 is healthy"
-            exit 0
-          else
-            echo "❌ Port 6379 in use but not Redis"
-            exit 1
-          fi
-        fi
-        echo "🚀 Starting new Redis container..."
-        docker run -d \
-          --name prod-docsplus-redis \
-          --network ${{ env.DOCKER_NETWORK }} \
-          --restart unless-stopped \
-          -p 6379:6379 \
-          -v prod-redis-data:/data \
-          redis:alpine \
-          redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy noeviction
-        sleep 5
       fi
-      if docker exec prod-docsplus-redis redis-cli ping 2>/dev/null | grep -q PONG; then
-        echo "✅ Redis healthy (container)"
-      elif redis-cli ping 2>/dev/null | grep -q PONG; then
-        echo "✅ Redis healthy (host)"
-      else
-        echo "❌ Redis health check failed"
-        exit 1
-      fi
+      # Create network if not exists
+      docker network create ${{ env.DOCKER_NETWORK }} 2>/dev/null || true
 
    - name: 🏗️ Build Docker Images
      run: |

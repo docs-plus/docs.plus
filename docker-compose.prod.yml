@@ -16,9 +16,10 @@ services:
  # ===========================================================================
 
  # ---------------------------------------------------------------------------
- # PostgreSQL Database (Shared by Hocuspocus)
+ # PostgreSQL Database (LOCAL/DEV ONLY - Production uses managed DB)
  # ---------------------------------------------------------------------------
  postgres:
+  profiles: ["local"] # Only starts with: docker-compose --profile local up
   image: postgres:17-alpine
   container_name: docsy-postgres
   restart: unless-stopped
@@ -49,16 +50,15 @@ services:
      memory: 512M
 
  # ---------------------------------------------------------------------------
- # Redis Cache & Pub/Sub (Shared by Hocuspocus)
+ # Redis Cache & Pub/Sub (Shared across blue/green deployments)
  # ---------------------------------------------------------------------------
- # Using "noeviction" (not "allkeys-lru") to prevent silent data loss in collaboration/pub-sub
  redis:
   image: redis:alpine
-  container_name: docsy-redis
+  container_name: prod-docsplus-redis
   restart: unless-stopped
-  command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy noeviction --tcp-backlog 511 --timeout 300 --tcp-keepalive 300
-  ports:
-   - "${REDIS_PORT:-6379}:6379"
+  command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy noeviction --tcp-backlog 511 --timeout 300 --tcp-keepalive 300
+  expose:
+   - "6379"
   volumes:
    - redis_data:/data
   healthcheck:
@@ -121,11 +121,7 @@ services:
   # Multiple replicas can't bind to same host port
   expose:
    - "4000"
-  depends_on:
-   postgres:
-    condition: service_healthy
-   redis:
-    condition: service_healthy
+  # No depends_on - postgres (DigitalOcean) and redis (external container) are external
   healthcheck:
    test:
     [
@@ -188,11 +184,7 @@ services:
   # Multiple replicas can't bind to same host port
   expose:
    - "4001"
-  depends_on:
-   postgres:
-    condition: service_healthy
-   redis:
-    condition: service_healthy
+  # No depends_on - postgres (DigitalOcean) and redis (external container) are external
   healthcheck:
    test:
     [
@@ -260,11 +252,7 @@ services:
   # Multiple replicas can't bind to same host port
   expose:
    - "4002"
-  depends_on:
-   postgres:
-    condition: service_healthy
-   redis:
-    condition: service_healthy
+  # No depends_on - postgres (DigitalOcean) and redis (external container) are external
   healthcheck:
    test:
     [
@@ -437,4 +425,4 @@ volumes:
 networks:
  docsy-network:
   driver: bridge
-  name: docsy-network
+  name: prod-docsplus-network
