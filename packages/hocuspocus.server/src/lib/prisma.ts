@@ -19,14 +19,13 @@ const globalForPrisma = globalThis as unknown as {
  * - Graceful shutdown
  */
 
-// Parse DATABASE_URL to extract connection params
+// Get DATABASE_URL - preserve full URL including query params (?sslmode=require, etc.)
 const getDatabaseUrl = (): string => {
   const url = process.env.DATABASE_URL
   if (!url) {
     throw new Error('DATABASE_URL environment variable is required')
   }
-  // Remove any existing pool params from URL as we handle them via Pool config
-  return url.split('?')[0]
+  return url
 }
 
 // Connection pool configuration
@@ -44,9 +43,10 @@ const poolConfig = {
   statement_timeout: parseInt(process.env.DB_STATEMENT_TIMEOUT || '30000', 10),
   // Query timeout
   query_timeout: parseInt(process.env.DB_QUERY_TIMEOUT || '30000', 10),
-  // Allow pool to create connections on-demand (pg Pool doesn't support min, but this helps)
-  // Connections are created lazily when needed and kept alive longer
-  // The pool automatically removes dead connections and creates new ones as needed
+  // SSL config:
+  // - Production: Enable SSL for managed DBs (DigitalOcean, etc.) - rejectUnauthorized: false for self-signed certs
+  // - Development: undefined = no SSL override, uses connectionString defaults (local Docker Postgres typically has no SSL)
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined,
 }
 
 // Create PostgreSQL connection pool
