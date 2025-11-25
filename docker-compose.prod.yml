@@ -121,8 +121,6 @@ services:
    - "traefik.http.routers.rest-api.entrypoints=websecure"
    - "traefik.http.routers.rest-api.tls.certresolver=letsencrypt"
    - "traefik.http.routers.rest-api.service=rest-api"
-   # Middleware: rate limiting + retry
-   - "traefik.http.routers.rest-api.middlewares=rate-limit-api@file,retry@file"
    - "traefik.http.services.rest-api.loadbalancer.server.port=4000"
    # Health check - only route to healthy containers
    - "traefik.http.services.rest-api.loadbalancer.healthcheck.path=/health"
@@ -323,8 +321,6 @@ services:
    - "traefik.http.routers.webapp.entrypoints=websecure"
    - "traefik.http.routers.webapp.tls.certresolver=letsencrypt"
    - "traefik.http.routers.webapp.service=webapp"
-   # Middleware: rate limiting
-   - "traefik.http.routers.webapp.middlewares=rate-limit-global@file"
    - "traefik.http.services.webapp.loadbalancer.server.port=3000"
    # Health check - Traefik only routes to healthy containers
    - "traefik.http.services.webapp.loadbalancer.healthcheck.path=/api/health"

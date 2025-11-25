@@ -15,10 +15,10 @@ http:
         frameDeny: true
         contentTypeNosniff: true
         browserXssFilter: true
-        referrerPolicy: "strict-origin-when-cross-origin"
+        referrerPolicy: 'strict-origin-when-cross-origin'
         customResponseHeaders:
-          X-Powered-By: ""
-          Server: ""
+          X-Powered-By: ''
+          Server: ''
 
     # -------------------------------------------------------------------------
     # Compression
