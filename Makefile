@@ -3,7 +3,7 @@
 # Manages: Hocuspocus Server + Webapp + Infrastructure
 # =============================================================================
 
-.PHONY: help build build-dev up-prod up-dev up-local infra-up infra-down infra-logs dev-local dev-backend dev-webapp dev-rest dev-ws dev-worker down logs logs-webapp logs-backend restart clean scale scale-webapp scale-hocuspocus ps stats supabase-start supabase-stop supabase-status
+.PHONY: help build build-dev up-prod up-dev up-local infra-up infra-down infra-logs dev-local dev-backend dev-webapp dev-rest dev-ws dev-worker down logs logs-webapp logs-backend restart clean scale scale-webapp scale-hocuspocus ps stats supabase-start supabase-stop supabase-status deploy-prod-all rollback-prod status-prod
 
 help:
 	@echo "Docsplus Full Stack Docker Commands"
@@ -28,6 +28,11 @@ help:
 	@echo "  make dev-ws             - Start WebSocket server only"
 	@echo "  make dev-worker         - Start Worker only"
 	@echo "  make migrate            - Run database migrations"
+	@echo ""
+	@echo "Production Deployment (Blue-Green Docker Compose):"
+	@echo "  make deploy-prod-all         - Deploy full stack (frontend + backend)"
+	@echo "  make rollback-prod           - Rollback to previous deployment"
+	@echo "  make status-prod             - Check production status"
 	@echo ""
 	@echo "Scaling (production only):"
 	@echo "  make scale-webapp      - Scale webapp to 3 replicas"
@@ -394,3 +399,18 @@ supabase-stop:
 supabase-status:
 	@echo "📊 Supabase local instance status:"
 	@cd packages/supabase && bun run status
+
+# =============================================================================
+# PRODUCTION DEPLOYMENT COMMANDS
+# =============================================================================
+
+deploy-prod-all:
+	@echo "🚀 Deploying full production stack (Blue-Green with Docker Compose)..."
+	@./scripts/deploy-prod-manual.sh all
+
+rollback-prod:
+	@echo "🔄 Rolling back production deployment..."
+	@./scripts/rollback-prod.sh
+
+status-prod:
+	@./scripts/status-prod.sh

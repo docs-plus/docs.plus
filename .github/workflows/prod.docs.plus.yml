@@ -1,150 +1,244 @@
-# Production CI/CD Pipeline for docs.plus
-name: CI-Production
+# ============================================================================
+# Production CI/CD Pipeline - Blue-Green Zero Downtime Deployment
+# ============================================================================
+#
+# DIRECTORY STRUCTURE ON SERVER:
+# /opt/projects/prod.docs.plus/
+# ├── .env                              ← Main environment file (you edit this)
+# └── app/docs.plus/docs.plus/          ← Git repo (GitHub Actions workspace)
+#     ├── docker-compose.prod.yml
+#     ├── .env.production               ← Auto-generated from parent .env
+#     └── packages/
+#
+# The self-hosted runner workspace is: /opt/projects/prod.docs.plus/app/docs.plus/docs.plus
+# The .env file lives at: /opt/projects/prod.docs.plus/.env (3 levels up)
+#
+# ============================================================================
 
-# Triggered on push or pull request to main branch
+name: CI-Production-BlueGreen
+
 on:
  push:
   branches: [main]
  pull_request:
   branches: [main]
 
+env:
+ # .env location (3 levels up from app directory)
+ ENV_SOURCE: /opt/projects/prod.docs.plus/.env
+ ENV_FILE: .env.production
+ # Docker settings
+ COMPOSE_FILE: docker-compose.prod.yml
+ DOCKER_NETWORK: prod-docsplus-network
+ # Ports for blue-green
+ FRONTEND_PORT_BLUE: 3001
+ FRONTEND_PORT_GREEN: 3011
+
 jobs:
- # ============================================================
- # UPTIME KUMA - Independent pipeline (no dependencies)
- # ============================================================
- build-uptime-kuma:
+ deploy-stack:
+  name: 🚀 Deploy Full Stack (Blue-Green)
+  runs-on: prod.docs.plus
+  if: contains(github.event.head_commit.message, 'build') && (contains(github.event.head_commit.message, 'front') || contains(github.event.head_commit.message, 'back'))
+
+  steps:
+   - name: 📦 Checkout Code
+     uses: actions/checkout@v4
+     with:
+      fetch-depth: 1
+      clean: false
+
+   - name: 🥟 Setup Bun
+     uses: oven-sh/setup-bun@v2
+     with:
+      bun-version: latest
+
+   - name: 📥 Install Dependencies
+     run: bun install --frozen-lockfile
+
+   - name: 🔐 Prepare Environment
+     run: |
+      echo "📁 Current directory: $(pwd)"
+      echo "📁 .env source: ${{ env.ENV_SOURCE }}"
+
+      # Check if main .env exists
+      if [ ! -f "${{ env.ENV_SOURCE }}" ]; then
+        echo "❌ .env file not found at ${{ env.ENV_SOURCE }}"
+        exit 1
+      fi
+
+      # Copy .env to current directory as .env.production
+      cp "${{ env.ENV_SOURCE }}" "${{ env.ENV_FILE }}"
+
+      # Verify DATABASE_URL exists
+      if ! grep -q "DATABASE_URL" "${{ env.ENV_FILE }}"; then
+        echo "❌ DATABASE_URL not found in .env file"
+        exit 1
+      fi
+
+      echo "✅ Environment prepared"
+
+   - name: 🔍 Detect Current Deployment Color
+     id: detect-color
+     run: |
+      if docker ps --format '{{.Names}}' | grep -q "^prod-blue-"; then
+        echo "CURRENT_COLOR=blue" >> $GITHUB_OUTPUT
+        echo "NEW_COLOR=green" >> $GITHUB_OUTPUT
+        echo "CURRENT_PORT=${{ env.FRONTEND_PORT_BLUE }}" >> $GITHUB_OUTPUT
+        echo "NEW_PORT=${{ env.FRONTEND_PORT_GREEN }}" >> $GITHUB_OUTPUT
+        echo "📘 Current: BLUE → Deploying: GREEN 🟢"
+      elif docker ps --format '{{.Names}}' | grep -q "^prod-green-"; then
+        echo "CURRENT_COLOR=green" >> $GITHUB_OUTPUT
+        echo "NEW_COLOR=blue" >> $GITHUB_OUTPUT
+        echo "CURRENT_PORT=${{ env.FRONTEND_PORT_GREEN }}" >> $GITHUB_OUTPUT
+        echo "NEW_PORT=${{ env.FRONTEND_PORT_BLUE }}" >> $GITHUB_OUTPUT
+        echo "🟢 Current: GREEN → Deploying: BLUE 📘"
+      else
+        echo "CURRENT_COLOR=none" >> $GITHUB_OUTPUT
+        echo "NEW_COLOR=blue" >> $GITHUB_OUTPUT
+        echo "CURRENT_PORT=none" >> $GITHUB_OUTPUT
+        echo "NEW_PORT=${{ env.FRONTEND_PORT_BLUE }}" >> $GITHUB_OUTPUT
+        echo "🆕 First deployment: BLUE 📘"
+      fi
+
+   - name: 🔍 Ensure Redis is Running
+     run: |
+      docker network create ${{ env.DOCKER_NETWORK }} 2>/dev/null || true
+
+      if ! docker ps | grep -q "prod-docsplus-redis"; then
+        echo "🚀 Starting Redis..."
+        docker run -d \
+          --name prod-docsplus-redis \
+          --network ${{ env.DOCKER_NETWORK }} \
+          --restart unless-stopped \
+          -p 6379:6379 \
+          -v prod-redis-data:/data \
+          redis:alpine \
+          redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy noeviction
+        sleep 5
+      fi
+
+      docker exec prod-docsplus-redis redis-cli ping | grep -q PONG && echo "✅ Redis healthy" || exit 1
+
+   - name: 🏗️ Build Docker Images
+     run: |
+      echo "🔨 Building ${{ steps.detect-color.outputs.NEW_COLOR }} stack..."
+
+      docker-compose -f ${{ env.COMPOSE_FILE }} \
+        --env-file ${{ env.ENV_FILE }} \
+        -p prod-${{ steps.detect-color.outputs.NEW_COLOR }} \
+        build
+
+      echo "✅ Images built"
+
+   - name: 🚀 Deploy New Stack
+     run: |
+      # Update env file with new frontend port
+      sed -i "s/NGINX_HTTP_PORT=.*/NGINX_HTTP_PORT=${{ steps.detect-color.outputs.NEW_PORT }}/" ${{ env.ENV_FILE }}
+
+      docker-compose -f ${{ env.COMPOSE_FILE }} \
+        --env-file ${{ env.ENV_FILE }} \
+        -p prod-${{ steps.detect-color.outputs.NEW_COLOR }} \
+        up -d \
+        --scale webapp=2 \
+        --scale rest-api=2 \
+        --scale hocuspocus-server=2 \
+        --scale hocuspocus-worker=1
+
+      echo "✅ Stack deployed"
+
+   - name: ⏳ Wait for Services
+     run: sleep 30
+
+   - name: 🩺 Health Check - Frontend
+     run: |
+      WEBAPP=$(docker ps --filter "name=prod-${{ steps.detect-color.outputs.NEW_COLOR }}-webapp" --format "{{.Names}}" | head -1)
+
+      if [ -z "$WEBAPP" ]; then
+        echo "❌ No webapp container found"
+        exit 1
+      fi
+
+      for i in {1..30}; do
+        if docker exec $WEBAPP bun -e "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))" &> /dev/null; then
+          echo "✅ Frontend healthy"
+          exit 0
+        fi
+        echo "⏳ Attempt $i/30..."
+        sleep 2
+      done
+
+      echo "❌ Frontend health check failed"
+      docker logs $WEBAPP --tail 100
+      exit 1
+
+   - name: 🩺 Health Check - Backend
+     run: |
+      REST=$(docker ps --filter "name=prod-${{ steps.detect-color.outputs.NEW_COLOR }}-rest-api" --format "{{.Names}}" | head -1)
+      docker exec $REST bun -e "fetch('http://localhost:4000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))" && echo "✅ REST API healthy" || (docker logs $REST --tail 50 && exit 1)
+
+      WS=$(docker ps --filter "name=prod-${{ steps.detect-color.outputs.NEW_COLOR }}-hocuspocus-server" --format "{{.Names}}" | head -1)
+      docker exec $WS bun -e "fetch('http://localhost:4001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))" && echo "✅ WebSocket healthy" || (docker logs $WS --tail 50 && exit 1)
+
+      WORKER=$(docker ps --filter "name=prod-${{ steps.detect-color.outputs.NEW_COLOR }}-hocuspocus-worker" --format "{{.Names}}" | head -1)
+      docker exec $WORKER bun -e "fetch('http://localhost:4002/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))" && echo "✅ Worker healthy" || (docker logs $WORKER --tail 50 && exit 1)
+
+   - name: 🔄 Update Nginx
+     run: |
+      sudo cp /etc/nginx/sites-available/docs.plus /etc/nginx/sites-available/docs.plus.backup.$(date +%Y%m%d_%H%M%S)
+      sudo sed -i "s/server localhost:[0-9]\+;/server localhost:${{ steps.detect-color.outputs.NEW_PORT }};/" /etc/nginx/sites-available/docs.plus
+      sudo nginx -t && sudo nginx -s reload
+      echo "✅ Nginx updated to port ${{ steps.detect-color.outputs.NEW_PORT }}"
+
+   - name: ⏳ Grace Period
+     run: sleep 15
+
+   - name: 🛑 Remove Old Stack
+     if: steps.detect-color.outputs.CURRENT_COLOR != 'none'
+     run: |
+      docker-compose -f ${{ env.COMPOSE_FILE }} \
+        --env-file ${{ env.ENV_FILE }} \
+        -p prod-${{ steps.detect-color.outputs.CURRENT_COLOR }} \
+        down
+      echo "✅ Old stack (${{ steps.detect-color.outputs.CURRENT_COLOR }}) removed"
+
+   - name: 🧹 Cleanup
+     run: |
+      docker image prune -f
+      docker volume prune -f --filter "label!=keep"
+
+   - name: 📊 Summary
+     run: |
+      echo "======================================"
+      echo "✅ DEPLOYMENT SUCCESSFUL"
+      echo "======================================"
+      echo "Stack: prod-${{ steps.detect-color.outputs.NEW_COLOR }}"
+      echo "Port: ${{ steps.detect-color.outputs.NEW_PORT }}"
+      docker ps --filter "name=prod-${{ steps.detect-color.outputs.NEW_COLOR }}-" --format "table {{.Names}}\t{{.Status}}"
+      echo "URLs: https://docs.plus | https://prodback.docs.plus"
+      echo "======================================"
+
+ # ==========================================================================
+ # UPTIME KUMA
+ # ==========================================================================
+ deploy-uptime-kuma:
   name: 🔔 Deploy Uptime Kuma
   runs-on: prod.docs.plus
   if: contains(github.event.head_commit.message, 'build') && contains(github.event.head_commit.message, 'uptime-kuma')
+
   steps:
-   - name: 📦 Checkout code
-     uses: actions/checkout@v4
-     with:
-      fetch-depth: 1
-      clean: false
-
-   - name: 🚀 Deploy Uptime Kuma
-     run: make build_uptime_kuma
-
- # ============================================================
- # FRONTEND - Build and deploy Next.js app with PM2
- # ============================================================
- build-front:
-  name: 🎨 Deploy Frontend
-  runs-on: prod.docs.plus
-  if: contains(github.event.head_commit.message, 'build') && contains(github.event.head_commit.message, 'front')
-  steps:
-   - name: 📦 Checkout code
-     uses: actions/checkout@v4
-     with:
-      fetch-depth: 1
-      clean: false
-
-   - name: 🥟 Setup Bun
-     uses: oven-sh/setup-bun@v2
-     with:
-      bun-version: latest
-
-   - name: 📥 Install dependencies
-     run: bun install --frozen-lockfile
-
-   - name: 🔐 Ensure .env exists
+   - name: 🚀 Deploy
      run: |
-      if [ -f "../../../.env" ]; then
-        cp ../../../.env packages/webapp/.env
-      elif [ -f "../../.env" ]; then
-        cp ../../.env packages/webapp/.env
-      elif [ -f ".env" ]; then
-        cp .env packages/webapp/.env
-      fi
-     continue-on-error: true
+      docker network create ${{ env.DOCKER_NETWORK }} 2>/dev/null || true
+      docker stop uptime-kuma 2>/dev/null || true
+      docker rm uptime-kuma 2>/dev/null || true
 
-   - name: 🚀 Build & Deploy Frontend
-     run: make build_front_production
+      docker run -d \
+        --name uptime-kuma \
+        --network ${{ env.DOCKER_NETWORK }} \
+        --restart unless-stopped \
+        -p 3001:3001 \
+        -v uptime-kuma-data:/app/data \
+        louislam/uptime-kuma:latest
 
-   - name: 🩺 Health check
-     run: |
-      echo "⏳ Waiting for app to be ready..."
       sleep 15
-      curl -f http://localhost:3001/api/health || (echo "❌ Health check failed" && exit 1)
-      echo "✅ Frontend is healthy!"
-
- # ============================================================
- # BACKEND - Build and deploy Hocuspocus server with Docker
- # ============================================================
- build-back:
-  name: 🔧 Deploy Backend
-  runs-on: prod.docs.plus
-  if: contains(github.event.head_commit.message, 'build') && contains(github.event.head_commit.message, 'back')
-  steps:
-   - name: 📦 Checkout code
-     uses: actions/checkout@v4
-     with:
-      fetch-depth: 1
-      clean: false
-
-   - name: 🥟 Setup Bun
-     uses: oven-sh/setup-bun@v2
-     with:
-      bun-version: latest
-
-   - name: 📥 Install dependencies
-     run: bun install --frozen-lockfile
-
-   - name: 🔐 Ensure .env is available
-     run: |
-      if [ -f "../../../.env" ]; then
-        cp ../../../.env packages/hocuspocus.server/.env
-      elif [ -f "../../.env" ]; then
-        cp ../../.env packages/hocuspocus.server/.env
-      elif [ -f ".env" ]; then
-        cp .env packages/hocuspocus.server/.env
-      fi
-     continue-on-error: true
-
-   - name: 🐳 Build & Deploy Backend
-     run: make build_hocuspocus.server_prod
-     env:
-      DATABASE_URL: ${{ secrets.STAGE_DATABASE_URL }}
-
-   - name: 📊 Check containers
-     run: |
-      echo "🔍 Checking running containers..."
-      docker ps | grep prod-docsplus || echo "⚠️  Warning: No prod-docsplus containers found"
-      echo "✅ Backend deployment completed!"
-
-# ============================================================
-# 📖 USAGE EXAMPLES
-# ============================================================
-#
-# Trigger specific pipelines by including keywords in commit messages:
-#
-# 1️⃣  Frontend only:
-#    git commit -m "Feature: New UI component (build front)"
-#
-# 2️⃣  Backend only:
-#    git commit -m "Fix: WebSocket connection (build back)"
-#
-# 3️⃣  Uptime Kuma only:
-#    git commit -m "Update monitoring (build uptime-kuma)"
-#
-# 4️⃣  Frontend + Backend:
-#    git commit -m "Full deploy (build front back)"
-#
-# 5️⃣  Everything at once:
-#    git commit -m "Major release (build front back uptime-kuma)"
-#
-# Then push to main:
-#    git push origin main
-#
-# ============================================================
-# 🔍 PIPELINE LOGIC
-# ============================================================
-#
-# - All jobs are independent and self-contained
-# - Each job installs Bun and dependencies
-# - .env files are preserved during deployment
-# - Health checks ensure successful deployments
-# - No shared state between jobs (simpler and more reliable)
-#
-# ============================================================
+      curl -f -s http://localhost:3001 > /dev/null && echo "✅ Uptime Kuma running" || echo "⚠️ May need more time"
