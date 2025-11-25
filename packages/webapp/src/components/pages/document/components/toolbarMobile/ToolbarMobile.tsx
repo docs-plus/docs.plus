@@ -14,6 +14,7 @@ const ToolbarMobile = () => {
   } = useStore((state) => state.settings)
 
   const { createComment } = useTurnSelectedTextIntoComment()
+  const { isKeyboardOpen } = useStore((state) => state)
 
   useEffect(() => {
     if (isEditable) {
@@ -21,9 +22,7 @@ const ToolbarMobile = () => {
     }
   }, [isEditable])
 
-  if (!editor) {
-    return null
-  }
+  if (!editor || !isKeyboardOpen) return null
 
   const buttons = [
     {

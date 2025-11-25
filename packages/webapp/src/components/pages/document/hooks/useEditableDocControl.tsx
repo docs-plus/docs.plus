@@ -7,31 +7,33 @@ const useEditableDocControl = () => {
     editor: { instance: editor, loading }
   } = useStore((state) => state.settings)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
+  const { isKeyboardOpen } = useStore((state) => state)
 
   useEffect(() => {
     if (!editor) return
-      const isKeyboardOpen = useStore.getState().isKeyboardOpen
 
     // TODO: update text selection, when editable change to false, scrolling is getting hard when we have a text range selected
     const timeout = setTimeout(() => {
+      const { isKeyboardOpen } = useStore.getState()
 
-      if (isKeyboardOpen) {
+      if (!isKeyboardOpen) {
         const divProseMirror = document.querySelector('.tiptap.ProseMirror') as HTMLElement
         divProseMirror?.setAttribute('contenteditable', 'false')
-        useStore.getState().setWorkspaceEditorSetting('isEditable', false)
         editor?.setEditable(false)
       } else {
         const divProseMirror = document.querySelector('.tiptap.ProseMirror') as HTMLElement
         divProseMirror?.setAttribute('contenteditable', 'true')
-        setWorkspaceEditorSetting('isEditable', true)
         editor?.setEditable(true)
       }
-
     }, 500)
     return () => {
       clearTimeout(timeout)
     }
   }, [deviceDetect, editor, loading])
+
+  useEffect(() => {
+    setWorkspaceEditorSetting('isEditable', !isKeyboardOpen ? false : true)
+  }, [isKeyboardOpen, setWorkspaceEditorSetting])
 }
 
 export default useEditableDocControl

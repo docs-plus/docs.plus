@@ -35,8 +35,6 @@ const MobileLayout = () => {
   if (isHistoryView) return <MobileHistory />
 
   return (
-
-
     <div
       className={`tiptap relative flex w-full flex-col ${deviceClass}`}
       style={{
@@ -49,7 +47,7 @@ const MobileLayout = () => {
       <MobileEditor />
       <BigPencilBtn />
       <BottomSheet />
-      <div className="sticky mobileToolbarBottom bottom-0 left-0 z-20 w-full bg-white">
+      <div className="mobileToolbarBottom sticky bottom-0 left-0 z-20 w-full bg-white">
         <ToolbarMobile />
       </div>
     </div>
