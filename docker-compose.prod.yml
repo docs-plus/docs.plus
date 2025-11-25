@@ -50,9 +50,12 @@ services:
      memory: 512M
 
  # ---------------------------------------------------------------------------
- # Redis Cache & Pub/Sub (Shared across blue/green deployments)
+ # Redis Cache & Pub/Sub (Shared infrastructure - managed separately from blue/green)
  # ---------------------------------------------------------------------------
+ # NOTE: In production, Redis is started separately via docker run (not compose)
+ # to avoid conflicts during blue/green deployments. Use --profile infra to start via compose.
  redis:
+  profiles: ["infra"] # Only starts with: docker-compose --profile infra up redis
   image: redis:alpine
   container_name: prod-docsplus-redis
   restart: unless-stopped
@@ -364,9 +367,10 @@ services:
    - "com.docker.compose.service=webapp"
 
  # ---------------------------------------------------------------------------
- # Nginx Reverse Proxy
+ # Nginx Reverse Proxy (for local dev only - production uses host nginx)
  # ---------------------------------------------------------------------------
  nginx:
+  profiles: ["local"] # Production uses host nginx for blue/green routing
   image: nginx:alpine
   container_name: docsy-nginx
   ports:

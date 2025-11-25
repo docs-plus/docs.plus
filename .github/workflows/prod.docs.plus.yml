@@ -84,23 +84,36 @@ jobs:
         echo "🆕 First deployment: BLUE 📘"
       fi
 
-   - name: 🧹 Cleanup Old Manual Redis (One-time migration)
+   - name: 🧹 Pre-deploy Cleanup
      run: |
-      # Remove any manually-created Redis containers from old workflow
-      # Compose will now manage Redis with the same container name
-      if docker ps -a --format '{{.Names}}' | grep -q "^prod-docsplus-redis$"; then
-        echo "🔄 Found old Redis container, checking if compose-managed..."
-        # If Redis was created by docker run (not compose), remove it
-        if ! docker inspect prod-docsplus-redis --format '{{index .Config.Labels "com.docker.compose.project"}}' 2>/dev/null | grep -q "prod-"; then
-          echo "🗑️ Removing manually-created Redis (compose will recreate it)"
-          docker stop prod-docsplus-redis 2>/dev/null || true
-          docker rm prod-docsplus-redis 2>/dev/null || true
-        else
-          echo "✅ Redis already managed by compose"
-        fi
-      fi
       # Create network if not exists
       docker network create ${{ env.DOCKER_NETWORK }} 2>/dev/null || true
+
+      # Clean up any failed/orphan containers from the NEW stack (in case previous deploy failed)
+      NEW_COLOR="${{ steps.detect-color.outputs.NEW_COLOR }}"
+      echo "🧹 Cleaning up any orphan containers from prod-${NEW_COLOR}..."
+      docker-compose -f ${{ env.COMPOSE_FILE }} --env-file ${{ env.ENV_FILE }} -p prod-${NEW_COLOR} down --remove-orphans 2>/dev/null || true
+
+      # Ensure Redis is running (shared across blue/green - started once, never rotated)
+      if docker ps --format '{{.Names}}' | grep -q "^prod-docsplus-redis$"; then
+        echo "✅ Redis already running"
+      elif docker ps -a --format '{{.Names}}' | grep -q "^prod-docsplus-redis$"; then
+        echo "🔄 Starting stopped Redis container..."
+        docker start prod-docsplus-redis
+      else
+        echo "🚀 Starting Redis (shared infrastructure)..."
+        docker run -d \
+          --name prod-docsplus-redis \
+          --network ${{ env.DOCKER_NETWORK }} \
+          --restart unless-stopped \
+          -v docsy-redis-prod:/data \
+          redis:alpine \
+          redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy noeviction
+      fi
+
+      # Wait for Redis to be ready
+      sleep 3
+      docker exec prod-docsplus-redis redis-cli ping | grep -q PONG && echo "✅ Redis healthy" || echo "⚠️ Redis may need more time"
 
    - name: 🏗️ Build Docker Images
      run: |
@@ -123,6 +136,8 @@ jobs:
    - name: 🚀 Deploy New Stack
      run: |
       sed -i "s/NGINX_HTTP_PORT=.*/NGINX_HTTP_PORT=${{ steps.detect-color.outputs.NEW_PORT }}/" ${{ env.ENV_FILE }}
+
+      # Deploy app services only (redis/postgres/nginx have profiles, won't start by default)
       docker-compose -f ${{ env.COMPOSE_FILE }} \
         --env-file ${{ env.ENV_FILE }} \
         -p prod-${{ steps.detect-color.outputs.NEW_COLOR }} \
@@ -131,6 +146,12 @@ jobs:
         --scale rest-api=2 \
         --scale hocuspocus-server=2 \
         --scale hocuspocus-worker=1
+
+      # Connect app containers to the shared network where Redis lives
+      for container in $(docker ps --filter "name=prod-${{ steps.detect-color.outputs.NEW_COLOR }}-" --format "{{.Names}}"); do
+        docker network connect ${{ env.DOCKER_NETWORK }} $container 2>/dev/null || true
+      done
+
       echo "✅ Stack deployed"
 
    - name: ⏳ Wait for Services
@@ -198,6 +219,24 @@ jobs:
       docker ps --filter "name=prod-${{ steps.detect-color.outputs.NEW_COLOR }}-" --format "table {{.Names}}\t{{.Status}}"
       echo "URLs: https://docs.plus | https://prodback.docs.plus"
       echo "======================================"
+
+   - name: 🚨 Cleanup on Failure
+     if: failure()
+     run: |
+      echo "⚠️ Deployment failed - cleaning up failed stack..."
+      NEW_COLOR="${{ steps.detect-color.outputs.NEW_COLOR }}"
+
+      # Stop and remove the failed stack's containers
+      docker-compose -f ${{ env.COMPOSE_FILE }} \
+        --env-file ${{ env.ENV_FILE }} \
+        -p prod-${NEW_COLOR} \
+        down --remove-orphans 2>/dev/null || true
+
+      # Also clean up any orphan containers with the new color prefix
+      docker ps -a --filter "name=prod-${NEW_COLOR}-" --format "{{.Names}}" | xargs -r docker rm -f 2>/dev/null || true
+
+      echo "🧹 Failed stack cleaned up"
+      echo "💡 Fix the issue and push again to retry deployment"
 
  deploy-uptime-kuma:
   name: 🔔 Deploy Uptime Kuma
