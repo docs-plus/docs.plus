@@ -202,11 +202,17 @@ export const setupMiddleware = (app: Hono) => {
   // Production-ready Pino logger
   app.use('*', pinoLogger())
 
-  // Rate limiting (global) - Skip OPTIONS requests
+  // Rate limiting (global) - Skip OPTIONS and health check requests
   const rateLimitMax = parseInt(process.env.RATE_LIMIT_MAX || '100', 10)
   app.use('*', async (c, next) => {
     // Skip rate limiting for OPTIONS preflight requests
     if (c.req.method === 'OPTIONS') {
+      return next()
+    }
+
+    // Skip rate limiting for health check endpoints (Traefik, k8s probes, etc.)
+    const path = new URL(c.req.url).pathname
+    if (path === '/health' || path.startsWith('/health/')) {
       return next()
     }
 
