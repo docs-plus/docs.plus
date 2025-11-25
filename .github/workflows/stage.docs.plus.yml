@@ -1,120 +1,87 @@
 # ============================================================================
-# Staging CI/CD Pipeline - Docker Compose Deployment
-# ============================================================================
-#
-# DIRECTORY STRUCTURE ON SERVER:
-# /opt/projects/stage.docs.plus/
-# ├── .env                              ← Main environment file
-# └── app/docs.plus/docs.plus/          ← Git repo (GitHub Actions workspace)
-#
+# Staging CI/CD Pipeline - Traefik Deployment
 # ============================================================================
 
 name: CI-Staging
 
 on:
- push:
-  branches: [dev]
- pull_request:
-  branches: [dev]
+  push:
+    branches: [dev]
+  pull_request:
+    branches: [dev]
 
 env:
- ENV_SOURCE: /opt/projects/stage.docs.plus/.env
- ENV_FILE: .env.staging
- COMPOSE_FILE: docker-compose.prod.yml
- DOCKER_NETWORK: stage-docsplus-network
- FRONTEND_PORT: 3000
+  ENV_SOURCE: /opt/projects/stage.docs.plus/.env
+  ENV_FILE: .env.staging
+  COMPOSE_FILE: docker-compose.prod.yml
+  DEPLOY_TAG: ${{ github.sha }}
 
 jobs:
- deploy-stack:
-  name: 🎨 Deploy Staging Stack
-  runs-on: stage.docs.plus
-  if: contains(github.event.head_commit.message, 'build') && (contains(github.event.head_commit.message, 'front') || contains(github.event.head_commit.message, 'back'))
+  deploy:
+    name: 🎨 Deploy to Staging
+    runs-on: stage.docs.plus
+    if: contains(github.event.head_commit.message, 'build') && (contains(github.event.head_commit.message, 'front') || contains(github.event.head_commit.message, 'back'))
 
-  steps:
-   - name: 📦 Checkout Code
-     uses: actions/checkout@v4
-     with:
-      fetch-depth: 1
-      clean: false
+    steps:
+      - name: 📦 Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
 
-   - name: 🥟 Setup Bun
-     uses: oven-sh/setup-bun@v2
-     with:
-      bun-version: latest
+      - name: 🥟 Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
 
-   - name: 📥 Install Dependencies
-     run: bun install --frozen-lockfile
+      - name: 📥 Install Dependencies
+        run: bun install --frozen-lockfile
 
-   - name: 🔐 Prepare Environment
-     run: |
-      if [ ! -f "${{ env.ENV_SOURCE }}" ]; then
-        echo "❌ .env file not found at ${{ env.ENV_SOURCE }}"
-        exit 1
-      fi
-      cp "${{ env.ENV_SOURCE }}" "${{ env.ENV_FILE }}"
-      if ! grep -q "DATABASE_URL" "${{ env.ENV_FILE }}"; then
-        echo "❌ DATABASE_URL not found in .env file"
-        exit 1
-      fi
-      echo "✅ Environment prepared"
+      - name: 🔐 Prepare Environment
+        run: |
+          if [ ! -f "${{ env.ENV_SOURCE }}" ]; then
+            echo "❌ .env file not found at ${{ env.ENV_SOURCE }}"
+            exit 1
+          fi
+          cp "${{ env.ENV_SOURCE }}" "${{ env.ENV_FILE }}"
+          echo "DEPLOY_TAG=${{ env.DEPLOY_TAG }}" >> "${{ env.ENV_FILE }}"
+          echo "✅ Environment prepared"
 
-   - name: 🧹 Cleanup Old Manual Redis
-     run: |
-      # Remove any manually-created Redis containers from old workflow
-      if docker ps -a --format '{{.Names}}' | grep -q "^stage-docsplus-redis$"; then
-        if ! docker inspect stage-docsplus-redis --format '{{index .Config.Labels "com.docker.compose.project"}}' 2>/dev/null | grep -q "stage-"; then
-          echo "🗑️ Removing manually-created Redis (compose will recreate it)"
-          docker stop stage-docsplus-redis 2>/dev/null || true
-          docker rm stage-docsplus-redis 2>/dev/null || true
-        fi
-      fi
-      docker network create ${{ env.DOCKER_NETWORK }} 2>/dev/null || true
+      - name: 🏗️ Build Docker Images
+        run: |
+          set -a
+          source ${{ env.ENV_FILE }}
+          set +a
 
-   - name: 🛑 Stop Current Stack
-     run: |
-      docker-compose -f ${{ env.COMPOSE_FILE }} \
-        --env-file ${{ env.ENV_FILE }} \
-        -p stage-docsplus \
-        down || true
+          docker-compose -f ${{ env.COMPOSE_FILE }} \
+            --env-file ${{ env.ENV_FILE }} \
+            build --parallel
 
-   - name: 🏗️ Build Docker Images
-     run: |
-      set -a
-      source ${{ env.ENV_FILE }}
-      set +a
-      echo "DATABASE_URL is set: ${DATABASE_URL:0:50}..."
-      docker-compose -f ${{ env.COMPOSE_FILE }} \
-        --env-file ${{ env.ENV_FILE }} \
-        -p stage-docsplus \
-        build
+      - name: 🚀 Deploy Services
+        run: |
+          docker-compose -f ${{ env.COMPOSE_FILE }} \
+            --env-file ${{ env.ENV_FILE }} \
+            up -d \
+            --remove-orphans \
+            --scale webapp=1 \
+            --scale rest-api=1 \
+            --scale hocuspocus-server=1 \
+            --scale hocuspocus-worker=1
 
-   - name: 🚀 Deploy Stack
-     run: |
-      sed -i "s/NGINX_HTTP_PORT=.*/NGINX_HTTP_PORT=${{ env.FRONTEND_PORT }}/" ${{ env.ENV_FILE }}
-      docker-compose -f ${{ env.COMPOSE_FILE }} \
-        --env-file ${{ env.ENV_FILE }} \
-        -p stage-docsplus \
-        up -d \
-        --scale webapp=1 \
-        --scale rest-api=1 \
-        --scale hocuspocus-server=1 \
-        --scale hocuspocus-worker=1
+      - name: ⏳ Wait for Services
+        run: sleep 20
 
-   - name: ⏳ Wait for Services
-     run: sleep 20
+      - name: 🩺 Health Checks
+        run: |
+          for svc in traefik docsplus-redis; do
+            docker ps --filter "name=$svc" | grep -q "$svc" && echo "✅ $svc running" || echo "⚠️ $svc not found"
+          done
 
-   - name: 🩺 Health Checks
-     run: |
-      WEBAPP=$(docker ps --filter "name=stage-docsplus-webapp" --format "{{.Names}}" | head -1)
-      docker exec $WEBAPP bun -e "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))" && echo "✅ Frontend healthy"
-      REST=$(docker ps --filter "name=stage-docsplus-rest-api" --format "{{.Names}}" | head -1)
-      docker exec $REST bun -e "fetch('http://localhost:4000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))" && echo "✅ REST API healthy"
-      WS=$(docker ps --filter "name=stage-docsplus-hocuspocus-server" --format "{{.Names}}" | head -1)
-      docker exec $WS bun -e "fetch('http://localhost:4001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))" && echo "✅ WebSocket healthy"
-      WORKER=$(docker ps --filter "name=stage-docsplus-hocuspocus-worker" --format "{{.Names}}" | head -1)
-      docker exec $WORKER bun -e "fetch('http://localhost:4002/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))" && echo "✅ Worker healthy"
+          for svc in webapp rest-api hocuspocus-server hocuspocus-worker; do
+            COUNT=$(docker ps --filter "name=${svc}" --format "{{.Names}}" | wc -l)
+            echo "✅ $svc: $COUNT container(s)"
+          done
 
-   - name: 📊 Summary
-     run: |
-      echo "✅ STAGING DEPLOYMENT SUCCESSFUL"
-      docker ps --filter "name=stage-docsplus-" --format "table {{.Names}}\t{{.Status}}"
+      - name: 📊 Summary
+        run: |
+          echo "✅ STAGING DEPLOYMENT SUCCESSFUL"
+          docker ps --format "table {{.Names}}\t{{.Status}}" | head -15

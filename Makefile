@@ -3,7 +3,7 @@
 # Manages: Hocuspocus Server + Webapp + Infrastructure
 # =============================================================================
 
-.PHONY: help build build-dev up-prod up-dev up-local infra-up infra-down infra-logs dev-local dev-backend dev-webapp dev-rest dev-ws dev-worker down logs logs-webapp logs-backend restart clean scale scale-webapp scale-hocuspocus ps stats supabase-start supabase-stop supabase-status deploy-prod-all rollback-prod status-prod
+.PHONY: help build build-dev up-prod up-dev up-local infra-up infra-down infra-logs dev-local dev-backend dev-webapp dev-rest dev-ws dev-worker down logs logs-webapp logs-backend restart clean scale scale-webapp scale-hocuspocus ps stats supabase-start supabase-stop supabase-status deploy-prod rollback-prod status-prod logs-traefik
 
 help:
 	@echo "Docsplus Full Stack Docker Commands"
@@ -29,10 +29,11 @@ help:
 	@echo "  make dev-worker         - Start Worker only"
 	@echo "  make migrate            - Run database migrations"
 	@echo ""
-	@echo "Production Deployment (Blue-Green Docker Compose):"
-	@echo "  make deploy-prod-all         - Deploy full stack (frontend + backend)"
+	@echo "Production Deployment (Traefik):"
+	@echo "  make deploy-prod             - Deploy full stack with Traefik"
 	@echo "  make rollback-prod           - Rollback to previous deployment"
 	@echo "  make status-prod             - Check production status"
+	@echo "  make logs-traefik            - View Traefik logs"
 	@echo ""
 	@echo "Scaling (production only):"
 	@echo "  make scale-webapp      - Scale webapp to 3 replicas"
@@ -74,35 +75,35 @@ build-dev:
 # =============================================================================
 
 up-prod: build
-	@echo "🚀 Starting full stack production environment..."
+	@echo "🚀 Starting full stack production environment (Traefik)..."
 	@echo ""
 	@echo "Services:"
-	@echo "  📦 PostgreSQL (port 5432)"
-	@echo "  🔴 Redis (port 6379)"
-	@echo "  🔌 REST API (port 4000) - 2 replicas"
-	@echo "  🌐 Hocuspocus WS (port 4001) - 3 replicas"
-	@echo "  ⚙️  Worker (port 4002) - 2 replicas"
-	@echo "  💻 Webapp (internal:3000) - 2 replicas"
-	@echo "  🌍 Nginx (ports 3000:80, 443:443)"
+	@echo "  🔀 Traefik (ports 80, 443) - reverse proxy + SSL"
+	@echo "  🔴 Redis (internal) - cache & pub/sub"
+	@echo "  🔌 REST API - 2 replicas"
+	@echo "  🌐 Hocuspocus WS - 2 replicas"
+	@echo "  ⚙️  Worker - 1 replica"
+	@echo "  💻 Webapp - 2 replicas"
 	@echo ""
-	@docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
+	@docker-compose -f docker-compose.prod.yml --env-file .env.production up -d \
+		--scale webapp=2 \
+		--scale rest-api=2 \
+		--scale hocuspocus-server=2 \
+		--scale hocuspocus-worker=1
 	@echo ""
 	@echo "✅ Full stack started!"
 	@echo ""
-	@echo "Access points:"
-	@echo "  Webapp:     http://localhost:3000"
-	@echo "  REST API:   http://localhost:4000"
-	@echo "  WebSocket:  ws://localhost:4001"
-	@echo "  PostgreSQL: localhost:5432"
-	@echo "  Redis:      localhost:6379"
+	@echo "URLs:"
+	@echo "  Webapp:    https://docs.plus"
+	@echo "  API:       https://prodback.docs.plus/api"
+	@echo "  WebSocket: wss://prodback.docs.plus/hocuspocus"
+	@echo "  Dashboard: https://traefik.docs.plus"
 	@echo ""
-	@echo "Common commands:"
-	@echo "  make logs              - View all logs (auto-detects dev/prod)"
-	@echo "  make logs-webapp       - View webapp logs (auto-detects dev/prod)"
-	@echo "  make logs-backend      - View backend logs (auto-detects dev/prod)"
-	@echo "  make ps                - Show running containers (auto-detects dev/prod)"
-	@echo "  make down              - Stop all services (auto-detects dev/prod)"
-	@echo "  make restart           - Restart all services (auto-detects dev/prod)"
+	@echo "Commands:"
+	@echo "  make logs         - View all logs"
+	@echo "  make logs-traefik - View Traefik logs"
+	@echo "  make status-prod  - Check production status"
+	@echo "  make down         - Stop all services"
 
 up-dev: build-dev
 	@echo "🚀 Starting full stack development environment..."
@@ -401,16 +402,47 @@ supabase-status:
 	@cd packages/supabase && bun run status
 
 # =============================================================================
-# PRODUCTION DEPLOYMENT COMMANDS
+# PRODUCTION DEPLOYMENT COMMANDS (Traefik)
 # =============================================================================
 
-deploy-prod-all:
-	@echo "🚀 Deploying full production stack (Blue-Green with Docker Compose)..."
-	@./scripts/deploy-prod-manual.sh all
+deploy-prod:
+	@echo "🚀 Deploying to production with Traefik..."
+	@if [ ! -f .env.production ]; then \
+		echo "❌ .env.production not found"; \
+		exit 1; \
+	fi
+	@docker-compose -f docker-compose.prod.yml \
+		--env-file .env.production \
+		up -d --build \
+		--scale webapp=2 \
+		--scale rest-api=2 \
+		--scale hocuspocus-server=2 \
+		--scale hocuspocus-worker=1
+	@echo "✅ Production deployed"
+	@docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | head -15
 
 rollback-prod:
-	@echo "🔄 Rolling back production deployment..."
-	@./scripts/rollback-prod.sh
+	@echo "🔄 Rolling back production..."
+	@PREV_TAG=$$(docker images docsy-webapp --format "{{.Tag}}" | grep -v latest | head -1); \
+	if [ -n "$$PREV_TAG" ]; then \
+		echo "Rolling back to: $$PREV_TAG"; \
+		sed -i.bak "s/DEPLOY_TAG=.*/DEPLOY_TAG=$$PREV_TAG/" .env.production; \
+		docker-compose -f docker-compose.prod.yml --env-file .env.production up -d; \
+		echo "✅ Rollback complete"; \
+	else \
+		echo "❌ No previous version found"; \
+	fi
 
 status-prod:
-	@./scripts/status-prod.sh
+	@echo "📊 Production Status"
+	@echo "===================="
+	@docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" 2>/dev/null || echo "No containers running"
+	@echo ""
+	@echo "Traefik Dashboard: https://traefik.docs.plus"
+	@echo ""
+	@echo "Health Checks:"
+	@curl -sf https://docs.plus/api/health 2>/dev/null && echo "  ✅ docs.plus" || echo "  ❌ docs.plus"
+	@curl -sf https://prodback.docs.plus/api/health 2>/dev/null && echo "  ✅ prodback.docs.plus/api" || echo "  ❌ prodback.docs.plus/api"
+
+logs-traefik:
+	@docker logs traefik -f --tail 100

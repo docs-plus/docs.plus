@@ -1,130 +1,127 @@
 # =============================================================================
-# Root Docker Compose - Full Stack Production
+# Production Docker Compose with Traefik
+# =============================================================================
 #
-# ENVIRONMENT VARIABLES:
-# Production environment variables are loaded from .env.production file
-# Use --env-file flag to specify the environment file
+# Architecture:
+#   Internet → Traefik (SSL/LB) → Services (webapp, rest-api, hocuspocus)
 #
-# USAGE:
-#   docker-compose -f docker-compose.prod.yml --env-file .env.production up
-#   docker-compose -f docker-compose.prod.yml --env-file .env.production up --build
+# Features:
+#   - Auto SSL via Let's Encrypt
+#   - Auto service discovery via Docker labels
+#   - Built-in load balancing
+#   - Zero-downtime blue/green deployments
+#
+# Usage:
+#   docker-compose -f docker-compose.prod.yml --env-file .env.production up -d
+#
 # =============================================================================
 
 services:
  # ===========================================================================
- # INFRASTRUCTURE - Shared Services
+ # TRAEFIK - Reverse Proxy & SSL
  # ===========================================================================
-
- # ---------------------------------------------------------------------------
- # PostgreSQL Database (LOCAL/DEV ONLY - Production uses managed DB)
- # ---------------------------------------------------------------------------
- postgres:
-  profiles: ["local"] # Only starts with: docker-compose --profile local up
-  image: postgres:17-alpine
-  container_name: docsy-postgres
+ traefik:
+  image: traefik:v3.0
+  container_name: traefik
   restart: unless-stopped
-  environment:
-   POSTGRES_DB: docsplus
-   POSTGRES_USER: ${DB_USER:-docsplus}
-   POSTGRES_PASSWORD: ${DB_PASSWORD:-CHANGE_ME_STRONG_PASSWORD}
-   POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
+  command:
+   # API & Dashboard
+   - "--api.dashboard=true"
+   - "--api.insecure=false"
+   # Docker provider
+   - "--providers.docker=true"
+   - "--providers.docker.exposedbydefault=false"
+   - "--providers.docker.network=docsplus-network"
+   # Entrypoints
+   - "--entrypoints.web.address=:80"
+   - "--entrypoints.websecure.address=:443"
+   # HTTP → HTTPS redirect
+   - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+   - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+   # Let's Encrypt
+   - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@docs.plus}"
+   - "--certificatesresolvers.letsencrypt.acme.storage=/letsencrypt/acme.json"
+   - "--certificatesresolvers.letsencrypt.acme.httpchallenge.entrypoint=web"
+   # Logging
+   - "--log.level=INFO"
+   - "--accesslog=true"
   ports:
-   - "${DB_PORT:-5432}:5432"
+   - "80:80"
+   - "443:443"
   volumes:
-   - postgres_data:/var/lib/postgresql/data
-  healthcheck:
-   test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-docsplus}"]
-   interval: 10s
-   timeout: 5s
-   retries: 5
-   start_period: 10s
+   - /var/run/docker.sock:/var/run/docker.sock:ro
+   - traefik-certs:/letsencrypt
   networks:
-   - docsy-network
-  deploy:
-   resources:
-    limits:
-     cpus: "2"
-     memory: 2G
-    reservations:
-     cpus: "1"
-     memory: 512M
+   - docsplus-network
+  labels:
+   # Dashboard (optional - access via traefik.docs.plus)
+   - "traefik.enable=true"
+   - "traefik.http.routers.dashboard.rule=Host(`traefik.docs.plus`)"
+   - "traefik.http.routers.dashboard.entrypoints=websecure"
+   - "traefik.http.routers.dashboard.tls.certresolver=letsencrypt"
+   - "traefik.http.routers.dashboard.service=api@internal"
+   - "traefik.http.routers.dashboard.middlewares=dashboard-auth"
+   - "traefik.http.middlewares.dashboard-auth.basicauth.users=${TRAEFIK_DASHBOARD_AUTH:-admin:$$apr1$$xyz$$hash}"
+  healthcheck:
+   test: ["CMD", "traefik", "healthcheck"]
+   interval: 30s
+   timeout: 3s
+   retries: 3
 
- # ---------------------------------------------------------------------------
- # Redis Cache & Pub/Sub (Shared infrastructure - managed separately from blue/green)
- # ---------------------------------------------------------------------------
- # NOTE: In production, Redis is started separately via docker run (not compose)
- # to avoid conflicts during blue/green deployments. Use --profile infra to start via compose.
+ # ===========================================================================
+ # REDIS - Shared Cache & Pub/Sub
+ # ===========================================================================
  redis:
-  profiles: ["infra"] # Only starts with: docker-compose --profile infra up redis
   image: redis:alpine
-  container_name: prod-docsplus-redis
+  container_name: docsplus-redis
   restart: unless-stopped
-  command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy noeviction --tcp-backlog 511 --timeout 300 --tcp-keepalive 300
-  expose:
-   - "6379"
+  command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy noeviction
   volumes:
-   - redis_data:/data
+   - redis-data:/data
+  networks:
+   - docsplus-network
   healthcheck:
    test: ["CMD", "redis-cli", "ping"]
    interval: 10s
    timeout: 5s
    retries: 5
-   start_period: 5s
-  networks:
-   - docsy-network
-  deploy:
-   resources:
-    limits:
-     cpus: "2"
-     memory: 2G
-    reservations:
-     cpus: "0.5"
-     memory: 512M
 
  # ===========================================================================
- # HOCUSPOCUS SERVER SERVICES
+ # REST API (Hocuspocus)
  # ===========================================================================
-
- # ---------------------------------------------------------------------------
- # REST API Service (Scalable)
- # ---------------------------------------------------------------------------
  rest-api:
-  image: docsy-hocuspocus:latest
+  image: docsy-hocuspocus:${DEPLOY_TAG:-latest}
   build:
    context: ./packages/hocuspocus.server
    dockerfile: docker/Dockerfile.bun
    target: production
    args:
-    DATABASE_URL: ${DATABASE_URL:-postgresql://dummy:dummy@localhost:5432/dummy}
+    DATABASE_URL: ${DATABASE_URL}
   restart: unless-stopped
   command: bun /app/src/index.ts
-  # All environment variables loaded from .env.production file
   environment:
    NODE_ENV: production
    APP_PORT: 4000
    DATABASE_URL: ${DATABASE_URL}
-   REDIS: true
-   REDIS_HOST: redis
+   REDIS_HOST: docsplus-redis
    REDIS_PORT: 6379
-   JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-replace-this-in-production}
    SUPABASE_URL: ${SUPABASE_URL}
    SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-   LOG_LEVEL: ${LOG_LEVEL:-error}
-   REST_LOG_LEVEL: ${REST_LOG_LEVEL:-info}
-   ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
-   RATE_LIMIT_MAX: ${RATE_LIMIT_MAX:-500}
-   HOCUSPOCUS_LOGGER: false
-   HOCUSPOCUS_THROTTLE: true
-   DO_STORAGE_ENDPOINT: ${DO_STORAGE_ENDPOINT}
-   DO_STORAGE_REGION: ${DO_STORAGE_REGION}
-   DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
-   DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
-   DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
-  # Ports not exposed - accessed via nginx reverse proxy
-  # Multiple replicas can't bind to same host port
-  expose:
-   - "4000"
-  # No depends_on - postgres (DigitalOcean) and redis (external container) are external
+   SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+   JWT_SECRET: ${JWT_SECRET}
+   ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://docs.plus}
+  networks:
+   - docsplus-network
+  labels:
+   - "traefik.enable=true"
+   # REST API routes (prodback.docs.plus/*)
+   - "traefik.http.routers.rest-api.rule=Host(`prodback.docs.plus`) && PathPrefix(`/api`)"
+   - "traefik.http.routers.rest-api.entrypoints=websecure"
+   - "traefik.http.routers.rest-api.tls.certresolver=letsencrypt"
+   - "traefik.http.routers.rest-api.service=rest-api"
+   - "traefik.http.services.rest-api.loadbalancer.server.port=4000"
+   - "traefik.http.services.rest-api.loadbalancer.healthcheck.path=/health"
+   - "traefik.http.services.rest-api.loadbalancer.healthcheck.interval=10s"
   healthcheck:
    test:
     [
@@ -137,57 +134,52 @@ services:
    timeout: 5s
    retries: 3
    start_period: 30s
-  networks:
-   - docsy-network
   deploy:
-   replicas: ${REST_REPLICAS:-2}
+   replicas: 2
    resources:
     limits:
      cpus: "1"
      memory: 1G
-    reservations:
-     cpus: "0.25"
-     memory: 256M
-   restart_policy:
-    condition: on-failure
-    delay: 5s
-    max_attempts: 3
 
- # ---------------------------------------------------------------------------
- # Hocuspocus WebSocket Server (Scalable)
- # ---------------------------------------------------------------------------
+ # ===========================================================================
+ # HOCUSPOCUS WEBSOCKET SERVER
+ # ===========================================================================
  hocuspocus-server:
-  image: docsy-hocuspocus:latest
+  image: docsy-hocuspocus:${DEPLOY_TAG:-latest}
   build:
    context: ./packages/hocuspocus.server
    dockerfile: docker/Dockerfile.bun
    target: production
    args:
-    DATABASE_URL: ${DATABASE_URL:-postgresql://dummy:dummy@localhost:5432/dummy}
+    DATABASE_URL: ${DATABASE_URL}
   restart: unless-stopped
-  command: bun /app/src/hocuspocus.server.ts
-  # All environment variables loaded from .env.production file
+  command: bun /app/src/hocuspocus.ts
   environment:
    NODE_ENV: production
    HOCUSPOCUS_PORT: 4001
    DATABASE_URL: ${DATABASE_URL}
-   REDIS: true
-   REDIS_HOST: redis
+   REDIS_HOST: docsplus-redis
    REDIS_PORT: 6379
-   JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-replace-this-in-production}
    SUPABASE_URL: ${SUPABASE_URL}
    SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-   LOG_LEVEL: ${LOG_LEVEL:-error}
-   WS_LOG_LEVEL: ${WS_LOG_LEVEL:-info}
-   HOCUSPOCUS_LOGGER: false
-   HOCUSPOCUS_THROTTLE: true
-   HOCUSPOCUS_THROTTLE_ATTEMPTS: ${HOCUSPOCUS_THROTTLE_ATTEMPTS:-10}
-   HOCUSPOCUS_THROTTLE_BANTIME: ${HOCUSPOCUS_THROTTLE_BANTIME:-60000}
-  # Ports not exposed - accessed via nginx reverse proxy
-  # Multiple replicas can't bind to same host port
-  expose:
-   - "4001"
-  # No depends_on - postgres (DigitalOcean) and redis (external container) are external
+   SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+   JWT_SECRET: ${JWT_SECRET}
+   ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://docs.plus}
+   HOCUSPOCUS_LOGGER: "false"
+   HOCUSPOCUS_THROTTLE: "true"
+  networks:
+   - docsplus-network
+  labels:
+   - "traefik.enable=true"
+   # WebSocket routes (prodback.docs.plus/hocuspocus)
+   - "traefik.http.routers.hocuspocus.rule=Host(`prodback.docs.plus`) && PathPrefix(`/hocuspocus`)"
+   - "traefik.http.routers.hocuspocus.entrypoints=websecure"
+   - "traefik.http.routers.hocuspocus.tls.certresolver=letsencrypt"
+   - "traefik.http.routers.hocuspocus.service=hocuspocus"
+   - "traefik.http.services.hocuspocus.loadbalancer.server.port=4001"
+   # Sticky sessions for WebSocket
+   - "traefik.http.services.hocuspocus.loadbalancer.sticky.cookie=true"
+   - "traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.name=hocuspocus_sticky"
   healthcheck:
    test:
     [
@@ -200,62 +192,38 @@ services:
    timeout: 5s
    retries: 3
    start_period: 30s
-  networks:
-   - docsy-network
   deploy:
-   replicas: ${WS_REPLICAS:-3}
+   replicas: 2
    resources:
     limits:
      cpus: "1"
      memory: 1G
-    reservations:
-     cpus: "0.5"
-     memory: 512M
-   restart_policy:
-    condition: on-failure
-    delay: 5s
-    max_attempts: 3
 
- # ---------------------------------------------------------------------------
- # Hocuspocus Worker (Scalable)
- # ---------------------------------------------------------------------------
+ # ===========================================================================
+ # HOCUSPOCUS WORKER
+ # ===========================================================================
  hocuspocus-worker:
-  image: docsy-hocuspocus:latest
+  image: docsy-hocuspocus:${DEPLOY_TAG:-latest}
   build:
    context: ./packages/hocuspocus.server
    dockerfile: docker/Dockerfile.bun
    target: production
    args:
-    DATABASE_URL: ${DATABASE_URL:-postgresql://dummy:dummy@localhost:5432/dummy}
+    DATABASE_URL: ${DATABASE_URL}
   restart: unless-stopped
-  command: bun /app/src/hocuspocus.worker.ts
-  # All environment variables loaded from .env.production file
+  command: bun /app/src/worker.ts
   environment:
    NODE_ENV: production
    WORKER_HEALTH_PORT: 4002
    DATABASE_URL: ${DATABASE_URL}
-   REDIS: true
-   REDIS_HOST: redis
+   REDIS_HOST: docsplus-redis
    REDIS_PORT: 6379
-   REDIS_CONNECT_TIMEOUT: ${REDIS_CONNECT_TIMEOUT:-30000}
-   REDIS_COMMAND_TIMEOUT: ${REDIS_COMMAND_TIMEOUT:-60000}
-   REDIS_KEEPALIVE: ${REDIS_KEEPALIVE:-30000}
-   REDIS_MAX_RETRIES: ${REDIS_MAX_RETRIES:-10}
-   LOG_LEVEL: ${LOG_LEVEL:-error}
-   WORKER_LOG_LEVEL: ${WORKER_LOG_LEVEL:-info}
-   BULLMQ_CONCURRENCY: ${BULLMQ_CONCURRENCY:-20}
-   BULLMQ_RATE_LIMIT_MAX: ${BULLMQ_RATE_LIMIT_MAX:-1000}
-   BULLMQ_RATE_LIMIT_DURATION: ${BULLMQ_RATE_LIMIT_DURATION:-1000}
-   DO_STORAGE_ENDPOINT: ${DO_STORAGE_ENDPOINT}
-   DO_STORAGE_REGION: ${DO_STORAGE_REGION}
-   DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
-   DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
-   DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
-  # Ports not exposed - accessed via nginx reverse proxy
-  # Multiple replicas can't bind to same host port
-  expose:
-   - "4002"
-  # No depends_on - postgres (DigitalOcean) and redis (external container) are external
+   SUPABASE_URL: ${SUPABASE_URL}
+   SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+   SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+  networks:
+   - docsplus-network
+  # Worker doesn't need Traefik labels (no external traffic)
   healthcheck:
    test:
     [
@@ -268,70 +236,47 @@ services:
    timeout: 5s
    retries: 3
    start_period: 30s
-  networks:
-   - docsy-network
   deploy:
-   replicas: ${WORKER_REPLICAS:-2}
+   replicas: 1
    resources:
     limits:
      cpus: "2"
      memory: 2G
-    reservations:
-     cpus: "0.5"
-     memory: 512M
-   restart_policy:
-    condition: on-failure
-    delay: 5s
-    max_attempts: 3
 
  # ===========================================================================
- # WEBAPP SERVICES
+ # WEBAPP (Next.js)
  # ===========================================================================
-
- # ---------------------------------------------------------------------------
- # Next.js Webapp (Scalable)
- # ---------------------------------------------------------------------------
  webapp:
+  image: docsy-webapp:${DEPLOY_TAG:-latest}
   build:
    context: .
    dockerfile: packages/webapp/docker/Dockerfile.bun
+   target: runner
    args:
-    BUILDKIT_INLINE_CACHE: 1
-    BUILD_ID: ${BUILD_ID:-production-build}
-    GIT_HASH: ${GIT_HASH:-latest}
-    NODE_ENV: production
     NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
     NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    NEXT_PUBLIC_SUPABASE_WS_URL: ${NEXT_PUBLIC_SUPABASE_WS_URL}
     NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL}
     NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL}
-    NEXT_PUBLIC_SSE_URL: ${NEXT_PUBLIC_SSE_URL}
-    NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
-  image: docsy-webapp:latest
-  # DO NOT add container_name - it breaks horizontal scaling
-  expose:
-   - "3000"
+  restart: unless-stopped
   environment:
    NODE_ENV: production
    PORT: 3000
    HOSTNAME: "0.0.0.0"
-   NEXT_TELEMETRY_DISABLED: 1
-   # Webapp environment variables loaded from .env.production
-   NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
-   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-   NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL:-ws://localhost:3000}
-   NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL:-http://rest-api:4000}
-   NEXT_PUBLIC_SSE_URL: ${NEXT_PUBLIC_SSE_URL:-http://localhost:3000/sse}
-   NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID:-}
-   # Server-side URLs (internal Docker network)
-   SERVER_RESTAPI_URL: ${SERVER_RESTAPI_URL:-http://rest-api:4000/api}
-  restart: unless-stopped
+   # Server-side API URL (internal Docker network)
+   SERVER_RESTAPI_URL: http://rest-api:4000/api
   networks:
-   - docsy-network
-  depends_on:
-   rest-api:
-    condition: service_healthy
-   hocuspocus-server:
-    condition: service_healthy
+   - docsplus-network
+  labels:
+   - "traefik.enable=true"
+   # Main frontend (docs.plus)
+   - "traefik.http.routers.webapp.rule=Host(`docs.plus`)"
+   - "traefik.http.routers.webapp.entrypoints=websecure"
+   - "traefik.http.routers.webapp.tls.certresolver=letsencrypt"
+   - "traefik.http.routers.webapp.service=webapp"
+   - "traefik.http.services.webapp.loadbalancer.server.port=3000"
+   - "traefik.http.services.webapp.loadbalancer.healthcheck.path=/api/health"
+   - "traefik.http.services.webapp.loadbalancer.healthcheck.interval=10s"
   healthcheck:
    test:
     [
@@ -342,91 +287,28 @@ services:
     ]
    interval: 30s
    timeout: 3s
-   start_period: 10s
    retries: 3
+   start_period: 30s
   deploy:
-   replicas: ${WEBAPP_REPLICAS:-2}
-   resources:
-    limits:
-     cpus: "2"
-     memory: 1G
-    reservations:
-     cpus: "0.5"
-     memory: 256M
-   restart_policy:
-    condition: on-failure
-    delay: 5s
-    max_attempts: 3
-  logging:
-   driver: "json-file"
-   options:
-    max-size: "10m"
-    max-file: "3"
-  labels:
-   - "com.docker.compose.project=docsy"
-   - "com.docker.compose.service=webapp"
-
- # ---------------------------------------------------------------------------
- # Nginx Reverse Proxy (for local dev only - production uses host nginx)
- # ---------------------------------------------------------------------------
- nginx:
-  profiles: ["local"] # Production uses host nginx for blue/green routing
-  image: nginx:alpine
-  container_name: docsy-nginx
-  ports:
-   - "${NGINX_HTTP_PORT:-3000}:80"
-   - "${NGINX_HTTPS_PORT:-443}:443"
-  volumes:
-   - ./packages/webapp/docker/nginx.conf:/etc/nginx/nginx.conf:ro
-   - ./packages/webapp/docker/ssl:/etc/nginx/ssl:ro
-  depends_on:
-   webapp:
-    condition: service_healthy
-  networks:
-   - docsy-network
-  restart: unless-stopped
-  deploy:
+   replicas: 2
    resources:
     limits:
      cpus: "1"
-     memory: 256M
-    reservations:
-     cpus: "0.25"
-     memory: 128M
-  healthcheck:
-   test:
-    [
-     "CMD",
-     "wget",
-     "--quiet",
-     "--tries=1",
-     "--spider",
-     "http://localhost/health",
-    ]
-   interval: 30s
-   timeout: 3s
-   retries: 3
-  logging:
-   driver: "json-file"
-   options:
-    max-size: "10m"
-    max-file: "3"
+     memory: 1G
 
 # =============================================================================
-# Volumes
+# VOLUMES
 # =============================================================================
 volumes:
- postgres_data:
+ traefik-certs:
   driver: local
-  name: docsy-postgres-prod
- redis_data:
+ redis-data:
   driver: local
-  name: docsy-redis-prod
 
 # =============================================================================
-# Networks
+# NETWORKS
 # =============================================================================
 networks:
- docsy-network:
+ docsplus-network:
   driver: bridge
-  name: prod-docsplus-network
+  name: docsplus-network
