@@ -9,6 +9,10 @@
 FROM oven/bun:1-slim AS base
 WORKDIR /app
 
+# Build argument for Prisma (only needed for client generation, not actual connection)
+ARG DATABASE_URL
+ENV DATABASE_URL=${DATABASE_URL:-postgresql://dummy:dummy@localhost:5432/dummy}
+
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     ca-certificates \
@@ -26,7 +30,7 @@ RUN bun install --frozen-lockfile --production
 # This ensures Prisma is available in node_modules/.bin for the entrypoint script
 RUN bun add -d prisma@latest --no-save || true
 
-# Generate Prisma client
+# Generate Prisma client (uses DATABASE_URL for schema validation only)
 RUN bunx prisma generate
 
 # Copy and setup entrypoint script for development

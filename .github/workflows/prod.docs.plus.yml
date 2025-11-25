@@ -100,35 +100,71 @@ jobs:
         echo "🆕 First deployment: BLUE 📘"
       fi
 
-   - name: 🔍 Ensure Redis is Running
-     run: |
-      docker network create ${{ env.DOCKER_NETWORK }} 2>/dev/null || true
+      - name: 🔍 Ensure Redis is Running
+        run: |
+          docker network create ${{ env.DOCKER_NETWORK }} 2>/dev/null || true
 
-      if ! docker ps | grep -q "prod-docsplus-redis"; then
-        echo "🚀 Starting Redis..."
-        docker run -d \
-          --name prod-docsplus-redis \
-          --network ${{ env.DOCKER_NETWORK }} \
-          --restart unless-stopped \
-          -p 6379:6379 \
-          -v prod-redis-data:/data \
-          redis:alpine \
-          redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy noeviction
-        sleep 5
-      fi
+          # Check if our Redis container exists (running or stopped)
+          if docker ps -a --format '{{.Names}}' | grep -q "^prod-docsplus-redis$"; then
+            # Container exists - make sure it's running
+            if ! docker ps --format '{{.Names}}' | grep -q "^prod-docsplus-redis$"; then
+              echo "🔄 Starting existing Redis container..."
+              docker start prod-docsplus-redis
+              sleep 3
+            fi
+            # Connect to network if not already
+            docker network connect ${{ env.DOCKER_NETWORK }} prod-docsplus-redis 2>/dev/null || true
+          else
+            # Check if port 6379 is in use by something else
+            if netstat -tuln 2>/dev/null | grep -q ":6379 " || ss -tuln 2>/dev/null | grep -q ":6379 "; then
+              echo "⚠️ Port 6379 already in use by another process"
+              echo "Checking if it's a Redis we can use..."
+              if redis-cli ping 2>/dev/null | grep -q PONG; then
+                echo "✅ Existing Redis on port 6379 is healthy - using it"
+                exit 0
+              else
+                echo "❌ Port 6379 in use but not responding as Redis"
+                echo "Please free up port 6379 or stop the conflicting service"
+                exit 1
+              fi
+            fi
 
-      docker exec prod-docsplus-redis redis-cli ping | grep -q PONG && echo "✅ Redis healthy" || exit 1
+            echo "🚀 Starting new Redis container..."
+            docker run -d \
+              --name prod-docsplus-redis \
+              --network ${{ env.DOCKER_NETWORK }} \
+              --restart unless-stopped \
+              -p 6379:6379 \
+              -v prod-redis-data:/data \
+              redis:alpine \
+              redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy noeviction
+            sleep 5
+          fi
 
-   - name: 🏗️ Build Docker Images
-     run: |
-      echo "🔨 Building ${{ steps.detect-color.outputs.NEW_COLOR }} stack..."
+          # Health check
+          if docker exec prod-docsplus-redis redis-cli ping 2>/dev/null | grep -q PONG; then
+            echo "✅ Redis healthy (container)"
+          elif redis-cli ping 2>/dev/null | grep -q PONG; then
+            echo "✅ Redis healthy (host)"
+          else
+            echo "❌ Redis health check failed"
+            exit 1
+          fi
 
-      docker-compose -f ${{ env.COMPOSE_FILE }} \
-        --env-file ${{ env.ENV_FILE }} \
-        -p prod-${{ steps.detect-color.outputs.NEW_COLOR }} \
-        build
+      - name: 🏗️ Build Docker Images
+        run: |
+          echo "🔨 Building ${{ steps.detect-color.outputs.NEW_COLOR }} stack..."
 
-      echo "✅ Images built"
+          # Extract DATABASE_URL from env file for Prisma generate during build
+          export DATABASE_URL=$(grep "^DATABASE_URL=" ${{ env.ENV_FILE }} | cut -d'=' -f2-)
+
+          docker-compose -f ${{ env.COMPOSE_FILE }} \
+            --env-file ${{ env.ENV_FILE }} \
+            -p prod-${{ steps.detect-color.outputs.NEW_COLOR }} \
+            build \
+            --build-arg DATABASE_URL="${DATABASE_URL}"
+
+          echo "✅ Images built"
 
    - name: 🚀 Deploy New Stack
      run: |

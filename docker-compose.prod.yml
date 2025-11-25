@@ -91,6 +91,8 @@ services:
    context: ./packages/hocuspocus.server
    dockerfile: docker/Dockerfile.bun
    target: production
+   args:
+    DATABASE_URL: ${DATABASE_URL:-postgresql://dummy:dummy@localhost:5432/dummy}
   restart: unless-stopped
   command: bun /app/src/index.ts
   # All environment variables loaded from .env.production file
@@ -161,6 +163,8 @@ services:
    context: ./packages/hocuspocus.server
    dockerfile: docker/Dockerfile.bun
    target: production
+   args:
+    DATABASE_URL: ${DATABASE_URL:-postgresql://dummy:dummy@localhost:5432/dummy}
   restart: unless-stopped
   command: bun /app/src/hocuspocus.server.ts
   # All environment variables loaded from .env.production file
@@ -226,6 +230,8 @@ services:
    context: ./packages/hocuspocus.server
    dockerfile: docker/Dockerfile.bun
    target: production
+   args:
+    DATABASE_URL: ${DATABASE_URL:-postgresql://dummy:dummy@localhost:5432/dummy}
   restart: unless-stopped
   command: bun /app/src/hocuspocus.worker.ts
   # All environment variables loaded from .env.production file

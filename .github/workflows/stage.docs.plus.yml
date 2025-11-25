@@ -88,12 +88,16 @@ jobs:
         -p stage-docsplus \
         down || true
 
-   - name: 🏗️ Build Docker Images
-     run: |
-      docker-compose -f ${{ env.COMPOSE_FILE }} \
-        --env-file ${{ env.ENV_FILE }} \
-        -p stage-docsplus \
-        build
+      - name: 🏗️ Build Docker Images
+        run: |
+          # Extract DATABASE_URL from env file for Prisma generate during build
+          export DATABASE_URL=$(grep "^DATABASE_URL=" ${{ env.ENV_FILE }} | cut -d'=' -f2-)
+
+          docker-compose -f ${{ env.COMPOSE_FILE }} \
+            --env-file ${{ env.ENV_FILE }} \
+            -p stage-docsplus \
+            build \
+            --build-arg DATABASE_URL="${DATABASE_URL}"
 
    - name: 🚀 Deploy Stack
      run: |
