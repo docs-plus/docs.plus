@@ -165,6 +165,21 @@
     user-select: text !important;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
 
+    /* iOS Safari caret positioning fix */
+    touch-action: manipulation; /* Prevent double-tap zoom interference */
+    -webkit-text-size-adjust: 100%; /* Prevent text size adjustment */
+    text-size-adjust: 100%;
+
+    /* Force proper text rendering for accurate tap positioning */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+
+    /* Ensure proper word boundaries for iOS */
+    word-break: normal;
+    overflow-wrap: break-word;
+    -webkit-line-break: after-white-space;
+
     /* Ensure all editable content shows caret */
     &[contenteditable='true'] {
       caret-color: var(--caret-color) !important;
@@ -200,7 +215,27 @@
     }
 
     .title {
-      padding-right: 40px;
+      padding-right: 50px;
+      position: relative;
+
+      // iOS Safari fix: position button absolutely to not interfere with text caret
+      .btnOpenChatBox {
+        position: absolute !important;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        // Remove from text flow so iOS Safari can position caret correctly
+        float: none !important;
+        display: flex !important;
+      }
+    }
+
+    // iOS Safari: Ensure text selection/caret works properly in heading content
+    .heading-content {
+      -webkit-user-select: text;
+      user-select: text;
+      // Force iOS to use proper caret positioning
+      -webkit-tap-highlight-color: transparent;
     }
 
     .heading:not([level='1']) {
