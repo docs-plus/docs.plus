@@ -249,6 +249,13 @@ jobs:
       echo ""
       echo "✅ Deployment verified"
 
+   - name: 🔄 Ensure Services from Production Directory
+     run: |
+      cd /opt/projects/prod.docs.plus/app/docs.plus/docs.plus
+      docker compose -f ${{ env.COMPOSE_FILE }} --env-file ${{ env.ENV_FILE }} up -d \
+        rest-api hocuspocus-server hocuspocus-worker webapp
+      echo "✅ Services running"
+
    - name: 🧹 Cleanup
      run: |
       # Remove dangling images
@@ -281,9 +288,8 @@ jobs:
 
       # Don't do aggressive rollback - just ensure services are running
       # Traefik will route to whatever containers are healthy
-
-      docker compose -f ${{ env.COMPOSE_FILE }} \
-        --env-file ${{ env.ENV_FILE }} \
+      cd /opt/projects/prod.docs.plus/app/docs.plus/docs.plus
+      docker compose -f ${{ env.COMPOSE_FILE }} --env-file ${{ env.ENV_FILE }} \
         up -d --no-recreate 2>/dev/null || true
 
       echo "📊 Current state:"
