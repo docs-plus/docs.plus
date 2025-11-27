@@ -47,7 +47,31 @@ const ToolbarMobile = () => {
     event.stopPropagation()
 
     if (action === 'toggleFormatSelection') {
-      setIsFormatSelectionVisible(!isFormatSelectionVisible)
+      const willOpen = !isFormatSelectionVisible
+      setIsFormatSelectionVisible(willOpen)
+
+      // When format panel opens, ensure caret is visible above the panel
+      if (willOpen) {
+        requestAnimationFrame(() => {
+          const editorWrapper = document.querySelector('.editorWrapper')
+          const selection = window.getSelection()
+          if (!editorWrapper || !selection?.rangeCount) return
+
+          const range = selection.getRangeAt(0)
+          const caretRect = range.getBoundingClientRect()
+          const wrapperRect = editorWrapper.getBoundingClientRect()
+
+          // Format panel is ~134px tall, add some padding
+          const panelHeight = 150
+          const visibleBottom = wrapperRect.bottom - panelHeight
+
+          // If caret is below the visible area (behind format panel), scroll it up
+          if (caretRect.bottom > visibleBottom) {
+            const scrollAmount = caretRect.bottom - visibleBottom + 20 // 20px extra padding
+            editorWrapper.scrollTop += scrollAmount
+          }
+        })
+      }
     } else if (action === 'addComment') {
       createComment(editor)
     } else {
