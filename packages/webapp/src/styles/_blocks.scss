@@ -17,11 +17,11 @@ $bg-root: #f8f9fa;
         background-color: #fff;
 
         /* Fix caret visibility on white background */
-        caret-color: #000;
+        caret-color: var(--caret-color);
 
         /* Ensure caret is visible in all child elements */
         * {
-          caret-color: #000;
+          caret-color: inherit;
         }
       }
     }
@@ -59,11 +59,11 @@ $bg-root: #f8f9fa;
   scroll-padding-top: 100px;
 
   /* Ensure caret is always visible */
-  caret-color: #000;
+  caret-color: var(--caret-color);
 
   /* Ensure caret is visible on different backgrounds */
   &.dark-theme {
-    caret-color: #fff;
+    caret-color: var(--caret-color-inverse);
   }
 
   /* Fix caret visibility in all child elements */
@@ -91,16 +91,16 @@ $bg-root: #f8f9fa;
     caret-color: inherit;
   }
 
-  /* Elements with white/light backgrounds need explicit black caret */
+  /* Elements with white/light backgrounds need explicit caret color */
   .heading[level='1'],
   [style*='background-color: #fff'],
   [style*='background-color: white'],
   [style*='background: #fff'],
   [style*='background: white'] {
-    caret-color: #000 !important;
+    caret-color: var(--caret-color) !important;
 
     * {
-      caret-color: #000 !important;
+      caret-color: inherit !important;
     }
   }
 

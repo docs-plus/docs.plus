@@ -1,7 +1,7 @@
-@import "tailwindcss";
-@plugin "daisyui";
+@import 'tailwindcss';
+@plugin 'daisyui';
 
-@plugin "daisyui/theme" {
+@plugin 'daisyui/theme' {
   name: 'docsyLight';
   default: true;
   prefersdark: false;
@@ -45,6 +45,8 @@
   --font-family: 'Helvetica, Arial, sans-serif';
   --color-docsy: #2778ff;
   --text-docsy: #2778ff;
+  --caret-color: #2778ff; /* Docsy brand color */
+  --caret-color-inverse: oklch(100% 0 0); /* For dark backgrounds */
 }
 
 * {
@@ -62,7 +64,7 @@ input {
   outline: none;
 
   /* Ensure caret is always visible across all ProseMirror instances */
-  caret-color: auto;
+  caret-color: var(--caret-color);
 }
 
 html:not(.m_mobile) {
@@ -86,7 +88,6 @@ html:not(.m_mobile) {
   height: 100%;
   min-height: 100vh;
   min-height: calc(var(--vh, 1vh) * 100);
-
 }
 
 .tippy-box {
