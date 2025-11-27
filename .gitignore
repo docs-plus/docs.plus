@@ -144,9 +144,8 @@ packages/hocuspocus.server/temp/
 # Development environment file
 .env.development
 
-# Local notification scripts with sensitive credentials
-.github/workflows/sendnotif.sh
 
+# local Notes and scripts
 Notes/
 
 # Sensitive documentation (contains env templates)
