@@ -21,10 +21,17 @@ const Editor = () => {
 
   useUpdateDocPageUnreadMsg()
 
+  // Prevent native context menu on mobile - use custom bubble menu instead
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault()
+    return false
+  }
+
   return (
     <>
       <div
         ref={editorWrapperRef}
+        onContextMenu={handleContextMenu}
         className="editor editorWrapper relative flex size-full w-full max-w-full flex-col justify-center overflow-y-auto p-0">
         <MobileBubbleMenu />
         <EditorContent />
@@ -37,8 +44,7 @@ const Editor = () => {
             : isKeyboardOpen && !chatRoom?.headingId && !activeSheet && !pendingSheet
               ? 'pointer-events-auto translate-y-0 opacity-100'
               : 'pointer-events-none translate-y-4 opacity-0'
-        }`}>
-      </div>
+        }`}></div>
     </>
   )
 }
