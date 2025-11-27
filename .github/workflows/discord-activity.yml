@@ -16,6 +16,16 @@ jobs:
       REF=$(jq -r '.ref' <<< "$EVENT" | sed 's|refs/heads/||')
       COMPARE=$(jq -r '.compare' <<< "$EVENT")
 
+      # Check if this is a build trigger commit (skip notification)
+      FIRST_COMMIT_MSG=$(jq -r '.commits[0].message // ""' <<< "$EVENT")
+      SKIP_NOTIFICATION="false"
+
+      # Skip if single commit with "build front back" message
+      if [ "$COUNT" -eq 1 ] && [ "$FIRST_COMMIT_MSG" = "build front back" ]; then
+        SKIP_NOTIFICATION="true"
+        echo "⏭️ Skipping Discord notification (build trigger commit)"
+      fi
+
       # List every commit with numbered list and clickable commit hash
       REPO_URL="https://github.com/${{ github.repository }}"
       COMMITS=$(jq -r --arg repo "$REPO_URL" '.commits | to_entries[] |
@@ -27,12 +37,14 @@ jobs:
         echo "COUNT=$COUNT"
         echo "REF=$REF"
         echo "COMPARE=$COMPARE"
+        echo "SKIP_NOTIFICATION=$SKIP_NOTIFICATION"
         echo 'COMMITS<<EOF'
         echo "$COMMITS"
         echo 'EOF'
       } >> "$GITHUB_ENV"
 
    - name: Post to Discord (smart split)
+     if: env.SKIP_NOTIFICATION != 'true'
      run: |
       HEADER="🚀 **Push Event**
       📦 Repository: \`${{ github.repository }}\`
