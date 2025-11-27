@@ -293,7 +293,7 @@ $bg-root: #f8f9fa;
         visibility: visible;
       }
 
-      > span {
+      > span:not(.collaboration-cursor__caret) {
         width: calc(100% + 60px);
         display: inline-block;
         position: relative;
