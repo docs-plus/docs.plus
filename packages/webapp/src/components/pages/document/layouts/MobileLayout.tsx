@@ -35,11 +35,7 @@ const MobileLayout = () => {
   if (isHistoryView) return <MobileHistory />
 
   return (
-    <div
-      className={`tiptap relative flex w-full flex-col ${deviceClass}`}
-      style={{
-        height: 'calc(var(--vh, 1vh) * 100)'
-      }}>
+    <div className={`mobileLayoutRoot tiptap flex w-full flex-col ${deviceClass}`}>
       <div className="sticky top-0 z-20 w-full bg-white">
         <MobilePadTitle />
       </div>

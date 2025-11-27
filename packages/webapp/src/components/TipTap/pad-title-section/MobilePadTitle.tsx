@@ -28,8 +28,8 @@ interface UndoRedoButtonsProps {
 const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
   if (isEditable) {
     return (
-      <ToolbarButton className="text-docsy size-12">
-        <BiCheck size={32} />
+      <ToolbarButton className="text-docsy size-8">
+        <BiCheck size={32} className="size-12" />
       </ToolbarButton>
     )
   }
@@ -38,7 +38,7 @@ const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
     <label
       htmlFor="mobile_left_side_panel"
       aria-label="close sidebar"
-      className="btn drawer-button btn-ghost btn-square">
+      className="btn drawer-button btn-ghost btn-square size-8">
       <MdMenu size={30} />
     </label>
   )
@@ -93,10 +93,18 @@ const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
   return (
     <div className={`flex items-center ${className}`}>
       <div className="flex items-center gap-3">
-        <ToolbarButton onClick={() => editor?.commands.undo()} editor={editor} type="undo">
+        <ToolbarButton
+          onClick={() => editor?.commands.undo()}
+          editor={editor}
+          type="undo"
+          className="size-8">
           <BiUndo size={26} />
         </ToolbarButton>
-        <ToolbarButton onClick={() => editor?.commands.redo()} editor={editor} type="redo">
+        <ToolbarButton
+          onClick={() => editor?.commands.redo()}
+          editor={editor}
+          type="redo"
+          className="size-8">
           <BiRedo size={26} />
         </ToolbarButton>
       </div>

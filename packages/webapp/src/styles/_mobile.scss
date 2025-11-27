@@ -1,19 +1,56 @@
 :root {
-  --app-height: 100%;
-  --app-overFlow-y: auto;
-  --app-position_b: 'fixed';
   --bg-docy: #2778ff;
 }
 
 .m_mobile {
+  // iOS Safari keyboard fix - lock html/body, make layout container the viewport
   html,
   body {
-    height: 100vh;
-    height: calc(var(--vh, 1vh) * 100);
-    position: var(--app-position_b);
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    // Prevent Safari scroll restoration on keyboard re-open
+    overflow-anchor: none;
+  }
+
+  #root,
+  #__next {
+    height: 100%;
+    overflow: hidden;
+    overflow-anchor: none;
+  }
+
+  // Main mobile layout container - CSS-only keyboard handling
+  .mobileLayoutRoot {
+    position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
+    right: 0;
+    bottom: 0;
+    height: 100dvh; // Dynamic viewport height - handles keyboard natively
+    height: calc(var(--vh, 1vh) * 100); // Fallback for older browsers
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    overscroll-behavior: none;
+    overflow-anchor: none;
+    // Prevent any smooth scrolling during resize
+    scroll-behavior: auto !important;
+
+    // Header - fixed size, no shrink
+    > .sticky:first-child {
+      flex-shrink: 0;
+      position: relative; // Override sticky - we're in fixed container
+    }
+
+    // Footer toolbar - fixed size, no shrink
+    > .mobileToolbarBottom {
+      flex-shrink: 0;
+      position: relative; // Override sticky - we're in fixed container
+    }
   }
 
   em-emoji-picker {
@@ -101,17 +138,24 @@
     }
   }
 
-  // Single scroll container for iOS Safari caret fix
+  // Editor is the ONLY scrollable element - key to preventing iOS keyboard glitch
   .editorWrapper {
-    // Enable GPU acceleration for smoother scrolling and caret rendering
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain; // Prevent scroll chaining to parent
+    -webkit-overflow-scrolling: touch;
+
+    // Prevent Safari scroll restoration on subsequent keyboard opens
+    overflow-anchor: none;
+    scroll-behavior: auto;
+
+    // GPU acceleration for smooth scrolling
     transform: translate3d(0, 0, 0);
     -webkit-transform: translate3d(0, 0, 0);
 
-    // iOS Safari: Force scroll container to be the layout viewport
-    -webkit-overflow-scrolling: touch;
-
-    // Prevent nested overflow issues
-    overflow-x: hidden;
+    // Contain layout recalculations
+    contain: layout style;
   }
 
   .ProseMirror {
