@@ -59,9 +59,9 @@ export const RenderToc = ({ childItems, item, renderTocs }: any) => {
 
         <span className="block w-8 pl-8"></span>
         <span
-          className="btn_openChatBox flex items-center justify-end overflow-hidden bg-neutral text-neutral-content"
+          className="btn_openChatBox bg-neutral text-neutral-content flex items-center justify-end overflow-hidden"
           onClick={() => {
-            openChatContainerHandler(item)
+            openChatContainerHandler(item, { focusEditor: false })
             closeModal?.()
           }}
           data-unread-count={unreadMessage > 0 ? unreadMessage : ''}>

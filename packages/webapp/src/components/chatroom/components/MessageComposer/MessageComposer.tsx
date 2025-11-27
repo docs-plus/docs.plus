@@ -65,7 +65,10 @@ const MessageComposer = ({
   // const usersPresence = useStore((state: any) => state.usersPresence)
   const startThreadMessage = useChatStore((state) => state.startThreadMessage)
   const channels = useChatStore((state) => state.channels)
-  const { workspaceId } = useStore((state) => state.settings)
+  const {
+    workspaceId,
+    editor: { isMobile }
+  } = useStore((state) => state.settings)
   const editorRef = useRef<HTMLDivElement | null>(null)
   const [isToolbarOpen, setIsToolbarOpen] = useState(false)
   const setOrUpdateChatRoom = useChatStore((state) => state.setOrUpdateChatRoom)
@@ -152,8 +155,7 @@ const MessageComposer = ({
 
     const content = editMessageMemory.html || editMessageMemory.content
     if (!content) return
-
-    editor.chain().setContent(content).focus('start').run()
+    if (!isMobile) editor.chain().setContent(content).focus('start').run()
   }, [editor, editMessageMemory, channelId])
 
   // Validation helpers

@@ -10,11 +10,12 @@ const useOpenChatContainer = () => {
   } = useStore((state) => state.settings)
 
   const openChatContainerHandler = useCallback(
-    (item: any) => {
+    (item: any, data: any) => {
       if (!editor) return
 
       PubSub.publish(CHAT_OPEN, {
-        headingId: item.id
+        headingId: item.id,
+        ...(data ?? {})
       })
     },
     [editor, headingId]

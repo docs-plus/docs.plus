@@ -87,7 +87,8 @@ const buttonWrapper = (
     e.preventDefault()
 
     PubSub.publish(CHAT_OPEN, {
-      headingId
+      headingId,
+      focusEditor: false
     })
 
     editor
