@@ -1,47 +1,72 @@
 {
+  "id": "docs-plus-pwa",
   "name": "Docs.plus",
   "short_name": "Docs.plus",
-  "description": "Docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge efficiently. It leverages open-source technologies to make document collaboration and knowledge sharing straightforward and effective.",
-  "background_color": "#3367D6",
-  "theme_color": "#3367D6",
+  "description": "Docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge efficiently.",
+  "lang": "en",
+  "dir": "ltr",
+  "categories": ["productivity", "utilities", "education"],
+  "background_color": "#ffffff",
+  "theme_color": "#2778ff",
   "display": "standalone",
+  "orientation": "any",
   "start_url": "/",
   "scope": "/",
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "icons/favicon.ico",
+      "src": "/icons/favicon.ico",
       "type": "image/x-icon",
-      "sizes": "any"
+      "sizes": "48x48"
     },
     {
-      "src": "icons/logo.svg",
+      "src": "/icons/favicon-16x16.png",
+      "type": "image/png",
+      "sizes": "16x16"
+    },
+    {
+      "src": "/icons/favicon-32x32.png",
+      "type": "image/png",
+      "sizes": "32x32"
+    },
+    {
+      "src": "/icons/logo.svg",
       "type": "image/svg+xml",
-      "sizes": "any"
+      "sizes": "any",
+      "purpose": "any"
     },
     {
-      "src": "icons/android-chrome-192x192.png",
+      "src": "/icons/android-chrome-192x192.png",
       "type": "image/png",
-      "sizes": "192x192"
+      "sizes": "192x192",
+      "purpose": "any"
     },
     {
-      "src": "icons/android-chrome-512x512.png",
+      "src": "/icons/android-chrome-512x512.png",
       "type": "image/png",
-      "sizes": "512x512"
+      "sizes": "512x512",
+      "purpose": "any"
     },
     {
-      "src": "icons/maskable_icon_x192.png",
+      "src": "/icons/apple-touch-icon.png",
+      "type": "image/png",
+      "sizes": "180x180",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable_icon_x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "icons/maskable_icon_x384.png",
+      "src": "/icons/maskable_icon_x384.png",
       "sizes": "384x384",
       "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "icons/maskable_icon_x512.png",
+      "src": "/icons/maskable_icon_x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
@@ -49,44 +74,40 @@
   ],
   "screenshots": [
     {
-      "src": "icons/screenshot1.jpg",
-      "type": "image/png",
-      "sizes": "1244x1370"
+      "src": "/icons/screenshot1.jpg",
+      "type": "image/jpeg",
+      "sizes": "1244x1370",
+      "form_factor": "wide",
+      "label": "Docs.plus collaborative editor"
     },
     {
-      "src": "icons/screenshot2.jpg",
-      "type": "image/png",
-      "sizes": "1244x1370"
+      "src": "/icons/screenshot2.jpg",
+      "type": "image/jpeg",
+      "sizes": "1244x1370",
+      "form_factor": "wide",
+      "label": "Real-time collaboration"
     },
     {
-      "src": "icons/screenshot3.jpg",
-      "type": "image/png",
-      "sizes": "1244x1370"
+      "src": "/icons/screenshot3.jpg",
+      "type": "image/jpeg",
+      "sizes": "1244x1370",
+      "form_factor": "wide",
+      "label": "Knowledge sharing"
     }
   ],
   "shortcuts": [
     {
-      "name": "Demo page",
+      "name": "Demo",
+      "short_name": "Demo",
       "url": "/demo",
-      "description": "Navigate to the demo page to see Docs.plus in action.",
+      "description": "Try the demo page",
       "icons": [
         {
-          "src": "icons/android-chrome-192x192.png",
-          "sizes": "192x192"
-        }
-      ]
-    },
-    {
-      "name": "Docs.plus on GitHub",
-      "url": "/github",
-      "description": "Visit our GitHub document to view the source code, contribute, or report issues.",
-      "icons": [
-        {
-          "src": "icons/github-mark-white.png",
-          "sizes": "230×225"
+          "src": "/icons/android-chrome-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
         }
       ]
     }
-  ],
-  "splash_pages": null
+  ]
 }
