@@ -854,6 +854,95 @@ ol {
   }
 }
 
+/* Mobile Bubble Menu - Selection Actions */
+.mobile-bubble-menu {
+  z-index: 50;
+
+  .bubble-menu-container {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 10px;
+    background: #1a1a1a;
+    border-radius: 10px;
+    box-shadow:
+      0 4px 20px rgba(0, 0, 0, 0.3),
+      0 2px 6px rgba(0, 0, 0, 0.2);
+  }
+
+  .bubble-menu-group {
+    display: flex;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .bubble-menu-divider {
+    width: 1px;
+    height: 24px;
+    background: rgba(255, 255, 255, 0.2);
+    margin: 0 6px;
+  }
+
+  // Icon-only buttons (Cut/Copy/Paste)
+  .bubble-menu-btn--icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 8px;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.9);
+    transition: all 0.12s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+
+    &:active {
+      background: rgba(255, 255, 255, 0.15);
+      transform: scale(0.92);
+    }
+
+    // Copied state
+    &.copied {
+      color: #4ade80;
+    }
+  }
+
+  // Icon + label buttons (Comment/Link)
+  .bubble-menu-btn {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 8px 14px;
+    height: 40px;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--color-docsy, #2778ff);
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    transition: all 0.12s ease;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+
+    svg {
+      flex-shrink: 0;
+    }
+
+    &:active {
+      background: rgba(39, 120, 255, 0.15);
+      transform: scale(0.95);
+    }
+  }
+}
+
+/* Bubble menu arrow - hide default */
+.mobile-bubble-menu .tippy-arrow {
+  display: none;
+}
+
 .chat-comment-button {
   svg {
     position: relative;

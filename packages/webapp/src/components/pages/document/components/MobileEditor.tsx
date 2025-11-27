@@ -4,7 +4,6 @@ import { useChatStore, useStore, useSheetStore } from '@stores'
 import { useAdjustEditorSizeForChatRoom } from '../hooks'
 import useEditableDocControl from '@components/pages/document/hooks/useEditableDocControl'
 import useUpdateDocPageUnreadMsg from '@components/pages/document/hooks/useUpdateDocPageUnreadMsg'
-import { MobileBubbleMenu } from './MobileBubbleMenu'
 
 const Editor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
@@ -21,19 +20,11 @@ const Editor = () => {
 
   useUpdateDocPageUnreadMsg()
 
-  // Prevent native context menu on mobile - use custom bubble menu instead
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault()
-    return false
-  }
-
   return (
     <>
       <div
         ref={editorWrapperRef}
-        onContextMenu={handleContextMenu}
         className="editor editorWrapper relative flex size-full w-full max-w-full flex-col justify-center overflow-y-auto p-0">
-        <MobileBubbleMenu />
         <EditorContent />
       </div>
 

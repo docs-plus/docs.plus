@@ -1,40 +1,98 @@
 import { BubbleMenu } from '@tiptap/react/menus'
 import { useStore } from '@stores'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
+import { useClipboard } from '@pages/document/hooks'
+import { useCallback, TouchEvent, MouseEvent } from 'react'
+import {
+  MdContentCut,
+  MdContentCopy,
+  MdContentPaste,
+  MdOutlineComment,
+  MdInsertLink
+} from 'react-icons/md'
 
-type Props = {}
-
-export const MobileBubbleMenu = ({}: Props) => {
+export const MobileBubbleMenu = () => {
   const {
     editor: { instance: editor }
   } = useStore((state) => state.settings)
 
   const { createComment } = useTurnSelectedTextIntoComment()
+  const { cut, copy, paste, copied } = useClipboard(editor)
+
+  // Prevent scroll behavior on button interactions
+  const preventScrollAndRun = useCallback(
+    (handler: () => void) => (e: TouchEvent | MouseEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      handler()
+    },
+    []
+  )
+
+  const handleComment = useCallback(() => {
+    if (!editor) return
+    createComment(editor)
+  }, [editor, createComment])
+
+  const handleLink = useCallback(() => {
+    if (!editor) return
+    // @ts-ignore - setHyperlink is a valid command
+    editor.chain().focus().setHyperlink().run()
+  }, [editor])
+
+  if (!editor) return null
 
   return (
-    <div>
-      {editor && (
-        <BubbleMenu
-          className="bubble-menu join bg-base-100 rounded-[10px] drop-shadow-lg"
-          options={{
-            placement: 'top',
-            offset: 6
-          }}
-          editor={editor}>
+    <BubbleMenu
+      className="mobile-bubble-menu"
+      options={{
+        placement: 'top',
+        offset: 8
+      }}
+      editor={editor}>
+      <div className="bubble-menu-container">
+        {/* Clipboard - icon only (universal symbols) */}
+        <div className="bubble-menu-group">
           <button
-            className="bt btn-ghost join-item flex max-h-[42px] min-h-[42px] items-center px-4"
-            onClick={() => createComment(editor)}>
-            Add Comments
+            className="bubble-menu-btn--icon"
+            onTouchEnd={preventScrollAndRun(cut)}
+            onClick={preventScrollAndRun(cut)}>
+            <MdContentCut size={18} />
           </button>
-          <div className="divider divider-horizontal m-0"></div>
           <button
-            className="btn btn-ghost join-item max-h-[42px] min-h-[42px] px-4"
-            // @ts-ignore - setHyperlink is a valid command but TypeScript types aren't picking it up in Docker builds
-            onClick={() => editor.chain().focus().setHyperlink().run()}>
-            Insert Link
+            className={`bubble-menu-btn--icon ${copied ? 'copied' : ''}`}
+            onTouchEnd={preventScrollAndRun(copy)}
+            onClick={preventScrollAndRun(copy)}>
+            <MdContentCopy size={18} />
           </button>
-        </BubbleMenu>
-      )}
-    </div>
+          <button
+            className="bubble-menu-btn--icon"
+            onTouchEnd={preventScrollAndRun(paste)}
+            onClick={preventScrollAndRun(paste)}>
+            <MdContentPaste size={18} />
+          </button>
+        </div>
+
+        <div className="bubble-menu-divider" />
+
+        {/* Primary Actions - icon + label inline */}
+        <div className="bubble-menu-group">
+          <button
+            className="bubble-menu-btn"
+            onTouchEnd={preventScrollAndRun(handleComment)}
+            onClick={preventScrollAndRun(handleComment)}>
+            <MdOutlineComment size={18} />
+            <span>Comment</span>
+          </button>
+          <button
+            className="bubble-menu-btn"
+            onTouchEnd={preventScrollAndRun(handleLink)}
+            onClick={preventScrollAndRun(handleLink)}>
+            <MdInsertLink size={18} />
+            <span>Link</span>
+          </button>
+        </div>
+      </div>
+    </BubbleMenu>
   )
 }

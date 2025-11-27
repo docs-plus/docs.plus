@@ -165,15 +165,11 @@
     user-select: text !important;
     -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
 
-    /* Disable native iOS callout menu (Copy/Look Up/Share) - use custom bubble menu instead */
-    -webkit-touch-callout: none !important;
-
     /* Ensure all editable content shows caret */
     &[contenteditable='true'] {
       caret-color: var(--caret-color) !important;
       -webkit-user-select: text !important;
       user-select: text !important;
-      -webkit-touch-callout: none !important;
     }
 
     /* Fix caret visibility in nested elements - critical for deep heading nesting */
