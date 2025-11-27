@@ -63,7 +63,7 @@ jobs:
           fi
 
           curl -H "Content-Type: application/json" \
-               -d "{\"content\": $(echo "$MESSAGE" | jq -Rs .)}" \
+               -d "{\"content\": $(echo "$MESSAGE" | jq -Rs .), \"flags\": 4}" \
                "${{ secrets.DISCORD_WEBHOOK }}"
 
           sleep 1  # Rate limit protection
@@ -83,6 +83,6 @@ jobs:
         fi
 
         curl -H "Content-Type: application/json" \
-             -d "{\"content\": $(echo "$MESSAGE" | jq -Rs .)}" \
+             -d "{\"content\": $(echo "$MESSAGE" | jq -Rs .), \"flags\": 4}" \
              "${{ secrets.DISCORD_WEBHOOK }}"
       fi
