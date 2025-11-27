@@ -66,34 +66,39 @@ export default function MyApp({ Component, pageProps }: any) {
         // Silently fail - cleanup is best-effort
       })
 
-      // Viewport height correction
-      const customViewportCorrectionVariable = 'vh'
-      const setViewportProperty = (doc: HTMLElement) => {
-        let prevClientHeight: number | undefined
-        const customVar = '--' + (customViewportCorrectionVariable || 'vh')
+      // Viewport height correction for iOS Safari keyboard handling
+      let prevHeight: number | undefined
+      let prevOffsetTop: number | undefined
+      const doc = document.documentElement
 
-        function handleResize() {
-          let clientHeight = doc.clientHeight
-          // Use visualViewport if available to support virtual keyboards (iOS/Android)
-          if (window.visualViewport) {
-            clientHeight = window.visualViewport.height
-          }
+      function updateViewportHeight() {
+        const vv = window.visualViewport
+        // Get visual viewport height (excludes keyboard on iOS/Android)
+        const height = vv?.height ?? window.innerHeight
+        // On iOS, visual viewport can scroll when keyboard opens
+        const offsetTop = vv?.offsetTop ?? 0
 
-          if (clientHeight === prevClientHeight) return
-          requestAnimationFrame(function updateViewportHeight() {
-            doc.style.setProperty(customVar, clientHeight * 0.01 + 'px')
-            prevClientHeight = clientHeight
-          })
-        }
-        handleResize()
-        return handleResize
+        if (height === prevHeight && offsetTop === prevOffsetTop) return
+        prevHeight = height
+        prevOffsetTop = offsetTop
+
+        requestAnimationFrame(() => {
+          // --visual-viewport-height: actual pixel value for mobile layouts
+          doc.style.setProperty('--visual-viewport-height', `${height}px`)
+          // --visual-viewport-offset-top: how much visual viewport has scrolled
+          doc.style.setProperty('--visual-viewport-offset-top', `${offsetTop}px`)
+          // --vh: 1% of viewport for calc() usage (legacy)
+          doc.style.setProperty('--vh', `${height * 0.01}px`)
+        })
       }
 
-      const onResize = setViewportProperty(document.documentElement)
-      window.addEventListener('resize', onResize)
-      if (window.visualViewport) {
-        window.visualViewport.addEventListener('resize', onResize)
-      }
+      // Initial set
+      updateViewportHeight()
+
+      // Listen for changes
+      window.addEventListener('resize', updateViewportHeight)
+      window.visualViewport?.addEventListener('resize', updateViewportHeight)
+      window.visualViewport?.addEventListener('scroll', updateViewportHeight)
     }
   }, [])
 

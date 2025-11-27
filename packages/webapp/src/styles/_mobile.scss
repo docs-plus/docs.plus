@@ -26,12 +26,12 @@
   // Main mobile layout container - CSS-only keyboard handling
   .mobileLayoutRoot {
     position: fixed;
-    top: 0;
+    // Account for iOS visual viewport scrolling when keyboard opens
+    top: var(--visual-viewport-offset-top, 0px);
     left: 0;
-    right: 0;
-    bottom: 0;
-    height: 100dvh; // Dynamic viewport height - handles keyboard natively
-    height: calc(var(--vh, 1vh) * 100); // Fallback for older browsers
+    width: 100%;
+    height: 100dvh;
+    height: var(--visual-viewport-height, 100dvh);
     display: flex;
     flex-direction: column;
     overflow: hidden;

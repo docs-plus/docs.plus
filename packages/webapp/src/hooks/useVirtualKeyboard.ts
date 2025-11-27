@@ -10,9 +10,7 @@ const useVirtualKeyboard = () => {
   useEffect(() => {
     const visualViewport = window.visualViewport
 
-    if (!visualViewport) {
-      return
-    }
+    if (!visualViewport) return
 
     const handleViewportChange = () => {
       const windowHeight = window.innerHeight
