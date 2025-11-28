@@ -66,39 +66,70 @@ export default function MyApp({ Component, pageProps }: any) {
         // Silently fail - cleanup is best-effort
       })
 
-      // Viewport height correction for iOS Safari keyboard handling
-      let prevHeight: number | undefined
-      let prevOffsetTop: number | undefined
+      // iOS Safari keyboard viewport fix
+      // Two key behaviors to handle:
+      // 1. Height changes when keyboard opens/closes
+      // 2. iOS auto-scrolls when focusing elements in bottom half of screen
       const doc = document.documentElement
+      let lastHeight = window.visualViewport?.height ?? window.innerHeight
+      let rafId: number | null = null
 
-      function updateViewportHeight() {
-        const vv = window.visualViewport
-        // Get visual viewport height (excludes keyboard on iOS/Android)
-        const height = vv?.height ?? window.innerHeight
-        // On iOS, visual viewport can scroll when keyboard opens
-        const offsetTop = vv?.offsetTop ?? 0
+      // Set initial height
+      const vv = window.visualViewport
+      if (vv) {
+        doc.style.setProperty('--visual-viewport-height', `${vv.height}px`)
+        doc.style.setProperty('--vh', `${vv.height * 0.01}px`)
+      }
 
-        if (height === prevHeight && offsetTop === prevOffsetTop) return
-        prevHeight = height
-        prevOffsetTop = offsetTop
+      // Update height immediately using rAF for smooth rendering
+      function handleViewportResize() {
+        if (rafId) cancelAnimationFrame(rafId)
 
-        requestAnimationFrame(() => {
-          // --visual-viewport-height: actual pixel value for mobile layouts
+        rafId = requestAnimationFrame(() => {
+          const vv = window.visualViewport
+          if (!vv) return
+
+          const height = vv.height
+
+          // Skip micro-updates (less than 50px change might be just toolbar hiding)
+          if (Math.abs(height - lastHeight) < 50) return
+
+          lastHeight = height
           doc.style.setProperty('--visual-viewport-height', `${height}px`)
-          // --visual-viewport-offset-top: how much visual viewport has scrolled
-          doc.style.setProperty('--visual-viewport-offset-top', `${offsetTop}px`)
-          // --vh: 1% of viewport for calc() usage (legacy)
           doc.style.setProperty('--vh', `${height * 0.01}px`)
         })
       }
 
-      // Initial set
-      updateViewportHeight()
+      // CRITICAL: When iOS auto-scrolls to show focused element, reset scroll
+      // This prevents the "off-screen" issue when tapping bottom half
+      let scrollResetTimeout: ReturnType<typeof setTimeout> | null = null
 
-      // Listen for changes
-      window.addEventListener('resize', updateViewportHeight)
-      window.visualViewport?.addEventListener('resize', updateViewportHeight)
-      window.visualViewport?.addEventListener('scroll', updateViewportHeight)
+      function handleViewportScroll() {
+        const vv = window.visualViewport
+        if (!vv || vv.offsetTop === 0) return
+
+        // Clear any pending reset
+        if (scrollResetTimeout) clearTimeout(scrollResetTimeout)
+
+        // Debounce the scroll reset to let iOS finish its animation
+        scrollResetTimeout = setTimeout(() => {
+          // Double-check offsetTop is still non-zero
+          if (window.visualViewport && window.visualViewport.offsetTop > 0) {
+            // Reset window scroll - our fixed container will realign
+            window.scrollTo(0, 0)
+          }
+        }, 100)
+      }
+
+      window.visualViewport?.addEventListener('resize', handleViewportResize)
+      window.visualViewport?.addEventListener('scroll', handleViewportScroll)
+
+      return () => {
+        if (rafId) cancelAnimationFrame(rafId)
+        if (scrollResetTimeout) clearTimeout(scrollResetTimeout)
+        window.visualViewport?.removeEventListener('resize', handleViewportResize)
+        window.visualViewport?.removeEventListener('scroll', handleViewportScroll)
+      }
     }
   }, [])
 

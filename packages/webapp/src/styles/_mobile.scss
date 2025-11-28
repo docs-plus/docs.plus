@@ -2,54 +2,64 @@
   --bg-docy: #2778ff;
 }
 
+// iOS Safari keyboard fix - lock html/body to prevent scroll glitches
+html.m_mobile {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+html.m_mobile body {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  margin: 0;
+  padding: 0;
+}
+
+html.m_mobile #root,
+html.m_mobile #__next {
+  height: 100%;
+  overflow: hidden;
+}
+
 .m_mobile {
-  // iOS Safari keyboard fix - lock html/body, make layout container the viewport
-  html,
-  body {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    overscroll-behavior: none;
-    // Prevent Safari scroll restoration on keyboard re-open
-    overflow-anchor: none;
-  }
-
-  #root,
-  #__next {
-    height: 100%;
-    overflow: hidden;
-    overflow-anchor: none;
-  }
-
-  // Main mobile layout container - CSS-only keyboard handling
+  // Main mobile layout container
+  // CRITICAL: Do NOT use offsetTop - it causes feedback loops with iOS Safari auto-scroll
+  // Height is updated immediately via rAF in _app.tsx
   .mobileLayoutRoot {
     position: fixed;
-    // Account for iOS visual viewport scrolling when keyboard opens
-    top: var(--visual-viewport-offset-top, 0px);
+    top: 0;
     left: 0;
-    width: 100%;
-    height: 100dvh;
+    right: 0;
+    // Height tracks visual viewport - updated via JS on resize
+    // Fallback to 100dvh (dynamic viewport height that adjusts for browser chrome)
     height: var(--visual-viewport-height, 100dvh);
     display: flex;
     flex-direction: column;
     overflow: hidden;
     overscroll-behavior: none;
-    overflow-anchor: none;
-    // Prevent any smooth scrolling during resize
-    scroll-behavior: auto !important;
+    -webkit-overflow-scrolling: touch;
+    // No transition - immediate updates feel more native on iOS
+    will-change: height;
+    contain: layout style;
 
     // Header - fixed size, no shrink
     > .sticky:first-child {
       flex-shrink: 0;
-      position: relative; // Override sticky - we're in fixed container
+      position: relative;
     }
 
     // Footer toolbar - fixed size, no shrink
     > .mobileToolbarBottom {
       flex-shrink: 0;
-      position: relative; // Override sticky - we're in fixed container
+      position: relative;
     }
   }
 
@@ -138,24 +148,16 @@
     }
   }
 
-  // Editor is the ONLY scrollable element - key to preventing iOS keyboard glitch
+  // Editor is the ONLY scrollable element - prevents iOS keyboard glitch
   .editorWrapper {
     flex: 1;
+    min-height: 0; // Critical for flex child scrolling
     overflow-y: auto;
     overflow-x: hidden;
-    overscroll-behavior: contain; // Prevent scroll chaining to parent
+    overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-
-    // Prevent Safari scroll restoration on subsequent keyboard opens
-    overflow-anchor: none;
-    scroll-behavior: auto;
-
-    // GPU acceleration for smooth scrolling
-    transform: translate3d(0, 0, 0);
-    -webkit-transform: translate3d(0, 0, 0);
-
-    // Contain layout recalculations
-    contain: layout style;
+    // GPU layer for smooth scrolling
+    transform: translateZ(0);
   }
 
   .ProseMirror {

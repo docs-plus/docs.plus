@@ -1,87 +1,63 @@
 import { useEffect, useRef } from 'react'
 import { useStore } from '@stores'
 
+/**
+ * Tracks virtual keyboard state for mobile devices.
+ * Uses 300ms debounce to wait for full iOS keyboard animation completion.
+ *
+ * CRITICAL: This hook only tracks state - layout is handled by CSS + _app.tsx
+ */
 const useVirtualKeyboard = () => {
   const { setKeyboardOpen, setKeyboardHeight, setVirtualKeyboardState } = useStore((state) => state)
   const previousIsOpenRef = useRef<boolean | null>(null)
-  const previousKeyboardHeightRef = useRef<number>(0)
-  const transitionTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const visualViewport = window.visualViewport
-
     if (!visualViewport) return
+
+    // Threshold to consider keyboard "open" (accounts for browser chrome variations)
+    const KEYBOARD_THRESHOLD = 100
+    // iOS keyboard animation takes ~300-400ms
+    const DEBOUNCE_MS = 300
 
     const handleViewportChange = () => {
       const windowHeight = window.innerHeight
       const viewportHeight = visualViewport.height
-      const keyboardHeight = windowHeight - viewportHeight
-      const isKeyboardOpen = keyboardHeight > 0
-      const previousIsOpen = previousIsOpenRef.current
-      const previousKeyboardHeight = previousKeyboardHeightRef.current
+      const keyboardHeight = Math.max(0, windowHeight - viewportHeight)
+      const isKeyboardOpen = keyboardHeight > KEYBOARD_THRESHOLD
 
-      setKeyboardOpen(isKeyboardOpen)
-      setKeyboardHeight(keyboardHeight)
-
-      // Clear any existing transition timeout
-      if (transitionTimeoutRef.current) {
-        clearTimeout(transitionTimeoutRef.current)
+      // Debounce ALL state changes to prevent rapid updates during animation
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
       }
 
-      // Determine state based on current vs previous
-      if (previousIsOpen === null) {
-        // Initial state - no transition
-        setVirtualKeyboardState(isKeyboardOpen ? 'open' : 'closed')
-      } else if (previousIsOpen === false && isKeyboardOpen === true) {
-        // Keyboard is opening
-        setVirtualKeyboardState('opening')
-        transitionTimeoutRef.current = setTimeout(() => {
-          setVirtualKeyboardState('open')
-        }, 300) // Typical keyboard animation duration
-      } else if (
-        previousIsOpen === true &&
-        keyboardHeight < previousKeyboardHeight &&
-        keyboardHeight > 50
-      ) {
-        // Keyboard is starting to close (height decreasing but still substantial)
-        setVirtualKeyboardState('closing')
-        transitionTimeoutRef.current = setTimeout(() => {
-          setVirtualKeyboardState('closed')
-        }, 300)
-      } else if (previousIsOpen === true && isKeyboardOpen === false) {
-        // Keyboard has fully closed (fallback case)
-        setVirtualKeyboardState('closed')
-      } else if (
-        isKeyboardOpen &&
-        previousKeyboardHeight > 0 &&
-        keyboardHeight > previousKeyboardHeight
-      ) {
-        // Keyboard height is increasing while already open - ensure we're in 'open' state
-        setVirtualKeyboardState('open')
-      } else if (!isKeyboardOpen && previousIsOpen === true) {
-        // Keyboard is fully closed
-        setVirtualKeyboardState('closed')
-      }
+      debounceTimerRef.current = setTimeout(() => {
+        const previousIsOpen = previousIsOpenRef.current
 
-      previousIsOpenRef.current = isKeyboardOpen
-      previousKeyboardHeightRef.current = keyboardHeight
+        // Only update if state actually changed
+        if (previousIsOpen !== isKeyboardOpen) {
+          setKeyboardHeight(keyboardHeight)
+          setKeyboardOpen(isKeyboardOpen)
+          setVirtualKeyboardState(isKeyboardOpen ? 'open' : 'closed')
+          previousIsOpenRef.current = isKeyboardOpen
+        }
+      }, DEBOUNCE_MS)
     }
 
     // Initial check
     handleViewportChange()
 
-    // Listen for viewport changes
+    // Only listen to resize events - scroll events cause glitches!
     visualViewport.addEventListener('resize', handleViewportChange)
-    visualViewport.addEventListener('scroll', handleViewportChange)
 
     return () => {
       visualViewport.removeEventListener('resize', handleViewportChange)
-      visualViewport.removeEventListener('scroll', handleViewportChange)
-      if (transitionTimeoutRef.current) {
-        clearTimeout(transitionTimeoutRef.current)
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current)
       }
     }
-  }, [])
+  }, [setKeyboardOpen, setKeyboardHeight, setVirtualKeyboardState])
 }
 
 export default useVirtualKeyboard
