@@ -2,20 +2,33 @@ import { useEffect, useState, useRef } from 'react'
 import { useStore } from '@stores'
 import MobileDetect from 'mobile-detect'
 
+const MOBILE_BREAKPOINT = 768
+
 export const useInitialSteps = (isMobileInitial: boolean) => {
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const [isClient, setIsClient] = useState(false)
+  const wasMobileRef = useRef(isMobileInitial)
 
   useEffect(() => {
     setIsClient(true)
 
     // Set initial mobile state
     setWorkspaceEditorSetting('isMobile', isMobileInitial)
+    wasMobileRef.current = isMobileInitial
 
-    // Handle resize
+    // Handle resize - reload page when crossing mobile/desktop breakpoint
     const handleResize = () => {
-      setWorkspaceEditorSetting('isMobile', window.innerWidth <= 640)
+      const isMobileNow = window.innerWidth <= MOBILE_BREAKPOINT
+      const wasMobile = wasMobileRef.current
+
+      // Reload when crossing the breakpoint to reinitialize mobile/desktop components
+      if (isMobileNow !== wasMobile) {
+        window.location.reload()
+        return
+      }
+
+      setWorkspaceEditorSetting('isMobile', isMobileNow)
     }
 
     window.addEventListener('resize', handleResize)
