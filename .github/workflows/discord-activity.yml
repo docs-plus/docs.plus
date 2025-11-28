@@ -43,6 +43,13 @@ jobs:
         echo 'EOF'
       } >> "$GITHUB_ENV"
 
+   - name: Write commits to file
+     if: env.SKIP_NOTIFICATION != 'true'
+     run: |
+      cat << 'COMMITS_EOF' > /tmp/commits.txt
+      ${{ env.COMMITS }}
+      COMMITS_EOF
+
    - name: Post to Discord (smart split)
      if: env.SKIP_NOTIFICATION != 'true'
      run: |
@@ -57,13 +64,15 @@ jobs:
       "
 
       MAX_LEN=1900  # Leave buffer for safety
-      HEADER_LEN=${#HEADER}
 
       # Split commits into chunks
       CURRENT_CHUNK=""
       CHUNK_NUM=1
 
-      while IFS= read -r line; do
+      while IFS= read -r line || [ -n "$line" ]; do
+        # Skip empty lines
+        [ -z "$line" ] && continue
+
         TEST_MSG="${HEADER}${CURRENT_CHUNK}${line}"$'\n'
 
         if [ ${#TEST_MSG} -gt $MAX_LEN ] && [ -n "$CURRENT_CHUNK" ]; then
@@ -75,7 +84,7 @@ jobs:
           fi
 
           curl -H "Content-Type: application/json" \
-               -d "{\"content\": $(echo "$MESSAGE" | jq -Rs .), \"flags\": 4}" \
+               -d "{\"content\": $(printf '%s' "$MESSAGE" | jq -Rs .), \"flags\": 4}" \
                "${{ secrets.DISCORD_WEBHOOK }}"
 
           sleep 1  # Rate limit protection
@@ -84,7 +93,7 @@ jobs:
         else
           CURRENT_CHUNK="${CURRENT_CHUNK}${line}"$'\n'
         fi
-      done <<< "${{ env.COMMITS }}"
+      done < /tmp/commits.txt
 
       # Send final chunk
       if [ -n "$CURRENT_CHUNK" ]; then
@@ -95,6 +104,6 @@ jobs:
         fi
 
         curl -H "Content-Type: application/json" \
-             -d "{\"content\": $(echo "$MESSAGE" | jq -Rs .), \"flags\": 4}" \
+             -d "{\"content\": $(printf '%s' "$MESSAGE" | jq -Rs .), \"flags\": 4}" \
              "${{ secrets.DISCORD_WEBHOOK }}"
       fi
