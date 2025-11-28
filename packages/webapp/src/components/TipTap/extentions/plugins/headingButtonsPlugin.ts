@@ -85,16 +85,26 @@ const buttonWrapper = (
 
   btnChatBox.addEventListener('click', (e: Event) => {
     e.preventDefault()
+    e.stopPropagation()
+
+    // On mobile, blur to close keyboard before opening chat
+    const isMobile = window.innerWidth <= 768
+    if (isMobile && document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur()
+    }
 
     PubSub.publish(CHAT_OPEN, {
       headingId,
       focusEditor: false
     })
 
-    editor
-      .chain()
-      .focus(from + node.nodeSize - 1)
-      .run()
+    // Only focus editor on desktop - on mobile this would reopen keyboard
+    if (!isMobile) {
+      editor
+        .chain()
+        .focus(from + node.nodeSize - 1)
+        .run()
+    }
   })
 
   // copy the link to clipboard
