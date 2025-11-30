@@ -17,6 +17,6 @@
   "license": "ISC",
   "devDependencies": {
     "dotenv-cli": "^11.0.0",
-    "supabase": "^2.58.5"
+    "supabase": "^2.63.1"
   }
 }

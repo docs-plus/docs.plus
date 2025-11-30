@@ -39,7 +39,7 @@
     "@hono/zod-validator": "^0.7.4",
     "@prisma/adapter-pg": "^6.19.0",
     "@prisma/client": "^6.19.0",
-    "@supabase/supabase-js": "^2.81.1",
+    "@supabase/supabase-js": "^2.86.0",
     "@tiptap/core": "^3.10.7",
     "@tiptap/extension-document": "^3.10.7",
     "@tiptap/extension-paragraph": "^3.10.7",
