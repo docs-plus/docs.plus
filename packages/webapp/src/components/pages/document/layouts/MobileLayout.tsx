@@ -3,7 +3,7 @@ import MobilePadTitle from '@components/TipTap/pad-title-section/MobilePadTitle'
 import MobileEditor from '../components/MobileEditor'
 import { useStore } from '@stores'
 import TocModal from '@components/pages/document/components/TocModal'
-import BigPencilBtn from '@components/pages/document/components/BigPencilBtn'
+import EditFAB from '@components/pages/document/components/EditFAB'
 import { ModalDrawer } from '@components/ui/ModalDrawer'
 import { useHashRouter } from '@hooks/useHashRouter'
 import MobileHistory from '@components/pages/history/mobile/MobileHistory'
@@ -41,7 +41,7 @@ const MobileLayout = () => {
       </div>
       <MobileLeftSidePanel filterModalRef={filterModalRef} />
       <MobileEditor />
-      <BigPencilBtn />
+      <EditFAB />
       <BottomSheet />
       <div className="mobileToolbarBottom sticky bottom-0 left-0 z-20 w-full bg-white">
         <ToolbarMobile />

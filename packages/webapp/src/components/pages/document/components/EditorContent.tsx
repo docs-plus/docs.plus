@@ -5,6 +5,7 @@ import { useStore } from '@stores'
 import { twMerge } from 'tailwind-merge'
 import { useRef, useCallback } from 'react'
 import useDoubleTap from '@hooks/useDoubleTap'
+import { useEnableEditor, useEditorFocusScroll } from '@hooks/useCaretPosition'
 
 const RenderLoader = ({ className }: { className?: string }) => {
   return (
@@ -20,19 +21,20 @@ const EditorContent = ({ className }: { className?: string }) => {
   const {
     editor: { instance: editor, loading, providerSyncing, applyingFilters }
   } = useStore((state) => state.settings)
-  const { isKeyboardOpen } = useStore((state) => state)
   const editorElement = useRef<HTMLDivElement>(null)
+  const { enableAndFocus, isKeyboardOpen } = useEnableEditor()
 
-  // Focus handler
-  const handleFocus = useCallback(() => {
-    if (!editor) return
-    const btnBigBluePencil = document.querySelector('.btn_bigBluePencil') as HTMLButtonElement
+  // Auto-scroll caret into view on any focus (direct tap, etc.)
+  useEditorFocusScroll()
 
-    if (btnBigBluePencil && !isKeyboardOpen) btnBigBluePencil.click()
-  }, [editor, isKeyboardOpen])
-
-  // Double tap handler
-  const handleDoubleTap = useDoubleTap(handleFocus)
+  // Double-tap: enable editor and focus (caret already at tap position via iOS fix)
+  const handleDoubleTap = useDoubleTap(
+    useCallback(() => {
+      if (!isKeyboardOpen) {
+        enableAndFocus()
+      }
+    }, [isKeyboardOpen, enableAndFocus])
+  )
 
   if (loading || providerSyncing || !editor) {
     return <RenderLoader className={className} />
