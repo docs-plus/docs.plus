@@ -5,7 +5,7 @@ import { useModal } from '@components/ui/ModalDrawer'
 import useUnreadMessageEffect from '../hooks/useUnreadMessageEffect'
 import usePresentUsers from '../hooks/usePresentUsers'
 import AvatarStack from '@components/AvatarStack'
-import { handelScroll2Title } from '../helper'
+import { scrollToTitle } from '../utils'
 
 export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) => {
   const { metadata: docMetadata, workspaceId } = useStore((state) => state.settings)
@@ -18,7 +18,7 @@ export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) =
       <div
         className={`group hover:bg-opacity-50 flex cursor-pointer items-center justify-between rounded-md p-1 px-2 pr-3 hover:bg-gray-300 ${headingId === workspaceId && 'activeTocBorder bg-gray-300'}`}
         onClick={() => {
-          handelScroll2Title({
+          scrollToTitle({
             workspaceId,
             title: docMetadata?.title,
             openChatRoom: true
@@ -28,7 +28,7 @@ export const DocTitleChatRoomDesktop = ({ className }: { className?: string }) =
         <span
           className="btn_chat tooltip tooltip-top relative ml-auto"
           onClick={() => {
-            handelScroll2Title({
+            scrollToTitle({
               workspaceId,
               title: docMetadata?.title,
               openChatRoom: true

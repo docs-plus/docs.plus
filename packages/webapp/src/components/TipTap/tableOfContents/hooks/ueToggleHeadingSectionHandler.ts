@@ -1,12 +1,12 @@
 import { useCallback } from 'react'
-import { toggleHeadingSection } from '../helper'
+import { toggleHeadingSection } from '../utils'
 
-const useToggleHeadingSectionHandler = (tocId: string, isOpen: boolean) => {
+const useToggleHeadingSectionHandler = (tocId: string) => {
   const toggleHeadingSectionHandler = useCallback(() => {
     if (!tocId) return
 
-    toggleHeadingSection({ id: tocId, open: isOpen })
-  }, [tocId, isOpen])
+    toggleHeadingSection(tocId)
+  }, [tocId])
   return toggleHeadingSectionHandler
 }
 

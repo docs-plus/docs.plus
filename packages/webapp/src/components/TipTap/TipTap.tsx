@@ -62,6 +62,9 @@ import { HardBreak } from '@tiptap/extension-hard-break'
 // Table
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
 
+// Table of Contents
+import { TableOfContents, getHierarchicalIndexes } from '@tiptap/extension-table-of-contents'
+
 import { Indent } from '@docs.plus/extension-indent'
 
 import ChatCommentExtension from './extentions/ChatCommentExtension'
@@ -223,7 +226,17 @@ const Editor = ({
       placeholder: (data: any) => generatePlaceholderText(data) || ''
     }),
     // iOS Safari: Fix caret positioning when tapping in middle of words
-    IOSCaretFix
+    IOSCaretFix,
+    // Table of Contents - tracks headings in the document
+    TableOfContents.configure({
+      anchorTypes: [TIPTAP_NODES.CONTENT_HEADING_TYPE],
+      getIndex: getHierarchicalIndexes,
+      scrollParent: () =>
+        (document.querySelector('.editorWrapper') as HTMLElement | Window) || window,
+      onUpdate: (anchors) => {
+        window.dispatchEvent(new CustomEvent('toc-update', { detail: anchors }))
+      }
+    })
   ]
 
   if (!provider) {

@@ -28,7 +28,7 @@ const ContextMenuItems = ({ tocItem }: { tocItem: Element | null }) => {
   if (!headingId) return null
 
   const openChatroomHandler = useOpenChatroomHandler(headingId)
-  const toggleHeadingSectionHandler = useToggleHeadingSectionHandler(headingId, isOpen)
+  const toggleHeadingSectionHandler = useToggleHeadingSectionHandler(headingId)
   const linkHeadingSectionHandler = useLinkHeadingSectionHandler(headingId)
   const focusHeadingSectionHandler = useFocusHeadingSectionHandler(headingId)
   const deleteHeadingSectionHandler = useDeleteHeadingSectionHandler(headingId)
