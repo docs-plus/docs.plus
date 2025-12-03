@@ -11,6 +11,7 @@ import { useHandleUserStatus } from '@hooks/useHanelUserStatus'
 import { eventsHub } from '@services/eventsHub'
 import GoogleAnalytics from '@components/GoogleAnalytics'
 import { performMaintenanceCleanup } from '@db/messageComposerDB'
+import { useEditorPreferences, applyEditorPreferences } from '@stores'
 
 import '../styles/globals.scss'
 import '../styles/styles.scss'
@@ -45,6 +46,7 @@ const Header = () => {
 
 export default function MyApp({ Component, pageProps }: any) {
   const isMobileInitial = pageProps.isMobile || false
+  const { preferences, hydrated } = useEditorPreferences()
 
   const router = useRouter()
 
@@ -56,6 +58,12 @@ export default function MyApp({ Component, pageProps }: any) {
   // service worker side
   useHandleUserStatus()
   useInitialSteps(isMobileInitial)
+
+  // Apply editor preferences on hydration and changes
+  useEffect(() => {
+    if (hydrated) applyEditorPreferences(preferences)
+  }, [hydrated, preferences])
+
   useEffect(() => {
     eventsHub(router)
     // initializeApm()

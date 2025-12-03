@@ -1,17 +1,12 @@
-import React, { useState, useEffect, ChangeEvent } from 'react'
-import TextAreaOvelapLabel from '@components/ui/TextAreaOvelapLabel'
+import React, { useState, useEffect } from 'react'
 import Button from '@components/ui/Button'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import toast from 'react-hot-toast'
-import {
-  useBooleanLocalStorageState,
-  saveDocDescriptionHandler,
-  saveDocReadOnlyPage
-} from './toolbarUtils'
+import { saveDocDescriptionHandler, saveDocReadOnlyPage } from './toolbarUtils'
 import Toggle from '@components/ui/Toggle'
 import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
-import { useAuthStore, useStore } from '@stores'
+import { useAuthStore, useStore, useEditorPreferences } from '@stores'
 import { Gear } from '@icons'
 import { TagsInput } from 'react-tag-input-component'
 import { TbPageBreak } from 'react-icons/tb'
@@ -25,7 +20,7 @@ const ToggleSection = ({ name, className, description, value, checked, onChange 
       <p className="text-base font-bold">{name}</p>
       <div className="flex w-full flex-row items-center justify-between align-middle">
         <p className="text-sm text-gray-500">{description}</p>
-        <div className="ml-2 mr-6 h-full flex-col border-l px-3 py-2">
+        <div className="mr-6 ml-2 h-full flex-col border-l px-3 py-2">
           <Toggle id={value} checked={checked} onChange={onChange} />
         </div>
       </div>
@@ -41,14 +36,9 @@ const GearModal = ({ className }: any) => {
     metadata: docMetadata
   } = useStore((state) => state.settings)
 
-  const [indentSetting, setIndentSetting] = useBooleanLocalStorageState(
-    'setting.indentHeading',
-    false
-  )
-  const [h1SectionBreakSetting, setH1SectionBreakSetting] = useBooleanLocalStorageState(
-    'setting.h1SectionBreakSetting',
-    true
-  )
+  // Editor preferences from store (persisted in localStorage)
+  const { preferences, togglePreference } = useEditorPreferences()
+
   const [docDescription, setDocDescription] = useState(docMetadata.description)
   const { isLoading, isSuccess, mutate } = useUpdateDocMetadata()
   const [tags, setTags] = useState(docMetadata.keywords)
@@ -80,29 +70,8 @@ const GearModal = ({ className }: any) => {
     }
   }, [isSuccess])
 
-  useEffect(() => {
-    if (h1SectionBreakSetting) {
-      document.body.classList.add('h1SectionBreak')
-    } else {
-      document.body.classList.remove('h1SectionBreak')
-    }
-  }, [h1SectionBreakSetting])
-
-  useEffect(() => {
-    if (indentSetting) {
-      document.body.classList.add('indentHeading')
-    } else {
-      document.body.classList.remove('indentHeading')
-    }
-  }, [indentSetting])
-
-  const toggleIndentSetting = () => {
-    setIndentSetting(!indentSetting)
-  }
-
-  const toggleH1SectionBreakSetting = () => {
-    setH1SectionBreakSetting(!h1SectionBreakSetting)
-  }
+  const toggleIndentSetting = () => togglePreference('indentHeading')
+  const toggleH1SectionBreakSetting = () => togglePreference('h1SectionBreak')
 
   const OwnerProfile = () => {
     const { full_name, username } = docMetadata.ownerProfile
@@ -112,7 +81,7 @@ const GearModal = ({ className }: any) => {
         <p className="font-bold">Document Owner: </p>
 
         <div className="flex items-center justify-between align-baseline">
-          <div className="ml-2 mt-1">
+          <div className="mt-1 ml-2">
             <p className="text-sm">
               <b>Name: </b>
               {full_name}
@@ -156,14 +125,14 @@ const GearModal = ({ className }: any) => {
       <div className="mb-4 flex items-center align-middle">
         <div>
           <p className="m-0 flex items-center space-x-1 font-semibold">
-            <Gear size={18} className="ml-1 mr-1" fill="rgba(42,42,42)" />
+            <Gear size={18} className="mr-1 ml-1" fill="rgba(42,42,42)" />
             <span>Settings</span>
           </p>
           <small className="pl-1 text-gray-400">Document settings and preferences</small>
         </div>
       </div>
 
-      <div className="collapse collapse-arrow bg-base-200">
+      <div className="collapse-arrow bg-base-200 collapse">
         <input type="radio" className="peer" name="gear-pear" />
         <div className="collapse-title flex items-center p-0 text-sm font-semibold">
           <TbPageBreak className="mx-2 ml-3" size={18} />
@@ -174,20 +143,20 @@ const GearModal = ({ className }: any) => {
             <ToggleSection
               name="Heading Indentation"
               description="Turn on to indent headings for better readability"
-              checked={indentSetting}
+              checked={preferences.indentHeading}
               onChange={toggleIndentSetting}
             />
             <ToggleSection
               name="H1 Section Break"
               description="Enable to insert a break after H1 headings for clear separation"
-              checked={h1SectionBreakSetting}
+              checked={preferences.h1SectionBreak}
               onChange={toggleH1SectionBreakSetting}
             />
           </div>
         </div>
       </div>
 
-      <div className="collapse collapse-arrow mt-3 bg-base-200">
+      <div className="collapse-arrow bg-base-200 collapse mt-3">
         <input type="radio" className="peer" name="gear-pear" defaultChecked />
         <div className="collapse-title flex items-center p-0 text-sm font-semibold">
           <HiOutlineDocumentText className="mx-2 ml-3" size={18} />

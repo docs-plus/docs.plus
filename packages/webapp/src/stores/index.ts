@@ -2,6 +2,7 @@ export * from './workspace'
 export * from './usersPresence'
 export * from './sheetStore'
 export * from './dialogStore'
+export * from './editorPreferences'
 
 export { useStore } from './useStore'
 export { useAuthStore } from './authStore'
