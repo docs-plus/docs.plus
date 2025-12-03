@@ -2,7 +2,7 @@ import { useCallback, useRef } from 'react'
 import ToolbarDesktop from '@components/TipTap/toolbar/ToolbarDesktop'
 import EditorContent from './EditorContent'
 import TOC from './Toc'
-import { useAdjustEditorSizeForChatRoom, useTOCResize } from '../hooks'
+import { useAdjustEditorSizeForChatRoom, useTOCResize, useScrollSyncToc } from '../hooks'
 import useUpdateDocPageUnreadMsg from '../hooks/useUpdateDocPageUnreadMsg'
 import { Chatroom } from '@components/chatroom'
 import { HoverMenu } from '@components/ui/HoverMenu'
@@ -35,6 +35,9 @@ const DesktopEditor = () => {
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
 
   useUpdateDocPageUnreadMsg()
+
+  // Use the custom hook for scroll sync -> TOC
+  useScrollSyncToc(editorWrapperRef)
 
   return (
     <>

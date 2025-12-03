@@ -1,14 +1,14 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import Link from 'next/link'
 import DocTitle from '@components/TipTap/DocTitle'
 import { DocsPlus } from '@icons'
 import { useStore, useSheetStore } from '@stores'
 import { IoClose } from 'react-icons/io5'
 import { MdFilterAlt, MdHistory } from 'react-icons/md'
-import TableOfContents from '@components/TipTap/tableOfContents/TocMobile'
+import TableOfContents from '@components/TipTap/tableOfContents/mobile/TocMobile'
 import { useModal } from '@components/ui/ModalDrawer'
 
-const TocModal = () => {
+const TocModal = ({ filterModalRef }: any) => {
   const { close: closeModal } = useModal() || {}
   const { openSheet } = useSheetStore()
   const {
