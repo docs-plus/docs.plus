@@ -56,7 +56,7 @@ import { Typography } from '@tiptap/extension-typography'
 // Other Nodes and Extensions
 import { Blockquote } from '@tiptap/extension-blockquote'
 import { Gapcursor, Placeholder, UndoRedo } from '@tiptap/extensions'
-import UniqueID from './extentions/UniqueId'
+import { UniqueID } from '@tiptap/extension-unique-id'
 import { HardBreak } from '@tiptap/extension-hard-break'
 
 // Table
