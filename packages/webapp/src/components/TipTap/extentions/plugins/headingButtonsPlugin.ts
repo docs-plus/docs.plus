@@ -122,7 +122,7 @@ const buttonWrapper = (
     url.searchParams.set('id', headingId)
     window.history.pushState({}, '', url.toString())
     copyToClipboard(url.href, () => {
-      console.log('Link copied to clipboard')
+      console.info('Link copied to clipboard')
     })
     editor
       .chain()
@@ -154,25 +154,37 @@ const appendButtonsDec = (doc: ProseMirrorNode, editor: TipTapEditor): Decoratio
 }
 
 const handleHeadingToggle = (editor: TipTapEditor, { headingId }: EditorEventData): void => {
-  const { tr } = editor.state
-  const headingNodeEl = editor.view.dom.querySelector(
-    `.ProseMirror .heading[data-id="${headingId}"]`
-  )
+  // Guard: check if editor is available and has a mounted view
+  // tiptap throws when accessing .view if not mounted, so we need try-catch
+  let editorDom: Element | null = null
+  try {
+    editorDom = editor?.view?.dom
+  } catch {
+    console.warn('[HeadingButtons] Editor view not available yet')
+    return
+  }
+
+  if (!editorDom) {
+    console.warn('[HeadingButtons] Editor DOM not available')
+    return
+  }
 
   if (isProcessing) return
   isProcessing = true
+
+  const { tr } = editor.state
+  const headingNodeEl = editorDom.querySelector(`.ProseMirror .heading[data-id="${headingId}"]`)
 
   if (!headingNodeEl) {
     isProcessing = false
     return
   }
 
-  // TODO: I have no idea why this is working like this!
-
   let nodePos
   try {
     nodePos = editor.view.state.doc.resolve(editor.view.posAtDOM(headingNodeEl))
-  } catch (error) {
+  } catch {
+    console.warn('[HeadingButtons] Error getting node position')
     isProcessing = false
     return
   }

@@ -1,4 +1,4 @@
-import TOCDesktop from '@components/TipTap/tableOfContents/TocDesktop'
+import { TocDesktop } from '@components/TipTap/TableOfContents'
 import TableOfcontentLoader from '@components/skeleton/TableOfContentsLoader'
 import { useStore } from '@stores'
 
@@ -16,7 +16,7 @@ const TOC = ({ className = '' }: any) => {
   }
 
   return (
-    <TOCDesktop
+    <TocDesktop
       className={`${className} tiptap__toc h-full w-full overflow-hidden overflow-y-auto scroll-smooth pr-10 pb-4 hover:overscroll-contain sm:py-4 sm:pb-14`}
     />
   )
