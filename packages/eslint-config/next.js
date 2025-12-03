@@ -14,8 +14,8 @@ module.exports = [
         'error',
         {
           selector:
-            "CallExpression[callee.object.name='console'][callee.property.name!=/^(info|error)$/]",
-          message: 'Unexpected console method. Use console.info or console.error.'
+            "CallExpression[callee.object.name='console'][callee.property.name!=/^(info|warn|error)$/]",
+          message: 'Unexpected console method. Use console.info, console.warn, or console.error.'
         }
       ]
     }
