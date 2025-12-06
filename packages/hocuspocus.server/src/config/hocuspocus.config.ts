@@ -8,6 +8,7 @@ import { StoreDocumentQueue } from '../lib/queue'
 import { HealthCheck } from '../extensions/health.extension'
 import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extension'
 import { prisma } from '../lib/prisma'
+import { dbLogger } from '../lib/logger'
 
 export { Database }
 
@@ -78,7 +79,7 @@ const configureExtensions = () => {
           })
           return doc ? doc.data : generateDefaultState()
         } catch (err) {
-          console.error('Error fetching data:', err)
+          dbLogger.error({ err }, 'Error fetching document data')
           await prisma.$disconnect()
           throw err
         }

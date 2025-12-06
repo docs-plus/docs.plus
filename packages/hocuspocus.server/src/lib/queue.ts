@@ -12,27 +12,38 @@ async function generateUniqueSlug(baseSlug: string): Promise<string> {
   return `${baseSlug}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
 }
 
-// BullMQ requires ioredis - create dedicated connection for queues
-// Use centralized Redis config with BullMQ-specific settings
-const connection = createRedisConnection({
+// BullMQ connection options (shared base config)
+const bullmqConnectionOptions = {
   maxRetriesPerRequest: null, // BullMQ requirement - allows unlimited retries
-  enableReadyCheck: true, // Enable to ensure connection is ready before sending commands
-  enableOfflineQueue: true, // Enable to prevent command timeouts during reconnection
-  // Explicit timeout for BullMQ operations (longer than default for heavy operations)
+  enableReadyCheck: true,
+  enableOfflineQueue: true,
   commandTimeout: parseInt(process.env.REDIS_COMMAND_TIMEOUT || '60000', 10),
-  // Connection pooling settings
   connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || '30000', 10),
   keepAlive: parseInt(process.env.REDIS_KEEPALIVE || '30000', 10)
-})
+}
 
-if (!connection) {
-  queueLogger.error('Failed to create Redis connection for BullMQ')
+// Queue connection (non-blocking operations)
+const queueConnection = createRedisConnection(bullmqConnectionOptions)
+
+if (!queueConnection) {
+  queueLogger.error('Failed to create Redis connection for BullMQ Queue')
   throw new Error('Redis configuration required for queue operations')
+}
+
+// Worker connection (blocking operations - MUST be separate)
+// BullMQ uses BRPOPLPUSH which blocks the connection
+const createWorkerConnection = () => {
+  const conn = createRedisConnection(bullmqConnectionOptions)
+  if (!conn) {
+    queueLogger.error('Failed to create Redis connection for BullMQ Worker')
+    throw new Error('Redis configuration required for worker operations')
+  }
+  return conn
 }
 
 // Main queue for storing documents
 export const StoreDocumentQueue = new Queue<StoreDocumentData>('store-documents', {
-  connection,
+  connection: queueConnection,
   defaultJobOptions: {
     attempts: 5, // Increased retry attempts for better reliability
     backoff: {
@@ -49,7 +60,7 @@ export const StoreDocumentQueue = new Queue<StoreDocumentData>('store-documents'
 
 // Dead Letter Queue for permanently failed jobs
 export const DeadLetterQueue = new Queue<StoreDocumentData>('store-documents-dlq', {
-  connection,
+  connection: queueConnection,
   defaultJobOptions: {
     removeOnComplete: {
       count: 500,
@@ -67,6 +78,8 @@ StoreDocumentQueue.on('error', (err: Error) => {
 // Worker to process document storage jobs
 export const createDocumentWorker = () => {
   const redisPublisher = getRedisPublisher()
+  // Worker MUST have dedicated connection (uses blocking commands)
+  const workerConnection = createWorkerConnection()
 
   const worker = new Worker<StoreDocumentData>(
     'store-documents',
@@ -119,7 +132,10 @@ export const createDocumentWorker = () => {
         })
 
         const duration = Date.now() - startTime
-        queueLogger.info({ jobId: job.id, duration: `${duration}ms` }, 'Document stored successfully')
+        queueLogger.info(
+          { jobId: job.id, duration: `${duration}ms` },
+          'Document stored successfully'
+        )
 
         // Publish save confirmation to document-specific Redis channel
         if (redisPublisher) {
@@ -152,7 +168,7 @@ export const createDocumentWorker = () => {
       }
     },
     {
-      connection,
+      connection: workerConnection,
       concurrency: parseInt(process.env.BULLMQ_CONCURRENCY || '5', 10),
       limiter: {
         max: parseInt(process.env.BULLMQ_RATE_LIMIT_MAX || '300', 10),

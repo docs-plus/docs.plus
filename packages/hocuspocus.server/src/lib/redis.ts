@@ -25,7 +25,6 @@ const getRedisConfig = () => {
   const host = process.env.REDIS_HOST
   const port = process.env.REDIS_PORT
 
-
   if (!host || !port) {
     return null
   }
@@ -33,7 +32,6 @@ const getRedisConfig = () => {
   return {
     host,
     port: parseInt(port, 10),
-
 
     // Connection settings
     lazyConnect: false, // Connect immediately on creation
@@ -95,13 +93,15 @@ export const getRedisClient = (): RedisClient | null => {
   }
 
   if (!redis) {
-    redisLogger.info({
-      host: config.host,
-      port: config.port,
-      db: config.db,
-      lazyConnect: config.lazyConnect,
-      connectTimeout: config.connectTimeout
-    }, 'Creating new Redis client...')
+    redisLogger.info(
+      {
+        host: config.host,
+        port: config.port,
+        lazyConnect: config.lazyConnect,
+        connectTimeout: config.connectTimeout
+      },
+      'Creating new Redis client...'
+    )
 
     redis = new Redis(config)
 
@@ -111,7 +111,7 @@ export const getRedisClient = (): RedisClient | null => {
     })
 
     redis.on('ready', () => {
-      redisLogger.info({ host: config.host, port: config.port, db: config.db }, 'Redis ready')
+      redisLogger.info({ host: config.host, port: config.port }, 'Redis ready')
     })
 
     redis.on('error', (err: Error) => {
@@ -140,7 +140,10 @@ export const getRedisClient = (): RedisClient | null => {
 }
 
 // Wait for Redis client to be ready (with auto-connect, it should be connecting already)
-export const waitForRedisReady = async (client: RedisClient, timeoutMs = 10000): Promise<boolean> => {
+export const waitForRedisReady = async (
+  client: RedisClient,
+  timeoutMs = 10000
+): Promise<boolean> => {
   if (client.status === 'ready') {
     return true
   }
@@ -238,7 +241,8 @@ export const createRedisConnection = (options: Partial<RedisOptions> = {}): Redi
 
   // BullMQ needs higher timeout for long-running operations
   // Use explicit timeout from options if provided, otherwise use env var or default
-  const commandTimeout = options.commandTimeout ?? parseInt(process.env.REDIS_COMMAND_TIMEOUT || '60000', 10)
+  const commandTimeout =
+    options.commandTimeout ?? parseInt(process.env.REDIS_COMMAND_TIMEOUT || '60000', 10)
 
   return new Redis({
     ...config,
