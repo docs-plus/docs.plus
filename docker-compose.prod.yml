@@ -42,11 +42,17 @@ services:
    - ./scripts/traefik/dynamic:/etc/traefik/dynamic:ro
    - /var/run/docker.sock:/var/run/docker.sock:ro
    - traefik-certs:/letsencrypt
-   - traefik-logs:/var/log/traefik
   networks:
    - docsplus-network
   labels:
    - "traefik.enable=false"
+  # Docker log rotation
+  logging:
+   driver: "json-file"
+   options:
+    max-size: "50m"
+    max-file: "5"
+    compress: "true"
   healthcheck:
    test: ["CMD", "traefik", "healthcheck", "--ping"]
    interval: 10s
@@ -156,6 +162,12 @@ services:
    timeout: 5s
    retries: 3
    start_period: 20s
+  logging:
+   driver: "json-file"
+   options:
+    max-size: "50m"
+    max-file: "5"
+    compress: "true"
   deploy:
    replicas: 2
    resources:
@@ -233,6 +245,12 @@ services:
    timeout: 5s
    retries: 3
    start_period: 20s
+  logging:
+   driver: "json-file"
+   options:
+    max-size: "50m"
+    max-file: "5"
+    compress: "true"
   deploy:
    replicas: 2
    resources:
@@ -290,6 +308,12 @@ services:
    timeout: 5s
    retries: 3
    start_period: 20s
+  logging:
+   driver: "json-file"
+   options:
+    max-size: "50m"
+    max-file: "5"
+    compress: "true"
   deploy:
    replicas: 1
    resources:
@@ -361,6 +385,12 @@ services:
    timeout: 3s
    retries: 3
    start_period: 30s
+  logging:
+   driver: "json-file"
+   options:
+    max-size: "50m"
+    max-file: "5"
+    compress: "true"
   deploy:
    replicas: 2
    resources:
@@ -376,8 +406,6 @@ services:
 # =============================================================================
 volumes:
  traefik-certs:
-  driver: local
- traefik-logs:
   driver: local
  redis-data:
   driver: local
