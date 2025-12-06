@@ -423,5 +423,5 @@ volumes:
 # =============================================================================
 networks:
  docsplus-network:
-  driver: bridge
+  external: true
   name: docsplus-network
