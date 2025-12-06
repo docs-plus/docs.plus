@@ -1,235 +1,14 @@
-// =============================================================================
-// Table of Contents Styles
-// =============================================================================
-// All TOC-related styles in one place for maintainability.
-// Uses CSS custom properties for level-based indentation (--level).
+$bg-root: #f8f9fa;
 
-// -----------------------------------------------------------------------------
-// Variables
-// -----------------------------------------------------------------------------
-$toc-indent-base: 12px;
-$toc-line-color: var(--base-300, #e5e7eb);
-$toc-line-active-color: var(--color-docsy, #6366f1);
-$toc-active-bg: #d5dffc;
-$toc-hover-bg: var(--base-300);
-
-// -----------------------------------------------------------------------------
-// Container
-// -----------------------------------------------------------------------------
-.tiptap__toc {
-  padding-left: 20px;
-  padding-top: 10px;
-}
-
-// -----------------------------------------------------------------------------
-// List
-// -----------------------------------------------------------------------------
-.toc__list {
-  // Base list styling handled by menu class from DaisyUI
-}
-
-// -----------------------------------------------------------------------------
-// Item
-// -----------------------------------------------------------------------------
-.toc__item {
-  // Level-based indentation using CSS variable from tiptap approach
-  --indent: calc(var(--level, 1) * #{$toc-indent-base});
-  padding-left: var(--indent);
-  position: relative;
-
-  // ---------------------------------------------------------------------------
-  // Vertical level indicator line (shows hierarchy)
-  // ---------------------------------------------------------------------------
-  &::before {
-    content: '';
-    position: absolute;
-    left: calc(var(--indent) - 8px);
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background-color: $toc-line-color;
-    border-radius: 1px;
-    opacity: 0;
-    transition: opacity 0.15s ease;
-  }
-
-  // Show line for levels > 1
-  &:not([style*='--level: 1']):not([style*='--level:1'])::before {
-    opacity: 1;
-  }
-
-  // Highlight line on hover
-  &:hover::before {
-    background-color: $toc-line-active-color;
-    opacity: 1;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Level 1 headings are bold
-  // ---------------------------------------------------------------------------
-  &[style*='--level: 1'],
-  &[style*='--level:1'] {
-    > a {
-      font-weight: 600;
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Focus sight indicator (current section)
-  // ---------------------------------------------------------------------------
-  &.focusSight {
-    position: relative;
-
-    > a::after {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: -9.5px;
-      width: 4px;
-      height: 100%;
-      background-color: var(--color-docsy);
-      border-radius: 4px;
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Link/anchor
-  // ---------------------------------------------------------------------------
-  > a {
-    padding: 0.3rem 0.4rem;
-    padding-left: 24px; // Room for fold button
-    position: relative;
-    transition: all 0.2s ease-in-out;
-    margin-bottom: 0.1rem;
-    display: flex;
-    align-items: center;
-
-    &::after {
-      content: '';
-    }
-  }
-
-  // Active state (context menu open)
-  a.context-menu-active {
-    background-color: $toc-active-bg !important;
-  }
-
-  &.active > span a {
-    color: #4285f4;
-
-    &::after {
-      opacity: 1;
-    }
-  }
-
-  // ---------------------------------------------------------------------------
-  // Chat button
-  // ---------------------------------------------------------------------------
-  .btn_chat {
-    display: block;
-    width: 16px;
-    height: 24px;
-    --tooltip-offset: 26px;
-    --tooltip-tail-offset: 20px;
-    font-weight: normal;
-
-    &:hover {
-      fill: var(--neutral-content);
-    }
-  }
-
-  .btnChat {
-    opacity: 0;
-    width: 24px;
-    height: 24px;
-    padding: 4px;
-    border-radius: 6px;
-    position: absolute;
-    right: -5px;
-    top: 52%;
-    transform: translateY(-50%);
-  }
-
-  a:not(:active, .active):hover .btnChat {
-    background-color: $toc-hover-bg;
-  }
-
-  &:hover > a > span > .btnChat {
-    opacity: 1;
-  }
-
-  // ---------------------------------------------------------------------------
-  // Fold/unfold button (caret)
-  // ---------------------------------------------------------------------------
-  .btnFold {
-    transition: all 0.1s linear;
-    font-weight: normal;
-    position: absolute;
-    left: 2px;
-    top: 50%;
-    opacity: 0.6;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    width: 20px;
-    height: 20px;
-    transform: translateY(-50%);
-    z-index: 1;
-
-    > svg {
-      position: absolute;
-      top: 50%;
-      transition: transform 0.15s ease;
-    }
-
-    &:hover {
-      opacity: 1;
-
-      > svg {
-        fill: #2778ff;
-      }
-    }
-
-    // Rotation states
-    &.closed > svg {
-      transform: translateY(-50%) rotate(0deg);
-    }
-
-    &.opened > svg {
-      transform: translateY(-50%) rotate(90deg);
-    }
-  }
-
-  &:hover > a > .btnFold {
-    opacity: 1;
-  }
-
-  &:hover > a .btn_fold {
-    transition-delay: 0.2s;
-  }
-}
-
-// -----------------------------------------------------------------------------
-// Link text
-// -----------------------------------------------------------------------------
-.toc__link {
-  // Base link styling - inherits from parent
-}
-
-// =============================================================================
-// Mobile Styles
-// =============================================================================
 .m_mobile {
   .btnChat {
     opacity: 1 !important;
   }
-
   .toc__item {
+    // padding-left: 30px;
     > a {
       line-height: 2 !important;
     }
-
     .btnFold {
       opacity: 1 !important;
       left: -16px !important;
@@ -237,74 +16,156 @@ $toc-hover-bg: var(--base-300);
       width: 21px !important;
     }
   }
+}
 
-  .tiptap__toc {
-    .toc__list {
-      flex-wrap: nowrap !important;
+.tiptap__toc {
+  padding-left: 20px;
+  padding-top: 10px;
 
-      li ul {
-        white-space: unset;
-      }
+  ul > li:hover {
+    // change background of ul to red
+    & ~ ul {
+      // change background of ul to red
+      background-color: red;
     }
+  }
 
-    :where(.menu li) {
-      flex-wrap: nowrap;
-    }
-
-    .toc__item > span .btnFold::before {
-      opacity: 1;
-    }
-
-    .btn_openChatBox {
-      position: absolute;
-      right: 0.5rem;
-      display: flex;
-      width: 2rem;
-      height: 2rem;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      border-radius: 0.75rem;
-      background-color: var(--bg-docy);
-      fill: white;
-      padding: 0.5rem;
-      color: var(--neutral-content);
-
-      svg {
-        fill: #fff;
-        display: block;
-        margin: auto;
-      }
-
-      .chatLeft {
-        fill: #fff;
-        position: relative;
-        top: 1px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        margin: auto;
-      }
-
-      &[data-unread-count]:not([data-unread-count='']) {
-        .chatLeft {
-          display: none;
+  .toc__item {
+    &.focusSight {
+      position: relative;
+      > a {
+        &::after {
+          content: '';
+          position: absolute;
+          top: -2px;
+          left: -9.5px;
+          width: 4px;
+          height: 100%;
+          background-color: var(--color-docsy);
+          border-radius: 4px;
         }
       }
+    }
+    > a {
+      padding: 0.3rem 0.4rem;
+      position: relative;
+      transition: all 0.2s ease-in-out;
+      margin-bottom: 0.1rem;
+    }
+  }
+  .toc {
+    &__item {
+      .btn_chat {
+        display: block;
+        width: 16px;
+        height: 24px;
+        --tooltip-offset: 26px;
+        --tooltip-tail-offset: 20px;
+        font-weight: normal;
+      }
+      .btnChat {
+        opacity: 0;
+        // background-color: $bg-root;
+        width: 24px;
+        border-radius: 6px;
+        height: 24px;
+        padding: 4px;
+        position: absolute;
+        right: -5px;
+        top: 52%;
+        transform: translateY(-50%);
+      }
 
-      &::before {
-        content: attr(data-unread-count);
-        color: #fff;
-        font-weight: 600;
+      .btn_chat:hover {
+        fill: var(--neutral-content);
+      }
+
+      a:not(:active, .active):hover .btnChat {
+        background-color: var(--base-300);
+      }
+
+      &:hover > a > span > .btnChat {
+        opacity: 1;
+      }
+
+      & > a {
+        padding-left: 30px;
+      }
+
+      &:hover > a .btn_fold {
+        transition-delay: 0.2s;
+      }
+
+      .btnFold {
+        transition: all 0.1s linear;
+        // margin-right: 4px;
+        font-weight: normal;
+        position: absolute;
+        left: 6px;
+        top: 50%;
+        opacity: 1;
         display: flex;
         align-items: center;
         justify-content: center;
+        cursor: pointer;
+        width: 20px;
+        height: 20px;
+        transform: translateY(-50%);
+
+        & > svg {
+          position: absolute;
+          top: 50%;
+        }
+
+        &:hover > svg {
+          fill: #2778ff;
+        }
+
+        &.closed > svg {
+          transform: translateY(-50%) rotate(0deg);
+        }
+
+        &.opened > svg {
+          transform: translateY(-50%) rotate(90deg);
+        }
+      }
+
+      &:hover > a > .btnFold {
+        opacity: 1;
+      }
+
+      &.active > span a {
+        color: #4285f4;
+
+        &::after {
+          opacity: 1;
+        }
+      }
+
+      a {
+        // font-weight: normal;
+        // position: relative;
+        // width: 100%;
+        // @apply text-sm text-gray-400;
+
+        &::after {
+          content: '';
+          // display: block;
+          // width: 100%;
+          // border: 1px solid #4285f4;
+          // position: absolute;
+          // opacity: 0;
+          // transition: all 0.1s cubic-bezier(0.39, 0.575, 0.565, 1);
+        }
+      }
+
+      &--1 {
+        > a {
+          font-size: 1rem;
+          font-weight: 600;
+          color: black;
+        }
       }
     }
   }
 }
-
-// =============================================================================
-// Print Styles
-// =============================================================================
-// Note: Print hiding is in _print.scss alongside other hidden elements

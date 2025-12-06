@@ -1,5 +1,0 @@
-export { default as TocDesktop } from './TocDesktop'
-export { default as TocMobile } from './TocMobile'
-export * from './types'
-export * from './hooks'
-export * from './components'

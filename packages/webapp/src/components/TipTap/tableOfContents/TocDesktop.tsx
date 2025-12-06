@@ -1,72 +1,82 @@
-import React, { memo, useRef, useState, useCallback } from 'react'
-import { ContextMenu } from '@components/ui/ContextMenu'
+import React, { useEffect, useRef, useState } from 'react'
+import { useChatStore } from '@stores'
+import useHandelTocUpdate from './hooks/useHandelTocUpdate'
+import { RenderTocs } from './RenderTocs'
+import { DocTitleChatRoomDesktop } from './components/DocTitleChatRoom'
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
-import { DocTitle, TocList, TocContextMenu } from './components'
-import { useTocItems } from './hooks'
+import { ContextMenu } from '@components/ui/ContextMenu'
+import ContextMenuItems from './components/ContextMenuItems'
 
-interface TocDesktopProps {
-  className?: string
+const removeContextMenuActiveClass = () => {
+  const tocItems = document.querySelectorAll('.toc__item a.context-menu-active')
+  tocItems.forEach((item: Element) => {
+    item.classList.remove('context-menu-active')
+  })
 }
 
-const TocDesktop = memo(({ className = '' }: TocDesktopProps) => {
-  const items = useTocItems()
+const TOCDesktop = ({ className }: any) => {
+  const { headingId } = useChatStore((state) => state.chatRoom)
+  const [renderedTocs, setRenderedTocs] = useState([])
+  const { items } = useHandelTocUpdate()
   const contextMenuRef = useRef<HTMLDivElement>(null)
-  const [contextTarget, setContextTarget] = useState<Element | null>(null)
+  const [contextMenuState, setContextMenuState] = useState<{
+    tocItem: Element | null
+  }>({
+    tocItem: null
+  })
 
-  const handleBeforeContextMenu = useCallback((e: any) => {
-    const tocItem = e.target.closest('.toc__item') as Element | null
+  useEffect(() => {
+    if (!items.length) return
+    const tocs = RenderTocs(items)
+    // @ts-ignore
+    setRenderedTocs(tocs)
+  }, [items, headingId])
+
+  const handleBeforeShow = (e: any) => {
+    const tocItem = e.target.closest('.toc__item') ?? null
     if (!tocItem) return null
+    setContextMenuState({ tocItem })
 
-    // Remove any existing highlight
-    document.querySelectorAll('.toc__item a.context-menu-active').forEach((el) => {
-      el.classList.remove('context-menu-active')
-    })
+    removeContextMenuActiveClass()
 
-    // Highlight current item
     const tocId = tocItem.getAttribute('data-id')
+
+    // Add CSS class to highlight the toc item
     tocItem.querySelector(`a[data-id="${tocId}"]`)?.classList.add('context-menu-active')
 
-    setContextTarget(tocItem)
     return tocItem
-  }, [])
-
-  const handleContextMenuClose = useCallback(() => {
-    setContextTarget(null)
-    document.querySelectorAll('.toc__item a.context-menu-active').forEach((el) => {
-      el.classList.remove('context-menu-active')
+  }
+  const handleContextMenuClose = () => {
+    setContextMenuState({
+      tocItem: null
     })
-  }, [])
-
-  // Empty state
-  if (!items.length) {
+    // Remove CSS class from the toc item
+    // find all .toc__item and the remove the class
+    removeContextMenuActiveClass()
+  }
+  if (!items.length)
     return (
-      <div className={className} style={{ scrollbarGutter: 'stable' }}>
-        <DocTitle className="my-1" variant="desktop" />
+      <div className={`${className}`} style={{ scrollbarGutter: 'stable' }}>
+        <DocTitleChatRoomDesktop className="my-1" />
       </div>
     )
-  }
 
   return (
-    <div className={className} style={{ scrollbarGutter: 'stable' }} ref={contextMenuRef}>
-      <DocTitle className="my-1" variant="desktop" />
-
+    <div className={`${className}`} style={{ scrollbarGutter: 'stable' }} ref={contextMenuRef}>
+      <DocTitleChatRoomDesktop className="my-1" />
       <ul className="toc__list menu w-full p-0">
         <ContextMenu
           className="menu bg-base-100 absolute z-20 m-0 rounded-md p-2 shadow-md outline-none"
           parrentRef={contextMenuRef}
-          onBeforeShow={handleBeforeContextMenu}
+          onBeforeShow={handleBeforeShow}
           onClose={handleContextMenuClose}>
-          <TocContextMenu tocElement={contextTarget} />
+          <ContextMenuItems tocItem={contextMenuState?.tocItem} />
         </ContextMenu>
-
-        <TocList items={items} variant="desktop" />
+        {renderedTocs}
       </ul>
-
       <AppendHeadingButton className="mt-4" />
     </div>
   )
-})
+}
 
-TocDesktop.displayName = 'TocDesktop'
-
-export default TocDesktop
+export default React.memo(TOCDesktop)

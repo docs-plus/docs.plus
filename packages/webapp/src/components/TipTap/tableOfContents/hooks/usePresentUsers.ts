@@ -1,19 +1,20 @@
-import { useMemo } from 'react'
+import { useEffect, useState } from 'react'
 import { useStore } from '@stores'
 
-/**
- * Hook to get users currently viewing a heading section.
- */
-const usePresentUsers = (headingId: string) => {
+const usePresentUsers = (id: string) => {
   const usersPresence = useStore((state) => state.usersPresence)
+  const [presentUsers, setPresentUsers] = useState([])
 
-  const presentUsers = useMemo(() => {
-    if (!usersPresence || !headingId) return []
+  useEffect(() => {
+    if (!usersPresence) return
 
-    return Array.from(usersPresence.values()).filter(
-      (user) => user?.channelId === headingId && user?.status !== 'OFFLINE'
-    )
-  }, [usersPresence, headingId])
+    const precenseUsers = usersPresence.values()
+    const users = Array.from(precenseUsers)
+      .filter((user) => user?.channelId === id)
+      .filter((user) => user?.status !== 'OFFLINE') as any
+
+    setPresentUsers(users)
+  }, [usersPresence])
 
   return presentUsers
 }
