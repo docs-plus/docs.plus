@@ -58,14 +58,30 @@ services:
  # REDIS - Shared Cache & Pub/Sub
  # ===========================================================================
  redis:
-  image: redis:alpine
+  image: redis:7-alpine
   container_name: docsplus-redis
   restart: unless-stopped
-  command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy noeviction
+  command: >
+   redis-server
+   --appendonly yes
+   --appendfsync everysec
+   --maxmemory 4gb
+   --maxmemory-policy allkeys-lru
+   --save ""
+   --stop-writes-on-bgsave-error no
+   --tcp-backlog 511
+   --timeout 0
+   --tcp-keepalive 300
+   --maxclients 10000
+   --lazyfree-lazy-eviction yes
+   --lazyfree-lazy-expire yes
+   --lazyfree-lazy-server-del yes
   volumes:
    - redis-data:/data
   networks:
    - docsplus-network
+  sysctls:
+   - net.core.somaxconn=511
   healthcheck:
    test: ["CMD", "redis-cli", "ping"]
    interval: 10s
@@ -74,9 +90,9 @@ services:
   deploy:
    resources:
     limits:
-     memory: 768M
+     memory: 5G
     reservations:
-     memory: 256M
+     memory: 1G
 
  # ===========================================================================
  # REST API (Hocuspocus)
