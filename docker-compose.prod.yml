@@ -19,7 +19,15 @@
 # Usage:
 #   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 #
+# Naming Convention:
+#   - Project: docsplus
+#   - Containers: docsplus-{service}-{replica} (e.g., docsplus-webapp-1)
+#   - Images: docsplus-{service}:{tag}
+#   - Network: docsplus-network
+#
 # =============================================================================
+
+name: docsplus
 
 services:
  # ===========================================================================
@@ -104,7 +112,7 @@ services:
  # REST API (Hocuspocus)
  # ===========================================================================
  rest-api:
-  image: docsy-hocuspocus:${DEPLOY_TAG:-latest}
+  image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
   env_file: .env.production
   build:
    context: ./packages/hocuspocus.server
@@ -182,7 +190,7 @@ services:
  # HOCUSPOCUS WEBSOCKET SERVER
  # ===========================================================================
  hocuspocus-server:
-  image: docsy-hocuspocus:${DEPLOY_TAG:-latest}
+  image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
   env_file: .env.production
   build:
    context: ./packages/hocuspocus.server
@@ -265,7 +273,7 @@ services:
  # HOCUSPOCUS WORKER (Background Jobs)
  # ===========================================================================
  hocuspocus-worker:
-  image: docsy-hocuspocus:${DEPLOY_TAG:-latest}
+  image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
   env_file: .env.production
   build:
    context: ./packages/hocuspocus.server
@@ -328,7 +336,7 @@ services:
  # WEBAPP (Next.js Frontend)
  # ===========================================================================
  webapp:
-  image: docsy-webapp:${DEPLOY_TAG:-latest}
+  image: docsplus-webapp:${DEPLOY_TAG:-latest}
   env_file: .env.production
   build:
    context: .

@@ -334,12 +334,12 @@ clean:
 	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
 		echo "🧹 Cleaning up (development)..."; \
 		docker-compose -f docker-compose.dev.yml --env-file .env.development down -v; \
-		docker rmi docsy-webapp:dev 2>/dev/null || true; \
+		docker rmi docsplus-webapp:dev 2>/dev/null || true; \
 		echo "✅ Development cleanup complete"; \
 	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
 		echo "🧹 Cleaning up (production)..."; \
 		docker-compose -f docker-compose.prod.yml --env-file .env.production down -v; \
-		docker rmi docsy-webapp:latest docsy-hocuspocus:latest 2>/dev/null || true; \
+		docker rmi docsplus-webapp:latest docsplus-hocuspocus:latest 2>/dev/null || true; \
 		echo "✅ Production cleanup complete"; \
 	elif docker-compose -f docker-compose.local.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
 		echo "🧹 Cleaning up (local)..."; \
@@ -347,7 +347,7 @@ clean:
 		echo "✅ Local cleanup complete"; \
 	else \
 		echo "🧹 No running containers found. Cleaning up project images..."; \
-		docker rmi docsy-webapp:dev docsy-webapp:latest docsy-hocuspocus:latest 2>/dev/null || true; \
+		docker rmi docsplus-webapp:dev docsplus-webapp:latest docsplus-hocuspocus:latest 2>/dev/null || true; \
 		docker volume rm docsy-postgres-dev docsy-redis-dev docsy-postgres-prod docsy-redis-prod docsy-postgres-local docsy-redis-local 2>/dev/null || true; \
 		docker network rm docsy-network-dev docsy-network docsy-network-local 2>/dev/null || true; \
 		echo "✅ Cleanup complete"; \
@@ -423,7 +423,7 @@ deploy-prod:
 
 rollback-prod:
 	@echo "🔄 Rolling back production..."
-	@PREV_TAG=$$(docker images docsy-webapp --format "{{.Tag}}" | grep -v latest | head -1); \
+	@PREV_TAG=$$(docker images docsplus-webapp --format "{{.Tag}}" | grep -v latest | head -1); \
 	if [ -n "$$PREV_TAG" ]; then \
 		echo "Rolling back to: $$PREV_TAG"; \
 		sed -i.bak "s/DEPLOY_TAG=.*/DEPLOY_TAG=$$PREV_TAG/" .env.production; \
