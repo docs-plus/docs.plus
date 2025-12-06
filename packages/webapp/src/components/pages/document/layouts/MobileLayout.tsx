@@ -11,10 +11,10 @@ import BottomSheet from '@components/BottomSheet'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import ToolbarMobile from '../components/toolbarMobile/ToolbarMobile'
 
-const MobileLeftSidePanel = ({ filterModalRef }: any) => {
+const MobileLeftSidePanel = () => {
   return (
     <ModalDrawer modalId="mobile_left_side_panel" width={80}>
-      <TocModal filterModalRef={filterModalRef} />
+      <TocModal />
     </ModalDrawer>
   )
 }
@@ -26,7 +26,6 @@ const MobileLayout = () => {
     }
   } = useStore((state) => state)
 
-  const filterModalRef = useRef<HTMLDivElement>(null)
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
 
   const isHistoryView = useHashRouter()
@@ -39,7 +38,7 @@ const MobileLayout = () => {
       <div className="sticky top-0 z-20 w-full bg-white">
         <MobilePadTitle />
       </div>
-      <MobileLeftSidePanel filterModalRef={filterModalRef} />
+      <MobileLeftSidePanel />
       <MobileEditor />
       <EditFAB />
       <BottomSheet />
