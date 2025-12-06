@@ -19,15 +19,19 @@ api:
 # -----------------------------------------------------------------------------
 # Logging
 # -----------------------------------------------------------------------------
+# Log to stdout (Docker handles rotation via json-file driver)
 log:
-  level: INFO
+  level: WARN  # Reduced from INFO to reduce log volume
   format: json
 
+# Access logs - only log errors (4xx/5xx) to reduce volume
 accessLog:
   format: json
   filters:
     statusCodes:
       - "400-599"
+    retryAttempts: true  # Only log retries
+    minDuration: "1s"     # Only log slow requests (>1s)
 
 # -----------------------------------------------------------------------------
 # Entrypoints
