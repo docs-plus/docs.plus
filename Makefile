@@ -194,7 +194,10 @@ dev-local:
 		echo "✅ Created .env.local - please review and adjust for localhost if needed"; \
 	fi
 	@if ! docker ps | grep -q docsy-postgres-local; then \
-		echo "⚠️  Infrastructure not running. Starting it..."; \
+		echo "⚠️  PostgreSQL not running. Starting infrastructure..."; \
+		$(MAKE) infra-up; \
+	elif ! docker ps | grep -q docsy-redis-local; then \
+		echo "⚠️  Redis not running. Starting infrastructure..."; \
 		$(MAKE) infra-up; \
 	fi
 	@if ! lsof -Pi :54321 -sTCP:LISTEN -t >/dev/null 2>&1; then \
