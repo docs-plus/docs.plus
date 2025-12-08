@@ -1,50 +1,26 @@
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
 
-function Custom500() {
-  const [error, setError] = useState<string | null>(null)
+export default function Custom500() {
   const router = useRouter()
-
-  useEffect(() => {
-    if (router.query.error) {
-      setError(router.query.error as string)
-    } else {
-      router.push('/')
-    }
-  }, [router])
-
-  if (!error) {
-    return null
-  }
+  const error = router.query.error as string | undefined
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
-      <div className="w-full max-w-md space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">Server Error</h2>
-          <div className="mt-4 rounded-md border border-red-200 bg-red-50 p-4">
-            <div className="text-sm text-red-700">
-              <p className="font-medium">Error: 500</p>
-              <p className="mt-1">
-                Details: {error || 'An unexpected error occurred. Please try again later.'}
-              </p>
-            </div>
-          </div>
-          <div className="mt-4 flex justify-center space-x-4">
-            <button
-              onClick={() => router.push('/')}
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-              Return to Home
-            </button>
-            <button
-              onClick={() => router.back()}
-              className="text-sm font-medium text-indigo-600 hover:text-indigo-500">
-              Go Back
-            </button>
-          </div>
+    <div className="bg-base-200 grid min-h-screen place-items-center p-4">
+      <div className="text-center">
+        <p className="text-error text-8xl font-bold">500</p>
+        <h1 className="text-base-content mt-4 text-2xl font-semibold">Something went wrong</h1>
+        <p className="text-base-content/60 mt-2 max-w-md">
+          {error || 'An unexpected error occurred. Please try again later.'}
+        </p>
+        <div className="mt-6 flex justify-center gap-3">
+          <button onClick={() => router.back()} className="btn btn-outline btn-sm">
+            Go Back
+          </button>
+          <button onClick={() => router.push('/')} className="btn btn-primary btn-sm">
+            Home
+          </button>
         </div>
       </div>
     </div>
   )
 }
-export default Custom500
