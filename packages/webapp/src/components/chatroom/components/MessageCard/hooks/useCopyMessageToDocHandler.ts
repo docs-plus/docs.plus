@@ -1,7 +1,6 @@
 import { useCallback } from 'react'
-import { TMsgRow } from '@types'
+import { TMsgRow, TIPTAP_NODES, TRANSACTION_META } from '@types'
 import { useStore } from '@stores'
-import { TIPTAP_NODES } from '@types'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 
 const createParagraphNodeJson = (message: TMsgRow) => {
@@ -25,10 +24,10 @@ const createParagraphNodeJson = (message: TMsgRow) => {
 
   const newContent = [
     {
-      type: 'text',
+      type: TIPTAP_NODES.TEXT_TYPE,
       marks: [
         {
-          type: 'hyperlink',
+          type: TIPTAP_NODES.HYPERLINK_TYPE,
           attrs: {
             id: null,
             href: messageUrl,
@@ -71,7 +70,11 @@ export const useCopyMessageToDocHandler = () => {
 
       // Traverse the document to find the heading with matching ID
       doc.descendants((node: any, pos: any) => {
-        if (node.type.name === 'heading' && node.attrs.id === headingId && !headingPos) {
+        if (
+          node.type.name === TIPTAP_NODES.HEADING_TYPE &&
+          node.attrs.id === headingId &&
+          !headingPos
+        ) {
           headingPos = pos
           headingLevel = node.attrs.level
           headingNode = node
@@ -88,7 +91,7 @@ export const useCopyMessageToDocHandler = () => {
       // find a first heading in the contentWrapper, if it deos not exsits,
       // the end of the contentWrapper is the end pos
       contentWrapperNode.content.forEach((child: any, offset: number) => {
-        if (child.type.name === 'heading' && !foundFirstHeading) {
+        if (child.type.name === TIPTAP_NODES.HEADING_TYPE && !foundFirstHeading) {
           foundFirstHeading = true
           firstHeadingOffset = offset
           return true
@@ -106,7 +109,7 @@ export const useCopyMessageToDocHandler = () => {
           .chain()
           .focus()
           .command(({ tr }) => {
-            tr.setMeta('copyToDoc', true)
+            tr.setMeta(TRANSACTION_META.COPY_TO_DOC, true)
             return true
           })
           .setTextSelection(insertPosition)

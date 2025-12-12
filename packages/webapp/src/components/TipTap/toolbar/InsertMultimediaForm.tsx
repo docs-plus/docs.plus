@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { useStore } from '@stores'
+import { TIPTAP_NODES } from '@types'
 import toast from 'react-hot-toast'
 import { MdCloudUpload, MdOutlineImage, MdAudiotrack } from 'react-icons/md'
 import { FaYoutube, FaVimeo, FaSoundcloud, FaXTwitter } from 'react-icons/fa6'
@@ -174,7 +175,7 @@ const useUploadManager = (editor: any) => {
 
       // Insert placeholder
       editor.commands.insertContent({
-        type: 'mediaUploadPlaceholder',
+        type: TIPTAP_NODES.MEDIA_UPLOAD_PLACEHOLDER_TYPE,
         attrs: {
           progress: 0,
           fileName: file.name,
@@ -211,7 +212,10 @@ const useUploadManager = (editor: any) => {
         let placeholderPos: number | null = null
 
         state.doc.descendants((node: any, pos: number) => {
-          if (node.type.name === 'mediaUploadPlaceholder' && node.attrs.uploadId === uploadId) {
+          if (
+            node.type.name === TIPTAP_NODES.MEDIA_UPLOAD_PLACEHOLDER_TYPE &&
+            node.attrs.uploadId === uploadId
+          ) {
             placeholderPos = pos
             return false
           }
@@ -244,7 +248,10 @@ const useUploadManager = (editor: any) => {
         let placeholderPos: number | null = null
 
         state.doc.descendants((node: any, pos: number) => {
-          if (node.type.name === 'mediaUploadPlaceholder' && node.attrs.uploadId === uploadId) {
+          if (
+            node.type.name === TIPTAP_NODES.MEDIA_UPLOAD_PLACEHOLDER_TYPE &&
+            node.attrs.uploadId === uploadId
+          ) {
             placeholderPos = pos
             return false
           }

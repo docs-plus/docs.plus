@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useEditor, Editor } from '@tiptap/react'
 import { TextSelection } from '@tiptap/pm/state'
 import { setComposerStateDebounced } from '@db/messageComposerDB'
+import { TIPTAP_NODES } from '@types'
 
 import { StarterKit } from '@tiptap/starter-kit'
 import { Placeholder } from '@tiptap/extensions'
@@ -134,16 +135,16 @@ export const useTiptapEditor = ({
             const { $from } = view.state.selection
 
             // Check if we're inside a list item
-            const inList = $from.node(2)?.type.name === 'listItem'
+            const inList = $from.node(2)?.type.name === TIPTAP_NODES.LISTITEM_TYPE
             if (inList) {
               // Create a new list item by splitting the current one
-              editor?.commands.splitListItem('listItem') //
+              editor?.commands.splitListItem(TIPTAP_NODES.LISTITEM_TYPE)
 
               return true // We handled this event
             }
 
             const isEmptyParagraph =
-              $from.parent.type.name === 'paragraph' && $from.parent.content.size === 0
+              $from.parent.type.name === TIPTAP_NODES.PARAGRAPH_TYPE && $from.parent.content.size === 0
 
             // Create a new paragraph
             let tr

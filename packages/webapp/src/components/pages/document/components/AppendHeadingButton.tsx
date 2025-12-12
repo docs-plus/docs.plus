@@ -37,7 +37,7 @@ const findNewHeadingId = (doc: any, insertPosition: number): string | null => {
   const searchEnd = Math.min(doc.content.size, insertPosition + SEARCH_RANGE_BUFFER)
 
   doc.nodesBetween(searchStart, searchEnd, (node: any) => {
-    if (node.type.name === 'heading' && node.attrs?.id) {
+    if (node.type.name === TIPTAP_NODES.HEADING_TYPE && node.attrs?.id) {
       headingId = node.attrs.id
       return false // Stop iteration
     }

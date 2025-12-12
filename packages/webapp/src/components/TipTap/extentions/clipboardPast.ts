@@ -1,6 +1,6 @@
 import { Slice, Fragment } from '@tiptap/pm/model'
 import { TextSelection, EditorState, Transaction } from '@tiptap/pm/state'
-import { TIPTAP_NODES } from '@types'
+import { TIPTAP_NODES, TRANSACTION_META } from '@types'
 import { Editor } from '@tiptap/core'
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import {
@@ -51,7 +51,7 @@ const insertParagraphsAtPosition = (
   const contentArray = [...paragraphs]
     .map((node) => {
       // If it's a TextNode, wrap it in a paragraph
-      if (node.type.name === 'text') {
+      if (node.type.name === TIPTAP_NODES.TEXT_TYPE) {
         return state.schema.nodes.paragraph.create(null, [node])
       }
       return node
@@ -152,7 +152,7 @@ const clipboardPaste = (slice: Slice, editor: Editor): Slice => {
 
   // If there are no headings to paste, return the original slice simple content will be handel in contentWrapper node
   if (headings.length === 0) {
-    tr.setMeta('paste', true)
+    tr.setMeta(TRANSACTION_META.PASTE, true)
     view.dispatch(tr)
     return slice
   }
@@ -190,7 +190,7 @@ const clipboardPaste = (slice: Slice, editor: Editor): Slice => {
   }
 
   // insert hello world to the end of the lastH1inserte
-  tr.setMeta('paste', true)
+  tr.setMeta(TRANSACTION_META.PASTE, true)
   view.dispatch(tr)
   return Slice.empty
 }

@@ -37,7 +37,7 @@ function DeleteSectionDialog({ headingId }: { headingId: string }) {
 
     for (let depth = $pos.depth; depth > 0; depth--) {
       const node = $pos.node(depth)
-      if (node.type.name === 'heading') {
+      if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
         parentHeadingPos = $pos.start(depth)
         parentHeadingNode = node
         break
@@ -165,4 +165,3 @@ export function useTocActions() {
     deleteSection
   }
 }
-

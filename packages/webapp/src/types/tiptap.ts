@@ -45,7 +45,9 @@ export const TRANSACTION_META = {
   /** Heading text changed */
   HEADING_TEXT_CHANGED: 'headingTextChanged',
   /** Skip history for this transaction */
-  ADD_TO_HISTORY: 'addToHistory'
+  ADD_TO_HISTORY: 'addToHistory',
+  /** Content copied to document from chat */
+  COPY_TO_DOC: 'copyToDoc'
 } as const
 
 /**
@@ -61,7 +63,9 @@ export const TIPTAP_NODES = {
   TEXT_TYPE: 'text',
   BULLETLIST_TYPE: 'bulletList',
   ORDEREDLIST_TYPE: 'orderedList',
-  LISTITEM_TYPE: 'listItem'
+  LISTITEM_TYPE: 'listItem',
+  HARD_BREAK_TYPE: 'hardBreak',
+  MEDIA_UPLOAD_PLACEHOLDER_TYPE: 'mediaUploadPlaceholder'
 } as const
 
 /**

@@ -850,7 +850,7 @@ const convertContentBlockToParagraph = (contentBlock: SelectionBlock): Selection
 
   return {
     ...contentBlock,
-    type: 'paragraph',
+    type: TIPTAP_NODES.PARAGRAPH_TYPE,
     content: contentBlock.content?.map(removeBoldMark) || contentBlock.content
   }
 }

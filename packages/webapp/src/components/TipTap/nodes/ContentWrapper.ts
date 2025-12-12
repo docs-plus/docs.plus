@@ -240,7 +240,7 @@ const ContentWrapper = Node.create({
 
               // Filter out the "hardBreak" nodes from the paragraph content
               const filteredContent = paragraphContent.filter(
-                (node: any) => node.type.name !== 'hardBreak'
+                (node: any) => node.type.name !== TIPTAP_NODES.HARD_BREAK_TYPE
               )
 
               const cloneCurrentNodeAsParagraph = {

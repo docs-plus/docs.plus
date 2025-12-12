@@ -1,4 +1,5 @@
 import { Editor } from '@tiptap/core'
+import { TIPTAP_NODES } from '@types'
 
 export const createDocumentFromStructure = ({ editor }: { editor: Editor }) => {
   return (structure: any) => {
@@ -16,16 +17,16 @@ export const createDocumentFromStructure = ({ editor }: { editor: Editor }) => {
     const content = structure.sections.map((section: any) => {
       // Create heading node for section title
       const sectionNode = {
-        type: 'heading',
+        type: TIPTAP_NODES.HEADING_TYPE,
         attrs: { level: 1 },
         content: [
           {
-            type: 'contentHeading',
+            type: TIPTAP_NODES.CONTENT_HEADING_TYPE,
             attrs: { level: 1 },
-            content: [{ type: 'text', text: section.title || 'Untitled Section' }]
+            content: [{ type: TIPTAP_NODES.TEXT_TYPE, text: section.title || 'Untitled Section' }]
           },
           {
-            type: 'contentWrapper',
+            type: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
             content: []
           }
         ]
@@ -38,11 +39,11 @@ export const createDocumentFromStructure = ({ editor }: { editor: Editor }) => {
 
         // Add each content item to the wrapper
         section.contents.forEach((item: any) => {
-          if (item.type === 'paragraph') {
+          if (item.type === TIPTAP_NODES.PARAGRAPH_TYPE) {
             // @ts-ignore
             contentWrapper.push({
-              type: 'paragraph',
-              content: [{ type: 'text', text: item.content || ' ' }]
+              type: TIPTAP_NODES.PARAGRAPH_TYPE,
+              content: [{ type: TIPTAP_NODES.TEXT_TYPE, text: item.content || ' ' }]
             })
           }
           // Add handling for other content types as needed

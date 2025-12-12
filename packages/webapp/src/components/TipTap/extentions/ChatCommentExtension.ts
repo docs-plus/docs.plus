@@ -4,6 +4,7 @@ import { EditorView } from '@tiptap/pm/view'
 import PubSub from 'pubsub-js'
 import { CHAT_COMMENT } from '@services/eventsHub'
 import { AddCommentMD } from '@icons'
+import { TIPTAP_NODES } from '@types'
 
 const shouldShow = (editor: Editor): boolean => {
   const state = editor.state
@@ -49,7 +50,7 @@ const createChatCommentButton = (view: EditorView, selection: Selection): void =
   // Adjust the button position to be centered vertically relative to the node
   const adjustedTop = nodeHeight ? offsetTop + nodeHeight / 2 - 16 : offsetTop - 16
 
-  const isInContentHeading = selection.$anchor.parent.type.name === 'contentHeading'
+  const isInContentHeading = selection.$anchor.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
 
   button.style.position = 'absolute'
 
@@ -89,7 +90,7 @@ const openChatComment = (state: EditorState): void => {
   let depth = selection.$from.depth
   while (depth > 0) {
     const node = selection.$from.node(depth)
-    if (node.type.name.startsWith('heading')) {
+    if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
       headingNode = node
       break
     }
