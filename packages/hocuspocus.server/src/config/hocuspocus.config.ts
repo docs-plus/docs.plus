@@ -90,31 +90,30 @@ const configureExtensions = () => {
         const ydoc = new Y.Doc()
         Y.applyUpdate(ydoc, state)
         const meta = ydoc.getMap('metadata')
-        const commitMessage = meta.get('commitMessage') || ''
+        const commitMessageValue = meta.get('commitMessage')
+        const commitMessage = typeof commitMessageValue === 'string' ? commitMessageValue : ''
         const isDraft = meta.get('isDraft') || false
-        let firstCreation = false
 
         meta.delete('commitMessage')
 
         // If the document is draft, don't store the data
         if (isDraft) return
 
+        // Clean up draft flag after first save
         if (meta.has('isDraft')) {
           meta.delete('isDraft')
-          firstCreation = true
         }
 
         // Create a new Y.Doc to store the updated state
         Y.applyUpdate(ydoc, state)
         const newState = Y.encodeStateAsUpdate(ydoc)
 
-        // Add job to queue
+        // Add job to queue (firstCreation is determined in worker by checking DB)
         await StoreDocumentQueue.add('store-document', {
           documentName,
           state: Buffer.from(newState).toString('base64'),
           context,
-          commitMessage,
-          firstCreation
+          commitMessage
         })
       }
     })

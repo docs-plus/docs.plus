@@ -1,5 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
-import { extractUserFromToken } from '../../utils'
+import { extractUserFromToken } from '../utils/auth'
 import * as documentsService from '../services/documents.service'
 import * as mediaService from '../services/media.service'
 import { documentsControllerLogger } from '../../lib/logger'
@@ -11,7 +11,7 @@ export const getDocumentBySlug = async (c: any) => {
   const { userId } = c.req.valid('query')
   const token = c.req.header('token')
 
-  const user = extractUserFromToken(token, userId)
+  const user = await extractUserFromToken(token, userId)
 
   try {
     const doc = await documentsService.getDocumentBySlug(prisma, docName)

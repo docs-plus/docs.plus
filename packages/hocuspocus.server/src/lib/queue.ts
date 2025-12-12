@@ -2,6 +2,7 @@ import { Queue, Worker, Job } from 'bullmq'
 import { prisma } from './prisma'
 import { createRedisConnection, getRedisPublisher } from './redis'
 import { queueLogger } from './logger'
+import { sendNewDocumentNotification } from './email'
 import type { StoreDocumentData, DeadLetterJobData } from '../types'
 
 async function generateUniqueSlug(baseSlug: string): Promise<string> {
@@ -88,9 +89,17 @@ export const createDocumentWorker = () => {
 
       try {
         const startTime = Date.now()
+        const context = data.context
 
-        if (data.firstCreation) {
-          const context = data.context
+        // Check if this is the first time this document is being saved
+        const existingDoc = await prisma.documents.findFirst({
+          where: { documentId: data.documentName },
+          select: { id: true, version: true }
+        })
+        const isFirstCreation = !existingDoc
+
+        if (isFirstCreation) {
+          const slug = await generateUniqueSlug(context.slug || data.documentName)
 
           await prisma.documentMetadata.upsert({
             where: {
@@ -106,7 +115,7 @@ export const createDocumentWorker = () => {
             },
             create: {
               documentId: data.documentName,
-              slug: await generateUniqueSlug(context.slug || data.documentName),
+              slug,
               title: context.slug || data.documentName,
               description: context.slug || data.documentName,
               ownerId: context.user?.sub,
@@ -114,12 +123,26 @@ export const createDocumentWorker = () => {
               keywords: ''
             }
           })
+          // Send email notification for new document (fire-and-forget, don't block queue)
+          const userMeta = context.user?.user_metadata
+          sendNewDocumentNotification({
+            documentId: data.documentName,
+            documentName: context.slug || data.documentName,
+            slug,
+            creatorEmail: context.user?.email,
+            creatorId: context.user?.sub,
+            creatorName: userMeta?.full_name || userMeta?.name,
+            creatorAvatarUrl: userMeta?.avatar_url,
+            createdAt: new Date()
+          }).catch((err) => {
+            queueLogger.error(
+              { err, documentId: data.documentName },
+              'Failed to send new document notification email'
+            )
+          })
         }
 
-        const currentDoc = await prisma.documents.findFirst({
-          where: { documentId: data.documentName },
-          orderBy: { version: 'desc' }
-        })
+        const currentDoc = existingDoc
 
         // Create a new version
         const savedDoc = await prisma.documents.create({

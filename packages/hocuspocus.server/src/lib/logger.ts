@@ -148,3 +148,9 @@ export const jwtLogger = logger.child(
   { module: 'jwt' },
   { level: envLevel(process.env.JWT_LOG_LEVEL, baseLevel) }
 )
+
+// Email
+export const emailLogger = logger.child(
+  { module: 'email' },
+  { level: envLevel(process.env.EMAIL_LOG_LEVEL, baseLevel) }
+)

@@ -1,65 +1,55 @@
-import jwt from 'jsonwebtoken'
+import { createClient } from '@supabase/supabase-js'
 import { jwtLogger } from '../lib/logger'
 
 /**
- * Verify and decode a JWT token
- * @param token - The JWT token to verify
- * @returns Decoded token payload or null if verification fails
+ * Supabase user data from token verification
  */
-export const verifyJWT = (token: string): any | null => {
-  const secret = process.env.JWT_SECRET
-
-  if (!secret) {
-    jwtLogger.error('JWT_SECRET not configured - token verification disabled')
-    // In production, this should throw an error
-    if (process.env.NODE_ENV === 'production') {
-      throw new Error('JWT_SECRET must be configured in production')
-    }
-    return null
-  }
-
-  try {
-    const decoded = jwt.verify(token, secret)
-    return decoded
-  } catch (error) {
-    if (error instanceof jwt.TokenExpiredError) {
-      jwtLogger.warn('Token expired')
-    } else if (error instanceof jwt.JsonWebTokenError) {
-      jwtLogger.warn('Invalid token signature')
-    } else {
-      jwtLogger.error({ err: error }, 'JWT verification failed')
-    }
-    return null
+export interface SupabaseUser {
+  sub: string
+  email?: string
+  user_metadata?: {
+    full_name?: string
+    name?: string
+    avatar_url?: string
   }
 }
 
 /**
- * Decode JWT without verification (use only when verification is done elsewhere)
- * @param token - The JWT token to decode
- * @returns Decoded token payload or null
+ * Verify Supabase access token via API
  */
-export const decodeJWT = (token: string): any | null => {
+export const verifySupabaseToken = async (token: string): Promise<SupabaseUser | null> => {
+  const supabaseUrl = process.env.SUPABASE_URL
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    jwtLogger.error('SUPABASE_URL or SUPABASE_ANON_KEY not configured')
+    return null
+  }
+
   try {
-    return jwt.decode(token)
+    const supabase = createClient(supabaseUrl, supabaseAnonKey)
+    const {
+      data: { user },
+      error
+    } = await supabase.auth.getUser(token)
+
+    if (error || !user) {
+      jwtLogger.warn({ error }, 'Token verification failed')
+      return null
+    }
+
+    jwtLogger.debug({ userId: user.id }, 'Token verified')
+
+    return {
+      sub: user.id,
+      email: user.email,
+      user_metadata: user.user_metadata as SupabaseUser['user_metadata']
+    }
   } catch (error) {
-    jwtLogger.error({ err: error }, 'JWT decode failed')
+    jwtLogger.error({ err: error }, 'Error verifying token')
     return null
   }
 }
 
-/**
- * Extract user from token string or return null
- * Used in controllers where token might be missing
- */
-export const extractUserFromToken = (token?: string, userId?: string): any | null => {
-  if (!token || !userId) return null
-
-  const decoded = verifyJWT(token)
-
-  if (!decoded) {
-    return null
-  }
-
-  return { ...decoded, id: userId }
-}
-
+// Alias for backward compatibility
+export const verifyJWT = verifySupabaseToken

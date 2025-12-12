@@ -12,4 +12,4 @@ export const generateRandomId = (length = 19): string => {
   return result
 }
 
-export { verifyJWT, decodeJWT, extractUserFromToken } from './jwt'
+export { verifySupabaseToken as verifyJWT } from './jwt'

@@ -71,6 +71,23 @@ export const config = {
       .map((origin) => origin.trim())
       .filter(Boolean),
     rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || '100', 10)
+  },
+
+  // Email (SMTP via Nodemailer)
+  email: {
+    fromEmail: process.env.EMAIL_FROM || process.env.SMTP_USER || 'noreply@docs.plus',
+    notificationEmails: (process.env.NEW_DOCUMENT_NOTIFICATION_EMAILS || '')
+      .split(',')
+      .map((email) => email.trim())
+      .filter((email) => email.length > 0 && email.includes('@')),
+    appUrl: process.env.APP_URL || 'https://docs.plus',
+    smtp: {
+      host: process.env.SMTP_HOST || '',
+      port: parseInt(process.env.SMTP_PORT || '587', 10),
+      secure: process.env.SMTP_SECURE === 'true',
+      user: process.env.SMTP_USER || '',
+      pass: process.env.SMTP_PASS || ''
+    }
   }
 } as const
 

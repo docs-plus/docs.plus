@@ -2,7 +2,7 @@ import { Server } from '@hocuspocus/server'
 import HocuspocusConfig from './config/hocuspocus.config'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { disconnectRedis } from './lib/redis'
-import { verifyJWT, decodeJWT } from './utils'
+import { verifyJWT } from './utils'
 import type { HistoryPayload } from './types'
 import { logger } from './lib/logger'
 
@@ -92,66 +92,39 @@ const serverConfig = {
   async onAuthenticate({ token, documentName }: any) {
     if (!token) {
       wsLogger.debug({ documentName }, 'No token provided - allowing anonymous access')
-      return {
-        user: null,
-        slug: '',
-        documentId: documentName
-      }
+      return { user: null, slug: '', documentId: documentName }
     }
 
     try {
       const tokenData = JSON.parse(token)
 
-      // Verify JWT signature if accessToken is provided
       if (tokenData.accessToken) {
-        const verified = verifyJWT(tokenData.accessToken)
+        const user = await verifyJWT(tokenData.accessToken)
 
-        if (verified) {
-          wsLogger.debug({ userId: verified.sub, documentName }, 'JWT verified successfully')
-          return {
-            user: verified,
-            slug: tokenData.slug || '',
-            documentId: documentName
-          }
-        } else {
-          wsLogger.warn({ documentName }, 'JWT verification failed - invalid signature')
-
-          // In production, reject invalid tokens
-          if (process.env.NODE_ENV === 'production' && process.env.JWT_SECRET) {
-            throw new Error('Invalid authentication token')
-          }
-
-          // In development, allow access but log warning
-          wsLogger.warn('Allowing unauthenticated access in development mode')
-          return {
-            user: null,
-            slug: tokenData.slug || '',
-            documentId: documentName
-          }
+        if (user) {
+          wsLogger.debug({ userId: user.sub, documentName }, 'Token verified')
+          return { user, slug: tokenData.slug || '', documentId: documentName }
         }
+
+        // Token invalid
+        if (process.env.NODE_ENV === 'production') {
+          throw new Error('Invalid authentication token')
+        }
+
+        wsLogger.warn({ documentName }, 'Token verification failed - allowing in dev')
+        return { user: null, slug: tokenData.slug || '', documentId: documentName }
       }
 
-      // No accessToken provided, allow access with slug only
-      wsLogger.debug({ documentName }, 'No accessToken in token data')
-      return {
-        user: null,
-        slug: tokenData.slug || '',
-        documentId: documentName
-      }
+      // No accessToken, allow with slug only
+      return { user: null, slug: tokenData.slug || '', documentId: documentName }
     } catch (error) {
-      wsLogger.error({ err: error, documentName }, 'Error parsing authentication token')
+      wsLogger.error({ err: error, documentName }, 'Auth error')
 
-      // In production, reject malformed tokens
       if (process.env.NODE_ENV === 'production') {
-        throw new Error('Malformed authentication token')
+        throw new Error('Authentication failed')
       }
 
-      // In development, allow access
-      return {
-        user: null,
-        slug: '',
-        documentId: documentName
-      }
+      return { user: null, slug: '', documentId: documentName }
     }
   }
 }

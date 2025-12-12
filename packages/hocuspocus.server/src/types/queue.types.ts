@@ -7,10 +7,15 @@ export interface StoreDocumentData {
     user?: {
       sub?: string
       email?: string
+      // Supabase user_metadata fields
+      user_metadata?: {
+        full_name?: string
+        name?: string
+        avatar_url?: string
+      }
     }
   }
   commitMessage?: string
-  firstCreation: boolean
 }
 
 // Dead letter queue data (for failed jobs)
