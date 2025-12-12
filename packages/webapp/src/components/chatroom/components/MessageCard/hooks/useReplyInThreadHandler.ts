@@ -2,7 +2,7 @@ import { useCallback } from 'react'
 import PubSub from 'pubsub-js'
 import { useStore } from '@stores'
 import { CHAT_OPEN } from '@services/eventsHub'
-import { TIPTAP_NODES, TMsgRow } from '@types'
+import { TIPTAP_NODES, TRANSACTION_META, TMsgRow } from '@types'
 
 // For reply in thread feature
 const emptyParagraphs = Array(5).fill({
@@ -72,7 +72,7 @@ export const useReplyInThreadHandler = () => {
             { updateSelection: true }
           )
           .command(({ tr }) => {
-            tr.setMeta('renderTOC', true)
+            tr.setMeta(TRANSACTION_META.RENDER_TOC, true)
             return true
           })
           .run()

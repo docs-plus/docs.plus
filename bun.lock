@@ -239,6 +239,7 @@
         "@tiptap/extension-subscript": "^3.10.7",
         "@tiptap/extension-superscript": "^3.10.7",
         "@tiptap/extension-table": "^3.10.7",
+        "@tiptap/extension-table-of-contents": "^3.13.0",
         "@tiptap/extension-text": "^3.10.7",
         "@tiptap/extension-text-align": "^3.10.7",
         "@tiptap/extension-text-style": "^3.10.7",
@@ -1186,6 +1187,8 @@
     "@tiptap/extension-superscript": ["@tiptap/extension-superscript@3.10.7", "", { "peerDependencies": { "@tiptap/core": "^3.10.7", "@tiptap/pm": "^3.10.7" } }, "sha512-qUBWXzl8RPpLaIzIHKjGQNJoEw4pp598tbWqdEQGOidBnUu5cVDCbM+ybi2lSZTRP2InlIQe7cw8uRA8Mw/wng=="],
 
     "@tiptap/extension-table": ["@tiptap/extension-table@3.10.7", "", { "peerDependencies": { "@tiptap/core": "^3.10.7", "@tiptap/pm": "^3.10.7" } }, "sha512-+970tUQBMTvJDg+l/B9ktGAnPPDb0FrL8olmCFR7RRx4tWaUyZUIFI0yiLHK17HKRbW/8MZJ85sNMko3NJl77g=="],
+
+    "@tiptap/extension-table-of-contents": ["@tiptap/extension-table-of-contents@3.13.0", "", { "dependencies": { "uuid": "^10.0.0" }, "peerDependencies": { "@tiptap/core": "^3.13.0", "@tiptap/pm": "^3.13.0" } }, "sha512-y9uNnihi0nThMw/09p/dceDJhwQjfpbNNBXrdGkIZhdY1/WMyHl8hFVO2kZNc2bcaKque4wDrtPdC5SDozJMIg=="],
 
     "@tiptap/extension-text": ["@tiptap/extension-text@3.10.7", "", { "peerDependencies": { "@tiptap/core": "^3.10.7" } }, "sha512-b7Rjil/uqiabWnRHyd1P84rWD2XRyZZSrmIAO9mDMD/jB2bE+f7rDJcHG76GF03UicDhEEEf2/8mz0dMLa6mUA=="],
 
@@ -3548,6 +3551,8 @@
     "@testing-library/dom/aria-query": ["aria-query@5.3.0", "", { "dependencies": { "dequal": "^2.0.3" } }, "sha512-b0P0sZPKtyu8HkeRAfCq0IfURZK+SuwMjY1UXGBU27wpAiTwQAIlq56IbIO+ytk/JjS1fMR14ee5WBBfKi5J6A=="],
 
     "@testing-library/dom/dom-accessibility-api": ["dom-accessibility-api@0.5.16", "", {}, "sha512-X7BJ2yElsnOJ30pZF4uIIDfBEVgF4XEBxL9Bxhy6dnrm5hkzqmsWHGTiHqRiITNhMyFLyAiWndIJP7Z1NTteDg=="],
+
+    "@tiptap/extension-table-of-contents/uuid": ["uuid@10.0.0", "", { "bin": { "uuid": "dist/bin/uuid" } }, "sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ=="],
 
     "@tiptap/extension-unique-id/uuid": ["uuid@10.0.0", "", { "bin": { "uuid": "dist/bin/uuid" } }, "sha512-8XkAphELsDnEGrDxUOHB3RGvXz6TeuYSGEZBOjtTtPm2lwhGBjLgOzLHB63IUWfBpNucQjND6d3AOudO+H3RWQ=="],
 

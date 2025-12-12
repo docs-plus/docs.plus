@@ -6,7 +6,7 @@ import {
   getSelectionRangeBlocks,
   convertHeadingsToParagraphs
 } from '../helper'
-import { TIPTAP_NODES, TIPTAP_EVENTS } from '@types'
+import { TIPTAP_NODES, TRANSACTION_META } from '@types'
 import { NormalTextArgs } from '../types'
 import { HeadingBlockInfo, SelectionBlock } from '../types'
 
@@ -129,10 +129,10 @@ const onHeading = (args: NormalTextArgs): void => {
 
   processHeadings(state, tr, [prevBlock!], remainingHeadings)
 
-  // update TOC
-  tr.setMeta('renderTOC', true)
-  // notify that new heading was created, for update TOC
-  tr.setMeta(TIPTAP_EVENTS.NEW_HEADING_CREATED, true)
+  // Trigger TOC update
+  tr.setMeta(TRANSACTION_META.RENDER_TOC, true)
+  // Notify that new heading was created
+  tr.setMeta(TRANSACTION_META.NEW_HEADING_CREATED, true)
 
   if (backspaceAction && tr) editor.view.dispatch(tr)
   return

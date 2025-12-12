@@ -1,11 +1,11 @@
-import React, { useCallback } from 'react'
+import React from 'react'
 import Link from 'next/link'
 import DocTitle from '@components/TipTap/DocTitle'
 import { DocsPlus } from '@icons'
 import { useStore, useSheetStore } from '@stores'
 import { IoClose } from 'react-icons/io5'
 import { MdFilterAlt, MdHistory } from 'react-icons/md'
-import TableOfContents from '@components/TipTap/tableOfContents/mobile/TocMobile'
+import { TocMobile } from '@components/toc'
 import { useModal } from '@components/ui/ModalDrawer'
 
 const TocModal = ({ filterModalRef }: any) => {
@@ -59,7 +59,7 @@ const TocModal = ({ filterModalRef }: any) => {
           </div>
         </div>
         <div className="h-full">
-          <TableOfContents className="tiptap__toc size-full pb-4 pl-2" />
+          <TocMobile className="tiptap__toc size-full pb-4 pl-2" />
         </div>
       </div>
     </div>

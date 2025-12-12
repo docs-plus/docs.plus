@@ -1,14 +1,42 @@
-$bg-root: #f8f9fa;
+/**
+ * Table of Contents Styles
+ * All styles for the TOC component (desktop and mobile views)
+ */
 
+// ======================
+// Active TOC Border
+// ======================
+.activeTocBorder::after {
+  content: '';
+  position: absolute;
+  top: -2px;
+  left: -9.5px;
+  width: 4px;
+  height: 100%;
+  background-color: var(--color-docsy);
+  border-radius: 4px;
+}
+
+// ======================
+// Context Menu Active State
+// ======================
+.toc__item a.context-menu-active {
+  background-color: #d5dffc !important;
+}
+
+// ======================
+// Mobile TOC Styles
+// ======================
 .m_mobile {
   .btnChat {
     opacity: 1 !important;
   }
+
   .toc__item {
-    // padding-left: 30px;
     > a {
       line-height: 2 !important;
     }
+
     .btnFold {
       opacity: 1 !important;
       left: -16px !important;
@@ -16,156 +44,210 @@ $bg-root: #f8f9fa;
       width: 21px !important;
     }
   }
+
+  .tiptap__toc {
+    .toc__list {
+      flex-wrap: nowrap !important;
+
+      li ul {
+        white-space: unset;
+      }
+    }
+
+    :where(.menu li) {
+      flex-wrap: nowrap;
+    }
+
+    .toc__item > span .btnFold::before {
+      opacity: 1;
+    }
+
+    // Mobile chat box button
+    .btn_openChatBox {
+      position: absolute;
+      right: 0.5rem;
+      display: flex;
+      width: 2rem;
+      height: 2rem;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border-radius: 0.75rem;
+      background-color: var(--bg-docy);
+      fill: white;
+      padding: 0.5rem;
+      color: var(--neutral-content);
+
+      svg {
+        fill: #fff;
+        display: block;
+        margin: auto;
+      }
+
+      .chatLeft {
+        fill: #fff;
+        position: relative;
+        top: 1px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin: auto;
+      }
+
+      // Hide chat icon when unread count exists
+      &[data-unread-count]:not([data-unread-count='']) {
+        .chatLeft {
+          display: none;
+        }
+      }
+
+      // Show unread count
+      &::before {
+        content: attr(data-unread-count);
+        color: #fff;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+  }
 }
 
+// ======================
+// Main TOC Container
+// ======================
 .tiptap__toc {
   padding-left: 20px;
   padding-top: 10px;
 
-  ul > li:hover {
-    // change background of ul to red
-    & ~ ul {
-      // change background of ul to red
-      background-color: red;
-    }
-  }
-
+  // ======================
+  // TOC Item Base Styles
+  // ======================
   .toc__item {
+    // Focus sight indicator (shows current scroll position)
     &.focusSight {
       position: relative;
-      > a {
-        &::after {
-          content: '';
-          position: absolute;
-          top: -2px;
-          left: -9.5px;
-          width: 4px;
-          height: 100%;
-          background-color: var(--color-docsy);
-          border-radius: 4px;
-        }
+
+      > a::after {
+        content: '';
+        position: absolute;
+        top: -2px;
+        left: -9.5px;
+        width: 4px;
+        height: 100%;
+        background-color: var(--color-docsy);
+        border-radius: 4px;
       }
     }
+
+    // Item link base styles
     > a {
       padding: 0.3rem 0.4rem;
+      padding-left: 30px;
       position: relative;
       transition: all 0.2s ease-in-out;
       margin-bottom: 0.1rem;
     }
-  }
-  .toc {
-    &__item {
-      .btn_chat {
-        display: block;
-        width: 16px;
-        height: 24px;
-        --tooltip-offset: 26px;
-        --tooltip-tail-offset: 20px;
-        font-weight: normal;
-      }
-      .btnChat {
-        opacity: 0;
-        // background-color: $bg-root;
-        width: 24px;
-        border-radius: 6px;
-        height: 24px;
-        padding: 4px;
-        position: absolute;
-        right: -5px;
-        top: 52%;
-        transform: translateY(-50%);
-      }
 
-      .btn_chat:hover {
+    // Active state
+    &.active > span a {
+      color: #4285f4;
+    }
+
+    // Level 1 heading styles
+    &--1 > a {
+      font-size: 1rem;
+      font-weight: 600;
+      color: black;
+    }
+  }
+
+  // ======================
+  // Chat Button
+  // ======================
+  .toc__item {
+    .btn_chat {
+      display: block;
+      width: 16px;
+      height: 24px;
+      --tooltip-offset: 26px;
+      --tooltip-tail-offset: 20px;
+      font-weight: normal;
+
+      &:hover {
         fill: var(--neutral-content);
       }
+    }
 
-      a:not(:active, .active):hover .btnChat {
-        background-color: var(--base-300);
-      }
+    .btnChat {
+      opacity: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 6px;
+      padding: 4px;
+      position: absolute;
+      right: -5px;
+      top: 52%;
+      transform: translateY(-50%);
+    }
 
-      &:hover > a > span > .btnChat {
-        opacity: 1;
-      }
+    // Show chat button on hover
+    &:hover > a > span > .btnChat {
+      opacity: 1;
+    }
 
-      & > a {
-        padding-left: 30px;
-      }
+    // Chat button hover background
+    a:not(:active, .active):hover .btnChat {
+      background-color: var(--base-300);
+    }
+  }
 
-      &:hover > a .btn_fold {
-        transition-delay: 0.2s;
-      }
+  // ======================
+  // Fold/Unfold Button
+  // ======================
+  .toc__item {
+    .btnFold {
+      position: absolute;
+      left: 6px;
+      top: 50%;
+      transform: translateY(-50%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+      opacity: 1;
+      cursor: pointer;
+      font-weight: normal;
+      transition: all 0.1s linear;
 
-      .btnFold {
-        transition: all 0.1s linear;
-        // margin-right: 4px;
-        font-weight: normal;
+      > svg {
         position: absolute;
-        left: 6px;
         top: 50%;
-        opacity: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        cursor: pointer;
-        width: 20px;
-        height: 20px;
-        transform: translateY(-50%);
-
-        & > svg {
-          position: absolute;
-          top: 50%;
-        }
-
-        &:hover > svg {
-          fill: #2778ff;
-        }
-
-        &.closed > svg {
-          transform: translateY(-50%) rotate(0deg);
-        }
-
-        &.opened > svg {
-          transform: translateY(-50%) rotate(90deg);
-        }
       }
 
-      &:hover > a > .btnFold {
-        opacity: 1;
+      &:hover > svg {
+        fill: #2778ff;
       }
 
-      &.active > span a {
-        color: #4285f4;
-
-        &::after {
-          opacity: 1;
-        }
+      // Closed state - arrow points right
+      &.closed > svg {
+        transform: translateY(-50%) rotate(0deg);
       }
 
-      a {
-        // font-weight: normal;
-        // position: relative;
-        // width: 100%;
-        // @apply text-sm text-gray-400;
-
-        &::after {
-          content: '';
-          // display: block;
-          // width: 100%;
-          // border: 1px solid #4285f4;
-          // position: absolute;
-          // opacity: 0;
-          // transition: all 0.1s cubic-bezier(0.39, 0.575, 0.565, 1);
-        }
+      // Opened state - arrow points down
+      &.opened > svg {
+        transform: translateY(-50%) rotate(90deg);
       }
+    }
 
-      &--1 {
-        > a {
-          font-size: 1rem;
-          font-weight: 600;
-          color: black;
-        }
-      }
+    &:hover > a > .btnFold {
+      opacity: 1;
+    }
+
+    &:hover > a .btn_fold {
+      transition-delay: 0.2s;
     }
   }
 }

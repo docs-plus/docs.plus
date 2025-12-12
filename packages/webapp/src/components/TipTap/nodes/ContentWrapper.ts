@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from '@tiptap/core'
 import { getNodeState } from '../extentions/helper'
-import { TIPTAP_EVENTS, TIPTAP_NODES } from '@types'
+import { TIPTAP_NODES, TRANSACTION_META } from '@types'
 import deleteSelectedRange from '../extentions/deleteSelectedRange'
 import { TextSelection } from '@tiptap/pm/state'
 import { createCrinklePlugin } from '../extentions/plugins'
@@ -143,9 +143,9 @@ const ContentWrapper = Node.create({
 
         const { tr } = editor.state
 
-        tr.setMeta('addToHistory', false)
-        // for trigger table of contents
-        tr.setMeta(TIPTAP_EVENTS.FOLD_AND_UNFOLD, true)
+        tr.setMeta(TRANSACTION_META.ADD_TO_HISTORY, false)
+        // Trigger table of contents update
+        tr.setMeta(TRANSACTION_META.FOLD_AND_UNFOLD, true)
 
         const pos = getPos()
         if (pos === undefined) return false

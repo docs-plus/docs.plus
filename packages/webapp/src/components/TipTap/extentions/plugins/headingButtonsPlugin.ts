@@ -2,7 +2,13 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { createDecorationPluginState, createDecorationPluginProps } from './decorationHelpers'
-import { TipTapEditor, EditorEventData, TIPTAP_EVENTS, TIPTAP_NODES } from '@types'
+import {
+  TipTapEditor,
+  EditorEventData,
+  TIPTAP_EVENTS,
+  TIPTAP_NODES,
+  TRANSACTION_META
+} from '@types'
 import * as PubSub from 'pubsub-js'
 import { copyToClipboard } from '../helper'
 import { CHAT_OPEN } from '@services/eventsHub'
@@ -122,7 +128,7 @@ const buttonWrapper = (
     url.searchParams.set('id', headingId)
     window.history.pushState({}, '', url.toString())
     copyToClipboard(url.href, () => {
-      console.log('Link copied to clipboard')
+      console.info('Link copied to clipboard')
     })
     editor
       .chain()
@@ -154,36 +160,43 @@ const appendButtonsDec = (doc: ProseMirrorNode, editor: TipTapEditor): Decoratio
 }
 
 const handleHeadingToggle = (editor: TipTapEditor, { headingId }: EditorEventData): void => {
+  // Safety check: ensure editor view is available
+  if (!editor?.view?.dom) {
+    console.warn('[headingButtonsPlugin] Editor view not available')
+    return
+  }
+
+  if (isProcessing) return
+  isProcessing = true
+
   const { tr } = editor.state
   const headingNodeEl = editor.view.dom.querySelector(
     `.ProseMirror .heading[data-id="${headingId}"]`
   )
-
-  if (isProcessing) return
-  isProcessing = true
 
   if (!headingNodeEl) {
     isProcessing = false
     return
   }
 
-  // TODO: I have no idea why this is working like this!
-
   let nodePos
   try {
     nodePos = editor.view.state.doc.resolve(editor.view.posAtDOM(headingNodeEl))
-  } catch (error) {
+  } catch {
     isProcessing = false
     return
   }
 
-  if (!nodePos) return
+  if (!nodePos) {
+    isProcessing = false
+    return
+  }
 
   // if (editor.isEditable) {
   const pos = nodePos.pos
   const currentNode = tr.doc.nodeAt(pos)
-  // update toc
-  tr.setMeta('renderTOC', true)
+  // Mark as fold/unfold transaction - TOC will be updated via PubSub with delay
+  tr.setMeta(TRANSACTION_META.FOLD_AND_UNFOLD, true)
 
   const documentId = localStorage.getItem('docId')
   const headingMapString = localStorage.getItem('headingMap')
@@ -196,8 +209,10 @@ const handleHeadingToggle = (editor: TipTapEditor, { headingId }: EditorEventDat
 
   // In filter mode, avoid saving the heading map to prevent overwriting the primary heading filter.
   if (filterMode) {
-    editor.view.dispatch(tr)
-    dispatchToggleHeadingSection(headingNodeEl)
+    if (editor.view) {
+      editor.view.dispatch(tr)
+      dispatchToggleHeadingSection(headingNodeEl)
+    }
     isProcessing = false
     return
   }
@@ -214,8 +229,11 @@ const handleHeadingToggle = (editor: TipTapEditor, { headingId }: EditorEventDat
         database.toArray().then((data: any[]) => {
           localStorage.setItem('headingMap', JSON.stringify(data))
         })
-        editor.view.dispatch(tr)
-        dispatchToggleHeadingSection(headingNodeEl)
+        // Safety check: editor view may be destroyed during async operation
+        if (editor.view) {
+          editor.view.dispatch(tr)
+          dispatchToggleHeadingSection(headingNodeEl)
+        }
         isProcessing = false
       })
       .catch((err: Error) => {

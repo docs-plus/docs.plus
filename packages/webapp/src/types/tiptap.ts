@@ -16,10 +16,36 @@ import { Plugin } from '@tiptap/pm/state'
 
 /**
  * TipTap editor events
+ * Used for PubSub communication between components
  */
 export const TIPTAP_EVENTS = {
+  /** Fold/unfold heading section (crinkle) */
   FOLD_AND_UNFOLD: 'foldAndUnfold',
+  /** New heading was created */
   NEW_HEADING_CREATED: 'newHeadingCreated'
+} as const
+
+/**
+ * Transaction metadata keys
+ * Used to mark transactions for specific handling (e.g., TOC updates)
+ */
+export const TRANSACTION_META = {
+  /** Fold/unfold event occurred - triggers TOC update */
+  FOLD_AND_UNFOLD: 'foldAndUnfold',
+  /** Request to render/rebuild TOC */
+  RENDER_TOC: 'renderTOC',
+  /** Content was pasted */
+  PASTE: 'paste',
+  /** New heading was created */
+  NEW_HEADING_CREATED: 'newHeadingCreated',
+  /** Heading level changed */
+  HEADING_LEVEL_CHANGED: 'headingLevelChanged',
+  /** Heading was deleted */
+  HEADING_DELETED: 'headingDeleted',
+  /** Heading text changed */
+  HEADING_TEXT_CHANGED: 'headingTextChanged',
+  /** Skip history for this transaction */
+  ADD_TO_HISTORY: 'addToHistory'
 } as const
 
 /**
@@ -56,7 +82,8 @@ export const HTML_ENTITIES = {
 export const TIPTAP_ENUMS = {
   EVENTS: TIPTAP_EVENTS,
   NODES: TIPTAP_NODES,
-  HTML_ENTITIES
+  HTML_ENTITIES,
+  TRANSACTION_META
 } as const
 
 /**
@@ -71,6 +98,7 @@ export default TIPTAP_ENUMS
 export type TipTapEventType = (typeof TIPTAP_EVENTS)[keyof typeof TIPTAP_EVENTS]
 export type TipTapNodeType = (typeof TIPTAP_NODES)[keyof typeof TIPTAP_NODES]
 export type HtmlEntityType = (typeof HTML_ENTITIES)[keyof typeof HTML_ENTITIES]
+export type TransactionMetaKey = (typeof TRANSACTION_META)[keyof typeof TRANSACTION_META]
 
 // ============================================================================
 // Core Editor Types

@@ -7,6 +7,7 @@
  * - Domain types (business entities)
  * - API types (request/response)
  * - Editor types (TipTap)
+ * - TOC types (Table of Contents)
  * - History types
  * - Store types
  */
@@ -23,6 +24,9 @@ export * from './api'
 
 // Editor types (TipTap)
 export * from './tiptap'
+
+// TOC types (Table of Contents)
+export * from './toc'
 
 // History types
 export * from './history'

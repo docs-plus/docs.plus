@@ -1092,27 +1092,12 @@ ol {
   animation: avatar-typing 0.8s ease-in-out infinite;
 }
 
-.activeTocBorder::after {
-  content: '';
-  position: absolute;
-  top: -2px;
-  left: -9.5px;
-  width: 4px;
-  height: 100%;
-  background-color: var(--color-docsy);
-  border-radius: 4px;
-}
-
 /* Context menu active state for message cards */
 .msg_card.context-menu-active {
   background-color: #f0f4ff !important;
   // border-left: 3px solid #3b82f6 !important;
   // transform: translateX(2px) !important;
   // transition: all 0.2s ease-in-out !important;
-}
-
-.toc__item a.context-menu-active {
-  background-color: #d5dffc !important;
 }
 
 .overflow-anchor-auto {
