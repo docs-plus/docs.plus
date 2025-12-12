@@ -6,13 +6,6 @@ import PubSub from 'pubsub-js'
 import { getNodeState } from '@components/TipTap/extentions/helper'
 
 /**
- * Gets the offset top of an element recursively
- */
-function getOffsetTop(element: HTMLElement | null): number {
-  return element ? element.offsetTop + getOffsetTop(element.offsetParent as HTMLElement) : 0
-}
-
-/**
  * Checks if a transaction contains changes that affect headings
  * This is more efficient than rebuilding on every docChanged
  */
@@ -103,9 +96,6 @@ export function useToc() {
       const headingId = parent?.attrs?.id || node.attrs?.id
       if (!headingId || !node.textContent) return
 
-      const headingSection = document.querySelector(`.heading[data-id="${headingId}"]`)
-      const offsetTop = headingSection ? getOffsetTop(headingSection as HTMLElement) : 0
-
       // Use getNodeState as source of truth - same source as the Heading node
       // This reads from localStorage/IndexedDB which is updated when fold state changes
       const nodeState = getNodeState(headingId)
@@ -129,7 +119,6 @@ export function useToc() {
         isActive: false,
         isScrolledOver: false,
         itemIndex: headings.length,
-        offsetTop,
         node,
         editor,
         dom: dom as HTMLHeadingElement

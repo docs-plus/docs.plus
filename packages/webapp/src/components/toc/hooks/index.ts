@@ -6,3 +6,10 @@ export { useTocActions } from './useTocActions'
 export { useActiveHeading } from './useActiveHeading'
 export { usePresentUsers } from './usePresentUsers'
 export { useUnreadCount } from './useUnreadCount'
+
+// Scroll spy hooks
+export {
+  useHeadingScrollSpy,
+  useTocAutoScroll,
+  useFocusedHeadingStore
+} from './useHeadingScrollSpy'

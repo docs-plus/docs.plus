@@ -2,7 +2,13 @@ import { useCallback } from 'react'
 import { CaretRight, ChatLeft } from '@icons'
 import { useStore, useChatStore } from '@stores'
 import type { TocItem as TocItemType } from '@types'
-import { useTocActions, usePresentUsers, useUnreadCount, useActiveHeading } from './hooks'
+import {
+  useTocActions,
+  usePresentUsers,
+  useUnreadCount,
+  useActiveHeading,
+  useFocusedHeadingStore
+} from './hooks'
 import { scrollToHeading, buildNestedToc } from './utils'
 import { useModal } from '@components/ui/ModalDrawer'
 import AvatarStack from '@components/AvatarStack'
@@ -19,6 +25,10 @@ export function TocItem({ item, children, variant, onToggle }: TocItemProps) {
   const {
     editor: { instance: editor }
   } = useStore((state) => state.settings)
+
+  // Use the scroll spy store to determine if this heading is in focus
+  const focusedHeadingId = useFocusedHeadingStore((s) => s.focusedHeadingId)
+  const isFocused = focusedHeadingId === item.id
 
   const presentUsers = usePresentUsers(item.id)
   const [, setActiveHeading] = useActiveHeading()
@@ -71,9 +81,8 @@ export function TocItem({ item, children, variant, onToggle }: TocItemProps) {
 
   return (
     <li
-      className={`toc__item relative w-full ${!item.open ? 'closed' : ''}`}
-      data-id={item.id}
-      data-offsettop={item.offsetTop}>
+      className={`toc__item relative w-full ${!item.open ? 'closed' : ''} ${isFocused ? 'focusSight' : ''}`}
+      data-id={item.id}>
       <a
         className={`group relative ${isActive ? 'active activeTocBorder bg-gray-300' : ''} ${variant === 'mobile' ? '!py-2' : ''} ${variant === 'mobile' && item.level === 1 ? 'ml-3' : ''}`}
         onClick={handleClick}

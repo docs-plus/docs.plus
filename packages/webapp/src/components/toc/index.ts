@@ -6,7 +6,16 @@ export { TocItem } from './TocItem'
 export { TocContextMenu } from './TocContextMenu'
 
 // Hooks
-export { useToc, useTocActions, useActiveHeading, usePresentUsers, useUnreadCount } from './hooks'
+export {
+  useToc,
+  useTocActions,
+  useActiveHeading,
+  usePresentUsers,
+  useUnreadCount,
+  useHeadingScrollSpy,
+  useTocAutoScroll,
+  useFocusedHeadingStore
+} from './hooks'
 
 // Utils
 export { scrollToHeading, scrollToDocTitle, buildNestedToc } from './utils'

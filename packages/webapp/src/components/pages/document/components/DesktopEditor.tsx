@@ -2,11 +2,12 @@ import { useCallback, useRef } from 'react'
 import ToolbarDesktop from '@components/TipTap/toolbar/ToolbarDesktop'
 import EditorContent from './EditorContent'
 import TOC from './Toc'
-import { useAdjustEditorSizeForChatRoom, useTOCResize, useScrollSyncToc } from '../hooks'
+import { useAdjustEditorSizeForChatRoom, useTOCResize } from '../hooks'
 import useUpdateDocPageUnreadMsg from '../hooks/useUpdateDocPageUnreadMsg'
 import { Chatroom } from '@components/chatroom'
 import { HoverMenu } from '@components/ui/HoverMenu'
 import { useMessageFeedContext } from '@components/chatroom/components/MessageFeed/MessageFeedContext'
+import { useHeadingScrollSpy } from '@components/toc/hooks'
 
 const MessageHoverMenu = (props: React.ComponentProps<typeof HoverMenu>) => {
   const { virtualizerRef, messageContainerRef } = useMessageFeedContext()
@@ -36,8 +37,8 @@ const DesktopEditor = () => {
 
   useUpdateDocPageUnreadMsg()
 
-  // Use the custom hook for scroll sync -> TOC
-  useScrollSyncToc(editorWrapperRef)
+  // IntersectionObserver-based scroll spy for TOC highlighting
+  useHeadingScrollSpy(editorWrapperRef)
 
   return (
     <>

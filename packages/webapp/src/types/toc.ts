@@ -14,7 +14,6 @@ export interface TocItem {
   isActive: boolean
   isScrolledOver: boolean
   itemIndex: number
-  offsetTop: number
   node: Node
   editor: Editor
   dom: HTMLHeadingElement

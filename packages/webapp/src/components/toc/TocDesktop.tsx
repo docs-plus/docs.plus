@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback } from 'react'
-import { useToc } from './hooks'
+import { useToc, useTocAutoScroll } from './hooks'
 import { buildNestedToc } from './utils'
 import { TocHeader } from './TocHeader'
 import { TocItem } from './TocItem'
@@ -21,6 +21,9 @@ function removeContextMenuActiveClass() {
 export function TocDesktop({ className = '' }: TocDesktopProps) {
   const { items, toggleSection } = useToc()
   const contextMenuRef = useRef<HTMLDivElement>(null)
+
+  // Auto-scroll TOC when focused heading changes
+  useTocAutoScroll()
   const [contextMenuState, setContextMenuState] = useState<{
     headingId: string | null
     isOpen: boolean
