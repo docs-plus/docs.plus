@@ -1,8 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react'
 import { useStore } from '@stores'
-import { TIPTAP_NODES, TIPTAP_EVENTS, TRANSACTION_META } from '@types'
+import { TIPTAP_NODES, TIPTAP_EVENTS, TRANSACTION_META, type Transaction } from '@types'
 import type { TocItem } from '@types'
-import type { Transaction } from '@tiptap/pm/state'
 import PubSub from 'pubsub-js'
 import { getNodeState } from '@components/TipTap/extentions/helper'
 

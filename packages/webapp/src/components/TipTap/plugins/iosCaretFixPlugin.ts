@@ -1,6 +1,6 @@
 import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
 import { Extension } from '@tiptap/core'
-import type { EditorView } from '@tiptap/pm/view'
+import type { EditorView } from '@types'
 
 /**
  * iOS Safari Caret Positioning Fix

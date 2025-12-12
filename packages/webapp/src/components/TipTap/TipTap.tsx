@@ -2,7 +2,13 @@ import { UseEditorOptions } from '@tiptap/react'
 import randomColor from 'randomcolor'
 import { createLowlight } from 'lowlight'
 import ShortUniqueId from 'short-unique-id'
-import { TIPTAP_NODES } from '@types'
+import {
+  TIPTAP_NODES,
+  type ProseMirrorNode,
+  type Editor as TipTapEditor,
+  type Transaction
+} from '@types'
+import type { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
 import { authStore } from '@stores'
 import Config from '@config'
@@ -104,24 +110,27 @@ const scrollDown = () => {
   }, 200)
 }
 
-const generatePlaceholderText = (data: any) => {
-  const { node } = data
+interface PlaceholderData {
+  node: ProseMirrorNode
+  editor: TipTapEditor
+}
+
+const generatePlaceholderText = (data: PlaceholderData): string | null => {
+  const { node, editor } = data
   const nodeType = node.type.name
-  if (!data.editor.isFocused) return null
+  if (!editor.isFocused) return null
 
   if (nodeType === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
     const level = node.attrs.level
     return `Heading ${level}`
   } else if (nodeType === TIPTAP_NODES.PARAGRAPH_TYPE) {
-    // const msg = Placeholders
+    const { $head } = editor.view.state.selection
 
-    const { $head } = data.editor.view.state.selection
+    // Access internal 'path' property of ResolvedPos for heading breadcrumb
+    const headingPath = ($head as unknown as { path: ProseMirrorNode[] }).path
+      .filter((x: ProseMirrorNode) => x?.type?.name === TIPTAP_NODES.HEADING_TYPE)
+      .map((x: ProseMirrorNode) => x.firstChild?.textContent)
 
-    const headingPath = $head.path
-      .filter((x: any) => x?.type?.name === TIPTAP_NODES.HEADING_TYPE)
-      .map((x: any) => x.firstChild.textContent)
-
-    // `${headingPath.join(' / ')}: ${msg[Math.floor(Math.random() * msg.length + 1)]}`
     return `${headingPath.join(' / ')}`
   }
 
@@ -136,7 +145,7 @@ const Editor = ({
   localPersistence = false,
   docName = 'example-document'
 }: {
-  provider?: any
+  provider?: HocuspocusProvider | null
   spellcheck?: boolean
   editable?: boolean
   localPersistence?: boolean
@@ -152,7 +161,7 @@ const Editor = ({
   const baseExtensions = [
     UniqueID.configure({
       types: [TIPTAP_NODES.HEADING_TYPE, TIPTAP_NODES.HYPERLINK_TYPE],
-      filterTransaction: (transaction: any) => !isChangeOrigin(transaction),
+      filterTransaction: (transaction: Transaction) => !isChangeOrigin(transaction),
       generateID: () => {
         const uid = new ShortUniqueId()
         return uid.stamp(16)
@@ -220,7 +229,7 @@ const Editor = ({
     Placeholder.configure({
       includeChildren: true,
       showOnlyWhenEditable: false,
-      placeholder: (data: any) => generatePlaceholderText(data) || ''
+      placeholder: (data: PlaceholderData) => generatePlaceholderText(data) || ''
     }),
     // iOS Safari: Fix caret positioning when tapping in middle of words
     IOSCaretFix
@@ -287,7 +296,7 @@ const Editor = ({
 }
 
 // Helper function to get collaboration caret config
-const getCollaborationCaretConfig = (provider: any) => {
+const getCollaborationCaretConfig = (provider: HocuspocusProvider) => {
   const profile = authStore.getState().profile
   const user = {
     name: profile?.display_name || profile?.username || profile?.email || 'anonymous',

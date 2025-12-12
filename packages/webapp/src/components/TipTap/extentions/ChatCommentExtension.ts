@@ -1,10 +1,15 @@
-import { Extension, isTextSelection, Editor } from '@tiptap/core'
-import { Plugin, PluginKey, EditorState, Selection } from '@tiptap/pm/state'
-import { EditorView } from '@tiptap/pm/view'
+import { Extension, isTextSelection } from '@tiptap/core'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
 import PubSub from 'pubsub-js'
 import { CHAT_COMMENT } from '@services/eventsHub'
 import { AddCommentMD } from '@icons'
-import { TIPTAP_NODES } from '@types'
+import {
+  TIPTAP_NODES,
+  type Editor,
+  type EditorState,
+  type Selection,
+  type EditorView
+} from '@types'
 
 const shouldShow = (editor: Editor): boolean => {
   const state = editor.state
@@ -50,7 +55,8 @@ const createChatCommentButton = (view: EditorView, selection: Selection): void =
   // Adjust the button position to be centered vertically relative to the node
   const adjustedTop = nodeHeight ? offsetTop + nodeHeight / 2 - 16 : offsetTop - 16
 
-  const isInContentHeading = selection.$anchor.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
+  const isInContentHeading =
+    selection.$anchor.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
 
   button.style.position = 'absolute'
 

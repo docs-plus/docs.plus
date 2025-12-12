@@ -3,12 +3,16 @@ import changeHeadingLevel from '../extentions/changeHeadingLevel'
 import wrapContenWithHeading from '../extentions/wrapContenWithHeading'
 import changeHeading2paragraphs from '../extentions/changeHeading2paragraphs'
 import deleteSelectedRange from '../extentions/deleteSelectedRange'
-import { TIPTAP_NODES } from '@types'
+import {
+  TIPTAP_NODES,
+  type ProseMirrorNode,
+  type CommandProps,
+  type DOMOutputSpec,
+  type ViewMutationRecord
+} from '@types'
 import { getNodeState } from '../extentions/helper'
 import { createCopyPastePlugin, createRangeSelectionPlugin } from '../extentions/plugins'
-import { DOMOutputSpec } from '@tiptap/pm/model'
 import { HeadingAttributes } from '../extentions/types'
-import { ViewMutationRecord } from '@tiptap/pm/view'
 
 const Heading = Node.create({
   name: TIPTAP_NODES.HEADING_TYPE,
@@ -112,13 +116,13 @@ const Heading = Node.create({
     return {
       normalText:
         () =>
-        ({ state, tr, dispatch, editor }: any) => {
+        ({ state, tr, dispatch, editor }: CommandProps) => {
           changeHeading2paragraphs({ state, tr, dispatch, editor })
           return true
         },
       wrapBlock:
         (attributes: HeadingAttributes) =>
-        ({ state, tr, dispatch, editor }: any) => {
+        ({ state, tr, dispatch, editor }: CommandProps) => {
           const { selection } = state
           const { $anchor } = selection
 
@@ -133,9 +137,9 @@ const Heading = Node.create({
         },
       ensureContentWrapper:
         () =>
-        ({ tr, state, dispatch }: any) => {
+        ({ tr, state, dispatch }: CommandProps) => {
           const { doc, schema } = state
-          doc.descendants((node: any, pos: number) => {
+          doc.descendants((node: ProseMirrorNode, pos: number) => {
             if (node.type.name === TIPTAP_NODES.HEADING_TYPE && !node.childCount) {
               const contentWrapper = schema.nodes.contentWrapper.create()
               tr.insert(pos + node.nodeSize, contentWrapper)
@@ -144,7 +148,7 @@ const Heading = Node.create({
           if (dispatch) dispatch(tr)
           return true
         }
-    } as any
+    } as any // Custom commands - proper declaration requires extending TipTap's RawCommands
   },
   addKeyboardShortcuts() {
     return {

@@ -1,5 +1,4 @@
-import { Editor } from '@tiptap/core'
-import { TIPTAP_NODES } from '@types'
+import { TIPTAP_NODES, type Editor } from '@types'
 
 export const createDocumentFromStructure = ({ editor }: { editor: Editor }) => {
   return (structure: any) => {

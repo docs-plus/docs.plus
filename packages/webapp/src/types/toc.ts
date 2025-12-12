@@ -1,5 +1,5 @@
 import type { Editor } from '@tiptap/react'
-import type { Node } from '@tiptap/pm/model'
+import type { ProseMirrorNode as Node } from '@types'
 
 /**
  * TOC item representing a heading in the document
@@ -46,5 +46,3 @@ export interface TocContextMenuState {
   headingId: string | null
   isOpen: boolean
 }
-
-

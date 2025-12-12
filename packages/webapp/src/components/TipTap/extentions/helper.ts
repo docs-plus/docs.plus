@@ -1,7 +1,12 @@
-import { TIPTAP_NODES, TIPTAP_EVENTS } from '@types'
-import { TextSelection, EditorState } from '@tiptap/pm/state'
-import { Node as ProseMirrorNode, Schema } from '@tiptap/pm/model'
-import { Transaction } from '@tiptap/pm/state'
+import { TextSelection } from '@tiptap/pm/state'
+import {
+  TIPTAP_NODES,
+  TIPTAP_EVENTS,
+  type EditorState,
+  type ProseMirrorNode,
+  type Schema,
+  type Transaction
+} from '@types'
 import {
   HeadingBlockInfo,
   SelectionBlock,

@@ -1,16 +1,22 @@
-import { Transaction, EditorState } from '@tiptap/pm/state'
-import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { DecorationSet } from '@tiptap/pm/view'
-import {
-  BuildDecorationsFunction,
-  PluginStateApplyFunction,
-  DecorationPluginState,
-  DecorationPluginProps
-} from '@types'
+import { type Transaction, type EditorState, type ProseMirrorNode } from '@types'
 
 /**
  * Helper functions for optimizing ProseMirror decorations performance
  */
+
+// Local type definitions using ProseMirror types
+type BuildDecorationsFunction = (doc: ProseMirrorNode) => DecorationSet
+type PluginStateApplyFunction = (tr: Transaction, old: DecorationSet) => DecorationSet
+
+interface DecorationPluginState {
+  init: (_: unknown, state: { doc: ProseMirrorNode }) => DecorationSet
+  apply: PluginStateApplyFunction
+}
+
+interface DecorationPluginProps {
+  decorations: (state: EditorState) => DecorationSet
+}
 
 /**
  * Creates an optimized apply function for decoration plugins

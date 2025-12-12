@@ -1,13 +1,13 @@
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
-import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { createDecorationPluginState, createDecorationPluginProps } from './decorationHelpers'
 import {
   TipTapEditor,
   EditorEventData,
   TIPTAP_EVENTS,
   TIPTAP_NODES,
-  TRANSACTION_META
+  TRANSACTION_META,
+  type ProseMirrorNode
 } from '@types'
 import * as PubSub from 'pubsub-js'
 import { copyToClipboard } from '../helper'
@@ -181,7 +181,7 @@ const handleHeadingToggle = (editor: TipTapEditor, { headingId }: EditorEventDat
 
   let nodePos
   try {
-    nodePos = editor.view.state.doc.resolve(editor.view.posAtDOM(headingNodeEl))
+    nodePos = editor.view.state.doc.resolve(editor.view.posAtDOM(headingNodeEl, 0))
   } catch {
     isProcessing = false
     return

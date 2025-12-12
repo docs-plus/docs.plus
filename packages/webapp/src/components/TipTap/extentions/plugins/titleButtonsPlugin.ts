@@ -1,9 +1,7 @@
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
-import { Node as ProseMirrorNode } from '@tiptap/pm/model'
-import { EditorView } from '@tiptap/pm/view'
 import { createDecorationPluginState, createDecorationPluginProps } from './decorationHelpers'
-import { CreateTitleButtonDecorationsFunction, TipTapEditor, TIPTAP_NODES } from '@types'
+import { TIPTAP_NODES, type EditorView, type ProseMirrorNode, type Editor } from '@types'
 import { ChatLeftSVG } from '@icons'
 import * as PubSub from 'pubsub-js'
 import { CHAT_OPEN } from '@services/eventsHub'
@@ -17,7 +15,7 @@ interface TitleNodeData {
 }
 
 // Create title button widget
-const createTitleButton = (editor: TipTapEditor, { headingId }: { headingId: string | null }) => {
+const createTitleButton = (editor: Editor, { headingId }: { headingId: string | null }) => {
   return (view: EditorView, getPos: () => number | undefined): Node => {
     const button = document.createElement('button')
     button.classList.add(
@@ -90,10 +88,7 @@ const findTitleNodes = (doc: ProseMirrorNode): TitleNodeData[] => {
 }
 
 // Create decorations for title buttons
-const createTitleButtonDecorations = (
-  doc: ProseMirrorNode,
-  editor: TipTapEditor
-): DecorationSet => {
+const createTitleButtonDecorations = (doc: ProseMirrorNode, editor: Editor): DecorationSet => {
   const decos: Decoration[] = []
   const titleNodes = findTitleNodes(doc)
 
@@ -115,7 +110,7 @@ const createTitleButtonDecorations = (
  * @param editor - TipTap editor instance
  * @returns ProseMirror plugin
  */
-export function createTitleButtonsPlugin(editor: TipTapEditor): Plugin {
+export function createTitleButtonsPlugin(editor: Editor): Plugin {
   const targetNodeTypes = [TIPTAP_NODES.HEADING_TYPE, TIPTAP_NODES.CONTENT_HEADING_TYPE]
 
   const buildDecorations = (doc: ProseMirrorNode): DecorationSet =>

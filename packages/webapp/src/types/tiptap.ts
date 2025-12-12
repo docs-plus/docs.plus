@@ -1,13 +1,13 @@
-import { Transaction, EditorState } from '@tiptap/pm/state'
-import { Node as ProseMirrorNode } from '@tiptap/pm/model'
-import { DecorationSet } from '@tiptap/pm/view'
-import { Plugin } from '@tiptap/pm/state'
+import type { Editor } from '@tiptap/core'
+import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 
 /**
  * TipTap Editor Types & Constants
  *
  * This file contains all TypeScript definitions for TipTap editor functionality,
  * including ProseMirror decorations, plugins, editor-specific types, and constants.
+ *
+ * Note: Use library types from @tiptap/core and @tiptap/pm/* where possible.
  */
 
 // ============================================================================
@@ -105,14 +105,32 @@ export type HtmlEntityType = (typeof HTML_ENTITIES)[keyof typeof HTML_ENTITIES]
 export type TransactionMetaKey = (typeof TRANSACTION_META)[keyof typeof TRANSACTION_META]
 
 // ============================================================================
-// Core Editor Types
+// Core Editor Types (Re-exports from TipTap/ProseMirror)
 // ============================================================================
 
 /**
  * TipTap editor instance type
- * @description Using any for flexibility since TipTap has complex internal types
+ * Using 'any' for flexibility with custom commands.
+ * For strict typing in new code, import Editor directly from '@tiptap/core'
  */
+
 export type TipTapEditor = any
+
+/**
+ * Re-export commonly used ProseMirror/TipTap types for convenience.
+ * Import from '@types' to maintain single source of truth.
+ */
+export type { Transaction, EditorState, Selection } from '@tiptap/pm/state'
+export type {
+  Node as ProseMirrorNode,
+  ResolvedPos,
+  Schema,
+  NodeType,
+  Mark,
+  DOMOutputSpec
+} from '@tiptap/pm/model'
+export type { EditorView, ViewMutationRecord } from '@tiptap/pm/view'
+export type { Editor, CommandProps } from '@tiptap/core'
 
 /**
  * Editor node position information
@@ -137,35 +155,10 @@ export interface EditorEventData {
 // Decoration System Types
 // ============================================================================
 
-/**
- * Function type for building decorations from a document
- */
-export type BuildDecorationsFunction = (doc: ProseMirrorNode) => DecorationSet
-
-/**
- * Plugin state apply function type for decoration optimization
- */
-export type PluginStateApplyFunction = (tr: Transaction, old: DecorationSet) => DecorationSet
-
-/**
- * Decoration plugin state configuration
- */
-export interface DecorationPluginState {
-  init: (config: any, state: { doc: ProseMirrorNode }) => DecorationSet
-  apply: PluginStateApplyFunction
-}
-
-/**
- * Decoration plugin props configuration
- */
-export interface DecorationPluginProps {
-  decorations: (state: EditorState) => DecorationSet
-}
-
-/**
- * Plugin factory function type
- */
-export type PluginFactory = () => Plugin
+// Note: For decoration building, use ProseMirror types directly:
+// - DecorationSet from '@tiptap/pm/view'
+// - Transaction from '@tiptap/pm/state'
+// - Node from '@tiptap/pm/model'
 
 // ============================================================================
 // Content Structure Types
@@ -188,57 +181,12 @@ export interface HeadingNodeData extends NodePosition {
 }
 
 // ============================================================================
-// Plugin-Specific Function Types
-// ============================================================================
-
-/**
- * Function type for creating button decorations on headings
- */
-export type CreateButtonDecorationsFunction = (
-  doc: ProseMirrorNode,
-  editor: TipTapEditor
-) => DecorationSet
-
-/**
- * Function type for creating title-specific button decorations
- */
-export type CreateTitleButtonDecorationsFunction = (
-  doc: ProseMirrorNode,
-  editor: TipTapEditor
-) => DecorationSet
-
-/**
- * Function type for creating content wrapper fold decorations
- */
-export type CreateFoldDecorationsFunction = (doc: ProseMirrorNode) => DecorationSet
-
-// ============================================================================
 // Plugin Configuration Types
 // ============================================================================
 
-/**
- * Configuration for heading buttons plugin
- */
-export interface HeadingButtonsPluginConfig {
-  appendButtonsDec: CreateButtonDecorationsFunction
-  editor: TipTapEditor
-}
-
-/**
- * Configuration for title buttons plugin
- */
-export interface TitleButtonsPluginConfig {
-  createTitleButtonDecorations: CreateTitleButtonDecorationsFunction
-  editor: TipTapEditor
-}
-
-/**
- * Configuration for crinkle/fold plugin
- */
-export interface CrinklePluginConfig {
-  targetNodeTypes: string[]
-  buildDecorations: CreateFoldDecorationsFunction
-}
+// Note: Plugin configurations should import types directly from TipTap/ProseMirror
+// - Use Editor from '@tiptap/core'
+// - Use Node, DecorationSet from '@tiptap/pm/*'
 
 // ============================================================================
 // DOM Event Types

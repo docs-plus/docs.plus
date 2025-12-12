@@ -1,11 +1,9 @@
 import { Node, mergeAttributes } from '@tiptap/core'
-import { getNodeState } from '../extentions/helper'
-import { TIPTAP_NODES, TRANSACTION_META } from '@types'
-import deleteSelectedRange from '../extentions/deleteSelectedRange'
 import { TextSelection } from '@tiptap/pm/state'
+import { getNodeState } from '../extentions/helper'
+import { TIPTAP_NODES, TRANSACTION_META, type DOMOutputSpec, type ViewMutationRecord } from '@types'
+import deleteSelectedRange from '../extentions/deleteSelectedRange'
 import { createCrinklePlugin } from '../extentions/plugins'
-import { DOMOutputSpec } from '@tiptap/pm/model'
-import { ViewMutationRecord } from '@tiptap/pm/view'
 
 function expandElement(
   elem: HTMLElement,

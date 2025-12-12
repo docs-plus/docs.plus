@@ -144,7 +144,8 @@ export const useTiptapEditor = ({
             }
 
             const isEmptyParagraph =
-              $from.parent.type.name === TIPTAP_NODES.PARAGRAPH_TYPE && $from.parent.content.size === 0
+              $from.parent.type.name === TIPTAP_NODES.PARAGRAPH_TYPE &&
+              $from.parent.content.size === 0
 
             // Create a new paragraph
             let tr

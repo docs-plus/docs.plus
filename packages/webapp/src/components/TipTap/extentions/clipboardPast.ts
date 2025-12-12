@@ -1,8 +1,13 @@
 import { Slice, Fragment } from '@tiptap/pm/model'
-import { TextSelection, EditorState, Transaction } from '@tiptap/pm/state'
-import { TIPTAP_NODES, TRANSACTION_META } from '@types'
-import { Editor } from '@tiptap/core'
-import { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { TextSelection } from '@tiptap/pm/state'
+import {
+  TIPTAP_NODES,
+  TRANSACTION_META,
+  type EditorState,
+  type Transaction,
+  type Editor,
+  type ProseMirrorNode
+} from '@types'
 import {
   getSelectionRangeSlice,
   getPrevHeadingPos,
