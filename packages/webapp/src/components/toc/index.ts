@@ -9,6 +9,7 @@ export { TocContextMenu } from './TocContextMenu'
 export {
   useToc,
   useTocActions,
+  useTocDrag,
   useActiveHeading,
   usePresentUsers,
   useUnreadCount,

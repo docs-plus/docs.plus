@@ -1,6 +1,7 @@
 // Main hooks
 export { useToc } from './useToc'
 export { useTocActions } from './useTocActions'
+export { useTocDrag } from './useTocDrag'
 
 // Helper hooks
 export { useActiveHeading } from './useActiveHeading'
