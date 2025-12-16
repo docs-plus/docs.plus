@@ -209,7 +209,7 @@
   .toc__item {
     .btnFold {
       position: absolute;
-      left: 6px;
+      left: 12px;
       top: 50%;
       transform: translateY(-50%);
       display: flex;
@@ -256,46 +256,70 @@
   // ======================
   .toc-drag-handle {
     position: absolute;
-    left: -8px;
+    left: 6px;
     top: 50%;
-    transform: translateY(-50%) translateX(4px);
+    transform: translateY(-50%) translateX(-8px) scale(0.85);
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 20px;
-    height: 20px;
+    width: 16px;
+    height: 18px;
     opacity: 0;
     cursor: grab;
-    color: #9ca3af;
-    transition: all 0.15s ease;
-    border-radius: 4px;
-    z-index: 2;
+    color: #a1a1aa;
+    background: linear-gradient(to bottom, #fafafa, #f4f4f5);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    border-radius: 3px;
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    transition:
+      opacity 0.18s ease-out,
+      transform 0.18s ease-out,
+      color 0.12s ease,
+      background 0.12s ease,
+      border-color 0.12s ease,
+      box-shadow 0.12s ease;
+    z-index: 10;
 
     &:hover {
-      color: #6b7280;
-      background-color: #f3f4f6;
+      color: #71717a;
+      background: linear-gradient(to bottom, #f4f4f5, #e4e4e7);
+      border-color: rgba(0, 0, 0, 0.1);
+      box-shadow:
+        0 2px 4px rgba(0, 0, 0, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+      transform: translateY(-50%) translateX(-10px) scale(1.08);
     }
 
     &:active {
       cursor: grabbing;
+      color: var(--color-docsy);
+      background: linear-gradient(to bottom, #e4e4e7, #d4d4d8);
+      border-color: color-mix(in srgb, var(--color-docsy) 30%, transparent);
+      box-shadow:
+        0 1px 1px rgba(0, 0, 0, 0.06),
+        inset 0 1px 2px rgba(0, 0, 0, 0.08);
+      transform: translateY(-50%) translateX(-10px) scale(0.95);
+      transition-duration: 0.05s;
     }
   }
 
-  // Show drag handle on hover
+  // Fade + slide in on item hover
   .toc__item:hover > a > .toc-drag-handle {
     opacity: 0.7;
-    transform: translateY(-50%) translateX(0);
+    transform: translateY(-50%) translateX(-10px) scale(1.18);
   }
 
-  // Increase opacity on direct hover
-  .toc__item > a:hover > .toc-drag-handle {
+  // Full visibility on direct hover
+  .toc__item > a:hover > .toc-drag-handle,
+  .toc-drag-handle:hover {
     opacity: 1;
-    transform: translateY(-50%) translateX(-2px);
   }
 
   // Links with drag handle need extra left padding
   .toc__item > a.has-drag-handle {
-    padding-left: 32px !important;
+    padding-left: 36px !important;
   }
 
   // Ghosted state for items during drag
