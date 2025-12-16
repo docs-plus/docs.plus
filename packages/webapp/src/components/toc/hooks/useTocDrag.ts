@@ -145,30 +145,52 @@ export function useTocDrag(items: TocItem[]) {
           return { ...prev, dropTarget: initialDropTarget }
         }
 
-        const overIdStr = String(over.id)
-        const overElement = document.querySelector(
-          `li.toc__item[data-id="${overIdStr}"] > a`
-        ) as HTMLElement
-
-        if (!overElement) {
-          return { ...prev, dropTarget: initialDropTarget }
-        }
-
-        const rect = overElement.getBoundingClientRect()
         const pointerY =
           pointerYRef.current ||
           (event.activatorEvent as PointerEvent)?.clientY ||
-          rect.top + rect.height / 2
+          0
 
-        const overItem = flatItems.find((f) => f.id === overIdStr)
+        if (pointerY <= 0) {
+          return { ...prev, dropTarget: initialDropTarget }
+        }
+
+        // Find closest visible item to pointer Y
+        let closestId = String(over.id)
+        let closestRect: DOMRect | null = null
+        let closestDist = Infinity
+
+        for (const item of flatItems) {
+          if (item.id === prev.activeId || prev.collapsedIds.has(item.id)) continue
+
+          const element = document.querySelector(
+            `li.toc__item[data-id="${item.id}"] > a`
+          ) as HTMLElement
+          if (!element) continue
+
+          const rect = element.getBoundingClientRect()
+          const centerY = rect.top + rect.height / 2
+          const dist = Math.abs(pointerY - centerY)
+
+          if (dist < closestDist) {
+            closestDist = dist
+            closestId = item.id
+            closestRect = rect
+          }
+        }
+
+        if (!closestRect) {
+          return { ...prev, dropTarget: initialDropTarget }
+        }
+
+        const closestItem = flatItems.find((f) => f.id === closestId)
 
         return {
           ...prev,
           dropTarget: {
-            id: overIdStr,
-            rect,
-            position: getPointerPosition(pointerY, rect),
-            level: overItem?.item.level ?? 1
+            id: closestId,
+            rect: closestRect,
+            position: getPointerPosition(pointerY, closestRect),
+            level: closestItem?.item.level ?? 1
           }
         }
       })
