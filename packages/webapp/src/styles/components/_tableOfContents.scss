@@ -1,31 +1,480 @@
 /**
  * Table of Contents Styles
- * All styles for the TOC component (desktop and mobile views)
  */
 
 // ======================
-// Active TOC Border
+// Utility Classes
 // ======================
 .activeTocBorder::after {
   content: '';
   position: absolute;
-  top: -2px;
-  left: -9.5px;
+  top: 0;
+  left: 0.5px;
   width: 4px;
   height: 100%;
   background-color: var(--color-docsy);
   border-radius: 4px;
+  z-index: 1;
 }
 
 // ======================
-// Context Menu Active State
+// Main TOC Container
 // ======================
-.toc__item a.context-menu-active {
-  background-color: #d5dffc !important;
+.tiptap__toc {
+  padding-left: 18px;
+  padding-top: 8px;
+
+  // List indentation override (daisyui)
+  .toc__list :where(li ul)::before {
+    inset-inline-start: 1px;
+    top: 0;
+    bottom: 0;
+  }
+
+  // During drag state
+  .toc__list.is-dragging {
+    user-select: none;
+
+    .btnFold,
+    .btn_chat,
+    .toc-drag-handle,
+    .avatar-group,
+    .focusSight > a::after {
+      opacity: 0 !important;
+      pointer-events: none;
+    }
+
+    .toc-item-level {
+      display: block;
+    }
+
+    .toc__item > a {
+      pointer-events: none;
+
+      &:hover,
+      &:focus,
+      &:active {
+        background-color: transparent !important;
+        color: inherit !important;
+      }
+    }
+  }
 }
 
 // ======================
-// Mobile TOC Styles
+// TOC Item
+// ======================
+.toc__item {
+  width: 100%;
+  transition: width 0.2s ease-in-out;
+
+  // Width adjustments for present users avatars
+  $base: 20px;
+  $per: 8px;
+  @for $i from 1 through 7 {
+    &[data-present-users-count='#{$i}'] {
+      width: calc(100% - #{$base + $per * ($i * 0.5)});
+    }
+  }
+
+  &.has-present-users {
+    margin: 2px 0;
+  }
+
+  // Link base
+  > a {
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding-left: 8px !important;
+    transition:
+      background-color 0.2s ease-in-out,
+      color 0.2s ease-in-out;
+    -webkit-user-drag: none;
+
+    &:hover {
+      background-color: #e5e7eb;
+    }
+
+    &:active {
+      background-color: color-mix(in oklab, var(--color-base-content) 10%, transparent);
+      color: inherit;
+    }
+
+    &.context-menu-active {
+      background-color: #d5dffc !important;
+    }
+  }
+
+  // Level 1 heading
+  &--1 > a {
+    font-size: 1rem;
+    font-weight: 600;
+    color: black;
+  }
+
+  // Focus sight indicator
+  &.focusSight > a::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -8.5px;
+    width: 4px;
+    height: 100%;
+    background-color: var(--color-docsy);
+    border-radius: 4px;
+    transition: left 0.2s ease-in-out;
+  }
+
+  &.focusSight:hover > a::after {
+    left: -22px !important;
+  }
+
+  // Active state
+  &.active > span a {
+    color: #4285f4;
+  }
+
+  > a.active > span > .btnChat {
+    fill: var(--color-docsy);
+    opacity: 1;
+  }
+
+  // Ghosted state (during drag)
+  &.is-ghosted > a {
+    background-color: #f3f4f6 !important;
+    border: 2px dashed #d1d5db;
+    border-radius: 6px;
+    opacity: 0.6;
+
+    .toc__link {
+      opacity: 0.5;
+    }
+
+    .btnFold {
+      opacity: 0.4;
+    }
+  }
+
+  &.is-dragging > a {
+    background-color: #e5e7eb !important;
+    border-color: #9ca3af;
+  }
+}
+
+// ======================
+// Fold Button
+// ======================
+.toc__item .btnFold {
+  opacity: 1;
+  cursor: pointer;
+  transition: opacity 0.2s ease-in-out;
+
+  > svg {
+    transition:
+      fill 0.2s ease-in-out,
+      transform 0.2s ease-in-out;
+  }
+
+  &:hover > svg {
+    fill: #2778ff;
+  }
+
+  &.closed > svg {
+    transform: rotate(0deg);
+  }
+
+  &.opened > svg {
+    transform: rotate(90deg);
+  }
+}
+
+// ======================
+// Chat Button
+// ======================
+.toc__item {
+  .btn_chat {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    transition: fill 0.2s ease-in-out;
+
+    &:hover {
+      fill: var(--neutral-content);
+    }
+  }
+
+  .btnChat {
+    opacity: 0;
+    padding: 1px;
+    transition:
+      opacity 0.2s ease-in-out,
+      background-color 0.2s ease-in-out;
+  }
+
+  &:hover > a > span > .btnChat {
+    opacity: 1;
+  }
+
+  a:not(:active, .active):hover .btnChat {
+    background-color: var(--base-300);
+  }
+}
+
+// ======================
+// Drag Handle
+// ======================
+.toc-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  cursor: grab;
+  color: #a1a1aa;
+  height: 100%;
+  background-color: #e5e7eb;
+  border-radius: 4px 0 0 4px;
+  z-index: 2;
+  margin-left: 1px;
+  -webkit-user-drag: element;
+  pointer-events: auto;
+  transition:
+    opacity 0.2s ease-in-out,
+    color 0.2s ease-in-out,
+    background-color 0.2s ease-in-out;
+
+  &:hover {
+    color: var(--color-docsy);
+    background-color: #e5e7eb;
+  }
+
+  &:active {
+    cursor: grabbing;
+    color: var(--color-docsy);
+  }
+}
+
+.toc__item > a:hover > .toc-drag-handle,
+.toc-drag-handle:hover {
+  opacity: 1;
+}
+
+// ======================
+// Hover Level Picker (reuses drag-levels styles)
+// ======================
+.toc-hover-levels {
+  position: absolute;
+  left: -16px;
+  top: -28px; // Position above the TOC item (matches drag overlay position)
+  z-index: 1000;
+}
+
+// ======================
+// Level Badge (hidden until drag)
+// ======================
+.toc-item-level {
+  display: none;
+  position: absolute;
+  right: 0px;
+  top: 50%;
+  transform: translateY(-50%);
+  min-width: 22px;
+  height: 18px;
+  padding: 0 4px;
+  background: var(--color-docsy);
+  color: white;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border-radius: 4px;
+  text-align: center;
+  line-height: 18px;
+  z-index: 5;
+}
+
+// ======================
+// Drag Overlay
+// ======================
+.toc-drag-wrapper {
+  pointer-events: none;
+  // Offset so cursor lands on the card (level picker is ~28px above the card)
+  transform: translate(-12px, -36px);
+}
+
+.toc-drag-levels {
+  display: flex;
+  gap: 2px;
+  margin-bottom: 4px;
+  background: white;
+  border-radius: 6px;
+  padding: 2px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  width: fit-content;
+}
+
+.toc-drag-level {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 24px;
+  height: 18px;
+  padding: 0 4px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #9ca3af;
+  background: transparent;
+  border-radius: 4px;
+  transition:
+    background-color 0.15s ease-in-out,
+    color 0.15s ease-in-out;
+
+  &.original {
+    border: 1px solid var(--color-docsy);
+    color: var(--color-docsy);
+    transform: scale(1.1);
+    margin: 0 16px;
+
+    &::before,
+    &::after {
+      content: '';
+      position: absolute;
+      top: 50%;
+      width: 12px;
+      height: 1px;
+      background: #1f2937;
+    }
+
+    &::before {
+      right: 100%;
+      margin-right: 1px;
+    }
+
+    &::after {
+      left: 100%;
+      margin-left: 1px;
+    }
+
+    &:not(.active)::before,
+    &:not(.active)::after {
+      background: var(--color-docsy);
+    }
+  }
+
+  &.active {
+    color: white;
+    background: #1f2937;
+    position: relative;
+    border-color: transparent;
+  }
+}
+
+.toc-drag-card {
+  // Match the original TOC item styling - size set dynamically via inline style
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border-radius: 4px;
+  padding: 6px 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+  box-sizing: border-box;
+  cursor: grabbing;
+
+  .toc__link {
+    flex: 1;
+    white-space: normal;
+    word-wrap: break-word;
+    font-size: 0.875rem;
+    color: #1f2937;
+  }
+
+  .toc-tree-icon {
+    flex-shrink: 0;
+    color: #6b7280;
+  }
+
+  .toc-descendant-badge {
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 16px;
+    padding: 0 4px;
+    background: #6b7280;
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 600;
+    border-radius: 8px;
+  }
+
+  // Stack indicator - creates a "deck of cards" effect using box-shadows
+  .toc-stack-indicator {
+    position: absolute;
+    inset: 0;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: -1;
+
+    // Single layer
+    &[data-count='1'] {
+      box-shadow:
+        3px 3px 0 0 #e8e8e8,
+        3px 3px 0 1px #d0d0d0;
+    }
+
+    // Two layers - fanned effect
+    &[data-count='2'] {
+      box-shadow:
+        3px 3px 0 0 #e8e8e8,
+        3px 3px 0 1px #d0d0d0,
+        6px 6px 0 0 #dcdcdc,
+        6px 6px 0 1px #c0c0c0;
+    }
+
+    // Three layers - full deck effect
+    &[data-count='3'] {
+      box-shadow:
+        3px 3px 0 0 #e8e8e8,
+        3px 3px 0 1px #d0d0d0,
+        6px 6px 0 0 #dcdcdc,
+        6px 6px 0 1px #c0c0c0,
+        9px 9px 0 0 #d0d0d0,
+        9px 9px 0 1px #b0b0b0;
+    }
+  }
+}
+
+// ======================
+// Drop Indicator
+// ======================
+.toc-drop-indicator-portal {
+  pointer-events: none;
+
+  .toc-drop-indicator-line {
+    height: 2px;
+    background: #1f2937;
+    border-radius: 1px;
+    position: relative;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: -5px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 10px;
+      height: 10px;
+      background: #1f2937;
+      border-radius: 50%;
+    }
+  }
+}
+
+// ======================
+// Mobile Overrides
 // ======================
 .m_mobile {
   .btnChat {
@@ -45,577 +494,55 @@
     }
   }
 
-  .tiptap__toc {
-    .toc__list {
-      flex-wrap: nowrap !important;
+  .tiptap__toc .toc__list {
+    flex-wrap: nowrap !important;
 
-      li ul {
-        white-space: unset;
-      }
+    li ul {
+      white-space: unset;
     }
 
     :where(.menu li) {
       flex-wrap: nowrap;
     }
-
-    .toc__item > span .btnFold::before {
-      opacity: 1;
-    }
-
-    // Mobile chat box button
-    .btn_openChatBox {
-      position: absolute;
-      right: 0.5rem;
-      display: flex;
-      width: 2rem;
-      height: 2rem;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      border-radius: 0.75rem;
-      background-color: var(--bg-docy);
-      fill: white;
-      padding: 0.5rem;
-      color: var(--neutral-content);
-
-      svg {
-        fill: #fff;
-        display: block;
-        margin: auto;
-      }
-
-      .chatLeft {
-        fill: #fff;
-        position: relative;
-        top: 1px;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        margin: auto;
-      }
-
-      // Hide chat icon when unread count exists
-      &[data-unread-count]:not([data-unread-count='']) {
-        .chatLeft {
-          display: none;
-        }
-      }
-
-      // Show unread count
-      &::before {
-        content: attr(data-unread-count);
-        color: #fff;
-        font-weight: 600;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-      }
-    }
-  }
-}
-
-// ======================
-// Main TOC Container
-// ======================
-.tiptap__toc {
-  padding-left: 20px;
-  padding-top: 10px;
-
-  // ======================
-  // TOC Item Base Styles
-  // ======================
-  .toc__item {
-    // Focus sight indicator (shows current scroll position)
-    &.focusSight {
-      position: relative;
-
-      > a::after {
-        content: '';
-        position: absolute;
-        top: -2px;
-        left: -9.5px;
-        width: 4px;
-        height: 100%;
-        background-color: var(--color-docsy);
-        border-radius: 4px;
-      }
-    }
-
-    // Item link base styles
-    > a {
-      padding: 0.3rem 0.4rem;
-      padding-left: 30px;
-      position: relative;
-      transition: all 0.2s ease-in-out;
-      margin-bottom: 0.1rem;
-    }
-
-    // Active state
-    &.active > span a {
-      color: #4285f4;
-    }
-
-    // Level 1 heading styles
-    &--1 > a {
-      font-size: 1rem;
-      font-weight: 600;
-      color: black;
-    }
   }
 
-  // ======================
-  // Chat Button
-  // ======================
-  .toc__item {
-    .btn_chat {
-      display: block;
-      width: 16px;
-      height: 24px;
-      --tooltip-offset: 26px;
-      --tooltip-tail-offset: 20px;
-      font-weight: normal;
-
-      &:hover {
-        fill: var(--neutral-content);
-      }
-    }
-
-    .btnChat {
-      opacity: 0;
-      width: 24px;
-      height: 24px;
-      border-radius: 6px;
-      padding: 4px;
-      position: absolute;
-      right: -5px;
-      top: 52%;
-      transform: translateY(-50%);
-    }
-
-    // Show chat button on hover
-    &:hover > a > span > .btnChat {
-      opacity: 1;
-    }
-
-    // Chat button hover background
-    a:not(:active, .active):hover .btnChat {
-      background-color: var(--base-300);
-    }
-  }
-
-  // ======================
-  // Fold/Unfold Button
-  // ======================
-  .toc__item {
-    .btnFold {
-      position: absolute;
-      left: 12px;
-      top: 50%;
-      transform: translateY(-50%);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      width: 20px;
-      height: 20px;
-      opacity: 1;
-      cursor: pointer;
-      font-weight: normal;
-      transition: all 0.1s linear;
-
-      > svg {
-        position: absolute;
-        top: 50%;
-      }
-
-      &:hover > svg {
-        fill: #2778ff;
-      }
-
-      // Closed state - arrow points right
-      &.closed > svg {
-        transform: translateY(-50%) rotate(0deg);
-      }
-
-      // Opened state - arrow points down
-      &.opened > svg {
-        transform: translateY(-50%) rotate(90deg);
-      }
-    }
-
-    &:hover > a > .btnFold {
-      opacity: 1;
-    }
-
-    &:hover > a .btn_fold {
-      transition-delay: 0.2s;
-    }
-  }
-
-  // ======================
-  // Drag Handle
-  // ======================
-  .toc-drag-handle {
+  .btn_openChatBox {
     position: absolute;
-    left: 6px;
-    top: 50%;
-    transform: translateY(-50%) translateX(-8px) scale(0.85);
+    right: 0.5rem;
     display: flex;
+    width: 2rem;
+    height: 2rem;
     align-items: center;
     justify-content: center;
-    width: 16px;
-    height: 18px;
-    opacity: 0;
-    cursor: grab;
-    color: #a1a1aa;
-    background: linear-gradient(to bottom, #fafafa, #f4f4f5);
-    border: 1px solid rgba(0, 0, 0, 0.06);
-    border-radius: 3px;
-    box-shadow:
-      0 1px 2px rgba(0, 0, 0, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 0.8);
-    transition:
-      opacity 0.18s ease-out,
-      transform 0.18s ease-out,
-      color 0.12s ease,
-      background 0.12s ease,
-      border-color 0.12s ease,
-      box-shadow 0.12s ease;
-    z-index: 10;
+    border-radius: 0.75rem;
+    background-color: var(--bg-docy);
+    padding: 0.5rem;
 
-    &:hover {
-      color: #71717a;
-      background: linear-gradient(to bottom, #f4f4f5, #e4e4e7);
-      border-color: rgba(0, 0, 0, 0.1);
-      box-shadow:
-        0 2px 4px rgba(0, 0, 0, 0.08),
-        inset 0 1px 0 rgba(255, 255, 255, 0.6);
-      transform: translateY(-50%) translateX(-10px) scale(1.08);
+    svg,
+    .chatLeft {
+      fill: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: auto;
     }
 
-    &:active {
-      cursor: grabbing;
-      color: var(--color-docsy);
-      background: linear-gradient(to bottom, #e4e4e7, #d4d4d8);
-      border-color: color-mix(in srgb, var(--color-docsy) 30%, transparent);
-      box-shadow:
-        0 1px 1px rgba(0, 0, 0, 0.06),
-        inset 0 1px 2px rgba(0, 0, 0, 0.08);
-      transform: translateY(-50%) translateX(-10px) scale(0.95);
-      transition-duration: 0.05s;
-    }
-  }
-
-  // Fade + slide in on item hover
-  .toc__item:hover > a > .toc-drag-handle {
-    opacity: 0.7;
-    transform: translateY(-50%) translateX(-10px) scale(1.18);
-  }
-
-  // Full visibility on direct hover
-  .toc__item > a:hover > .toc-drag-handle,
-  .toc-drag-handle:hover {
-    opacity: 1;
-  }
-
-  // Links with drag handle need extra left padding
-  .toc__item > a.has-drag-handle {
-    padding-left: 36px !important;
-  }
-
-  // Ghosted state for items during drag
-  .toc__item.is-ghosted {
-    > a {
-      background-color: #f3f4f6 !important;
-      border: 2px dashed #d1d5db;
-      border-radius: 6px;
-      opacity: 0.6;
-
-      .toc__link {
-        opacity: 0.5;
-      }
-
-      .btnFold {
-        opacity: 0.4;
-      }
-    }
-  }
-
-  // Extra styling for the main dragged item (not descendants)
-  .toc__item.is-dragging {
-    > a {
-      background-color: #e5e7eb !important;
-      border-color: #9ca3af;
-    }
-  }
-
-  // Fade elements during drag
-  .fade-on-drag {
-    opacity: 0.3 !important;
-    transition: opacity 0.15s ease;
-  }
-
-  // Level badge - hidden by default
-  .toc-item-level {
-    display: none;
-    position: absolute;
-    right: -8px;
-    top: 50%;
-    transform: translateY(-50%);
-    min-width: 22px;
-    height: 18px;
-    padding: 0 4px;
-    background: var(--color-docsy);
-    color: white;
-    font-size: 0.65rem;
-    font-weight: 700;
-    border-radius: 4px;
-    text-align: center;
-    line-height: 18px;
-    z-index: 5;
-  }
-
-  // List state during drag
-  .toc__list.is-dragging {
-    user-select: none;
-
-    // Hide fold, chat, and drag handle buttons during drag for cleaner UX
-    .btnFold,
-    .btn_chat,
-    .toc-drag-handle,
-    .avatar-group,
-    .focusSight > a:after {
-      opacity: 0 !important;
-      pointer-events: none;
+    .chatLeft {
+      position: relative;
+      top: 1px;
     }
 
-    // Show level badges during drag
-    .toc-item-level {
-      display: block;
+    &[data-unread-count]:not([data-unread-count='']) .chatLeft {
+      display: none;
     }
 
-    // Disable hover state on TOC items during drag
-    .toc__item > a {
-      pointer-events: none;
-
-      &:hover,
-      &:focus,
-      &:active {
-        background-color: transparent !important;
-        color: inherit !important;
-      }
-    }
-  }
-
-  .toc__item > a:active {
-    background-color: color-mix(in oklab, var(--color-base-content) 10%, transparent);
-    color: inherit;
-  }
-
-  // Prevent dragging from the main link - only drag handle should work
-  .toc__item > a {
-    -webkit-user-drag: none;
-    user-drag: none;
-
-    // Allow drag handle to be interactive
-    .toc-drag-handle {
-      -webkit-user-drag: element;
-      user-drag: element;
-      pointer-events: auto;
-    }
-  }
-}
-
-// ======================
-// Drag Wrapper & Floating Levels
-// ======================
-.toc-drag-wrapper {
-  pointer-events: none;
-}
-
-// Floating level picker - pill style above card
-.toc-drag-levels {
-  display: flex;
-  gap: 1px;
-  margin-bottom: 4px;
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 12px;
-  padding: 3px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
-  width: fit-content;
-}
-
-.toc-drag-level {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 20px;
-  padding: 0 6px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #9ca3af;
-  background: transparent;
-  border-radius: 10px;
-  transition: all 0.15s ease;
-
-  // Original level - shows where item started
-  &.original {
-    background: #e5e7eb;
-    color: #6b7280;
-    position: relative;
-
-    // Small dot indicator below
-    &::after {
-      content: '';
-      position: absolute;
-      bottom: -4px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 4px;
-      height: 4px;
-      background: #9ca3af;
-      border-radius: 50%;
-    }
-  }
-
-  // Active/projected level
-  &.active {
-    color: white;
-    background: var(--color-docsy);
-    box-shadow: 0 2px 4px rgba(99, 102, 241, 0.3);
-
-    // Override original dot when active
-    &::after {
-      background: white;
-    }
-  }
-}
-
-// ======================
-// Drag Card - Matches TOC item style
-// ======================
-.toc-drag-card {
-  position: relative;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  background: white;
-  border: 2px solid var(--color-docsy);
-  border-radius: 6px;
-  padding: 6px 10px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  min-width: 160px;
-  max-width: 260px;
-
-  .toc__link {
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    font-size: 0.85rem;
-    font-weight: 500;
-    color: #1f2937;
-  }
-
-  .toc-tree-icon {
-    flex-shrink: 0;
-    color: var(--color-docsy);
-  }
-
-  .toc-descendant-badge {
-    flex-shrink: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 22px;
-    height: 18px;
-    padding: 0 5px;
-    background: var(--color-docsy);
-    color: white;
-    font-size: 0.65rem;
-    font-weight: 700;
-    border-radius: 9px;
-  }
-
-  // Stacked cards for items with children
-  &.has-children {
-    .toc-stack-card--back,
-    .toc-stack-card--mid {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      border-radius: 6px;
-    }
-
-    .toc-stack-card--back {
-      transform: translate(4px, 4px);
-      background: #e0e7ff;
-      border: 1px solid #c7d2fe;
-      z-index: -2;
-    }
-
-    .toc-stack-card--mid {
-      transform: translate(2px, 2px);
-      background: #eef2ff;
-      border: 1px solid #ddd6fe;
-      z-index: -1;
-    }
-  }
-}
-
-// ======================
-// Level Badge Styles
-// ======================
-.toc-level-badge {
-  position: absolute;
-  top: -8px;
-  right: -8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 28px;
-  height: 22px;
-  padding: 0 6px;
-  background: var(--color-docsy);
-  color: white;
-  font-size: 0.75rem;
-  font-weight: 700;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  z-index: 10;
-}
-
-// ======================
-// Drop Indicator Portal Styles
-// ======================
-.toc-drop-indicator-portal {
-  pointer-events: none;
-
-  .toc-drop-indicator-line {
-    height: 3px;
-    background: var(--color-docsy);
-    border-radius: 2px;
-    box-shadow:
-      0 0 0 2px white,
-      0 2px 8px rgba(99, 102, 241, 0.5);
-    position: relative;
-
-    // Circle indicator on the left
     &::before {
-      content: '';
-      position: absolute;
-      left: -6px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 12px;
-      height: 12px;
-      background: var(--color-docsy);
-      border-radius: 50%;
-      box-shadow:
-        0 0 0 3px white,
-        0 2px 6px rgba(0, 0, 0, 0.2);
+      content: attr(data-unread-count);
+      color: #fff;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
   }
 }

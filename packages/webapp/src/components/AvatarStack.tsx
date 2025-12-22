@@ -1,6 +1,4 @@
-import React from 'react'
 import { twMerge } from 'tailwind-merge'
-
 import { Avatar } from './ui/Avatar'
 
 type StackUser = {
@@ -11,17 +9,19 @@ type StackUser = {
   status?: string | null
 }
 
+type TooltipPosition = 'tooltip-top' | 'tooltip-bottom' | 'tooltip-left' | 'tooltip-right'
+
 type AvatarStackProps = {
   users?: StackUser[]
   size?: number
-  tooltipPosition?: string
+  tooltipPosition?: TooltipPosition
   showStatus?: boolean
   clickable?: boolean
   maxDisplay?: number
   className?: string
 }
 
-const AvatarStack: React.FC<AvatarStackProps> = ({
+export function AvatarStack({
   users = [],
   size = 9,
   tooltipPosition = 'tooltip-bottom',
@@ -29,37 +29,38 @@ const AvatarStack: React.FC<AvatarStackProps> = ({
   clickable = true,
   maxDisplay = 4,
   className
-}) => {
-  const safeUsers = Array.isArray(users)
-    ? users.filter((user): user is StackUser => Boolean(user))
-    : []
-  const visibleUsers = safeUsers.slice(0, maxDisplay)
-  const remainingUsers = Math.max(safeUsers.length - maxDisplay, 0)
+}: AvatarStackProps) {
+  // Filter out null/undefined users
+  const validUsers = users.filter(Boolean) as StackUser[]
 
-  const groupClassName = twMerge('avatar-group -space-x-5', className)
-  const tooltipClasses = tooltipPosition ? `tooltip ${tooltipPosition}` : undefined
+  // Ensure maxDisplay is a positive number
+  const limit = Math.max(1, Number(maxDisplay) || 4)
+  const visibleUsers = validUsers.slice(0, limit)
+  const remainingCount = Math.max(0, validUsers.length - limit)
+
   const sizeClass = `size-${size}`
 
   return (
-    <div className={groupClassName}>
-      {visibleUsers.map((user, index) => (
+    <div className={twMerge('avatar-group -space-x-5 !overflow-visible', className)}>
+      {visibleUsers.map((user, idx) => (
         <Avatar
-          key={user?.id ?? `avatar-${index}`}
-          avatarUpdatedAt={user?.avatar_updated_at}
-          className={twMerge('bg-gray-300 shadow-xl', sizeClass, tooltipClasses)}
-          data-tip={user?.display_name || 'Anonymous'}
-          id={user?.id}
-          src={user?.avatar_url ?? undefined}
-          alt={user?.display_name ?? undefined}
-          status={showStatus ? user?.status ?? undefined : undefined}
+          key={user.id ?? `avatar-${idx}`}
+          id={user.id}
+          src={user.avatar_url ?? undefined}
+          alt={user.display_name ?? undefined}
+          avatarUpdatedAt={user.avatar_updated_at}
+          status={showStatus ? (user.status ?? undefined) : undefined}
           clickable={clickable}
+          className={twMerge('bg-gray-300 shadow-xl', sizeClass)}
+          tooltip={user.display_name || 'Anonymous'}
+          tooltipPosition={tooltipPosition}
         />
       ))}
 
-      {remainingUsers > 0 && (
+      {remainingCount > 0 && (
         <div className={twMerge('avatar avatar-placeholder border', sizeClass)}>
           <div className={twMerge('bg-neutral text-neutral-content text-sm', sizeClass)}>
-            +{remainingUsers}
+            +{remainingCount}
           </div>
         </div>
       )}

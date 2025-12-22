@@ -31,6 +31,7 @@ interface DragState {
   collapsedIds: Set<string>
   descendantCount: number
   dropTarget: DropTarget
+  sourceRect: { width: number; height: number } | null
 }
 
 const initialDropTarget: DropTarget = {
@@ -46,7 +47,8 @@ const initialState: DragState = {
   originalLevel: 1,
   collapsedIds: new Set(),
   descendantCount: 0,
-  dropTarget: initialDropTarget
+  dropTarget: initialDropTarget,
+  sourceRect: null
 }
 
 export function useTocDrag(items: TocItem[]) {
@@ -61,16 +63,25 @@ export function useTocDrag(items: TocItem[]) {
     })
   )
 
-  // Track pointer Y during drag
+  // Track pointer Y during drag and set cursor
   useEffect(() => {
     if (!state.activeId) return
+
+    // Set grabbing cursor on body
+    document.body.style.cursor = 'grabbing'
+    document.body.style.userSelect = 'none'
 
     const handlePointerMove = (e: PointerEvent) => {
       pointerYRef.current = e.clientY
     }
 
     window.addEventListener('pointermove', handlePointerMove)
-    return () => window.removeEventListener('pointermove', handlePointerMove)
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove)
+      document.body.style.cursor = ''
+      document.body.style.userSelect = ''
+    }
   }, [state.activeId])
 
   const resetState = useCallback(() => {
@@ -84,13 +95,24 @@ export function useTocDrag(items: TocItem[]) {
 
       if (activeItem) {
         const descendants = getDescendantIds(items, activeIdStr)
+
+        // Capture source element dimensions
+        const sourceElement = document.querySelector(
+          `li.toc__item[data-id="${activeIdStr}"] > a`
+        ) as HTMLElement
+
+        const sourceRect = sourceElement
+          ? { width: sourceElement.offsetWidth, height: sourceElement.offsetHeight }
+          : null
+
         setState({
           activeId: activeIdStr,
           projectedLevel: activeItem.item.level,
           originalLevel: activeItem.item.level,
           collapsedIds: new Set(descendants),
           descendantCount: getDescendantCount(items, activeIdStr),
-          dropTarget: initialDropTarget
+          dropTarget: initialDropTarget,
+          sourceRect
         })
       }
     },
@@ -145,10 +167,7 @@ export function useTocDrag(items: TocItem[]) {
           return { ...prev, dropTarget: initialDropTarget }
         }
 
-        const pointerY =
-          pointerYRef.current ||
-          (event.activatorEvent as PointerEvent)?.clientY ||
-          0
+        const pointerY = pointerYRef.current || (event.activatorEvent as PointerEvent)?.clientY || 0
 
         if (pointerY <= 0) {
           return { ...prev, dropTarget: initialDropTarget }
@@ -198,10 +217,13 @@ export function useTocDrag(items: TocItem[]) {
     [flatItems]
   )
 
-  const handleDragEnd = useCallback((_event: DragEndEvent) => {
-    // TODO: Implement actual reordering logic here when ready
-    resetState()
-  }, [resetState])
+  const handleDragEnd = useCallback(
+    (_event: DragEndEvent) => {
+      // TODO: Implement actual reordering logic here when ready
+      resetState()
+    },
+    [resetState]
+  )
 
   const handleDragCancel = useCallback(() => {
     resetState()
@@ -226,4 +248,3 @@ export function useTocDrag(items: TocItem[]) {
     }
   }
 }
-

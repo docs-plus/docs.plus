@@ -3,6 +3,7 @@ export * from './usersPresence'
 export * from './sheetStore'
 export * from './dialogStore'
 export * from './editorPreferences'
+export * from './focusedHeadingStore'
 
 export { useStore } from './useStore'
 export { useAuthStore } from './authStore'

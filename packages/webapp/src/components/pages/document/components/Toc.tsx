@@ -17,7 +17,7 @@ const TOC = ({ className = '' }: { className?: string }) => {
 
   return (
     <TocDesktop
-      className={`${className} tiptap__toc h-full w-full overflow-hidden overflow-y-auto scroll-smooth pr-10 pb-4 hover:overscroll-contain sm:py-4 sm:pb-14`}
+      className={`${className} tiptap__toc h-full w-full overflow-hidden overflow-y-auto scroll-smooth hover:overscroll-contain`}
     />
   )
 }

@@ -14,9 +14,7 @@ export function createRestrictHorizontal(maxOffset: number): Modifier {
 /**
  * Snap horizontal movement to discrete level steps
  */
-export function createSnapToLevelGrid(
-  stepSize: number = DEFAULT_SNAP_CONFIG.stepSize
-): Modifier {
+export function createSnapToLevelGrid(stepSize: number = DEFAULT_SNAP_CONFIG.stepSize): Modifier {
   return ({ transform }) => ({
     ...transform,
     x: Math.round(transform.x / stepSize) * stepSize
@@ -42,4 +40,3 @@ export const tocDragModifier: Modifier = composeModifiers(
   createRestrictHorizontal(DEFAULT_SNAP_CONFIG.stepSize * DEFAULT_SNAP_CONFIG.maxSteps),
   createSnapToLevelGrid(DEFAULT_SNAP_CONFIG.stepSize)
 )
-

@@ -11,14 +11,12 @@ export function usePresentUsers(channelId: string) {
   useEffect(() => {
     if (!usersPresence) return
 
-    const users = Array.from(usersPresence.values())
-      .filter((user) => user?.channelId === channelId)
-      .filter((user) => user?.status !== 'OFFLINE')
+    const users = Array.from(usersPresence.values()).filter(
+      (user) => user?.channelId === channelId && user?.status !== 'OFFLINE'
+    )
 
     setPresentUsers(users)
   }, [usersPresence, channelId])
 
   return presentUsers
 }
-
-

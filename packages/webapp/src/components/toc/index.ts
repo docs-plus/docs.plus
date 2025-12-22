@@ -2,7 +2,8 @@
 export { TocDesktop } from './TocDesktop'
 export { TocMobile } from './TocMobile'
 export { TocHeader } from './TocHeader'
-export { TocItem } from './TocItem'
+export { TocItemDesktop } from './TocItemDesktop'
+export { TocItemMobile } from './TocItemMobile'
 export { TocContextMenu } from './TocContextMenu'
 
 // Hooks
@@ -22,9 +23,4 @@ export {
 export { scrollToHeading, scrollToDocTitle, buildNestedToc } from './utils'
 
 // Types (re-export from @types)
-export type {
-  TocItem as TocItemType,
-  TocItemProps,
-  TocListProps,
-  TocContextMenuState
-} from '@types'
+export type { TocItem as TocItemType, TocContextMenuState } from '@types'

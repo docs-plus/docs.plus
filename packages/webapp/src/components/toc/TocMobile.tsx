@@ -2,7 +2,7 @@ import React from 'react'
 import { useToc } from './hooks'
 import { buildNestedToc } from './utils'
 import { TocHeader } from './TocHeader'
-import { TocItem } from './TocItem'
+import { TocItemMobile } from './TocItemMobile'
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
 
 interface TocMobileProps {
@@ -23,11 +23,10 @@ export function TocMobile({ className = '' }: TocMobileProps) {
       <TocHeader variant="mobile" />
       <ul className="toc__list menu p-0">
         {nestedItems.map(({ item, children }) => (
-          <TocItem
+          <TocItemMobile
             key={item.id}
             item={item}
-            children={children}
-            variant="mobile"
+            childItems={children}
             onToggle={toggleSection}
           />
         ))}

@@ -14,6 +14,7 @@ import { copyToClipboard } from '../helper'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { ChatLeftSVG, ArrowDownSVG } from '@icons'
 import { db } from '@db/headingCrinckleDB'
+import { useStore } from '@stores'
 
 // Plugin-specific types
 interface HeadingBlock {
@@ -159,94 +160,74 @@ const appendButtonsDec = (doc: ProseMirrorNode, editor: TipTapEditor): Decoratio
   return DecorationSet.create(doc, decos)
 }
 
-const handleHeadingToggle = (editor: TipTapEditor, { headingId }: EditorEventData): void => {
-  // Safety check: ensure editor view is available
-  if (!editor?.view?.dom) {
-    console.warn('[headingButtonsPlugin] Editor view not available')
-    return
-  }
-
-  if (isProcessing) return
+const handleHeadingToggle = (_editor: TipTapEditor, { headingId }: EditorEventData): void => {
+  if (isProcessing || !headingId) return
   isProcessing = true
 
-  const { tr } = editor.state
-  const headingNodeEl = editor.view.dom.querySelector(
+  // Get editor from store - safer than using passed reference
+  const editor = useStore.getState().settings.editor.instance
+  const headingNodeEl = document.querySelector(
     `.ProseMirror .heading[data-id="${headingId}"]`
-  )
+  ) as HTMLElement | null
 
-  if (!headingNodeEl) {
+  if (!editor?.view || !headingNodeEl) {
     isProcessing = false
     return
   }
 
-  let nodePos
-  try {
-    nodePos = editor.view.state.doc.resolve(editor.view.posAtDOM(headingNodeEl, 0))
-  } catch {
+  const view = editor.view
+  const tr = editor.state.tr
+  const nodePos = view.state.doc.resolve(view.posAtDOM(headingNodeEl, 0))
+  const currentNode = tr.doc.nodeAt(nodePos.pos)
+
+  if (!currentNode) {
     isProcessing = false
     return
   }
 
-  if (!nodePos) {
-    isProcessing = false
-    return
-  }
-
-  // if (editor.isEditable) {
-  const pos = nodePos.pos
-  const currentNode = tr.doc.nodeAt(pos)
-  // Mark as fold/unfold transaction - TOC will be updated via PubSub with delay
   tr.setMeta(TRANSACTION_META.FOLD_AND_UNFOLD, true)
 
   const documentId = localStorage.getItem('docId')
   const headingMapString = localStorage.getItem('headingMap')
   const headingMap: HeadingState[] = headingMapString ? JSON.parse(headingMapString) : []
-  const nodeState = headingMap.find((h: HeadingState) => h.headingId === headingId) || {
-    crinkleOpen: true
-  }
+  const nodeState = headingMap.find((h) => h.headingId === headingId) || { crinkleOpen: true }
   const filterMode = document.body.classList.contains('filter-mode')
-  let database = filterMode ? db.docFilter : db.meta
+  const database = filterMode ? db.docFilter : db.meta
 
-  // In filter mode, avoid saving the heading map to prevent overwriting the primary heading filter.
+  const dispatch = () => {
+    view.dispatch(tr)
+    dispatchToggleHeadingSection(headingNodeEl)
+    isProcessing = false
+  }
+
+  // In filter mode, skip saving to DB
   if (filterMode) {
-    if (editor.view) {
-      editor.view.dispatch(tr)
-      dispatchToggleHeadingSection(headingNodeEl)
-    }
+    dispatch()
+    return
+  }
+
+  if (!documentId) {
     isProcessing = false
     return
   }
 
-  if (documentId && currentNode && headingId) {
-    database
-      .put({
-        docId: documentId,
-        headingId,
-        crinkleOpen: !nodeState.crinkleOpen,
-        level: currentNode.attrs.level
+  database
+    .put({
+      docId: documentId,
+      headingId,
+      crinkleOpen: !nodeState.crinkleOpen,
+      level: currentNode.attrs.level
+    })
+    .then(() => {
+      database.toArray().then((data: any[]) => {
+        localStorage.setItem('headingMap', JSON.stringify(data))
       })
-      .then(() => {
-        database.toArray().then((data: any[]) => {
-          localStorage.setItem('headingMap', JSON.stringify(data))
-        })
-        // Safety check: editor view may be destroyed during async operation
-        if (editor.view) {
-          editor.view.dispatch(tr)
-          dispatchToggleHeadingSection(headingNodeEl)
-        }
-        isProcessing = false
-      })
-      .catch((err: Error) => {
-        console.error(err)
-        isProcessing = false
-      })
-  } else {
-    console.error('headingId is not defined')
-    isProcessing = false
-  }
-  // } else {
-  //   isProcessing = false
-  // }
+      dispatch()
+    })
+    .catch((err: Error) => {
+      console.error(err)
+      isProcessing = false
+    })
 }
 
 /**

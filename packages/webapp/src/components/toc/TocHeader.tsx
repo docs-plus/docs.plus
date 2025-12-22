@@ -60,9 +60,9 @@ export function TocHeader({ variant }: TocHeaderProps) {
   }
 
   return (
-    <div className="relative border-b border-gray-300 pb-1">
+    <div className="relative w-full border-b border-gray-300 pb-1">
       <div
-        className={`group flex cursor-pointer items-center justify-between rounded-md p-1 px-2 pr-3 hover:bg-gray-300 hover:bg-opacity-50 ${isActive && 'activeTocBorder bg-gray-300'}`}
+        className={`group hover:bg-opacity-50 flex cursor-pointer items-center justify-between gap-0.5 rounded-md p-1 px-2 pr-3 hover:bg-gray-300 ${isActive && 'activeTocBorder bg-gray-300'}`}
         onClick={handleClick}>
         <span className="text-lg font-bold">{docMetadata?.title}</span>
         <span
@@ -70,7 +70,7 @@ export function TocHeader({ variant }: TocHeaderProps) {
           onClick={handleChatClick}
           data-tip="Chat Room">
           {unreadCount > 0 && (
-            <div className="badge badge-docsy badge-sm bg-docsy border-docsy absolute top-1/2 z-[1] -translate-y-1/2 scale-90 border border-none text-white">
+            <div className="badge badge-docsy badge-sm bg-docsy border-docsy scale-90 border border-none text-white">
               {unreadCount > 99 ? '99+' : unreadCount}
             </div>
           )}

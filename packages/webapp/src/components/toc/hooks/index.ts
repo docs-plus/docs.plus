@@ -9,8 +9,7 @@ export { usePresentUsers } from './usePresentUsers'
 export { useUnreadCount } from './useUnreadCount'
 
 // Scroll spy hooks
-export {
-  useHeadingScrollSpy,
-  useTocAutoScroll,
-  useFocusedHeadingStore
-} from './useHeadingScrollSpy'
+export { useHeadingScrollSpy, useTocAutoScroll } from './useHeadingScrollSpy'
+
+// Store re-exported from @stores for convenience
+export { useFocusedHeadingStore } from '@stores'

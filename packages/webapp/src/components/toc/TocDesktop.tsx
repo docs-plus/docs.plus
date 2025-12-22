@@ -6,7 +6,7 @@ import { MdAccountTree } from 'react-icons/md'
 import { useToc, useTocAutoScroll, useTocDrag } from './hooks'
 import { buildNestedToc } from './utils'
 import { TocHeader } from './TocHeader'
-import { TocItem } from './TocItem'
+import { TocItemDesktop } from './TocItemDesktop'
 import { TocContextMenu } from './TocContextMenu'
 import { ContextMenu } from '@components/ui/ContextMenu'
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
@@ -30,8 +30,15 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
   useTocAutoScroll()
 
   const { state, activeItem, flatItems, sensors, handlers } = useTocDrag(items)
-  const { activeId, projectedLevel, originalLevel, collapsedIds, descendantCount, dropTarget } =
-    state
+  const {
+    activeId,
+    projectedLevel,
+    originalLevel,
+    collapsedIds,
+    descendantCount,
+    dropTarget,
+    sourceRect
+  } = state
 
   const [contextMenuState, setContextMenuState] = useState<{
     headingId: string | null
@@ -93,13 +100,11 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
               />
             </ContextMenu>
             {nestedItems.map(({ item, children }) => (
-              <TocItem
+              <TocItemDesktop
                 key={item.id}
                 item={item}
-                children={children}
-                variant="desktop"
+                childItems={children}
                 onToggle={toggleSection}
-                draggable
                 activeId={activeId}
                 collapsedIds={collapsedIds}
               />
@@ -127,20 +132,22 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
                   ))}
               </div>
 
-              {/* Drag card */}
+              {/* Drag card - matches source element size */}
               <div
                 ref={overlayRef}
-                className={`toc-drag-card ${descendantCount > 0 ? 'has-children' : ''}`}>
+                className="toc-drag-card"
+                style={
+                  sourceRect
+                    ? { width: sourceRect.width, minHeight: sourceRect.height, height: 'auto' }
+                    : undefined
+                }>
                 {descendantCount > 0 && <MdAccountTree className="toc-tree-icon" size={14} />}
                 <span className="toc__link wrap-anywhere">{activeItem.textContent}</span>
                 {descendantCount > 0 && (
                   <span className="toc-descendant-badge">+{descendantCount}</span>
                 )}
                 {descendantCount > 0 && (
-                  <>
-                    <div className="toc-stack-card toc-stack-card--back" />
-                    <div className="toc-stack-card toc-stack-card--mid" />
-                  </>
+                  <div className="toc-stack-indicator" data-count={Math.min(descendantCount, 3)} />
                 )}
               </div>
             </div>
