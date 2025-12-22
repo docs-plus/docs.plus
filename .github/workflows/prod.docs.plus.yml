@@ -43,7 +43,7 @@ jobs:
           bun-version: latest
 
       - name: 📥 Install Dependencies
-        run: bun install --frozen-lockfile
+        run: bun install --frozen-lockfile --ignore-scripts
 
       - name: 🔐 Prepare Environment
         run: |
