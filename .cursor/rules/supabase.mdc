@@ -1,5 +1,4 @@
 ---
-description: 
 globs: **/*.sql
 alwaysApply: false
 ---
@@ -163,13 +162,14 @@ create policy "Users can view their own data"
 ## ☑️ Optional Helpers
 
 - Add UUID default generator if required:
+
 ```sql
 id uuid primary key default gen_random_uuid()
 ```
+
 - Use `now()` for timestamps.
 - Default status columns to enums or safe values.
 
 ---
 
 Use this guide to keep SQL predictable, maintainable, and safe. All features used in PostgreSQL and Supabase should follow this format to ensure clarity and ease of maintenance.
-

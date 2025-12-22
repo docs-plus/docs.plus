@@ -30,398 +30,406 @@
 name: docsplus
 
 services:
- # ===========================================================================
- # TRAEFIK - Reverse Proxy & SSL
- # Static config:  ./scripts/traefik/traefik.yml
- # Dynamic config: ./scripts/traefik/dynamic/
- # ===========================================================================
- traefik:
-  image: traefik:v3.6
-  container_name: traefik
-  restart: unless-stopped
-  command:
-   - "--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@docs.plus}"
-  ports:
-   - "80:80"
-   - "443:443"
-   - "127.0.0.1:8080:8080"
-  volumes:
-   - ./scripts/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-   - ./scripts/traefik/dynamic:/etc/traefik/dynamic:ro
-   - /var/run/docker.sock:/var/run/docker.sock:ro
-   - traefik-certs:/letsencrypt
-  networks:
-   - docsplus-network
-  labels:
-   - "traefik.enable=false"
-  # Docker log rotation
-  logging:
-   driver: "json-file"
-   options:
-    max-size: "50m"
-    max-file: "5"
-    compress: "true"
-  healthcheck:
-   test: ["CMD", "traefik", "healthcheck", "--ping"]
-   interval: 10s
-   timeout: 3s
-   retries: 3
-   start_period: 10s
+  # ===========================================================================
+  # TRAEFIK - Reverse Proxy & SSL
+  # Static config:  ./scripts/traefik/traefik.yml
+  # Dynamic config: ./scripts/traefik/dynamic/
+  # ===========================================================================
+  traefik:
+    image: traefik:v3.6
+    container_name: traefik
+    restart: unless-stopped
+    command:
+      - '--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@docs.plus}'
+    ports:
+      - '80:80'
+      - '443:443'
+      - '127.0.0.1:8080:8080'
+    volumes:
+      - ./scripts/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./scripts/traefik/dynamic:/etc/traefik/dynamic:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - traefik-certs:/letsencrypt
+    networks:
+      - docsplus-network
+    labels:
+      - 'traefik.enable=false'
+    # Docker log rotation
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '5'
+        compress: 'true'
+    healthcheck:
+      test: ['CMD', 'traefik', 'healthcheck', '--ping']
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
 
- # ===========================================================================
- # REDIS - Shared Cache & Pub/Sub
- # ===========================================================================
- redis:
-  image: redis:7-alpine
-  container_name: docsplus-redis
-  restart: unless-stopped
-  command: >
-   redis-server
-   --appendonly yes
-   --appendfsync everysec
-   --maxmemory 4gb
-   --maxmemory-policy allkeys-lru
-   --save ""
-   --stop-writes-on-bgsave-error no
-   --tcp-backlog 511
-   --timeout 0
-   --tcp-keepalive 300
-   --maxclients 10000
-   --lazyfree-lazy-eviction yes
-   --lazyfree-lazy-expire yes
-   --lazyfree-lazy-server-del yes
-  volumes:
-   - redis-data:/data
-  networks:
-   - docsplus-network
-  sysctls:
-   - net.core.somaxconn=511
-  healthcheck:
-   test: ["CMD", "redis-cli", "ping"]
-   interval: 10s
-   timeout: 5s
-   retries: 5
-  deploy:
-   resources:
-    limits:
-     memory: 5G
-    reservations:
-     memory: 1G
+  # ===========================================================================
+  # REDIS - Shared Cache & Pub/Sub
+  # ===========================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: docsplus-redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --appendfsync everysec
+      --maxmemory 4gb
+      --maxmemory-policy allkeys-lru
+      --save ""
+      --stop-writes-on-bgsave-error no
+      --tcp-backlog 511
+      --timeout 0
+      --tcp-keepalive 300
+      --maxclients 10000
+      --lazyfree-lazy-eviction yes
+      --lazyfree-lazy-expire yes
+      --lazyfree-lazy-server-del yes
+    volumes:
+      - redis-data:/data
+    networks:
+      - docsplus-network
+    sysctls:
+      - net.core.somaxconn=511
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: 5G
+        reservations:
+          memory: 1G
 
- # ===========================================================================
- # REST API (Hocuspocus)
- # ===========================================================================
- rest-api:
-  image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
-  env_file: .env.production
-  build:
-   context: ./packages/hocuspocus.server
-   dockerfile: docker/Dockerfile.bun
-   target: production
-   args:
-    DATABASE_URL: ${DATABASE_URL}
-  restart: unless-stopped
-  command: bun /app/src/index.ts
-  environment:
-   NODE_ENV: production
-   APP_PORT: 4000
-   DATABASE_URL: ${DATABASE_URL}
-   REDIS_HOST: docsplus-redis
-   REDIS_PORT: 6379
-   SUPABASE_URL: ${SUPABASE_URL}
-   SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-   SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
-   JWT_SECRET: ${JWT_SECRET}
-   ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://docs.plus}
-   # S3 Storage (DigitalOcean Spaces)
-   DO_STORAGE_ENDPOINT: ${DO_STORAGE_ENDPOINT}
-   DO_STORAGE_REGION: ${DO_STORAGE_REGION}
-   DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
-   DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
-   DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
-   DO_STORAGE_MAX_FILE_SIZE: ${DO_STORAGE_MAX_FILE_SIZE:-52428800}
-  networks:
-   - docsplus-network
-  depends_on:
-   redis:
-    condition: service_healthy
-  labels:
-   - "traefik.enable=true"
-   # REST API routes (prodback.docs.plus/api/*)
-   - "traefik.http.routers.rest-api.rule=Host(`prodback.docs.plus`) && PathPrefix(`/api`)"
-   - "traefik.http.routers.rest-api.entrypoints=websecure"
-   - "traefik.http.routers.rest-api.tls.certresolver=letsencrypt"
-   - "traefik.http.routers.rest-api.service=rest-api"
-   - "traefik.http.routers.rest-api.middlewares=security-headers@file,rate-limit-api@file,retry@file"
-   - "traefik.http.services.rest-api.loadbalancer.server.port=4000"
-   # Health check - only route to healthy containers
-   - "traefik.http.services.rest-api.loadbalancer.healthcheck.path=/health"
-   - "traefik.http.services.rest-api.loadbalancer.healthcheck.interval=5s"
-   - "traefik.http.services.rest-api.loadbalancer.healthcheck.timeout=3s"
-  healthcheck:
-   test:
-    [
-     "CMD",
-     "bun",
-     "-e",
-     "fetch('http://localhost:4000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
-    ]
-   interval: 10s
-   timeout: 5s
-   retries: 3
-   start_period: 20s
-  logging:
-   driver: "json-file"
-   options:
-    max-size: "50m"
-    max-file: "5"
-    compress: "true"
-  deploy:
-   replicas: 2
-   resources:
-    limits:
-     cpus: "0.5"
-     memory: 512M
-    reservations:
-     cpus: "0.25"
-     memory: 256M
+  # ===========================================================================
+  # REST API (Hocuspocus)
+  # ===========================================================================
+  rest-api:
+    image: docsplus-rest-api:${DEPLOY_TAG:-latest}
+    env_file: .env.production
+    build:
+      context: ./packages/hocuspocus.server
+      dockerfile: docker/Dockerfile.bun
+      target: production
+      args:
+        DATABASE_URL: ${DATABASE_URL}
+    restart: unless-stopped
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
+    command: bun /app/src/index.ts
+    environment:
+      NODE_ENV: production
+      APP_PORT: 4000
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_HOST: docsplus-redis
+      REDIS_PORT: 6379
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://docs.plus}
+      # S3 Storage (DigitalOcean Spaces)
+      DO_STORAGE_ENDPOINT: ${DO_STORAGE_ENDPOINT}
+      DO_STORAGE_REGION: ${DO_STORAGE_REGION}
+      DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
+      DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
+      DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
+      DO_STORAGE_MAX_FILE_SIZE: ${DO_STORAGE_MAX_FILE_SIZE:-52428800}
+    networks:
+      - docsplus-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    labels:
+      - 'traefik.enable=true'
+      # REST API routes (prodback.docs.plus/api/*)
+      - 'traefik.http.routers.rest-api.rule=Host(`prodback.docs.plus`) && PathPrefix(`/api`)'
+      - 'traefik.http.routers.rest-api.entrypoints=websecure'
+      - 'traefik.http.routers.rest-api.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.rest-api.service=rest-api'
+      - 'traefik.http.routers.rest-api.middlewares=security-headers@file,rate-limit-api@file,retry@file'
+      - 'traefik.http.services.rest-api.loadbalancer.server.port=4000'
+      # Health check - only route to healthy containers
+      - 'traefik.http.services.rest-api.loadbalancer.healthcheck.path=/health'
+      - 'traefik.http.services.rest-api.loadbalancer.healthcheck.interval=5s'
+      - 'traefik.http.services.rest-api.loadbalancer.healthcheck.timeout=3s'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'bun',
+          '-e',
+          "fetch('http://localhost:4000/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '5'
+        compress: 'true'
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
- # ===========================================================================
- # HOCUSPOCUS WEBSOCKET SERVER
- # ===========================================================================
- hocuspocus-server:
-  image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
-  env_file: .env.production
-  build:
-   context: ./packages/hocuspocus.server
-   dockerfile: docker/Dockerfile.bun
-   target: production
-   args:
-    DATABASE_URL: ${DATABASE_URL}
-  restart: unless-stopped
-  command: bun /app/src/hocuspocus.server.ts
-  environment:
-   NODE_ENV: production
-   HOCUSPOCUS_PORT: 4001
-   DATABASE_URL: ${DATABASE_URL}
-   REDIS_HOST: docsplus-redis
-   REDIS_PORT: 6379
-   SUPABASE_URL: ${SUPABASE_URL}
-   SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-   SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
-   JWT_SECRET: ${JWT_SECRET}
-   ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://docs.plus}
-   HOCUSPOCUS_LOGGER: "false"
-   HOCUSPOCUS_THROTTLE: "true"
-   # S3 Storage (DigitalOcean Spaces)
-   DO_STORAGE_ENDPOINT: ${DO_STORAGE_ENDPOINT}
-   DO_STORAGE_REGION: ${DO_STORAGE_REGION}
-   DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
-   DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
-   DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
-   DO_STORAGE_MAX_FILE_SIZE: ${DO_STORAGE_MAX_FILE_SIZE:-52428800}
-  networks:
-   - docsplus-network
-  depends_on:
-   redis:
-    condition: service_healthy
-  labels:
-   - "traefik.enable=true"
-   # WebSocket routes (prodback.docs.plus/websocket)
-   - "traefik.http.routers.hocuspocus.rule=Host(`prodback.docs.plus`) && PathPrefix(`/websocket`)"
-   - "traefik.http.routers.hocuspocus.entrypoints=websecure"
-   - "traefik.http.routers.hocuspocus.tls.certresolver=letsencrypt"
-   - "traefik.http.routers.hocuspocus.service=hocuspocus"
-   - "traefik.http.routers.hocuspocus.middlewares=security-headers@file"
-   - "traefik.http.services.hocuspocus.loadbalancer.server.port=4001"
-   # Sticky sessions for WebSocket connections
-   - "traefik.http.services.hocuspocus.loadbalancer.sticky.cookie=true"
-   - "traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.name=hocuspocus_sticky"
-   - "traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.httponly=true"
-   # Health check for load balancer
-   - "traefik.http.services.hocuspocus.loadbalancer.healthcheck.path=/health"
-   - "traefik.http.services.hocuspocus.loadbalancer.healthcheck.interval=5s"
-  healthcheck:
-   test:
-    [
-     "CMD",
-     "bun",
-     "-e",
-     "fetch('http://localhost:4001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
-    ]
-   interval: 10s
-   timeout: 5s
-   retries: 3
-   start_period: 20s
-  logging:
-   driver: "json-file"
-   options:
-    max-size: "50m"
-    max-file: "5"
-    compress: "true"
-  deploy:
-   replicas: 2
-   resources:
-    limits:
-     cpus: "0.5"
-     memory: 768M
-    reservations:
-     cpus: "0.25"
-     memory: 256M
+  # ===========================================================================
+  # HOCUSPOCUS WEBSOCKET SERVER
+  # ===========================================================================
+  hocuspocus-server:
+    image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
+    env_file: .env.production
+    build:
+      context: ./packages/hocuspocus.server
+      dockerfile: docker/Dockerfile.bun
+      target: production
+      args:
+        DATABASE_URL: ${DATABASE_URL}
+    restart: unless-stopped
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
+    command: bun /app/src/hocuspocus.server.ts
+    environment:
+      NODE_ENV: production
+      HOCUSPOCUS_PORT: 4001
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_HOST: docsplus-redis
+      REDIS_PORT: 6379
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      JWT_SECRET: ${JWT_SECRET}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://docs.plus}
+      HOCUSPOCUS_LOGGER: 'false'
+      HOCUSPOCUS_THROTTLE: 'true'
+      # S3 Storage (DigitalOcean Spaces)
+      DO_STORAGE_ENDPOINT: ${DO_STORAGE_ENDPOINT}
+      DO_STORAGE_REGION: ${DO_STORAGE_REGION}
+      DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
+      DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
+      DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
+      DO_STORAGE_MAX_FILE_SIZE: ${DO_STORAGE_MAX_FILE_SIZE:-52428800}
+    networks:
+      - docsplus-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    labels:
+      - 'traefik.enable=true'
+      # WebSocket routes (prodback.docs.plus/websocket)
+      - 'traefik.http.routers.hocuspocus.rule=Host(`prodback.docs.plus`) && PathPrefix(`/websocket`)'
+      - 'traefik.http.routers.hocuspocus.entrypoints=websecure'
+      - 'traefik.http.routers.hocuspocus.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.hocuspocus.service=hocuspocus'
+      - 'traefik.http.routers.hocuspocus.middlewares=security-headers@file'
+      - 'traefik.http.services.hocuspocus.loadbalancer.server.port=4001'
+      # Sticky sessions for WebSocket connections
+      - 'traefik.http.services.hocuspocus.loadbalancer.sticky.cookie=true'
+      - 'traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.name=hocuspocus_sticky'
+      - 'traefik.http.services.hocuspocus.loadbalancer.sticky.cookie.httponly=true'
+      # Health check for load balancer
+      - 'traefik.http.services.hocuspocus.loadbalancer.healthcheck.path=/health'
+      - 'traefik.http.services.hocuspocus.loadbalancer.healthcheck.interval=5s'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'bun',
+          '-e',
+          "fetch('http://localhost:4001/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '5'
+        compress: 'true'
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 768M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
- # ===========================================================================
- # HOCUSPOCUS WORKER (Background Jobs)
- # ===========================================================================
- hocuspocus-worker:
-  image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
-  env_file: .env.production
-  build:
-   context: ./packages/hocuspocus.server
-   dockerfile: docker/Dockerfile.bun
-   target: production
-   args:
-    DATABASE_URL: ${DATABASE_URL}
-  restart: unless-stopped
-  command: bun /app/src/hocuspocus.worker.ts
-  environment:
-   NODE_ENV: production
-   WORKER_HEALTH_PORT: 4002
-   DATABASE_URL: ${DATABASE_URL}
-   REDIS_HOST: docsplus-redis
-   REDIS_PORT: 6379
-   SUPABASE_URL: ${SUPABASE_URL}
-   SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
-   SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
-   # S3 Storage (DigitalOcean Spaces)
-   DO_STORAGE_ENDPOINT: ${DO_STORAGE_ENDPOINT}
-   DO_STORAGE_REGION: ${DO_STORAGE_REGION}
-   DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
-   DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
-   DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
-  networks:
-   - docsplus-network
-  depends_on:
-   redis:
-    condition: service_healthy
-  # Worker doesn't need Traefik labels (internal only)
-  healthcheck:
-   test:
-    [
-     "CMD",
-     "bun",
-     "-e",
-     "fetch('http://localhost:4002/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
-    ]
-   interval: 10s
-   timeout: 5s
-   retries: 3
-   start_period: 20s
-  logging:
-   driver: "json-file"
-   options:
-    max-size: "50m"
-    max-file: "5"
-    compress: "true"
-  deploy:
-   replicas: 1
-   resources:
-    limits:
-     cpus: "1"
-     memory: 1G
-    reservations:
-     cpus: "0.25"
-     memory: 256M
+  # ===========================================================================
+  # HOCUSPOCUS WORKER (Background Jobs)
+  # ===========================================================================
+  hocuspocus-worker:
+    image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
+    env_file: .env.production
+    build:
+      context: ./packages/hocuspocus.server
+      dockerfile: docker/Dockerfile.bun
+      target: production
+      args:
+        DATABASE_URL: ${DATABASE_URL}
+    restart: unless-stopped
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
+    command: bun /app/src/hocuspocus.worker.ts
+    environment:
+      NODE_ENV: production
+      WORKER_HEALTH_PORT: 4002
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_HOST: docsplus-redis
+      REDIS_PORT: 6379
+      SUPABASE_URL: ${SUPABASE_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
+      # S3 Storage (DigitalOcean Spaces)
+      DO_STORAGE_ENDPOINT: ${DO_STORAGE_ENDPOINT}
+      DO_STORAGE_REGION: ${DO_STORAGE_REGION}
+      DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
+      DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
+      DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
+    networks:
+      - docsplus-network
+    depends_on:
+      redis:
+        condition: service_healthy
+    # Worker doesn't need Traefik labels (internal only)
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'bun',
+          '-e',
+          "fetch('http://localhost:4002/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '5'
+        compress: 'true'
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
- # ===========================================================================
- # WEBAPP (Next.js Frontend)
- # ===========================================================================
- webapp:
-  image: docsplus-webapp:${DEPLOY_TAG:-latest}
-  env_file: .env.production
-  build:
-   context: .
-   dockerfile: packages/webapp/docker/Dockerfile.bun
-   target: runner
-   args:
-    NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
-    NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-    NEXT_PUBLIC_SUPABASE_WS_URL: ${NEXT_PUBLIC_SUPABASE_WS_URL}
-    NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL}
-    NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL}
-    NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
-    NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
-    NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-  restart: unless-stopped
-  environment:
-   NODE_ENV: production
-   PORT: 3000
-   HOSTNAME: "0.0.0.0"
-   # NEXT_PUBLIC vars for runtime
-   NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
-   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-   NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL}
-   NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL}
-   NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
-   NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
-   NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-   # Server-side API URL (internal Docker network)
-   SERVER_RESTAPI_URL: http://rest-api:4000/api
-  networks:
-   - docsplus-network
-  labels:
-   - "traefik.enable=true"
-   # Main frontend (docs.plus)
-   - "traefik.http.routers.webapp.rule=Host(`docs.plus`)"
-   - "traefik.http.routers.webapp.entrypoints=websecure"
-   - "traefik.http.routers.webapp.tls.certresolver=letsencrypt"
-   - "traefik.http.routers.webapp.service=webapp"
-   - "traefik.http.routers.webapp.middlewares=security-headers@file,compress@file,rate-limit-web@file"
-   - "traefik.http.services.webapp.loadbalancer.server.port=3000"
-   # Health check - Traefik only routes to healthy containers
-   - "traefik.http.services.webapp.loadbalancer.healthcheck.path=/api/health"
-   - "traefik.http.services.webapp.loadbalancer.healthcheck.interval=5s"
-   - "traefik.http.services.webapp.loadbalancer.healthcheck.timeout=3s"
-  healthcheck:
-   test:
-    [
-     "CMD",
-     "bun",
-     "-e",
-     "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
-    ]
-   interval: 10s
-   timeout: 3s
-   retries: 3
-   start_period: 30s
-  logging:
-   driver: "json-file"
-   options:
-    max-size: "50m"
-    max-file: "5"
-    compress: "true"
-  deploy:
-   replicas: 2
-   resources:
-    limits:
-     cpus: "0.5"
-     memory: 768M
-    reservations:
-     cpus: "0.25"
-     memory: 256M
+  # ===========================================================================
+  # WEBAPP (Next.js Frontend)
+  # ===========================================================================
+  webapp:
+    image: docsplus-webapp:${DEPLOY_TAG:-latest}
+    env_file: .env.production
+    build:
+      context: .
+      dockerfile: packages/webapp/docker/Dockerfile.bun
+      target: runner
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_SUPABASE_WS_URL: ${NEXT_PUBLIC_SUPABASE_WS_URL}
+        NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL}
+        NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL}
+        NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+        NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
+        NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+    restart: unless-stopped
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      HOSTNAME: '0.0.0.0'
+      # NEXT_PUBLIC vars for runtime
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL}
+      NEXT_PUBLIC_RESTAPI_URL: ${NEXT_PUBLIC_RESTAPI_URL}
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
+      NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
+      NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+      # Server-side API URL (internal Docker network)
+      SERVER_RESTAPI_URL: http://rest-api:4000/api
+    networks:
+      - docsplus-network
+    labels:
+      - 'traefik.enable=true'
+      # Main frontend (docs.plus)
+      - 'traefik.http.routers.webapp.rule=Host(`docs.plus`)'
+      - 'traefik.http.routers.webapp.entrypoints=websecure'
+      - 'traefik.http.routers.webapp.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.webapp.service=webapp'
+      - 'traefik.http.routers.webapp.middlewares=security-headers@file,compress@file,rate-limit-web@file'
+      - 'traefik.http.services.webapp.loadbalancer.server.port=3000'
+      # Health check - Traefik only routes to healthy containers
+      - 'traefik.http.services.webapp.loadbalancer.healthcheck.path=/api/health'
+      - 'traefik.http.services.webapp.loadbalancer.healthcheck.interval=5s'
+      - 'traefik.http.services.webapp.loadbalancer.healthcheck.timeout=3s'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'bun',
+          '-e',
+          "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+        ]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 30s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '5'
+        compress: 'true'
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 768M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
 # =============================================================================
 # VOLUMES
 # =============================================================================
 volumes:
- traefik-certs:
-  driver: local
- redis-data:
-  driver: local
+  traefik-certs:
+    driver: local
+  redis-data:
+    driver: local
 
 # =============================================================================
 # NETWORKS
 # =============================================================================
 networks:
- docsplus-network:
-  external: true
-  name: docsplus-network
+  docsplus-network:
+    external: true
+    name: docsplus-network

@@ -62,12 +62,12 @@ help:
 
 build:
 	@echo "🏗️  Building all services (production)..."
-	@docker-compose -f docker-compose.prod.yml --env-file .env.production build
+	@docker compose -f docker compose.prod.yml --env-file .env.production build
 	@echo "✅ All services built"
 
 build-dev:
 	@echo "🏗️  Building all services (development)..."
-	@docker-compose -f docker-compose.dev.yml --env-file .env.development build
+	@docker compose -f docker compose.dev.yml --env-file .env.development build
 	@echo "✅ All services built"
 
 # =============================================================================
@@ -85,11 +85,11 @@ up-prod: build
 	@echo "  ⚙️  Worker - 1 replica"
 	@echo "  💻 Webapp - 2 replicas"
 	@echo ""
-	@docker-compose -f docker-compose.prod.yml --env-file .env.production up -d \
-		--scale webapp=2 \
+	@docker compose -f docker compose.prod.yml --env-file .env.production up -d \
 		--scale rest-api=2 \
 		--scale hocuspocus-server=2 \
-		--scale hocuspocus-worker=1
+		--scale hocuspocus-worker=1 \
+		--scale webapp=2
 	@echo ""
 	@echo "✅ Full stack started!"
 	@echo ""
@@ -108,7 +108,7 @@ up-prod: build
 up-dev: build-dev
 	@echo "🚀 Starting full stack development environment..."
 	@echo "🧹 Cleaning up any existing containers..."
-	@docker-compose -f docker-compose.dev.yml --env-file .env.development down 2>/dev/null || true
+	@docker compose -f docker compose.dev.yml --env-file .env.development down 2>/dev/null || true
 	@CONTAINERS=$$(docker ps -a -q --filter "name=docsy-" 2>/dev/null); \
 	if [ -n "$$CONTAINERS" ]; then \
 		echo "Removing stale containers..."; \
@@ -127,7 +127,7 @@ up-dev: build-dev
 	@echo "  ⚙️  Worker (port 4002) - hot reload enabled"
 	@echo "  💻 Webapp (port 3000) - hot reload enabled"
 	@echo ""
-	@docker-compose -f docker-compose.dev.yml --env-file .env.development up -d
+	@docker compose -f docker compose.dev.yml --env-file .env.development up -d
 	@echo ""
 	@echo "✅ Development environment started!"
 	@echo ""
@@ -159,7 +159,7 @@ infra-up:
 		echo "⚠️  Warning: .env.local not found. Creating from .env.development..."; \
 		cp .env.development .env.local 2>/dev/null || true; \
 	fi
-	@docker-compose -f docker-compose.local.yml --env-file .env.local up -d
+	@docker compose -f docker compose.local.yml --env-file .env.local up -d
 	@echo ""
 	@echo "✅ Infrastructure started!"
 	@echo ""
@@ -179,12 +179,12 @@ infra-up:
 
 infra-down:
 	@echo "🛑 Stopping infrastructure services..."
-	@docker-compose -f docker-compose.local.yml --env-file .env.local down
+	@docker compose -f docker compose.local.yml --env-file .env.local down
 	@echo "✅ Infrastructure stopped"
 
 infra-logs:
 	@echo "📋 Infrastructure logs..."
-	@docker-compose -f docker-compose.local.yml --env-file .env.local logs -f
+	@docker compose -f docker compose.local.yml --env-file .env.local logs -f
 
 dev-local:
 	@echo "🚀 Starting local development (all services)..."
@@ -257,12 +257,12 @@ up-local: infra-up
 
 scale-webapp:
 	@echo "📈 Scaling webapp to 3 replicas..."
-	@docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --scale webapp=3
+	@docker compose -f docker compose.prod.yml --env-file .env.production up -d --scale webapp=3
 	@echo "✅ Webapp scaled to 3 replicas"
 
 scale-hocuspocus:
 	@echo "📈 Scaling hocuspocus services..."
-	@docker-compose -f docker-compose.prod.yml --env-file .env.production up -d --scale rest-api=3 --scale hocuspocus-server=5 --scale hocuspocus-worker=3
+	@docker compose -f docker compose.prod.yml --env-file .env.production up -d --scale rest-api=3 --scale hocuspocus-server=5 --scale hocuspocus-worker=3
 	@echo "✅ Hocuspocus services scaled"
 
 # =============================================================================
@@ -270,17 +270,17 @@ scale-hocuspocus:
 # =============================================================================
 
 down:
-	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+	@if docker compose -f docker compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
 		echo "🛑 Stopping all services (development)..."; \
-		docker-compose -f docker-compose.dev.yml --env-file .env.development down; \
+		docker compose -f docker compose.dev.yml --env-file .env.development down; \
 		echo "✅ All services stopped"; \
-	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
+	elif docker compose -f docker compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
 		echo "🛑 Stopping all services (production)..."; \
-		docker-compose -f docker-compose.prod.yml --env-file .env.production down; \
+		docker compose -f docker compose.prod.yml --env-file .env.production down; \
 		echo "✅ All services stopped"; \
-	elif docker-compose -f docker-compose.local.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+	elif docker compose -f docker compose.local.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
 		echo "🛑 Stopping infrastructure services (local)..."; \
-		docker-compose -f docker-compose.local.yml --env-file .env.development down; \
+		docker compose -f docker compose.local.yml --env-file .env.development down; \
 		echo "✅ Infrastructure stopped"; \
 		echo "💡 Apps are running natively - stop them manually (Ctrl+C)"; \
 	else \
@@ -288,42 +288,42 @@ down:
 	fi
 
 logs:
-	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+	@if docker compose -f docker compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
 		echo "📋 Detected development environment - showing all logs..."; \
-		docker-compose -f docker-compose.dev.yml --env-file .env.development logs -f; \
-	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
+		docker compose -f docker compose.dev.yml --env-file .env.development logs -f; \
+	elif docker compose -f docker compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
 		echo "📋 Detected production environment - showing all logs..."; \
-		docker-compose -f docker-compose.prod.yml --env-file .env.production logs -f; \
+		docker compose -f docker compose.prod.yml --env-file .env.production logs -f; \
 	else \
 		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
 	fi
 
 logs-webapp:
-	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q webapp 2>/dev/null | grep -q .; then \
-		docker-compose -f docker-compose.dev.yml --env-file .env.development logs -f webapp; \
-	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q webapp 2>/dev/null | grep -q .; then \
-		docker-compose -f docker-compose.prod.yml --env-file .env.production logs -f webapp; \
+	@if docker compose -f docker compose.dev.yml --env-file .env.development ps -q webapp 2>/dev/null | grep -q .; then \
+		docker compose -f docker compose.dev.yml --env-file .env.development logs -f webapp; \
+	elif docker compose -f docker compose.prod.yml --env-file .env.production ps -q webapp 2>/dev/null | grep -q .; then \
+		docker compose -f docker compose.prod.yml --env-file .env.production logs -f webapp; \
 	else \
 		echo "⚠️  Webapp container not found. Start services with 'make up-dev' or 'make up-prod'"; \
 	fi
 
 logs-backend:
-	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q rest-api 2>/dev/null | grep -q .; then \
-		docker-compose -f docker-compose.dev.yml --env-file .env.development logs -f rest-api hocuspocus-server hocuspocus-worker; \
-	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q rest-api 2>/dev/null | grep -q .; then \
-		docker-compose -f docker-compose.prod.yml --env-file .env.production logs -f rest-api hocuspocus-server hocuspocus-worker; \
+	@if docker compose -f docker compose.dev.yml --env-file .env.development ps -q rest-api 2>/dev/null | grep -q .; then \
+		docker compose -f docker compose.dev.yml --env-file .env.development logs -f rest-api hocuspocus-server hocuspocus-worker; \
+	elif docker compose -f docker compose.prod.yml --env-file .env.production ps -q rest-api 2>/dev/null | grep -q .; then \
+		docker compose -f docker compose.prod.yml --env-file .env.production logs -f rest-api hocuspocus-server hocuspocus-worker; \
 	else \
 		echo "⚠️  Backend containers not found. Start services with 'make up-dev' or 'make up-prod'"; \
 	fi
 
 restart:
-	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+	@if docker compose -f docker compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
 		echo "🔄 Restarting all services (development)..."; \
-		docker-compose -f docker-compose.dev.yml --env-file .env.development restart; \
+		docker compose -f docker compose.dev.yml --env-file .env.development restart; \
 		echo "✅ All services restarted"; \
-	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
+	elif docker compose -f docker compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
 		echo "🔄 Restarting all services (production)..."; \
-		docker-compose -f docker-compose.prod.yml --env-file .env.production restart; \
+		docker compose -f docker compose.prod.yml --env-file .env.production restart; \
 		echo "✅ All services restarted"; \
 	else \
 		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
@@ -334,19 +334,19 @@ restart:
 # =============================================================================
 
 clean:
-	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+	@if docker compose -f docker compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
 		echo "🧹 Cleaning up (development)..."; \
-		docker-compose -f docker-compose.dev.yml --env-file .env.development down -v; \
+		docker compose -f docker compose.dev.yml --env-file .env.development down -v; \
 		docker rmi docsplus-webapp:dev 2>/dev/null || true; \
 		echo "✅ Development cleanup complete"; \
-	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
+	elif docker compose -f docker compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
 		echo "🧹 Cleaning up (production)..."; \
-		docker-compose -f docker-compose.prod.yml --env-file .env.production down -v; \
+		docker compose -f docker compose.prod.yml --env-file .env.production down -v; \
 		docker rmi docsplus-webapp:latest docsplus-hocuspocus:latest 2>/dev/null || true; \
 		echo "✅ Production cleanup complete"; \
-	elif docker-compose -f docker-compose.local.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+	elif docker compose -f docker compose.local.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
 		echo "🧹 Cleaning up (local)..."; \
-		docker-compose -f docker-compose.local.yml --env-file .env.development down -v; \
+		docker compose -f docker compose.local.yml --env-file .env.development down -v; \
 		echo "✅ Local cleanup complete"; \
 	else \
 		echo "🧹 No running containers found. Cleaning up project images..."; \
@@ -361,12 +361,12 @@ clean:
 # =============================================================================
 
 ps:
-	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
-		docker-compose -f docker-compose.dev.yml --env-file .env.development ps; \
-	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
-		docker-compose -f docker-compose.prod.yml --env-file .env.production ps; \
-	elif docker-compose -f docker-compose.local.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
-		docker-compose -f docker-compose.local.yml --env-file .env.development ps; \
+	@if docker compose -f docker compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+		docker compose -f docker compose.dev.yml --env-file .env.development ps; \
+	elif docker compose -f docker compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
+		docker compose -f docker compose.prod.yml --env-file .env.production ps; \
+	elif docker compose -f docker compose.local.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+		docker compose -f docker compose.local.yml --env-file .env.development ps; \
 		echo ""; \
 		echo "💡 Apps are running natively (not shown above)"; \
 	else \
@@ -374,10 +374,10 @@ ps:
 	fi
 
 stats:
-	@if docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
-		docker stats $$(docker-compose -f docker-compose.dev.yml --env-file .env.development ps -q); \
-	elif docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
-		docker stats $$(docker-compose -f docker-compose.prod.yml --env-file .env.production ps -q); \
+	@if docker compose -f docker compose.dev.yml --env-file .env.development ps -q 2>/dev/null | grep -q .; then \
+		docker stats $$(docker compose -f docker compose.dev.yml --env-file .env.development ps -q); \
+	elif docker compose -f docker compose.prod.yml --env-file .env.production ps -q 2>/dev/null | grep -q .; then \
+		docker stats $$(docker compose -f docker compose.prod.yml --env-file .env.production ps -q); \
 	else \
 		echo "⚠️  No running containers found. Start services with 'make up-dev' or 'make up-prod'"; \
 	fi
@@ -414,13 +414,14 @@ deploy-prod:
 		echo "❌ .env.production not found"; \
 		exit 1; \
 	fi
-	@docker-compose -f docker-compose.prod.yml \
-		--env-file .env.production \
-		up -d --build \
-		--scale webapp=2 \
+	@echo "Building images..."
+	@docker compose -f docker-compose.prod.yml --env-file .env.production build
+	@echo "Deploying services (zero-downtime)..."
+	@docker compose -f docker-compose.prod.yml --env-file .env.production up -d \
 		--scale rest-api=2 \
 		--scale hocuspocus-server=2 \
-		--scale hocuspocus-worker=1
+		--scale hocuspocus-worker=1 \
+		--scale webapp=2
 	@echo "✅ Production deployed"
 	@docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}" | head -15
 
@@ -430,7 +431,7 @@ rollback-prod:
 	if [ -n "$$PREV_TAG" ]; then \
 		echo "Rolling back to: $$PREV_TAG"; \
 		sed -i.bak "s/DEPLOY_TAG=.*/DEPLOY_TAG=$$PREV_TAG/" .env.production; \
-		docker-compose -f docker-compose.prod.yml --env-file .env.production up -d; \
+		docker compose -f docker compose.prod.yml --env-file .env.production up -d; \
 		echo "✅ Rollback complete"; \
 	else \
 		echo "❌ No previous version found"; \
