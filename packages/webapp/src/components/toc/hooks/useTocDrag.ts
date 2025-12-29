@@ -8,21 +8,16 @@ import {
   type DragOverEvent,
   type DragEndEvent
 } from '@dnd-kit/core'
-import type { TocItem } from '@types'
+import type { ProseMirrorNode, TocItem } from '@types'
+import type { DropTarget } from '../dnd'
 import {
   flattenTocItems,
   getDescendantIds,
   getDescendantCount,
   calculateProjectedLevel,
-  getPointerPosition
+  findDropTarget
 } from '../dnd'
-
-interface DropTarget {
-  id: string | null
-  position: 'before' | 'after' | null
-  rect: DOMRect | null
-  level: number
-}
+import { useStore } from '../../../stores'
 
 interface DragState {
   activeId: string | null
@@ -38,7 +33,8 @@ const initialDropTarget: DropTarget = {
   id: null,
   position: null,
   rect: null,
-  level: 1
+  level: 1,
+  indicatorY: null
 }
 
 const initialState: DragState = {
@@ -51,194 +47,145 @@ const initialState: DragState = {
   sourceRect: null
 }
 
+const getItemElement = (id: string) =>
+  document.querySelector(`li.toc__item[data-id="${id}"] > a`) as HTMLElement | null
+
 export function useTocDrag(items: TocItem[]) {
   const [state, setState] = useState<DragState>(initialState)
-  const pointerYRef = useRef<number>(0)
-
+  const pointerYRef = useRef(0)
   const flatItems = useMemo(() => flattenTocItems(items), [items])
 
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 5 }
-    })
-  )
+  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }))
 
-  // Track pointer Y during drag and set cursor
+  // Track pointer Y and set grabbing cursor during drag
   useEffect(() => {
     if (!state.activeId) return
 
-    // Set grabbing cursor on body
-    document.body.style.cursor = 'grabbing'
-    document.body.style.userSelect = 'none'
-
-    const handlePointerMove = (e: PointerEvent) => {
-      pointerYRef.current = e.clientY
-    }
-
-    window.addEventListener('pointermove', handlePointerMove)
+    Object.assign(document.body.style, { cursor: 'grabbing', userSelect: 'none' })
+    const onMove = (e: PointerEvent) => (pointerYRef.current = e.clientY)
+    window.addEventListener('pointermove', onMove)
 
     return () => {
-      window.removeEventListener('pointermove', handlePointerMove)
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
+      window.removeEventListener('pointermove', onMove)
+      Object.assign(document.body.style, { cursor: '', userSelect: '' })
     }
   }, [state.activeId])
 
-  const resetState = useCallback(() => {
-    setState(initialState)
-  }, [])
+  const resetState = useCallback(() => setState(initialState), [])
 
   const handleDragStart = useCallback(
     (event: DragStartEvent) => {
-      const activeIdStr = String(event.active.id)
-      const activeItem = flatItems.find((f) => f.id === activeIdStr)
+      const id = String(event.active.id)
+      const active = flatItems.find((f) => f.id === id)
+      if (!active) return
 
-      if (activeItem) {
-        const descendants = getDescendantIds(items, activeIdStr)
-
-        // Capture source element dimensions
-        const sourceElement = document.querySelector(
-          `li.toc__item[data-id="${activeIdStr}"] > a`
-        ) as HTMLElement
-
-        const sourceRect = sourceElement
-          ? { width: sourceElement.offsetWidth, height: sourceElement.offsetHeight }
-          : null
-
-        setState({
-          activeId: activeIdStr,
-          projectedLevel: activeItem.item.level,
-          originalLevel: activeItem.item.level,
-          collapsedIds: new Set(descendants),
-          descendantCount: getDescendantCount(items, activeIdStr),
-          dropTarget: initialDropTarget,
-          sourceRect
-        })
-      }
+      const el = getItemElement(id)
+      setState({
+        activeId: id,
+        projectedLevel: active.item.level,
+        originalLevel: active.item.level,
+        collapsedIds: new Set(getDescendantIds(items, id)),
+        descendantCount: getDescendantCount(items, id),
+        dropTarget: initialDropTarget,
+        sourceRect: el ? { width: el.offsetWidth, height: el.offsetHeight } : null
+      })
     },
     [flatItems, items]
   )
 
   const handleDragMove = useCallback(
     (event: DragMoveEvent) => {
-      const { delta, active } = event
-      const activeItem = flatItems.find((f) => f.id === String(active.id))
-
-      if (activeItem) {
-        const newLevel = calculateProjectedLevel(activeItem.item.level, delta.x)
+      // Update projected level based on horizontal drag
+      const active = flatItems.find((f) => f.id === String(event.active.id))
+      if (active) {
+        const newLevel = calculateProjectedLevel(active.item.level, event.delta.x)
         setState((prev) => ({ ...prev, projectedLevel: newLevel }))
       }
 
-      // Update drop position if we have a target
-      setState((prev) => {
-        if (!prev.dropTarget.id || pointerYRef.current <= 0) return prev
+      const pointerY = pointerYRef.current
+      if (pointerY <= 0) return
 
-        const overElement = document.querySelector(
-          `li.toc__item[data-id="${prev.dropTarget.id}"] > a`
-        ) as HTMLElement
-
-        if (!overElement) return prev
-
-        const rect = overElement.getBoundingClientRect()
-        return {
-          ...prev,
-          dropTarget: {
-            ...prev.dropTarget,
-            rect,
-            position: getPointerPosition(pointerYRef.current, rect)
-          }
-        }
-      })
+      // Find and normalize drop target
+      setState((prev) => ({
+        ...prev,
+        dropTarget: findDropTarget({
+          pointerY,
+          flatItems,
+          activeId: prev.activeId,
+          collapsedIds: prev.collapsedIds,
+          currentDropTarget: prev.dropTarget
+        })
+      }))
     },
     [flatItems]
   )
 
-  const handleDragOver = useCallback(
-    (event: DragOverEvent) => {
-      const { over, active } = event
+  const handleDragOver = useCallback((event: DragOverEvent) => {
+    const { over, active } = event
+    if (!over || over.id === active.id) {
+      setState((prev) => ({ ...prev, dropTarget: initialDropTarget }))
+    }
+  }, [])
 
-      if (!over || over.id === active.id) {
-        setState((prev) => ({ ...prev, dropTarget: initialDropTarget }))
+  const handleDragEnd = useCallback(
+    (event: DragEndEvent) => {
+      const { dropTarget, projectedLevel, originalLevel } = state
+
+      if (!dropTarget.id || !dropTarget.position) {
+        resetState()
         return
       }
 
-      setState((prev) => {
-        if (prev.collapsedIds.has(String(over.id))) {
-          return { ...prev, dropTarget: initialDropTarget }
-        }
+      const activeItem = flatItems.find((f) => f.id === String(event.active.id))
+      const targetItem = flatItems.find((f) => f.id === dropTarget.id)
+      const editor = useStore.getState().settings.editor.instance
 
-        const pointerY = pointerYRef.current || (event.activatorEvent as PointerEvent)?.clientY || 0
+      if (!editor) {
+        resetState()
+        return
+      }
 
-        if (pointerY <= 0) {
-          return { ...prev, dropTarget: initialDropTarget }
-        }
-
-        // Find closest visible item to pointer Y
-        let closestId = String(over.id)
-        let closestRect: DOMRect | null = null
-        let closestDist = Infinity
-
-        for (const item of flatItems) {
-          if (item.id === prev.activeId || prev.collapsedIds.has(item.id)) continue
-
-          const element = document.querySelector(
-            `li.toc__item[data-id="${item.id}"] > a`
-          ) as HTMLElement
-          if (!element) continue
-
-          const rect = element.getBoundingClientRect()
-          const centerY = rect.top + rect.height / 2
-          const dist = Math.abs(pointerY - centerY)
-
-          if (dist < closestDist) {
-            closestDist = dist
-            closestId = item.id
-            closestRect = rect
+      // Find heading node by ID in the document
+      const findHeadingById = (id: string | null | undefined) => {
+        if (!id) return null
+        let result: { start: number; end: number; level: number; node: ProseMirrorNode } | null =
+          null
+        editor.state.doc.descendants((node, pos) => {
+          if (result) return false
+          if (node.type.name === 'heading' && node.attrs.id === id) {
+            result = {
+              start: pos,
+              end: pos + node.nodeSize,
+              level: node.firstChild?.attrs?.level ?? 1,
+              node
+            }
+            return false
           }
-        }
+        })
+        return result
+      }
 
-        if (!closestRect) {
-          return { ...prev, dropTarget: initialDropTarget }
-        }
-
-        const closestItem = flatItems.find((f) => f.id === closestId)
-
-        return {
-          ...prev,
-          dropTarget: {
-            id: closestId,
-            rect: closestRect,
-            position: getPointerPosition(pointerY, closestRect),
-            level: closestItem?.item.level ?? 1
-          }
-        }
+      console.info('[DragEnd]', {
+        dragged: { id: activeItem?.id, text: activeItem?.item.textContent?.slice(0, 30) },
+        target: { id: dropTarget.id, text: targetItem?.item.textContent?.slice(0, 30) },
+        position: dropTarget.position,
+        level: { before: originalLevel, now: projectedLevel },
+        nodes: { dragged: findHeadingById(activeItem?.id), target: findHeadingById(dropTarget.id) }
       })
-    },
-    [flatItems]
-  )
 
-  const handleDragEnd = useCallback(
-    (_event: DragEndEvent) => {
-      // TODO: Implement actual reordering logic here when ready
+      // TODO: Implement reordering using dropTarget.id, dropTarget.position, projectedLevel
       resetState()
     },
-    [resetState]
+    [resetState, state, flatItems]
   )
 
-  const handleDragCancel = useCallback(() => {
-    resetState()
-  }, [resetState])
-
-  const activeItem = state.activeId ? items.find((i) => i.id === state.activeId) : null
+  const handleDragCancel = useCallback(() => resetState(), [resetState])
 
   return {
-    // State
     state,
-    activeItem,
+    activeItem: state.activeId ? items.find((i) => i.id === state.activeId) : null,
     flatItems,
-    // DnD config
     sensors,
-    // Handlers
     handlers: {
       onDragStart: handleDragStart,
       onDragMove: handleDragMove,

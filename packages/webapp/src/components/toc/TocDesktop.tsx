@@ -154,11 +154,11 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
           )}
         </DragOverlay>
 
-        {activeId && dropTarget.id && dropTarget.position && dropTarget.rect && (
+        {activeId && dropTarget.id && dropTarget.indicatorY !== null && dropTarget.rect && (
           <DropIndicatorPortal
-            targetRect={dropTarget.rect}
-            position={dropTarget.position}
-            indentLevel={dropTarget.level - 1}
+            indicatorY={dropTarget.indicatorY}
+            left={dropTarget.rect.left}
+            width={dropTarget.rect.width}
           />
         )}
       </DndContext>

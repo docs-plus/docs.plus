@@ -12,6 +12,17 @@ export interface FlattenedTocItem {
 }
 
 /**
+ * Drop target state
+ */
+export interface DropTarget {
+  id: string | null
+  position: 'before' | 'after' | null
+  rect: DOMRect | null
+  level: number
+  indicatorY: number | null
+}
+
+/**
  * Configuration for level snapping
  */
 export interface SnapConfig {
@@ -27,3 +38,7 @@ export const DEFAULT_SNAP_CONFIG: SnapConfig = {
   minLevel: 1,
   maxLevel: 6
 }
+
+// Hysteresis constants to prevent flickering during drag
+export const TARGET_HYSTERESIS = 10 // px - must be this much closer to switch targets
+export const INDICATOR_Y_HYSTERESIS = 8 // px - don't jump indicator if within this threshold

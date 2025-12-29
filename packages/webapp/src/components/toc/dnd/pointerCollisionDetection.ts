@@ -40,9 +40,17 @@ export const pointerYCollision: CollisionDetection = ({
  */
 export function getPointerPosition(
   pointerY: number,
-  rect: { top: number; height: number }
+  rect: { top: number; height: number },
+  currentPosition?: 'before' | 'after' | null
 ): 'before' | 'after' {
   const middle = rect.top + rect.height / 2
+  const deadZone = 4 // px hysteresis to prevent flickering
+
+  // If we have a current position, require moving past dead zone to switch
+  if (currentPosition) {
+    if (currentPosition === 'before' && pointerY < middle + deadZone) return 'before'
+    if (currentPosition === 'after' && pointerY > middle - deadZone) return 'after'
+  }
+
   return pointerY < middle ? 'before' : 'after'
 }
-
