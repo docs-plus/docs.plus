@@ -336,23 +336,32 @@ Cypress.Commands.add('createIndentHeading', (content) => {
 })
 
 Cypress.Commands.add('createDocument', (doc) => {
-  const documentTitle = doc.documentName
-  const sections = doc.sections
+  // Use fast direct insertion via window._createDocumentFromStructure
+  cy.window().then((win) => {
+    if (typeof win._createDocumentFromStructure === 'function') {
+      // Fast path: direct insertion (no typing simulation)
+      const success = win._createDocumentFromStructure(doc)
+      if (!success) {
+        throw new Error('Failed to create document via _createDocumentFromStructure')
+      }
+    } else {
+      // Fallback: slow path with typing simulation
+      console.warn('_createDocumentFromStructure not available, using slow typing method')
+      const sections = doc.sections
 
-  // Initialize document with title
-  const editor = cy
-    .get('.docy_editor > .tiptap.ProseMirror')
-    .click({ force: true })
-    .realPress(['Meta', 'a', 'Backspace'])
+      cy.get('.docy_editor > .tiptap.ProseMirror')
+        .click({ force: true })
+        .realPress(['Meta', 'a', 'Backspace'])
 
-  // Process each section
-  for (const [index, section] of sections.entries()) {
-    cy.createSection({
-      title: section.title,
-      contents: section.contents ?? [], // Use nullish coalescing for default empty array
-      isFirst: index === 0
-    })
-  }
+      for (const [index, section] of sections.entries()) {
+        cy.createSection({
+          title: section.title,
+          contents: section.contents ?? [],
+          isFirst: index === 0
+        })
+      }
+    }
+  })
 })
 
 Cypress.Commands.add('createSection', (section) => {
@@ -464,9 +473,9 @@ Cypress.Commands.add('getEditor', () => {
 
 Cypress.Commands.add('visitEditor', ({ persist = false, docName, clearDoc = false } = {}) => {
   if (persist && docName) {
-    cy.visit(`http://localhost:3000/editor?localPersistence=${persist}&docName=${docName}`)
+    cy.visit(`http://localhost:3001/editor?localPersistence=${persist}&docName=${docName}`)
   } else {
-    cy.visit(`http://localhost:3000/editor`)
+    cy.visit(`http://localhost:3001/editor`)
   }
   cy.get('.docy_editor > .tiptap.ProseMirror').should('be.visible')
   if (clearDoc) {
@@ -1195,5 +1204,159 @@ Cypress.Commands.add(
 
       return cy.wrap(result)
     })
+  }
+)
+
+// =============================================================================
+// TOC DRAG AND DROP COMMANDS
+// =============================================================================
+
+declare global {
+  namespace Cypress {
+    interface Chainable {
+      /**
+       * Get a TOC item by its heading text
+       * @param headingText - The text content of the heading to find
+       * @example cy.getTocItem('My Heading')
+       */
+      getTocItem(headingText: string): Chainable<JQuery<HTMLElement>>
+
+      /**
+       * Drag a TOC item to a target position with optional level change
+       * @param sourceText - The text of the heading to drag
+       * @param targetText - The text of the target heading
+       * @param options - Drag options including position and level
+       * @example cy.dragTocItem('Source Heading', 'Target Heading', { position: 'after', level: 3 })
+       */
+      dragTocItem(
+        sourceText: string,
+        targetText: string,
+        options?: {
+          position?: 'before' | 'after'
+          level?: number
+        }
+      ): Chainable<void>
+
+      /**
+       * Verify TOC structure matches expected hierarchy
+       * @param expectedStructure - Array of expected TOC items with nesting
+       * @example cy.verifyTocStructure([{ text: 'H1', level: 1, children: [{ text: 'H2', level: 2 }] }])
+       */
+      verifyTocStructure(
+        expectedStructure: Array<{
+          text: string
+          level: number
+          children?: Array<{ text: string; level: number; children?: any[] }>
+        }>
+      ): Chainable<void>
+
+      /**
+       * Wait for TOC to be visible and ready
+       */
+      waitForToc(): Chainable<JQuery<HTMLElement>>
+    }
+  }
+}
+
+/**
+ * Wait for TOC to be visible and ready
+ */
+Cypress.Commands.add('waitForToc', () => {
+  return cy.get('.toc__list', { timeout: 10000 }).should('be.visible')
+})
+
+/**
+ * Get a TOC item by its heading text
+ */
+Cypress.Commands.add('getTocItem', (headingText: string) => {
+  return cy.get('.toc__list').contains('.toc__link', headingText).closest('.toc__item')
+})
+
+/**
+ * Move a TOC item to a target position with optional level change.
+ * Calls the editor directly via window._moveHeading to bypass dnd-kit.
+ */
+Cypress.Commands.add(
+  'dragTocItem',
+  (
+    sourceText: string,
+    targetText: string,
+    options: { position?: 'before' | 'after'; level?: number } = {}
+  ) => {
+    const { position = 'after', level } = options
+
+    // Get source element to find its ID
+    cy.getTocItem(sourceText).then(($source) => {
+      const sourceId = $source.attr('data-id')
+      if (!sourceId) {
+        throw new Error(`Source heading "${sourceText}" does not have data-id attribute`)
+      }
+
+      // Get target element to find its ID
+      cy.getTocItem(targetText).then(($target) => {
+        const targetId = $target.attr('data-id')
+        if (!targetId) {
+          throw new Error(`Target heading "${targetText}" does not have data-id attribute`)
+        }
+
+        // Call the programmatic move function exposed on window
+        cy.window().then((win) => {
+          if (typeof win._moveHeading !== 'function') {
+            throw new Error('window._moveHeading is not available. Make sure editor is loaded.')
+          }
+
+          const success = win._moveHeading(sourceId, targetId, position, level)
+          if (!success) {
+            throw new Error(`Failed to move heading "${sourceText}" to "${targetText}"`)
+          }
+        })
+
+        // Wait for DOM to update
+        cy.wait(300)
+      })
+    })
+  }
+)
+
+/**
+ * Verify TOC structure matches expected hierarchy
+ */
+Cypress.Commands.add(
+  'verifyTocStructure',
+  (
+    expectedStructure: Array<{
+      text: string
+      level: number
+      children?: Array<{ text: string; level: number; children?: any[] }>
+    }>
+  ) => {
+    function verifyItems(items: typeof expectedStructure, parentSelector: string = '.toc__list') {
+      items.forEach((expected, index) => {
+        // Find the item at this level
+        cy.get(parentSelector)
+          .find('> .toc__item')
+          .eq(index)
+          .within(() => {
+            // Verify text content
+            cy.get('> a .toc__link').should('contain.text', expected.text)
+
+            // Verify level attribute
+            cy.root().should('have.attr', 'data-level', String(expected.level))
+
+            // Recursively verify children if present
+            if (expected.children && expected.children.length > 0) {
+              cy.get('> ul.toc__list').should('exist')
+              verifyItems(expected.children, '> ul.toc__list')
+            }
+          })
+      })
+    }
+
+    // Start verification from root
+    cy.get('.toc__list')
+      .first()
+      .within(() => {
+        verifyItems(expectedStructure)
+      })
   }
 )

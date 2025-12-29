@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /**
  * Helper functions for testing document structure
  */
@@ -16,7 +17,6 @@ export function generateDocumentTests(documentStructure, options = {}) {
 
   // Merge provided options with defaults
   const opts = { ...defaultOptions, ...options }
-  console.log('opts', opts)
 
   // We'll still do basic validation first to prevent starting tests with invalid structure
   const validationResult = validateDocumentStructure(documentStructure)
@@ -27,7 +27,7 @@ export function generateDocumentTests(documentStructure, options = {}) {
   describe(`Document: "${documentStructure.documentName}"`, { testIsolation: false }, () => {
     before(() => {
       cy.viewport(1280, 600)
-      cy.visit('http://localhost:3000/editor')
+      cy.visit('http://localhost:3001/editor')
       cy.get('.docy_editor > .tiptap.ProseMirror').should('be.visible')
     })
 
@@ -481,14 +481,13 @@ function buildHeadingStructureRecursive(contents, result, parentLevel, indent) {
       // Add this heading to the result
       result.push(`${indent}H${content.level}: "${content.title}"`)
 
-      // Check if this heading follows the hierarchy rules
+      // Check if this heading follows HN-10 hierarchy rules
+      // Child level must be > parent level (STACK-ATTACH semantics)
       const isValid =
-        parentLevel === 1
-          ? content.level >= 2 && content.level <= 9
-          : content.level === parentLevel + 1
+        parentLevel === 1 ? content.level >= 2 && content.level <= 10 : content.level > parentLevel
 
       if (!isValid) {
-        result[result.length - 1] += ` ⚠️ INVALID: Should be H${parentLevel + 1}`
+        result[result.length - 1] += ` ⚠️ INVALID: Should be > H${parentLevel}`
       }
 
       // Recursively process the heading's contents
@@ -606,17 +605,18 @@ function validateHeadingHierarchy(contents, parentLevel, parentTitle) {
         return { valid: false, error: `Heading "${content.title}" is missing contents array` }
       }
 
-      // Validate heading level - child level must be greater than parent level
-      // The only exception is if parent is level 1 (section), headings can be any level from 2-9
+      // Validate heading level per HN-10 spec (STACK-ATTACH semantics)
+      // Child level must be > parent level (any amount, not just +1)
+      // Valid levels are 2-10 under H1, and anything > parentLevel otherwise
       if (parentLevel === 1) {
-        if (content.level < 2 || content.level > 9) {
+        if (content.level < 2 || content.level > 10) {
           return {
             valid: false,
-            error: `Invalid heading level: "${content.title}" has level ${content.level}, but should be between 2-9 under level 1 parent "${parentTitle}"`
+            error: `Invalid heading level: "${content.title}" has level ${content.level}, but should be between 2-10 under level 1 parent "${parentTitle}"`
           }
         }
       } else {
-        // For all other cases, heading level must be greater than parent level
+        // For all other cases, heading level must be greater than parent level (HN-10 §5.3)
         if (content.level <= parentLevel) {
           return {
             valid: false,

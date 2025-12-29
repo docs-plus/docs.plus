@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { TEST_TITLE, TEST_CONTENT } from '../../support/commands'
 import { section, paragraph, heading } from '../../fixtures/docMaker'
 
@@ -97,7 +98,6 @@ describe('Heading Change Manually', { testIsolation: false }, () => {
     })
 
     // check the Introduction heading is level 4
-    cy.get('.heading').contains('Introduction').parent().should('have.attr', 'level', '4')
     cy.get('.heading')
       .contains('Introduction')
       .closest('.heading')

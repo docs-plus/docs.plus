@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { TEST_CONTENT, TEST_TITLE } from '../../support/commands'
 import {
   heading,
@@ -54,7 +55,7 @@ const DocumentStructure = {
 describe('document creation', { testIsolation: false }, () => {
   before(() => {
     cy.viewport(1280, 1900)
-    cy.visit('http://localhost:3000/editor')
+    cy.visit('http://localhost:3001/editor')
     cy.get('.docy_editor').should('be.visible')
   })
 

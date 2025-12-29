@@ -47,8 +47,9 @@ export const bulletList = (items: any[]) => ({
 })
 
 export const heading = (level: number, title: string, contents: HeadingContent[]) => {
-  if (level < 2) {
-    throw new Error('Heading level must be 2 or greater. Level 1 is not acceptable.')
+  // HN-10: Levels are 1-10, but level 1 is reserved for sections
+  if (level < 2 || level > 10) {
+    throw new Error('Heading level must be between 2-10. Level 1 is reserved for sections.')
   }
 
   if (!title || title.trim() === '') {

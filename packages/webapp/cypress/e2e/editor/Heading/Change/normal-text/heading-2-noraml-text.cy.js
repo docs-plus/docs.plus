@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { TEST_TITLE, TEST_CONTENT } from '../../../../../support/commands'
 import { section, paragraph, heading } from '../../../../../fixtures/docMaker'
 
@@ -72,17 +73,20 @@ const expectedStructureAfterConversion = {
 
 describe('Convert Heading to Normal Text', { testIsolation: false }, () => {
   before(() => {
-    cy.visitEditor({ persist: true, docName: 'heading-to-normal-text-doc' })
+    // Use clearDoc: true to ensure fresh start each run
+    cy.visitEditor({ persist: false, docName: 'heading-to-normal-text-doc', clearDoc: true })
   })
 
   it('should create a complex document with nested headings', () => {
-    // Validate initial document structure
+    // Create the document first
+    cy.createDocument(ComplexDocumentStructure)
+    cy.wait(500) // Wait for DOM to settle
+
+    // Then validate the structure
     cy.validateDocumentStructure(ComplexDocumentStructure).then((result) => {
       expect(result.valid).to.be.true
       expect(result.errors).to.be.undefined
     })
-    // Create the document
-    cy.createDocument(ComplexDocumentStructure)
   })
 
   it('should convert a heading to normal text using keyboard shortcut', () => {
