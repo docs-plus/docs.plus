@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { TEST_TITLE, TEST_CONTENT } from '../../../support/commands'
 import { section, paragraph, heading } from '../../../fixtures/docMaker'
 
@@ -248,7 +249,7 @@ describe('Complex Nested Heading Level Changes', () => {
   }
 
   beforeEach(() => {
-    cy.visitEditor({ persist: true, docName: 'complex-heading-changes-doc' })
+    cy.visitEditor({ persist: false, clearDoc: true, docName: 'complex-heading-changes-doc' })
     cy.createDocument(ComplexDocumentStructure)
     cy.wait(500)
   })

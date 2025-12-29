@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { TEST_TITLE, TEST_CONTENT } from '../../../../../support/commands'
 import {
   section,

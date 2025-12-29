@@ -578,8 +578,8 @@ export function useTocDrag(items: TocItem[]) {
         tr.delete(source.pos, source.end)
         const mappedInsertPos = tr.mapping.map(insertPos)
         tr.insert(mappedInsertPos, nodeToInsert)
-        // Insert extracted children after the main node
-        let afterPos = tr.mapping.map(mappedInsertPos) + nodeToInsert.nodeSize
+        // Insert extracted children after the main node (no re-mapping needed)
+        let afterPos = mappedInsertPos + nodeToInsert.nodeSize
         for (const child of extracted) {
           tr.insert(afterPos, child)
           afterPos += child.nodeSize

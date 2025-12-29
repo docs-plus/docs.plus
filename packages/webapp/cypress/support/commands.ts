@@ -916,7 +916,25 @@ Cypress.Commands.add('createSelection', (options) => {
     selection.removeAllRanges()
     selection.addRange(range)
 
-    return cy.wrap({ startElement, endElement, range })
+    // Sync with TipTap editor selection synchronously
+    const tiptapEditor = (win as any)._editor
+    if (tiptapEditor) {
+      const view = tiptapEditor.view
+      if (view) {
+        view.focus()
+        try {
+          const anchorNode = range.startContainer
+          const focusNode = range.endContainer
+          const anchorPos = view.posAtDOM(anchorNode, range.startOffset)
+          const focusPos = view.posAtDOM(focusNode, range.endOffset)
+          tiptapEditor.commands.setTextSelection({ from: anchorPos, to: focusPos })
+        } catch {
+          // Selection sync failed, continue with DOM selection
+        }
+      }
+    }
+
+    return cy.wrap({ startElement, endElement, range }).wait(100)
   })
 
   function findElement({ editor, section, heading, paragraph }) {

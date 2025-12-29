@@ -11,7 +11,11 @@ import {
   type ViewMutationRecord
 } from '@types'
 import { getNodeState } from '../extentions/helper'
-import { createCopyPastePlugin, createRangeSelectionPlugin } from '../extentions/plugins'
+import {
+  createCopyPastePlugin,
+  createRangeSelectionPlugin,
+  createHierarchyValidationPlugin
+} from '../extentions/plugins'
 import { HeadingAttributes } from '../extentions/types'
 
 const Heading = Node.create({
@@ -274,7 +278,11 @@ const Heading = Node.create({
     })
   },
   addProseMirrorPlugins() {
-    return [createCopyPastePlugin(this.editor), createRangeSelectionPlugin(this.editor)]
+    return [
+      createCopyPastePlugin(this.editor),
+      createRangeSelectionPlugin(this.editor),
+      createHierarchyValidationPlugin()
+    ]
   }
 })
 

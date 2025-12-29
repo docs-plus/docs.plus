@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { TEST_TITLE, TEST_CONTENT } from '../../../../../support/commands'
 import { section, paragraph, heading } from '../../../../../fixtures/docMaker'
 
@@ -219,12 +220,12 @@ function verifyHeadingConversion(headingText, expectedStructure) {
   })
 }
 
-describe('Convert Headings to Text - Complex Cases', { testIsolation: false }, () => {
+describe('Convert Headings to Text - Complex Cases', () => {
   beforeEach(() => {
     // Start fresh for each test to avoid state issues
-    cy.visitEditor({ persist: true, docName: 'heading-to-text-complex-doc' })
+    cy.visitEditor({ persist: false, clearDoc: true, docName: 'heading-to-text-complex-doc' })
     cy.createDocument(complexDocumentStructure)
-    cy.wait(1000)
+    cy.wait(500)
 
     // Verify initial document structure is valid
     cy.validateDocumentStructure(complexDocumentStructure).then((result) => {

@@ -281,7 +281,7 @@ export function moveHeadingById(
       (position === 'before' && source.end === target.pos))
 
   if (isSamePosition) {
-    console.log('[moveHeadingById] No-op, same position')
+    console.info('[moveHeadingById] No-op, same position')
     return true
   }
 
@@ -330,7 +330,8 @@ export function moveHeadingById(
       }
 
       tr.insert(mappedInsertPos, nodeToInsert)
-      let afterPos = tr.mapping.map(mappedInsertPos) + nodeToInsert.nodeSize
+      // No re-mapping needed - position is already mapped
+      let afterPos = mappedInsertPos + nodeToInsert.nodeSize
       for (const child of extracted) {
         tr.insert(afterPos, child)
         afterPos += child.nodeSize
