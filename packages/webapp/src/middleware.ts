@@ -10,6 +10,13 @@ export async function middleware(request: NextRequest) {
   const requestId = crypto.randomUUID()
   const { pathname, searchParams } = request.nextUrl
 
+  // Handle new.docs.plus → create random doc and redirect
+  const hostname = request.headers.get('host') || ''
+  if (hostname.startsWith('new.')) {
+    const randomSlug = (Math.random() + 1).toString(36).substring(2)
+    return NextResponse.redirect(new URL(`https://docs.plus/${randomSlug}`))
+  }
+
   // Handle auth error redirects (from OAuth providers)
   if (searchParams.has('error') && searchParams.has('error_code')) {
     const errorUrl = new URL('/auth/error', request.url)

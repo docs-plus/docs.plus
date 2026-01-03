@@ -379,7 +379,7 @@ services:
     labels:
       - 'traefik.enable=true'
       # Main frontend (docs.plus)
-      - 'traefik.http.routers.webapp.rule=Host(`docs.plus`)'
+      - 'traefik.http.routers.webapp.rule=Host(`docs.plus`) || Host(`new.docs.plus`)'
       - 'traefik.http.routers.webapp.entrypoints=websecure'
       - 'traefik.http.routers.webapp.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.webapp.service=webapp'
