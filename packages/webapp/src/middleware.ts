@@ -10,11 +10,12 @@ export async function middleware(request: NextRequest) {
   const requestId = crypto.randomUUID()
   const { pathname, searchParams } = request.nextUrl
 
-  // Handle new.docs.plus → create random doc and redirect
+  // Handle new.{domain} → create random doc and redirect
   const hostname = request.headers.get('host') || ''
   if (hostname.startsWith('new.')) {
     const randomSlug = (Math.random() + 1).toString(36).substring(2)
-    return NextResponse.redirect(new URL(`https://docs.plus/${randomSlug}`))
+    const mainHost = hostname.replace(/^new\./, '')
+    return NextResponse.redirect(`${request.nextUrl.protocol}//${mainHost}/${randomSlug}`, 307)
   }
 
   // Handle auth error redirects (from OAuth providers)
