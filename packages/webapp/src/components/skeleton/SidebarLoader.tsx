@@ -1,36 +1,47 @@
 const SidebarLoader = () => {
   return (
     <div className="sidebar flex h-full w-[25%] flex-col border-l border-gray-200 bg-base-100">
-      <div className="h-[94px] border-gray-200 p-4">
-        <h2 className="mb-2 text-2xl font-bold text-base-content">Version History</h2>
-        <p className="text-sm font-medium text-base-content/60">Auto versioning enabled</p>
+      {/* Header */}
+      <div className="border-b border-gray-200 p-4">
+        <div className="skeleton h-6 w-36" />
+        <div className="skeleton mt-2 h-3 w-24" />
       </div>
-      <div className="flex-1 overflow-y-auto px-4 pt-4">
-        <div className="flex w-[22%] flex-col space-y-6 px-4">
-          {/* Day groups - create 3 day sections */}
-          {[1, 2, 3].map((day) => (
-            <div key={day} className="space-y-3">
-              {/* Date header */}
-              <div className="skeleton h-5 w-48"></div>
 
-              {/* Hour groups - 2-3 time blocks per day */}
-              {[...Array(Math.floor(Math.random() * 2) + 2)].map((_, hourIndex) => (
-                <div key={hourIndex} className="ml-2 space-y-2">
-                  {/* Hour header */}
-                  <div className="skeleton h-4 w-20"></div>
+      {/* Version list */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Day groups */}
+        {[1, 2, 3].map((day) => (
+          <div key={day} className="border-b border-gray-100">
+            {/* Day header */}
+            <div className="flex items-center justify-between px-4 py-3">
+              <div className="skeleton h-4 w-24" />
+              <div className="skeleton h-4 w-4" />
+            </div>
 
-                  {/* Version entries - 2-4 entries per hour */}
-                  {[...Array(Math.floor(Math.random() * 3) + 2)].map((_, versionIndex) => (
-                    <div key={versionIndex} className="ml-4 space-y-1">
-                      <div className="skeleton h-4 w-32"></div>
-                      <div className="skeleton h-3 w-24 opacity-60"></div>
+            {/* Session items */}
+            <div className="pb-2">
+              {[1, 2].map((session) => (
+                <div key={session} className="flex items-start gap-3 px-4 py-2.5">
+                  {/* Timeline dot */}
+                  <div className="pt-1.5">
+                    <div className="skeleton h-2 w-2 rounded-full" />
+                  </div>
+
+                  {/* Content */}
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <div className="skeleton h-4 w-20" />
+                      {session === 1 && day === 1 && (
+                        <div className="skeleton h-4 w-12 rounded" />
+                      )}
                     </div>
-                  ))}
+                    <div className="skeleton mt-1.5 h-3 w-16" />
+                  </div>
                 </div>
               ))}
             </div>
-          ))}
-        </div>
+          </div>
+        ))}
       </div>
     </div>
   )
