@@ -80,7 +80,7 @@ services:
       --appendonly yes
       --appendfsync everysec
       --maxmemory 4gb
-      --maxmemory-policy allkeys-lru
+      --maxmemory-policy noeviction
       --save ""
       --stop-writes-on-bgsave-error no
       --tcp-backlog 511
@@ -379,7 +379,7 @@ services:
     labels:
       - 'traefik.enable=true'
       # Main frontend (docs.plus)
-      - 'traefik.http.routers.webapp.rule=Host(`docs.plus`) || Host(`new.docs.plus`)'
+      - 'traefik.http.routers.webapp.rule=Host(`docs.plus`) || Host(`new.docs.plus`) || Host(`www.new.docs.plus`)'
       - 'traefik.http.routers.webapp.entrypoints=websecure'
       - 'traefik.http.routers.webapp.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.webapp.service=webapp'
