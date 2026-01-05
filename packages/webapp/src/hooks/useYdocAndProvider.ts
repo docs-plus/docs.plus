@@ -1,8 +1,18 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import * as Y from 'yjs'
 import { HocuspocusProvider } from '@hocuspocus/provider'
-import { debounce } from 'lodash'
 import { useStore } from '@stores'
+
+/**
+ * Provider Status Flow (Single Source of Truth):
+ *
+ * 1. User types → "saving" (changes being sent to server)
+ * 2. Server receives → "synced" (in server memory, visible to other users)
+ * 3. Server persists to DB → "saved" (durably stored, survives restart)
+ *
+ * The server debounces DB writes (10s), but syncs to memory immediately.
+ * We only show "saved" when we get actual confirmation from the server.
+ */
 
 const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
   const {
@@ -13,20 +23,10 @@ const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
   const ydocRef = useRef(new Y.Doc())
   const providerRef = useRef<any>(null)
   const isSyncedRef = useRef(false)
+  const syncedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
-  const { hocuspocusProvider } = useStore((state) => state.settings)
-
-  // Debounced function to set synced state
-  const setSyncedState = useMemo(
-    () =>
-      debounce(() => {
-        if (isSyncedRef.current) {
-          setWorkspaceSetting('providerStatus', 'synced')
-        }
-      }, 500),
-    [setWorkspaceSetting]
-  )
+  const { hocuspocusProvider, providerStatus } = useStore((state) => state.settings)
 
   useEffect(() => {
     if (!documentId) return
@@ -49,6 +49,8 @@ const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
           onSynced: (data) => {
             console.info('++onSynced', data)
             isSyncedRef.current = true
+
+            // Initial sync complete - document loaded from server (already saved)
             setWorkspaceSetting('providerStatus', 'saved')
 
             if (data?.state) setWorkspaceEditorSetting('providerSyncing', false)
@@ -84,12 +86,10 @@ const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
               const data = JSON.parse(payload)
 
               // Listen for save confirmations from server (real DB persistence)
+              // This is the ONLY place where we set "saved" - Single Source of Truth
               if (data.msg === 'document:saved' && data.documentId === documentId) {
                 console.info('📝 Document saved to DB:', data)
                 setWorkspaceSetting('providerStatus', 'saved')
-
-                // Cancel any pending debounced call since we have real server confirmation
-                setSyncedState.cancel()
               }
             } catch {
               // Ignore malformed payloads
@@ -134,7 +134,7 @@ const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
     const ydoc = ydocRef.current
     if (!ydoc) return
 
-    const handleUpdate = (update: Uint8Array, origin: any) => {
+    const handleUpdate = (_update: Uint8Array, origin: any) => {
       // Only track local updates, ignore remote updates from provider
       if (origin === providerRef.current) return
 
@@ -143,20 +143,34 @@ const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
         return
       }
 
+      // Clear any pending timeout
+      if (syncedTimeoutRef.current) {
+        clearTimeout(syncedTimeoutRef.current)
+      }
+
+      // Show "saving" immediately - changes are being sent to server
       setWorkspaceSetting('providerStatus', 'saving')
 
-      // After 500ms of no typing → "synced" (synced to server memory)
-      // Server will send "document:saved" message when actually persisted to DB
-      setSyncedState()
+      // After 300ms of no updates, show "synced" (WebSocket is real-time, ~50-100ms latency)
+      // This gives user feedback that changes are on the server (in memory)
+      // "saved" will come from server when DB write completes (after 10s debounce)
+      syncedTimeoutRef.current = setTimeout(() => {
+        // Only transition if we're still in "saving" state
+        if (providerStatus === 'saving') {
+          setWorkspaceSetting('providerStatus', 'synced')
+        }
+      }, 300)
     }
 
     ydoc.on('update', handleUpdate)
 
     return () => {
       ydoc.off('update', handleUpdate)
-      setSyncedState.cancel() // Cancel pending debounced calls
+      if (syncedTimeoutRef.current) {
+        clearTimeout(syncedTimeoutRef.current)
+      }
     }
-  }, [setSyncedState, setWorkspaceSetting])
+  }, [setWorkspaceSetting, providerStatus])
 
   // Track browser online/offline state
   useEffect(() => {

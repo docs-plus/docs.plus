@@ -8,14 +8,14 @@ const ProviderSyncStatus = () => {
   const statusConfig = {
     saving: {
       icon: <MdSync className="animate-spin" size={18} />,
-      text: 'Saving...',
-      tooltip: 'Saving changes...',
+      text: 'Saving',
+      tooltip: 'Syncing changes to server...',
       className: 'text-gray-500'
     },
     synced: {
       icon: <MdCloudQueue size={18} />,
       text: '',
-      tooltip: 'All changes synced to server and can be seen by other users',
+      tooltip: 'Changes synced to server (visible to collaborators). Saving to database...',
       className: 'text-gray-500'
     },
     saved: {
@@ -39,7 +39,7 @@ const ProviderSyncStatus = () => {
     error: {
       icon: <MdCloudOff size={18} />,
       text: 'Error',
-      tooltip: 'Error syncing changes. Check your connection.',
+      tooltip: 'Connection error. Your changes are saved locally.',
       className: 'text-red-500'
     }
   }
