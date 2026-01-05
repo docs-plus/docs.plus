@@ -92,8 +92,10 @@ export const createDocumentWorker = () => {
         const context = data.context
 
         // Check if this is the first time this document is being saved
+        // IMPORTANT: Order by id DESC to get the LATEST record (id is auto-increment, always reliable)
         const existingDoc = await prisma.documents.findFirst({
           where: { documentId: data.documentName },
+          orderBy: { id: 'desc' },
           select: { id: true, version: true }
         })
         const isFirstCreation = !existingDoc
