@@ -24,7 +24,8 @@ model Documents {
   metadata      DocumentMetadata @relation(fields: [documentId], references: [documentId])
   collaborators DocumentUsers[]
 
-  @@index([documentId, version]) // Allows querying by version
+  @@unique([documentId, version], name: "Documents_documentId_version_unique") // Prevents duplicate versions
+  @@index([documentId, version]) // Allows fast querying by version
 }
 
 model DocumentMetadata {

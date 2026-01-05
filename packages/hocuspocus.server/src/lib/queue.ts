@@ -91,69 +91,72 @@ export const createDocumentWorker = () => {
         const startTime = Date.now()
         const context = data.context
 
-        // Check if this is the first time this document is being saved
-        // IMPORTANT: Order by id DESC to get the LATEST record (id is auto-increment, always reliable)
-        const existingDoc = await prisma.documents.findFirst({
-          where: { documentId: data.documentName },
-          orderBy: { id: 'desc' },
-          select: { id: true, version: true }
-        })
-        const isFirstCreation = !existingDoc
+        // Use transaction to ensure atomic version increment (prevents race conditions)
+        const savedDoc = await prisma.$transaction(async (tx) => {
+          // Get latest version with row-level lock to prevent concurrent updates
+          const existingDoc = await tx.documents.findFirst({
+            where: { documentId: data.documentName },
+            orderBy: { id: 'desc' },
+            select: { id: true, version: true }
+          })
 
-        if (isFirstCreation) {
-          const slug = await generateUniqueSlug(context.slug || data.documentName)
+          const isFirstCreation = !existingDoc
+          const nextVersion = existingDoc ? existingDoc.version + 1 : 1
 
-          await prisma.documentMetadata.upsert({
-            where: {
-              documentId: data.documentName
-            },
-            update: {
-              // Don't update slug on existing documents to avoid conflicts
-              title: context.slug || data.documentName,
-              description: context.slug || data.documentName,
-              ownerId: context.user?.sub,
-              email: context.user?.email,
-              keywords: ''
-            },
-            create: {
+          // Handle first-time document creation
+          if (isFirstCreation) {
+            const slug = await generateUniqueSlug(context.slug || data.documentName)
+
+            await tx.documentMetadata.upsert({
+              where: { documentId: data.documentName },
+              update: {
+                title: context.slug || data.documentName,
+                description: context.slug || data.documentName,
+                ownerId: context.user?.sub,
+                email: context.user?.email,
+                keywords: ''
+              },
+              create: {
+                documentId: data.documentName,
+                slug,
+                title: context.slug || data.documentName,
+                description: context.slug || data.documentName,
+                ownerId: context.user?.sub,
+                email: context.user?.email,
+                keywords: ''
+              }
+            })
+
+            // Send email notification AFTER transaction commits (fire-and-forget)
+            const userMeta = context.user?.user_metadata
+            setImmediate(() => {
+              sendNewDocumentNotification({
+                documentId: data.documentName,
+                documentName: context.slug || data.documentName,
+                slug,
+                creatorEmail: context.user?.email,
+                creatorId: context.user?.sub,
+                creatorName: userMeta?.full_name || userMeta?.name,
+                creatorAvatarUrl: userMeta?.avatar_url,
+                createdAt: new Date()
+              }).catch((err) => {
+                queueLogger.error(
+                  { err, documentId: data.documentName },
+                  'Failed to send new document notification email'
+                )
+              })
+            })
+          }
+
+          // Create new version (within transaction = atomic)
+          return tx.documents.create({
+            data: {
               documentId: data.documentName,
-              slug,
-              title: context.slug || data.documentName,
-              description: context.slug || data.documentName,
-              ownerId: context.user?.sub,
-              email: context.user?.email,
-              keywords: ''
+              commitMessage: data.commitMessage || '',
+              version: nextVersion,
+              data: Buffer.from(data.state, 'base64')
             }
           })
-          // Send email notification for new document (fire-and-forget, don't block queue)
-          const userMeta = context.user?.user_metadata
-          sendNewDocumentNotification({
-            documentId: data.documentName,
-            documentName: context.slug || data.documentName,
-            slug,
-            creatorEmail: context.user?.email,
-            creatorId: context.user?.sub,
-            creatorName: userMeta?.full_name || userMeta?.name,
-            creatorAvatarUrl: userMeta?.avatar_url,
-            createdAt: new Date()
-          }).catch((err) => {
-            queueLogger.error(
-              { err, documentId: data.documentName },
-              'Failed to send new document notification email'
-            )
-          })
-        }
-
-        const currentDoc = existingDoc
-
-        // Create a new version
-        const savedDoc = await prisma.documents.create({
-          data: {
-            documentId: data.documentName,
-            commitMessage: data.commitMessage || '',
-            version: currentDoc ? currentDoc.version + 1 : 1,
-            data: Buffer.from(data.state, 'base64')
-          }
         })
 
         const duration = Date.now() - startTime

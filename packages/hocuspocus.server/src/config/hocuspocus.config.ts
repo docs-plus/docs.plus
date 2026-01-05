@@ -122,19 +122,22 @@ const configureExtensions = () => {
           dbLogger.warn({ err, documentName }, 'Queue unavailable, falling back to direct save')
 
           try {
-            const existingDoc = await prisma.documents.findFirst({
-              where: { documentId: documentName },
-              orderBy: { id: 'desc' },
-              select: { version: true }
-            })
+            // Use transaction for atomic version increment (same as queue worker)
+            await prisma.$transaction(async (tx) => {
+              const existingDoc = await tx.documents.findFirst({
+                where: { documentId: documentName },
+                orderBy: { id: 'desc' },
+                select: { version: true }
+              })
 
-            await prisma.documents.create({
-              data: {
-                documentId: documentName,
-                commitMessage: commitMessage || '',
-                version: existingDoc ? existingDoc.version + 1 : 1,
-                data: Buffer.from(stateBase64, 'base64')
-              }
+              await tx.documents.create({
+                data: {
+                  documentId: documentName,
+                  commitMessage: commitMessage || '',
+                  version: existingDoc ? existingDoc.version + 1 : 1,
+                  data: Buffer.from(stateBase64, 'base64')
+                }
+              })
             })
 
             dbLogger.info({ documentName }, 'Document saved via fallback (direct DB)')
@@ -165,7 +168,8 @@ export default () => {
     name: getServerName(),
     port: parseInt(process.env.HOCUSPOCUS_PORT || '4001', 10),
     extensions: configureExtensions(),
-    debounce: 10_000, // 10 seconds
+    debounce: 10_000, // 10 seconds - wait for user to stop typing
+    maxDebounce: 60_000, // 60 seconds - force save even if user keeps typing (prevents data loss)
 
     async onListen(data: any) {
       healthCheck.onConfigure({ ...data, extensions: configureExtensions() })
