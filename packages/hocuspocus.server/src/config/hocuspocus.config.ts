@@ -107,14 +107,45 @@ const configureExtensions = () => {
         // Create a new Y.Doc to store the updated state
         Y.applyUpdate(ydoc, state)
         const newState = Y.encodeStateAsUpdate(ydoc)
+        const stateBase64 = Buffer.from(newState).toString('base64')
 
-        // Add job to queue (firstCreation is determined in worker by checking DB)
-        await StoreDocumentQueue.add('store-document', {
-          documentName,
-          state: Buffer.from(newState).toString('base64'),
-          context,
-          commitMessage
-        })
+        try {
+          // Primary: Add job to queue for async processing
+          await StoreDocumentQueue.add('store-document', {
+            documentName,
+            state: stateBase64,
+            context,
+            commitMessage
+          })
+        } catch (err) {
+          // Fallback: Direct DB save when queue fails (Redis OOM, connection error)
+          dbLogger.warn({ err, documentName }, 'Queue unavailable, falling back to direct save')
+
+          try {
+            const existingDoc = await prisma.documents.findFirst({
+              where: { documentId: documentName },
+              orderBy: { id: 'desc' },
+              select: { version: true }
+            })
+
+            await prisma.documents.create({
+              data: {
+                documentId: documentName,
+                commitMessage: commitMessage || '',
+                version: existingDoc ? existingDoc.version + 1 : 1,
+                data: Buffer.from(stateBase64, 'base64')
+              }
+            })
+
+            dbLogger.info({ documentName }, 'Document saved via fallback (direct DB)')
+          } catch (dbErr) {
+            dbLogger.error(
+              { err: dbErr, documentName },
+              'Fallback save failed - document may be lost'
+            )
+            throw dbErr
+          }
+        }
       }
     })
   )

@@ -39,16 +39,26 @@ const getRedisConfig = () => {
     keepAlive: parseInt(process.env.REDIS_KEEPALIVE || '30000', 10),
 
     // Retry strategy with exponential backoff
+    // In production: retry forever with capped delay (Redis may restart)
+    // In development: stop after maxRetries to fail fast
     retryStrategy: (times: number) => {
+      const isProduction = process.env.NODE_ENV === 'production'
       const maxRetries = parseInt(process.env.REDIS_MAX_RETRIES || '10', 10)
 
-      if (times > maxRetries) {
-        redisLogger.error({ times }, 'Redis max retries exceeded')
-        return null // Stop retrying
+      // Development: fail fast after max retries
+      if (!isProduction && times > maxRetries) {
+        redisLogger.error({ times }, 'Redis max retries exceeded (dev mode)')
+        return null
       }
 
-      // Exponential backoff: 200ms, 400ms, 800ms, 1600ms, 3200ms, max 5000ms
-      const delay = Math.min(times * 200, 5000)
+      // Production: never give up, but log warnings
+      if (times > maxRetries) {
+        redisLogger.warn({ times }, 'Redis reconnecting (exceeded initial retries, will keep trying)')
+      }
+
+      // Exponential backoff: 200ms, 400ms, 800ms... capped at 10s in prod, 5s in dev
+      const maxDelay = isProduction ? 10000 : 5000
+      const delay = Math.min(times * 200, maxDelay)
       redisLogger.warn({ times, delay: `${delay}ms` }, 'Redis reconnecting...')
       return delay
     },
@@ -67,12 +77,12 @@ const getRedisConfig = () => {
     // TLS for production (if needed)
     tls: process.env.REDIS_TLS === 'true' ? {} : undefined,
 
-    // Reconnect on error
+    // Reconnect on error - include all connection-related errors
     reconnectOnError: (err: Error) => {
-      const targetErrors = ['READONLY', 'ETIMEDOUT', 'ECONNRESET']
+      const targetErrors = ['READONLY', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'Connection is closed']
       if (targetErrors.some((targetError) => err.message.includes(targetError))) {
-        redisLogger.warn({ err }, 'Reconnecting on error')
-        return true // Reconnect
+        redisLogger.warn({ err: err.message }, 'Reconnecting on error')
+        return true
       }
       return false
     }
