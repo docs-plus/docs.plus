@@ -2,9 +2,7 @@
 
 import { Node, mergeAttributes } from '@tiptap/core'
 import { TIPTAP_NODES } from '@types'
-import { createHeadingButtonsPlugin, createTitleButtonsPlugin } from '../extentions/plugins'
 import onHeading from '../extentions/normalText/onHeading'
-import { EditorState } from '@tiptap/pm/state'
 import { Node as ProseMirrorNode, DOMOutputSpec } from '@tiptap/pm/model'
 
 // Helpers
@@ -159,9 +157,6 @@ const HeadingsTitle = Node.create({
         return false
       }
     }
-  },
-  addProseMirrorPlugins() {
-    return [createHeadingButtonsPlugin(this.editor), createTitleButtonsPlugin(this.editor)]
   }
 })
 

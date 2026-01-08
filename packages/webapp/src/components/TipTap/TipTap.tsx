@@ -70,7 +70,7 @@ import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table
 
 import { Indent } from '@docs.plus/extension-indent'
 
-import ChatCommentExtension from './extentions/ChatCommentExtension'
+import { HeadingActionsExtension } from './extentions/HeadingActions'
 import { IOSCaretFix } from './plugins/iosCaretFixPlugin'
 
 import { InlineCode } from '@docs.plus/extension-inline-code'
@@ -194,7 +194,11 @@ const Editor = ({
     Blockquote,
     TextAlign,
     Underline,
-    ...(isMobile ? [] : [ChatCommentExtension]),
+    HeadingActionsExtension.configure({
+      hoverChat: true,
+      selectionChat: !isMobile,
+      headingToggle: true
+    }),
     Hyperlink.configure({
       protocols: ['ftp', 'mailto'],
       hyperlinkOnPaste: false,

@@ -266,14 +266,8 @@ $bg-root: #f8f9fa;
     flex-direction: row-reverse;
     align-items: stretch;
 
-    // &:hover > .title .btnOpenChatBox {
-    //   visibility: visible;
-    // }
-
     .title {
       flex: 1;
-      padding-left: 60px;
-      margin-left: -100px;
       position: relative;
       z-index: 1;
       min-width: 100%;
@@ -334,32 +328,6 @@ $bg-root: #f8f9fa;
     .foldWrapper,
     .contentWrapper {
       width: 100%;
-    }
-
-    .buttonWrapper {
-      display: flex;
-      width: 40px;
-      align-items: center;
-      position: relative;
-      left: -40px;
-      z-index: 2;
-      visibility: hidden;
-      order: 1;
-
-      &:hover {
-        visibility: visible;
-      }
-
-      > .btn_copyLink {
-        margin-left: 14px;
-        color: #ccc;
-        cursor: pointer;
-        display: none;
-
-        &:hover {
-          color: #646cff;
-        }
-      }
     }
 
     .contentWrapper {
