@@ -305,19 +305,6 @@ $bg-root: #f8f9fa;
         &[data-unread-count] {
           visibility: visible;
         }
-        &[data-unread-count]::after {
-          content: attr(data-unread-count);
-          position: absolute;
-          top: -2px;
-          right: -2px;
-          background: red;
-          color: white;
-          border-radius: 50%;
-          font-size: 14px;
-          min-width: 24px;
-          text-align: center;
-          padding: 2px 4px;
-        }
         svg {
           position: relative;
           top: 1px;
