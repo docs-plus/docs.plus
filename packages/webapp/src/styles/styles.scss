@@ -302,9 +302,7 @@ $bg-root: #f8f9fa;
         left: calc(100% + 16px);
         top: calc(50%);
         transform: translateY(-50%);
-        &[data-unread-count] {
-          visibility: visible;
-        }
+
         svg {
           position: relative;
           top: 1px;

@@ -23,6 +23,7 @@
 }
 
 .title {
+  // Base positioning (always)
   .ha-wrap.has-selection > .ha-group {
     position: absolute;
     right: -3.9rem;
@@ -30,12 +31,17 @@
     transform: translateY(-50%);
     z-index: 10;
 
+    // Default: hide chat until “open” state
     .ha-chat-btn {
       display: none;
     }
   }
 
-  &:hover .ha-wrap.has-selection > .ha-group {
+  // “Open” state:
+  // - on hover
+  // - OR when unread count exists on the group
+  &:hover .ha-wrap.has-selection > .ha-group,
+  .ha-wrap.has-selection > .ha-group[data-unread-count]:not([data-unread-count='']) {
     flex-direction: column;
     align-items: center;
     background-color: var(--bg-docy, #fff);
@@ -46,54 +52,96 @@
     gap: 2px;
     border-radius: 46%;
 
-    .ha-comment-btn {
-      border-radius: 0 0 46% 46% !important;
-    }
-    .ha-chat-btn {
-      border-radius: 46% 46% 0 0 !important;
-    }
-
-    .ha-chat-btn,
-    .ha-comment-btn {
+    // Shared button reset + show buttons
+    :is(.ha-chat-btn, .ha-comment-btn) {
       position: relative !important;
       transform: none !important;
       box-shadow: none;
-      border-radius: 0;
       border: 0;
       top: 0 !important;
       left: 0 !important;
       right: 0 !important;
       display: flex;
     }
+
+    // Keep your “capsule” corners
+    .ha-chat-btn {
+      border-radius: 46% 46% 0 0 !important;
+    }
+
+    .ha-comment-btn {
+      border-radius: 0 0 46% 46% !important;
+    }
+  }
+
+  // Unread-only extras (badge + force visibility)
+  .ha-wrap.has-selection > .ha-group[data-unread-count]:not([data-unread-count='']) {
+    :is(.ha-chat-btn, .ha-comment-btn) {
+      display: flex !important;
+      visibility: visible !important;
+    }
+
+    &::before {
+      content: attr(data-unread-count);
+      position: absolute;
+      z-index: 2;
+
+      top: 0;
+      right: 0;
+      left: 23px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+
+      color: #fff;
+      font-weight: 600;
+      font-size: 12px;
+
+      background-color: red !important;
+      border-radius: var(--radius-field);
+
+      width: max-content;
+      max-width: 20rem;
+      padding-block: 0.25rem;
+      padding-inline: 0.5rem;
+
+      text-align: center;
+      white-space: normal;
+      transform: none;
+      opacity: 1;
+    }
   }
 }
 
-.ha-chat-btn,
-.ha-comment-btn {
-  svg {
-    position: relative;
-    top: 1px;
-  }
+// Icon nudge (cleaner selector)
+:is(.ha-chat-btn, .ha-comment-btn) svg {
+  position: relative;
+  top: 1px;
 }
 
-// Unread message count badge
+// Unread message count badge on the chat button (separate feature)
 .ha-chat-btn[data-unread-count]:not([data-unread-count='']) {
-  // Show count inside button
+  visibility: visible !important;
+
   &::before {
     content: attr(data-unread-count);
     color: #fff;
-    font-weight: semibold;
+    font-weight: 600;
     display: flex;
     align-items: center;
     justify-content: center;
+
     transform: none;
     opacity: 1;
     background-color: red !important;
     font-size: 16px;
-    top: 0px;
-    right: 0px;
+
+    top: 0;
+    right: 0;
     left: 23px;
   }
+
   &::after {
     display: none;
   }

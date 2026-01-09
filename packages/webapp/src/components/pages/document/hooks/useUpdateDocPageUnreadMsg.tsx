@@ -11,6 +11,7 @@ const useUpdateDocPageUnreadMsg = () => {
 
     const selectors = [
       `.wrapBlock[data-id="${channel.id}"] > .title .btnOpenChatBox`,
+      `.wrapBlock[data-id="${channel.id}"] > .title .ha-group`,
       `.wrapBlock[data-id="${channel.id}"] > .buttonWrapper .btn_openChatBox`
     ]
 
