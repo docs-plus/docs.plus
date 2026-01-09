@@ -147,7 +147,7 @@ const deepCrossHierarchyExpectedStructure = {
 
 describe('Convert Cross-Hierarchy Selections to Normal Text', { testIsolation: false }, () => {
   before(() => {
-    cy.visitEditor({ persist: true, docName: 'heading-cross-hierarchy-to-normal' })
+    cy.visitEditor({ persist: false, clearDoc: true })
   })
 
   it('should create a complex document with multiple hierarchies', () => {

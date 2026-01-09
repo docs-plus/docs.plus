@@ -5,7 +5,12 @@ export default defineConfig({
 
   e2e: {
     setupNodeEvents(on, config) {
-      // We'll add the clipboard tasks back after basic config works
+      on('task', {
+        log(message) {
+          console.log(message)
+          return null
+        }
+      })
       return config
     }
   }

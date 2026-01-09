@@ -13,7 +13,9 @@ import {
   getPrevHeadingPos,
   linearizeHeadingNodes,
   transformClipboardToStructured,
-  insertHeadingsByNodeBlocks
+  insertHeadingsByNodeBlocks,
+  adjustHeadingLevelsForContext,
+  getPasteContextLevel
 } from './helper'
 
 /**
@@ -149,18 +151,35 @@ const clipboardPaste = (slice: Slice, editor: Editor): Slice => {
   const aggregatedContent = [
     ...sliceJsonContent,
     ...contentWrapperParagraphs,
-    ...linearizedHeadings.map((node) => node.toJSON())
+    ...linearizedHeadings.map((node) => {
+      // Handle both ProseMirror nodes (with .toJSON) and plain objects
+      return typeof node.toJSON === 'function' ? node.toJSON() : node
+    })
   ]
 
-  // Extract paragraphs and aggrigated headings from the clipboard content
-  const [paragraphs, headings] = transformClipboardToStructured(aggregatedContent, state)
+  // Extract paragraphs and headings from the clipboard content
+  const [paragraphs, rawHeadings] = transformClipboardToStructured(aggregatedContent, state)
 
-  // If there are no headings to paste, return the original slice simple content will be handel in contentWrapper node
-  if (headings.length === 0) {
+  // If there are no headings to paste, return the original slice - simple content handled by contentWrapper
+  if (rawHeadings.length === 0) {
     tr.setMeta(TRANSACTION_META.PASTE, true)
     view.dispatch(tr)
     return slice
   }
+
+  // Get the paste context level to adjust heading levels appropriately
+  // HN-10: Child level must be > parent level
+  const contextLevel = getPasteContextLevel(tr.doc, from)
+
+  // Convert headings to JSON for level adjustment
+  const headingsJson = rawHeadings.map((h) => h.toJSON())
+
+  // Adjust heading levels to fit the paste context
+  const { adjustedHeadings, h1Headings } = adjustHeadingLevelsForContext(
+    headingsJson,
+    contextLevel,
+    state.schema
+  )
 
   // Delete all content from the caret to the end of the document
   tr.delete(from, titleEndPos)
@@ -180,15 +199,26 @@ const clipboardPaste = (slice: Slice, editor: Editor): Slice => {
   }
 
   try {
-    insertHeadingsByNodeBlocks(
-      tr,
-      headings,
-      lastBlockPos,
-      lastH1Inserted,
-      from,
-      titleStartPos,
-      prevHStartPos
-    )
+    // Insert adjusted headings at their appropriate positions
+    if (adjustedHeadings.length > 0) {
+      insertHeadingsByNodeBlocks(
+        tr,
+        adjustedHeadings,
+        lastBlockPos,
+        lastH1Inserted,
+        from,
+        titleStartPos,
+        prevHStartPos
+      )
+    }
+
+    // Insert H1 headings at document root (they become new sections)
+    if (h1Headings.length > 0) {
+      const docEnd = tr.doc.content.size
+      for (const h1 of h1Headings) {
+        tr.insert(docEnd, h1)
+      }
+    }
   } catch (error) {
     console.error('[heading][clipboardPaste]:', error)
     return Slice.empty

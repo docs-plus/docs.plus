@@ -308,6 +308,9 @@ export const getPrevHeadingPos = (
 
 /**
  * Finds the previous block based on the heading level and determines whether it should be nested.
+ *
+ * STACK-ATTACH algorithm: Walk up until you find an ancestor with a STRICTLY LOWER level.
+ * The incoming heading becomes the last child of that ancestor.
  */
 export const findPrevBlock = (
   mapHPost: HeadingBlockInfo[],
@@ -318,19 +321,18 @@ export const findPrevBlock = (
     return { prevBlock: null, shouldNested: false }
   }
 
-  // Find the last block with a level less than or equal to the heading level
-  const prevBlock = mapHPost.findLast((x) => x.le <= headingLevel)
+  // STACK-ATTACH: Find the last block with a level STRICTLY LESS than the heading level
+  // This means headingLevel will become a child of prevBlock
+  const prevBlock = mapHPost.findLast((x) => x.le < headingLevel)
 
   if (!prevBlock) {
-    const shouldNested = mapHPost[0].le < headingLevel
-
-    // If no suitable block found, return the first block
-    return { prevBlock: mapHPost[0], shouldNested }
+    // No parent found with lower level - insert as sibling of first block
+    // This can happen when pasting same-level or shallower headings
+    return { prevBlock: mapHPost[mapHPost.length - 1], shouldNested: false }
   }
 
-  const shouldNested = prevBlock.le < headingLevel
-
-  return { prevBlock, shouldNested }
+  // Found a parent - heading will be nested inside it
+  return { prevBlock, shouldNested: true }
 }
 
 export const extractParagraphsAndHeadings = (
@@ -726,16 +728,49 @@ export const createNodeFromJSON = (node: any, schema: Schema): ProseMirrorNode =
 
 /**
  * Flattens heading nodes into a single array
+ * Handles both ProseMirror nodes (with .child() method) and plain JSON objects
  */
 export const linearizeHeadingNodes = (headings: ProseMirrorNode[]): ProseMirrorNode[] => {
   const flatHeadings: ProseMirrorNode[] = []
 
   headings.forEach((heading) => {
-    const headingTitleNode = heading.content.child(0)
-    const contentWrapperNodes = heading.content.child(1).content
+    // Handle both ProseMirror nodes and plain objects
+    if (!heading || !heading.content) {
+      console.warn('[linearizeHeadingNodes] Invalid heading:', heading)
+      return
+    }
 
-    flatHeadings.push(headingTitleNode)
-    contentWrapperNodes.forEach((node) => flatHeadings.push(node))
+    let headingTitleNode: any
+    let contentWrapperNodes: any
+
+    // Check if it's a ProseMirror node (has .child method) or plain object
+    if (typeof heading.content.child === 'function') {
+      // ProseMirror Fragment
+      headingTitleNode = heading.content.child(0)
+      const contentWrapper = heading.content.child(1)
+      contentWrapperNodes = contentWrapper?.content
+    } else if (Array.isArray(heading.content as any)) {
+      // Plain array (from JSON)
+      headingTitleNode = (heading.content as any)[0]
+      const contentWrapper = (heading.content as any)[1]
+      contentWrapperNodes = contentWrapper?.content
+    } else {
+      console.warn('[linearizeHeadingNodes] Unexpected content structure:', heading.content)
+      return
+    }
+
+    if (headingTitleNode) {
+      flatHeadings.push(headingTitleNode)
+    }
+
+    if (contentWrapperNodes) {
+      // Handle both Fragment.forEach and array iteration
+      if (typeof contentWrapperNodes.forEach === 'function') {
+        contentWrapperNodes.forEach((node: ProseMirrorNode) => flatHeadings.push(node))
+      } else if (Array.isArray(contentWrapperNodes)) {
+        contentWrapperNodes.forEach((node: any) => flatHeadings.push(node))
+      }
+    }
   })
 
   return flatHeadings
@@ -788,6 +823,95 @@ export const transformClipboardToStructured = (
 }
 
 /**
+ * Adjusts heading levels in pasted content to respect the target context.
+ *
+ * HN-10 Rule: Child level must be > parent level.
+ * This function shifts heading levels so they're valid within the paste target.
+ *
+ * @param headingsJson - Array of heading JSON objects to adjust
+ * @param targetContextLevel - The level of the heading that will be the parent (0 for document root)
+ * @param schema - The ProseMirror schema
+ * @returns Object with adjusted headings and any H1s that should go to document root
+ */
+export const adjustHeadingLevelsForContext = (
+  headingsJson: any[],
+  targetContextLevel: number,
+  schema: Schema
+): { adjustedHeadings: ProseMirrorNode[]; h1Headings: ProseMirrorNode[] } => {
+  if (headingsJson.length === 0) {
+    return { adjustedHeadings: [], h1Headings: [] }
+  }
+
+  const adjustedHeadings: ProseMirrorNode[] = []
+  const h1Headings: ProseMirrorNode[] = []
+
+  // Find the minimum level in pasted content
+  const levels = headingsJson.map((h) => {
+    const level = h.content?.[0]?.attrs?.level || h.attrs?.level || 1
+    return level
+  })
+  const minLevel = Math.min(...levels)
+
+  // Calculate offset: we want minLevel to become targetContextLevel + 1
+  // But if targetContextLevel is 0 (doc root), minLevel should become 1
+  const requiredMinLevel = targetContextLevel === 0 ? 1 : targetContextLevel + 1
+  const levelOffset = requiredMinLevel - minLevel
+
+  for (const headingJson of headingsJson) {
+    const originalLevel = headingJson.content?.[0]?.attrs?.level || headingJson.attrs?.level || 1
+    const adjustedLevel = Math.min(10, Math.max(1, originalLevel + levelOffset))
+
+    // H1s after adjustment should go to document root
+    if (adjustedLevel === 1 && targetContextLevel > 0) {
+      // This heading wants to be H1 but we're pasting inside a section
+      // Keep it as H1 and extract to document root
+      h1Headings.push(createNodeFromJSON(headingJson, schema))
+      continue
+    }
+
+    // Create adjusted heading JSON - MUST update BOTH heading.attrs.level AND contentHeading.attrs.level
+    const adjustedJson = {
+      ...headingJson,
+      attrs: { ...headingJson.attrs, level: adjustedLevel }, // FIX: Update parent heading level
+      content: headingJson.content?.map((child: any, index: number) => {
+        if (index === 0 && child.type === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
+          return {
+            ...child,
+            attrs: { ...child.attrs, level: adjustedLevel }
+          }
+        }
+        return child
+      })
+    }
+
+    adjustedHeadings.push(createNodeFromJSON(adjustedJson, schema))
+  }
+
+  return { adjustedHeadings, h1Headings }
+}
+
+/**
+ * Gets the context level for paste operation based on cursor position.
+ * Returns the level of the containing heading, or 0 if at document root.
+ */
+export const getPasteContextLevel = (doc: ProseMirrorNode, pos: number): number => {
+  let contextLevel = 0
+
+  doc.descendants((node, nodePos) => {
+    if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
+      const nodeEndPos = nodePos + node.nodeSize
+      if (pos > nodePos && pos < nodeEndPos) {
+        const level = node.firstChild?.attrs?.level || 1
+        // We're inside this heading's contentWrapper
+        contextLevel = Math.max(contextLevel, level)
+      }
+    }
+  })
+
+  return contextLevel
+}
+
+/**
  * Inserts heading nodes into the document at their appropriate positions
  */
 export const insertHeadingsByNodeBlocks = (
@@ -805,10 +929,11 @@ export const insertHeadingsByNodeBlocks = (
   headings.forEach((heading) => {
     const comingLevel = heading.attrs.level || heading.content.firstChild!.attrs.level
     const startBlock = lastH1Inserted.startBlockPos
+    const nodeAtStart = tr.doc.nodeAt(lastH1Inserted.startBlockPos)
     const endBlock =
       lastH1Inserted.endBlockPos === 0
         ? tr.mapping.map(from)
-        : tr.doc.nodeAt(lastH1Inserted.startBlockPos)!.content.size + lastH1Inserted.startBlockPos
+        : nodeAtStart!.content.size + lastH1Inserted.startBlockPos
 
     // Get the map of headings blocks within the specified range
     mapHPost = getHeadingsBlocksMap(tr.doc, startBlock, endBlock).filter(
@@ -829,8 +954,10 @@ export const insertHeadingsByNodeBlocks = (
       prevHStartPos = prevBlock.startBlockPos
     }
 
+    const insertPos = lastBlockPos - (shouldNested ? 2 : 0)
+
     // Insert the heading at the appropriate position
-    tr.insert(lastBlockPos - (shouldNested ? 2 : 0), heading)
+    tr.insert(insertPos, heading)
 
     // Update the position of the last H1 heading inserted
     if (comingLevel === 1) {

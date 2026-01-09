@@ -336,11 +336,19 @@ Cypress.Commands.add('createIndentHeading', (content) => {
 })
 
 Cypress.Commands.add('createDocument', (doc) => {
+  // Normalize doc to { sections: [...] } format
+  let normalizedDoc = doc
+  if (Array.isArray(doc)) {
+    normalizedDoc = { sections: doc }
+  } else if (!doc.sections) {
+    normalizedDoc = { sections: [doc] }
+  }
+
   // Use fast direct insertion via window._createDocumentFromStructure
   cy.window().then((win) => {
     if (typeof win._createDocumentFromStructure === 'function') {
       // Fast path: direct insertion (no typing simulation)
-      const success = win._createDocumentFromStructure(doc)
+      const success = win._createDocumentFromStructure(normalizedDoc)
       if (!success) {
         throw new Error('Failed to create document via _createDocumentFromStructure')
       }

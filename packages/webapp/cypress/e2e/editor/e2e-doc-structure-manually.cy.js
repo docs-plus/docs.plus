@@ -55,8 +55,7 @@ const DocumentStructure = {
 describe('document creation', { testIsolation: false }, () => {
   before(() => {
     cy.viewport(1280, 1900)
-    cy.visit('http://localhost:3001/editor')
-    cy.get('.docy_editor').should('be.visible')
+    cy.visitEditor({ persist: false, clearDoc: true })
   })
 
   it('Create a document from structure', () => {
@@ -89,11 +88,17 @@ describe('document creation', { testIsolation: false }, () => {
 
     it('Verifies section title and initial content', () => {
       // Verify title
-      firstSection.find('.title').should('contain.text', TEST_TITLE.short)
+      firstSection.find('.title').first().should('contain.text', TEST_TITLE.short)
 
-      // Verify initial paragraphs
-      firstSection.find('.contents > p').eq(0).should('contain.text', TEST_CONTENT.short)
-      firstSection.find('.contents > p').eq(1).should('contain.text', TEST_CONTENT.short)
+      // Verify initial paragraphs (inside contentWrapper > contents)
+      firstSection
+        .find('> .contentWrapper .contents > p')
+        .eq(0)
+        .should('contain.text', TEST_CONTENT.short)
+      firstSection
+        .find('> .contentWrapper .contents > p')
+        .eq(1)
+        .should('contain.text', TEST_CONTENT.short)
     })
 
     it('Verifies ordered list structure', () => {
@@ -110,32 +115,53 @@ describe('document creation', { testIsolation: false }, () => {
 
       // First level-2 heading
       const firstL2Heading = firstSection.find('.heading[level="2"]').eq(0)
-      firstL2Heading.find('.title').should('contain.text', TEST_TITLE.short)
-      firstL2Heading.find('.contents > p').eq(0).should('contain.text', TEST_CONTENT.medium)
-      firstL2Heading.find('.contents > p').eq(1).should('contain.text', TEST_CONTENT.short)
+      firstL2Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
+      firstL2Heading
+        .find('> .contentWrapper .contents > p')
+        .eq(0)
+        .should('contain.text', TEST_CONTENT.medium)
+      firstL2Heading
+        .find('> .contentWrapper .contents > p')
+        .eq(1)
+        .should('contain.text', TEST_CONTENT.short)
 
       const l3Heading = firstL2Heading.find('.heading[level="3"]')
       // Verify nested level-3 heading in first level-2 heading
       l3Heading.should('have.length', 1)
-      l3Heading.find('.title').should('contain.text', TEST_TITLE.short)
-      l3Heading.find('.contents > p').first().should('contain.text', TEST_CONTENT.short)
+      l3Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
+      l3Heading
+        .find('> .contentWrapper .contents > p')
+        .first()
+        .should('contain.text', TEST_CONTENT.short)
 
       // Verify level-4 heading inside level-3
       const l4Heading = l3Heading.find('.heading[level="4"]')
       l4Heading.should('have.length', 1)
-      l4Heading.find('.title').should('contain.text', TEST_TITLE.short)
-      l4Heading.find('.contents > p').first().should('contain.text', TEST_CONTENT.short)
+      l4Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
+      l4Heading
+        .find('> .contentWrapper .contents > p')
+        .first()
+        .should('contain.text', TEST_CONTENT.short)
 
       // Second level-2 heading
       const secondL2Heading = firstSection.find('.heading[level="2"]').eq(1)
-      secondL2Heading.find('.title').should('contain.text', TEST_TITLE.short)
-      secondL2Heading.find('.contents > p').first().should('contain.text', TEST_CONTENT.medium)
+      secondL2Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
+      secondL2Heading
+        .find('> .contentWrapper .contents > p')
+        .first()
+        .should('contain.text', TEST_CONTENT.medium)
 
       // Third level-2 heading
       const thirdL2Heading = firstSection.find('.heading[level="2"]').eq(2)
-      thirdL2Heading.find('.title').should('contain.text', TEST_TITLE.short)
-      thirdL2Heading.find('.contents > p').eq(0).should('contain.text', TEST_CONTENT.medium)
-      thirdL2Heading.find('.contents > p').eq(1).should('contain.text', TEST_CONTENT.short)
+      thirdL2Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
+      thirdL2Heading
+        .find('> .contentWrapper .contents > p')
+        .eq(0)
+        .should('contain.text', TEST_CONTENT.medium)
+      thirdL2Heading
+        .find('> .contentWrapper .contents > p')
+        .eq(1)
+        .should('contain.text', TEST_CONTENT.short)
     })
   })
 
@@ -147,22 +173,34 @@ describe('document creation', { testIsolation: false }, () => {
     })
 
     it('Verifies section title and content', () => {
-      secondSection.find('.title').should('contain.text', TEST_TITLE.medium)
-      secondSection.find('.contents > p').eq(0).should('contain.text', TEST_CONTENT.medium)
-      secondSection.find('.contents > p').eq(1).should('contain.text', TEST_CONTENT.short)
+      secondSection.find('.title').first().should('contain.text', TEST_TITLE.medium)
+      secondSection
+        .find('> .contentWrapper .contents > p')
+        .eq(0)
+        .should('contain.text', TEST_CONTENT.medium)
+      secondSection
+        .find('> .contentWrapper .contents > p')
+        .eq(1)
+        .should('contain.text', TEST_CONTENT.short)
     })
 
     it('Verifies level-3 heading and its nested content', () => {
       const l3Heading = secondSection.find('.heading[level="3"]')
       l3Heading.should('have.length', 1)
-      l3Heading.find('.title').should('contain.text', TEST_TITLE.short)
-      l3Heading.find('.contents > p').first().should('contain.text', TEST_CONTENT.short)
+      l3Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
+      l3Heading
+        .find('> .contentWrapper .contents > p')
+        .first()
+        .should('contain.text', TEST_CONTENT.short)
 
       // Verify level-4 heading inside level-3
       const l4Heading = l3Heading.find('.heading[level="4"]')
       l4Heading.should('have.length', 1)
-      l4Heading.find('.title').should('contain.text', TEST_TITLE.short)
-      l4Heading.find('.contents > p').first().should('contain.text', TEST_CONTENT.short)
+      l4Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
+      l4Heading
+        .find('> .contentWrapper .contents > p')
+        .first()
+        .should('contain.text', TEST_CONTENT.short)
     })
   })
 
@@ -174,16 +212,25 @@ describe('document creation', { testIsolation: false }, () => {
     })
 
     it('Verifies section title and content', () => {
-      thirdSection.find('.title').should('contain.text', TEST_TITLE.short)
-      thirdSection.find('.contents > p').eq(0).should('contain.text', TEST_CONTENT.medium)
-      thirdSection.find('.contents > p').eq(1).should('contain.text', TEST_CONTENT.short)
+      thirdSection.find('.title').first().should('contain.text', TEST_TITLE.short)
+      thirdSection
+        .find('> .contentWrapper .contents > p')
+        .eq(0)
+        .should('contain.text', TEST_CONTENT.medium)
+      thirdSection
+        .find('> .contentWrapper .contents > p')
+        .eq(1)
+        .should('contain.text', TEST_CONTENT.short)
     })
 
     it('Verifies level-8 heading and its content', () => {
       const l8Heading = thirdSection.find('.heading[level="8"]')
       l8Heading.should('have.length', 1)
-      l8Heading.find('.title').should('contain.text', TEST_TITLE.short)
-      l8Heading.find('.contents > p').first().should('contain.text', TEST_CONTENT.short)
+      l8Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
+      l8Heading
+        .find('> .contentWrapper .contents > p')
+        .first()
+        .should('contain.text', TEST_CONTENT.short)
     })
 
     it('Verifies nested bullet list structure', () => {
