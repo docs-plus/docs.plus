@@ -86,6 +86,7 @@ registerDocumentValidator()
 type SelectionLevel = 'element' | 'parent' | 'section' | 'heading' | 'list' | 'document'
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Cypress {
     interface Chainable {
       clearEditor(title?: string, sentencesCount?: number): Chainable<Element>
@@ -180,6 +181,27 @@ declare global {
         throwOnError: boolean
         logResults: boolean
       }): Chainable<{ valid: boolean; errors: string[]; structure: any[] }>
+
+      // Schema validators (from schemaValidator.js)
+      validateDocumentSchema(): Chainable<{
+        valid: boolean
+        errors: string[]
+        errorCount?: number
+        skipped?: boolean
+      }>
+      assertValidSchema(): Chainable<void>
+      logDocumentStructure(): Chainable<void>
+
+      // DOM Schema validators (from domSchemaValidator.js)
+      validateDOMSchema(): Chainable<{
+        valid: boolean
+        errors: string[]
+        errorCount: number
+        structure: any[]
+      }>
+      assertValidDOMSchema(): Chainable<void>
+      logDOMStructure(): Chainable<void>
+      assertFullSchemaValid(): Chainable<void>
 
       createSelection(options: {
         editorSelector?: string
@@ -1238,6 +1260,7 @@ Cypress.Commands.add(
 // =============================================================================
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Cypress {
     interface Chainable {
       /**

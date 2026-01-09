@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 import { LoremIpsum } from 'lorem-ipsum'
 
 // Create singleton instance with configuration

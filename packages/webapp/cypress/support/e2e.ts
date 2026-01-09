@@ -59,8 +59,10 @@ afterEach(function () {
         pmResult.errors.forEach((err) => cy.log(`   ${err}`))
 
         // STRICT: Fail the test
-        expect(pmResult.valid, `ProseMirror Schema invalid:\n${pmResult.errors.join('\n')}`).to.be
-          .true
+        expect(
+          pmResult.valid,
+          `ProseMirror Schema invalid:\n${pmResult.errors.join('\n')}`
+        ).to.equal(true)
       }
     })
 
@@ -78,7 +80,9 @@ afterEach(function () {
         })
 
         // STRICT: Fail the test
-        expect(domResult.valid, `DOM Schema invalid:\n${domResult.errors.join('\n')}`).to.be.true
+        expect(domResult.valid, `DOM Schema invalid:\n${domResult.errors.join('\n')}`).to.equal(
+          true
+        )
       }
     })
   })
