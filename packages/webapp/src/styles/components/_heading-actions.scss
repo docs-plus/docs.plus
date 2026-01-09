@@ -75,3 +75,22 @@
     top: 1px;
   }
 }
+
+// Unread message count badge
+.ha-chat-btn[data-unread-count]:not([data-unread-count='']) {
+  // Hide the chat icon when showing count
+  .chatLeft {
+    display: none;
+  }
+
+  // Show count inside button
+  &::before {
+    content: attr(data-unread-count);
+    color: #fff;
+    font-weight: 600;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
