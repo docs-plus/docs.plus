@@ -77,8 +77,11 @@ html.m_mobile #__next {
     --category-nav-display: none;
   }
 
-  .btnOpenChatBox {
-    display: none;
+  // Hide the grouped buttons and comment button on mobile - only show single chat button
+  .ha-wrap {
+    .ha-group {
+      display: none !important;
+    }
   }
 
   // Editor is the ONLY scrollable element - prevents iOS keyboard glitch
@@ -150,18 +153,88 @@ html.m_mobile #__next {
     }
 
     .title {
-      padding-right: 50px;
+      padding-right: 70px;
       position: relative;
 
-      // iOS Safari fix: position button absolutely to not interfere with text caret
-      .btnOpenChatBox {
+      .ha-wrap {
         position: absolute !important;
         right: 0;
         top: 50%;
         transform: translateY(-50%);
-        // Remove from text flow so iOS Safari can position caret correctly
-        float: none !important;
-        display: flex !important;
+
+        .ha-single.btnOpenChatBox {
+          // Force visibility - override desktop hidden styles
+          display: flex !important;
+          visibility: visible !important;
+          opacity: 1 !important;
+
+          // Reset positioning - override desktop absolute positioning
+          position: absolute !important;
+          right: -12px !important;
+          left: auto !important;
+          top: auto !important;
+          transform: none !important;
+
+          // Pill style base
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          padding: 4px 6px 4px 10px;
+          min-width: auto;
+          width: auto;
+          height: 28px;
+          min-height: 28px !important;
+          background-color: var(--bg-docy, #2778ff);
+          border-radius: 8px 0 0 8px !important;
+          border: none;
+          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+
+          // Override size classes
+          &.size-12 {
+            width: auto;
+            height: 28px;
+          }
+
+          svg.chatLeft {
+            width: 16px;
+            height: 16px;
+            flex-shrink: 0;
+          }
+
+          // Hide desktop badge pseudo-elements
+          &::after {
+            display: none !important;
+          }
+
+          // Default: just show chat icon (no count)
+          &::before {
+            display: none !important;
+          }
+
+          &[data-unread-count]:not([data-unread-count='']) {
+            padding-left: 4px;
+
+            &::before {
+              content: attr(data-unread-count);
+              display: flex !important;
+              align-items: center;
+              justify-content: center;
+              min-width: 20px;
+              height: 20px;
+              padding: 0 4px;
+              background-color: rgba(0, 0, 0, 0.25);
+              border-radius: 6px;
+              color: #fff;
+              font-size: 11px;
+              font-weight: 600;
+              order: -1;
+              position: static !important;
+              top: auto !important;
+              left: auto !important;
+              right: auto !important;
+            }
+          }
+        }
       }
     }
 
