@@ -12,6 +12,7 @@ import Modal from '@components/ui/Modal'
 import TabLayout from '../TabLayout'
 import { useAuthStore, useStore } from '@stores'
 import { LuGithub, LuMessageCircle } from 'react-icons/lu'
+import { FaDiscord } from 'react-icons/fa'
 
 const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
   loading: () => <Loading />
@@ -110,7 +111,7 @@ const HomePage = ({ hostname }: HomePageProps) => {
                 Get everyone on the same page
               </h1>
               <p className="text-sm text-slate-500 sm:text-lg">
-                Free, open-source collaborative documents for teams
+                Free, open-source collaborative documents for teams & communities
               </p>
             </div>
 
@@ -195,18 +196,32 @@ const HomePage = ({ hostname }: HomePageProps) => {
         </main>
 
         {/* Footer */}
-        <footer className="flex shrink-0 flex-wrap items-center justify-center gap-2 px-4 py-3 text-sm text-slate-500 sm:gap-4 sm:py-6">
+        <footer className="flex shrink-0 items-center justify-center gap-3 px-4 py-3 text-sm text-slate-500 sm:gap-4 sm:py-6">
+          {/* GitHub group */}
+          <div className="flex items-center gap-2">
+            <a
+              href="https://github.com/docs-plus/docs.plus"
+              className="flex items-center gap-1.5 rounded-full bg-slate-800 px-3 py-1.5 text-xs text-white transition-colors hover:bg-slate-700 sm:px-4 sm:py-2 sm:text-sm">
+              <LuGithub size={16} />
+              <span>GitHub</span>
+            </a>
+            <a
+              href="https://github.com/docs-plus/docs.plus/discussions"
+              className="flex items-center gap-1.5 rounded-full border border-slate-300 px-3 py-1.5 text-xs transition-colors hover:bg-slate-100 sm:px-4 sm:py-2 sm:text-sm">
+              <LuMessageCircle size={16} />
+              <span>Discuss</span>
+            </a>
+          </div>
+
+          {/* Divider */}
+          <div className="h-6 w-px bg-slate-300" />
+
+          {/* Discord */}
           <a
-            href="https://github.com/docs-plus/docs.plus"
-            className="flex items-center gap-1.5 rounded-full bg-slate-800 px-3 py-1.5 text-xs text-white transition-colors hover:bg-slate-700 sm:px-4 sm:py-2 sm:text-sm">
-            <LuGithub size={16} />
-            <span>GitHub</span>
-          </a>
-          <a
-            href="https://github.com/docs-plus/docs.plus/discussions"
-            className="flex items-center gap-1.5 rounded-full border border-slate-300 px-3 py-1.5 text-xs transition-colors hover:bg-slate-100 sm:px-4 sm:py-2 sm:text-sm">
-            <LuMessageCircle size={16} />
-            <span>Discuss</span>
+            href="https://discord.com/invite/25JPG38J59"
+            className="flex items-center gap-1.5 rounded-full bg-[#5865F2] px-3 py-1.5 text-xs text-white transition-colors hover:bg-[#4752C4] sm:px-4 sm:py-2 sm:text-sm">
+            <FaDiscord size={16} />
+            <span>Discord</span>
           </a>
         </footer>
       </div>
