@@ -7,7 +7,7 @@ import React, { useState } from 'react'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { useAuthStore } from '@stores'
-import { MdMenu, MdInsertComment } from 'react-icons/md'
+import { MdMenu, MdNotifications } from 'react-icons/md'
 import ProfilePanel from '@components/pages/panels/profile/ProfilePanel'
 import TabLayout from '@components/pages/TabLayout'
 import SignInPanel from '@components/pages/panels/SignInPanel'
@@ -79,9 +79,12 @@ const NotificationButton = () => {
       className="btn-ghost tooltip tooltip-bottom relative p-2"
       data-tip="Notifications"
       onClick={openNotifications}>
-      <MdInsertComment size={26} className="text-docsy" />
+      <MdNotifications
+        size={26}
+        className={`text-docsy ${unreadCount > 0 ? 'text-docsy' : 'text-docsy/80'}`}
+      />
       {unreadCount > 0 && (
-        <div className="absolute top-[2px] right-[2px] flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+        <div className="absolute top-[2px] right-[2px] flex h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
           {unreadCount}
         </div>
       )}
@@ -124,20 +127,20 @@ const MobilePadTitle = () => {
     <>
       <div className="docTitle sticky top-0 left-0 z-10 h-auto w-full bg-white">
         <div className="relative z-10 flex min-h-12 w-full flex-col items-center border-b border-gray-300 bg-white p-2">
-          <div className="flex w-full flex-row items-center justify-between gap-4">
-            <div className="flex w-[80%] items-center gap-2">
+          <div className="flex w-full flex-row items-center justify-between gap-2">
+            <div className="flex min-w-0 flex-1 items-center gap-2">
               <EditableToggle isEditable={isEditable} />
 
               {isEditable ? (
                 <UndoRedoButtons editor={editor} className="ml-4" />
               ) : (
-                <div className="w-[calc(100%-40px)] overflow-hidden">
+                <div className="min-w-0 flex-1 overflow-hidden">
                   <DocTitle className="truncate text-sm font-medium" />
                 </div>
               )}
             </div>
 
-            <div className="flex w-[20%] items-center justify-end gap-2">
+            <div className="flex shrink-0 items-center gap-1">
               <ReadOnlyIndicator />
               <NotificationButton />
               <UserProfileButton user={user} onProfileClick={() => setProfileModalOpen(true)} />
