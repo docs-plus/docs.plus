@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, KeyboardEvent, ChangeEvent } from 'react'
+import { useState, KeyboardEvent, ChangeEvent } from 'react'
 import { useRouter } from 'next/router'
 import slugify from 'slugify'
 import dynamic from 'next/dynamic'
@@ -33,31 +33,25 @@ const HomePage = ({ hostname }: HomePageProps) => {
   const [isLoading, setIsLoading] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isSignInOpen, setIsSignInOpen] = useState(false)
-  const inputRef = useRef<HTMLInputElement>(null)
 
-  const navigateToDocument = useCallback(
-    (name?: string) => {
-      setIsLoading(true)
-      let docSlug = name || documentName
+  const navigateToDocument = (name?: string) => {
+    setIsLoading(true)
+    let docSlug = name || documentName
 
-      if (!docSlug) {
-        // Generate random slug
-        docSlug = (Math.random() + 1).toString(36).substring(2)
-      }
+    if (!docSlug) {
+      docSlug = (Math.random() + 1).toString(36).substring(2)
+    }
 
-      // Sanitize the slug
-      let sanitizedSlug = slugify(docSlug, { lower: true, strict: true })
+    let sanitizedSlug = slugify(docSlug, { lower: true, strict: true })
 
-      if (sanitizedSlug.length < 3) {
-        sanitizedSlug = sanitizedSlug.padEnd(3, 'x')
-      } else if (sanitizedSlug.length > 30) {
-        sanitizedSlug = sanitizedSlug.substring(0, 30)
-      }
+    if (sanitizedSlug.length < 3) {
+      sanitizedSlug = sanitizedSlug.padEnd(3, 'x')
+    } else if (sanitizedSlug.length > 30) {
+      sanitizedSlug = sanitizedSlug.substring(0, 30)
+    }
 
-      router.push(`/${sanitizedSlug}`)
-    },
-    [documentName, router]
-  )
+    router.push(`/${sanitizedSlug}`)
+  }
 
   const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter' && documentName) {
@@ -69,23 +63,16 @@ const HomePage = ({ hostname }: HomePageProps) => {
     setDocumentName(e.target.value)
   }
 
-  // Scroll input into view when focused (mobile keyboard fix)
-  const handleInputFocus = useCallback(() => {
-    setTimeout(() => {
-      inputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    }, 300)
-  }, [])
-
   return (
     <>
       <HeadSeo />
 
       <div className="flex min-h-[100dvh] flex-col bg-gradient-to-b from-slate-50 to-slate-100">
         {/* Header */}
-        <header className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
+        <header className="flex shrink-0 items-center justify-between px-4 py-2 sm:px-6 sm:py-4">
           <div className="flex items-center gap-2">
-            <DocsPlus size={32} />
-            <span className="text-xl font-bold text-slate-800 sm:text-2xl">docs.plus</span>
+            <DocsPlus size={28} className="sm:size-8" />
+            <span className="text-lg font-bold text-slate-800 sm:text-2xl">docs.plus</span>
           </div>
 
           {isAuthServiceAvailable && (
@@ -100,7 +87,7 @@ const HomePage = ({ hostname }: HomePageProps) => {
                     id={user.id}
                     alt={user.display_name}
                     clickable={false}
-                    className="size-10 rounded-full border-2 border-white shadow-md"
+                    className="size-9 rounded-full border-2 border-white shadow-md sm:size-10"
                   />
                 </button>
               ) : (
@@ -115,40 +102,39 @@ const HomePage = ({ hostname }: HomePageProps) => {
         </header>
 
         {/* Main Content */}
-        <main className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:py-12">
+        <main className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-4 sm:py-12">
           <div className="w-full max-w-2xl">
             {/* Hero Section */}
-            <div className="mb-8 text-center sm:mb-12">
-              <h1 className="mb-3 text-3xl font-bold text-slate-800 sm:text-4xl md:text-5xl">
+            <div className="mb-4 text-center sm:mb-12">
+              <h1 className="mb-2 text-2xl font-bold text-slate-800 sm:mb-3 sm:text-4xl md:text-5xl">
                 Get everyone on the same page
               </h1>
-              <p className="text-base text-slate-500 sm:text-lg">
+              <p className="text-sm text-slate-500 sm:text-lg">
                 Free, open-source collaborative documents for teams
               </p>
             </div>
 
             {/* Action Card */}
-            <div className="rounded-2xl bg-white p-6 shadow-xl shadow-slate-200/50 sm:p-8">
+            <div className="rounded-2xl bg-white p-4 shadow-xl shadow-slate-200/50 sm:p-8">
               {/* Quick Create */}
               <Button
-                className="btn btn-primary btn-block mb-6 h-12 rounded-xl text-base font-semibold"
+                className="btn btn-primary btn-block mb-4 h-11 rounded-xl text-base font-semibold sm:mb-6 sm:h-12"
                 onClick={() => navigateToDocument()}
                 disabled={isLoading}>
                 {isLoading ? <Loading size="sm" /> : 'Create New Document'}
               </Button>
 
               {/* Divider */}
-              <div className="mb-6 flex items-center gap-4">
+              <div className="mb-4 flex items-center gap-3 sm:mb-6 sm:gap-4">
                 <div className="h-px flex-1 bg-slate-200" />
-                <span className="text-sm text-slate-400">or open existing</span>
+                <span className="text-xs text-slate-400 sm:text-sm">or open existing</span>
                 <div className="h-px flex-1 bg-slate-200" />
               </div>
 
               {/* Document Name Input */}
-              <div className="flex flex-col gap-3 sm:flex-row">
+              <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
                 <div className="flex-1">
                   <Input
-                    ref={inputRef}
                     required
                     pattern="[a-z0-9\-]*"
                     minLength={3}
@@ -163,11 +149,10 @@ const HomePage = ({ hostname }: HomePageProps) => {
                     labelPosition="before"
                     onChange={handleInputChange}
                     onKeyDown={handleKeyDown}
-                    onFocus={handleInputFocus}
                   />
                 </div>
                 <Button
-                  className="btn btn-neutral h-12 rounded-xl px-6 sm:h-auto"
+                  className="btn btn-neutral h-11 rounded-xl px-6 sm:h-auto"
                   onClick={() => navigateToDocument()}
                   disabled={isLoading || !documentName}>
                   Open
@@ -176,7 +161,7 @@ const HomePage = ({ hostname }: HomePageProps) => {
             </div>
 
             {/* Info Links */}
-            <div className="mt-8 space-y-2 text-center text-sm text-slate-500 sm:mt-10">
+            <div className="mt-4 space-y-1 text-center text-xs text-slate-500 sm:mt-10 sm:space-y-2 sm:text-sm">
               <p>
                 A{' '}
                 <a
@@ -210,17 +195,17 @@ const HomePage = ({ hostname }: HomePageProps) => {
         </main>
 
         {/* Footer */}
-        <footer className="flex flex-wrap items-center justify-center gap-4 px-4 py-6 text-sm text-slate-500">
+        <footer className="flex shrink-0 flex-wrap items-center justify-center gap-2 px-4 py-3 text-sm text-slate-500 sm:gap-4 sm:py-6">
           <a
             href="https://github.com/docs-plus/docs.plus"
-            className="flex items-center gap-1.5 rounded-full bg-slate-800 px-4 py-2 text-white transition-colors hover:bg-slate-700">
-            <LuGithub size={18} />
-            <span>Star on GitHub</span>
+            className="flex items-center gap-1.5 rounded-full bg-slate-800 px-3 py-1.5 text-xs text-white transition-colors hover:bg-slate-700 sm:px-4 sm:py-2 sm:text-sm">
+            <LuGithub size={16} />
+            <span>GitHub</span>
           </a>
           <a
             href="https://github.com/docs-plus/docs.plus/discussions"
-            className="flex items-center gap-1.5 rounded-full border border-slate-300 px-4 py-2 transition-colors hover:bg-slate-100">
-            <LuMessageCircle size={18} />
+            className="flex items-center gap-1.5 rounded-full border border-slate-300 px-3 py-1.5 text-xs transition-colors hover:bg-slate-100 sm:px-4 sm:py-2 sm:text-sm">
+            <LuMessageCircle size={16} />
             <span>Discuss</span>
           </a>
         </footer>
@@ -241,11 +226,7 @@ const HomePage = ({ hostname }: HomePageProps) => {
 
       {/* Sign In Modal */}
       {isAuthServiceAvailable && !user && (
-        <Modal
-          asAChild={false}
-          id="modal_signin"
-          isOpen={isSignInOpen}
-          setIsOpen={setIsSignInOpen}>
+        <Modal asAChild={false} id="modal_signin" isOpen={isSignInOpen} setIsOpen={setIsSignInOpen}>
           <TabLayout name="sign-in" footer={false} className="w-full p-6 sm:w-[28rem] sm:p-6">
             <SignInPanel />
           </TabLayout>
