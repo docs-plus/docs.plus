@@ -122,41 +122,44 @@ const HomePage = ({ hostname }: HomePageProps) => {
         <main className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-4 sm:py-12">
           <div className="w-full max-w-2xl">
             {/* Hero Section */}
-            <div className="mb-4 text-center sm:mb-12">
-              <h1 className="mb-2 text-2xl font-bold text-slate-800 sm:mb-3 sm:text-4xl md:text-5xl">
+            <div className="mb-3 text-center sm:mb-8">
+              <h1 className="mb-1 text-2xl font-bold text-slate-800 sm:mb-2 sm:text-4xl md:text-5xl">
                 Get everyone on the same page
               </h1>
-              <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm text-slate-500 sm:mt-3 sm:text-lg">
-                <span>Free, open-source collaborative documents for</span>
-                <span className="text-rotate inline-block h-8 overflow-hidden align-middle text-sm font-semibold sm:h-9 sm:text-base">
+              <p className="text-sm text-slate-500 sm:text-base">
+                <span className="hidden sm:inline">
+                  Free, open-source collaborative documents for
+                </span>
+                <span className="sm:hidden">Open-source docs for</span>{' '}
+                <span className="text-rotate inline-block h-6 overflow-hidden align-middle text-sm font-semibold sm:h-7 sm:text-base">
                   <span className="flex flex-col items-center">
-                    <span className="flex h-8 items-center gap-1.5 rounded-full bg-blue-50 px-3 text-blue-600 sm:h-9">
-                      <LuUsers size={15} />
+                    <span className="flex h-6 items-center gap-1 rounded-full bg-blue-50 px-2 text-blue-600 sm:h-7 sm:gap-1.5 sm:px-3">
+                      <LuUsers className="size-3.5 sm:size-4" />
                       teams
                     </span>
-                    <span className="flex h-8 items-center gap-1.5 rounded-full bg-violet-50 px-3 text-violet-600 sm:h-9">
-                      <LuGlobe size={15} />
+                    <span className="flex h-6 items-center gap-1 rounded-full bg-violet-50 px-2 text-violet-600 sm:h-7 sm:gap-1.5 sm:px-3">
+                      <LuGlobe className="size-3.5 sm:size-4" />
                       communities
                     </span>
-                    <span className="flex h-8 items-center gap-1.5 rounded-full bg-emerald-50 px-3 text-emerald-600 sm:h-9">
-                      <LuGraduationCap size={15} />
+                    <span className="flex h-6 items-center gap-1 rounded-full bg-emerald-50 px-2 text-emerald-600 sm:h-7 sm:gap-1.5 sm:px-3">
+                      <LuGraduationCap className="size-3.5 sm:size-4" />
                       classrooms
                     </span>
-                    <span className="flex h-8 items-center gap-1.5 rounded-full bg-amber-50 px-3 text-amber-600 sm:h-9">
-                      <LuRocket size={15} />
+                    <span className="flex h-6 items-center gap-1 rounded-full bg-amber-50 px-2 text-amber-600 sm:h-7 sm:gap-1.5 sm:px-3">
+                      <LuRocket className="size-3.5 sm:size-4" />
                       projects
                     </span>
-                    <span className="flex h-8 items-center gap-1.5 rounded-full bg-rose-50 px-3 text-rose-600 sm:h-9">
-                      <LuCalendar size={15} />
+                    <span className="flex h-6 items-center gap-1 rounded-full bg-rose-50 px-2 text-rose-600 sm:h-7 sm:gap-1.5 sm:px-3">
+                      <LuCalendar className="size-3.5 sm:size-4" />
                       meetups
                     </span>
-                    <span className="flex h-8 items-center gap-1.5 rounded-full bg-teal-50 px-3 text-teal-600 sm:h-9">
-                      <LuBuilding2 size={15} />
+                    <span className="flex h-6 items-center gap-1 rounded-full bg-teal-50 px-2 text-teal-600 sm:h-7 sm:gap-1.5 sm:px-3">
+                      <LuBuilding2 className="size-3.5 sm:size-4" />
                       organizations
                     </span>
                   </span>
                 </span>
-              </div>
+              </p>
             </div>
 
             {/* Action Card */}
