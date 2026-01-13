@@ -1,109 +1,99 @@
-name: "Discord: repo activity"
+name: 'Discord: repo activity'
 
 on:
- push:
-  branches: ["**"]
+  push:
+    branches: ['**']
 
 jobs:
- notify:
-  runs-on: ubuntu-latest
-  steps:
-   - name: Build commit summary (for push)
-     id: build
-     run: |
-      EVENT='${{ toJSON(github.event) }}'
-      COUNT=$(jq -r '.commits | length' <<< "$EVENT")
-      REF=$(jq -r '.ref' <<< "$EVENT" | sed 's|refs/heads/||')
-      COMPARE=$(jq -r '.compare' <<< "$EVENT")
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Build commit summary (for push)
+        id: build
+        run: |
+          EVENT='${{ toJSON(github.event) }}'
+          COUNT=$(jq -r '.commits | length' <<< "$EVENT")
+          REF=$(jq -r '.ref' <<< "$EVENT" | sed 's|refs/heads/||')
+          COMPARE=$(jq -r '.compare' <<< "$EVENT")
 
-      # Check if this is a build trigger commit (skip notification)
-      FIRST_COMMIT_MSG=$(jq -r '.commits[0].message // ""' <<< "$EVENT")
-      SKIP_NOTIFICATION="false"
+          # Check if this is a build trigger commit (skip notification)
+          FIRST_COMMIT_MSG=$(jq -r '.commits[0].message // ""' <<< "$EVENT")
+          SKIP_NOTIFICATION="false"
 
-      # Skip if single commit with "build front back" message
-      if [ "$COUNT" -eq 1 ] && [ "$FIRST_COMMIT_MSG" = "build front back" ]; then
-        SKIP_NOTIFICATION="true"
-        echo "⏭️ Skipping Discord notification (build trigger commit)"
-      fi
-
-      # List every commit with numbered list and clickable commit hash
-      REPO_URL="https://github.com/${{ github.repository }}"
-      COMMITS=$(jq -r --arg repo "$REPO_URL" '.commits | to_entries[] |
-        (1 + .key | tostring) + ". " +
-        (.value.message | gsub("\\r?\\n"; " ")) +
-        " [" + .value.id[0:7] + "](" + $repo + "/commit/" + .value.id + ") by " + .value.author.name + "\n"' <<< "$EVENT")
-
-      {
-        echo "COUNT=$COUNT"
-        echo "REF=$REF"
-        echo "COMPARE=$COMPARE"
-        echo "SKIP_NOTIFICATION=$SKIP_NOTIFICATION"
-        echo 'COMMITS<<EOF'
-        echo "$COMMITS"
-        echo 'EOF'
-      } >> "$GITHUB_ENV"
-
-   - name: Write commits to file
-     if: env.SKIP_NOTIFICATION != 'true'
-     run: |
-      cat << 'COMMITS_EOF' > /tmp/commits.txt
-      ${{ env.COMMITS }}
-      COMMITS_EOF
-
-   - name: Post to Discord (smart split)
-     if: env.SKIP_NOTIFICATION != 'true'
-     run: |
-      HEADER="🚀 **Push Event**
-      📦 Repository: \`${{ github.repository }}\`
-      👤 Author: \`${{ github.actor }}\`
-      🌿 Branch: \`${{ env.REF }}\`
-      📝 Commits: \`${{ env.COUNT }}\`
-      🔗 [View Diff](${{ env.COMPARE }})
-
-      **Commit List:**
-      "
-
-      MAX_LEN=1900  # Leave buffer for safety
-
-      # Split commits into chunks
-      CURRENT_CHUNK=""
-      CHUNK_NUM=1
-
-      while IFS= read -r line || [ -n "$line" ]; do
-        # Skip empty lines
-        [ -z "$line" ] && continue
-
-        TEST_MSG="${HEADER}${CURRENT_CHUNK}${line}"$'\n'
-
-        if [ ${#TEST_MSG} -gt $MAX_LEN ] && [ -n "$CURRENT_CHUNK" ]; then
-          # Send current chunk
-          if [ $CHUNK_NUM -eq 1 ]; then
-            MESSAGE="${HEADER}${CURRENT_CHUNK}"
-          else
-            MESSAGE="${CURRENT_CHUNK}"
+          # Skip if single commit with "build front back" message
+          if [ "$COUNT" -eq 1 ] && [ "$FIRST_COMMIT_MSG" = "build front back" ]; then
+            SKIP_NOTIFICATION="true"
+            echo "⏭️ Skipping Discord notification (build trigger commit)"
           fi
 
-          curl -H "Content-Type: application/json" \
-               -d "{\"content\": $(printf '%s' "$MESSAGE" | jq -Rs .), \"flags\": 4}" \
-               "${{ secrets.DISCORD_WEBHOOK }}"
+          # Write commits directly to file (avoids shell interpolation issues)
+          REPO_URL="https://github.com/${{ github.repository }}"
+          jq -r --arg repo "$REPO_URL" '.commits | to_entries[] |
+            (1 + .key | tostring) + ". " +
+            (.value.message | gsub("\\r?\\n"; " ")) +
+            " [" + .value.id[0:7] + "](" + $repo + "/commit/" + .value.id + ") by " + .value.author.name' <<< "$EVENT" > /tmp/commits.txt
 
-          sleep 1  # Rate limit protection
-          CHUNK_NUM=$((CHUNK_NUM + 1))
-          CURRENT_CHUNK="${line}"$'\n'
-        else
-          CURRENT_CHUNK="${CURRENT_CHUNK}${line}"$'\n'
-        fi
-      done < /tmp/commits.txt
+          {
+            echo "COUNT=$COUNT"
+            echo "REF=$REF"
+            echo "COMPARE=$COMPARE"
+            echo "SKIP_NOTIFICATION=$SKIP_NOTIFICATION"
+          } >> "$GITHUB_ENV"
 
-      # Send final chunk
-      if [ -n "$CURRENT_CHUNK" ]; then
-        if [ $CHUNK_NUM -eq 1 ]; then
-          MESSAGE="${HEADER}${CURRENT_CHUNK}"
-        else
-          MESSAGE="${CURRENT_CHUNK}"
-        fi
+      - name: Post to Discord (smart split)
+        if: env.SKIP_NOTIFICATION != 'true'
+        run: |
+          HEADER="🚀 **Push Event**
+          📦 Repository: \`${{ github.repository }}\`
+          👤 Author: \`${{ github.actor }}\`
+          🌿 Branch: \`${{ env.REF }}\`
+          📝 Commits: \`${{ env.COUNT }}\`
+          🔗 [View Diff](${{ env.COMPARE }})
 
-        curl -H "Content-Type: application/json" \
-             -d "{\"content\": $(printf '%s' "$MESSAGE" | jq -Rs .), \"flags\": 4}" \
-             "${{ secrets.DISCORD_WEBHOOK }}"
-      fi
+          **Commit List:**
+          "
+
+          MAX_LEN=1900  # Leave buffer for safety
+
+          # Split commits into chunks
+          CURRENT_CHUNK=""
+          CHUNK_NUM=1
+
+          while IFS= read -r line || [ -n "$line" ]; do
+            # Skip empty lines
+            [ -z "$line" ] && continue
+
+            TEST_MSG="${HEADER}${CURRENT_CHUNK}${line}"$'\n'
+
+            if [ ${#TEST_MSG} -gt $MAX_LEN ] && [ -n "$CURRENT_CHUNK" ]; then
+              # Send current chunk
+              if [ $CHUNK_NUM -eq 1 ]; then
+                MESSAGE="${HEADER}${CURRENT_CHUNK}"
+              else
+                MESSAGE="${CURRENT_CHUNK}"
+              fi
+
+              curl -H "Content-Type: application/json" \
+                   -d "{\"content\": $(printf '%s' "$MESSAGE" | jq -Rs .), \"flags\": 4}" \
+                   "${{ secrets.DISCORD_WEBHOOK }}"
+
+              sleep 1  # Rate limit protection
+              CHUNK_NUM=$((CHUNK_NUM + 1))
+              CURRENT_CHUNK="${line}"$'\n'
+            else
+              CURRENT_CHUNK="${CURRENT_CHUNK}${line}"$'\n'
+            fi
+          done < /tmp/commits.txt
+
+          # Send final chunk
+          if [ -n "$CURRENT_CHUNK" ]; then
+            if [ $CHUNK_NUM -eq 1 ]; then
+              MESSAGE="${HEADER}${CURRENT_CHUNK}"
+            else
+              MESSAGE="${CURRENT_CHUNK}"
+            fi
+
+            curl -H "Content-Type: application/json" \
+                 -d "{\"content\": $(printf '%s' "$MESSAGE" | jq -Rs .), \"flags\": 4}" \
+                 "${{ secrets.DISCORD_WEBHOOK }}"
+          fi
