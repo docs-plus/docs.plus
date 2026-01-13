@@ -7,6 +7,7 @@ import { DocsPlus } from '@components/icons/Icons'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import Input from '@components/ui/Input'
+import TypingText from '@components/ui/TypingText'
 import Loading from '@components/ui/Loading'
 import Modal from '@components/ui/Modal'
 import TabLayout from '../TabLayout'
@@ -131,34 +132,33 @@ const HomePage = ({ hostname }: HomePageProps) => {
                   Free, open-source collaborative documents for
                 </span>
                 <span className="sm:hidden">Open-source docs for</span>{' '}
-                <span className="text-rotate inline-block h-6 overflow-hidden align-middle text-sm font-semibold sm:h-7 sm:text-base">
-                  <span className="flex flex-col items-center">
-                    <span className="flex h-6 items-center gap-1 rounded-full bg-blue-50 px-2 text-blue-600 sm:h-7 sm:gap-1.5 sm:px-3">
-                      <LuUsers className="size-3.5 sm:size-4" />
-                      teams
-                    </span>
-                    <span className="flex h-6 items-center gap-1 rounded-full bg-violet-50 px-2 text-violet-600 sm:h-7 sm:gap-1.5 sm:px-3">
-                      <LuGlobe className="size-3.5 sm:size-4" />
-                      communities
-                    </span>
-                    <span className="flex h-6 items-center gap-1 rounded-full bg-emerald-50 px-2 text-emerald-600 sm:h-7 sm:gap-1.5 sm:px-3">
-                      <LuGraduationCap className="size-3.5 sm:size-4" />
-                      classrooms
-                    </span>
-                    <span className="flex h-6 items-center gap-1 rounded-full bg-amber-50 px-2 text-amber-600 sm:h-7 sm:gap-1.5 sm:px-3">
-                      <LuRocket className="size-3.5 sm:size-4" />
-                      projects
-                    </span>
-                    <span className="flex h-6 items-center gap-1 rounded-full bg-rose-50 px-2 text-rose-600 sm:h-7 sm:gap-1.5 sm:px-3">
-                      <LuCalendar className="size-3.5 sm:size-4" />
-                      meetups
-                    </span>
-                    <span className="flex h-6 items-center gap-1 rounded-full bg-teal-50 px-2 text-teal-600 sm:h-7 sm:gap-1.5 sm:px-3">
-                      <LuBuilding2 className="size-3.5 sm:size-4" />
-                      organizations
-                    </span>
-                  </span>
-                </span>
+                <TypingText
+                  texts={[
+                    { text: 'teams', icon: <LuUsers size={14} />, className: 'text-blue-600' },
+                    {
+                      text: 'communities',
+                      icon: <LuGlobe size={14} />,
+                      className: 'text-violet-600'
+                    },
+                    {
+                      text: 'classrooms',
+                      icon: <LuGraduationCap size={14} />,
+                      className: 'text-emerald-600'
+                    },
+                    { text: 'projects', icon: <LuRocket size={14} />, className: 'text-amber-600' },
+                    { text: 'meetups', icon: <LuCalendar size={14} />, className: 'text-rose-600' },
+                    {
+                      text: 'organizations',
+                      icon: <LuBuilding2 size={14} />,
+                      className: 'text-teal-600'
+                    }
+                  ]}
+                  className="font-semibold"
+                  minWidth="130px"
+                  typingSpeed={80}
+                  deletingSpeed={40}
+                  delayAfterTyping={2000}
+                />
               </p>
             </div>
 
