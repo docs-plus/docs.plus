@@ -1,9 +1,182 @@
-import DocumentSimpleLoader from '@components/skeleton/DocumentSimpleLoader'
-import DocumentWithPictureLoader from '@components/skeleton/DocumentWithPictureLoader'
-import TableOfcontentLoader from '@components/skeleton/TableOfContentsLoader'
-import ToolbarSkeleton from '@components/skeleton/ToolbarLoader'
 import { useStore } from '@stores'
-import { PadTitleLoader } from './PadTitleLoader'
+
+// Skeleton line component for consistent styling
+const SkeletonLine = ({
+  width = 'w-full',
+  height = 'h-4'
+}: {
+  width?: string
+  height?: string
+}) => <div className={`skeleton rounded ${width} ${height}`} />
+
+// Skeleton for heading with subtext
+const HeadingSkeleton = () => (
+  <div className="mb-6">
+    <SkeletonLine width="w-3/5" height="h-7" />
+    <div className="mt-3 flex gap-4">
+      <SkeletonLine width="w-16" height="h-4" />
+      <SkeletonLine width="w-24" height="h-4" />
+    </div>
+  </div>
+)
+
+// Skeleton for paragraph content
+const ParagraphSkeleton = ({ lines = 5 }: { lines?: number }) => (
+  <div className="mb-6 space-y-3 pl-4">
+    {Array.from({ length: lines }).map((_, i) => (
+      <SkeletonLine key={i} width={i === lines - 1 ? 'w-3/5' : i % 2 === 0 ? 'w-full' : 'w-4/5'} />
+    ))}
+  </div>
+)
+
+// Skeleton for content with image
+const ContentWithImageSkeleton = () => (
+  <div className="mb-6 pl-4">
+    <div className="flex gap-4">
+      <div className="skeleton size-32 shrink-0 rounded-lg" />
+      <div className="flex-1 space-y-3">
+        <SkeletonLine width="w-4/5" />
+        <SkeletonLine width="w-3/5" />
+        <SkeletonLine width="w-4/5" />
+        <SkeletonLine width="w-2/5" />
+      </div>
+    </div>
+  </div>
+)
+
+// Table of contents skeleton - extended for large screens
+const TableOfContentsSkeleton = () => (
+  <div className="space-y-4 p-4">
+    <SkeletonLine width="w-32" height="h-5" />
+    <div className="mt-6 space-y-3">
+      {/* Section 1 */}
+      <SkeletonLine width="w-4/5" />
+      <div className="space-y-2 pl-4">
+        <SkeletonLine width="w-3/4" height="h-3" />
+        <SkeletonLine width="w-3/4" height="h-3" />
+        <SkeletonLine width="w-2/3" height="h-3" />
+      </div>
+      {/* Section 2 */}
+      <SkeletonLine width="w-4/5" />
+      <div className="space-y-2 pl-4">
+        <SkeletonLine width="w-3/4" height="h-3" />
+        <SkeletonLine width="w-2/3" height="h-3" />
+      </div>
+      {/* Section 3 */}
+      <SkeletonLine width="w-3/4" />
+      <div className="space-y-2 pl-4">
+        <SkeletonLine width="w-2/3" height="h-3" />
+        <SkeletonLine width="w-3/4" height="h-3" />
+        <SkeletonLine width="w-1/2" height="h-3" />
+      </div>
+      {/* Section 4 */}
+      <SkeletonLine width="w-4/5" />
+      <div className="space-y-2 pl-4">
+        <SkeletonLine width="w-2/3" height="h-3" />
+        <SkeletonLine width="w-3/4" height="h-3" />
+      </div>
+      {/* Section 5 */}
+      <SkeletonLine width="w-3/5" />
+      <div className="space-y-2 pl-4">
+        <SkeletonLine width="w-3/4" height="h-3" />
+        <SkeletonLine width="w-2/3" height="h-3" />
+        <SkeletonLine width="w-1/2" height="h-3" />
+      </div>
+    </div>
+  </div>
+)
+
+// Toolbar skeleton
+const ToolbarSkeleton = () => (
+  <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-2">
+    <SkeletonLine width="w-24" height="h-6" />
+    <div className="mx-2 h-5 w-px bg-slate-200" />
+    <div className="flex gap-1">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="skeleton size-7 rounded" />
+      ))}
+    </div>
+    <div className="mx-2 h-5 w-px bg-slate-200" />
+    <div className="flex gap-1">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="skeleton size-7 rounded" />
+      ))}
+    </div>
+    <div className="ml-auto flex gap-1">
+      {[1, 2].map((i) => (
+        <div key={i} className="skeleton size-7 rounded" />
+      ))}
+    </div>
+  </div>
+)
+
+// Header skeleton
+const HeaderSkeleton = ({ isMobile }: { isMobile: boolean }) => (
+  <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+    <div className="flex items-center gap-3">
+      {!isMobile && <div className="skeleton size-8 rounded" />}
+      <SkeletonLine width="w-32" height="h-5" />
+    </div>
+    <div className="flex items-center gap-2">
+      {!isMobile && <SkeletonLine width="w-20" height="h-8" />}
+      <div className="skeleton size-9 rounded-full" />
+    </div>
+  </div>
+)
+
+// Document content skeleton - fills viewport on large screens
+const DocumentSkeleton = () => (
+  <div className="mx-auto max-w-3xl px-4 py-6">
+    {/* Section 1 */}
+    <HeadingSkeleton />
+    <ParagraphSkeleton lines={4} />
+
+    {/* Section 2 with image */}
+    <HeadingSkeleton />
+    <ParagraphSkeleton lines={3} />
+    <ContentWithImageSkeleton />
+    <ParagraphSkeleton lines={3} />
+
+    {/* Section 3 */}
+    <HeadingSkeleton />
+    <ParagraphSkeleton lines={5} />
+
+    {/* Section 4 - additional content for large screens */}
+    <HeadingSkeleton />
+    <ParagraphSkeleton lines={4} />
+
+    {/* Section 5 - more content for tall viewports */}
+    <HeadingSkeleton />
+    <ParagraphSkeleton lines={3} />
+    <ContentWithImageSkeleton />
+    <ParagraphSkeleton lines={4} />
+  </div>
+)
+
+// Loading status toast - simple and clean
+const LoadingToast = ({
+  loading,
+  providerSyncing,
+  loadingPage
+}: {
+  loading: boolean
+  providerSyncing: boolean
+  loadingPage: boolean
+}) => {
+  const getMessage = () => {
+    if (loading) return 'Fetching profile data'
+    if (providerSyncing) return 'Syncing document'
+    if (loadingPage) return 'Loading components'
+    return 'Loading'
+  }
+
+  return (
+    <div className="fixed bottom-4 left-4 z-50 flex items-center gap-2 rounded-full bg-slate-800 px-4 py-2 text-sm text-white shadow-lg">
+      <span className="loading loading-spinner loading-sm" />
+      <span>{getMessage()}...</span>
+    </div>
+  )
+}
 
 export const SlugPageLoader = ({
   loading = false,
@@ -14,40 +187,33 @@ export const SlugPageLoader = ({
   providerSyncing?: boolean
   loadingPage?: boolean
 }) => {
-  const {
-    settings: {
-      editor: { isMobile }
-    }
-  } = useStore((state) => state)
-
-  const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
+  const isMobile = useStore((state) => state.settings.editor.isMobile) ?? false
 
   return (
-    <div className={`pad tiptap flex h-full flex-col border-solid ${deviceClass}`}>
-      <div>
-        <PadTitleLoader />
+    <div className="flex h-full min-h-screen flex-col bg-slate-50">
+      {/* Header */}
+      <HeaderSkeleton isMobile={isMobile} />
+
+      {/* Toolbar - desktop only */}
+      {!isMobile && <ToolbarSkeleton />}
+
+      {/* Main content area */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Table of Contents - desktop only */}
+        {!isMobile && (
+          <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white md:block">
+            <TableOfContentsSkeleton />
+          </aside>
+        )}
+
+        {/* Document content */}
+        <main className="flex-1 overflow-y-auto bg-white">
+          <DocumentSkeleton />
+        </main>
       </div>
-      <div className="toolbars bottom-0 z-[9] hidden h-auto w-full bg-white sm:relative md:block">
-        <ToolbarSkeleton />
-      </div>
-      <div className="editor relative flex size-full flex-row-reverse justify-around align-top">
-        <div className="relative my-4 mt-2 flex w-full max-w-full flex-col align-top md:w-[78%]">
-          <div className={'ProseMirror tiptap__editor m-auto pb-4 md:my-4'}>
-            <DocumentSimpleLoader className="heading !h-auto" level="1" />
-            <DocumentWithPictureLoader className="heading !h-auto" level="1" />
-            <DocumentSimpleLoader className="heading !h-auto" level="1" />
-          </div>
-        </div>
-        <div className="tableOfContents hidden h-full max-h-full w-[22%] md:block">
-          <TableOfcontentLoader className="mt-6" />
-        </div>
-      </div>
-      <div className="fixed bottom-4 left-4 flex w-fit items-center rounded-full bg-gray-100 px-3 py-1 text-sm text-gray-700 md:right-4">
-        {loading && <span>Hang tight! Fetching profile data</span>}
-        {!loading && providerSyncing && <span>Hang tight! Provider is syncing</span>}
-        {!loading && !providerSyncing && loadingPage && <span>Hang tight! Loading Components</span>}
-        <span className="loading loading-dots loading-xs mt-2 ml-2"></span>
-      </div>
+
+      {/* Loading toast */}
+      <LoadingToast loading={loading} providerSyncing={providerSyncing} loadingPage={loadingPage} />
     </div>
   )
 }

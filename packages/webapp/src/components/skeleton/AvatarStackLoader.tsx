@@ -4,12 +4,14 @@ type TProps = {
   repeat?: number
 }
 
-const AvatarStackLoader = ({ className, size = 8, repeat = 2 }: TProps) => {
+const AvatarStackLoader = ({ className = '', size = 9, repeat = 2 }: TProps) => {
+  const sizeClass = `size-${size}`
+
   return (
-    <div className={`avatar-group -space-x-5 ${className}`}>
+    <div className={`avatar-group -space-x-4 ${className}`}>
       {Array.from({ length: repeat }).map((_, index) => (
         <div className="avatar" key={index}>
-          <div className={`skeleton h-${size} w-${size} rounded-full`}></div>
+          <div className={`skeleton ${sizeClass} rounded-full`} />
         </div>
       ))}
     </div>

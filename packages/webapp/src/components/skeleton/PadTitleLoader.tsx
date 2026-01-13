@@ -1,11 +1,17 @@
-type Props = {}
-export const PadTitleLoader = ({}: Props) => {
+export const PadTitleLoader = () => {
   return (
-    <div className="docTitle relative z-10 flex min-h-12 w-full flex-row items-center bg-white p-2 py-4 shadow-md md:shadow-none">
-      <div className="skeleton hidden h-10 w-10 md:block"></div>
-      <div className="skeleton ml-4 h-5 w-32"></div>
-      <div className="skeleton ml-auto mr-4 hidden h-8 w-20 md:block"></div>
-      <div className="skeleton ml-auto h-10 w-10 rounded-full md:ml-0"></div>
+    <div className="docTitle flex min-h-14 items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+      {/* Left side - Logo and title */}
+      <div className="flex items-center gap-3">
+        <div className="skeleton hidden size-8 rounded md:block" />
+        <div className="skeleton h-5 w-32 rounded" />
+      </div>
+
+      {/* Right side - Actions */}
+      <div className="flex items-center gap-3">
+        <div className="skeleton hidden h-8 w-20 rounded-lg md:block" />
+        <div className="skeleton size-9 rounded-full" />
+      </div>
     </div>
   )
 }

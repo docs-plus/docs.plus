@@ -11,7 +11,16 @@ import Loading from '@components/ui/Loading'
 import Modal from '@components/ui/Modal'
 import TabLayout from '../TabLayout'
 import { useAuthStore, useStore } from '@stores'
-import { LuGithub, LuMessageCircle } from 'react-icons/lu'
+import {
+  LuGithub,
+  LuMessageCircle,
+  LuUsers,
+  LuGlobe,
+  LuGraduationCap,
+  LuRocket,
+  LuCalendar,
+  LuBuilding2
+} from 'react-icons/lu'
 import { FaDiscord } from 'react-icons/fa'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 
@@ -117,9 +126,37 @@ const HomePage = ({ hostname }: HomePageProps) => {
               <h1 className="mb-2 text-2xl font-bold text-slate-800 sm:mb-3 sm:text-4xl md:text-5xl">
                 Get everyone on the same page
               </h1>
-              <p className="text-sm text-slate-500 sm:text-lg">
-                Free, open-source collaborative documents for teams & communities
-              </p>
+              <div className="mt-2 flex flex-wrap items-center justify-center gap-2 text-sm text-slate-500 sm:mt-3 sm:text-lg">
+                <span>Free, open-source collaborative documents for</span>
+                <span className="text-rotate inline-block h-8 overflow-hidden align-middle text-sm font-semibold sm:h-9 sm:text-base">
+                  <span className="flex flex-col items-center">
+                    <span className="flex h-8 items-center gap-1.5 rounded-full bg-blue-50 px-3 text-blue-600 sm:h-9">
+                      <LuUsers size={15} />
+                      teams
+                    </span>
+                    <span className="flex h-8 items-center gap-1.5 rounded-full bg-violet-50 px-3 text-violet-600 sm:h-9">
+                      <LuGlobe size={15} />
+                      communities
+                    </span>
+                    <span className="flex h-8 items-center gap-1.5 rounded-full bg-emerald-50 px-3 text-emerald-600 sm:h-9">
+                      <LuGraduationCap size={15} />
+                      classrooms
+                    </span>
+                    <span className="flex h-8 items-center gap-1.5 rounded-full bg-amber-50 px-3 text-amber-600 sm:h-9">
+                      <LuRocket size={15} />
+                      projects
+                    </span>
+                    <span className="flex h-8 items-center gap-1.5 rounded-full bg-rose-50 px-3 text-rose-600 sm:h-9">
+                      <LuCalendar size={15} />
+                      meetups
+                    </span>
+                    <span className="flex h-8 items-center gap-1.5 rounded-full bg-teal-50 px-3 text-teal-600 sm:h-9">
+                      <LuBuilding2 size={15} />
+                      organizations
+                    </span>
+                  </span>
+                </span>
+              </div>
             </div>
 
             {/* Action Card */}

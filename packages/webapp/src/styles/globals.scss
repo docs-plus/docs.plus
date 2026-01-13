@@ -945,25 +945,6 @@ ol {
   display: none;
 }
 
-.skeleton {
-  border-radius: var(--rounded-box, 1rem);
-  --tw-bg-opacity: 1;
-  // background-color: var(--fallback-b3, oklch(var(--b3) / var(--tw-bg-opacity)));
-  will-change: background-position;
-  animation: skeleton 1.8s ease-in-out infinite;
-  background-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    transparent 40%,
-    var(--fallback-b1, oklch(var(--b1) / 0.5)) 50%,
-    transparent 60%,
-    transparent 100%
-  );
-  background-size: 200% auto;
-  background-repeat: no-repeat;
-  background-position-x: -50%;
-}
-
 .bg-chatBubble-owner {
   background-color: #a6c5fa;
 }
