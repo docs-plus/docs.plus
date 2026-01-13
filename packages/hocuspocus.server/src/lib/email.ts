@@ -66,10 +66,16 @@ export const sendEmail = async (params: SendEmailParams): Promise<boolean> => {
 
 /**
  * Sends notification email when a new document is created
+ * Only sends in production environment to avoid noise during development
  */
 export const sendNewDocumentNotification = async (
   params: NewDocumentEmailParams
 ): Promise<boolean> => {
+  if (process.env.NODE_ENV !== 'production') {
+    emailLogger.debug('Skipping new document notification (non-production environment)')
+    return false
+  }
+
   const notificationEmails = process.env.NEW_DOCUMENT_NOTIFICATION_EMAILS
 
   if (!notificationEmails) {
