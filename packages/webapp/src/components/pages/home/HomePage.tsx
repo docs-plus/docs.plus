@@ -28,7 +28,7 @@ interface HomePageProps {
 const HomePage = ({ hostname }: HomePageProps) => {
   const router = useRouter()
   const user = useAuthStore((state) => state.profile)
-  const { isAuthServiceAvailable } = useStore((state) => state.settings)
+  const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
 
   const [documentName, setDocumentName] = useState('')
   const [isLoading, setIsLoading] = useState(false)

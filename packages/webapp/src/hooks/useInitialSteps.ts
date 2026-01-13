@@ -20,15 +20,10 @@ export const useInitialSteps = (isMobileInitial: boolean) => {
     // Handle resize - reload page when crossing mobile/desktop breakpoint
     const handleResize = () => {
       const isMobileNow = window.innerWidth <= MOBILE_BREAKPOINT
-      const wasMobile = wasMobileRef.current
 
-      // Reload when crossing the breakpoint to reinitialize mobile/desktop components
-      if (isMobileNow !== wasMobile) {
+      if (isMobileNow !== wasMobileRef.current) {
         window.location.reload()
-        return
       }
-
-      setWorkspaceEditorSetting('isMobile', isMobileNow)
     }
 
     window.addEventListener('resize', handleResize)

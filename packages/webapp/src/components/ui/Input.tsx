@@ -1,6 +1,5 @@
-import { forwardRef, useEffect, useState, InputHTMLAttributes } from 'react'
+import { forwardRef, useId, InputHTMLAttributes } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { randstr } from '@utils/index'
 
 export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'onChange'> {
   /** Label text for the input */
@@ -33,11 +32,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     },
     ref
   ) => {
-    const [id, setId] = useState(_id)
-
-    useEffect(() => {
-      if (!_id) setId(randstr('input-'))
-    }, [_id])
+    const generatedId = useId()
+    const id = _id || generatedId
 
     const containerClasses = twMerge('form-control relative', className)
 
