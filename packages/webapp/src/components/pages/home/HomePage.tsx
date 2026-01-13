@@ -13,6 +13,7 @@ import TabLayout from '../TabLayout'
 import { useAuthStore, useStore } from '@stores'
 import { LuGithub, LuMessageCircle } from 'react-icons/lu'
 import { FaDiscord } from 'react-icons/fa'
+import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 
 const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
   loading: () => <Loading />
@@ -29,11 +30,15 @@ const HomePage = ({ hostname }: HomePageProps) => {
   const router = useRouter()
   const user = useAuthStore((state) => state.profile)
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
+  const keyboardHeight = useStore((state) => state.keyboardHeight)
 
   const [documentName, setDocumentName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [isProfileOpen, setIsProfileOpen] = useState(false)
   const [isSignInOpen, setIsSignInOpen] = useState(false)
+
+  // Initialize keyboard tracking for iOS
+  useVirtualKeyboard()
 
   const navigateToDocument = (name?: string) => {
     setIsLoading(true)
@@ -68,7 +73,9 @@ const HomePage = ({ hostname }: HomePageProps) => {
     <>
       <HeadSeo />
 
-      <div className="flex min-h-[100dvh] flex-col bg-gradient-to-b from-slate-50 to-slate-100">
+      <div
+        className="flex flex-col bg-gradient-to-b from-slate-50 to-slate-100"
+        style={{ minHeight: keyboardHeight > 0 ? `calc(100dvh - ${keyboardHeight}px)` : '100dvh' }}>
         {/* Header */}
         <header className="flex shrink-0 items-center justify-between px-4 py-2 sm:px-6 sm:py-4">
           <div className="flex items-center gap-2">
