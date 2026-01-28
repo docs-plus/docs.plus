@@ -1,91 +1,93 @@
-import { useMemo, useRef, useEffect } from 'react'
 import { useChatStore } from '@stores'
 import { EmptyBookmarkState } from '../components/EmptyBookmarkState'
 import { BookmarkItem } from '../components/BookmarkItem'
 import { BookmarkHeader } from '../components/BookmarkHeader'
-import { LoadingSpinner } from '../components/LoadingSpinner'
+import { BookmarkSkeleton } from '../components/BookmarkSkeleton'
 import { useBookmarkSummary } from '../hooks/useBookmarkSummary'
-import { LoadMoreButton } from '../components/LoadMoreButton'
-import { useBookmarkTabData } from '../hooks/useBookmarkTabData'
-import React from 'react'
+import { useInfiniteBookmarks } from '../hooks/useInfiniteBookmarks'
+import { ScrollArea } from '@components/ui/ScrollArea'
 
 type TBookmarkTab = 'in progress' | 'archive' | 'read'
 
-export const BookmarkPanel = () => {
-  const { loadingBookmarks, bookmarks, bookmarkActiveTab, bookmarkTabs, setBookmarkActiveTab } =
-    useChatStore((state) => state)
+interface BookmarkPanelProps {
+  onClose?: () => void
+}
+
+export const BookmarkPanel = ({ onClose }: BookmarkPanelProps) => {
+  const { bookmarkActiveTab, bookmarkTabs, setBookmarkActiveTab } = useChatStore((state) => state)
 
   useBookmarkSummary()
-  useBookmarkTabData()
 
-  const activeTabBookmarkList = useMemo(() => {
-    return bookmarks.get(bookmarkActiveTab) || []
-  }, [bookmarks, bookmarkActiveTab])
-
-  // Use refs to store references to the radio inputs
-  const radioRefs = useRef<Record<string, HTMLInputElement | null>>({})
-
-  // When active tab changes, click the corresponding radio input
-  useEffect(() => {
-    const activeRadio = radioRefs.current[bookmarkActiveTab]
-    if (activeRadio) {
-      activeRadio.checked = true
-    }
-  }, [bookmarkActiveTab])
-
-  // Set the initial tab on mount
-  useEffect(() => {
-    const activeRadio = radioRefs.current[bookmarkActiveTab]
-    if (activeRadio) {
-      activeRadio.checked = true
-    }
-  }, [])
-
-  const setRadioRef = (label: string) => (el: HTMLInputElement | null) => {
-    radioRefs.current[label] = el
-  }
+  const { bookmarks, isLoading, isLoadingMore, hasMore, sentinelRef } = useInfiniteBookmarks()
 
   return (
-    <div className="w-full min-w-96 p-3 pb-0">
-      <BookmarkHeader />
-      <div className="mt-4">
-        <div className="tabs tabs-lift">
-          {bookmarkTabs.map((tab) => (
-            <React.Fragment key={`tab-group-${tab.label}`}>
-              <input
-                type="radio"
-                name="bookmark_tabs"
-                className="tab"
-                aria-label={`${tab.label}${tab.count ? ` (${tab.count})` : ''}`}
-                ref={setRadioRef(tab.label)}
-                onChange={() => setBookmarkActiveTab(tab.label as TBookmarkTab)}
-              />
-              <div className="tab-content bg-base-100 border-base-300 p-3 pr-0 pb-0">
-                <div className="max-h-96 overflow-x-hidden overflow-y-auto">
-                  <LoadingSpinner show={loadingBookmarks && bookmarkActiveTab === tab.label} />
-                  <EmptyBookmarkState
-                    show={
-                      !loadingBookmarks &&
-                      bookmarkActiveTab === tab.label &&
-                      activeTabBookmarkList.length === 0
-                    }
-                  />
-
-                  {bookmarkActiveTab === tab.label && (
-                    <div className={`mb-3 flex-col gap-2`}>
-                      {activeTabBookmarkList.map((bookmark, index) => (
-                        <BookmarkItem key={index} bookmark={bookmark} />
-                      ))}
-
-                      {activeTabBookmarkList.length > 0 && <LoadMoreButton />}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </React.Fragment>
-          ))}
-        </div>
+    <div className="bg-base-100 flex w-full flex-col">
+      {/* Header */}
+      <div className="border-base-300 border-b px-4 py-3">
+        <BookmarkHeader onClose={onClose} />
       </div>
+
+      {/* Tabs */}
+      <div className="border-base-300 flex gap-1 border-b px-4 py-2">
+        {bookmarkTabs.map((tab) => (
+          <button
+            key={tab.label}
+            onClick={() => setBookmarkActiveTab(tab.label as TBookmarkTab)}
+            className={`rounded-selector px-3 py-1.5 text-sm font-medium capitalize transition-colors ${
+              bookmarkActiveTab === tab.label
+                ? 'bg-primary text-primary-content'
+                : 'text-base-content/70 hover:bg-base-200 hover:text-base-content'
+            }`}>
+            {tab.label}
+            {tab.count !== undefined && tab.count > 0 && (
+              <span
+                className={`ml-1.5 ${
+                  bookmarkActiveTab === tab.label
+                    ? 'text-primary-content/80'
+                    : 'text-base-content/50'
+                }`}>
+                ({tab.count})
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
+      {/* Content with infinite scroll */}
+      <ScrollArea
+        className="max-h-96 min-h-48 p-3"
+        scrollbarSize="thin"
+        hideScrollbar
+        preserveWidth={false}>
+        {/* Loading skeleton */}
+        {isLoading && bookmarks.length === 0 && <BookmarkSkeleton count={4} />}
+
+        {/* Empty state */}
+        <EmptyBookmarkState show={!isLoading && bookmarks.length === 0} />
+
+        {/* Bookmarks list */}
+        {bookmarks.length > 0 && (
+          <div className="flex flex-col gap-2">
+            {bookmarks.map((bookmark) => (
+              <BookmarkItem key={bookmark.bookmark_id} bookmark={bookmark} />
+            ))}
+
+            {/* Infinite scroll sentinel */}
+            {hasMore && (
+              <div ref={sentinelRef} className="flex justify-center py-3">
+                {isLoadingMore && (
+                  <div className="loading loading-spinner loading-sm text-primary" />
+                )}
+              </div>
+            )}
+
+            {/* End of list indicator */}
+            {!hasMore && bookmarks.length > 0 && (
+              <p className="text-base-content/40 py-3 text-center text-xs">No more bookmarks</p>
+            )}
+          </div>
+        )}
+      </ScrollArea>
     </div>
   )
 }

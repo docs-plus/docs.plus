@@ -1,15 +1,10 @@
 import { Avatar } from '@components/ui/Avatar'
+import Button from '@components/ui/Button'
 import { formatTimeAgo } from '../../notificationPanel/helpers'
 import { useChatStore } from '@stores'
 import PubSub from 'pubsub-js'
 import { CHAT_OPEN } from '@services/eventsHub'
-import {
-  MdLink,
-  MdOutlineBookmarkAdded,
-  MdOutlineVisibility,
-  MdOutlineInventory2,
-  MdOutlineBookmarkRemove
-} from 'react-icons/md'
+import { LuLink, LuBookmarkCheck, LuEye, LuArchive, LuBookmarkMinus } from 'react-icons/lu'
 import * as toast from '@components/toast'
 import { archiveBookmark, markBookmarkAsRead, toggleMessageBookmark } from '@api'
 import { usePopoverState } from '../../ui/Popover'
@@ -129,77 +124,93 @@ export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {
 
   return (
     <div
-      className="my-2 flex w-full items-start gap-4 rounded-lg border border-gray-300 p-3 hover:bg-gray-50"
+      className="rounded-box border-base-300 bg-base-100 hover:bg-base-200 my-2 flex w-full items-start gap-3 border p-3 transition-colors"
       key={bookmark.bookmark_id}>
-      <div className="h-10 w-10 flex-shrink-0">
+      <div className="size-10 flex-shrink-0">
         <Avatar
           id={bookmark.user_details.id}
           src={bookmark.user_details.avatar_url}
           avatarUpdatedAt={bookmark.user_details.avatar_updated_at}
           clickable={false}
-          className="size-[42px] cursor-pointer rounded-full border border-gray-300 shadow-md"
+          className="border-base-300 size-10 cursor-pointer rounded-full border"
         />
       </div>
 
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <div className="flex w-full flex-col items-start gap-2">
           <div className="flex w-full items-center gap-2">
-            <p className="flex flex-col items-start gap-1 text-sm font-bold">
+            <p className="flex flex-col items-start gap-1 text-sm">
               <span className="flex items-center gap-2">
-                <span className="font-semibold">
+                <span className="text-base-content font-medium">
                   {bookmark.user_details.fullname || bookmark.user_details.username}
                 </span>
               </span>
-              {/* <span className="text-xs text-gray-500">in #{bookmark.channel_name}</span> */}
             </p>
-            <div className="join bg-base-300 ml-4 ml-auto rounded-md">
-              <button
+            <div className="join ml-auto">
+              <Button
                 onClick={() => handleViewBookmark(bookmark)}
-                className="btn btn-ghost tooltip-left btn-square join-item btn-sm tooltip border-noungap-1 flex items-center bg-blue-100 text-blue-700 hover:bg-blue-200"
-                data-tip="View in chat">
-                <MdOutlineVisibility size={18} />
-              </button>
+                variant="ghost"
+                size="sm"
+                shape="square"
+                className="join-item tooltip tooltip-left text-info hover:bg-info/10"
+                data-tip="View in chat"
+                startIcon={LuEye}
+              />
             </div>
           </div>
-          <p className="w-full rounded-md bg-gray-100 p-2 text-sm">{bookmark.message_content}</p>
+          <p className="bg-base-200 text-base-content/70 w-full truncate rounded-lg p-2.5 text-sm">
+            {bookmark.message_content}
+          </p>
         </div>
 
-        <div className="mt-1 flex items-center gap-2">
-          <span className="text-xs text-gray-500">
+        <div className="mt-2 flex items-center gap-2">
+          <span className="text-base-content/50 text-xs">
             {formatTimeAgo(bookmark.bookmark_created_at)}
           </span>
         </div>
 
-        <div className="mt-2 ml-auto flex w-full justify-end">
-          <button
+        <div className="mt-2 flex w-full items-center justify-between">
+          <Button
             onClick={() => handleRemoveBookmark(bookmark)}
             data-tip="Delete Bookmark"
-            className="btn btn-ghost btn-square join-item btn-sm tooltip border-noun mr-auto flex items-center gap-1 bg-red-100 text-red-500 hover:bg-red-200">
-            <MdOutlineBookmarkRemove size={18} />
-          </button>
-          <div className="join bg-base-300 rounded-md">
+            variant="ghost"
+            size="sm"
+            shape="square"
+            className="tooltip text-base-content/50 hover:bg-error/10 hover:text-error"
+            startIcon={LuBookmarkMinus}
+          />
+          <div className="join">
             {bookmarkActiveTab !== 'archive' && (
-              <button
+              <Button
                 onClick={() => handleArchiveBookmark(bookmark)}
-                className="btn btn-ghost btn-square join-item btn-sm tooltip border-noun flex items-center gap-1"
-                data-tip={bookmark.bookmark_archived_at ? 'Unarchive' : 'Archive'}>
-                <MdOutlineInventory2 size={18} />
-              </button>
+                variant="ghost"
+                size="sm"
+                shape="square"
+                className="join-item tooltip text-base-content/50 hover:bg-base-200"
+                data-tip={bookmark.bookmark_archived_at ? 'Unarchive' : 'Archive'}
+                startIcon={LuArchive}
+              />
             )}
             {bookmarkActiveTab !== 'read' && (
-              <button
+              <Button
                 onClick={() => handleMarkAsRead(bookmark)}
-                className="btn btn-ghost btn-square join-item btn-sm tooltip border-noun flex items-center gap-1"
-                data-tip={bookmark.bookmark_marked_at ? 'Mark as unread' : 'Mark as read'}>
-                <MdOutlineBookmarkAdded size={18} />
-              </button>
+                variant="ghost"
+                size="sm"
+                shape="square"
+                className="join-item tooltip text-base-content/50 hover:bg-base-200"
+                data-tip={bookmark.bookmark_marked_at ? 'Mark as unread' : 'Mark as read'}
+                startIcon={LuBookmarkCheck}
+              />
             )}
-            <button
+            <Button
               onClick={() => handleCopyUrl(bookmark)}
               data-tip="Copy URL"
-              className="btn btn-ghost tooltip-left btn-square join-item btn-sm tooltip border-noun flex items-center gap-1">
-              <MdLink size={18} className="-rotate-45" />
-            </button>
+              variant="ghost"
+              size="sm"
+              shape="square"
+              className="join-item tooltip tooltip-left text-base-content/50 hover:bg-base-200"
+              endIcon={<LuLink size={16} className="-rotate-45" />}
+            />
           </div>
         </div>
       </div>
