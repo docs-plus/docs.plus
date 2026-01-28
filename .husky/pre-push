@@ -1,34 +1,103 @@
 #!/bin/sh
 
 echo "🔍 Pre-push checks starting..."
+echo ""
 
-# Build admin-dashboard (catches TS errors via Next.js build)
-echo "📦 Building admin-dashboard..."
-if bun run --filter "@docs.plus/admin-dashboard" build:local; then
-    echo "✅ Admin dashboard build successful"
+# Track overall status
+FAILED=0
+
+# ============================================
+# 1. Type Checks (fast - catches type errors)
+# ============================================
+echo "📝 Running TypeScript type checks..."
+
+# Hocuspocus Server
+echo "  → hocuspocus.server..."
+if cd packages/hocuspocus.server && bun run tsc --noEmit 2>/dev/null; then
+    echo "    ✅ hocuspocus.server types OK"
 else
-    echo "❌ Admin dashboard build failed. Push aborted."
+    echo "    ❌ hocuspocus.server type errors"
+    FAILED=1
+fi
+cd ../..
+
+# Admin Dashboard (via Next.js)
+echo "  → admin-dashboard..."
+if cd packages/admin-dashboard && bun run tsc --noEmit 2>/dev/null; then
+    echo "    ✅ admin-dashboard types OK"
+else
+    echo "    ❌ admin-dashboard type errors"
+    FAILED=1
+fi
+cd ../..
+
+# Webapp (via Next.js)
+echo "  → webapp..."
+if cd packages/webapp && bun run tsc --noEmit 2>/dev/null; then
+    echo "    ✅ webapp types OK"
+else
+    echo "    ❌ webapp type errors"
+    FAILED=1
+fi
+cd ../..
+
+if [ $FAILED -ne 0 ]; then
+    echo ""
+    echo "❌ Type checks failed. Fix type errors before pushing."
     exit 1
 fi
 
-# Build TipTap extensions (dependencies for webapp)
+echo ""
+
+# ============================================
+# 2. Build TipTap Extensions (webapp deps)
+# ============================================
 echo "📦 Building TipTap extensions..."
 for ext in extension-hyperlink extension-hypermultimedia extension-indent extension-inline-code; do
-    if bun run --filter "@docs.plus/${ext}" build; then
+    if bun run --filter "@docs.plus/${ext}" build >/dev/null 2>&1; then
         echo "  ✅ ${ext}"
     else
-        echo "  ❌ ${ext} build failed. Push aborted."
-        exit 1
+        echo "  ❌ ${ext} build failed"
+        FAILED=1
     fi
 done
 
-# Build webapp (catches TS errors via Next.js build)
-echo "📦 Building webapp..."
-if bun run --filter "@docs.plus/webapp" build:local; then
-    echo "✅ Webapp build successful"
-else
-    echo "❌ Webapp build failed. Push aborted."
+if [ $FAILED -ne 0 ]; then
+    echo ""
+    echo "❌ Extension builds failed. Push aborted."
     exit 1
 fi
 
+echo ""
+
+# ============================================
+# 3. Build Next.js Apps (catches all errors)
+# ============================================
+echo "📦 Building Next.js applications..."
+
+# Admin Dashboard
+echo "  → admin-dashboard..."
+if bun run --filter "@docs.plus/admin-dashboard" build:local >/dev/null 2>&1; then
+    echo "  ✅ admin-dashboard build OK"
+else
+    echo "  ❌ admin-dashboard build failed"
+    FAILED=1
+fi
+
+# Webapp
+echo "  → webapp..."
+if bun run --filter "@docs.plus/webapp" build:local >/dev/null 2>&1; then
+    echo "  ✅ webapp build OK"
+else
+    echo "  ❌ webapp build failed"
+    FAILED=1
+fi
+
+if [ $FAILED -ne 0 ]; then
+    echo ""
+    echo "❌ Next.js builds failed. Push aborted."
+    exit 1
+fi
+
+echo ""
 echo "🚀 All pre-push checks passed. Proceeding with push."

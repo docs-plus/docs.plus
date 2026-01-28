@@ -1,0 +1,111 @@
+{
+  "extends": ["stylelint-config-standard", "stylelint-config-standard-scss"],
+  "plugins": ["stylelint-order"],
+  "rules": {
+    "selector-class-pattern": null,
+    "custom-property-pattern": null,
+    "scss/dollar-variable-pattern": null,
+    "scss/at-mixin-pattern": null,
+    "scss/percent-placeholder-pattern": null,
+    "no-descending-specificity": null,
+    "property-no-vendor-prefix": null,
+    "value-no-vendor-prefix": null,
+    "selector-pseudo-class-no-unknown": [
+      true,
+      {
+        "ignorePseudoClasses": ["global", "local"]
+      }
+    ],
+    "at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": [
+          "tailwind",
+          "apply",
+          "variants",
+          "responsive",
+          "screen",
+          "layer",
+          "use",
+          "forward",
+          "mixin",
+          "include",
+          "extend",
+          "if",
+          "else",
+          "for",
+          "each",
+          "while",
+          "function",
+          "return",
+          "warn",
+          "error",
+          "debug",
+          "plugin",
+          "theme",
+          "source",
+          "utility",
+          "custom-variant"
+        ]
+      }
+    ],
+    "scss/at-rule-no-unknown": [
+      true,
+      {
+        "ignoreAtRules": [
+          "tailwind",
+          "apply",
+          "variants",
+          "responsive",
+          "screen",
+          "layer",
+          "plugin",
+          "theme",
+          "source",
+          "utility",
+          "custom-variant"
+        ]
+      }
+    ],
+    "order/properties-alphabetical-order": null,
+    "declaration-empty-line-before": null,
+    "scss/double-slash-comment-empty-line-before": null,
+    "scss/comment-no-empty": null,
+    "block-no-empty": null,
+    "color-function-notation": null,
+    "color-function-alias-notation": null,
+    "alpha-value-notation": null,
+    "import-notation": null,
+    "scss/no-global-function-names": null,
+    "function-no-unknown": null,
+    "color-hex-length": null,
+    "selector-type-no-unknown": [
+      true,
+      {
+        "ignoreTypes": ["h7", "h8", "h9", "h10", "em-emoji-picker"]
+      }
+    ],
+    "declaration-block-no-duplicate-properties": null,
+    "font-family-name-quotes": null,
+    "selector-pseudo-element-colon-notation": null,
+    "declaration-block-no-redundant-longhand-properties": null,
+    "keyframes-name-pattern": null,
+    "scss/operator-no-newline-after": null,
+    "scss/operator-no-unspaced": null,
+    "number-max-precision": null,
+    "media-feature-range-notation": null,
+    "property-no-deprecated": null,
+    "rule-empty-line-before": null,
+    "custom-property-empty-line-before": null,
+    "selector-id-pattern": null,
+    "comment-empty-line-before": null,
+    "value-keyword-case": null,
+    "selector-not-notation": null,
+    "length-zero-no-unit": null,
+    "shorthand-property-no-redundant-values": null,
+    "comment-whitespace-inside": null,
+    "hue-degree-notation": null,
+    "at-rule-empty-line-before": null
+  },
+  "ignoreFiles": ["**/node_modules/**", "**/dist/**", "**/.next/**", "**/coverage/**"]
+}
