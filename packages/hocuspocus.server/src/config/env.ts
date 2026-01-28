@@ -87,6 +87,27 @@ export const config = {
       secure: process.env.SMTP_SECURE === 'true',
       user: process.env.SMTP_USER || '',
       pass: process.env.SMTP_PASS || ''
+    },
+    // Email Gateway settings
+    gateway: {
+      workerConcurrency: parseInt(process.env.EMAIL_WORKER_CONCURRENCY || '3', 10),
+      rateLimitMax: parseInt(process.env.EMAIL_RATE_LIMIT_MAX || '50', 10),
+      rateLimitDuration: parseInt(process.env.EMAIL_RATE_LIMIT_DURATION || '60000', 10)
+    }
+  },
+
+  // Push Notifications (VAPID for Web Push)
+  push: {
+    vapid: {
+      publicKey: process.env.VAPID_PUBLIC_KEY || '',
+      privateKey: process.env.VAPID_PRIVATE_KEY || '',
+      subject: process.env.VAPID_SUBJECT || 'mailto:support@docs.plus'
+    },
+    // Push Gateway settings
+    gateway: {
+      workerConcurrency: parseInt(process.env.PUSH_WORKER_CONCURRENCY || '5', 10),
+      rateLimitMax: parseInt(process.env.PUSH_RATE_LIMIT_MAX || '100', 10),
+      rateLimitDuration: parseInt(process.env.PUSH_RATE_LIMIT_DURATION || '60000', 10)
     }
   }
 } as const

@@ -6,6 +6,11 @@ import { restApiLogger } from './lib/logger'
 import healthRouter from './api/health'
 import documentsRouter from './api/documents'
 import hypermultimediaRouter from './api/hypermultimedia'
+import emailRouter from './api/email'
+import pushRouter from './api/push'
+import adminRouter from './api/admin'
+import { emailGateway } from './lib/email'
+import { pushGateway } from './lib/push'
 import { checkEnvBolean } from './utils'
 
 const {
@@ -38,13 +43,25 @@ app.get('/', (c) => {
 app.route('/health', healthRouter)
 app.route('/api/documents', documentsRouter)
 app.route('/api/plugins/hypermultimedia', hypermultimediaRouter)
+app.route('/api/email', emailRouter)
+app.route('/api/push', pushRouter)
+app.route('/api/admin', adminRouter)
+
+// Initialize gateways (queue-only mode - workers run in hocuspocus-worker)
+// This allows rest-api to scale to multiple replicas without duplicate workers
+emailGateway.initialize(false).catch((err) => {
+  restApiLogger.error({ err }, 'Failed to initialize email gateway')
+})
+
+pushGateway.initialize(false).catch((err) => {
+  restApiLogger.error({ err }, 'Failed to initialize push gateway')
+})
 
 // Start server
 const server = Bun.serve({
   fetch: app.fetch,
   port: parseInt(APP_PORT, 10),
   hostname: '0.0.0.0'
-
 })
 
 // Log server startup
@@ -70,6 +87,8 @@ const shutdown = async () => {
     server.stop()
 
     // Cleanup connections
+    await emailGateway.shutdown()
+    await pushGateway.shutdown()
     await shutdownDatabase()
     await disconnectRedis()
 

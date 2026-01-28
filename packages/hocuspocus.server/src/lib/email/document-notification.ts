@@ -1,12 +1,13 @@
-import { emailLogger } from './logger'
-import nodemailer from 'nodemailer'
+/**
+ * Document Notification Emails
+ *
+ * Sends notification emails when new documents are created.
+ * This is a legacy function preserved from the original email.ts
+ */
 
-interface SendEmailParams {
-  to: string[]
-  subject: string
-  html: string
-  text?: string
-}
+import { emailLogger } from '../logger'
+import { sendEmailViaProvider } from './sender'
+import type { EmailJobData, GenericEmailRequest } from '../../types/email.types'
 
 interface NewDocumentEmailParams {
   documentId: string
@@ -17,51 +18,6 @@ interface NewDocumentEmailParams {
   creatorName?: string
   creatorAvatarUrl?: string
   createdAt: Date
-}
-
-/**
- * Sends email using Nodemailer (SMTP)
- * @see https://nodemailer.com/
- *
- */
-export const sendEmail = async (params: SendEmailParams): Promise<boolean> => {
-  const smtpHost = process.env.SMTP_HOST
-  const smtpUser = process.env.SMTP_USER
-  const smtpPass = process.env.SMTP_PASS
-  const fromEmail = process.env.EMAIL_FROM || smtpUser || 'noreply@docs.plus'
-
-  if (!smtpHost || !smtpUser || !smtpPass) {
-    emailLogger.warn(
-      'SMTP not configured. Set SMTP_HOST, SMTP_USER, and SMTP_PASS to enable email notifications'
-    )
-    return false
-  }
-
-  try {
-    const transporter = nodemailer.createTransport({
-      host: smtpHost,
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true', // true for 465, false for 587
-      auth: {
-        user: smtpUser,
-        pass: smtpPass
-      }
-    })
-
-    const info = await transporter.sendMail({
-      from: fromEmail,
-      to: params.to.join(', '),
-      subject: params.subject,
-      text: params.text,
-      html: params.html
-    })
-
-    emailLogger.info({ messageId: info.messageId, to: params.to }, 'Email sent via SMTP')
-    return true
-  } catch (err) {
-    emailLogger.error({ err }, 'Error sending email via SMTP')
-    return false
-  }
 }
 
 /**
@@ -125,7 +81,7 @@ export const sendNewDocumentNotification = async (
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 30px; border-radius: 12px 12px 0 0;">
-    <h1 style="color: white; margin: 0; font-size: 24px;">📄 New Document Created</h1>
+    <h1 style="color: white; margin: 0; font-size: 24px;">New Document Created</h1>
   </div>
 
   <div style="background: #f8f9fa; padding: 30px; border-radius: 0 0 12px 12px; border: 1px solid #e9ecef; border-top: none;">
@@ -152,7 +108,7 @@ export const sendNewDocumentNotification = async (
 
     <div style="margin-top: 25px; text-align: center;">
       <a href="${documentUrl}" style="display: inline-block; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 30px; text-decoration: none; border-radius: 8px; font-weight: 600;">
-        View Document →
+        View Document
       </a>
     </div>
   </div>
@@ -179,10 +135,17 @@ Created At: ${params.createdAt.toISOString()}
 View Document: ${documentUrl}
 `
 
-  return sendEmail({
-    to: recipients,
-    subject: `📄 New Document: ${params.documentName}`,
-    html,
-    text
-  })
+  const jobData: EmailJobData = {
+    type: 'generic',
+    payload: {
+      to: recipients,
+      subject: `New Document: ${params.documentName}`,
+      html,
+      text
+    } as GenericEmailRequest,
+    created_at: new Date().toISOString()
+  }
+
+  const result = await sendEmailViaProvider(jobData)
+  return result.success
 }

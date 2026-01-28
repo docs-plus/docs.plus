@@ -7,6 +7,7 @@ import { checkEnvBolean, generateRandomId } from '../utils'
 import { StoreDocumentQueue } from '../lib/queue'
 import { HealthCheck } from '../extensions/health.extension'
 import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extension'
+import { DocumentViewsExtension } from '../extensions/document-views.extension'
 import { prisma } from '../lib/prisma'
 import { dbLogger } from '../lib/logger'
 
@@ -158,6 +159,12 @@ const configureExtensions = () => {
   // Add Redis subscriber for save confirmations (requires Redis)
   if (checkEnvBolean(process.env.REDIS)) {
     extensions.push(new RedisSubscriberExtension())
+  }
+
+  // Add document view tracking (requires Supabase)
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    extensions.push(new DocumentViewsExtension())
+    dbLogger.info('Document view tracking enabled')
   }
 
   return extensions

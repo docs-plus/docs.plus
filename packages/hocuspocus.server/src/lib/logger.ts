@@ -154,3 +154,9 @@ export const emailLogger = logger.child(
   { module: 'email' },
   { level: envLevel(process.env.EMAIL_LOG_LEVEL, baseLevel) }
 )
+
+// Push Notifications
+export const pushLogger = logger.child(
+  { module: 'push' },
+  { level: envLevel(process.env.PUSH_LOG_LEVEL, baseLevel) }
+)

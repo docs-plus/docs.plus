@@ -1,16 +1,65 @@
 import { Queue, Worker, Job } from 'bullmq'
+import { Prisma } from '@prisma/client'
 import { prisma } from './prisma'
 import { createRedisConnection, getRedisPublisher } from './redis'
 import { queueLogger } from './logger'
-import { sendNewDocumentNotification } from './email'
+import { sendNewDocumentNotification } from './email/document-notification'
 import type { StoreDocumentData, DeadLetterJobData } from '../types'
 
-async function generateUniqueSlug(baseSlug: string): Promise<string> {
-  const existing = await prisma.documentMetadata.findUnique({ where: { slug: baseSlug } })
-  if (!existing) return baseSlug
+type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
-  // If slug exists, append timestamp + random to make it unique
-  return `${baseSlug}-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`
+// Upsert document metadata with retry on slug collision (handles P2002)
+async function upsertDocumentMetadata(
+  tx: TransactionClient,
+  params: {
+    documentId: string
+    baseSlug: string
+    title: string
+    ownerId?: string
+    email?: string
+  },
+  maxRetries = 3
+): Promise<string> {
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    // First attempt uses base slug, retries add timestamp + random suffix
+    const slug = attempt === 0
+      ? params.baseSlug
+      : `${params.baseSlug}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
+    try {
+      await tx.documentMetadata.upsert({
+        where: { documentId: params.documentId },
+        update: {
+          title: params.title,
+          description: params.title,
+          ownerId: params.ownerId,
+          email: params.email,
+          keywords: ''
+        },
+        create: {
+          documentId: params.documentId,
+          slug,
+          title: params.title,
+          description: params.title,
+          ownerId: params.ownerId,
+          email: params.email,
+          keywords: ''
+        }
+      })
+      return slug
+    } catch (err) {
+      // P2002 = unique constraint violation
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+        const target = err.meta?.target as string[] | undefined
+        if (target?.includes('slug') && attempt < maxRetries) {
+          queueLogger.debug({ attempt, baseSlug: params.baseSlug }, 'Slug collision, retrying with new slug')
+          continue
+        }
+      }
+      throw err
+    }
+  }
+  // Fallback: should not reach here but just in case
+  throw new Error(`Failed to create unique slug after ${maxRetries} attempts`)
 }
 
 // BullMQ connection options (shared base config)
@@ -91,65 +140,36 @@ export const createDocumentWorker = () => {
         const startTime = Date.now()
         const context = data.context
 
-        // Use transaction to ensure atomic version increment (prevents race conditions)
-        const savedDoc = await prisma.$transaction(async (tx) => {
-          // Get latest version with row-level lock to prevent concurrent updates
-          const existingDoc = await tx.documents.findFirst({
-            where: { documentId: data.documentName },
-            orderBy: { id: 'desc' },
-            select: { id: true, version: true }
-          })
+        // Use transaction with serializable isolation to prevent race conditions
+        const { savedDoc, createdSlug, isFirstCreation } = await prisma.$transaction(async (tx) => {
+          // Use raw query with FOR UPDATE to actually lock the row
+          const existingDocs = await tx.$queryRaw<{ id: number; version: number }[]>`
+            SELECT id, version FROM "Documents"
+            WHERE "documentId" = ${data.documentName}
+            ORDER BY id DESC
+            LIMIT 1
+            FOR UPDATE
+          `
+          const existingDoc = existingDocs[0] ?? null
 
-          const isFirstCreation = !existingDoc
+          const isFirst = !existingDoc
           const nextVersion = existingDoc ? existingDoc.version + 1 : 1
 
-          // Handle first-time document creation
-          if (isFirstCreation) {
-            const slug = await generateUniqueSlug(context.slug || data.documentName)
-
-            await tx.documentMetadata.upsert({
-              where: { documentId: data.documentName },
-              update: {
-                title: context.slug || data.documentName,
-                description: context.slug || data.documentName,
-                ownerId: context.user?.sub,
-                email: context.user?.email,
-                keywords: ''
-              },
-              create: {
-                documentId: data.documentName,
-                slug,
-                title: context.slug || data.documentName,
-                description: context.slug || data.documentName,
-                ownerId: context.user?.sub,
-                email: context.user?.email,
-                keywords: ''
-              }
-            })
-
-            // Send email notification AFTER transaction commits (fire-and-forget)
-            const userMeta = context.user?.user_metadata
-            setImmediate(() => {
-              sendNewDocumentNotification({
-                documentId: data.documentName,
-                documentName: context.slug || data.documentName,
-                slug,
-                creatorEmail: context.user?.email,
-                creatorId: context.user?.sub,
-                creatorName: userMeta?.full_name || userMeta?.name,
-                creatorAvatarUrl: userMeta?.avatar_url,
-                createdAt: new Date()
-              }).catch((err) => {
-                queueLogger.error(
-                  { err, documentId: data.documentName },
-                  'Failed to send new document notification email'
-                )
-              })
+          // Handle first-time document creation with retry on slug collision
+          let slug: string | undefined
+          if (isFirst) {
+            const baseSlug = context.slug || data.documentName
+            slug = await upsertDocumentMetadata(tx, {
+              documentId: data.documentName,
+              baseSlug,
+              title: baseSlug,
+              ownerId: context.user?.sub,
+              email: context.user?.email
             })
           }
 
           // Create new version (within transaction = atomic)
-          return tx.documents.create({
+          const doc = await tx.documents.create({
             data: {
               documentId: data.documentName,
               commitMessage: data.commitMessage || '',
@@ -157,6 +177,8 @@ export const createDocumentWorker = () => {
               data: Buffer.from(data.state, 'base64')
             }
           })
+
+          return { savedDoc: doc, createdSlug: slug, isFirstCreation: isFirst }
         })
 
         const duration = Date.now() - startTime
@@ -164,6 +186,28 @@ export const createDocumentWorker = () => {
           { jobId: job.id, duration: `${duration}ms` },
           'Document stored successfully'
         )
+
+        // Send email notification AFTER transaction commits (fire-and-forget)
+        if (isFirstCreation && createdSlug) {
+          const userMeta = context.user?.user_metadata
+          setImmediate(() => {
+            sendNewDocumentNotification({
+              documentId: data.documentName,
+              documentName: context.slug || data.documentName,
+              slug: createdSlug,
+              creatorEmail: context.user?.email,
+              creatorId: context.user?.sub,
+              creatorName: userMeta?.full_name || userMeta?.name,
+              creatorAvatarUrl: userMeta?.avatar_url,
+              createdAt: new Date()
+            }).catch((err) => {
+              queueLogger.error(
+                { err, documentId: data.documentName },
+                'Failed to send new document notification email'
+              )
+            })
+          })
+        }
 
         // Publish save confirmation to document-specific Redis channel
         if (redisPublisher) {

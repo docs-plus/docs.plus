@@ -92,18 +92,20 @@ const serverConfig = {
   async onAuthenticate({ token, documentName }: any) {
     if (!token) {
       wsLogger.debug({ documentName }, 'No token provided - allowing anonymous access')
-      return { user: null, slug: '', documentId: documentName }
+      return { user: null, slug: '', documentId: documentName, deviceType: 'desktop' }
     }
 
     try {
       const tokenData = JSON.parse(token)
+      // Extract deviceType from token (sent by webapp)
+      const deviceType = tokenData.deviceType || 'desktop'
 
       if (tokenData.accessToken) {
         const user = await verifyJWT(tokenData.accessToken)
 
         if (user) {
           wsLogger.debug({ userId: user.sub, documentName }, 'Token verified')
-          return { user, slug: tokenData.slug || '', documentId: documentName }
+          return { user, slug: tokenData.slug || '', documentId: documentName, deviceType }
         }
 
         // Token invalid
@@ -112,11 +114,11 @@ const serverConfig = {
         }
 
         wsLogger.warn({ documentName }, 'Token verification failed - allowing in dev')
-        return { user: null, slug: tokenData.slug || '', documentId: documentName }
+        return { user: null, slug: tokenData.slug || '', documentId: documentName, deviceType }
       }
 
       // No accessToken, allow with slug only
-      return { user: null, slug: tokenData.slug || '', documentId: documentName }
+      return { user: null, slug: tokenData.slug || '', documentId: documentName, deviceType }
     } catch (error) {
       wsLogger.error({ err: error, documentName }, 'Auth error')
 
@@ -124,7 +126,7 @@ const serverConfig = {
         throw new Error('Authentication failed')
       }
 
-      return { user: null, slug: '', documentId: documentName }
+      return { user: null, slug: '', documentId: documentName, deviceType: 'desktop' }
     }
   }
 }

@@ -1,9 +1,10 @@
 import { createDocumentWorker } from './lib/queue'
-import { workerLogger, queueLogger } from './lib/logger'
+import { emailGateway } from './lib/email'
+import { pushGateway } from './lib/push'
+import { workerLogger } from './lib/logger'
 import { shutdownDatabase } from './lib/prisma'
 import { getRedisClient, disconnectRedis, waitForRedisReady } from './lib/redis'
 import { Hono } from 'hono'
-
 
 const WORKER_HEALTH_PORT = parseInt(process.env.WORKER_HEALTH_PORT || '4002', 10)
 
@@ -24,8 +25,9 @@ if (!isRedisReady) {
 
 workerLogger.info('✅ Redis connection established and ready')
 
-// Start BullMQ worker (now Redis is guaranteed ready)
-const worker = createDocumentWorker()
+// Start ALL BullMQ workers (document, email, push)
+// This is the ONLY place workers should be created - not in rest-api
+const documentWorker = createDocumentWorker()
 
 workerLogger.info({
   msg: '🔧 BullMQ document worker started',
@@ -36,20 +38,44 @@ workerLogger.info({
   }
 })
 
+// Initialize email gateway with worker mode (processes email jobs)
+await emailGateway.initialize(true)
+workerLogger.info('📧 Email gateway worker initialized')
+
+// Initialize push gateway with worker mode (processes push jobs)
+await pushGateway.initialize(true)
+workerLogger.info('🔔 Push gateway worker initialized')
+
 // Create health check endpoint for worker
 const healthApp = new Hono()
 
 healthApp.get('/health', async (c) => {
-  const isRunning = worker.isRunning()
-  const isPaused = worker.isPaused()
+  const docWorkerRunning = documentWorker.isRunning()
+  const docWorkerPaused = documentWorker.isPaused()
+  const emailHealth = await emailGateway.getHealth()
+  const pushHealth = await pushGateway.getHealth()
+
+  const allHealthy = docWorkerRunning && !docWorkerPaused
 
   return c.json({
-    status: isRunning && !isPaused ? 'healthy' : 'unhealthy',
+    status: allHealthy ? 'healthy' : 'unhealthy',
     timestamp: new Date().toISOString(),
-    worker: {
-      running: isRunning,
-      paused: isPaused,
-      name: worker.name
+    workers: {
+      document: {
+        running: docWorkerRunning,
+        paused: docWorkerPaused,
+        name: documentWorker.name
+      },
+      email: {
+        pending: emailHealth.pending_jobs,
+        failed: emailHealth.failed_jobs,
+        provider: emailHealth.provider
+      },
+      push: {
+        pending: pushHealth.pending_jobs,
+        failed: pushHealth.failed_jobs,
+        configured: pushHealth.configured
+      }
     },
     services: {
       redis: redis ? 'connected' : 'disconnected',
@@ -59,7 +85,7 @@ healthApp.get('/health', async (c) => {
 })
 
 healthApp.get('/health/ready', async (c) => {
-  const isReady = worker.isRunning() && !worker.isPaused()
+  const isReady = documentWorker.isRunning() && !documentWorker.isPaused()
 
   if (!isReady) {
     return c.json({ status: 'not ready' }, 503)
@@ -86,9 +112,9 @@ const shutdown = async () => {
   workerLogger.info('🛑 Shutting down worker gracefully...')
 
   try {
-    // Stop accepting new jobs
-    await worker.pause()
-    workerLogger.info('Worker paused - no longer accepting jobs')
+    // Stop accepting new jobs on all workers
+    await documentWorker.pause()
+    workerLogger.info('Document worker paused')
 
     // Wait up to 30 seconds for jobs to complete
     workerLogger.info('Waiting for active jobs to complete (max 30s)...')
@@ -97,9 +123,14 @@ const shutdown = async () => {
       workerLogger.warn('Timeout reached - forcing worker shutdown')
     }, 30000)
 
-    await worker.close()
+    // Close all workers
+    await Promise.all([
+      documentWorker.close(),
+      emailGateway.shutdown(),
+      pushGateway.shutdown()
+    ])
     clearTimeout(timeout)
-    workerLogger.info('Worker closed successfully')
+    workerLogger.info('All workers closed successfully')
 
     // Close connections
     await shutdownDatabase()
@@ -127,5 +158,5 @@ process.on('unhandledRejection', (reason, promise) => {
   shutdown()
 })
 
-export { worker }
+export { documentWorker, emailGateway, pushGateway }
 
