@@ -37,9 +37,9 @@ export const HighlightMarker = ({ size = 18, fill = 'black' }) => {
 }
 
 // prettier-ignore
-export const ClearMark = ({ size = 18, fill = 'black' }) => {
+export const ClearMark = ({ size = 18, fill = 'black', className = '' }) => {
   return (
-    <svg fill={fill} viewBox="0 0 13.73 13" width={size} xmlns="http://www.w3.org/2000/svg">
+    <svg fill={fill} viewBox="0 0 13.73 13" width={size} xmlns="http://www.w3.org/2000/svg" className={className}>
       <path d="M0,1.55,5.16,6.7,2.73,12h2.5L6.87,8.42,11.46,13l1.27-1.27L1.28.27,0,1.55ZM3.55,0l2,2H7.31L6.76,3.21,8.47,4.92,9.81,2h3.92V0Z" fillRule="evenodd" />
     </svg>
   )
@@ -82,9 +82,9 @@ export const BulletList = ({ size = 18, fill = 'black' }) => {
 }
 
 // prettier-ignore
-export const Link = ({ size = 18, fill = 'black' }) => {
+export const Link = ({ size = 18, fill = 'black', className = '' }) => {
   return (
-    <svg fill={fill} viewBox="0 0 20 10" width={size} xmlns="http://www.w3.org/2000/svg">
+    <svg fill={fill} viewBox="0 0 20 10" width={size} xmlns="http://www.w3.org/2000/svg" className={className}>
       <path d="M15,0H11V2h4a3,3,0,0,1,0,6H11v2h4A5,5,0,0,0,15,0ZM9,8H5A3,3,0,0,1,5,2H9V0H5A5,5,0,0,0,5,10H9ZM6,4h8V6H6Z" />
     </svg>
   )
@@ -162,9 +162,9 @@ export const Video = ({ size = 18, fill = 'black' }) => {
 }
 
 // prettier-ignore
-export const ImageBox = ({ size = 18, fill = 'black' }) => {
+export const ImageBox = ({ size = 18, fill = 'black', className = '' }) => {
   return (
-    <svg viewBox="0 0 18 18" fill={fill} width={size} xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 18 18" fill={fill} width={size} xmlns="http://www.w3.org/2000/svg" className={className}>
       <path d="M16,0H2A2,2,0,0,0,0,2V16a2,2,0,0,0,2,2H16a2,2,0,0,0,2-2V2A2,2,0,0,0,16,0Zm0,16H2V2H16ZM11,9,8,12.72,6,10,3,14H15Z" />
     </svg>
   )

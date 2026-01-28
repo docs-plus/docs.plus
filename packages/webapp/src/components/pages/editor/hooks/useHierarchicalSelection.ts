@@ -45,11 +45,12 @@ export const useHierarchicalSelection = (editor: Editor | null) => {
           targetElement = element.closest('p, li, h1, h2, h3, h4, h5, h6') as HTMLElement
           break
 
-        case 'parent':
+        case 'parent': {
           // Find the parent container
           const immediateElement = element.closest('p, li, h1, h2, h3, h4, h5, h6') as HTMLElement
           targetElement = immediateElement?.parentElement as HTMLElement
           break
+        }
 
         case 'section':
           // Find the section container

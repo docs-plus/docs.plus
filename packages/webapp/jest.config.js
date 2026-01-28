@@ -26,8 +26,7 @@ const customJestConfig = {
     '^@config$': '<rootDir>/src/config/index.ts',
     '^@helpers$': '<rootDir>/src/lib/helpers/index.ts'
   },
-  moduleDirectories: ['node_modules', '<rootDir>/'],
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'] // For custom Jest setup
+  moduleDirectories: ['node_modules', '<rootDir>/']
 }
 
 // Export Jest config

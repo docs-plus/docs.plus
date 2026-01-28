@@ -24,6 +24,7 @@ export const isOnlyEmoji = (str: string): boolean => {
   // - Zero width joiners
   // - Variation selectors
   // - Regional indicators (for flags)
+  // eslint-disable-next-line no-misleading-character-class
   const emojiPattern = /^[\p{Emoji}\p{Emoji_Modifier}\p{Emoji_Component}\u200D\uFE0F\uFE0E]+$/u
 
   return emojiPattern.test(cleanedStr)

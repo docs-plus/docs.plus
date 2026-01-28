@@ -4,8 +4,7 @@ import { useAuthStore } from '@stores'
 import { useMemo } from 'react'
 import { MdOutlineEdit } from 'react-icons/md'
 
-type Props = {}
-export const EditAction = ({}: Props) => {
+export const EditAction = () => {
   const { message } = useMessageCardContext()
   const { editMessageHandler } = useEditMessageHandler()
   const profile = useAuthStore((state) => state.profile)

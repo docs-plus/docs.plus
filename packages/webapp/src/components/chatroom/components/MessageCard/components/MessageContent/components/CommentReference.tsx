@@ -2,9 +2,7 @@ import { MdInsertComment } from 'react-icons/md'
 import { useMessageCardContext } from '../../../MessageCardContext'
 import { getMetadataProperty } from '@utils/metadata'
 
-type Props = {}
-
-export const CommentReference = ({}: Props) => {
+export const CommentReference = () => {
   const { message } = useMessageCardContext()
 
   const comment = getMetadataProperty<{ content?: string; html?: string }>(

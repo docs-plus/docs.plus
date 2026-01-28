@@ -56,14 +56,14 @@ export const applySearchThroughHeading = (searchInput: string, router: NextRoute
   router.push(url.toString(), undefined, { shallow: true })
 }
 
-interface DocumentMetadata {
+interface DocumentMetadataUpdate {
   documentId: string
-  description: string
-  keywords: string[]
+  description?: string
+  keywords?: string[]
 }
 
-export const saveDocDescriptionHandler = (
-  mutate: UseMutateFunction<unknown, unknown, DocumentMetadata>,
+export const saveDocDescriptionHandler = <TData = unknown, TError = unknown, TContext = unknown>(
+  mutate: UseMutateFunction<TData, TError, DocumentMetadataUpdate, TContext>,
   docId: string,
   docDescription: string,
   tags: string[]
@@ -77,11 +77,11 @@ export const saveDocDescriptionHandler = (
 
 interface ReadOnlyUpdate {
   documentId: string
-  readOnly: boolean
+  readOnly?: boolean
 }
 
-export const saveDocReadOnlyPage = (
-  mutate: UseMutateFunction<unknown, unknown, ReadOnlyUpdate>,
+export const saveDocReadOnlyPage = <TData = unknown, TError = unknown, TContext = unknown>(
+  mutate: UseMutateFunction<TData, TError, ReadOnlyUpdate, TContext>,
   documentId: string,
   readOnly: boolean
 ): void => {

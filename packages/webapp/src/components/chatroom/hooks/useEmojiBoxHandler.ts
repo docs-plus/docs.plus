@@ -31,7 +31,10 @@ export const useEmojiBoxHandler = (emojiPikerRef: any, messageContainerRef: any)
       setEditor(editor)
       setEventTypes(type)
 
-      const { clientHeight, clientWidth } = emojiPikerRef?.current
+      const { clientHeight, clientWidth } = emojiPikerRef?.current ?? {
+        clientHeight: 0,
+        clientWidth: 0
+      }
 
       // we need to pick up these dynamic values from the DOM
       const emojiButtonWidth = 24

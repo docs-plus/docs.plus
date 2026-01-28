@@ -1,8 +1,7 @@
 import { useMessageCardContext } from '../../../MessageCardContext'
 import { useMemo } from 'react'
 
-type Props = {}
-export const ReplyReference = ({}: Props) => {
+export const ReplyReference = () => {
   const { message } = useMessageCardContext()
 
   const userReplyTo = useMemo(() => {

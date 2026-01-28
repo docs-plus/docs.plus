@@ -29,7 +29,7 @@ import {
 import { TbBlockquote } from 'react-icons/tb'
 
 const icons: {
-  [key: string]: React.ComponentType<{ size?: number; fill?: string; className?: string }>
+  [key: string]: React.ComponentType<{ size?: number; fill?: string; className?: any }>
 } = {
   Bold,
   Italic,

@@ -4,7 +4,14 @@
  * Centralized type definitions for the design system demo page.
  */
 
-export type TabType = 'dashboard' | 'documents' | 'team' | 'components' | 'forms' | 'settings'
+export type TabType =
+  | 'dashboard'
+  | 'documents'
+  | 'foundations'
+  | 'team'
+  | 'components'
+  | 'forms'
+  | 'settings'
 
 export type ThemeType = 'docsplus' | 'docsplus-dark'
 

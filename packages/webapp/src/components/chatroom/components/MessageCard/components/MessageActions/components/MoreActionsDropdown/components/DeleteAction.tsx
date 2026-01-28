@@ -5,8 +5,7 @@ import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { DeleteMessageConfirmationDialog } from '@components/chatroom/components/MessageCard/components/common/DeleteMessageConfirmationDialog'
 import { useMemo } from 'react'
 
-type Props = {}
-export const DeleteAction = ({}: Props) => {
+export const DeleteAction = () => {
   const { message } = useMessageCardContext()
   const profile = useAuthStore((state) => state.profile)
   const { openDialog } = useChatroomContext()

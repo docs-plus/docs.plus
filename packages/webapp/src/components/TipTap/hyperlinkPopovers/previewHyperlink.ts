@@ -158,7 +158,7 @@ const createMetadataContent = (data: MetadataResponse | null, href: string): HTM
         this.style.display = 'none'
       }
     }) as HTMLImageElement
-    iconElement && container.removeChild(iconElement)
+    if (iconElement) container.removeChild(iconElement)
     container.prepend(img)
   }
 
@@ -169,7 +169,7 @@ const fetchMetadata = async (
   href: string,
   metadataContainer: HTMLDivElement,
   editor: Editor,
-  nodePos: number
+  _nodePos: number
 ): Promise<void> => {
   const defaultContent = createMetadataContent(null, href)
   metadataContainer.appendChild(defaultContent)
@@ -207,7 +207,7 @@ const fetchMetadata = async (
       const { left: x, top: y } = editor.view.coordsAtPos(from)
       let el = document.elementFromPoint(x, y)
       el = el?.closest('a[href]') as HTMLElement | null
-      el && updateCurrentToolbarPosition(el as HTMLElement)
+      if (el) updateCurrentToolbarPosition(el as HTMLElement)
     } else {
       console.error('Metadata API error:', data.message)
     }
@@ -217,7 +217,7 @@ const fetchMetadata = async (
 }
 
 export default function previewHyperlink(options: HyperlinkModalOptions) {
-  const { link, editor, nodePos, node, attrs } = options
+  const { link, editor, nodePos, node: _node, attrs } = options
   const href = link.href
 
   const hyperlinkLinkModal = createHTMLElement('div', { className: 'hyperlinkPreviewPopover' })

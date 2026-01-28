@@ -18,9 +18,11 @@ export const usePinMessageHandler = () => {
       toast.Error(`Message not ${actionType}`)
     } else {
       toast.Success(`Message ${actionType} successfully`)
-      actionType === 'pin'
-        ? addChannelPinnedMessage(message.channel_id, message)
-        : removeChannelPinnedMessage(message.channel_id, message.id)
+      if (actionType === 'pin') {
+        addChannelPinnedMessage(message.channel_id, message)
+      } else {
+        removeChannelPinnedMessage(message.channel_id, message.id)
+      }
 
       // await workspaceBroadcaster.send({
       //   type: 'broadcast',
