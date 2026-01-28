@@ -1,5 +1,4 @@
 ---
-description: daisyUI 5
 alwaysApply: false
 ---
 
@@ -43,7 +42,7 @@ daisyUI 5 provides class names for common UI components
 5. when using Tailwind CSS `flex` and `grid` for layout, it should be responsive using Tailwind CSS responsive utility prefixes.
 6. Only allowed class names are existing daisyUI class names or Tailwind CSS utility classes.
 7. Ideally, you won't need to write any custom CSS. Using daisyUI class names or Tailwind CSS utility classes is preferred.
-8. suggested - if you need placeholder images, use <https://picsum.photos/200/300> with the size you want
+8. suggested - if you need placeholder images, use https://picsum.photos/200/300 with the size you want
 9. suggested - when designing , don't add a custom font unless it's necessary
 10. don't add `bg-base-100 text-base-content` to body unless it's necessary
 11. For design decisions, use Refactoring UI book best practices
@@ -63,7 +62,7 @@ daisyUI 5 class names are one of the following categories. These type names are 
 
 ## Config
 
-daisyUI 5 config docs: <https://daisyui.com/docs/config/>
+daisyUI 5 config docs: https://daisyui.com/docs/config/
 daisyUI without config:
 
 ```css
@@ -237,7 +236,7 @@ A CSS file with Tailwind CSS, daisyUI and a custom daisyUI theme looks like this
 - Colors can be OKLCH or hex or other formats
 - If you're generating a custom theme, do not include the comments from the example above. Just provide the code.
 
-People can use <https://daisyui.com/theme-generator/> visual tool to create their own theme.
+People can use https://daisyui.com/theme-generator/ visual tool to create their own theme.
 
 ## daisyUI 5 components
 
@@ -1033,7 +1032,7 @@ File Input is a an input field for uploading files
 
 [file-input docs](https://daisyui.com/components/file-input/)
 
-#### Class Names
+#### Class Names:
 
 - Component: `file-input`
 - Style: `file-input-ghost`
@@ -1366,7 +1365,7 @@ List is a vertical layout to display information in rows
 
 [list docs](https://daisyui.com/components/list/)
 
-#### Class Names
+#### Class Names:
 
 - Component: `list`, `list-row`
 - Modifier: `list-col-wrap`, `list-col-grow`
@@ -1836,7 +1835,7 @@ Stack visually puts elements on top of each other
 
 [stack docs](https://daisyui.com/components/stack/)
 
-#### Class Names
+#### Class Names:
 
 - Component: `stack`
 - Modifier: `stack-top`, `stack-bottom`, `stack-start`, `stack-end`
@@ -1884,7 +1883,7 @@ Status is a really small icon to visually show the current status of an element,
 
 [status docs](https://daisyui.com/components/status/)
 
-#### Class Names
+#### Class Names:
 
 - Component: `status`
 - Color: `status-neutral`, `status-primary`, `status-secondary`, `status-accent`, `status-info`, `status-success`, `status-warning`, `status-error`
@@ -1907,7 +1906,7 @@ Steps can be used to show a list of steps in a process
 
 [steps docs](https://daisyui.com/components/steps/)
 
-#### Class Names
+#### Class Names:
 
 - Component: `steps`
 - Part: `step`, `step-icon`
@@ -1935,7 +1934,7 @@ Swap allows you to toggle the visibility of two elements using a checkbox or a c
 
 [swap docs](https://daisyui.com/components/swap/)
 
-#### Class Names
+#### Class Names:
 
 - Component: `swap`
 - Part: `swap-on`, `swap-off`, `swap-indeterminate`
@@ -1975,7 +1974,7 @@ Tabs can be used to show a list of links in a tabbed format
 
 [tab docs](https://daisyui.com/components/tab/)
 
-#### Class Names
+#### Class Names:
 
 - Component: `tabs`
 - Part: `tab`, `tab-content`
@@ -2013,7 +2012,7 @@ Table can be used to show a list of data in a table format
 
 [table docs](https://daisyui.com/components/table/)
 
-#### Class Names
+#### Class Names:
 
 - Component: `table`
 - Modifier: `table-zebra`, `table-pin-rows`, `table-pin-cols`
@@ -2049,7 +2048,7 @@ Text Rotate can show up to 6 lines of text, one at a time, with a an infinite lo
 
 [textarea docs](https://daisyui.com/components/text-rotate/)
 
-#### Class Names
+#### Class Names:
 
 - Component: `text-rotate`
 
@@ -2126,7 +2125,7 @@ Textarea allows users to enter text in multiple lines
 
 [textarea docs](https://daisyui.com/components/textarea/)
 
-#### Class Names
+#### Class Names:
 
 - Component: `textarea`
 - Style: `textarea-ghost`
@@ -2169,7 +2168,7 @@ Timeline component shows a list of events in chronological order
 
 [timeline docs](https://daisyui.com/components/timeline/)
 
-#### Class Names
+#### Class Names:
 
 - Component: `timeline`
 - Part: `timeline-start`, `timeline-middle`, `timeline-end`
@@ -2201,7 +2200,7 @@ Toast is a wrapper to stack elements, positioned on the corner of page
 
 [toast docs](https://daisyui.com/components/toast/)
 
-#### Class Names
+#### Class Names:
 
 - Component: `toast`
 - Placement: `toast-start`, `toast-center`, `toast-end`, `toast-top`, `toast-middle`, `toast-bottom`
@@ -2222,7 +2221,7 @@ Toggle is a checkbox that is styled to look like a switch button
 
 [toggle docs](https://daisyui.com/components/toggle/)
 
-#### Class Names
+#### Class Names:
 
 - Component: `toggle`
 - Color: `toggle-primary`, `toggle-secondary`, `toggle-accent`, `toggle-neutral`, `toggle-success`, `toggle-warning`, `toggle-info`, `toggle-error`
