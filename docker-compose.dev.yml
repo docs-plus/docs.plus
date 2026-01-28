@@ -316,6 +316,54 @@ services:
    start_period: 15s
    retries: 3
 
+ # ---------------------------------------------------------------------------
+ # Admin Dashboard (Development - Single Instance with Hot Reload)
+ # ---------------------------------------------------------------------------
+ admin-dashboard:
+  build:
+   context: .
+   dockerfile: packages/admin-dashboard/docker/Dockerfile.bun
+   args:
+    NODE_ENV: development
+    NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+    NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_RESTAPI_URL}
+  image: docsy-admin-dashboard:dev
+  container_name: docsy-admin-dashboard-dev
+  ports:
+   - "${ADMIN_PORT:-3100}:3100"
+  extra_hosts:
+   - "host.docker.internal:host-gateway"
+  environment:
+   NODE_ENV: development
+   PORT: 3100
+   HOSTNAME: "0.0.0.0"
+   NEXT_TELEMETRY_DISABLED: 1
+   NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+   SUPABASE_URL: http://host.docker.internal:54321
+   NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+   NEXT_PUBLIC_API_URL: http://rest-api:4000/api
+  volumes:
+   - ./packages/admin-dashboard:/app/packages/admin-dashboard
+   - /app/node_modules
+  command: bun run dev
+  working_dir: /app/packages/admin-dashboard
+  restart: unless-stopped
+  networks:
+   - docsy-network-dev
+  healthcheck:
+   test:
+    [
+     "CMD",
+     "bun",
+     "-e",
+     "fetch('http://localhost:3100/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))",
+    ]
+   interval: 10s
+   timeout: 5s
+   start_period: 15s
+   retries: 3
+
 # =============================================================================
 # Volumes (Development - Separate from production)
 # =============================================================================

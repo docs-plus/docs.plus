@@ -3,7 +3,7 @@
 # Manages: Hocuspocus Server + Webapp + Infrastructure
 # =============================================================================
 
-.PHONY: help build build-dev up-prod up-dev up-local infra-up infra-down infra-logs dev-local dev-backend dev-webapp dev-rest dev-ws dev-worker down logs logs-webapp logs-backend restart clean scale scale-webapp scale-hocuspocus ps stats supabase-start supabase-stop supabase-status deploy-prod rollback-prod status-prod logs-traefik
+.PHONY: help build build-dev up-prod up-dev up-local infra-up infra-down infra-logs dev-local dev-backend dev-webapp dev-admin dev-rest dev-ws dev-worker down logs logs-webapp logs-backend restart clean scale scale-webapp scale-hocuspocus ps stats supabase-start supabase-stop supabase-status deploy-prod rollback-prod status-prod logs-traefik
 
 help:
 	@echo "Docsplus Full Stack Docker Commands"
@@ -24,6 +24,7 @@ help:
 	@echo "  make dev-local          - Start all services (backend + frontend)"
 	@echo "  make dev-backend        - Start backend services (REST, WS, Worker)"
 	@echo "  make dev-webapp         - Start frontend only"
+	@echo "  make dev-admin          - Start admin dashboard only"
 	@echo "  make dev-rest           - Start REST API only"
 	@echo "  make dev-ws             - Start WebSocket server only"
 	@echo "  make dev-worker         - Start Worker only"
@@ -234,7 +235,11 @@ dev-backend:
 
 dev-webapp:
 	@echo "🚀 Starting frontend..."
-	@cd packages/webapp && dotenv -e ../../.env.local -- next dev --turbopack
+	@cd packages/webapp && bunx dotenv -e ../../.env.local -- next dev --turbopack
+
+dev-admin:
+	@echo "🎛️  Starting Admin Dashboard..."
+	@cd packages/admin-dashboard && bunx dotenv -e ../../.env.local -- next dev -p 3100 --turbopack
 
 dev-rest:
 	@cd packages/hocuspocus.server && NODE_ENV=development bun --env-file ../../.env.local --watch src/index.ts

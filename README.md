@@ -20,7 +20,7 @@ docs.plus is a free, real-time collaboration tool built on open-source technolog
 
 **Tech Stack:**
 
-- **Runtime**: 🚀 Bun 1.3.2+
+- **Runtime**: 🚀 Bun 1.3.7+
 - **Frontend**: ⚛️ Next.js 15, React, TipTap, Tailwind CSS
 - **Backend**: 🔧 Hono, Hocuspocus (Y.js), Prisma ORM
 - **Database**: 🐘 PostgreSQL 17, 🔴 Redis
@@ -31,7 +31,7 @@ docs.plus is a free, real-time collaboration tool built on open-source technolog
 
 - 🐳 **Docker** & **Docker Compose** v2+ - [Install](https://docs.docker.com/get-docker/)
   - ⚠️ **macOS Silicon users:** Docker Desktop has IO performance issues. Use [OrbStack](https://orbstack.dev/) instead (drop-in replacement, faster, lighter).
-- 🚀 **Bun** >=1.3.2 - [Install](https://bun.sh/docs/installation)
+- 🚀 **Bun** >=1.3.7 - [Install](https://bun.sh/docs/installation)
 - 🗄️ **Supabase CLI** - [Install](https://supabase.com/docs/guides/cli/installation)
 
 ## 🚀 Quick Start
@@ -145,6 +145,56 @@ You still need to configure your cloud project:
 - Activate **pg_cron** and **pgmq (Queues)** extensions in the Dashboard
 - Run SQL scripts from `packages/supabase/scripts/` in order via SQL Editor
 - Configure queues and permissions (same as local setup)
+
+**Step 4: Configure Push Notifications (Vault)** 🔔
+
+Push notifications require configuration stored in Supabase Vault. Run these SQL commands in the **SQL Editor**:
+
+```sql
+-- Add secrets to Vault
+SELECT vault.create_secret(
+    'https://your-backend-url.com',  -- Your Hocuspocus backend URL
+    'hocuspocus_url',
+    'Hocuspocus backend URL for push notifications'
+);
+
+SELECT vault.create_secret(
+    'your-service-role-key-here',  -- From Settings → API → service_role
+    'service_role_key',
+    'Supabase service role key'
+);
+
+-- Update the push config function to read from Vault
+CREATE OR REPLACE FUNCTION internal.get_push_config()
+RETURNS table (edge_url text, service_key text)
+LANGUAGE plpgsql
+SECURITY DEFINER
+AS $$
+DECLARE
+    v_hocuspocus_url text;
+    v_service_key text;
+BEGIN
+    SELECT decrypted_secret INTO v_hocuspocus_url
+    FROM vault.decrypted_secrets WHERE name = 'hocuspocus_url';
+
+    SELECT decrypted_secret INTO v_service_key
+    FROM vault.decrypted_secrets WHERE name = 'service_role_key';
+
+    IF v_hocuspocus_url IS NULL OR v_service_key IS NULL THEN
+        RETURN;
+    END IF;
+
+    RETURN QUERY SELECT
+        v_hocuspocus_url || '/api/push/send',
+        v_service_key;
+END;
+$$;
+
+-- Verify configuration
+SELECT * FROM internal.get_push_config();
+```
+
+**Note:** Supabase Cloud doesn't allow `ALTER DATABASE SET` for custom parameters, so we use Vault for secure secret storage.
 
 **Note:** Make sure your Supabase project allows connections from your Docker network or configure network settings accordingly.
 

@@ -70,11 +70,12 @@ services:
 
   # ===========================================================================
   # REDIS - Shared Cache & Pub/Sub
+  # Critical infrastructure - must restart on any failure
   # ===========================================================================
   redis:
     image: redis:7-alpine
     container_name: docsplus-redis
-    restart: unless-stopped
+    restart: always
     command: >
       redis-server
       --appendonly yes
@@ -110,6 +111,7 @@ services:
 
   # ===========================================================================
   # REST API (Hocuspocus)
+  # Handles HTTP requests and queues jobs - does NOT process jobs
   # ===========================================================================
   rest-api:
     image: docsplus-rest-api:${DEPLOY_TAG:-latest}
@@ -120,7 +122,7 @@ services:
       target: production
       args:
         DATABASE_URL: ${DATABASE_URL}
-    restart: unless-stopped
+    restart: always  # Always restart on failure
     stop_grace_period: 30s
     stop_signal: SIGTERM
     command: bun /app/src/index.ts
@@ -145,6 +147,8 @@ services:
       DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
       DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
       DO_STORAGE_MAX_FILE_SIZE: ${DO_STORAGE_MAX_FILE_SIZE:-52428800}
+      # VAPID public key (needed for API responses, not sending)
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
     networks:
       - docsplus-network
     depends_on:
@@ -173,8 +177,8 @@ services:
         ]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 20s
+      retries: 5  # More retries
+      start_period: 30s
     logging:
       driver: 'json-file'
       options:
@@ -190,9 +194,15 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 0
+        window: 60s
 
   # ===========================================================================
   # HOCUSPOCUS WEBSOCKET SERVER
+  # Real-time collaboration - does NOT process background jobs
   # ===========================================================================
   hocuspocus-server:
     image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
@@ -203,7 +213,7 @@ services:
       target: production
       args:
         DATABASE_URL: ${DATABASE_URL}
-    restart: unless-stopped
+    restart: always  # Always restart on failure
     stop_grace_period: 30s
     stop_signal: SIGTERM
     command: bun /app/src/hocuspocus.server.ts
@@ -261,8 +271,8 @@ services:
         ]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 20s
+      retries: 5  # More retries
+      start_period: 30s
     logging:
       driver: 'json-file'
       options:
@@ -278,9 +288,16 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 0
+        window: 60s
 
   # ===========================================================================
   # HOCUSPOCUS WORKER (Background Jobs)
+  # Processes ALL queued jobs: documents, emails, push notifications
+  # This is the ONLY container that runs BullMQ workers (not rest-api)
   # ===========================================================================
   hocuspocus-worker:
     image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
@@ -291,7 +308,7 @@ services:
       target: production
       args:
         DATABASE_URL: ${DATABASE_URL}
-    restart: unless-stopped
+    restart: always  # Always restart on failure (was: unless-stopped)
     stop_grace_period: 30s
     stop_signal: SIGTERM
     command: bun /app/src/hocuspocus.worker.ts
@@ -313,6 +330,19 @@ services:
       DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
       DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
       DO_STORAGE_BUCKET: ${DO_STORAGE_BUCKET}
+      # Email Gateway (SMTP)
+      SMTP_HOST: ${SMTP_HOST}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER}
+      SMTP_PASS: ${SMTP_PASS}
+      SMTP_FROM_EMAIL: ${SMTP_FROM_EMAIL:-noreply@docs.plus}
+      SMTP_FROM_NAME: ${SMTP_FROM_NAME:-Docs.plus}
+      # Email Gateway (Resend - alternative)
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      # Push Notifications (VAPID)
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:support@docs.plus}
     networks:
       - docsplus-network
     depends_on:
@@ -325,12 +355,12 @@ services:
           'CMD',
           'bun',
           '-e',
-          "fetch('http://localhost:4002/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+          "fetch('http://localhost:4002/health').then(r => r.json()).then(h => h.status === 'healthy' ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
         ]
       interval: 10s
       timeout: 5s
-      retries: 3
-      start_period: 20s
+      retries: 5  # More retries before marking unhealthy
+      start_period: 30s  # More time for initial startup
     logging:
       driver: 'json-file'
       options:
@@ -338,7 +368,7 @@ services:
         max-file: '5'
         compress: 'true'
     deploy:
-      replicas: 1
+      replicas: 1  # Single worker to prevent duplicate job processing
       resources:
         limits:
           cpus: '1'
@@ -346,6 +376,12 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
+      # Restart policy for swarm mode
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 0  # Unlimited restarts
+        window: 60s
 
   # ===========================================================================
   # WEBAPP (Next.js Frontend)
@@ -366,7 +402,7 @@ services:
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
         NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-    restart: unless-stopped
+    restart: always  # Always restart on failure
     stop_grace_period: 30s
     stop_signal: SIGTERM
     environment:
@@ -407,8 +443,8 @@ services:
           "fetch('http://localhost:3000/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
         ]
       interval: 10s
-      timeout: 3s
-      retries: 3
+      timeout: 5s
+      retries: 5  # More retries
       start_period: 30s
     logging:
       driver: 'json-file'
@@ -425,6 +461,11 @@ services:
         reservations:
           cpus: '0.25'
           memory: 256M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 0
+        window: 60s
 
 # =============================================================================
 # VOLUMES
