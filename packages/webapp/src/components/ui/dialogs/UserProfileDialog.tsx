@@ -1,12 +1,12 @@
 import { useEffect, useMemo } from 'react'
-import { IoCloseSharp } from 'react-icons/io5'
 import { MdMailOutline, MdPhone, MdLink } from 'react-icons/md'
 
 import { getUserProfileForModal } from '@api'
 import { Avatar } from '@components/ui/Avatar'
 import Loading from '@components/ui/Loading'
-import { SOCIAL_MEDIA_ICONS } from '@components/pages/panels/profile/constants'
-import { ILinkItem } from '@components/pages/panels/profile/types'
+import CloseButtonUI from '@components/ui/CloseButton'
+import { SOCIAL_MEDIA_ICONS } from '@components/profile/constants'
+import { ILinkItem } from '@components/profile/types'
 import { useStore } from '@stores'
 import { useSupabase } from '@hooks/useSupabase'
 import type { PostgrestError } from '@supabase/supabase-js'
@@ -30,8 +30,6 @@ type SanitizedLink = {
 
 type UserProfileResponse = Awaited<ReturnType<typeof getUserProfileForModal>>
 type UserProfileRecord = NonNullable<UserProfileResponse['data']>
-
-const DEFAULT_LINK_BACKGROUND = 'rgba(15, 23, 42, 0.05)'
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0
@@ -73,15 +71,6 @@ const sanitizeLinks = (rawLinks: unknown): SanitizedLink[] => {
   }, [])
 }
 
-const computeLinkBackgroundColor = (color?: string) => {
-  if (!color) return DEFAULT_LINK_BACKGROUND
-  const trimmed = color.trim()
-  if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(trimmed)) {
-    return `${trimmed}20`
-  }
-  return trimmed
-}
-
 export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
   const closeDialog = useStore((state) => state.closeDialog)
   const {
@@ -117,11 +106,11 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
 
   const getLinkIcon = (link: SanitizedLink) => {
     if (link.type === 'email') {
-      return <MdMailOutline className="h-5 w-5" aria-hidden="true" />
+      return <MdMailOutline className="size-5 text-slate-600" aria-hidden="true" />
     }
 
     if (link.type === 'phone') {
-      return <MdPhone className="h-5 w-5" aria-hidden="true" />
+      return <MdPhone className="size-5 text-slate-600" aria-hidden="true" />
     }
 
     if (link.type === 'social') {
@@ -130,7 +119,7 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
         const SocialIcon = SOCIAL_MEDIA_ICONS[domain]?.icon
         if (SocialIcon) {
           return (
-            <SocialIcon className="h-5 w-5" style={{ color: SOCIAL_MEDIA_ICONS[domain].color }} />
+            <SocialIcon className="size-5" style={{ color: SOCIAL_MEDIA_ICONS[domain].color }} />
           )
         }
       } catch {
@@ -138,7 +127,7 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
       }
     }
 
-    return <MdLink className="h-5 w-5" aria-hidden="true" />
+    return <MdLink className="size-5 text-slate-600" aria-hidden="true" />
   }
 
   const renderLinkItem = (link: SanitizedLink) => {
@@ -150,41 +139,39 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
           : link.url
 
     const openInNewTab = link.type === 'social' || link.type === 'simple'
-    const backgroundColor = computeLinkBackgroundColor(link.themeColor)
 
     return (
-      <div
+      <a
         key={link.key}
-        className="group hover:bg-opacity-30 mb-3 w-full rounded-lg p-3 transition-all"
-        style={{ backgroundColor }}>
-        <a
-          href={href}
-          target={openInNewTab ? '_blank' : undefined}
-          rel={openInNewTab ? 'noopener noreferrer' : undefined}
-          className="flex items-center space-x-3 text-gray-700 hover:text-gray-900">
-          <span className="flex-shrink-0">{getLinkIcon(link)}</span>
-          <div className="flex-1 overflow-hidden">
-            <span className="block truncate">{link.title}</span>
-            {link.description && (
-              <span className="mt-1 block truncate text-sm text-gray-500">{link.description}</span>
-            )}
-          </div>
-        </a>
-      </div>
+        href={href}
+        target={openInNewTab ? '_blank' : undefined}
+        rel={openInNewTab ? 'noopener noreferrer' : undefined}
+        className="flex items-center gap-3 rounded-xl bg-slate-50 p-3 transition-colors hover:bg-slate-100">
+        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+          {getLinkIcon(link)}
+        </span>
+        <div className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium text-slate-700">{link.title}</span>
+          {link.description && (
+            <span className="block truncate text-xs text-slate-500">{link.description}</span>
+          )}
+        </div>
+      </a>
     )
   }
 
+  // Close button component for reuse
+  const CloseButton = () => <CloseButtonUI onClick={closeDialog} />
+
   if (!userId) {
     return (
-      <div className="flex flex-col gap-4 p-6">
-        <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold">No user selected</h2>
-            <p className="text-sm text-gray-500">Choose a user to see their profile.</p>
+            <h2 className="text-lg font-semibold text-slate-800">No user selected</h2>
+            <p className="text-sm text-slate-500">Choose a user to see their profile.</p>
           </div>
-          <button className="btn btn-square btn-xs" onClick={closeDialog}>
-            <IoCloseSharp size={20} />
-          </button>
+          <CloseButton />
         </div>
       </div>
     )
@@ -192,7 +179,7 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center p-4">
+      <div className="flex items-center justify-center p-8">
         <Loading />
       </div>
     )
@@ -200,15 +187,13 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
 
   if (error) {
     return (
-      <div className="flex flex-col gap-4 p-6">
-        <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold">Unable to load profile</h2>
-            <p className="text-sm text-gray-500">{error.message || 'Please try again later.'}</p>
+            <h2 className="text-lg font-semibold text-slate-800">Unable to load profile</h2>
+            <p className="text-sm text-slate-500">{error.message || 'Please try again later.'}</p>
           </div>
-          <button className="btn btn-square btn-xs" onClick={closeDialog}>
-            <IoCloseSharp size={20} />
-          </button>
+          <CloseButton />
         </div>
       </div>
     )
@@ -216,15 +201,13 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
 
   if (!userData) {
     return (
-      <div className="flex flex-col gap-4 p-6">
-        <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 p-4 sm:p-6">
+        <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold">User not available</h2>
-            <p className="text-sm text-gray-500">We couldn&apos;t load this profile right now.</p>
+            <h2 className="text-lg font-semibold text-slate-800">User not available</h2>
+            <p className="text-sm text-slate-500">We couldn&apos;t load this profile right now.</p>
           </div>
-          <button className="btn btn-square btn-xs" onClick={closeDialog}>
-            <IoCloseSharp size={20} />
-          </button>
+          <CloseButton />
         </div>
       </div>
     )
@@ -239,42 +222,45 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
 
   return (
     <div className="flex max-h-[80vh] flex-col">
-      <div className="sticky top-0 bg-white p-6 pb-0">
-        <div className="flex items-center">
-          <div className="flex flex-1 items-center space-x-4">
-            <Avatar
-              id={userData.id || userId}
-              src={isNonEmptyString(userData.avatar_url) ? userData.avatar_url : undefined}
-              avatarUpdatedAt={userData.avatar_updated_at}
-              alt={fullName}
-              clickable={false}
-              className="size-[64px] rounded-full object-cover"
-            />
-            <div>
-              <h2 className="text-xl font-bold">{fullName}</h2>
-              {username && <p className="text-gray-600">@{username}</p>}
-            </div>
+      {/* Header */}
+      <div className="sticky top-0 z-10 bg-white p-4 sm:p-6">
+        <div className="flex items-center gap-4">
+          <Avatar
+            id={userData.id || userId}
+            src={isNonEmptyString(userData.avatar_url) ? userData.avatar_url : undefined}
+            avatarUpdatedAt={userData.avatar_updated_at}
+            alt={fullName}
+            clickable={false}
+            className="size-14 shrink-0 rounded-full border-2 border-white object-cover shadow-md sm:size-16"
+          />
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-lg font-bold text-slate-800 sm:text-xl">{fullName}</h2>
+            {username && <p className="truncate text-sm text-slate-500">@{username}</p>}
           </div>
-          <button className="btn btn-square btn-xs" onClick={closeDialog}>
-            <IoCloseSharp size={20} />
-          </button>
+          <CloseButton />
         </div>
       </div>
 
-      {(bio || hasContactInfo) && <div className="divider h-0"></div>}
+      {/* Divider */}
+      {(bio || hasContactInfo) && <div className="h-px bg-slate-200" />}
 
-      <div className="flex-1 overflow-y-auto p-6 pt-0">
+      {/* Content */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         {bio && (
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">About</h3>
-            <p className="whitespace-pre-line text-gray-700">{bio}</p>
+          <div className="mb-6">
+            <h3 className="mb-2 text-sm font-semibold tracking-wide text-slate-400 uppercase">
+              About
+            </h3>
+            <p className="text-sm whitespace-pre-line text-slate-600 sm:text-base">{bio}</p>
           </div>
         )}
 
         {hasContactInfo && (
-          <div className="mt-5 space-y-3">
-            <h3 className="text-lg font-semibold">Contact Information</h3>
-            <div className="space-y-2">{links.map(renderLinkItem)}</div>
+          <div>
+            <h3 className="mb-3 text-sm font-semibold tracking-wide text-slate-400 uppercase">
+              Links
+            </h3>
+            <div className="flex flex-col gap-2">{links.map(renderLinkItem)}</div>
           </div>
         )}
       </div>
