@@ -519,7 +519,7 @@ services:
       - 'traefik.http.routers.admin.entrypoints=websecure'
       - 'traefik.http.routers.admin.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.admin.service=admin'
-      - 'traefik.http.routers.admin.middlewares=security-headers@file,gzip@file'
+      - 'traefik.http.routers.admin.middlewares=security-headers@file,compress@file'
       - 'traefik.http.services.admin.loadbalancer.server.port=3100'
       # Health check
       - 'traefik.http.services.admin.loadbalancer.healthcheck.path=/api/health'

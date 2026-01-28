@@ -196,6 +196,34 @@ SELECT * FROM internal.get_push_config();
 
 **Note:** Supabase Cloud doesn't allow `ALTER DATABASE SET` for custom parameters, so we use Vault for secure secret storage.
 
+**Step 5: Configure OAuth Redirect URLs** 🔐
+
+Go to **Authentication → URL Configuration** in Supabase Dashboard and add your **Redirect URLs**:
+
+```
+https://yourdomain.com
+https://yourdomain.com/*
+https://admin.yourdomain.com
+https://admin.yourdomain.com/*
+```
+
+Replace `yourdomain.com` with your actual domain.
+
+**Step 6: Add Admin Users** 👤
+
+Only users in the `admin_users` table can access the admin dashboard. Run this SQL to grant access:
+
+```sql
+-- Add admin user by email
+INSERT INTO public.admin_users (user_id, created_at)
+SELECT id, now() FROM auth.users WHERE email = 'your-admin@example.com';
+
+-- Verify admin users
+SELECT u.email, a.created_at
+FROM public.admin_users a
+JOIN auth.users u ON a.user_id = u.id;
+```
+
 **Note:** Make sure your Supabase project allows connections from your Docker network or configure network settings accordingly.
 
 </details>
