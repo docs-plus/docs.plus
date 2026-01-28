@@ -13,6 +13,19 @@ const useServiceWorker = () => {
   useEffect(() => {
     if (typeof window === 'undefined' || !('serviceWorker' in navigator)) return
 
+    // Register the service worker
+    const registerServiceWorker = async () => {
+      try {
+        const registration = await navigator.serviceWorker.register('/service-worker.js')
+        console.info('Service worker registered:', registration.scope)
+
+        // Check for updates immediately
+        registration.update()
+      } catch (error) {
+        console.error('Service worker registration failed:', error)
+      }
+    }
+
     // When new SW is waiting, activate it and reload
     const handleNewVersion = () => {
       navigator.serviceWorker.getRegistration().then((reg) => {
@@ -42,6 +55,9 @@ const useServiceWorker = () => {
     if (window.workbox) {
       window.workbox.addEventListener('waiting', handleNewVersion)
       window.workbox.register()
+    } else {
+      // No workbox, register manually
+      registerServiceWorker()
     }
 
     return () => {
