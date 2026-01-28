@@ -2,19 +2,20 @@ import DocTitle from '../DocTitle'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
 import FilterBar from './FilterBar'
 import { useStore } from '@stores'
-import Modal from '@components/ui/Modal'
+import { Modal, ModalContent } from '@components/ui/Dialog'
 import React, { useState } from 'react'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
+import UnreadBadge from '@components/ui/UnreadBadge'
 import { useAuthStore } from '@stores'
 import { MdMenu, MdNotifications } from 'react-icons/md'
-import ProfilePanel from '@components/pages/panels/profile/ProfilePanel'
-import TabLayout from '@components/pages/TabLayout'
-import SignInPanel from '@components/pages/panels/SignInPanel'
+import ProfilePanel from '@components/profile/ProfilePanel'
+import SignInForm from '@components/auth/SignInForm'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import { BiCheck, BiUndo, BiRedo } from 'react-icons/bi'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 import { useBottomSheet } from '@hooks/useBottomSheet'
+
 interface UserProfileButtonProps {
   user: any
   onProfileClick: () => void
@@ -28,8 +29,8 @@ interface UndoRedoButtonsProps {
 const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
   if (isEditable) {
     return (
-      <ToolbarButton className="text-docsy size-8">
-        <BiCheck size={32} className="size-12" />
+      <ToolbarButton className="text-primary size-8">
+        <BiCheck size={32} />
       </ToolbarButton>
     )
   }
@@ -38,8 +39,8 @@ const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
     <label
       htmlFor="mobile_left_side_panel"
       aria-label="close sidebar"
-      className="btn drawer-button btn-ghost btn-square size-8">
-      <MdMenu size={30} />
+      className="btn btn-ghost btn-square size-9">
+      <MdMenu size={28} className="text-base-content" />
     </label>
   )
 }
@@ -48,7 +49,9 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
   if (user) {
     return (
       <Button
-        className="btn-circle btn-ghost tooltip tooltip-bottom p-0"
+        variant="ghost"
+        shape="circle"
+        className="tooltip tooltip-bottom p-0"
         onClick={onProfileClick}
         data-tip="Profile">
         <Avatar
@@ -56,15 +59,16 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
           avatarUpdatedAt={user.avatar_updated_at}
           clickable={false}
           src={user.avatar_url}
-          className="bg-base-300 size-[42px] cursor-pointer rounded-full border shadow-md"
+          size="md"
+          className="border-base-300 cursor-pointer border shadow-md"
         />
       </Button>
     )
   }
 
   return (
-    <Button id="btn_signin" className="btn btn-neutral btn-sm" onClick={onProfileClick}>
-      Signin
+    <Button variant="neutral" size="sm" onClick={onProfileClick}>
+      Sign in
     </Button>
   )
 }
@@ -76,18 +80,20 @@ const NotificationButton = () => {
 
   return (
     <Button
-      className="btn-ghost tooltip tooltip-bottom relative p-2"
+      variant="ghost"
+      className="tooltip tooltip-bottom relative p-2"
       data-tip="Notifications"
       onClick={openNotifications}>
       <MdNotifications
-        size={26}
-        className={`text-docsy ${unreadCount > 0 ? 'text-docsy' : 'text-docsy/80'}`}
+        size={24}
+        className={unreadCount > 0 ? 'text-primary' : 'text-base-content/70'}
       />
-      {unreadCount > 0 && (
-        <div className="absolute top-[2px] right-[2px] flex h-4.5 w-4.5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
-          {unreadCount}
-        </div>
-      )}
+      <UnreadBadge
+        count={unreadCount}
+        size="xs"
+        variant="error"
+        className="absolute top-0.5 right-0.5"
+      />
     </Button>
   )
 }
@@ -95,23 +101,23 @@ const NotificationButton = () => {
 const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
   return (
     <div className={`flex items-center ${className}`}>
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         <ToolbarButton
           onClick={() => editor?.commands.undo()}
           editor={editor}
           type="undo"
-          className="size-8">
-          <BiUndo size={26} />
+          className="size-9">
+          <BiUndo size={24} />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor?.commands.redo()}
           editor={editor}
           type="redo"
-          className="size-8">
-          <BiRedo size={26} />
+          className="size-9">
+          <BiRedo size={24} />
         </ToolbarButton>
       </div>
-      <span className="divider divider-horizontal"></span>
+      <div className="divider divider-horizontal mx-2" />
     </div>
   )
 }
@@ -125,14 +131,17 @@ const MobilePadTitle = () => {
 
   return (
     <>
-      <div className="docTitle sticky top-0 left-0 z-10 h-auto w-full bg-white">
-        <div className="relative z-10 flex min-h-12 w-full flex-col items-center border-b border-gray-300 bg-white p-2">
-          <div className="flex w-full flex-row items-center justify-between gap-2">
-            <div className="flex min-w-0 flex-1 items-center gap-2">
+      {/* Sticky mobile header - theme-aware */}
+      <header className="bg-base-100 sticky top-0 left-0 z-30 w-full">
+        <div className="border-base-300 flex min-h-12 w-full flex-col border-b px-2 py-2">
+          {/* Main row */}
+          <div className="flex w-full items-center justify-between gap-2">
+            {/* Left section */}
+            <div className="flex min-w-0 flex-1 items-center gap-1">
               <EditableToggle isEditable={isEditable} />
 
               {isEditable ? (
-                <UndoRedoButtons editor={editor} className="ml-4" />
+                <UndoRedoButtons editor={editor} className="ml-2" />
               ) : (
                 <div className="min-w-0 flex-1 overflow-hidden">
                   <DocTitle className="truncate text-sm font-medium" />
@@ -140,32 +149,32 @@ const MobilePadTitle = () => {
               )}
             </div>
 
+            {/* Right section */}
             <div className="flex shrink-0 items-center gap-1">
               <ReadOnlyIndicator />
               <NotificationButton />
               <UserProfileButton user={user} onProfileClick={() => setProfileModalOpen(true)} />
             </div>
           </div>
+
+          {/* Filter bar row */}
           <div className="w-full">
             <FilterBar />
           </div>
         </div>
-      </div>
+      </header>
 
-      <Modal
-        asAChild={false}
-        id="modal_profile"
-        isOpen={isProfileModalOpen}
-        setIsOpen={setProfileModalOpen}>
-        {user ? (
-          <TabLayout name="profile" className="h-full max-h-[94%] max-w-[64rem]">
-            <ProfilePanel />
-          </TabLayout>
-        ) : (
-          <TabLayout name="sign-in" footer={false} className="w-full p-6 sm:w-[28rem] sm:p-6">
-            <SignInPanel />
-          </TabLayout>
-        )}
+      {/* Profile Modal */}
+      <Modal open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
+        <ModalContent size={user ? '4xl' : 'md'} className="overflow-hidden rounded-2xl p-0">
+          {user ? (
+            <ProfilePanel onClose={() => setProfileModalOpen(false)} />
+          ) : (
+            <div className="w-full p-6 sm:p-8">
+              <SignInForm variant="inline" />
+            </div>
+          )}
+        </ModalContent>
       </Modal>
     </>
   )

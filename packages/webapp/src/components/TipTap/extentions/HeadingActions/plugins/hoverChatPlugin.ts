@@ -29,6 +29,7 @@ const createChatButton = (headingId: string, editor: Editor): HTMLButtonElement 
   )
   button.setAttribute('type', 'button')
   button.setAttribute('data-tip', 'Open chat')
+  button.dataset.headingId = headingId
 
   Object.assign(button.style, {
     userSelect: 'none',

@@ -1,11 +1,13 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react'
 import { useStore } from '@stores'
 import { TIPTAP_NODES } from '@types'
-import toast from 'react-hot-toast'
+import * as toast from '@components/toast'
 import { MdCloudUpload, MdOutlineImage, MdAudiotrack } from 'react-icons/md'
 import { FaYoutube, FaVimeo, FaSoundcloud, FaXTwitter } from 'react-icons/fa6'
 import { FiFilm } from 'react-icons/fi'
 import { usePopoverState } from '@components/ui/Popover'
+import Button from '@components/ui/Button'
+import TextInput from '@components/ui/TextInput'
 
 // Types and Interfaces
 type MediaType = 'Picture' | 'Video' | 'Audio' | 'Youtube' | 'Vimeo' | 'SoundCloud' | 'x.com'
@@ -36,13 +38,13 @@ const MEDIA_CONFIG: Record<MediaType, MediaConfig> = {
     icon: FiFilm,
     command: 'setVideo',
     regex:
-      /^(?:(?:https?|ftp):\/\/(?:www\.)?[^\/]+\/|\/|\.\.?\/)?[\w\-\/\\]+\.(mp4|avi|mov|wmv|flv|mkv|3gp|3g2|asf|divx|m4v|mpg|m2v|m4p|mts|m2ts|ogv|rm|rmvb|ts|vob|webm|qt|f4v)$/i
+      /^(?:(?:https?|ftp):\/\/(?:www\.)?[^/]+\/|\/|\.\.?\/)?[\w\-/\\]+\.(mp4|avi|mov|wmv|flv|mkv|3gp|3g2|asf|divx|m4v|mpg|m2v|m4p|mts|m2ts|ogv|rm|rmvb|ts|vob|webm|qt|f4v)$/i
   },
   Audio: {
     icon: MdAudiotrack,
     command: 'setAudio',
     regex:
-      /^(?:(?:https?|ftp):\/\/(?:www\.)?[^\/]+\/|\/|\.\.?\/)?[\w\-\/\\]+\.(mp3|wav|aac|flac|ogg|m4a|aiff|ape|asf|m4p|m4b|mp2|mpc|wma|webm|opus|ra|rm|wavpack|wv)$/i
+      /^(?:(?:https?|ftp):\/\/(?:www\.)?[^/]+\/|\/|\.\.?\/)?[\w\-/\\]+\.(mp3|wav|aac|flac|ogg|m4a|aiff|ape|asf|m4p|m4b|mp2|mpc|wma|webm|opus|ra|rm|wavpack|wv)$/i
   },
   Youtube: {
     icon: FaYoutube,
@@ -238,10 +240,10 @@ const useUploadManager = (editor: any) => {
           editor.view.dispatch(tr)
         }
 
-        toast.success('Upload successful!')
+        toast.Success('Upload successful!')
       } catch (error) {
         console.error('Upload error:', error)
-        toast.error(error instanceof Error ? error.message : 'Error uploading file')
+        toast.Error(error instanceof Error ? error.message : 'Error uploading file')
 
         // Remove placeholder on error
         const { state } = editor
@@ -281,12 +283,14 @@ const MediaTypeButton: React.FC<MediaTypeButtonProps> = ({ type, isActive, onCli
   const IconComponent = MEDIA_CONFIG[type].icon
 
   return (
-    <button
-      className={`btn btn-sm join-item tooltip flex-1 ${isActive ? 'btn-primary' : 'btn-ghost'}`}
+    <Button
+      variant={isActive ? 'primary' : 'ghost'}
+      size="sm"
+      className="join-item tooltip flex-1"
       data-tip={type}
-      onClick={onClick}>
-      <IconComponent size={18} />
-    </button>
+      onClick={onClick}
+      startIcon={<IconComponent size={18} />}
+    />
   )
 }
 
@@ -328,7 +332,7 @@ const UploadDropzone: React.FC<UploadDropzoneProps> = ({ onFileUpload }) => {
     ) {
       onFileUpload(file)
     } else {
-      toast.error('Please drop a valid image, video, or audio file')
+      toast.Error('Please drop a valid image, video, or audio file')
     }
   }
 
@@ -461,22 +465,23 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
         {/* URL Input */}
         <div className="form-control">
           <div className="join w-full">
-            <div className="w-full">
-              <label className="input validator join-item">
-                <IconComponent size={20} />
-                <input
-                  ref={inputRef}
-                  type="url"
-                  placeholder={`Enter ${mediaType} URL...`}
-                  value={mediaURL}
-                  onChange={handleURLChange}
-                />
-              </label>
-              <div className="validator-hint hidden">Enter valid URL</div>
-            </div>
-            <button className="btn btn-neutral join-item" type="submit" disabled={!mediaURL.trim()}>
+            <TextInput
+              ref={inputRef}
+              type="url"
+              placeholder={`Enter ${mediaType} URL...`}
+              value={mediaURL}
+              onChange={handleURLChange}
+              startIcon={<IconComponent size={18} />}
+              wrapperClassName="flex-1"
+              className="join-item rounded-r-none"
+            />
+            <Button
+              variant="neutral"
+              className="join-item"
+              type="submit"
+              disabled={!mediaURL.trim()}>
               Insert
-            </button>
+            </Button>
           </div>
         </div>
 

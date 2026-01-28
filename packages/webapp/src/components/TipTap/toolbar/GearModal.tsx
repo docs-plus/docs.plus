@@ -1,34 +1,60 @@
 import React, { useState, useEffect } from 'react'
 import Button from '@components/ui/Button'
+import Textarea from '@components/ui/Textarea'
+import CloseButton from '@components/ui/CloseButton'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
-import toast from 'react-hot-toast'
+import * as toast from '@components/toast'
 import { saveDocDescriptionHandler, saveDocReadOnlyPage } from './toolbarUtils'
 import Toggle from '@components/ui/Toggle'
 import Image from 'next/image'
 import { twMerge } from 'tailwind-merge'
 import { useAuthStore, useStore, useEditorPreferences } from '@stores'
-import { Gear } from '@icons'
+import { LuSquareSplitVertical, LuFileText } from 'react-icons/lu'
 import { TagsInput } from 'react-tag-input-component'
-import { TbPageBreak } from 'react-icons/tb'
-import { HiOutlineDocumentText } from 'react-icons/hi'
+import { usePopoverState } from '@components/ui/Popover'
 
-const ToggleSection = ({ name, className, description, value, checked, onChange }: any) => {
-  const containerClasses = twMerge(`flex flex-col p-2 antialiased `, className)
+interface ToggleSectionProps {
+  name: string
+  className?: string
+  description: string
+  value?: string
+  checked: boolean
+  onChange: () => void
+}
 
+const ToggleSection = ({
+  name,
+  className,
+  description,
+  value,
+  checked,
+  onChange
+}: ToggleSectionProps) => {
   return (
-    <div className={containerClasses}>
-      <p className="text-base font-bold">{name}</p>
-      <div className="flex w-full flex-row items-center justify-between align-middle">
-        <p className="text-sm text-gray-500">{description}</p>
-        <div className="mr-6 ml-2 h-full flex-col border-l px-3 py-2">
-          <Toggle id={value} checked={checked} onChange={onChange} />
-        </div>
+    <div className={twMerge('flex items-center justify-between gap-4 py-3', className)}>
+      <div className="min-w-0 flex-1">
+        <p className="text-base-content text-sm font-medium">{name}</p>
+        <p className="text-base-content/50 text-xs">{description}</p>
       </div>
+      <Toggle
+        id={value}
+        checked={checked}
+        onChange={() => onChange()}
+        size="sm"
+        variant="primary"
+      />
     </div>
   )
 }
 
-const GearModal = ({ className }: any) => {
+interface GearModalProps {
+  className?: string
+  onClose?: () => void
+}
+
+const GearModal = ({ className, onClose }: GearModalProps) => {
+  const popoverState = usePopoverState()
+  const handleClose = onClose || popoverState.close
   const user = useAuthStore((state) => state.profile)
   const {
     hocuspocusProvider,
@@ -39,9 +65,9 @@ const GearModal = ({ className }: any) => {
   // Editor preferences from store (persisted in localStorage)
   const { preferences, togglePreference } = useEditorPreferences()
 
-  const [docDescription, setDocDescription] = useState(docMetadata.description)
+  const [docDescription, setDocDescription] = useState(docMetadata.description || '')
   const { isLoading, isSuccess, mutate } = useUpdateDocMetadata()
-  const [tags, setTags] = useState(docMetadata.keywords)
+  const [tags, setTags] = useState<string[]>(docMetadata.keywords || [])
   const [readOnly, setreadOnly] = useState(docMetadata.readOnly || false)
   const [formTargetHandler, setFormTargetHndler] = useState('description')
 
@@ -65,8 +91,8 @@ const GearModal = ({ className }: any) => {
 
   useEffect(() => {
     if (isSuccess) {
-      if (formTargetHandler === 'readOnly') toast.success('Read-only status updated')
-      else toast.success('Description and keywords updated')
+      if (formTargetHandler === 'readOnly') toast.Success('Read-only status updated')
+      else toast.Success('Description and keywords updated')
     }
   }, [isSuccess])
 
@@ -77,40 +103,28 @@ const GearModal = ({ className }: any) => {
     const { full_name, username } = docMetadata.ownerProfile
 
     return (
-      <div className="mt-2 rounded-md border p-2 antialiased">
-        <p className="font-bold">Document Owner: </p>
-
-        <div className="flex items-center justify-between align-baseline">
-          <div className="mt-1 ml-2">
-            <p className="text-sm">
-              <b>Name: </b>
-              {full_name}
-            </p>
-            {username && (
-              <p className="text-xs text-gray-500">
-                <b>Username: </b>
-                {username}
-              </p>
-            )}
-          </div>
-          {/* <p className="font-semibold text-gray-400 underline underline-offset-1"> Public document</p> */}
-
+      <div className="rounded-box border-base-300 bg-base-200/50 mt-4 border p-4">
+        <div className="mb-3 flex items-center gap-3">
           <Image
-            className="size-9 rounded-full border-2"
+            className="border-base-100 size-10 rounded-full border-2"
             src={
               docMetadata?.ownerProfile?.avatar_url || docMetadata?.ownerProfile?.default_avatar_url
             }
-            height={32}
-            width={32}
+            height={40}
+            width={40}
             alt={full_name}
             title={full_name}
           />
+          <div className="min-w-0 flex-1">
+            <p className="text-base-content truncate text-sm font-medium">{full_name}</p>
+            {username && <p className="text-base-content/50 truncate text-xs">@{username}</p>}
+          </div>
         </div>
         {user?.id === docMetadata?.ownerId && (
-          <div className="mt-4 border-t">
+          <div className="border-base-300 border-t pt-3">
             <ToggleSection
               name="Read-only"
-              description="Enable to make document read-only"
+              description="Make this document read-only for viewers"
               checked={readOnly}
               onChange={saveDocreadOnlyHandler}
             />
@@ -121,88 +135,92 @@ const GearModal = ({ className }: any) => {
   }
 
   return (
-    <div className={twMerge('gearModal text-neutral', className)}>
-      <div className="mb-4 flex items-center align-middle">
-        <div>
-          <p className="m-0 flex items-center space-x-1 font-semibold">
-            <Gear size={18} className="mr-1 ml-1" fill="rgba(42,42,42)" />
-            <span>Settings</span>
-          </p>
-          <small className="pl-1 text-gray-400">Document settings and preferences</small>
+    <div className={twMerge('bg-base-100 flex w-full flex-col', className)}>
+      {/* Header */}
+      <div className="border-base-300 border-b px-4 py-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base-content text-lg font-semibold">Settings</h2>
+          <CloseButton onClick={handleClose} size="sm" />
         </div>
       </div>
 
-      <div className="collapse-arrow bg-base-200 collapse">
-        <input type="radio" className="peer" name="gear-pear" />
-        <div className="collapse-title flex items-center p-0 text-sm font-semibold">
-          <TbPageBreak className="mx-2 ml-3" size={18} />
-          Page Preferences
-        </div>
-        <div className="collapse-content !pb-0">
-          <div className="card-body p-0">
-            <ToggleSection
-              name="Heading Indentation"
-              description="Turn on to indent headings for better readability"
-              checked={preferences.indentHeading}
-              onChange={toggleIndentSetting}
-            />
-            <ToggleSection
-              name="H1 Section Break"
-              description="Enable to insert a break after H1 headings for clear separation"
-              checked={preferences.h1SectionBreak}
-              onChange={toggleH1SectionBreakSetting}
-            />
+      {/* Content */}
+      <div className="flex flex-col gap-4 p-4">
+        {/* Page Preferences */}
+        <div className="collapse-arrow rounded-box border-base-300 bg-base-100 collapse border">
+          <input type="radio" className="peer" name="gear-accordion" />
+          <div className="collapse-title text-base-content flex items-center gap-2 font-medium">
+            <LuSquareSplitVertical size={16} className="text-base-content/50" />
+            Page Preferences
+          </div>
+          <div className="collapse-content border-base-300 border-t px-4">
+            <div className="divide-base-300 divide-y">
+              <ToggleSection
+                name="Heading Indentation"
+                description="Indent headings for better readability"
+                checked={preferences.indentHeading}
+                onChange={toggleIndentSetting}
+              />
+              <ToggleSection
+                name="H1 Section Break"
+                description="Insert a break after H1 headings"
+                checked={preferences.h1SectionBreak}
+                onChange={toggleH1SectionBreakSetting}
+              />
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="collapse-arrow bg-base-200 collapse mt-3">
-        <input type="radio" className="peer" name="gear-pear" defaultChecked />
-        <div className="collapse-title flex items-center p-0 text-sm font-semibold">
-          <HiOutlineDocumentText className="mx-2 ml-3" size={18} />
-          Document Preferences
-        </div>
-        <div className="collapse-content !pb-0">
-          <div className="card-body p-0 pb-2">
-            <div className="">
-              <label htmlFor="docDescription" className="mb-1 block text-sm font-medium">
-                Description
-              </label>
-              <textarea
+        {/* Document Preferences */}
+        <div className="collapse-arrow rounded-box border-base-300 bg-base-100 collapse border">
+          <input type="radio" className="peer" name="gear-accordion" defaultChecked />
+          <div className="collapse-title text-base-content flex items-center gap-2 font-medium">
+            <LuFileText size={16} className="text-base-content/50" />
+            Document Preferences
+          </div>
+          <div className="collapse-content border-base-300 border-t px-4 pt-4">
+            <div className="flex flex-col gap-4">
+              {/* Description */}
+              <Textarea
                 id="docDescription"
-                className="textarea textarea-bordered w-full"
+                label="Description"
+                labelPosition="above"
                 value={docDescription}
                 onChange={(e) => setDocDescription(e.target.value)}
-                placeholder="Enter document description..."></textarea>
-            </div>
-            <div>
-              <label htmlFor="docKeywords" className="mb-1 block text-sm font-medium">
-                Keywords
-              </label>
-              <span className="documentKeywordTnput">
-                <TagsInput
-                  value={tags}
-                  onChange={handleTagsChange}
-                  name="tags"
-                  placeHolder="Type keyword..."
-                />
-              </span>
-            </div>
-            <div className="mt-4 flex justify-end">
-              <Button
-                loading={formTargetHandler === 'description' && isLoading}
-                className="bg btn btn-neutral btn-sm"
-                onClick={saveDescriptionHandler}>
-                Save Preferences
-              </Button>
-            </div>
-          </div>
-          <div className="max-w-md">
-            {docMetadata.ownerProfile && isAuthServiceAvailable && (
+                placeholder="Enter document description..."
+                rows={3}
+              />
+
+              {/* Keywords */}
               <div>
-                <OwnerProfile />
+                <label
+                  htmlFor="docKeywords"
+                  className="text-base-content mb-2 block text-sm font-medium">
+                  Keywords
+                </label>
+                <span className="documentKeywordTnput">
+                  <TagsInput
+                    value={tags}
+                    onChange={handleTagsChange}
+                    name="tags"
+                    placeHolder="Type keyword..."
+                  />
+                </span>
               </div>
-            )}
+
+              {/* Save Button */}
+              <div className="flex justify-end pt-2">
+                <Button
+                  variant="primary"
+                  loading={formTargetHandler === 'description' && isLoading}
+                  onClick={saveDescriptionHandler}>
+                  Save Changes
+                </Button>
+              </div>
+
+              {/* Owner Profile */}
+              {docMetadata.ownerProfile && isAuthServiceAvailable && <OwnerProfile />}
+            </div>
           </div>
         </div>
       </div>

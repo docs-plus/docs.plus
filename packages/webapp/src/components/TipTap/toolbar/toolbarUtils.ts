@@ -1,19 +1,23 @@
-// toolbarUtils.js
 import { useState } from 'react'
+import type { NextRouter } from 'next/router'
+import type { UseMutateFunction } from '@tanstack/react-query'
 
-export const getLocalStorageBoolean = (key, defaultValue) => {
+export const getLocalStorageBoolean = (key: string, defaultValue: boolean): boolean => {
   const value = localStorage.getItem(key)
   return value !== null ? value === 'true' : defaultValue
 }
 
-export const setLocalStorageBoolean = (key, value) => {
+export const setLocalStorageBoolean = (key: string, value: boolean): void => {
   localStorage.setItem(key, value.toString())
 }
 
-export const useBooleanLocalStorageState = (key, defaultValue) => {
+export const useBooleanLocalStorageState = (
+  key: string,
+  defaultValue: boolean
+): [boolean, (newValue: boolean) => void] => {
   const [state, setState] = useState(() => getLocalStorageBoolean(key, defaultValue))
 
-  const updateState = (newValue) => {
+  const updateState = (newValue: boolean): void => {
     setState(newValue)
     setLocalStorageBoolean(key, newValue)
   }
@@ -21,16 +25,21 @@ export const useBooleanLocalStorageState = (key, defaultValue) => {
   return [state, updateState]
 }
 
-export const searchThroughHeading = (e) => {
+interface SearchResult {
+  searchValue: string
+  filteredHeadings: Element[]
+  totalSearch: number
+  totalHeadings: number
+}
+
+export const searchThroughHeading = (e: React.ChangeEvent<HTMLInputElement>): SearchResult => {
   const search = e.target.value
   const headings = document.querySelectorAll('.title')
 
   const filteredHeadings = Array.from(headings).filter((heading) => {
     const key = search
     const regex = new RegExp(key, 'i')
-    if (regex.test(heading.textContent)) {
-      return { node: heading, text: heading.textContent }
-    }
+    return regex.test(heading.textContent || '')
   })
 
   return {
@@ -41,13 +50,24 @@ export const searchThroughHeading = (e) => {
   }
 }
 
-export const applySearchThroughHeading = (searchInput, router) => {
+export const applySearchThroughHeading = (searchInput: string, router: NextRouter): void => {
   const url = new URL(router.asPath, window.location.origin)
   url.pathname = `${url.pathname}/${encodeURIComponent(searchInput)}`
   router.push(url.toString(), undefined, { shallow: true })
 }
 
-export const saveDocDescriptionHandler = (mutate, docId, docDescription, tags) => {
+interface DocumentMetadata {
+  documentId: string
+  description: string
+  keywords: string[]
+}
+
+export const saveDocDescriptionHandler = (
+  mutate: UseMutateFunction<unknown, unknown, DocumentMetadata>,
+  docId: string,
+  docDescription: string,
+  tags: string[]
+): void => {
   mutate({
     documentId: docId,
     description: docDescription,
@@ -55,15 +75,24 @@ export const saveDocDescriptionHandler = (mutate, docId, docDescription, tags) =
   })
 }
 
-export const saveDocReadOnlyPage = (mutate, documentId, readOnly) => {
+interface ReadOnlyUpdate {
+  documentId: string
+  readOnly: boolean
+}
+
+export const saveDocReadOnlyPage = (
+  mutate: UseMutateFunction<unknown, unknown, ReadOnlyUpdate>,
+  documentId: string,
+  readOnly: boolean
+): void => {
   mutate({
     documentId,
     readOnly
   })
 }
 
-export const highlightTocHeadings = (headings) => {
-  const headingIds = headings.map((heading) => heading.closest('.heading').getAttribute('data-id'))
+export const highlightTocHeadings = (headings: Element[]): void => {
+  const headingIds = headings.map((heading) => heading.closest('.heading')?.getAttribute('data-id'))
   const tocHeadings = document.querySelectorAll('.tiptap__toc .toc__item a')
 
   tocHeadings.forEach((tocItem) => {

@@ -3,21 +3,22 @@ import React, { useState } from 'react'
 import { Link, ClearMark, ImageBox } from '@icons'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import Icon from '@components/TipTap/toolbar/Icon'
-import FilterModal from './FilterModal'
 import SelectHeadingBox from './SelectHeadingBox'
 import { useAuthStore, useStore } from '@stores'
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/Popover'
 import Loading from '@components/ui/Loading'
-import Modal from '@components/ui/Modal'
+import { BookmarkPanelSkeleton } from '@components/bookmarkPanel/components/BookmarkPanelSkeleton'
+import { FilterPanelSkeleton } from './FilterPanelSkeleton'
+import { GearPanelSkeleton } from './GearPanelSkeleton'
+import { Modal, ModalContent } from '@components/ui/Dialog'
 import ToolbarSkeleton from '@components/skeleton/ToolbarLoader'
+import { LuBookmark, LuFilter, LuSettings } from 'react-icons/lu'
 import {
   MdAddComment,
   MdOutlineFileCopy,
+  MdCheck,
   MdOutlinePrint,
-  MdOutlineFolder,
-  MdOutlineSettings,
-  MdFilterAlt,
-  MdOutlineBookmarkBorder
+  MdOutlineFolder
 } from 'react-icons/md'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToClipboard'
@@ -27,20 +28,26 @@ const InsertMultimediaForm = dynamic(() => import('./InsertMultimediaForm'), {
   loading: () => <Loading />
 })
 
-const ControlCenter = dynamic(() => import('@components/ControlCenter'), {
+const ProfilePanel = dynamic(() => import('@components/profile/ProfilePanel'), {
   loading: () => <Loading />
 })
+
 const GearModal = dynamic(() => import('./GearModal'), {
-  loading: () => <Loading />
+  loading: () => <GearPanelSkeleton />
 })
+
 const BookmarkModal = dynamic(() => import('./BookmarkModal'), {
-  loading: () => <Loading />
+  loading: () => <BookmarkPanelSkeleton />
+})
+
+const FilterModal = dynamic(() => import('./FilterModal'), {
+  loading: () => <FilterPanelSkeleton />
 })
 
 const BookmarkButton = () => {
   return (
     <ToolbarButton tooltip="Bookmarks" position="tooltip-bottom">
-      <MdOutlineBookmarkBorder fill="rgba(0,0,0,.7)" size={20} />
+      <LuBookmark className="text-base-content" size={18} />
     </ToolbarButton>
   )
 }
@@ -48,15 +55,15 @@ const BookmarkButton = () => {
 const FilterButton = () => {
   return (
     <ToolbarButton tooltip="Filter Document" position="tooltip-bottom">
-      <MdFilterAlt fill="rgba(0,0,0,.7)" size={20} />
+      <LuFilter className="text-base-content" size={16} />
     </ToolbarButton>
   )
 }
 
-const InsertMedaiButton = () => {
+const InsertMediaButton = () => {
   return (
     <ToolbarButton tooltip="Insert Media" position="tooltip-bottom">
-      <ImageBox fill="rgba(0,0,0,.7)" size={14} />
+      <ImageBox className="text-base-content" size={14} />
     </ToolbarButton>
   )
 }
@@ -64,7 +71,7 @@ const InsertMedaiButton = () => {
 const GearButton = () => {
   return (
     <ToolbarButton tooltip="Document Settings" position="tooltip-left">
-      <MdOutlineSettings fill="rgba(0,0,0,.7)" size={20} />
+      <LuSettings className="text-base-content" size={18} />
     </ToolbarButton>
   )
 }
@@ -78,14 +85,14 @@ const ToolbarDesktop = () => {
   const user = useAuthStore((state) => state.profile)
 
   const { createComment } = useTurnSelectedTextIntoComment()
-  const { copyDocumentToClipboard } = useCopyDocumentToClipboard(editor ?? null)
+  const { copyDocumentToClipboard, copied } = useCopyDocumentToClipboard(editor ?? null)
 
   // TODO: skeleton loading
   if (loading || providerSyncing || !editor) return <ToolbarSkeleton />
 
   return (
     <>
-      <div className="tiptap__toolbar editorButtons flex flex-row items-center justify-between space-x-1 px-1 sm:justify-start sm:px-4">
+      <div className="bg-base-100 border-base-300 flex flex-row items-center justify-between gap-0.5 border-b px-3 py-1.5 sm:justify-start">
         {/* <ToolbarButton onClick={() => editor.chain().focus().undo().run()} editor={editor} type="undo">
         <Icon type="Undo" size="16" />
       </ToolbarButton>
@@ -96,7 +103,7 @@ const ToolbarDesktop = () => {
 
         <SelectHeadingBox editor={editor} />
 
-        <div className="divided"></div>
+        <div className="bg-base-300 mx-2 h-5 w-px" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleBold().run()}
@@ -130,7 +137,7 @@ const ToolbarDesktop = () => {
           <Icon type="Stric" size={14} />
         </ToolbarButton>
 
-        <div className="divided"></div>
+        <div className="bg-base-300 mx-2 h-5 w-px" />
 
         <ToolbarButton
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
@@ -156,15 +163,15 @@ const ToolbarDesktop = () => {
           <Icon type="CheckList" size={16} />
         </ToolbarButton>
 
-        <div className="divided"></div>
+        <div className="bg-base-300 mx-2 h-5 w-px" />
 
         <Popover placement="bottom-start">
           <PopoverTrigger asChild>
             <div>
-              <InsertMedaiButton />
+              <InsertMediaButton />
             </div>
           </PopoverTrigger>
-          <PopoverContent className="bg-base-100 rounded-box border border-gray-300 p-2 shadow-md">
+          <PopoverContent className="rounded-box border-base-300 bg-base-100 border p-4 shadow-lg">
             <InsertMultimediaForm />
           </PopoverContent>
         </Popover>
@@ -174,7 +181,7 @@ const ToolbarDesktop = () => {
           editor={editor}
           tooltip="comment (⌘+Option+M)"
           type="chatComment">
-          <MdAddComment fill="rgba(0,0,0,.7)" size={18} />
+          <MdAddComment className="text-base-content" size={18} />
         </ToolbarButton>
 
         <ToolbarButton
@@ -183,7 +190,7 @@ const ToolbarDesktop = () => {
           editor={editor}
           tooltip="Hyperlink (⌘+K)"
           type="hyperlink">
-          <Link fill="rgba(0,0,0,.7)" size={18} />
+          <Link className="text-base-content" size={18} />
         </ToolbarButton>
 
         <ToolbarButton
@@ -194,7 +201,7 @@ const ToolbarDesktop = () => {
           <Icon type="HighlightMarker" size={14} />
         </ToolbarButton>
 
-        <div className="divided"></div>
+        <div className="bg-base-300 mx-2 h-5 w-px" />
 
         <ToolbarButton
           tooltip="Clear Formatting"
@@ -206,32 +213,38 @@ const ToolbarDesktop = () => {
               editor.commands.unsetAllMarks()
             }
           }}>
-          <ClearMark fill="rgba(0,0,0,.7)" size={14} />
+          <ClearMark className="text-base-content" size={14} />
         </ToolbarButton>
 
-        <div className="!ml-auto flex items-center align-baseline">
+        <div className="!ml-auto flex items-center gap-0.5">
           <ToolbarButton
             onClick={() => window.open('https://discord.gg/25JPG38J59', '_blank')}
             tooltip="Join Discord Community">
             <FaDiscord size={18} className="text-[#5865F2]" />
           </ToolbarButton>
 
-          <div className="divided"></div>
-          <ToolbarButton tooltip="Copy Document" onClick={copyDocumentToClipboard}>
-            <MdOutlineFileCopy fill="rgba(0,0,0,.7)" size={18} />
+          <div className="bg-base-300 mx-2 h-5 w-px" />
+          <ToolbarButton
+            tooltip={copied ? 'Copied!' : 'Copy Document'}
+            onClick={copyDocumentToClipboard}>
+            {copied ? (
+              <MdCheck size={18} className="text-success" />
+            ) : (
+              <MdOutlineFileCopy className="text-base-content" size={18} />
+            )}
           </ToolbarButton>
 
           <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)">
-            <MdOutlinePrint fill="rgba(0,0,0,.7)" size={20} />
+            <MdOutlinePrint className="text-base-content" size={20} />
           </ToolbarButton>
 
           {isAuthServiceAvailable && user && (
             <ToolbarButton tooltip="Open" onClick={() => setModalOpen(true)}>
-              <MdOutlineFolder fill="rgba(0,0,0,.7)" size={20} />
+              <MdOutlineFolder className="text-base-content" size={16} />
             </ToolbarButton>
           )}
 
-          {user && <div className="divided"></div>}
+          {user && <div className="bg-base-300 mx-2 h-5 w-px" />}
 
           <Popover placement="bottom-end">
             <PopoverTrigger asChild>
@@ -239,7 +252,7 @@ const ToolbarDesktop = () => {
                 <BookmarkButton />
               </div>
             </PopoverTrigger>
-            <PopoverContent className="bg-base-100 rounded-box z-50 w-[470px] border border-gray-300 p-2 shadow-md">
+            <PopoverContent className="rounded-box border-base-300 bg-base-100 z-50 w-[28rem] overflow-hidden border p-0 shadow-xl">
               <BookmarkModal />
             </PopoverContent>
           </Popover>
@@ -250,11 +263,11 @@ const ToolbarDesktop = () => {
                 <FilterButton />
               </div>
             </PopoverTrigger>
-            <PopoverContent className="bg-base-100 rounded-box z-50 w-96 border border-gray-300 p-2 shadow-md">
+            <PopoverContent className="rounded-box border-base-300 bg-base-100 z-50 w-[28rem] overflow-hidden border p-0 shadow-xl">
               <FilterModal />
             </PopoverContent>
           </Popover>
-          <div className="divided"></div>
+          <div className="bg-base-300 mx-2 h-5 w-px" />
 
           <Popover placement="bottom-end">
             <PopoverTrigger asChild>
@@ -262,14 +275,16 @@ const ToolbarDesktop = () => {
                 <GearButton />
               </div>
             </PopoverTrigger>
-            <PopoverContent className="bg-base-100 rounded-box z-50 w-96 border border-gray-300 p-2 shadow-md">
+            <PopoverContent className="rounded-box border-base-300 bg-base-100 z-50 w-[28rem] overflow-hidden border p-0 shadow-xl">
               <GearModal />
             </PopoverContent>
           </Popover>
         </div>
       </div>
-      <Modal asAChild={false} id="modal_profile" isOpen={isModalOpen} setIsOpen={setModalOpen}>
-        <ControlCenter defaultTab="documents" />
+      <Modal open={isModalOpen} onOpenChange={setModalOpen}>
+        <ModalContent size="4xl" className="overflow-hidden rounded-2xl p-0">
+          <ProfilePanel defaultTab="documents" onClose={() => setModalOpen(false)} />
+        </ModalContent>
       </Modal>
     </>
   )

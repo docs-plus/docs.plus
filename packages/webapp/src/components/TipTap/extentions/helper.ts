@@ -263,15 +263,6 @@ export const createThisBlockMap = (state: EditorState): BlockMap => {
   }
 }
 
-/**
- * Copy text to clipboard
- */
-export const copyToClipboard = (text: string, callback?: () => void): void => {
-  navigator.clipboard.writeText(text).then(() => {
-    if (callback) callback()
-  })
-}
-
 export const getNodeState = (headingId: string): NodeState => {
   try {
     const headingMap = JSON.parse(localStorage.getItem('headingMap') || '[]')

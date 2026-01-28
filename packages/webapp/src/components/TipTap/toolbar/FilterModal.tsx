@@ -7,36 +7,64 @@ import {
   highlightTocHeadings
 } from './toolbarUtils'
 import Toggle from '@components/ui/Toggle'
+import Button from '@components/ui/Button'
+import TextInput from '@components/ui/TextInput'
+import CloseButton from '@components/ui/CloseButton'
 import { useBooleanLocalStorageState } from './toolbarUtils'
-import { MdOutlineKeyboardArrowDown } from 'react-icons/md'
+import { LuChevronDown, LuSearch, LuX, LuFilterX, LuCheck } from 'react-icons/lu'
 import { useStore } from '@stores'
 import FilterBar from '../pad-title-section/FilterBar'
-import { TbFilter, TbFilterX, TbFilterCheck } from 'react-icons/tb'
 import PubSub from 'pubsub-js'
 import { RESET_FILTER } from '@services/eventsHub'
+import { usePopoverState } from '@components/ui/Popover'
 
-const ToggleSection = ({ name, className, description, value, checked, onChange }: any) => {
-  const containerClasses = twMerge('flex flex-col p-2 antialiased', className)
+interface ToggleSectionProps {
+  name: string
+  className?: string
+  description: string
+  value?: string
+  checked: boolean
+  onChange: () => void
+}
 
+const ToggleSection = ({
+  name,
+  className,
+  description,
+  value,
+  checked,
+  onChange
+}: ToggleSectionProps) => {
   return (
-    <div className={containerClasses}>
-      <p className="text-base font-bold">{name}</p>
-      <div className="flex w-full flex-row items-center justify-between align-middle">
-        <p className="text-sm text-gray-500">{description}</p>
-        <div className="mr-6 ml-2 h-full flex-col border-l px-3 py-2">
-          <Toggle id={value} checked={checked} onChange={onChange} />
-        </div>
+    <div className={twMerge('flex items-center justify-between gap-4 py-3', className)}>
+      <div className="min-w-0 flex-1">
+        <p className="text-base-content text-sm font-medium">{name}</p>
+        <p className="text-base-content/50 text-xs">{description}</p>
       </div>
+      <Toggle
+        id={value}
+        checked={checked}
+        onChange={() => onChange()}
+        size="sm"
+        variant="primary"
+      />
     </div>
   )
 }
 
-const FilterModal = ({ totalHeading = 0, className = '' }: any) => {
+interface FilterModalProps {
+  totalHeading?: number
+  className?: string
+  onClose?: () => void
+}
+
+const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalProps) => {
+  const popoverState = usePopoverState()
+  const handleClose = onClose || popoverState.close
   const router = useRouter()
   const { slugs } = router.query
 
   const [totalSearch, setTotalSearch] = useState(0)
-  const [totalHeadings, setTotalHeadings] = useState(totalHeading)
   const [filterInput, setFilterInput] = useState('')
   const [filteredHeadings, setFilteredHeadings] = useState([])
   const [filterAlgorithm, setFilterAlgorithm] = useBooleanLocalStorageState(
@@ -47,7 +75,7 @@ const FilterModal = ({ totalHeading = 0, className = '' }: any) => {
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const {
     editor: {
-      filterResult: { sortedSlugs, selectedNodes }
+      filterResult: { sortedSlugs }
     }
   } = useStore((state) => state.settings)
 
@@ -56,20 +84,27 @@ const FilterModal = ({ totalHeading = 0, className = '' }: any) => {
     [filteredHeadings]
   )
 
+  const clearForm = useCallback(() => {
+    setFilterInput('')
+    setTotalSearch(0)
+    setFilteredHeadings([])
+    highlightTocHeadings([])
+  }, [])
+
   useEffect(() => {
     if (totalHeading !== totalSearch && totalSearch > 0) {
       highlightTocHeadings(filteredHeadings)
     } else {
       highlightTocHeadings([])
     }
-  }, [totalSearch])
+  }, [totalSearch, totalHeading, filteredHeadings])
 
   const handleSearch = useCallback(
     (e: any) => {
-      const { totalSearch, totalHeadings, filteredHeadings } = searchThroughHeading(e) as any
-      setFilteredHeadings(filteredHeadings)
-      setTotalHeadings(totalHeadings)
-      setTotalSearch(totalSearch)
+      const { totalSearch: newTotalSearch, filteredHeadings: newFilteredHeadings } =
+        searchThroughHeading(e) as any
+      setFilteredHeadings(newFilteredHeadings)
+      setTotalSearch(newTotalSearch)
 
       if (e.key === 'Enter') {
         setWorkspaceEditorSetting('applyingFilters', true)
@@ -77,7 +112,7 @@ const FilterModal = ({ totalHeading = 0, className = '' }: any) => {
         clearForm()
       }
     },
-    [filterInput, router]
+    [filterInput, router, setWorkspaceEditorSetting, clearForm]
   )
 
   const handleApplySearch = () => {
@@ -95,115 +130,117 @@ const FilterModal = ({ totalHeading = 0, className = '' }: any) => {
     }
   }
 
-  const clearForm = () => {
-    setFilterInput('')
-    setTotalSearch(0)
-    setTotalHeadings(totalHeading)
-    setFilteredHeadings([])
-    highlightTocHeadings([])
-  }
-
   const resetFilterHandler = useCallback(() => {
     PubSub.publish(RESET_FILTER, {})
   }, [])
 
+  const handleClearAll = () => {
+    clearForm()
+    resetFilterHandler()
+  }
+
   return (
-    <div className={twMerge('gearModal text-neutral', className)}>
-      <div className="flex items-center align-middle">
-        <div>
-          <p className="m-0 flex items-center space-x-1 font-semibold">
-            <TbFilter size={18} fill="rgba(42,42,42)" />
-            <span>Filter</span>
-          </p>
-          <small className="pl-2 text-gray-400">Search and filter headings sections</small>
+    <div className={twMerge('bg-base-100 flex w-full flex-col', className)}>
+      {/* Header */}
+      <div className="border-base-300 border-b px-4 py-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-base-content text-lg font-semibold">Filter</h2>
+          <CloseButton onClick={handleClose} size="sm" />
         </div>
       </div>
 
-      <div className="flex w-full flex-col justify-start py-2">
-        <div className="join w-full">
-          <label
-            htmlFor="toggle-section"
-            className="btn join-item btn-md h-[2.4rem] !min-h-[2.4rem] border border-gray-300 px-1">
-            <MdOutlineKeyboardArrowDown size={24} />
-          </label>
-          <input
-            type="text"
+      {/* Content */}
+      <div className="flex flex-col gap-4 p-4">
+        {/* Search Input with integrated counter */}
+        <div className="relative">
+          <TextInput
             id="filterSearchBox"
-            className="input input-md join-item input-bordered h-[2.4rem] w-full"
+            startIcon={LuSearch}
             value={filterInput}
             onKeyUp={handleSearch}
-            onChange={(e: any) => setFilterInput(e.target.value.trim())}
-            placeholder="Find in document"
-            list={datalist.length > 0 ? 'filterSearchBox-datalist' : undefined}
+            onChange={(e) => setFilterInput(e.target.value.trim())}
+            placeholder="Find in document..."
+            datalist={datalist}
+            className="pr-24"
           />
-
-          {datalist.length > 0 && (
-            <datalist id="filterSearchBox-datalist">
-              {datalist.map((option: string, index: number) => (
-                <option key={index} value={option} />
-              ))}
-            </datalist>
-          )}
-          <div className="flex items-center justify-center rounded-r-md border border-gray-300 px-3 text-sm font-semibold text-gray-500">
-            {totalSearch}
+          {/* Counter badge inside input */}
+          <div className="absolute top-1/2 right-3 flex -translate-y-1/2 items-center gap-1.5">
+            <span
+              className={twMerge(
+                'badge badge-md font-medium',
+                totalSearch > 0 ? 'badge-primary badge-outline' : 'text-base-content/50'
+              )}>
+              {totalSearch}
+            </span>
+            <Button
+              variant="ghost"
+              size="xs"
+              shape="square"
+              className="text-base-content/50"
+              onClick={() => setIsSectionOpen(!isSectionOpen)}
+              aria-label="Toggle options">
+              <LuChevronDown
+                size={16}
+                className={`transition-transform duration-200 ${isSectionOpen ? 'rotate-180' : ''}`}
+              />
+            </Button>
           </div>
         </div>
+
+        {/* Advanced Options (collapsible) */}
+        {isSectionOpen && (
+          <div className="animate-in fade-in slide-in-from-top-1 duration-200">
+            <div className="rounded-box border-base-300 bg-base-200 border px-4">
+              <ToggleSection
+                name="Filter Algorithm"
+                description="Use sequential heading order instead of relevance"
+                checked={filterAlgorithm}
+                onChange={handelFilterAlgorithm}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Active Filters */}
+        {sortedSlugs.length > 0 && (
+          <div className="rounded-box border-base-300 bg-base-100 border p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <LuCheck className="text-success size-4" />
+                <span className="text-base-content text-sm font-medium">Active Filters</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="xs"
+                className="text-base-content/50 hover:text-error gap-1"
+                onClick={resetFilterHandler}
+                startIcon={LuFilterX}>
+                Reset
+              </Button>
+            </div>
+            <FilterBar className="flex-wrap" />
+          </div>
+        )}
       </div>
 
-      <input
-        type="checkbox"
-        id="toggle-section"
-        className="peer hidden"
-        onChange={() => setIsSectionOpen(!isSectionOpen)}
-      />
-      <label htmlFor="toggle-section" className="cursor-pointer">
-        <div
-          className={`transition-max-height overflow-hidden duration-500 ease-in-out ${
-            isSectionOpen ? 'max-h-40' : 'max-h-0'
-          }`}>
-          <ToggleSection
-            className="bg-base-200 rounded-md px-2 py-1 shadow-inner"
-            name="Filter Algorithm"
-            description="Switch between relevant-only OR sequential heading filtering"
-            checked={filterAlgorithm}
-            onChange={handelFilterAlgorithm}
-          />
-        </div>
-      </label>
-
-      {sortedSlugs.length > 0 && (
-        <div className="mt-2 mb-3 py-2">
-          <div className="flex items-center text-sm">
-            <p className="flex space-x-1 font-semibold">
-              <TbFilterCheck size={16} fill="rgba(42,42,42)" />
-              <span> Active filters</span>
-            </p>
-            <button className="btn btn-ghost btn-sm ml-auto text-xs" onClick={resetFilterHandler}>
-              <TbFilterX size={16} fill="rgba(42,42,42)" />
-              <span className="">Reset</span>
-            </button>
-          </div>
-          <FilterBar className="flex-wrap" />
-        </div>
-      )}
-
-      <div className="flex items-center pt-2">
-        <button
-          className="btn btn-sm w-3/12"
-          disabled={sortedSlugs.length === 0}
-          onClick={() => {
-            setFilterInput('')
-            setTotalSearch(0)
-            setTotalHeadings(totalHeading)
-            setFilteredHeadings([])
-            highlightTocHeadings([])
-            resetFilterHandler()
-          }}>
-          <span>Clear</span>
-        </button>
-        <button className="btn btn-neutral btn-sm ml-auto w-8/12" onClick={handleApplySearch}>
-          <span>Apply</span>
-        </button>
+      {/* Footer Actions */}
+      <div className="border-base-300 bg-base-200/50 flex items-center gap-3 border-t px-4 py-3">
+        <Button
+          variant="neutral"
+          btnStyle="outline"
+          className="flex-1"
+          disabled={sortedSlugs.length === 0 && !filterInput}
+          onClick={handleClearAll}
+          startIcon={LuX}>
+          Clear
+        </Button>
+        <Button
+          variant="primary"
+          className="flex-[2]"
+          onClick={handleApplySearch}
+          disabled={!filterInput}>
+          Apply Filter
+        </Button>
       </div>
     </div>
   )

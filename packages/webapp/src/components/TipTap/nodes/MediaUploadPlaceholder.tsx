@@ -51,8 +51,9 @@ const CancelButton: React.FC<{ onCancel: () => void; compact?: boolean }> = ({
   compact = false
 }) => (
   <button
+    type="button"
     onClick={onCancel}
-    className={`cursor-pointer rounded bg-black/${compact ? '70' : '50'} px-${compact ? '2' : '3'} py-1 text-xs ${compact ? 'text-white' : 'font-medium text-white'} shadow-lg transition-colors hover:bg-black/90 ${compact ? '' : 'hover:shadow-2xl'}`}
+    className={`btn btn-xs cursor-pointer bg-black/60 text-white hover:bg-black/90 ${compact ? 'btn-circle' : ''}`}
     title="Cancel upload">
     {compact ? '✕' : 'Cancel'}
   </button>

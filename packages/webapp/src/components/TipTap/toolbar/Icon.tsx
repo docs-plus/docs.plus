@@ -1,7 +1,13 @@
 import React from 'react'
-import { MdCode, MdFormatColorText, MdOutlineEmojiEmotions, MdOutlineAdd } from 'react-icons/md'
+import {
+  MdCode,
+  MdFormatColorText,
+  MdOutlineEmojiEmotions,
+  MdOutlineAdd,
+  MdClose as Close
+} from 'react-icons/md'
 import { RiAtLine, RiCodeBlock } from 'react-icons/ri'
-import { IoSend, IoCloseOutline as Close } from 'react-icons/io5'
+import { IoSend } from 'react-icons/io5'
 import {
   Bold,
   Italic,
@@ -22,7 +28,9 @@ import {
 } from '@icons'
 import { TbBlockquote } from 'react-icons/tb'
 
-const icons: { [key: string]: React.ComponentType<{ size?: number; fill?: string }> } = {
+const icons: {
+  [key: string]: React.ComponentType<{ size?: number; fill?: string; className?: string }>
+} = {
   Bold,
   Italic,
   Underline,
@@ -54,11 +62,17 @@ type TIcon = {
   type: string
   fill?: string
   size: number
+  className?: string
 }
 
-const Icon = ({ type, fill = 'rgba(0,0,0,.7)', size = 16 }: TIcon) => {
+/**
+ * Icon component for toolbar buttons
+ * Uses theme-aware color by default (text-base-content/70)
+ */
+const Icon = ({ type, fill, size = 16, className = 'text-base-content/70' }: TIcon) => {
   const IconComponent = icons[type]
-  return <IconComponent fill={fill} size={size} />
+  // If fill is explicitly provided, use it; otherwise rely on className for color
+  return <IconComponent fill={fill} size={size} className={!fill ? className : undefined} />
 }
 
 export default Icon

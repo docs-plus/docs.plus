@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import dynamic from 'next/dynamic'
 import { DocsPlus } from '@icons'
 import DocTitle from '../DocTitle'
 import PresentUsers from './PresentUsers'
@@ -6,20 +7,28 @@ import ReadOnlyIndicator from './ReadOnlyIndicator'
 import ProviderSyncStatus from './ProviderSyncStatus'
 import FilterBar from './FilterBar'
 import { useStore } from '@stores'
-import Modal from '@components/ui/Modal'
+import { Modal, ModalContent } from '@components/ui/Dialog'
 import React, { useState } from 'react'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { useAuthStore } from '@stores'
 import ShareModal from './ShareModal'
-import ProfilePanel from '@components/pages/panels/profile/ProfilePanel'
-import TabLayout from '@components/pages/TabLayout'
-import SignInPanel from '@components/pages/panels/SignInPanel'
+import ProfilePanel from '@components/profile/ProfilePanel'
+import SignInForm from '@components/auth/SignInForm'
 import { FaRegBell } from 'react-icons/fa'
-import { NotificationPanel } from '../../notificationPanel/desktop/NotificationPanel'
+import { NotificationPanelSkeleton } from '../../notificationPanel/components/NotificationPanelSkeleton'
 import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/Popover'
 import { MdHistory, MdGroup } from 'react-icons/md'
 import { useNotificationCount } from '@hooks/useNotificationCount'
+import UnreadBadge from '@components/ui/UnreadBadge'
+
+const NotificationPanel = dynamic(
+  () =>
+    import('../../notificationPanel/desktop/NotificationPanel').then(
+      (mod) => mod.NotificationPanel
+    ),
+  { loading: () => <NotificationPanelSkeleton /> }
+)
 
 const PadTitle = () => {
   const user = useAuthStore((state) => state.profile)
@@ -32,112 +41,121 @@ const PadTitle = () => {
 
   return (
     <>
-      <div className="docTitle relative z-10 flex min-h-12 w-full flex-row items-center bg-white p-2">
-        <div className="flex w-full flex-row items-center align-middle">
-          <div className="padLog">
-            <Link href="/">
-              <DocsPlus size={34} />
-            </Link>
-          </div>
+      {/* Header bar - theme-aware with border */}
+      <header className="bg-base-100 border-base-300 relative z-30 flex min-h-12 w-full items-center border-b px-3 py-2">
+        {/* Left section: Logo + Document info */}
+        <div className="flex flex-1 items-center gap-2">
+          {/* Logo */}
+          <Link href="/" className="shrink-0">
+            <DocsPlus size={34} />
+          </Link>
 
-          <div className="flex items-center justify-start align-middle">
+          {/* Document title + sync status */}
+          <div className="flex min-w-0 items-center gap-2">
             <DocTitle />
             <ProviderSyncStatus />
             <FilterBar displayRestButton={true} />
           </div>
 
           <ReadOnlyIndicator />
-
-          <div className="mr-3 ml-auto flex items-center justify-center space-x-4">
-            {isAuthServiceAvailable && <PresentUsers />}
-
-            <Button
-              className={`btn-primary flex items-center ${user && 'btn-outline'}`}
-              onClick={() => setShareModalOpen(true)}>
-              <div className="flex items-center gap-1">
-                <MdGroup size={20} />
-                <div className="h-4 w-[1px]"></div>
-                <span>Share</span>
-              </div>
-            </Button>
-
-            {user && (
-              <Button
-                className="btn-circle btn-ghost btn-outline tooltip tooltip-bottom text-docsy relative border-gray-300"
-                onClick={() => (window.location.hash = 'history')}
-                data-tip="History">
-                <MdHistory size={22} />
-              </Button>
-            )}
-
-            {isAuthServiceAvailable && user && (
-              <Popover placement="bottom-end">
-                <PopoverTrigger asChild>
-                  <Button
-                    className="btn-circle btn-ghost btn-outline tooltip tooltip-bottom relative border-gray-300"
-                    data-tip="Notifications">
-                    <FaRegBell size={20} fill="currentColor" className="text-primary" />
-                    {unreadCount > 0 && (
-                      <div className="badge badge-sm bg-docsy absolute -top-1 -right-2 rounded-md border-0 text-white">
-                        {unreadCount}
-                      </div>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="bg-base-100 rounded-box z-50 w-[480px] border border-gray-300 p-2 shadow-md">
-                  <NotificationPanel />
-                </PopoverContent>
-              </Popover>
-            )}
-
-            {isAuthServiceAvailable && (
-              <div className="flex">
-                {user ? (
-                  <button
-                    className="btn-circle btn-ghost tooltip tooltip-bottom size-[46px] !cursor-pointer"
-                    onClick={() => setProfileModalOpen(true)}
-                    data-tip="Profile">
-                    <Avatar
-                      id={user.id}
-                      src={user.avatar_url}
-                      avatarUpdatedAt={user.avatar_updated_at}
-                      clickable={false}
-                      imageClassName={'cursor-pointer'}
-                      className="!size-[46px] rounded-full border border-gray-300 shadow-md"
-                    />
-                  </button>
-                ) : (
-                  <Button
-                    id="btn_signin"
-                    className="btn btn-neutral"
-                    onClick={() => setProfileModalOpen(true)}>
-                    Signin
-                  </Button>
-                )}
-              </div>
-            )}
-          </div>
         </div>
-      </div>
 
-      <Modal id="modal_share" isOpen={isShareModalOpen} setIsOpen={setShareModalOpen}>
-        <ShareModal setIsOpen={setShareModalOpen} />
+        {/* Right section: Actions */}
+        <div className="flex shrink-0 items-center gap-3">
+          {/* Present users */}
+          {isAuthServiceAvailable && <PresentUsers />}
+
+          {/* Share button */}
+          <Button
+            variant="primary"
+            btnStyle={user ? 'outline' : undefined}
+            startIcon={MdGroup}
+            onClick={() => setShareModalOpen(true)}>
+            Share
+          </Button>
+
+          {/* History button - authenticated users only */}
+          {user && (
+            <Button
+              variant="ghost"
+              shape="circle"
+              className="tooltip tooltip-bottom"
+              onClick={() => (window.location.hash = 'history')}
+              data-tip="History">
+              <MdHistory size={20} className="text-base-content/70" />
+            </Button>
+          )}
+
+          {/* Notifications - authenticated users only */}
+          {isAuthServiceAvailable && user && (
+            <Popover placement="bottom-end">
+              <PopoverTrigger asChild>
+                <Button
+                  variant="ghost"
+                  shape="circle"
+                  className="tooltip tooltip-bottom relative"
+                  data-tip="Notifications">
+                  <FaRegBell size={18} className="text-primary" />
+                  <UnreadBadge
+                    count={unreadCount}
+                    size="sm"
+                    variant="error"
+                    className="absolute -top-1 -right-2"
+                  />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="rounded-box border-base-300 bg-base-100 z-50 w-[28rem] overflow-hidden border p-0 shadow-xl">
+                <NotificationPanel />
+              </PopoverContent>
+            </Popover>
+          )}
+
+          {/* Profile / Sign in */}
+          {isAuthServiceAvailable && (
+            <>
+              {user ? (
+                <button
+                  type="button"
+                  className="tooltip tooltip-bottom cursor-pointer"
+                  onClick={() => setProfileModalOpen(true)}
+                  data-tip="Profile">
+                  <Avatar
+                    id={user.id}
+                    src={user.avatar_url}
+                    avatarUpdatedAt={user.avatar_updated_at}
+                    clickable={false}
+                    size="lg"
+                    className="border-base-300 border shadow-md"
+                  />
+                </button>
+              ) : (
+                <Button variant="neutral" onClick={() => setProfileModalOpen(true)}>
+                  Sign in
+                </Button>
+              )}
+            </>
+          )}
+        </div>
+      </header>
+
+      {/* Share Modal */}
+      <Modal open={isShareModalOpen} onOpenChange={setShareModalOpen}>
+        <ModalContent size="lg" className="p-0">
+          <ShareModal setIsOpen={setShareModalOpen} />
+        </ModalContent>
       </Modal>
 
-      <Modal
-        asAChild={false}
-        id="modal_profile"
-        isOpen={isProfileModalOpen}
-        setIsOpen={setProfileModalOpen}>
-        {user ? (
-          <TabLayout name="profile" className="max-w-[64rem]">
-            <ProfilePanel />
-          </TabLayout>
-        ) : (
-          <TabLayout name="sign-in" footer={false} className="w-full p-6 sm:w-[28rem] sm:p-6">
-            <SignInPanel />
-          </TabLayout>
-        )}
+      {/* Profile Modal */}
+      <Modal open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
+        <ModalContent size={user ? '5xl' : 'md'} className="overflow-hidden rounded-2xl p-0">
+          {user ? (
+            <ProfilePanel onClose={() => setProfileModalOpen(false)} />
+          ) : (
+            <div className="w-full p-6 sm:p-8">
+              <SignInForm variant="inline" />
+            </div>
+          )}
+        </ModalContent>
       </Modal>
     </>
   )

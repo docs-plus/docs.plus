@@ -1,18 +1,22 @@
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useStore } from '@stores'
-import { IoCloseSharp } from 'react-icons/io5'
+import { MdClose } from 'react-icons/md'
 import { TbFilterX } from 'react-icons/tb'
 import PubSub from 'pubsub-js'
 import { RESET_FILTER, REMOVE_FILTER } from '@services/eventsHub'
+import Button from '@components/ui/Button'
 
-const CloseButton = ({ onClick }: any) => (
-  <button onClick={onClick}>
-    <IoCloseSharp
-      size={14}
-      className="feather feather-x ml-2 cursor-pointer rounded-full hover:text-indigo-400"
-    />
-  </button>
+const CloseButton = ({ onClick }: { onClick: () => void }) => (
+  <Button
+    onClick={onClick}
+    variant="ghost"
+    size="xs"
+    shape="circle"
+    className="text-base-content/50 hover:text-base-content ml-1.5"
+    aria-label="Remove filter"
+    startIcon={<MdClose size={14} />}
+  />
 )
 
 const Chip = ({ type, text, onMouseEnter, onMouseLeave }: any) => {
@@ -101,12 +105,14 @@ const FilterBar = ({
       ))}
 
       {displayRestButton && sortedSlugs.length > 0 && (
-        <button
-          className="btn btn-ghost btn-xs ml-3 text-xs font-medium opacity-0 transition-all group-hover:opacity-100"
-          onClick={resetFilterHandler}>
-          <TbFilterX size={14} fill="rgba(42,42,42)" />
-          <span className="">Reset</span>
-        </button>
+        <Button
+          variant="ghost"
+          size="xs"
+          className="ml-3 text-xs font-medium opacity-0 transition-all group-hover:opacity-100"
+          onClick={resetFilterHandler}
+          startIcon={<TbFilterX size={14} />}>
+          Reset
+        </Button>
       )}
     </div>
   )
