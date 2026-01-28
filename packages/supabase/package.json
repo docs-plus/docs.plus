@@ -9,7 +9,7 @@
     "stop": "dotenv -e ../../.env.local -- supabase stop",
     "status": "dotenv -e ../../.env.local -- supabase status",
     "db:reset": "dotenv -e ../../.env.local -- supabase db reset --debug",
-    "supabase:types": "dotenv -e ../../.env.local -- bunx supabase gen types typescript --local > ../webapp/types/supabase.ts",
+    "supabase:types": "dotenv -e ../../.env.local -- bunx supabase gen types typescript --local > ../webapp/src/types/supabase.ts",
     "seed:generate": "bun generate-seed.ts"
   },
   "keywords": [],

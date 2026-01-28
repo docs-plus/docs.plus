@@ -11,10 +11,10 @@ export type Database = {
     Functions: {
       graphql: {
         Args: {
+          extensions?: Json
           operationName?: string
           query?: string
           variables?: Json
-          extensions?: Json
         }
         Returns: Json
       }
@@ -28,6 +28,39 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'admin_users_created_by_fkey'
+            columns: ['created_by']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'admin_users_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: true
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       channel_members: {
         Row: {
           channel_id: string
@@ -205,6 +238,383 @@ export type Database = {
             columns: ['workspace_id']
             isOneToOne: false
             referencedRelation: 'workspaces'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      document_view_stats: {
+        Row: {
+          anonymous_views: number
+          authenticated_views: number
+          avg_duration_ms: number
+          bounce_count: number
+          bounce_rate: number
+          document_slug: string
+          first_viewed_at: string | null
+          guest_views: number
+          last_viewed_at: string | null
+          stats_updated_at: string | null
+          total_duration_ms: number
+          total_views: number
+          unique_sessions: number
+          unique_users: number
+          unique_users_30d: number
+          unique_users_7d: number
+          views_30d: number
+          views_7d: number
+          views_desktop: number
+          views_mobile: number
+          views_tablet: number
+          views_today: number
+        }
+        Insert: {
+          anonymous_views?: number
+          authenticated_views?: number
+          avg_duration_ms?: number
+          bounce_count?: number
+          bounce_rate?: number
+          document_slug: string
+          first_viewed_at?: string | null
+          guest_views?: number
+          last_viewed_at?: string | null
+          stats_updated_at?: string | null
+          total_duration_ms?: number
+          total_views?: number
+          unique_sessions?: number
+          unique_users?: number
+          unique_users_30d?: number
+          unique_users_7d?: number
+          views_30d?: number
+          views_7d?: number
+          views_desktop?: number
+          views_mobile?: number
+          views_tablet?: number
+          views_today?: number
+        }
+        Update: {
+          anonymous_views?: number
+          authenticated_views?: number
+          avg_duration_ms?: number
+          bounce_count?: number
+          bounce_rate?: number
+          document_slug?: string
+          first_viewed_at?: string | null
+          guest_views?: number
+          last_viewed_at?: string | null
+          stats_updated_at?: string | null
+          total_duration_ms?: number
+          total_views?: number
+          unique_sessions?: number
+          unique_users?: number
+          unique_users_30d?: number
+          unique_users_7d?: number
+          views_30d?: number
+          views_7d?: number
+          views_desktop?: number
+          views_mobile?: number
+          views_tablet?: number
+          views_today?: number
+        }
+        Relationships: []
+      }
+      document_views: {
+        Row: {
+          device_type: string | null
+          document_slug: string
+          duration_ms: number | null
+          id: string
+          is_anonymous: boolean
+          is_authenticated: boolean
+          is_bounce: boolean | null
+          session_id: string
+          user_id: string | null
+          view_date: string
+          viewed_at: string
+        }
+        Insert: {
+          device_type?: string | null
+          document_slug: string
+          duration_ms?: number | null
+          id: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Update: {
+          device_type?: string | null
+          document_slug?: string
+          duration_ms?: number | null
+          id?: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id?: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'document_views_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
+      document_views_2026_01: {
+        Row: {
+          device_type: string | null
+          document_slug: string
+          duration_ms: number | null
+          id: string
+          is_anonymous: boolean
+          is_authenticated: boolean
+          is_bounce: boolean | null
+          session_id: string
+          user_id: string | null
+          view_date: string
+          viewed_at: string
+        }
+        Insert: {
+          device_type?: string | null
+          document_slug: string
+          duration_ms?: number | null
+          id: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Update: {
+          device_type?: string | null
+          document_slug?: string
+          duration_ms?: number | null
+          id?: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id?: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
+      document_views_2026_02: {
+        Row: {
+          device_type: string | null
+          document_slug: string
+          duration_ms: number | null
+          id: string
+          is_anonymous: boolean
+          is_authenticated: boolean
+          is_bounce: boolean | null
+          session_id: string
+          user_id: string | null
+          view_date: string
+          viewed_at: string
+        }
+        Insert: {
+          device_type?: string | null
+          document_slug: string
+          duration_ms?: number | null
+          id: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Update: {
+          device_type?: string | null
+          document_slug?: string
+          duration_ms?: number | null
+          id?: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id?: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
+      document_views_2026_03: {
+        Row: {
+          device_type: string | null
+          document_slug: string
+          duration_ms: number | null
+          id: string
+          is_anonymous: boolean
+          is_authenticated: boolean
+          is_bounce: boolean | null
+          session_id: string
+          user_id: string | null
+          view_date: string
+          viewed_at: string
+        }
+        Insert: {
+          device_type?: string | null
+          document_slug: string
+          duration_ms?: number | null
+          id: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Update: {
+          device_type?: string | null
+          document_slug?: string
+          duration_ms?: number | null
+          id?: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id?: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
+      document_views_2026_04: {
+        Row: {
+          device_type: string | null
+          document_slug: string
+          duration_ms: number | null
+          id: string
+          is_anonymous: boolean
+          is_authenticated: boolean
+          is_bounce: boolean | null
+          session_id: string
+          user_id: string | null
+          view_date: string
+          viewed_at: string
+        }
+        Insert: {
+          device_type?: string | null
+          document_slug: string
+          duration_ms?: number | null
+          id: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Update: {
+          device_type?: string | null
+          document_slug?: string
+          duration_ms?: number | null
+          id?: string
+          is_anonymous?: boolean
+          is_authenticated?: boolean
+          is_bounce?: boolean | null
+          session_id?: string
+          user_id?: string | null
+          view_date?: string
+          viewed_at?: string
+        }
+        Relationships: []
+      }
+      document_views_daily: {
+        Row: {
+          avg_duration_ms: number
+          bounce_count: number
+          document_slug: string
+          unique_sessions: number
+          unique_users: number
+          view_date: string
+          views: number
+        }
+        Insert: {
+          avg_duration_ms?: number
+          bounce_count?: number
+          document_slug: string
+          unique_sessions?: number
+          unique_users?: number
+          view_date: string
+          views?: number
+        }
+        Update: {
+          avg_duration_ms?: number
+          bounce_count?: number
+          document_slug?: string
+          unique_sessions?: number
+          unique_users?: number
+          view_date?: string
+          views?: number
+        }
+        Relationships: []
+      }
+      email_queue: {
+        Row: {
+          attempts: number
+          created_at: string
+          email_type: string
+          error_message: string | null
+          id: string
+          notification_id: string | null
+          scheduled_for: string
+          sent_at: string | null
+          status: string
+          user_id: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          email_type: string
+          error_message?: string | null
+          id?: string
+          notification_id?: string | null
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          user_id: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          email_type?: string
+          error_message?: string | null
+          id?: string
+          notification_id?: string | null
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'email_queue_notification_id_fkey'
+            columns: ['notification_id']
+            isOneToOne: false
+            referencedRelation: 'notifications'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'email_queue_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
             referencedColumns: ['id']
           }
         ]
@@ -489,6 +899,59 @@ export type Database = {
           }
         ]
       }
+      push_subscriptions: {
+        Row: {
+          created_at: string
+          device_id: string
+          device_name: string | null
+          failed_count: number
+          id: string
+          is_active: boolean
+          last_error: string | null
+          last_used_at: string | null
+          platform: string
+          push_credentials: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          device_id: string
+          device_name?: string | null
+          failed_count?: number
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          last_used_at?: string | null
+          platform?: string
+          push_credentials: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          device_id?: string
+          device_name?: string | null
+          failed_count?: number
+          id?: string
+          is_active?: boolean
+          last_error?: string | null
+          last_used_at?: string | null
+          platform?: string
+          push_credentials?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'push_subscriptions_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
+        ]
+      }
       users: {
         Row: {
           avatar_updated_at: string | null
@@ -541,7 +1004,6 @@ export type Database = {
         Row: {
           created_at: string
           id: string
-          joined_at: string
           left_at: string | null
           member_id: string
           updated_at: string | null
@@ -550,7 +1012,6 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
-          joined_at?: string
           left_at?: string | null
           member_id: string
           updated_at?: string | null
@@ -559,7 +1020,6 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
-          joined_at?: string
           left_at?: string | null
           member_id?: string
           updated_at?: string | null
@@ -631,14 +1091,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      aggregate_document_view_stats: { Args: never; Returns: Json }
       archive_bookmark: {
-        Args: { p_bookmark_id: number; p_archive?: boolean }
+        Args: { p_archive?: boolean; p_bookmark_id: number }
         Returns: boolean
       }
+      cleanup_email_queue: { Args: never; Returns: undefined }
+      cleanup_old_document_views: { Args: never; Returns: Json }
+      cleanup_push_subscriptions: { Args: never; Returns: undefined }
       create_direct_message_channel: {
-        Args: { workspace_uid: string; user_id: string }
+        Args: { user_id: string; workspace_uid: string }
         Returns: Json
       }
+      create_document_views_partitions: { Args: never; Returns: undefined }
       create_thread_message: {
         Args: {
           p_content: string
@@ -648,65 +1113,82 @@ export type Database = {
         }
         Returns: undefined
       }
+      enqueue_document_view: {
+        Args: {
+          p_device_type?: string
+          p_document_slug: string
+          p_is_anonymous?: boolean
+          p_session_id: string
+          p_user_id?: string
+        }
+        Returns: Json
+      }
       fetch_mentioned_users: {
-        Args: { _workspace_id: string; _username: string }
+        Args: { _username: string; _workspace_id: string }
         Returns: {
+          avatar_updated_at: string
+          avatar_url: string
+          created_at: string
+          display_name: string
+          full_name: string
           id: string
           username: string
-          full_name: string
-          display_name: string
-          avatar_url: string
-          avatar_updated_at: string
-          created_at: string
+        }[]
+      }
+      generate_unsubscribe_token: {
+        Args: { p_action: string; p_user_id: string }
+        Returns: string
+      }
+      get_activity_by_hour: {
+        Args: { p_days?: number }
+        Returns: {
+          day_of_week: number
+          hour_of_day: number
+          message_count: number
         }[]
       }
       get_bookmark_count: {
-        Args: { p_workspace_id?: string; p_archived?: boolean }
+        Args: { p_archived?: boolean; p_workspace_id?: string }
         Returns: number
       }
-      get_bookmark_stats: {
-        Args: { p_workspace_id?: string }
-        Returns: Json
-      }
+      get_bookmark_stats: { Args: { p_workspace_id?: string }; Returns: Json }
       get_channel_aggregate_data: {
         Args: {
+          anchor_message_id?: string
           input_channel_id: string
           message_limit?: number
-          anchor_message_id?: string
         }
         Returns: {
+          anchor_message_timestamp: string
           channel_info: Json
-          last_messages: Json
-          pinned_messages: Json
-          is_user_channel_member: boolean
           channel_member_info: Json
-          total_messages_since_last_read: number
-          unread_message: boolean
+          is_user_channel_member: boolean
+          last_messages: Json
           last_read_message_id: string
           last_read_message_timestamp: string
-          anchor_message_timestamp: string
+          pinned_messages: Json
+          total_messages_since_last_read: number
+          unread_message: boolean
         }[]
       }
       get_channel_members_by_last_read_update: {
         Args: { _channel_id: string; _timestamp: string }
         Returns: {
-          id: string
-          username: string
-          full_name: string
-          display_name: string
-          avatar_url: string
           avatar_updated_at: string
+          avatar_url: string
+          display_name: string
+          full_name: string
           last_read_update_at: string
-          channel_member_role: Database['public']['Enums']['channel_member_role']
-          joined_at: string
+          user_id: string
+          username: string
         }[]
       }
       get_channel_messages_paginated: {
         Args: {
-          input_channel_id: string
-          limit_count?: number
           cursor_timestamp?: string
           direction?: string
+          input_channel_id: string
+          limit_count?: number
         }
         Returns: {
           messages: Json
@@ -717,62 +1199,132 @@ export type Database = {
         Args: { _channel_id: string }
         Returns: Database['public']['Enums']['channel_notification_state']
       }
+      get_communication_stats: { Args: { p_days?: number }; Returns: Json }
+      get_dau_trend: {
+        Args: { p_days?: number }
+        Returns: {
+          active_users: number
+          activity_date: string
+        }[]
+      }
+      get_document_view_stats: {
+        Args: { p_document_slug: string }
+        Returns: Json
+      }
+      get_document_views_summary: { Args: never; Returns: Json }
+      get_document_views_trend: {
+        Args: { p_days?: number; p_document_slug?: string }
+        Returns: {
+          unique_visitors: number
+          view_date: string
+          views: number
+        }[]
+      }
+      get_email_footer_links: {
+        Args: { p_base_url?: string; p_user_id: string }
+        Returns: Json
+      }
+      get_email_notification_stats: { Args: never; Returns: Json }
+      get_message_type_distribution: {
+        Args: { p_days?: number }
+        Returns: {
+          count: number
+          message_type: string
+          percentage: number
+        }[]
+      }
+      get_notification_reach: { Args: never; Returns: Json }
+      get_push_notification_stats: { Args: never; Returns: Json }
+      get_push_subscriptions: {
+        Args: never
+        Returns: {
+          created_at: string
+          device_id: string
+          device_name: string
+          id: string
+          is_active: boolean
+          platform: string
+        }[]
+      }
+      get_retention_metrics: { Args: never; Returns: Json }
+      get_top_active_documents: {
+        Args: { p_days?: number; p_limit?: number }
+        Returns: {
+          document_slug: string
+          message_count: number
+          unique_users: number
+          workspace_id: string
+        }[]
+      }
+      get_top_viewed_documents: {
+        Args: { p_days?: number; p_limit?: number }
+        Returns: {
+          avg_duration_ms: number
+          bounce_rate: number
+          document_slug: string
+          unique_visitors: number
+          views: number
+        }[]
+      }
       get_unread_notif_count: {
         Args: { _workspace_id?: string }
         Returns: number
       }
       get_unread_notifications_paginated: {
         Args: {
-          _workspace_id?: string
-          _type?: string
           _page?: number
           _page_size?: number
+          _type?: string
+          _workspace_id?: string
         }
         Returns: Json[]
       }
+      get_unsubscribe_url: {
+        Args: { p_action: string; p_base_url?: string; p_user_id: string }
+        Returns: string
+      }
       get_user_bookmarks: {
         Args: {
-          p_workspace_id?: string
           p_archived?: boolean
           p_limit?: number
           p_offset?: number
+          p_workspace_id?: string
         }
         Returns: {
-          bookmark_id: number
-          bookmark_created_at: string
-          bookmark_updated_at: string
           bookmark_archived_at: string
+          bookmark_created_at: string
+          bookmark_id: number
           bookmark_marked_at: string
           bookmark_metadata: Json
-          message_id: string
-          message_content: string
-          message_html: string
-          message_created_at: string
-          message_user_id: string
-          message_channel_id: string
-          message_type: Database['public']['Enums']['message_type']
-          user_details: Json
+          bookmark_updated_at: string
           channel_name: string
           channel_slug: string
+          message_channel_id: string
+          message_content: string
+          message_created_at: string
+          message_html: string
+          message_id: string
+          message_type: Database['public']['Enums']['message_type']
+          message_user_id: string
+          user_details: Json
           workspace_id: string
           workspace_name: string
           workspace_slug: string
         }[]
       }
+      get_user_lifecycle_segments: { Args: never; Returns: Json }
       get_workspace_notifications: {
         Args: {
-          p_user_id: string
-          p_workspace_id: string
+          p_is_read?: boolean
           p_limit?: number
           p_offset?: number
-          p_is_read?: boolean
+          p_user_id: string
+          p_workspace_id: string
         }
         Returns: Json[]
       }
-      join_workspace: {
-        Args: { _workspace_id: string }
-        Returns: boolean
-      }
+      is_admin: { Args: { check_user_id: string }; Returns: boolean }
+      join_workspace: { Args: { _workspace_id: string }; Returns: boolean }
       mark_bookmark_as_read: {
         Args: { p_bookmark_id: number; p_mark_as_read?: boolean }
         Returns: boolean
@@ -781,21 +1333,32 @@ export type Database = {
         Args: { p_channel_id: string; p_message_id: string }
         Returns: undefined
       }
-      message_counter_batch_worker: {
-        Args: Record<PropertyKey, never>
-        Returns: undefined
+      message_counter_batch_worker: { Args: never; Returns: undefined }
+      notifications_summary: { Args: { _workspace_id?: string }; Returns: Json }
+      process_document_views_queue: { Args: never; Returns: Json }
+      process_email_queue: { Args: never; Returns: Json }
+      process_unsubscribe: { Args: { p_token: string }; Returns: Json }
+      register_push_subscription: {
+        Args: {
+          p_device_id: string
+          p_device_name: string
+          p_platform: string
+          p_push_credentials: Json
+        }
+        Returns: string
       }
-      notifications_summary: {
-        Args: { _workspace_id?: string }
-        Returns: Json
-      }
-      toggle_message_bookmark: {
-        Args: { p_message_id: string }
-        Returns: Json
-      }
+      toggle_message_bookmark: { Args: { p_message_id: string }; Returns: Json }
       truncate_content: {
         Args: { input_content: string; max_length?: number }
         Returns: string
+      }
+      unregister_push_subscription: {
+        Args: { p_device_id: string }
+        Returns: boolean
+      }
+      update_view_duration: {
+        Args: { p_duration_ms: number; p_view_id: string }
+        Returns: boolean
       }
       user_details_json: {
         Args: { u: Database['public']['Tables']['users']['Row'] }
@@ -864,21 +1427,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, 'public'>]
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -894,14 +1461,16 @@ export type Tables<
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema['Tables']
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -917,14 +1486,16 @@ export type TablesInsert<
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
     | keyof DefaultSchema['Tables']
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
@@ -938,14 +1509,18 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums'] | { schema: keyof Database },
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema['Enums']
+    | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
     ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
@@ -953,14 +1528,16 @@ export type Enums<
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
     | keyof DefaultSchema['CompositeTypes']
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
     ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
