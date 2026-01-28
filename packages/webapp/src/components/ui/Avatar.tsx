@@ -15,24 +15,75 @@ const AVATAR_COLLECTIONS = {
   initials
 } as const
 
+/**
+ * Avatar size presets following Tailwind spacing scale
+ * Maps size names to Tailwind size classes
+ */
+export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
+
+const SIZE_CLASSES: Record<AvatarSize, string> = {
+  xs: 'size-6', // 24px
+  sm: 'size-8', // 32px
+  md: 'size-10', // 40px
+  lg: 'size-12', // 48px
+  xl: 'size-14', // 56px
+  '2xl': 'size-16' // 64px
+}
+
 export interface AvatarProps extends Omit<React.ComponentPropsWithoutRef<'div'>, 'children'> {
+  /** User ID for fetching avatar from storage */
   id?: string
+  /** Show online/offline presence indicator */
   displayPresence?: boolean
+  /** DiceBear collection for fallback avatar */
   collection?: AvatarCollectionKey | string
+  /** Render only the image element without wrapper */
   justImage?: boolean
+  /** Timestamp for cache-busting avatar URL */
   avatarUpdatedAt?: string | number | null
+  /** Online status for presence indicator */
   online?: boolean
+  /** Image source URL */
   src?: string | null
+  /** Alt text for image */
   alt?: string | null
+  /** User status (e.g., 'TYPING') */
   status?: string
+  /** Enable click to open profile dialog */
   clickable?: boolean
+  /** Preset size following design system */
+  size?: AvatarSize
+  /** Additional classes for the image element */
   imageClassName?: string
+  /** Additional props for the image element */
   imageProps?: React.ComponentPropsWithoutRef<'img'>
-  // Tooltip (daisyUI)
+  /** Tooltip text (daisyUI) */
   tooltip?: string
+  /** Tooltip position (daisyUI) */
   tooltipPosition?: 'tooltip-top' | 'tooltip-bottom' | 'tooltip-left' | 'tooltip-right'
 }
 
+/**
+ * Avatar component following docs.plus design system
+ *
+ * Uses daisyUI avatar classes with custom styling for:
+ * - Consistent sizing via size presets
+ * - Soft border and shadow for depth
+ * - Online/offline presence indicators
+ * - Fallback to generated avatars
+ *
+ * @example
+ * ```tsx
+ * // Basic usage
+ * <Avatar id={userId} size="md" />
+ *
+ * // With presence indicator
+ * <Avatar id={userId} displayPresence online size="lg" />
+ *
+ * // Non-clickable
+ * <Avatar id={userId} clickable={false} size="sm" />
+ * ```
+ */
 export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
   (
     {
@@ -46,6 +97,7 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
       alt,
       status,
       clickable = true,
+      size = 'md',
       className,
       imageClassName,
       imageProps,
@@ -58,7 +110,7 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
     const openDialog = useStore((state) => state.openDialog)
     const [hasError, setHasError] = useState(false)
 
-    // Generate fallback avatar
+    // Generate fallback avatar using DiceBear
     const fallbackAvatar = useMemo(() => {
       const resolvedCollection =
         collection in AVATAR_COLLECTIONS
@@ -73,11 +125,10 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
       return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
     }, [id, alt, collection])
 
-    // Derive image source
+    // Derive image source with priority: bucket URL > src prop > fallback
     const imgSrc = useMemo(() => {
       if (hasError) return fallbackAvatar
 
-      // Priority: bucket URL > src prop > fallback
       if (avatarUpdatedAt && id && process.env.NEXT_PUBLIC_SUPABASE_URL) {
         return Config.app.profile.getAvatarURL(id, avatarUpdatedAt.toString())
       }
@@ -92,13 +143,21 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
       openDialog(<UserProfileDialog userId={id} />, { size: 'lg' })
     }, [clickable, id, openDialog])
 
-    // Classes
+    // Derive classes
     const isTyping = status === 'TYPING'
-    const cursorClass = clickable ? 'cursor-pointer' : 'cursor-default'
+    const sizeClass = SIZE_CLASSES[size]
+    const cursorClass = clickable && id ? 'cursor-pointer' : 'cursor-default'
 
+    // Container uses daisyUI avatar class with custom styling
+    // Uses subtle gray ring instead of white border for visibility on any background
     const containerClass = twMerge(
-      'avatar border border-gray-300 bg-white rounded-full !overflow-visible',
-      displayPresence && (online ? 'online' : 'offline'),
+      'avatar',
+      sizeClass,
+      'rounded-full',
+      'bg-slate-100',
+      '!ring-1 ring-base-300',
+      '!overflow-visible',
+      displayPresence && (online ? 'avatar-online' : 'avatar-offline'),
       isTyping && 'avatar-typing',
       tooltip && 'tooltip',
       tooltip && tooltipPosition,
@@ -106,8 +165,13 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
       className
     )
 
+    // Image styling with inset shadow for inner definition on light images
     const imgClass = twMerge(
-      'h-full w-full object-cover rounded-full bg-white',
+      'size-full',
+      'rounded-full',
+      'object-cover',
+      'bg-slate-100',
+      'shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06)]',
       cursorClass,
       imageClassName,
       justImage && className,

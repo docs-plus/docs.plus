@@ -27,6 +27,7 @@ import {
   useClick
 } from '@floating-ui/react'
 import { twMerge } from 'tailwind-merge'
+import Button from '@components/ui/Button'
 
 // Global state for managing multiple HoverMenus
 class HoverMenuManager {
@@ -464,17 +465,17 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
   return (
     <DropdownContext.Provider value={dropdownContextValue}>
       {/* Trigger Button */}
-      <button
+      <Button
         ref={dropdown.refs.setReference}
         {...dropdown.getReferenceProps()}
-        className={twMerge(
-          'btn btn-sm btn-square join-item btn-ghost tooltip tooltip-left',
-          className
-        )}
+        variant="ghost"
+        size="sm"
+        shape="square"
+        className={twMerge('join-item tooltip tooltip-left', className)}
         data-tip={tooltip}
         disabled={disabled}>
         {trigger}
-      </button>
+      </Button>
 
       {/* Dropdown Content */}
       {dropdown.open && (
@@ -490,7 +491,7 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
             }}
             {...dropdown.getFloatingProps()}
             className={twMerge(
-              'bg-base-100 rounded-box z-[60] overflow-hidden border border-gray-300 shadow-md',
+              'bg-base-100 rounded-box border-base-300 z-[60] overflow-hidden border shadow-md',
               contentClassName
             )}>
             <ul className="menu bg-base-100 rounded-box max-h-80 w-52 overflow-y-auto !p-1">
@@ -526,12 +527,13 @@ export const HoverMenuDropdownItem: FC<HoverMenuDropdownItemProps> = ({
 
   return (
     <li>
-      <button
+      <Button
+        variant="ghost"
         onClick={handleClick}
         disabled={disabled}
         className={twMerge('flex w-full items-center gap-2 text-sm', className)}>
         {children}
-      </button>
+      </Button>
     </li>
   )
 }

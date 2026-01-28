@@ -71,7 +71,7 @@ export function Modal({
 }
 
 type Props = {
-  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
+  size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full'
   className?: string
   children: React.ReactNode
 } & Omit<React.HTMLProps<HTMLDivElement>, 'size'>
@@ -82,10 +82,14 @@ export const ModalContent = function ModalContent({
   ...props
 }: Props) {
   const sizeClasses: Record<typeof size, string> = {
-    sm: 'w-full max-w-sm',
-    md: 'w-full max-w-md',
-    lg: 'w-full max-w-lg',
-    xl: 'w-full max-w-xl',
+    sm: 'w-full max-w-sm', // 384px
+    md: 'w-full max-w-md', // 448px
+    lg: 'w-full max-w-lg', // 512px
+    xl: 'w-full max-w-xl', // 576px
+    '2xl': 'w-full max-w-2xl', // 672px
+    '3xl': 'w-full max-w-3xl', // 768px
+    '4xl': 'w-full max-w-4xl', // 896px
+    '5xl': 'w-full max-w-5xl', // 1024px
     full: 'w-full max-w-[calc(100vw-2rem)] h-full max-h-[calc(100vh-2rem)]'
   }
   const { open, refs, context, getFloatingProps } = useModalContext()
@@ -96,12 +100,12 @@ export const ModalContent = function ModalContent({
 
   return (
     <FloatingPortal>
-      <FloatingOverlay className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm" lockScroll>
+      <FloatingOverlay className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm" lockScroll>
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <FloatingFocusManager context={context}>
             <div
               ref={ref}
-              className={`animate-in fade-in-0 zoom-in-95 outline-none ${sizeClasses[size]} max-h-[90vh] overflow-y-auto rounded-lg bg-white shadow-xl duration-200 ${className}`}
+              className={`animate-in fade-in-0 zoom-in-95 outline-none ${sizeClasses[size]} max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl shadow-slate-900/10 duration-200 ${className}`}
               aria-labelledby={id}
               aria-describedby={id}
               id={id}
