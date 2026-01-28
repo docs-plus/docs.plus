@@ -1,8 +1,6 @@
-import { useRouter } from 'next/router'
+import Link from 'next/link'
 
 export default function Custom404() {
-  const router = useRouter()
-
   return (
     <div className="bg-base-200 grid min-h-screen place-items-center p-4">
       <div className="text-center">
@@ -10,12 +8,9 @@ export default function Custom404() {
         <h1 className="text-base-content mt-4 text-2xl font-semibold">Page not found</h1>
         <p className="text-base-content/60 mt-2">The page you're looking for doesn't exist.</p>
         <div className="mt-6 flex justify-center gap-3">
-          <button onClick={() => router.back()} className="btn btn-outline btn-sm">
-            Go Back
-          </button>
-          <button onClick={() => router.push('/')} className="btn btn-primary btn-sm">
+          <Link href="/" className="btn btn-primary btn-sm">
             Home
-          </button>
+          </Link>
         </div>
       </div>
     </div>

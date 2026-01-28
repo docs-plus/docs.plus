@@ -4,7 +4,10 @@
  * Landing page for all showcase pages.
  */
 
+import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
+
+export const getServerSideProps: GetServerSideProps = async () => ({ props: {} })
 import Link from 'next/link'
 import { useState, useCallback } from 'react'
 import {

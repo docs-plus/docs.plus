@@ -1,7 +1,6 @@
-import { useRouter } from 'next/router'
+import Link from 'next/link'
 
 function Error({ statusCode }: { statusCode?: number }) {
-  const router = useRouter()
   const isServer = !!statusCode
 
   return (
@@ -17,12 +16,9 @@ function Error({ statusCode }: { statusCode?: number }) {
             : 'An error occurred on the client.'}
         </p>
         <div className="mt-6 flex justify-center gap-3">
-          <button onClick={() => router.back()} className="btn btn-outline btn-sm">
-            Go Back
-          </button>
-          <button onClick={() => router.push('/')} className="btn btn-primary btn-sm">
+          <Link href="/" className="btn btn-primary btn-sm">
             Home
-          </button>
+          </Link>
         </div>
       </div>
     </div>
