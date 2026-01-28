@@ -1,28 +1,24 @@
 import { Avatar } from '@components/ui/Avatar'
+import Button from '@components/ui/Button'
 import { formatTimeAgo } from '../helpers'
 import NotificationIcon from './NotificationIcon'
 import { useMarkNotificationAsRead } from '../hooks/useMarkNotificationAsRead'
 import { useChatStore, useStore } from '@stores'
 import PubSub from 'pubsub-js'
 import { CHAT_OPEN } from '@services/eventsHub'
-import { MdLink } from 'react-icons/md'
+import { LuLink } from 'react-icons/lu'
 import * as toast from '@components/toast'
-import NotificationBreadcrumb from './NotificationBreadcrumb'
 import { usePopoverState } from '@components/ui/Popover'
 
 export const NotificationItem = ({ notification }: { notification: any }) => {
   const { handleMarkAsRead } = useMarkNotificationAsRead()
-  const {
-    notificationActiveTab,
-    settings: { metadata: docMetadata }
-  } = useStore((state) => state)
+  const { notificationActiveTab } = useStore((state) => state)
 
   const { headingId } = useChatStore((state) => state.chatRoom)
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
   const { close: closePopover } = usePopoverState()
 
   const handleViewNotification = (id: string, notification: any) => {
-    // put the channelId and also the messageId in the uil history in order to later use it for fetching the message
     const messageId = notification.message_id
     const channelId = notification.channel_id
 
@@ -59,57 +55,63 @@ export const NotificationItem = ({ notification }: { notification: any }) => {
 
   return (
     <div
-      className="my-2 flex w-full items-start gap-4 rounded-lg border border-gray-300 p-3 hover:bg-gray-50"
+      className="rounded-box border-base-300 bg-base-100 hover:bg-base-200 flex w-full items-start gap-3 border p-3 transition-colors"
       key={notification.id}>
-      <div className="size-12 flex-shrink-0">
+      <div className="size-9 flex-shrink-0">
         <Avatar
           id={notification.sender.id}
           src={notification.sender.avatar_url}
           avatarUpdatedAt={notification.sender.avatar_updated_at}
           clickable={false}
-          className="size-12 cursor-pointer rounded-full border border-gray-300 shadow-md"
+          className="border-base-300 size-9 rounded-full border"
         />
       </div>
 
-      <div className="flex-1">
+      <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <div className="flex flex-col items-start gap-2">
-            <p className="flex flex-col items-start gap-1 text-sm font-bold">
-              <span className="flex items-center gap-2">
-                <NotificationIcon type={notification.type} size={16} />
-                <span className="font-semibold">{notification.sender.display_name}</span>
+          <div className="flex min-w-0 flex-col items-start gap-1">
+            <p className="flex items-center gap-1.5 text-sm">
+              <NotificationIcon type={notification.type} size={14} />
+              <span className="text-base-content font-medium">
+                {notification.sender.display_name}
               </span>
             </p>
-            <div>
-              <p className="rounded-md bg-gray-100 p-2 text-sm">{notification.message_preview}</p>
-              {/* <div className="relative text-xs">
-                <NotificationBreadcrumb channelId={notification.channel_id} />
-              </div> */}
-            </div>
+            <p className="bg-base-200 text-base-content/70 line-clamp-2 w-full rounded-lg px-2 py-1 text-sm">
+              {notification.message_preview}
+            </p>
           </div>
-          <div>
-            <button
-              className="btn btn-sm btn-ghost btn-square flex items-center gap-2"
-              onClick={() => handleCopyUrl(notification)}>
-              <MdLink size={18} className="rotate-45" />
-            </button>
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            shape="square"
+            className="text-base-content/50 hover:text-base-content shrink-0"
+            onClick={() => handleCopyUrl(notification)}
+            aria-label="Copy link">
+            <LuLink size={14} className="rotate-45" />
+          </Button>
         </div>
 
-        <div className="mt-1 flex items-center gap-2">
-          <span className="text-xs text-gray-500">{formatTimeAgo(notification.created_at)}</span>
+        <div className="mt-2 flex items-center gap-2">
+          <span className="text-base-content/50 text-xs">
+            {formatTimeAgo(notification.created_at)}
+          </span>
           {notificationActiveTab !== 'Read' && (
-            <button
+            <Button
               onClick={(e) => handleMarkAsRead(e, notification.id)}
-              className="btn btn-ghost btn-sm ml-auto flex items-center gap-1 text-xs text-blue-700 hover:text-blue-800">
+              variant="ghost"
+              size="xs"
+              className="text-primary hover:bg-primary/10">
               Mark as read
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             onClick={() => handleViewNotification(notification.message_id, notification)}
-            className="btn btn-sm ml-auto rounded-md bg-blue-50 px-3 py-1 text-xs font-medium text-blue-600 hover:bg-blue-100">
+            variant="primary"
+            btnStyle="soft"
+            size="xs"
+            className="ml-auto">
             View
-          </button>
+          </Button>
         </div>
       </div>
     </div>
