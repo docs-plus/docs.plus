@@ -67,10 +67,22 @@ services:
       timeout: 3s
       retries: 3
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+        reservations:
+          cpus: '0.1'
+          memory: 64M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 0
 
   # ===========================================================================
-  # REDIS - Shared Cache & Pub/Sub
-  # Critical infrastructure - must restart on any failure
+  # REDIS - Shared Cache, Pub/Sub, and Queues
+  # Single Redis instance (simpler, sufficient for 2-5k users)
   # ===========================================================================
   redis:
     image: redis:7-alpine
@@ -80,8 +92,8 @@ services:
       redis-server
       --appendonly yes
       --appendfsync everysec
-      --maxmemory 4gb
-      --maxmemory-policy noeviction
+      --maxmemory 3gb
+      --maxmemory-policy volatile-lru
       --save ""
       --stop-writes-on-bgsave-error no
       --tcp-backlog 511
@@ -102,10 +114,16 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 10s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '3'
     deploy:
       resources:
         limits:
-          memory: 5G
+          memory: 3584M
         reservations:
           memory: 1G
 
@@ -122,7 +140,7 @@ services:
       target: production
       args:
         DATABASE_URL: ${DATABASE_URL}
-    restart: always  # Always restart on failure
+    restart: always
     stop_grace_period: 30s
     stop_signal: SIGTERM
     command: bun /app/src/index.ts
@@ -213,7 +231,7 @@ services:
       target: production
       args:
         DATABASE_URL: ${DATABASE_URL}
-    restart: always  # Always restart on failure
+    restart: always
     stop_grace_period: 30s
     stop_signal: SIGTERM
     command: bun /app/src/hocuspocus.server.ts
@@ -223,7 +241,6 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_HOST: docsplus-redis
       REDIS_PORT: 6379
-      # Limit DB pool to prevent connection exhaustion
       DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
       DB_IDLE_TIMEOUT: 30000
       SUPABASE_URL: ${SUPABASE_URL}
@@ -308,7 +325,7 @@ services:
       target: production
       args:
         DATABASE_URL: ${DATABASE_URL}
-    restart: always  # Always restart on failure (was: unless-stopped)
+    restart: always
     stop_grace_period: 30s
     stop_signal: SIGTERM
     command: bun /app/src/hocuspocus.worker.ts
@@ -318,7 +335,6 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_HOST: docsplus-redis
       REDIS_PORT: 6379
-      # Worker needs slightly higher pool for background jobs
       DB_POOL_SIZE: ${DB_POOL_SIZE:-8}
       DB_IDLE_TIMEOUT: 30000
       SUPABASE_URL: ${SUPABASE_URL}

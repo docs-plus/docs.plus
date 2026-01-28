@@ -20,18 +20,16 @@ const globalForRedis = globalThis as unknown as {
  * - Dedicated clients for pub/sub
  */
 
-// Shared Redis configuration
-const getRedisConfig = () => {
-  const host = process.env.REDIS_HOST
-  const port = process.env.REDIS_PORT
-
-  if (!host || !port) {
-    return null
-  }
-
+/**
+ * Build shared Redis configuration options
+ * @param host - Redis host
+ * @param port - Redis port
+ * @param label - Label for logging (e.g., 'sync', 'queue')
+ */
+const buildRedisConfig = (host: string, port: number, label = 'main') => {
   return {
     host,
-    port: parseInt(port, 10),
+    port,
 
     // Connection settings
     lazyConnect: false, // Connect immediately on creation
@@ -47,19 +45,19 @@ const getRedisConfig = () => {
 
       // Development: fail fast after max retries
       if (!isProduction && times > maxRetries) {
-        redisLogger.error({ times }, 'Redis max retries exceeded (dev mode)')
+        redisLogger.error({ times, redis: label }, 'Redis max retries exceeded (dev mode)')
         return null
       }
 
       // Production: never give up, but log warnings
       if (times > maxRetries) {
-        redisLogger.warn({ times }, 'Redis reconnecting (exceeded initial retries, will keep trying)')
+        redisLogger.warn({ times, redis: label }, 'Redis reconnecting (exceeded initial retries, will keep trying)')
       }
 
       // Exponential backoff: 200ms, 400ms, 800ms... capped at 10s in prod, 5s in dev
       const maxDelay = isProduction ? 10000 : 5000
       const delay = Math.min(times * 200, maxDelay)
-      redisLogger.warn({ times, delay: `${delay}ms` }, 'Redis reconnecting...')
+      redisLogger.warn({ times, delay: `${delay}ms`, redis: label }, 'Redis reconnecting...')
       return delay
     },
 
@@ -81,12 +79,53 @@ const getRedisConfig = () => {
     reconnectOnError: (err: Error) => {
       const targetErrors = ['READONLY', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'Connection is closed']
       if (targetErrors.some((targetError) => err.message.includes(targetError))) {
-        redisLogger.warn({ err: err.message }, 'Reconnecting on error')
+        redisLogger.warn({ err: err.message, redis: label }, 'Reconnecting on error')
         return true
       }
       return false
     }
   }
+}
+
+/**
+ * Get config for SYNC Redis (Hocuspocus Y.js sync, pub/sub, awareness)
+ * Uses REDIS_HOST / REDIS_PORT (primary Redis)
+ */
+const getRedisConfig = () => {
+  const host = process.env.REDIS_HOST
+  const port = process.env.REDIS_PORT
+
+  if (!host || !port) {
+    return null
+  }
+
+  return buildRedisConfig(host, parseInt(port, 10), 'sync')
+}
+
+/**
+ * Get config for QUEUE Redis (BullMQ job queues)
+ * Uses REDIS_QUEUE_HOST / REDIS_QUEUE_PORT if set, otherwise falls back to main Redis
+ * This allows running with single Redis in dev, dual Redis in prod
+ */
+const getQueueRedisConfig = () => {
+  // Try queue-specific config first
+  const queueHost = process.env.REDIS_QUEUE_HOST
+  const queuePort = process.env.REDIS_QUEUE_PORT
+
+  if (queueHost && queuePort) {
+    return buildRedisConfig(queueHost, parseInt(queuePort, 10), 'queue')
+  }
+
+  // Fall back to main Redis (single Redis mode)
+  const mainHost = process.env.REDIS_HOST
+  const mainPort = process.env.REDIS_PORT
+
+  if (mainHost && mainPort) {
+    redisLogger.info('REDIS_QUEUE_HOST not set, using main Redis for queues')
+    return buildRedisConfig(mainHost, parseInt(mainPort, 10), 'queue')
+  }
+
+  return null
 }
 
 // Main Redis client (for general operations)
@@ -240,24 +279,48 @@ export const getRedisPublisher = (): RedisClient | null => {
   return redisPublisher
 }
 
-// Create a new dedicated Redis connection for specific use cases (e.g., BullMQ)
+/**
+ * Create a new dedicated Redis connection for SYNC operations (Hocuspocus)
+ * Uses REDIS_HOST / REDIS_PORT
+ */
 export const createRedisConnection = (options: Partial<RedisOptions> = {}): RedisClient | null => {
   const config = getRedisConfig()
 
   if (!config) {
-    redisLogger.warn('Cannot create Redis connection: config not found')
+    redisLogger.warn('Cannot create Redis sync connection: config not found')
     return null
   }
 
-  // BullMQ needs higher timeout for long-running operations
-  // Use explicit timeout from options if provided, otherwise use env var or default
   const commandTimeout =
     options.commandTimeout ?? parseInt(process.env.REDIS_COMMAND_TIMEOUT || '60000', 10)
 
   return new Redis({
     ...config,
-    ...options, // Spread options first to allow specific overrides
-    commandTimeout // Then ensure timeout is set (may override from options if needed)
+    ...options,
+    commandTimeout
+  })
+}
+
+/**
+ * Create a new dedicated Redis connection for QUEUE operations (BullMQ)
+ * Uses REDIS_QUEUE_HOST / REDIS_QUEUE_PORT, falls back to main Redis
+ */
+export const createQueueRedisConnection = (options: Partial<RedisOptions> = {}): RedisClient | null => {
+  const config = getQueueRedisConfig()
+
+  if (!config) {
+    redisLogger.warn('Cannot create Redis queue connection: config not found')
+    return null
+  }
+
+  // BullMQ needs higher timeout for long-running operations
+  const commandTimeout =
+    options.commandTimeout ?? parseInt(process.env.REDIS_COMMAND_TIMEOUT || '60000', 10)
+
+  return new Redis({
+    ...config,
+    ...options,
+    commandTimeout
   })
 }
 
