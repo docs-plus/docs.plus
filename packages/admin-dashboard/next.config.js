@@ -8,12 +8,12 @@ const nextConfig = {
   // This forces all pages to be SSR, avoiding the "NextRouter was not mounted" error
   experimental: {
     // PPR (Partial Pre-Rendering) disabled
-    ppr: false,
+    ppr: false
   },
 
   // Sass deprecation warnings
   sassOptions: {
-    silenceDeprecations: ['legacy-js-api', 'import'],
+    silenceDeprecations: ['legacy-js-api', 'import']
   },
 
   // Image optimization
@@ -21,19 +21,19 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: '*.supabase.co',
-      },
-    ],
+        hostname: '*.supabase.co'
+      }
+    ]
   },
 
   // Turbopack workspace root (silence monorepo warning)
   turbopack: {
-    root: '../../',
+    root: '../../'
   },
 
   // Security headers (OWASP compliant)
   async headers() {
-    const isDev = process.env.NODE_ENV === 'development';
+    const isDev = process.env.NODE_ENV === 'development'
 
     // Content Security Policy
     // - 'self' for same-origin resources
@@ -44,7 +44,7 @@ const nextConfig = {
     // - localhost/127.0.0.1 for local Supabase in development
     const localDevHosts = isDev
       ? ' http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*'
-      : '';
+      : ''
 
     const cspDirectives = [
       "default-src 'self'",
@@ -57,8 +57,8 @@ const nextConfig = {
       "frame-ancestors 'none'",
       "form-action 'self'",
       "base-uri 'self'",
-      "object-src 'none'",
-    ];
+      "object-src 'none'"
+    ]
 
     return [
       {
@@ -76,23 +76,22 @@ const nextConfig = {
             : [
                 {
                   key: 'Strict-Transport-Security',
-                  value: 'max-age=31536000; includeSubDomains; preload',
-                },
+                  value: 'max-age=31536000; includeSubDomains; preload'
+                }
               ]),
           // Content Security Policy
           { key: 'Content-Security-Policy', value: cspDirectives.join('; ') },
           // Restrict browser features
           {
             key: 'Permissions-Policy',
-            value:
-              'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+            value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()'
           },
           // Prevent XSS attacks (legacy browsers)
-          { key: 'X-XSS-Protection', value: '1; mode=block' },
-        ],
-      },
-    ];
-  },
-};
+          { key: 'X-XSS-Protection', value: '1; mode=block' }
+        ]
+      }
+    ]
+  }
+}
 
-module.exports = nextConfig;
+module.exports = nextConfig

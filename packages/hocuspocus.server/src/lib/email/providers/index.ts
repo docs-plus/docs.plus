@@ -86,7 +86,7 @@ export async function verifyProvider(): Promise<boolean> {
  * Check if any email provider is configured
  */
 export function isAnyProviderConfigured(): boolean {
-  return Object.values(providers).some(p => p.isConfigured())
+  return Object.values(providers).some((p) => p.isConfigured())
 }
 
 /**
@@ -96,8 +96,9 @@ export function getProviderStatus(): {
   active: EmailProvider | null
   configured: EmailProvider[]
 } {
-  const configured = (Object.keys(providers) as EmailProvider[])
-    .filter(name => providers[name].isConfigured())
+  const configured = (Object.keys(providers) as EmailProvider[]).filter((name) =>
+    providers[name].isConfigured()
+  )
 
   return {
     active: getProvider()?.name || null,

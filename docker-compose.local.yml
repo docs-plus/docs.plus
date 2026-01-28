@@ -11,67 +11,67 @@
 # =============================================================================
 
 services:
- # ---------------------------------------------------------------------------
- # PostgreSQL Database
- # ---------------------------------------------------------------------------
- postgres:
-  image: postgres:17-alpine
-  container_name: docsy-postgres-local
-  restart: unless-stopped
-  environment:
-   POSTGRES_DB: docsplus
-   POSTGRES_USER: ${DB_USER:-docsplus}
-   POSTGRES_PASSWORD: ${DB_PASSWORD:-CHANGE_ME_STRONG_PASSWORD}
-   POSTGRES_INITDB_ARGS: "-E UTF8 --locale=C"
-  ports:
-   - "${DB_PORT:-5432}:5432"
-  volumes:
-   - postgres_data_local:/var/lib/postgresql/data
-  healthcheck:
-   test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-docsplus}"]
-   interval: 5s
-   timeout: 3s
-   retries: 3
-   start_period: 5s
-  networks:
-   - docsy-network-local
+  # ---------------------------------------------------------------------------
+  # PostgreSQL Database
+  # ---------------------------------------------------------------------------
+  postgres:
+    image: postgres:17-alpine
+    container_name: docsy-postgres-local
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: docsplus
+      POSTGRES_USER: ${DB_USER:-docsplus}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-CHANGE_ME_STRONG_PASSWORD}
+      POSTGRES_INITDB_ARGS: '-E UTF8 --locale=C'
+    ports:
+      - '${DB_PORT:-5432}:5432'
+    volumes:
+      - postgres_data_local:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${DB_USER:-docsplus}']
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    networks:
+      - docsy-network-local
 
- # ---------------------------------------------------------------------------
- # Redis Cache & Pub/Sub
- # ---------------------------------------------------------------------------
- redis:
-  image: redis:alpine
-  container_name: docsy-redis-local
-  restart: unless-stopped
-  command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy noeviction
-  ports:
-   - "${REDIS_PORT:-6379}:6379"
-  volumes:
-   - redis_data_local:/data
-  healthcheck:
-   test: ["CMD", "redis-cli", "ping"]
-   interval: 3s
-   timeout: 2s
-   retries: 3
-   start_period: 3s
-  networks:
-   - docsy-network-local
+  # ---------------------------------------------------------------------------
+  # Redis Cache & Pub/Sub
+  # ---------------------------------------------------------------------------
+  redis:
+    image: redis:alpine
+    container_name: docsy-redis-local
+    restart: unless-stopped
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy noeviction
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data_local:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 3s
+      timeout: 2s
+      retries: 3
+      start_period: 3s
+    networks:
+      - docsy-network-local
 
 # =============================================================================
 # Volumes
 # =============================================================================
 volumes:
- postgres_data_local:
-  driver: local
-  name: docsy-postgres-local
- redis_data_local:
-  driver: local
-  name: docsy-redis-local
+  postgres_data_local:
+    driver: local
+    name: docsy-postgres-local
+  redis_data_local:
+    driver: local
+    name: docsy-redis-local
 
 # =============================================================================
 # Networks
 # =============================================================================
 networks:
- docsy-network-local:
-  driver: bridge
-  name: docsy-network-local
+  docsy-network-local:
+    driver: bridge
+    name: docsy-network-local

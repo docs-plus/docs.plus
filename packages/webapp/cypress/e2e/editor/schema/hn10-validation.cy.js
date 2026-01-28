@@ -309,4 +309,3 @@ describe('HN-10 Schema Validation', () => {
     })
   })
 })
-

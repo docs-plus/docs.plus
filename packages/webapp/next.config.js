@@ -53,7 +53,13 @@ module.exports = withPWA({
 
   // Experimental features for performance
   experimental: {
-    optimizePackageImports: ['@emoji-mart/react', '@tiptap/react', 'react-icons', '@supabase/supabase-js', '@supabase/ssr']
+    optimizePackageImports: [
+      '@emoji-mart/react',
+      '@tiptap/react',
+      'react-icons',
+      '@supabase/supabase-js',
+      '@supabase/ssr'
+    ]
   },
 
   // Turbopack configuration (moved from experimental.turbo in Next.js 15)
@@ -203,7 +209,14 @@ module.exports = withPWA({
       font: ["'self'", 'data:', 'fonts.gstatic.com', ...localUrls, ...envUrls],
       image: ["'self'", 'data:', 'blob:', 'https:', ...localUrls, ...devUrls], // 🔥 All HTTPS images
       media: ["'self'", 'data:', 'blob:', 'https:', ...localUrls, ...devUrls],
-      frame: ["'self'", '*.cloudflare.com', 'accounts.google.com', ...localUrls, ...envUrls, ...devUrls],
+      frame: [
+        "'self'",
+        '*.cloudflare.com',
+        'accounts.google.com',
+        ...localUrls,
+        ...envUrls,
+        ...devUrls
+      ],
       form: ["'self'", ...localUrls, ...envUrls, ...devUrls]
     }
 

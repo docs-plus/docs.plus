@@ -8,15 +8,15 @@ HyperMultimedia is a powerful extension for the TipTap editor, enabling the embe
 
 Below is a list of supported media types:
 
-| Media Type  | Description                                       | Documentation                           |
-|-------------|---------------------------------------------------|-----------------------------------------|
-| `Images`      | Embed images within the editor.                 | [More details](./src/nodes/image/)      |
-| `Audio`      | Embed Audio within the editor.                   | [More details](./src/nodes/audio/)      |
-| `Video`      | Embed Video within the editor.                   | [More details](./src/nodes/video/)      |
-| `YouTube`     | Embed YouTube videos within the editor.         | [More details](./src/nodes/youtube/)    |
-| `Vimeo`       | Embed Vimeo videos within the editor.           | [More details](./src/nodes/vimeo/)      |
-| `SoundCloud`  | Embed SoundCloud audio within the editor.       | [More details](./src/nodes/soundcloud/) |
-| `Twitter`     | Embed Twitter posts within the editor.          | [More details](./src/nodes/twitter/)    |
+| Media Type   | Description                               | Documentation                           |
+| ------------ | ----------------------------------------- | --------------------------------------- |
+| `Images`     | Embed images within the editor.           | [More details](./src/nodes/image/)      |
+| `Audio`      | Embed Audio within the editor.            | [More details](./src/nodes/audio/)      |
+| `Video`      | Embed Video within the editor.            | [More details](./src/nodes/video/)      |
+| `YouTube`    | Embed YouTube videos within the editor.   | [More details](./src/nodes/youtube/)    |
+| `Vimeo`      | Embed Vimeo videos within the editor.     | [More details](./src/nodes/vimeo/)      |
+| `SoundCloud` | Embed SoundCloud audio within the editor. | [More details](./src/nodes/soundcloud/) |
+| `Twitter`    | Embed Twitter posts within the editor.    | [More details](./src/nodes/twitter/)    |
 
 > Missing a media type? Let us know. 📬
 
@@ -33,18 +33,18 @@ npm install @docs.plus/extension-hypermultimedia
 Configure the `HyperMultimediaKit` by passing an object with the desired settings for each media type you wish to use.
 
 ```javascript
-import { HyperMultimediaKit, vimeoModal } from "@docs.plus/extension-hypermultimedia";
+import { HyperMultimediaKit, vimeoModal } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
   Image,
   Youtube,
   Vimeo: {
     modal: vimeoModal, // default modal
-    inline: true, // default false
+    inline: true // default false
   },
   SoundCloud: false,
-  Twitter: false,
-});
+  Twitter: false
+})
 ```
 
 ### Modals, Exciting Features 💡
@@ -90,7 +90,7 @@ you import and use the default modal for each media type like this:
         cursor: crosshair;
 
         &::after {
-          content: "";
+          content: '';
           position: absolute;
           left: 50%;
           transform: translateX(-50%);
@@ -180,7 +180,9 @@ you import and use the default modal for each media type like this:
     border-radius: 6px;
     display: flex;
     align-items: center;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow:
+      0 4px 6px -1px rgba(0, 0, 0, 0.1),
+      0 2px 4px -1px rgba(0, 0, 0, 0.06);
     border: 1px solid rgba(0, 0, 0, 0.1);
     flex-direction: row;
     flex-wrap: wrap;
@@ -193,7 +195,7 @@ you import and use the default modal for each media type like this:
     }
 
     select {
-      @apply border-gray-300 py-2 px-2 rounded-md;
+      @apply rounded-md border-gray-300 px-2 py-2;
       &:hover {
         background-color: #eee;
       }
@@ -232,14 +234,13 @@ you import and use the default modal for each media type like this:
 </details>
 
 ```javascript
-import { HyperMultimediaKit, vimeoModal } from "@docs.plus/extension-hypermultimedia";
+import { HyperMultimediaKit, vimeoModal } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
   Vimeo: {
-    modal: vimeoModal,
+    modal: vimeoModal
   }
-});
-
+})
 ```
 
 #### Custom Modals
@@ -251,57 +252,57 @@ OR you can create your own modal for each media type. To do so, you must pass a 
 
 ```js
 const twitterModal = (options) => {
- const { editor, tooltip, tippyModal, iframe, wrapper } = options;
-  const nodePos = editor.view.posAtDOM(wrapper, 0);
+  const { editor, tooltip, tippyModal, iframe, wrapper } = options
+  const nodePos = editor.view.posAtDOM(wrapper, 0)
 
   // Get the node attributes.
-  const node = editor.state.doc.nodeAt(nodePos);
-  const { float, display, margin } = attrs.attrs;
+  const node = editor.state.doc.nodeAt(nodePos)
+  const { float, display, margin } = attrs.attrs
 
   // Remove all children from the modal, clear the modal content.
-  while (tippyModal.firstChild) node.removeChild(tippyModal.firstChild);
+  while (tippyModal.firstChild) node.removeChild(tippyModal.firstChild)
 
   // Create a wrapper for the modal content.
-  const div = createElement("div", "twitter-modal__wrapper");
+  const div = createElement('div', 'twitter-modal__wrapper')
 
   // Create action buttons for the node.
-  const buttonFloadLeft = createElement("button", "twitter-modal__fload__left");
-  const btnFloadRight = createElement("button", "twitter-modal__fload__right");
+  const buttonFloadLeft = createElement('button', 'twitter-modal__fload__left')
+  const btnFloadRight = createElement('button', 'twitter-modal__fload__right')
 
-  buttonFloadLeft.addEventListener("click", () => {
-    const { state, dispatch } = editor.view;
-    const { tr } = state;
+  buttonFloadLeft.addEventListener('click', () => {
+    const { state, dispatch } = editor.view
+    const { tr } = state
 
-    tr.setNodeAttribute("Twitter", "float", "left");
-    tooltip.hide();
-    dispatch(tr);
-  });
+    tr.setNodeAttribute('Twitter', 'float', 'left')
+    tooltip.hide()
+    dispatch(tr)
+  })
 
-  btnFloadRight.addEventListener("click", () => {
-    const { state, dispatch } = editor.view;
-    const { tr } = state;
+  btnFloadRight.addEventListener('click', () => {
+    const { state, dispatch } = editor.view
+    const { tr } = state
 
-    tr.setNodeAttribute("Twitter", "float", "right");
-    tooltip.hide();
-    dispatch(tr);
-  });
+    tr.setNodeAttribute('Twitter', 'float', 'right')
+    tooltip.hide()
+    dispatch(tr)
+  })
 
   // Append the buttons to the modal.
-  div.append(buttonFloadLeft, btnFloadRight);
+  div.append(buttonFloadLeft, btnFloadRight)
 
   // Append the modal wrapper to the modal.
-  tippyModal.append(div);
+  tippyModal.append(div)
 
   // Update the modal position, and place it on the bottom of the iframe,
   // then display the modal.
-  tooltip.update(editor.view, { placement: "bottom-start" }, iframe);
+  tooltip.update(editor.view, { placement: 'bottom-start' }, iframe)
 }
 ```
 
 </details>
 
 ```javascript
-import { HyperMultimediaKit } from "@docs.plus/extension-hypermultimedia";
+import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 
 Editor = new Editor({
   // Other configurations
@@ -309,11 +310,11 @@ Editor = new Editor({
     // Other extensions
     HyperMultimediaKit.configure({
       Twitter: {
-        modal: twitterModal,
+        modal: twitterModal
       }
-    }),
+    })
   ]
-});
+})
 ```
 
 > For more details, check out [the modal document](./src/modals/twitter.ts).
@@ -326,8 +327,8 @@ Editor = new Editor({
 editor.commands.setYoutubeVideo({
   src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
   width: 560,
-  height: 315,
-});
+  height: 315
+})
 ```
 
 > For more details, check out [the Youtube document](./src/nodes/youtube/).
@@ -388,7 +389,7 @@ editor.commands.setImage({
 
 ```js
 editor.commands.setVideo({
-  src: 'https://example.com/foobar.mp4',
+  src: 'https://example.com/foobar.mp4'
 })
 ```
 
@@ -406,7 +407,7 @@ editor.commands.setVideo({
 
 ```js
 editor.commands.setAudio({
-  src: 'https://example.com/foobar.mp3',
+  src: 'https://example.com/foobar.mp3'
 })
 ```
 

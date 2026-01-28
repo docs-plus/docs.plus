@@ -12,7 +12,8 @@ import dialogStore from './dialogStore'
 enableMapSet()
 
 interface IStore
-  extends ReturnType<typeof usersPresence>,
+  extends
+    ReturnType<typeof usersPresence>,
     ReturnType<typeof workspaceStore>,
     ReturnType<typeof chatRoom>,
     ReturnType<typeof notification>,

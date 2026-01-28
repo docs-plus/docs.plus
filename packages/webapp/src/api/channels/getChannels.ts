@@ -114,10 +114,12 @@ export const getChannelsByWorkspaceAndUserids = async (
   // Alias channels as 'workspace' to match expected response structure
   const result = await supabase
     .from('channel_members')
-    .select(`
+    .select(
+      `
       *,
       workspace:channels(*)
-    `)
+    `
+    )
     .eq('member_id', userId)
 
   if (result.error) {
@@ -135,9 +137,7 @@ export const getChannelsByWorkspaceAndUserids = async (
   // Filter by workspace_id in memory since PostgREST doesn't support nested filtering well
   const filtered = {
     ...result,
-    data: (result.data || []).filter((item: any) =>
-      item.workspace?.workspace_id === workspaceId
-    )
+    data: (result.data || []).filter((item: any) => item.workspace?.workspace_id === workspaceId)
   }
 
   return filtered as PostgrestResponse<any>

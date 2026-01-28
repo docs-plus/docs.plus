@@ -1,40 +1,40 @@
 services:
- app:
-  build:
-   context: ../.. # Monorepo root
-   dockerfile: packages/webapp/docker/Dockerfile.bun
-   target: builder # Stop at builder stage for dev
-   args:
-    NODE_ENV: development
-  image: docsy-webapp:dev
-  ports:
-   - "3000:3000"
-  environment:
-   NODE_ENV: development
-   PORT: 3000
-   HOSTNAME: "0.0.0.0"
-   NEXT_TELEMETRY_DISABLED: 1
-   # Development environment variables
-   # NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-http://localhost:54321}
-   # NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-   # NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL:-ws://localhost:4001}
-  volumes:
-   # Mount source for hot reload (if using Next.js dev mode)
-   - ../../packages/webapp:/app/packages/webapp
-   - ../../packages/extension-hyperlink:/app/packages/extension-hyperlink
-   - ../../packages/extension-hypermultimedia:/app/packages/extension-hypermultimedia
-   - ../../packages/extension-indent:/app/packages/extension-indent
-   - ../../packages/extension-inline-code:/app/packages/extension-inline-code
-   # Exclude node_modules and build outputs
-   - /app/node_modules
-   - /app/packages/webapp/.next
-   - /app/packages/*/dist
-  command: bun run dev
-  working_dir: /app/packages/webapp
-  networks:
-   - app-network
-  restart: unless-stopped
+  app:
+    build:
+      context: ../.. # Monorepo root
+      dockerfile: packages/webapp/docker/Dockerfile.bun
+      target: builder # Stop at builder stage for dev
+      args:
+        NODE_ENV: development
+    image: docsy-webapp:dev
+    ports:
+      - '3000:3000'
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      HOSTNAME: '0.0.0.0'
+      NEXT_TELEMETRY_DISABLED: 1
+      # Development environment variables
+      # NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:-http://localhost:54321}
+      # NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      # NEXT_PUBLIC_PROVIDER_URL: ${NEXT_PUBLIC_PROVIDER_URL:-ws://localhost:4001}
+    volumes:
+      # Mount source for hot reload (if using Next.js dev mode)
+      - ../../packages/webapp:/app/packages/webapp
+      - ../../packages/extension-hyperlink:/app/packages/extension-hyperlink
+      - ../../packages/extension-hypermultimedia:/app/packages/extension-hypermultimedia
+      - ../../packages/extension-indent:/app/packages/extension-indent
+      - ../../packages/extension-inline-code:/app/packages/extension-inline-code
+      # Exclude node_modules and build outputs
+      - /app/node_modules
+      - /app/packages/webapp/.next
+      - /app/packages/*/dist
+    command: bun run dev
+    working_dir: /app/packages/webapp
+    networks:
+      - app-network
+    restart: unless-stopped
 
 networks:
- app-network:
-  driver: bridge
+  app-network:
+    driver: bridge

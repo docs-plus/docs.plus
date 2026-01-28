@@ -25,10 +25,10 @@ const editor = new Editor({
   extensions: [
     InlineCode.configure({
       HTMLAttributes: {
-        class: 'my-custom-class',
-      },
-    }),
-  ],
+        class: 'my-custom-class'
+      }
+    })
+  ]
 })
 ```
 

@@ -5,8 +5,11 @@ import { type GetServerSidePropsContext } from 'next'
 import { getDeviceInfo } from '@helpers'
 import { logger } from '@utils/logger'
 
-export async function handleUserSessionForServerProp(docMetadata: any, session: any, supabase: any) {
-
+export async function handleUserSessionForServerProp(
+  docMetadata: any,
+  session: any,
+  supabase: any
+) {
   if (!session?.user) return null
   const [upsertResult, channelsResult] = await Promise.allSettled([
     upsertWorkspace({
@@ -18,7 +21,6 @@ export async function handleUserSessionForServerProp(docMetadata: any, session: 
     }),
     getChannelsByWorkspaceAndUserids(docMetadata.documentId, session.user.id, supabase)
   ])
-
 
   if (upsertResult.status === 'rejected') {
     throw new Error('Failed to upsert workspace', { cause: upsertResult.reason })
@@ -72,7 +74,7 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Auth timeout')), 5000)
       )
-      const result = await Promise.race([authPromise, timeoutPromise]) as any
+      const result = (await Promise.race([authPromise, timeoutPromise])) as any
       user = result?.data?.user || null
       userError = result?.error || null
     } catch (error) {
@@ -89,7 +91,7 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
         const sessionTimeout = new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Session timeout')), 5000)
         )
-        const sessionResult = await Promise.race([sessionPromise, sessionTimeout]) as any
+        const sessionResult = (await Promise.race([sessionPromise, sessionTimeout])) as any
         session = sessionResult?.data?.session || null
       } catch (error) {
         // Timeout or error - continue without session

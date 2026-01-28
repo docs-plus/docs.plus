@@ -63,7 +63,6 @@ const SelectHeadingBox = ({ editor }: SelectHeadingBoxProps) => {
         : editor.isActive('contentHeading', { level: opt.value })
     )
     return active || MAIN_OPTIONS[0]
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editor.state.selection])
 
   const handleSelect = useCallback(

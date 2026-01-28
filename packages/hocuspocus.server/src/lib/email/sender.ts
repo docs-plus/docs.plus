@@ -83,7 +83,9 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
         subject = getEmailSubject(payload.notification_type, payload.sender_name)
 
         const actionUrl = payload.action_url
-          ? (payload.action_url.startsWith('http') ? payload.action_url : `${appUrl}${payload.action_url}`)
+          ? payload.action_url.startsWith('http')
+            ? payload.action_url
+            : `${appUrl}${payload.action_url}`
           : payload.channel_id
             ? `${appUrl}?chatroom=${payload.channel_id}`
             : payload.document_slug
@@ -127,8 +129,10 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
         to = payload.to
         userId = payload.recipient_id
 
-        const totalNotifications = payload.documents.reduce((sum, doc) =>
-          sum + doc.channels.reduce((cSum, ch) => cSum + ch.notifications.length, 0), 0)
+        const totalNotifications = payload.documents.reduce(
+          (sum, doc) => sum + doc.channels.reduce((cSum, ch) => cSum + ch.notifications.length, 0),
+          0
+        )
 
         subject = `Your ${payload.frequency} digest - ${totalNotifications} notification${totalNotifications !== 1 ? 's' : ''}`
 
@@ -178,7 +182,10 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
       success: result.success,
       message_id: result.messageId,
       error: result.error,
-      queue_id: data.type === 'notification' ? (data.payload as NotificationEmailRequest).queue_id : undefined
+      queue_id:
+        data.type === 'notification'
+          ? (data.payload as NotificationEmailRequest).queue_id
+          : undefined
     }
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err)
@@ -187,7 +194,10 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
     return {
       success: false,
       error,
-      queue_id: data.type === 'notification' ? (data.payload as NotificationEmailRequest).queue_id : undefined
+      queue_id:
+        data.type === 'notification'
+          ? (data.payload as NotificationEmailRequest).queue_id
+          : undefined
     }
   }
 }

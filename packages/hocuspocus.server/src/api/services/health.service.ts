@@ -47,12 +47,14 @@ export const checkRedisHealth = async (redis: RedisClient | null): Promise<Healt
     return {
       status: healthy ? 'healthy' : 'unhealthy',
       lastCheck: new Date(),
-      metadata: stats ? {
-        status: stats.status,
-        connected: stats.connected,
-        commandQueueLength: stats.commandQueueLength,
-        offlineQueueLength: stats.offlineQueue
-      } : undefined
+      metadata: stats
+        ? {
+            status: stats.status,
+            connected: stats.connected,
+            commandQueueLength: stats.commandQueueLength,
+            offlineQueueLength: stats.offlineQueue
+          }
+        : undefined
     }
   } catch (error) {
     return {

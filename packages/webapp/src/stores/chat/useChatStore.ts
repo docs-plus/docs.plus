@@ -14,7 +14,8 @@ import emojiPickerStore from './emojiPickerStore'
 enableMapSet()
 
 interface IStore
-  extends ReturnType<typeof channelMembersStore>,
+  extends
+    ReturnType<typeof channelMembersStore>,
     ReturnType<typeof channelPinnedMessagesStore>,
     ReturnType<typeof channelsStore>,
     ReturnType<typeof chatRoom>,

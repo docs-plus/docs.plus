@@ -4,14 +4,14 @@ import {
   LuFileText,
   LuMessageSquare,
   LuBell,
-  LuActivity,
-} from 'react-icons/lu';
-import type { IconType } from 'react-icons';
+  LuActivity
+} from 'react-icons/lu'
+import type { IconType } from 'react-icons'
 
 export interface NavItem {
-  href: string;
-  label: string;
-  icon: IconType;
+  href: string
+  label: string
+  icon: IconType
 }
 
 /**
@@ -24,5 +24,5 @@ export const navItems: NavItem[] = [
   { href: '/documents', label: 'Documents', icon: LuFileText },
   { href: '/channels', label: 'Channels', icon: LuMessageSquare },
   { href: '/notifications', label: 'Notifications', icon: LuBell },
-  { href: '/system', label: 'System', icon: LuActivity },
-];
+  { href: '/system', label: 'System', icon: LuActivity }
+]

@@ -48,7 +48,10 @@ export const uploadMedia = async (documentId: string, mediaFile: File) => {
 
     // Validate file size
     if (mediaFile.size > MAX_FILE_SIZE) {
-      mediaServiceLogger.warn({ documentId, fileSize: mediaFile.size, maxSize: MAX_FILE_SIZE }, 'File too large')
+      mediaServiceLogger.warn(
+        { documentId, fileSize: mediaFile.size, maxSize: MAX_FILE_SIZE },
+        'File too large'
+      )
       throw new PayloadTooLargeError(
         `File size ${(mediaFile.size / 1024 / 1024).toFixed(2)}MB exceeds maximum ${(MAX_FILE_SIZE / 1024 / 1024).toFixed(2)}MB`
       )
@@ -66,9 +69,15 @@ export const uploadMedia = async (documentId: string, mediaFile: File) => {
 
     // Local storage
     if (canPersist2Local) {
-      mediaServiceLogger.debug({ documentId, fileName: mediaFile.name }, 'Uploading to local storage')
+      mediaServiceLogger.debug(
+        { documentId, fileName: mediaFile.name },
+        'Uploading to local storage'
+      )
       const result = await localStorage.upload(documentId, mediaFile)
-      mediaServiceLogger.info({ documentId, fileAddress: result.fileAddress }, 'File uploaded to local storage')
+      mediaServiceLogger.info(
+        { documentId, fileAddress: result.fileAddress },
+        'File uploaded to local storage'
+      )
       return result
     }
 
@@ -83,11 +92,17 @@ export const uploadMedia = async (documentId: string, mediaFile: File) => {
     const fileType = extractFileType(mediaFile.type)
     const Key = `${documentId}/${fileName}`
 
-    mediaServiceLogger.debug({ documentId, fileName, fileSize: mediaFile.size }, 'Uploading to S3 storage')
+    mediaServiceLogger.debug(
+      { documentId, fileName, fileSize: mediaFile.size },
+      'Uploading to S3 storage'
+    )
     const buffer = await mediaFile.arrayBuffer()
     await S3Storage.upload(documentId, fileName, new Uint8Array(buffer))
 
-    mediaServiceLogger.info({ documentId, fileName, fileSize: mediaFile.size }, 'File uploaded to S3 storage')
+    mediaServiceLogger.info(
+      { documentId, fileName, fileSize: mediaFile.size },
+      'File uploaded to S3 storage'
+    )
 
     return {
       type: 's3',

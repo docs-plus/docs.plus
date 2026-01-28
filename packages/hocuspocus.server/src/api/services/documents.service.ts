@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js'
 import ShortUniqueId from 'short-unique-id'
 import slugify from 'slugify'
 import type { CreateDocumentParams, UpdateDocumentParams, SearchDocumentsParams } from '../../types'
-import { handlePrismaError, NotFoundError, ValidationError } from '../../lib/errors'
+import { handlePrismaError, _NotFoundError, ValidationError } from '../../lib/errors'
 import { documentsServiceLogger } from '../../lib/logger'
 
 export const getOwnerProfile = async (userId: string) => {
@@ -194,7 +194,8 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
       if (!doc.ownerId) return doc
 
       const ownerProfile = ownerProfiles.find((profile: any) => profile.id === doc.ownerId)
-      const displayName = ownerProfile?.display_name || ownerProfile?.full_name || ownerProfile?.email
+      const displayName =
+        ownerProfile?.display_name || ownerProfile?.full_name || ownerProfile?.email
 
       return {
         ...doc,
@@ -206,7 +207,10 @@ export const searchDocuments = async (prisma: PrismaClient, params: SearchDocume
       }
     })
 
-    documentsServiceLogger.debug({ count: docsWithOwners.length, total }, 'Documents searched successfully')
+    documentsServiceLogger.debug(
+      { count: docsWithOwners.length, total },
+      'Documents searched successfully'
+    )
     return { docs: docsWithOwners, total }
   } catch (error) {
     documentsServiceLogger.error({ err: error, params }, 'Error searching documents')

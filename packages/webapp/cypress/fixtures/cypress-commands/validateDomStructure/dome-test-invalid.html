@@ -1,31 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Editor DOM Test - Invalid Structure</title>
+    <link rel="stylesheet" href="../style.css" />
+  </head>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Editor DOM Test - Invalid Structure</title>
-  <link rel="stylesheet" href="../style.css">
-
-</head>
-
-<body>
-  <div class="tiptap__editor docy_editor relative">
-    <div contenteditable="true" spellcheck="false" translate="no" class="tiptap ProseMirror" tabindex="0">
-      <!-- First section with nested level 1 heading (INVALID) -->
-      <div class="heading opend" level="1" data-type="heading" data-id="invalid1">
-        <div class="wrapBlock" data-id="invalid1">
-          <h1 class="title" level="1"><span>First Section</span></h1>
-          <div class="contentWrapper opend" data-type="contentWrapper">
-            <div class="contents">
-              <p>This is a brief test content for basic testing scenarios.</p>
-              <!-- INVALID: Level 1 heading nested inside another level 1 heading -->
-              <div class="heading opend" level="1" data-id="invalid2" data-type="heading">
-                <div class="wrapBlock" data-id="invalid2">
-                  <h1 class="title" level="1"><span>Nested Section (INVALID)</span></h1>
-                  <div class="contentWrapper opend" data-type="contentWrapper">
-                    <div class="contents">
-                      <p>This is an invalid nested section (level 1 inside level 1).</p>
+  <body>
+    <div class="tiptap__editor docy_editor relative">
+      <div
+        contenteditable="true"
+        spellcheck="false"
+        translate="no"
+        class="tiptap ProseMirror"
+        tabindex="0">
+        <!-- First section with nested level 1 heading (INVALID) -->
+        <div class="heading opend" level="1" data-type="heading" data-id="invalid1">
+          <div class="wrapBlock" data-id="invalid1">
+            <h1 class="title" level="1"><span>First Section</span></h1>
+            <div class="contentWrapper opend" data-type="contentWrapper">
+              <div class="contents">
+                <p>This is a brief test content for basic testing scenarios.</p>
+                <!-- INVALID: Level 1 heading nested inside another level 1 heading -->
+                <div class="heading opend" level="1" data-id="invalid2" data-type="heading">
+                  <div class="wrapBlock" data-id="invalid2">
+                    <h1 class="title" level="1"><span>Nested Section (INVALID)</span></h1>
+                    <div class="contentWrapper opend" data-type="contentWrapper">
+                      <div class="contents">
+                        <p>This is an invalid nested section (level 1 inside level 1).</p>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -33,35 +37,43 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Second section with invalid hierarchy (level 2 -> level 1) -->
-      <div class="heading opend" level="1" data-type="heading" data-id="invalid3">
-        <div class="wrapBlock" data-id="invalid3">
-          <h1 class="title" level="1"><span>Second Section</span></h1>
-          <div class="contentWrapper opend" data-type="contentWrapper">
-            <div class="contents">
-              <p>This is a brief test content for basic testing scenarios.</p>
-              <div class="heading opend" level="2" data-id="invalid4" data-type="heading">
-                <div class="wrapBlock" data-id="invalid4">
-                  <h2 class="title" level="2"><span>Level 2 Heading</span></h2>
-                  <div class="contentWrapper opend" data-type="contentWrapper">
-                    <div class="contents">
-                      <p>This is a brief test content for basic testing scenarios.</p>
-                      <!-- INVALID: Level 3 heading with level 2 child (violation of hierarchy) -->
-                      <div class="heading opend" level="3" data-id="invalid5" data-type="heading">
-                        <div class="wrapBlock" data-id="invalid5">
-                          <h3 class="title" level="3"><span>Level 3 Heading</span></h3>
-                          <div class="contentWrapper opend" data-type="contentWrapper">
-                            <div class="contents">
-                              <p>This heading contains an invalid child hierarchy.</p>
-                              <!-- INVALID: Level 2 heading inside level 3 (child level <= parent level) -->
-                              <div class="heading opend" level="2" data-id="invalid6" data-type="heading">
-                                <div class="wrapBlock" data-id="invalid6">
-                                  <h2 class="title" level="2"><span>Invalid Level 2 Inside Level 3</span></h2>
-                                  <div class="contentWrapper opend" data-type="contentWrapper">
-                                    <div class="contents">
-                                      <p>This level 2 heading cannot be inside a level 3 heading.</p>
+        <!-- Second section with invalid hierarchy (level 2 -> level 1) -->
+        <div class="heading opend" level="1" data-type="heading" data-id="invalid3">
+          <div class="wrapBlock" data-id="invalid3">
+            <h1 class="title" level="1"><span>Second Section</span></h1>
+            <div class="contentWrapper opend" data-type="contentWrapper">
+              <div class="contents">
+                <p>This is a brief test content for basic testing scenarios.</p>
+                <div class="heading opend" level="2" data-id="invalid4" data-type="heading">
+                  <div class="wrapBlock" data-id="invalid4">
+                    <h2 class="title" level="2"><span>Level 2 Heading</span></h2>
+                    <div class="contentWrapper opend" data-type="contentWrapper">
+                      <div class="contents">
+                        <p>This is a brief test content for basic testing scenarios.</p>
+                        <!-- INVALID: Level 3 heading with level 2 child (violation of hierarchy) -->
+                        <div class="heading opend" level="3" data-id="invalid5" data-type="heading">
+                          <div class="wrapBlock" data-id="invalid5">
+                            <h3 class="title" level="3"><span>Level 3 Heading</span></h3>
+                            <div class="contentWrapper opend" data-type="contentWrapper">
+                              <div class="contents">
+                                <p>This heading contains an invalid child hierarchy.</p>
+                                <!-- INVALID: Level 2 heading inside level 3 (child level <= parent level) -->
+                                <div
+                                  class="heading opend"
+                                  level="2"
+                                  data-id="invalid6"
+                                  data-type="heading">
+                                  <div class="wrapBlock" data-id="invalid6">
+                                    <h2 class="title" level="2">
+                                      <span>Invalid Level 2 Inside Level 3</span>
+                                    </h2>
+                                    <div class="contentWrapper opend" data-type="contentWrapper">
+                                      <div class="contents">
+                                        <p>
+                                          This level 2 heading cannot be inside a level 3 heading.
+                                        </p>
+                                      </div>
                                     </div>
                                   </div>
                                 </div>
@@ -77,21 +89,19 @@
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Invalid heading with level outside range (11) -->
-      <div class="heading opend" level="11" data-id="invalid7" data-type="heading">
-        <div class="wrapBlock" data-id="invalid7">
-          <h6 class="title" level="11"><span>Invalid Level 11 Heading</span></h6>
-          <div class="contentWrapper opend" data-type="contentWrapper">
-            <div class="contents">
-              <p>This heading has a level (11) outside the valid range (1-10).</p>
+        <!-- Invalid heading with level outside range (11) -->
+        <div class="heading opend" level="11" data-id="invalid7" data-type="heading">
+          <div class="wrapBlock" data-id="invalid7">
+            <h6 class="title" level="11"><span>Invalid Level 11 Heading</span></h6>
+            <div class="contentWrapper opend" data-type="contentWrapper">
+              <div class="contents">
+                <p>This heading has a level (11) outside the valid range (1-10).</p>
+              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
-  </div>
-</body>
-
+  </body>
 </html>

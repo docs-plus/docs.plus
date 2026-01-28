@@ -55,4 +55,3 @@ export type TSendThreadMsgArgs = Database['public']['Functions']['create_thread_
 
 // Database function types
 export type TFToggleMessageBookmark = Database['public']['Functions']['toggle_message_bookmark']
-

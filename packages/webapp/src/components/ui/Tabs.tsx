@@ -16,7 +16,7 @@ export const Tab = ({ label, count, isActive, onClick }: TabProps) => {
       <span className={`mt-0.5 font-semibold ${isActive ? 'text-indigo-600' : ''}`}>{label}</span>
       {count !== undefined && count > 0 && (
         <span
-          className={`rounded-md bg-base-200 px-1 text-xs font-extrabold leading-5 ${
+          className={`bg-base-200 rounded-md px-1 text-xs leading-5 font-extrabold ${
             isActive ? 'text-indigo-600' : 'bg-base-300'
           }`}>
           {count}

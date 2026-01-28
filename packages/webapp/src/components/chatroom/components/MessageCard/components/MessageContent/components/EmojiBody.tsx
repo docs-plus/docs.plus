@@ -52,7 +52,6 @@ export const EmojiBody = () => {
       {emojiArray.map((emoji: string, index: number) => (
         <div key={index} className="tooltip tooltip-right" data-tip={emojiTitles[index] || 'emoji'}>
           {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             <em-emoji native={emoji} set="native" size="4rem"></em-emoji>
           }

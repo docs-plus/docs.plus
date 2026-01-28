@@ -151,9 +151,7 @@ describe('Schema Validation After Paste', () => {
 
     it('should maintain valid schema after pasting H3 inside H2', () => {
       cy.createDocument([
-        section('Section', [
-          heading(2, 'Existing H2', [paragraph('H2 content')])
-        ])
+        section('Section', [heading(2, 'Existing H2', [paragraph('H2 content')])])
       ])
       cy.wait(500)
 
@@ -169,12 +167,7 @@ describe('Schema Validation After Paste', () => {
 
   describe('Paste at ContentWrapper Boundaries', () => {
     it('should validate schema when pasting at START of contentWrapper', () => {
-      cy.createDocument([
-        section('Section', [
-          paragraph('First para'),
-          paragraph('Second para')
-        ])
-      ])
+      cy.createDocument([section('Section', [paragraph('First para'), paragraph('Second para')])])
       cy.wait(500)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
@@ -187,11 +180,7 @@ describe('Schema Validation After Paste', () => {
     })
 
     it('should validate schema when pasting at END of contentWrapper', () => {
-      cy.createDocument([
-        section('Section', [
-          paragraph('Content before')
-        ])
-      ])
+      cy.createDocument([section('Section', [paragraph('Content before')])])
       cy.wait(500)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').last().click()
@@ -228,11 +217,7 @@ describe('Schema Validation After Paste', () => {
   describe('Level Adjustment Validation', () => {
     it('should adjust levels and maintain valid schema when pasting H2 inside H3', () => {
       cy.createDocument([
-        section('Section', [
-          heading(2, 'L2', [
-            heading(3, 'L3', [paragraph('L3 content')])
-          ])
-        ])
+        section('Section', [heading(2, 'L2', [heading(3, 'L3', [paragraph('L3 content')])])])
       ])
       cy.wait(500)
 
@@ -256,11 +241,7 @@ describe('Schema Validation After Paste', () => {
               heading(4, 'L4', [
                 heading(5, 'L5', [
                   heading(6, 'L6', [
-                    heading(7, 'L7', [
-                      heading(8, 'L8', [
-                        heading(9, 'L9', [paragraph('Deep')])
-                      ])
-                    ])
+                    heading(7, 'L7', [heading(8, 'L8', [heading(9, 'L9', [paragraph('Deep')])])])
                   ])
                 ])
               ])
@@ -307,7 +288,8 @@ describe('Schema Validation After Paste', () => {
       cy.realPress('End')
       cy.wait(100)
 
-      pasteAndValidate(`
+      pasteAndValidate(
+        `
         <h2>Chapter 1</h2>
         <p>Chapter intro</p>
         <h3>Section 1.1</h3>
@@ -316,7 +298,9 @@ describe('Schema Validation After Paste', () => {
         <p>Details</p>
         <h3>Section 1.2</h3>
         <p>More content</p>
-      `, true)
+      `,
+        true
+      )
 
       cy.get('.docy_editor').should('contain', 'Chapter 1')
       cy.get('.docy_editor').should('contain', 'Section 1.1')
@@ -345,11 +329,7 @@ describe('Schema Validation After Paste', () => {
 
   describe('Debug: Log Schema State', () => {
     it('should log document structure after paste for debugging', () => {
-      cy.createDocument([
-        section('Section', [
-          heading(2, 'Existing H2', [paragraph('Content')])
-        ])
-      ])
+      cy.createDocument([section('Section', [heading(2, 'Existing H2', [paragraph('Content')])])])
       cy.wait(500)
 
       cy.get('.docy_editor .heading[level="2"] .contentWrapper p').first().click()
@@ -406,4 +386,3 @@ describe('Schema Validation After Paste', () => {
     })
   })
 })
-

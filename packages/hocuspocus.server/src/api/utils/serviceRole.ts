@@ -19,9 +19,7 @@ export function verifyServiceRole(authHeader: string | undefined): boolean {
   }
 
   // Support both "Bearer <token>" and raw token
-  const token = authHeader.startsWith('Bearer ')
-    ? authHeader.slice(7)
-    : authHeader
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader
 
   // Direct key match
   if (token === serviceRoleKey) return true
@@ -41,4 +39,3 @@ export function verifyServiceRole(authHeader: string | undefined): boolean {
 
   return false
 }
-

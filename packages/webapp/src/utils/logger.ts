@@ -14,7 +14,7 @@ class Logger {
   private isDevelopment = process.env.NODE_ENV === 'development'
   private isClient = typeof window !== 'undefined'
 
-  private formatMessage(level: LogLevel, message: string, context?: LogContext): string {
+  private formatMessage(level: LogLevel, message: string, _context?: LogContext): string {
     const timestamp = new Date().toISOString()
     const prefix = this.isClient ? '[CLIENT]' : '[SERVER]'
     return `${prefix} [${level.toUpperCase()}] ${timestamp} - ${message}`
@@ -28,25 +28,25 @@ class Logger {
     return true
   }
 
-  debug(message: string, context?: LogContext): void {
+  debug(message: string, _context?: LogContext): void {
     if (!this.shouldLog('debug')) return
-    const formatted = this.formatMessage('debug', message, context)
-    console.debug(formatted, context || '')
+    const formatted = this.formatMessage('debug', message, _context)
+    console.debug(formatted, _context || '')
   }
 
-  info(message: string, context?: LogContext): void {
+  info(message: string, _context?: LogContext): void {
     if (!this.shouldLog('info')) return
-    const formatted = this.formatMessage('info', message, context)
-    console.info(formatted, context || '')
+    const formatted = this.formatMessage('info', message, _context)
+    console.info(formatted, _context || '')
   }
 
-  warn(message: string, context?: LogContext): void {
-    const formatted = this.formatMessage('warn', message, context)
-    console.warn(formatted, context || '')
+  warn(message: string, _context?: LogContext): void {
+    const formatted = this.formatMessage('warn', message, _context)
+    console.warn(formatted, _context || '')
   }
 
-  error(message: string, error?: Error | unknown, context?: LogContext): void {
-    const formatted = this.formatMessage('error', message, context)
+  error(message: string, error?: Error | unknown, _context?: LogContext): void {
+    const formatted = this.formatMessage('error', message, _context)
 
     if (error instanceof Error) {
       console.error(formatted, {
@@ -55,10 +55,10 @@ class Logger {
           message: error.message,
           stack: this.isDevelopment ? error.stack : undefined
         },
-        ...context
+        ..._context
       })
     } else {
-      console.error(formatted, error, context || '')
+      console.error(formatted, error, _context || '')
     }
   }
 
@@ -66,7 +66,7 @@ class Logger {
    * Structured logging for production (JSON format)
    * Useful for log aggregation tools
    */
-  structured(level: LogLevel, message: string, context?: LogContext): void {
+  structured(level: LogLevel, message: string, _context?: LogContext): void {
     if (!this.shouldLog(level)) return
 
     const logEntry = {
@@ -74,7 +74,7 @@ class Logger {
       message,
       timestamp: new Date().toISOString(),
       environment: this.isClient ? 'client' : 'server',
-      ...context
+      ..._context
     }
 
     if (this.isDevelopment) {
@@ -96,4 +96,3 @@ export const logger = new Logger()
 
 // Export types for use in other files
 export type { LogLevel, LogContext }
-

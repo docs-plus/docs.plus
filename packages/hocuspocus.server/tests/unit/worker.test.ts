@@ -297,4 +297,3 @@ describe('Worker - Unit Tests', () => {
     })
   })
 })
-

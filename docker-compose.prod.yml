@@ -195,7 +195,7 @@ services:
         ]
       interval: 10s
       timeout: 5s
-      retries: 5  # More retries
+      retries: 5 # More retries
       start_period: 30s
     logging:
       driver: 'json-file'
@@ -288,7 +288,7 @@ services:
         ]
       interval: 10s
       timeout: 5s
-      retries: 5  # More retries
+      retries: 5 # More retries
       start_period: 30s
     logging:
       driver: 'json-file'
@@ -375,8 +375,8 @@ services:
         ]
       interval: 10s
       timeout: 5s
-      retries: 5  # More retries before marking unhealthy
-      start_period: 30s  # More time for initial startup
+      retries: 5 # More retries before marking unhealthy
+      start_period: 30s # More time for initial startup
     logging:
       driver: 'json-file'
       options:
@@ -384,7 +384,7 @@ services:
         max-file: '5'
         compress: 'true'
     deploy:
-      replicas: 1  # Single worker to prevent duplicate job processing
+      replicas: 1 # Single worker to prevent duplicate job processing
       resources:
         limits:
           cpus: '1'
@@ -396,7 +396,7 @@ services:
       restart_policy:
         condition: any
         delay: 5s
-        max_attempts: 0  # Unlimited restarts
+        max_attempts: 0 # Unlimited restarts
         window: 60s
 
   # ===========================================================================
@@ -418,7 +418,7 @@ services:
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
         NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
-    restart: always  # Always restart on failure
+    restart: always # Always restart on failure
     stop_grace_period: 30s
     stop_signal: SIGTERM
     environment:
@@ -460,7 +460,7 @@ services:
         ]
       interval: 10s
       timeout: 5s
-      retries: 5  # More retries
+      retries: 5 # More retries
       start_period: 30s
     logging:
       driver: 'json-file'

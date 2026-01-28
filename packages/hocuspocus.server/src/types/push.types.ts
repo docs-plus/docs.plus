@@ -79,4 +79,3 @@ export interface PushJobData {
   payload: PushNotificationRequest
   created_at: string
 }
-

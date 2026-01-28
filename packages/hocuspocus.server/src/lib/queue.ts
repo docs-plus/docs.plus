@@ -4,7 +4,7 @@ import { prisma } from './prisma'
 import { createRedisConnection, getRedisPublisher } from './redis'
 import { queueLogger } from './logger'
 import { sendNewDocumentNotification } from './email/document-notification'
-import type { StoreDocumentData, DeadLetterJobData } from '../types'
+import type { StoreDocumentData, _DeadLetterJobData } from '../types'
 
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 
@@ -22,9 +22,10 @@ async function upsertDocumentMetadata(
 ): Promise<string> {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     // First attempt uses base slug, retries add timestamp + random suffix
-    const slug = attempt === 0
-      ? params.baseSlug
-      : `${params.baseSlug}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
+    const slug =
+      attempt === 0
+        ? params.baseSlug
+        : `${params.baseSlug}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}`
     try {
       await tx.documentMetadata.upsert({
         where: { documentId: params.documentId },
@@ -51,7 +52,10 @@ async function upsertDocumentMetadata(
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
         const target = err.meta?.target as string[] | undefined
         if (target?.includes('slug') && attempt < maxRetries) {
-          queueLogger.debug({ attempt, baseSlug: params.baseSlug }, 'Slug collision, retrying with new slug')
+          queueLogger.debug(
+            { attempt, baseSlug: params.baseSlug },
+            'Slug collision, retrying with new slug'
+          )
           continue
         }
       }

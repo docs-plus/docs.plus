@@ -49,4 +49,3 @@ for (const check of checks) {
 
 console.log('\n✅ All checks passed. Proceeding with push.\n')
 process.exit(0)
-

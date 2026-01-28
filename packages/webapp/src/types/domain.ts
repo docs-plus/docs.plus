@@ -80,4 +80,3 @@ export type TNotificationSummary = {
 }
 
 export type TTab = 'Unread' | 'Mentions' | 'Read'
-

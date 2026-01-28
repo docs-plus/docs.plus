@@ -22,7 +22,10 @@ export const upload = async (documentId: string, file: File): Promise<StorageUpl
     const buffer = await file.arrayBuffer()
     await Bun.write(filePath, buffer)
 
-    storageLocalLogger.info({ documentId, fileName, fileSize: file.size }, 'File uploaded to local storage')
+    storageLocalLogger.info(
+      { documentId, fileName, fileSize: file.size },
+      'File uploaded to local storage'
+    )
 
     return {
       type: 'localStorage',
@@ -53,7 +56,10 @@ export const get = async (documentId: string, mediaId: string, c: Context) => {
 
     const contentType = mime.getType(mediaId) || 'application/octet-stream'
 
-    storageLocalLogger.debug({ documentId, mediaId, fileSize: file.size }, 'File retrieved from local storage')
+    storageLocalLogger.debug(
+      { documentId, mediaId, fileSize: file.size },
+      'File retrieved from local storage'
+    )
 
     return c.body(await file.arrayBuffer(), 200, {
       'Content-Type': contentType,
@@ -61,7 +67,10 @@ export const get = async (documentId: string, mediaId: string, c: Context) => {
       'Accept-Ranges': 'bytes'
     })
   } catch (error) {
-    storageLocalLogger.error({ err: error, documentId, mediaId }, 'Error retrieving file from local storage')
+    storageLocalLogger.error(
+      { err: error, documentId, mediaId },
+      'Error retrieving file from local storage'
+    )
     return c.json({ error: 'Error retrieving file' }, 500)
   }
 }

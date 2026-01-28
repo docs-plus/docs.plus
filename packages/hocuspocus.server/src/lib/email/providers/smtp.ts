@@ -80,10 +80,6 @@ export const smtpProvider: EmailProviderInterface = {
   },
 
   isConfigured(): boolean {
-    return !!(
-      process.env.SMTP_HOST &&
-      process.env.SMTP_USER &&
-      process.env.SMTP_PASS
-    )
+    return !!(process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS)
   }
 }

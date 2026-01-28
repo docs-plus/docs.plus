@@ -5,14 +5,14 @@
  * in production browser console.
  */
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = process.env.NODE_ENV === 'development'
 
 /**
  * Log error messages (only in development)
  */
 export function logError(message: string, error?: unknown): void {
   if (isDev) {
-    console.error(message, error);
+    console.error(message, error)
   }
 }
 
@@ -21,7 +21,7 @@ export function logError(message: string, error?: unknown): void {
  */
 export function logWarn(message: string, data?: unknown): void {
   if (isDev) {
-    console.warn(message, data);
+    console.warn(message, data)
   }
 }
 
@@ -30,6 +30,6 @@ export function logWarn(message: string, data?: unknown): void {
  */
 export function logInfo(message: string, data?: unknown): void {
   if (isDev) {
-    console.log(message, data);
+    console.log(message, data)
   }
 }

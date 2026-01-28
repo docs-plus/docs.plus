@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import Head from 'next/head';
-import type { GetServerSideProps } from 'next';
+import { useState } from 'react'
+import Head from 'next/head'
+import type { GetServerSideProps } from 'next'
 import {
   LuUsers,
   LuFileText,
@@ -10,16 +10,20 @@ import {
   LuLock,
   LuEye,
   LuMonitor,
-  LuActivity,
-} from 'react-icons/lu';
-import { AdminLayout } from '@/components/layout/AdminLayout';
-import { Header } from '@/components/layout/Header';
-import { StatCard } from '@/components/cards/StatCard';
-import { CollapsibleSection } from '@/components/ui/CollapsibleSection';
-import { ChartErrorBoundary } from '@/components/ui/ChartErrorBoundary';
-import { useDashboardStats } from '@/hooks/useDashboardStats';
-import { useViewsSummary, useTopViewedDocuments, useViewsTrend } from '@/hooks/useDocumentViews';
-import { useRetentionMetrics, useUserLifecycleSegments, useDauTrend } from '@/hooks/useRetentionMetrics';
+  LuActivity
+} from 'react-icons/lu'
+import { AdminLayout } from '@/components/layout/AdminLayout'
+import { Header } from '@/components/layout/Header'
+import { StatCard } from '@/components/cards/StatCard'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
+import { ChartErrorBoundary } from '@/components/ui/ChartErrorBoundary'
+import { useDashboardStats } from '@/hooks/useDashboardStats'
+import { useViewsSummary, useTopViewedDocuments, useViewsTrend } from '@/hooks/useDocumentViews'
+import {
+  useRetentionMetrics,
+  useUserLifecycleSegments,
+  useDauTrend
+} from '@/hooks/useRetentionMetrics'
 import {
   ViewsTrendChart,
   TopViewedDocuments,
@@ -28,28 +32,27 @@ import {
   UserTypeBreakdown,
   RetentionCards,
   DauTrendChart,
-  UserLifecycleChart,
-} from '@/components/charts';
+  UserLifecycleChart
+} from '@/components/charts'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {
-  return { props: {} };
-};
+  return { props: {} }
+}
 
 export default function OverviewPage() {
-  const { documentStats, supabaseStats, loading, refetch, isRefetching } =
-    useDashboardStats();
+  const { documentStats, supabaseStats, loading, refetch, isRefetching } = useDashboardStats()
 
   // Document Views Analytics
-  const [viewsDays, setViewsDays] = useState(30);
-  const { data: viewsSummary, isLoading: viewsSummaryLoading } = useViewsSummary();
-  const { data: topDocuments, isLoading: topDocsLoading } = useTopViewedDocuments(5, viewsDays);
-  const { data: viewsTrend, isLoading: trendLoading } = useViewsTrend(viewsDays);
+  const [viewsDays, setViewsDays] = useState(30)
+  const { data: viewsSummary, isLoading: viewsSummaryLoading } = useViewsSummary()
+  const { data: topDocuments, isLoading: topDocsLoading } = useTopViewedDocuments(5, viewsDays)
+  const { data: viewsTrend, isLoading: trendLoading } = useViewsTrend(viewsDays)
 
   // User Retention Analytics (Phase 8)
-  const { data: retentionMetrics, isLoading: retentionLoading } = useRetentionMetrics();
-  const { data: lifecycleSegments, isLoading: lifecycleLoading } = useUserLifecycleSegments();
-  const { data: dauTrend, isLoading: dauTrendLoading } = useDauTrend(viewsDays);
+  const { data: retentionMetrics, isLoading: retentionLoading } = useRetentionMetrics()
+  const { data: lifecycleSegments, isLoading: lifecycleLoading } = useUserLifecycleSegments()
+  const { data: dauTrend, isLoading: dauTrendLoading } = useDauTrend(viewsDays)
 
   return (
     <>
@@ -65,9 +68,9 @@ export default function OverviewPage() {
           refreshing={isRefetching}
         />
 
-        <div className="p-6 space-y-6">
+        <div className="space-y-6 p-6">
           {/* Main Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Total Users"
               value={supabaseStats?.users.total ?? 0}
@@ -75,7 +78,7 @@ export default function OverviewPage() {
               trend={{
                 value: supabaseStats?.users.newThisWeek ?? 0,
                 label: 'this week',
-                direction: (supabaseStats?.users.newThisWeek ?? 0) > 0 ? 'up' : 'neutral',
+                direction: (supabaseStats?.users.newThisWeek ?? 0) > 0 ? 'up' : 'neutral'
               }}
               loading={loading}
             />
@@ -87,7 +90,7 @@ export default function OverviewPage() {
               trend={{
                 value: documentStats?.documents.recentlyCreated ?? 0,
                 label: 'this week',
-                direction: (documentStats?.documents.recentlyCreated ?? 0) > 0 ? 'up' : 'neutral',
+                direction: (documentStats?.documents.recentlyCreated ?? 0) > 0 ? 'up' : 'neutral'
               }}
               loading={loading}
             />
@@ -106,14 +109,14 @@ export default function OverviewPage() {
               trend={{
                 value: supabaseStats?.messages.total ?? 0,
                 label: 'total',
-                direction: 'neutral',
+                direction: 'neutral'
               }}
               loading={loading}
             />
           </div>
 
           {/* Secondary Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
             <StatCard
               title="Online Now"
               value={supabaseStats?.users.online ?? 0}
@@ -144,53 +147,55 @@ export default function OverviewPage() {
           </div>
 
           {/* Document Stats Card */}
-          <div className="bg-base-100 rounded-box border border-base-300 p-5">
-            <h2 className="text-lg font-semibold mb-4">Document Statistics</h2>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-base-100 rounded-box border-base-300 border p-5">
+            <h2 className="mb-4 text-lg font-semibold">Document Statistics</h2>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               <div>
-                <p className="text-sm text-base-content/60">Total Versions</p>
+                <p className="text-base-content/60 text-sm">Total Versions</p>
                 <p className="text-2xl font-bold">
                   {loading ? (
-                    <span className="skeleton h-7 w-16 inline-block" />
+                    <span className="skeleton inline-block h-7 w-16" />
                   ) : (
                     documentStats?.documents.totalVersions.toLocaleString()
                   )}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-base-content/60">Avg Versions/Doc</p>
+                <p className="text-base-content/60 text-sm">Avg Versions/Doc</p>
                 <p className="text-2xl font-bold">
                   {loading ? (
-                    <span className="skeleton h-7 w-12 inline-block" />
+                    <span className="skeleton inline-block h-7 w-12" />
                   ) : (
                     documentStats?.documents.avgVersionsPerDoc
                   )}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-base-content/60">Total Notifications</p>
+                <p className="text-base-content/60 text-sm">Total Notifications</p>
                 <p className="text-2xl font-bold">
                   {loading ? (
-                    <span className="skeleton h-7 w-16 inline-block" />
+                    <span className="skeleton inline-block h-7 w-16" />
                   ) : (
                     supabaseStats?.notifications.total.toLocaleString()
                   )}
                 </p>
               </div>
               <div>
-                <p className="text-sm text-base-content/60">Read Rate</p>
+                <p className="text-base-content/60 text-sm">Read Rate</p>
                 <p className="text-2xl font-bold">
                   {loading ? (
-                    <span className="skeleton h-7 w-14 inline-block" />
+                    <span className="skeleton inline-block h-7 w-14" />
                   ) : (
-                    `${supabaseStats?.notifications.total
-                      ? Math.round(
-                          ((supabaseStats.notifications.total -
-                            supabaseStats.notifications.unread) /
-                            supabaseStats.notifications.total) *
-                            100
-                        )
-                      : 0}%`
+                    `${
+                      supabaseStats?.notifications.total
+                        ? Math.round(
+                            ((supabaseStats.notifications.total -
+                              supabaseStats.notifications.unread) /
+                              supabaseStats.notifications.total) *
+                              100
+                          )
+                        : 0
+                    }%`
                   )}
                 </p>
               </div>
@@ -208,25 +213,23 @@ export default function OverviewPage() {
                   <button
                     key={days}
                     className={`join-item btn btn-sm ${viewsDays === days ? 'btn-primary' : 'btn-ghost'}`}
-                    onClick={() => setViewsDays(days)}
-                  >
+                    onClick={() => setViewsDays(days)}>
                     {days}d
                   </button>
                 ))}
               </div>
-            }
-          >
+            }>
             {/* DAU/WAU/MAU Cards */}
             <ChartErrorBoundary fallbackHeight={120}>
               <RetentionCards data={retentionMetrics} loading={retentionLoading} />
             </ChartErrorBoundary>
 
             {/* DAU Trend + User Lifecycle */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               {/* DAU Trend Chart */}
-              <div className="lg:col-span-2 bg-base-100 rounded-box border border-base-300 p-5">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <LuActivity className="h-5 w-5 text-primary" />
+              <div className="bg-base-100 rounded-box border-base-300 border p-5 lg:col-span-2">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+                  <LuActivity className="text-primary h-5 w-5" />
                   Daily Active Users Trend
                 </h3>
                 <ChartErrorBoundary fallbackHeight={280}>
@@ -235,9 +238,9 @@ export default function OverviewPage() {
               </div>
 
               {/* User Lifecycle Segments */}
-              <div className="bg-base-100 rounded-box border border-base-300 p-5">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <LuUserCheck className="h-5 w-5 text-primary" />
+              <div className="bg-base-100 rounded-box border-base-300 border p-5">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+                  <LuUserCheck className="text-primary h-5 w-5" />
                   User Lifecycle
                 </h3>
                 <ChartErrorBoundary fallbackHeight={200}>
@@ -251,19 +254,18 @@ export default function OverviewPage() {
           <CollapsibleSection
             title="Document Views Analytics"
             icon={<LuEye className="h-5 w-5" />}
-            defaultOpen={true}
-          >
+            defaultOpen={true}>
             {/* Views Summary Cards */}
             <ChartErrorBoundary fallbackHeight={120}>
               <ViewsSummaryCards data={viewsSummary} loading={viewsSummaryLoading} />
             </ChartErrorBoundary>
 
             {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
               {/* Views Trend Chart */}
-              <div className="lg:col-span-2 bg-base-100 rounded-box border border-base-300 p-5">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <LuEye className="h-5 w-5 text-primary" />
+              <div className="bg-base-100 rounded-box border-base-300 border p-5 lg:col-span-2">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+                  <LuEye className="text-primary h-5 w-5" />
                   Views Trend
                 </h3>
                 <ChartErrorBoundary fallbackHeight={280}>
@@ -272,22 +274,26 @@ export default function OverviewPage() {
               </div>
 
               {/* Top Viewed Documents */}
-              <div className="bg-base-100 rounded-box border border-base-300 p-5">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <LuFileText className="h-5 w-5 text-primary" />
+              <div className="bg-base-100 rounded-box border-base-300 border p-5">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+                  <LuFileText className="text-primary h-5 w-5" />
                   Top Documents
                 </h3>
                 <ChartErrorBoundary fallbackHeight={200}>
-                  <TopViewedDocuments data={topDocuments || []} loading={topDocsLoading} limit={5} />
+                  <TopViewedDocuments
+                    data={topDocuments || []}
+                    loading={topDocsLoading}
+                    limit={5}
+                  />
                 </ChartErrorBoundary>
               </div>
             </div>
 
             {/* Device & User Type Breakdown */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="bg-base-100 rounded-box border border-base-300 p-5">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <LuMonitor className="h-5 w-5 text-primary" />
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+              <div className="bg-base-100 rounded-box border-base-300 border p-5">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+                  <LuMonitor className="text-primary h-5 w-5" />
                   Device Breakdown
                 </h3>
                 <ChartErrorBoundary fallbackHeight={150}>
@@ -295,9 +301,9 @@ export default function OverviewPage() {
                 </ChartErrorBoundary>
               </div>
 
-              <div className="bg-base-100 rounded-box border border-base-300 p-5">
-                <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                  <LuUsers className="h-5 w-5 text-primary" />
+              <div className="bg-base-100 rounded-box border-base-300 border p-5">
+                <h3 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+                  <LuUsers className="text-primary h-5 w-5" />
                   User Types
                 </h3>
                 <ChartErrorBoundary fallbackHeight={150}>
@@ -309,5 +315,5 @@ export default function OverviewPage() {
         </div>
       </AdminLayout>
     </>
-  );
+  )
 }

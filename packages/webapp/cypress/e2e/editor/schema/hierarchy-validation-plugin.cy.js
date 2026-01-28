@@ -196,10 +196,7 @@ describe('Hierarchy Validation Plugin - Auto-Fix Behavior', () => {
             heading(2, 'Parent', [
               paragraph('Parent paragraph 1'),
               paragraph('Parent paragraph 2'),
-              heading(4, 'Child', [
-                paragraph('Child paragraph 1'),
-                paragraph('Child paragraph 2')
-              ])
+              heading(4, 'Child', [paragraph('Child paragraph 1'), paragraph('Child paragraph 2')])
             ])
           ])
         ]
@@ -285,4 +282,3 @@ describe('Hierarchy Validation Plugin - Auto-Fix Behavior', () => {
     })
   })
 })
-

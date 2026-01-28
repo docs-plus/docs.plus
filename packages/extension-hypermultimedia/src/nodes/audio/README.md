@@ -13,10 +13,10 @@ npm install @docs.plus/extension-hypermultimedia
 Then, import the extension into your editor:
 
 ```js
-import { HyperMultimediaKit } from "@docs.plus/extension-hypermultimedia";
+import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
-  Audio,
+  Audio
 })
 ```
 
@@ -32,7 +32,7 @@ Controls if the node should be handled inline or as a block.
 ```js
 HyperMultimediaKit.configure({
   Audio: {
-    inline: true,
+    inline: true
   }
 })
 ```
@@ -47,7 +47,7 @@ Show the native controls of the audio player.
 ```js
 HyperMultimediaKit.configure({
   Audio: {
-    controls: false,
+    controls: false
   }
 })
 ```
@@ -62,7 +62,7 @@ Automatically start playing the audio as soon as it can do so without stopping.
 ```js
 HyperMultimediaKit.configure({
   Audio: {
-    autoplay: true,
+    autoplay: true
   }
 })
 ```
@@ -77,7 +77,7 @@ Automatically start playing the audio again after it is finished.
 ```js
 HyperMultimediaKit.configure({
   Audio: {
-    loop: true,
+    loop: true
   }
 })
 ```
@@ -92,7 +92,7 @@ Specifies if and how the author thinks the audio should be loaded when the page 
 ```js
 HyperMultimediaKit.configure({
   Audio: {
-    preload: "auto",
+    preload: 'auto'
   }
 })
 ```
@@ -107,7 +107,7 @@ Specifies the volume of the audio.
 ```js
 HyperMultimediaKit.configure({
   Audio: {
-    volume: 0.5,
+    volume: 0.5
   }
 })
 ```
@@ -122,7 +122,7 @@ Mute the audio.
 ```js
 HyperMultimediaKit.configure({
   Audio: {
-    muted: true,
+    muted: true
   }
 })
 ```
@@ -138,8 +138,8 @@ Custom HTML attributes that should be added to the rendered HTML tag.
 HyperMultimediaKit.configure({
   Audio: {
     HTMLAttributes: {
-      class: 'my-custom-class',
-    },
+      class: 'my-custom-class'
+    }
   }
 })
 ```
@@ -152,11 +152,11 @@ A modal that apear when you click on audio.
 - Default: `true`
 
 ```js
-import { hypermultimedia, audioModal } from "@docs.plus/extension-hypermultimedia";
+import { hypermultimedia, audioModal } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
   Audio: {
-    modal: audioModal,
+    modal: audioModal
   }
 })
 ```
@@ -168,15 +168,14 @@ HyperMultimediaKit.configure({
 Makes the current node an audio.
 
 ```js
-
 editor.commands.setAudio({
   src: 'https://example.com/foobar.mp3'
-});
+})
 
 editor.commands.setAudio({
   src: 'https://example.com/foobar.mp3',
   width: 200,
-  height: 160,
+  height: 160
 })
 ```
 
@@ -190,16 +189,16 @@ editor.commands.setAudio({
 
 ### Options
 
-|Option          |Description                                                               |Default    |Optional |
-|---             |---                                                                       |---        |---      |
-|src             |The URL of the audio                                                      |`null`     |         |
-|width           |The embed width (overrides the default option, optional)                  |`null`     |✅       |
-|height          |The embed height (overrides the default option, optional)                 |`null`     |✅       |
-|float           |The CSS style `float` (overrides the default option, optional)            |`unset`    |✅       |
-|clear           |The CSS style `clear` (overrides the default option, optional)            |`none`     |✅       |
-|display         |The CSS style `display` (overrides the default option, optional)          |`block`    |✅       |
-|margin          |The CSS style `margin` (overrides the default option, optional)           |`0.0in`    |✅       |
-|justifyContent  |The CSS style `justify-content` (overrides the default option, optional)  |`start`    |✅       |
+| Option         | Description                                                              | Default | Optional |
+| -------------- | ------------------------------------------------------------------------ | ------- | -------- |
+| src            | The URL of the audio                                                     | `null`  |          |
+| width          | The embed width (overrides the default option, optional)                 | `null`  | ✅       |
+| height         | The embed height (overrides the default option, optional)                | `null`  | ✅       |
+| float          | The CSS style `float` (overrides the default option, optional)           | `unset` | ✅       |
+| clear          | The CSS style `clear` (overrides the default option, optional)           | `none`  | ✅       |
+| display        | The CSS style `display` (overrides the default option, optional)         | `block` | ✅       |
+| margin         | The CSS style `margin` (overrides the default option, optional)          | `0.0in` | ✅       |
+| justifyContent | The CSS style `justify-content` (overrides the default option, optional) | `start` | ✅       |
 
 ## Source code
 

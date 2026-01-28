@@ -11,10 +11,10 @@ npm install @docs.plus/extension-hypermultimedia
 Then, import the extension into your editor:
 
 ```js
-import { HyperMultimediaKit } from "@docs.plus/extension-hypermultimedia";
+import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
-  Image,
+  Image
 })
 ```
 
@@ -30,7 +30,7 @@ Controls if the node should be handled inline or as a block.
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    inline: true,
+    inline: true
   }
 })
 ```
@@ -46,7 +46,7 @@ Controls the default width & height of added videos
 HyperMultimediaKit.configure({
   Youtube: {
     width: 480,
-    height: 320,
+    height: 320
   }
 })
 ```
@@ -61,7 +61,7 @@ Controls the default frameborder of added videos
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    frameborder: 1,
+    frameborder: 1
   }
 })
 ```
@@ -76,7 +76,8 @@ Controls the default allow attribute of added videos
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    allow: 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture',
+    allow:
+      'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
   }
 })
 ```
@@ -91,7 +92,7 @@ Allows the iframe to be played in fullscreen
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    allowFullscreen: false,
+    allowFullscreen: false
   }
 })
 ```
@@ -104,11 +105,11 @@ A modal box that apear when you `mouseover` on video. A default modal box is pro
 - Default: `false`
 
 ```js
-import { hypermultimedia, youtubeModal } from "@docs.plus/extension-hypermultimedia";
+import { hypermultimedia, youtubeModal } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
   Youtube: {
-    modal: youtubeModal, // default modal
+    modal: youtubeModal // default modal
   }
 })
 ```
@@ -123,12 +124,12 @@ a resize gripper that apear when you `mouseover` on video.
 - default: `true`
 
 ```js
-import { hypermultimedia, youtubeModal } from "@docs.plus/extension-hypermultimedia";
+import { hypermultimedia, youtubeModal } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
   Youtube: {
     modal: youtubeModal,
-    resizeGripper: true,
+    resizeGripper: true
   }
 })
 ```
@@ -144,7 +145,7 @@ if enabled, the editor will automatically convert YouTube links to embeds
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    addPasteHandler: false,
+    addPasteHandler: false
   }
 })
 ```
@@ -159,7 +160,7 @@ Enables or disables YouTube video controls
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    controls: 0,
+    controls: 0
   }
 })
 ```
@@ -174,7 +175,7 @@ Enables the nocookie mode for YouTube embeds
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    nocookie: true,
+    nocookie: true
   }
 })
 ```
@@ -189,7 +190,7 @@ Allows the iframe to to start playing after the player is loaded
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    autoplay: 1,
+    autoplay: 1
   }
 })
 ```
@@ -204,7 +205,7 @@ Specifies the default language that the player will use to display closed captio
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    ccLanguage: 'es',
+    ccLanguage: 'es'
   }
 })
 ```
@@ -219,7 +220,7 @@ Setting this parameter's value to `true` causes closed captions to be shown by d
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    ccLoadPolicy: 1,
+    ccLoadPolicy: 1
   }
 })
 ```
@@ -234,7 +235,7 @@ Disables the keyboards controls for the iframe player
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    disableKBcontrols: 1,
+    disableKBcontrols: 1
   }
 })
 ```
@@ -249,7 +250,7 @@ Enables the player to be controlled via IFrame Player API calls
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    enableIFrameApi: 1,
+    enableIFrameApi: 1
   }
 })
 ```
@@ -264,7 +265,7 @@ This parameter provides an extra security measure for the IFrame API and is only
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    origin: 'yourdomain.com',
+    origin: 'yourdomain.com'
   }
 })
 ```
@@ -279,7 +280,7 @@ This parameter specifies the time, measured in seconds from the start of the vid
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    endTime: '15',
+    endTime: '15'
   }
 })
 ```
@@ -294,7 +295,7 @@ Sets the player's interface language. The parameter value is an ISO 639-1 two-le
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    interfaceLanguage: 'fr',
+    interfaceLanguage: 'fr'
   }
 })
 ```
@@ -309,7 +310,7 @@ Setting this to `1` causes video annotations to be shown by default, whereas set
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    ivLoadPolicy: '3',
+    ivLoadPolicy: '3'
   }
 })
 ```
@@ -324,7 +325,7 @@ This parameter has limited support in IFrame embeds. To loop a single video, set
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-    loop: true,
+    loop: true
   }
 })
 ```
@@ -339,7 +340,7 @@ This parameter specifies a comma-separated list of video IDs to play.
 ```js
 HyperMultimediaKit.configure({
   Youtube: {
-     playlist: 'VIDEO_ID_1,VIDEO_ID_2,VIDEO_ID_3,...,VIDEO_ID_N',
+    playlist: 'VIDEO_ID_1,VIDEO_ID_2,VIDEO_ID_3,...,VIDEO_ID_N'
   }
 })
 ```
@@ -354,22 +355,22 @@ Inserts a YouTube iframe embed at the current position
 editor.commands.setYoutubeVideo({
   src: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
   width: 640,
-  height: 480,
+  height: 480
 })
 ```
 
 ### Options
 
-|Option          |Description                                                               |Default    |Optional |
-|---             |---                                                                       |---        |---      |
-|src             |The URL of the youtube, (Iframe Source Attribute)                         |`null`     |         |
-|width           |The embed width (overrides the default option, optional)                  |`640`      |✅       |
-|height          |The embed height (overrides the default option, optional)                 |`480`      |✅       |
-|float           |The CSS style `float` (overrides the default option, optional)            |`unset`    |✅       |
-|clear           |The CSS style `clear` (overrides the default option, optional)            |`none`     |✅       |
-|display         |The CSS style `display` (overrides the default option, optional)          |`block`    |✅       |
-|margin          |The CSS style `margin` (overrides the default option, optional)           |`0.0in`    |✅       |
-|justifyContent  |The CSS style `justify-content` (overrides the default option, optional)  |`start`    |✅       |
+| Option         | Description                                                              | Default | Optional |
+| -------------- | ------------------------------------------------------------------------ | ------- | -------- |
+| src            | The URL of the youtube, (Iframe Source Attribute)                        | `null`  |          |
+| width          | The embed width (overrides the default option, optional)                 | `640`   | ✅       |
+| height         | The embed height (overrides the default option, optional)                | `480`   | ✅       |
+| float          | The CSS style `float` (overrides the default option, optional)           | `unset` | ✅       |
+| clear          | The CSS style `clear` (overrides the default option, optional)           | `none`  | ✅       |
+| display        | The CSS style `display` (overrides the default option, optional)         | `block` | ✅       |
+| margin         | The CSS style `margin` (overrides the default option, optional)          | `0.0in` | ✅       |
+| justifyContent | The CSS style `justify-content` (overrides the default option, optional) | `start` | ✅       |
 
 ## Source code
 

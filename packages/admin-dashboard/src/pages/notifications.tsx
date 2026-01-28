@@ -1,12 +1,12 @@
-import { useCallback } from 'react';
-import Head from 'next/head';
-import type { GetServerSideProps } from 'next';
-import { useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react'
+import Head from 'next/head'
+import type { GetServerSideProps } from 'next'
+import { useQuery } from '@tanstack/react-query'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {
-  return { props: {} };
-};
+  return { props: {} }
+}
 import {
   LuBell,
   LuBellOff,
@@ -15,54 +15,58 @@ import {
   LuCheck,
   LuClock,
   LuCircleAlert,
-  LuRadio,
-} from 'react-icons/lu';
-import { AdminLayout } from '@/components/layout/AdminLayout';
-import { Header } from '@/components/layout/Header';
-import { StatCard } from '@/components/cards/StatCard';
-import {
-  fetchNotificationStats,
-  fetchPushStats,
-  fetchEmailStats,
-} from '@/services/supabase';
-import { useMultiTableSubscription } from '@/hooks/useRealtimeSubscription';
+  LuRadio
+} from 'react-icons/lu'
+import { AdminLayout } from '@/components/layout/AdminLayout'
+import { Header } from '@/components/layout/Header'
+import { StatCard } from '@/components/cards/StatCard'
+import { fetchNotificationStats, fetchPushStats, fetchEmailStats } from '@/services/supabase'
+import { useMultiTableSubscription } from '@/hooks/useRealtimeSubscription'
 
 export default function NotificationsPage() {
   const {
     data: notifStats,
     isLoading: notifLoading,
     refetch,
-    isRefetching,
+    isRefetching
   } = useQuery({
     queryKey: ['admin', 'notifications', 'stats'],
-    queryFn: fetchNotificationStats,
-  });
+    queryFn: fetchNotificationStats
+  })
 
-  const { data: pushStats, isLoading: pushLoading, refetch: refetchPush } = useQuery({
+  const {
+    data: pushStats,
+    isLoading: pushLoading,
+    refetch: refetchPush
+  } = useQuery({
     queryKey: ['admin', 'push', 'stats'],
-    queryFn: fetchPushStats,
-  });
+    queryFn: fetchPushStats
+  })
 
-  const { data: emailStats, isLoading: emailLoading, refetch: refetchEmail } = useQuery({
+  const {
+    data: emailStats,
+    isLoading: emailLoading,
+    refetch: refetchEmail
+  } = useQuery({
     queryKey: ['admin', 'email', 'stats'],
-    queryFn: fetchEmailStats,
-  });
+    queryFn: fetchEmailStats
+  })
 
   // Real-time subscription to notification-related tables
   const handleRealtimeChange = useCallback(() => {
-    refetch();
-    refetchPush();
-    refetchEmail();
-  }, [refetch, refetchPush, refetchEmail]);
+    refetch()
+    refetchPush()
+    refetchEmail()
+  }, [refetch, refetchPush, refetchEmail])
 
   useMultiTableSubscription(
     ['notifications', 'push_subscriptions', 'email_queue'],
     handleRealtimeChange
-  );
+  )
 
-  const loading = notifLoading || pushLoading || emailLoading;
+  const loading = notifLoading || pushLoading || emailLoading
 
-  const notificationTypes = ['mention', 'reply', 'message', 'reaction', 'channel_event'];
+  const notificationTypes = ['mention', 'reply', 'message', 'reaction', 'channel_event']
 
   return (
     <>
@@ -85,11 +89,11 @@ export default function NotificationsPage() {
           refreshing={isRefetching}
         />
 
-        <div className="p-6 space-y-6">
+        <div className="space-y-6 p-6">
           {/* Main Notification Stats */}
           <div>
-            <h2 className="text-lg font-semibold mb-4">In-App Notifications</h2>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <h2 className="mb-4 text-lg font-semibold">In-App Notifications</h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
               <StatCard
                 title="Total Notifications"
                 value={notifStats?.total ?? 0}
@@ -117,19 +121,19 @@ export default function NotificationsPage() {
           </div>
 
           {/* Notification by Type */}
-          <div className="bg-base-100 rounded-box border border-base-300 p-5">
-            <h2 className="text-lg font-semibold mb-4">By Type</h2>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+          <div className="bg-base-100 rounded-box border-base-300 border p-5">
+            <h2 className="mb-4 text-lg font-semibold">By Type</h2>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
               {notificationTypes.map((type) => (
                 <div key={type} className="text-center">
                   <p className="text-2xl font-bold">
                     {loading ? (
-                      <span className="skeleton h-7 w-12 inline-block" />
+                      <span className="skeleton inline-block h-7 w-12" />
                     ) : (
                       (notifStats?.byType?.[type] ?? 0).toLocaleString()
                     )}
                   </p>
-                  <p className="text-sm text-base-content/60 capitalize">
+                  <p className="text-base-content/60 text-sm capitalize">
                     {type.replace('_', ' ')}
                   </p>
                 </div>
@@ -139,8 +143,8 @@ export default function NotificationsPage() {
 
           {/* Push Notifications */}
           <div>
-            <h2 className="text-lg font-semibold mb-4">Push Notifications</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <h2 className="mb-4 text-lg font-semibold">Push Notifications</h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <StatCard
                 title="Active Subscriptions"
                 value={pushStats?.active ?? 0}
@@ -167,8 +171,8 @@ export default function NotificationsPage() {
 
           {/* Email Notifications */}
           <div>
-            <h2 className="text-lg font-semibold mb-4">Email Queue</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <h2 className="mb-4 text-lg font-semibold">Email Queue</h2>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
               <StatCard
                 title="Pending"
                 value={emailStats?.pending ?? 0}
@@ -192,5 +196,5 @@ export default function NotificationsPage() {
         </div>
       </AdminLayout>
     </>
-  );
+  )
 }

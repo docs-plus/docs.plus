@@ -25,13 +25,15 @@ export const sendgridProvider: EmailProviderInterface = {
       const response = await fetch(SENDGRID_API_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          personalizations: [{
-            to: [{ email: message.to }]
-          }],
+          personalizations: [
+            {
+              to: [{ email: message.to }]
+            }
+          ],
           from: { email: message.from },
           reply_to: message.replyTo ? { email: message.replyTo } : undefined,
           subject: message.subject,
@@ -69,7 +71,7 @@ export const sendgridProvider: EmailProviderInterface = {
     try {
       // Verify by checking API key scopes
       const response = await fetch('https://api.sendgrid.com/v3/scopes', {
-        headers: { 'Authorization': `Bearer ${apiKey}` }
+        headers: { Authorization: `Bearer ${apiKey}` }
       })
 
       if (response.ok) {

@@ -8,7 +8,11 @@ import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
 import { pushLogger } from '../logger'
 import { config } from '../../config/env'
-import type { PushNotificationRequest, PushSubscription, PushSendResult } from '../../types/push.types'
+import type {
+  PushNotificationRequest,
+  PushSubscription,
+  PushSendResult
+} from '../../types/push.types'
 
 // Configure web-push with VAPID credentials
 let vapidConfigured = false
@@ -53,7 +57,9 @@ function getSupabaseClient() {
 /**
  * Send push notification to a user
  */
-export async function sendPushNotification(request: PushNotificationRequest): Promise<PushSendResult> {
+export async function sendPushNotification(
+  request: PushNotificationRequest
+): Promise<PushSendResult> {
   if (!vapidConfigured) {
     return { success: false, sent: 0, total: 0, error: 'VAPID not configured' }
   }
@@ -69,7 +75,10 @@ export async function sendPushNotification(request: PushNotificationRequest): Pr
     .eq('is_active', true)
 
   if (fetchError) {
-    pushLogger.error({ err: fetchError, user_id: request.user_id }, 'Failed to fetch push subscriptions')
+    pushLogger.error(
+      { err: fetchError, user_id: request.user_id },
+      'Failed to fetch push subscriptions'
+    )
     return { success: false, sent: 0, total: 0, error: fetchError.message }
   }
 
@@ -146,12 +155,15 @@ export async function sendPushNotification(request: PushNotificationRequest): Pr
     (r) => r.status === 'fulfilled' && (r.value as { success: boolean }).success
   ).length
 
-  pushLogger.info({
-    user_id: request.user_id,
-    notification_id: request.notification_id,
-    sent: successful,
-    total: subscriptions.length
-  }, 'Push notification batch completed')
+  pushLogger.info(
+    {
+      user_id: request.user_id,
+      notification_id: request.notification_id,
+      sent: successful,
+      total: subscriptions.length
+    },
+    'Push notification batch completed'
+  )
 
   return {
     success: successful > 0 || subscriptions.length === 0,
@@ -162,4 +174,3 @@ export async function sendPushNotification(request: PushNotificationRequest): Pr
     )
   }
 }
-

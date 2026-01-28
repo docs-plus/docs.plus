@@ -18,25 +18,20 @@ const getSupabaseClient = () => {
  */
 export async function getDashboardStats(c: Context) {
   try {
-    const [
-      totalDocuments,
-      privateDocuments,
-      readOnlyDocuments,
-      totalVersions,
-      recentDocuments
-    ] = await Promise.all([
-      prisma.documentMetadata.count(),
-      prisma.documentMetadata.count({ where: { isPrivate: true } }),
-      prisma.documentMetadata.count({ where: { readOnly: true } }),
-      prisma.documents.count(),
-      prisma.documentMetadata.count({
-        where: {
-          createdAt: {
-            gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+    const [totalDocuments, privateDocuments, readOnlyDocuments, totalVersions, recentDocuments] =
+      await Promise.all([
+        prisma.documentMetadata.count(),
+        prisma.documentMetadata.count({ where: { isPrivate: true } }),
+        prisma.documentMetadata.count({ where: { readOnly: true } }),
+        prisma.documents.count(),
+        prisma.documentMetadata.count({
+          where: {
+            createdAt: {
+              gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
+            }
           }
-        }
-      })
-    ])
+        })
+      ])
 
     return c.json({
       documents: {
@@ -108,7 +103,7 @@ export async function listDocuments(c: Context) {
       title: 'title',
       updatedAt: 'updatedAt',
       createdAt: 'createdAt',
-      versionCount: 'updatedAt', // Can't sort by _count, fallback to updatedAt
+      versionCount: 'updatedAt' // Can't sort by _count, fallback to updatedAt
     }
     const orderField = sortFieldMap[sortBy] || 'updatedAt'
 
@@ -119,8 +114,8 @@ export async function listDocuments(c: Context) {
             { title: { contains: search, mode: 'insensitive' as const } },
             { slug: { contains: search, mode: 'insensitive' as const } },
             { description: { contains: search, mode: 'insensitive' as const } },
-            { email: { contains: search, mode: 'insensitive' as const } },
-          ],
+            { email: { contains: search, mode: 'insensitive' as const } }
+          ]
         }
       : {}
 
@@ -151,7 +146,7 @@ export async function listDocuments(c: Context) {
     ])
 
     // Prepare data with defaults
-    const docsWithDefaults = documents.map(doc => ({
+    const docsWithDefaults = documents.map((doc) => ({
       id: doc.id,
       docId: doc.slug,
       documentId: doc.documentId,
@@ -178,35 +173,49 @@ export async function listDocuments(c: Context) {
       const headers = { apikey: supabaseKey, Authorization: `Bearer ${supabaseKey}` }
 
       // Get unique owner IDs
-      const ownerIds = [...new Set(documents.filter(d => d.ownerId).map(d => d.ownerId))]
-      const slugs = documents.map(d => d.slug)
+      const ownerIds = [...new Set(documents.filter((d) => d.ownerId).map((d) => d.ownerId))]
+      const slugs = documents.map((d) => d.slug)
 
       // Batch fetch owners (including avatar info)
       if (ownerIds.length > 0) {
         try {
           // Quote UUIDs for PostgREST in.() operator
-          const quotedIds = ownerIds.map(id => `"${id}"`).join(',')
+          const quotedIds = ownerIds.map((id) => `"${id}"`).join(',')
           const queryUrl = `${supabaseUrl}/rest/v1/users?id=in.(${quotedIds})&select=id,username,email,avatar_url,avatar_updated_at`
           console.log('[Admin] Fetching owners from:', queryUrl)
           console.log('[Admin] Owner IDs from Prisma:', ownerIds)
-          
+
           const usersRes = await fetch(queryUrl, { headers })
           const users = await usersRes.json()
           console.log('[Admin] Supabase response:', JSON.stringify(users, null, 2))
           if (Array.isArray(users)) {
-            const userMap = new Map(users.map((u: { id: string; username: string | null; email: string | null; avatar_url: string | null; avatar_updated_at: string | null }) => [u.id, u]))
+            const userMap = new Map(
+              users.map(
+                (u: {
+                  id: string
+                  username: string | null
+                  email: string | null
+                  avatar_url: string | null
+                  avatar_updated_at: string | null
+                }) => [u.id, u]
+              )
+            )
             console.log('[Admin] User map keys:', [...userMap.keys()])
-            
-            docsWithDefaults.forEach(doc => {
+
+            docsWithDefaults.forEach((doc) => {
               if (doc.ownerId) {
                 const user = userMap.get(doc.ownerId)
-                console.log(`[Admin] Doc ${doc.docId}: ownerId=${doc.ownerId}, found user=${!!user}`)
+                console.log(
+                  `[Admin] Doc ${doc.docId}: ownerId=${doc.ownerId}, found user=${!!user}`
+                )
                 if (user) {
                   doc.ownerName = user.username || user.email?.split('@')[0] || null
                   // Return raw avatar data for frontend to handle fallback chain
                   doc.ownerAvatarUrl = user.avatar_url || null
                   doc.ownerAvatarUpdatedAt = user.avatar_updated_at || null
-                  console.log(`[Admin] Mapped owner: name=${doc.ownerName}, avatarUrl=${doc.ownerAvatarUrl}, avatarUpdatedAt=${doc.ownerAvatarUpdatedAt}`)
+                  console.log(
+                    `[Admin] Mapped owner: name=${doc.ownerName}, avatarUrl=${doc.ownerAvatarUrl}, avatarUpdatedAt=${doc.ownerAvatarUpdatedAt}`
+                  )
                 }
               }
             })
@@ -220,7 +229,7 @@ export async function listDocuments(c: Context) {
       if (slugs.length > 0) {
         try {
           // Quote slugs for PostgREST in.() operator
-          const quotedSlugs = slugs.map(s => `"${s}"`).join(',')
+          const quotedSlugs = slugs.map((s) => `"${s}"`).join(',')
           // Get workspaces by slugs
           const workspacesRes = await fetch(
             `${supabaseUrl}/rest/v1/workspaces?slug=in.(${quotedSlugs})&select=id,slug`,
@@ -230,10 +239,12 @@ export async function listDocuments(c: Context) {
 
           if (Array.isArray(workspaces) && workspaces.length > 0) {
             const workspaceIds = workspaces.map((w: { id: string }) => w.id)
-            const slugToWorkspaceId = new Map(workspaces.map((w: { id: string; slug: string }) => [w.slug, w.id]))
+            const slugToWorkspaceId = new Map(
+              workspaces.map((w: { id: string; slug: string }) => [w.slug, w.id])
+            )
 
             // Get member counts (only active members where left_at is null)
-            const quotedWorkspaceIds = workspaceIds.map(id => `"${id}"`).join(',')
+            const quotedWorkspaceIds = workspaceIds.map((id) => `"${id}"`).join(',')
             const membersRes = await fetch(
               `${supabaseUrl}/rest/v1/workspace_members?workspace_id=in.(${quotedWorkspaceIds})&left_at=is.null&select=workspace_id`,
               { headers }
@@ -248,7 +259,7 @@ export async function listDocuments(c: Context) {
               })
 
               // Map back to documents
-              docsWithDefaults.forEach(doc => {
+              docsWithDefaults.forEach((doc) => {
                 const workspaceId = slugToWorkspaceId.get(doc.docId)
                 if (workspaceId) {
                   doc.memberCount = memberCounts.get(workspaceId) || 0
@@ -263,7 +274,7 @@ export async function listDocuments(c: Context) {
     }
 
     return c.json({
-      data: docsWithDefaults.map(doc => ({
+      data: docsWithDefaults.map((doc) => ({
         id: doc.id,
         docId: doc.docId,
         documentId: doc.documentId,
@@ -607,12 +618,14 @@ export async function getTopViewedDocuments(c: Context) {
       where: { slug: { in: slugs } },
       select: { slug: true, title: true }
     })
-    const titleMap = new Map(docs.map(d => [d.slug, d.title]))
+    const titleMap = new Map(docs.map((d) => [d.slug, d.title]))
 
-    const enrichedData = (data || []).map((d: { document_slug: string; views: number; unique_users: number }) => ({
-      ...d,
-      title: titleMap.get(d.document_slug) || d.document_slug
-    }))
+    const enrichedData = (data || []).map(
+      (d: { document_slug: string; views: number; unique_users: number }) => ({
+        ...d,
+        title: titleMap.get(d.document_slug) || d.document_slug
+      })
+    )
 
     return c.json(enrichedData)
   } catch (error) {
@@ -821,12 +834,14 @@ export async function getTopActiveDocuments(c: Context) {
       where: { slug: { in: slugs } },
       select: { slug: true, title: true }
     })
-    const titleMap = new Map(docs.map(d => [d.slug, d.title]))
+    const titleMap = new Map(docs.map((d) => [d.slug, d.title]))
 
-    const enrichedData = (data || []).map((d: { document_slug: string; message_count: number; unique_users: number }) => ({
-      ...d,
-      title: titleMap.get(d.document_slug) || d.document_slug
-    }))
+    const enrichedData = (data || []).map(
+      (d: { document_slug: string; message_count: number; unique_users: number }) => ({
+        ...d,
+        title: titleMap.get(d.document_slug) || d.document_slug
+      })
+    )
 
     return c.json(enrichedData)
   } catch (error) {

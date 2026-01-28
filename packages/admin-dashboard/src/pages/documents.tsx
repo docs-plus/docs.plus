@@ -1,126 +1,129 @@
-import { useState, useCallback } from 'react';
-import Head from 'next/head';
-import type { GetServerSideProps } from 'next';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useState, useCallback } from 'react'
+import Head from 'next/head'
+import type { GetServerSideProps } from 'next'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {
-  return { props: {} };
-};
-import { LuLock, LuEye, LuFileText, LuUsers, LuChartBar } from 'react-icons/lu';
-import toast from 'react-hot-toast';
-import { AdminLayout } from '@/components/layout/AdminLayout';
-import { Header } from '@/components/layout/Header';
-import { DataTable } from '@/components/tables/DataTable';
-import { StatCard } from '@/components/cards/StatCard';
-import { Avatar } from '@/components/ui/Avatar';
-import { SearchInput } from '@/components/ui/SearchInput';
-import { ActionsDropdown, DeleteModal } from '@/components/documents';
+  return { props: {} }
+}
+import { LuLock, LuEye, LuFileText, LuUsers, LuChartBar } from 'react-icons/lu'
+import toast from 'react-hot-toast'
+import { AdminLayout } from '@/components/layout/AdminLayout'
+import { Header } from '@/components/layout/Header'
+import { DataTable } from '@/components/tables/DataTable'
+import { StatCard } from '@/components/cards/StatCard'
+import { Avatar } from '@/components/ui/Avatar'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { ActionsDropdown, DeleteModal } from '@/components/documents'
 import {
   fetchDocuments,
   fetchDocumentStats,
   updateDocumentFlags,
-  deleteDocument,
-} from '@/services/api';
-import { formatDate, formatDateTime } from '@/utils/format';
-import { exportToCSV } from '@/utils/export';
-import { useTableParams } from '@/hooks/useTableParams';
-import type { Document } from '@/types';
+  deleteDocument
+} from '@/services/api'
+import { formatDate, formatDateTime } from '@/utils/format'
+import { exportToCSV } from '@/utils/export'
+import { useTableParams } from '@/hooks/useTableParams'
+import type { Document } from '@/types'
 
 export default function DocumentsPage() {
   // URL-synced table state
-  const {
-    page,
-    search,
-    sortKey,
-    sortDirection,
-    setPage,
-    setSearch,
-    handleSort,
-  } = useTableParams({ defaultSortKey: 'updatedAt', defaultSortDirection: 'desc' });
+  const { page, search, sortKey, sortDirection, setPage, setSearch, handleSort } = useTableParams({
+    defaultSortKey: 'updatedAt',
+    defaultSortDirection: 'desc'
+  })
 
-  const [deleteTarget, setDeleteTarget] = useState<Document | null>(null);
-  const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const queryClient = useQueryClient();
+  const [deleteTarget, setDeleteTarget] = useState<Document | null>(null)
+  const [updatingId, setUpdatingId] = useState<string | null>(null)
+  const queryClient = useQueryClient()
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['admin', 'documents', page, sortKey, sortDirection, search],
-    queryFn: () => fetchDocuments(page, 20, sortKey || undefined, sortDirection, search || undefined),
-  });
+    queryFn: () =>
+      fetchDocuments(page, 20, sortKey || undefined, sortDirection, search || undefined)
+  })
 
-  const { data: stats, isLoading: statsLoading, refetch: refetchStats } = useQuery({
+  const {
+    data: stats,
+    isLoading: statsLoading,
+    refetch: refetchStats
+  } = useQuery({
     queryKey: ['admin', 'documents', 'stats'],
-    queryFn: fetchDocumentStats,
-  });
+    queryFn: fetchDocumentStats
+  })
 
   // Mutation for updating document flags
   const updateMutation = useMutation({
-    mutationFn: ({ id, flags }: { id: string; flags: { isPrivate?: boolean; readOnly?: boolean } }) =>
-      updateDocumentFlags(id, flags),
+    mutationFn: ({
+      id,
+      flags
+    }: {
+      id: string
+      flags: { isPrivate?: boolean; readOnly?: boolean }
+    }) => updateDocumentFlags(id, flags),
     onMutate: ({ id }) => setUpdatingId(id),
     onSuccess: (_, { flags }) => {
-      const flagName = flags.isPrivate !== undefined ? 'visibility' : 'read-only status';
-      toast.success(`Document ${flagName} updated`);
-      refetch();
-      refetchStats();
+      const flagName = flags.isPrivate !== undefined ? 'visibility' : 'read-only status'
+      toast.success(`Document ${flagName} updated`)
+      refetch()
+      refetchStats()
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to update document');
+      toast.error(error.message || 'Failed to update document')
     },
-    onSettled: () => setUpdatingId(null),
-  });
+    onSettled: () => setUpdatingId(null)
+  })
 
   // Mutation for deleting documents (with confirmSlug)
   const deleteMutation = useMutation({
     mutationFn: ({ id, confirmSlug }: { id: string; confirmSlug: string }) =>
       deleteDocument(id, confirmSlug),
     onSuccess: (result) => {
-      toast.success(
-        `Deleted "${result.deleted.title || result.deleted.slug}" and all related data`
-      );
-      setDeleteTarget(null);
-      queryClient.invalidateQueries({ queryKey: ['admin', 'documents'] });
-      refetchStats();
+      toast.success(`Deleted "${result.deleted.title || result.deleted.slug}" and all related data`)
+      setDeleteTarget(null)
+      queryClient.invalidateQueries({ queryKey: ['admin', 'documents'] })
+      refetchStats()
     },
     onError: (error: Error) => {
-      toast.error(error.message || 'Failed to delete document');
-    },
-  });
+      toast.error(error.message || 'Failed to delete document')
+    }
+  })
 
   const handleTogglePrivate = useCallback(
     (doc: Document) => {
-      updateMutation.mutate({ id: doc.id, flags: { isPrivate: !doc.isPrivate } });
+      updateMutation.mutate({ id: doc.id, flags: { isPrivate: !doc.isPrivate } })
     },
     [updateMutation]
-  );
+  )
 
   const handleToggleReadOnly = useCallback(
     (doc: Document) => {
-      updateMutation.mutate({ id: doc.id, flags: { readOnly: !doc.readOnly } });
+      updateMutation.mutate({ id: doc.id, flags: { readOnly: !doc.readOnly } })
     },
     [updateMutation]
-  );
+  )
 
   const handleDeleteConfirm = useCallback(
     (confirmSlug: string) => {
       if (deleteTarget) {
-        deleteMutation.mutate({ id: deleteTarget.id, confirmSlug });
+        deleteMutation.mutate({ id: deleteTarget.id, confirmSlug })
       }
     },
     [deleteTarget, deleteMutation]
-  );
+  )
 
   const handleExport = () => {
     if (!data?.data?.length) {
-      toast.error('No data to export');
-      return;
+      toast.error('No data to export')
+      return
     }
     const exportData = data.data.map((doc) => ({
       ...doc,
       owner: doc.ownerName || doc.ownerEmail || '',
       isPrivate: doc.isPrivate ? 'Yes' : 'No',
-      readOnly: doc.readOnly ? 'Yes' : 'No',
-    }));
+      readOnly: doc.readOnly ? 'Yes' : 'No'
+    }))
     exportToCSV(exportData, `documents-${new Date().toISOString().split('T')[0]}`, [
       { key: 'docId', header: 'Slug' },
       { key: 'title', header: 'Title' },
@@ -131,10 +134,10 @@ export default function DocumentsPage() {
       { key: 'readOnly', header: 'Read Only' },
       { key: 'versionCount', header: 'Versions' },
       { key: 'createdAt', header: 'Created' },
-      { key: 'updatedAt', header: 'Updated' },
-    ]);
-    toast.success('Exported documents to CSV');
-  };
+      { key: 'updatedAt', header: 'Updated' }
+    ])
+    toast.success('Exported documents to CSV')
+  }
 
   const columns = [
     {
@@ -143,10 +146,10 @@ export default function DocumentsPage() {
       sortable: true,
       render: (doc: Document) => (
         <div className="min-w-0">
-          <p className="font-medium truncate max-w-[200px]">{doc.title || doc.docId}</p>
-          <code className="text-xs text-base-content/50">{doc.docId}</code>
+          <p className="max-w-[200px] truncate font-medium">{doc.title || doc.docId}</p>
+          <code className="text-base-content/50 text-xs">{doc.docId}</code>
         </div>
-      ),
+      )
     },
     {
       key: 'owner',
@@ -163,7 +166,7 @@ export default function DocumentsPage() {
                 email={doc.ownerEmail}
                 size="sm"
               />
-              <span className="text-sm truncate max-w-[100px]">
+              <span className="max-w-[100px] truncate text-sm">
                 {doc.ownerName || doc.ownerEmail?.split('@')[0]}
               </span>
             </>
@@ -171,13 +174,13 @@ export default function DocumentsPage() {
             <span className="text-base-content/40 text-sm">No owner</span>
           )}
         </div>
-      ),
+      )
     },
     {
       key: 'flags',
       header: 'Flags',
       render: (doc: Document) => (
-        <div className="flex gap-1.5 flex-wrap">
+        <div className="flex flex-wrap gap-1.5">
           {doc.isPrivate && (
             <span className="badge badge-sm badge-warning gap-1">
               <LuLock className="h-3 w-3" /> Private
@@ -192,17 +195,17 @@ export default function DocumentsPage() {
             <span className="text-base-content/40 text-sm">Public</span>
           )}
         </div>
-      ),
+      )
     },
     {
       key: 'members',
       header: 'Members',
       render: (doc: Document) => (
         <div className="flex items-center gap-1.5">
-          <LuUsers className="h-4 w-4 text-base-content/40" />
+          <LuUsers className="text-base-content/40 h-4 w-4" />
           <span className="text-sm font-medium">{doc.memberCount}</span>
         </div>
-      ),
+      )
     },
     {
       key: 'views7d',
@@ -210,12 +213,12 @@ export default function DocumentsPage() {
       sortable: true,
       render: (doc: Document) => (
         <div className="flex items-center gap-1.5">
-          <LuChartBar className="h-4 w-4 text-base-content/40" />
+          <LuChartBar className="text-base-content/40 h-4 w-4" />
           <span className="text-sm font-medium">
             {doc.views7d !== undefined ? doc.views7d.toLocaleString() : '—'}
           </span>
         </div>
-      ),
+      )
     },
     {
       key: 'versionCount',
@@ -223,25 +226,23 @@ export default function DocumentsPage() {
       sortable: true,
       render: (doc: Document) => (
         <span className="badge badge-ghost badge-sm">{doc.versionCount}</span>
-      ),
+      )
     },
     {
       key: 'updatedAt',
       header: 'Last Updated',
       sortable: true,
       render: (doc: Document) => (
-        <span className="text-sm text-base-content/70">{formatDateTime(doc.updatedAt)}</span>
-      ),
+        <span className="text-base-content/70 text-sm">{formatDateTime(doc.updatedAt)}</span>
+      )
     },
     {
       key: 'createdAt',
       header: 'Created',
       sortable: true,
       render: (doc: Document) => (
-        <span className="text-sm text-base-content/50">
-          {formatDate(doc.createdAt)}
-        </span>
-      ),
+        <span className="text-base-content/50 text-sm">{formatDate(doc.createdAt)}</span>
+      )
     },
     {
       key: 'actions',
@@ -254,9 +255,9 @@ export default function DocumentsPage() {
           onDelete={() => setDeleteTarget(doc)}
           isUpdating={updatingId === doc.id}
         />
-      ),
-    },
-  ];
+      )
+    }
+  ]
 
   return (
     <>
@@ -273,9 +274,9 @@ export default function DocumentsPage() {
           onExport={handleExport}
         />
 
-        <div className="p-6 space-y-6">
+        <div className="space-y-6 p-6">
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <StatCard
               title="Total Documents"
               value={stats?.total ?? 0}
@@ -310,7 +311,7 @@ export default function DocumentsPage() {
           />
 
           {/* Table */}
-          <div className="bg-base-100 rounded-box border border-base-300">
+          <div className="bg-base-100 rounded-box border-base-300 border">
             <DataTable
               columns={columns}
               data={data?.data || []}
@@ -319,12 +320,12 @@ export default function DocumentsPage() {
                 page,
                 totalPages: data?.pagination.totalPages || 1,
                 total: data?.pagination.total || 0,
-                onPageChange: setPage,
+                onPageChange: setPage
               }}
               sorting={{
                 sortKey,
                 sortDirection,
-                onSort: handleSort,
+                onSort: handleSort
               }}
               emptyMessage="No documents found"
             />
@@ -341,5 +342,5 @@ export default function DocumentsPage() {
         />
       </AdminLayout>
     </>
-  );
+  )
 }

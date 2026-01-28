@@ -46,7 +46,7 @@ const toolbar = createFloatingToolbar({
   },
   buttons: [
     {
-      content: '<svg>...</svg>',  // Raw HTML
+      content: '<svg>...</svg>', // Raw HTML
       onClick: (e) => handleClick(e),
       className: 'my-button',
       style: {
@@ -57,12 +57,12 @@ const toolbar = createFloatingToolbar({
       }
     },
     {
-      content: document.createElement('div'),  // Actual DOM element
+      content: document.createElement('div'), // Actual DOM element
       onClick: () => {},
       disabled: true
     },
     {
-      content: '🎨',  // Emoji
+      content: '🎨', // Emoji
       onClick: () => openColorPicker()
     }
   ]
@@ -73,21 +73,21 @@ const toolbar = createFloatingToolbar({
 
 ```typescript
 interface ToolbarButton {
-  content: string | HTMLElement    // Whatever you want to display
+  content: string | HTMLElement // Whatever you want to display
   onClick: (event: MouseEvent) => void
-  className?: string               // CSS classes
-  style?: Partial<CSSStyleDeclaration>  // Inline styles
-  disabled?: boolean              // Disable the button
-  title?: string                  // Tooltip
+  className?: string // CSS classes
+  style?: Partial<CSSStyleDeclaration> // Inline styles
+  disabled?: boolean // Disable the button
+  title?: string // Tooltip
 }
 
 interface FloatingToolbarOptions {
-  targetElement: HTMLElement      // Element to position around
-  buttons: ToolbarButton[]       // Your buttons
-  className?: string             // Toolbar CSS classes
-  style?: Partial<CSSStyleDeclaration>  // Toolbar styles
+  targetElement: HTMLElement // Element to position around
+  buttons: ToolbarButton[] // Your buttons
+  className?: string // Toolbar CSS classes
+  style?: Partial<CSSStyleDeclaration> // Toolbar styles
   position?: 'top' | 'bottom' | 'left' | 'right' | 'center'
-  offset?: number                // Distance from target
+  offset?: number // Distance from target
 }
 ```
 
@@ -179,6 +179,6 @@ toolbar.hide()
 toolbar.destroy()
 
 // Utility functions
-hideCurrentToolbar()    // Hide whatever's currently showing
+hideCurrentToolbar() // Hide whatever's currently showing
 destroyCurrentToolbar() // Destroy current toolbar
 ```

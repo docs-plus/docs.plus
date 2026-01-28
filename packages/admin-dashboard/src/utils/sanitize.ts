@@ -14,7 +14,7 @@
  */
 export function sanitizeSearchInput(input: string, maxLength = 100): string {
   if (!input || typeof input !== 'string') {
-    return '';
+    return ''
   }
 
   return (
@@ -28,7 +28,7 @@ export function sanitizeSearchInput(input: string, maxLength = 100): string {
       .replace(/\\/g, '\\\\')
       .replace(/%/g, '\\%')
       .replace(/_/g, '\\_')
-  );
+  )
 }
 
 /**
@@ -36,9 +36,8 @@ export function sanitizeSearchInput(input: string, maxLength = 100): string {
  * Used for ID parameters
  */
 export function isValidUUID(id: string): boolean {
-  const uuidRegex =
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-  return uuidRegex.test(id);
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+  return uuidRegex.test(id)
 }
 
 /**
@@ -46,6 +45,6 @@ export function isValidUUID(id: string): boolean {
  * Used for numeric ID parameters
  */
 export function isValidIntId(id: string): boolean {
-  const num = parseInt(id, 10);
-  return !isNaN(num) && num > 0 && String(num) === id;
+  const num = parseInt(id, 10)
+  return !isNaN(num) && num > 0 && String(num) === id
 }

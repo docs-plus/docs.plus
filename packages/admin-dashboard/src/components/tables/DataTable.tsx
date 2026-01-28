@@ -1,38 +1,44 @@
-import { ReactNode } from 'react';
-import { LuChevronLeft, LuChevronRight, LuArrowUp, LuArrowDown, LuArrowUpDown } from 'react-icons/lu';
+import { ReactNode } from 'react'
+import {
+  LuChevronLeft,
+  LuChevronRight,
+  LuArrowUp,
+  LuArrowDown,
+  LuArrowUpDown
+} from 'react-icons/lu'
 
-export type SortDirection = 'asc' | 'desc';
+export type SortDirection = 'asc' | 'desc'
 
 export interface SortConfig {
-  key: string;
-  direction: SortDirection;
+  key: string
+  direction: SortDirection
 }
 
 interface Column<T> {
-  key: keyof T | string;
-  header: string;
-  render?: (item: T) => ReactNode;
-  className?: string;
-  sortable?: boolean;
+  key: keyof T | string
+  header: string
+  render?: (item: T) => ReactNode
+  className?: string
+  sortable?: boolean
 }
 
 interface DataTableProps<T> {
-  columns: Column<T>[];
-  data: T[];
-  loading?: boolean;
+  columns: Column<T>[]
+  data: T[]
+  loading?: boolean
   pagination?: {
-    page: number;
-    totalPages: number;
-    total: number;
-    pageSize?: number; // Items per page (default: 20)
-    onPageChange: (page: number) => void;
-  };
+    page: number
+    totalPages: number
+    total: number
+    pageSize?: number // Items per page (default: 20)
+    onPageChange: (page: number) => void
+  }
   sorting?: {
-    sortKey: string | null;
-    sortDirection: SortDirection;
-    onSort: (key: string) => void;
-  };
-  emptyMessage?: string;
+    sortKey: string | null
+    sortDirection: SortDirection
+    onSort: (key: string) => void
+  }
+  emptyMessage?: string
 }
 
 export function DataTable<T extends object>({
@@ -41,19 +47,19 @@ export function DataTable<T extends object>({
   loading,
   pagination,
   sorting,
-  emptyMessage = 'No data available',
+  emptyMessage = 'No data available'
 }: DataTableProps<T>) {
   const renderSortIcon = (colKey: string) => {
-    if (!sorting) return null;
+    if (!sorting) return null
     if (sorting.sortKey !== colKey) {
-      return <LuArrowUpDown className="h-3.5 w-3.5 text-base-content/30" />;
+      return <LuArrowUpDown className="text-base-content/30 h-3.5 w-3.5" />
     }
     return sorting.sortDirection === 'asc' ? (
-      <LuArrowUp className="h-3.5 w-3.5 text-primary" />
+      <LuArrowUp className="text-primary h-3.5 w-3.5" />
     ) : (
-      <LuArrowDown className="h-3.5 w-3.5 text-primary" />
-    );
-  };
+      <LuArrowDown className="text-primary h-3.5 w-3.5" />
+    )
+  }
 
   if (loading) {
     return (
@@ -81,15 +87,11 @@ export function DataTable<T extends object>({
           </tbody>
         </table>
       </div>
-    );
+    )
   }
 
   if (data.length === 0) {
-    return (
-      <div className="text-center py-12 text-base-content/60">
-        {emptyMessage}
-      </div>
-    );
+    return <div className="text-base-content/60 py-12 text-center">{emptyMessage}</div>
   }
 
   return (
@@ -99,19 +101,18 @@ export function DataTable<T extends object>({
           <thead>
             <tr>
               {columns.map((col) => {
-                const isSortable = col.sortable && sorting;
+                const isSortable = col.sortable && sorting
                 return (
                   <th
                     key={String(col.key)}
-                    className={`${col.className || ''} ${isSortable ? 'cursor-pointer select-none hover:bg-base-200 transition-colors' : ''}`}
-                    onClick={isSortable ? () => sorting.onSort(String(col.key)) : undefined}
-                  >
+                    className={`${col.className || ''} ${isSortable ? 'hover:bg-base-200 cursor-pointer transition-colors select-none' : ''}`}
+                    onClick={isSortable ? () => sorting.onSort(String(col.key)) : undefined}>
                     <div className="flex items-center gap-1.5">
                       <span>{col.header}</span>
                       {col.sortable && renderSortIcon(String(col.key))}
                     </div>
                   </th>
-                );
+                )
               })}
             </tr>
           </thead>
@@ -120,9 +121,7 @@ export function DataTable<T extends object>({
               <tr key={index} className="hover">
                 {columns.map((col) => (
                   <td key={String(col.key)} className={col.className}>
-                    {col.render
-                      ? col.render(item)
-                      : String(item[col.key as keyof T] ?? '-')}
+                    {col.render ? col.render(item) : String(item[col.key as keyof T] ?? '-')}
                   </td>
                 ))}
               </tr>
@@ -132,21 +131,20 @@ export function DataTable<T extends object>({
       </div>
 
       {pagination && pagination.totalPages > 1 && (
-        <div className="flex items-center justify-between mt-4 px-2">
-          <p className="text-sm text-base-content/60">
+        <div className="mt-4 flex items-center justify-between px-2">
+          <p className="text-base-content/60 text-sm">
             {(() => {
-              const pageSize = pagination.pageSize || 20;
-              const start = (pagination.page - 1) * pageSize + 1;
-              const end = Math.min(pagination.page * pageSize, pagination.total);
-              return `Showing ${start} to ${end} of ${pagination.total}`;
+              const pageSize = pagination.pageSize || 20
+              const start = (pagination.page - 1) * pageSize + 1
+              const end = Math.min(pagination.page * pageSize, pagination.total)
+              return `Showing ${start} to ${end} of ${pagination.total}`
             })()}
           </p>
           <div className="join">
             <button
               className="join-item btn btn-sm"
               disabled={pagination.page <= 1}
-              onClick={() => pagination.onPageChange(pagination.page - 1)}
-            >
+              onClick={() => pagination.onPageChange(pagination.page - 1)}>
               <LuChevronLeft className="h-4 w-4" />
             </button>
             <button className="join-item btn btn-sm">
@@ -155,13 +153,12 @@ export function DataTable<T extends object>({
             <button
               className="join-item btn btn-sm"
               disabled={pagination.page >= pagination.totalPages}
-              onClick={() => pagination.onPageChange(pagination.page + 1)}
-            >
+              onClick={() => pagination.onPageChange(pagination.page + 1)}>
               <LuChevronRight className="h-4 w-4" />
             </button>
           </div>
         </div>
       )}
     </div>
-  );
+  )
 }

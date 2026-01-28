@@ -51,7 +51,10 @@ const buildRedisConfig = (host: string, port: number, label = 'main') => {
 
       // Production: never give up, but log warnings
       if (times > maxRetries) {
-        redisLogger.warn({ times, redis: label }, 'Redis reconnecting (exceeded initial retries, will keep trying)')
+        redisLogger.warn(
+          { times, redis: label },
+          'Redis reconnecting (exceeded initial retries, will keep trying)'
+        )
       }
 
       // Exponential backoff: 200ms, 400ms, 800ms... capped at 10s in prod, 5s in dev
@@ -77,7 +80,14 @@ const buildRedisConfig = (host: string, port: number, label = 'main') => {
 
     // Reconnect on error - include all connection-related errors
     reconnectOnError: (err: Error) => {
-      const targetErrors = ['READONLY', 'ETIMEDOUT', 'ECONNRESET', 'ECONNREFUSED', 'ENOTFOUND', 'Connection is closed']
+      const targetErrors = [
+        'READONLY',
+        'ETIMEDOUT',
+        'ECONNRESET',
+        'ECONNREFUSED',
+        'ENOTFOUND',
+        'Connection is closed'
+      ]
       if (targetErrors.some((targetError) => err.message.includes(targetError))) {
         redisLogger.warn({ err: err.message, redis: label }, 'Reconnecting on error')
         return true
@@ -305,7 +315,9 @@ export const createRedisConnection = (options: Partial<RedisOptions> = {}): Redi
  * Create a new dedicated Redis connection for QUEUE operations (BullMQ)
  * Uses REDIS_QUEUE_HOST / REDIS_QUEUE_PORT, falls back to main Redis
  */
-export const createQueueRedisConnection = (options: Partial<RedisOptions> = {}): RedisClient | null => {
+export const createQueueRedisConnection = (
+  options: Partial<RedisOptions> = {}
+): RedisClient | null => {
   const config = getQueueRedisConfig()
 
   if (!config) {

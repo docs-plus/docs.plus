@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo } from 'react'
 import {
   AreaChart,
   Area,
@@ -6,15 +6,15 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import { format, parseISO } from 'date-fns';
-import type { ViewsTrendPoint } from '@/types';
+  ResponsiveContainer
+} from 'recharts'
+import { format, parseISO } from 'date-fns'
+import type { ViewsTrendPoint } from '@/types'
 
 interface ViewsTrendChartProps {
-  data: ViewsTrendPoint[];
-  loading?: boolean;
-  height?: number;
+  data: ViewsTrendPoint[]
+  loading?: boolean
+  height?: number
 }
 
 export function ViewsTrendChart({ data, loading, height = 300 }: ViewsTrendChartProps) {
@@ -22,24 +22,24 @@ export function ViewsTrendChart({ data, loading, height = 300 }: ViewsTrendChart
     return data.map((point) => ({
       ...point,
       date: format(parseISO(point.view_date), 'MMM d'),
-      fullDate: format(parseISO(point.view_date), 'MMM d, yyyy'),
-    }));
-  }, [data]);
+      fullDate: format(parseISO(point.view_date), 'MMM d, yyyy')
+    }))
+  }, [data])
 
   if (loading) {
     return (
       <div className="flex items-center justify-center" style={{ height }}>
         <span className="loading loading-spinner loading-lg text-primary" />
       </div>
-    );
+    )
   }
 
   if (!data.length) {
     return (
-      <div className="flex items-center justify-center text-base-content/50" style={{ height }}>
+      <div className="text-base-content/50 flex items-center justify-center" style={{ height }}>
         No view data available yet
       </div>
-    );
+    )
   }
 
   return (
@@ -75,7 +75,7 @@ export function ViewsTrendChart({ data, loading, height = 300 }: ViewsTrendChart
             backgroundColor: 'oklch(var(--b1))',
             border: '1px solid oklch(var(--b3))',
             borderRadius: '0.5rem',
-            fontSize: '0.875rem',
+            fontSize: '0.875rem'
           }}
           labelFormatter={(_, payload) => payload[0]?.payload?.fullDate || ''}
         />
@@ -99,5 +99,5 @@ export function ViewsTrendChart({ data, loading, height = 300 }: ViewsTrendChart
         />
       </AreaChart>
     </ResponsiveContainer>
-  );
+  )
 }

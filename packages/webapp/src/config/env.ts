@@ -8,13 +8,10 @@ import { logger } from '@utils/logger'
 const requiredEnvVars = [
   'NEXT_PUBLIC_SUPABASE_URL',
   'NEXT_PUBLIC_SUPABASE_ANON_KEY',
-  'NEXT_PUBLIC_PROVIDER_URL',
+  'NEXT_PUBLIC_PROVIDER_URL'
 ] as const
 
-const optionalEnvVars = [
-  'NEXT_PUBLIC_RESTAPI_URL',
-  'NEXT_PUBLIC_GA_ID',
-] as const
+const optionalEnvVars = ['NEXT_PUBLIC_RESTAPI_URL', 'NEXT_PUBLIC_GA_ID'] as const
 
 export function validateEnv() {
   // Only validate on server-side
@@ -68,4 +65,3 @@ export function validateEnv() {
 
 // Auto-validate on module import (server-side only, but skip during build)
 validateEnv()
-

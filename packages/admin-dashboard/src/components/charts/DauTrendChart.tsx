@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo } from 'react'
 import {
   AreaChart,
   Area,
@@ -6,15 +6,15 @@ import {
   YAxis,
   CartesianGrid,
   Tooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import { format, parseISO } from 'date-fns';
-import type { DauTrendPoint } from '@/types';
+  ResponsiveContainer
+} from 'recharts'
+import { format, parseISO } from 'date-fns'
+import type { DauTrendPoint } from '@/types'
 
 interface DauTrendChartProps {
-  data: DauTrendPoint[];
-  loading?: boolean;
-  height?: number;
+  data: DauTrendPoint[]
+  loading?: boolean
+  height?: number
 }
 
 export function DauTrendChart({ data, loading, height = 300 }: DauTrendChartProps) {
@@ -22,24 +22,24 @@ export function DauTrendChart({ data, loading, height = 300 }: DauTrendChartProp
     return data.map((point) => ({
       ...point,
       date: format(parseISO(point.activity_date), 'MMM d'),
-      fullDate: format(parseISO(point.activity_date), 'MMM d, yyyy'),
-    }));
-  }, [data]);
+      fullDate: format(parseISO(point.activity_date), 'MMM d, yyyy')
+    }))
+  }, [data])
 
   if (loading) {
     return (
       <div className="flex items-center justify-center" style={{ height }}>
         <span className="loading loading-spinner loading-lg text-primary" />
       </div>
-    );
+    )
   }
 
   if (!data.length) {
     return (
-      <div className="flex items-center justify-center text-base-content/50" style={{ height }}>
+      <div className="text-base-content/50 flex items-center justify-center" style={{ height }}>
         No activity data available yet
       </div>
-    );
+    )
   }
 
   return (
@@ -71,7 +71,7 @@ export function DauTrendChart({ data, loading, height = 300 }: DauTrendChartProp
             backgroundColor: 'oklch(var(--b1))',
             border: '1px solid oklch(var(--b3))',
             borderRadius: '0.5rem',
-            fontSize: '0.875rem',
+            fontSize: '0.875rem'
           }}
           labelFormatter={(_, payload) => payload[0]?.payload?.fullDate || ''}
           formatter={(value) => [(value as number).toLocaleString(), 'Active Users']}
@@ -87,5 +87,5 @@ export function DauTrendChart({ data, loading, height = 300 }: DauTrendChartProp
         />
       </AreaChart>
     </ResponsiveContainer>
-  );
+  )
 }

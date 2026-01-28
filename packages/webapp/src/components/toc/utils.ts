@@ -53,7 +53,9 @@ export function scrollToDocTitle(options: {
 }) {
   const { workspaceId, title, openChatRoom = false } = options
 
-  document.querySelector('.tiptap__editor.docy_editor .heading')?.scrollIntoView({ behavior: 'smooth' })
+  document
+    .querySelector('.tiptap__editor.docy_editor .heading')
+    ?.scrollIntoView({ behavior: 'smooth' })
 
   if (!workspaceId) return
 
@@ -92,4 +94,3 @@ export function buildNestedToc<T extends { level: number }>(
 
   return result
 }
-

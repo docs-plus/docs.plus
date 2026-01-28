@@ -1,10 +1,4 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   graphql_public: {
@@ -37,9 +31,7 @@ export type Database = {
       channel_members: {
         Row: {
           channel_id: string
-          channel_member_role:
-            | Database["public"]["Enums"]["channel_member_role"]
-            | null
+          channel_member_role: Database['public']['Enums']['channel_member_role'] | null
           created_at: string
           id: string
           joined_at: string
@@ -48,17 +40,13 @@ export type Database = {
           left_at: string | null
           member_id: string
           mute_in_app_notifications: boolean | null
-          notif_state:
-            | Database["public"]["Enums"]["channel_notification_state"]
-            | null
+          notif_state: Database['public']['Enums']['channel_notification_state'] | null
           unread_message_count: number | null
           updated_at: string | null
         }
         Insert: {
           channel_id: string
-          channel_member_role?:
-            | Database["public"]["Enums"]["channel_member_role"]
-            | null
+          channel_member_role?: Database['public']['Enums']['channel_member_role'] | null
           created_at?: string
           id?: string
           joined_at?: string
@@ -67,17 +55,13 @@ export type Database = {
           left_at?: string | null
           member_id: string
           mute_in_app_notifications?: boolean | null
-          notif_state?:
-            | Database["public"]["Enums"]["channel_notification_state"]
-            | null
+          notif_state?: Database['public']['Enums']['channel_notification_state'] | null
           unread_message_count?: number | null
           updated_at?: string | null
         }
         Update: {
           channel_id?: string
-          channel_member_role?:
-            | Database["public"]["Enums"]["channel_member_role"]
-            | null
+          channel_member_role?: Database['public']['Enums']['channel_member_role'] | null
           created_at?: string
           id?: string
           joined_at?: string
@@ -86,34 +70,32 @@ export type Database = {
           left_at?: string | null
           member_id?: string
           mute_in_app_notifications?: boolean | null
-          notif_state?:
-            | Database["public"]["Enums"]["channel_notification_state"]
-            | null
+          notif_state?: Database['public']['Enums']['channel_notification_state'] | null
           unread_message_count?: number | null
           updated_at?: string | null
         }
         Relationships: [
           {
-            foreignKeyName: "channel_members_channel_id_fkey"
-            columns: ["channel_id"]
+            foreignKeyName: 'channel_members_channel_id_fkey'
+            columns: ['channel_id']
             isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "channel_members_last_read_message_id_fkey"
-            columns: ["last_read_message_id"]
+            foreignKeyName: 'channel_members_last_read_message_id_fkey'
+            columns: ['last_read_message_id']
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            referencedRelation: 'messages'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "channel_members_member_id_fkey"
-            columns: ["member_id"]
+            foreignKeyName: 'channel_members_member_id_fkey'
+            columns: ['member_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
       channel_message_counts: {
@@ -134,19 +116,19 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "channel_message_counts_channel_id_fkey"
-            columns: ["channel_id"]
+            foreignKeyName: 'channel_message_counts_channel_id_fkey'
+            columns: ['channel_id']
             isOneToOne: true
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "channel_message_counts_workspace_id_fkey"
-            columns: ["workspace_id"]
+            foreignKeyName: 'channel_message_counts_workspace_id_fkey'
+            columns: ['workspace_id']
             isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'workspaces'
+            referencedColumns: ['id']
+          }
         ]
       }
       channels: {
@@ -166,7 +148,7 @@ export type Database = {
           mute_in_app_notifications: boolean | null
           name: string
           slug: string
-          type: Database["public"]["Enums"]["channel_type"] | null
+          type: Database['public']['Enums']['channel_type'] | null
           updated_at: string
           workspace_id: string
         }
@@ -186,7 +168,7 @@ export type Database = {
           mute_in_app_notifications?: boolean | null
           name: string
           slug: string
-          type?: Database["public"]["Enums"]["channel_type"] | null
+          type?: Database['public']['Enums']['channel_type'] | null
           updated_at?: string
           workspace_id: string
         }
@@ -206,25 +188,25 @@ export type Database = {
           mute_in_app_notifications?: boolean | null
           name?: string
           slug?: string
-          type?: Database["public"]["Enums"]["channel_type"] | null
+          type?: Database['public']['Enums']['channel_type'] | null
           updated_at?: string
           workspace_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "channels_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: 'channels_created_by_fkey'
+            columns: ['created_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "channels_workspace_id_fkey"
-            columns: ["workspace_id"]
+            foreignKeyName: 'channels_workspace_id_fkey'
+            columns: ['workspace_id']
             isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'workspaces'
+            referencedColumns: ['id']
+          }
         ]
       }
       message_bookmarks: {
@@ -260,19 +242,19 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "message_bookmarks_message_id_fkey"
-            columns: ["message_id"]
+            foreignKeyName: 'message_bookmarks_message_id_fkey'
+            columns: ['message_id']
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            referencedRelation: 'messages'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "message_bookmarks_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'message_bookmarks_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
       messages: {
@@ -295,7 +277,7 @@ export type Database = {
           thread_depth: number | null
           thread_id: string | null
           thread_owner_id: string | null
-          type: Database["public"]["Enums"]["message_type"] | null
+          type: Database['public']['Enums']['message_type'] | null
           updated_at: string
           user_id: string
         }
@@ -318,7 +300,7 @@ export type Database = {
           thread_depth?: number | null
           thread_id?: string | null
           thread_owner_id?: string | null
-          type?: Database["public"]["Enums"]["message_type"] | null
+          type?: Database['public']['Enums']['message_type'] | null
           updated_at?: string
           user_id: string
         }
@@ -341,53 +323,53 @@ export type Database = {
           thread_depth?: number | null
           thread_id?: string | null
           thread_owner_id?: string | null
-          type?: Database["public"]["Enums"]["message_type"] | null
+          type?: Database['public']['Enums']['message_type'] | null
           updated_at?: string
           user_id?: string
         }
         Relationships: [
           {
-            foreignKeyName: "messages_channel_id_fkey"
-            columns: ["channel_id"]
+            foreignKeyName: 'messages_channel_id_fkey'
+            columns: ['channel_id']
             isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "messages_origin_message_id_fkey"
-            columns: ["origin_message_id"]
+            foreignKeyName: 'messages_origin_message_id_fkey'
+            columns: ['origin_message_id']
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            referencedRelation: 'messages'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "messages_reply_to_message_id_fkey"
-            columns: ["reply_to_message_id"]
+            foreignKeyName: 'messages_reply_to_message_id_fkey'
+            columns: ['reply_to_message_id']
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            referencedRelation: 'messages'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "messages_thread_id_fkey"
-            columns: ["thread_id"]
+            foreignKeyName: 'messages_thread_id_fkey'
+            columns: ['thread_id']
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            referencedRelation: 'messages'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "messages_thread_owner_id_fkey"
-            columns: ["thread_owner_id"]
+            foreignKeyName: 'messages_thread_owner_id_fkey'
+            columns: ['thread_owner_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "messages_user_id_fkey"
-            columns: ["user_id"]
+            foreignKeyName: 'messages_user_id_fkey'
+            columns: ['user_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
       notifications: {
@@ -401,7 +383,7 @@ export type Database = {
           readed_at: string | null
           receiver_user_id: string
           sender_user_id: string | null
-          type: Database["public"]["Enums"]["notification_category"]
+          type: Database['public']['Enums']['notification_category']
         }
         Insert: {
           action_url?: string | null
@@ -413,7 +395,7 @@ export type Database = {
           readed_at?: string | null
           receiver_user_id: string
           sender_user_id?: string | null
-          type: Database["public"]["Enums"]["notification_category"]
+          type: Database['public']['Enums']['notification_category']
         }
         Update: {
           action_url?: string | null
@@ -425,37 +407,37 @@ export type Database = {
           readed_at?: string | null
           receiver_user_id?: string
           sender_user_id?: string | null
-          type?: Database["public"]["Enums"]["notification_category"]
+          type?: Database['public']['Enums']['notification_category']
         }
         Relationships: [
           {
-            foreignKeyName: "notifications_channel_id_fkey"
-            columns: ["channel_id"]
+            foreignKeyName: 'notifications_channel_id_fkey'
+            columns: ['channel_id']
             isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "notifications_message_id_fkey"
-            columns: ["message_id"]
+            foreignKeyName: 'notifications_message_id_fkey'
+            columns: ['message_id']
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            referencedRelation: 'messages'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "notifications_receiver_user_id_fkey"
-            columns: ["receiver_user_id"]
+            foreignKeyName: 'notifications_receiver_user_id_fkey'
+            columns: ['receiver_user_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "notifications_sender_user_id_fkey"
-            columns: ["sender_user_id"]
+            foreignKeyName: 'notifications_sender_user_id_fkey'
+            columns: ['sender_user_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
       pinned_messages: {
@@ -485,26 +467,26 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "pinned_messages_channel_id_fkey"
-            columns: ["channel_id"]
+            foreignKeyName: 'pinned_messages_channel_id_fkey'
+            columns: ['channel_id']
             isOneToOne: false
-            referencedRelation: "channels"
-            referencedColumns: ["id"]
+            referencedRelation: 'channels'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "pinned_messages_message_id_fkey"
-            columns: ["message_id"]
+            foreignKeyName: 'pinned_messages_message_id_fkey'
+            columns: ['message_id']
             isOneToOne: false
-            referencedRelation: "messages"
-            referencedColumns: ["id"]
+            referencedRelation: 'messages'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "pinned_messages_pinned_by_fkey"
-            columns: ["pinned_by"]
+            foreignKeyName: 'pinned_messages_pinned_by_fkey'
+            columns: ['pinned_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
       users: {
@@ -519,7 +501,7 @@ export type Database = {
           id: string
           online_at: string | null
           profile_data: Json
-          status: Database["public"]["Enums"]["user_status"]
+          status: Database['public']['Enums']['user_status']
           updated_at: string
           username: string
         }
@@ -534,7 +516,7 @@ export type Database = {
           id: string
           online_at?: string | null
           profile_data?: Json
-          status?: Database["public"]["Enums"]["user_status"]
+          status?: Database['public']['Enums']['user_status']
           updated_at?: string
           username: string
         }
@@ -549,7 +531,7 @@ export type Database = {
           id?: string
           online_at?: string | null
           profile_data?: Json
-          status?: Database["public"]["Enums"]["user_status"]
+          status?: Database['public']['Enums']['user_status']
           updated_at?: string
           username?: string
         }
@@ -585,19 +567,19 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "workspace_members_member_id_fkey"
-            columns: ["member_id"]
+            foreignKeyName: 'workspace_members_member_id_fkey'
+            columns: ['member_id']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
+            referencedRelation: 'users'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "workspace_members_workspace_id_fkey"
-            columns: ["workspace_id"]
+            foreignKeyName: 'workspace_members_workspace_id_fkey'
+            columns: ['workspace_id']
             isOneToOne: false
-            referencedRelation: "workspaces"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'workspaces'
+            referencedColumns: ['id']
+          }
         ]
       }
       workspaces: {
@@ -636,12 +618,12 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "workspaces_created_by_fkey"
-            columns: ["created_by"]
+            foreignKeyName: 'workspaces_created_by_fkey'
+            columns: ['created_by']
             isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          }
         ]
       }
     }
@@ -715,7 +697,7 @@ export type Database = {
           avatar_url: string
           avatar_updated_at: string
           last_read_update_at: string
-          channel_member_role: Database["public"]["Enums"]["channel_member_role"]
+          channel_member_role: Database['public']['Enums']['channel_member_role']
           joined_at: string
         }[]
       }
@@ -733,7 +715,7 @@ export type Database = {
       }
       get_channel_notif_state: {
         Args: { _channel_id: string }
-        Returns: Database["public"]["Enums"]["channel_notification_state"]
+        Returns: Database['public']['Enums']['channel_notification_state']
       }
       get_unread_notif_count: {
         Args: { _workspace_id?: string }
@@ -768,7 +750,7 @@ export type Database = {
           message_created_at: string
           message_user_id: string
           message_channel_id: string
-          message_type: Database["public"]["Enums"]["message_type"]
+          message_type: Database['public']['Enums']['message_type']
           user_details: Json
           channel_name: string
           channel_slug: string
@@ -816,78 +798,65 @@ export type Database = {
         Returns: string
       }
       user_details_json: {
-        Args: { u: Database["public"]["Tables"]["users"]["Row"] }
+        Args: { u: Database['public']['Tables']['users']['Row'] }
         Returns: Json
       }
     }
     Enums: {
       app_permission:
-        | "channels.create"
-        | "channels.delete"
-        | "channels.edit"
-        | "messages.create"
-        | "messages.delete"
-        | "messages.edit"
-        | "users.view"
-        | "users.edit"
-        | "users.delete"
-        | "roles.create"
-        | "roles.edit"
-        | "roles.delete"
-      app_role: "admin" | "moderator" | "member" | "guest"
-      channel_member_role: "MEMBER" | "ADMIN" | "MODERATOR" | "GUEST"
-      channel_notification_state: "MENTIONS" | "ALL" | "MUTED"
-      channel_type:
-        | "PUBLIC"
-        | "PRIVATE"
-        | "BROADCAST"
-        | "ARCHIVE"
-        | "DIRECT"
-        | "GROUP"
-        | "THREAD"
+        | 'channels.create'
+        | 'channels.delete'
+        | 'channels.edit'
+        | 'messages.create'
+        | 'messages.delete'
+        | 'messages.edit'
+        | 'users.view'
+        | 'users.edit'
+        | 'users.delete'
+        | 'roles.create'
+        | 'roles.edit'
+        | 'roles.delete'
+      app_role: 'admin' | 'moderator' | 'member' | 'guest'
+      channel_member_role: 'MEMBER' | 'ADMIN' | 'MODERATOR' | 'GUEST'
+      channel_notification_state: 'MENTIONS' | 'ALL' | 'MUTED'
+      channel_type: 'PUBLIC' | 'PRIVATE' | 'BROADCAST' | 'ARCHIVE' | 'DIRECT' | 'GROUP' | 'THREAD'
       message_type:
-        | "text"
-        | "image"
-        | "video"
-        | "audio"
-        | "link"
-        | "giphy"
-        | "file"
-        | "notification"
+        | 'text'
+        | 'image'
+        | 'video'
+        | 'audio'
+        | 'link'
+        | 'giphy'
+        | 'file'
+        | 'notification'
       notification_category:
-        | "mention"
-        | "message"
-        | "reply"
-        | "reaction"
-        | "thread_message"
-        | "channel_event"
-        | "direct_message"
-        | "invitation"
-        | "system_alert"
+        | 'mention'
+        | 'message'
+        | 'reply'
+        | 'reaction'
+        | 'thread_message'
+        | 'channel_event'
+        | 'direct_message'
+        | 'invitation'
+        | 'system_alert'
       notification_type:
-        | "message"
-        | "channel_invite"
-        | "mention"
-        | "reply"
-        | "thread_update"
-        | "channel_update"
-        | "member_join"
-        | "member_leave"
-        | "user_activity"
-        | "task_assignment"
-        | "event_reminder"
-        | "system_update"
-        | "security_alert"
-        | "like_reaction"
-        | "feedback_request"
-        | "performance_insight"
-      user_status:
-        | "ONLINE"
-        | "OFFLINE"
-        | "AWAY"
-        | "BUSY"
-        | "INVISIBLE"
-        | "TYPING"
+        | 'message'
+        | 'channel_invite'
+        | 'mention'
+        | 'reply'
+        | 'thread_update'
+        | 'channel_update'
+        | 'member_join'
+        | 'member_leave'
+        | 'user_activity'
+        | 'task_assignment'
+        | 'event_reminder'
+        | 'system_update'
+        | 'security_alert'
+        | 'like_reaction'
+        | 'feedback_request'
+        | 'performance_insight'
+      user_status: 'ONLINE' | 'OFFLINE' | 'AWAY' | 'BUSY' | 'INVISIBLE' | 'TYPING'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -895,29 +864,27 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, "public">]
+type DefaultSchema = Database[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof Database
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+    ? keyof (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    : never = never
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -926,21 +893,21 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof Database
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -949,21 +916,21 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
+    | keyof DefaultSchema['Tables']
     | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof Database
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    : never = never
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -971,108 +938,88 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof Database },
+  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums'] | { schema: keyof Database },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof Database
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+    ? keyof Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    : never = never
 > = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  ? Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
+    | keyof DefaultSchema['CompositeTypes']
     | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof Database
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+    ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    : never = never
 > = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
   graphql_public: {
-    Enums: {},
+    Enums: {}
   },
   public: {
     Enums: {
       app_permission: [
-        "channels.create",
-        "channels.delete",
-        "channels.edit",
-        "messages.create",
-        "messages.delete",
-        "messages.edit",
-        "users.view",
-        "users.edit",
-        "users.delete",
-        "roles.create",
-        "roles.edit",
-        "roles.delete",
+        'channels.create',
+        'channels.delete',
+        'channels.edit',
+        'messages.create',
+        'messages.delete',
+        'messages.edit',
+        'users.view',
+        'users.edit',
+        'users.delete',
+        'roles.create',
+        'roles.edit',
+        'roles.delete'
       ],
-      app_role: ["admin", "moderator", "member", "guest"],
-      channel_member_role: ["MEMBER", "ADMIN", "MODERATOR", "GUEST"],
-      channel_notification_state: ["MENTIONS", "ALL", "MUTED"],
-      channel_type: [
-        "PUBLIC",
-        "PRIVATE",
-        "BROADCAST",
-        "ARCHIVE",
-        "DIRECT",
-        "GROUP",
-        "THREAD",
-      ],
-      message_type: [
-        "text",
-        "image",
-        "video",
-        "audio",
-        "link",
-        "giphy",
-        "file",
-        "notification",
-      ],
+      app_role: ['admin', 'moderator', 'member', 'guest'],
+      channel_member_role: ['MEMBER', 'ADMIN', 'MODERATOR', 'GUEST'],
+      channel_notification_state: ['MENTIONS', 'ALL', 'MUTED'],
+      channel_type: ['PUBLIC', 'PRIVATE', 'BROADCAST', 'ARCHIVE', 'DIRECT', 'GROUP', 'THREAD'],
+      message_type: ['text', 'image', 'video', 'audio', 'link', 'giphy', 'file', 'notification'],
       notification_category: [
-        "mention",
-        "message",
-        "reply",
-        "reaction",
-        "thread_message",
-        "channel_event",
-        "direct_message",
-        "invitation",
-        "system_alert",
+        'mention',
+        'message',
+        'reply',
+        'reaction',
+        'thread_message',
+        'channel_event',
+        'direct_message',
+        'invitation',
+        'system_alert'
       ],
       notification_type: [
-        "message",
-        "channel_invite",
-        "mention",
-        "reply",
-        "thread_update",
-        "channel_update",
-        "member_join",
-        "member_leave",
-        "user_activity",
-        "task_assignment",
-        "event_reminder",
-        "system_update",
-        "security_alert",
-        "like_reaction",
-        "feedback_request",
-        "performance_insight",
+        'message',
+        'channel_invite',
+        'mention',
+        'reply',
+        'thread_update',
+        'channel_update',
+        'member_join',
+        'member_leave',
+        'user_activity',
+        'task_assignment',
+        'event_reminder',
+        'system_update',
+        'security_alert',
+        'like_reaction',
+        'feedback_request',
+        'performance_insight'
       ],
-      user_status: ["ONLINE", "OFFLINE", "AWAY", "BUSY", "INVISIBLE", "TYPING"],
-    },
-  },
+      user_status: ['ONLINE', 'OFFLINE', 'AWAY', 'BUSY', 'INVISIBLE', 'TYPING']
+    }
+  }
 } as const
-

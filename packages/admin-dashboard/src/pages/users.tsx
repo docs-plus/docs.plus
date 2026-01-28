@@ -1,75 +1,70 @@
-import { useCallback, useMemo } from 'react';
-import Head from 'next/head';
-import { useQuery } from '@tanstack/react-query';
-import { LuCircle, LuRadio, LuFileText } from 'react-icons/lu';
-import toast from 'react-hot-toast';
-import { AdminLayout } from '@/components/layout/AdminLayout';
-import { Header } from '@/components/layout/Header';
-import { DataTable } from '@/components/tables/DataTable';
-import { Avatar } from '@/components/ui/Avatar';
-import { SearchInput } from '@/components/ui/SearchInput';
-import { fetchUsers } from '@/services/supabase';
-import { fetchUserDocumentCounts } from '@/services/api';
-import { formatDate, formatDateTime } from '@/utils/format';
-import { exportToCSV } from '@/utils/export';
-import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
-import { useTableParams } from '@/hooks/useTableParams';
-import type { User } from '@/types';
-import type { GetServerSideProps } from 'next';
+import { useCallback, useMemo } from 'react'
+import Head from 'next/head'
+import { useQuery } from '@tanstack/react-query'
+import { LuCircle, LuRadio, LuFileText } from 'react-icons/lu'
+import toast from 'react-hot-toast'
+import { AdminLayout } from '@/components/layout/AdminLayout'
+import { Header } from '@/components/layout/Header'
+import { DataTable } from '@/components/tables/DataTable'
+import { Avatar } from '@/components/ui/Avatar'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { fetchUsers } from '@/services/supabase'
+import { fetchUserDocumentCounts } from '@/services/api'
+import { formatDate, formatDateTime } from '@/utils/format'
+import { exportToCSV } from '@/utils/export'
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
+import { useTableParams } from '@/hooks/useTableParams'
+import type { User } from '@/types'
+import type { GetServerSideProps } from 'next'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {
-  return { props: {} };
-};
+  return { props: {} }
+}
 
-type UserWithDocs = User & { document_count: number };
+type UserWithDocs = User & { document_count: number }
 
 export default function UsersPage() {
   // URL-synced table state
-  const {
-    page,
-    search,
-    sortKey,
-    sortDirection,
-    setPage,
-    setSearch,
-    handleSort,
-  } = useTableParams({ defaultSortKey: 'created_at', defaultSortDirection: 'desc' });
+  const { page, search, sortKey, sortDirection, setPage, setSearch, handleSort } = useTableParams({
+    defaultSortKey: 'created_at',
+    defaultSortDirection: 'desc'
+  })
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['admin', 'users', page, search, sortKey, sortDirection],
-    queryFn: () => fetchUsers(page, search, sortKey || undefined, sortDirection),
-  });
+    queryFn: () => fetchUsers(page, search, sortKey || undefined, sortDirection)
+  })
 
   // Fetch document counts per user
   const { data: docCounts } = useQuery({
     queryKey: ['admin', 'users', 'document-counts'],
-    queryFn: fetchUserDocumentCounts,
-  });
+    queryFn: fetchUserDocumentCounts
+  })
 
   // Merge document counts into user data for display
   const usersWithDocCounts = useMemo(() => {
-    if (!data?.data) return [];
+    if (!data?.data) return []
     return data.data.map((user) => ({
       ...user,
-      document_count: docCounts?.[user.id] ?? 0,
-    }));
-  }, [data?.data, docCounts]);
+      document_count: docCounts?.[user.id] ?? 0
+    }))
+  }, [data?.data, docCounts])
 
   // Real-time subscription to users table
   const handleRealtimeChange = useCallback(() => {
-    refetch();
-  }, [refetch]);
+    refetch()
+  }, [refetch])
 
   useRealtimeSubscription({
     table: 'users',
-    onchange: handleRealtimeChange,
-  });
+    onchange: handleRealtimeChange
+  })
 
   const handleExport = () => {
     if (!usersWithDocCounts.length) {
-      toast.error('No data to export');
-      return;
+      toast.error('No data to export')
+      return
     }
     exportToCSV(usersWithDocCounts, `users-${new Date().toISOString().split('T')[0]}`, [
       { key: 'username', header: 'Username' },
@@ -78,10 +73,10 @@ export default function UsersPage() {
       { key: 'document_count', header: 'Documents' },
       { key: 'status', header: 'Status' },
       { key: 'created_at', header: 'Joined' },
-      { key: 'online_at', header: 'Last Active' },
-    ]);
-    toast.success('Exported users to CSV');
-  };
+      { key: 'online_at', header: 'Last Active' }
+    ])
+    toast.success('Exported users to CSV')
+  }
 
   const columns = [
     {
@@ -100,31 +95,29 @@ export default function UsersPage() {
           />
           <span className="font-medium">{user.username || '-'}</span>
         </div>
-      ),
+      )
     },
     {
       key: 'email',
       header: 'Email',
       sortable: true,
-      render: (user: UserWithDocs) => (
-        <span className="text-sm">{user.email || '-'}</span>
-      ),
+      render: (user: UserWithDocs) => <span className="text-sm">{user.email || '-'}</span>
     },
     {
       key: 'full_name',
       header: 'Name',
       sortable: true,
-      render: (user: UserWithDocs) => user.full_name || '-',
+      render: (user: UserWithDocs) => user.full_name || '-'
     },
     {
       key: 'document_count',
       header: 'Documents',
       render: (user: UserWithDocs) => (
         <div className="flex items-center gap-1.5">
-          <LuFileText className="h-4 w-4 text-base-content/40" />
+          <LuFileText className="text-base-content/40 h-4 w-4" />
           <span className="text-sm font-medium">{user.document_count}</span>
         </div>
-      ),
+      )
     },
     {
       key: 'status',
@@ -137,33 +130,31 @@ export default function UsersPage() {
               user.status === 'ONLINE'
                 ? 'text-success'
                 : user.status === 'AWAY'
-                ? 'text-warning'
-                : 'text-base-content/30'
+                  ? 'text-warning'
+                  : 'text-base-content/30'
             }`}
           />
           <span className="text-sm capitalize">{user.status?.toLowerCase()}</span>
         </div>
-      ),
+      )
     },
     {
       key: 'created_at',
       header: 'Joined',
       sortable: true,
-      render: (user: UserWithDocs) => (
-        <span className="text-sm">{formatDate(user.created_at)}</span>
-      ),
+      render: (user: UserWithDocs) => <span className="text-sm">{formatDate(user.created_at)}</span>
     },
     {
       key: 'online_at',
       header: 'Last Active',
       sortable: true,
       render: (user: UserWithDocs) => (
-        <span className="text-sm text-base-content/60">
+        <span className="text-base-content/60 text-sm">
           {user.online_at ? formatDateTime(user.online_at) : '-'}
         </span>
-      ),
-    },
-  ];
+      )
+    }
+  ]
 
   return (
     <>
@@ -187,7 +178,7 @@ export default function UsersPage() {
           onExport={handleExport}
         />
 
-        <div className="p-6 space-y-4">
+        <div className="space-y-4 p-6">
           {/* Search */}
           <SearchInput
             placeholder="Search by username, email, or name..."
@@ -197,7 +188,7 @@ export default function UsersPage() {
           />
 
           {/* Table */}
-          <div className="bg-base-100 rounded-box border border-base-300">
+          <div className="bg-base-100 rounded-box border-base-300 border">
             <DataTable
               columns={columns}
               data={usersWithDocCounts}
@@ -206,12 +197,12 @@ export default function UsersPage() {
                 page,
                 totalPages: data?.totalPages || 1,
                 total: data?.total || 0,
-                onPageChange: setPage,
+                onPageChange: setPage
               }}
               sorting={{
                 sortKey,
                 sortDirection,
-                onSort: handleSort,
+                onSort: handleSort
               }}
               emptyMessage="No users found"
             />
@@ -219,5 +210,5 @@ export default function UsersPage() {
         </div>
       </AdminLayout>
     </>
-  );
+  )
 }

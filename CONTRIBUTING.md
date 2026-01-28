@@ -73,6 +73,7 @@ make up-dev
 ```
 
 This starts all services:
+
 - 🌐 Webapp: http://localhost:3000
 - 🔌 REST API: http://localhost:4000
 - ⚡ WebSocket: ws://localhost:4001
@@ -89,6 +90,7 @@ git checkout -b type/description
 ```
 
 **Branch naming conventions:**
+
 - `feature/` - New features
 - `fix/` - Bug fixes
 - `refactor/` - Code refactoring
@@ -97,6 +99,7 @@ git checkout -b type/description
 - `chore/` - Maintenance tasks
 
 **Examples:**
+
 - `feature/add-dark-mode`
 - `fix/resolve-memory-leak`
 - `docs/update-api-docs`
@@ -114,6 +117,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/) format:
 ```
 
 **Types:**
+
 - `feat`: New feature
 - `fix`: Bug fix
 - `docs`: Documentation changes
@@ -123,6 +127,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/) format:
 - `chore`: Maintenance tasks
 
 **Examples:**
+
 ```
 feat(webapp): add dark mode toggle
 fix(api): resolve memory leak in document sync
@@ -195,6 +200,7 @@ bun run cypress:run
 ### Test Coverage
 
 Aim for good test coverage, especially for:
+
 - Critical business logic
 - API endpoints
 - Complex components
@@ -212,6 +218,7 @@ Aim for good test coverage, especially for:
 ### Before Submitting
 
 1. **Update your fork**:
+
    ```bash
    git fetch upstream
    git checkout main
@@ -219,12 +226,14 @@ Aim for good test coverage, especially for:
    ```
 
 2. **Rebase your branch** (if needed):
+
    ```bash
    git checkout your-branch
    git rebase main
    ```
 
 3. **Run tests**:
+
    ```bash
    bun run lint
    bun run format:check
@@ -239,6 +248,7 @@ Aim for good test coverage, especially for:
 ### Creating a Pull Request
 
 1. **Push your branch**:
+
    ```bash
    git push origin your-branch
    ```
@@ -315,4 +325,3 @@ Your contributions make docs.plus better for everyone. Thank you for taking the 
 ---
 
 **Questions?** Feel free to ask in Discord or open an issue on GitHub.
-

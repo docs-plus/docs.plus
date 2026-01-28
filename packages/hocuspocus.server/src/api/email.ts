@@ -9,7 +9,11 @@ import { Hono } from 'hono'
 import { emailGateway } from '../lib/email'
 import { emailLogger } from '../lib/logger'
 import { verifyServiceRole } from './utils/serviceRole'
-import type { NotificationEmailRequest, GenericEmailRequest, DigestEmailRequest } from '../types/email.types'
+import type {
+  NotificationEmailRequest,
+  GenericEmailRequest,
+  DigestEmailRequest
+} from '../types/email.types'
 
 const emailRouter = new Hono()
 
@@ -45,11 +49,14 @@ emailRouter.post('/send', async (c) => {
       })
     }
 
-    return c.json({
-      success: false,
-      error: result.error,
-      queue_id: result.queue_id
-    }, 500)
+    return c.json(
+      {
+        success: false,
+        error: result.error,
+        queue_id: result.queue_id
+      },
+      500
+    )
   } catch (err) {
     emailLogger.error({ err }, 'Error processing email send request')
     return c.json({ error: 'Internal server error' }, 500)
@@ -161,12 +168,14 @@ emailRouter.get('/unsubscribe', async (c) => {
   const token = c.req.query('token')
 
   if (!token) {
-    return c.html(buildUnsubscribeHtml({
-      success: false,
-      title: 'Invalid Link',
-      message: 'This unsubscribe link is missing required information.',
-      showManageLink: true
-    }))
+    return c.html(
+      buildUnsubscribeHtml({
+        success: false,
+        title: 'Invalid Link',
+        message: 'This unsubscribe link is missing required information.',
+        showManageLink: true
+      })
+    )
   }
 
   try {
@@ -176,12 +185,14 @@ emailRouter.get('/unsubscribe', async (c) => {
 
     if (!supabaseUrl || !serviceRoleKey) {
       emailLogger.error('Supabase credentials not configured for unsubscribe')
-      return c.html(buildUnsubscribeHtml({
-        success: false,
-        title: 'Service Error',
-        message: 'Unable to process your request. Please try again later.',
-        showManageLink: true
-      }))
+      return c.html(
+        buildUnsubscribeHtml({
+          success: false,
+          title: 'Service Error',
+          message: 'Unable to process your request. Please try again later.',
+          showManageLink: true
+        })
+      )
     }
 
     // Call the process_unsubscribe function via Supabase RPC
@@ -189,57 +200,68 @@ emailRouter.get('/unsubscribe', async (c) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`
       },
       body: JSON.stringify({ p_token: token })
     })
 
     if (!response.ok) {
       emailLogger.error({ status: response.status }, 'Supabase RPC failed')
-      return c.html(buildUnsubscribeHtml({
-        success: false,
-        title: 'Error',
-        message: 'Unable to process your request. The link may be invalid or expired.',
-        showManageLink: true
-      }))
+      return c.html(
+        buildUnsubscribeHtml({
+          success: false,
+          title: 'Error',
+          message: 'Unable to process your request. The link may be invalid or expired.',
+          showManageLink: true
+        })
+      )
     }
 
     const result = await response.json()
 
     if (result.success) {
-      emailLogger.info({
-        user_id: result.user_id,
-        action: result.action
-      }, 'User unsubscribed via email link')
+      emailLogger.info(
+        {
+          user_id: result.user_id,
+          action: result.action
+        },
+        'User unsubscribed via email link'
+      )
 
-      return c.html(buildUnsubscribeHtml({
-        success: true,
-        title: 'Unsubscribed',
-        message: result.message,
-        actionDescription: result.action_description,
-        email: result.email,
-        action: result.action,
-        showManageLink: true,
-        showUndoLink: true,
-        token: token
-      }))
+      return c.html(
+        buildUnsubscribeHtml({
+          success: true,
+          title: 'Unsubscribed',
+          message: result.message,
+          _actionDescription: result.action_description,
+          email: result.email,
+          action: result.action,
+          showManageLink: true,
+          showUndoLink: true,
+          token: token
+        })
+      )
     }
 
-    return c.html(buildUnsubscribeHtml({
-      success: false,
-      title: 'Unable to Unsubscribe',
-      message: result.message || 'The unsubscribe link is invalid or has expired.',
-      showManageLink: true
-    }))
+    return c.html(
+      buildUnsubscribeHtml({
+        success: false,
+        title: 'Unable to Unsubscribe',
+        message: result.message || 'The unsubscribe link is invalid or has expired.',
+        showManageLink: true
+      })
+    )
   } catch (err) {
     emailLogger.error({ err }, 'Error processing unsubscribe')
-    return c.html(buildUnsubscribeHtml({
-      success: false,
-      title: 'Error',
-      message: 'An unexpected error occurred. Please try again later.',
-      showManageLink: true
-    }))
+    return c.html(
+      buildUnsubscribeHtml({
+        success: false,
+        title: 'Error',
+        message: 'An unexpected error occurred. Please try again later.',
+        showManageLink: true
+      })
+    )
   }
 })
 
@@ -268,8 +290,8 @@ emailRouter.post('/unsubscribe', async (c) => {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'apikey': serviceRoleKey,
-        'Authorization': `Bearer ${serviceRoleKey}`
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`
       },
       body: JSON.stringify({ p_token: token })
     })
@@ -281,10 +303,13 @@ emailRouter.post('/unsubscribe', async (c) => {
     const result = await response.json()
 
     if (result.success) {
-      emailLogger.info({
-        user_id: result.user_id,
-        action: result.action
-      }, 'User unsubscribed via List-Unsubscribe-Post')
+      emailLogger.info(
+        {
+          user_id: result.user_id,
+          action: result.action
+        },
+        'User unsubscribed via List-Unsubscribe-Post'
+      )
       return c.json({ success: true })
     }
 
@@ -303,7 +328,7 @@ interface UnsubscribePageParams {
   success: boolean
   title: string
   message: string
-  actionDescription?: string
+  _actionDescription?: string
   email?: string
   action?: string
   showManageLink?: boolean
@@ -316,7 +341,7 @@ function buildUnsubscribeHtml(params: UnsubscribePageParams): string {
     success,
     title,
     message,
-    actionDescription,
+    _actionDescription,
     email,
     showManageLink,
     showUndoLink,
@@ -333,11 +358,15 @@ function buildUnsubscribeHtml(params: UnsubscribePageParams): string {
   const actions: string[] = []
 
   if (showManageLink) {
-    actions.push(`<a href="${APP_URL}/settings/notifications" style="display: inline-block; background: #1a73e8; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; margin: 8px;">Manage Preferences</a>`)
+    actions.push(
+      `<a href="${APP_URL}/settings/notifications" style="display: inline-block; background: #1a73e8; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; margin: 8px;">Manage Preferences</a>`
+    )
   }
 
   if (showUndoLink && token) {
-    actions.push(`<a href="${APP_URL}" style="display: inline-block; background: white; color: #1a73e8; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; border: 1px solid #1a73e8; margin: 8px;">Go to ${APP_NAME}</a>`)
+    actions.push(
+      `<a href="${APP_URL}" style="display: inline-block; background: white; color: #1a73e8; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; border: 1px solid #1a73e8; margin: 8px;">Go to ${APP_NAME}</a>`
+    )
   }
 
   return `<!DOCTYPE html>

@@ -52,4 +52,3 @@ describe('Prisma Connection Pool Configuration', () => {
     expect(stats.waiting).toBe(0)
   })
 })
-

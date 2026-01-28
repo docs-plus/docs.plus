@@ -13,5 +13,3 @@ export function useUnreadCount(channelId: string): number {
     return Math.min(count, 99)
   }, [channels, channelId])
 }
-
-

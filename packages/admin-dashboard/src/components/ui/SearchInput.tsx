@@ -1,12 +1,12 @@
-import { useState, useCallback, useEffect } from 'react';
-import { LuSearch, LuX } from 'react-icons/lu';
+import { useState, useCallback, useEffect } from 'react'
+import { LuSearch, LuX } from 'react-icons/lu'
 
 interface SearchInputProps {
-  placeholder?: string;
-  onSearch: (value: string) => void;
-  value?: string; // Controlled value (from URL params)
-  defaultValue?: string;
-  className?: string;
+  placeholder?: string
+  onSearch: (value: string) => void
+  value?: string // Controlled value (from URL params)
+  defaultValue?: string
+  className?: string
 }
 
 /**
@@ -18,49 +18,49 @@ export function SearchInput({
   onSearch,
   value: controlledValue,
   defaultValue = '',
-  className = '',
+  className = ''
 }: SearchInputProps) {
-  const [internalValue, setInternalValue] = useState(defaultValue);
+  const [internalValue, setInternalValue] = useState(defaultValue)
 
   // Sync internal value when controlled value changes (for URL params)
   useEffect(() => {
     if (controlledValue !== undefined) {
-      setInternalValue(controlledValue);
+      setInternalValue(controlledValue)
     }
-  }, [controlledValue]);
+  }, [controlledValue])
 
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
-      e.preventDefault();
-      onSearch(internalValue);
+      e.preventDefault()
+      onSearch(internalValue)
     },
     [onSearch, internalValue]
-  );
+  )
 
   const handleClear = useCallback(() => {
-    setInternalValue('');
-    onSearch('');
-  }, [onSearch]);
+    setInternalValue('')
+    onSearch('')
+  }, [onSearch])
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
       if (e.key === 'Escape') {
-        handleClear();
+        handleClear()
       }
     },
     [handleClear]
-  );
+  )
 
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setInternalValue(e.target.value);
-  }, []);
+    setInternalValue(e.target.value)
+  }, [])
 
   return (
     <form onSubmit={handleSubmit} className={className}>
       <div className="flex gap-2">
         <div className="relative flex-1">
-          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <LuSearch className="h-4 w-4 text-base-content/40" />
+          <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+            <LuSearch className="text-base-content/40 h-4 w-4" />
           </div>
           <input
             type="text"
@@ -74,9 +74,8 @@ export function SearchInput({
             <button
               type="button"
               onClick={handleClear}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center hover:text-error transition-colors"
-              title="Clear search (Esc)"
-            >
+              className="hover:text-error absolute inset-y-0 right-0 flex items-center pr-3 transition-colors"
+              title="Clear search (Esc)">
               <LuX className="h-4 w-4" />
             </button>
           )}
@@ -87,5 +86,5 @@ export function SearchInput({
         </button>
       </div>
     </form>
-  );
+  )
 }

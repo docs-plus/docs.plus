@@ -13,7 +13,12 @@ import { pushLogger } from '../logger'
 import { queuePush, getPushQueueHealth, createPushWorker, closePushQueue } from './queue'
 import { configureVapid, isVapidConfigured, sendPushNotification } from './sender'
 import { config } from '../../config/env'
-import type { PushNotificationRequest, PushSendResult, PushGatewayHealth, PushJobData } from '../../types/push.types'
+import type {
+  PushNotificationRequest,
+  PushSendResult,
+  PushGatewayHealth,
+  PushJobData
+} from '../../types/push.types'
 
 /**
  * Push Gateway Service
@@ -50,11 +55,14 @@ export class PushGatewayService {
 
     this.initialized = true
 
-    pushLogger.info({
-      vapid_configured: vapidOk,
-      worker_enabled: this.worker !== null,
-      mode: enableWorker ? 'worker' : 'queue-only'
-    }, 'Push Gateway initialized')
+    pushLogger.info(
+      {
+        vapid_configured: vapidOk,
+        worker_enabled: this.worker !== null,
+        mode: enableWorker ? 'worker' : 'queue-only'
+      },
+      'Push Gateway initialized'
+    )
   }
 
   async shutdown(): Promise<void> {
@@ -126,4 +134,3 @@ export class PushGatewayService {
 }
 
 export const pushGateway = new PushGatewayService()
-

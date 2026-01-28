@@ -17,7 +17,6 @@ const channelsStore = immer<IChannelStore>((set) => ({
   bulkSetChannels: (channels) => {
     set((state) => {
       channels.forEach((channel) => {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore
         state.channels.set(channel.id, channel)
       })
@@ -26,7 +25,6 @@ const channelsStore = immer<IChannelStore>((set) => ({
 
   setOrUpdateChannel: (channelId, channelData) => {
     set((state) => {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
       // @ts-ignore
       state.channels.set(channelId, {
         ...state.channels.get(channelId),

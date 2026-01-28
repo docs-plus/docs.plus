@@ -1,18 +1,18 @@
-import Head from 'next/head';
-import Link from 'next/link';
-import type { GetServerSideProps } from 'next';
-import { LuShieldX } from 'react-icons/lu';
+import Head from 'next/head'
+import Link from 'next/link'
+import type { GetServerSideProps } from 'next'
+import { LuShieldX } from 'react-icons/lu'
 
 // Disable static generation to prevent "NextRouter was not mounted" errors
 export const getServerSideProps: GetServerSideProps = async () => {
-  return { props: {} };
-};
-import { supabase } from '@/lib/supabase';
+  return { props: {} }
+}
+import { supabase } from '@/lib/supabase'
 
 export default function UnauthorizedPage() {
   const handleSignOut = async () => {
-    await supabase.auth.signOut();
-  };
+    await supabase.auth.signOut()
+  }
 
   return (
     <>
@@ -20,15 +20,15 @@ export default function UnauthorizedPage() {
         <title>Access Denied | Admin Dashboard</title>
       </Head>
 
-      <div className="min-h-screen flex items-center justify-center bg-base-200">
-        <div className="text-center max-w-md px-4">
-          <LuShieldX className="h-20 w-20 text-error mx-auto mb-6" />
-          <h1 className="text-3xl font-bold mb-3">Access Denied</h1>
+      <div className="bg-base-200 flex min-h-screen items-center justify-center">
+        <div className="max-w-md px-4 text-center">
+          <LuShieldX className="text-error mx-auto mb-6 h-20 w-20" />
+          <h1 className="mb-3 text-3xl font-bold">Access Denied</h1>
           <p className="text-base-content/60 mb-6">
-            You don&apos;t have permission to access the admin dashboard.
-            This area is restricted to administrators only.
+            You don&apos;t have permission to access the admin dashboard. This area is restricted to
+            administrators only.
           </p>
-          <div className="flex gap-3 justify-center">
+          <div className="flex justify-center gap-3">
             <button onClick={handleSignOut} className="btn btn-outline">
               Sign Out
             </button>
@@ -39,5 +39,5 @@ export default function UnauthorizedPage() {
         </div>
       </div>
     </>
-  );
+  )
 }

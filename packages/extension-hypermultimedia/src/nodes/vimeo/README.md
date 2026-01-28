@@ -11,10 +11,10 @@ npm install @docs.plus/extension-hypermultimedia
 Then, import the extension into your editor:
 
 ```js
-import { HyperMultimediaKit } from "@docs.plus/extension-hypermultimedia";
+import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
-  Vimeo,
+  Vimeo
 })
 ```
 
@@ -30,7 +30,7 @@ Controls if the node should be handled inline or as a block.
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    inline: true,
+    inline: true
   }
 })
 ```
@@ -45,7 +45,7 @@ The frameborder attribute specifies whether or not to display a border around th
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    frameborder: 1,
+    frameborder: 1
   }
 })
 ```
@@ -60,7 +60,7 @@ The allowfullscreen attribute specifies whether or not to display a full-screen 
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    allowfullscreen: false,
+    allowfullscreen: false
   }
 })
 ```
@@ -76,8 +76,8 @@ Custom HTML attributes that should be added to the rendered HTML tag.
 HyperMultimediaKit.configure({
   Vimeo: {
     HTMLAttributes: {
-      class: 'my-custom-class',
-    },
+      class: 'my-custom-class'
+    }
   }
 })
 ```
@@ -92,7 +92,7 @@ The autopause attribute specifies whether or not to pause the video when another
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    autopause: false,
+    autopause: false
   }
 })
 ```
@@ -107,7 +107,7 @@ The autoplay attribute specifies whether or not to automatically start playing t
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    autoplay: true,
+    autoplay: true
   }
 })
 ```
@@ -122,7 +122,7 @@ The background attribute specifies whether or not to display the video in the ba
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    background: true,
+    background: true
   }
 })
 ```
@@ -137,7 +137,7 @@ The byline attribute specifies whether or not to display the video owner's name.
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    byline: false,
+    byline: false
   }
 })
 ```
@@ -152,7 +152,7 @@ The color attribute specifies the color of the video controls.
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    color: '#ff0000',
+    color: '#ff0000'
   }
 })
 ```
@@ -167,7 +167,7 @@ The controls attribute specifies whether or not to display the video controls.
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    controls: false,
+    controls: false
   }
 })
 ```
@@ -182,7 +182,7 @@ The dnt attribute specifies whether or not to honor the "Do Not Track" browser s
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    dnt: true,
+    dnt: true
   }
 })
 ```
@@ -197,7 +197,7 @@ The keyboard attribute specifies whether or not to allow keyboard controls.
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    keyboard: false,
+    keyboard: false
   }
 })
 ```
@@ -212,7 +212,7 @@ The loop attribute specifies whether or not to loop the video.
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    loop: true,
+    loop: true
   }
 })
 ```
@@ -227,7 +227,7 @@ The muted attribute specifies whether or not to mute the video.
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    muted: true,
+    muted: true
   }
 })
 ```
@@ -242,7 +242,7 @@ The pip attribute specifies whether or not to display the picture-in-picture but
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    pip: false,
+    pip: false
   }
 })
 ```
@@ -257,7 +257,7 @@ The playsinline attribute specifies whether or not to play the video inline on m
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    playsinline: false,
+    playsinline: false
   }
 })
 ```
@@ -272,7 +272,7 @@ The portrait attribute specifies whether or not to display the video owner's por
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    portrait: false,
+    portrait: false
   }
 })
 ```
@@ -287,7 +287,7 @@ The quality attribute specifies the default video quality.
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    quality: '1080p',
+    quality: '1080p'
   }
 })
 ```
@@ -302,7 +302,7 @@ The speed attribute specifies whether or not to display the speed controls.
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    speed: false,
+    speed: false
   }
 })
 ```
@@ -317,7 +317,7 @@ The startTime attribute specifies the time at which the video should start playi
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    startTime: '1m30s',
+    startTime: '1m30s'
   }
 })
 ```
@@ -332,7 +332,7 @@ The texttrack attribute specifies the default language of the video's captions.
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    texttrack: 'en',
+    texttrack: 'en'
   }
 })
 ```
@@ -347,7 +347,7 @@ The title attribute specifies whether or not to display the video title.
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    title: false,
+    title: false
   }
 })
 ```
@@ -362,7 +362,7 @@ The width attribute specifies the width of the video.
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    width: 1280,
+    width: 1280
   }
 })
 ```
@@ -377,7 +377,7 @@ The height attribute specifies the height of the video.
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    height: 720,
+    height: 720
   }
 })
 ```
@@ -392,7 +392,7 @@ Allows pasting Vimeo URLs directly into the editor to auto-generate the embedded
 ```js
 HyperMultimediaKit.configure({
   Vimeo: {
-    addPasteHandler: false,
+    addPasteHandler: false
   }
 })
 ```
@@ -405,11 +405,11 @@ A modal box that appears when you <u>**mouseover on the video**</u>. A default m
 - Default: `false`
 
 ```js
-import { hypermultimedia, vimeoModal } from "@docs.plus/extension-hypermultimedia";
+import { hypermultimedia, vimeoModal } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
   Vimeo: {
-    modal: vimeoModal, // default modal
+    modal: vimeoModal // default modal
   }
 })
 ```
@@ -425,31 +425,31 @@ Makes the current node a Vimeo video.
 ```js
 editor.commands.setVimeo({
   src: 'https://vimeo.com/123456789'
-});
+})
 
 editor.commands.setVimeo({
   src: 'https://vimeo.com/123456789',
   width: 640,
   height: 480,
-  float: "unset",
-  clear: "none",
-  display: "block",
-  margin: "0.2in"
+  float: 'unset',
+  clear: 'none',
+  display: 'block',
+  margin: '0.2in'
 })
 ```
 
 ### Options
 
-|Option          |Description                                                               |Default    |Optional |
-|---             |---                                                                       |---        |---      |
-|src             |The URL of the Vimeo, (Iframe Source Attribute)                           |`null`     |         |
-|width           |The embed width (overrides the default option, optional)                  |`640`      |✅       |
-|height          |The embed height (overrides the default option, optional)                 |`480`      |✅       |
-|float           |The CSS style `float` (overrides the default option, optional)            |`unset`    |✅       |
-|clear           |The CSS style `clear` (overrides the default option, optional)            |`none`     |✅       |
-|display         |The CSS style `display` (overrides the default option, optional)          |`block`    |✅       |
-|margin          |The CSS style `margin` (overrides the default option, optional)           |`0.0in`    |✅       |
-|justifyContent  |The CSS style `justify-content` (overrides the default option, optional)  |`start`    |✅       |
+| Option         | Description                                                              | Default | Optional |
+| -------------- | ------------------------------------------------------------------------ | ------- | -------- |
+| src            | The URL of the Vimeo, (Iframe Source Attribute)                          | `null`  |          |
+| width          | The embed width (overrides the default option, optional)                 | `640`   | ✅       |
+| height         | The embed height (overrides the default option, optional)                | `480`   | ✅       |
+| float          | The CSS style `float` (overrides the default option, optional)           | `unset` | ✅       |
+| clear          | The CSS style `clear` (overrides the default option, optional)           | `none`  | ✅       |
+| display        | The CSS style `display` (overrides the default option, optional)         | `block` | ✅       |
+| margin         | The CSS style `margin` (overrides the default option, optional)          | `0.0in` | ✅       |
+| justifyContent | The CSS style `justify-content` (overrides the default option, optional) | `start` | ✅       |
 
 ## Source code
 

@@ -124,11 +124,7 @@ const shutdown = async () => {
     }, 30000)
 
     // Close all workers
-    await Promise.all([
-      documentWorker.close(),
-      emailGateway.shutdown(),
-      pushGateway.shutdown()
-    ])
+    await Promise.all([documentWorker.close(), emailGateway.shutdown(), pushGateway.shutdown()])
     clearTimeout(timeout)
     workerLogger.info('All workers closed successfully')
 
@@ -159,4 +155,3 @@ process.on('unhandledRejection', (reason, promise) => {
 })
 
 export { documentWorker, emailGateway, pushGateway }
-

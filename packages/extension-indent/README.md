@@ -27,8 +27,8 @@ import { Indent } from '@docs.plus/extension-indent'
 new Editor({
   extensions: [
     // ...other extensions
-    Indent,
-  ],
+    Indent
+  ]
 })
 ```
 
@@ -44,7 +44,7 @@ Indent.configure({
 
   // Control which node types can be indented (default: paragraph, listItem, orderedList)
   // Empty array allows all nodes to be indented
-  allowedNodeTypes: ['paragraph', 'listItem', 'orderedList'],
+  allowedNodeTypes: ['paragraph', 'listItem', 'orderedList']
 })
 ```
 

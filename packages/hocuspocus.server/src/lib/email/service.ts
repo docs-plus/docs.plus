@@ -43,7 +43,10 @@ export class EmailGatewayService {
 
     const status = getProviderStatus()
     if (status.active) {
-      emailLogger.info({ provider: status.active, configured: status.configured }, 'Email provider detected')
+      emailLogger.info(
+        { provider: status.active, configured: status.configured },
+        'Email provider detected'
+      )
       const verified = await verifyProvider()
       if (!verified) {
         emailLogger.warn({ provider: status.active }, 'Email provider verification failed')
@@ -61,11 +64,14 @@ export class EmailGatewayService {
     }
 
     this.initialized = true
-    emailLogger.info({
-      provider: status.active,
-      worker_enabled: this.worker !== null,
-      mode: enableWorker ? 'worker' : 'queue-only'
-    }, 'Email Gateway initialized')
+    emailLogger.info(
+      {
+        provider: status.active,
+        worker_enabled: this.worker !== null,
+        mode: enableWorker ? 'worker' : 'queue-only'
+      },
+      'Email Gateway initialized'
+    )
   }
 
   async shutdown(): Promise<void> {

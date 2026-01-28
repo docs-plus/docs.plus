@@ -32,12 +32,7 @@ export function hasMetadataProperty(metadata: unknown, property: string): boolea
 /**
  * Type-safe metadata accessor with default value
  */
-export function getMetadataValue<T>(
-  metadata: unknown,
-  property: string,
-  defaultValue: T
-): T {
+export function getMetadataValue<T>(metadata: unknown, property: string, defaultValue: T): T {
   const value = getMetadataProperty<T>(metadata, property)
   return value !== undefined ? value : defaultValue
 }
-

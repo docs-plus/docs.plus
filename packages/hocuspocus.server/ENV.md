@@ -15,8 +15,8 @@ If you run services directly without Docker (`bun run dev:rest`, `bun run dev:ho
 See root `.env.example` for the complete list of environment variables.
 
 Key variables:
+
 - `DATABASE_URL`
 - `REDIS_HOST`, `REDIS_PORT`
 - `JWT_SECRET`
 - `SUPABASE_URL`, `SUPABASE_ANON_KEY`
-

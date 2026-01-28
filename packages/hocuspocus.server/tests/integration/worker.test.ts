@@ -207,4 +207,3 @@ describe('Worker Server - Integration Tests', () => {
     }, 15000)
   })
 })
-

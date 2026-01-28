@@ -124,9 +124,9 @@ The extension intelligently respects markdown syntax and provides clean URL dete
 Auto-linking intelligently handles markdown syntax:
 
 ```markdown
-![Alt text](https://example.com/image.jpg)  ❌ Won't auto-link (protected for image syntax)
-[Link text](https://example.com/page.html)  ✅ Converts to hyperlink (link syntax)
-Visit https://example.com                   ✅ Will auto-link (normal text)
+![Alt text](https://example.com/image.jpg) ❌ Won't auto-link (protected for image syntax)
+[Link text](https://example.com/page.html) ✅ Converts to hyperlink (link syntax)
+Visit https://example.com ✅ Will auto-link (normal text)
 ```
 
 **Markdown Link Syntax**: `[text](url)` is automatically converted to proper hyperlinks with the text as the display and url as the href.
@@ -134,9 +134,9 @@ Visit https://example.com                   ✅ Will auto-link (normal text)
 **URL Normalization**: URLs without protocols are automatically normalized:
 
 ```markdown
-[Google](www.google.com)        → Becomes link to https://www.google.com
-[Example](example.com)          → Becomes link to https://example.com
-[Full URL](https://site.com)    → Becomes link to https://site.com (unchanged)
+[Google](www.google.com) → Becomes link to https://www.google.com
+[Example](example.com) → Becomes link to https://example.com
+[Full URL](https://site.com) → Becomes link to https://site.com (unchanged)
 ```
 
 **Image Syntax Protection**: `![alt](url)` patterns are protected to allow image input rules to work correctly.

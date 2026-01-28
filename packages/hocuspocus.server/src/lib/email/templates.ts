@@ -12,7 +12,7 @@
  * - Hierarchical digest: Document → Channel → Messages
  */
 
-import type { NotificationType, DigestDocument, DigestNotification } from '../../types/email.types'
+import type { NotificationType, DigestDocument, _DigestNotification } from '../../types/email.types'
 
 // ============================================================================
 // DESIGN TOKENS (from docs.plus design system)
@@ -20,20 +20,20 @@ import type { NotificationType, DigestDocument, DigestNotification } from '../..
 
 const APP_NAME = 'docs.plus'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://docs.plus'
-const API_URL = process.env.API_URL || 'https://api.docs.plus'
+const _API_URL = process.env._API_URL || 'https://api.docs.plus'
 
 // Colors
 const COLORS = {
-  primary: '#1a73e8',      // docs blue (--color-primary)
+  primary: '#1a73e8', // docs blue (--color-primary)
   primaryLight: '#e8f0fe', // light blue background
-  secondary: '#0f9d7a',    // teal-green (--color-secondary)
-  text: '#1f2937',         // gray-800
-  textMuted: '#6b7280',    // gray-500
-  textLight: '#9ca3af',    // gray-400
-  border: '#e5e7eb',       // gray-200
-  borderLight: '#f3f4f6',  // gray-100
-  background: '#f9fafb',   // gray-50
-  white: '#ffffff',
+  secondary: '#0f9d7a', // teal-green (--color-secondary)
+  text: '#1f2937', // gray-800
+  textMuted: '#6b7280', // gray-500
+  textLight: '#9ca3af', // gray-400
+  border: '#e5e7eb', // gray-200
+  borderLight: '#f3f4f6', // gray-100
+  background: '#f9fafb', // gray-50
+  white: '#ffffff'
 }
 
 // Spacing
@@ -43,7 +43,7 @@ const SPACING = {
   md: '12px',
   lg: '16px',
   xl: '24px',
-  xxl: '32px',
+  xxl: '32px'
 }
 
 // Border radius
@@ -51,7 +51,7 @@ const RADIUS = {
   sm: '6px',
   md: '8px',
   lg: '10px',
-  xl: '12px',
+  xl: '12px'
 }
 
 // ============================================================================
@@ -87,13 +87,20 @@ export function getEmailSubject(type: NotificationType, senderName: string): str
  */
 function getNotificationIcon(type: NotificationType): string {
   switch (type) {
-    case 'mention': return '@'
-    case 'reply': return '↩'
-    case 'reaction': return '❤'
-    case 'thread_message': return '💬'
-    case 'message': return '✉'
-    case 'channel_event': return '📢'
-    default: return '•'
+    case 'mention':
+      return '@'
+    case 'reply':
+      return '↩'
+    case 'reaction':
+      return '❤'
+    case 'thread_message':
+      return '💬'
+    case 'message':
+      return '✉'
+    case 'channel_event':
+      return '📢'
+    default:
+      return '•'
   }
 }
 
@@ -118,7 +125,11 @@ function buildAvatarHtml(name: string, avatarUrl?: string, size: number = 40): s
 /**
  * Build CTA button
  */
-function buildButton(text: string, url: string, variant: 'primary' | 'secondary' = 'primary'): string {
+function buildButton(
+  text: string,
+  url: string,
+  variant: 'primary' | 'secondary' = 'primary'
+): string {
   const bgColor = variant === 'primary' ? COLORS.primary : COLORS.white
   const textColor = variant === 'primary' ? COLORS.white : COLORS.primary
   const border = variant === 'secondary' ? `border: 1px solid ${COLORS.primary};` : ''
@@ -146,7 +157,10 @@ export interface UnsubscribeLinks {
 /**
  * Build footer links with unsubscribe URLs
  */
-function buildFooterLinks(unsubscribeLinks?: UnsubscribeLinks, notificationType?: NotificationType): string {
+function buildFooterLinks(
+  unsubscribeLinks?: UnsubscribeLinks,
+  notificationType?: NotificationType
+): string {
   const preferencesUrl = unsubscribeLinks?.preferences || `${APP_URL}/settings/notifications`
 
   // Get the specific unsubscribe link based on notification type
@@ -288,13 +302,16 @@ export function buildNotificationEmailHtml(params: {
   const avatarHtml = buildAvatarHtml(senderName, senderAvatarUrl, 44)
 
   // Context breadcrumb (Document > Channel)
-  const contextHtml = (documentName || channelName) ? `
+  const contextHtml =
+    documentName || channelName
+      ? `
     <p style="margin: 0 0 ${SPACING.lg}; color: ${COLORS.textMuted}; font-size: 13px;">
       ${documentName ? `<span style="color: ${COLORS.text}; font-weight: 500;">${documentName}</span>` : ''}
       ${documentName && channelName ? ' › ' : ''}
       ${channelName ? `<span>#${channelName}</span>` : ''}
     </p>
-  ` : ''
+  `
+      : ''
 
   const content = `
     <p style="margin: 0 0 ${SPACING.xl}; color: ${COLORS.text}; font-size: 16px; line-height: 1.5;">
@@ -316,11 +333,15 @@ export function buildNotificationEmailHtml(params: {
                 <p style="margin: 0 0 ${SPACING.xs}; color: ${COLORS.primary}; font-size: 14px; font-weight: 600;">
                   ${subject}
                 </p>
-                ${messagePreview ? `
+                ${
+                  messagePreview
+                    ? `
                 <p style="margin: 0; color: ${COLORS.textMuted}; font-size: 15px; line-height: 1.5;">
                   "${messagePreview.length > 150 ? messagePreview.substring(0, 150) + '...' : messagePreview}"
                 </p>
-                ` : ''}
+                `
+                    : ''
+                }
               </td>
             </tr>
           </table>
@@ -355,7 +376,15 @@ export function buildNotificationEmailText(params: {
   documentName?: string
   channelName?: string
 }): string {
-  const { recipientName, senderName, notificationType, messagePreview, actionUrl, documentName, channelName } = params
+  const {
+    recipientName,
+    senderName,
+    notificationType,
+    messagePreview,
+    actionUrl,
+    documentName,
+    channelName
+  } = params
   const subject = getEmailSubject(notificationType, senderName)
 
   const context = [documentName, channelName ? `#${channelName}` : ''].filter(Boolean).join(' > ')
@@ -388,27 +417,33 @@ export function buildDigestEmailHtml(params: {
   recipientName: string
   frequency: 'daily' | 'weekly'
   documents: DigestDocument[]
-  periodStart: string
-  periodEnd: string
+  _periodStart: string
+  _periodEnd: string
   unsubscribeLinks?: UnsubscribeLinks
 }): string {
-  const { recipientName, frequency, documents, periodStart, periodEnd, unsubscribeLinks } = params
+  const { recipientName, frequency, documents, _periodStart, _periodEnd, unsubscribeLinks } = params
   const periodLabel = frequency === 'daily' ? 'today' : 'this week'
 
   // Count total notifications
-  const totalNotifications = documents.reduce((sum, doc) =>
-    sum + doc.channels.reduce((cSum, ch) => cSum + ch.notifications.length, 0), 0)
+  const totalNotifications = documents.reduce(
+    (sum, doc) => sum + doc.channels.reduce((cSum, ch) => cSum + ch.notifications.length, 0),
+    0
+  )
 
   // Build document sections
-  const documentsHtml = documents.map(doc => {
-    // Build channels within this document
-    const channelsHtml = doc.channels.map(channel => {
-      // Build notification cards for this channel
-      const notificationsHtml = channel.notifications.slice(0, 5).map(n => {
-        const icon = getNotificationIcon(n.type)
-        const avatarHtml = buildAvatarHtml(n.sender_name, n.sender_avatar_url, 32)
+  const documentsHtml = documents
+    .map((doc) => {
+      // Build channels within this document
+      const channelsHtml = doc.channels
+        .map((channel) => {
+          // Build notification cards for this channel
+          const notificationsHtml = channel.notifications
+            .slice(0, 5)
+            .map((n) => {
+              const icon = getNotificationIcon(n.type)
+              const avatarHtml = buildAvatarHtml(n.sender_name, n.sender_avatar_url, 32)
 
-        return `
+              return `
         <!-- Notification Item -->
         <tr>
           <td style="padding: ${SPACING.sm} 0; border-bottom: 1px solid ${COLORS.borderLight};">
@@ -421,11 +456,15 @@ export function buildDigestEmailHtml(params: {
                   <p style="margin: 0; color: ${COLORS.text}; font-size: 13px; font-weight: 500;">
                     <span style="color: ${COLORS.primary};">${icon}</span> ${n.sender_name}
                   </p>
-                  ${n.message_preview ? `
+                  ${
+                    n.message_preview
+                      ? `
                   <p style="margin: ${SPACING.xs} 0 0; color: ${COLORS.textMuted}; font-size: 12px; line-height: 1.4;">
                     ${n.message_preview.substring(0, 80)}${n.message_preview.length > 80 ? '...' : ''}
                   </p>
-                  ` : ''}
+                  `
+                      : ''
+                  }
                 </td>
                 <td width="50" align="right" valign="middle">
                   <a href="${n.action_url}" style="color: ${COLORS.primary}; font-size: 12px; text-decoration: none; font-weight: 500;">View</a>
@@ -434,13 +473,15 @@ export function buildDigestEmailHtml(params: {
             </table>
           </td>
         </tr>`
-      }).join('')
+            })
+            .join('')
 
-      const moreInChannel = channel.notifications.length > 5
-        ? `<tr><td style="padding: ${SPACING.sm} 0; color: ${COLORS.textLight}; font-size: 11px; text-align: center;">+${channel.notifications.length - 5} more in this channel</td></tr>`
-        : ''
+          const moreInChannel =
+            channel.notifications.length > 5
+              ? `<tr><td style="padding: ${SPACING.sm} 0; color: ${COLORS.textLight}; font-size: 11px; text-align: center;">+${channel.notifications.length - 5} more in this channel</td></tr>`
+              : ''
 
-      return `
+          return `
       <!-- Channel Section -->
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: ${SPACING.md};">
         <tr>
@@ -467,9 +508,10 @@ export function buildDigestEmailHtml(params: {
           </td>
         </tr>
       </table>`
-    }).join('')
+        })
+        .join('')
 
-    return `
+      return `
     <!-- Document Section -->
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: ${SPACING.xl};">
       <!-- Document Header -->
@@ -497,7 +539,8 @@ export function buildDigestEmailHtml(params: {
         </td>
       </tr>
     </table>`
-  }).join('')
+    })
+    .join('')
 
   const content = `
     <p style="margin: 0 0 ${SPACING.lg}; color: ${COLORS.text}; font-size: 16px; line-height: 1.5;">
@@ -544,23 +587,36 @@ export function buildDigestEmailText(params: {
   const { recipientName, frequency, documents } = params
 
   // Count total
-  const totalNotifications = documents.reduce((sum, doc) =>
-    sum + doc.channels.reduce((cSum, ch) => cSum + ch.notifications.length, 0), 0)
+  const totalNotifications = documents.reduce(
+    (sum, doc) => sum + doc.channels.reduce((cSum, ch) => cSum + ch.notifications.length, 0),
+    0
+  )
 
   // Build text content
-  const documentsText = documents.map(doc => {
-    const channelsText = doc.channels.map(channel => {
-      const notificationsText = channel.notifications.slice(0, 3).map(n =>
-        `    - ${getEmailSubject(n.type, n.sender_name)}${n.message_preview ? `: "${n.message_preview.substring(0, 50)}..."` : ''}`
-      ).join('\n')
+  const documentsText = documents
+    .map((doc) => {
+      const channelsText = doc.channels
+        .map((channel) => {
+          const notificationsText = channel.notifications
+            .slice(0, 3)
+            .map(
+              (n) =>
+                `    - ${getEmailSubject(n.type, n.sender_name)}${n.message_preview ? `: "${n.message_preview.substring(0, 50)}..."` : ''}`
+            )
+            .join('\n')
 
-      const more = channel.notifications.length > 3 ? `\n    ...and ${channel.notifications.length - 3} more` : ''
+          const more =
+            channel.notifications.length > 3
+              ? `\n    ...and ${channel.notifications.length - 3} more`
+              : ''
 
-      return `  #${channel.name} (${channel.notifications.length} messages)\n${notificationsText}${more}`
-    }).join('\n\n')
+          return `  #${channel.name} (${channel.notifications.length} messages)\n${notificationsText}${more}`
+        })
+        .join('\n\n')
 
-    return `📄 ${doc.name}\n${channelsText}`
-  }).join('\n\n---\n\n')
+      return `📄 ${doc.name}\n${channelsText}`
+    })
+    .join('\n\n---\n\n')
 
   return `
 Hi ${recipientName || 'there'},

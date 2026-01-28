@@ -43,9 +43,7 @@ describe('User Keyboard Shortcuts', () => {
     it('should convert heading to paragraph with Alt+Meta+0', () => {
       const doc = {
         documentName: TEST_TITLE.HelloDocy,
-        sections: [
-          section('Test Section', [heading(3, 'Convert Me', [paragraph('Some content')])])
-        ]
+        sections: [section('Test Section', [heading(3, 'Convert Me', [paragraph('Some content')])])]
       }
 
       cy.createDocument(doc)
@@ -445,4 +443,3 @@ describe('User Keyboard Shortcuts', () => {
     })
   })
 })
-

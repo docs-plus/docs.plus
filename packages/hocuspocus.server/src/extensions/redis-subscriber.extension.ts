@@ -23,7 +23,10 @@ export class RedisSubscriberExtension implements Extension {
         if (err) {
           redisLogger.error({ err }, 'Failed to psubscribe to doc:*:saved')
         } else {
-          redisLogger.info({ count }, '✅ Subscribed to document save channels (pattern: doc:*:saved)')
+          redisLogger.info(
+            { count },
+            '✅ Subscribed to document save channels (pattern: doc:*:saved)'
+          )
         }
       })
 

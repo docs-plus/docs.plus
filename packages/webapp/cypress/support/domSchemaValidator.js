@@ -39,9 +39,7 @@ Cypress.Commands.add('validateDOMSchema', () => {
       const parentLevel =
         $parentHeading.length > 0 ? parseInt($parentHeading.attr('level'), 10) : null
       const parentTitle =
-        $parentHeading.length > 0
-          ? $parentHeading.children('.title').text().substring(0, 30)
-          : null
+        $parentHeading.length > 0 ? $parentHeading.children('.title').text().substring(0, 30) : null
 
       // Check if this heading is at the editor root level
       // A heading is at root if it's not inside another heading's contentWrapper

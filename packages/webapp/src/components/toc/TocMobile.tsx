@@ -23,12 +23,7 @@ export function TocMobile({ className = '' }: TocMobileProps) {
       <TocHeader variant="mobile" />
       <ul className="toc__list menu p-0">
         {nestedItems.map(({ item, children }) => (
-          <TocItemMobile
-            key={item.id}
-            item={item}
-            childItems={children}
-            onToggle={toggleSection}
-          />
+          <TocItemMobile key={item.id} item={item} childItems={children} onToggle={toggleSection} />
         ))}
       </ul>
       <AppendHeadingButton className="mt-4" />

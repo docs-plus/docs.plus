@@ -133,7 +133,7 @@ function extractH1ToRoot(tr: Transaction, violation: HierarchyViolation): void {
 
   // Find the root H1 that contains this nested H1
   let rootH1EndPos = parentEndPos
-  let searchPos = parentPos
+  let _searchPos = parentPos
 
   tr.doc.nodesBetween(0, parentPos, (node, pos) => {
     if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
@@ -154,7 +154,9 @@ function extractH1ToRoot(tr: Transaction, violation: HierarchyViolation): void {
   const mappedInsertPos = tr.mapping.map(rootH1EndPos)
   tr.insert(mappedInsertPos, nodeToMove.content)
 
-  console.info(`[validateHeadingHierarchy] Extracted nested H1 from pos ${childPos} to ${mappedInsertPos}`)
+  console.info(
+    `[validateHeadingHierarchy] Extracted nested H1 from pos ${childPos} to ${mappedInsertPos}`
+  )
 }
 
 /**
@@ -174,7 +176,9 @@ function extractInvalidChild(tr: Transaction, violation: HierarchyViolation): vo
   const mappedInsertPos = tr.mapping.map(parentEndPos)
   tr.insert(mappedInsertPos, nodeToMove.content)
 
-  console.info(`[validateHeadingHierarchy] Extracted invalid child (level ${violation.childLevel}) from parent (level ${violation.parentLevel})`)
+  console.info(
+    `[validateHeadingHierarchy] Extracted invalid child (level ${violation.childLevel}) from parent (level ${violation.parentLevel})`
+  )
 }
 
 /**
@@ -192,4 +196,3 @@ export const getHierarchyViolations = (doc: ProseMirrorNode): HierarchyViolation
 }
 
 export default validateAndFixHeadingHierarchy
-

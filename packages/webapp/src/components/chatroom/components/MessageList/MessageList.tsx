@@ -18,7 +18,11 @@ const MessageList = ({ children, className }: Props) => {
   return (
     <MessageListProvider>
       <MessagesEmptyState>
-        <div className={twMerge('message-list overflow-anchor-auto relative scroll-smooth', className)}>
+        <div
+          className={twMerge(
+            'message-list overflow-anchor-auto relative scroll-smooth',
+            className
+          )}>
           {/* Loading spinners - absolute positioned within container */}
           {isLoadingMore && (
             <LoadingSpinner position={loadingMoreDirection === 'older' ? 'top' : 'bottom'} />

@@ -135,4 +135,3 @@ Cypress.Commands.add('logDocumentStructure', () => {
     })
   })
 })
-

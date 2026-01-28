@@ -47,10 +47,16 @@ describe('Complex Cut/Paste Operations', () => {
           if (headingStack.length > 0) {
             const parent = headingStack[headingStack.length - 1]
             if (level === 1) {
-              errors.push({ type: 'H1_NESTED', message: `H1 "${title}" nested in H${parent.level}` })
+              errors.push({
+                type: 'H1_NESTED',
+                message: `H1 "${title}" nested in H${parent.level}`
+              })
             }
             if (level <= parent.level) {
-              errors.push({ type: 'INVALID_CHILD', message: `H${level} "${title}" inside H${parent.level}` })
+              errors.push({
+                type: 'INVALID_CHILD',
+                message: `H${level} "${title}" inside H${parent.level}`
+              })
             }
           }
           headingStack.push({ pos, level, endPos, title })
@@ -113,10 +119,7 @@ describe('Complex Cut/Paste Operations', () => {
               heading(4, 'Deep H4', [paragraph('H4 content')])
             ])
           ]),
-          heading(2, 'Target H2', [
-            paragraph('Target para 1'),
-            paragraph('Target para 2')
-          ])
+          heading(2, 'Target H2', [paragraph('Target para 1'), paragraph('Target para 2')])
         ])
       ])
       cy.wait(500)
@@ -289,8 +292,15 @@ describe('Complex Cut/Paste Operations', () => {
           type: 'heading',
           attrs: { level: 1 },
           content: [
-            { type: 'contentHeading', attrs: { level: 1 }, content: [{ type: 'text', text: 'Target Section' }] },
-            { type: 'contentWrapper', content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Target content' }] }] }
+            {
+              type: 'contentHeading',
+              attrs: { level: 1 },
+              content: [{ type: 'text', text: 'Target Section' }]
+            },
+            {
+              type: 'contentWrapper',
+              content: [{ type: 'paragraph', content: [{ type: 'text', text: 'Target content' }] }]
+            }
           ]
         })
       })
@@ -350,9 +360,7 @@ describe('Complex Cut/Paste Operations', () => {
       cy.createDocument([
         section('Section', [
           paragraph('Very first paragraph'),
-          heading(2, 'H2', [
-            heading(3, 'H3 to Cut', [paragraph('H3 content')])
-          ])
+          heading(2, 'H2', [heading(3, 'H3 to Cut', [paragraph('H3 content')])])
         ])
       ])
       cy.wait(500)
@@ -383,7 +391,7 @@ describe('Complex Cut/Paste Operations', () => {
       cy.createDocument([
         section('Section', [
           paragraph('Paragraph to cut'),
-          paragraph('')  // Empty paragraph
+          paragraph('') // Empty paragraph
         ])
       ])
       cy.wait(500)
@@ -414,7 +422,7 @@ describe('Complex Cut/Paste Operations', () => {
       cy.createDocument([
         section('Section', [
           heading(2, 'H2 with List', [
-            paragraph('Before list'),
+            paragraph('Before list')
             // Note: Lists would need to be added differently
           ]),
           heading(2, 'Target H2', [paragraph('Target')])
@@ -439,4 +447,3 @@ describe('Complex Cut/Paste Operations', () => {
     })
   })
 })
-

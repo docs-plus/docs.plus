@@ -136,10 +136,16 @@ export function createPushWorker(): Worker<PushJobData> | null {
     pushLogger.error({ jobId: job?.id, err: err.message }, 'Push job failed')
   })
 
-  pushLogger.info({
-    concurrency: config.push.gateway.workerConcurrency,
-    rateLimit: { max: config.push.gateway.rateLimitMax, duration: config.push.gateway.rateLimitDuration }
-  }, 'Push notification worker started')
+  pushLogger.info(
+    {
+      concurrency: config.push.gateway.workerConcurrency,
+      rateLimit: {
+        max: config.push.gateway.rateLimitMax,
+        duration: config.push.gateway.rateLimitDuration
+      }
+    },
+    'Push notification worker started'
+  )
 
   return pushWorker
 }
@@ -202,4 +208,3 @@ export async function closePushQueue(): Promise<void> {
   }
   pushLogger.info('Push queue closed')
 }
-

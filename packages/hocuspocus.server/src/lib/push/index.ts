@@ -7,4 +7,3 @@
 export { pushGateway, PushGatewayService } from './service'
 export { sendPushNotification, configureVapid, isVapidConfigured } from './sender'
 export { queuePush, createPushWorker, getPushQueueHealth, closePushQueue } from './queue'
-

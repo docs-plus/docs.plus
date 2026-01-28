@@ -21,7 +21,7 @@ api:
 # -----------------------------------------------------------------------------
 # Log to stdout (Docker handles rotation via json-file driver)
 log:
-  level: WARN  # Reduced from INFO to reduce log volume
+  level: WARN # Reduced from INFO to reduce log volume
   format: json
 
 # Access logs - only log errors (4xx/5xx) to reduce volume
@@ -29,16 +29,16 @@ accessLog:
   format: json
   filters:
     statusCodes:
-      - "400-599"
-    retryAttempts: true  # Only log retries
-    minDuration: "1s"     # Only log slow requests (>1s)
+      - '400-599'
+    retryAttempts: true # Only log retries
+    minDuration: '1s' # Only log slow requests (>1s)
 
 # -----------------------------------------------------------------------------
 # Entrypoints
 # -----------------------------------------------------------------------------
 entryPoints:
   web:
-    address: ":80"
+    address: ':80'
     http:
       redirections:
         entryPoint:
@@ -47,7 +47,7 @@ entryPoints:
           permanent: true
 
   websecure:
-    address: ":443"
+    address: ':443'
 
 # -----------------------------------------------------------------------------
 # Certificate Resolvers (Let's Encrypt)

@@ -1,9 +1,9 @@
-import { LuUserPlus, LuUserCheck, LuUserX, LuTriangleAlert } from 'react-icons/lu';
-import type { UserLifecycleSegments } from '@/types';
+import { LuUserPlus, LuUserCheck, LuUserX, LuTriangleAlert } from 'react-icons/lu'
+import type { UserLifecycleSegments } from '@/types'
 
 interface UserLifecycleChartProps {
-  data: UserLifecycleSegments | undefined;
-  loading?: boolean;
+  data: UserLifecycleSegments | undefined
+  loading?: boolean
 }
 
 export function UserLifecycleChart({ data, loading }: UserLifecycleChartProps) {
@@ -15,7 +15,7 @@ export function UserLifecycleChart({ data, loading }: UserLifecycleChartProps) {
       pct: data?.new_pct ?? 0,
       icon: LuUserPlus,
       color: 'bg-success',
-      textColor: 'text-success',
+      textColor: 'text-success'
     },
     {
       label: 'Active',
@@ -24,7 +24,7 @@ export function UserLifecycleChart({ data, loading }: UserLifecycleChartProps) {
       pct: data?.active_pct ?? 0,
       icon: LuUserCheck,
       color: 'bg-primary',
-      textColor: 'text-primary',
+      textColor: 'text-primary'
     },
     {
       label: 'At Risk',
@@ -33,7 +33,7 @@ export function UserLifecycleChart({ data, loading }: UserLifecycleChartProps) {
       pct: data?.at_risk_pct ?? 0,
       icon: LuTriangleAlert,
       color: 'bg-warning',
-      textColor: 'text-warning',
+      textColor: 'text-warning'
     },
     {
       label: 'Churned',
@@ -42,40 +42,41 @@ export function UserLifecycleChart({ data, loading }: UserLifecycleChartProps) {
       pct: data?.churned_pct ?? 0,
       icon: LuUserX,
       color: 'bg-error',
-      textColor: 'text-error',
-    },
-  ];
+      textColor: 'text-error'
+    }
+  ]
 
-  const total = data?.total ?? 0;
+  const total = data?.total ?? 0
 
   return (
     <div className="space-y-4">
       {/* Stacked bar */}
-      <div className="w-full h-4 rounded-full overflow-hidden flex bg-base-200">
-        {!loading && segments.map((segment) => (
-          <div
-            key={segment.label}
-            className={`${segment.color} transition-all duration-300`}
-            style={{ width: `${segment.pct}%` }}
-            title={`${segment.label}: ${segment.value} (${segment.pct}%)`}
-          />
-        ))}
+      <div className="bg-base-200 flex h-4 w-full overflow-hidden rounded-full">
+        {!loading &&
+          segments.map((segment) => (
+            <div
+              key={segment.label}
+              className={`${segment.color} transition-all duration-300`}
+              style={{ width: `${segment.pct}%` }}
+              title={`${segment.label}: ${segment.value} (${segment.pct}%)`}
+            />
+          ))}
       </div>
 
       {/* Legend */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {segments.map((segment) => (
           <div key={segment.label} className="flex items-center gap-2">
-            <div className={`w-3 h-3 rounded-full ${segment.color}`} />
+            <div className={`h-3 w-3 rounded-full ${segment.color}`} />
             <div>
-              <p className="text-sm font-medium flex items-center gap-1">
+              <p className="flex items-center gap-1 text-sm font-medium">
                 <segment.icon className={`h-3 w-3 ${segment.textColor}`} />
                 {segment.label}
               </p>
               {loading ? (
                 <div className="skeleton h-4 w-16" />
               ) : (
-                <p className="text-xs text-base-content/60">
+                <p className="text-base-content/60 text-xs">
                   {segment.value.toLocaleString()} ({segment.pct}%)
                 </p>
               )}
@@ -86,10 +87,10 @@ export function UserLifecycleChart({ data, loading }: UserLifecycleChartProps) {
 
       {/* Total */}
       {!loading && (
-        <div className="text-center text-sm text-base-content/60">
+        <div className="text-base-content/60 text-center text-sm">
           Total Users: {total.toLocaleString()}
         </div>
       )}
     </div>
-  );
+  )
 }

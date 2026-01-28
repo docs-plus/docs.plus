@@ -40,12 +40,7 @@ export interface FlipWordsProps {
  *   itemClassName="rounded-full px-3"
  * />
  */
-const FlipWords = ({
-  words,
-  duration = 2500,
-  className,
-  itemClassName
-}: FlipWordsProps) => {
+const FlipWords = ({ words, duration = 2500, className, itemClassName }: FlipWordsProps) => {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isAnimating, setIsAnimating] = useState(false)
 
@@ -69,11 +64,7 @@ const FlipWords = ({
   const itemClass = isObject ? currentWord.className : undefined
 
   return (
-    <span
-      className={twMerge(
-        'inline-flex items-center justify-center overflow-hidden',
-        className
-      )}>
+    <span className={twMerge('inline-flex items-center justify-center overflow-hidden', className)}>
       <span
         className={twMerge(
           'inline-flex items-center gap-1.5 transition-all duration-300',

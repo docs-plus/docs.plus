@@ -106,9 +106,9 @@
 
 /* Custom admin styles */
 .admin-sidebar {
-  @apply w-64 bg-base-200 border-r border-base-300;
+  @apply bg-base-200 border-base-300 w-64 border-r;
 }
 
 .stat-card {
-  @apply bg-base-100 rounded-box p-4 border border-base-300;
+  @apply bg-base-100 rounded-box border-base-300 border p-4;
 }

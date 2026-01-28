@@ -92,10 +92,10 @@ serve(async (req: Request) => {
       ].filter(Boolean)
 
       console.error('Missing required environment variables:', missing.join(', '))
-      return new Response(
-        JSON.stringify({ error: 'Push notifications not configured', missing }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      )
+      return new Response(JSON.stringify({ error: 'Push notifications not configured', missing }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      })
     }
 
     // Configure web-push

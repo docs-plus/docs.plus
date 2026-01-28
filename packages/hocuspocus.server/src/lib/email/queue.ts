@@ -164,10 +164,7 @@ export function createEmailWorker() {
 
   worker.on('failed', (job, err) => {
     if (job) {
-      emailLogger.error(
-        { jobId: job.id, err, attempts: job.attemptsMade },
-        'Email job failed'
-      )
+      emailLogger.error({ jobId: job.id, err, attempts: job.attemptsMade }, 'Email job failed')
     }
   })
 

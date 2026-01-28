@@ -62,4 +62,3 @@ export const createHierarchyValidationPlugin = (): Plugin => {
 }
 
 export default createHierarchyValidationPlugin
-

@@ -25,7 +25,7 @@ export const resendProvider: EmailProviderInterface = {
       const response = await fetch(RESEND_API_URL, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`,
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
@@ -35,7 +35,7 @@ export const resendProvider: EmailProviderInterface = {
           html: message.html,
           text: message.text,
           reply_to: message.replyTo,
-          tags: message.tags?.map(tag => ({ name: tag, value: 'true' })),
+          tags: message.tags?.map((tag) => ({ name: tag, value: 'true' })),
           headers: message.headers
         })
       })
@@ -64,7 +64,7 @@ export const resendProvider: EmailProviderInterface = {
     try {
       // Verify by fetching domains (lightweight API call)
       const response = await fetch('https://api.resend.com/domains', {
-        headers: { 'Authorization': `Bearer ${apiKey}` }
+        headers: { Authorization: `Bearer ${apiKey}` }
       })
 
       if (response.ok) {

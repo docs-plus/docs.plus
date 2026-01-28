@@ -11,10 +11,10 @@ npm install @docs.plus/extension-hypermultimedia
 ```
 
 ```js
-import { HyperMultimediaKit } from "@docs.plus/extension-hypermultimedia";
+import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
-  Image,
+  Image
 })
 ```
 
@@ -63,7 +63,7 @@ Controls if the node should be handled inline or as a block.
 ```js
 HyperMultimediaKit.configure({
   Image: {
-    inline: true,
+    inline: true
   }
 })
 ```
@@ -78,7 +78,7 @@ Allow images to be parsed as base64 strings `<img src="data:image/jpg;base64..."
 ```js
 HyperMultimediaKit.configure({
   Image: {
-    allowBase64: true,
+    allowBase64: true
   }
 })
 ```
@@ -93,7 +93,7 @@ Advanced floating toolbar with media controls and placement options.
 ```js
 HyperMultimediaKit.configure({
   Image: {
-    toolbar: createMediaToolbar, // Advanced toolbar (default)
+    toolbar: createMediaToolbar // Advanced toolbar (default)
   }
 })
 ```
@@ -115,7 +115,7 @@ Advanced resize system with corner and side clamps.
 ```js
 HyperMultimediaKit.configure({
   Image: {
-    resizeGripper: true, // Enables advanced resize system
+    resizeGripper: true // Enables advanced resize system
   }
 })
 ```
@@ -146,7 +146,7 @@ HyperMultimediaKit.configure({
     HTMLAttributes: {
       class: 'my-custom-class',
       'data-custom': 'value'
-    },
+    }
   }
 })
 ```
@@ -168,12 +168,12 @@ Creates an image node with advanced dimension and placement control.
 // Basic usage
 editor.commands.setImage({
   src: 'https://example.com/image.png'
-});
+})
 
 // With metadata
 editor.commands.setImage({
   src: 'https://example.com/image.png',
-  alt: 'Professional image',
+  alt: 'Professional image'
 })
 
 // With layout control
@@ -181,10 +181,10 @@ editor.commands.setImage({
   src: 'https://example.com/image.png',
   width: 400,
   height: 300,
-  float: "left",
-  clear: "none",
-  display: "block",
-  margin: "0.5in"
+  float: 'left',
+  clear: 'none',
+  display: 'block',
+  margin: '0.5in'
 })
 ```
 
@@ -212,17 +212,17 @@ const dimensions = editor.commands.getImageDimensions({
 
 ## Command Options
 
-|Option          |Description                                                               |Default    |Optional |
-|---             |---                                                                       |---        |---      |
-|src             |The URL of the image                                                      |`null`     |         |
-|width           |Image width in pixels                                                     |`null`     |✅       |
-|height          |Image height in pixels                                                    |`null`     |✅       |
-|float           |CSS `float` property (`left`, `right`, `none`)                          |`null`     |✅       |
-|clear           |CSS `clear` property                                                      |`none`     |✅       |
-|display         |CSS `display` property                                                    |`block`    |✅       |
-|margin          |CSS `margin` property (supports inch units)                              |`auto`     |✅       |
-|alt             |Alternative text for accessibility                                        |`null`     |✅       |
-|title           |Image title attribute                                                     |`null`     |✅       |
+| Option  | Description                                    | Default | Optional |
+| ------- | ---------------------------------------------- | ------- | -------- |
+| src     | The URL of the image                           | `null`  |          |
+| width   | Image width in pixels                          | `null`  | ✅       |
+| height  | Image height in pixels                         | `null`  | ✅       |
+| float   | CSS `float` property (`left`, `right`, `none`) | `null`  | ✅       |
+| clear   | CSS `clear` property                           | `none`  | ✅       |
+| display | CSS `display` property                         | `block` | ✅       |
+| margin  | CSS `margin` property (supports inch units)    | `auto`  | ✅       |
+| alt     | Alternative text for accessibility             | `null`  | ✅       |
+| title   | Image title attribute                          | `null`  | ✅       |
 
 ## Performance Optimizations
 

@@ -11,10 +11,10 @@ npm install @docs.plus/extension-hypermultimedia
 Then, import the extension into your editor:
 
 ```js
-import { HyperMultimediaKit } from "@docs.plus/extension-hypermultimedia";
+import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
-  Twitter,
+  Twitter
 })
 ```
 
@@ -30,7 +30,7 @@ Controls if the node should be handled inline or as a block.
 ```js
 HyperMultimediaKit.configure({
   Twitter: {
-    inline: true,
+    inline: true
   }
 })
 ```
@@ -45,7 +45,7 @@ Enable the auto-embedding of tweets by pasting Twitter URLs directly into the ed
 ```js
 HyperMultimediaKit.configure({
   Twitter: {
-    addPasteHandler: false,
+    addPasteHandler: false
   }
 })
 ```
@@ -60,7 +60,7 @@ Define the theme of the embedded tweet, either light or dark.
 ```js
 HyperMultimediaKit.configure({
   Twitter: {
-    theme: 'dark',
+    theme: 'dark'
   }
 })
 ```
@@ -75,7 +75,7 @@ Enable the data tracking parameter.
 ```js
 HyperMultimediaKit.configure({
   Twitter: {
-    dnt: false,
+    dnt: false
   }
 })
 ```
@@ -90,7 +90,7 @@ Specify the language of the embedded tweet, e.g., `'en'` for English.
 ```js
 HyperMultimediaKit.configure({
   Twitter: {
-    lang: 'fr',
+    lang: 'fr'
   }
 })
 ```
@@ -105,7 +105,7 @@ Define the width of the embedded tweet.
 ```js
 HyperMultimediaKit.configure({
   Twitter: {
-    width: 550,
+    width: 550
   }
 })
 ```
@@ -120,7 +120,7 @@ Define the height of the embedded tweet.
 ```js
 HyperMultimediaKit.configure({
   Twitter: {
-    height: 600,
+    height: 600
   }
 })
 ```
@@ -135,7 +135,7 @@ Define the maximum number of tweets to display.
 ```js
 HyperMultimediaKit.configure({
   Twitter: {
-    limit: 10,
+    limit: 10
   }
 })
 ```
@@ -150,7 +150,7 @@ Define the maximum width of the embedded tweet.
 ```js
 HyperMultimediaKit.configure({
   Twitter: {
-    maxwidth: 600,
+    maxwidth: 600
   }
 })
 ```
@@ -165,7 +165,7 @@ Define the maximum height of the embedded tweet.
 ```js
 HyperMultimediaKit.configure({
   Twitter: {
-    maxheight: 650,
+    maxheight: 650
   }
 })
 ```
@@ -180,7 +180,7 @@ Define the chrome of the embedded tweet.
 ```js
 HyperMultimediaKit.configure({
   Twitter: {
-    chrome: 'noheader nofooter noborders noscrollbar transparent',
+    chrome: 'noheader nofooter noborders noscrollbar transparent'
   }
 })
 ```
@@ -195,7 +195,7 @@ Define the ARIA live region politeness value for tweets added to a timeline.
 ```js
 HyperMultimediaKit.configure({
   Twitter: {
-    aria_polite: 'assertive',
+    aria_polite: 'assertive'
   }
 })
 ```
@@ -208,11 +208,11 @@ A modal box that appears when you <u>**click on the tweet**</u>. A default modal
 - Default: `false`
 
 ```js
-import { hypermultimedia, twitterModal } from "@docs.plus/extension-hypermultimedia";
+import { hypermultimedia, twitterModal } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
   Twitter: {
-    modal: twitterModal, // default modal
+    modal: twitterModal // default modal
   }
 })
 ```
@@ -228,30 +228,30 @@ Embed a Twitter tweet into the current node.
 ```js
 editor.commands.setTwitter({
   src: 'https://twitter.com/username/status/1234567890'
-});
+})
 
 editor.commands.setTwitter({
   src: 'https://twitter.com/username/status/1234567890',
   theme: 'dark',
   width: '550px',
   height: '600px',
-  float: "unset",
-  clear: "none",
-  display: "block",
-  margin: "0.2in"
+  float: 'unset',
+  clear: 'none',
+  display: 'block',
+  margin: '0.2in'
 })
 ```
 
 ### Options
 
-|Option          |Description                                                               |Default    |Optional |
-|---             |---                                                                       |---        |---      |
-|src             |The URL of the youtube, (Iframe Source Attribute)                         |`null`     |         |
-|float           |The CSS style `float` (overrides the default option, optional)            |`unset`    |✅       |
-|clear           |The CSS style `clear` (overrides the default option, optional)            |`none`     |✅       |
-|display         |The CSS style `display` (overrides the default option, optional)          |`block`    |✅       |
-|margin          |The CSS style `margin` (overrides the default option, optional)           |`0.0in`    |✅       |
-|justifyContent  |The CSS style `justify-content` (overrides the default option, optional)  |`start`    |✅       |
+| Option         | Description                                                              | Default | Optional |
+| -------------- | ------------------------------------------------------------------------ | ------- | -------- |
+| src            | The URL of the youtube, (Iframe Source Attribute)                        | `null`  |          |
+| float          | The CSS style `float` (overrides the default option, optional)           | `unset` | ✅       |
+| clear          | The CSS style `clear` (overrides the default option, optional)           | `none`  | ✅       |
+| display        | The CSS style `display` (overrides the default option, optional)         | `block` | ✅       |
+| margin         | The CSS style `margin` (overrides the default option, optional)          | `0.0in` | ✅       |
+| justifyContent | The CSS style `justify-content` (overrides the default option, optional) | `start` | ✅       |
 
 ## Source code
 

@@ -155,7 +155,8 @@ describe('S3 Storage - Comprehensive Coverage', () => {
       expect([200, 404, 500]).toContain(response.status)
 
       // Check that logging happened (either success or error)
-      const loggingHappened = consoleLogSpy.mock.calls.length > 0 || consoleErrorSpy.mock.calls.length > 0
+      const loggingHappened =
+        consoleLogSpy.mock.calls.length > 0 || consoleErrorSpy.mock.calls.length > 0
       expect(loggingHappened).toBe(true)
 
       console.log = originalConsoleLog
@@ -217,4 +218,3 @@ describe('S3 Storage - Comprehensive Coverage', () => {
     })
   })
 })
-

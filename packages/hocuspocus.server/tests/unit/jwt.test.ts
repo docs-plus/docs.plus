@@ -235,5 +235,3 @@ describe('JWT Utilities', () => {
     })
   })
 })
-
-

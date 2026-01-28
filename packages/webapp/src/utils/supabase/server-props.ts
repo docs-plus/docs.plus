@@ -6,11 +6,11 @@ import { createSupabaseFetch } from './error-handler'
 const getSupabaseUrl = () => {
   // Server-side: prefer SUPABASE_URL (host.docker.internal) if available
   if (process.env.SUPABASE_URL) {
-    return process.env.SUPABASE_URL;
+    return process.env.SUPABASE_URL
   }
   // Fallback: use NEXT_PUBLIC_SUPABASE_URL (localhost)
-  return process.env.NEXT_PUBLIC_SUPABASE_URL!;
-};
+  return process.env.NEXT_PUBLIC_SUPABASE_URL!
+}
 
 export function createClient({ req, res }: GetServerSidePropsContext) {
   const supabaseFetch = createSupabaseFetch()

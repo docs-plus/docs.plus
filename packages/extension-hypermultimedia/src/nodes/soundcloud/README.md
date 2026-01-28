@@ -11,10 +11,10 @@ npm install @docs.plus/extension-hypermultimedia
 Then, import the extension into your editor:
 
 ```js
-import { HyperMultimediaKit } from "@docs.plus/extension-hypermultimedia";
+import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
-  SoundCloud,
+  SoundCloud
 })
 ```
 
@@ -30,7 +30,7 @@ Controls if the node should be handled inline or as a block.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    inline: true,
+    inline: true
   }
 })
 ```
@@ -45,7 +45,7 @@ Switch to a video player with `true` or an audio player with `false`.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    visual: true,
+    visual: true
   }
 })
 ```
@@ -60,7 +60,7 @@ Set to `true` to autoplay the track on load.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    autoPlay: true,
+    autoPlay: true
   }
 })
 ```
@@ -76,7 +76,7 @@ Toggle visibility of related tracks, comments and reposts respectively.
 HyperMultimediaKit.configure({
   SoundCloud: {
     showComments: false,
-    showReposts: false,
+    showReposts: false
   }
 })
 ```
@@ -91,7 +91,7 @@ Toggle visibility of related tracks.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    hideRelated: true,
+    hideRelated: true
   }
 })
 ```
@@ -106,7 +106,7 @@ Set to `true` to autoplay the track on load. This attribute is used in `URLSearc
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    autoPlay: true,
+    autoPlay: true
   }
 })
 ```
@@ -121,7 +121,7 @@ Toggle visibility of related tracks.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    hide_related: true,
+    hide_related: true
   }
 })
 ```
@@ -136,7 +136,7 @@ Specify the color of the embedded player. Default color is `#ff5500`.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    color: "#ff5500",
+    color: '#ff5500'
   }
 })
 ```
@@ -151,7 +151,7 @@ Toggle visibility of the buy button.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    buying: false,
+    buying: false
   }
 })
 ```
@@ -166,7 +166,7 @@ Toggle visibility of the share button.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    sharing: false,
+    sharing: false
   }
 })
 ```
@@ -178,10 +178,9 @@ Toggle visibility of the download button.
 - target: `URLSearchParams`
 
 ```js
-
 HyperMultimediaKit.configure({
   SoundCloud: {
-    download: false,
+    download: false
   }
 })
 ```
@@ -196,7 +195,7 @@ Toggle visibility of the artwork.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    show_artwork: false,
+    show_artwork: false
   }
 })
 ```
@@ -211,7 +210,7 @@ Toggle visibility of the play count.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    show_playcount: false,
+    show_playcount: false
   }
 })
 ```
@@ -226,7 +225,7 @@ Toggle visibility of the uploader name and avatar.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    show_user: false,
+    show_user: false
   }
 })
 ```
@@ -241,7 +240,7 @@ Specify the track number to start playing from.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    start_track: 2,
+    start_track: 2
   }
 })
 ```
@@ -256,7 +255,7 @@ Toggle the single active player.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    single_active: false,
+    single_active: false
   }
 })
 ```
@@ -272,7 +271,7 @@ Specify the dimensions of the embedded player. Default width is `460` and height
 HyperMultimediaKit.configure({
   SoundCloud: {
     width: 500,
-    height: 160,
+    height: 160
   }
 })
 ```
@@ -287,7 +286,7 @@ Toggle scrolling of the embedded player.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    scrolling: "yes",
+    scrolling: 'yes'
   }
 })
 ```
@@ -302,7 +301,7 @@ Toggle the frame border of the embedded player.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    frameborder: "yes",
+    frameborder: 'yes'
   }
 })
 ```
@@ -317,7 +316,7 @@ Toggle autoplay of the embedded player.
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    allow: "autoplay",
+    allow: 'autoplay'
   }
 })
 ```
@@ -332,7 +331,7 @@ Enable the auto-embedding of SoundCloud tracks by pasting URLs directly into the
 ```js
 HyperMultimediaKit.configure({
   SoundCloud: {
-    addPasteHandler: false,
+    addPasteHandler: false
   }
 })
 ```
@@ -345,13 +344,13 @@ Custom HTML attributes that should be added to the rendered HTML wrapper tag.
 - Default: `{}`
 
 ```js
-import { HyperMultimediaKit } from "@docs.plus/extension-hypermultimedia";
+import { HyperMultimediaKit } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
   SoundCloud: {
     HTMLAttributes: {
-      class: 'my-custom-class',
-    },
+      class: 'my-custom-class'
+    }
   }
 })
 ```
@@ -364,11 +363,11 @@ A modal box that appears when you <u>**click on the track**</u>. A default modal
 - Default: `true`
 
 ```js
-import { hypermultimedia, soundCloudModal } from "@docs.plus/extension-hypermultimedia";
+import { hypermultimedia, soundCloudModal } from '@docs.plus/extension-hypermultimedia'
 
 HyperMultimediaKit.configure({
   SoundCloud: {
-    modal: soundCloudModal, // default modal
+    modal: soundCloudModal // default modal
   }
 })
 ```
@@ -384,7 +383,7 @@ Embed a SoundCloud track into the current node.
 ```js
 editor.commands.setSoundCloud({
   src: 'https://soundcloud.com/artist/track'
-});
+})
 
 editor.commands.setSoundCloud({
   src: 'https://soundcloud.com/artist/track',
@@ -392,25 +391,25 @@ editor.commands.setSoundCloud({
   autoPlay: false,
   width: 500,
   height: 160,
-  float: "unset",
-  clear: "none",
-  display: "block",
-  margin: "0.2in"
+  float: 'unset',
+  clear: 'none',
+  display: 'block',
+  margin: '0.2in'
 })
 ```
 
 ### Options
 
-|Option          |Description                                                               |Default    |Optional |
-|---             |---                                                                       |---        |---      |
-|src             |The URL of the youtube, (Iframe Source Attribute)                         |`null`     |         |
-|width           |The embed width (overrides the default option, optional)                  |`450`      |✅       |
-|height          |The embed height (overrides the default option, optional)                 |`120`      |✅       |
-|float           |The CSS style `float` (overrides the default option, optional)            |`unset`    |✅       |
-|clear           |The CSS style `clear` (overrides the default option, optional)            |`none`     |✅       |
-|display         |The CSS style `display` (overrides the default option, optional)          |`block`    |✅       |
-|margin          |The CSS style `margin` (overrides the default option, optional)           |`0.0in`    |✅       |
-|justifyContent  |The CSS style `justify-content` (overrides the default option, optional)  |`start`    |✅       |
+| Option         | Description                                                              | Default | Optional |
+| -------------- | ------------------------------------------------------------------------ | ------- | -------- |
+| src            | The URL of the youtube, (Iframe Source Attribute)                        | `null`  |          |
+| width          | The embed width (overrides the default option, optional)                 | `450`   | ✅       |
+| height         | The embed height (overrides the default option, optional)                | `120`   | ✅       |
+| float          | The CSS style `float` (overrides the default option, optional)           | `unset` | ✅       |
+| clear          | The CSS style `clear` (overrides the default option, optional)           | `none`  | ✅       |
+| display        | The CSS style `display` (overrides the default option, optional)         | `block` | ✅       |
+| margin         | The CSS style `margin` (overrides the default option, optional)          | `0.0in` | ✅       |
+| justifyContent | The CSS style `justify-content` (overrides the default option, optional) | `start` | ✅       |
 
 ## Source Code
 

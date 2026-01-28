@@ -3,12 +3,11 @@ import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
 import { RateLimiterRedis } from 'rate-limiter-flexible'
 import { getRedisClient } from '../lib/redis'
-import { logger, httpLogger } from '../lib/logger'
+import { httpLogger } from '../lib/logger'
 import '../types' // For type augmentation
 
 // Use centralized Redis client for rate limiting
 const redisClient = getRedisClient()
-
 
 export const rateLimiter = (options: {
   points: number // Number of requests allowed
@@ -44,12 +43,11 @@ export const rateLimiter = (options: {
     // Internal requests come from Docker network IPs (172.x.x.x, 10.x.x.x) or have internal headers
     const isInternalRequest =
       c.req.header('x-internal-request') === 'true' ||
-      (ip && (
-        ip.startsWith('172.') || // Docker default network range
-        ip.startsWith('10.') || // Private network range
-        ip === '127.0.0.1' ||
-        ip === '::1'
-      ))
+      (ip &&
+        (ip.startsWith('172.') || // Docker default network range
+          ip.startsWith('10.') || // Private network range
+          ip === '127.0.0.1' ||
+          ip === '::1'))
 
     if (isInternalRequest) {
       return next()

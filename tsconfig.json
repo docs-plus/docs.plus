@@ -1,11 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2019",
-    "lib": [
-      "dom",
-      "dom.iterable",
-      "esnext"
-    ],
+    "lib": ["dom", "dom.iterable", "esnext"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -24,19 +20,9 @@
     "skipLibCheck": true,
     "baseUrl": "./",
     "paths": {
-      "@docs.plus/*": [
-        "packages/*/dist",
-        "packages/*/src"
-      ]
+      "@docs.plus/*": ["packages/*/dist", "packages/*/src"]
     }
   },
-  "include": [
-    "next-env.d.ts",
-    "packages/**/*.ts",
-    "packages/**/*.tsx"
-  ],
-  "exclude": [
-    "node_modules",
-    "packages/webapp"
-  ]
+  "include": ["next-env.d.ts", "packages/**/*.ts", "packages/**/*.tsx"],
+  "exclude": ["node_modules", "packages/webapp"]
 }

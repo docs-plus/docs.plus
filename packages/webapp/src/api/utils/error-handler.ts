@@ -70,12 +70,7 @@ export async function safeSupabaseQuery<T>(
       throw error
     }
     logger.error('Unexpected error in Supabase query', error as Error, context)
-    throw new ApiError(
-      'An unexpected error occurred',
-      500,
-      'UNEXPECTED_ERROR',
-      error
-    )
+    throw new ApiError('An unexpected error occurred', 500, 'UNEXPECTED_ERROR', error)
   }
 }
 
@@ -88,4 +83,3 @@ export type SafePostgrestResponse<T> = {
   error: null
   count: number | null
 }
-

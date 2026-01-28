@@ -1,56 +1,51 @@
-import { useCallback } from 'react';
-import Head from 'next/head';
-import type { GetServerSideProps } from 'next';
-import { useQuery } from '@tanstack/react-query';
+import { useCallback } from 'react'
+import Head from 'next/head'
+import type { GetServerSideProps } from 'next'
+import { useQuery } from '@tanstack/react-query'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {
-  return { props: {} };
-};
-import { LuHash, LuRadio, LuFileText } from 'react-icons/lu';
-import toast from 'react-hot-toast';
-import { AdminLayout } from '@/components/layout/AdminLayout';
-import { Header } from '@/components/layout/Header';
-import { DataTable } from '@/components/tables/DataTable';
-import { SearchInput } from '@/components/ui/SearchInput';
-import { fetchChannels } from '@/services/supabase';
-import { formatDate, formatDateTime } from '@/utils/format';
-import { exportToCSV } from '@/utils/export';
-import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
-import { useTableParams } from '@/hooks/useTableParams';
-import type { Channel } from '@/types';
+  return { props: {} }
+}
+import { LuHash, LuRadio, LuFileText } from 'react-icons/lu'
+import toast from 'react-hot-toast'
+import { AdminLayout } from '@/components/layout/AdminLayout'
+import { Header } from '@/components/layout/Header'
+import { DataTable } from '@/components/tables/DataTable'
+import { SearchInput } from '@/components/ui/SearchInput'
+import { fetchChannels } from '@/services/supabase'
+import { formatDate, formatDateTime } from '@/utils/format'
+import { exportToCSV } from '@/utils/export'
+import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
+import { useTableParams } from '@/hooks/useTableParams'
+import type { Channel } from '@/types'
 
 export default function ChannelsPage() {
   // URL-synced table state
-  const {
-    page,
-    search,
-    sortKey,
-    sortDirection,
-    setPage,
-    setSearch,
-    handleSort,
-  } = useTableParams({ defaultSortKey: 'last_activity_at', defaultSortDirection: 'desc' });
+  const { page, search, sortKey, sortDirection, setPage, setSearch, handleSort } = useTableParams({
+    defaultSortKey: 'last_activity_at',
+    defaultSortDirection: 'desc'
+  })
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['admin', 'channels', page, sortKey, sortDirection, search],
-    queryFn: () => fetchChannels(page, sortKey || undefined, sortDirection, search || undefined),
-  });
+    queryFn: () => fetchChannels(page, sortKey || undefined, sortDirection, search || undefined)
+  })
 
   // Real-time subscription to channels table
   const handleRealtimeChange = useCallback(() => {
-    refetch();
-  }, [refetch]);
+    refetch()
+  }, [refetch])
 
   useRealtimeSubscription({
     table: 'channels',
-    onchange: handleRealtimeChange,
-  });
+    onchange: handleRealtimeChange
+  })
 
   const handleExport = () => {
     if (!data?.data?.length) {
-      toast.error('No data to export');
-      return;
+      toast.error('No data to export')
+      return
     }
     exportToCSV(data.data, `public-channels-${new Date().toISOString().split('T')[0]}`, [
       { key: 'name', header: 'Name' },
@@ -58,10 +53,10 @@ export default function ChannelsPage() {
       { key: 'document_name', header: 'Document Name' },
       { key: 'member_count', header: 'Members' },
       { key: 'last_activity_at', header: 'Last Activity' },
-      { key: 'created_at', header: 'Created' },
-    ]);
-    toast.success('Exported channels to CSV');
-  };
+      { key: 'created_at', header: 'Created' }
+    ])
+    toast.success('Exported channels to CSV')
+  }
 
   const columns = [
     {
@@ -70,61 +65,57 @@ export default function ChannelsPage() {
       sortable: true,
       render: (channel: Channel) => (
         <div className="flex items-center gap-2">
-          <LuHash className="h-4 w-4 text-base-content/60" />
+          <LuHash className="text-base-content/60 h-4 w-4" />
           <span className="font-medium">{channel.name || 'Unnamed'}</span>
         </div>
-      ),
+      )
     },
     {
       key: 'document',
       header: 'Document',
       render: (channel: Channel) => (
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex min-w-0 items-center gap-2">
           {channel.document_slug ? (
             <>
-              <LuFileText className="h-4 w-4 text-base-content/40 shrink-0" />
+              <LuFileText className="text-base-content/40 h-4 w-4 shrink-0" />
               <div className="min-w-0">
-                <p className="text-sm font-medium truncate max-w-[150px]">
+                <p className="max-w-[150px] truncate text-sm font-medium">
                   {channel.document_name || channel.document_slug}
                 </p>
-                <code className="text-xs text-base-content/50">{channel.document_slug}</code>
+                <code className="text-base-content/50 text-xs">{channel.document_slug}</code>
               </div>
             </>
           ) : (
-            <span className="text-sm text-base-content/40">-</span>
+            <span className="text-base-content/40 text-sm">-</span>
           )}
         </div>
-      ),
+      )
     },
     {
       key: 'member_count',
       header: 'Members',
       sortable: true,
-      render: (channel: Channel) => (
-        <span className="text-sm">{channel.member_count}</span>
-      ),
+      render: (channel: Channel) => <span className="text-sm">{channel.member_count}</span>
     },
     {
       key: 'last_activity_at',
       header: 'Last Activity',
       sortable: true,
       render: (channel: Channel) => (
-        <span className="text-sm text-base-content/60">
+        <span className="text-base-content/60 text-sm">
           {channel.last_activity_at ? formatDateTime(channel.last_activity_at) : '-'}
         </span>
-      ),
+      )
     },
     {
       key: 'created_at',
       header: 'Created',
       sortable: true,
       render: (channel: Channel) => (
-        <span className="text-sm text-base-content/60">
-          {formatDate(channel.created_at)}
-        </span>
-      ),
-    },
-  ];
+        <span className="text-base-content/60 text-sm">{formatDate(channel.created_at)}</span>
+      )
+    }
+  ]
 
   return (
     <>
@@ -148,7 +139,7 @@ export default function ChannelsPage() {
           onExport={handleExport}
         />
 
-        <div className="p-6 space-y-6">
+        <div className="space-y-6 p-6">
           {/* Search */}
           <SearchInput
             placeholder="Search channels by name..."
@@ -158,7 +149,7 @@ export default function ChannelsPage() {
           />
 
           {/* Table */}
-          <div className="bg-base-100 rounded-box border border-base-300">
+          <div className="bg-base-100 rounded-box border-base-300 border">
             <DataTable
               columns={columns}
               data={data?.data || []}
@@ -167,12 +158,12 @@ export default function ChannelsPage() {
                 page,
                 totalPages: data?.totalPages || 1,
                 total: data?.total || 0,
-                onPageChange: setPage,
+                onPageChange: setPage
               }}
               sorting={{
                 sortKey,
                 sortDirection,
-                onSort: handleSort,
+                onSort: handleSort
               }}
               emptyMessage="No channels found"
             />
@@ -180,5 +171,5 @@ export default function ChannelsPage() {
         </div>
       </AdminLayout>
     </>
-  );
+  )
 }
