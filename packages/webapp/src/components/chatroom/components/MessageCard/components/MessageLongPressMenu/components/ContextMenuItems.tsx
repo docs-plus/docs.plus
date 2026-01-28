@@ -8,7 +8,8 @@ import {
   MdOutlineEdit,
   MdOutlineFileOpen,
   MdBookmarkRemove,
-  MdOutlineLink
+  MdOutlineLink,
+  MdCheck
 } from 'react-icons/md'
 import { ReplyMD } from '@components/icons/Icons'
 import { useBookmarkMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useBookmarkMessageHandler'
@@ -21,8 +22,7 @@ import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { DeleteMessageConfirmationDialog } from '@components/chatroom/components/MessageCard/components/common/DeleteMessageConfirmationDialog'
 import { TMsgRow } from '@types'
 import { useCopyMessageLinkHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageLinkHandler'
-import { useAuthStore, useChatStore } from '@stores'
-import { calculateEmojiPickerPosition } from '@components/chatroom/components/MessageCard/helpers'
+import { useAuthStore } from '@stores'
 import { useMessageLongPressMenu } from '../MessageLongPressMenu'
 import { hasMetadataProperty } from '@utils/metadata'
 
@@ -44,7 +44,7 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
   const { pinMessageHandler } = usePinMessageHandler()
   const { editMessageHandler } = useEditMessageHandler()
   const { openDialog } = useChatroomContext()
-  const { copyMessageLinkHandler } = useCopyMessageLinkHandler()
+  const { copyMessageLinkHandler, copied: linkCopied } = useCopyMessageLinkHandler()
 
   const isOwner = useMemo(() => {
     return message?.user_id === profile?.id
@@ -63,11 +63,15 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
       className: ''
     },
     {
-      title: 'Copy Link',
-      icon: <MdOutlineLink size={20} />,
+      title: linkCopied ? 'Copied!' : 'Copy Link',
+      icon: linkCopied ? (
+        <MdCheck size={20} className="text-success" />
+      ) : (
+        <MdOutlineLink size={20} />
+      ),
       onClickFn: () => copyMessageLinkHandler(message),
       display: true, //settings.contextMenue?.copyLink ?? true,
-      className: 'border-b border-gray-300 pb-1 mb-1'
+      className: `border-b border-base-300 pb-1 mb-1 ${linkCopied ? 'text-success' : ''}`
     },
     {
       title: 'Bookmark',
@@ -115,7 +119,7 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
       icon: <MdOutlineEdit size={20} />,
       onClickFn: () => editMessageHandler(message),
       display: isOwner, //true, //settings.contextMenue?.edite ?? true,
-      className: 'border-t pt-1 mt-1 border-gray-300'
+      className: 'border-t pt-1 mt-1 border-base-300'
     },
     {
       title: 'Delete',

@@ -1,27 +1,45 @@
-import { IoNotifications, IoNotificationsOff } from 'react-icons/io5'
-import { RiAtLine } from 'react-icons/ri'
+import { LuBell, LuBellOff, LuAtSign } from 'react-icons/lu'
 import Button from '@components/ui/Button'
 import { useNotificationToggle } from '@components/chatroom/hooks/useNotificationToggle'
+import { twMerge } from 'tailwind-merge'
 
 type Props = {
   className?: string
 }
 
+const notificationConfig = {
+  ALL: {
+    icon: LuBell,
+    label: 'All notifications'
+  },
+  MENTIONS: {
+    icon: LuAtSign,
+    label: 'Mentions only'
+  },
+  MUTED: {
+    icon: LuBellOff,
+    label: 'Muted'
+  }
+}
+
 export const NotificationToggle = ({ className }: Props) => {
   const { notificationState, loading, handleToggle } = useNotificationToggle()
 
-  const notificationIcons = {
-    ALL: <IoNotifications size={18} />,
-    MENTIONS: <RiAtLine size={18} />,
-    MUTED: <IoNotificationsOff size={18} />
-  }
+  const config = notificationConfig[notificationState]
+  const Icon = config.icon
+
   return (
-    <Button
-      loading={loading}
-      onClick={handleToggle}
-      className={`btn btn-sm btn-square btn-ghost tooltip tooltip-left flex items-center ${className} `}
-      data-tip={`Notifications: ${notificationState}`}>
-      {notificationIcons[notificationState]}
-    </Button>
+    <div className="tooltip tooltip-bottom" data-tip={config.label}>
+      <Button
+        variant="ghost"
+        size="xs"
+        shape="square"
+        loading={loading}
+        onClick={handleToggle}
+        className={twMerge('hover:bg-base-300', className)}
+        aria-label={`Notifications: ${config.label}`}>
+        <Icon size={16} />
+      </Button>
+    </div>
   )
 }

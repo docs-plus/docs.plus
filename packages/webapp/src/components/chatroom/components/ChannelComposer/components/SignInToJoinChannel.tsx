@@ -1,6 +1,8 @@
 import { useChatroomContext } from '../../../ChatroomContext'
 import { useChatStore } from '@stores'
 import { twMerge } from 'tailwind-merge'
+import Button from '@components/ui/Button'
+import { LuLogIn } from 'react-icons/lu'
 
 export default function SignInToJoinChannel({ className }: { className?: string }) {
   const { channelId } = useChatroomContext()
@@ -18,10 +20,19 @@ export default function SignInToJoinChannel({ className }: { className?: string 
   }
 
   return (
-    <div className={twMerge('flex w-full flex-col items-center justify-center p-2', className)}>
-      <div className="btn btn-block" onClick={openSignInModalHandler}>
-        Please sign in to join the heading chat.
-      </div>
+    <div
+      className={twMerge(
+        'border-base-300 bg-base-100 flex w-full items-center justify-center border-t p-3',
+        className
+      )}>
+      <Button
+        variant="primary"
+        shape="wide"
+        size="sm"
+        startIcon={LuLogIn}
+        onClick={openSignInModalHandler}>
+        Sign in to join
+      </Button>
     </div>
   )
 }

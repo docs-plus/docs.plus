@@ -1,7 +1,7 @@
 import { useChatroomContext } from '../../../../ChatroomContext'
 import { useMessageComposer } from '../../hooks/useMessageComposer'
 import { RiPencilFill } from 'react-icons/ri'
-import { IoCloseOutline } from 'react-icons/io5'
+import CloseButton from '@components/ui/CloseButton'
 
 const EditContext = ({ onDismiss }: { onDismiss?: () => void }) => {
   const { channelId } = useChatroomContext()
@@ -30,9 +30,7 @@ const EditContext = ({ onDismiss }: { onDismiss?: () => void }) => {
           {editMessageMemory?.content}
         </span>
       </div>
-      <button className="btn btn-square btn-xs h-8 w-8 p-1" onClick={handleClose}>
-        <IoCloseOutline size={22} />
-      </button>
+      <CloseButton onClick={handleClose} size="xs" aria-label="Cancel edit" />
     </div>
   )
 }

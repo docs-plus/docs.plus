@@ -1,25 +1,46 @@
 import useResizeContainer from '@components/pages/document/components/chat/hooks/useResizeContainer'
+import ResizeHandle from '@components/ui/ResizeHandle'
 
 type Props = {
   children: React.ReactNode
 }
+
+/**
+ * Desktop layout for the chatroom panel.
+ *
+ * Design System Requirements:
+ * - Surface: bg-base-100 (primary canvas)
+ * - Border: border-base-300
+ * - Radius: rounded-box for panels (applied to top corners)
+ * - Shadow: subtle elevation
+ * - Resize handle: horizontal orientation
+ */
 export const DesktopLayout = ({ children }: Props) => {
-  const { handleMouseDown, gripperRef, height } = useResizeContainer()
+  const { handleMouseDown, containerRef, height, isResizing } = useResizeContainer()
 
   return (
     <div
-      ref={gripperRef}
-      className="group absolute bottom-0 z-40 flex h-[410px] w-full flex-row flex-wrap border-t border-gray-300 bg-white pt-0.5 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1),0_2px_4px_-1px_rgba(0,0,0,0.06)]"
+      ref={containerRef}
+      className="group/chat bg-base-100 border-base-300 absolute bottom-0 z-40 flex w-full flex-col border-t shadow-lg"
       style={{ height: `${height}px` }}>
-      <div
-        className="gripper absolute -top-5 left-0 z-[51] w-full bg-transparent pt-10"
-        // onMouseDown={handleMouseDown}
-      />
-      <div
+      {/* Resize Handle - Design System compliant */}
+      <ResizeHandle
+        orientation="horizontal"
         onMouseDown={handleMouseDown}
-        className="active:bg-block absolute top-2 left-1/2 z-[52] h-1.5 w-22 -translate-x-1/2 cursor-row-resize rounded-full bg-gray-400 transition-all duration-200 group-hover:opacity-100"
+        isResizing={isResizing}
       />
-      <div className="flex size-full flex-col justify-start">{children}</div>
+
+      {/* Visual resize indicator - centered pill */}
+      <div className="flex h-3 w-full items-center justify-center">
+        <div
+          onMouseDown={handleMouseDown}
+          className="bg-base-300 hover:bg-primary/50 h-1 w-12 cursor-row-resize rounded-full transition-colors duration-150"
+          aria-hidden="true"
+        />
+      </div>
+
+      {/* Chat content */}
+      <div className="flex min-h-0 flex-1 flex-col">{children}</div>
     </div>
   )
 }

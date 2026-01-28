@@ -2,7 +2,7 @@ import { ChannelMemberReadUpdate, getChannelMembersByLastReadUpdate } from '@api
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { MenuItem } from '@components/ui/ContextMenu'
 import { useApi } from '@hooks/useApi'
-import { useEffect, useState, ReactNode } from 'react'
+import { useEffect, useState } from 'react'
 import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
 import { IoCheckmarkDoneSharp, IoCheckmarkSharp } from 'react-icons/io5'
 import AvatarStack from '@components/AvatarStack'
@@ -60,7 +60,7 @@ export const UserReadStatus = ({
       </span>
 
       <AvatarStack
-        className="ml-auto !-space-x-4"
+        className="ml-auto"
         users={(readUsers as ChannelMemberReadUpdate[]).map((user) => ({
           id: user.user_id,
           username: user.username,
@@ -68,7 +68,7 @@ export const UserReadStatus = ({
           avatar_url: user.avatar_url,
           avatar_updated_at: user.avatar_updated_at
         }))}
-        size={8}
+        size="sm"
         maxDisplay={5}
       />
     </div>
@@ -78,11 +78,7 @@ export const UserReadStatus = ({
     <>
       <div className="skeleton ml-2 h-4 w-4 rounded-full p-0"></div>
       <div className="skeleton h-4 w-10 rounded-full"></div>
-      <AvatarStackLoader
-        size={7}
-        repeat={avatarLoaderRepeat}
-        className="ml-auto !-space-x-6 pr-1"
-      />
+      <AvatarStackLoader size="sm" repeat={avatarLoaderRepeat} className="ml-auto pr-1" />
     </>
   )
 

@@ -1,11 +1,8 @@
 import { useMessageComposer } from '../../hooks/useMessageComposer'
 import { FaReply } from 'react-icons/fa'
-import { IoCloseSharp } from 'react-icons/io5'
 import { useChatroomContext } from '../../../../ChatroomContext'
-import { useCallback, useEffect } from 'react'
 import { useAutoScrollOnMessageContext } from '../../hooks/useAutoScrollOnMessageContext'
-
-const CLOSE_TO_BOTTOM_THRESHOLD = 120
+import CloseButton from '@components/ui/CloseButton'
 
 const ReplyContext = ({ onDismiss }: { onDismiss?: () => void }) => {
   const { channelId } = useChatroomContext()
@@ -36,9 +33,7 @@ const ReplyContext = ({ onDismiss }: { onDismiss?: () => void }) => {
           {replyMessageMemory?.content}
         </span>
       </div>
-      <button className="btn btn-square btn-xs h-8 w-8 p-1" onClick={handleClose}>
-        <IoCloseSharp size={22} />
-      </button>
+      <CloseButton onClick={handleClose} size="xs" aria-label="Dismiss reply" />
     </div>
   )
 }

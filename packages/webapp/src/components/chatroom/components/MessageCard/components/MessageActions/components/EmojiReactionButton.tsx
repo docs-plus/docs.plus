@@ -1,9 +1,9 @@
 import { useAuthStore, useChatStore } from '@stores'
 import { MdOutlineEmojiEmotions } from 'react-icons/md'
 import { useMessageCardContext } from '../../../MessageCardContext'
-import { twMerge } from 'tailwind-merge'
 import { useCallback, useRef } from 'react'
 import { calculateEmojiPickerPosition } from '../../../helpers'
+import Button from '@components/ui/Button'
 
 type Props = {
   className?: string
@@ -32,16 +32,16 @@ export const EmojiReactionButton = ({ className }: Props) => {
   }, [openEmojiPicker, message])
 
   return (
-    <button
+    <Button
       ref={ref}
-      className={twMerge(
-        'btn btn-sm btn-square join-item btn-ghost tooltip tooltip-left',
-        className
-      )}
+      variant="ghost"
+      size="sm"
+      shape="square"
+      className={`join-item tooltip tooltip-left ${className || ''}`}
       data-tip="Add Reaction"
       disabled={!profile}
-      onClick={openEmojiPickerHandler}>
-      <MdOutlineEmojiEmotions size={20} className="text-gray-600" />
-    </button>
+      onClick={openEmojiPickerHandler}
+      startIcon={<MdOutlineEmojiEmotions size={20} className="text-base-content/70" />}
+    />
   )
 }

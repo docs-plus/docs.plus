@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { useAuthStore, useChatStore } from '@stores'
-import { useChannel } from '../../context/ChannelProvider'
 import { TChannelSettings } from '@types'
 import { twMerge } from 'tailwind-merge'
 
@@ -31,7 +30,7 @@ export interface ChannelComposerProps {
  * Wrapper component that provides the basic container structure
  */
 const ChannelComposerWrapper = ({ children, className }: ChannelComposerProps) => {
-  return <div className={twMerge('channel-composer', className)}>{children}</div>
+  return <div className={twMerge('channel-composer w-full', className)}>{children}</div>
 }
 
 /**

@@ -3,7 +3,7 @@ import { useChatStore, useSheetStore } from '@stores'
 import SheetHeader from '@components/SheetHeader'
 import { CopyUrlButton } from '@components/chatroom/components/CopyUrlButton'
 import { NotificationToggle } from '@components/chatroom/components/ChatroomToolbar/components/NotificationToggle'
-import { IoCloseSharp } from 'react-icons/io5'
+import CloseButton from '@components/ui/CloseButton'
 
 type Props = {
   children: React.ReactNode
@@ -31,14 +31,14 @@ const ChatRoomHeader = () => {
           />
           <NotificationToggle className="btn btn-ghost join-item btn-sm w-12 bg-transparent" />
 
-          <button
-            className={`btn btn-sm btn btn-ghost join-item btn-sm w-12 bg-transparent`}
+          <CloseButton
             onClick={() => {
               destroyChatRoom()
               closeSheet()
-            }}>
-            <IoCloseSharp size={20} />
-          </button>
+            }}
+            className="join-item w-12 bg-transparent"
+            aria-label="Close chat"
+          />
         </div>
       </SheetHeader.Actions>
     </SheetHeader>

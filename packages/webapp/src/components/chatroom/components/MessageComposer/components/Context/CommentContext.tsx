@@ -1,7 +1,7 @@
 import { useChatroomContext } from '../../../../ChatroomContext'
 import { useMessageComposer } from '../../hooks/useMessageComposer'
 import { MdInsertComment } from 'react-icons/md'
-import { IoCloseOutline } from 'react-icons/io5'
+import CloseButton from '@components/ui/CloseButton'
 
 const CommentContext = ({ onDismiss }: { onDismiss?: () => void }) => {
   const { channelId } = useChatroomContext()
@@ -20,9 +20,7 @@ const CommentContext = ({ onDismiss }: { onDismiss?: () => void }) => {
       <div className="text-base-content flex w-full flex-col justify-start pl-3 text-base">
         <span className="text-sm">{commentMessageMemory?.content}</span>
       </div>
-      <button className="btn btn-square btn-xs h-8 w-8 p-1" onClick={handleClose}>
-        <IoCloseOutline size={22} />
-      </button>
+      <CloseButton onClick={handleClose} size="xs" aria-label="Dismiss comment" />
     </div>
   )
 }

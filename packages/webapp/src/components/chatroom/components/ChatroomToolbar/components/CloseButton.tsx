@@ -1,14 +1,15 @@
 import { useChatStore } from '@stores'
-import { IoCloseSharp } from 'react-icons/io5'
 import PubSub from 'pubsub-js'
 import { CHAT_CLOSE } from '@services/eventsHub'
+import Button from '@components/ui/Button'
+import { LuX } from 'react-icons/lu'
+import { twMerge } from 'tailwind-merge'
 
 type Props = {
   className?: string
-  dataTip?: string
 }
 
-export const CloseButton = ({ className, dataTip }: Props) => {
+export const CloseButton = ({ className }: Props) => {
   const chatRoom = useChatStore((state) => state.chatRoom)
 
   const handelCloseChatRoom = () => {
@@ -16,11 +17,14 @@ export const CloseButton = ({ className, dataTip }: Props) => {
   }
 
   return (
-    <button
-      className={`btn btn-ghost btn-sm btn-square ${className}`}
+    <Button
+      variant="ghost"
+      size="xs"
+      shape="square"
       onClick={handelCloseChatRoom}
-      data-tip={dataTip}>
-      <IoCloseSharp size={20} />
-    </button>
+      className={twMerge('hover:bg-base-300', className)}
+      aria-label="Close chatroom">
+      <LuX size={16} />
+    </Button>
   )
 }

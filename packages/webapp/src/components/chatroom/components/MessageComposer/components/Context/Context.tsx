@@ -5,13 +5,14 @@ import ReplyContext from './ReplyContext'
 import { useMessageComposer } from '../../hooks/indext'
 import { useHandleEscKey } from '../../hooks/useHandleEscKey'
 
-type TContextProps = React.HTMLAttributes<HTMLDivElement> & {
+interface TContextProps {
   type?: 'reply' | 'edit' | 'comment'
   onDismiss?: () => void
-  children: React.ReactNode
+  children?: React.ReactNode
+  className?: string
 }
 
-export const Context = ({ type, className = '', children, ...props }: TContextProps) => {
+export const Context = ({ type, className = '', children }: TContextProps) => {
   const { contextType } = useMessageComposer()
   // close context when esc key is pressed
   useHandleEscKey()
@@ -28,7 +29,7 @@ export const Context = ({ type, className = '', children, ...props }: TContextPr
   }
 
   return (
-    <div className={twMerge('message-context', className)} {...props}>
+    <div className={twMerge('message-context', className)}>
       {type ? renderContextContent(type || contextType) : children}
     </div>
   )

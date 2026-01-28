@@ -1,8 +1,9 @@
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Editor } from '@tiptap/react'
+import SharedButton from '@components/ui/Button'
 
-interface ButtonProps {
+interface ToolbarButtonProps {
   type?: string
   editor?: Editor | null
   onPress?: (event: React.MouseEvent | React.TouchEvent) => void
@@ -14,17 +15,22 @@ interface ButtonProps {
   disabled?: boolean
 }
 
-const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
+const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   (
     { type, editor, onPress, children, tooltip, tooltipPosition, className, isActive, disabled },
     ref
   ) => {
+    const isButtonActive = isActive || editor?.isActive(type || '')
+
     return (
-      <button
+      <SharedButton
         ref={ref}
+        variant="ghost"
+        size="sm"
+        shape="square"
         className={twMerge(
-          'btn btn-ghost btn-sm tooltip tooltip-bottom flex size-8 cursor-pointer touch-manipulation items-center justify-center border-0 p-0 antialiased outline-none',
-          (isActive || editor?.isActive(type || '')) && 'is-active btn-active',
+          'tooltip tooltip-bottom size-8 cursor-pointer touch-manipulation border-0 p-0 antialiased',
+          isButtonActive && 'is-active btn-active',
           tooltipPosition,
           className
         )}
@@ -35,11 +41,11 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
         data-tip={tooltip}
         disabled={disabled}>
         {children}
-      </button>
+      </SharedButton>
     )
   }
 )
 
-Button.displayName = 'Button'
+ToolbarButton.displayName = 'ToolbarButton'
 
-export default Button
+export default ToolbarButton

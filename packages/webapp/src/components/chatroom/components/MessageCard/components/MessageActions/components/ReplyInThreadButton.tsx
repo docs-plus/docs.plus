@@ -1,7 +1,7 @@
 import { useReplyInThreadHandler } from '@components/chatroom/components/MessageCard/hooks/useReplyInThreadHandler'
 import { MdOutlineComment } from 'react-icons/md'
 import { useMessageCardContext } from '../../../MessageCardContext'
-import { twMerge } from 'tailwind-merge'
+import Button from '@components/ui/Button'
 
 type Props = {
   className?: string
@@ -12,14 +12,14 @@ export const ReplyInThreadButton = ({ className }: Props) => {
   const { message } = useMessageCardContext()
 
   return (
-    <button
-      className={twMerge(
-        'btn btn-sm btn-square join-item btn-ghost tooltip tooltip-left',
-        className
-      )}
+    <Button
+      variant="ghost"
+      size="sm"
+      shape="square"
+      className={`join-item tooltip tooltip-left ${className || ''}`}
       data-tip="Reply in thread"
-      onClick={() => replyInThreadHandler(message)}>
-      <MdOutlineComment size={20} className="text-docsy" />
-    </button>
+      onClick={() => replyInThreadHandler(message)}
+      startIcon={<MdOutlineComment size={20} className="text-primary" />}
+    />
   )
 }

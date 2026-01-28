@@ -1,5 +1,5 @@
-import { IoCloseOutline } from 'react-icons/io5'
 import { useChatStore } from '@stores'
+import CloseButton from '@components/ui/CloseButton'
 
 export const ThreadHeader = () => {
   const clearThread = useChatStore((state: any) => state.clearThread)
@@ -9,12 +9,10 @@ export const ThreadHeader = () => {
     clearThread()
   }
   return (
-    <div className="flex w-full flex-row items-center justify-start bg-base-100 px-4 py-3">
-      <h5 className="m-0 font-semibold">Thread</h5>
+    <div className="bg-base-100 flex w-full flex-row items-center justify-start px-4 py-3">
+      <h5 className="m-0 font-semibold text-slate-800">Thread</h5>
       <div className="ml-auto">
-        <button className="btn btn-circle  btn-sm" onClick={handelCloseThread}>
-          <IoCloseOutline className="size-6" />
-        </button>
+        <CloseButton onClick={handelCloseThread} aria-label="Close thread" />
       </div>
     </div>
   )

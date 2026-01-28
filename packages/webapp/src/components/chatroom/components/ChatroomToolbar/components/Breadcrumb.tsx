@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react'
 import { useChatStore, useStore } from '@stores'
-import { RiArrowRightSLine } from 'react-icons/ri'
+import { LuChevronRight } from 'react-icons/lu'
 import slugify from 'slugify'
 import { TIPTAP_NODES } from '@types'
 import { useRouter } from 'next/router'
@@ -32,9 +32,10 @@ export const Breadcrumb = ({ className }: Props) => {
     if (headingId === workspaceId) return
 
     let posAtDOM = getPostAtDOM(editor, headingId)
-    if (posAtDOM === -1) {
+    if (posAtDOM == null || posAtDOM < 0) {
       posAtDOM = getPostAtDOM(editor, '1')
     }
+    if (posAtDOM == null || posAtDOM < 0) return
 
     const nodePos = editor.view.state.doc.resolve(posAtDOM) as any
 
@@ -87,44 +88,40 @@ export const Breadcrumb = ({ className }: Props) => {
   }
 
   // Document Root
-  if (headingId === workspaceId) return <>{metadata.title}</>
+  if (headingId === workspaceId) {
+    return <span className="text-base-content truncate text-sm font-medium">{metadata.title}</span>
+  }
   if (!headingPath.length || !headingId) return null
 
   return (
-    <nav className={twMerge('flex', className)}>
-      <ul className="menu menu-horizontal flex items-center p-0">
+    <nav className={twMerge('flex min-w-0 flex-1', className)} aria-label="Breadcrumb">
+      <ol className="flex min-w-0 items-center gap-1">
         {headingPath.map((heading: any, index: number) => {
+          const isLast = headingPath.length - 1 === index
           return (
-            <React.Fragment key={index}>
-              {index === 0 ? (
-                // <IoMdGitBranch size={18} className="mr-1" />
-                ''
+            <li
+              key={index}
+              className="flex min-w-0 items-center gap-1"
+              aria-current={isLast ? 'page' : undefined}>
+              {index > 0 && <LuChevronRight size={14} className="text-base-content/40 shrink-0" />}
+              {isLast ? (
+                <button
+                  onClick={(e) => scroll2Heading(e, heading)}
+                  className="text-base-content hover:text-primary truncate text-sm font-medium transition-colors">
+                  {heading.text}
+                </button>
               ) : (
-                <RiArrowRightSLine size={20} />
+                <a
+                  onClick={(e) => openChatContainerHandler(e, heading)}
+                  href={heading.url}
+                  className="text-base-content/60 hover:text-primary truncate text-sm transition-colors">
+                  {heading.text}
+                </a>
               )}
-              <li key={index} aria-current={headingPath.length - 1 === index ? 'page' : undefined}>
-                <div className="flex items-center px-1.5 wrap-anywhere">
-                  {headingPath.length - 1 === index ? (
-                    <span
-                      className={headingPath.length > 1 ? '!font-bold' : ''}
-                      onClick={(e) => scroll2Heading(e, heading)}>
-                      {heading.text}
-                    </span>
-                  ) : (
-                    <a
-                      onClick={(e) => openChatContainerHandler(e, heading)}
-                      href={heading.url}
-                      target="_blank"
-                      className="">
-                      {heading.text}
-                    </a>
-                  )}
-                </div>
-              </li>
-            </React.Fragment>
+            </li>
           )
         })}
-      </ul>
+      </ol>
     </nav>
   )
 }

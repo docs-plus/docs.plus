@@ -1,6 +1,9 @@
 import { useDeleteMessageHandler } from '../../hooks/useDeleteMessageHandler'
 import { TMsgRow } from '@types'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import { MdDeleteOutline } from 'react-icons/md'
+import PanelHeader from '@components/ui/PanelHeader'
+import Button from '@components/ui/Button'
 
 type Props = {
   message: TMsgRow
@@ -16,17 +19,29 @@ export const DeleteMessageConfirmationDialog = ({ message }: Props) => {
   }
 
   return (
-    <div className="flex flex-col gap-3 p-4 pr-3 pb-3">
-      <div>
-        <p className="text-gray-600">Do you want to delete this message?</p>
-      </div>
-      <div className="flex justify-end gap-4">
-        <button className="btn btn-ghost" onClick={closeDialog}>
+    <div className="flex flex-col gap-4 p-4 sm:p-6">
+      {/* Header */}
+      <PanelHeader
+        icon={MdDeleteOutline}
+        title="Delete Message"
+        description="This action cannot be undone"
+        variant="error"
+      />
+
+      {/* Content */}
+      <p className="text-sm text-slate-600">
+        Are you sure you want to delete this message? This will permanently remove it from the
+        conversation.
+      </p>
+
+      {/* Actions */}
+      <div className="flex justify-end gap-3 pt-2">
+        <Button variant="ghost" onClick={closeDialog}>
           Cancel
-        </button>
-        <button className="btn btn-ghost" onClick={handleDeleteConfirm}>
+        </Button>
+        <Button variant="error" onClick={handleDeleteConfirm}>
           Delete
-        </button>
+        </Button>
       </div>
     </div>
   )

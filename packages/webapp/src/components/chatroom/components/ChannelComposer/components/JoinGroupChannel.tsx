@@ -3,6 +3,8 @@ import { useAuthStore, useChatStore } from '@stores'
 import { join2Channel } from '@api'
 import { useApi } from '@hooks/useApi'
 import { useChatroomContext } from '../../../ChatroomContext'
+import Button from '@components/ui/Button'
+import { LuUserPlus } from 'react-icons/lu'
 
 export default function JoinGroupChannel() {
   const { channelId } = useChatroomContext()
@@ -43,11 +45,16 @@ export default function JoinGroupChannel() {
   if (!user || !channelId) return null
 
   return (
-    <div className="flex w-full flex-col items-center justify-center p-2">
-      <button className="btn btn-block" onClick={joinToChannel}>
+    <div className="border-base-300 bg-base-100 flex w-full items-center justify-center border-t p-3">
+      <Button
+        variant="primary"
+        shape="wide"
+        size="sm"
+        startIcon={LuUserPlus}
+        onClick={joinToChannel}
+        loading={loading}>
         Join Channel
-        {loading && <span className="loading loading-spinner ml-auto"></span>}
-      </button>
+      </Button>
     </div>
   )
 }

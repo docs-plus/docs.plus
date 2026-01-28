@@ -11,7 +11,7 @@ import {
   setComposerStateDebounced,
   ComposerState
 } from '@db/messageComposerDB'
-import { SignInDialog } from '@components/ui/dialogs'
+import SignInForm from '@components/auth/SignInForm'
 import { isOnlyEmoji } from '@utils/emojis'
 
 import { EditorContent } from '@tiptap/react'
@@ -33,6 +33,7 @@ import { chunkHtmlContent } from '@utils/chunkHtmlContent'
 import * as toast from '@components/toast'
 import { messageInsert } from '../../hooks/listner/helpers'
 import { useChatroomContext } from '../../ChatroomContext'
+import { showNotificationPrompt } from '@components/NotificationPromptCard'
 
 import {
   Actions,
@@ -376,7 +377,7 @@ const MessageComposer = ({
     url.searchParams.set('open_heading_chat', channelId)
     window.history.pushState({}, '', url.href)
 
-    openDialog(<SignInDialog />, { size: 'sm', dismissible: true })
+    openDialog(<SignInForm showHeader onClose={() => {}} />, { size: 'sm', dismissible: true })
   }, [openDialog])
 
   // Main submit function - now clean and focused
@@ -411,10 +412,14 @@ const MessageComposer = ({
         }
       } catch (error: any) {
         toast.Error(error.message)
-      } finally {
-        // 5. Cleanup
-        cleanupAfterSubmit()
+        return
       }
+
+      // 5. Cleanup
+      cleanupAfterSubmit()
+
+      // 6. Show notification prompt (after first message)
+      showNotificationPrompt()
     },
     [
       user,
@@ -460,8 +465,8 @@ const MessageComposer = ({
   }, [isToolbarOpen, workspaceId, channelId, editor])
 
   useEffect(() => {
-    editor && setOrUpdateChatRoom('editorInstance', editor)
-    editorRef.current && setOrUpdateChatRoom('editorRef', editorRef.current)
+    if (editor) setOrUpdateChatRoom('editorInstance', editor)
+    if (editorRef.current) setOrUpdateChatRoom('editorRef', editorRef.current)
   }, [editor, editorRef])
 
   const contextValue = {

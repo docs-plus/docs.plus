@@ -6,6 +6,7 @@ import { twMerge } from 'tailwind-merge'
 type Props = {
   className?: string
 }
+
 export const ParticipantsList = ({ className }: Props) => {
   const [presentUsers, setPresentUsers] = useState<any>([])
   const chatRoom = useChatStore((state) => state.chatRoom)
@@ -21,10 +22,12 @@ export const ParticipantsList = ({ className }: Props) => {
     setPresentUsers(users)
   }, [usersPresence, chatRoom])
 
+  if (!presentUsers.length) return null
+
   return (
-    <div className={twMerge(`flex h-9 items-center`, className)}>
+    <div className={twMerge('flex items-center', className)}>
       <AvatarStack
-        size={9}
+        size="sm"
         users={presentUsers}
         showStatus={true}
         tooltipPosition="tooltip-bottom"

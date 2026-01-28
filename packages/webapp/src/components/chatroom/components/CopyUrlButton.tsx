@@ -1,5 +1,5 @@
 import { MdLink } from 'react-icons/md'
-import * as toast from '@components/toast'
+import CopyButton from '@components/ui/CopyButton'
 
 interface CopyUrlButtonProps {
   url?: string
@@ -11,28 +11,24 @@ interface CopyUrlButtonProps {
 
 export const CopyUrlButton = ({
   url,
-  className = 'btn btn-circle btn-ghost btn-xs',
+  className = '',
   successMessage = 'URL copied to clipboard',
   errorMessage = 'Failed to copy URL',
   dataTip = 'Copy URL'
 }: CopyUrlButtonProps) => {
-  const handleCopyUrl = () => {
-    if (!url) return
-
-    navigator.clipboard
-      .writeText(url)
-      .then(() => {
-        toast.Success(successMessage)
-      })
-      .catch((err) => {
-        console.error('Failed to copy URL:', err)
-        toast.Error(errorMessage)
-      })
-  }
+  if (!url) return null
 
   return (
-    <button className={className} onClick={handleCopyUrl} data-tip={dataTip}>
-      <MdLink size={20} className="rotate-45" />
-    </button>
+    <CopyButton
+      text={url}
+      size="xs"
+      variant="ghost"
+      circle
+      icon={MdLink}
+      className={className}
+      tooltip={dataTip}
+      successMessage={successMessage}
+      errorMessage={errorMessage}
+    />
   )
 }

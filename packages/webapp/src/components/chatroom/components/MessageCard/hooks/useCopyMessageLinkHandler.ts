@@ -1,13 +1,18 @@
 import { useCallback } from 'react'
 import { TMsgRow } from '@types'
 import { useStore } from '@stores'
-import { copyToClipboard } from '@utils/index'
-import * as toast from '@components/toast'
+import useCopyToClipboard from '@hooks/useCopyToClipboard'
 
+/**
+ * Hook for copying message deep links to clipboard.
+ * Uses the shared useCopyToClipboard hook for consistent UX.
+ */
 export const useCopyMessageLinkHandler = () => {
-  const copyMessageLinkHandler = useCallback((message: TMsgRow) => {
-    if (!message) return
+  const { copy, copied, copying } = useCopyToClipboard({
+    successMessage: 'Message link copied to clipboard'
+  })
 
+  const getMessageUrl = useCallback((message: TMsgRow): string => {
     const workspaceId = useStore.getState().settings.workspaceId || ''
     const documentSlug = location.pathname.split('/').pop()
     const channelId = message.channel_id || workspaceId
@@ -19,9 +24,17 @@ export const useCopyMessageLinkHandler = () => {
     url.searchParams.set('c_id', channelId)
     url.searchParams.set('m_id', messageId)
 
-    copyToClipboard(url.toString())
-    toast.Success('Message link copied to clipboard')
+    return url.toString()
   }, [])
 
-  return { copyMessageLinkHandler }
+  const copyMessageLinkHandler = useCallback(
+    (message: TMsgRow) => {
+      if (!message) return
+      const url = getMessageUrl(message)
+      copy(url)
+    },
+    [copy, getMessageUrl]
+  )
+
+  return { copyMessageLinkHandler, copied, copying, getMessageUrl }
 }

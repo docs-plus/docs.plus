@@ -4,10 +4,12 @@ import { useChatStore } from '@stores'
 import { useCallback, useMemo } from 'react'
 import { MdOutlineAddReaction } from 'react-icons/md'
 import { calculateEmojiPickerPosition } from '../../../../../helpers'
+import Button from '@components/ui/Button'
+
 type Props = {
   className?: string
 }
-const AddReactionButton = ({ className }: Props) => {
+const AddReactionButton = ({ className: _className }: Props) => {
   const { message } = useMessageCardContext()
   const user = useAuthStore((state) => state.profile)
   const member = useChatStore((state) => state.channelMembers.get(message.channel_id))
@@ -34,11 +36,13 @@ const AddReactionButton = ({ className }: Props) => {
   if (!canUserReact || Object.keys(message.reactions || {}).length === 0) return null
 
   return (
-    <button
-      className="badge bg-base-300 border-noun cursor-pointer !px-2"
-      onClick={openEmojiPickerHandler}>
-      <MdOutlineAddReaction size={18} />
-    </button>
+    <Button
+      variant="ghost"
+      size="xs"
+      className="badge bg-base-300 cursor-pointer border-none !px-2"
+      onClick={openEmojiPickerHandler}
+      startIcon={<MdOutlineAddReaction size={18} />}
+    />
   )
 }
 

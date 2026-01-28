@@ -11,11 +11,11 @@ export const ProfilePic = ({ message }: { message: TMsgRow }) => {
   const isGroupStart = message.isGroupStart
 
   return (
-    <div className={`avatar ${isGroupStart ? 'block' : 'hidden'}`}>
+    <div className={isGroupStart ? 'block' : 'hidden'}>
       <Avatar
         src={message?.user_details?.avatar_url}
         avatarUpdatedAt={message?.user_details?.avatar_updated_at}
-        className="avatar w-[40px] cursor-pointer rounded-full"
+        size="md"
         id={message?.user_details?.id}
         alt={`avatar_${message?.user_details?.id}`}
       />

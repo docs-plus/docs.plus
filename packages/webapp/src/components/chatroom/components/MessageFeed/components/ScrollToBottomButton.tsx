@@ -3,6 +3,7 @@ import { FaChevronDown } from 'react-icons/fa6'
 import { useMessageFeedContext } from '../MessageFeedContext'
 import { useChatStore } from '@stores'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import Button from '@components/ui/Button'
 
 const BOTTOM_THRESHOLD_PX = 64
 
@@ -74,14 +75,16 @@ export const ScrollToBottom = () => {
   }, [virtualizerRef, messageCount])
 
   return (
-    <button
+    <Button
       onClick={scrollToBottomHandler}
-      className={`btn btn-circle btn-primary absolute right-2 z-20 transition-all duration-300 ${
+      variant="primary"
+      shape="circle"
+      className={`absolute right-2 z-20 transition-all duration-300 ${
         isVisible
           ? 'bottom-3 opacity-100 delay-200'
           : 'pointer-events-none bottom-[-60px] opacity-0'
-      }`}>
-      <FaChevronDown size={23} color="#fff" />
-    </button>
+      }`}
+      startIcon={<FaChevronDown size={23} color="#fff" />}
+    />
   )
 }

@@ -5,6 +5,8 @@ import { join2Channel } from '@api'
 import { useApi } from '@hooks/useApi'
 import { TChannelSettings } from '@types'
 import { useChatroomContext } from '../../../ChatroomContext'
+import Button from '@components/ui/Button'
+import { LuBell, LuBellOff, LuUserPlus } from 'react-icons/lu'
 
 export default function JoinBroadcastChannel() {
   const { channelId } = useChatroomContext()
@@ -83,16 +85,26 @@ export default function JoinBroadcastChannel() {
   if (!user || !channelId) return null
 
   return (
-    <div className="flex w-full flex-col items-center justify-center p-2">
+    <div className="border-base-300 bg-base-100 flex w-full items-center justify-center border-t p-3">
       {isUserChannelMember ? (
-        <button className="btn btn-block" onClick={() => muteHandler(!mute)}>
-          {mute ? 'Unmute' : 'Mute'}
-        </button>
+        <Button
+          variant="ghost"
+          shape="wide"
+          size="sm"
+          startIcon={mute ? LuBell : LuBellOff}
+          onClick={() => muteHandler(!mute)}>
+          {mute ? 'Unmute notifications' : 'Mute notifications'}
+        </Button>
       ) : (
-        <button className="btn btn-block" onClick={joinUserToChannel}>
-          Join
-          {loading && <span className="loading loading-spinner ml-auto"></span>}
-        </button>
+        <Button
+          variant="primary"
+          shape="wide"
+          size="sm"
+          startIcon={LuUserPlus}
+          onClick={joinUserToChannel}
+          loading={loading}>
+          Join Channel
+        </Button>
       )}
     </div>
   )

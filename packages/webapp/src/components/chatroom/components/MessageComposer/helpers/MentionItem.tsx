@@ -1,15 +1,17 @@
 import { Avatar } from '@components/ui/Avatar'
+import Button from '@components/ui/Button'
 import { MdGroups } from 'react-icons/md'
 
 const MentionItem = ({ item, index, selectedIndex, onSelect }: any) => (
   <div key={item.id} className="mention-item">
-    <button
-      className={`flex w-full items-center p-2 hover:bg-gray-100 ${
-        index === selectedIndex ? '!ring-primary/50 bg-gray-100 !ring-1' : ''
+    <Button
+      variant="ghost"
+      className={`hover:bg-base-200 flex w-full items-center justify-start p-2 ${
+        index === selectedIndex ? '!ring-primary/50 bg-base-200 !ring-1' : ''
       }`}
       onClick={() => onSelect(index)}>
       {item.isEveryoneOption ? (
-        <MdGroups className="mr-2 size-8 text-gray-600" />
+        <MdGroups className="text-base-content/70 mr-2 size-8" />
       ) : (
         <Avatar
           id={item.id}
@@ -24,9 +26,9 @@ const MentionItem = ({ item, index, selectedIndex, onSelect }: any) => (
         <span className={`font-medium ${index === selectedIndex ? 'text-primary' : ''}`}>
           {item.full_name || item.username}
         </span>
-        <span className="text-xs text-gray-600">@{item.username}</span>
+        <span className="text-base-content/70 text-xs">@{item.username}</span>
       </span>
-    </button>
+    </Button>
     {index === 0 && <div className="divider m-0 h-2 p-0" />}
   </div>
 )
