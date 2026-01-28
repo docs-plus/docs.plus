@@ -27,7 +27,7 @@ export function useRealtimeSubscription({
 
     const channelName = `admin-${table}-changes`;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     const channel = (supabase.channel(channelName) as any)
       .on(
         'postgres_changes',
@@ -57,7 +57,7 @@ export function useMultiTableSubscription(
 
     const channelName = `admin-multi-${tables.join('-')}`;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+
     let channel: any = supabase.channel(channelName);
 
     // Subscribe to each table
