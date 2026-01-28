@@ -10,28 +10,30 @@ jobs:
     steps:
       - name: Build commit summary (for push)
         id: build
+        env:
+          EVENT_JSON: ${{ toJSON(github.event) }}
         run: |
-          EVENT='${{ toJSON(github.event) }}'
-          COUNT=$(jq -r '.commits | length' <<< "$EVENT")
-          REF=$(jq -r '.ref' <<< "$EVENT" | sed 's|refs/heads/||')
-          COMPARE=$(jq -r '.compare' <<< "$EVENT")
+          COUNT=$(jq -r '.commits | length' <<< "$EVENT_JSON")
+          REF=$(jq -r '.ref' <<< "$EVENT_JSON" | sed 's|refs/heads/||')
+          COMPARE=$(jq -r '.compare' <<< "$EVENT_JSON")
 
           # Check if this is a build trigger commit (skip notification)
-          FIRST_COMMIT_MSG=$(jq -r '.commits[0].message // ""' <<< "$EVENT")
+          # Use jq for comparison to avoid shell escaping issues with special chars
           SKIP_NOTIFICATION="false"
-
-          # Skip if single commit with "build front back" message
-          if [ "$COUNT" -eq 1 ] && [ "$FIRST_COMMIT_MSG" = "build front back" ]; then
-            SKIP_NOTIFICATION="true"
-            echo "⏭️ Skipping Discord notification (build trigger commit)"
+          if [ "$COUNT" -eq 1 ]; then
+            FIRST_MSG=$(jq -r '.commits[0].message // "" | split("\n")[0]' <<< "$EVENT_JSON")
+            if [ "$FIRST_MSG" = "build front back" ]; then
+              SKIP_NOTIFICATION="true"
+              echo "⏭️ Skipping Discord notification (build trigger commit)"
+            fi
           fi
 
           # Write commits directly to file (avoids shell interpolation issues)
           REPO_URL="https://github.com/${{ github.repository }}"
           jq -r --arg repo "$REPO_URL" '.commits | to_entries[] |
             (1 + .key | tostring) + ". " +
-            (.value.message | gsub("\\r?\\n"; " ")) +
-            " [" + .value.id[0:7] + "](" + $repo + "/commit/" + .value.id + ") by " + .value.author.name' <<< "$EVENT" > /tmp/commits.txt
+            (.value.message | gsub("\\r?\\n"; " ") | gsub("[\\(\\)\\[\\]`]"; "")) +
+            " [" + .value.id[0:7] + "](" + $repo + "/commit/" + .value.id + ") by " + .value.author.name' <<< "$EVENT_JSON" > /tmp/commits.txt
 
           {
             echo "COUNT=$COUNT"
