@@ -1,0 +1,77 @@
+# Multi-stage Dockerfile for Admin Dashboard
+# Build context should be monorepo root (../../)
+
+# ============================================================================
+# Stage 1: Base
+# ============================================================================
+FROM oven/bun:1-alpine AS base
+
+RUN apk add --no-cache libc6-compat nodejs
+
+WORKDIR /app
+
+# ============================================================================
+# Stage 2: Dependencies
+# ============================================================================
+FROM base AS deps
+
+COPY package.json bun.lock* ./
+COPY packages/admin-dashboard/package.json ./packages/admin-dashboard/
+
+RUN bun install --frozen-lockfile
+
+# ============================================================================
+# Stage 3: Build
+# ============================================================================
+FROM base AS builder
+
+WORKDIR /app
+
+ARG NODE_ENV=production
+ARG NEXT_PUBLIC_SUPABASE_URL
+ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
+ARG NEXT_PUBLIC_API_URL
+
+ENV NEXT_TELEMETRY_DISABLED=1 \
+    NODE_ENV=${NODE_ENV} \
+    NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL} \
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
+    NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./package.json
+COPY --from=deps /app/bun.lock* ./
+
+COPY packages/admin-dashboard ./packages/admin-dashboard
+COPY tsconfig.json ./
+
+WORKDIR /app/packages/admin-dashboard
+RUN bun run build
+
+# ============================================================================
+# Stage 4: Runner
+# ============================================================================
+FROM base AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3100 \
+    HOSTNAME="0.0.0.0"
+
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nextjs
+
+COPY --from=builder --chown=nextjs:nodejs /app/packages/admin-dashboard/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/packages/admin-dashboard/.next/static ./packages/admin-dashboard/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/packages/admin-dashboard/public ./packages/admin-dashboard/public
+
+USER nextjs
+
+EXPOSE 3100
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
+    CMD bun -e "fetch('http://localhost:3100/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+
+CMD ["bun", "packages/admin-dashboard/server.js"]

@@ -1,0 +1,114 @@
+@import 'tailwindcss';
+@plugin 'daisyui';
+
+/* ============================================
+   Admin Dashboard Theme
+   Uses the same docsplus theme from webapp
+   ============================================ */
+
+@plugin 'daisyui/theme' {
+  name: 'docsplus';
+  default: true;
+  prefersdark: false;
+  color-scheme: 'light';
+
+  /* NEUTRALS */
+  --color-base-100: #fafbfc;
+  --color-base-200: #f7f9fc;
+  --color-base-300: #e5eaf1;
+  --color-base-content: #0f172a;
+
+  /* PRIMARY (brand blue) */
+  --color-primary: #1a73e8;
+  --color-primary-content: #ffffff;
+
+  /* SECONDARY */
+  --color-secondary: #0f9d7a;
+  --color-secondary-content: #06261e;
+
+  /* ACCENT */
+  --color-accent: #eab308;
+  --color-accent-content: #1c1917;
+
+  /* NEUTRAL */
+  --color-neutral: #334155;
+  --color-neutral-content: #f8fafc;
+
+  /* STATUS */
+  --color-info: #0284c7;
+  --color-info-content: #f0f9ff;
+  --color-success: #16a34a;
+  --color-success-content: #052e16;
+  --color-warning: #ea580c;
+  --color-warning-content: #1c1917;
+  --color-error: #dc2626;
+  --color-error-content: #ffffff;
+
+  /* SHAPE */
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'docsplus-dark';
+  default: false;
+  prefersdark: true;
+  color-scheme: 'dark';
+
+  /* NEUTRALS */
+  --color-base-100: #0b1220;
+  --color-base-200: #0f172a;
+  --color-base-300: #1e293b;
+  --color-base-content: #e5e7eb;
+
+  /* PRIMARY */
+  --color-primary: #6ea8ff;
+  --color-primary-content: #0b1220;
+
+  /* SECONDARY */
+  --color-secondary: #2fbf9b;
+  --color-secondary-content: #071a14;
+
+  /* ACCENT */
+  --color-accent: #e3b341;
+  --color-accent-content: #0b1220;
+
+  /* NEUTRAL */
+  --color-neutral: #8b9bb0;
+  --color-neutral-content: #0b1220;
+
+  /* STATUS */
+  --color-info: #38bdf8;
+  --color-info-content: #07131f;
+  --color-success: #22c55e;
+  --color-success-content: #052e16;
+  --color-warning: #fb923c;
+  --color-warning-content: #1c1917;
+  --color-error: #f87171;
+  --color-error-content: #1c1917;
+
+  /* SHAPE */
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* Custom admin styles */
+.admin-sidebar {
+  @apply w-64 bg-base-200 border-r border-base-300;
+}
+
+.stat-card {
+  @apply bg-base-100 rounded-box p-4 border border-base-300;
+}

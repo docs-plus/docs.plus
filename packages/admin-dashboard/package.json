@@ -1,0 +1,45 @@
+{
+  "name": "@docs.plus/admin-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3100 --turbopack",
+    "dev:local": "dotenv -e ../../.env.local -- next dev -p 3100 --turbopack",
+    "build": "dotenv -e ../../.env.production -- next build",
+    "build:local": "dotenv -e ../../.env.local -- next build",
+    "start": "node .next/standalone/packages/admin-dashboard/server.js",
+    "start:local": "dotenv -e ../../.env.local -- node .next/standalone/packages/admin-dashboard/server.js",
+    "lint": "next lint",
+    "lint:fix": "next lint --fix"
+  },
+  "dependencies": {
+    "@supabase/ssr": "^0.8.0",
+    "@supabase/supabase-js": "^2.91.1",
+    "@tanstack/react-query": "^5.90.20",
+    "clsx": "^2.1.1",
+    "daisyui": "^5.5.14",
+    "date-fns": "^4.1.0",
+    "dotenv": "^17.2.3",
+    "dotenv-cli": "^11.0.0",
+    "next": "^16.1.4",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
+    "react-hot-toast": "^2.6.0",
+    "react-icons": "^5.5.0",
+    "recharts": "^3.7.0",
+    "tailwind-merge": "^3.4.0",
+    "tailwindcss": "^4.1.18",
+    "zustand": "^5.0.10"
+  },
+  "devDependencies": {
+    "@types/node": "^25.0.10",
+    "@types/react": "^19.2.9",
+    "@types/react-dom": "^19.2.3",
+    "typescript": "^5.9.3",
+    "@tailwindcss/postcss": "^4.1.18",
+    "postcss": "^8.5.6",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "^16.1.4",
+    "sass": "^1.97.3"
+  }
+}
