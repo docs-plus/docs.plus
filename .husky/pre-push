@@ -11,6 +11,17 @@ else
     exit 1
 fi
 
+# Build TipTap extensions (dependencies for webapp)
+echo "📦 Building TipTap extensions..."
+for ext in extension-hyperlink extension-hypermultimedia extension-indent extension-inline-code; do
+    if bun run --filter "@docs.plus/${ext}" build; then
+        echo "  ✅ ${ext}"
+    else
+        echo "  ❌ ${ext} build failed. Push aborted."
+        exit 1
+    fi
+done
+
 # Build webapp (catches TS errors via Next.js build)
 echo "📦 Building webapp..."
 if bun run --filter "@docs.plus/webapp" build:local; then
