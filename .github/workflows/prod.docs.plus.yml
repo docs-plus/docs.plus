@@ -152,6 +152,7 @@ jobs:
           deploy_service "rest-api" 2
           deploy_service "hocuspocus-server" 2
           deploy_service "hocuspocus-worker" 1
+          deploy_service "admin-dashboard" 1
 
           echo ""
           echo "✅ All services deployed"
@@ -176,7 +177,7 @@ jobs:
           done
 
           # Check scaled services
-          for svc in webapp rest-api hocuspocus-server hocuspocus-worker; do
+          for svc in webapp rest-api hocuspocus-server hocuspocus-worker admin-dashboard; do
             RUNNING=$(docker ps --filter "label=com.docker.compose.service=${svc}" --filter "status=running" --format "{{.Names}}" | wc -l)
             HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${svc}" --filter "health=healthy" --format "{{.Names}}" | wc -l)
 
@@ -220,7 +221,7 @@ jobs:
         run: |
           cd /opt/projects/prod.docs.plus/app/docs.plus/docs.plus
           docker compose -f ${{ env.COMPOSE_FILE }} --env-file ${{ env.ENV_FILE }} up -d \
-            rest-api hocuspocus-server hocuspocus-worker webapp
+            rest-api hocuspocus-server hocuspocus-worker webapp admin-dashboard
           echo "✅ Services running"
 
       - name: 🧹 Cleanup
