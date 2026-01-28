@@ -1,11 +1,33 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Run lerna/nx build
-echo "Running lerna build..."
-if npm run build; then
-    echo "Build successful. Proceeding with push."
+echo "🔍 Pre-push checks starting..."
+
+# Type-check and build admin-dashboard (catches TS errors)
+echo "📦 Building admin-dashboard..."
+if bun run --filter "@docs.plus/admin-dashboard" build:local; then
+    echo "✅ Admin dashboard build successful"
 else
-    echo "Build failed. Push aborted."
+    echo "❌ Admin dashboard build failed. Push aborted."
     exit 1
 fi
+
+# Build hocuspocus-server (backend)
+echo "📦 Building hocuspocus-server..."
+if bun run --filter "@docs.plus/hocuspocus-server" build; then
+    echo "✅ Hocuspocus server build successful"
+else
+    echo "❌ Hocuspocus server build failed. Push aborted."
+    exit 1
+fi
+
+# Build webapp
+echo "📦 Building webapp..."
+if bun run --filter "@docs.plus/webapp" build:local; then
+    echo "✅ Webapp build successful"
+else
+    echo "❌ Webapp build failed. Push aborted."
+    exit 1
+fi
+
+echo "🚀 All pre-push checks passed. Proceeding with push."
