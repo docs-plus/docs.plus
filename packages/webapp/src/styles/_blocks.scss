@@ -7,6 +7,31 @@ $bg-root: #f8f9fa;
 
     .editorWrapper {
       padding-bottom: 300px;
+      overflow-x: hidden; // Prevent horizontal scroll from absolutely positioned chat buttons
+
+      // Styled scrollbar - consistent with ScrollArea but native for performance
+      scrollbar-width: thin;
+      scrollbar-color: oklch(var(--b3)) transparent;
+
+      &::-webkit-scrollbar {
+        width: 8px;
+      }
+
+      &::-webkit-scrollbar-track {
+        background: transparent;
+      }
+
+      &::-webkit-scrollbar-thumb {
+        background: oklch(var(--b3));
+        border-radius: 8px;
+        border: 2px solid transparent;
+        background-clip: content-box;
+
+        &:hover {
+          background: oklch(var(--b3) / 0.8);
+          background-clip: content-box;
+        }
+      }
     }
 
     .tiptap__editor {

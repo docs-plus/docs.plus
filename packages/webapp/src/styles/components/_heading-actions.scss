@@ -74,42 +74,12 @@
     }
   }
 
-  // Unread-only extras (badge + force visibility)
+  // Unread-only extras (force visibility)
+  // Badge styles are in _unread-badge.scss
   .ha-wrap.has-selection > .ha-group[data-unread-count]:not([data-unread-count='']) {
     :is(.ha-chat-btn, .ha-comment-btn) {
       display: flex !important;
       visibility: visible !important;
-    }
-
-    &::before {
-      content: attr(data-unread-count);
-      position: absolute;
-      z-index: 2;
-
-      top: 0;
-      right: 0;
-      left: 23px;
-
-      display: flex;
-      align-items: center;
-      justify-content: center;
-
-      color: #fff;
-      font-weight: 600;
-      font-size: 12px;
-
-      background-color: red !important;
-      border-radius: var(--radius-field);
-
-      width: max-content;
-      max-width: 20rem;
-      padding-block: 0.25rem;
-      padding-inline: 0.5rem;
-
-      text-align: center;
-      white-space: normal;
-      transform: none;
-      opacity: 1;
     }
   }
 }
@@ -120,29 +90,4 @@
   top: 1px;
 }
 
-// Unread message count badge on the chat button (separate feature)
-.ha-chat-btn[data-unread-count]:not([data-unread-count='']) {
-  visibility: visible !important;
-
-  &::before {
-    content: attr(data-unread-count);
-    color: #fff;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    transform: none;
-    opacity: 1;
-    background-color: red !important;
-    font-size: 16px;
-
-    top: 0;
-    right: 0;
-    left: 23px;
-  }
-
-  &::after {
-    display: none;
-  }
-}
+// Note: Unread badge styles are now in _unread-badge.scss for consistency

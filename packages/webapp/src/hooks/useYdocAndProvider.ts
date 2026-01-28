@@ -14,7 +14,14 @@ import { useStore } from '@stores'
  * We only show "saved" when we get actual confirmation from the server.
  */
 
-const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
+type DeviceType = 'desktop' | 'mobile' | 'tablet'
+
+interface UseYdocAndProviderProps {
+  accessToken: string
+  deviceType?: DeviceType
+}
+
+const useYdocAndProvider = ({ accessToken, deviceType = 'desktop' }: UseYdocAndProviderProps) => {
   const {
     metadata: { documentId, slug }
   } = useStore((state) => state.settings)
@@ -42,7 +49,7 @@ const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
           url: providerUrl,
           name: documentId,
           document: ydocRef.current,
-          token: JSON.stringify({ accessToken: accessToken || '', slug: slug }),
+          token: JSON.stringify({ accessToken: accessToken || '', slug: slug, deviceType }),
           // onStatus: (data) => {
           //   console.log('onStatus', data)
           // },
@@ -126,7 +133,6 @@ const useYdocAndProvider = ({ accessToken }: { accessToken: string }) => {
     return () => {
       providerRef.current?.destroy()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [documentId])
 
   // Track Y.Doc updates for sync state (local changes only)

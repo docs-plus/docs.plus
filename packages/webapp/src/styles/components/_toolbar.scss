@@ -14,16 +14,16 @@
 
   button {
     &.is-active {
-      background-color: #e8f0fe;
-      color: #1a73e8;
+      background-color: oklch(var(--p) / 0.1);
+      color: oklch(var(--p));
 
       svg {
-        fill: #1a73e8;
+        fill: oklch(var(--p));
       }
     }
 
     &[disabled]:hover {
-      color: #aaa;
+      color: oklch(var(--bc) / 0.4);
       background-color: transparent;
     }
   }
@@ -42,9 +42,9 @@
 
 .tiptap__toolbar,
 .chatroom__toolbar {
-  border-bottom-width: 1px;
   border-top-width: 1px;
-  border-color: #e0e0e0;
+  border-bottom-width: 1px;
+  border-color: oklch(var(--b3));
 
   .divided {
     display: inline-block;
@@ -54,21 +54,21 @@
     margin-top: 6px;
     margin-bottom: 6px;
     border-left-width: 1px;
-    border-color: #e0e0e0;
+    border-color: oklch(var(--b3));
   }
 
   button {
     &.is-active {
-      background-color: #e8f0fe;
-      color: #1a73e8;
+      background-color: oklch(var(--p) / 0.1);
+      color: oklch(var(--p));
 
       svg {
-        fill: #1a73e8;
+        fill: oklch(var(--p));
       }
     }
 
     &[disabled]:hover {
-      color: #aaa;
+      color: oklch(var(--bc) / 0.4);
       background-color: transparent;
     }
   }
@@ -76,8 +76,8 @@
   .gearModal,
   .filterModal {
     width: 430px;
-    background: #fff;
-    border-radius: 4px;
+    background: oklch(var(--b1));
+    border-radius: var(--rounded-box);
 
     .content {
       display: flex;
@@ -93,7 +93,7 @@
 button {
   &[disabled] {
     svg {
-      fill: #aaa;
+      fill: oklch(var(--bc) / 0.4);
     }
   }
 }

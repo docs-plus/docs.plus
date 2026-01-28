@@ -1,38 +1,121 @@
 @import 'tailwindcss';
 @plugin 'daisyui';
 
+/* ============================================
+   docs.plus Theme System
+   Light & Dark themes with consistent design language
+   ============================================ */
+/* ============================================
+   docs.plus Theme System (Mature v2)
+   Calm, professional, docs-first
+   ============================================ */
+
 @plugin 'daisyui/theme' {
-  name: 'docsyLight';
+  name: 'docsplus';
   default: true;
   prefersdark: false;
   color-scheme: 'light';
-  --color-base-100: oklch(100% 0 0);
-  --color-base-200: oklch(98% 0 0);
-  --color-base-300: oklch(95% 0 0);
-  --color-base-content: oklch(21% 0.006 285.885);
-  --color-primary: #2778ff;
-  --color-primary-content: oklch(93% 0.034 272.788);
-  --color-secondary: oklch(65% 0.241 354.308);
-  --color-secondary-content: oklch(94% 0.028 342.258);
-  --color-accent: oklch(77% 0.152 181.912);
-  --color-accent-content: oklch(38% 0.063 188.416);
-  --color-neutral: oklch(14% 0.005 285.823);
-  --color-neutral-content: oklch(92% 0.004 286.32);
-  --color-info: oklch(74% 0.16 232.661);
-  --color-info-content: oklch(29% 0.066 243.157);
-  --color-success: oklch(76% 0.177 163.223);
-  --color-success-content: oklch(37% 0.077 168.94);
-  --color-warning: oklch(82% 0.189 84.429);
-  --color-warning-content: oklch(41% 0.112 45.904);
-  --color-error: oklch(71% 0.194 13.428);
-  --color-error-content: oklch(27% 0.105 12.094);
-  --radius-selector: 0.5rem;
-  --radius-field: 0.5rem;
-  --radius-box: 0.5rem;
+
+  /* NEUTRALS */
+  --color-base-100: #fafbfc; /* document canvas, soft white */
+  --color-base-200: #f7f9fc; /* subtle surfaces */
+  --color-base-300: #e5eaf1; /* borders/dividers */
+  --color-base-content: #0f172a; /* slate-900 (clean + readable) */
+
+  /* PRIMARY (brand blue) */
+  --color-primary: #1a73e8; /* docs blue */
+  --color-primary-content: #ffffff;
+
+  /* SECONDARY (collaboration / presence) */
+  --color-secondary: #0f9d7a; /* calm teal-green */
+  --color-secondary-content: #06261e;
+
+  /* ACCENT (highlights / bookmarks / comments) */
+  --color-accent: #eab308; /* warm gold (refined highlight) */
+  --color-accent-content: #1c1917;
+
+  /* NEUTRAL (chrome / icons / secondary UI) */
+  --color-neutral: #334155; /* slate-700 */
+  --color-neutral-content: #f8fafc;
+
+  /* STATUS */
+  --color-info: #0284c7; /* sky-600 (calm info) */
+  --color-info-content: #f0f9ff;
+
+  --color-success: #16a34a; /* green-600 (not neon) */
+  --color-success-content: #052e16;
+
+  --color-warning: #ea580c; /* orange-600 (distinct from gold accent) */
+  --color-warning-content: #1c1917;
+
+  --color-error: #dc2626; /* red-600 */
+  --color-error-content: #ffffff;
+
+  /* SHAPE SYSTEM */
+  --radius-selector: 0.5rem; /* 8px */
+  --radius-field: 0.5rem; /* 8px */
+  --radius-box: 1rem; /* 16px */
+
   --size-selector: 0.25rem;
   --size-field: 0.25rem;
   --border: 1px;
-  --depth: 1;
+
+  /* Docs apps: prefer borders over shadows */
+  --depth: 0;
+  --noise: 0;
+}
+
+@plugin 'daisyui/theme' {
+  name: 'docsplus-dark';
+  default: false;
+  prefersdark: true;
+  color-scheme: 'dark';
+
+  /* NEUTRALS */
+  --color-base-100: #0b1220; /* deep blue-black */
+  --color-base-200: #0f172a; /* surface */
+  --color-base-300: #1e293b; /* borders */
+  --color-base-content: #e5e7eb; /* soft white */
+
+  /* PRIMARY (brand blue, darker-friendly) */
+  --color-primary: #6ea8ff; /* softer than neon */
+  --color-primary-content: #0b1220;
+
+  /* SECONDARY (collaboration / presence) */
+  --color-secondary: #2fbf9b; /* calm teal-green */
+  --color-secondary-content: #071a14;
+
+  /* ACCENT (highlights / bookmarks / comments) */
+  --color-accent: #e3b341; /* warm gold */
+  --color-accent-content: #0b1220;
+
+  /* NEUTRAL (chrome / icons) */
+  --color-neutral: #8b9bb0; /* muted gray-blue */
+  --color-neutral-content: #0b1220;
+
+  /* STATUS */
+  --color-info: #38bdf8; /* sky-400 */
+  --color-info-content: #07131f;
+
+  --color-success: #22c55e; /* green-500 (balanced in dark) */
+  --color-success-content: #071a14;
+
+  --color-warning: #fb7a3a; /* orange (distinct from accent gold) */
+  --color-warning-content: #0b1220;
+
+  --color-error: #ff6b6b; /* coral red */
+  --color-error-content: #0b1220;
+
+  /* SHAPE SYSTEM (must match light theme) */
+  --radius-selector: 0.5rem; /* 8px */
+  --radius-field: 0.5rem; /* 8px */
+  --radius-box: 1rem; /* 16px */
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+
+  --depth: 0;
   --noise: 0;
 }
 
@@ -45,13 +128,29 @@
   --font-family: 'Helvetica, Arial, sans-serif';
   --color-docsy: #2778ff;
   --text-docsy: #2778ff;
-  --caret-color: #2778ff; /* Docsy brand color */
-  --caret-color-inverse: oklch(100% 0 0); /* For dark backgrounds */
+  --caret-color: #2778ff;
+  --caret-color-inverse: #ffffff;
 }
 
 * {
   box-sizing: border-box;
   font-family: Helvetica, Arial, sans-serif;
+}
+
+/* Interactive elements should have pointer cursor */
+button,
+[role='button'],
+[type='button'],
+[type='submit'],
+[type='reset'],
+summary {
+  cursor: pointer;
+}
+
+/* Disabled elements should show not-allowed cursor */
+button:disabled,
+[role='button'][aria-disabled='true'] {
+  cursor: not-allowed;
 }
 
 input {
@@ -1066,6 +1165,66 @@ ol {
   animation: avatar-typing 0.8s ease-in-out infinite;
 }
 
+/* ============================================
+   Unread Badge Animations
+   ============================================ */
+
+/* Entry animation - scale + fade in */
+/* ============================================
+   Unread Badge Animations - CSS Only
+   ============================================ */
+
+/* Entry animation - scale in */
+@keyframes badge-entry {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.2);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Count UP - new number slides from bottom */
+@keyframes badge-count-up {
+  0% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Count DOWN - new number slides from top */
+@keyframes badge-count-down {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-badge-entry {
+  animation: badge-entry 0.3s ease-out forwards;
+}
+
+.animate-badge-count-up {
+  animation: badge-count-up 0.25s ease-out forwards;
+}
+
+.animate-badge-count-down {
+  animation: badge-count-down 0.25s ease-out forwards;
+}
+
 /* Context menu active state for message cards */
 .msg_card.context-menu-active {
   background-color: #f0f4ff !important;
@@ -1086,4 +1245,139 @@ ol {
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
+}
+
+/* ============================================
+   Custom ScrollArea Component Styles
+   ============================================ */
+
+/* Base custom scrollbar styles */
+.scrollbar-custom {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+
+  /* Smooth scrolling */
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* WebKit (Chrome, Safari, Edge) custom scrollbar */
+.scrollbar-custom::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 8px;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 8px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+  transition: background 0.2s ease;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+  background-clip: content-box;
+}
+
+.scrollbar-custom::-webkit-scrollbar-thumb:active {
+  background: rgba(148, 163, 184, 0.8);
+  background-clip: content-box;
+}
+
+.scrollbar-custom::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Thin scrollbar variant */
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  border: 1px solid transparent;
+}
+
+/* Default scrollbar size */
+.scrollbar-default::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+/* Hide scrollbar by default, show on hover - preserves width */
+.scrollbar-hide {
+  /* Firefox: use transparent color to preserve gutter space */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  /* Keep width consistent - don't set to 0 */
+  width: 6px;
+  height: 6px;
+}
+
+.scrollbar-hide::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scrollbar-hide::-webkit-scrollbar-thumb {
+  /* Transparent by default - space is preserved */
+  background: transparent;
+  border-radius: 8px;
+  transition: background 0.2s ease;
+}
+
+/* Hover state - reveal the scrollbar */
+.scrollbar-hide:hover {
+  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+}
+
+.scrollbar-hide:hover::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background-clip: content-box;
+}
+
+.scrollbar-hide:hover::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+  background-clip: content-box;
+}
+
+/* Primary color scrollbar variant */
+.scrollbar-primary {
+  scrollbar-color: rgba(39, 120, 255, 0.4) transparent;
+}
+
+.scrollbar-primary::-webkit-scrollbar-thumb {
+  background: rgba(39, 120, 255, 0.4);
+}
+
+.scrollbar-primary::-webkit-scrollbar-thumb:hover {
+  background: rgba(39, 120, 255, 0.6);
+}
+
+/* Dark scrollbar variant */
+.scrollbar-dark {
+  scrollbar-color: rgba(30, 41, 59, 0.5) transparent;
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb {
+  background: rgba(30, 41, 59, 0.5);
+}
+
+.scrollbar-dark::-webkit-scrollbar-thumb:hover {
+  background: rgba(30, 41, 59, 0.7);
 }

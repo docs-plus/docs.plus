@@ -232,6 +232,8 @@ html.m_mobile #__next {
               top: auto !important;
               left: auto !important;
               right: auto !important;
+              // Entry animation
+              animation: badge-entry 0.3s ease-out forwards;
             }
           }
         }

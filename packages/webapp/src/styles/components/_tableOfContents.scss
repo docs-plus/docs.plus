@@ -545,6 +545,8 @@
       display: flex;
       align-items: center;
       justify-content: center;
+      // Entry animation
+      animation: badge-entry 0.3s ease-out forwards;
     }
   }
 }

@@ -98,7 +98,7 @@
     "lowlight": "^3.3.0",
     "mobile-detect": "^1.4.5",
     "motion": "^12.23.24",
-    "next": "15.5.7",
+    "next": "15.5.9",
     "next-pwa": "^5.6.0",
     "next-secure-headers": "^2.2.0",
     "open-graph-scraper": "^6.10.0",

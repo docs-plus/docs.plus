@@ -1,36 +1,19 @@
-// @ts-nocheck
 import { useEffect } from 'react'
-import { useAuthStore, useStore } from '@stores'
-import { toast } from 'react-hot-toast'
+import { useStore } from '@stores'
 
 const useEditorReadOnly = () => {
-  const user = useAuthStore((state) => state.profile)
   const {
-    metadata,
     hocuspocusProvider: provider,
     editor: { instance: editor }
   } = useStore((state) => state.settings)
-  // readOnly handler
 
-  // this runs when statless event is fired
+  // This runs when stateless event is fired
   useEffect(() => {
     if (!provider || !editor) return
 
-    const statelessHandler = ({ payload }: any) => {
-      // TODO: remove this
-      return
-      const payloadData = JSON.parse(payload)
-
-      if (payloadData.type === 'readOnly') {
-        if (!editor) return
-
-        if (metadata.ownerId === user?.id) return editor.setEditable(true)
-
-        editor.setEditable(!payloadData.state)
-
-        if (payloadData.state) return toast.error('Document is now read only')
-        toast.success('Document is now editable')
-      }
+    const statelessHandler = ({ payload: _payload }: { payload: string }) => {
+      // TODO: Re-enable read-only handling when backend implementation is ready
+      // Currently disabled as the feature is not yet complete
     }
 
     provider.on('stateless', statelessHandler)
@@ -38,7 +21,7 @@ const useEditorReadOnly = () => {
     return () => {
       provider?.off('stateless', statelessHandler)
     }
-  }, [provider, editor, user, metadata])
+  }, [provider, editor])
 }
 
 export default useEditorReadOnly

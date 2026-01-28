@@ -1,0 +1,114 @@
+// =============================================================================
+// Unread Badge - Unified CSS-only solution
+// =============================================================================
+// All elements with [data-unread-count] get a badge via ::before pseudo-element.
+// CSS handles all visuals and animations - zero JS overhead.
+// =============================================================================
+
+// Shared badge styles via mixin
+@mixin unread-badge($top: -4px, $right: -8px, $size: 20px, $font-size: 11px) {
+  position: relative;
+
+  &::before {
+    content: attr(data-unread-count);
+    position: absolute;
+    top: $top;
+    right: $right;
+    z-index: 10;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    min-width: $size;
+    height: $size;
+    padding: 0 6px;
+
+    // Error color (red) - !important to override btn/daisyUI styles
+    background-color: var(--color-error, #ef4444) !important;
+    color: var(--color-error-content, #fff) !important;
+    border-radius: calc($size / 2);
+
+    font-size: $font-size;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
+
+    // Clip text overflow inside badge
+    overflow: hidden;
+
+    // Default: entry animation
+    animation: badge-entry 0.3s ease-out forwards;
+  }
+
+  // Count UP - slide from bottom
+  &[data-count-dir='up']::before {
+    animation: badge-count-up 0.25s ease-out forwards;
+  }
+
+  // Count DOWN - slide from top
+  &[data-count-dir='down']::before {
+    animation: badge-count-down 0.25s ease-out forwards;
+  }
+}
+
+// =============================================================================
+// Floating Chat Button (.btnOpenChatBox)
+// =============================================================================
+.btnOpenChatBox[data-unread-count]:not([data-unread-count='']) {
+  @include unread-badge($top: -4px, $right: -8px, $size: 20px, $font-size: 11px);
+  visibility: visible !important;
+}
+
+// =============================================================================
+// TOC Chat Button (.btn_chat)
+// =============================================================================
+.btn_chat[data-unread-count]:not([data-unread-count='']) {
+  @include unread-badge($top: -2px, $right: -6px, $size: 16px, $font-size: 10px);
+
+  // Hide the chat icon when badge is shown
+  .chatLeft,
+  svg {
+    display: none;
+  }
+}
+
+// =============================================================================
+// Mobile Chat Button (.btn_openChatBox)
+// =============================================================================
+.btn_openChatBox[data-unread-count]:not([data-unread-count='']) {
+  @include unread-badge($top: 2px, $right: 2px, $size: 18px, $font-size: 10px);
+}
+
+// =============================================================================
+// Notification Bell Badge ([data-notification-badge])
+// =============================================================================
+[data-notification-badge][data-unread-count]:not([data-unread-count='']) {
+  @include unread-badge($top: -2px, $right: -4px, $size: 18px, $font-size: 10px);
+}
+
+// =============================================================================
+// Heading Actions Group Badge
+// =============================================================================
+.ha-group[data-unread-count]:not([data-unread-count='']) {
+  @include unread-badge($top: 0, $right: 0, $size: 20px, $font-size: 12px);
+
+  &::before {
+    left: 23px;
+    right: auto;
+  }
+}
+
+.ha-chat-btn[data-unread-count]:not([data-unread-count='']) {
+  @include unread-badge($top: 0, $right: 0, $size: 20px, $font-size: 16px);
+  visibility: visible !important;
+
+  &::before {
+    left: 23px;
+    right: auto;
+  }
+
+  &::after {
+    display: none;
+  }
+}

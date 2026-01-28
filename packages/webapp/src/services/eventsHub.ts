@@ -10,6 +10,7 @@ export const CHAT_CLOSE = Symbol('chat.close')
 export const APPLY_FILTER = Symbol('apply.filter')
 export const REMOVE_FILTER = Symbol('remove.filter')
 export const RESET_FILTER = Symbol('reset.filter')
+export const UNREAD_SYNC = Symbol('unread.sync')
 
 type TChatCommentData = {
   content: string
@@ -44,6 +45,10 @@ type TCloseChatData = {
 type TResetFilterData = {
   callback: () => void
   applyFilters: boolean
+}
+
+type TUnreadSyncData = {
+  channels: Map<string, { unread_message_count?: number }>
 }
 
 export const eventsHub = (router: NextRouter) => {
@@ -155,7 +160,7 @@ export const eventsHub = (router: NextRouter) => {
             console.info(`Attempt ${attempt} failed: ${error.message}. Retrying...`)
           }
         }
-      ).then((result) => {
+      ).then((_result) => {
         // do nothing
       })
     }
@@ -256,4 +261,105 @@ export const eventsHub = (router: NextRouter) => {
       if (callback) callback()
     }, 500)
   })
+
+  /**
+   * UNREAD_SYNC: Updates unread count badges via DOM attributes.
+   * CSS handles all visuals and animations - zero React re-renders.
+   *
+   * Animation direction:
+   * - data-count-dir="up" → number slides from bottom (count increased)
+   * - data-count-dir="down" → number slides from top (count decreased)
+   *
+   * Selectors updated (by data-heading-id):
+   * - .btnOpenChatBox[data-heading-id] (floating chat buttons via ProseMirror)
+   * - .btn_chat[data-heading-id] (TOC chat buttons)
+   * - .btn_openChatBox[data-heading-id] (mobile chat buttons)
+   *
+   * Fallback selectors (by parent wrapBlock):
+   * - .wrapBlock[data-id] > .title .btnOpenChatBox
+   * - .wrapBlock[data-id] > .title .ha-group
+   * - .wrapBlock[data-id] > .buttonWrapper .btn_openChatBox
+   *
+   * - [data-notification-badge] (notification bell)
+   */
+  PubSub.subscribe(UNREAD_SYNC, (msg, data: TUnreadSyncData) => {
+    const { channels } = data
+
+    /**
+     * Helper: Update a single element with unread count + animation
+     */
+    const updateElement = (el: HTMLElement, count: number) => {
+      const oldCount = parseInt(el.dataset.unreadCount || '0', 10)
+
+      if (count > 0) {
+        const displayCount = count > 99 ? '99+' : String(count)
+
+        // Only animate if count actually changed
+        if (count !== oldCount) {
+          el.dataset.countDir = count > oldCount ? 'up' : 'down'
+          el.style.animation = 'none'
+          void el.offsetHeight // Force reflow
+          el.style.animation = ''
+        }
+
+        el.dataset.unreadCount = displayCount
+      } else {
+        delete el.dataset.unreadCount
+        delete el.dataset.countDir
+      }
+    }
+
+    // Strategy 1: Update elements with data-heading-id attribute
+    const directSelectors = [
+      '.btnOpenChatBox[data-heading-id]',
+      '.btn_chat[data-heading-id]',
+      '.btn_openChatBox[data-heading-id]'
+    ]
+
+    document.querySelectorAll<HTMLElement>(directSelectors.join(',')).forEach((el) => {
+      const headingId = el.dataset.headingId
+      if (!headingId) return
+
+      const channel = channels.get(headingId)
+      updateElement(el, channel?.unread_message_count ?? 0)
+    })
+
+    // Strategy 2: Fallback - Update elements via parent wrapBlock[data-id]
+    // (for elements that don't have data-heading-id yet)
+    channels.forEach((channel, channelId) => {
+      if (!channel || channel.unread_message_count === undefined) return
+
+      const fallbackSelectors = [
+        `.wrapBlock[data-id="${channelId}"] > .title .btnOpenChatBox:not([data-heading-id])`,
+        `.wrapBlock[data-id="${channelId}"] > .title .ha-group`,
+        `.wrapBlock[data-id="${channelId}"] > .buttonWrapper .btn_openChatBox:not([data-heading-id])`
+      ]
+
+      fallbackSelectors.forEach((selector) => {
+        const el = document.querySelector<HTMLElement>(selector)
+        if (el) {
+          updateElement(el, channel.unread_message_count ?? 0)
+        }
+      })
+    })
+
+    // Update notification bell badge
+    const totalUnread = Array.from(channels.values()).reduce(
+      (sum, ch) => sum + (ch?.unread_message_count ?? 0),
+      0
+    )
+
+    document.querySelectorAll<HTMLElement>('[data-notification-badge]').forEach((el) => {
+      updateElement(el, totalUnread)
+    })
+  })
+}
+
+/**
+ * Publish UNREAD_SYNC event - call this when channels update.
+ * Typically called from a zustand subscription or after fetching channels.
+ */
+export const publishUnreadSync = () => {
+  const channels = useChatStore.getState().channels
+  PubSub.publish(UNREAD_SYNC, { channels })
 }

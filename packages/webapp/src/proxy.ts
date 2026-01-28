@@ -5,7 +5,7 @@ import { logger } from '@utils/logger'
  * Middleware for request handling, error redirects, and logging
  * Runs on Edge Runtime - keep it lightweight and fast
  */
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const startTime = Date.now()
   const requestId = crypto.randomUUID()
   const { pathname, searchParams } = request.nextUrl

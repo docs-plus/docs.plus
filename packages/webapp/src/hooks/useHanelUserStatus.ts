@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useMemo } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import debounce from 'lodash/debounce'
 import { updateUser } from '@api'
 import { useAuthStore } from '@stores'
 
 const ONLINE = 'ONLINE'
 const OFFLINE = 'OFFLINE'
+const HEARTBEAT_INTERVAL = 60000 // 60 seconds - keeps online_at fresh for push suppression
 
 export const useHandleUserStatus = () => {
-  // Add a null check in case the store isn't ready
   const user = useAuthStore ? useAuthStore((state) => state?.profile) : null
+  const heartbeatRef = useRef<NodeJS.Timeout | null>(null)
 
   const updateUserStatus = useCallback(
     async (newStatus: 'ONLINE' | 'OFFLINE') => {
@@ -19,9 +20,7 @@ export const useHandleUserStatus = () => {
         try {
           sessionStorage.setItem('userLastStatus', newStatus)
           console.info(`Updated user status: ${newStatus}`)
-          await updateUser(user.id, {
-            status: newStatus
-          })
+          await updateUser(user.id, { status: newStatus })
         } catch (error) {
           console.error('Failed to update user status', error)
         }
@@ -29,6 +28,16 @@ export const useHandleUserStatus = () => {
     },
     [user]
   )
+
+  // Silent heartbeat - refreshes online_at without changing status
+  const sendHeartbeat = useCallback(async () => {
+    if (!user || document.visibilityState !== 'visible') return
+    try {
+      await updateUser(user.id, { status: ONLINE })
+    } catch {
+      // Silent fail - heartbeat is best effort
+    }
+  }, [user])
 
   // Debounced updateUserStatus function
   const debouncedUpdateUserStatus = useMemo(
@@ -47,49 +56,75 @@ export const useHandleUserStatus = () => {
     [debouncedUpdateUserStatus]
   )
 
-  const handleUnload = () => {
+  const startHeartbeat = useCallback(() => {
+    if (heartbeatRef.current) clearInterval(heartbeatRef.current)
+    heartbeatRef.current = setInterval(sendHeartbeat, HEARTBEAT_INTERVAL)
+  }, [sendHeartbeat])
+
+  const stopHeartbeat = useCallback(() => {
+    if (heartbeatRef.current) {
+      clearInterval(heartbeatRef.current)
+      heartbeatRef.current = null
+    }
+  }, [])
+
+  const handleVisibilityChange = useCallback(() => {
+    if (document.visibilityState === 'visible') {
+      handleOnline()
+      startHeartbeat()
+    } else {
+      handleOffline()
+      stopHeartbeat()
+    }
+  }, [handleOnline, handleOffline, startHeartbeat, stopHeartbeat])
+
+  const handleUnload = useCallback(() => {
     if (!user) return
 
     if ('serviceWorker' in navigator && 'SyncManager' in window) {
       navigator.serviceWorker.ready.then((registration) => {
         console.info('Service worker ready', registration)
         // @ts-ignore
-        registration.active.postMessage({
+        registration.active?.postMessage({
           type: 'UPDATE_USER_STATUS',
-          payload: {
-            userId: user?.id,
-            status: OFFLINE
-          }
+          payload: { userId: user?.id, status: OFFLINE }
         })
       })
     }
-  }
+  }, [user])
 
   useEffect(() => {
-    window.addEventListener('beforeunload', handleUnload)
-
-    // first mount status
+    // Set online on mount
     handleOnline()
 
+    // Start heartbeat if tab is visible
+    if (document.visibilityState === 'visible') {
+      startHeartbeat()
+    }
+
+    // Event listeners
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
     window.addEventListener('beforeunload', handleOffline)
-    document.addEventListener('visibilitychange', () => {
-      document.visibilityState === 'visible' ? handleOnline() : handleOffline()
-    })
+    window.addEventListener('beforeunload', handleUnload)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
 
     return () => {
+      stopHeartbeat()
       window.removeEventListener('online', handleOnline)
       window.removeEventListener('offline', handleOffline)
       window.removeEventListener('beforeunload', handleOffline)
-
       window.removeEventListener('beforeunload', handleUnload)
-
-      document.removeEventListener('visibilitychange', () => {
-        document.visibilityState === 'visible' ? handleOnline() : handleOffline()
-      })
-      // @ts-ignore
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
       debouncedUpdateUserStatus.cancel()
     }
-  }, [handleOnline, handleOffline, debouncedUpdateUserStatus])
+  }, [
+    handleOnline,
+    handleOffline,
+    handleUnload,
+    handleVisibilityChange,
+    startHeartbeat,
+    stopHeartbeat,
+    debouncedUpdateUserStatus
+  ])
 }
