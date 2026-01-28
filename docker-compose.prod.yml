@@ -497,7 +497,7 @@ services:
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://prodback.docs.plus/api}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://prodback.docs.plus}
         NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://docs.plus}
     restart: always
     stop_grace_period: 30s
@@ -508,7 +508,7 @@ services:
       HOSTNAME: '0.0.0.0'
       NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://prodback.docs.plus/api}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://prodback.docs.plus}
       NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://docs.plus}
     networks:
       - docsplus-network

@@ -9,8 +9,9 @@ const withPWA = require('next-pwa')({
   disable: !isProduction,
   register: true,
   skipWaiting: false,
-  runtimeCaching
-  // disableDevLogs: true,
+  runtimeCaching,
+  // Exclude files that don't exist in Next.js 15+
+  buildExcludes: [/dynamic-css-manifest\.json$/, /middleware-manifest\.json$/]
 })
 
 module.exports = withPWA({

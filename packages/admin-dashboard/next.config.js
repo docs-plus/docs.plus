@@ -52,7 +52,7 @@ const nextConfig = {
       "style-src 'self' 'unsafe-inline'",
       `img-src 'self' data: blob: https://*.supabase.co https://*.googleusercontent.com${isDev ? ' http://localhost:* http://127.0.0.1:*' : ''}`,
       "font-src 'self' data:",
-      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com${localDevHosts}`,
+      `connect-src 'self' https://*.supabase.co wss://*.supabase.co https://accounts.google.com https://*.docs.plus${localDevHosts}`,
       `frame-src 'self' https://accounts.google.com${isDev ? ' http://localhost:*' : ''}`,
       "frame-ancestors 'none'",
       "form-action 'self'",
