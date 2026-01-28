@@ -483,6 +483,79 @@ services:
         max_attempts: 0
         window: 60s
 
+  # ===========================================================================
+  # ADMIN DASHBOARD (Next.js)
+  # Internal admin interface - single replica, restricted access
+  # ===========================================================================
+  admin-dashboard:
+    image: docsplus-admin:${DEPLOY_TAG:-latest}
+    env_file: .env.production
+    build:
+      context: .
+      dockerfile: packages/admin-dashboard/docker/Dockerfile.bun
+      target: runner
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://prodback.docs.plus/api}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://docs.plus}
+    restart: always
+    stop_grace_period: 30s
+    stop_signal: SIGTERM
+    environment:
+      NODE_ENV: production
+      PORT: 3100
+      HOSTNAME: '0.0.0.0'
+      NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-https://prodback.docs.plus/api}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-https://docs.plus}
+    networks:
+      - docsplus-network
+    labels:
+      - 'traefik.enable=true'
+      # Admin dashboard (admin.docs.plus)
+      - 'traefik.http.routers.admin.rule=Host(`admin.docs.plus`)'
+      - 'traefik.http.routers.admin.entrypoints=websecure'
+      - 'traefik.http.routers.admin.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.admin.service=admin'
+      - 'traefik.http.routers.admin.middlewares=security-headers@file,gzip@file'
+      - 'traefik.http.services.admin.loadbalancer.server.port=3100'
+      # Health check
+      - 'traefik.http.services.admin.loadbalancer.healthcheck.path=/api/health'
+      - 'traefik.http.services.admin.loadbalancer.healthcheck.interval=10s'
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'bun',
+          '-e',
+          "fetch('http://localhost:3100/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: 'json-file'
+      options:
+        max-size: '50m'
+        max-file: '3'
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+        reservations:
+          cpus: '0.1'
+          memory: 128M
+      restart_policy:
+        condition: any
+        delay: 5s
+        max_attempts: 0
+        window: 60s
+
 # =============================================================================
 # VOLUMES
 # =============================================================================

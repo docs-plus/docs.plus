@@ -15,10 +15,12 @@ WORKDIR /app
 # ============================================================================
 FROM base AS deps
 
+# Copy root package files
 COPY package.json bun.lock* ./
 COPY packages/admin-dashboard/package.json ./packages/admin-dashboard/
 
-RUN bun install --frozen-lockfile
+# Install from root (only admin-dashboard workspace)
+RUN bun install --filter "@docs.plus/admin-dashboard"
 
 # ============================================================================
 # Stage 3: Build
@@ -38,6 +40,7 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
     NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
+# Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=deps /app/package.json ./package.json
 COPY --from=deps /app/bun.lock* ./

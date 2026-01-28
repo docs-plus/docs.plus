@@ -27,16 +27,12 @@ export function useRealtimeSubscription({
 
     const channelName = `admin-${table}-changes`;
 
-    const channel = supabase
-      .channel(channelName)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const channel = (supabase.channel(channelName) as any)
       .on(
         'postgres_changes',
-        {
-          event,
-          schema,
-          table,
-        },
-        (payload) => {
+        { event, schema, table },
+        (payload: RealtimePostgresChangesPayload<Record<string, unknown>>) => {
           onchange(payload);
         }
       )
@@ -61,20 +57,15 @@ export function useMultiTableSubscription(
 
     const channelName = `admin-multi-${tables.join('-')}`;
 
-    let channel = supabase.channel(channelName);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let channel: any = supabase.channel(channelName);
 
     // Subscribe to each table
     for (const table of tables) {
       channel = channel.on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table,
-        },
-        () => {
-          onchange();
-        }
+        { event: '*', schema: 'public', table },
+        () => onchange()
       );
     }
 

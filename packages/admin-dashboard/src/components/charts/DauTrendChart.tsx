@@ -74,7 +74,7 @@ export function DauTrendChart({ data, loading, height = 300 }: DauTrendChartProp
             fontSize: '0.875rem',
           }}
           labelFormatter={(_, payload) => payload[0]?.payload?.fullDate || ''}
-          formatter={(value: number) => [value.toLocaleString(), 'Active Users']}
+          formatter={(value) => [(value as number).toLocaleString(), 'Active Users']}
         />
         <Area
           type="monotone"
