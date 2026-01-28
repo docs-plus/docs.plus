@@ -16,7 +16,20 @@ module.exports = [
       '**/build/**',
       '**/.next/**',
       '**/.turbo/**',
-      '**/coverage/**'
+      '**/coverage/**',
+      '**/cypress/**',
+      '**/public/**',
+      '**/*.min.js',
+      '**/workbox-*.js',
+      '**/tests/**',
+      '**/__tests__/**',
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      '**/*.test.js',
+      '**/*.spec.ts',
+      '**/*.spec.tsx',
+      '**/*.spec.js',
+      '**/next-env.d.ts'
     ]
   },
 

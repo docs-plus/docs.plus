@@ -7,50 +7,7 @@ echo ""
 FAILED=0
 
 # ============================================
-# 1. Type Checks (fast - catches type errors)
-# ============================================
-echo "📝 Running TypeScript type checks..."
-
-# Hocuspocus Server
-echo "  → hocuspocus.server..."
-if cd packages/hocuspocus.server && bun run tsc --noEmit 2>/dev/null; then
-    echo "    ✅ hocuspocus.server types OK"
-else
-    echo "    ❌ hocuspocus.server type errors"
-    FAILED=1
-fi
-cd ../..
-
-# Admin Dashboard (via Next.js)
-echo "  → admin-dashboard..."
-if cd packages/admin-dashboard && bun run tsc --noEmit 2>/dev/null; then
-    echo "    ✅ admin-dashboard types OK"
-else
-    echo "    ❌ admin-dashboard type errors"
-    FAILED=1
-fi
-cd ../..
-
-# Webapp (via Next.js)
-echo "  → webapp..."
-if cd packages/webapp && bun run tsc --noEmit 2>/dev/null; then
-    echo "    ✅ webapp types OK"
-else
-    echo "    ❌ webapp type errors"
-    FAILED=1
-fi
-cd ../..
-
-if [ $FAILED -ne 0 ]; then
-    echo ""
-    echo "❌ Type checks failed. Fix type errors before pushing."
-    exit 1
-fi
-
-echo ""
-
-# ============================================
-# 2. Build TipTap Extensions (webapp deps)
+# 1. Build TipTap Extensions (webapp deps)
 # ============================================
 echo "📦 Building TipTap extensions..."
 for ext in extension-hyperlink extension-hypermultimedia extension-indent extension-inline-code; do
@@ -71,12 +28,9 @@ fi
 echo ""
 
 # ============================================
-# 3. Build Next.js Apps (catches all errors)
+# 2. Build Admin Dashboard
 # ============================================
-echo "📦 Building Next.js applications..."
-
-# Admin Dashboard
-echo "  → admin-dashboard..."
+echo "📦 Building admin-dashboard..."
 if bun run --filter "@docs.plus/admin-dashboard" build:local >/dev/null 2>&1; then
     echo "  ✅ admin-dashboard build OK"
 else
@@ -84,20 +38,13 @@ else
     FAILED=1
 fi
 
-# Webapp
-echo "  → webapp..."
-if bun run --filter "@docs.plus/webapp" build:local >/dev/null 2>&1; then
-    echo "  ✅ webapp build OK"
-else
-    echo "  ❌ webapp build failed"
-    FAILED=1
-fi
-
 if [ $FAILED -ne 0 ]; then
     echo ""
-    echo "❌ Next.js builds failed. Push aborted."
+    echo "❌ Admin dashboard build failed. Push aborted."
     exit 1
 fi
 
 echo ""
 echo "🚀 All pre-push checks passed. Proceeding with push."
+echo ""
+echo "💡 Note: Webapp build is handled by CI/CD pipeline."

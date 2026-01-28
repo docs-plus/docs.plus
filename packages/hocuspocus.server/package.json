@@ -27,6 +27,7 @@
     "@types/jsonwebtoken": "^9.0.10",
     "@types/nodemailer": "^6.4.14",
     "@types/pg": "^8.15.6",
+    "@types/web-push": "^3.6.4",
     "bun-types": "latest",
     "prisma": "^6.19.0"
   },
