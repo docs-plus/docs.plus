@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from 'react'
+import { useEffect, useCallback, useRef } from 'react'
 import { useAuthStore } from '@stores'
 import { getUserById } from '@api'
 import { useApi } from '@hooks/useApi'
@@ -8,6 +8,7 @@ export const useOnAuthStateChange = () => {
   const supabaseClient = createClient()
   const setLoading = useAuthStore((state) => state.setLoading)
   const { request: getUserByIdRequest } = useApi(getUserById, null, false)
+  const anonymousSignInAttempted = useRef(false)
 
   const getUserProfile = useCallback(async (user: any) => {
     const { data, error } = (await getUserByIdRequest(user.id)) as any
@@ -15,6 +16,31 @@ export const useOnAuthStateChange = () => {
     useAuthStore.getState().setProfile({ ...data, status: 'ONLINE' })
     setLoading(false)
   }, [])
+
+  /**
+   * Sign in anonymously if no session exists.
+   * Anonymous users get a persistent user_id that can be linked to a real account later.
+   * @see https://supabase.com/docs/guides/auth/auth-anonymous
+   */
+  const signInAnonymously = useCallback(async () => {
+    // Prevent multiple attempts
+    if (anonymousSignInAttempted.current) return
+    anonymousSignInAttempted.current = true
+
+    try {
+      const { data, error } = await supabaseClient.auth.signInAnonymously()
+      if (error) {
+        console.warn('Anonymous sign-in failed:', error.message)
+        setLoading(false)
+        return
+      }
+      console.info('Anonymous user created:', data.user?.id)
+      // The onAuthStateChange will handle setting the session
+    } catch (err) {
+      console.warn('Anonymous sign-in error:', err)
+      setLoading(false)
+    }
+  }, [supabaseClient, setLoading])
 
   // Handle auth state changes
   useEffect(() => {
@@ -33,7 +59,11 @@ export const useOnAuthStateChange = () => {
       }
 
       if (event === 'INITIAL_SESSION') {
-        // if (!session?.user) router.push('/login')
+        if (!session?.user) {
+          // No session - sign in anonymously for document view tracking
+          signInAnonymously()
+          return
+        }
       }
       if (/*event === 'SIGNED_IN' ||*/ event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
         if (!session?.user) {
@@ -41,13 +71,23 @@ export const useOnAuthStateChange = () => {
           setLoading(false)
           return
         }
-        useAuthStore.getState().setSession(session?.user || null)
-        if (session?.user) getUserProfile(session?.user)
+        // Track if user is anonymous (from Supabase Anonymous Auth)
+        const isAnonymous = session?.user?.is_anonymous || false
+        useAuthStore.getState().setSession(session?.user || null, isAnonymous)
+
+        // Only fetch profile for non-anonymous users (anonymous users don't have profiles)
+        if (session?.user && !isAnonymous) {
+          getUserProfile(session?.user)
+        } else {
+          setLoading(false)
+        }
       }
       if (event === 'SIGNED_OUT') {
-        useAuthStore.getState().setSession(null)
+        useAuthStore.getState().setSession(null, false)
         useAuthStore.getState().setProfile(null)
         setLoading(false)
+        // Reset flag so anonymous sign-in can happen again
+        anonymousSignInAttempted.current = false
       }
     })
 
@@ -62,5 +102,5 @@ export const useOnAuthStateChange = () => {
       data.subscription.unsubscribe()
       window.removeEventListener('offline', handleOffline)
     }
-  }, [supabaseClient])
+  }, [supabaseClient, signInAnonymously])
 }

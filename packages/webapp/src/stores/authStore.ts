@@ -1,12 +1,13 @@
 import createSelectors from '@utils/zustand'
 import { create } from 'zustand'
-import { Database, Profile as TProfile } from '@types'
+import { Profile as TProfile } from '@types'
 
 export interface IAuthStore {
   session: any | null
   profile: TProfile | null
   loading: boolean
-  setSession: (session: any) => void
+  isAnonymous: boolean
+  setSession: (session: any, isAnonymous?: boolean) => void
   setProfile: (profile: TProfile | null) => void
   setLoading: (loading: boolean) => void
 }
@@ -15,7 +16,8 @@ const authStore = create<IAuthStore>((set) => ({
   session: null,
   profile: null,
   loading: true,
-  setSession: (session) => set({ session, loading: false }),
+  isAnonymous: false,
+  setSession: (session, isAnonymous = false) => set({ session, isAnonymous, loading: false }),
   setProfile: (profile) => set({ profile }),
   setLoading: (loading) => set({ loading })
 }))
