@@ -1,23 +1,20 @@
-import { ToastNotification, TToastOpt } from './ToastNotification'
+import { ToastNotification, ToastNotificationOptions } from './ToastNotification'
 
-export const Error = (message: string, options?: Partial<TToastOpt>) => {
-  return ToastNotification(message, {
+/**
+ * Error/Danger toast - Colored indicator with error (red) color.
+ * Commonly used with "Undo" action for destructive operations.
+ *
+ * @example
+ * toast.Error('Failed to save')
+ * toast.Error('Item deleted', { actionLabel: 'Undo', onAction: handleUndo })
+ */
+export const Error = (
+  content: React.ReactNode,
+  options?: Partial<Omit<ToastNotificationOptions, 'variant'>>
+) => {
+  return ToastNotification(content, {
+    duration: 5000, // Errors stay longer
     ...options,
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="size-6 shrink-0 stroke-current"
-        fill="none"
-        viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    ),
-    iconClassName: 'text-error',
-    textColor: 'text-error-content'
+    variant: 'error'
   })
 }

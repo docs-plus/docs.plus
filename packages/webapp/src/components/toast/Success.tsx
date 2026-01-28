@@ -1,23 +1,19 @@
-import { ToastNotification, TToastOpt } from './ToastNotification'
+import { ToastNotification, ToastNotificationOptions } from './ToastNotification'
 
-export const Success = (message: string, options?: Partial<TToastOpt>) => {
-  return ToastNotification(message, {
+/**
+ * Success toast - Colored indicator with success (green) color.
+ *
+ * @example
+ * toast.Success('Document saved')
+ * toast.Success(<><MdCheck /> Saved successfully</>)
+ * toast.Success('Item created', { actionLabel: 'View', onAction: handleView })
+ */
+export const Success = (
+  content: React.ReactNode,
+  options?: Partial<Omit<ToastNotificationOptions, 'variant'>>
+) => {
+  return ToastNotification(content, {
     ...options,
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="size-6 shrink-0 stroke-current"
-        fill="none"
-        viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-        />
-      </svg>
-    ),
-    iconClassName: 'text-success',
-    textColor: 'text-success-content'
+    variant: 'success'
   })
 }

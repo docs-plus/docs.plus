@@ -1,25 +1,19 @@
-import { ToastNotification, TToastOpt } from './ToastNotification'
+import { ToastNotification, ToastNotificationOptions } from './ToastNotification'
 
-export const Warning = (message: string, options?: Partial<TToastOpt>) => {
-  return ToastNotification(message, {
+/**
+ * Warning toast - Colored indicator with warning (orange) color.
+ *
+ * @example
+ * toast.Warning('Unsaved changes will be lost')
+ * toast.Warning('Session expiring', { actionLabel: 'Extend', onAction: handleExtend })
+ */
+export const Warning = (
+  content: React.ReactNode,
+  options?: Partial<Omit<ToastNotificationOptions, 'variant'>>
+) => {
+  return ToastNotification(content, {
+    duration: 5000, // Warnings stay longer
     ...options,
-    icon: (
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        className="size-6 shrink-0 stroke-current"
-        fill="none"
-        viewBox="0 0 24 24">
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          strokeWidth="2"
-          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-        />
-      </svg>
-    ),
-    iconClassName: 'text-warning',
-    textColor: 'text-warning-content'
+    variant: 'warning'
   })
 }
-
-// Define Info and Error similarly...

@@ -1,18 +1,18 @@
 import { ToastNotification, ToastNotificationOptions } from './ToastNotification'
 
 /**
- * Info toast - Colored indicator with info (blue) color.
+ * Neutral toast - No colored indicator, just content.
  *
  * @example
- * toast.Info('New features available')
- * toast.Info(<><MdInfo /> Tip: Use keyboard shortcuts</>)
+ * toast.Neutral('Message sent')
+ * toast.Neutral(<><MdEmail /> Email sent</>)
  */
-export const Info = (
+export const Neutral = (
   content: React.ReactNode,
   options?: Partial<Omit<ToastNotificationOptions, 'variant'>>
 ) => {
   return ToastNotification(content, {
     ...options,
-    variant: 'info'
+    variant: 'neutral'
   })
 }
