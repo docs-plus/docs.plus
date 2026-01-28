@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# Run lint-staged for fast feedback on staged files
+bun run lint:staged
+

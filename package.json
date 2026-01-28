@@ -7,6 +7,7 @@
   ],
   "prettier": "./.prettierrc.json",
   "scripts": {
+    "prepare": "husky",
     "start": "sh ./scripts/run_dev.sh",
     "update:packages": "bunx npm-check-updates -u",
     "start:webapp": "cd packages/webapp && bun run start",

@@ -1,3 +1,5 @@
+#!/bin/sh
+
 echo "🔍 Pre-push checks starting..."
 
 # Build admin-dashboard (catches TS errors via Next.js build)
@@ -17,8 +19,5 @@ else
     echo "❌ Webapp build failed. Push aborted."
     exit 1
 fi
-
-# Note: hocuspocus runs TypeScript directly with Bun, no build step needed
-# TypeScript errors are caught at runtime or via IDE
 
 echo "🚀 All pre-push checks passed. Proceeding with push."
