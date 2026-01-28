@@ -25,6 +25,16 @@ export function useTableParams(options: UseTableParamsOptions = {}) {
 
   // Parse current params from URL
   const params: TableParams = useMemo(() => {
+    // Return defaults when router is not ready (SSG/SSR)
+    if (!router.isReady) {
+      return {
+        page: 1,
+        search: '',
+        sortKey: defaultSortKey,
+        sortDirection: defaultSortDirection,
+      };
+    }
+
     const query = router.query;
     return {
       page: parseInt(query.page as string) || 1,
@@ -32,7 +42,7 @@ export function useTableParams(options: UseTableParamsOptions = {}) {
       sortKey: (query.sortKey as string) || defaultSortKey,
       sortDirection: ((query.sortDir as string) || defaultSortDirection) as SortDirection,
     };
-  }, [router.query, defaultSortKey, defaultSortDirection]);
+  }, [router.isReady, router.query, defaultSortKey, defaultSortDirection]);
 
   // Update URL params without full page reload
   const updateParams = useCallback(

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import Head from 'next/head';
+import type { GetServerSideProps } from 'next';
 import {
   LuUsers,
   LuFileText,
@@ -29,6 +30,11 @@ import {
   DauTrendChart,
   UserLifecycleChart,
 } from '@/components/charts';
+
+// Disable static generation - pages require auth which needs client-side router
+export const getServerSideProps: GetServerSideProps = async () => {
+  return { props: {} };
+};
 
 export default function OverviewPage() {
   const { documentStats, supabaseStats, loading, refetch, isRefetching } =

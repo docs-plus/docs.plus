@@ -1,6 +1,12 @@
 import { useState, useCallback } from 'react';
 import Head from 'next/head';
+import type { GetServerSideProps } from 'next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+
+// Disable static generation - pages require auth which needs client-side router
+export const getServerSideProps: GetServerSideProps = async () => {
+  return { props: {} };
+};
 import { LuLock, LuEye, LuFileText, LuUsers, LuChartBar } from 'react-icons/lu';
 import toast from 'react-hot-toast';
 import { AdminLayout } from '@/components/layout/AdminLayout';

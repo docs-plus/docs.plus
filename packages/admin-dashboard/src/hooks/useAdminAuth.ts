@@ -17,6 +17,9 @@ export function useAdminAuth(): AdminAuthState {
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    // Wait for router to be ready (prevents SSG/SSR issues)
+    if (!router.isReady) return;
+
     // Skip auth check on login page
     if (router.pathname === '/login' || router.pathname === '/unauthorized') {
       setLoading(false);
@@ -91,7 +94,7 @@ export function useAdminAuth(): AdminAuthState {
     });
 
     return () => subscription.unsubscribe();
-  }, [router]);
+  }, [router, router.isReady]);
 
   return { user, loading, isAdmin };
 }

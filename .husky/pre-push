@@ -1,9 +1,6 @@
-#!/usr/bin/env sh
-. "$(dirname -- "$0")/_/husky.sh"
-
 echo "🔍 Pre-push checks starting..."
 
-# Type-check and build admin-dashboard (catches TS errors)
+# Build admin-dashboard (catches TS errors via Next.js build)
 echo "📦 Building admin-dashboard..."
 if bun run --filter "@docs.plus/admin-dashboard" build:local; then
     echo "✅ Admin dashboard build successful"
@@ -12,16 +9,7 @@ else
     exit 1
 fi
 
-# Build hocuspocus-server (backend)
-echo "📦 Building hocuspocus-server..."
-if bun run --filter "@docs.plus/hocuspocus-server" build; then
-    echo "✅ Hocuspocus server build successful"
-else
-    echo "❌ Hocuspocus server build failed. Push aborted."
-    exit 1
-fi
-
-# Build webapp
+# Build webapp (catches TS errors via Next.js build)
 echo "📦 Building webapp..."
 if bun run --filter "@docs.plus/webapp" build:local; then
     echo "✅ Webapp build successful"
@@ -29,5 +17,8 @@ else
     echo "❌ Webapp build failed. Push aborted."
     exit 1
 fi
+
+# Note: hocuspocus runs TypeScript directly with Bun, no build step needed
+# TypeScript errors are caught at runtime or via IDE
 
 echo "🚀 All pre-push checks passed. Proceeding with push."

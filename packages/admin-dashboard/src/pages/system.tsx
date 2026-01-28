@@ -1,5 +1,11 @@
 import Head from 'next/head';
+import type { GetServerSideProps } from 'next';
 import { useQuery } from '@tanstack/react-query';
+
+// Disable static generation - pages require auth which needs client-side router
+export const getServerSideProps: GetServerSideProps = async () => {
+  return { props: {} };
+};
 import {
   LuActivity,
   LuDatabase,

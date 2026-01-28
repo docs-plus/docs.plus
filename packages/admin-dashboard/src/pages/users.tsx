@@ -15,6 +15,12 @@ import { exportToCSV } from '@/utils/export';
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription';
 import { useTableParams } from '@/hooks/useTableParams';
 import type { User } from '@/types';
+import type { GetServerSideProps } from 'next';
+
+// Disable static generation - pages require auth which needs client-side router
+export const getServerSideProps: GetServerSideProps = async () => {
+  return { props: {} };
+};
 
 type UserWithDocs = User & { document_count: number };
 

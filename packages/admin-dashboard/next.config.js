@@ -4,6 +4,13 @@ const nextConfig = {
   reactStrictMode: true,
   poweredByHeader: false,
 
+  // Disable static generation for error pages (workaround for Next.js 16 Turbopack issue)
+  // This forces all pages to be SSR, avoiding the "NextRouter was not mounted" error
+  experimental: {
+    // PPR (Partial Pre-Rendering) disabled
+    ppr: false,
+  },
+
   // Sass deprecation warnings
   sassOptions: {
     silenceDeprecations: ['legacy-js-api', 'import'],

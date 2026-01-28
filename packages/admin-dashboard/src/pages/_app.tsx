@@ -1,8 +1,7 @@
+import { useEffect, useState } from 'react';
 import type { AppProps } from 'next/app';
-import { useRouter } from 'next/router';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
-import { useAdminAuth } from '@/hooks/useAdminAuth';
 import '@/styles/globals.scss';
 
 const queryClient = new QueryClient({
@@ -14,44 +13,35 @@ const queryClient = new QueryClient({
   },
 });
 
-// Pages that don't require auth
-const publicPages = ['/login', '/unauthorized'];
+// Lazy load AuthGuard only on client
+function ClientAuthGuard({ children }: { children: React.ReactNode }) {
+  const [AuthGuard, setAuthGuard] = useState<React.ComponentType<{ children: React.ReactNode }> | null>(null);
 
-function AuthGuard({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
-  const { loading, isAdmin } = useAdminAuth();
+  useEffect(() => {
+    // Import AuthGuard only on client side
+    import('@/components/auth/AuthGuard').then((mod) => {
+      setAuthGuard(() => mod.default);
+    });
+  }, []);
 
-  // Public pages don't need auth
-  if (publicPages.includes(router.pathname)) {
-    return <>{children}</>;
-  }
-
-  // Show loading spinner while checking auth
-  if (loading) {
+  // Show loading while AuthGuard is being loaded
+  if (!AuthGuard) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-base-200">
-        <div className="text-center">
-          <span className="loading loading-spinner loading-lg text-primary" />
-          <p className="mt-4 text-base-content/60">Loading...</p>
-        </div>
+        <span className="loading loading-spinner loading-lg text-primary" />
       </div>
     );
   }
 
-  // Not admin - redirect is handled by hook, show nothing
-  if (!isAdmin) {
-    return null;
-  }
-
-  return <>{children}</>;
+  return <AuthGuard>{children}</AuthGuard>;
 }
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthGuard>
+      <ClientAuthGuard>
         <Component {...pageProps} />
-      </AuthGuard>
+      </ClientAuthGuard>
       <Toaster position="bottom-right" />
     </QueryClientProvider>
   );
