@@ -4,6 +4,7 @@ import { useModal } from '@components/ui/ModalDrawer'
 import { useStore } from '@stores'
 import { MdAdd } from 'react-icons/md'
 import { scrollToHeading } from '@utils/scrollToHeading'
+import Button from '@components/ui/Button'
 
 // Constants for timing and positioning
 const SCROLL_DELAY_MS = 150
@@ -78,7 +79,7 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
     const selectionPos = editor.state.doc.content.size
 
     editor.commands.insertContentAt(selectionPos, jsonNode)
-    isMobile && closeModal?.()
+    if (isMobile) closeModal?.()
 
     const divProseMirror = document.querySelector('.tiptap.ProseMirror') as HTMLElement
     divProseMirror.setAttribute('contenteditable', 'true')
@@ -91,12 +92,16 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
 
   return (
     <div className={`p-3 ${className}`}>
-      <button
-        className="btn btn-sm btn-primary btn-outline btn-block tooltip"
+      <Button
+        variant="primary"
+        btnStyle="outline"
+        size="sm"
+        shape="block"
+        className="tooltip"
         data-tip="Add headings"
-        onClick={appendHeadingToEnd}>
-        <MdAdd size={20} />
-      </button>
+        onClick={appendHeadingToEnd}
+        startIcon={MdAdd}
+      />
     </div>
   )
 }

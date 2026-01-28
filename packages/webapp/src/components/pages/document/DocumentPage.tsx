@@ -28,7 +28,9 @@ const DocumentPage = ({ docMetadata, isMobile, channels, accessToken }: Document
 
   useDocumentMetadata(slugs, docMetadata)
   useInitiateDocumentAndWorkspace(docMetadata)
-  const { provider } = useYdocAndProvider({ accessToken })
+  // Pass deviceType for document view analytics
+  const deviceType = isMobile ? 'mobile' : 'desktop'
+  const { provider } = useYdocAndProvider({ accessToken, deviceType })
   const { join2WorkspaceLoading } = useJoinWorkspace({
     documentId: docMetadata.documentId,
     loading

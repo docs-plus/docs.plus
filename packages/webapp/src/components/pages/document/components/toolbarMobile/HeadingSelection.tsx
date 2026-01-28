@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react'
 import { MdAdd, MdOutlineRemove } from 'react-icons/md'
+import Button from '@components/ui/Button'
 
 type HeadingSelectionProps = {
   editor: any
@@ -85,18 +86,30 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
 
   return (
     <div
-      className={`headingSelection ${activeSectionType === 'heading' ? 'is-active' : ''} flex h-9 w-32 items-center justify-between rounded-md border border-gray-400 px-2`}>
-      <button onTouchEnd={() => changeHeadingLevel(-1)} disabled={headingLevel === 1}>
-        <MdOutlineRemove size={24} />
-      </button>
-      <p
-        className="flex h-8 w-8 items-center justify-center font-semibold"
+      className={`headingSelection ${activeSectionType === 'heading' ? 'is-active' : ''} join rounded-field border-base-300 flex h-9 w-32 items-center justify-between border px-1`}>
+      <Button
+        variant="ghost"
+        size="xs"
+        shape="square"
+        className="join-item"
+        onTouchEnd={() => changeHeadingLevel(-1)}
+        disabled={headingLevel === 1}
+        startIcon={<MdOutlineRemove size={20} />}
+      />
+      <span
+        className="text-base-content flex h-8 w-8 cursor-pointer items-center justify-center font-semibold"
         onTouchEnd={toggleContentSectionLevel}>
         {`H${headingLevel}`}
-      </p>
-      <button onTouchEnd={() => changeHeadingLevel(1)} disabled={headingLevel === 9}>
-        <MdAdd size={24} />
-      </button>
+      </span>
+      <Button
+        variant="ghost"
+        size="xs"
+        shape="square"
+        className="join-item"
+        onTouchEnd={() => changeHeadingLevel(1)}
+        disabled={headingLevel === 9}
+        startIcon={<MdAdd size={20} />}
+      />
     </div>
   )
 }

@@ -1,42 +1,99 @@
-import React, { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore, useChatStore } from '@stores'
 
+/**
+ * Design System Panel Constraints
+ * @see Notes/Design_System_Global_v2.md
+ */
+const CHAT_MIN_HEIGHT = 320 // Minimum height for Chat panel
+const CHAT_MAX_HEIGHT = 520 // Maximum height for Chat panel
+const CHAT_DEFAULT_HEIGHT = 410 // Default height
+const LOCAL_STORAGE_KEY = 'docsy:chat-height'
+
+/**
+ * Hook for managing chat panel resize functionality.
+ *
+ * Design System Requirements:
+ * - Min height: 320px
+ * - Max height: 520px (or 70% of viewport, whichever is smaller)
+ * - Persist height per user
+ * - During drag, disable text selection
+ *
+ * @returns Chat resize state and handlers
+ */
 const useResizeContainer = () => {
-  const gripperRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const setOrUpdateChatPannelHeight = useChatStore((state) => state.setOrUpdateChatPannelHeight)
-  const { pannelHeight: height } = useChatStore((state) => state.chatRoom)
+  const { pannelHeight: storeHeight } = useChatStore((state) => state.chatRoom)
+  const [isResizing, setIsResizing] = useState(false)
   const {
     editor: { instance: editor }
   } = useStore((state) => state.settings)
 
+  // Load persisted height on mount (or use default)
+  useEffect(() => {
+    try {
+      const storedHeight = localStorage.getItem(LOCAL_STORAGE_KEY)
+      const maxHeight = Math.min(CHAT_MAX_HEIGHT, window.innerHeight * 0.7)
+
+      if (storedHeight) {
+        const parsed = parseInt(storedHeight, 10)
+        if (!isNaN(parsed)) {
+          setOrUpdateChatPannelHeight(Math.min(maxHeight, Math.max(CHAT_MIN_HEIGHT, parsed)))
+          return
+        }
+      }
+      // No stored value - use default
+      setOrUpdateChatPannelHeight(Math.min(maxHeight, CHAT_DEFAULT_HEIGHT))
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [setOrUpdateChatPannelHeight])
+
+  // Persist height changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(LOCAL_STORAGE_KEY, String(storeHeight))
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [storeHeight])
+
   const handleMouseDown = useCallback(
-    (e: React.MouseEvent<HTMLInputElement>) => {
-      if (!gripperRef.current) return
+    (e: React.MouseEvent) => {
+      if (!containerRef.current) return
 
       e.preventDefault()
-
-      const editorWrapper = document.querySelector('.editorWrapper') as HTMLDivElement
-      const maxHeight = window.innerHeight * 0.7
-      const minHeight = Math.max(260, (editorWrapper?.clientHeight || 0) * 0.15)
+      setIsResizing(true)
 
       const startY = e.clientY
-      const startHeight = gripperRef.current.clientHeight
+      const startHeight = containerRef.current.clientHeight
+      const maxHeight = Math.min(CHAT_MAX_HEIGHT, window.innerHeight * 0.7)
 
-      // Prevent text selection during drag
+      // Disable text selection and set resize cursor
       document.body.style.userSelect = 'none'
+      document.body.style.cursor = 'row-resize'
+
+      // Disable editor during resize to prevent interference
+      if (editor?.isEditable) editor.setEditable(false)
 
       const doDrag = (e: MouseEvent) => {
         e.preventDefault()
-        let newHeight = startHeight - e.clientY + startY
+        const deltaY = startY - e.clientY
+        const newHeight = startHeight + deltaY
 
-        if (editor?.isEditable) editor.setEditable(false)
-        newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight))
-        setOrUpdateChatPannelHeight(newHeight)
+        // Clamp to min/max constraints
+        const clampedHeight = Math.min(maxHeight, Math.max(CHAT_MIN_HEIGHT, newHeight))
+        setOrUpdateChatPannelHeight(clampedHeight)
       }
 
       const stopDrag = () => {
+        setIsResizing(false)
+        // Re-enable editor
         if (editor && !editor.isEditable) editor.setEditable(true)
+        // Re-enable text selection
         document.body.style.userSelect = ''
+        document.body.style.cursor = ''
 
         document.removeEventListener('mousemove', doDrag)
         document.removeEventListener('mouseup', stopDrag)
@@ -48,28 +105,27 @@ const useResizeContainer = () => {
     [editor, setOrUpdateChatPannelHeight]
   )
 
-  // Simple resize handler to validate height constraints
+  // Handle window resize - validate height constraints
   useEffect(() => {
-    const handleResize = () => {
-      const editorWrapper = document.querySelector('.editorWrapper') as HTMLDivElement
-      const maxHeight = window.innerHeight * 0.7
-      const minHeight = Math.max(260, (editorWrapper?.clientHeight || 0) * 0.15)
+    const handleWindowResize = () => {
+      const maxHeight = Math.min(CHAT_MAX_HEIGHT, window.innerHeight * 0.7)
 
-      if (height > maxHeight) {
+      if (storeHeight > maxHeight) {
         setOrUpdateChatPannelHeight(maxHeight)
-      } else if (height < minHeight) {
-        setOrUpdateChatPannelHeight(minHeight)
+      } else if (storeHeight < CHAT_MIN_HEIGHT) {
+        setOrUpdateChatPannelHeight(CHAT_MIN_HEIGHT)
       }
     }
 
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
-  }, [height, setOrUpdateChatPannelHeight])
+    window.addEventListener('resize', handleWindowResize)
+    return () => window.removeEventListener('resize', handleWindowResize)
+  }, [storeHeight, setOrUpdateChatPannelHeight])
 
   return {
     handleMouseDown,
-    gripperRef,
-    height
+    containerRef,
+    height: storeHeight,
+    isResizing
   }
 }
 

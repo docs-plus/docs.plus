@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react'
 import { Pencil } from '@icons'
 import { useCaretPosition, useEnableEditor } from '@hooks/useCaretPosition'
+import Button from '@components/ui/Button'
 
 /**
  * Floating Action Button for entering edit mode.
@@ -18,11 +19,13 @@ const EditFAB = () => {
   if (isKeyboardOpen) return null
 
   return (
-    <button
+    <Button
       onClick={handleClick}
-      className="edit-fab btn btn-circle border-docsy bg-docsy active fixed right-6 bottom-8 z-20 size-16 text-white">
-      <Pencil size={28} />
-    </button>
+      variant="primary"
+      shape="circle"
+      className="edit-fab fixed right-6 bottom-8 z-20 size-16"
+      startIcon={<Pencil size={28} />}
+    />
   )
 }
 

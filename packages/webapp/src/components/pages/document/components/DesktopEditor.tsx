@@ -3,9 +3,10 @@ import ToolbarDesktop from '@components/TipTap/toolbar/ToolbarDesktop'
 import EditorContent from './EditorContent'
 import TOC from './Toc'
 import { useAdjustEditorSizeForChatRoom, useTOCResize } from '../hooks'
-import useUpdateDocPageUnreadMsg from '../hooks/useUpdateDocPageUnreadMsg'
+import { useUnreadSync } from '@hooks/useUnreadSync'
 import { Chatroom } from '@components/chatroom'
 import { HoverMenu } from '@components/ui/HoverMenu'
+import ResizeHandle from '@components/ui/ResizeHandle'
 import { useMessageFeedContext } from '@components/chatroom/components/MessageFeed/MessageFeedContext'
 import { useHeadingScrollSpy } from '@components/toc/hooks'
 
@@ -30,38 +31,44 @@ const DesktopEditor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
 
   // Hook for TOC resize functionality
-  const { tocRef, tocWidth, handleMouseDown, editorContainerStyle } = useTOCResize()
+  const { tocRef, tocWidth, isResizing, handleMouseDown, editorContainerStyle } = useTOCResize()
 
   // @ts-ignore
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
 
-  useUpdateDocPageUnreadMsg()
+  useUnreadSync()
 
   // IntersectionObserver-based scroll spy for TOC highlighting
   useHeadingScrollSpy(editorWrapperRef)
 
   return (
     <>
-      <div className="toolbars fixed bottom-0 z-[9] h-auto w-full bg-white sm:relative sm:block">
+      {/* Toolbar - Design System: bg-base-100 for primary canvas elements */}
+      <div className="toolbars bg-base-100 border-base-300 fixed bottom-0 z-[9] h-auto w-full border-t sm:relative sm:block sm:border-t-0">
         <ToolbarDesktop />
       </div>
-      <div className="editor relative flex size-full flex-row-reverse justify-around align-top">
+
+      {/* Main editor layout - 3 panel structure */}
+      <div className="editor bg-base-200 relative flex size-full flex-row-reverse justify-around align-top">
+        {/* Editor + Chat container */}
         <div className="relative flex flex-col align-top" style={editorContainerStyle}>
+          {/* Editor wrapper - Design System: bg-base-100 for editor canvas */}
           <div
             ref={editorWrapperRef}
-            className="editorWrapper flex h-full grow items-start justify-center overflow-y-auto border-t-0 p-0 sm:py-4">
+            className="editorWrapper bg-base-100 flex h-full grow items-start justify-center overflow-y-auto border-t-0 p-0 sm:py-4">
             <EditorContent className="mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8" />
           </div>
-          {/* <ChatContainer /> */}
+
+          {/* Chatroom Panel */}
           <Chatroom variant="desktop">
-            <Chatroom.Toolbar className="relative z-50 flex w-full items-center border-b border-gray-300 bg-white p-2">
-              <Chatroom.Toolbar.Breadcrumb className="px-1" />
-              <div className="ml-auto flex items-center gap-3">
-                <Chatroom.Toolbar.ParticipantsList className="flex h-9 items-center" />
-                <div className="join bg-base-300 rounded-md">
-                  <Chatroom.Toolbar.ShareButton className="join-item" />
-                  <Chatroom.Toolbar.NotificationToggle className="join-item" />
-                  <Chatroom.Toolbar.CloseButton className="join-item" />
+            <Chatroom.Toolbar className="border-base-300 bg-base-100 relative z-50 flex w-full items-center gap-2 border-b px-2 py-1">
+              <Chatroom.Toolbar.Breadcrumb />
+              <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                <Chatroom.Toolbar.ParticipantsList />
+                <div className="bg-base-200 flex items-center rounded-md">
+                  <Chatroom.Toolbar.ShareButton />
+                  <Chatroom.Toolbar.NotificationToggle />
+                  <Chatroom.Toolbar.CloseButton />
                 </div>
               </div>
             </Chatroom.Toolbar>
@@ -151,15 +158,17 @@ const DesktopEditor = () => {
             <Chatroom.ChannelComposer className="w-full" />
           </Chatroom>
         </div>
+
+        {/* TOC Sidebar - Design System: bg-base-200 for side panels */}
         <div
           ref={tocRef}
-          className="tableOfContents relative h-full max-h-full"
-          style={{
-            width: tocWidth
-          }}>
-          <div
+          className="tableOfContents bg-base-200 relative h-full max-h-full"
+          style={{ width: tocWidth }}>
+          {/* Resize Handle - Design System compliant */}
+          <ResizeHandle
+            orientation="vertical"
             onMouseDown={handleMouseDown}
-            className="absolute top-0 right-0 z-10 h-full w-[1px] cursor-col-resize bg-gray-300 select-none"
+            isResizing={isResizing}
           />
           <TOC />
         </div>

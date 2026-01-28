@@ -10,6 +10,7 @@ import useServiceWorker from '@hooks/useServiceWorker'
 import { useHandleUserStatus } from '@hooks/useHanelUserStatus'
 import { eventsHub } from '@services/eventsHub'
 import GoogleAnalytics from '@components/GoogleAnalytics'
+import NotificationPromptCard from '@components/NotificationPromptCard'
 import { performMaintenanceCleanup } from '@db/messageComposerDB'
 import { useEditorPreferences, applyEditorPreferences } from '@stores'
 
@@ -145,6 +146,7 @@ export default function MyApp({ Component, pageProps }: any) {
     <div id="root">
       <Header />
       <GoogleAnalytics />
+      <NotificationPromptCard />
       <QueryClientProvider client={queryClient}>
         <Component {...pageProps} />
       </QueryClientProvider>

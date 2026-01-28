@@ -2,6 +2,8 @@ import { MdArrowBack, MdMenu } from 'react-icons/md'
 import { formatVersionDate } from '../helpers'
 import { useVersionRestore } from '../hooks/useVersionRestore'
 import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
+import Button from '@components/ui/Button'
+
 const Toolbar = () => {
   const { handleRestore } = useVersionRestore()
   const versionInfo = useGetVersionInfo()()
@@ -10,23 +12,27 @@ const Toolbar = () => {
     <div className="docTitle sticky top-0 left-0 z-10 h-auto w-full bg-white">
       <div className="relative z-10 flex min-h-12 w-full flex-col items-center border-b border-gray-300 bg-white p-2">
         <div className="flex w-full flex-row items-center justify-between gap-1">
-          <button
-            className="btn btn-ghost btn-sm tooltip tooltip-right"
+          <Button
+            variant="ghost"
+            size="sm"
+            className="tooltip tooltip-right"
             data-tip="Back to the Editor"
             onClick={() => (window.location.hash = '')}
-            aria-label="Back to Editor">
-            <MdArrowBack size={22} />
-          </button>
+            aria-label="Back to Editor"
+            startIcon={MdArrowBack}
+            iconSize={22}
+          />
           <div className="divider divider-horizontal m-0 h-10 p-0" />
 
           {versionInfo && !versionInfo.isLatestVersion && (
-            <button
-              className="btn btn-outline tooltip tooltip-bottom bg-docsy text-white"
+            <Button
+              variant="primary"
+              className="tooltip tooltip-bottom"
               onClick={handleRestore}
               data-tip={`Restore document to ${versionInfo.version} version`}
               aria-label="Restore this version">
               Restore this version
-            </button>
+            </Button>
           )}
           {versionInfo && (
             <div className="text-center text-sm">

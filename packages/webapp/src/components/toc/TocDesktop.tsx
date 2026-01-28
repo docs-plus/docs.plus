@@ -72,14 +72,14 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
 
   if (!items.length) {
     return (
-      <div className={className} style={{ scrollbarGutter: 'stable' }}>
+      <div className={`${className}`}>
         <TocHeader variant="desktop" />
       </div>
     )
   }
 
   return (
-    <div className={className} style={{ scrollbarGutter: 'stable' }} ref={contextMenuRef}>
+    <div className={`${className}`} ref={contextMenuRef}>
       <TocHeader variant="desktop" />
       <DndContext
         sensors={sensors}

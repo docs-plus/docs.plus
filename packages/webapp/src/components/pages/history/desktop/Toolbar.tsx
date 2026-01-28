@@ -2,6 +2,7 @@ import React from 'react'
 import { MdArrowBack } from 'react-icons/md'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import Icon from '@components/TipTap/toolbar/Icon'
+import Button from '@components/ui/Button'
 import { useStore } from '@stores'
 import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
 import { useVersionRestore } from '../hooks/useVersionRestore'
@@ -13,25 +14,27 @@ const Toolbar = () => {
   const versionInfo = useGetVersionInfo()()
 
   return (
-    <div className="toolbar bg-base-100 flex flex-col border-b border-gray-200">
+    <div className="toolbar bg-base-100 border-base-300 flex flex-col border-b">
       <div className="flex items-center space-x-2 px-6 py-3">
-        <button
-          className="btn btn-square tooltip tooltip-right"
+        <Button
+          shape="square"
+          className="tooltip tooltip-right"
           data-tip="Back to the Editor"
           onClick={() => (window.location.hash = '')}
-          aria-label="Back to Editor">
-          <MdArrowBack size={18} />
-        </button>
+          aria-label="Back to Editor"
+          startIcon={MdArrowBack}
+        />
         <div className="flex w-full items-center space-x-3">
           <div className="ml-auto">
             {versionInfo && !versionInfo.isLatestVersion && (
-              <button
-                className="btn tooltip btn-primary tooltip-bottom font-normal text-white"
+              <Button
+                variant="primary"
+                className="tooltip tooltip-bottom font-normal"
                 onClick={handleRestore}
                 data-tip={`Restore document to ${versionInfo.version} version`}
                 aria-label="Restore this version">
                 Restore this version
-              </button>
+              </Button>
             )}
           </div>
           {versionInfo && (
@@ -45,7 +48,7 @@ const Toolbar = () => {
         </div>
       </div>
 
-      <div className="flex flex-row items-center justify-between space-x-1 border-t border-gray-200 px-6">
+      <div className="border-base-300 flex flex-row items-center justify-between space-x-1 border-t px-6">
         <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)" aria-label="Print">
           <Icon type="Printer" size={16} />
         </ToolbarButton>

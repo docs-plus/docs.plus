@@ -6,11 +6,10 @@ import HeadSeo from '@components/HeadSeo'
 import { DocsPlus } from '@components/icons/Icons'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
-import Input from '@components/ui/Input'
+import TextInput from '@components/ui/TextInput'
 import TypingText from '@components/ui/TypingText'
 import Loading from '@components/ui/Loading'
-import Modal from '@components/ui/Modal'
-import TabLayout from '../TabLayout'
+import { Modal, ModalContent } from '@components/ui/Dialog'
 import { useAuthStore, useStore } from '@stores'
 import {
   LuGithub,
@@ -25,10 +24,10 @@ import {
 import { FaDiscord } from 'react-icons/fa'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 
-const SignInPanel = dynamic(() => import('@pages/panels/SignInPanel'), {
+const SignInForm = dynamic(() => import('@components/auth/SignInForm'), {
   loading: () => <Loading />
 })
-const ProfilePanel = dynamic(() => import('@pages/panels/profile/ProfilePanel'), {
+const ProfilePanel = dynamic(() => import('@components/profile/ProfilePanel'), {
   loading: () => <Loading />
 })
 
@@ -84,33 +83,38 @@ const HomePage = ({ hostname }: HomePageProps) => {
       <HeadSeo />
 
       <div
-        className="flex flex-col bg-gradient-to-b from-slate-50 to-slate-100"
+        className="bg-base-200 flex flex-col"
         style={{ minHeight: keyboardHeight > 0 ? `calc(100dvh - ${keyboardHeight}px)` : '100dvh' }}>
         {/* Header */}
-        <header className="flex shrink-0 items-center justify-between px-4 py-2 sm:px-6 sm:py-4">
+        <header className="flex shrink-0 items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex items-center gap-2">
-            <DocsPlus size={28} className="sm:size-8" />
-            <span className="text-lg font-bold text-slate-800 sm:text-2xl">docs.plus</span>
+            <DocsPlus size={28} className="sm:size-10" />
+            <span className="text-base-content text-lg font-bold sm:text-2xl">docs.plus</span>
           </div>
 
           {isAuthServiceAvailable && (
             <div className="flex items-center gap-2">
               {user ? (
                 <button
+                  type="button"
+                  className="tooltip tooltip-bottom cursor-pointer transition-transform hover:scale-105"
                   onClick={() => setIsProfileOpen(true)}
-                  className="transition-transform hover:scale-105">
+                  data-tip="Profile">
                   <Avatar
                     src={user.avatar_url}
                     avatarUpdatedAt={user.avatar_updated_at}
                     id={user.id}
                     alt={user.display_name}
                     clickable={false}
-                    className="size-9 rounded-full border-2 border-white shadow-md sm:size-10"
+                    size="lg"
+                    className="border-base-300 border shadow-md"
                   />
                 </button>
               ) : (
                 <Button
-                  className="btn btn-primary btn-sm rounded-full px-4"
+                  variant="primary"
+                  size="sm"
+                  className="rounded-selector px-5 font-semibold"
                   onClick={() => setIsSignInOpen(true)}>
                   Sign in
                 </Button>
@@ -123,11 +127,11 @@ const HomePage = ({ hostname }: HomePageProps) => {
         <main className="flex min-h-0 flex-1 flex-col items-center justify-center px-4 py-4 sm:py-12">
           <div className="w-full max-w-2xl">
             {/* Hero Section */}
-            <div className="mb-3 text-center sm:mb-8">
-              <h1 className="mb-1 text-2xl font-bold text-slate-800 sm:mb-2 sm:text-4xl md:text-5xl">
+            <div className="mb-6 text-center sm:mb-10">
+              <h1 className="text-base-content mb-2 text-3xl font-bold sm:mb-3 sm:text-5xl md:text-6xl">
                 Get everyone on the same page
               </h1>
-              <p className="text-sm text-slate-500 sm:text-base">
+              <p className="text-base-content/60 text-sm sm:text-lg">
                 <span className="hidden sm:inline">
                   Free, open-source collaborative documents for
                 </span>
@@ -163,44 +167,48 @@ const HomePage = ({ hostname }: HomePageProps) => {
             </div>
 
             {/* Action Card */}
-            <div className="rounded-2xl bg-white p-4 shadow-xl shadow-slate-200/50 sm:p-8">
+            <div className="rounded-box bg-base-100 p-5 shadow-xl sm:p-8">
               {/* Quick Create */}
               <Button
-                className="btn btn-primary btn-block mb-4 h-11 rounded-xl text-base font-semibold sm:mb-6 sm:h-12"
+                variant="primary"
+                shape="block"
+                size="lg"
+                className="mb-6 text-base font-bold shadow-sm sm:mb-8"
                 onClick={() => navigateToDocument()}
-                disabled={isLoading}>
-                {isLoading ? <Loading size="sm" /> : 'Create New Document'}
+                disabled={isLoading}
+                loading={isLoading}>
+                Create New Document
               </Button>
 
               {/* Divider */}
-              <div className="mb-4 flex items-center gap-3 sm:mb-6 sm:gap-4">
-                <div className="h-px flex-1 bg-slate-200" />
-                <span className="text-xs text-slate-400 sm:text-sm">or open existing</span>
-                <div className="h-px flex-1 bg-slate-200" />
+              <div className="mb-6 flex items-center gap-3 sm:mb-8 sm:gap-4">
+                <div className="bg-base-300 h-px flex-1" />
+                <span className="text-base-content/40 text-xs sm:text-sm">or open existing</span>
+                <div className="bg-base-300 h-px flex-1" />
               </div>
 
               {/* Document Name Input */}
               <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
-                <div className="flex-1">
-                  <Input
-                    required
-                    pattern="[a-z0-9\-]*"
-                    minLength={3}
-                    maxLength={30}
-                    title="Only lowercase letters, numbers or dash"
-                    value={documentName}
-                    inputMode="text"
-                    enterKeyHint="go"
-                    placeholder="document-name"
-                    className="w-full"
-                    label={`${hostname}/`}
-                    labelPosition="before"
-                    onChange={handleInputChange}
-                    onKeyDown={handleKeyDown}
-                  />
-                </div>
+                <TextInput
+                  wrapperClassName="flex-1"
+                  label={`${hostname}/`}
+                  type="text"
+                  required
+                  pattern="[a-z0-9\-]*"
+                  minLength={3}
+                  maxLength={30}
+                  title="Only lowercase letters, numbers or dash"
+                  value={documentName}
+                  inputMode="text"
+                  enterKeyHint="go"
+                  placeholder="document-name"
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  containerClassName="w-full"
+                />
                 <Button
-                  className="btn btn-neutral h-11 rounded-xl px-6 sm:h-auto"
+                  variant="neutral"
+                  className="px-6"
                   onClick={() => navigateToDocument()}
                   disabled={isLoading || !documentName}>
                   Open
@@ -209,18 +217,18 @@ const HomePage = ({ hostname }: HomePageProps) => {
             </div>
 
             {/* Info Links */}
-            <div className="mt-4 space-y-1 text-center text-xs text-slate-500 sm:mt-10 sm:space-y-2 sm:text-sm">
+            <div className="text-base-content/50 mt-8 space-y-1 text-center text-xs sm:mt-12 sm:space-y-2 sm:text-sm">
               <p>
                 A{' '}
                 <a
                   href="https://github.com/docs-plus"
-                  className="font-medium text-blue-600 hover:underline">
+                  className="text-primary font-medium hover:underline">
                   free & open source
                 </a>{' '}
                 project by{' '}
                 <a
                   href="https://newspeak.house"
-                  className="font-medium text-blue-600 hover:underline">
+                  className="text-primary font-medium hover:underline">
                   Newspeak House
                 </a>
               </p>
@@ -228,13 +236,13 @@ const HomePage = ({ hostname }: HomePageProps) => {
                 Seed funded by{' '}
                 <a
                   href="https://www.grantfortheweb.org"
-                  className="font-medium text-blue-600 hover:underline">
+                  className="text-primary font-medium hover:underline">
                   Grant for Web
                 </a>{' '}
                 &{' '}
                 <a
                   href="https://www.nesta.org.uk"
-                  className="font-medium text-blue-600 hover:underline">
+                  className="text-primary font-medium hover:underline">
                   Nesta
                 </a>
               </p>
@@ -243,30 +251,30 @@ const HomePage = ({ hostname }: HomePageProps) => {
         </main>
 
         {/* Footer */}
-        <footer className="flex shrink-0 items-center justify-center gap-3 px-4 py-3 text-sm text-slate-500 sm:gap-4 sm:py-6">
+        <footer className="text-base-content/60 flex shrink-0 items-center justify-center gap-3 px-4 py-4 text-sm sm:gap-6 sm:py-8">
           {/* GitHub group */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <a
               href="https://github.com/docs-plus/docs.plus"
-              className="flex items-center gap-1.5 rounded-full bg-slate-800 px-3 py-1.5 text-xs text-white transition-colors hover:bg-slate-700 sm:px-4 sm:py-2 sm:text-sm">
+              className="bg-neutral text-neutral-content hover:bg-neutral/90 flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-colors sm:text-sm">
               <LuGithub size={16} />
               <span>GitHub</span>
             </a>
             <a
               href="https://github.com/docs-plus/docs.plus/discussions"
-              className="flex items-center gap-1.5 rounded-full border border-slate-300 px-3 py-1.5 text-xs transition-colors hover:bg-slate-100 sm:px-4 sm:py-2 sm:text-sm">
+              className="border-base-300 text-base-content hover:bg-base-200 flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-colors sm:text-sm">
               <LuMessageCircle size={16} />
               <span>Discuss</span>
             </a>
           </div>
 
           {/* Divider */}
-          <div className="h-6 w-px bg-slate-300" />
+          <div className="bg-base-300 h-6 w-px" />
 
           {/* Discord */}
           <a
             href="https://discord.com/invite/25JPG38J59"
-            className="flex items-center gap-1.5 rounded-full bg-[#5865F2] px-3 py-1.5 text-xs text-white transition-colors hover:bg-[#4752C4] sm:px-4 sm:py-2 sm:text-sm">
+            className="flex items-center gap-2 rounded-full bg-[#5865F2] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#4752C4] sm:text-sm">
             <FaDiscord size={16} />
             <span>Discord</span>
           </a>
@@ -275,23 +283,19 @@ const HomePage = ({ hostname }: HomePageProps) => {
 
       {/* Profile Modal */}
       {user && (
-        <Modal
-          asAChild={false}
-          id="modal_profile"
-          isOpen={isProfileOpen}
-          setIsOpen={setIsProfileOpen}>
-          <TabLayout name="profile" className="h-full max-h-[94%] max-w-[64rem]">
-            <ProfilePanel />
-          </TabLayout>
+        <Modal open={isProfileOpen} onOpenChange={setIsProfileOpen}>
+          <ModalContent size="4xl" className="overflow-hidden rounded-2xl p-0">
+            <ProfilePanel onClose={() => setIsProfileOpen(false)} />
+          </ModalContent>
         </Modal>
       )}
 
       {/* Sign In Modal */}
       {isAuthServiceAvailable && !user && (
-        <Modal asAChild={false} id="modal_signin" isOpen={isSignInOpen} setIsOpen={setIsSignInOpen}>
-          <TabLayout name="sign-in" footer={false} className="w-full p-6 sm:w-[28rem] sm:p-6">
-            <SignInPanel />
-          </TabLayout>
+        <Modal open={isSignInOpen} onOpenChange={setIsSignInOpen}>
+          <ModalContent size="sm" className="overflow-hidden p-0">
+            <SignInForm variant="card" showHeader onClose={() => setIsSignInOpen(false)} />
+          </ModalContent>
         </Modal>
       )}
     </>

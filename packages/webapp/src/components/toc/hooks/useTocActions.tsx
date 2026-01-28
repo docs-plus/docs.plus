@@ -5,8 +5,9 @@ import { TIPTAP_NODES, type ResolvedPos } from '@types'
 import slugify from 'slugify'
 import PubSub from 'pubsub-js'
 import { CHAT_OPEN } from '@services/eventsHub'
+import { copyToClipboard } from '@utils/clipboard'
 import * as toast from '@components/toast'
-import { copyToClipboard } from '@utils/index'
+import Button from '@components/ui/Button'
 
 /**
  * Dialog content for delete confirmation
@@ -57,14 +58,14 @@ function DeleteSectionDialog({ headingId }: { headingId: string }) {
 
   return (
     <div className="flex flex-col gap-3 p-4 pr-3 pb-3">
-      <p className="text-gray-600">Do you want to delete this heading section?</p>
+      <p className="text-base-content/70">Do you want to delete this heading section?</p>
       <div className="flex justify-end gap-4">
-        <button className="btn btn-ghost" onClick={closeDialog}>
+        <Button variant="ghost" onClick={closeDialog}>
           Cancel
-        </button>
-        <button className="btn btn-ghost" onClick={handleDelete}>
+        </Button>
+        <Button variant="error" onClick={handleDelete}>
           Delete
-        </button>
+        </Button>
       </div>
     </div>
   )
@@ -95,7 +96,7 @@ export function useTocActions() {
   )
 
   const copyLink = useCallback(
-    (headingId: string) => {
+    async (headingId: string) => {
       if (!headingId || !editor) return
 
       const targetHeading = document.querySelector(`.heading[data-id="${headingId}"]`)
@@ -114,8 +115,12 @@ export function useTocActions() {
       url.searchParams.set('h', headingPath.join('>'))
       url.searchParams.set('id', headingId)
 
-      copyToClipboard(url.toString())
-      toast.Success('URL copied to clipboard')
+      const success = await copyToClipboard(url.toString())
+      if (success) {
+        toast.Success('Section link copied to clipboard')
+      } else {
+        toast.Error('Failed to copy link')
+      }
     },
     [editor]
   )

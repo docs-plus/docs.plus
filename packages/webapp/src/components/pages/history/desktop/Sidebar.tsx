@@ -13,6 +13,7 @@ import {
 import { useVersionContent } from '../hooks/useVersionContent'
 import { twMerge } from 'tailwind-merge'
 import { useModal } from '@components/ui/ModalDrawer'
+import Button from '@components/ui/Button'
 
 const Sidebar = ({ className }: { className?: string }) => {
   const { loadingHistory, activeHistory, historyList } = useStore((state) => state)
@@ -26,10 +27,10 @@ const Sidebar = ({ className }: { className?: string }) => {
 
   return (
     <div
-      className={twMerge('sidebar bg-base-100 h-full w-[25%] border-l border-gray-200', className)}>
+      className={twMerge('sidebar bg-base-100 border-base-300 h-full w-[25%] border-l', className)}>
       <div className="flex h-full flex-col">
         {/* Header */}
-        <div className="border-b border-gray-200 px-4 py-4">
+        <div className="border-base-300 border-b px-4 py-4">
           <h2 className="text-base-content text-lg font-bold">Version History</h2>
           <p className="text-base-content/60 mt-0.5 text-xs">
             {historyList.length} version{historyList.length !== 1 ? 's' : ''}
@@ -78,18 +79,19 @@ const DayGroup = ({
   const [isOpen, setIsOpen] = useState(defaultOpen)
 
   return (
-    <div className="border-b border-gray-200">
+    <div className="border-base-300 border-b">
       {/* Day Header */}
-      <button
+      <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-base-200 hover:bg-base-300 flex w-full cursor-pointer items-center justify-between px-4 py-2.5 transition-colors">
+        variant="ghost"
+        className="bg-base-200 hover:bg-base-300 flex w-full cursor-pointer items-center justify-between rounded-none px-4 py-2.5 transition-colors">
         <span className="text-base-content text-sm font-semibold">{label}</span>
         {isOpen ? (
           <MdExpandLess className="text-base-content/50" size={18} />
         ) : (
           <MdExpandMore className="text-base-content/50" size={18} />
         )}
-      </button>
+      </Button>
 
       {/* Sessions */}
       {isOpen && (
@@ -137,10 +139,11 @@ const SessionItem = ({
     const isLatest = version.version === latestVersion
 
     return (
-      <button
+      <Button
         onClick={() => onSelectVersion(version.version)}
+        variant="ghost"
         className={twMerge(
-          'flex w-full cursor-pointer items-start gap-3 px-4 py-2 text-left transition-all',
+          'flex h-auto w-full cursor-pointer items-start gap-3 rounded-none px-4 py-2 text-left transition-all',
           isCurrentActive
             ? 'bg-primary/15 hover:bg-base-300'
             : 'hover:bg-base-200 active:bg-base-200'
@@ -149,7 +152,7 @@ const SessionItem = ({
         <div className="flex flex-col items-center pt-1">
           <div
             className={twMerge(
-              'hover:bg-docsy h-2.5 w-2.5 rounded-full transition-colors',
+              'hover:bg-primary h-2.5 w-2.5 rounded-full transition-colors',
               isCurrentActive ? 'bg-primary' : 'bg-base-300'
             )}
           />
@@ -182,7 +185,7 @@ const SessionItem = ({
             <p className="text-base-content/70 mt-1 truncate text-xs">{version.commitMessage}</p>
           )}
         </div>
-      </button>
+      </Button>
     )
   }
 
@@ -190,10 +193,11 @@ const SessionItem = ({
   return (
     <div className={twMerge('transition-colors', isActive ? 'bg-primary/5' : '')}>
       {/* Session header */}
-      <button
+      <Button
         onClick={() => setIsExpanded(!isExpanded)}
+        variant="ghost"
         className={twMerge(
-          'flex w-full cursor-pointer items-start gap-3 px-4 py-2 text-left transition-all',
+          'flex h-auto w-full cursor-pointer items-start gap-3 rounded-none px-4 py-2 text-left transition-all',
           'hover:bg-base-200/50 active:bg-base-200'
         )}>
         {/* Timeline dot with count badge */}
@@ -245,7 +249,7 @@ const SessionItem = ({
             <MdExpandMore className="text-base-content/50" size={16} />
           )}
         </div>
-      </button>
+      </Button>
 
       {/* Expanded versions list */}
       {isExpanded && (
@@ -255,11 +259,13 @@ const SessionItem = ({
             const isLatest = version.version === latestVersion
 
             return (
-              <button
+              <Button
                 key={version.version}
                 onClick={() => onSelectVersion(version.version)}
+                variant="ghost"
+                size="sm"
                 className={twMerge(
-                  'flex w-full cursor-pointer items-center gap-2.5 rounded px-2 py-1.5 text-left transition-all',
+                  'flex h-auto w-full cursor-pointer items-center justify-start gap-2.5 rounded px-2 py-1.5 text-left transition-all',
                   isCurrentActive
                     ? 'bg-primary/15 hover:bg-primary/20'
                     : 'hover:bg-base-200/60 active:bg-base-200'
@@ -285,7 +291,7 @@ const SessionItem = ({
                     Latest
                   </span>
                 )}
-              </button>
+              </Button>
             )
           })}
         </div>

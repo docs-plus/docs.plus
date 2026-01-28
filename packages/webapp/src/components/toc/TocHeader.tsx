@@ -4,6 +4,7 @@ import { useTocActions, usePresentUsers, useUnreadCount } from './hooks'
 import { scrollToDocTitle } from './utils'
 import AvatarStack from '@components/AvatarStack'
 import { useModal } from '@components/ui/ModalDrawer'
+import UnreadBadge from '@components/ui/UnreadBadge'
 
 interface TocHeaderProps {
   variant: 'desktop' | 'mobile'
@@ -42,9 +43,9 @@ export function TocHeader({ variant }: TocHeaderProps) {
 
   if (variant === 'mobile') {
     return (
-      <div className="border-b border-gray-300">
+      <div className="border-base-300 border-b">
         <div className="group relative flex items-center justify-between py-2">
-          <span className="text-lg font-bold">{docMetadata?.title}</span>
+          <span className="text-base-content text-lg font-bold">{docMetadata?.title}</span>
           <span
             className="btn_openChatBox bg-neutral text-neutral-content flex items-center justify-end overflow-hidden"
             onClick={handleChatClick}
@@ -60,29 +61,28 @@ export function TocHeader({ variant }: TocHeaderProps) {
   }
 
   return (
-    <div className="relative w-full border-b border-gray-300 pb-1">
+    <div className="border-base-300 relative w-full border-b pb-1">
       <div
-        className={`group hover:bg-opacity-50 flex cursor-pointer items-center justify-between gap-0.5 rounded-md p-1 px-2 pr-3 hover:bg-gray-300 ${isActive && 'activeTocBorder bg-gray-300'}`}
+        className={`group hover:bg-base-300/50 flex cursor-pointer items-center justify-between gap-0.5 rounded-md p-1 px-2 pr-3 ${isActive && 'activeTocBorder bg-base-300'}`}
         onClick={handleClick}>
-        <span className="text-lg font-bold">{docMetadata?.title}</span>
+        <span className="text-base-content text-lg font-bold">{docMetadata?.title}</span>
         <span
           className="btn_chat tooltip tooltip-top relative ml-auto"
           onClick={handleChatClick}
           data-tip="Chat Room">
-          {unreadCount > 0 && (
-            <div className="badge badge-docsy badge-sm bg-docsy border-docsy scale-90 border border-none text-white">
-              {unreadCount > 99 ? '99+' : unreadCount}
-            </div>
+          {unreadCount > 0 ? (
+            <UnreadBadge count={unreadCount} size="sm" />
+          ) : (
+            <ChatLeft
+              className="btnChat text-base-content/60 hover:text-primary ml-1 cursor-pointer transition-all"
+              size={16}
+            />
           )}
-          <ChatLeft
-            className={`btnChat ml-1 ${unreadCount > 0 && 'hidden'} group-hover:fill-docsy cursor-pointer transition-all hover:fill-indigo-900`}
-            size={16}
-          />
         </span>
         <div className="absolute -right-9">
           {presentUsers.length > 0 && (
             <AvatarStack
-              size={8}
+              size="sm"
               users={presentUsers}
               showStatus={true}
               tooltipPosition="tooltip-left"

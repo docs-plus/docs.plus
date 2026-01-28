@@ -1,4 +1,5 @@
 import { useStore } from '@stores'
+import { ScrollArea } from '@components/ui/ScrollArea'
 
 // Skeleton line component for consistent styling
 const SkeletonLine = ({
@@ -88,15 +89,15 @@ const TableOfContentsSkeleton = () => (
 
 // Toolbar skeleton
 const ToolbarSkeleton = () => (
-  <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-2">
+  <div className="border-base-300 bg-base-100 flex items-center gap-2 border-b px-4 py-2">
     <SkeletonLine width="w-24" height="h-6" />
-    <div className="mx-2 h-5 w-px bg-slate-200" />
+    <div className="bg-base-300 mx-2 h-5 w-px" />
     <div className="flex gap-1">
       {[1, 2, 3].map((i) => (
         <div key={i} className="skeleton size-7 rounded" />
       ))}
     </div>
-    <div className="mx-2 h-5 w-px bg-slate-200" />
+    <div className="bg-base-300 mx-2 h-5 w-px" />
     <div className="flex gap-1">
       {[1, 2, 3].map((i) => (
         <div key={i} className="skeleton size-7 rounded" />
@@ -112,7 +113,7 @@ const ToolbarSkeleton = () => (
 
 // Header skeleton
 const HeaderSkeleton = ({ isMobile }: { isMobile: boolean }) => (
-  <div className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3">
+  <div className="border-base-300 bg-base-100 flex items-center justify-between border-b px-4 py-3">
     <div className="flex items-center gap-3">
       {!isMobile && <div className="skeleton size-8 rounded" />}
       <SkeletonLine width="w-32" height="h-5" />
@@ -171,7 +172,7 @@ const LoadingToast = ({
   }
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 flex items-center gap-2 rounded-full bg-slate-800 px-4 py-2 text-sm text-white shadow-lg">
+    <div className="bg-neutral text-neutral-content fixed bottom-4 left-4 z-50 flex items-center gap-2 rounded-full px-4 py-2 text-sm shadow-lg">
       <span className="loading loading-spinner loading-sm" />
       <span>{getMessage()}...</span>
     </div>
@@ -190,7 +191,7 @@ export const SlugPageLoader = ({
   const isMobile = useStore((state) => state.settings.editor.isMobile) ?? false
 
   return (
-    <div className="flex h-full min-h-screen flex-col bg-slate-50">
+    <div className="bg-base-200 flex h-full min-h-screen flex-col">
       {/* Header */}
       <HeaderSkeleton isMobile={isMobile} />
 
@@ -201,15 +202,15 @@ export const SlugPageLoader = ({
       <div className="flex flex-1 overflow-hidden">
         {/* Table of Contents - desktop only */}
         {!isMobile && (
-          <aside className="hidden w-64 shrink-0 border-r border-slate-200 bg-white md:block">
+          <aside className="border-base-300 bg-base-100 hidden w-64 shrink-0 border-r md:block">
             <TableOfContentsSkeleton />
           </aside>
         )}
 
         {/* Document content */}
-        <main className="flex-1 overflow-y-auto bg-white">
+        <ScrollArea className="bg-base-100 flex-1" orientation="vertical">
           <DocumentSkeleton />
-        </main>
+        </ScrollArea>
       </div>
 
       {/* Loading toast */}

@@ -2,7 +2,7 @@ import { useRef } from 'react'
 import EditorContent from './EditorContent'
 import { useAdjustEditorSizeForChatRoom } from '../hooks'
 import useEditableDocControl from '@components/pages/document/hooks/useEditableDocControl'
-import useUpdateDocPageUnreadMsg from '@components/pages/document/hooks/useUpdateDocPageUnreadMsg'
+import { useUnreadSync } from '@hooks/useUnreadSync'
 
 const Editor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
@@ -12,7 +12,8 @@ const Editor = () => {
 
   useEditableDocControl()
 
-  useUpdateDocPageUnreadMsg()
+  // Sync unread counts to all badges via UNREAD_SYNC event (CSS handles visuals)
+  useUnreadSync()
 
   return (
     <div
