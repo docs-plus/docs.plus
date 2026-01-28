@@ -17,4 +17,6 @@ create publication supabase_realtime for table
   public.messages,              -- Track changes in the 'messages' table
   public.channel_members,       -- Track changes in the 'channel_members' table
   public.channel_message_counts -- Track changes in the 'channel_message_counts' table
+  -- NOTE: notifications uses broadcast trigger (18-notification-broadcast.sql)
+  -- This is more efficient: O(1) routing vs O(n) filtering
     with (publish = 'insert, update, delete'); -- Publish insert, update, and delete events

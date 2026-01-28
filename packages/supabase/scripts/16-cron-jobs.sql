@@ -1,16 +1,17 @@
 -- Scheduled tasks for database maintenance and system operations
 
 -- Automatically update user status to offline when inactive
--- This cron job runs every 5 minutes and updates user status to 'OFFLINE'
--- for users who haven't been active (based on online_at timestamp) for more than 5 minutes.
--- This keeps user status indicators accurate across the application.
+-- This cron job runs every 2 minutes and updates user status to 'OFFLINE'
+-- for users who haven't been active (based on online_at timestamp) for more than 2 minutes.
+-- The 2-minute interval is consistent with the is_user_online() helper function
+-- used by push notifications, ensuring cohesive online/offline behavior.
 select cron.schedule(
     'update-user-status',
-    '*/5 * * * *',
+    '*/2 * * * *',
     $$
     update public.users
     set status = 'OFFLINE'
-    where online_at < now() - interval '5 minutes' and status = 'ONLINE';
+    where online_at < now() - interval '2 minutes' and status = 'ONLINE';
     $$
 );
 

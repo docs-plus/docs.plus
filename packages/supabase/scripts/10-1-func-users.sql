@@ -3,6 +3,10 @@
  * This file contains functions and triggers related to user account management.
  */
 
+-- Create internal schema for private helper functions
+CREATE SCHEMA IF NOT EXISTS internal;
+GRANT USAGE ON SCHEMA internal TO authenticated, service_role;
+
 /**
  * Function: handle_new_user
  * Description: Creates a new user record in public.users when a new auth user is registered.
@@ -128,3 +132,35 @@ FOR EACH ROW
 EXECUTE FUNCTION public.update_user_online_at();
 
 COMMENT ON TRIGGER trigger_update_user_online_at ON public.users IS 'Automatically updates the online_at timestamp when a user status changes.';
+
+----------------------------------------------------
+----------------------------------------------------
+
+/**
+ * Function: is_user_online
+ * Description: Checks if a user is actively online based on status and recent activity.
+ * Parameters: p_user_id - The UUID of the user to check
+ * Returns: TRUE if user has status='ONLINE' AND online_at within last 2 minutes
+ * 
+ * Usage: Used by push notification trigger to skip push for active users.
+ * The 2-minute threshold is more aggressive than the cron cleanup (also 2 min)
+ * to ensure we catch users who are actively engaged.
+ */
+CREATE OR REPLACE FUNCTION internal.is_user_online(p_user_id uuid)
+RETURNS boolean
+LANGUAGE sql
+STABLE
+AS $$
+    SELECT EXISTS (
+        SELECT 1 FROM public.users
+        WHERE id = p_user_id
+          AND status = 'ONLINE'
+          AND online_at > now() - interval '2 minutes'
+    );
+$$;
+
+COMMENT ON FUNCTION internal.is_user_online(uuid) IS 
+'Checks if user is actively online. Returns true if status is ONLINE and online_at is within last 2 minutes.';
+
+-- Grant execute to service_role for push notification trigger
+GRANT EXECUTE ON FUNCTION internal.is_user_online(uuid) TO service_role;

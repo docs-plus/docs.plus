@@ -11,8 +11,9 @@
  * Description: Performs cleanup operations when a message is soft-deleted
  * Trigger: Executes after UPDATE of deleted_at on public.messages
  * Action:
- *   - Updates the message previews in various places
- *   - Deletes related pinned messages and notifications
+ *   - Deletes related pinned messages
+ *   - Decrements unread_message_count for users with unread notifications
+ *   - Deletes related notifications
  *   - Updates related reply references
  *   - Updates channel last_message_preview if needed
  * Returns: The NEW record (trigger standard)
@@ -31,6 +32,17 @@ BEGIN
 
         -- Delete pinned message
         DELETE FROM public.pinned_messages WHERE message_id = OLD.id;
+
+        -- Decrement unread count for users with unread notifications for this message
+        -- Must happen BEFORE deleting notifications so we know who to decrement
+        UPDATE public.channel_members cm
+        SET unread_message_count = GREATEST(0, unread_message_count - 1)
+        FROM (
+            SELECT receiver_user_id, channel_id
+            FROM public.notifications
+            WHERE message_id = OLD.id AND readed_at IS NULL
+        ) n
+        WHERE cm.channel_id = n.channel_id AND cm.member_id = n.receiver_user_id;
 
         -- Delete associated notifications
         DELETE FROM public.notifications WHERE message_id = OLD.id;

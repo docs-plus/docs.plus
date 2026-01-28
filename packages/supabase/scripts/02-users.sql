@@ -80,3 +80,9 @@ comment on column public.users.profile_data is E'Expected schema:\n{
     "type": "github" | "twitter" | "linkedin" | "other"
   }]
 }';
+
+-- Partial index for efficient online user queries
+-- Only indexes users with status='ONLINE', keeping the index small and fast
+create index if not exists idx_users_online_status
+    on public.users (id, online_at)
+    where status = 'ONLINE';

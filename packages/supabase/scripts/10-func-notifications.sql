@@ -105,6 +105,101 @@ EXECUTE FUNCTION create_mention_notifications();
 COMMENT ON TRIGGER create_mention_notifications ON public.messages IS 'Creates notifications for users mentioned with @username in a message.';
 
 /**
+ * Function: create_reply_notification
+ * Description: Creates notification when someone replies to a message
+ * Trigger: Executes after INSERT on public.messages when reply_to_message_id is set
+ * Action: Always notifies the original message author (regardless of notif_state)
+ * Returns: The NEW record (trigger standard)
+ *
+ * Note: Replies are high-signal notifications - if someone replies to YOUR message,
+ * you should always be notified (unless you've muted the channel).
+ */
+CREATE OR REPLACE FUNCTION create_reply_notification()
+RETURNS TRIGGER AS $$
+DECLARE
+    original_message RECORD;
+    truncated_content TEXT;
+BEGIN
+    -- Only process if this is a reply
+    IF NEW.reply_to_message_id IS NULL THEN
+        RETURN NEW;
+    END IF;
+
+    -- Get the original message and channel info
+    SELECT m.user_id, m.channel_id, c.mute_in_app_notifications
+    INTO original_message
+    FROM public.messages m
+    JOIN public.channels c ON c.id = m.channel_id
+    WHERE m.id = NEW.reply_to_message_id;
+
+    IF NOT FOUND THEN
+        RETURN NEW;
+    END IF;
+
+    -- Skip if channel is globally muted
+    IF original_message.mute_in_app_notifications THEN
+        RETURN NEW;
+    END IF;
+
+    -- Skip if replying to own message
+    IF original_message.user_id = NEW.user_id THEN
+        RETURN NEW;
+    END IF;
+
+    -- Skip if user has muted this channel
+    IF EXISTS (
+        SELECT 1 FROM public.channel_members
+        WHERE channel_id = NEW.channel_id
+          AND member_id = original_message.user_id
+          AND mute_in_app_notifications = TRUE
+    ) THEN
+        RETURN NEW;
+    END IF;
+
+    -- Truncate content for preview
+    truncated_content := CASE
+        WHEN length(NEW.content) > 100 THEN substring(NEW.content, 1, 100) || '...'
+        ELSE NEW.content
+    END;
+
+    -- Create the reply notification
+    INSERT INTO public.notifications (
+        receiver_user_id,
+        sender_user_id,
+        type,
+        message_id,
+        channel_id,
+        message_preview,
+        created_at
+    ) VALUES (
+        original_message.user_id,
+        NEW.user_id,
+        'reply'::notification_category,
+        NEW.id,
+        NEW.channel_id,
+        truncated_content,
+        timezone('utc', now())
+    );
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+COMMENT ON FUNCTION create_reply_notification() IS
+'Creates notification for original message author when someone replies. Always notifies regardless of notif_state.';
+
+-- Trigger: create_reply_notification
+DROP TRIGGER IF EXISTS create_reply_notification ON public.messages;
+CREATE TRIGGER create_reply_notification
+AFTER INSERT ON public.messages
+FOR EACH ROW
+WHEN (NEW.reply_to_message_id IS NOT NULL)
+EXECUTE FUNCTION create_reply_notification();
+
+COMMENT ON TRIGGER create_reply_notification ON public.messages IS
+'Notifies the original message author when someone replies to their message.';
+
+/**
  * Function: create_everyone_notifications
  * Description: Creates notifications for all channel members when @everyone is used
  * Trigger: Executes after INSERT on public.messages when content contains '@everyone'
@@ -277,8 +372,11 @@ COMMENT ON TRIGGER create_regular_message_notifications ON public.messages IS 'C
  * Function: create_reaction_notifications
  * Description: Creates notifications for new reactions on messages
  * Trigger: Executes after UPDATE of reactions on public.messages
- * Action: Creates notifications for message owners when their messages receive reactions
+ * Action: Always notifies message owner when their message receives a reaction
  * Returns: The NEW record (trigger standard)
+ *
+ * Note: Reactions are high-signal notifications - if someone reacts to YOUR message,
+ * you should always be notified (unless you've muted the channel).
  */
 CREATE OR REPLACE FUNCTION create_reaction_notifications()
 RETURNS TRIGGER AS $$
@@ -289,86 +387,80 @@ DECLARE
     new_reaction      JSONB;
     sender_user_id    UUID;
     is_channel_muted  BOOLEAN;
+    is_user_muted     BOOLEAN;
 BEGIN
-    -- 1) Check if the channel is valid and if it's globally muted
+    -- 1) Check if the channel is globally muted
     SELECT mute_in_app_notifications
       INTO is_channel_muted
       FROM public.channels
      WHERE id = NEW.channel_id;
 
     IF NOT FOUND OR is_channel_muted THEN
-        RETURN NEW; -- Channel doesn't exist or is globally muted
+        RETURN NEW;
     END IF;
 
-    -- 2) Verify the receiver (message owner) still exists
+    -- 2) Verify the message owner exists
     IF NOT EXISTS (
-        SELECT 1
-          FROM public.users
-         WHERE id = OLD.user_id
+        SELECT 1 FROM public.users WHERE id = OLD.user_id
     ) THEN
-        RETURN NEW; -- Receiver doesn't exist or is deleted
+        RETURN NEW;
     END IF;
 
-    -- 3) Ensure the message owner (receiver) has notif_state = 'ALL' and isn't muted in this channel
-    IF NOT EXISTS (
-        SELECT 1
-          FROM public.channel_members cm
-         WHERE cm.channel_id = NEW.channel_id
-           AND cm.member_id  = OLD.user_id
-           AND cm.mute_in_app_notifications = FALSE
-           AND cm.notif_state = 'ALL'
-    ) THEN
-        RETURN NEW; -- User isn't configured to receive reaction notifications
+    -- 3) Check if user has muted this channel (ignore notif_state for reactions)
+    SELECT cm.mute_in_app_notifications
+      INTO is_user_muted
+      FROM public.channel_members cm
+     WHERE cm.channel_id = NEW.channel_id
+       AND cm.member_id = OLD.user_id;
+
+    IF is_user_muted THEN
+        RETURN NEW;
     END IF;
 
     -- 4) Compare old and new reactions
     old_reactions := COALESCE(OLD.reactions, '{}'::jsonb);
     new_reactions := NEW.reactions;
 
-    -- 5) Loop through each reaction type in the new reactions JSONB
+    -- 5) Loop through each reaction type
     FOR reaction_key IN
         SELECT jsonb_object_keys(new_reactions)
     LOOP
-        -- Loop through each new reaction for the current reaction_key
         FOR new_reaction IN
             SELECT jsonb_array_elements(new_reactions -> reaction_key)
         LOOP
-            -- Extract the sender ID from the reaction
             sender_user_id := (new_reaction ->> 'user_id')::UUID;
 
-            -- Check if this exact reaction was already present
+            -- Skip if reacting to own message
+            IF sender_user_id = OLD.user_id THEN
+                CONTINUE;
+            END IF;
+
+            -- Skip if reaction already existed
             IF (old_reactions ? reaction_key)
                AND (old_reactions -> reaction_key) @> jsonb_build_array(new_reaction)
             THEN
-                -- Reaction already exists, skip
                 CONTINUE;
-            ELSE
-                -- Verify that the sender exists
-                IF EXISTS (
-                    SELECT 1
-                      FROM public.users
-                     WHERE id = sender_user_id
-                ) THEN
-                    -- Create a new reaction notification for the message owner
-                    INSERT INTO public.notifications (
-                        receiver_user_id,
-                        sender_user_id,
-                        type,
-                        message_id,
-                        channel_id,
-                        message_preview,
-                        created_at
-                    )
-                    VALUES (
-                        OLD.user_id,
-                        sender_user_id,
-                        'reaction',
-                        NEW.id,
-                        NEW.channel_id,
-                        COALESCE(truncate_content(NEW.content), ''),
-                        timezone('utc', now())
-                    );
-                END IF;
+            END IF;
+
+            -- Verify sender exists and create notification
+            IF EXISTS (SELECT 1 FROM public.users WHERE id = sender_user_id) THEN
+                INSERT INTO public.notifications (
+                    receiver_user_id,
+                    sender_user_id,
+                    type,
+                    message_id,
+                    channel_id,
+                    message_preview,
+                    created_at
+                ) VALUES (
+                    OLD.user_id,
+                    sender_user_id,
+                    'reaction'::notification_category,
+                    NEW.id,
+                    NEW.channel_id,
+                    reaction_key,  -- Store the emoji
+                    timezone('utc', now())
+                );
             END IF;
         END LOOP;
     END LOOP;
@@ -377,7 +469,8 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
-COMMENT ON FUNCTION create_reaction_notifications() IS 'Creates notifications for message owners when their messages receive new reactions.';
+COMMENT ON FUNCTION create_reaction_notifications() IS
+'Creates notification when someone reacts to your message. Always notifies regardless of notif_state.';
 
 -- Trigger: create_reaction_notifications
 CREATE TRIGGER create_reaction_notifications
@@ -465,53 +558,19 @@ EXECUTE FUNCTION increment_unread_count_on_new_message();
 COMMENT ON TRIGGER increment_unread_count ON public.messages IS 'Increments the unread message count for all workspace members when a new message is posted.';
 
 /**
- * Function: update_unread_count_on_message_delete
- * Description: Updates unread message counts when messages are deleted
- * Trigger: Executes after UPDATE of deleted_at or DELETE on public.messages
- * Action: Recalculates unread message counts based on remaining unread notifications
- * Returns: NULL (not used for AFTER triggers)
+ * DEPRECATED: update_unread_count_on_message_delete
+ *
+ * This function and its triggers have been removed.
+ * Unread count decrements are now handled in handle_message_soft_delete()
+ * in 10-3-func-message.sql, which decrements counts BEFORE deleting
+ * notifications to ensure we know exactly which users to update.
+ *
+ * See: handle_message_soft_delete() in 10-3-func-message.sql
  */
-CREATE OR REPLACE FUNCTION update_unread_count_on_message_delete() RETURNS TRIGGER AS $$
-DECLARE
-    channel_id_used VARCHAR(36);
-BEGIN
-    -- Determine whether it's a soft delete (update) or hard delete
-    IF TG_OP = 'DELETE' THEN
-        channel_id_used := OLD.channel_id;
-    ELSE
-        channel_id_used := NEW.channel_id;
-    END IF;
 
-    -- Update unread_message_count for all channel members in a single query
-    UPDATE public.channel_members cm
-    SET unread_message_count = sub.notification_count
-    FROM (
-        SELECT receiver_user_id AS member_id, COUNT(*) AS notification_count
-        FROM public.notifications
-        WHERE channel_id = channel_id_used AND readed_at IS NULL
-        GROUP BY receiver_user_id
-    ) sub
-    WHERE cm.channel_id = channel_id_used AND cm.member_id = sub.member_id;
+-- Drop the old triggers (if they exist)
+DROP TRIGGER IF EXISTS update_unread_count_on_soft_delete ON public.messages;
+DROP TRIGGER IF EXISTS update_unread_count_on_hard_delete ON public.messages;
 
-    RETURN NULL; -- Return value is not used for AFTER triggers
-END;
-$$ LANGUAGE plpgsql;
-
-COMMENT ON FUNCTION update_unread_count_on_message_delete() IS 'Updates unread message counts when messages are deleted, ensuring counts stay accurate.';
-
--- Trigger: update_unread_count_on_soft_delete
-CREATE TRIGGER update_unread_count_on_soft_delete
-AFTER UPDATE OF deleted_at ON public.messages
-FOR EACH ROW
-WHEN (OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL)
-EXECUTE FUNCTION update_unread_count_on_message_delete();
-
-COMMENT ON TRIGGER update_unread_count_on_soft_delete ON public.messages IS 'Updates unread message counts when a message is soft-deleted.';
-
--- Trigger: update_unread_count_on_hard_delete
-CREATE TRIGGER update_unread_count_on_hard_delete
-AFTER DELETE ON public.messages
-FOR EACH ROW
-EXECUTE FUNCTION update_unread_count_on_message_delete();
-
-COMMENT ON TRIGGER update_unread_count_on_hard_delete ON public.messages IS 'Updates unread message counts when a message is hard-deleted.';
+-- Drop the old function (if it exists)
+DROP FUNCTION IF EXISTS update_unread_count_on_message_delete();
