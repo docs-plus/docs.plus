@@ -124,7 +124,12 @@ export function createPushWorker(): Worker<PushJobData> | null {
       limiter: {
         max: config.push.gateway.rateLimitMax,
         duration: config.push.gateway.rateLimitDuration
-      }
+      },
+      // Lock settings for job ownership (prevents duplicate processing across workers)
+      lockDuration: 30000, // 30s - push notifications are fast
+      lockRenewTime: 10000, // 10s - renew lock
+      stalledInterval: 15000, // Check every 15s
+      maxStalledCount: 2 // 30s total before marking stalled
     }
   )
 

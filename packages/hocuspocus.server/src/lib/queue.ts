@@ -250,9 +250,18 @@ export const createDocumentWorker = () => {
         max: parseInt(process.env.BULLMQ_RATE_LIMIT_MAX || '300', 10),
         duration: parseInt(process.env.BULLMQ_RATE_LIMIT_DURATION || '1000', 10)
       },
-      // Auto-remove stalled jobs after timeout
-      stalledInterval: 30000, // Check every 30s
-      maxStalledCount: 3 // After 3 stalls, consider it failed
+      // Lock settings for job ownership (prevents duplicate processing)
+      // lockDuration: How long a job is "owned" by this worker before others can take it
+      // lockRenewTime: How often to extend the lock (should be < lockDuration/2)
+      lockDuration: 120000, // 2 minutes - job lock duration
+      lockRenewTime: 30000, // 30s - auto-renew lock while processing
+
+      // Stalled job detection (for crashed workers)
+      // A job is "stalled" if worker dies mid-processing without releasing lock
+      // stalledInterval: How often to check for stalled jobs
+      // maxStalledCount: How many stall checks before marking as failed
+      stalledInterval: 60000, // Check every 60s (was 30s - too aggressive)
+      maxStalledCount: 2 // After 2 stalls (2 min), consider it failed
     }
   )
 

@@ -315,6 +315,9 @@ services:
   # HOCUSPOCUS WORKER (Background Jobs)
   # Processes ALL queued jobs: documents, emails, push notifications
   # This is the ONLY container that runs BullMQ workers (not rest-api)
+  #
+  # SCALING NOTE: BullMQ handles job deduplication atomically via Redis locks.
+  # Multiple workers will NOT process the same job twice. Safe to scale to 2+.
   # ===========================================================================
   hocuspocus-worker:
     image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
@@ -326,7 +329,8 @@ services:
       args:
         DATABASE_URL: ${DATABASE_URL}
     restart: always
-    stop_grace_period: 30s
+    # Grace period must exceed lockDuration (2min) to allow jobs to complete
+    stop_grace_period: 150s
     stop_signal: SIGTERM
     command: bun /app/src/hocuspocus.worker.ts
     environment:
@@ -335,7 +339,8 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_HOST: docsplus-redis
       REDIS_PORT: 6379
-      DB_POOL_SIZE: ${DB_POOL_SIZE:-8}
+      # Lower pool per worker since we run 2 replicas (2 workers × 5 = 10 connections)
+      DB_POOL_SIZE: ${DB_POOL_SIZE:-5}
       DB_IDLE_TIMEOUT: 30000
       SUPABASE_URL: ${SUPABASE_URL}
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
@@ -359,6 +364,8 @@ services:
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY}
       VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:support@docs.plus}
+      # Worker resilience settings (shutdown timeout should be < stop_grace_period)
+      WORKER_SHUTDOWN_TIMEOUT_MS: 120000
     networks:
       - docsplus-network
     depends_on:
@@ -373,10 +380,10 @@ services:
           '-e',
           "fetch('http://localhost:4002/health').then(r => r.json()).then(h => h.status === 'healthy' ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
         ]
-      interval: 10s
-      timeout: 5s
-      retries: 5 # More retries before marking unhealthy
-      start_period: 30s # More time for initial startup
+      interval: 15s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
     logging:
       driver: 'json-file'
       options:
@@ -384,7 +391,9 @@ services:
         max-file: '5'
         compress: 'true'
     deploy:
-      replicas: 1 # Single worker to prevent duplicate job processing
+      # BullMQ uses Redis atomic ops for job claiming - safe to run multiple workers
+      # 2 replicas provides redundancy without excessive resource usage
+      replicas: 2
       resources:
         limits:
           cpus: '1'
@@ -397,7 +406,7 @@ services:
         condition: any
         delay: 5s
         max_attempts: 0 # Unlimited restarts
-        window: 60s
+        window: 120s
 
   # ===========================================================================
   # WEBAPP (Next.js Frontend)
@@ -418,6 +427,7 @@ services:
         NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
         NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
         NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+        NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
     restart: always # Always restart on failure
     stop_grace_period: 30s
     stop_signal: SIGTERM
@@ -433,6 +443,7 @@ services:
       NEXT_PUBLIC_GOOGLE_CLIENT_ID: ${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
       NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID}
       NEXT_PUBLIC_TURNSTILE_SITE_KEY: ${NEXT_PUBLIC_TURNSTILE_SITE_KEY}
+      NEXT_PUBLIC_VAPID_PUBLIC_KEY: ${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
       # Server-side API URL (internal Docker network)
       SERVER_RESTAPI_URL: http://rest-api:4000/api
     networks:

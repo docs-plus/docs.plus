@@ -153,7 +153,12 @@ export function createEmailWorker() {
       limiter: {
         max: parseInt(process.env.EMAIL_RATE_LIMIT_MAX || '50', 10),
         duration: parseInt(process.env.EMAIL_RATE_LIMIT_DURATION || '60000', 10) // 50 per minute
-      }
+      },
+      // Lock settings for job ownership (prevents duplicate processing across workers)
+      lockDuration: 60000, // 1 min - email sending typically fast
+      lockRenewTime: 15000, // 15s - renew lock
+      stalledInterval: 30000, // Check every 30s
+      maxStalledCount: 2 // 1 min total before marking stalled
     }
   )
 

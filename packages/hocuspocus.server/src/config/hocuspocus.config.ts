@@ -123,13 +123,18 @@ const configureExtensions = () => {
           dbLogger.warn({ err, documentName }, 'Queue unavailable, falling back to direct save')
 
           try {
-            // Use transaction for atomic version increment (same as queue worker)
+            // Use transaction with FOR UPDATE lock to prevent race conditions
+            // Multiple Hocuspocus instances may hit this fallback simultaneously
             await prisma.$transaction(async (tx) => {
-              const existingDoc = await tx.documents.findFirst({
-                where: { documentId: documentName },
-                orderBy: { id: 'desc' },
-                select: { version: true }
-              })
+              // Use raw query with FOR UPDATE to actually lock the row
+              const existingDocs = await tx.$queryRaw<{ version: number }[]>`
+                SELECT version FROM "Documents"
+                WHERE "documentId" = ${documentName}
+                ORDER BY id DESC
+                LIMIT 1
+                FOR UPDATE
+              `
+              const existingDoc = existingDocs[0] ?? null
 
               await tx.documents.create({
                 data: {
