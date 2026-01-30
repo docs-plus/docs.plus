@@ -15,7 +15,8 @@ import type {
   TopViewedDocument,
   UserLifecycleSegments,
   ViewsSummary,
-  ViewsTrendPoint} from '@/types'
+  ViewsTrendPoint
+} from '@/types'
 
 /**
  * Get the current session's access token
@@ -267,4 +268,110 @@ export async function fetchCommunicationStats(days = 7): Promise<CommunicationSt
  */
 export async function fetchNotificationReach(): Promise<NotificationReach> {
   return fetchApi('/api/admin/stats/notification-reach')
+}
+
+// =============================================================================
+// Push Gateway Health API
+// =============================================================================
+
+export interface PushGatewayHealth {
+  status: 'healthy' | 'degraded' | 'down'
+  latency: number
+  vapidConfigured: boolean
+  queueConnected: boolean
+  pendingJobs?: number
+  failedJobs?: number
+  error?: string
+}
+
+/**
+ * Check push gateway health (hocuspocus.server /api/push/health)
+ */
+export async function checkPushGatewayHealth(): Promise<PushGatewayHealth> {
+  const start = Date.now()
+  try {
+    const response = await fetch(`${API_URL}/api/push/health`, {
+      signal: AbortSignal.timeout(5000)
+    })
+    const latency = Date.now() - start
+
+    if (!response.ok) {
+      return {
+        status: 'degraded',
+        latency,
+        vapidConfigured: false,
+        queueConnected: false,
+        error: `HTTP ${response.status}`
+      }
+    }
+
+    const data = await response.json()
+    return {
+      status: data.vapid_configured && data.queue_connected ? 'healthy' : 'degraded',
+      latency,
+      vapidConfigured: data.vapid_configured ?? false,
+      queueConnected: data.queue_connected ?? false,
+      pendingJobs: data.pending_jobs ?? 0,
+      failedJobs: data.failed_jobs ?? 0
+    }
+  } catch (err) {
+    return {
+      status: 'down',
+      latency: 0,
+      vapidConfigured: false,
+      queueConnected: false,
+      error: err instanceof Error ? err.message : 'Unknown error'
+    }
+  }
+}
+
+/**
+ * Check email gateway health (hocuspocus.server /api/email/health)
+ */
+export interface EmailGatewayHealth {
+  status: 'healthy' | 'degraded' | 'down'
+  latency: number
+  provider: string | null
+  queueConnected: boolean
+  pendingJobs?: number
+  failedJobs?: number
+  error?: string
+}
+
+export async function checkEmailGatewayHealth(): Promise<EmailGatewayHealth> {
+  const start = Date.now()
+  try {
+    const response = await fetch(`${API_URL}/api/email/health`, {
+      signal: AbortSignal.timeout(5000)
+    })
+    const latency = Date.now() - start
+
+    if (!response.ok) {
+      return {
+        status: 'degraded',
+        latency,
+        provider: null,
+        queueConnected: false,
+        error: `HTTP ${response.status}`
+      }
+    }
+
+    const data = await response.json()
+    return {
+      status: data.smtp_configured || data.provider ? 'healthy' : 'degraded',
+      latency,
+      provider: data.provider ?? null,
+      queueConnected: data.queue_connected ?? false,
+      pendingJobs: data.pending_jobs ?? 0,
+      failedJobs: data.failed_jobs ?? 0
+    }
+  } catch (err) {
+    return {
+      status: 'down',
+      latency: 0,
+      provider: null,
+      queueConnected: false,
+      error: err instanceof Error ? err.message : 'Unknown error'
+    }
+  }
 }

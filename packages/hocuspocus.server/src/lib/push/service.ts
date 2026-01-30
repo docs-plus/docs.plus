@@ -14,9 +14,10 @@ import type {
   PushGatewayHealth,
   PushJobData,
   PushNotificationRequest,
-  PushSendResult} from '../../types/push.types'
+  PushSendResult
+} from '../../types/push.types'
 import { pushLogger } from '../logger'
-import { closePushQueue,createPushWorker, getPushQueueHealth, queuePush } from './queue'
+import { closePushQueue, createPushWorker, getPushQueueHealth, queuePush } from './queue'
 import { configureVapid, isVapidConfigured, sendPushNotification } from './sender'
 
 /**
@@ -115,7 +116,7 @@ export class PushGatewayService {
     const queueHealth = await getPushQueueHealth()
 
     return {
-      configured: isVapidConfigured(),
+      vapid_configured: isVapidConfigured(),
       vapid_subject: config.push.vapid.subject || null,
       queue_connected: queueHealth.available,
       pending_jobs: queueHealth.waiting + queueHealth.delayed,

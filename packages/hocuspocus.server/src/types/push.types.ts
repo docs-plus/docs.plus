@@ -63,7 +63,7 @@ export interface PushSendResult {
  * Push gateway health status
  */
 export interface PushGatewayHealth {
-  configured: boolean
+  vapid_configured: boolean
   vapid_subject: string | null
   queue_connected: boolean
   pending_jobs: number

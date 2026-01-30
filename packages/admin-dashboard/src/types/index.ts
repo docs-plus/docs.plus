@@ -263,3 +263,74 @@ export interface NotificationReach {
   email_reach_pct: number
   notification_read_rate: number
 }
+
+// =============================================================================
+// Push Notification Debugging Types
+// =============================================================================
+
+export interface PushGatewayHealth {
+  status: 'healthy' | 'degraded' | 'down'
+  latency: number
+  vapidConfigured: boolean
+  queueConnected: boolean
+  pendingJobs?: number
+  error?: string
+}
+
+export interface PgNetResponse {
+  id: number
+  status_code: number | null
+  content: string | null
+  created: string
+  error_msg?: string | null
+}
+
+export interface PushSubscriptionDetail {
+  id: string
+  user_id: string
+  username: string | null
+  device_name: string | null
+  platform: string
+  is_active: boolean
+  failed_count: number
+  last_error: string | null
+  last_used_at: string | null
+  created_at: string
+}
+
+export interface PushPipelineStats {
+  // Database trigger stats
+  triggerConfigured: boolean
+  gatewayUrl: string | null
+  serviceKeyConfigured: boolean
+  // pg_net stats (last 24h)
+  pgNetTotal: number
+  pgNetSuccess: number
+  pgNetFailed: number
+  // Push subscription stats
+  totalSubscriptions: number
+  activeSubscriptions: number
+  failedSubscriptions: number
+  // Recent activity
+  lastPushSent: string | null
+  lastPushError: string | null
+}
+
+export interface RecentPushAttempt {
+  id: string
+  notification_id: string
+  notification_type: string
+  receiver_username: string | null
+  created_at: string
+  pg_net_status: number | null
+  push_sent: boolean
+  error?: string | null
+}
+
+export interface PushDebugStats {
+  gateway: PushGatewayHealth
+  pipeline: PushPipelineStats
+  recentPgNetResponses: PgNetResponse[]
+  failedSubscriptions: PushSubscriptionDetail[]
+  recentAttempts: RecentPushAttempt[]
+}

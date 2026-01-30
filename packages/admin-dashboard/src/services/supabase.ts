@@ -5,10 +5,14 @@ import type {
   ChannelStats,
   EmailStats,
   NotificationStats,
+  PgNetResponse,
+  PushPipelineStats,
   PushStats,
+  PushSubscriptionDetail,
   SupabaseStats,
   TableSize,
-  User} from '@/types'
+  User
+} from '@/types'
 import { sanitizeSearchInput } from '@/utils/sanitize'
 
 const PAGE_SIZE = DEFAULT_PAGE_SIZE
@@ -325,4 +329,160 @@ export async function checkDatabaseHealth(): Promise<{ status: string; latency: 
   } catch {
     return { status: 'down', latency: 0 }
   }
+}
+
+// =============================================================================
+// Push Notification Debugging Functions
+// =============================================================================
+
+/**
+ * Fetch push pipeline configuration stats using RPC
+ */
+export async function fetchPushPipelineStats(): Promise<PushPipelineStats> {
+  // Use the existing get_push_notification_stats RPC if available
+  const { data: rpcData, error: rpcError } = await supabase.rpc('get_push_notification_stats')
+
+  if (!rpcError && rpcData) {
+    return {
+      triggerConfigured: rpcData.config_status === 'ok',
+      gatewayUrl: rpcData.gateway_url || null,
+      serviceKeyConfigured: rpcData.config_status === 'ok',
+      pgNetTotal: rpcData.total_notifications || 0,
+      pgNetSuccess: rpcData.successful_pushes || 0,
+      pgNetFailed: rpcData.failed_pushes || 0,
+      totalSubscriptions: rpcData.total_subscriptions || 0,
+      activeSubscriptions: rpcData.active_subscriptions || 0,
+      failedSubscriptions: rpcData.failed_subscriptions || 0,
+      lastPushSent: rpcData.last_push_attempt || null,
+      lastPushError: null
+    }
+  }
+
+  // Fallback: Query tables directly
+  const [activeResult, failedResult, totalResult] = await Promise.all([
+    supabase
+      .from('push_subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_active', true),
+    supabase
+      .from('push_subscriptions')
+      .select('id', { count: 'exact', head: true })
+      .gt('failed_count', 0),
+    supabase.from('push_subscriptions').select('id', { count: 'exact', head: true })
+  ])
+
+  return {
+    triggerConfigured: true, // Assume true, we can't check without RPC
+    gatewayUrl: null,
+    serviceKeyConfigured: true,
+    pgNetTotal: 0,
+    pgNetSuccess: 0,
+    pgNetFailed: 0,
+    totalSubscriptions: totalResult.count || 0,
+    activeSubscriptions: activeResult.count || 0,
+    failedSubscriptions: failedResult.count || 0,
+    lastPushSent: null,
+    lastPushError: null
+  }
+}
+
+/**
+ * Fetch recent pg_net HTTP responses (for debugging push delivery)
+ */
+export async function fetchRecentPgNetResponses(limit = 10): Promise<PgNetResponse[]> {
+  // Try to query pg_net response table via RPC (needs to be exposed)
+  const { data, error } = await supabase.rpc('get_recent_pg_net_responses', { p_limit: limit })
+
+  if (error || !data) {
+    // pg_net responses might not be accessible, return empty
+    return []
+  }
+
+  return data as PgNetResponse[]
+}
+
+/**
+ * Fetch failed push subscriptions with details
+ */
+export async function fetchFailedPushSubscriptions(limit = 10): Promise<PushSubscriptionDetail[]> {
+  const { data, error } = await supabase
+    .from('push_subscriptions')
+    .select(
+      `
+      id,
+      user_id,
+      device_name,
+      platform,
+      is_active,
+      failed_count,
+      last_error,
+      last_used_at,
+      created_at,
+      users!inner(username)
+    `
+    )
+    .gt('failed_count', 0)
+    .order('failed_count', { ascending: false })
+    .limit(limit)
+
+  if (error) {
+    console.error('Failed to fetch failed push subscriptions:', error)
+    return []
+  }
+
+  return (data || []).map((sub: Record<string, unknown>) => ({
+    id: sub.id as string,
+    user_id: sub.user_id as string,
+    username: (sub.users as { username: string | null } | null)?.username || null,
+    device_name: sub.device_name as string | null,
+    platform: sub.platform as string,
+    is_active: sub.is_active as boolean,
+    failed_count: sub.failed_count as number,
+    last_error: sub.last_error as string | null,
+    last_used_at: sub.last_used_at as string | null,
+    created_at: sub.created_at as string
+  }))
+}
+
+/**
+ * Fetch recent push subscriptions activity
+ */
+export async function fetchRecentPushActivity(limit = 10): Promise<PushSubscriptionDetail[]> {
+  const { data, error } = await supabase
+    .from('push_subscriptions')
+    .select(
+      `
+      id,
+      user_id,
+      device_name,
+      platform,
+      is_active,
+      failed_count,
+      last_error,
+      last_used_at,
+      created_at,
+      users!inner(username)
+    `
+    )
+    .eq('is_active', true)
+    .order('last_used_at', { ascending: false, nullsFirst: false })
+    .limit(limit)
+
+  if (error) {
+    console.error('Failed to fetch recent push activity:', error)
+    return []
+  }
+
+  return (data || []).map((sub: Record<string, unknown>) => ({
+    id: sub.id as string,
+    user_id: sub.user_id as string,
+    username: (sub.users as { username: string | null } | null)?.username || null,
+    device_name: sub.device_name as string | null,
+    platform: sub.platform as string,
+    is_active: sub.is_active as boolean,
+    failed_count: sub.failed_count as number,
+    last_error: sub.last_error as string | null,
+    last_used_at: sub.last_used_at as string | null,
+    created_at: sub.created_at as string
+  }))
 }

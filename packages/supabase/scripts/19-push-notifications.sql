@@ -5,14 +5,19 @@
 -- Sends notifications immediately via pg_net async HTTP to hocuspocus backend.
 --
 -- ARCHITECTURE:
---   Database Trigger → pg_net → hocuspocus.server → Web Push API
+--   Database Trigger → pg_net → hocuspocus.server → BullMQ → Web Push API
 --   (Cohesive with email gateway - both use hocuspocus backend)
 --
 -- DEPLOYMENT CHECKLIST:
 --
--- 1. DATABASE SETTINGS (run once per environment):
---    ALTER DATABASE postgres SET app.settings.service_role_key = 'YOUR-SERVICE-ROLE-KEY';
---    ALTER DATABASE postgres SET app.push_gateway_url = 'https://your-hocuspocus-server.com';
+-- 1. DATABASE CONFIGURATION:
+--    For hosted Supabase (recommended - uses config table):
+--      SELECT internal.set_config('app.push_gateway_url', 'https://your-api.com');
+--      SELECT internal.set_config('app.settings.service_role_key', 'YOUR-KEY');
+--
+--    For self-hosted (alternative - uses ALTER DATABASE):
+--      ALTER DATABASE postgres SET app.push_gateway_url = 'https://your-api.com';
+--      ALTER DATABASE postgres SET app.settings.service_role_key = 'YOUR-KEY';
 --
 -- 2. HOCUSPOCUS BACKEND ENVIRONMENT (hocuspocus.server/.env):
 --    - VAPID_PUBLIC_KEY  (generate: npx web-push generate-vapid-keys)
@@ -20,6 +25,7 @@
 --    - VAPID_SUBJECT     (e.g., mailto:support@yourdomain.com)
 --    - SUPABASE_URL      (your Supabase project URL)
 --    - SUPABASE_SERVICE_ROLE_KEY (for subscription lookups)
+--    - REDIS_HOST / REDIS_PORT (for BullMQ)
 --
 -- 3. CLIENT ENVIRONMENT (webapp/.env):
 --    - NEXT_PUBLIC_VAPID_PUBLIC_KEY (same as VAPID_PUBLIC_KEY above)
@@ -30,8 +36,105 @@
 -- Create internal schema for private helper functions
 create schema if not exists internal;
 
--- 1. Push Subscriptions Table
+
+-- =============================================================================
+-- 1. Application Configuration Table
+-- =============================================================================
+-- For hosted Supabase where ALTER DATABASE is not available.
+-- Stores key-value configuration that persists across sessions.
+-- =============================================================================
+
+create table if not exists internal.app_config (
+    key text primary key,
+    value text not null,
+    description text,
+    created_at timestamptz default now(),
+    updated_at timestamptz default now()
+);
+
+comment on table internal.app_config is
+'Application configuration storage for settings that cannot use ALTER DATABASE (e.g., hosted Supabase).
+Used by push notifications, email gateway, and other system configuration.';
+
+-- Auto-update timestamp
+create or replace function internal.update_app_config_timestamp()
+returns trigger as $$
+begin
+    new.updated_at = now();
+    return new;
+end;
+$$ language plpgsql;
+
+drop trigger if exists trigger_app_config_updated_at on internal.app_config;
+create trigger trigger_app_config_updated_at
+    before update on internal.app_config
+    for each row execute function internal.update_app_config_timestamp();
+
+
+-- =============================================================================
+-- 2. Configuration Helper Functions
+-- =============================================================================
+
+-- Get config value (checks table first, then GUC settings, then default)
+create or replace function internal.get_config(p_key text, p_default text default null)
+returns text
+language plpgsql
+security definer
+stable
+as $$
+declare
+    v_value text;
+begin
+    -- First try the config table (works on hosted Supabase)
+    select value into v_value
+    from internal.app_config
+    where key = p_key;
+
+    if v_value is not null then
+        return v_value;
+    end if;
+
+    -- Fall back to GUC settings (works on self-hosted/local)
+    v_value := current_setting(p_key, true);
+
+    if v_value is not null and v_value != '' then
+        return v_value;
+    end if;
+
+    -- Return default
+    return p_default;
+end;
+$$;
+
+comment on function internal.get_config(text, text) is
+'Get configuration value. Checks app_config table first, then PostgreSQL GUC settings.
+Use this for all configuration lookups to support both hosted and self-hosted Supabase.';
+
+-- Set config value
+create or replace function internal.set_config(p_key text, p_value text, p_description text default null)
+returns void
+language plpgsql
+security definer
+as $$
+begin
+    insert into internal.app_config (key, value, description)
+    values (p_key, p_value, p_description)
+    on conflict (key) do update set
+        value = excluded.value,
+        description = coalesce(excluded.description, internal.app_config.description),
+        updated_at = now();
+end;
+$$;
+
+comment on function internal.set_config(text, text, text) is
+'Set configuration value in app_config table. Use this on hosted Supabase instead of ALTER DATABASE.';
+
+
+-- =============================================================================
+-- 3. Push Subscriptions Table
+-- =============================================================================
 -- Stores browser/device push subscription credentials per user
+
 create table if not exists public.push_subscriptions (
     id uuid default uuid_generate_v4() primary key,
     user_id uuid not null references public.users(id) on delete cascade,
@@ -74,9 +177,12 @@ create trigger trigger_push_subscriptions_updated_at
     for each row execute function update_push_subscriptions_updated_at();
 
 
--- 2. Helper: Get configuration with validation
+-- =============================================================================
+-- 4. Push Configuration Helper
+-- =============================================================================
+
+-- Get push gateway configuration with validation
 -- Returns null if not configured (caller should handle gracefully)
--- Now uses hocuspocus backend gateway instead of Edge Function
 create or replace function internal.get_push_config()
 returns table (edge_url text, service_key text)
 language plpgsql
@@ -87,37 +193,43 @@ declare
     v_service_key text;
 begin
     -- Get push gateway URL (hocuspocus backend)
-    -- Priority: app.push_gateway_url > app.hocuspocus_url > default localhost
-    v_gateway_url := coalesce(
-        current_setting('app.push_gateway_url', true),
-        current_setting('app.hocuspocus_url', true),
-        'http://localhost:4000'
+    -- Priority: app_config table > GUC settings > localhost fallback
+    v_gateway_url := internal.get_config(
+        'app.push_gateway_url',
+        internal.get_config('app.hocuspocus_url', null)
     );
 
     -- Get service role key for authorization
-    v_service_key := current_setting('app.settings.service_role_key', true);
+    v_service_key := internal.get_config('app.settings.service_role_key', null);
 
     -- Validate configuration
-    if v_service_key is null or v_service_key = '' then
-        raise warning 'Push notifications: app.settings.service_role_key not configured';
-        return;
+    if v_gateway_url is null or v_gateway_url = '' then
+        return; -- Return empty if not configured
     end if;
 
-    -- Return backend gateway URL and service key
+    if v_service_key is null or v_service_key = '' then
+        return; -- Return empty if not configured
+    end if;
+
+    -- Return the full push endpoint URL
     return query select
-        v_gateway_url || '/api/push/send',
-        v_service_key;
+        v_gateway_url || '/api/push/send' as edge_url,
+        v_service_key as service_key;
 end;
 $$;
 
 comment on function internal.get_push_config() is
 'Returns push gateway URL and service key.
-Uses hocuspocus.server backend for cohesive architecture with email gateway.';
+Uses hocuspocus.server backend for cohesive architecture with email gateway.
+Checks app_config table first (for hosted Supabase), then GUC settings (for self-hosted).';
 
 
--- 3. Send push notification immediately via pg_net (async, non-blocking)
+-- =============================================================================
+-- 5. Send Push Notification Trigger
+-- =============================================================================
 -- Sends RAW DATA only - the service worker formats the title/body
 -- Respects user preferences (notification types, quiet hours)
+
 create or replace function public.send_push_notification()
 returns trigger
 language plpgsql
@@ -240,7 +352,7 @@ begin
         computed_action_url := coalesce(new.action_url, '/');
     end if;
 
-    -- Send RAW DATA to Edge Function
+    -- Send RAW DATA to hocuspocus backend
     -- Service worker will build the title and body
     perform net.http_post(
         url := config.edge_url,
@@ -275,7 +387,10 @@ create trigger trigger_send_push_notification
     for each row execute function public.send_push_notification();
 
 
--- 4. Cleanup: Deactivate failed subscriptions (runs via pg_cron)
+-- =============================================================================
+-- 6. Cleanup Function (runs via pg_cron)
+-- =============================================================================
+
 create or replace function public.cleanup_push_subscriptions()
 returns void
 language plpgsql
@@ -318,7 +433,9 @@ end;
 $$;
 
 
--- 5. Client API Functions
+-- =============================================================================
+-- 7. Client API Functions
+-- =============================================================================
 
 -- Register a push subscription for the current user
 create or replace function public.register_push_subscription(
@@ -393,22 +510,126 @@ as $$
 $$;
 
 
--- 6. Admin function to check push notification health
+-- =============================================================================
+-- 8. Admin Functions
+-- =============================================================================
+
+-- Get push notification health and configuration status
 create or replace function public.get_push_notification_stats()
 returns jsonb
-language sql
+language plpgsql
 security definer
-stable
 as $$
+declare
+    v_result jsonb;
+    v_gateway_url text;
+    v_service_key text;
+    v_config_status text;
+begin
+    -- Get configuration
+    v_gateway_url := internal.get_config('app.push_gateway_url', null);
+    v_service_key := internal.get_config('app.settings.service_role_key', null);
+
+    -- Determine config status
+    if v_gateway_url is null or v_gateway_url = '' then
+        v_config_status := 'missing_gateway_url';
+    elsif v_service_key is null or v_service_key = '' then
+        v_config_status := 'missing_service_key';
+    else
+        v_config_status := 'ok';
+    end if;
+
+    -- Build result
     select jsonb_build_object(
+        'config_status', v_config_status,
+        'gateway_url', v_gateway_url,
         'total_subscriptions', (select count(*) from public.push_subscriptions),
-        'active_subscriptions', (select count(*) from public.push_subscriptions where is_active),
+        'active_subscriptions', (select count(*) from public.push_subscriptions where is_active = true),
         'failed_subscriptions', (select count(*) from public.push_subscriptions where failed_count > 0),
-        'config_status', case
-            when current_setting('app.settings.supabase_url', true) is not null
-             and current_setting('app.settings.service_role_key', true) is not null
-            then 'configured'
-            else 'missing_configuration'
-        end
-    );
+        'last_push_attempt', (select max(last_used_at) from public.push_subscriptions)
+    ) into v_result;
+
+    return v_result;
+end;
 $$;
+
+comment on function public.get_push_notification_stats() is
+'Returns push notification configuration status and subscription statistics.
+Use this to verify push notifications are properly configured.';
+
+-- Set push configuration (admin function)
+create or replace function public.set_push_config(
+    p_gateway_url text,
+    p_service_key text default null
+)
+returns jsonb
+language plpgsql
+security definer
+as $$
+begin
+    -- Require authentication
+    if auth.uid() is null then
+        raise exception 'Authentication required';
+    end if;
+
+    -- Set gateway URL
+    if p_gateway_url is not null then
+        perform internal.set_config(
+            'app.push_gateway_url',
+            p_gateway_url,
+            'Push notification gateway URL (hocuspocus.server)'
+        );
+    end if;
+
+    -- Set service key
+    if p_service_key is not null then
+        perform internal.set_config(
+            'app.settings.service_role_key',
+            p_service_key,
+            'Supabase service role key for push gateway auth'
+        );
+    end if;
+
+    -- Return updated config status
+    return public.get_push_notification_stats();
+end;
+$$;
+
+comment on function public.set_push_config(text, text) is
+'Set push notification configuration.
+For hosted Supabase where ALTER DATABASE is not available.
+Call with gateway_url and optionally service_key.';
+
+-- Grant execute to authenticated users
+grant execute on function public.set_push_config(text, text) to authenticated;
+
+
+-- =============================================================================
+-- 9. Enable Realtime for Notification Tables
+-- =============================================================================
+-- Required for admin dashboard to receive live updates
+
+do $$
+begin
+    -- Add tables to realtime publication if not already added
+    if not exists (
+        select 1 from pg_publication_tables
+        where pubname = 'supabase_realtime' and tablename = 'notifications'
+    ) then
+        alter publication supabase_realtime add table notifications;
+    end if;
+
+    if not exists (
+        select 1 from pg_publication_tables
+        where pubname = 'supabase_realtime' and tablename = 'push_subscriptions'
+    ) then
+        alter publication supabase_realtime add table push_subscriptions;
+    end if;
+
+    if not exists (
+        select 1 from pg_publication_tables
+        where pubname = 'supabase_realtime' and tablename = 'email_queue'
+    ) then
+        alter publication supabase_realtime add table email_queue;
+    end if;
+end $$;
