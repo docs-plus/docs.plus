@@ -157,7 +157,7 @@ services:
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       JWT_SECRET: ${JWT_SECRET}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://docs.plus}
+      # ALLOWED_ORIGINS loaded from env_file
       # S3 Storage (DigitalOcean Spaces)
       DO_STORAGE_ENDPOINT: ${DO_STORAGE_ENDPOINT}
       DO_STORAGE_REGION: ${DO_STORAGE_REGION}
@@ -247,7 +247,7 @@ services:
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
       SUPABASE_SERVICE_ROLE_KEY: ${SUPABASE_SERVICE_ROLE_KEY}
       JWT_SECRET: ${JWT_SECRET}
-      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-https://docs.plus}
+      # ALLOWED_ORIGINS loaded from env_file
       HOCUSPOCUS_LOGGER: 'false'
       HOCUSPOCUS_THROTTLE: 'true'
       # S3 Storage (DigitalOcean Spaces)
