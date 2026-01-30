@@ -1,12 +1,15 @@
 {
   "version": "0.2.0",
   "configurations": [
+    // ============================================
+    // WEBAPP (Next.js)
+    // ============================================
     {
-      "name": "Next.js: Debug Server",
+      "name": "Webapp: Debug Server",
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "bun",
-      "runtimeArgs": ["run", "dev"],
+      "runtimeArgs": ["run", "dev:local"],
       "cwd": "${workspaceFolder}/packages/webapp",
       "skipFiles": ["<node_internals>/**"],
       "serverReadyAction": {
@@ -16,18 +19,40 @@
       }
     },
     {
-      "name": "Next.js: Debug Client",
+      "name": "Webapp: Debug Client",
       "type": "chrome",
       "request": "launch",
       "url": "http://localhost:3000",
       "webRoot": "${workspaceFolder}/packages/webapp"
     },
+
+    // ============================================
+    // ADMIN DASHBOARD (Next.js)
+    // ============================================
     {
-      "name": "Hocuspocus: Debug REST API",
+      "name": "Admin: Debug Server",
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "bun",
-      "runtimeArgs": ["--watch", "src/index.ts"],
+      "runtimeArgs": ["run", "dev:local"],
+      "cwd": "${workspaceFolder}/packages/admin-dashboard",
+      "skipFiles": ["<node_internals>/**"],
+      "serverReadyAction": {
+        "pattern": "started server on .+, url: (https?://.+)",
+        "uriFormat": "%s",
+        "action": "debugWithChrome"
+      }
+    },
+
+    // ============================================
+    // HOCUSPOCUS (Backend)
+    // ============================================
+    {
+      "name": "Backend: REST API",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["--env-file", "../../.env.local", "--watch", "src/index.ts"],
       "cwd": "${workspaceFolder}/packages/hocuspocus.server",
       "env": {
         "NODE_ENV": "development"
@@ -35,17 +60,33 @@
       "skipFiles": ["<node_internals>/**"]
     },
     {
-      "name": "Hocuspocus: Debug WebSocket",
+      "name": "Backend: WebSocket Server",
       "type": "node",
       "request": "launch",
       "runtimeExecutable": "bun",
-      "runtimeArgs": ["--watch", "src/hocuspocus.server.ts"],
+      "runtimeArgs": ["--env-file", "../../.env.local", "--watch", "src/hocuspocus.server.ts"],
       "cwd": "${workspaceFolder}/packages/hocuspocus.server",
       "env": {
         "NODE_ENV": "development"
       },
       "skipFiles": ["<node_internals>/**"]
     },
+    {
+      "name": "Backend: Worker",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "bun",
+      "runtimeArgs": ["--env-file", "../../.env.local", "--watch", "src/hocuspocus.worker.ts"],
+      "cwd": "${workspaceFolder}/packages/hocuspocus.server",
+      "env": {
+        "NODE_ENV": "development"
+      },
+      "skipFiles": ["<node_internals>/**"]
+    },
+
+    // ============================================
+    // ATTACH
+    // ============================================
     {
       "name": "Attach to Bun Process",
       "type": "node",
@@ -54,14 +95,23 @@
       "skipFiles": ["<node_internals>/**"]
     }
   ],
+
+  // ============================================
+  // COMPOUND CONFIGURATIONS
+  // ============================================
   "compounds": [
     {
-      "name": "Full Stack Debug",
+      "name": "Full Stack: All Services",
       "configurations": [
-        "Next.js: Debug Server",
-        "Hocuspocus: Debug REST API",
-        "Hocuspocus: Debug WebSocket"
+        "Webapp: Debug Server",
+        "Backend: REST API",
+        "Backend: WebSocket Server",
+        "Backend: Worker"
       ]
+    },
+    {
+      "name": "Backend: All Services",
+      "configurations": ["Backend: REST API", "Backend: WebSocket Server", "Backend: Worker"]
     }
   ]
 }

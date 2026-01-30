@@ -1,49 +1,48 @@
 {
   // ============================================
-  // REQUIRED EXTENSIONS (Core functionality)
+  // RECOMMENDED EXTENSIONS
+  // Install all: Cmd+Shift+P > "Extensions: Show Recommended"
   // ============================================
   "recommendations": [
-    // Code Quality & Formatting
+    // --- Code Quality & Formatting ---
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
+    "stylelint.vscode-stylelint",
 
-    // Language Support
+    // --- Language Support ---
     "Prisma.prisma",
     "bradlc.vscode-tailwindcss",
-
-    // Framework Support
     "ms-vscode.vscode-typescript-next",
 
-    // Git & Collaboration
+    // --- Git & Collaboration ---
     "vivaxy.vscode-conventional-commits",
     "eamodio.gitlens",
 
-    // Utilities
+    // --- Utilities ---
     "christian-kohler.path-intellisense",
     "streetsidesoftware.code-spell-checker",
     "usernamehw.errorlens",
 
-    // Monorepo Support
-    "folke.vscode-monorepo-workspace",
-
-    // Productivity
-    "lokalise.i18n-ally",
+    // --- Productivity ---
     "formulahendry.auto-rename-tag",
     "formulahendry.auto-close-tag",
 
-    // Optional but Recommended
+    // --- Bun/Runtime ---
     "oven.bun-vscode",
-    "ms-vscode.vscode-json-languageservice",
-    "redhat.vscode-yaml"
+
+    // --- Config Files ---
+    "redhat.vscode-yaml",
+    "ms-azuretools.vscode-docker"
   ],
 
   // ============================================
-  // UNWANTED EXTENSIONS (Conflicts or deprecated)
+  // UNWANTED EXTENSIONS (conflicts or deprecated)
   // ============================================
   "unwantedRecommendations": [
     "standard.vscode-standard",
     "hookyqr.beautify",
     "dbaeumer.jshint",
-    "ms-vscode.vscode-typescript-tslint-plugin"
+    "ms-vscode.vscode-typescript-tslint-plugin",
+    "eg2.tslint"
   ]
 }

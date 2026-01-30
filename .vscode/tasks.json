@@ -1,6 +1,9 @@
 {
   "version": "2.0.0",
   "tasks": [
+    // ============================================
+    // SETUP
+    // ============================================
     {
       "label": "Install Dependencies",
       "type": "shell",
@@ -8,6 +11,74 @@
       "problemMatcher": [],
       "group": "build"
     },
+
+    // ============================================
+    // DEVELOPMENT (using Makefile)
+    // ============================================
+    {
+      "label": "Dev: All Services",
+      "type": "shell",
+      "command": "make dev-local",
+      "problemMatcher": [],
+      "isBackground": true,
+      "group": "none",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      }
+    },
+    {
+      "label": "Dev: Backend Only",
+      "type": "shell",
+      "command": "make dev-backend",
+      "problemMatcher": [],
+      "isBackground": true,
+      "group": "none"
+    },
+    {
+      "label": "Dev: Webapp Only",
+      "type": "shell",
+      "command": "make dev-webapp",
+      "problemMatcher": [],
+      "isBackground": true,
+      "group": "none"
+    },
+    {
+      "label": "Dev: Admin Dashboard",
+      "type": "shell",
+      "command": "make dev-admin",
+      "problemMatcher": [],
+      "isBackground": true,
+      "group": "none"
+    },
+    {
+      "label": "Dev: REST API Only",
+      "type": "shell",
+      "command": "make dev-rest",
+      "problemMatcher": [],
+      "isBackground": true,
+      "group": "none"
+    },
+    {
+      "label": "Dev: WebSocket Only",
+      "type": "shell",
+      "command": "make dev-ws",
+      "problemMatcher": [],
+      "isBackground": true,
+      "group": "none"
+    },
+    {
+      "label": "Dev: Worker Only",
+      "type": "shell",
+      "command": "make dev-worker",
+      "problemMatcher": [],
+      "isBackground": true,
+      "group": "none"
+    },
+
+    // ============================================
+    // CODE QUALITY
+    // ============================================
     {
       "label": "Lint",
       "type": "shell",
@@ -30,6 +101,17 @@
       "group": "test"
     },
     {
+      "label": "Type Check",
+      "type": "shell",
+      "command": "bun run typecheck",
+      "problemMatcher": ["$tsc"],
+      "group": "test"
+    },
+
+    // ============================================
+    // BUILD
+    // ============================================
+    {
       "label": "Build All",
       "type": "shell",
       "command": "bun run build",
@@ -39,38 +121,76 @@
         "isDefault": true
       }
     },
+
+    // ============================================
+    // DATABASE
+    // ============================================
     {
-      "label": "Start Dev (All Services)",
+      "label": "Prisma: Generate Client",
       "type": "shell",
-      "command": "make local",
-      "problemMatcher": [],
-      "isBackground": true,
-      "group": "none"
-    },
-    {
-      "label": "Start Webapp",
-      "type": "shell",
-      "command": "bun run dev",
-      "problemMatcher": [],
-      "isBackground": true,
-      "group": "none"
-    },
-    {
-      "label": "Prisma Generate",
-      "type": "shell",
-      "command": "make prisma_generate",
+      "command": "bun run --filter @docs.plus/hocuspocus prisma:generate",
       "problemMatcher": [],
       "group": "build"
     },
     {
-      "label": "Update Packages",
+      "label": "Prisma: Migrate Dev",
+      "type": "shell",
+      "command": "bun run --filter @docs.plus/hocuspocus prisma:migrate:dev",
+      "problemMatcher": [],
+      "group": "build"
+    },
+    {
+      "label": "Database: Run Migrations",
+      "type": "shell",
+      "command": "make migrate",
+      "problemMatcher": [],
+      "group": "build"
+    },
+
+    // ============================================
+    // INFRASTRUCTURE
+    // ============================================
+    {
+      "label": "Infra: Start (Postgres + Redis)",
+      "type": "shell",
+      "command": "make infra-up",
+      "problemMatcher": [],
+      "group": "none"
+    },
+    {
+      "label": "Infra: Stop",
+      "type": "shell",
+      "command": "make infra-down",
+      "problemMatcher": [],
+      "group": "none"
+    },
+    {
+      "label": "Supabase: Start",
+      "type": "shell",
+      "command": "make supabase-start",
+      "problemMatcher": [],
+      "group": "none"
+    },
+    {
+      "label": "Supabase: Stop",
+      "type": "shell",
+      "command": "make supabase-stop",
+      "problemMatcher": [],
+      "group": "none"
+    },
+
+    // ============================================
+    // UTILITIES
+    // ============================================
+    {
+      "label": "Update All Packages",
       "type": "shell",
       "command": "bun run update:all-packages",
       "problemMatcher": [],
       "group": "none"
     },
     {
-      "label": "Reinstall All",
+      "label": "Reinstall All Dependencies",
       "type": "shell",
       "command": "bun run reinstall:all-packages",
       "problemMatcher": [],

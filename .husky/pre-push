@@ -3,21 +3,42 @@
 echo "🔍 Pre-push checks starting..."
 echo ""
 
+# Get changed files compared to origin/main (or HEAD~1 if on main)
+BRANCH=$(git rev-parse --abbrev-ref HEAD)
+if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
+    CHANGED_FILES=$(git diff --name-only HEAD~1 2>/dev/null || echo "")
+else
+    CHANGED_FILES=$(git diff --name-only origin/main...HEAD 2>/dev/null || git diff --name-only HEAD~1 2>/dev/null || echo "")
+fi
+
 # Track overall status
 FAILED=0
 
 # ============================================
-# 1. Build TipTap Extensions (webapp deps)
+# 1. Build TipTap Extensions (only if changed)
 # ============================================
-echo "📦 Building TipTap extensions..."
-for ext in extension-hyperlink extension-hypermultimedia extension-indent extension-inline-code; do
-    if bun run --filter "@docs.plus/${ext}" build >/dev/null 2>&1; then
-        echo "  ✅ ${ext}"
-    else
-        echo "  ❌ ${ext} build failed"
-        FAILED=1
+EXTENSIONS="extension-hyperlink extension-hypermultimedia extension-indent extension-inline-code"
+NEEDS_BUILD=""
+
+for ext in $EXTENSIONS; do
+    if echo "$CHANGED_FILES" | grep -q "packages/${ext}/"; then
+        NEEDS_BUILD="$NEEDS_BUILD $ext"
     fi
 done
+
+if [ -n "$NEEDS_BUILD" ]; then
+    echo "📦 Building changed TipTap extensions..."
+    for ext in $NEEDS_BUILD; do
+        if bun run --filter "@docs.plus/${ext}" build >/dev/null 2>&1; then
+            echo "  ✅ ${ext}"
+        else
+            echo "  ❌ ${ext} build failed"
+            FAILED=1
+        fi
+    done
+else
+    echo "📦 No extension changes detected, skipping extension builds"
+fi
 
 if [ $FAILED -ne 0 ]; then
     echo ""
@@ -28,14 +49,18 @@ fi
 echo ""
 
 # ============================================
-# 2. Build Admin Dashboard
+# 2. Build Admin Dashboard (only if changed)
 # ============================================
-echo "📦 Building admin-dashboard..."
-if bun run --filter "@docs.plus/admin-dashboard" build:local >/dev/null 2>&1; then
-    echo "  ✅ admin-dashboard build OK"
+if echo "$CHANGED_FILES" | grep -q "packages/admin-dashboard/"; then
+    echo "📦 Building admin-dashboard..."
+    if bun run --filter "@docs.plus/admin-dashboard" build:local >/dev/null 2>&1; then
+        echo "  ✅ admin-dashboard build OK"
+    else
+        echo "  ❌ admin-dashboard build failed"
+        FAILED=1
+    fi
 else
-    echo "  ❌ admin-dashboard build failed"
-    FAILED=1
+    echo "📦 No admin-dashboard changes detected, skipping build"
 fi
 
 if [ $FAILED -ne 0 ]; then

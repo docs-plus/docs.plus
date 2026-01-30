@@ -88,7 +88,7 @@
   },
 
   // ============================================
-  // ESLINT
+  // ESLINT (ESLint 9 Flat Config)
   // ============================================
   "eslint.enable": true,
   "eslint.useFlatConfig": true,
@@ -102,6 +102,12 @@
   "prettier.enable": true,
   "prettier.requireConfig": true,
   "prettier.configPath": ".prettierrc.json",
+
+  // ============================================
+  // STYLELINT
+  // ============================================
+  "stylelint.enable": true,
+  "stylelint.validate": ["css", "scss"],
 
   // ============================================
   // TAILWIND CSS
@@ -125,12 +131,11 @@
   ],
 
   // ============================================
-  // CSS/SCSS
+  // CSS/SCSS (disable built-in, use Stylelint)
   // ============================================
   "css.validate": false,
   "less.validate": false,
   "scss.validate": false,
-  "stylelint.enable": false,
 
   // ============================================
   // PRISMA
@@ -147,12 +152,13 @@
   "git.autofetch": true,
 
   // ============================================
-  // CONVENTIONAL COMMITS
+  // CONVENTIONAL COMMITS (for vivaxy extension)
   // ============================================
   "conventionalCommits.scopes": [
     "root",
     "webapp",
-    "hocuspocus.server",
+    "admin-dashboard",
+    "hocuspocus",
     "supabase",
     "extension-hyperlink",
     "extension-hypermultimedia",
@@ -187,7 +193,7 @@
   },
 
   // ============================================
-  // BUN (if extension exists)
+  // BUN
   // ============================================
   "bun.runtime": "${workspaceFolder}/node_modules/.bin/bun"
 }
