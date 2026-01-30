@@ -29,8 +29,8 @@
     "build": "NODE_ENV=production bunx tsup",
     "build:dev": "bunx tsup",
     "dev": "bunx tsup --watch",
-    "lint": "eslint src --ext .ts",
-    "lint:fix": "eslint src --ext .ts --fix",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
     "update:packages": "bunx npm-check-updates -u"
   },
   "files": [

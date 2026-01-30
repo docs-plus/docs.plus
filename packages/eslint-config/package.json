@@ -4,6 +4,20 @@
   "private": true,
   "description": "Shared ESLint configuration for docs.plus monorepo",
   "main": "index.js",
+  "exports": {
+    ".": {
+      "require": "./index.js",
+      "import": "./index.js"
+    },
+    "./next": {
+      "require": "./next.js",
+      "import": "./next.js"
+    },
+    "./library": {
+      "require": "./library.js",
+      "import": "./library.js"
+    }
+  },
   "files": [
     "index.js",
     "next.js",

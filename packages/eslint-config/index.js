@@ -4,23 +4,34 @@ const tseslint = require('@typescript-eslint/eslint-plugin')
 const tsParser = require('@typescript-eslint/parser')
 const react = require('eslint-plugin-react')
 const reactHooks = require('eslint-plugin-react-hooks')
+const simpleImportSort = require('eslint-plugin-simple-import-sort')
 const prettier = require('eslint-config-prettier')
 const globals = require('globals')
 
 module.exports = [
-  // Ignore patterns
+  // Ignore patterns (replaces .eslintignore)
   {
     ignores: [
+      // Dependencies & Build outputs
       '**/node_modules/**',
       '**/dist/**',
       '**/build/**',
       '**/.next/**',
       '**/.turbo/**',
       '**/coverage/**',
-      '**/cypress/**',
+
+      // Config files (JS configs shouldn't lint themselves)
+      '**/*.config.js',
+      '**/*.config.ts',
+      '**/*.config.mjs',
+      'eslint.config.js',
+
+      // Next.js
+      '**/next-env.d.ts',
       '**/public/**',
-      '**/*.min.js',
-      '**/workbox-*.js',
+
+      // Test files (if you want to lint tests, remove these)
+      '**/cypress/**',
       '**/tests/**',
       '**/__tests__/**',
       '**/*.test.ts',
@@ -29,7 +40,10 @@ module.exports = [
       '**/*.spec.ts',
       '**/*.spec.tsx',
       '**/*.spec.js',
-      '**/next-env.d.ts'
+
+      // Misc
+      '**/*.min.js',
+      '**/workbox-*.js'
     ]
   },
 
@@ -58,7 +72,8 @@ module.exports = [
     plugins: {
       '@typescript-eslint': tseslint,
       react,
-      'react-hooks': reactHooks
+      'react-hooks': reactHooks,
+      'simple-import-sort': simpleImportSort
     },
     rules: {
       ...tseslint.configs.recommended.rules,
@@ -75,7 +90,10 @@ module.exports = [
       'no-undef': 'off', // TypeScript handles this
       'no-console': 'off',
       'react/react-in-jsx-scope': 'off',
-      'react/prop-types': 'off'
+      'react/prop-types': 'off',
+      // Import sorting - auto-fixable
+      'simple-import-sort/imports': 'warn',
+      'simple-import-sort/exports': 'warn'
     },
     settings: {
       react: {
@@ -84,7 +102,7 @@ module.exports = [
     }
   },
 
-  // JavaScript files
+  // JavaScript files (config files, etc.)
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {
@@ -122,6 +140,21 @@ module.exports = [
       react: {
         version: 'detect'
       }
+    }
+  },
+
+  // Warn about JS files in src directories - prefer TypeScript
+  {
+    files: ['**/src/**/*.{js,jsx}'],
+    rules: {
+      'no-restricted-syntax': [
+        'warn',
+        {
+          selector: 'Program',
+          message:
+            'JavaScript files in src/ should be converted to TypeScript (.ts/.tsx). This project uses TypeScript.'
+        }
+      ]
     }
   },
 

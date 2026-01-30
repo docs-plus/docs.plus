@@ -9,8 +9,8 @@
     "build:local": "dotenv -e ../../.env.local -- next build",
     "start": "node .next/standalone/packages/admin-dashboard/server.js",
     "start:local": "dotenv -e ../../.env.local -- node .next/standalone/packages/admin-dashboard/server.js",
-    "lint": "next lint",
-    "lint:fix": "next lint --fix"
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@supabase/ssr": "^0.8.0",
