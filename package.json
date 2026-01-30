@@ -8,6 +8,8 @@
   "prettier": "./.prettierrc.json",
   "scripts": {
     "prepare": "husky",
+    "postinstall": "bun run --filter @docs.plus/hocuspocus prisma:generate || true",
+    "doctor": "bun scripts/doctor.ts",
     "start": "sh ./scripts/run_dev.sh",
     "update:packages": "bunx npm-check-updates -u",
     "start:webapp": "cd packages/webapp && bun run start",
@@ -22,6 +24,10 @@
     "dev:admin:local": "bun --filter @docs.plus/admin-dashboard run dev:local",
     "build:admin": "bun --filter @docs.plus/admin-dashboard run build",
     "build": "bun run --filter '*' build",
+    "check": "bun run check:lint && bun run check:format && bun run check:types",
+    "check:lint": "eslint .",
+    "check:format": "prettier --check .",
+    "check:types": "bun run typecheck:webapp && bun run typecheck:admin && bun run typecheck:backend",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint:packages": "bun run --filter '*' lint:fix",
@@ -45,7 +51,7 @@
     "publish": "bun run build && bun run --filter '*' --if-present npm publish --tag latest --access public",
     "update:all-packages": "sh ./scripts/update-packages.sh",
     "reinstall:all-packages": "sh ./scripts/reinstall-packages.sh",
-    "pre-push": "bun scripts/pre-push.js",
+    "pre-push": "bun scripts/pre-push.ts",
     "cypress:open": "bunx cypress open",
     "cypress:run": "bunx cypress run"
   },

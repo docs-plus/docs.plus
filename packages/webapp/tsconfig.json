@@ -25,7 +25,7 @@
       "@hooks/*": ["src/hooks/*"],
       "@context/*": ["src/context/*"],
       "@public/*": ["public/*"],
-      "@icons": ["src/components/icons/Icons.jsx"],
+      "@icons": ["src/components/icons/Icons.tsx"],
       "@tiptapEditor": ["src/components/tiptap/*"],
       "@pages": ["src/components/pages/*"],
       "@stores": ["src/stores/index.ts"],
