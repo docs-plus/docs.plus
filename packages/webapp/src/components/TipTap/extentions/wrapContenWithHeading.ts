@@ -1,5 +1,4 @@
-import { Node as ProseMirrorNode } from '@tiptap/pm/model'
-import { Selection,TextSelection } from '@tiptap/pm/state'
+import { Selection, TextSelection } from '@tiptap/pm/state'
 import { TIPTAP_NODES } from '@types'
 
 import changeHeadingLevelBackward from './changeHeadingLevel-backward'
@@ -40,7 +39,7 @@ const wrapContentWithHeading = (
   const fromParent = $from.parent.type.name
   if (fromParent === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
     const headSelection = $from.blockRange($to)
-    const headingLevel = headSelection.parent.attrs.level
+    // const headingLevel = headSelection.parent.attrs.level
 
     if (headSelection.parent.type.name === TIPTAP_NODES.HEADING_TYPE) {
       // INFO: 2 is the offset of the heading node

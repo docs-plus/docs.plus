@@ -1,14 +1,9 @@
 import { useChannelInitialData, useMessageSubscription } from '@components/chatroom/hooks'
 import { Modal, ModalContent } from '@components/ui/Dialog'
 import { useChatStore } from '@stores'
-import React, { createContext, useCallback, useContext, useEffect, useMemo,useState } from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 
-import {
-  ChatroomContextValue,
-  ChatroomProps,
-  ChatroomVariant,
-  DialogConfig
-} from './types/chatroom.types'
+import { ChatroomContextValue, ChatroomVariant, DialogConfig } from './types/chatroom.types'
 
 const ChatroomContext = createContext<ChatroomContextValue | null>(null)
 

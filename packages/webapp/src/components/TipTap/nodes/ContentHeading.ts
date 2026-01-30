@@ -1,15 +1,10 @@
 // TODO: Refactor this file, it's too long and hard to understand
 
-import { mergeAttributes,Node } from '@tiptap/core'
-import { DOMOutputSpec,Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { mergeAttributes, Node } from '@tiptap/core'
+import { DOMOutputSpec } from '@tiptap/pm/model'
 import { TIPTAP_NODES } from '@types'
 
 import onHeading from '../extentions/normalText/onHeading'
-
-// Helpers
-const getNodeHLevel = (doc: ProseMirrorNode, pos: number): number => {
-  return doc.nodeAt(pos)!.attrs.level
-}
 
 // Tiptap Node
 const HeadingsTitle = Node.create({
@@ -69,17 +64,17 @@ const HeadingsTitle = Node.create({
     return {
       Backspace: (): boolean => {
         const { editor } = this
-        const { schema, selection, doc } = editor.state
-        const { $anchor, from, $from } = selection
+        const { selection } = editor.state
+        const { $anchor, $from, from } = selection
 
         // it mean first heading node
         if (from === 2) return false
 
-        const blockStartPos = $from.start(1) - 1
-        const currentHLevel = getNodeHLevel($from.doc, blockStartPos)
+        // const blockStartPos = $from.start(1) - 1
+        // const currentHLevel = getNodeHLevel($from.doc, blockStartPos)
 
         // Check if the current node is the first child of the contentWrapper
-        const isFirstChild = $from.index() === 0
+        // const isFirstChild = $from.index() === 0
 
         // if the parent is not a content_heading node
         if ($from.parent.type.name !== TIPTAP_NODES.CONTENT_HEADING_TYPE) return false
@@ -161,4 +156,4 @@ const HeadingsTitle = Node.create({
   }
 })
 
-export { HeadingsTitle as default,HeadingsTitle }
+export { HeadingsTitle as default, HeadingsTitle }

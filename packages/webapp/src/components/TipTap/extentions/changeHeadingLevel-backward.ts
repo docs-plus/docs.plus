@@ -1,4 +1,4 @@
-import { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { Node as _ProseMirrorNode } from '@tiptap/pm/model'
 import { TIPTAP_NODES } from '@types'
 
 import {
@@ -22,7 +22,7 @@ const changeHeadingLevelBackward = (
   const { state, tr } = arrg
   const { selection, doc } = state
   const { $from, $to } = selection
-  const { start, end } = $from.blockRange($to)!
+  const { start } = $from.blockRange($to)!
 
   console.info('[Heading]: Backward process, comingLevel < currentHLevel')
 
@@ -78,11 +78,6 @@ const changeHeadingLevelBackward = (
     startBlockPos: Math.min(tr.mapping.map(titleStartPos), tr.doc.content.size),
     endBlockPos: Math.min(tr.mapping.map(titleEndPos), tr.doc.content.size)
   }
-
-  let totalNodeSize = 0
-  node.forEach((nodeItem: ProseMirrorNode) => {
-    totalNodeSize += nodeItem.nodeSize
-  })
 
   if (comingLevel === 1) {
     lastH1Inserted.startBlockPos = insertPos

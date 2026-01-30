@@ -2,18 +2,10 @@ import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { useAuthStore, useChatStore } from '@stores'
 import { TMsgRow } from '@types'
 import { isOnlyEmoji } from '@utils/index'
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useMemo,
-  useRef,
-  useState} from 'react'
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { useMessageListContext } from '../MessageList/MessageListContext'
-import { MessageLongPressMenu } from './components/MessageLongPressMenu'
+// import { useMessageListContext } from '../MessageList/MessageListContext'
 interface MessageCardContextValue {
   message: TMsgRow
   index: number
@@ -48,7 +40,7 @@ export const MessageCardProvider: React.FC<{
 }> = ({ message, children, index, className }) => {
   const cardRef = useRef<MessageCardDesktopElement>(null)
   const setReplyMessageMemory = useChatStore((state) => state.setReplyMessageMemory)
-  const { messages } = useMessageListContext()
+  // const { messages } = useMessageListContext()
   const { variant } = useChatroomContext()
   const user = useAuthStore((state) => state.profile)
   const handleDoubleClick = useCallback(() => {

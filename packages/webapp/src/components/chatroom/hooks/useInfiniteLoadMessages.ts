@@ -1,15 +1,14 @@
 import { fetchMessagesPaginated } from '@api'
 import { useChatStore } from '@stores'
 import { groupedMessages } from '@utils/index'
-import { RefObject,useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
+import { RefObject } from 'react'
 
 import { useChatroomContext } from '../ChatroomContext'
 
 const PAGE_SIZE = 20
 
-export const useInfiniteLoadMessages = (
-  messageContainerRef: React.RefObject<HTMLDivElement | null>
-) => {
+export const useInfiniteLoadMessages = (messageContainerRef: RefObject<HTMLDivElement | null>) => {
   const { channelId, isChannelDataLoaded, isDbSubscriptionReady } = useChatroomContext()
 
   const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false)

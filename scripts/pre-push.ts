@@ -46,7 +46,8 @@ for (const check of checks) {
     if (result.exitCode !== 0) {
       throw new Error(`Exit code: ${result.exitCode}`)
     }
-  } catch (_error) {
+  } catch (error) {
+    console.error(error instanceof Error ? error.message : String(error))
     console.error(`\n❌ ${check.name} failed. Push aborted.`)
     console.error(`   Fix the errors above and try again.\n`)
     process.exit(1)

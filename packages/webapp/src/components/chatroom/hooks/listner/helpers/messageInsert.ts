@@ -1,5 +1,5 @@
-import { getUserById, TUser } from '@api'
-import { useAuthStore, useChatStore, useStore } from '@stores'
+import { getUserById } from '@api'
+import { useChatStore, useStore } from '@stores'
 import { Profile } from '@types'
 import { groupedMessages } from '@utils/index'
 

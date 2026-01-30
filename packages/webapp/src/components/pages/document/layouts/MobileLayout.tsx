@@ -7,7 +7,6 @@ import { ModalDrawer } from '@components/ui/ModalDrawer'
 import { useHashRouter } from '@hooks/useHashRouter'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { useStore } from '@stores'
-import React, { useRef } from 'react'
 
 import MobileEditor from '../components/MobileEditor'
 import ToolbarMobile from '../components/toolbarMobile/ToolbarMobile'

@@ -1,4 +1,4 @@
-import { callOrReturn,InputRule, mergeAttributes, Node } from '@tiptap/core'
+import { callOrReturn, InputRule, mergeAttributes, Node } from '@tiptap/core'
 import {
   type CommandProps,
   type DOMOutputSpec,
@@ -14,7 +14,8 @@ import { getNodeState } from '../extentions/helper'
 import {
   createCopyPastePlugin,
   createHierarchyValidationPlugin,
-  createRangeSelectionPlugin} from '../extentions/plugins'
+  createRangeSelectionPlugin
+} from '../extentions/plugins'
 import { HeadingAttributes } from '../extentions/types'
 import wrapContenWithHeading from '../extentions/wrapContenWithHeading'
 
@@ -265,7 +266,7 @@ const Heading = Node.create({
         find: config.find,
         handler: (data) => {
           const { state, range, match } = data
-          const $start = state.doc.resolve(range.from)
+          // const $start = state.doc.resolve(range.from)
           const attributes = callOrReturn(config.getAttributes, undefined, match) || {}
 
           state.tr.delete(range.from, range.to)
@@ -286,4 +287,4 @@ const Heading = Node.create({
   }
 })
 
-export { Heading as default,Heading }
+export { Heading as default, Heading }

@@ -1,5 +1,4 @@
-import { useChatStore, useSheetStore } from '@stores'
-import { useEffect } from 'react'
+import { useSheetStore } from '@stores'
 
 /**
  * Hook for opening bottom sheets with a simple API

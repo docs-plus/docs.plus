@@ -1,6 +1,6 @@
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useStore } from '@stores'
-import { TIPTAP_NODES, TMsgRow,TRANSACTION_META } from '@types'
+import { TIPTAP_NODES, TMsgRow, TRANSACTION_META } from '@types'
 import PubSub from 'pubsub-js'
 import { useCallback } from 'react'
 
@@ -90,7 +90,7 @@ export const useReplyInThreadHandler = () => {
         const searchStart = Math.max(0, insertPosition - 10)
         const searchEnd = Math.min(doc.content.size, insertPosition + messageContent.length + 100)
 
-        doc.nodesBetween(searchStart, searchEnd, (node: any, pos: any) => {
+        doc.nodesBetween(searchStart, searchEnd, (node: any, _pos: any) => {
           if (
             node.type.name === TIPTAP_NODES.HEADING_TYPE &&
             node.textContent.trim() === messageContent &&

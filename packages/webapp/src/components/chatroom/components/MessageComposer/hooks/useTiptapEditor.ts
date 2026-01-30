@@ -13,7 +13,7 @@ import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
 import { Mention } from '@tiptap/extension-mention'
 import { Placeholder } from '@tiptap/extensions'
 import { TextSelection } from '@tiptap/pm/state'
-import { Editor,useEditor } from '@tiptap/react'
+import { Editor, useEditor } from '@tiptap/react'
 import { StarterKit } from '@tiptap/starter-kit'
 import { TIPTAP_NODES } from '@types'
 import bash from 'highlight.js/lib/languages/bash'
@@ -27,7 +27,7 @@ import html from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
 // load all highlight.js languages
 import { createLowlight } from 'lowlight'
-import { useEffect,useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import suggestion from '../helpers/suggestion'
 const lowlight = createLowlight()
@@ -167,7 +167,7 @@ export const useTiptapEditor = ({
             tr = tr.scrollIntoView()
 
             // Set the selection to the beginning of the new paragraph
-            const resolvedPos = tr.doc.resolve(newPos)
+            // const resolvedPos = tr.doc.resolve(newPos)
             tr = tr.setSelection(TextSelection.create(tr.doc, newPos))
 
             view.dispatch(tr)

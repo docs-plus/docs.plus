@@ -233,7 +233,7 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
       new InputRule({
         find: /(\[([^\]]+)\]\(([^)]+)\))$/,
         handler: ({ state, range, match }) => {
-          const [fullMatch, , linkText, url] = match
+          const [_fullMatch, , linkText, url] = match
           const { tr } = state
           const start = range.from
           const end = range.to

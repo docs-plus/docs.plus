@@ -38,7 +38,7 @@ export const useScrollAndLoad = ({
     return channelMessages ? Array.from(channelMessages.values()) : []
   }, [channelId])
 
-  const { userPickingEmoji, lastReadMessageId, lastReadMessageTimestamp } = channelSettings ?? {}
+  const { lastReadMessageId } = channelSettings ?? {}
 
   const getFetchMessageId = useCallback(() => {
     return (

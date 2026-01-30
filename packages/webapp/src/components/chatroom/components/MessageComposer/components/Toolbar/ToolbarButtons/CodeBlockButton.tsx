@@ -7,7 +7,7 @@ type Props = {
   className?: string
   size?: number
 }
-export const CodeBlockButton = ({ className, size = 16, ...props }: Props) => {
+export const CodeBlockButton = ({ className, size = 20, ...props }: Props) => {
   const { editor } = useMessageComposer()
 
   return (
@@ -18,7 +18,7 @@ export const CodeBlockButton = ({ className, size = 16, ...props }: Props) => {
       tooltip="Code Block (⌘+⇧+⌥+c)"
       className={className}
       {...props}>
-      <Icon type="RiCodeBlock" size={20} />
+      <Icon type="RiCodeBlock" size={size} />
     </Button>
   )
 }

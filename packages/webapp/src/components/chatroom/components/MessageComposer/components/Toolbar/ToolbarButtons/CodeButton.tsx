@@ -7,12 +7,11 @@ type Props = {
   className?: string
   size?: number
 }
-export const CodeButton = ({ className, size = 16, ...props }: Props) => {
+export const CodeButton = ({ size = 16 }: Props) => {
   const { editor } = useMessageComposer()
 
   return (
     <Button
-      // @ts-ignore - toggleInlineCode is a valid command but TypeScript types aren't picking it up in Docker builds
       onPress={() => editor?.chain().focus().toggleInlineCode().run()}
       editor={editor}
       type="code"

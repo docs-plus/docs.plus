@@ -12,7 +12,7 @@ process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 // Create logger for WebSocket server
 const wsLogger = logger.child({ service: 'websocket' })
 
-async function handleHistoryEvents(payload: HistoryPayload, context: any, document: any) {
+async function handleHistoryEvents(payload: HistoryPayload, _context: any, _document: any) {
   const { type, documentId } = payload
 
   switch (type) {
@@ -64,7 +64,7 @@ const broadcastToAll = (document: any, payload: any) => {
 }
 
 const statelessExtension = {
-  async onStateless({ payload, context, document, connection }: any) {
+  async onStateless({ payload, context, document, _connection }: any) {
     const parsedPayload = JSON.parse(payload)
 
     if (parsedPayload.msg === 'history') {

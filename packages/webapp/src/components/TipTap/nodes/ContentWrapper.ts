@@ -1,4 +1,4 @@
-import { mergeAttributes,Node } from '@tiptap/core'
+import { mergeAttributes, Node } from '@tiptap/core'
 import { TextSelection } from '@tiptap/pm/state'
 import { type DOMOutputSpec, TIPTAP_NODES, TRANSACTION_META, type ViewMutationRecord } from '@types'
 
@@ -105,7 +105,7 @@ const ContentWrapper = Node.create({
     ]
   },
   addNodeView() {
-    return ({ editor, getPos, HTMLAttributes, node }) => {
+    return ({ editor, getPos, HTMLAttributes }) => {
       const dom = document.createElement('div')
       const content = document.createElement('div')
       content.classList.add('contents')
@@ -276,9 +276,9 @@ const ContentWrapper = Node.create({
       },
       // Escape node on double enter
       Enter: () => {
-        const { state, dispatch } = this.editor.view
-        const { selection, doc } = state
-        const { $from, $to } = selection
+        const { state } = this.editor.view
+        const { selection } = state
+        const { $from } = selection
 
         // Check if we're in a ContentWrapper
         const contentWrapper = $from.node($from.depth - 1)

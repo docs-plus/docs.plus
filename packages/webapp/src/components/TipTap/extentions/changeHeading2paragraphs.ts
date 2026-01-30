@@ -3,7 +3,7 @@ import onSelection from './normalText/onSelection'
 import { CommandArgs } from './types'
 
 const changeHeading2Paragrapht = (arrg: CommandArgs): boolean | void => {
-  const { state, editor, tr } = arrg
+  const { state, editor } = arrg
   const { selection } = state
   const { $anchor, $head } = selection
 

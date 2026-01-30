@@ -3,7 +3,7 @@ import { ContextMenu } from '@components/ui/ContextMenu'
 import { useAuthStore, useChatStore } from '@stores'
 import { TChannelSettings } from '@types'
 import { TMsgRow } from '@types'
-import React, { useCallback, useEffect, useRef, useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 

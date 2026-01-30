@@ -1,4 +1,4 @@
-import { ReactNode,useCallback, useEffect, useState } from 'react'
+import { ReactNode, useCallback, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface TypingTextItem {
@@ -59,7 +59,7 @@ const TypingText = ({
   delayAfterTyping = 2000,
   delayBeforeTyping = 500,
   showCursor = true,
-  cursor = '|',
+  //cursor = '|',
   className,
   cursorClassName,
   loop = true,

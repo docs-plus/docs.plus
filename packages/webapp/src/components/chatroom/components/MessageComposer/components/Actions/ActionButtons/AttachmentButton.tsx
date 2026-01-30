@@ -1,5 +1,4 @@
 import Icon from '@components/TipTap/toolbar/Icon'
-import { twMerge } from 'tailwind-merge'
 
 import Button from '../../ui/Button'
 

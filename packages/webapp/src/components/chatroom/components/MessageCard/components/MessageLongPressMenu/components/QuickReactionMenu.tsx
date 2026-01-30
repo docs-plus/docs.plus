@@ -1,4 +1,4 @@
-import { useChatStore,useSheetStore } from '@stores'
+import { useChatStore } from '@stores'
 import { TMsgRow } from '@types'
 import { motion } from 'motion/react'
 import { forwardRef } from 'react'
@@ -37,7 +37,7 @@ const availableEmojiReactions: EmojiReaction[] = [
 
 export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuProps>(
   ({ position, isVisible, isInteractive = true, onReactionSelect, className, message }, ref) => {
-    const { switchSheet } = useSheetStore()
+    // const { switchSheet } = useSheetStore()
     const { openEmojiPicker } = useChatStore()
     const { hideMenu } = useMessageLongPressMenu()
     const handleReactionClick = (reaction: EmojiReaction) => {

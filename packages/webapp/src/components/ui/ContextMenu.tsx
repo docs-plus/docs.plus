@@ -11,7 +11,8 @@ import {
   useInteractions,
   useListNavigation,
   useRole,
-  useTypeahead} from '@floating-ui/react'
+  useTypeahead
+} from '@floating-ui/react'
 import {
   Children,
   cloneElement,
@@ -21,7 +22,8 @@ import {
   useContext,
   useEffect,
   useRef,
-  useState} from 'react'
+  useState
+} from 'react'
 
 interface ContextMenuContextType {
   setIsOpen: (open: boolean) => void
@@ -40,7 +42,7 @@ export const useContextMenuContext = () => {
 }
 
 export const MenuItem = forwardRef<HTMLLIElement, React.LiHTMLAttributes<HTMLLIElement>>(
-  ({ children, ...props }, ref) => {
+  ({ children, ...props }) => {
     return <li {...props}>{children}</li>
   }
 )

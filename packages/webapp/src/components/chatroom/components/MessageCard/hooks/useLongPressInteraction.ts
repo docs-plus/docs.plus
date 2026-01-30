@@ -1,5 +1,5 @@
 import { useChatStore } from '@stores'
-import { useCallback, useRef,useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { LongPressEventType, useLongPress } from 'use-long-press'
 
 /**
@@ -27,7 +27,7 @@ export const useLongPressInteraction = () => {
     }
   }, [])
 
-  const handleLongPressFinish = useCallback((event: any) => {
+  const handleLongPressFinish = useCallback((_event: any) => {
     setIsMessagePressed(false)
     setIsLongPressCompleted(true) // Mark as completed - buttons become active
     updateChatRoom('disableScroll', true)

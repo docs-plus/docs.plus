@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useRef,useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 
 /**
  * Handles complex menu positioning calculations for long press menu
@@ -85,7 +85,7 @@ export const useMenuPositioning = (
       const spaceBelow = viewportHeight - currentBottom
 
       let messageBounds = originalMessageBounds
-      let messageRepositioned = false
+      // let messageRepositioned = false
 
       // If insufficient space, reposition the message to center in viewport
       if (spaceAbove < spaceRequiredAbove || spaceBelow < spaceRequiredBelow) {
@@ -109,7 +109,7 @@ export const useMenuPositioning = (
           } as DOMRect
 
           setAdjustedMessageBounds(messageBounds)
-          messageRepositioned = true
+          // messageRepositioned = true
         }
       } else {
         setAdjustedMessageBounds(null)

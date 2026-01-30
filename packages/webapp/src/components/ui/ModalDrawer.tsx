@@ -3,7 +3,8 @@ import React, {
   forwardRef,
   useCallback,
   useContext,
-  useImperativeHandle} from 'react'
+  useImperativeHandle
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ModalDrawerProps {
@@ -34,11 +35,11 @@ export const ModalDrawer = forwardRef<unknown, ModalDrawerProps>(
   (
     {
       modalId = 'left_to_right_modal',
-      className,
+      // className,
       children,
       onModalStateChange,
-      contentClassName,
-      width = 80, // default to 80%
+      // contentClassName,
+      // width = 80, // default to 80%
       position = 'left' // default to left
     },
     ref

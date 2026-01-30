@@ -15,7 +15,7 @@ import { CommandArgs, HeadingAttributes } from './types'
 const changeHeadingLevelH1 = (arrg: CommandArgs, attributes: HeadingAttributes): boolean => {
   const { state, tr } = arrg
   const { selection, doc } = state
-  const { $from, $to, from } = selection
+  const { $from, $to } = selection
   const { start } = $from.blockRange($to)!
 
   console.info('[Heading]: change heading Level h1')
