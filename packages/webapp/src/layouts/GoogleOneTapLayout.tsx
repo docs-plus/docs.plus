@@ -5,10 +5,9 @@ type Props = {
 }
 export default function GoogleOneTapLayout({ children }: Props) {
   return (
-    // <div className="h-auto overflow-auto ">
-    //   {children}
-    //   {/* <GoogleOneTapAuth /> */}
-    // </div>
-    <>{children}</>
+    <>
+      {children}
+      <GoogleOneTapAuth />
+    </>
   )
 }

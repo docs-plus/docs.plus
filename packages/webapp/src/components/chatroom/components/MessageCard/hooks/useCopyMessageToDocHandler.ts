@@ -1,7 +1,7 @@
-import { useCallback } from 'react'
-import { TMsgRow, TIPTAP_NODES, TRANSACTION_META } from '@types'
-import { useStore } from '@stores'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import { useStore } from '@stores'
+import { TIPTAP_NODES, TMsgRow, TRANSACTION_META } from '@types'
+import { useCallback } from 'react'
 
 const createParagraphNodeJson = (message: TMsgRow) => {
   const workspaceId = useStore.getState().settings.workspaceId
@@ -65,7 +65,7 @@ export const useCopyMessageToDocHandler = () => {
       // Find the heading with matching ID in the document
       const { doc, tr } = editor.state
       let headingPos: number | null = null
-      let headingLevel = 1
+      let _headingLevel: number | null = 1
       let headingNode: any = null
 
       // Traverse the document to find the heading with matching ID

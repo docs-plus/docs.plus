@@ -1,5 +1,5 @@
+import type { TMsgRow } from '@types'
 import { supabaseClient } from '@utils/supabase'
-import { Database, TMsgRow, TSendMsgeArgs } from '@types'
 
 export const sendMessage = async (
   content: TMsgRow['content'],

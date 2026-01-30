@@ -16,7 +16,7 @@ export function getHostname(context: GetServerSidePropsContext): string {
     }
 
     return hostname
-  } catch (error) {
+  } catch {
     // Silent fallback for production use
     return process.env.NEXT_PUBLIC_DEFAULT_HOSTNAME || 'localhost'
   }

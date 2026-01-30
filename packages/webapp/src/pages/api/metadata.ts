@@ -1,6 +1,6 @@
+import * as cheerio from 'cheerio'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import ogs from 'open-graph-scraper'
-import * as cheerio from 'cheerio'
 
 interface MetadataResponse {
   title: string
@@ -103,7 +103,7 @@ const extractMetadata = async (
 ): Promise<Omit<MetadataResponse, 'success'>> => {
   // Parse HTML with cheerio for favicon/logo extraction
   const $ = cheerio.load(html)
-  const baseUrl = new URL(url)
+  const _baseUrl = new URL(url)
 
   // Use open-graph-scraper for Open Graph and Twitter Card data
   const ogsResult = await ogs({ url, html })

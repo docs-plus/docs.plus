@@ -1,9 +1,9 @@
-import type { NextApiRequest, NextApiResponse } from 'next'
-import ogs from 'open-graph-scraper'
-import { URL } from 'url'
 import axios from 'axios'
 import * as cheerio from 'cheerio'
+import type { NextApiRequest, NextApiResponse } from 'next'
+import ogs from 'open-graph-scraper'
 import randomColor from 'randomcolor'
+import { URL } from 'url'
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   const { url } = req.query
@@ -49,7 +49,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       getMetaTags(formattedUrl.toString())
     ])
 
-    const { error, result } = ogsResult
+    const { error: _error, result } = ogsResult
 
     const themeColor =
       metaTags['theme-color'] ||

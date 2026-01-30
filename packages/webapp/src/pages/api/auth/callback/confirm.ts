@@ -1,8 +1,8 @@
-import { NextApiHandler } from 'next'
-import { URL } from 'url'
-import { parse } from 'querystring'
 import createClient from '@utils/supabase/api'
+import type { NextApiHandler as _NextApiHandler } from 'next'
 import type { NextApiRequest, NextApiResponse } from 'next'
+import { parse } from 'querystring'
+import { URL } from 'url'
 
 // Type definition for query parameters
 type TQuery = {
@@ -59,7 +59,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       // const supabase = await createClient()
       const supabase = createClient(req, res)
 
-      const { error, data } = await supabase.auth.exchangeCodeForSession(code)
+      const { error, data: _data } = await supabase.auth.exchangeCodeForSession(code)
 
       if (!error) {
         // const forwardedHost = req.headers.get('x-forwarded-host') // original origin before load balancer

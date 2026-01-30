@@ -1,11 +1,9 @@
-import { useChatStore } from '@stores'
-import { ChannelProvider } from '@components/chatroom/context/ChannelProvider'
-// import { ChatRoom } from '@components/chatroom/____ChatRoom____OLDDDD'
-import BreadcrumbMobile from '@components/chatroom/components/BreadcrumbMobile'
 import Chatroom from '@components/chatroom/Chatroom'
+import BreadcrumbMobile from '@components/chatroom/components/BreadcrumbMobile'
 import { EmojiPanel } from '@components/chatroom/components/EmojiPanel'
+import { ChannelProvider } from '@components/chatroom/context/ChannelProvider'
+import { useChatStore } from '@stores'
 import { Sheet } from 'react-modal-sheet'
-import { useState } from 'react'
 
 const initSettings = {
   displayChannelBar: false,

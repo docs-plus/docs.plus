@@ -1,5 +1,5 @@
 import { Editor, Extension, isNodeEmpty } from '@tiptap/core'
-import { NodeType, Node as ProsemirrorNode } from '@tiptap/pm/model'
+import { Node as ProsemirrorNode, NodeType as _NodeType } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 

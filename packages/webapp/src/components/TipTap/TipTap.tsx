@@ -1,93 +1,81 @@
-import { UseEditorOptions } from '@tiptap/react'
-import randomColor from 'randomcolor'
-import { createLowlight } from 'lowlight'
-import ShortUniqueId from 'short-unique-id'
-import {
-  TIPTAP_NODES,
-  type ProseMirrorNode,
-  type Editor as TipTapEditor,
-  type Transaction
-} from '@types'
-import type { HocuspocusProvider } from '@hocuspocus/provider'
-import { useStore } from '@stores'
-import { authStore } from '@stores'
 import Config from '@config'
-
-// CustomNodes
-import Document from './nodes/Document'
-import Paragraph from './nodes/Paragraph'
-import Text from './nodes/Text'
-import Heading from './nodes/Heading'
-import ContentHeading from './nodes/ContentHeading'
-import ContentWrapper from './nodes/ContentWrapper'
-
-// Collaboration
-import { Collaboration, isChangeOrigin } from '@tiptap/extension-collaboration'
-import { CollaborationCaret } from '@tiptap/extension-collaboration-caret'
-
-// Basic Formatting
-import { Bold } from '@tiptap/extension-bold'
-import { Italic } from '@tiptap/extension-italic'
-import { Underline } from '@tiptap/extension-underline'
-import { Strike } from '@tiptap/extension-strike'
-import { Superscript } from '@tiptap/extension-superscript'
-import { Subscript } from '@tiptap/extension-subscript'
-import { TextAlign } from '@tiptap/extension-text-align'
-
-// Lists and Items
-import { BulletList, ListItem, OrderedList, TaskItem, TaskList } from '@tiptap/extension-list'
-
 // Links and Media
 // import previewHyperlinkModal from './hyperlinkModals/previewHyperlink'
 // import setHyperlinks from './hyperlinkModals/setHyperlink'
 import { createHyperlinkPopover, Hyperlink } from '@docs.plus/extension-hyperlink'
-import previewHyperlink from './hyperlinkPopovers/previewHyperlink'
-
-// Code and Syntax Highlighting
-import { Highlight } from '@tiptap/extension-highlight'
-import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
-import css from 'highlight.js/lib/languages/css'
-import js from 'highlight.js/lib/languages/javascript'
-import ts from 'highlight.js/lib/languages/typescript'
-import html from 'highlight.js/lib/languages/xml'
-import md from 'highlight.js/lib/languages/markdown'
-import yaml from 'highlight.js/lib/languages/yaml'
-import python from 'highlight.js/lib/languages/python'
-import json from 'highlight.js/lib/languages/json'
-import bash from 'highlight.js/lib/languages/bash'
-
-// Typography
-import { Typography } from '@tiptap/extension-typography'
-
-// Other Nodes and Extensions
-import { Blockquote } from '@tiptap/extension-blockquote'
-import { Gapcursor, Placeholder, UndoRedo } from '@tiptap/extensions'
-import { UniqueID } from '@tiptap/extension-unique-id'
-import { HardBreak } from '@tiptap/extension-hard-break'
-
-// Table
-import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
-
-import { Indent } from '@docs.plus/extension-indent'
-
-import { HeadingActionsExtension } from './extentions/HeadingActions'
-import { IOSCaretFix } from './plugins/iosCaretFixPlugin'
-
-import { InlineCode } from '@docs.plus/extension-inline-code'
 import {
   HyperMultimediaKit,
-  imageModal,
-  youtubeModal,
-  vimeoModal,
-  soundCloudModal,
-  twitterModal
+  imageModal as _imageModal,
+  soundCloudModal as _soundCloudModal,
+  twitterModal as _twitterModal,
+  vimeoModal as _vimeoModal,
+  youtubeModal as _youtubeModal
 } from '@docs.plus/extension-hypermultimedia'
+import { Indent } from '@docs.plus/extension-indent'
+import { InlineCode } from '@docs.plus/extension-inline-code'
+import type { HocuspocusProvider } from '@hocuspocus/provider'
+import { useStore } from '@stores'
+import { authStore } from '@stores'
+// Other Nodes and Extensions
+import { Blockquote } from '@tiptap/extension-blockquote'
+// Basic Formatting
+import { Bold } from '@tiptap/extension-bold'
+import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
+// Collaboration
+import { Collaboration, isChangeOrigin } from '@tiptap/extension-collaboration'
+import { CollaborationCaret } from '@tiptap/extension-collaboration-caret'
+import { HardBreak } from '@tiptap/extension-hard-break'
+// Code and Syntax Highlighting
+import { Highlight } from '@tiptap/extension-highlight'
+import { Italic } from '@tiptap/extension-italic'
+// Lists and Items
+import { BulletList, ListItem, OrderedList, TaskItem, TaskList } from '@tiptap/extension-list'
+import { Strike } from '@tiptap/extension-strike'
+import { Subscript } from '@tiptap/extension-subscript'
+import { Superscript } from '@tiptap/extension-superscript'
+// Table
+import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
+import { TextAlign } from '@tiptap/extension-text-align'
+// Typography
+import { Typography } from '@tiptap/extension-typography'
+import { Underline } from '@tiptap/extension-underline'
+import { UniqueID } from '@tiptap/extension-unique-id'
+import { Gapcursor, Placeholder, UndoRedo } from '@tiptap/extensions'
+import { UseEditorOptions } from '@tiptap/react'
+import {
+  type Editor as TipTapEditor,
+  type ProseMirrorNode,
+  TIPTAP_NODES,
+  type Transaction
+} from '@types'
+import bash from 'highlight.js/lib/languages/bash'
+import css from 'highlight.js/lib/languages/css'
+import js from 'highlight.js/lib/languages/javascript'
+import json from 'highlight.js/lib/languages/json'
+import md from 'highlight.js/lib/languages/markdown'
+import python from 'highlight.js/lib/languages/python'
+import ts from 'highlight.js/lib/languages/typescript'
+import html from 'highlight.js/lib/languages/xml'
+import yaml from 'highlight.js/lib/languages/yaml'
+import { createLowlight } from 'lowlight'
+import randomColor from 'randomcolor'
+import ShortUniqueId from 'short-unique-id'
+import { IndexeddbPersistence } from 'y-indexeddb'
+import * as Y from 'yjs'
+
+import { HeadingActionsExtension } from './extentions/HeadingActions'
+import previewHyperlink from './hyperlinkPopovers/previewHyperlink'
+import ContentHeading from './nodes/ContentHeading'
+import ContentWrapper from './nodes/ContentWrapper'
+// CustomNodes
+import Document from './nodes/Document'
+import Heading from './nodes/Heading'
 // import Placeholders from './placeholders'
 // import { Placeholder } from './Placeholder'
 import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
-
-import * as Y from 'yjs'
-import { IndexeddbPersistence } from 'y-indexeddb'
+import Paragraph from './nodes/Paragraph'
+import Text from './nodes/Text'
+import { IOSCaretFix } from './plugins/iosCaretFixPlugin'
 
 const lowlight = createLowlight()
 lowlight.register('html', html)
@@ -277,7 +265,7 @@ const Editor = ({
   return {
     onCreate: scrollDown,
     enableContentCheck: true,
-    onContentError({ editor, error, disableCollaboration }) {
+    onContentError({ error }) {
       console.error('onContentError', error)
     },
     editorProps: {

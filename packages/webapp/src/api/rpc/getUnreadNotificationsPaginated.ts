@@ -1,8 +1,8 @@
-import { supabaseClient } from '@utils/supabase'
 import { PostgrestResponse } from '@supabase/supabase-js'
 import { Database } from '@types'
+import { supabaseClient } from '@utils/supabase'
 
-type TUnreadNotifPaginatedReturn =
+type _TUnreadNotifPaginatedReturn =
   Database['public']['Functions']['get_unread_notifications_paginated']['Returns']
 
 type TUnreadNotifPaginated = {

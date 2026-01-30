@@ -1,6 +1,6 @@
-import { immer } from 'zustand/middleware/immer'
-import { Database, Profile } from '@types'
 import { useAuthStore, useStore } from '@stores'
+import type { Profile } from '@types'
+import { immer } from 'zustand/middleware/immer'
 
 type TChatRoom = {
   headingPath: Array<any>
@@ -37,7 +37,7 @@ interface IChatroomStore {
   switchChatRoom: (channelId: string) => void
 }
 
-const getWorkspaceId = (): string => {
+const _getWorkspaceId = (): string => {
   return useStore.getState().settings.workspaceId || ''
 }
 
@@ -85,7 +85,7 @@ const switchChannel = (user: Profile, newChannelId: string): void => {
   }
 }
 
-const chatRoom = immer<IChatroomStore>((set, get) => ({
+const chatRoom = immer<IChatroomStore>((set, _get) => ({
   chatRoom: {
     headingId: undefined,
     documentId: undefined,

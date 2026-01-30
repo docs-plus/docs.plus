@@ -1,116 +1,92 @@
-import Script from 'next/script'
 import { createClient } from '@utils/supabase/component'
-import { CredentialResponse } from 'google-one-tap'
+import type { CredentialResponse, PromptMomentNotification } from 'google-one-tap'
 import { useRouter } from 'next/router'
-import { useEffect, useCallback, useRef } from 'react'
+import Script from 'next/script'
+import { useCallback, useEffect, useRef } from 'react'
 
-// generate nonce to use for google id token sign-in
-const generateNonce = async (): Promise<string[]> => {
+/**
+ * Generates a cryptographic nonce for Google ID token sign-in.
+ * Returns both the raw nonce (for Supabase) and hashed nonce (for Google).
+ */
+const generateNonce = async (): Promise<[string, string]> => {
   const nonce = btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(32))))
   const encoder = new TextEncoder()
-  const encodedNonce = encoder.encode(nonce)
-  const hashBuffer = await crypto.subtle.digest('SHA-256', encodedNonce)
-  const hashArray = Array.from(new Uint8Array(hashBuffer))
-  const hashedNonce = hashArray.map((b) => b.toString(16).padStart(2, '0')).join('')
-
+  const hashBuffer = await crypto.subtle.digest('SHA-256', encoder.encode(nonce))
+  const hashedNonce = Array.from(new Uint8Array(hashBuffer))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
   return [nonce, hashedNonce]
 }
+
+const GOOGLE_SCRIPT_LOAD_TIMEOUT_MS = 4000
+const POLL_INTERVAL_MS = 200
 
 const OneTapComponent = () => {
   const supabase = createClient()
   const router = useRouter()
-  const initializationRef = useRef(false)
-  const abortControllerRef = useRef<AbortController | null>(null)
+  const isInitialized = useRef(false)
   const nonceRef = useRef<string | null>(null)
 
   const handleCredentialResponse = useCallback(
     async (response: CredentialResponse) => {
       try {
-        if (!response?.credential) {
-          console.error('Invalid credential response')
+        if (!response?.credential || !nonceRef.current) {
+          console.error('Google One Tap: Invalid credential or nonce')
           return
         }
 
-        if (!nonceRef.current) {
-          console.error('Nonce not available')
-          return
-        }
-
-        // send id token returned in response.credential to supabase
-        const { data, error } = await supabase.auth.signInWithIdToken({
+        const { error } = await supabase.auth.signInWithIdToken({
           provider: 'google',
           token: response.credential,
           nonce: nonceRef.current
         })
 
         if (error) throw error
-        console.log('Session data:', data)
-        console.log('Successfully logged in with Google One Tap')
-        // TODO: many states depend on profile auth, so silently updating the profile isn't enough. we need a better solution or a different call flow later.
+
+        // TODO: Replace router.reload() with reactive auth state update
+        // Many components depend on profile auth state, so we reload for now
         router.reload()
       } catch (error) {
-        console.error('Error logging in with Google One Tap:', error)
+        console.error('Google One Tap login failed:', error)
       }
     },
-    [supabase.auth]
+    [supabase.auth, router]
   )
 
   const initializeGoogleOneTap = useCallback(async () => {
-    // Prevent multiple initializations
-    if (initializationRef.current) return
+    if (isInitialized.current) return
 
     try {
-      // Create AbortController for this operation
-      const abortController = new AbortController()
-      abortControllerRef.current = abortController
-
-      // Check if component is still mounted
-      if (abortController.signal.aborted) return
-
-      // Check if already logged in (client-side check, not auth decision)
+      // Skip if user already has a session
       const {
         data: { session }
       } = await supabase.auth.getSession()
-
       if (session) return
 
-      if (!process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID) {
+      const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID
+      if (!clientId) {
         console.error('NEXT_PUBLIC_GOOGLE_CLIENT_ID is not set')
         return
       }
 
-      // Generate nonce
-      const [nonce, hashedNonce] = await generateNonce()
-      nonceRef.current = nonce
-
-      // Wait for Google script with retry mechanism
-      let attempts = 0
-      const maxAttempts = 20 // 4 seconds max wait
-
-      while (attempts < maxAttempts) {
-        if (abortController.signal.aborted) return
-
-        if (typeof window.google !== 'undefined' && window.google.accounts) {
-          break
-        }
-
-        attempts++
-        if (attempts >= maxAttempts) {
-          console.error('Google script failed to load after 4 seconds')
-          return
-        }
-
-        await new Promise((resolve) => setTimeout(resolve, 200))
+      // Wait for Google script to load with timeout
+      const maxAttempts = GOOGLE_SCRIPT_LOAD_TIMEOUT_MS / POLL_INTERVAL_MS
+      for (let i = 0; i < maxAttempts; i++) {
+        if (window.google?.accounts) break
+        await new Promise((r) => setTimeout(r, POLL_INTERVAL_MS))
       }
 
-      // Check if still mounted before initializing
-      if (abortController.signal.aborted) return
+      if (!window.google?.accounts) {
+        console.error('Google One Tap script failed to load within timeout')
+        return
+      }
 
-      // Mark as initialized to prevent multiple calls
-      initializationRef.current = true
+      const [nonce, hashedNonce] = await generateNonce()
+      nonceRef.current = nonce
+      isInitialized.current = true
 
       window.google.accounts.id.initialize({
-        client_id: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
+        client_id: clientId,
         callback: handleCredentialResponse,
         nonce: hashedNonce,
         auto_select: false,
@@ -118,54 +94,37 @@ const OneTapComponent = () => {
         use_fedcm_for_prompt: true
       })
 
-      window.google.accounts.id.prompt((notification: any) => {
+      window.google.accounts.id.prompt((notification: PromptMomentNotification) => {
         if (notification.isNotDisplayed()) {
-          console.info('One Tap not displayed:', notification.getNotDisplayedReason())
+          console.info('Google One Tap not displayed:', notification.getNotDisplayedReason())
         } else if (notification.isSkippedMoment()) {
-          console.info('One Tap skipped:', notification.getSkippedReason())
+          console.info('Google One Tap skipped:', notification.getSkippedReason())
         }
       })
     } catch (error) {
-      console.error('Error initializing Google One Tap:', error)
-      initializationRef.current = false // Reset on error
+      console.error('Google One Tap initialization failed:', error)
+      isInitialized.current = false
     }
   }, [supabase.auth, handleCredentialResponse])
 
   useEffect(() => {
     return () => {
-      // Abort any ongoing operations
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort()
-        abortControllerRef.current = null
-      }
-
-      // Cancel Google One Tap
-      if (typeof window.google !== 'undefined') {
-        window.google.accounts.id.cancel()
-      }
-
-      // Reset initialization flag
-      initializationRef.current = false
+      // Cleanup: cancel Google One Tap prompt on unmount
+      window.google?.accounts?.id?.cancel()
+      isInitialized.current = false
     }
   }, [])
 
   return (
-    <>
-      <Script
-        src="https://accounts.google.com/gsi/client"
-        strategy="afterInteractive"
-        onLoad={() => {
-          // Initialize when script loads
-          initializeGoogleOneTap()
-        }}
-        onError={(e) => {
-          console.error('Failed to load Google One Tap script:', e)
-          // Reset initialization flag so we can try again if needed
-          initializationRef.current = false
-        }}
-      />
-      <div id="oneTap" className="fixed top-0 right-0 z-[100]" />
-    </>
+    <Script
+      src="https://accounts.google.com/gsi/client"
+      strategy="afterInteractive"
+      onLoad={initializeGoogleOneTap}
+      onError={() => {
+        console.error('Failed to load Google One Tap script')
+        isInitialized.current = false
+      }}
+    />
   )
 }
 

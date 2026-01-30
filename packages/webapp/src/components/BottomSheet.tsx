@@ -1,11 +1,12 @@
-import React, { useCallback, useEffect, useMemo, useRef } from 'react'
-import { Sheet, SheetProps, SheetRef } from 'react-modal-sheet'
-import { useSheetStore, useChatStore, useStore } from '@stores'
 import FilterModal from '@components/pages/document/components/FilterModal'
+import { CHAT_OPEN } from '@services/eventsHub'
+import { useChatStore, useSheetStore, useStore } from '@stores'
+import React, { useEffect, useMemo, useRef } from 'react'
+import { Sheet, SheetProps, SheetRef } from 'react-modal-sheet'
+
+import { EmojiPanel } from './chatroom/components/EmojiPanel'
 import NotificationModal from './notificationPanel/mobile/NotificationModal'
 import ChatContainerMobile from './pages/document/components/chat/ChatContainerMobile'
-import { EmojiPanel } from './chatroom/components/EmojiPanel'
-import { CHAT_OPEN } from '@services/eventsHub'
 
 const BottomSheet = () => {
   const { activeSheet, closeSheet, sheetData } = useSheetStore()
@@ -14,8 +15,10 @@ const BottomSheet = () => {
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)
   const setSheetContainerRef = useSheetStore((state) => state.setSheetContainerRef)
   const setSheetState = useSheetStore((state) => state.setSheetState)
-  const sheetState = useSheetStore((state) => state.sheetState)
-  const { keyboardHeight, virtualKeyboardState } = useStore((state) => state)
+  const _sheetState = useSheetStore((state) => state.sheetState)
+  const { keyboardHeight: _keyboardHeight, virtualKeyboardState: _virtualKeyboardState } = useStore(
+    (state) => state
+  )
   const { deviceDetect } = useStore((state) => state.settings)
   const sheetContentRef = useRef<HTMLDivElement>(null)
   const sheetRef = useRef<SheetRef>(null)

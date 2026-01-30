@@ -1,14 +1,14 @@
-import * as React from 'react'
 import {
-  useFloating,
+  FloatingFocusManager,
+  FloatingOverlay,
+  FloatingPortal,
   useDismiss,
-  useRole,
+  useFloating,
   useInteractions,
   useMergeRefs,
-  FloatingPortal,
-  FloatingFocusManager,
-  FloatingOverlay
+  useRole
 } from '@floating-ui/react'
+import * as React from 'react'
 import { useId } from 'react'
 
 interface ModalProps {
@@ -79,7 +79,8 @@ type Props = {
 export const ModalContent = function ModalContent({
   size = 'md',
   className = '',
-  ...props
+  children,
+  ...restProps
 }: Props) {
   const sizeClasses: Record<typeof size, string> = {
     sm: 'w-full max-w-sm', // 384px
@@ -93,10 +94,13 @@ export const ModalContent = function ModalContent({
     full: 'w-full max-w-[calc(100vw-2rem)] h-full max-h-[calc(100vh-2rem)]'
   }
   const { open, refs, context, getFloatingProps } = useModalContext()
-  const ref = useMergeRefs([refs.setFloating])
+  const ref = useMergeRefs([refs.setFloating]) as React.Ref<HTMLDivElement>
   const id = useId()
 
   if (!open) return null
+
+  // Extract only the props we need to pass to getFloatingProps (excluding ref/children)
+  const { ref: _ref, ...safeProps } = restProps as { ref?: unknown; [key: string]: unknown }
 
   return (
     <FloatingPortal>
@@ -109,8 +113,8 @@ export const ModalContent = function ModalContent({
               aria-labelledby={id}
               aria-describedby={id}
               id={id}
-              {...getFloatingProps(props)}>
-              {props.children}
+              {...getFloatingProps(safeProps)}>
+              {children}
             </div>
           </FloatingFocusManager>
         </div>

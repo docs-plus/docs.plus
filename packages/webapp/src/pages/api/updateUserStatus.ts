@@ -1,7 +1,7 @@
 // pages/api/updateUserStatus.ts
 
-import { type NextApiRequest, type NextApiResponse } from 'next'
 import createClient from '@utils/supabase/api'
+import { type NextApiRequest, type NextApiResponse } from 'next'
 interface UpdateUserStatusRequestBody {
   userId: string
   status: string
@@ -16,7 +16,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     try {
       await updateSupabaseUserStatus(userId, status, supabase)
       res.status(200).json({ message: 'User status updated' })
-    } catch (error) {
+    } catch {
       res.status(500).json({ error: 'Error updating user status' })
     }
   } else {

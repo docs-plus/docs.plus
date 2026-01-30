@@ -1,4 +1,3 @@
-import type { Editor } from '@tiptap/core'
 import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
 
 /**
@@ -120,17 +119,17 @@ export type TipTapEditor = any
  * Re-export commonly used ProseMirror/TipTap types for convenience.
  * Import from '@types' to maintain single source of truth.
  */
-export type { Transaction, EditorState, Selection } from '@tiptap/pm/state'
+export type { CommandProps, Editor } from '@tiptap/core'
 export type {
+  DOMOutputSpec,
+  Mark,
+  NodeType,
   Node as ProseMirrorNode,
   ResolvedPos,
-  Schema,
-  NodeType,
-  Mark,
-  DOMOutputSpec
+  Schema
 } from '@tiptap/pm/model'
+export type { EditorState, Selection, Transaction } from '@tiptap/pm/state'
 export type { EditorView, ViewMutationRecord } from '@tiptap/pm/view'
-export type { Editor, CommandProps } from '@tiptap/core'
 
 /**
  * Editor node position information

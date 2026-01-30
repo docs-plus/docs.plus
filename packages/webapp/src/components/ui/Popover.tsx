@@ -1,19 +1,19 @@
-import * as React from 'react'
 import {
-  useFloating,
   autoUpdate,
-  offset,
   flip,
+  FloatingFocusManager,
+  FloatingPortal,
+  offset,
+  Placement,
   shift,
   useClick,
   useDismiss,
-  useRole,
+  useFloating,
   useInteractions,
   useMergeRefs,
-  Placement,
-  FloatingPortal,
-  FloatingFocusManager
+  useRole
 } from '@floating-ui/react'
+import * as React from 'react'
 
 interface PopoverOptions {
   initialOpen?: boolean
@@ -133,7 +133,11 @@ export const PopoverTrigger = React.forwardRef<
 >(function PopoverTrigger({ children, asChild = false, ...props }, propRef) {
   const context = usePopoverContext()
   const childrenRef = (children as any).ref
-  const ref = useMergeRefs([context.refs.setReference, propRef, childrenRef])
+  const ref = useMergeRefs([
+    context.refs.setReference,
+    propRef,
+    childrenRef
+  ]) as React.Ref<HTMLButtonElement>
 
   // `asChild` allows the user to pass any element as the anchor
   if (asChild && React.isValidElement(children)) {
@@ -164,7 +168,7 @@ export const PopoverTrigger = React.forwardRef<
 export const PopoverContent = React.forwardRef<HTMLDivElement, React.HTMLProps<HTMLDivElement>>(
   function PopoverContent({ style, ...props }, propRef) {
     const { context: floatingContext, ...context } = usePopoverContext()
-    const ref = useMergeRefs([context.refs.setFloating, propRef])
+    const ref = useMergeRefs([context.refs.setFloating, propRef]) as React.Ref<HTMLDivElement>
 
     if (!floatingContext.open) return null
 

@@ -32,7 +32,7 @@ interface IEmojiPickerStore {
   closeEmojiPicker: () => void
 }
 
-const emojiPickerStore = immer<IEmojiPickerStore>((set, get) => ({
+const emojiPickerStore = immer<IEmojiPickerStore>((set, _get) => ({
   emojiPicker: {
     isOpen: false,
     position: { top: 0, left: 0 },
