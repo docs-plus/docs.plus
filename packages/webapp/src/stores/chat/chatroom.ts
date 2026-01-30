@@ -1,6 +1,7 @@
-import { useAuthStore, useStore } from '@stores'
 import type { Profile } from '@types'
 import { immer } from 'zustand/middleware/immer'
+
+import { useAuthStore } from '../authStore'
 
 type TChatRoom = {
   headingPath: Array<any>
@@ -37,55 +38,21 @@ interface IChatroomStore {
   switchChatRoom: (channelId: string) => void
 }
 
-const _getWorkspaceId = (): string => {
-  return useStore.getState().settings.workspaceId || ''
-}
-
-const join2Channel = (user: Profile, channelId: string) => {
-  if (!user) return
-  const broadcaster = useStore.getState().settings?.broadcaster
+// Broadcast helpers - receive broadcaster to avoid circular dependency
+const broadcastPresence = (broadcaster: any, user: Profile, channelId: string | null) => {
+  if (!user || !broadcaster) return
   try {
-    broadcaster?.send({
+    broadcaster.send?.({
       type: 'broadcast',
       event: 'presence',
       payload: { ...user, channelId }
     })
   } catch (error) {
-    console.error('Failed to join channel:', error)
+    console.error('Failed to broadcast presence:', error)
   }
 }
 
-const leaveChannel = (user: Profile): void => {
-  if (!user) return
-
-  const broadcaster = useStore.getState().settings?.broadcaster
-  try {
-    broadcaster?.send?.({
-      type: 'broadcast',
-      event: 'presence',
-      payload: { ...user, channelId: null }
-    })
-  } catch (error) {
-    console.error('Failed to leave channel:', error)
-  }
-}
-
-const switchChannel = (user: Profile, newChannelId: string): void => {
-  if (!user) return
-
-  const broadcaster = useStore.getState().settings?.broadcaster
-  try {
-    broadcaster?.send?.({
-      type: 'broadcast',
-      event: 'presence',
-      payload: { ...user, channelId: newChannelId }
-    })
-  } catch (error) {
-    console.error('Failed to leave channel:', error)
-  }
-}
-
-const chatRoom = immer<IChatroomStore>((set, _get) => ({
+const chatRoom = immer<IChatroomStore>((set, get) => ({
   chatRoom: {
     headingId: undefined,
     documentId: undefined,
@@ -111,15 +78,17 @@ const chatRoom = immer<IChatroomStore>((set, _get) => ({
   },
 
   setChatRoom: (headingId, documentId, headingPath, user, fetchMsgsFromId) => {
-    let newHeadingId: string = headingId
     set((state) => {
-      state.chatRoom.headingId = newHeadingId
+      state.chatRoom.headingId = headingId
       state.chatRoom.documentId = documentId
       state.chatRoom.headingPath = headingPath
       state.chatRoom.fetchMsgsFromId = fetchMsgsFromId
     })
 
-    if (user) join2Channel(user, newHeadingId)
+    if (user) {
+      const broadcaster = (get() as any).settings?.broadcaster
+      broadcastPresence(broadcaster, user, headingId)
+    }
   },
 
   setOrUpdateChatRoom: (key, value) => {
@@ -153,7 +122,10 @@ const chatRoom = immer<IChatroomStore>((set, _get) => ({
     })
 
     const user = useAuthStore.getState().profile
-    if (user) switchChannel(user, channelId)
+    if (user) {
+      const broadcaster = (get() as any).settings?.broadcaster
+      broadcastPresence(broadcaster, user, channelId)
+    }
   },
 
   toggleChatRoom: () => {
@@ -163,6 +135,7 @@ const chatRoom = immer<IChatroomStore>((set, _get) => ({
   },
 
   destroyChatRoom: () => {
+    const broadcaster = (get() as any).settings?.broadcaster
     set((state) => {
       state.chatRoom = {
         headingId: undefined,
@@ -175,7 +148,7 @@ const chatRoom = immer<IChatroomStore>((set, _get) => ({
       }
     })
     const user = useAuthStore.getState().profile
-    if (user) leaveChannel(user)
+    if (user) broadcastPresence(broadcaster, user, null)
   }
 }))
 
