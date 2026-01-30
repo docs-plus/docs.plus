@@ -160,7 +160,7 @@ infra-up:
 		echo "⚠️  Warning: .env.local not found. Creating from .env.development..."; \
 		cp .env.development .env.local 2>/dev/null || true; \
 	fi
-	@docker compose -f docker compose.local.yml --env-file .env.local up -d
+	@docker compose -f docker-compose.local.yml --env-file .env.local up -d
 	@echo ""
 	@echo "✅ Infrastructure started!"
 	@echo ""
