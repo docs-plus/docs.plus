@@ -9,5 +9,11 @@
  */
 
 import { DesignSystemPage } from '@components/pages/design-system'
+import type { GetServerSideProps } from 'next'
+
+// Disable static generation - this is a dev-only page
+export const getServerSideProps: GetServerSideProps = async () => {
+  return { props: {} }
+}
 
 export default DesignSystemPage

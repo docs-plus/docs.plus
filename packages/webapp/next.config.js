@@ -18,6 +18,9 @@ module.exports = withPWA({
   // Production build optimization - standalone output for Docker
   output: 'standalone',
 
+  // Fix for monorepo with multiple lockfiles
+  outputFileTracingRoot: path.join(__dirname, '../../'),
+
   // Dev mode optimizations (faster compilation, especially in Docker)
   ...(process.env.NODE_ENV === 'development' && {
     // Skip type checking during dev (Next.js handles it separately)

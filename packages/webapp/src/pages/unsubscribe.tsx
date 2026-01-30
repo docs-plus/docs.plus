@@ -10,10 +10,16 @@
  * 3. Shows confirmation with options to manage preferences
  */
 
+import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
+
+// Disable static generation - this page uses useRouter
+export const getServerSideProps: GetServerSideProps = async () => {
+  return { props: {} }
+}
 
 interface UnsubscribeResult {
   success: boolean
