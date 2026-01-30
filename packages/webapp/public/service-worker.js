@@ -1,23 +1,24 @@
 // -----------------------------------------------------------------------------
-// Service Worker for Docs.plus
+// Service Worker Extension for Docs.plus
 // Handles: User status updates, Push notifications
-// Version: 2.1.0 - Rich notifications with sender avatars
+// Version: 2.3.0 - Imported by Workbox sw.js via importScripts
 // -----------------------------------------------------------------------------
 
+console.info("[SW Extension] Push notification handlers loaded");
 
-// Force activation of new service worker
-self.addEventListener("install", () => {
-  self.skipWaiting();
-});
-
-self.addEventListener("activate", (event) => {
-  event.waitUntil(clients.claim());
-});
-
-// Message handler for cross-tab communication
-addEventListener("message", (event) => {
+// Message handler for cross-tab communication and SW updates
+self.addEventListener("message", (event) => {
   const data = event.data;
-  const payload = data.payload;
+
+  // Handle SKIP_WAITING from update hook (Workbox also handles this)
+  if (data && data.type === "SKIP_WAITING") {
+    console.info("[SW Extension] Received SKIP_WAITING, activating new version...");
+    self.skipWaiting();
+    return;
+  }
+
+  // Handle user status updates
+  const payload = data?.payload;
   if (data && data.type === "UPDATE_USER_STATUS" && payload) {
     updateUser(payload);
   }

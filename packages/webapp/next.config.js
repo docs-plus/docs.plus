@@ -11,7 +11,9 @@ const withPWA = require('next-pwa')({
   skipWaiting: false,
   runtimeCaching,
   // Exclude files that don't exist in Next.js 15+
-  buildExcludes: [/dynamic-css-manifest\.json$/, /middleware-manifest\.json$/]
+  buildExcludes: [/dynamic-css-manifest\.json$/, /middleware-manifest\.json$/],
+  // Import custom service worker for push notifications
+  importScripts: ['/service-worker.js']
 })
 
 module.exports = withPWA({
