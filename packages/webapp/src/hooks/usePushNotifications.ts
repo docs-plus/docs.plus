@@ -138,7 +138,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         return 'success'
       }
 
-      // Check why subscription failed
+      // Subscription returned null (shouldn't happen now with throws, but handle gracefully)
       const currentPermission = Notification.permission
       setPermission(currentPermission)
 
@@ -147,7 +147,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         return 'denied'
       }
 
-      // User dismissed the prompt without choosing
+      // User dismissed the browser permission prompt
       if (currentPermission === 'default') {
         return 'dismissed'
       }
@@ -155,6 +155,15 @@ export function usePushNotifications(): UsePushNotificationsReturn {
       setError('Failed to subscribe')
       return 'error'
     } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+
+      // Check if it's a configuration error (server-side issue)
+      if (errorMessage.includes('not configured')) {
+        setError(errorMessage)
+        return 'error'
+      }
+
+      // Check browser permission state
       const currentPermission = Notification.permission
       setPermission(currentPermission)
 
@@ -163,7 +172,7 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         return 'denied'
       }
 
-      setError(err instanceof Error ? err.message : 'Unknown error')
+      setError(errorMessage)
       return 'error'
     } finally {
       setIsLoading(false)

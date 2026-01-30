@@ -316,7 +316,7 @@ const NotificationsContent = ({ onBack: _onBack }: NotificationsContentProps) =>
   const setProfile = useAuthStore((state) => state.setProfile)
 
   // Push notification state
-  const { isSupported, isSubscribed, isLoading, permission, subscribe, unsubscribe } =
+  const { isSupported, isSubscribed, isLoading, permission, error, subscribe, unsubscribe } =
     usePushNotifications()
 
   // Local preferences state - detect browser timezone on init
@@ -390,12 +390,21 @@ const NotificationsContent = ({ onBack: _onBack }: NotificationsContentProps) =>
   const handlePushChange = async (checked: boolean) => {
     if (checked) {
       const result = await subscribe()
-      if (result === 'success') {
-        toast.Success('Push notifications enabled')
-      } else if (result === 'denied') {
-        toast.Error('Notifications blocked. Please enable in browser settings.')
-      } else if (result === 'dismissed') {
-        toast.Warning('Permission prompt dismissed')
+      switch (result) {
+        case 'success':
+          toast.Success('Push notifications enabled')
+          break
+        case 'denied':
+          toast.Error('Notifications blocked. Please enable in browser settings.')
+          break
+        case 'dismissed':
+          // User closed the browser permission prompt without choosing
+          // Don't show toast - they made a conscious choice
+          break
+        case 'error':
+          // Show the actual error from the hook
+          toast.Error(error || 'Failed to enable notifications')
+          break
       }
     } else {
       const success = await unsubscribe()

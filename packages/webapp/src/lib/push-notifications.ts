@@ -105,17 +105,16 @@ function arrayBufferToBase64(buffer: ArrayBuffer | null): string {
 
 /**
  * Register for push notifications
- * Returns the subscription ID if successful
+ * Returns the subscription ID if successful, or throws an error with details
  */
 export async function registerPushSubscription(): Promise<string | null> {
   if (!isPushSupported()) {
-    console.warn('Push notifications not supported')
-    return null
+    throw new Error('Push notifications not supported in this browser')
   }
 
   if (!VAPID_PUBLIC_KEY) {
-    console.error('VAPID public key not configured')
-    return null
+    console.error('VAPID public key not configured (NEXT_PUBLIC_VAPID_PUBLIC_KEY)')
+    throw new Error('Push notifications not configured on server')
   }
 
   // Check permission

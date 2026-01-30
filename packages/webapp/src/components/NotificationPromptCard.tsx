@@ -119,6 +119,11 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
         localStorage.setItem(STORAGE_KEY, 'permanent')
         break
       case 'dismissed':
+        // User closed browser prompt - don't nag
+        break
+      case 'error':
+        // Server misconfiguration - don't spam user, just log
+        console.error('Push notification setup failed')
         break
     }
   }
