@@ -1,0 +1,56 @@
+name: PR Check
+
+on:
+  pull_request:
+    branches: [main, staging]
+  push:
+    branches: [main, staging]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: Lint, Type Check & Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📥 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🍞 Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: 📦 Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: 🔍 Lint
+        run: bun run lint
+
+      - name: 🎨 Format check
+        run: bun run format:check
+
+      - name: 📝 Type check (webapp)
+        run: bun run typecheck:webapp
+
+      - name: 📝 Type check (admin)
+        run: bun run typecheck:admin
+
+      - name: 📝 Type check (backend)
+        run: bun run typecheck:backend
+
+      - name: 🏗️ Build webapp
+        run: bun run --filter @docs.plus/webapp build:local
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
+
+      - name: 🏗️ Build admin
+        run: bun run --filter @docs.plus/admin-dashboard build:local
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
