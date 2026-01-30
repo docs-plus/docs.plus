@@ -11,11 +11,12 @@
  */
 
 import { Queue, Worker } from 'bullmq'
-import { createRedisConnection } from '../redis'
-import { pushLogger } from '../logger'
-import { sendPushNotification } from './sender'
+
 import { config } from '../../config/env'
 import type { PushJobData } from '../../types/push.types'
+import { pushLogger } from '../logger'
+import { createRedisConnection } from '../redis'
+import { sendPushNotification } from './sender'
 
 export const PUSH_QUEUE_NAME = 'push-notifications'
 

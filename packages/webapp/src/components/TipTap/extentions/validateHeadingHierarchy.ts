@@ -1,4 +1,4 @@
-import { TIPTAP_NODES, type Transaction, type ProseMirrorNode } from '@types'
+import { type ProseMirrorNode,TIPTAP_NODES, type Transaction } from '@types'
 
 interface HeadingInfo {
   pos: number

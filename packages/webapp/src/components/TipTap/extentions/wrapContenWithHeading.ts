@@ -1,16 +1,17 @@
-import { TextSelection, Selection } from '@tiptap/pm/state'
-import { TIPTAP_NODES } from '@types'
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { Selection,TextSelection } from '@tiptap/pm/state'
+import { TIPTAP_NODES } from '@types'
+
 import changeHeadingLevelBackward from './changeHeadingLevel-backward'
 import {
-  createThisBlockMap,
   createHeadingNodeFromSelection,
-  getRangeBlocks,
-  insertRemainingHeadings,
-  getHeadingsBlocksMap,
-  getPrevHeadingPos,
+  createThisBlockMap,
   findPrevBlock,
   getEndPosSelection,
+  getHeadingsBlocksMap,
+  getPrevHeadingPos,
+  getRangeBlocks,
+  insertRemainingHeadings,
   putTextSelectionEndNode
 } from './helper'
 import { CommandArgs, HeadingAttributes, SelectionBlock } from './types'

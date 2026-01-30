@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
-import { useChatStore } from '@stores'
 import { publishUnreadSync } from '@services/eventsHub'
+import { useChatStore } from '@stores'
+import { useEffect } from 'react'
 
 /**
  * Hook to sync unread counts to DOM via UNREAD_SYNC event.

@@ -1,7 +1,7 @@
+import Button from '@components/ui/Button'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'
 import { LuCircleAlert, LuHouse, LuRotateCcw } from 'react-icons/lu'
-import Button from '@components/ui/Button'
 
 const AuthErrorPage = () => {
   const router = useRouter()

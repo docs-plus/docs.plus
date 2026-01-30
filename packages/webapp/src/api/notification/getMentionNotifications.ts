@@ -1,6 +1,6 @@
 import { PostgrestResponse } from '@supabase/supabase-js'
-import { supabaseClient } from '@utils/supabase'
 import { Database } from '@types'
+import { supabaseClient } from '@utils/supabase'
 
 type TNotification = Database['public']['Tables']['notifications']['Row']
 

@@ -1,11 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { MdNotifications, MdEmail, MdSchedule } from 'react-icons/md'
+import { updateUser } from '@api'
 import * as toast from '@components/toast'
-import Toggle from '@components/ui/Toggle'
 import SearchableSelect from '@components/ui/SearchableSelect'
+import Toggle from '@components/ui/Toggle'
 import { usePushNotifications } from '@hooks/usePushNotifications'
 import { useAuthStore } from '@stores'
-import { updateUser } from '@api'
+import { useCallback, useEffect, useMemo,useState } from 'react'
+import { MdEmail, MdNotifications, MdSchedule } from 'react-icons/md'
 
 interface NotificationsContentProps {
   onBack?: () => void

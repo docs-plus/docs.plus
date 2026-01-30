@@ -1,15 +1,15 @@
-import { create } from 'zustand'
 import { enableMapSet } from 'immer'
+import { create } from 'zustand'
 
-import chatRoom from './chatroom'
-import channelsStore from './channelsStore'
-import threadStore from './threadStore'
+import bookmark from './bookmark'
 import channelMembersStore from './channelMembersStore'
 import channelMessagesStore from './channelMessagesStore'
-import workspaceSettingsStore from './workspaceSettingsStore'
 import channelPinnedMessagesStore from './channelPinnedMessagesStore'
-import bookmark from './bookmark'
+import channelsStore from './channelsStore'
+import chatRoom from './chatroom'
 import emojiPickerStore from './emojiPickerStore'
+import threadStore from './threadStore'
+import workspaceSettingsStore from './workspaceSettingsStore'
 
 enableMapSet()
 

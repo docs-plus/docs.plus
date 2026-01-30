@@ -1,31 +1,31 @@
-import { useState, useCallback } from 'react'
-import Head from 'next/head'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { GetServerSideProps } from 'next'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import Head from 'next/head'
+import { useCallback,useState } from 'react'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
-import { LuLock, LuEye, LuFileText, LuUsers, LuChartBar } from 'react-icons/lu'
 import toast from 'react-hot-toast'
+import { LuChartBar,LuEye, LuFileText, LuLock, LuUsers } from 'react-icons/lu'
+
+import { StatCard } from '@/components/cards/StatCard'
+import { ActionsDropdown, DeleteModal } from '@/components/documents'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
 import { DataTable } from '@/components/tables/DataTable'
-import { StatCard } from '@/components/cards/StatCard'
 import { Avatar } from '@/components/ui/Avatar'
 import { SearchInput } from '@/components/ui/SearchInput'
-import { ActionsDropdown, DeleteModal } from '@/components/documents'
+import { useTableParams } from '@/hooks/useTableParams'
 import {
+  deleteDocument,
   fetchDocuments,
   fetchDocumentStats,
-  updateDocumentFlags,
-  deleteDocument
-} from '@/services/api'
-import { formatDate, formatDateTime } from '@/utils/format'
-import { exportToCSV } from '@/utils/export'
-import { useTableParams } from '@/hooks/useTableParams'
+  updateDocumentFlags} from '@/services/api'
 import type { Document } from '@/types'
+import { exportToCSV } from '@/utils/export'
+import { formatDate, formatDateTime } from '@/utils/format'
 
 export default function DocumentsPage() {
   // URL-synced table state

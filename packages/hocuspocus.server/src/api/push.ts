@@ -6,10 +6,11 @@
  */
 
 import { Hono } from 'hono'
-import { pushGateway } from '../lib/push'
+
 import { pushLogger } from '../lib/logger'
-import { verifyServiceRole } from './utils/serviceRole'
+import { pushGateway } from '../lib/push'
 import type { PushNotificationRequest } from '../types/push.types'
+import { verifyServiceRole } from './utils/serviceRole'
 
 const pushRouter = new Hono()
 

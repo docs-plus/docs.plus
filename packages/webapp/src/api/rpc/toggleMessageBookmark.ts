@@ -1,6 +1,6 @@
-import { supabaseClient } from '@utils/supabase'
 import { PostgrestResponse } from '@supabase/supabase-js'
 import { TFToggleMessageBookmark } from '@types'
+import { supabaseClient } from '@utils/supabase'
 
 type TToggleMessageBookmark = {
   messageId: string

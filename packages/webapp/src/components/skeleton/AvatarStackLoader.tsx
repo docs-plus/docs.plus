@@ -1,5 +1,5 @@
-import { twMerge } from 'tailwind-merge'
 import type { AvatarSize } from '@components/ui/Avatar'
+import { twMerge } from 'tailwind-merge'
 
 interface AvatarStackLoaderProps {
   /** Additional classes for the container */

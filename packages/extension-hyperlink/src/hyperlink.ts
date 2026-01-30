@@ -1,10 +1,11 @@
-import { Mark, markPasteRule, InputRule, mergeAttributes } from '@tiptap/core'
+import { InputRule, Mark, markPasteRule, mergeAttributes } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
 import { find, registerCustomProtocol, reset } from 'linkifyjs'
+
+import editHyperlinkHelper from './helpers/editHyperlink'
 import AutoHyperlinkPlugin from './plugins/autoHyperlink'
 import HyperLinkClickHandlerPlugin from './plugins/clickHandler'
 import HyperLinkPasteHandlerPlugin from './plugins/pasteHandler'
-import editHyperlinkHelper from './helpers/editHyperlink'
 export interface LinkProtocolOptions {
   scheme: string
   optionalSlashes?: boolean

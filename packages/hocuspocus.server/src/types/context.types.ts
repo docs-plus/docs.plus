@@ -1,4 +1,5 @@
 import type { PrismaClient } from '@prisma/client'
+
 import type { RedisClient } from './redis.types'
 
 // Hono app context with injected dependencies

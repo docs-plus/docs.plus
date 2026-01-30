@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from 'react'
-import { useMessageComposer } from './useMessageComposer'
+
 import { useChatroomContext } from '../../../ChatroomContext'
+import { useMessageComposer } from './useMessageComposer'
 
 export const useHandleEscKey = () => {
   const { channelId } = useChatroomContext()

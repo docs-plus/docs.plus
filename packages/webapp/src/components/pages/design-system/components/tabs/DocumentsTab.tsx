@@ -4,7 +4,8 @@
  * Documents view with folder structure, list, and collapse demos.
  */
 
-import { MdFolder, MdInsertDriveFile, MdDescription, MdMoreVert } from 'react-icons/md'
+import { MdDescription, MdFolder, MdInsertDriveFile, MdMoreVert } from 'react-icons/md'
+
 import { DEMO_DOCUMENTS, FOLDER_ITEMS } from '../../constants/demoData'
 
 export const DocumentsTab = () => (

@@ -6,14 +6,14 @@
  */
 
 import { Hono } from 'hono'
+
 import { emailGateway } from '../lib/email'
 import { emailLogger } from '../lib/logger'
-import { verifyServiceRole } from './utils/serviceRole'
 import type {
-  NotificationEmailRequest,
+  DigestEmailRequest,
   GenericEmailRequest,
-  DigestEmailRequest
-} from '../types/email.types'
+  NotificationEmailRequest} from '../types/email.types'
+import { verifyServiceRole } from './utils/serviceRole'
 
 const emailRouter = new Hono()
 

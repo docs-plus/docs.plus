@@ -1,11 +1,10 @@
-import { useEffect, useRef } from 'react'
-import { useStore, useAuthStore, useChatStore } from '@stores'
 import {
-  dbChannelsListner,
-  dbChannelMessageCountsListner
-} from '@components/chatroom/hooks/listner/dbChannelsListner'
-import { supabaseClient } from '@utils/supabase'
+  dbChannelMessageCountsListner,
+  dbChannelsListner} from '@components/chatroom/hooks/listner/dbChannelsListner'
+import { useAuthStore, useChatStore,useStore } from '@stores'
 import { RealtimeChannel } from '@supabase/supabase-js'
+import { supabaseClient } from '@utils/supabase'
+import { useEffect, useRef } from 'react'
 
 export const useCatchUserPresences = () => {
   const profile = useAuthStore((state) => state.profile)

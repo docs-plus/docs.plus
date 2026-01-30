@@ -1,7 +1,8 @@
 import React from 'react'
-import { EmojiSelector } from './Selector'
-import { Picker } from './Picker'
+
 import { EmojiPanelProvider } from './context/EmojiPanelContext'
+import { Picker } from './Picker'
+import { EmojiSelector } from './Selector'
 
 const EmojiPanel = ({
   children,

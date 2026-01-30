@@ -14,10 +14,10 @@
  */
 
 import { emailLogger } from '../../logger'
-import { smtpProvider } from './smtp'
 import { resendProvider } from './resend'
 import { sendgridProvider } from './sendgrid'
-import type { EmailProvider, EmailProviderInterface, EmailMessage, SendResult } from './types'
+import { smtpProvider } from './smtp'
+import type { EmailMessage, EmailProvider, EmailProviderInterface, SendResult } from './types'
 
 // All available providers
 const providers: Record<EmailProvider, EmailProviderInterface> = {
@@ -107,4 +107,4 @@ export function getProviderStatus(): {
 }
 
 // Re-export types
-export type { EmailProvider, EmailProviderInterface, EmailMessage, SendResult } from './types'
+export type { EmailMessage, EmailProvider, EmailProviderInterface, SendResult } from './types'

@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'react'
 import { updateUser } from '@api'
 import * as toast from '@components/toast'
 import { useAuthStore } from '@stores'
+import { useCallback, useState } from 'react'
+
 import { useUsernameValidation } from './useUsernameValidation'
 
 export const useProfileUpdate = () => {

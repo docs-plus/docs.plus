@@ -3,8 +3,8 @@
  * Types used for API function parameters and return values
  */
 
-import { Database } from './supabase'
 import { Profile } from './domain'
+import { Database } from './supabase'
 
 // Message types
 export type TMsgRow = Database['public']['Tables']['messages']['Row'] & {

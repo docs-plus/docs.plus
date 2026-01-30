@@ -1,6 +1,7 @@
-import EmojiPicker from '@emoji-mart/react'
 import data from '@emoji-mart/data/sets/14/native.json'
+import EmojiPicker from '@emoji-mart/react'
 import { useChatStore } from '@stores'
+
 import { useEmojiPanelContext } from './context/EmojiPanelContext'
 
 type Props = {

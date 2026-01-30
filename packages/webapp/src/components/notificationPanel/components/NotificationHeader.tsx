@@ -1,8 +1,9 @@
-import { LuCheckCheck } from 'react-icons/lu'
-import { useMarkAllNotificationsAsRead } from '../hooks/useMarkAllNotificationsAsRead'
-import { usePopoverState } from '@components/ui/Popover'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
+import { usePopoverState } from '@components/ui/Popover'
+import { LuCheckCheck } from 'react-icons/lu'
+
+import { useMarkAllNotificationsAsRead } from '../hooks/useMarkAllNotificationsAsRead'
 
 interface NotificationHeaderProps {
   onClose?: () => void

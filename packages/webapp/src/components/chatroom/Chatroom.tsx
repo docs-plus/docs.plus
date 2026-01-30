@@ -1,12 +1,12 @@
-import { ChatroomProps } from './types/chatroom.types'
-import { ChatroomProvider } from './ChatroomContext'
-import ChatroomToolbar from './components/ChatroomToolbar/ChatroomToolbar'
-import { DesktopLayout, MobileLayout } from './components/Chatroom/layouts'
-import { ChatroomLayout } from './Layouts/ChatroomLayout'
 import { useChatStore } from '@stores'
 
+import { ChatroomProvider } from './ChatroomContext'
 import ChannelComposer from './components/ChannelComposer/ChannelComposer'
+import { DesktopLayout, MobileLayout } from './components/Chatroom/layouts'
+import ChatroomToolbar from './components/ChatroomToolbar/ChatroomToolbar'
 import MessageFeed from './components/MessageFeed/MessageFeed'
+import { ChatroomLayout } from './Layouts/ChatroomLayout'
+import { ChatroomProps } from './types/chatroom.types'
 
 const ChatRoom = ({ variant = 'desktop', className, children }: ChatroomProps) => {
   const chatRoom = useChatStore((state) => state.chatRoom)

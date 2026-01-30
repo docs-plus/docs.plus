@@ -1,12 +1,13 @@
-import { useStore } from '@stores'
-import { EmptyNotificationState } from '../components/EmptyNotificationState'
-import { NotificationItem } from '../components/NotificationItem'
-import { NotificationHeader } from '../components/NotificationHeader'
-import { NotificationSkeleton } from '../components/NotificationSkeleton'
-import { useNotificationSummary } from '../hooks/useNotificationSummary'
-import { useInfiniteNotifications } from '../hooks/useInfiniteNotifications'
 import { ScrollArea } from '@components/ui/ScrollArea'
+import { useStore } from '@stores'
 import { TTab } from '@types'
+
+import { EmptyNotificationState } from '../components/EmptyNotificationState'
+import { NotificationHeader } from '../components/NotificationHeader'
+import { NotificationItem } from '../components/NotificationItem'
+import { NotificationSkeleton } from '../components/NotificationSkeleton'
+import { useInfiniteNotifications } from '../hooks/useInfiniteNotifications'
+import { useNotificationSummary } from '../hooks/useNotificationSummary'
 
 const NotificationModal = () => {
   const { notificationActiveTab, notificationTabs, setNotificationActiveTab } = useStore(

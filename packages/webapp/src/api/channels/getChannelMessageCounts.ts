@@ -1,6 +1,6 @@
-import { supabaseClient } from '@utils/supabase'
-import { Database } from '@types'
 import { PostgrestResponse } from '@supabase/supabase-js'
+import { Database } from '@types'
+import { supabaseClient } from '@utils/supabase'
 type TChannelMessageCount = Database['public']['Tables']['channel_message_counts']['Row']
 
 export const getChannelMessageCounts = async (

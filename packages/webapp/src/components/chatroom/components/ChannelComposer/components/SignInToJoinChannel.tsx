@@ -1,8 +1,9 @@
-import { useChatroomContext } from '../../../ChatroomContext'
-import { useChatStore } from '@stores'
-import { twMerge } from 'tailwind-merge'
 import Button from '@components/ui/Button'
+import { useChatStore } from '@stores'
 import { LuLogIn } from 'react-icons/lu'
+import { twMerge } from 'tailwind-merge'
+
+import { useChatroomContext } from '../../../ChatroomContext'
 
 export default function SignInToJoinChannel({ className }: { className?: string }) {
   const { channelId } = useChatroomContext()

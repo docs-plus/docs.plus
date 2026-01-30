@@ -1,5 +1,6 @@
 import { useSheetStore, useStore } from '@stores'
 import { useEffect } from 'react'
+
 import { applyStyles } from '../helpers/domUtils'
 
 type Props = {

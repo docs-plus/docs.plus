@@ -1,5 +1,5 @@
-import { supabaseClient } from '@utils/supabase'
 import { PostgrestSingleResponse } from '@supabase/supabase-js'
+import { supabaseClient } from '@utils/supabase'
 
 type UserProfileModal = {
   id: string

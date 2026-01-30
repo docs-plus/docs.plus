@@ -1,6 +1,7 @@
-import { useEffect } from 'react'
-import { supabase } from '@/lib/supabase'
 import type { RealtimePostgresChangesPayload } from '@supabase/supabase-js'
+import { useEffect } from 'react'
+
+import { supabase } from '@/lib/supabase'
 
 type PostgresChangeEvent = 'INSERT' | 'UPDATE' | 'DELETE' | '*'
 

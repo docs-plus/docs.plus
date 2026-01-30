@@ -1,8 +1,8 @@
-import { useCallback } from 'react'
-import PubSub from 'pubsub-js'
-import { useStore } from '@stores'
 import { CHAT_OPEN } from '@services/eventsHub'
-import { TIPTAP_NODES, TRANSACTION_META, TMsgRow } from '@types'
+import { useStore } from '@stores'
+import { TIPTAP_NODES, TMsgRow,TRANSACTION_META } from '@types'
+import PubSub from 'pubsub-js'
+import { useCallback } from 'react'
 
 // For reply in thread feature
 const emptyParagraphs = Array(5).fill({

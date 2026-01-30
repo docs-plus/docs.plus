@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
+import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 import { useStore } from '@stores'
-import { MdTextFormat, MdInsertLink, MdOutlineImage, MdOutlineComment } from 'react-icons/md'
+import React, { useEffect,useState } from 'react'
+import { MdInsertLink, MdOutlineComment,MdOutlineImage, MdTextFormat } from 'react-icons/md'
 
 import FormatSelection from './FormatSelection'
 import HeadingSelection from './HeadingSelection'
-import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 
 const ToolbarMobile = () => {
   const [isFormatSelectionVisible, setIsFormatSelectionVisible] = useState(false)

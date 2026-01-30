@@ -9,18 +9,17 @@
  * - hocuspocus-worker: Calls initialize(true) - creates worker to process jobs
  */
 
-import { emailLogger } from '../logger'
-import { queueEmail, getEmailQueueHealth, createEmailWorker, closeEmailQueue } from './queue'
-import { sendEmailViaProvider } from './sender'
-import { verifyProvider, isAnyProviderConfigured, getProviderStatus } from './providers'
 import type {
-  NotificationEmailRequest,
-  GenericEmailRequest,
   DigestEmailRequest,
-  EmailResult,
+  EmailGatewayHealth,
   EmailJobData,
-  EmailGatewayHealth
-} from '../../types/email.types'
+  EmailResult,
+  GenericEmailRequest,
+  NotificationEmailRequest} from '../../types/email.types'
+import { emailLogger } from '../logger'
+import { getProviderStatus,isAnyProviderConfigured, verifyProvider } from './providers'
+import { closeEmailQueue,createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
+import { sendEmailViaProvider } from './sender'
 
 /**
  * Email Gateway Service

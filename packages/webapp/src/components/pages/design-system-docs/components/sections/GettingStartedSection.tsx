@@ -5,14 +5,14 @@
  */
 
 import {
-  MdRocketLaunch,
-  MdPalette,
-  MdWidgets,
-  MdPattern,
   MdCheckCircle,
-  MdCode
-} from 'react-icons/md'
-import { SectionHeader, CodeBlock } from '../shared'
+  MdCode,
+  MdPalette,
+  MdPattern,
+  MdRocketLaunch,
+  MdWidgets} from 'react-icons/md'
+
+import { CodeBlock,SectionHeader } from '../shared'
 
 export const GettingStartedSection = () => {
   return (

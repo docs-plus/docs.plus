@@ -1,22 +1,22 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react'
-import { useRouter } from 'next/router'
-import { twMerge } from 'tailwind-merge'
-import {
-  searchThroughHeading,
-  applySearchThroughHeading,
-  highlightTocHeadings
-} from './toolbarUtils'
-import Toggle from '@components/ui/Toggle'
 import Button from '@components/ui/Button'
-import TextInput from '@components/ui/TextInput'
 import CloseButton from '@components/ui/CloseButton'
-import { useBooleanLocalStorageState } from './toolbarUtils'
-import { LuChevronDown, LuSearch, LuX, LuFilterX, LuCheck } from 'react-icons/lu'
-import { useStore } from '@stores'
-import FilterBar from '../pad-title-section/FilterBar'
-import PubSub from 'pubsub-js'
-import { RESET_FILTER } from '@services/eventsHub'
 import { usePopoverState } from '@components/ui/Popover'
+import TextInput from '@components/ui/TextInput'
+import Toggle from '@components/ui/Toggle'
+import { RESET_FILTER } from '@services/eventsHub'
+import { useStore } from '@stores'
+import { useRouter } from 'next/router'
+import PubSub from 'pubsub-js'
+import React, { useCallback, useEffect, useMemo,useState } from 'react'
+import { LuCheck,LuChevronDown, LuFilterX, LuSearch, LuX } from 'react-icons/lu'
+import { twMerge } from 'tailwind-merge'
+
+import FilterBar from '../pad-title-section/FilterBar'
+import {
+  applySearchThroughHeading,
+  highlightTocHeadings,
+  searchThroughHeading} from './toolbarUtils'
+import { useBooleanLocalStorageState } from './toolbarUtils'
 
 interface ToggleSectionProps {
   name: string

@@ -1,10 +1,11 @@
-import React, { useCallback, useEffect } from 'react'
-import { isSameDay, parseISO } from 'date-fns'
-import { useVirtualizer } from '@tanstack/react-virtual'
 import { useChatStore } from '@stores'
+import { useVirtualizer } from '@tanstack/react-virtual'
+import { isSameDay, parseISO } from 'date-fns'
+import React, { useCallback, useEffect } from 'react'
+
 import { useMessageListContext } from '../MessageListContext'
-import { SystemNotifyChip } from './SystemNotifyChip'
 import { DateChip } from './DateChip'
+import { SystemNotifyChip } from './SystemNotifyChip'
 import { UnreadIndicatorLine } from './UnreadIndicatorLine'
 
 interface Props {

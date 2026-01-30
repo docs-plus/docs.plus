@@ -4,8 +4,9 @@
  * Team members view with cards and avatar stack demo.
  */
 
-import { MdAdd } from 'react-icons/md'
 import { Avatar } from '@components/ui'
+import { MdAdd } from 'react-icons/md'
+
 import { DEMO_USERS } from '../../constants/demoData'
 
 export const TeamTab = () => (

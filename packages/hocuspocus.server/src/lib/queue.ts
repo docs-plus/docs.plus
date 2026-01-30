@@ -1,10 +1,11 @@
-import { Queue, Worker, Job } from 'bullmq'
 import { Prisma } from '@prisma/client'
+import { Job,Queue, Worker } from 'bullmq'
+
+import type { _DeadLetterJobData,StoreDocumentData } from '../types'
+import { sendNewDocumentNotification } from './email/document-notification'
+import { queueLogger } from './logger'
 import { prisma } from './prisma'
 import { createRedisConnection, getRedisPublisher } from './redis'
-import { queueLogger } from './logger'
-import { sendNewDocumentNotification } from './email/document-notification'
-import type { StoreDocumentData, _DeadLetterJobData } from '../types'
 
 type TransactionClient = Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
 

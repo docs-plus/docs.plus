@@ -1,6 +1,7 @@
-import { useMessageCardContext } from '../../../MessageCardContext'
-import { useMemo } from 'react'
 import { sanitizeMessageContent } from '@utils/index'
+import { useMemo } from 'react'
+
+import { useMessageCardContext } from '../../../MessageCardContext'
 
 export const HTMLBody = () => {
   const { message } = useMessageCardContext()

@@ -1,17 +1,16 @@
-import { useState, useRef, useEffect, cloneElement, isValidElement, ReactNode } from 'react'
 import {
-  useFloating,
-  autoUpdate,
-  offset,
-  flip,
-  shift,
   arrow,
-  useDismiss,
-  useRole,
-  useInteractions,
+  autoUpdate,
+  flip,
   FloatingPortal,
-  Placement
-} from '@floating-ui/react'
+  offset,
+  Placement,
+  shift,
+  useDismiss,
+  useFloating,
+  useInteractions,
+  useRole} from '@floating-ui/react'
+import { cloneElement, isValidElement, ReactNode,useEffect, useRef, useState } from 'react'
 
 interface TooltipProps {
   title: ReactNode

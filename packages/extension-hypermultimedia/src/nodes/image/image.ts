@@ -8,10 +8,11 @@
  */
 import { Editor, mergeAttributes, Node, nodeInputRule } from '@tiptap/core'
 import { Transaction } from '@tiptap/pm/state'
-import { inputRegex } from './helper'
-import { HyperImagePlugin, HyperImagePastePlugin } from './plugin'
-import { generateShortId } from '../../utils/utils'
+
 import type { ImageOptions } from '../../types'
+import { generateShortId } from '../../utils/utils'
+import { inputRegex } from './helper'
+import { HyperImagePastePlugin,HyperImagePlugin } from './plugin'
 
 export const Image = Node.create<ImageOptions>({
   name: 'Image',

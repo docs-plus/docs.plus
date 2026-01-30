@@ -1,9 +1,9 @@
-import { useCallback } from 'react'
 import { toggleMessageBookmark } from '@api'
-import { useChatStore } from '@stores'
-import { useApi } from '@hooks/useApi'
 import * as toast from '@components/toast'
+import { useApi } from '@hooks/useApi'
+import { useChatStore } from '@stores'
 import { TMsgRow } from '@types'
+import { useCallback } from 'react'
 
 export const useBookmarkMessageHandler = () => {
   const setOrUpdateMessage = useChatStore((state) => state.setOrUpdateMessage)

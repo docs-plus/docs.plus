@@ -1,5 +1,5 @@
-import { useStore } from '@stores'
 import { ScrollArea } from '@components/ui/ScrollArea'
+import { useStore } from '@stores'
 
 // Skeleton line component for consistent styling
 const SkeletonLine = ({

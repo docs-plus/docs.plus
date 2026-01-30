@@ -6,44 +6,44 @@
  * Toast, and CopyButton.
  */
 
-import { useState } from 'react'
-import {
-  MdSmartButton,
-  MdInput,
-  MdNewReleases,
-  MdCreditCard,
-  MdOpenInNew,
-  MdInfoOutline,
-  MdAccountCircle,
-  MdHourglassEmpty,
-  MdNotifications,
-  MdSettings,
-  MdCheck,
-  MdContentCopy,
-  MdSearch,
-  MdSave,
-  MdSend,
-  MdEmail,
-  MdLock,
-  MdVisibility,
-  MdVisibilityOff,
-  MdToggleOn,
-  MdCheckBox,
-  MdUploadFile
-} from 'react-icons/md'
-import { SectionHeader, ComponentCard, CodeBlock } from '../shared'
+import * as toast from '@components/toast'
 import {
   Avatar,
-  CopyButton,
   Button,
-  TextInput,
+  Checkbox,
+  CopyButton,
+  FileInput,
   Select,
   Textarea,
-  FileInput,
-  Checkbox,
+  TextInput,
   Toggle
 } from '@components/ui'
-import * as toast from '@components/toast'
+import { useState } from 'react'
+import {
+  MdAccountCircle,
+  MdCheck,
+  MdCheckBox,
+  MdContentCopy,
+  MdCreditCard,
+  MdEmail,
+  MdHourglassEmpty,
+  MdInfoOutline,
+  MdInput,
+  MdLock,
+  MdNewReleases,
+  MdNotifications,
+  MdOpenInNew,
+  MdSave,
+  MdSearch,
+  MdSend,
+  MdSettings,
+  MdSmartButton,
+  MdToggleOn,
+  MdUploadFile,
+  MdVisibility,
+  MdVisibilityOff} from 'react-icons/md'
+
+import { CodeBlock,ComponentCard, SectionHeader } from '../shared'
 
 export const ComponentsSection = () => {
   const [showLoadingDemo, setShowLoadingDemo] = useState(false)

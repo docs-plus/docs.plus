@@ -1,13 +1,13 @@
 import { Editor } from '@tiptap/core'
+
 import { hideCurrentToolbar } from '../../utils/floating-toolbar'
 import { MediaGripperInfo, ResizeState } from './types'
 import {
+  DEFAULT_CONSTRAINTS,
   getPointerPosition,
   meetsConstraints,
-  updateNodeDimensions,
   resetGripperPosition,
-  DEFAULT_CONSTRAINTS
-} from './utils'
+  updateNodeDimensions} from './utils'
 
 export default function handleSideClampsMove(
   clamp: HTMLElement,

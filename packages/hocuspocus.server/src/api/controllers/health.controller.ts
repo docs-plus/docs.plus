@@ -1,5 +1,7 @@
-import type { Context } from 'hono'
 import '../../types' // Import for type augmentation
+
+import type { Context } from 'hono'
+
 import * as healthService from '../services/health.service'
 
 export const checkOverallHealth = async (c: Context) => {

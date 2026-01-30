@@ -1,6 +1,6 @@
-import { useEffect, useState, useRef } from 'react'
 import { useStore } from '@stores'
 import MobileDetect from 'mobile-detect'
+import { useEffect, useRef,useState } from 'react'
 
 const MOBILE_BREAKPOINT = 768
 

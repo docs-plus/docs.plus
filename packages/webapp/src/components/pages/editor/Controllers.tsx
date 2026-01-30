@@ -7,10 +7,11 @@
  * */
 
 import { Editor } from '@tiptap/react'
+import { useEffect, useState } from 'react'
+
+import { useClipboardListener } from './hooks/useClipboardListener'
 import { useClipboardShortcuts } from './hooks/useClipboardShortcuts'
 import { useHierarchicalSelection } from './hooks/useHierarchicalSelection'
-import { useEffect, useState } from 'react'
-import { useClipboardListener } from './hooks/useClipboardListener'
 /**
  * Controllers Component
  *

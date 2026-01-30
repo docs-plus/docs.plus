@@ -1,8 +1,9 @@
 import { Extension } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
+
+import { createHeadingTogglePlugin } from './plugins/headingTogglePlugin'
 import { createHoverChatPlugin } from './plugins/hoverChatPlugin'
 import { createSelectionChatPlugin } from './plugins/selectionChatPlugin'
-import { createHeadingTogglePlugin } from './plugins/headingTogglePlugin'
 import type { HeadingActionsOptions } from './types'
 
 /**

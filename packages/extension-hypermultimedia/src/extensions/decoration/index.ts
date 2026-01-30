@@ -1,6 +1,7 @@
-import { Decoration, DecorationSet } from '@tiptap/pm/view'
-import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { Editor } from '@tiptap/core'
+import { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { Decoration, DecorationSet } from '@tiptap/pm/view'
+
 import { createMediaResizeGripper, extractImageNode } from './media-resize-gripper'
 import { MediaGripperInfo } from './types'
 

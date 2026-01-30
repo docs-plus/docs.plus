@@ -1,12 +1,13 @@
+import { Editor } from '@tiptap/core'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { EditorView } from '@tiptap/pm/view'
-import { Editor } from '@tiptap/core'
-import { imageClickHandler, imageKeyDownHandler, isImageUrl } from './helper'
+
 import type {
   HyperImagePluginOptions,
   ImageClickHandlerOptions,
   ImageKeyDownHandlerOptions
 } from '../../types'
+import { imageClickHandler, imageKeyDownHandler, isImageUrl } from './helper'
 
 export const HyperImagePlugin = (editor: Editor, options: HyperImagePluginOptions) => {
   const handleImageClick = (view: EditorView, event: MouseEvent | TouchEvent) => {

@@ -1,5 +1,5 @@
-import { supabaseClient } from '@utils/supabase'
 import { Database } from '@types'
+import { supabaseClient } from '@utils/supabase'
 
 type TChannelNotifStateArg = Database['public']['Functions']['get_channel_notif_state']['Args']
 type TChannelNotifStateReturn =

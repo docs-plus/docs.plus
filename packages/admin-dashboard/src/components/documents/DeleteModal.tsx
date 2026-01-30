@@ -1,15 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useEffect,useState } from 'react'
 import {
+  LuCalendar,
+  LuHistory,
+  LuMessageSquare,
   LuTrash2,
   LuTriangleAlert,
-  LuUser,
-  LuMessageSquare,
-  LuHistory,
-  LuCalendar
-} from 'react-icons/lu'
-import { getDocumentDeletionImpact, type DeletionImpact } from '@/services/api'
-import { formatDate } from '@/utils/format'
+  LuUser} from 'react-icons/lu'
+
+import { type DeletionImpact,getDocumentDeletionImpact } from '@/services/api'
 import type { Document } from '@/types'
+import { formatDate } from '@/utils/format'
 
 interface DeleteModalProps {
   isOpen: boolean

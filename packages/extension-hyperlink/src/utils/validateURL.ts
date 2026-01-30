@@ -1,4 +1,5 @@
 import { find } from 'linkifyjs'
+
 import { getSpecialUrlInfo } from './specialUrls'
 
 type ValidateURLOptions = {

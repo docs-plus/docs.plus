@@ -1,6 +1,6 @@
-import { useEffect, useRef } from 'react'
-import { HocuspocusProvider } from '@hocuspocus/provider'
 import { Info } from '@components/toast'
+import { HocuspocusProvider } from '@hocuspocus/provider'
+import { useEffect, useRef } from 'react'
 
 const TIP_SHOWN_KEY = 'docsy_new_doc_tip_shown'
 

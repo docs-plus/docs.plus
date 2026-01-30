@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useState } from 'react'
 import { useChatStore, useStore } from '@stores'
+import { TIPTAP_NODES } from '@types'
+import { getPostAtDOM } from '@utils/index'
+import { useRouter } from 'next/router'
+import React, { useCallback, useEffect, useState } from 'react'
 import { RiArrowRightSLine } from 'react-icons/ri'
 import slugify from 'slugify'
-import { TIPTAP_NODES } from '@types'
-import { useRouter } from 'next/router'
-import { getPostAtDOM } from '@utils/index'
 
 const BreadcrumbMobile = () => {
   const { query } = useRouter()

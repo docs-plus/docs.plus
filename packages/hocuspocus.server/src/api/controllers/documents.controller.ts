@@ -1,9 +1,10 @@
 import type { PrismaClient } from '@prisma/client'
-import { extractUserFromToken } from '../utils/auth'
+
+import { AppError,getErrorResponse } from '../../lib/errors'
+import { documentsControllerLogger } from '../../lib/logger'
 import * as documentsService from '../services/documents.service'
 import * as mediaService from '../services/media.service'
-import { documentsControllerLogger } from '../../lib/logger'
-import { getErrorResponse, AppError } from '../../lib/errors'
+import { extractUserFromToken } from '../utils/auth'
 
 export const getDocumentBySlug = async (c: any) => {
   const prisma = c.get('prisma') as PrismaClient

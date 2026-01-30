@@ -1,12 +1,12 @@
 import { TextSelection } from '@tiptap/pm/state'
-import {
-  getRangeBlocks,
-  getPrevHeadingList,
-  findPrevBlock,
-  getSelectionRangeBlocks,
-  convertHeadingsToParagraphs
-} from '../helper'
 import { TIPTAP_NODES, TRANSACTION_META } from '@types'
+
+import {
+  convertHeadingsToParagraphs,
+  findPrevBlock,
+  getPrevHeadingList,
+  getRangeBlocks,
+  getSelectionRangeBlocks} from '../helper'
 import { NormalTextArgs } from '../types'
 import { HeadingBlockInfo, SelectionBlock } from '../types'
 

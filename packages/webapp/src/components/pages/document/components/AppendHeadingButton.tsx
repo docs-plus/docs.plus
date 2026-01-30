@@ -1,10 +1,10 @@
-import React, { useCallback } from 'react'
-import { TIPTAP_NODES } from '@types'
+import Button from '@components/ui/Button'
 import { useModal } from '@components/ui/ModalDrawer'
 import { useStore } from '@stores'
-import { MdAdd } from 'react-icons/md'
+import { TIPTAP_NODES } from '@types'
 import { scrollToHeading } from '@utils/scrollToHeading'
-import Button from '@components/ui/Button'
+import React, { useCallback } from 'react'
+import { MdAdd } from 'react-icons/md'
 
 // Constants for timing and positioning
 const SCROLL_DELAY_MS = 150

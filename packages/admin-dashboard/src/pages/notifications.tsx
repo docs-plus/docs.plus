@@ -1,7 +1,7 @@
-import { useCallback } from 'react'
-import Head from 'next/head'
-import type { GetServerSideProps } from 'next'
 import { useQuery } from '@tanstack/react-query'
+import type { GetServerSideProps } from 'next'
+import Head from 'next/head'
+import { useCallback } from 'react'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {
@@ -10,18 +10,18 @@ export const getServerSideProps: GetServerSideProps = async () => {
 import {
   LuBell,
   LuBellOff,
-  LuMail,
-  LuSmartphone,
   LuCheck,
-  LuClock,
   LuCircleAlert,
-  LuRadio
-} from 'react-icons/lu'
+  LuClock,
+  LuMail,
+  LuRadio,
+  LuSmartphone} from 'react-icons/lu'
+
+import { StatCard } from '@/components/cards/StatCard'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
-import { StatCard } from '@/components/cards/StatCard'
-import { fetchNotificationStats, fetchPushStats, fetchEmailStats } from '@/services/supabase'
 import { useMultiTableSubscription } from '@/hooks/useRealtimeSubscription'
+import { fetchEmailStats,fetchNotificationStats, fetchPushStats } from '@/services/supabase'
 
 export default function NotificationsPage() {
   const {

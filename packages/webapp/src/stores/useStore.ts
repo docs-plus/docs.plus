@@ -1,13 +1,13 @@
-import { create } from 'zustand'
 import { enableMapSet } from 'immer'
+import { create } from 'zustand'
 
-import usersPresence from './usersPresence'
-import workspaceStore from './workspace'
 import chatRoom from './chat/chatroom'
+import dialogStore from './dialogStore'
 import history from './history'
 import notification from './notification'
+import usersPresence from './usersPresence'
 import virtualKeyboardStore from './virtualKeyboardStore'
-import dialogStore from './dialogStore'
+import workspaceStore from './workspace'
 
 enableMapSet()
 

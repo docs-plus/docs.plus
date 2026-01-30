@@ -4,9 +4,10 @@
  * Mobile header with menu toggle and theme switch.
  */
 
-import { MdMenu, MdLightMode, MdDarkMode } from 'react-icons/md'
+import { useEffect,useState } from 'react'
+import { MdDarkMode,MdLightMode, MdMenu } from 'react-icons/md'
+
 import { useDesignSystemDocs } from '../../context/DesignSystemDocsContext'
-import { useState, useEffect } from 'react'
 
 export const Header = () => {
   const { setSidebarOpen } = useDesignSystemDocs()

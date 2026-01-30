@@ -1,9 +1,10 @@
 import { getAttributes } from '@tiptap/core'
+import { Editor } from '@tiptap/core'
 import { MarkType } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
-import { Editor } from '@tiptap/core'
 import { EditorView } from '@tiptap/pm/view'
-import { hideCurrentToolbar, createFloatingToolbar } from '../helpers/floating-toolbar'
+
+import { createFloatingToolbar,hideCurrentToolbar } from '../helpers/floating-toolbar'
 
 // Define type for the ClickHandlerOptions
 type ClickHandlerOptions = {

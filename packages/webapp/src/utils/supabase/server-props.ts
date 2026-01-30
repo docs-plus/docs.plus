@@ -1,5 +1,6 @@
-import { type GetServerSidePropsContext } from 'next'
 import { createServerClient, serializeCookieHeader } from '@supabase/ssr'
+import { type GetServerSidePropsContext } from 'next'
+
 import { createSupabaseFetch } from './error-handler'
 
 // Use SUPABASE_URL for server-side (container → host) or fallback to NEXT_PUBLIC_SUPABASE_URL (browser)

@@ -1,12 +1,13 @@
-import { useEditor } from '@tiptap/react'
-import { useStore } from '@stores'
-import { useHocuspocusStateless } from '../hooks/useHocuspocusStateless'
-import { useEffect } from 'react'
 import editorConfig from '@components/TipTap/TipTap'
-import Toolbar from './Toolbar'
-import EditorContent from './EditorContent'
 import { ModalDrawer } from '@components/ui/ModalDrawer'
+import { useStore } from '@stores'
+import { useEditor } from '@tiptap/react'
+import { useEffect } from 'react'
+
 import Sidebar from '../desktop/Sidebar'
+import { useHocuspocusStateless } from '../hooks/useHocuspocusStateless'
+import EditorContent from './EditorContent'
+import Toolbar from './Toolbar'
 
 const MobileLeftSidePanel = () => {
   return (

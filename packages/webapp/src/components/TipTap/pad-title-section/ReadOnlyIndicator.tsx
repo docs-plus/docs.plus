@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
 import { PenSlash } from '@icons'
-import { twMerge } from 'tailwind-merge'
 import { useStore } from '@stores'
+import { useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 const ReadOnlyIndicator = ({ className }: any) => {
   const { hocuspocusProvider, metadata } = useStore((state) => state.settings)

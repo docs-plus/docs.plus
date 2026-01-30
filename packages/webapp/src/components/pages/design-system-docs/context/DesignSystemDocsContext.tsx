@@ -4,10 +4,11 @@
  * State management for the documentation page.
  */
 
-import { createContext, useContext, useState, useMemo, ReactNode, useCallback, useRef } from 'react'
+import { copyToClipboard as copyToClipboardUtil } from '@utils/clipboard'
+import { createContext, ReactNode, useCallback, useContext, useMemo, useRef,useState } from 'react'
+
 import { NAV_SECTIONS } from '../constants'
 import type { SearchResult } from '../types'
-import { copyToClipboard as copyToClipboardUtil } from '@utils/clipboard'
 
 interface ContextValue {
   // Search

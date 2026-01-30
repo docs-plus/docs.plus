@@ -4,28 +4,28 @@
  * DocsPlus-specific editor UI components.
  */
 
+import { Avatar } from '@components/ui'
 import {
-  MdFormatBold,
-  MdFormatItalic,
-  MdFormatUnderlined,
   MdCode,
-  MdLink,
-  MdFormatListBulleted,
-  MdFormatQuote,
-  MdUndo,
-  MdRedo,
-  MdImage,
-  MdTableChart,
-  MdMoreVert,
-  MdPeople,
-  MdShare,
   MdComment,
   MdEdit,
+  MdFormatBold,
+  MdFormatItalic,
+  MdFormatListBulleted,
+  MdFormatQuote,
+  MdFormatUnderlined,
   MdHistory,
-  MdKeyboardArrowDown
-} from 'react-icons/md'
-import { SectionHeader, CodeBlock, ComponentCard } from '../shared'
-import { Avatar } from '@components/ui'
+  MdImage,
+  MdKeyboardArrowDown,
+  MdLink,
+  MdMoreVert,
+  MdPeople,
+  MdRedo,
+  MdShare,
+  MdTableChart,
+  MdUndo} from 'react-icons/md'
+
+import { CodeBlock, ComponentCard,SectionHeader } from '../shared'
 
 export const EditorComponentsSection = () => {
   return (

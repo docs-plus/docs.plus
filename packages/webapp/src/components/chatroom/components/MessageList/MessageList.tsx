@@ -1,11 +1,12 @@
 import React from 'react'
-import { MessageListProvider } from './MessageListContext'
 import { twMerge } from 'tailwind-merge'
-import { LoadingSpinner, MessageLoop } from './components'
-import { MessagesEmptyState } from './components/MessagesEmptyState'
+
 import { MessageCard } from '../MessageCard'
 import { useMessageFeedContext } from '../MessageFeed/MessageFeedContext'
+import { LoadingSpinner, MessageLoop } from './components'
 import { MessageListContextMenu } from './components/MessageListContextMenu'
+import { MessagesEmptyState } from './components/MessagesEmptyState'
+import { MessageListProvider } from './MessageListContext'
 
 type Props = {
   children: React.ReactNode

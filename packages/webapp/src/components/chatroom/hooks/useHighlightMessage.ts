@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { useChatStore } from '@stores'
 import type { Virtualizer } from '@tanstack/react-virtual'
+import { useCallback, useEffect, useState } from 'react'
 
 // Constants
 const HIGHLIGHT_DURATION_MS = 10000

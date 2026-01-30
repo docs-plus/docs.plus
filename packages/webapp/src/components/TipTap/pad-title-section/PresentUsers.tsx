@@ -1,6 +1,7 @@
-import React from 'react'
-import AvatarStack from '../../AvatarStack'
 import { useStore } from '@stores'
+import React from 'react'
+
+import AvatarStack from '../../AvatarStack'
 const PresentUsers = () => {
   const usersPresence = useStore((state) => state.usersPresence)
 

@@ -4,8 +4,9 @@
  * Displays a component example with preview and code.
  */
 
-import { useState, ReactNode } from 'react'
-import { MdCode, MdVisibility, MdContentCopy, MdCheck } from 'react-icons/md'
+import { ReactNode,useState } from 'react'
+import { MdCheck,MdCode, MdContentCopy, MdVisibility } from 'react-icons/md'
+
 import { useDesignSystemDocs } from '../../context/DesignSystemDocsContext'
 
 interface ComponentCardProps {

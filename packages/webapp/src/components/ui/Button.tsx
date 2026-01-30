@@ -1,6 +1,6 @@
 import React, { ButtonHTMLAttributes, forwardRef } from 'react'
-import { twMerge } from 'tailwind-merge'
 import { IconType } from 'react-icons'
+import { twMerge } from 'tailwind-merge'
 
 /**
  * daisyUI Button sizes

@@ -65,7 +65,7 @@ export const useCopyMessageToDocHandler = () => {
       // Find the heading with matching ID in the document
       const { doc, tr } = editor.state
       let headingPos: number | null = null
-      let _headingLevel: number | null = 1
+      let headingLevel: number | null = 1
       let headingNode: any = null
 
       // Traverse the document to find the heading with matching ID

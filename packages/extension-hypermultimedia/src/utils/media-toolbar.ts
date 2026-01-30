@@ -1,9 +1,10 @@
 import { Editor } from '@tiptap/core'
 import { EditorView } from '@tiptap/pm/view'
+
 // import { hideCurrentToolbar } from './floating-toolbar'
 import { HIDE_RESIZE_GRIPPER_META } from '../extensions/decorationHelpers'
-import * as Icons from './icons'
 import { hideCurrentToolbar } from './floating-toolbar'
+import * as Icons from './icons'
 
 const MARGIN_OPTIONS = [
   { value: '0in', text: '0"' },

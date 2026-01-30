@@ -7,18 +7,17 @@
  * high CPU usage when the page loads. Users can enable them manually.
  */
 
+import { Avatar } from '@components/ui'
 import { useState } from 'react'
 import {
-  MdNotifications,
-  MdEmail,
-  MdInfo,
   MdCheckCircle,
-  MdWarning,
+  MdEmail,
   MdError,
+  MdInfo,
+  MdNotifications,
   MdPlayArrow,
-  MdStop
-} from 'react-icons/md'
-import { Avatar } from '@components/ui'
+  MdStop,
+  MdWarning} from 'react-icons/md'
 
 export const ComponentsTab = () => {
   const [activeComponentTab, setActiveComponentTab] = useState(0)

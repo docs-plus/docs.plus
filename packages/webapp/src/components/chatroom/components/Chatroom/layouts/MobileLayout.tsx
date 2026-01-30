@@ -1,9 +1,9 @@
 // TODO: refactor this component in order to follow the compound component pattern
-import { useChatStore, useSheetStore } from '@stores'
-import SheetHeader from '@components/SheetHeader'
-import { CopyUrlButton } from '@components/chatroom/components/CopyUrlButton'
 import { NotificationToggle } from '@components/chatroom/components/ChatroomToolbar/components/NotificationToggle'
+import { CopyUrlButton } from '@components/chatroom/components/CopyUrlButton'
+import SheetHeader from '@components/SheetHeader'
 import CloseButton from '@components/ui/CloseButton'
+import { useChatStore, useSheetStore } from '@stores'
 
 type Props = {
   children: React.ReactNode

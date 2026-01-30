@@ -1,4 +1,5 @@
 import { createClient as createClientPrimitive } from '@supabase/supabase-js'
+
 import { createSupabaseFetch } from './error-handler'
 
 export function createClient() {

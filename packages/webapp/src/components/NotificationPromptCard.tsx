@@ -7,12 +7,12 @@
  * Design: Matches toast notification system (theme-aware, rounded-2xl, shadow-xl)
  * Position: Top-left for visibility without blocking main content
  */
-import { useState, useEffect, useCallback } from 'react'
-import { LuBell, LuX } from 'react-icons/lu'
-import { twMerge } from 'tailwind-merge'
+import * as toast from '@components/toast'
 import { usePushNotifications } from '@hooks/usePushNotifications'
 import { useAuthStore } from '@stores'
-import * as toast from '@components/toast'
+import { useCallback,useEffect, useState } from 'react'
+import { LuBell, LuX } from 'react-icons/lu'
+import { twMerge } from 'tailwind-merge'
 
 // Storage keys
 const STORAGE_KEY = 'notification-prompt-dismissed'

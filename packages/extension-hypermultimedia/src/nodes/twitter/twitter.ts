@@ -1,12 +1,12 @@
 import { Node, nodePasteRule } from '@tiptap/core'
-import {
-  isValidTwitterUrl,
-  TWITTER_URL_REGEX_GLOBAL,
-  loadTwitterScript,
-  fetchOEmbedHtml
-} from './helper'
-import { createTooltip, applyStyles, generateShortId } from '../../utils/utils'
+
 import { MediaPlacement } from '../../utils/media-placement'
+import { applyStyles, createTooltip, generateShortId } from '../../utils/utils'
+import {
+  fetchOEmbedHtml,
+  isValidTwitterUrl,
+  loadTwitterScript,
+  TWITTER_URL_REGEX_GLOBAL} from './helper'
 
 interface LayoutOptions {
   margin?: string

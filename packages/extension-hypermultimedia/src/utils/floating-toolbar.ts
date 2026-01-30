@@ -1,12 +1,11 @@
 import {
-  computePosition,
-  flip,
-  shift,
-  offset,
   arrow,
   autoUpdate,
-  Placement
-} from '@floating-ui/dom'
+  computePosition,
+  flip,
+  offset,
+  Placement,
+  shift} from '@floating-ui/dom'
 
 // Logger utility for production debugging
 class Logger {

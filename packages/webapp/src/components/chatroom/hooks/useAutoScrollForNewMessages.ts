@@ -1,7 +1,7 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { useAuthStore, useChatStore } from '@stores'
-import { useEffect, useMemo, useRef } from 'react'
 import type { Virtualizer } from '@tanstack/react-virtual'
+import { useEffect, useMemo, useRef } from 'react'
 
 const CLOSE_TO_BOTTOM_THRESHOLD = 100
 

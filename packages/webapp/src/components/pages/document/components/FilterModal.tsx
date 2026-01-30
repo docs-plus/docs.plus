@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react'
-import { useRouter } from 'next/router'
-import { useSheetStore } from '@stores'
 import SheetHeader from '@components/SheetHeader'
-import { MdSearch } from 'react-icons/md'
-import TextInput from '@components/ui/TextInput'
 import Button from '@components/ui/Button'
+import TextInput from '@components/ui/TextInput'
+import { useSheetStore } from '@stores'
+import { useRouter } from 'next/router'
+import React, { useEffect, useRef,useState } from 'react'
+import { MdSearch } from 'react-icons/md'
 
 const FilterModal = () => {
   const filterSearchRef = useRef<HTMLInputElement>(null)

@@ -7,14 +7,15 @@
 import { useState } from 'react'
 import {
   MdAccountCircle,
+  MdCheck,
   MdEmail,
   MdLock,
-  MdCheck,
   MdVisibility,
   MdVisibilityOff
 } from 'react-icons/md'
-import { useDesignSystem } from '../../context/DesignSystemContext'
+
 import { PLAN_OPTIONS } from '../../constants/demoData'
+import { useDesignSystem } from '../../context/DesignSystemContext'
 
 export const FormsTab = () => {
   const { showPassword, setShowPassword } = useDesignSystem()

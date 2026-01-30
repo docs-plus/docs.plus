@@ -4,37 +4,37 @@
  * Showcase page for Documents Management and Creation.
  */
 
-import { useState } from 'react'
+import { Avatar } from '@components/ui'
 import Head from 'next/head'
+import { useState } from 'react'
 import {
+  MdAccessTime,
   MdAdd,
-  MdSearch,
-  MdSort,
-  MdGridView,
-  MdViewList,
+  MdArticle,
+  MdClose,
+  MdCode,
+  MdContentCopy,
+  MdDelete,
   MdDescription,
+  MdDriveFileMove,
+  MdEdit,
+  MdGridView,
+  MdHistory,
+  MdInsertDriveFile,
+  MdListAlt,
+  MdLock,
+  MdMoreVert,
+  MdNoteAlt,
+  MdPeople,
+  MdPublic,
+  MdSearch,
+  MdShare,
+  MdSort,
   MdStar,
   MdStarBorder,
-  MdMoreVert,
-  MdEdit,
-  MdShare,
-  MdDelete,
-  MdContentCopy,
-  MdDriveFileMove,
-  MdHistory,
-  MdPeople,
-  MdLock,
-  MdPublic,
-  MdAccessTime,
-  MdInsertDriveFile,
-  MdArticle,
-  MdNoteAlt,
-  MdListAlt,
   MdTableChart,
-  MdCode,
-  MdClose
-} from 'react-icons/md'
-import { Avatar } from '@components/ui'
+  MdViewList} from 'react-icons/md'
+
 import { ShowcaseLayout } from './layouts'
 
 type ViewMode = 'grid' | 'list'

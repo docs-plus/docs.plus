@@ -1,7 +1,7 @@
-import tippy, { Instance } from 'tippy.js'
 import { Editor } from '@tiptap/core'
-import { EditorView } from '@tiptap/pm/view'
 import { posToDOMRect } from '@tiptap/core'
+import { EditorView } from '@tiptap/pm/view'
+import tippy, { Instance } from 'tippy.js'
 
 interface TippyInitOptions {
   editor: Editor

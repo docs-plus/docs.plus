@@ -1,13 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
+
 import {
-  fetchRetentionMetrics,
-  fetchUserLifecycleSegments,
-  fetchDauTrend,
   fetchActivityHeatmap,
-  fetchTopActiveDocuments,
   fetchCommunicationStats,
-  fetchNotificationReach
-} from '@/services/api'
+  fetchDauTrend,
+  fetchNotificationReach,
+  fetchRetentionMetrics,
+  fetchTopActiveDocuments,
+  fetchUserLifecycleSegments} from '@/services/api'
 
 /**
  * Hook for fetching retention metrics (DAU/WAU/MAU)

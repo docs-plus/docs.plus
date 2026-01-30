@@ -1,20 +1,18 @@
-import { useMemo } from 'react'
+import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { useAuthStore, useChatStore } from '@stores'
 import { TChannelSettings } from '@types'
+import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-
-// Join Components
-import {
-  SignInToJoinChannel,
-  JoinPrivateChannel,
-  JoinDirectChannel,
-  JoinGroupChannel,
-  JoinBroadcastChannel
-} from './components'
 
 // Message Composer
 import MsgComposer from '../MessageComposer/MessageComposer'
-import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+// Join Components
+import {
+  JoinBroadcastChannel,
+  JoinDirectChannel,
+  JoinGroupChannel,
+  JoinPrivateChannel,
+  SignInToJoinChannel} from './components'
 
 /**
  * Props for ChannelComposer component

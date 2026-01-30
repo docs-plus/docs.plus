@@ -1,5 +1,6 @@
-import { useMessageComposer } from '../../hooks/useMessageComposer'
 import { twMerge } from 'tailwind-merge'
+
+import { useMessageComposer } from '../../hooks/useMessageComposer'
 
 type Props = {
   className?: string

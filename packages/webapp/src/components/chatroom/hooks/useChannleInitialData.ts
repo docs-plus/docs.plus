@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState, useCallback } from 'react'
-import { useChatStore, useAuthStore, useStore } from '@stores'
-import { groupedMessages } from '@utils/index'
 import { fetchChannelInitialData, upsertChannel } from '@api'
-import slugify from 'slugify'
-import { TChannelSettings } from '@types'
 import { join2Channel } from '@api'
 import Config from '@config'
+import { useAuthStore, useChatStore, useStore } from '@stores'
+import { TChannelSettings } from '@types'
+import { groupedMessages } from '@utils/index'
 import debounce from 'lodash/debounce'
+import { useCallback,useEffect, useMemo, useState } from 'react'
+import slugify from 'slugify'
 
 interface UseChannelInitialData {
   isChannelDataLoaded: boolean

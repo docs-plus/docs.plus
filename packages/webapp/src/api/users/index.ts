@@ -1,4 +1,4 @@
-export * from './getUserById'
 export * from './getSimilarUsername'
-export * from './updateUser'
+export * from './getUserById'
 export * from './getUserProfileForModal'
+export * from './updateUser'

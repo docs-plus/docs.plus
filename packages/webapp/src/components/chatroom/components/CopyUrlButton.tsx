@@ -1,5 +1,5 @@
-import { MdLink } from 'react-icons/md'
 import CopyButton from '@components/ui/CopyButton'
+import { MdLink } from 'react-icons/md'
 
 interface CopyUrlButtonProps {
   url?: string

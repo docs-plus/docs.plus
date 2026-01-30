@@ -1,5 +1,5 @@
-import { TocDesktop } from '@components/toc'
 import TableOfContentsLoader from '@components/skeleton/TableOfContentsLoader'
+import { TocDesktop } from '@components/toc'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { useStore } from '@stores'
 

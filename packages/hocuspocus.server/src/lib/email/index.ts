@@ -16,39 +16,36 @@
 
 // Types
 export type {
-  NotificationType,
-  EmailFrequency,
-  EmailStatus,
-  NotificationEmailRequest,
-  GenericEmailRequest,
-  DigestEmailRequest,
-  DigestDocument,
   DigestChannel,
+  DigestDocument,
+  DigestEmailRequest,
   DigestNotification,
-  EmailResult,
-  EmailJobData,
+  EmailFrequency,
   EmailGatewayHealth,
-  EmailStatusCallback
-} from '../../types/email.types'
-
-export type { EmailProvider, EmailMessage, SendResult } from './providers'
+  EmailJobData,
+  EmailResult,
+  EmailStatus,
+  EmailStatusCallback,
+  GenericEmailRequest,
+  NotificationEmailRequest,
+  NotificationType} from '../../types/email.types'
+export type { EmailMessage, EmailProvider, SendResult } from './providers'
 
 // Templates
 export {
-  getEmailSubject,
+  buildDigestEmailHtml,
+  buildDigestEmailText,
   buildNotificationEmailHtml,
   buildNotificationEmailText,
-  buildDigestEmailHtml,
-  buildDigestEmailText
-} from './templates'
+  getEmailSubject} from './templates'
 
 // Core
+export { getProviderStatus,isAnyProviderConfigured, sendEmail, verifyProvider } from './providers'
+export { createEmailWorker,getEmailQueueHealth, queueEmail } from './queue'
 export { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
-export { sendEmail, verifyProvider, isAnyProviderConfigured, getProviderStatus } from './providers'
-export { queueEmail, getEmailQueueHealth, createEmailWorker } from './queue'
 
 // Service (main entry point)
-export { EmailGatewayService, emailGateway } from './service'
+export { emailGateway,EmailGatewayService } from './service'
 
 // Legacy
 export { sendNewDocumentNotification } from './document-notification'

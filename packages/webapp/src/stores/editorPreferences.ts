@@ -1,6 +1,6 @@
 import { StateCreator } from 'zustand'
-import { persist, PersistOptions } from 'zustand/middleware'
 import { create } from 'zustand'
+import { persist, PersistOptions } from 'zustand/middleware'
 
 type EditorPreferences = {
   indentHeading: boolean

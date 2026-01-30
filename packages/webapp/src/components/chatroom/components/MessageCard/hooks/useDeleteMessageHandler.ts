@@ -1,7 +1,7 @@
 import { deleteMessage } from '@api'
-import { useCallback } from 'react'
 import * as toast from '@components/toast'
 import { TMsgRow } from '@types'
+import { useCallback } from 'react'
 
 export const useDeleteMessageHandler = () => {
   const deleteMessageHandler = useCallback(async (message: TMsgRow) => {

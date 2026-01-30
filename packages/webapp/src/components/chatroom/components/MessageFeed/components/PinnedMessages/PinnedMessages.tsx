@@ -1,7 +1,8 @@
-import PinnedMessagesSlider from './PinnedMessagesSlider'
+import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { useChatStore } from '@stores'
 import { twMerge } from 'tailwind-merge'
-import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+
+import PinnedMessagesSlider from './PinnedMessagesSlider'
 
 type Props = {
   className?: string

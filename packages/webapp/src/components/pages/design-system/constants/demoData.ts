@@ -7,19 +7,19 @@
 import {
   MdDashboard,
   MdDescription,
-  MdPeople,
-  MdOutlineArticle,
   MdEdit,
-  MdSettings,
-  MdPalette
-} from 'react-icons/md'
+  MdOutlineArticle,
+  MdPalette,
+  MdPeople,
+  MdSettings} from 'react-icons/md'
+
 import type {
-  DemoUser,
   DemoDocument,
   DemoMessage,
-  NavItem,
-  KeyboardShortcut,
+  DemoUser,
   FolderItem,
+  KeyboardShortcut,
+  NavItem,
   PlanOption
 } from '../types'
 

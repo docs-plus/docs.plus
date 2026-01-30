@@ -1,12 +1,12 @@
 import { Extension } from '@tiptap/core'
-import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
+
 import { buildOptimizedDecorations } from './decoration'
 import {
-  createDecorationPluginState,
+  BuildDecorationsFunction,
   createDecorationPluginProps,
-  BuildDecorationsFunction
-} from './decorationHelpers'
+  createDecorationPluginState} from './decorationHelpers'
 
 export interface MediaResizeGripperOptions {
   acceptedNodes: string[]

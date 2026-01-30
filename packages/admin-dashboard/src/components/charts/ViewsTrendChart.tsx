@@ -1,14 +1,14 @@
+import { format, parseISO } from 'date-fns'
 import { useMemo } from 'react'
 import {
-  AreaChart,
   Area,
-  XAxis,
-  YAxis,
+  AreaChart,
   CartesianGrid,
+  ResponsiveContainer,
   Tooltip,
-  ResponsiveContainer
-} from 'recharts'
-import { format, parseISO } from 'date-fns'
+  XAxis,
+  YAxis} from 'recharts'
+
 import type { ViewsTrendPoint } from '@/types'
 
 interface ViewsTrendChartProps {

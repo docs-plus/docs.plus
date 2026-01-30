@@ -1,4 +1,5 @@
 import type { Modifier } from '@dnd-kit/core'
+
 import { DEFAULT_SNAP_CONFIG } from './types'
 
 /**

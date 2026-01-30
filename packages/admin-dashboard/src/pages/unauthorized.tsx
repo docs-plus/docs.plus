@@ -1,6 +1,6 @@
+import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
-import type { GetServerSideProps } from 'next'
 import { LuShieldX } from 'react-icons/lu'
 
 // Disable static generation to prevent "NextRouter was not mounted" errors

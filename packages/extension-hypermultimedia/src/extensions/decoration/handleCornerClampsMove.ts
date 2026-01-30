@@ -1,15 +1,15 @@
 import { Editor } from '@tiptap/core'
+
 import { hideCurrentToolbar } from '../../utils/floating-toolbar'
 import { Corner, MediaGripperInfo, ResizeState } from './types'
 import {
-  getPointerPosition,
   calculateAspectRatioDimensions,
+  DEFAULT_CONSTRAINTS,
+  getPointerPosition,
   meetsConstraints,
-  updateNodeDimensions,
   resetGripperPosition,
   setupKeyboardListeners,
-  DEFAULT_CONSTRAINTS
-} from './utils'
+  updateNodeDimensions} from './utils'
 
 export default function handleCornerClampsMove(
   clamp: HTMLElement,

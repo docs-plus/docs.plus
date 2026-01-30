@@ -4,7 +4,8 @@
  * Accessibility checklist, keyboard navigation, and focus management.
  */
 
-import { MdAccessibility, MdKeyboard, MdCenterFocusStrong } from 'react-icons/md'
+import { MdAccessibility, MdCenterFocusStrong,MdKeyboard } from 'react-icons/md'
+
 import { SectionHeader } from '../shared'
 
 const A11Y_CHECKLIST = [

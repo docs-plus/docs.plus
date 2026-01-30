@@ -1,7 +1,8 @@
+import * as toast from '@components/toast'
 import { useAuthStore, useStore } from '@stores'
 import { useCallback } from 'react'
+
 import { getContentFromYdocObject } from '../helpers'
-import * as toast from '@components/toast'
 
 export const useVersionRestore = () => {
   const { hocuspocusProvider } = useStore((state) => state.settings)

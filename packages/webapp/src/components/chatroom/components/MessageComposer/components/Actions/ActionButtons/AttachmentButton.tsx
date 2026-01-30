@@ -1,6 +1,7 @@
 import Icon from '@components/TipTap/toolbar/Icon'
-import Button from '../../ui/Button'
 import { twMerge } from 'tailwind-merge'
+
+import Button from '../../ui/Button'
 
 type Props = {
   size?: number

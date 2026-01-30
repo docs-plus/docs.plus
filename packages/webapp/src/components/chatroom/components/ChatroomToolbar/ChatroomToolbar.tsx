@@ -1,11 +1,11 @@
 import { twMerge } from 'tailwind-merge'
+
 import {
-  ShareButton,
-  NotificationToggle,
+  Breadcrumb,
   CloseButton,
+  NotificationToggle,
   ParticipantsList,
-  Breadcrumb
-} from './components'
+  ShareButton} from './components'
 
 type Props = {
   children: React.ReactNode

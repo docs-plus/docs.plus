@@ -1,7 +1,8 @@
 import { EditorContent } from '@tiptap/react'
-import { useMessageComposer } from '../../hooks/useMessageComposer'
 import { useEffect } from 'react'
 import { twMerge } from 'tailwind-merge'
+
+import { useMessageComposer } from '../../hooks/useMessageComposer'
 
 export const Input = ({ className }: { className?: string }) => {
   const { editorRef, editor, messageDraftMemory, isEmojiOnly } = useMessageComposer()

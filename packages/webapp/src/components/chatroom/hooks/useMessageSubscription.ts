@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
-import { supabaseClient } from '@utils/supabase'
 import { useChatStore } from '@stores'
 import { useAuthStore } from '@stores'
+import { supabaseClient } from '@utils/supabase'
+import { useEffect, useState } from 'react'
+
 import { dbMessagesListener } from './listner'
 
 // there is not relation join in realtime subscription

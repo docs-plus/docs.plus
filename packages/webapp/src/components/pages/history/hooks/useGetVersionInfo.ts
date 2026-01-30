@@ -1,5 +1,5 @@
-import { useCallback } from 'react'
 import { useStore } from '@stores'
+import { useCallback } from 'react'
 
 export const useGetVersionInfo = () => {
   const { activeHistory, historyList } = useStore((state) => state)

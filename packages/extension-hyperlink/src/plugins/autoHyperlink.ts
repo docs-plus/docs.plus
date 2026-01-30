@@ -8,6 +8,7 @@ import {
 import { MarkType } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { find, test } from 'linkifyjs'
+
 import { validateURL } from '../utils/validateURL'
 
 type AutoHyperlinkOptions = {

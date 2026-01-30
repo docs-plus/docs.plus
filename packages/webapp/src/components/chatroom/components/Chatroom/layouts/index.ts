@@ -1,2 +1,2 @@
-export * from './MobileLayout'
 export * from './DesktopLayout'
+export * from './MobileLayout'

@@ -1,10 +1,11 @@
-import mime from 'mime'
-import { extractFileType } from './fileType'
-import path from 'path'
 import { mkdir } from 'fs/promises'
 import type { Context } from 'hono'
+import mime from 'mime'
+import path from 'path'
+
 import type { StorageUploadResponse } from '../../types'
 import { storageLocalLogger } from '../logger'
+import { extractFileType } from './fileType'
 const PLUGIN_NAME = 'hypermultimedia'
 
 export const upload = async (documentId: string, file: File): Promise<StorageUploadResponse> => {

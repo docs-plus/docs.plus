@@ -1,6 +1,7 @@
 import { useStore } from '@stores'
-import { MobileLayout } from './MobileLayout'
+
 import { DesktopLayout } from './DesktopLayout'
+import { MobileLayout } from './MobileLayout'
 
 /**
  * Smart Editor component that renders the appropriate layout based on device type

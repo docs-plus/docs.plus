@@ -1,6 +1,6 @@
-import { useState, useCallback, useRef } from 'react'
 import * as toast from '@components/toast'
 import { copyToClipboard as copyToClipboardUtil } from '@utils/clipboard'
+import { useCallback, useRef,useState } from 'react'
 
 export interface UseCopyToClipboardOptions {
   /** Duration in ms to show "copied" state (default: 2000) */

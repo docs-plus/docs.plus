@@ -1,7 +1,8 @@
+import CloseButton from '@components/ui/CloseButton'
+import { MdInsertComment } from 'react-icons/md'
+
 import { useChatroomContext } from '../../../../ChatroomContext'
 import { useMessageComposer } from '../../hooks/useMessageComposer'
-import { MdInsertComment } from 'react-icons/md'
-import CloseButton from '@components/ui/CloseButton'
 
 const CommentContext = ({ onDismiss }: { onDismiss?: () => void }) => {
   const { channelId } = useChatroomContext()

@@ -1,10 +1,10 @@
-import { useState, useMemo, useCallback, forwardRef } from 'react'
-import { createAvatar } from '@dicebear/core'
-import { lorelei, shapes, rings, initials } from '@dicebear/collection'
-import { twMerge } from 'tailwind-merge'
-import Config from '@config'
-import { useStore } from '@stores'
 import { UserProfileDialog } from '@components/ui/dialogs/UserProfileDialog'
+import Config from '@config'
+import { initials,lorelei, rings, shapes } from '@dicebear/collection'
+import { createAvatar } from '@dicebear/core'
+import { useStore } from '@stores'
+import { forwardRef,useCallback, useMemo, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
 type AvatarCollectionKey = 'lorelei' | 'shapes' | 'rings' | 'initials'
 

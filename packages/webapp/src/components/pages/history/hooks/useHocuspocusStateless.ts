@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
-import { useStatelessMessage } from './useStatelessMessage'
-import { useDocumentHistory } from './useDocumentHistory'
 import { useStore } from '@stores'
+import { useEffect } from 'react'
+
+import { useDocumentHistory } from './useDocumentHistory'
+import { useStatelessMessage } from './useStatelessMessage'
 
 export const useHocuspocusStateless = () => {
   const { hocuspocusProvider } = useStore((state) => state.settings)

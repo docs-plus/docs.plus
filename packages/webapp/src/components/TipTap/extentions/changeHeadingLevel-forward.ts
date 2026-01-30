@@ -1,13 +1,14 @@
 import { TIPTAP_NODES } from '@types'
+
 import {
-  getRangeBlocks,
-  getHeadingsBlocksMap,
-  createThisBlockMap,
-  getPrevHeadingPos,
-  findPrevBlock,
-  insertRemainingHeadings,
   createHeadingNodeFromSelection,
+  createThisBlockMap,
+  findPrevBlock,
   getEndPosSelection,
+  getHeadingsBlocksMap,
+  getPrevHeadingPos,
+  getRangeBlocks,
+  insertRemainingHeadings,
   putTextSelectionEndNode
 } from './helper'
 import { CommandArgs, HeadingAttributes } from './types'

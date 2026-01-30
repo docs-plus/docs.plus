@@ -1,5 +1,5 @@
-export * from './types'
-export * from './utils'
+export { DropIndicatorPortal } from './DropIndicatorPortal'
 export * from './modifiers'
 export * from './pointerCollisionDetection'
-export { DropIndicatorPortal } from './DropIndicatorPortal'
+export * from './types'
+export * from './utils'

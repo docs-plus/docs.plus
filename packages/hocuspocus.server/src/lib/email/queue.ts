@@ -5,11 +5,12 @@
  * Handles retries, rate limiting, and dead letter queue.
  */
 
-import { Queue, Worker, Job } from 'bullmq'
-import { createRedisConnection } from '../redis'
-import { emailLogger } from '../logger'
-import { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
+import { Job,Queue, Worker } from 'bullmq'
+
 import type { EmailJobData, EmailResult } from '../../types/email.types'
+import { emailLogger } from '../logger'
+import { createRedisConnection } from '../redis'
+import { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
 
 // BullMQ connection options
 const bullmqConnectionOptions = {

@@ -4,15 +4,15 @@
  * Handles sending web push notifications via VAPID.
  */
 
-import webpush from 'web-push'
 import { createClient } from '@supabase/supabase-js'
-import { pushLogger } from '../logger'
+import webpush from 'web-push'
+
 import { config } from '../../config/env'
 import type {
   PushNotificationRequest,
-  PushSubscription,
-  PushSendResult
-} from '../../types/push.types'
+  PushSendResult,
+  PushSubscription} from '../../types/push.types'
+import { pushLogger } from '../logger'
 
 // Configure web-push with VAPID credentials
 let vapidConfigured = false

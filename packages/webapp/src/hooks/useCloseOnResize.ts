@@ -1,5 +1,5 @@
-import { useCallback, useEffect } from 'react'
 import { useChatStore } from '@stores'
+import { useCallback, useEffect } from 'react'
 
 export const useCloseOnResize = () => {
   const {

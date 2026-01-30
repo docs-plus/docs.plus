@@ -1,5 +1,6 @@
-import type { Context, Next } from 'hono'
 import { createClient } from '@supabase/supabase-js'
+import type { Context, Next } from 'hono'
+
 import { verifySupabaseToken } from '../../utils/jwt'
 
 /**

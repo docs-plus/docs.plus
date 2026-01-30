@@ -8,7 +8,7 @@
  */
 
 import { emailLogger } from '../../logger'
-import type { EmailProviderInterface, EmailMessage, SendResult } from './types'
+import type { EmailMessage, EmailProviderInterface, SendResult } from './types'
 
 const RESEND_API_URL = 'https://api.resend.com/emails'
 

@@ -1,8 +1,9 @@
-import { MdArrowBack, MdMenu } from 'react-icons/md'
-import { formatVersionDate } from '../helpers'
-import { useVersionRestore } from '../hooks/useVersionRestore'
-import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
 import Button from '@components/ui/Button'
+import { MdArrowBack, MdMenu } from 'react-icons/md'
+
+import { formatVersionDate } from '../helpers'
+import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
+import { useVersionRestore } from '../hooks/useVersionRestore'
 
 const Toolbar = () => {
   const { handleRestore } = useVersionRestore()

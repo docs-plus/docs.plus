@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
-import type { AppProps } from 'next/app'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { Toaster } from 'react-hot-toast'
 import '@/styles/globals.scss'
+
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import type { AppProps } from 'next/app'
+import { useEffect, useState } from 'react'
+import { Toaster } from 'react-hot-toast'
 
 const queryClient = new QueryClient({
   defaultOptions: {

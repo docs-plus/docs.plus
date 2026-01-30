@@ -1,14 +1,15 @@
-import { useCallback, useRef } from 'react'
-import ToolbarDesktop from '@components/TipTap/toolbar/ToolbarDesktop'
-import EditorContent from './EditorContent'
-import TOC from './Toc'
-import { useAdjustEditorSizeForChatRoom, useTOCResize } from '../hooks'
-import { useUnreadSync } from '@hooks/useUnreadSync'
 import { Chatroom } from '@components/chatroom'
+import { useMessageFeedContext } from '@components/chatroom/components/MessageFeed/MessageFeedContext'
+import ToolbarDesktop from '@components/TipTap/toolbar/ToolbarDesktop'
+import { useHeadingScrollSpy } from '@components/toc/hooks'
 import { HoverMenu } from '@components/ui/HoverMenu'
 import ResizeHandle from '@components/ui/ResizeHandle'
-import { useMessageFeedContext } from '@components/chatroom/components/MessageFeed/MessageFeedContext'
-import { useHeadingScrollSpy } from '@components/toc/hooks'
+import { useUnreadSync } from '@hooks/useUnreadSync'
+import { useCallback, useRef } from 'react'
+
+import { useAdjustEditorSizeForChatRoom, useTOCResize } from '../hooks'
+import EditorContent from './EditorContent'
+import TOC from './Toc'
 
 const MessageHoverMenu = (props: React.ComponentProps<typeof HoverMenu>) => {
   const { virtualizerRef, messageContainerRef } = useMessageFeedContext()

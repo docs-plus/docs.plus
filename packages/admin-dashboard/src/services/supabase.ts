@@ -1,15 +1,14 @@
+import { DEFAULT_PAGE_SIZE } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
 import type {
-  User,
   Channel,
   ChannelStats,
+  EmailStats,
   NotificationStats,
   PushStats,
-  EmailStats,
   SupabaseStats,
-  TableSize
-} from '@/types'
-import { DEFAULT_PAGE_SIZE } from '@/constants/config'
+  TableSize,
+  User} from '@/types'
 import { sanitizeSearchInput } from '@/utils/sanitize'
 
 const PAGE_SIZE = DEFAULT_PAGE_SIZE

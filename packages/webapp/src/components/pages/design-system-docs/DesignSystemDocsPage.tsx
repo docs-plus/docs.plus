@@ -11,20 +11,20 @@
  * - Implementation notes
  */
 
-import Head from 'next/head'
-import { DesignSystemDocsProvider } from './context/DesignSystemDocsContext'
 import { ScrollArea } from '@components/ui'
+import Head from 'next/head'
+
 import {
-  Sidebar,
-  Header,
-  GettingStartedSection,
-  FoundationsSection,
+  AccessibilitySection,
   ComponentsSection,
   EditorComponentsSection,
+  FoundationsSection,
+  GettingStartedSection,
+  Header,
+  ImplementationSection,
   PatternsSection,
-  AccessibilitySection,
-  ImplementationSection
-} from './components'
+  Sidebar} from './components'
+import { DesignSystemDocsProvider } from './context/DesignSystemDocsContext'
 
 /**
  * Main content area with all sections

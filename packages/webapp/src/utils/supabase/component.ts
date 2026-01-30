@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr'
+
 import { createSupabaseFetch } from './error-handler'
 
 /**

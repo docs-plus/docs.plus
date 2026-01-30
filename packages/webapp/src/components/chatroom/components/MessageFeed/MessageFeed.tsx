@@ -1,12 +1,12 @@
 import React, { useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { MessageFeedProvider } from './MessageFeedContext'
-import { MessageFeedError } from './components/OverLayers/MessageFeedError'
-import { PinnedMessages } from './components/PinnedMessages'
-import { MessageFeedLoading } from './components/OverLayers/MessageFeedLoading'
 import { MessageList } from '../MessageList'
 import { ScrollToBottom } from './components'
+import { MessageFeedError } from './components/OverLayers/MessageFeedError'
+import { MessageFeedLoading } from './components/OverLayers/MessageFeedLoading'
+import { PinnedMessages } from './components/PinnedMessages'
+import { MessageFeedProvider } from './MessageFeedContext'
 
 interface Props {
   className?: string

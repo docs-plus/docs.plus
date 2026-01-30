@@ -1,4 +1,5 @@
-import { LuEye, LuUsers, LuMonitor, LuSmartphone, LuTablet, LuTrendingUp } from 'react-icons/lu'
+import { LuEye, LuMonitor, LuSmartphone, LuTablet, LuTrendingUp,LuUsers } from 'react-icons/lu'
+
 import type { ViewsSummary } from '@/types'
 
 interface ViewsSummaryCardsProps {

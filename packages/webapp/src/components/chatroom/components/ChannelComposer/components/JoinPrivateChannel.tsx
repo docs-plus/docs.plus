@@ -1,6 +1,7 @@
 import { useAuthStore } from '@stores'
-import { useChatroomContext } from '../../../ChatroomContext'
 import { LuLock } from 'react-icons/lu'
+
+import { useChatroomContext } from '../../../ChatroomContext'
 
 export default function JoinPrivateChannel() {
   const { channelId } = useChatroomContext()

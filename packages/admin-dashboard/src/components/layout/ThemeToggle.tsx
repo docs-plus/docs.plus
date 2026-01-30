@@ -1,4 +1,5 @@
-import { LuSun, LuMoon } from 'react-icons/lu'
+import { LuMoon,LuSun } from 'react-icons/lu'
+
 import { useUIStore } from '@/stores/uiStore'
 
 export function ThemeToggle() {

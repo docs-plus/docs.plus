@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
-import { Editor } from '@tiptap/react'
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
+import { Editor } from '@tiptap/react'
+import { useEffect } from 'react'
 
 interface UseHandleDraftOnFocusProps {
   editor: Editor | null

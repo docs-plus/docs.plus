@@ -1,4 +1,5 @@
 import { useRouter } from 'next/router'
+
 import { useAdminAuth } from '@/hooks/useAdminAuth'
 
 // Pages that don't require auth

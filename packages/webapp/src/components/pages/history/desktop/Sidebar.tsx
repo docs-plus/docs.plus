@@ -1,19 +1,20 @@
 import SidebarLoader from '@components/skeleton/SidebarLoader'
+import Button from '@components/ui/Button'
+import { useModal } from '@components/ui/ModalDrawer'
 import { useStore } from '@stores'
 import { useState } from 'react'
-import { MdExpandMore, MdExpandLess } from 'react-icons/md'
+import { MdExpandLess,MdExpandMore } from 'react-icons/md'
+import { twMerge } from 'tailwind-merge'
+
 import {
-  groupSessionsByDay,
   dayContainsVersion,
-  sessionContainsVersion,
-  formatTime,
   formatRelativeTime,
+  formatTime,
+  groupSessionsByDay,
+  sessionContainsVersion,
   type VersionSession
 } from '../helpers'
 import { useVersionContent } from '../hooks/useVersionContent'
-import { twMerge } from 'tailwind-merge'
-import { useModal } from '@components/ui/ModalDrawer'
-import Button from '@components/ui/Button'
 
 const Sidebar = ({ className }: { className?: string }) => {
   const { loadingHistory, activeHistory, historyList } = useStore((state) => state)

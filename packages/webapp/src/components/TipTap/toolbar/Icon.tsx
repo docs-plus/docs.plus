@@ -1,31 +1,29 @@
-import React from 'react'
-import {
-  MdCode,
-  MdFormatColorText,
-  MdOutlineEmojiEmotions,
-  MdOutlineAdd,
-  MdClose as Close
-} from 'react-icons/md'
-import { RiAtLine, RiCodeBlock } from 'react-icons/ri'
-import { IoSend } from 'react-icons/io5'
 import {
   Bold,
-  Italic,
-  Underline,
-  OrderList,
   BulletList,
-  Link,
   CheckList,
-  ImageBox,
-  Gear,
   ClearMark,
-  Stric,
+  Filter,
+  Gear,
   HighlightMarker,
-  Undo,
-  Redo,
+  ImageBox,
+  Italic,
+  Link,
+  OrderList,
   Printer,
-  Filter
-} from '@icons'
+  Redo,
+  Stric,
+  Underline,
+  Undo} from '@icons'
+import React from 'react'
+import { IoSend } from 'react-icons/io5'
+import {
+  MdClose as Close,
+  MdCode,
+  MdFormatColorText,
+  MdOutlineAdd,
+  MdOutlineEmojiEmotions} from 'react-icons/md'
+import { RiAtLine, RiCodeBlock } from 'react-icons/ri'
 import { TbBlockquote } from 'react-icons/tb'
 
 const icons: {

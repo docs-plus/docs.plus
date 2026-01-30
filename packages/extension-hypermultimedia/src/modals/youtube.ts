@@ -1,6 +1,6 @@
 import * as Icons from '../utils/icons'
-import { createElement } from '../utils/utils'
 import { mediaPlacement } from '../utils/media-placement'
+import { createElement } from '../utils/utils'
 
 export const youtubeModal = ({ editor, tooltip, tippyModal, iframe, wrapper }: any): void => {
   const doesMediaResizeGripperExist = wrapper.previousSibling as HTMLElement

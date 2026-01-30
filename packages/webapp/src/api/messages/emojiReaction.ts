@@ -1,5 +1,5 @@
-import { supabaseClient } from '@utils/supabase'
 import { useAuthStore } from '@stores'
+import { supabaseClient } from '@utils/supabase'
 
 export const emojiReaction = async (message: any, newReaction: string) => {
   const user = useAuthStore.getState().profile

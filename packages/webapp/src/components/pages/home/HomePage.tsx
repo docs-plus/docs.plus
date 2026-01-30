@@ -1,28 +1,27 @@
-import { useState, KeyboardEvent, ChangeEvent } from 'react'
-import { useRouter } from 'next/router'
-import slugify from 'slugify'
-import dynamic from 'next/dynamic'
 import HeadSeo from '@components/HeadSeo'
 import { DocsPlus } from '@components/icons/Icons'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
+import { Modal, ModalContent } from '@components/ui/Dialog'
+import Loading from '@components/ui/Loading'
 import TextInput from '@components/ui/TextInput'
 import TypingText from '@components/ui/TypingText'
-import Loading from '@components/ui/Loading'
-import { Modal, ModalContent } from '@components/ui/Dialog'
+import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { useAuthStore, useStore } from '@stores'
+import dynamic from 'next/dynamic'
+import { useRouter } from 'next/router'
+import { ChangeEvent,KeyboardEvent, useState } from 'react'
+import { FaDiscord } from 'react-icons/fa'
 import {
+  LuBuilding2,
+  LuCalendar,
   LuGithub,
-  LuMessageCircle,
-  LuUsers,
   LuGlobe,
   LuGraduationCap,
+  LuMessageCircle,
   LuRocket,
-  LuCalendar,
-  LuBuilding2
-} from 'react-icons/lu'
-import { FaDiscord } from 'react-icons/fa'
-import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
+  LuUsers} from 'react-icons/lu'
+import slugify from 'slugify'
 
 const SignInForm = dynamic(() => import('@components/auth/SignInForm'), {
   loading: () => <Loading />

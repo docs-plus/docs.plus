@@ -4,10 +4,11 @@
  * Main navigation sidebar with collapsible sections.
  */
 
-import { MdClose, MdOpenInNew, MdStarOutline, MdHelpOutline, MdLogout } from 'react-icons/md'
 import { Avatar } from '@components/ui'
-import { useDesignSystem } from '../../context/DesignSystemContext'
+import { MdClose, MdHelpOutline, MdLogout,MdOpenInNew, MdStarOutline } from 'react-icons/md'
+
 import { NAV_ITEMS } from '../../constants/demoData'
+import { useDesignSystem } from '../../context/DesignSystemContext'
 
 export const Sidebar = () => {
   const { activeTab, setActiveTab, sidebarOpen, mobileMenuOpen, setMobileMenuOpen } =

@@ -1,12 +1,13 @@
+import { archiveBookmark, markBookmarkAsRead, toggleMessageBookmark } from '@api'
+import * as toast from '@components/toast'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
-import { formatTimeAgo } from '../../notificationPanel/helpers'
+import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore } from '@stores'
 import PubSub from 'pubsub-js'
-import { CHAT_OPEN } from '@services/eventsHub'
-import { LuLink, LuBookmarkCheck, LuEye, LuArchive, LuBookmarkMinus } from 'react-icons/lu'
-import * as toast from '@components/toast'
-import { archiveBookmark, markBookmarkAsRead, toggleMessageBookmark } from '@api'
+import { LuArchive, LuBookmarkCheck, LuBookmarkMinus,LuEye, LuLink } from 'react-icons/lu'
+
+import { formatTimeAgo } from '../../notificationPanel/helpers'
 import { usePopoverState } from '../../ui/Popover'
 
 export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {

@@ -1,14 +1,15 @@
+import * as toast from '@components/toast'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
-import { formatTimeAgo } from '../helpers'
-import NotificationIcon from './NotificationIcon'
-import { useMarkNotificationAsRead } from '../hooks/useMarkNotificationAsRead'
+import { usePopoverState } from '@components/ui/Popover'
+import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore, useStore } from '@stores'
 import PubSub from 'pubsub-js'
-import { CHAT_OPEN } from '@services/eventsHub'
 import { LuLink } from 'react-icons/lu'
-import * as toast from '@components/toast'
-import { usePopoverState } from '@components/ui/Popover'
+
+import { formatTimeAgo } from '../helpers'
+import { useMarkNotificationAsRead } from '../hooks/useMarkNotificationAsRead'
+import NotificationIcon from './NotificationIcon'
 
 export const NotificationItem = ({ notification }: { notification: any }) => {
   const { handleMarkAsRead } = useMarkNotificationAsRead()

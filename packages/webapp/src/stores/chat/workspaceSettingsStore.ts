@@ -1,5 +1,5 @@
-import { immer } from 'zustand/middleware/immer'
 import { TChannelSettings } from '@types'
+import { immer } from 'zustand/middleware/immer'
 
 type WorkspaceSettings = {
   workspaceId?: string

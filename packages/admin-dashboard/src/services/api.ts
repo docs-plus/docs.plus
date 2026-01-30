@@ -1,22 +1,21 @@
-import type {
-  DashboardDocumentStats,
-  DocumentStats,
-  PaginatedResponse,
-  Document,
-  ViewsSummary,
-  TopViewedDocument,
-  ViewsTrendPoint,
-  DocumentViewStats,
-  RetentionMetrics,
-  UserLifecycleSegments,
-  DauTrendPoint,
-  ActivityHeatmapPoint,
-  TopActiveDocument,
-  CommunicationStats,
-  NotificationReach
-} from '@/types'
 import { API_URL } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
+import type {
+  ActivityHeatmapPoint,
+  CommunicationStats,
+  DashboardDocumentStats,
+  DauTrendPoint,
+  Document,
+  DocumentStats,
+  DocumentViewStats,
+  NotificationReach,
+  PaginatedResponse,
+  RetentionMetrics,
+  TopActiveDocument,
+  TopViewedDocument,
+  UserLifecycleSegments,
+  ViewsSummary,
+  ViewsTrendPoint} from '@/types'
 
 /**
  * Get the current session's access token

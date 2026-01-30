@@ -1,12 +1,11 @@
-import {
-  LuLayoutDashboard,
-  LuUsers,
-  LuFileText,
-  LuMessageSquare,
-  LuBell,
-  LuActivity
-} from 'react-icons/lu'
 import type { IconType } from 'react-icons'
+import {
+  LuActivity,
+  LuBell,
+  LuFileText,
+  LuLayoutDashboard,
+  LuMessageSquare,
+  LuUsers} from 'react-icons/lu'
 
 export interface NavItem {
   href: string

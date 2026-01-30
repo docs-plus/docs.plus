@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+
 import * as documentsController from '../controllers/documents.controller'
 
 const hypermultimedia = new Hono()

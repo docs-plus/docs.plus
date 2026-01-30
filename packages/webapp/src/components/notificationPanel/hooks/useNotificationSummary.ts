@@ -1,10 +1,10 @@
-import { useEffect, useCallback } from 'react'
-import { useApi } from '@hooks/useApi'
 import { getNotificationsSummary } from '@api'
+import { useApi } from '@hooks/useApi'
+import { NOTIFICATION_STATE_CHANGED } from '@hooks/usePushNotifications'
 import { useAuthStore, useStore } from '@stores'
 import { TNotificationSummary } from '@types'
 import PubSub from 'pubsub-js'
-import { NOTIFICATION_STATE_CHANGED } from '@hooks/usePushNotifications'
+import { useCallback,useEffect } from 'react'
 
 export const useNotificationSummary = () => {
   const { workspaceId } = useStore((state) => state.settings)

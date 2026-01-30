@@ -1,7 +1,7 @@
+import CopyButton from '@components/ui/CopyButton'
+import { useChatStore } from '@stores'
 import { useMemo } from 'react'
 import { LuLink } from 'react-icons/lu'
-import { useChatStore } from '@stores'
-import CopyButton from '@components/ui/CopyButton'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {

@@ -1,5 +1,5 @@
-import { Transaction, EditorState } from '@tiptap/pm/state'
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { EditorState,Transaction } from '@tiptap/pm/state'
 import { DecorationSet } from '@tiptap/pm/view'
 
 /**

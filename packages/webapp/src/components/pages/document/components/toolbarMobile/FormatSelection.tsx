@@ -1,17 +1,16 @@
-import { useEffect, useRef } from 'react'
-import { Editor } from '@tiptap/core'
-import {
-  MdFormatBold,
-  MdFormatItalic,
-  MdFormatUnderlined,
-  MdFormatClear,
-  MdChecklist,
-  MdFormatListBulleted,
-  MdFormatListNumbered
-} from 'react-icons/md'
-import { MdOutlineStrikethroughS } from 'react-icons/md'
-import { HighlightMarker } from '@icons'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
+import { HighlightMarker } from '@icons'
+import { Editor } from '@tiptap/core'
+import { useEffect, useRef } from 'react'
+import {
+  MdChecklist,
+  MdFormatBold,
+  MdFormatClear,
+  MdFormatItalic,
+  MdFormatListBulleted,
+  MdFormatListNumbered,
+  MdFormatUnderlined} from 'react-icons/md'
+import { MdOutlineStrikethroughS } from 'react-icons/md'
 
 const FormatSelection = ({ isVisible, editor }: { isVisible: boolean; editor: Editor }) => {
   const containerRef = useRef<HTMLDivElement>(null)

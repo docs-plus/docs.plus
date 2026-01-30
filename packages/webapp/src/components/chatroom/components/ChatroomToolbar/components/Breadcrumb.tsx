@@ -1,13 +1,14 @@
-import React, { useCallback, useEffect, useState } from 'react'
+import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore, useStore } from '@stores'
-import { LuChevronRight } from 'react-icons/lu'
-import slugify from 'slugify'
 import { TIPTAP_NODES } from '@types'
+import { getPostAtDOM } from '@utils/index'
 import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
-import { CHAT_OPEN } from '@services/eventsHub'
-import { getPostAtDOM } from '@utils/index'
+import React, { useCallback, useEffect, useState } from 'react'
+import { LuChevronRight } from 'react-icons/lu'
+import slugify from 'slugify'
 import { twMerge } from 'tailwind-merge'
+
 import { useChatroomContext } from '../../../ChatroomContext'
 
 type Props = {

@@ -1,29 +1,28 @@
 import { FaBehance, FaDribbble, FaPatreon } from 'react-icons/fa'
-import { FaFacebook, FaTwitter, FaYoutube, FaReddit, FaWhatsapp } from 'react-icons/fa'
-import { SiThreads, SiBento, SiLine, SiCalendly, SiLinktree } from 'react-icons/si'
+import { FaFacebook, FaReddit, FaTwitter, FaWhatsapp,FaYoutube } from 'react-icons/fa'
 import {
-  FaTwitch,
-  FaStripe,
-  FaSnapchat,
-  FaShopify,
-  FaSpotify,
-  FaApple,
-  FaLinkedin,
-  FaDiscord,
-  FaSoundcloud,
   FaAmazon,
-  FaPinterest,
-  FaTiktok,
-  FaTelegram,
+  FaApple,
+  FaBandcamp,
+  FaDiscord,
   FaGithub,
-  FaPaypal,
   FaGitlab,
+  FaLinkedin,
+  FaPaypal,
+  FaPinterest,
+  FaShopify,
+  FaSnapchat,
+  FaSoundcloud,
+  FaSpotify,
   FaStackOverflow,
+  FaStripe,
+  FaTelegram,
+  FaTiktok,
   FaTumblr,
-  FaVk,
+  FaTwitch,
   FaVimeo,
-  FaBandcamp
-} from 'react-icons/fa'
+  FaVk} from 'react-icons/fa'
+import { SiBento, SiCalendly, SiLine, SiLinktree,SiThreads } from 'react-icons/si'
 
 export const SOCIAL_MEDIA_ICONS: {
   [key: string]: {

@@ -1,5 +1,5 @@
-import { usePopoverState } from '@components/ui/Popover'
 import CloseButton from '@components/ui/CloseButton'
+import { usePopoverState } from '@components/ui/Popover'
 
 interface BookmarkHeaderProps {
   onClose?: () => void

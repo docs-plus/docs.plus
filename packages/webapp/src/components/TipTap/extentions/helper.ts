@@ -1,24 +1,24 @@
 import { TextSelection } from '@tiptap/pm/state'
 import {
-  TIPTAP_NODES,
-  TIPTAP_EVENTS,
   type EditorState,
   type ProseMirrorNode,
   type Schema,
+  TIPTAP_EVENTS,
+  TIPTAP_NODES,
   type Transaction
 } from '@types'
+
 import {
-  HeadingBlockInfo,
-  SelectionBlock,
   BlockMap,
-  PrevBlockResult,
-  NodeState,
+  HeadingAttributes,
+  HeadingBlockInfo,
   HeadingPosition,
+  InsertHeadingsByNodeBlocksResult,
   InsertHeadingsParams,
   LastH1Inserted,
-  InsertHeadingsByNodeBlocksResult,
-  HeadingAttributes
-} from './types'
+  NodeState,
+  PrevBlockResult,
+  SelectionBlock} from './types'
 
 /**
  * Get a list of previous headings within a specified range in the document.

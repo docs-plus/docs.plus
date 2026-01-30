@@ -1,11 +1,12 @@
+import { useModal } from '@components/ui/ModalDrawer'
+import { CaretRight, ChatLeft } from '@icons'
+import { useChatStore, useFocusedHeadingStore,useStore } from '@stores'
+import type { TocItem as TocItemType } from '@types'
 import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { CaretRight, ChatLeft } from '@icons'
-import { useStore, useChatStore, useFocusedHeadingStore } from '@stores'
-import type { TocItem as TocItemType } from '@types'
-import { useTocActions, useUnreadCount, useActiveHeading } from './hooks'
-import { scrollToHeading, buildNestedToc } from './utils'
-import { useModal } from '@components/ui/ModalDrawer'
+
+import { useActiveHeading,useTocActions, useUnreadCount } from './hooks'
+import { buildNestedToc,scrollToHeading } from './utils'
 
 interface TocItemMobileProps {
   item: TocItemType

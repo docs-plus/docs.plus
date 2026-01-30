@@ -1,6 +1,6 @@
-import { supabaseClient } from '@utils/supabase'
-import { Channel as TChannel } from '@types'
 import { PostgrestResponse } from '@supabase/supabase-js'
+import { Channel as TChannel } from '@types'
+import { supabaseClient } from '@utils/supabase'
 
 export const getChannels = async (
   workspaceId: string,

@@ -1,13 +1,13 @@
-import {
-  MdChat,
-  MdOutlineUnfoldLess,
-  MdOutlineUnfoldMore,
-  MdCenterFocusStrong,
-  MdLink,
-  MdDelete,
-  MdOutlineInfo
-} from 'react-icons/md'
 import { MenuItem, useContextMenuContext } from '@components/ui/ContextMenu'
+import {
+  MdCenterFocusStrong,
+  MdChat,
+  MdDelete,
+  MdLink,
+  MdOutlineInfo,
+  MdOutlineUnfoldLess,
+  MdOutlineUnfoldMore} from 'react-icons/md'
+
 import { useTocActions } from './hooks'
 
 interface TocContextMenuProps {

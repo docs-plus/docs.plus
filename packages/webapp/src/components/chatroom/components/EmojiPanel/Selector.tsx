@@ -1,11 +1,12 @@
-import React from 'react'
-import { useChatStore, useSheetStore } from '@stores'
-import { CHAT_OPEN } from '@services/eventsHub'
-import { Picker } from './Picker'
-import { createPortal } from 'react-dom'
-import { useCloseOnResize } from '@hooks/useCloseOnResize'
-import { useEmojiPanelContext } from './context/EmojiPanelContext'
 import { emojiReaction } from '@api'
+import { useCloseOnResize } from '@hooks/useCloseOnResize'
+import { CHAT_OPEN } from '@services/eventsHub'
+import { useChatStore, useSheetStore } from '@stores'
+import React from 'react'
+import { createPortal } from 'react-dom'
+
+import { useEmojiPanelContext } from './context/EmojiPanelContext'
+import { Picker } from './Picker'
 
 export const EmojiSelector = () => {
   const { variant } = useEmojiPanelContext()

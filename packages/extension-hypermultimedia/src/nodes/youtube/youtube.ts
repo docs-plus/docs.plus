@@ -1,7 +1,8 @@
 import { mergeAttributes, Node, nodePasteRule } from '@tiptap/core'
-import { getEmbedUrlFromYoutubeUrl, isValidYoutubeUrl, YOUTUBE_REGEX_GLOBAL } from './helper'
-import { createTooltip, applyStyles, generateShortId } from '../../utils/utils'
+
 import { MediaPlacement } from '../../utils/media-placement'
+import { applyStyles, createTooltip, generateShortId } from '../../utils/utils'
+import { getEmbedUrlFromYoutubeUrl, isValidYoutubeUrl, YOUTUBE_REGEX_GLOBAL } from './helper'
 
 interface LayoutOptions {
   width?: number

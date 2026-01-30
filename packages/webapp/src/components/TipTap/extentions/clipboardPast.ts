@@ -1,22 +1,21 @@
-import { Slice, Fragment } from '@tiptap/pm/model'
+import { Fragment,Slice } from '@tiptap/pm/model'
 import { TextSelection } from '@tiptap/pm/state'
 import {
-  TIPTAP_NODES,
-  TRANSACTION_META,
-  type EditorState,
-  type Transaction,
   type Editor,
-  type ProseMirrorNode
-} from '@types'
+  type EditorState,
+  type ProseMirrorNode,
+  TIPTAP_NODES,
+  type Transaction,
+  TRANSACTION_META} from '@types'
+
 import {
-  getSelectionRangeSlice,
-  getPrevHeadingPos,
-  linearizeHeadingNodes,
-  transformClipboardToStructured,
-  insertHeadingsByNodeBlocks,
   adjustHeadingLevelsForContext,
-  getPasteContextLevel
-} from './helper'
+  getPasteContextLevel,
+  getPrevHeadingPos,
+  getSelectionRangeSlice,
+  insertHeadingsByNodeBlocks,
+  linearizeHeadingNodes,
+  transformClipboardToStructured} from './helper'
 
 /**
  * Removes empty nodes from both the beginning and end of a content array

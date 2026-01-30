@@ -1,5 +1,5 @@
-import { supabaseClient } from '@utils/supabase'
 import { Database } from '@types'
+import { supabaseClient } from '@utils/supabase'
 
 type TMessage = Database['public']['Tables']['messages']['Row']
 

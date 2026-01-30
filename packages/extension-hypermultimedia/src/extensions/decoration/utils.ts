@@ -1,4 +1,5 @@
 import { Editor } from '@tiptap/core'
+
 import { PointerPosition, ResizeConstraints } from './types'
 
 export const DEFAULT_CONSTRAINTS: ResizeConstraints = {

@@ -1,5 +1,5 @@
-import Head from 'next/head'
 import { useStore } from '@stores'
+import Head from 'next/head'
 
 const DEFAULT_METADATA = {
   title: 'docs.plus',

@@ -1,5 +1,5 @@
-import { useAuthStore } from '@stores'
 import { getSimilarUsername } from '@api'
+import { useAuthStore } from '@stores'
 
 const USERNAME_REGEX = /^[a-z][a-z0-9_-]{2,29}$/
 

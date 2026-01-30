@@ -1,39 +1,37 @@
-import { useState } from 'react'
-import Head from 'next/head'
 import type { GetServerSideProps } from 'next'
+import Head from 'next/head'
+import { useState } from 'react'
 import {
-  LuUsers,
-  LuFileText,
-  LuMessageSquare,
+  LuActivity,
   LuBell,
-  LuUserCheck,
-  LuLock,
   LuEye,
+  LuFileText,
+  LuLock,
+  LuMessageSquare,
   LuMonitor,
-  LuActivity
-} from 'react-icons/lu'
+  LuUserCheck,
+  LuUsers} from 'react-icons/lu'
+
+import { StatCard } from '@/components/cards/StatCard'
+import {
+  DauTrendChart,
+  DeviceBreakdown,
+  RetentionCards,
+  TopViewedDocuments,
+  UserLifecycleChart,
+  UserTypeBreakdown,
+  ViewsSummaryCards,
+  ViewsTrendChart} from '@/components/charts'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
-import { StatCard } from '@/components/cards/StatCard'
-import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { ChartErrorBoundary } from '@/components/ui/ChartErrorBoundary'
+import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
 import { useDashboardStats } from '@/hooks/useDashboardStats'
-import { useViewsSummary, useTopViewedDocuments, useViewsTrend } from '@/hooks/useDocumentViews'
+import { useTopViewedDocuments, useViewsSummary, useViewsTrend } from '@/hooks/useDocumentViews'
 import {
+  useDauTrend,
   useRetentionMetrics,
-  useUserLifecycleSegments,
-  useDauTrend
-} from '@/hooks/useRetentionMetrics'
-import {
-  ViewsTrendChart,
-  TopViewedDocuments,
-  ViewsSummaryCards,
-  DeviceBreakdown,
-  UserTypeBreakdown,
-  RetentionCards,
-  DauTrendChart,
-  UserLifecycleChart
-} from '@/components/charts'
+  useUserLifecycleSegments} from '@/hooks/useRetentionMetrics'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {

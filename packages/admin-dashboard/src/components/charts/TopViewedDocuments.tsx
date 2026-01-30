@@ -1,6 +1,7 @@
-import { LuFileText, LuUsers, LuEye } from 'react-icons/lu'
-import type { TopViewedDocument } from '@/types'
+import { LuEye,LuFileText, LuUsers } from 'react-icons/lu'
+
 import { APP_URL } from '@/constants/config'
+import type { TopViewedDocument } from '@/types'
 
 interface TopViewedDocumentsProps {
   data: TopViewedDocument[]

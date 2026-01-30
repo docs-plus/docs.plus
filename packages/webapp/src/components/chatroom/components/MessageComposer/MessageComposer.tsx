@@ -1,40 +1,24 @@
-import { useTiptapEditor } from './hooks/useTiptapEditor'
-import { sendMessage, updateMessage, createThreadMessage, sendCommentMessage } from '@api'
-import { useApi } from '@hooks/useApi'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { MessageComposerContext } from './context/MessageComposerContext'
-import { useAuthStore, useChatStore, useStore } from '@stores'
-import { TChannelSettings } from '@types'
-import {
-  getComposerState,
-  clearComposerState,
-  setComposerStateDebounced,
-  ComposerState
-} from '@db/messageComposerDB'
+import { createThreadMessage, sendCommentMessage,sendMessage, updateMessage } from '@api'
 import SignInForm from '@components/auth/SignInForm'
-import { isOnlyEmoji } from '@utils/emojis'
-
-import { EditorContent } from '@tiptap/react'
-import {
-  Toolbar,
-  BlockquoteButton,
-  CodeButton,
-  HyperlinkButton,
-  ItalicButton,
-  OrderedListButton,
-  StrikethroughButton,
-  BulletListButton,
-  BoldButton,
-  CodeBlockButton
-} from './components/Toolbar'
-import { Context } from './components/Context'
-import { sanitizeMessageContent, sanitizeChunk } from '@utils/sanitizeContent'
-import { chunkHtmlContent } from '@utils/chunkHtmlContent'
-import * as toast from '@components/toast'
-import { messageInsert } from '../../hooks/listner/helpers'
-import { useChatroomContext } from '../../ChatroomContext'
 import { showNotificationPrompt } from '@components/NotificationPromptCard'
+import * as toast from '@components/toast'
+import {
+  clearComposerState,
+  ComposerState,
+  getComposerState,
+  setComposerStateDebounced} from '@db/messageComposerDB'
+import { useApi } from '@hooks/useApi'
+import { useAuthStore, useChatStore, useStore } from '@stores'
+import { EditorContent } from '@tiptap/react'
+import { TChannelSettings } from '@types'
+import { chunkHtmlContent } from '@utils/chunkHtmlContent'
+import { isOnlyEmoji } from '@utils/emojis'
+import { sanitizeChunk,sanitizeMessageContent } from '@utils/sanitizeContent'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 
+import { useChatroomContext } from '../../ChatroomContext'
+import { messageInsert } from '../../hooks/listner/helpers'
 import {
   Actions,
   AttachmentButton,
@@ -43,13 +27,25 @@ import {
   SendButton,
   ToggleToolbarButton
 } from './components/Actions'
-import { MobileLayout, DesktopLayout, Editor } from './components/layouts'
-
-import { Input } from './components/Input'
-import { twMerge } from 'tailwind-merge'
-import ReplyContext from './components/Context/ReplyContext'
-import EditContext from './components/Context/EditContext'
+import { Context } from './components/Context'
 import CommentContext from './components/Context/CommentContext'
+import EditContext from './components/Context/EditContext'
+import ReplyContext from './components/Context/ReplyContext'
+import { Input } from './components/Input'
+import { DesktopLayout, Editor,MobileLayout } from './components/layouts'
+import {
+  BlockquoteButton,
+  BoldButton,
+  BulletListButton,
+  CodeBlockButton,
+  CodeButton,
+  HyperlinkButton,
+  ItalicButton,
+  OrderedListButton,
+  StrikethroughButton,
+  Toolbar} from './components/Toolbar'
+import { MessageComposerContext } from './context/MessageComposerContext'
+import { useTiptapEditor } from './hooks/useTiptapEditor'
 import { MobileWrapper } from './Mobile'
 
 const MessageComposer = ({

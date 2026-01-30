@@ -5,52 +5,52 @@
  * Includes TOC (Table of Contents) and Chatroom panels.
  */
 
-import { useState } from 'react'
+import { Avatar } from '@components/ui'
 import Head from 'next/head'
+import { useState } from 'react'
 import {
-  MdUndo,
-  MdRedo,
+  MdAlternateEmail,
+  MdAttachFile,
+  MdBookmark,
+  MdChat,
+  MdChevronRight,
+  MdClose,
+  MdCloudDone,
+  MdCode,
+  MdComment,
+  MdEdit,
+  MdEmojiEmotions,
+  MdExpandMore,
+  MdFormatAlignCenter,
+  MdFormatAlignLeft,
+  MdFormatAlignRight,
   MdFormatBold,
   MdFormatItalic,
-  MdFormatUnderlined,
-  MdFormatStrikethrough,
-  MdCode,
-  MdLink,
-  MdImage,
   MdFormatListBulleted,
   MdFormatListNumbered,
   MdFormatQuote,
-  MdFormatAlignLeft,
-  MdFormatAlignCenter,
-  MdFormatAlignRight,
-  MdTableChart,
-  MdHorizontalRule,
-  MdMoreVert,
-  MdPeople,
-  MdComment,
-  MdBookmark,
-  MdShare,
-  MdSettings,
+  MdFormatStrikethrough,
+  MdFormatUnderlined,
   MdFullscreen,
-  MdPrint,
   MdHistory,
-  MdCloudDone,
-  MdEdit,
-  MdVisibility,
+  MdHorizontalRule,
+  MdImage,
   MdKeyboardArrowDown,
-  MdExpandMore,
-  MdChevronRight,
-  MdChat,
-  MdSend,
-  MdAttachFile,
-  MdEmojiEmotions,
-  MdClose,
-  MdAlternateEmail,
-  MdOutlineTableChart,
+  MdLink,
+  MdMoreVert,
   MdOutlineCode,
-  MdOutlineFormatQuote
-} from 'react-icons/md'
-import { Avatar } from '@components/ui'
+  MdOutlineFormatQuote,
+  MdOutlineTableChart,
+  MdPeople,
+  MdPrint,
+  MdRedo,
+  MdSend,
+  MdSettings,
+  MdShare,
+  MdTableChart,
+  MdUndo,
+  MdVisibility} from 'react-icons/md'
+
 import { ShowcaseLayout } from './layouts'
 
 // TOC Data Structure

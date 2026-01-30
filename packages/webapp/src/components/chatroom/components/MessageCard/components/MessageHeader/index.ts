@@ -1,2 +1,2 @@
-export { default } from './MessageHeader'
 export * from './components'
+export { default } from './MessageHeader'

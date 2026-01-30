@@ -1,5 +1,5 @@
-import { immer } from 'zustand/middleware/immer'
 import { TNotification, TNotificationSummary, TTab } from '@types'
+import { immer } from 'zustand/middleware/immer'
 
 type TNotificationTab = {
   label: TTab

@@ -1,13 +1,14 @@
 import { Extension } from '@tiptap/core'
-import { Image } from './nodes/image/image'
-import type { ImageOptions } from './types'
-import { Youtube, YoutubeOptions } from './nodes/youtube/youtube'
-import { Vimeo, VimeoOptions } from './nodes/vimeo/vimeo'
-import { Twitter, TwitterOptions } from './nodes/twitter/twitter'
-import { SoundCloud, SoundCloudOptions } from './nodes/soundcloud/soundcloud'
+
 import { MediaResizeGripper } from './extensions/resizeGripper'
-import { Video, VideoOptions } from './nodes/video/video'
 import { Audio, AudioOptions } from './nodes/audio/audio'
+import { Image } from './nodes/image/image'
+import { SoundCloud, SoundCloudOptions } from './nodes/soundcloud/soundcloud'
+import { Twitter, TwitterOptions } from './nodes/twitter/twitter'
+import { Video, VideoOptions } from './nodes/video/video'
+import { Vimeo, VimeoOptions } from './nodes/vimeo/vimeo'
+import { Youtube, YoutubeOptions } from './nodes/youtube/youtube'
+import type { ImageOptions } from './types'
 
 export interface HyperMultimediaKitOptions {
   Image: Partial<ImageOptions & { resizeGripper?: boolean }> | true | false

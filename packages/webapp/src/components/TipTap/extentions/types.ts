@@ -1,6 +1,6 @@
 import { Editor } from '@tiptap/core'
-import { Transaction, EditorState } from '@tiptap/pm/state'
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { EditorState,Transaction } from '@tiptap/pm/state'
 import { EditorView } from '@tiptap/pm/view'
 
 // ============================================================================

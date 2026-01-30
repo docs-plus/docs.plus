@@ -1,11 +1,12 @@
-import React, { useEffect } from 'react'
-import { useEditor } from '@tiptap/react'
-import { useStore } from '@stores'
 import editorConfig from '@components/TipTap/TipTap'
-import Toolbar from './Toolbar'
+import { useStore } from '@stores'
+import { useEditor } from '@tiptap/react'
+import React, { useEffect } from 'react'
+
+import { useHocuspocusStateless } from '../hooks/useHocuspocusStateless'
 import EditorContent from './EditorContent'
 import Sidebar from './Sidebar'
-import { useHocuspocusStateless } from '../hooks/useHocuspocusStateless'
+import Toolbar from './Toolbar'
 
 const DesktopHistory = () => {
   const { hocuspocusProvider } = useStore((state) => state.settings)

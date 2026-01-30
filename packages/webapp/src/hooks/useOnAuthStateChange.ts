@@ -1,8 +1,8 @@
-import { useEffect, useCallback, useRef } from 'react'
-import { useAuthStore } from '@stores'
 import { getUserById } from '@api'
 import { useApi } from '@hooks/useApi'
+import { useAuthStore } from '@stores'
 import { createClient } from '@utils/supabase/component'
+import { useCallback, useEffect, useRef } from 'react'
 
 export const useOnAuthStateChange = () => {
   const supabaseClient = createClient()

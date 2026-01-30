@@ -1,10 +1,10 @@
 import { useQuery } from '@tanstack/react-query'
+
 import {
-  fetchViewsSummary,
+  fetchDocumentViewStats,
   fetchTopViewedDocuments,
-  fetchViewsTrend,
-  fetchDocumentViewStats
-} from '@/services/api'
+  fetchViewsSummary,
+  fetchViewsTrend} from '@/services/api'
 
 /**
  * Hook for fetching document views summary

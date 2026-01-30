@@ -1,6 +1,6 @@
-import React, { useCallback } from 'react'
-import { useStore } from '@stores'
 import { UserProfileDialog } from '@components/ui/dialogs/UserProfileDialog'
+import { useStore } from '@stores'
+import React, { useCallback } from 'react'
 
 export const useMentionClick = () => {
   const openDialog = useStore((state) => state.openDialog)

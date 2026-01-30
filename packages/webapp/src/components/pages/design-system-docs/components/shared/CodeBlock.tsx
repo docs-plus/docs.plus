@@ -4,7 +4,8 @@
  * Displays code with syntax highlighting and copy functionality.
  */
 
-import { MdContentCopy, MdCheck } from 'react-icons/md'
+import { MdCheck,MdContentCopy } from 'react-icons/md'
+
 import { useDesignSystemDocs } from '../../context/DesignSystemDocsContext'
 
 interface CodeBlockProps {

@@ -17,6 +17,7 @@
 
 import type { Extension, onConnectPayload, onDisconnectPayload } from '@hocuspocus/server'
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
+
 import { logger } from '../lib/logger'
 
 const viewLogger = logger.child({ service: 'document-views' })

@@ -1,8 +1,9 @@
-import { useMessageComposer } from '../../hooks/useMessageComposer'
+import CloseButton from '@components/ui/CloseButton'
 import { FaReply } from 'react-icons/fa'
+
 import { useChatroomContext } from '../../../../ChatroomContext'
 import { useAutoScrollOnMessageContext } from '../../hooks/useAutoScrollOnMessageContext'
-import CloseButton from '@components/ui/CloseButton'
+import { useMessageComposer } from '../../hooks/useMessageComposer'
 
 const ReplyContext = ({ onDismiss }: { onDismiss?: () => void }) => {
   const { channelId } = useChatroomContext()

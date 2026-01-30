@@ -1,5 +1,5 @@
-export { CopyButton } from './CopyButton'
 export { CodeBlock } from './CodeBlock'
-export { SectionHeader } from './SectionHeader'
-export { ComponentCard } from './ComponentCard'
 export { ColorSwatch } from './ColorSwatch'
+export { ComponentCard } from './ComponentCard'
+export { CopyButton } from './CopyButton'
+export { SectionHeader } from './SectionHeader'

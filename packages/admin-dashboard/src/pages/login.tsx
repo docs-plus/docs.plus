@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import Head from 'next/head'
 import type { GetServerSideProps } from 'next'
+import Head from 'next/head'
+import { useState } from 'react'
 import { LuCircleAlert, LuLayoutDashboard } from 'react-icons/lu'
 
 // Disable static generation to prevent "NextRouter was not mounted" errors
@@ -8,6 +8,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 import { FcGoogle } from 'react-icons/fc'
+
 import { supabase } from '@/lib/supabase'
 
 export default function LoginPage() {

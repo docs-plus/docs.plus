@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import type { NextRouter } from 'next/router'
 import type { UseMutateFunction } from '@tanstack/react-query'
+import type { NextRouter } from 'next/router'
+import { useState } from 'react'
 
 export const getLocalStorageBoolean = (key: string, defaultValue: boolean): boolean => {
   const value = localStorage.getItem(key)

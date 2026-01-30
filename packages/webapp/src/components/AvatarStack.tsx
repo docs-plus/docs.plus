@@ -1,4 +1,5 @@
 import { twMerge } from 'tailwind-merge'
+
 import { Avatar, type AvatarSize } from './ui/Avatar'
 
 type StackUser = {

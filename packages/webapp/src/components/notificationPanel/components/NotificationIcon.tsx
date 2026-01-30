@@ -1,14 +1,13 @@
 import {
   LuAtSign,
-  LuUsers,
-  LuSmile,
-  LuMessageSquare,
-  LuReply,
-  LuMessagesSquare,
   LuMail,
   LuMegaphone,
-  LuTriangleAlert
-} from 'react-icons/lu'
+  LuMessageSquare,
+  LuMessagesSquare,
+  LuReply,
+  LuSmile,
+  LuTriangleAlert,
+  LuUsers} from 'react-icons/lu'
 
 const NotificationIcon = ({ type, size = 16 }: { type: string; size?: number }) => {
   const iconProps = { size, className: 'text-base-content/60' }

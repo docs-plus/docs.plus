@@ -6,19 +6,20 @@
 
 import Head from 'next/head'
 import {
-  MdFormatSize,
+  MdCode,
   MdFormatBold,
   MdFormatItalic,
-  MdFormatUnderlined,
-  MdFormatStrikethrough,
-  MdCode,
-  MdFormatQuote,
-  MdLink,
   MdFormatListBulleted,
   MdFormatListNumbered,
+  MdFormatQuote,
+  MdFormatSize,
+  MdFormatStrikethrough,
+  MdFormatUnderlined,
+  MdLink,
   MdTextFields,
   MdTitle
 } from 'react-icons/md'
+
 import { ShowcaseLayout } from './layouts'
 
 const FONT_WEIGHTS = [

@@ -1,5 +1,5 @@
-import { immer } from 'zustand/middleware/immer'
 import { Profile as TProfile } from '@types'
+import { immer } from 'zustand/middleware/immer'
 
 type UserStatus = 'ONLINE' | 'OFFLINE' | 'AWAY' | 'BUSY' | 'INVISIBLE' | 'TYPING'
 

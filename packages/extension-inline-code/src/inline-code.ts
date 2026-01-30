@@ -1,4 +1,4 @@
-import { Mark, mergeAttributes, markInputRule, markPasteRule } from '@tiptap/core'
+import { Mark, markInputRule, markPasteRule,mergeAttributes } from '@tiptap/core'
 import { TextSelection } from '@tiptap/pm/state'
 
 export interface InlineCodeOptions {

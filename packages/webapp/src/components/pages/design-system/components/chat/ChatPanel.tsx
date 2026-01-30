@@ -4,11 +4,12 @@
  * Floating chat panel with live messaging demo.
  */
 
+import { Avatar, CloseButton } from '@components/ui'
 import { useState } from 'react'
 import { MdChat, MdChevronRight, MdSend } from 'react-icons/md'
-import { Avatar, CloseButton } from '@components/ui'
-import { useDesignSystem } from '../../context/DesignSystemContext'
+
 import { DEMO_MESSAGES } from '../../constants/demoData'
+import { useDesignSystem } from '../../context/DesignSystemContext'
 
 export const ChatPanel = () => {
   const { chatMessage, setChatMessage } = useDesignSystem()

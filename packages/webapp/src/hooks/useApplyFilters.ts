@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
 import { db, TDocFilter } from '@db/headingCrinckleDB'
-import getHeadingsFilterMap from './helpers/filterLogic'
-import { useRouter } from 'next/router'
 import { useStore } from '@stores'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+
+import getHeadingsFilterMap from './helpers/filterLogic'
 
 const useApplyFilters = () => {
   const router = useRouter()

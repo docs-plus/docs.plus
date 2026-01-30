@@ -1,7 +1,7 @@
 import { NextPage, NextPageContext } from 'next'
 import Head from 'next/head'
 import Link from 'next/link'
-import { LuServerCrash, LuFileQuestion } from 'react-icons/lu'
+import { LuFileQuestion,LuServerCrash } from 'react-icons/lu'
 
 interface ErrorProps {
   statusCode: number

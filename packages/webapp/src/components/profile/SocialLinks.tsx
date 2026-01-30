@@ -1,13 +1,14 @@
-import { useState } from 'react'
-import { MdAdd, MdDelete, MdLink, MdEmail, MdPhone, MdOpenInNew } from 'react-icons/md'
-import { useAuthStore } from '@stores'
+import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
 import TextInput from '@components/ui/TextInput'
-import * as toast from '@components/toast'
-import { useProfileUpdate } from './hooks/useProfileUpdate'
-import { SOCIAL_MEDIA_ICONS, SOCIAL_MEDIA_DOMAINS } from './constants'
-import { ILinkItem, ELinkType } from './types'
+import { useAuthStore } from '@stores'
 import type { Profile } from '@types'
+import { useState } from 'react'
+import { MdAdd, MdDelete, MdEmail, MdLink, MdOpenInNew,MdPhone } from 'react-icons/md'
+
+import { SOCIAL_MEDIA_DOMAINS,SOCIAL_MEDIA_ICONS } from './constants'
+import { useProfileUpdate } from './hooks/useProfileUpdate'
+import { ELinkType,ILinkItem } from './types'
 
 // Link validation helper
 const validateLink = (url: string): { valid: boolean; type?: ELinkType; error?: string } => {

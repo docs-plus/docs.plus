@@ -1,7 +1,8 @@
 import { Editor } from '@tiptap/core'
 import { EditorView } from '@tiptap/pm/view'
-import Tippy from './tippyHelper'
 import { Instance, Props as TippyProps } from 'tippy.js'
+
+import Tippy from './tippyHelper'
 
 interface MarginOption {
   value: string

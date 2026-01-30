@@ -6,23 +6,22 @@
 
 import { useState } from 'react'
 import {
-  MdPalette,
-  MdTextFields,
-  MdSpaceBar,
-  MdRoundedCorner,
   MdLayers,
-  MdSpeed
-} from 'react-icons/md'
-import { SectionHeader, ColorSwatch, CopyButton } from '../shared'
+  MdPalette,
+  MdRoundedCorner,
+  MdSpaceBar,
+  MdSpeed,
+  MdTextFields} from 'react-icons/md'
+
 import {
-  LIGHT_THEME_COLORS,
   DARK_THEME_COLORS,
-  SPACING_SCALE,
+  LIGHT_THEME_COLORS,
   RADIUS_SCALE,
   SHADOW_SCALE,
-  Z_INDEX_SCALE,
-  TIMING_SCALE
-} from '../../constants'
+  SPACING_SCALE,
+  TIMING_SCALE,
+  Z_INDEX_SCALE} from '../../constants'
+import { ColorSwatch, CopyButton,SectionHeader } from '../shared'
 
 export const FoundationsSection = () => {
   const [activeTheme, setActiveTheme] = useState<'light' | 'dark'>('light')

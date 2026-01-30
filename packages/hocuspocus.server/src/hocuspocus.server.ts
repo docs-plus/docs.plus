@@ -1,10 +1,11 @@
 import { Server } from '@hocuspocus/server'
+
 import HocuspocusConfig from './config/hocuspocus.config'
+import { logger } from './lib/logger'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { disconnectRedis } from './lib/redis'
-import { verifyJWT } from './utils'
 import type { HistoryPayload } from './types'
-import { logger } from './lib/logger'
+import { verifyJWT } from './utils'
 
 process.env.NODE_ENV = process.env.NODE_ENV || 'development'
 

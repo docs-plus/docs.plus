@@ -1,6 +1,6 @@
 import AvatarStack from '@components/AvatarStack'
-import { useEffect, useState } from 'react'
 import { useChatStore, useStore } from '@stores'
+import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {

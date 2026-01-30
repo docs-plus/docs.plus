@@ -1,12 +1,12 @@
-import * as Icons from './icons'
 import { Editor } from '@tiptap/core'
 
+import * as Icons from './icons'
 import {
+  applyStyleAndAttributes,
+  btnPlacementSettings,
   clearChildNodes,
   createElement,
-  applyStyleAndAttributes,
   createMarginSelection,
-  btnPlacementSettings,
   highlightButton,
   Ttooltip
 } from './utils'

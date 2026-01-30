@@ -1,5 +1,5 @@
+import { useChatStore,useStore } from '@stores'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { useStore, useChatStore } from '@stores'
 
 /**
  * Design System Panel Constraints

@@ -1,4 +1,5 @@
 import { useStore } from '@stores'
+
 import { Modal, ModalContent } from './Dialog'
 
 export function GlobalDialog() {

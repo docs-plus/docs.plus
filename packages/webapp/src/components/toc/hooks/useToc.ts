@@ -1,9 +1,9 @@
-import { useState, useCallback, useEffect, useRef } from 'react'
-import { useStore } from '@stores'
-import { TIPTAP_NODES, TIPTAP_EVENTS, TRANSACTION_META, type Transaction } from '@types'
-import type { TocItem } from '@types'
-import PubSub from 'pubsub-js'
 import { getNodeState } from '@components/TipTap/extentions/helper'
+import { useStore } from '@stores'
+import type { TocItem } from '@types'
+import { TIPTAP_EVENTS, TIPTAP_NODES, type Transaction,TRANSACTION_META } from '@types'
+import PubSub from 'pubsub-js'
+import { useCallback, useEffect, useRef,useState } from 'react'
 
 /**
  * Checks if a transaction contains changes that affect headings

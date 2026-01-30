@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
 import { useStore } from '@stores'
 import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 
 const useInitiateDocumentAndWorkspace = (docMetadata: any) => {
   const router = useRouter()

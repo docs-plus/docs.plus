@@ -1,15 +1,15 @@
 import HeadSeo from '@components/HeadSeo'
-import useMapDocumentAndWorkspace from '@hooks/useMapDocumentAndWorkspace'
-import useInitiateDocumentAndWorkspace from '@hooks/useInitiateDocumentAndWorkspace'
-import useYdocAndProvider from '@hooks/useYdocAndProvider'
 import DocumentLayouts from '@components/pages/document/layouts/DocumentLayouts'
+import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
+import { GlobalDialog } from '@components/ui/GlobalDialog'
 import useDocumentMetadata from '@hooks/useDocumentMetadata'
+import useInitiateDocumentAndWorkspace from '@hooks/useInitiateDocumentAndWorkspace'
+import useJoinWorkspace from '@hooks/useJoinWorkspace'
+import useMapDocumentAndWorkspace from '@hooks/useMapDocumentAndWorkspace'
+import useYdocAndProvider from '@hooks/useYdocAndProvider'
+import { GoogleOneTapLayout } from '@layouts'
 import { useStore } from '@stores'
 import { useRouter } from 'next/router'
-import { GoogleOneTapLayout } from '@layouts'
-import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
-import useJoinWorkspace from '@hooks/useJoinWorkspace'
-import { GlobalDialog } from '@components/ui/GlobalDialog'
 
 type DocumentPageProps = {
   docMetadata: any

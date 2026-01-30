@@ -1,6 +1,6 @@
-import { useCallback, useEffect } from 'react'
 import { useStore } from '@stores'
 import type { Editor } from '@tiptap/react'
+import { useCallback, useEffect } from 'react'
 
 // ============================================================================
 // Constants

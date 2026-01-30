@@ -1,7 +1,8 @@
 import type { TocItem } from '@types'
-import type { FlattenedTocItem, SnapConfig, DropTarget } from './types'
-import { DEFAULT_SNAP_CONFIG, TARGET_HYSTERESIS, INDICATOR_Y_HYSTERESIS } from './types'
+
 import { getPointerPosition } from './pointerCollisionDetection'
+import type { DropTarget,FlattenedTocItem, SnapConfig } from './types'
+import { DEFAULT_SNAP_CONFIG, INDICATOR_Y_HYSTERESIS,TARGET_HYSTERESIS } from './types'
 
 /** Get TOC item element by ID */
 export const getItemElement = (id: string) =>

@@ -1,6 +1,6 @@
-import type { Context } from 'hono'
 import { PrismaClient } from '@prisma/client'
 import { createClient } from '@supabase/supabase-js'
+import type { Context } from 'hono'
 
 const prisma = new PrismaClient()
 

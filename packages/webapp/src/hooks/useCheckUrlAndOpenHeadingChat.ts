@@ -1,8 +1,8 @@
-import { useEffect } from 'react'
+import { CHAT_OPEN } from '@services/eventsHub'
+import { useAuthStore,useStore } from '@stores'
 import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
-import { CHAT_OPEN } from '@services/eventsHub'
-import { useStore, useAuthStore } from '@stores'
+import { useEffect } from 'react'
 
 const useCheckUrlAndOpenHeadingChat = () => {
   const { slugs } = useRouter().query

@@ -4,33 +4,33 @@
  * Showcase page for Notifications and Bookmarks management.
  */
 
-import { useState } from 'react'
+import { Avatar } from '@components/ui'
 import Head from 'next/head'
+import { useState } from 'react'
 import {
-  MdNotifications,
+  MdAccessTime,
+  MdArrowForward,
   MdBookmark,
   MdBookmarkBorder,
-  MdComment,
-  MdPerson,
-  MdEdit,
-  MdShare,
-  MdDelete,
   MdCheck,
   MdClose,
-  MdMoreVert,
-  MdFilterList,
-  MdDoneAll,
-  MdNotificationsOff,
+  MdComment,
+  MdDelete,
   MdDescription,
-  MdAccessTime,
-  MdStar,
-  MdStarBorder,
+  MdDoneAll,
+  MdEdit,
+  MdFilterList,
   MdFolder,
   MdLabel,
+  MdMoreVert,
+  MdNotifications,
+  MdNotificationsOff,
+  MdPerson,
   MdSearch,
-  MdArrowForward
-} from 'react-icons/md'
-import { Avatar } from '@components/ui'
+  MdShare,
+  MdStar,
+  MdStarBorder} from 'react-icons/md'
+
 import { ShowcaseLayout } from './layouts'
 
 type TabType = 'notifications' | 'bookmarks'

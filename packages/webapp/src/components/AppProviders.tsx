@@ -5,17 +5,17 @@
  * This component is dynamically imported in _app.tsx.
  */
 
-import { useEffect } from 'react'
-import { useRouter } from 'next/router'
-import { useOnAuthStateChange } from '@hooks/useOnAuthStateChange'
-import { useCatchUserPresences } from '@hooks/useCatchUserPresences'
-import { useInitialSteps } from '@hooks/useInitialSteps'
-import { useBroadcastListner } from '@hooks/useBroadcastListner'
-import useServiceWorker from '@hooks/useServiceWorker'
-import { useHandleUserStatus } from '@hooks/useHanelUserStatus'
-import { eventsHub } from '@services/eventsHub'
 import { performMaintenanceCleanup } from '@db/messageComposerDB'
-import { useEditorPreferences, applyEditorPreferences } from '@stores'
+import { useBroadcastListner } from '@hooks/useBroadcastListner'
+import { useCatchUserPresences } from '@hooks/useCatchUserPresences'
+import { useHandleUserStatus } from '@hooks/useHanelUserStatus'
+import { useInitialSteps } from '@hooks/useInitialSteps'
+import { useOnAuthStateChange } from '@hooks/useOnAuthStateChange'
+import useServiceWorker from '@hooks/useServiceWorker'
+import { eventsHub } from '@services/eventsHub'
+import { applyEditorPreferences,useEditorPreferences } from '@stores'
+import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 
 interface AppProvidersProps {
   isMobileInitial: boolean

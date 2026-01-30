@@ -1,10 +1,11 @@
-import { ChatLeft } from '@icons'
-import { useChatStore, useStore } from '@stores'
-import { useTocActions, usePresentUsers, useUnreadCount } from './hooks'
-import { scrollToDocTitle } from './utils'
 import AvatarStack from '@components/AvatarStack'
 import { useModal } from '@components/ui/ModalDrawer'
 import UnreadBadge from '@components/ui/UnreadBadge'
+import { ChatLeft } from '@icons'
+import { useChatStore, useStore } from '@stores'
+
+import { usePresentUsers, useTocActions, useUnreadCount } from './hooks'
+import { scrollToDocTitle } from './utils'
 
 interface TocHeaderProps {
   variant: 'desktop' | 'mobile'

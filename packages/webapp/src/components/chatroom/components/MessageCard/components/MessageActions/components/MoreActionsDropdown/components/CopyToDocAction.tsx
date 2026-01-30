@@ -1,5 +1,5 @@
-import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
 import { useCopyMessageToDocHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageToDocHandler'
+import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
 import { MdOutlineFileOpen } from 'react-icons/md'
 
 export const CopyToDocAction = () => {

@@ -1,10 +1,11 @@
-import { createDocumentWorker } from './lib/queue'
+import { Hono } from 'hono'
+
 import { emailGateway } from './lib/email'
-import { pushGateway } from './lib/push'
 import { workerLogger } from './lib/logger'
 import { shutdownDatabase } from './lib/prisma'
-import { getRedisClient, disconnectRedis, waitForRedisReady } from './lib/redis'
-import { Hono } from 'hono'
+import { pushGateway } from './lib/push'
+import { createDocumentWorker } from './lib/queue'
+import { disconnectRedis, getRedisClient, waitForRedisReady } from './lib/redis'
 
 const WORKER_HEALTH_PORT = parseInt(process.env.WORKER_HEALTH_PORT || '4002', 10)
 

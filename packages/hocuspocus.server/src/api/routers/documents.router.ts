@@ -1,12 +1,13 @@
-import { Hono } from 'hono'
 import { zValidator } from '@hono/zod-validator'
-import * as documentsController from '../controllers/documents.controller'
+import { Hono } from 'hono'
+
 import {
   createDocumentSchema,
-  updateDocumentMetadataSchema,
   documentQuerySchema,
+  updateDocumentMetadataSchema,
   userIdQuerySchema
 } from '../../schemas/document.schema'
+import * as documentsController from '../controllers/documents.controller'
 
 const documents = new Hono()
 

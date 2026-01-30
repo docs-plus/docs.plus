@@ -1,5 +1,5 @@
-import { immer } from 'zustand/middleware/immer'
 import { Channel as TChannel } from '@types'
+import { immer } from 'zustand/middleware/immer'
 
 export interface IChannelStore {
   channels: Map<string, TChannel>

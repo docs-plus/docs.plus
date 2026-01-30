@@ -1,7 +1,8 @@
+import CloseButton from '@components/ui/CloseButton'
+import { RiPencilFill } from 'react-icons/ri'
+
 import { useChatroomContext } from '../../../../ChatroomContext'
 import { useMessageComposer } from '../../hooks/useMessageComposer'
-import { RiPencilFill } from 'react-icons/ri'
-import CloseButton from '@components/ui/CloseButton'
 
 const EditContext = ({ onDismiss }: { onDismiss?: () => void }) => {
   const { channelId } = useChatroomContext()

@@ -1,8 +1,8 @@
-import { useEffect } from 'react'
-import { Editor } from '@tiptap/react'
-import { HocuspocusProvider } from '@hocuspocus/provider'
 import Config from '@config'
+import { HocuspocusProvider } from '@hocuspocus/provider'
+import { Editor } from '@tiptap/react'
 import { useRouter } from 'next/router'
+import { useEffect } from 'react'
 
 interface UseInitializeNewDocumentProps {
   editor: Editor | null

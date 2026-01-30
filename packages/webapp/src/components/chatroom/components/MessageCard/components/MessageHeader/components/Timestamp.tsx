@@ -1,7 +1,8 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
-import { useMessageCardContext } from '../../../MessageCardContext'
-import { twMerge } from 'tailwind-merge'
 import { MdAccessTime } from 'react-icons/md'
+import { twMerge } from 'tailwind-merge'
+
+import { useMessageCardContext } from '../../../MessageCardContext'
 
 type Props = {
   className?: string

@@ -1,9 +1,10 @@
+import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
 import React from 'react'
+
 import { useToc } from './hooks'
-import { buildNestedToc } from './utils'
 import { TocHeader } from './TocHeader'
 import { TocItemMobile } from './TocItemMobile'
-import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
+import { buildNestedToc } from './utils'
 
 interface TocMobileProps {
   className?: string

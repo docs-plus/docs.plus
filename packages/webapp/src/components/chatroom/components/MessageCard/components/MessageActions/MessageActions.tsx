@@ -2,18 +2,17 @@ import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import {
+  BookmarkButton,
+  CopyLinkAction,
   CopyToDocAction,
   DeleteAction,
   EditAction,
-  ReadStatusDisplay,
-  QuickActions,
   EmojiReactionButton,
+  GroupAuth,
+  QuickActions,
+  ReadStatusDisplay,
   ReplyButton,
-  BookmarkButton,
-  ReplyInThreadButton,
-  CopyLinkAction,
-  GroupAuth
-} from './components'
+  ReplyInThreadButton} from './components'
 import { HoverMenuActions } from './HoverMenuActions'
 
 interface Props {

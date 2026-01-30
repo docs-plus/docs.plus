@@ -1,7 +1,7 @@
+import SharedButton from '@components/ui/Button'
+import { Editor } from '@tiptap/react'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
-import { Editor } from '@tiptap/react'
-import SharedButton from '@components/ui/Button'
 
 interface ToolbarButtonProps {
   type?: string

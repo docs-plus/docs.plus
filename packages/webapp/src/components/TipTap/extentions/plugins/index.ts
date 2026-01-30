@@ -1,8 +1,8 @@
 // Export all plugins for easy importing
-export { createCrinklePlugin } from './crinklePlugin'
 export { createCopyPastePlugin } from './copyPastePlugin'
-export { createRangeSelectionPlugin } from './rangeSelectionPlugin'
+export { createCrinklePlugin } from './crinklePlugin'
 export { createHierarchyValidationPlugin } from './hierarchyValidationPlugin'
+export { createRangeSelectionPlugin } from './rangeSelectionPlugin'
 
 // Export helpers
 export * from './decorationHelpers'

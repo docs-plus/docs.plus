@@ -1,6 +1,7 @@
 import { S3Client } from 'bun'
-import mime from 'mime'
 import type { Context } from 'hono'
+import mime from 'mime'
+
 import { storageS3Logger } from '../logger'
 
 // Bun's native S3 client - blazing fast with zero overhead

@@ -1,12 +1,13 @@
-import React from 'react'
-import { MdArrowBack } from 'react-icons/md'
-import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import Icon from '@components/TipTap/toolbar/Icon'
+import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import Button from '@components/ui/Button'
 import { useStore } from '@stores'
+import React from 'react'
+import { MdArrowBack } from 'react-icons/md'
+
+import { formatVersionDate } from '../helpers'
 import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
 import { useVersionRestore } from '../hooks/useVersionRestore'
-import { formatVersionDate } from '../helpers'
 
 const Toolbar = () => {
   const { activeHistory, historyList } = useStore((state) => state)

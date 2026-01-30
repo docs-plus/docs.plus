@@ -10,10 +10,10 @@
  * 3. Shows confirmation with options to manage preferences
  */
 
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/router'
 import Head from 'next/head'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
 
 interface UnsubscribeResult {
   success: boolean

@@ -9,16 +9,15 @@
  * - hocuspocus-worker: Calls initialize(true) - creates worker to process jobs
  */
 
-import { pushLogger } from '../logger'
-import { queuePush, getPushQueueHealth, createPushWorker, closePushQueue } from './queue'
-import { configureVapid, isVapidConfigured, sendPushNotification } from './sender'
 import { config } from '../../config/env'
 import type {
-  PushNotificationRequest,
-  PushSendResult,
   PushGatewayHealth,
-  PushJobData
-} from '../../types/push.types'
+  PushJobData,
+  PushNotificationRequest,
+  PushSendResult} from '../../types/push.types'
+import { pushLogger } from '../logger'
+import { closePushQueue,createPushWorker, getPushQueueHealth, queuePush } from './queue'
+import { configureVapid, isVapidConfigured, sendPushNotification } from './sender'
 
 /**
  * Push Gateway Service

@@ -1,9 +1,10 @@
 // TODO: Refactor this file, it's too long and hard to understand
 
-import { Node, mergeAttributes } from '@tiptap/core'
+import { mergeAttributes,Node } from '@tiptap/core'
+import { DOMOutputSpec,Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { TIPTAP_NODES } from '@types'
+
 import onHeading from '../extentions/normalText/onHeading'
-import { Node as ProseMirrorNode, DOMOutputSpec } from '@tiptap/pm/model'
 
 // Helpers
 const getNodeHLevel = (doc: ProseMirrorNode, pos: number): number => {
@@ -160,4 +161,4 @@ const HeadingsTitle = Node.create({
   }
 })
 
-export { HeadingsTitle, HeadingsTitle as default }
+export { HeadingsTitle as default,HeadingsTitle }

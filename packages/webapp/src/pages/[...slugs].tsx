@@ -1,11 +1,11 @@
-import { type GetServerSidePropsContext } from 'next'
-import React from 'react'
 import useAddDeviceTypeHtmlClass from '@components/pages/document/hooks/useAddDeviceTypeHtmlClass'
-import dynamic from 'next/dynamic'
-import { documentServerSideProps } from '@helpers'
 import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
 import data from '@emoji-mart/data'
+import { documentServerSideProps } from '@helpers'
 import { init } from 'emoji-mart'
+import { type GetServerSidePropsContext } from 'next'
+import dynamic from 'next/dynamic'
+import React from 'react'
 
 // Initialize emoji-mart
 init({ data })

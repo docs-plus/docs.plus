@@ -1,5 +1,5 @@
-import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
 import { Extension } from '@tiptap/core'
+import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
 import type { EditorView } from '@types'
 
 /**

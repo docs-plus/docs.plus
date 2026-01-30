@@ -1,6 +1,5 @@
 export {
-  HeadingActionsExtension,
-  HeadingActionsExtension as default
-} from './HeadingActionsExtension'
+  HeadingActionsExtension as default,
+  HeadingActionsExtension} from './HeadingActionsExtension'
+export type { HAClassName, HeadingActionsOptions, HeadingNodeData } from './types'
 export { HEADING_ACTIONS_CLASSES } from './types'
-export type { HeadingActionsOptions, HAClassName, HeadingNodeData } from './types'

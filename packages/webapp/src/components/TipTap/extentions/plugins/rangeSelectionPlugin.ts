@@ -1,6 +1,7 @@
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Editor } from '@tiptap/react'
 import { TIPTAP_NODES } from '@types'
+
 import deleteSelectedRange from '../deleteSelectedRange'
 
 /**

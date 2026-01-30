@@ -1,6 +1,6 @@
-import { useState } from 'react'
 import { signOut } from '@api'
 import * as toast from '@components/toast'
+import { useState } from 'react'
 
 export const useSignOut = () => {
   const [isLoading, setIsLoading] = useState(false)

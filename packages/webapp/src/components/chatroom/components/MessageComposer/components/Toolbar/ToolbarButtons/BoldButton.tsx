@@ -1,7 +1,8 @@
+import Icon from '@components/TipTap/toolbar/Icon'
 import React from 'react'
+
 import { useMessageComposer } from '../../../hooks/useMessageComposer'
 import Button from '../../ui/Button'
-import Icon from '@components/TipTap/toolbar/Icon'
 
 type Props = {
   className?: string

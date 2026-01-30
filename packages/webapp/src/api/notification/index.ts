@@ -1,5 +1,5 @@
 export * from './getAllNotifications'
+export * from './getLastReadedNotification'
+export * from './getMentionNotifications'
 export * from './markAllNotificationAsRead'
 export * from './markNotificationAsRead'
-export * from './getMentionNotifications'
-export * from './getLastReadedNotification'

@@ -1,7 +1,8 @@
+import { TMsgRow } from '@types'
 import { forwardRef } from 'react'
+
 import { LongPressMenuItems } from './ContextMenuItems'
 import { UserReadStatus } from './UserReadStatus'
-import { TMsgRow } from '@types'
 
 interface ContextActionsMenuProps {
   position: { x: number; y: number }

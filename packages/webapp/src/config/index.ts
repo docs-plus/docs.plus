@@ -1,5 +1,6 @@
-import type { Config } from './types'
 import './env' // Validate environment variables on startup
+
+import type { Config } from './types'
 
 const PUBLIC_BUCKET_URL = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/storage/v1/object/public`
 const AVATARS_BUCKET_URL = `${PUBLIC_BUCKET_URL}/user_avatars`

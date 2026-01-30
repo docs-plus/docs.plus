@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useMemo } from 'react'
-import debounce from 'lodash/debounce'
 import { markReadMessages } from '@api'
 import { useAuthStore, useChatStore } from '@stores'
-import { useMessageFeedContext } from '../components/MessageFeed/MessageFeedContext'
 import type { Virtualizer } from '@tanstack/react-virtual'
+import debounce from 'lodash/debounce'
+import { useCallback, useEffect, useMemo } from 'react'
+
+import { useMessageFeedContext } from '../components/MessageFeed/MessageFeedContext'
 
 interface UseCheckReadMessageProps {
   channelId: string

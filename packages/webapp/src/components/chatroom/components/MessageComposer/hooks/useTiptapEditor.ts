@@ -1,37 +1,35 @@
-import { useState, useEffect } from 'react'
-import { useEditor, Editor } from '@tiptap/react'
-import { TextSelection } from '@tiptap/pm/state'
 import { setComposerStateDebounced } from '@db/messageComposerDB'
-import { TIPTAP_NODES } from '@types'
-
-import { StarterKit } from '@tiptap/starter-kit'
-import { Placeholder } from '@tiptap/extensions'
-import { Mention } from '@tiptap/extension-mention'
-
-// Code and Syntax Highlighting
-import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
-import css from 'highlight.js/lib/languages/css'
-import js from 'highlight.js/lib/languages/javascript'
-import ts from 'highlight.js/lib/languages/typescript'
-import html from 'highlight.js/lib/languages/xml'
-import md from 'highlight.js/lib/languages/markdown'
-import yaml from 'highlight.js/lib/languages/yaml'
-import python from 'highlight.js/lib/languages/python'
-import json from 'highlight.js/lib/languages/json'
-import bash from 'highlight.js/lib/languages/bash'
-import suggestion from '../helpers/suggestion'
 // Links and Media
 import {
-  Hyperlink,
   createHyperlinkPopover,
+  Hyperlink,
   previewHyperlinkPopover
 } from '@docs.plus/extension-hyperlink'
-
+import { Indent } from '@docs.plus/extension-indent'
 // Custom Extensions
 import { InlineCode } from '@docs.plus/extension-inline-code'
-import { Indent } from '@docs.plus/extension-indent'
+// Code and Syntax Highlighting
+import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
+import { Mention } from '@tiptap/extension-mention'
+import { Placeholder } from '@tiptap/extensions'
+import { TextSelection } from '@tiptap/pm/state'
+import { Editor,useEditor } from '@tiptap/react'
+import { StarterKit } from '@tiptap/starter-kit'
+import { TIPTAP_NODES } from '@types'
+import bash from 'highlight.js/lib/languages/bash'
+import css from 'highlight.js/lib/languages/css'
+import js from 'highlight.js/lib/languages/javascript'
+import json from 'highlight.js/lib/languages/json'
+import md from 'highlight.js/lib/languages/markdown'
+import python from 'highlight.js/lib/languages/python'
+import ts from 'highlight.js/lib/languages/typescript'
+import html from 'highlight.js/lib/languages/xml'
+import yaml from 'highlight.js/lib/languages/yaml'
 // load all highlight.js languages
 import { createLowlight } from 'lowlight'
+import { useEffect,useState } from 'react'
+
+import suggestion from '../helpers/suggestion'
 const lowlight = createLowlight()
 lowlight.register('html', html)
 lowlight.register('css', css)
@@ -43,8 +41,9 @@ lowlight.register('yaml', yaml)
 lowlight.register('json', json)
 lowlight.register('bash', bash as any)
 
-import { handleTypingIndicator, TypingIndicatorType } from '../helpers/handelTypeingIndicator'
 import { isOnlyEmoji } from '@utils/emojis'
+
+import { handleTypingIndicator, TypingIndicatorType } from '../helpers/handelTypeingIndicator'
 
 export const useTiptapEditor = ({
   loading,

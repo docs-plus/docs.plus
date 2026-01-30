@@ -1,5 +1,6 @@
 import { Editor } from '@tiptap/core'
 import { EditorView } from '@tiptap/pm/view'
+
 import { createFloatingToolbar, hideCurrentToolbar } from '../helpers/floating-toolbar'
 import { createHTMLElement, Link, Title, validateURL } from '../utils'
 

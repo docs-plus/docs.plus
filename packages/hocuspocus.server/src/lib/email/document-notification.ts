@@ -5,9 +5,9 @@
  * This is a legacy function preserved from the original email.ts
  */
 
+import type { EmailJobData, GenericEmailRequest } from '../../types/email.types'
 import { emailLogger } from '../logger'
 import { sendEmailViaProvider } from './sender'
-import type { EmailJobData, GenericEmailRequest } from '../../types/email.types'
 
 interface NewDocumentEmailParams {
   documentId: string

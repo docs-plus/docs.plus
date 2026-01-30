@@ -1,13 +1,13 @@
-import { useCallback } from 'react'
-import { useRouter } from 'next/router'
-import { useStore } from '@stores'
-import { TIPTAP_NODES, type ResolvedPos } from '@types'
-import slugify from 'slugify'
-import PubSub from 'pubsub-js'
-import { CHAT_OPEN } from '@services/eventsHub'
-import { copyToClipboard } from '@utils/clipboard'
 import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
+import { CHAT_OPEN } from '@services/eventsHub'
+import { useStore } from '@stores'
+import { type ResolvedPos,TIPTAP_NODES } from '@types'
+import { copyToClipboard } from '@utils/clipboard'
+import { useRouter } from 'next/router'
+import PubSub from 'pubsub-js'
+import { useCallback } from 'react'
+import slugify from 'slugify'
 
 /**
  * Dialog content for delete confirmation

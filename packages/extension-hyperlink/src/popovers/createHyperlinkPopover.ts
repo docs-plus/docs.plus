@@ -1,4 +1,5 @@
 import { Editor } from '@tiptap/core'
+
 import { createFloatingToolbar, FloatingToolbarInstance } from '../helpers/floating-toolbar'
 import { createHTMLElement, Link, validateURL } from '../utils'
 

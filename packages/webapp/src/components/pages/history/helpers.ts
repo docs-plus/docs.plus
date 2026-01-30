@@ -1,6 +1,6 @@
-import * as Y from 'yjs'
 import { ProsemirrorTransformer } from '@hocuspocus/transformer'
 import { HistoryItem } from '@types'
+import * as Y from 'yjs'
 
 // Session = group of versions saved within SESSION_GAP_MS of each other
 const SESSION_GAP_MS = 2 * 60 * 1000 // 2 minutes

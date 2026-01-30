@@ -1,6 +1,7 @@
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { TRANSACTION_META } from '@types'
-import { validateAndFixHeadingHierarchy, hasHierarchyViolations } from '../validateHeadingHierarchy'
+
+import { hasHierarchyViolations,validateAndFixHeadingHierarchy } from '../validateHeadingHierarchy'
 
 const hierarchyValidationPluginKey = new PluginKey('hierarchyValidation')
 

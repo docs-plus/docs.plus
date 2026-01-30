@@ -1,15 +1,14 @@
-import { BubbleMenu } from '@tiptap/react/menus'
-import { useStore } from '@stores'
-import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 import { useClipboard } from '@pages/document/hooks'
-import { useCallback, TouchEvent, MouseEvent } from 'react'
+import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
+import { useStore } from '@stores'
+import { BubbleMenu } from '@tiptap/react/menus'
+import { MouseEvent,TouchEvent, useCallback } from 'react'
 import {
-  MdContentCut,
   MdContentCopy,
+  MdContentCut,
   MdContentPaste,
-  MdOutlineComment,
-  MdInsertLink
-} from 'react-icons/md'
+  MdInsertLink,
+  MdOutlineComment} from 'react-icons/md'
 
 export const MobileBubbleMenu = () => {
   const {

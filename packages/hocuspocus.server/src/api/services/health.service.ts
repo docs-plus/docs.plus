@@ -1,8 +1,9 @@
 import type { PrismaClient } from '@prisma/client'
 import { createClient } from '@supabase/supabase-js'
-import type { RedisClient, HealthCheckResult, OverallHealthResult } from '../../types'
+
 import { getPoolStats } from '../../lib/prisma'
 import { checkRedisHealth as redisHealthCheck, getRedisStats } from '../../lib/redis'
+import type { HealthCheckResult, OverallHealthResult,RedisClient } from '../../types'
 
 export const checkDatabaseHealth = async (prisma: PrismaClient): Promise<HealthCheckResult> => {
   try {

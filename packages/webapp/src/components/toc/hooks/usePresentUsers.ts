@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
 import { useStore } from '@stores'
+import { useEffect, useState } from 'react'
 
 /**
  * Hook to get users currently present in a specific channel/heading

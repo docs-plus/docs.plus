@@ -1,7 +1,8 @@
-import { TMsgRow } from '@types'
-import { useMessageCardContext } from '../../../MessageCardContext'
-import { twMerge } from 'tailwind-merge'
 import { Avatar } from '@components/ui/Avatar'
+import { TMsgRow } from '@types'
+import { twMerge } from 'tailwind-merge'
+
+import { useMessageCardContext } from '../../../MessageCardContext'
 
 type Props = {
   className?: string

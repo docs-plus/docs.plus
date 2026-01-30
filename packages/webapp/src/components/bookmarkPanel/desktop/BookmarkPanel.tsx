@@ -1,11 +1,12 @@
+import { ScrollArea } from '@components/ui/ScrollArea'
 import { useChatStore } from '@stores'
-import { EmptyBookmarkState } from '../components/EmptyBookmarkState'
-import { BookmarkItem } from '../components/BookmarkItem'
+
 import { BookmarkHeader } from '../components/BookmarkHeader'
+import { BookmarkItem } from '../components/BookmarkItem'
 import { BookmarkSkeleton } from '../components/BookmarkSkeleton'
+import { EmptyBookmarkState } from '../components/EmptyBookmarkState'
 import { useBookmarkSummary } from '../hooks/useBookmarkSummary'
 import { useInfiniteBookmarks } from '../hooks/useInfiniteBookmarks'
-import { ScrollArea } from '@components/ui/ScrollArea'
 
 type TBookmarkTab = 'in progress' | 'archive' | 'read'
 

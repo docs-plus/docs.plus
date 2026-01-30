@@ -1,7 +1,7 @@
-import { Editor } from '@tiptap/react'
-import { createContext } from 'react'
 import { PostgrestResponse, PostgrestSingleResponse } from '@supabase/postgrest-js'
-import { TSendMsgeArgs, TSendCommentArgs, TUpdateMsgArgs, TSendThreadMsgArgs } from '@types'
+import { Editor } from '@tiptap/react'
+import { TSendCommentArgs, TSendMsgeArgs, TSendThreadMsgArgs,TUpdateMsgArgs } from '@types'
+import { createContext } from 'react'
 
 export interface MessageComposerContextType {
   sendMsg: (args: TSendMsgeArgs) => Promise<PostgrestResponse<any> | PostgrestSingleResponse<any>>

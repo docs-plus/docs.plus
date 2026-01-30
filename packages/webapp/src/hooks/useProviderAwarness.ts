@@ -1,6 +1,6 @@
-import { useEffect } from 'react'
 import { useAuthStore, useStore } from '@stores'
 import randomColor from 'randomcolor'
+import { useEffect } from 'react'
 
 // Helper functions
 const getCursorUser = (user: any) => {

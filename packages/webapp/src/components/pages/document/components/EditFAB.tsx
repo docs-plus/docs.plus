@@ -1,7 +1,7 @@
-import React, { useCallback } from 'react'
-import { Pencil } from '@icons'
-import { useCaretPosition, useEnableEditor } from '@hooks/useCaretPosition'
 import Button from '@components/ui/Button'
+import { useCaretPosition, useEnableEditor } from '@hooks/useCaretPosition'
+import { Pencil } from '@icons'
+import React, { useCallback } from 'react'
 
 /**
  * Floating Action Button for entering edit mode.

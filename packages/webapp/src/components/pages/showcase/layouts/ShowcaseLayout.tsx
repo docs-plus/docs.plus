@@ -4,22 +4,21 @@
  * Shared layout for all showcase pages with navigation and theme support.
  */
 
-import { ReactNode, useState, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import { ReactNode, useCallback,useState } from 'react'
 import {
+  MdAccountCircle,
+  MdArrowBack,
+  MdClose,
   MdDarkMode,
+  MdDescription,
+  MdEdit,
+  MdHome,
   MdLightMode,
   MdMenu,
-  MdClose,
-  MdAccountCircle,
-  MdTextFields,
-  MdEdit,
   MdNotifications,
-  MdDescription,
-  MdHome,
-  MdArrowBack
-} from 'react-icons/md'
+  MdTextFields} from 'react-icons/md'
 
 interface NavItem {
   href: string

@@ -1,4 +1,5 @@
 import Redis, { type RedisOptions } from 'ioredis'
+
 import type { RedisClient } from '../types'
 import { redisLogger } from './logger'
 

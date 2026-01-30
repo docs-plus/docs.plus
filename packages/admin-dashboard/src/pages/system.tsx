@@ -1,6 +1,6 @@
-import Head from 'next/head'
-import type { GetServerSideProps } from 'next'
 import { useQuery } from '@tanstack/react-query'
+import type { GetServerSideProps } from 'next'
+import Head from 'next/head'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {
@@ -8,19 +8,19 @@ export const getServerSideProps: GetServerSideProps = async () => {
 }
 import {
   LuActivity,
-  LuDatabase,
-  LuServer,
-  LuCircleCheck,
   LuCircleAlert,
-  LuClock
-} from 'react-icons/lu'
+  LuCircleCheck,
+  LuClock,
+  LuDatabase,
+  LuServer} from 'react-icons/lu'
+
+import { StatCard } from '@/components/cards/StatCard'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
-import { StatCard } from '@/components/cards/StatCard'
-import { fetchTableSizes, checkDatabaseHealth } from '@/services/supabase'
 import { checkApiHealth } from '@/services/api'
-import { formatTime } from '@/utils/format'
+import { checkDatabaseHealth,fetchTableSizes } from '@/services/supabase'
 import type { ServiceStatus } from '@/types'
+import { formatTime } from '@/utils/format'
 
 async function checkAllServices(): Promise<ServiceStatus[]> {
   const [apiHealth, dbHealth] = await Promise.all([checkApiHealth(), checkDatabaseHealth()])

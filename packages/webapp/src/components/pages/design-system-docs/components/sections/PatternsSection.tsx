@@ -4,17 +4,17 @@
  * Layout, empty states, loading, error, confirmation, collaboration patterns.
  */
 
+import { Avatar } from '@components/ui'
 import {
+  MdCheckCircle,
   MdDashboard,
-  MdInbox,
-  MdHourglassEmpty,
   MdErrorOutline,
   MdHelpOutline,
-  MdPeople,
-  MdCheckCircle
-} from 'react-icons/md'
-import { SectionHeader, CodeBlock } from '../shared'
-import { Avatar } from '@components/ui'
+  MdHourglassEmpty,
+  MdInbox,
+  MdPeople} from 'react-icons/md'
+
+import { CodeBlock,SectionHeader } from '../shared'
 
 export const PatternsSection = () => {
   return (

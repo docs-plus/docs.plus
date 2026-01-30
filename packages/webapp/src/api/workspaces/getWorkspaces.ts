@@ -1,6 +1,6 @@
+import { PostgrestResponse } from '@supabase/supabase-js'
 import { Database } from '@types'
 import { supabaseClient } from '@utils/supabase'
-import { PostgrestResponse } from '@supabase/supabase-js'
 type TWorkspace = Database['public']['Tables']['workspaces']['Row']
 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

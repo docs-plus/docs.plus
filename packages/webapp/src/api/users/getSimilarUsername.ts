@@ -1,6 +1,6 @@
-import { supabaseClient } from '@utils/supabase'
 import { PostgrestResponse as Response } from '@supabase/supabase-js'
 import { Database } from '@types'
+import { supabaseClient } from '@utils/supabase'
 
 type TUser = Database['public']['Tables']['users']['Row']
 

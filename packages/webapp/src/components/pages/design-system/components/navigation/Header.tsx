@@ -4,20 +4,20 @@
  * Top header with search, notifications, and user menu.
  */
 
+import { Avatar, PanelHeader } from '@components/ui'
 import {
-  MdMenu,
+  MdAccountCircle,
   MdChevronLeft,
   MdChevronRight,
-  MdHome,
-  MdSearch,
-  MdNotifications,
   MdDarkMode,
+  MdHome,
   MdLightMode,
-  MdAccountCircle,
-  MdSettings,
-  MdLogout
-} from 'react-icons/md'
-import { Avatar, PanelHeader } from '@components/ui'
+  MdLogout,
+  MdMenu,
+  MdNotifications,
+  MdSearch,
+  MdSettings} from 'react-icons/md'
+
 import { useDesignSystem } from '../../context/DesignSystemContext'
 
 export const Header = () => {

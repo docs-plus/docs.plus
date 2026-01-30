@@ -9,18 +9,17 @@ import Head from 'next/head'
 
 export const getServerSideProps: GetServerSideProps = async () => ({ props: {} })
 import Link from 'next/link'
-import { useState, useCallback } from 'react'
+import { useCallback,useState } from 'react'
 import {
   MdAccountCircle,
-  MdTextFields,
-  MdEdit,
-  MdNotifications,
-  MdDescription,
+  MdArrowBack,
   MdArrowForward,
   MdDarkMode,
+  MdDescription,
+  MdEdit,
   MdLightMode,
-  MdArrowBack
-} from 'react-icons/md'
+  MdNotifications,
+  MdTextFields} from 'react-icons/md'
 
 const SHOWCASE_PAGES = [
   {

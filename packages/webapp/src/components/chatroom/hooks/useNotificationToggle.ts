@@ -1,6 +1,6 @@
-import { useAuthStore, useChatStore } from '@stores'
+import { getChannelNotifState,updateChannelNotifState } from '@api'
 import { useApi } from '@hooks/useApi'
-import { updateChannelNotifState, getChannelNotifState } from '@api'
+import { useAuthStore, useChatStore } from '@stores'
 import { useCallback, useEffect, useState } from 'react'
 
 type NotificationState = 'ALL' | 'MENTIONS' | 'MUTED'

@@ -43,42 +43,40 @@ export { DashboardLayout } from './layouts'
 
 // Components
 export {
-  Sidebar,
-  Header,
-  StatCard,
   ActionCard,
+  ChatPanel,
+  ComponentsTab,
   DashboardTab,
   DocumentsTab,
-  TeamTab,
-  ComponentsTab,
   FormsTab,
+  Header,
   SettingsTab,
-  ChatPanel
-} from './components'
+  Sidebar,
+  StatCard,
+  TeamTab} from './components'
 
 // Types
 export type {
-  TabType,
-  ThemeType,
-  UserStatus,
-  UserRole,
-  DocumentStatus,
-  DemoUser,
   DemoDocument,
   DemoMessage,
-  NavItem,
-  KeyboardShortcut,
+  DemoUser,
+  DocumentStatus,
   FolderItem,
-  PlanOption
-} from './types'
+  KeyboardShortcut,
+  NavItem,
+  PlanOption,
+  TabType,
+  ThemeType,
+  UserRole,
+  UserStatus} from './types'
 
 // Constants
 export {
-  DEMO_USERS,
   DEMO_DOCUMENTS,
   DEMO_MESSAGES,
-  NAV_ITEMS,
-  KEYBOARD_SHORTCUTS,
+  DEMO_USERS,
   FOLDER_ITEMS,
+  KEYBOARD_SHORTCUTS,
+  NAV_ITEMS,
   PLAN_OPTIONS
 } from './constants/demoData'

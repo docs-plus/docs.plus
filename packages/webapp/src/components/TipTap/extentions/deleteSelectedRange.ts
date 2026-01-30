@@ -1,9 +1,10 @@
-import { TextSelection } from '@tiptap/pm/state'
-import { HTML_ENTITIES, TIPTAP_NODES } from '@types'
 import { Editor } from '@tiptap/core'
-import { Transaction, EditorState } from '@tiptap/pm/state'
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
-import { getSelectionRangeBlocks, insertRemainingHeadings, getSelectionRangeSlice } from './helper'
+import { TextSelection } from '@tiptap/pm/state'
+import { EditorState,Transaction } from '@tiptap/pm/state'
+import { HTML_ENTITIES, TIPTAP_NODES } from '@types'
+
+import { getSelectionRangeBlocks, getSelectionRangeSlice,insertRemainingHeadings } from './helper'
 import { SelectionBlock } from './types'
 
 interface HandleHeadingBlockParams {

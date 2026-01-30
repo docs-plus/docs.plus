@@ -1,5 +1,5 @@
-import { supabaseClient } from '@utils/supabase'
 import { PostgrestResponse } from '@supabase/supabase-js'
+import { supabaseClient } from '@utils/supabase'
 
 export const searchWorkspaceUsers = async (arg: {
   workspaceId: string

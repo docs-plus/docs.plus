@@ -1,13 +1,12 @@
-import { ReactRenderer } from '@tiptap/react'
 import {
+  autoUpdate,
   computePosition,
   flip,
-  shift,
+  hide,
   offset as floatingOffset,
-  autoUpdate,
-  size,
-  hide
-} from '@floating-ui/dom'
+  shift,
+  size} from '@floating-ui/dom'
+import { ReactRenderer } from '@tiptap/react'
 
 import MentionList from './MentionList'
 

@@ -1,4 +1,4 @@
-import { useState, useEffect, RefObject } from 'react'
+import { RefObject,useEffect, useState } from 'react'
 
 export function useViewportObserver(defaultRef: RefObject<Element>, options: any) {
   const [isVisible, setIsVisible] = useState(false)

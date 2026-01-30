@@ -1,7 +1,8 @@
 import { EditorView } from '@tiptap/pm/view'
-import { createMediaToolbar } from '../../utils/media-toolbar'
-import { createFloatingToolbar } from '../../utils/floating-toolbar'
+
 import type { ImageClickHandlerOptions, ImageKeyDownHandlerOptions } from '../../types'
+import { createFloatingToolbar } from '../../utils/floating-toolbar'
+import { createMediaToolbar } from '../../utils/media-toolbar'
 
 // ![alt text](image_url) or [alt text](image_url)
 export const inputRegex =

@@ -1,8 +1,8 @@
-import type { Editor } from '@tiptap/react'
-import slugify from 'slugify'
-import PubSub from 'pubsub-js'
 import { CHAT_OPEN } from '@services/eventsHub'
+import type { Editor } from '@tiptap/react'
 import { TIPTAP_NODES } from '@types'
+import PubSub from 'pubsub-js'
+import slugify from 'slugify'
 
 /**
  * Scrolls the editor to a specific heading and updates the URL

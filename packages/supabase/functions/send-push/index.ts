@@ -16,7 +16,6 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-
 // Web Push implementation for Deno
 import * as webpush from 'npm:web-push@3.6.6'
 

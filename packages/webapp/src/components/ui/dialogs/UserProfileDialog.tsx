@@ -1,15 +1,14 @@
-import { useEffect, useMemo } from 'react'
-import { MdMailOutline, MdPhone, MdLink } from 'react-icons/md'
-
 import { getUserProfileForModal } from '@api'
-import { Avatar } from '@components/ui/Avatar'
-import Loading from '@components/ui/Loading'
-import CloseButtonUI from '@components/ui/CloseButton'
 import { SOCIAL_MEDIA_ICONS } from '@components/profile/constants'
 import { ILinkItem } from '@components/profile/types'
-import { useStore } from '@stores'
+import { Avatar } from '@components/ui/Avatar'
+import CloseButtonUI from '@components/ui/CloseButton'
+import Loading from '@components/ui/Loading'
 import { useSupabase } from '@hooks/useSupabase'
+import { useStore } from '@stores'
 import type { PostgrestError } from '@supabase/supabase-js'
+import { useEffect, useMemo } from 'react'
+import { MdLink,MdMailOutline, MdPhone } from 'react-icons/md'
 
 interface UserProfileDialogProps {
   userId: string

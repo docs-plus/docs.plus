@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import type { User } from '@supabase/supabase-js'
 import { useRouter } from 'next/router'
+import { useEffect, useState } from 'react'
+
 import { supabase } from '@/lib/supabase'
 import { logError } from '@/utils/logger'
-import type { User } from '@supabase/supabase-js'
 
 interface AdminAuthState {
   user: User | null

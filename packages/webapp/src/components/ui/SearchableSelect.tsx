@@ -1,17 +1,16 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
 import {
-  useFloating,
   autoUpdate,
-  offset,
   flip,
+  FloatingPortal,
+  offset,
   shift,
   size as floatingSize,
   useClick,
   useDismiss,
-  useInteractions,
-  FloatingPortal
-} from '@floating-ui/react'
-import { MdSearch, MdExpandMore, MdCheck } from 'react-icons/md'
+  useFloating,
+  useInteractions} from '@floating-ui/react'
+import { useCallback, useEffect, useMemo,useRef, useState } from 'react'
+import { MdCheck,MdExpandMore, MdSearch } from 'react-icons/md'
 import { twMerge } from 'tailwind-merge'
 
 export interface SearchableSelectOption {

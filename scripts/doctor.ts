@@ -12,8 +12,8 @@
 
 import { $ } from 'bun'
 import { existsSync } from 'fs'
-import { resolve } from 'path'
 import { createConnection } from 'net'
+import { resolve } from 'path'
 
 // =============================================================================
 // Configuration

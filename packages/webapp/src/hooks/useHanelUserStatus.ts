@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react'
-import debounce from 'lodash/debounce'
 import { updateUser } from '@api'
 import { useAuthStore } from '@stores'
+import debounce from 'lodash/debounce'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 
 const ONLINE = 'ONLINE'
 const OFFLINE = 'OFFLINE'

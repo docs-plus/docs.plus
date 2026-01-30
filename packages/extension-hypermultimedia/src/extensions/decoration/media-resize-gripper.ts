@@ -1,8 +1,9 @@
-import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { Editor } from '@tiptap/core'
-import handleSideClampsMove from './handleSideClampsMove'
+import { Node as ProseMirrorNode } from '@tiptap/pm/model'
+
 import handleCornerClampsMove from './handleCornerClampsMove'
-import { MediaGripperInfo, ClampType } from './types'
+import handleSideClampsMove from './handleSideClampsMove'
+import { ClampType,MediaGripperInfo } from './types'
 
 function createClamp(extraClass: ClampType): HTMLDivElement {
   const clamp = document.createElement('div')

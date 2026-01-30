@@ -1,7 +1,7 @@
+import Button from '@components/ui/Button'
+import { CHAT_CLOSE } from '@services/eventsHub'
 import { useChatStore } from '@stores'
 import PubSub from 'pubsub-js'
-import { CHAT_CLOSE } from '@services/eventsHub'
-import Button from '@components/ui/Button'
 import { LuX } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 

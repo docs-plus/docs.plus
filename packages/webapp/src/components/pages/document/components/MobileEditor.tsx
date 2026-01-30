@@ -1,8 +1,9 @@
-import { useRef } from 'react'
-import EditorContent from './EditorContent'
-import { useAdjustEditorSizeForChatRoom } from '../hooks'
 import useEditableDocControl from '@components/pages/document/hooks/useEditableDocControl'
 import { useUnreadSync } from '@hooks/useUnreadSync'
+import { useRef } from 'react'
+
+import { useAdjustEditorSizeForChatRoom } from '../hooks'
+import EditorContent from './EditorContent'
 
 const Editor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)

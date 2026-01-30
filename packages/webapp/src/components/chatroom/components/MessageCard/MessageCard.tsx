@@ -1,10 +1,11 @@
-import { MessageCardProvider } from './MessageCardContext'
 import { TMsgRow } from '@types'
+
 import MessageActions from './components/MessageActions'
 import MessageContent from './components/MessageContent'
-import MessageHeader from './components/MessageHeader'
 import MessageFooter from './components/MessageFooter/MessageFooter'
+import MessageHeader from './components/MessageHeader'
 import { MessageLongPressMenu } from './components/MessageLongPressMenu'
+import { MessageCardProvider } from './MessageCardContext'
 
 type Props = {
   children: React.ReactNode

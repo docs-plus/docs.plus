@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react'
+import { useCallback, useEffect,useState } from 'react'
 import { LuSearch, LuX } from 'react-icons/lu'
 
 interface SearchInputProps {

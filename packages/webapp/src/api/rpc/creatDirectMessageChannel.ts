@@ -1,5 +1,5 @@
-import { supabaseClient } from '@utils/supabase'
 import { Database } from '@types'
+import { supabaseClient } from '@utils/supabase'
 
 type TCreateDirectMsgArg = Database['public']['Functions']['create_direct_message_channel']['Args']
 

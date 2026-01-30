@@ -6,8 +6,9 @@
  */
 
 import nodemailer from 'nodemailer'
+
 import { emailLogger } from '../../logger'
-import type { EmailProviderInterface, EmailMessage, SendResult } from './types'
+import type { EmailMessage, EmailProviderInterface, SendResult } from './types'
 
 let transporter: nodemailer.Transporter | null = null
 

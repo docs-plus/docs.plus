@@ -1,13 +1,13 @@
-import { Node, mergeAttributes, nodeInputRule } from '@tiptap/core'
+import { mergeAttributes, Node, nodeInputRule } from '@tiptap/core'
+
+import { MediaPlacement } from '../../utils/media-placement'
 import {
+  applyStyles,
+  createStyleString,
   createTooltip,
   generateShortId,
-  createStyleString,
-  StyleLayoutOptions,
-  applyStyles
-} from '../../utils/utils'
+  StyleLayoutOptions} from '../../utils/utils'
 import { inputRegex } from './helper'
-import { MediaPlacement } from '../../utils/media-placement'
 
 interface AudioAttributes {
   src?: string | null

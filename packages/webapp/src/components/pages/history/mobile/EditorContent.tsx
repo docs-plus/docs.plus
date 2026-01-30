@@ -1,7 +1,7 @@
-import DocumentWithPictureLoader from '@components/skeleton/DocumentWithPictureLoader'
 import DocumentSimpleLoader from '@components/skeleton/DocumentSimpleLoader'
-import { EditorContent as TiptapEditorContent } from '@tiptap/react'
+import DocumentWithPictureLoader from '@components/skeleton/DocumentWithPictureLoader'
 import { useStore } from '@stores'
+import { EditorContent as TiptapEditorContent } from '@tiptap/react'
 
 const EditorContent = () => {
   const { loadingHistory, editor } = useStore((state) => state)

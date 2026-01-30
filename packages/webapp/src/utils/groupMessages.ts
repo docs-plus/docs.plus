@@ -1,5 +1,5 @@
-import { isSameDay, parseISO } from 'date-fns'
 import { useAuthStore } from '@stores'
+import { isSameDay, parseISO } from 'date-fns'
 
 // Assuming a type for your messages, you can replace `any` with a more specific type
 interface Message {

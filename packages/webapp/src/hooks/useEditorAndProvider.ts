@@ -1,16 +1,17 @@
-import { useEditor } from '@tiptap/react'
-import { useEffect } from 'react'
 import editorConfig from '@components/TipTap/TipTap'
 import useApplyFilters from '@hooks/useApplyFilters'
 import { useStore } from '@stores'
-import useProviderAwarness from './useProviderAwarness'
+import { useEditor } from '@tiptap/react'
+import { useEffect } from 'react'
+
+import useApplyOpenChatAndFocusOnMessage from './useApplyOpenChatAndFocusOnMessage'
+import useCheckUrlAndOpenHeadingChat from './useCheckUrlAndOpenHeadingChat'
 import useEditorEditableState from './useEditorEditableState'
 import useEditorReadOnly from './useEditorReadOnly'
+import useHandleDraftOnFocus from './useHandleDraftOnFocus'
 import useInitializeNewDocument from './useInitializeNewDocument'
 import useNewDocumentTip from './useNewDocumentTip'
-import useHandleDraftOnFocus from './useHandleDraftOnFocus'
-import useCheckUrlAndOpenHeadingChat from './useCheckUrlAndOpenHeadingChat'
-import useApplyOpenChatAndFocusOnMessage from './useApplyOpenChatAndFocusOnMessage'
+import useProviderAwarness from './useProviderAwarness'
 
 const useEditorAndProvider = ({ provider }: { provider: any }) => {
   const { editor: editorSetting } = useStore((state) => state.settings)

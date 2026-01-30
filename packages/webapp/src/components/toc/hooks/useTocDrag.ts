@@ -1,23 +1,22 @@
-import { useRef, useState, useCallback, useEffect, useMemo } from 'react'
 import {
-  PointerSensor,
-  useSensor,
-  useSensors,
-  type DragStartEvent,
+  type DragEndEvent,
   type DragMoveEvent,
   type DragOverEvent,
-  type DragEndEvent
-} from '@dnd-kit/core'
-import { TIPTAP_EVENTS, type ProseMirrorNode, type TocItem, type Schema } from '@types'
+  type DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors} from '@dnd-kit/core'
+import { type ProseMirrorNode, type Schema,TIPTAP_EVENTS, type TocItem } from '@types'
+import { useCallback, useEffect, useMemo,useRef, useState } from 'react'
+
+import { useStore } from '../../../stores'
 import type { DropTarget } from '../dnd'
 import {
-  flattenTocItems,
-  getDescendantIds,
-  getDescendantCount,
   calculateProjectedLevel,
-  findDropTarget
-} from '../dnd'
-import { useStore } from '../../../stores'
+  findDropTarget,
+  flattenTocItems,
+  getDescendantCount,
+  getDescendantIds} from '../dnd'
 
 // =============================================================================
 // TYPES

@@ -1,8 +1,8 @@
-import { Plugin, PluginKey } from '@tiptap/pm/state'
-import { TipTapEditor, EditorEventData, TIPTAP_EVENTS, TRANSACTION_META } from '@types'
-import * as PubSub from 'pubsub-js'
 import { db } from '@db/headingCrinckleDB'
 import { useStore } from '@stores'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
+import { EditorEventData, TIPTAP_EVENTS, TipTapEditor, TRANSACTION_META } from '@types'
+import * as PubSub from 'pubsub-js'
 
 interface HeadingState {
   headingId: string

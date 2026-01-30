@@ -1,7 +1,7 @@
-import { useEffect } from 'react'
 import { join2Workspace } from '@api'
 import { useApi } from '@hooks/useApi'
 import { useAuthStore, useStore } from '@stores'
+import { useEffect } from 'react'
 
 type UseJoinWorkspaceParams = {
   documentId: string

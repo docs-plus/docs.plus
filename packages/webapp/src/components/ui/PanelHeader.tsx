@@ -1,5 +1,6 @@
 import { ReactNode } from 'react'
 import { IconType } from 'react-icons'
+
 import CloseButton from './CloseButton'
 
 export type PanelHeaderVariant = 'default' | 'primary' | 'info' | 'warning' | 'error' | 'success'

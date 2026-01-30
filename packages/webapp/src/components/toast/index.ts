@@ -33,17 +33,17 @@
  * toast.Success('Done!', { id })
  */
 
-export { Success } from './Success'
 export { Error } from './Error'
 export { Info } from './Info'
-export { Warning } from './Warning'
+export { dismiss, dismissAll,Loading } from './Loading'
 export { Neutral } from './Neutral'
-export { Loading, dismiss, dismissAll } from './Loading'
+export { Success } from './Success'
 export { ToastNotification } from './ToastNotification'
+export { Warning } from './Warning'
 
 // Alias: Danger = Error
 export { Error as Danger } from './Error'
 
 // Types
-export type { ToastNotificationOptions, ToastVariant } from './ToastNotification'
 export type { LoadingToastOptions } from './Loading'
+export type { ToastNotificationOptions, ToastVariant } from './ToastNotification'

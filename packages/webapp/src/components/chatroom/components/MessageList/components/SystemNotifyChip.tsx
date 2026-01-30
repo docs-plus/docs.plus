@@ -1,10 +1,11 @@
-import { useStore } from '@stores'
-import { useMessageListContext } from '../MessageListContext'
 import { DocsPlus } from '@icons'
+import { useStore } from '@stores'
 import { TMsgRow } from '@types'
-import { useEffect, useRef } from 'react'
-import { formatDistanceToNow } from 'date-fns'
 import { getMetadataProperty } from '@utils/metadata'
+import { formatDistanceToNow } from 'date-fns'
+import { useEffect, useRef } from 'react'
+
+import { useMessageListContext } from '../MessageListContext'
 
 export interface MessageCardDesktopElement extends HTMLDivElement {
   msgId?: string

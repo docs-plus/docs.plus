@@ -4,11 +4,12 @@
  * Left sidebar navigation with search and anchor links.
  */
 
+import { ScrollArea } from '@components/ui'
 import { useCallback, useEffect, useRef } from 'react'
-import { MdSearch, MdClose, MdChevronRight } from 'react-icons/md'
+import { MdChevronRight,MdClose, MdSearch } from 'react-icons/md'
+
 import { NAV_SECTIONS } from '../../constants'
 import { useDesignSystemDocs } from '../../context/DesignSystemDocsContext'
-import { ScrollArea } from '@components/ui'
 
 export const Sidebar = () => {
   const {

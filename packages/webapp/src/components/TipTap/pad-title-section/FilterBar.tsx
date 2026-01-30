@@ -1,11 +1,11 @@
-import { useCallback } from 'react'
-import { twMerge } from 'tailwind-merge'
+import Button from '@components/ui/Button'
+import { REMOVE_FILTER,RESET_FILTER } from '@services/eventsHub'
 import { useStore } from '@stores'
+import PubSub from 'pubsub-js'
+import { useCallback } from 'react'
 import { MdClose } from 'react-icons/md'
 import { TbFilterX } from 'react-icons/tb'
-import PubSub from 'pubsub-js'
-import { RESET_FILTER, REMOVE_FILTER } from '@services/eventsHub'
-import Button from '@components/ui/Button'
+import { twMerge } from 'tailwind-merge'
 
 const CloseButton = ({ onClick }: { onClick: () => void }) => (
   <Button

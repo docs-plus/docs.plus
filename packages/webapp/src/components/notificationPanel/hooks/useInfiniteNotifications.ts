@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
-import { getUnreadNotificationsPaginated, getPaginatedLastReadedNotifications } from '@api'
-import { useStore, useAuthStore } from '@stores'
+import { getPaginatedLastReadedNotifications,getUnreadNotificationsPaginated } from '@api'
+import { useAuthStore,useStore } from '@stores'
 import { TNotification, TTab } from '@types'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 const PAGE_SIZE = 10
 

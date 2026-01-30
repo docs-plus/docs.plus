@@ -1,28 +1,28 @@
+import { BookmarkPanelSkeleton } from '@components/bookmarkPanel/components/BookmarkPanelSkeleton'
+import ToolbarSkeleton from '@components/skeleton/ToolbarLoader'
+import Icon from '@components/TipTap/toolbar/Icon'
+import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
+import { Modal, ModalContent } from '@components/ui/Dialog'
+import Loading from '@components/ui/Loading'
+import { Popover, PopoverContent,PopoverTrigger } from '@components/ui/Popover'
+import { ClearMark, ImageBox,Link } from '@icons'
+import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToClipboard'
+import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
+import { useAuthStore, useStore } from '@stores'
 import dynamic from 'next/dynamic'
 import React, { useState } from 'react'
-import { Link, ClearMark, ImageBox } from '@icons'
-import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
-import Icon from '@components/TipTap/toolbar/Icon'
-import SelectHeadingBox from './SelectHeadingBox'
-import { useAuthStore, useStore } from '@stores'
-import { Popover, PopoverTrigger, PopoverContent } from '@components/ui/Popover'
-import Loading from '@components/ui/Loading'
-import { BookmarkPanelSkeleton } from '@components/bookmarkPanel/components/BookmarkPanelSkeleton'
-import { FilterPanelSkeleton } from './FilterPanelSkeleton'
-import { GearPanelSkeleton } from './GearPanelSkeleton'
-import { Modal, ModalContent } from '@components/ui/Dialog'
-import ToolbarSkeleton from '@components/skeleton/ToolbarLoader'
+import { FaDiscord } from 'react-icons/fa'
 import { LuBookmark, LuFilter, LuSettings } from 'react-icons/lu'
 import {
   MdAddComment,
-  MdOutlineFileCopy,
   MdCheck,
-  MdOutlinePrint,
-  MdOutlineFolder
-} from 'react-icons/md'
-import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
-import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToClipboard'
-import { FaDiscord } from 'react-icons/fa'
+  MdOutlineFileCopy,
+  MdOutlineFolder,
+  MdOutlinePrint} from 'react-icons/md'
+
+import { FilterPanelSkeleton } from './FilterPanelSkeleton'
+import { GearPanelSkeleton } from './GearPanelSkeleton'
+import SelectHeadingBox from './SelectHeadingBox'
 
 const InsertMultimediaForm = dynamic(() => import('./InsertMultimediaForm'), {
   loading: () => <Loading />

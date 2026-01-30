@@ -1,7 +1,7 @@
-import { useAuthStore, useChatStore, useStore } from '@stores'
-import { groupedMessages } from '@utils/index'
 import { getUserById, TUser } from '@api'
+import { useAuthStore, useChatStore, useStore } from '@stores'
 import { Profile } from '@types'
+import { groupedMessages } from '@utils/index'
 
 const getChannelMessages = (channelId: string): any => {
   const messagesByChannel = useChatStore.getState().messagesByChannel

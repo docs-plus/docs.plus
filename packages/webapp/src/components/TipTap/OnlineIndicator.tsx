@@ -1,6 +1,5 @@
-import React, { useState, useEffect } from 'react'
-
 import { OfflineCloud, OnlineCloud } from '@icons'
+import React, { useEffect,useState } from 'react'
 
 const OnlineIndicator = ({ className }: { className: string }) => {
   const [isOnline, setIsOnline] = useState(false)

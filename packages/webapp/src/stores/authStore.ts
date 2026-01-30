@@ -1,6 +1,6 @@
+import { Profile as TProfile } from '@types'
 import createSelectors from '@utils/zustand'
 import { create } from 'zustand'
-import { Profile as TProfile } from '@types'
 
 export interface IAuthStore {
   session: any | null

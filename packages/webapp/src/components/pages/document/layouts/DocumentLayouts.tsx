@@ -1,7 +1,8 @@
-import MobileLayout from './MobileLayout'
-import DesktopLayout from './DesktopLayout'
-import React from 'react'
 import useEditorAndProvider from '@hooks/useEditorAndProvider'
+import React from 'react'
+
+import DesktopLayout from './DesktopLayout'
+import MobileLayout from './MobileLayout'
 
 const DocumentLayouts = ({ isMobile, provider }: { isMobile: boolean; provider: any }) => {
   useEditorAndProvider({ provider })

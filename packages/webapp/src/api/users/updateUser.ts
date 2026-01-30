@@ -1,6 +1,6 @@
-import { supabaseClient } from '@utils/supabase'
 import { PostgrestResponse } from '@supabase/supabase-js'
 import { Profile, ProfileUpdate } from '@types'
+import { supabaseClient } from '@utils/supabase'
 
 export const updateUser = async (
   id: string,

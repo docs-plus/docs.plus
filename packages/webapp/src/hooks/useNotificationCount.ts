@@ -1,8 +1,8 @@
-import { useEffect, useRef } from 'react'
 import { getUnreadNotificationCount } from '@api'
-import { useStore, useAuthStore } from '@stores'
-import { supabaseClient } from '@utils/supabase'
+import { useAuthStore,useStore } from '@stores'
 import { RealtimeChannel } from '@supabase/supabase-js'
+import { supabaseClient } from '@utils/supabase'
+import { useEffect, useRef } from 'react'
 
 interface UseNotificationCountProps {
   workspaceId?: string | null

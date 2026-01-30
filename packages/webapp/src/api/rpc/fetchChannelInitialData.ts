@@ -1,5 +1,5 @@
-import { supabaseClient } from '@utils/supabase'
 import { Database } from '@types'
+import { supabaseClient } from '@utils/supabase'
 
 type TAgChannelDataArg = Database['public']['Functions']['get_channel_aggregate_data']['Args']
 type TAgChannelDataReturn =

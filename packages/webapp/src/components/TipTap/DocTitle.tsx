@@ -1,11 +1,12 @@
-import { useEffect, useState, useCallback, useRef } from 'react'
-import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
+import { Tooltip } from '@components/ui/Tooltip'
 import { useStore } from '@stores'
 import DOMPurify from 'dompurify'
+import { useCallback, useEffect, useRef,useState } from 'react'
 import { AiOutlineLoading3Quarters } from 'react-icons/ai'
 import { IoCheckmarkCircle } from 'react-icons/io5'
 import { twMerge } from 'tailwind-merge'
-import { Tooltip } from '@components/ui/Tooltip'
+
+import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
 
 const SAVED_INDICATOR_DURATION = 2000 // ms
 

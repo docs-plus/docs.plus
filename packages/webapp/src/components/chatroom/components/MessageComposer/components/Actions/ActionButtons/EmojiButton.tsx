@@ -1,10 +1,11 @@
-import Button from '../../ui/Button'
 import Icon from '@components/TipTap/toolbar/Icon'
-import { useMessageComposer } from '../../../hooks/useMessageComposer'
+import { useChatStore, useSheetStore, useStore } from '@stores'
 import { Editor } from '@tiptap/react'
 import { useCallback } from 'react'
-import { useChatStore, useSheetStore, useStore } from '@stores'
+
 import { calculateEmojiPickerPosition } from '../../../../MessageCard/helpers'
+import { useMessageComposer } from '../../../hooks/useMessageComposer'
+import Button from '../../ui/Button'
 type Props = React.HTMLAttributes<HTMLButtonElement> & {
   className?: string
   size?: number

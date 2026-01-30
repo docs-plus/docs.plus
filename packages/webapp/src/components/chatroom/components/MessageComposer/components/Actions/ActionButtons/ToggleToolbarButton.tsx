@@ -1,6 +1,7 @@
-import Button from '../../ui/Button'
 import Icon from '@components/TipTap/toolbar/Icon'
+
 import { useMessageComposer } from '../../../hooks/useMessageComposer'
+import Button from '../../ui/Button'
 
 interface Props extends React.ComponentProps<typeof Button> {
   size?: number

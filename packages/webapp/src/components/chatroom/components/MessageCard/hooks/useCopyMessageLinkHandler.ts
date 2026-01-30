@@ -1,7 +1,7 @@
-import { useCallback } from 'react'
-import { TMsgRow } from '@types'
-import { useStore } from '@stores'
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
+import { useStore } from '@stores'
+import { TMsgRow } from '@types'
+import { useCallback } from 'react'
 
 /**
  * Hook for copying message deep links to clipboard.

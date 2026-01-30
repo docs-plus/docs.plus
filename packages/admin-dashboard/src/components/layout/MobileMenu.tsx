@@ -1,10 +1,12 @@
+import { clsx } from 'clsx'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { LuLayoutDashboard, LuLogOut, LuX } from 'react-icons/lu'
-import { supabase } from '@/lib/supabase'
-import { clsx } from 'clsx'
-import { ThemeToggle } from './ThemeToggle'
+
 import { navItems } from '@/constants/navigation'
+import { supabase } from '@/lib/supabase'
+
+import { ThemeToggle } from './ThemeToggle'
 
 interface MobileMenuProps {
   isOpen: boolean

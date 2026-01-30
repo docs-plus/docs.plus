@@ -1,4 +1,5 @@
 import { MdClose } from 'react-icons/md'
+
 import Button from './Button'
 
 export type CloseButtonSize = 'xs' | 'sm' | 'md'

@@ -8,16 +8,16 @@
  */
 
 import Head from 'next/head'
-import { DesignSystemProvider, useDesignSystem } from './context/DesignSystemContext'
-import { DashboardLayout } from './layouts'
+
 import {
+  ComponentsTab,
   DashboardTab,
   DocumentsTab,
-  TeamTab,
-  ComponentsTab,
   FormsTab,
-  SettingsTab
-} from './components'
+  SettingsTab,
+  TeamTab} from './components'
+import { DesignSystemProvider, useDesignSystem } from './context/DesignSystemContext'
+import { DashboardLayout } from './layouts'
 
 /**
  * TabContent - Renders the appropriate tab based on active selection

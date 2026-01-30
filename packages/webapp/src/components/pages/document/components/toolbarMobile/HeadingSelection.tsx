@@ -1,6 +1,6 @@
-import React, { useState, useCallback, useEffect } from 'react'
-import { MdAdd, MdOutlineRemove } from 'react-icons/md'
 import Button from '@components/ui/Button'
+import React, { useCallback, useEffect,useState } from 'react'
+import { MdAdd, MdOutlineRemove } from 'react-icons/md'
 
 type HeadingSelectionProps = {
   editor: any

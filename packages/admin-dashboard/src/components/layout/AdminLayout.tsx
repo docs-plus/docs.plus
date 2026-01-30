@@ -1,8 +1,10 @@
 import { ReactNode, useEffect, useState } from 'react'
-import { Sidebar } from './Sidebar'
-import { MobileMenu } from './MobileMenu'
-import { useUIStore } from '@/stores/uiStore'
 import { LuMenu } from 'react-icons/lu'
+
+import { useUIStore } from '@/stores/uiStore'
+
+import { MobileMenu } from './MobileMenu'
+import { Sidebar } from './Sidebar'
 import { ThemeToggle } from './ThemeToggle'
 
 interface AdminLayoutProps {

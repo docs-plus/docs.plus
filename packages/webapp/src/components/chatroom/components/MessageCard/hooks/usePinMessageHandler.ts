@@ -1,9 +1,9 @@
-import { useCallback } from 'react'
-import * as toast from '@components/toast'
 import { pinMessage } from '@api'
+import * as toast from '@components/toast'
 import { useChatStore } from '@stores'
 import { TMsgRow } from '@types'
 import { hasMetadataProperty } from '@utils/metadata'
+import { useCallback } from 'react'
 
 export const usePinMessageHandler = () => {
   const addChannelPinnedMessage = useChatStore((state) => state.addChannelPinnedMessage)

@@ -1,12 +1,12 @@
 import { ChannelMemberReadUpdate, getChannelMembersByLastReadUpdate } from '@api'
+import AvatarStack from '@components/AvatarStack'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
 import { MenuItem } from '@components/ui/ContextMenu'
 import { useApi } from '@hooks/useApi'
-import { useEffect, useState } from 'react'
-import AvatarStackLoader from '@components/skeleton/AvatarStackLoader'
-import { IoCheckmarkDoneSharp, IoCheckmarkSharp } from 'react-icons/io5'
-import AvatarStack from '@components/AvatarStack'
 import { TMsgRow } from '@types'
+import { useEffect, useState } from 'react'
+import { IoCheckmarkDoneSharp, IoCheckmarkSharp } from 'react-icons/io5'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {

@@ -1,11 +1,10 @@
 import { ReactNode } from 'react'
 import {
-  LuChevronLeft,
-  LuChevronRight,
-  LuArrowUp,
   LuArrowDown,
-  LuArrowUpDown
-} from 'react-icons/lu'
+  LuArrowUp,
+  LuArrowUpDown,
+  LuChevronLeft,
+  LuChevronRight} from 'react-icons/lu'
 
 export type SortDirection = 'asc' | 'desc'
 

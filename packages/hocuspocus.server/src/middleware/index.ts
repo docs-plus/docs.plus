@@ -1,10 +1,12 @@
-import { Hono, type Context, type Next } from 'hono'
+import '../types' // For type augmentation
+
+import { type Context, Hono, type Next } from 'hono'
 import { cors } from 'hono/cors'
 import { secureHeaders } from 'hono/secure-headers'
 import { RateLimiterRedis } from 'rate-limiter-flexible'
-import { getRedisClient } from '../lib/redis'
+
 import { httpLogger } from '../lib/logger'
-import '../types' // For type augmentation
+import { getRedisClient } from '../lib/redis'
 
 // Use centralized Redis client for rate limiting
 const redisClient = getRedisClient()

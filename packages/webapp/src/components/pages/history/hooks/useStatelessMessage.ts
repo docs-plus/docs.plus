@@ -1,6 +1,7 @@
-import { useCallback } from 'react'
-import { getContentFromYdocObject } from '../helpers'
 import { useStore } from '@stores'
+import { useCallback } from 'react'
+
+import { getContentFromYdocObject } from '../helpers'
 import { useVersionContent } from './useVersionContent'
 
 export const useStatelessMessage = () => {

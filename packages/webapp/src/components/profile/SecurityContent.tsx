@@ -1,9 +1,9 @@
-import { useState } from 'react'
-import { MdSecurity, MdInfo } from 'react-icons/md'
-import { useAuthStore } from '@stores'
+import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
 import TextInput from '@components/ui/TextInput'
-import * as toast from '@components/toast'
+import { useAuthStore } from '@stores'
+import { useState } from 'react'
+import { MdInfo,MdSecurity } from 'react-icons/md'
 
 interface SecurityContentProps {
   onBack?: () => void

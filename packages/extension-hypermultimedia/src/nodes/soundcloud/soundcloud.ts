@@ -1,7 +1,8 @@
-import { Node, mergeAttributes, nodePasteRule } from '@tiptap/core'
-import { SOUNDCLOUD_URL_REGEX_GLOBAL, getSoundCloudEmbedUrl, isValidSoundCloudUrl } from './helper'
-import { createTooltip, applyStyles, generateShortId } from '../../utils/utils'
+import { mergeAttributes, Node, nodePasteRule } from '@tiptap/core'
+
 import { MediaPlacement } from '../../utils/media-placement'
+import { applyStyles, createTooltip, generateShortId } from '../../utils/utils'
+import { getSoundCloudEmbedUrl, isValidSoundCloudUrl,SOUNDCLOUD_URL_REGEX_GLOBAL } from './helper'
 
 interface LayoutOptions {
   width?: number

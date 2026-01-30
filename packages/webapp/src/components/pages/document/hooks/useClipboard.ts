@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react'
 import { Editor } from '@tiptap/react'
+import { useCallback, useState } from 'react'
 
 interface UseClipboardReturn {
   cut: () => void

@@ -1,9 +1,10 @@
+import { Fragment,Slice } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
-import { Slice, Fragment } from '@tiptap/pm/model'
 import { Editor } from '@tiptap/react'
-import { getSelectionBlocks } from '../helper'
+
 import clipboardPast from '../clipboardPast'
 import deleteSelectedRange from '../deleteSelectedRange'
+import { getSelectionBlocks } from '../helper'
 
 /**
  * Creates a plugin for handling copy and paste operations with custom transformations

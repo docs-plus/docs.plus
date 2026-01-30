@@ -1,6 +1,6 @@
-import { immer } from 'zustand/middleware/immer'
-import { HistoryItem } from '@types'
 import { Editor } from '@tiptap/react'
+import { HistoryItem } from '@types'
+import { immer } from 'zustand/middleware/immer'
 interface IHistoryStore {
   historyList: HistoryItem[]
   activeHistory: HistoryItem | null

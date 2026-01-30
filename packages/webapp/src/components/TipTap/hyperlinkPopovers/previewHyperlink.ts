@@ -1,20 +1,21 @@
-import { Editor } from '@tiptap/core'
-import { EditorView } from '@tiptap/pm/view'
 import {
-  hideCurrentToolbar,
-  editHyperlinkPopover,
-  createHTMLElement,
   Copy,
+  copyToClipboard,
+  createHTMLElement,
+  editHyperlinkPopover,
+  getSpecialUrlInfo,
+  hideCurrentToolbar,
   LinkOff,
   Pencil,
-  copyToClipboard,
-  getSpecialUrlInfo,
   updateCurrentToolbarPosition
 } from '@docs.plus/extension-hyperlink'
-import * as Icons from './iconList'
 import { APPLY_FILTER, CHAT_OPEN } from '@services/eventsHub'
-import PubSub from 'pubsub-js'
+import { Editor } from '@tiptap/core'
+import { EditorView } from '@tiptap/pm/view'
 import { scrollToHeading } from '@utils/index'
+import PubSub from 'pubsub-js'
+
+import * as Icons from './iconList'
 
 type HyperlinkModalOptions = {
   editor: Editor

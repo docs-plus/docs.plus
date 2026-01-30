@@ -1,13 +1,13 @@
-import { Editor, EditorContent as TiptapEditor, useEditor } from '@tiptap/react'
-import editorConfig from '@components/TipTap/TipTap'
-import ToolbarDesktop from '@components/TipTap/toolbar/ToolbarDesktop'
-import { useEffect } from 'react'
-import { useStore, useEditorPreferences, applyEditorPreferences } from '@stores'
-import { GetServerSideProps } from 'next'
 import Controllers from '@components/pages/editor/Controllers'
 import { createDocumentFromStructure } from '@components/pages/editor/helpers/createDocumentFromStructure'
+import editorConfig from '@components/TipTap/TipTap'
+import ToolbarDesktop from '@components/TipTap/toolbar/ToolbarDesktop'
 import { TocDesktop } from '@components/toc/TocDesktop'
 import { moveHeadingById } from '@components/toc/utils/moveHeading'
+import { applyEditorPreferences,useEditorPreferences, useStore } from '@stores'
+import { Editor, EditorContent as TiptapEditor, useEditor } from '@tiptap/react'
+import { GetServerSideProps } from 'next'
+import { useEffect } from 'react'
 
 // Add this type for our props
 type EditorPageProps = {

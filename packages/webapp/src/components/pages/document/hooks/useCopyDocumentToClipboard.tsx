@@ -1,7 +1,7 @@
-import { useCallback, useState, useRef } from 'react'
-import { Editor } from '@tiptap/react'
 import * as toast from '@components/toast'
+import { Editor } from '@tiptap/react'
 import { copyRichContentToClipboard, copyToClipboard } from '@utils/clipboard'
+import { useCallback, useRef,useState } from 'react'
 
 /**
  * Hook for copying the entire document content to clipboard.

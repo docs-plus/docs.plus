@@ -1,5 +1,5 @@
-import { supabaseClient } from '@utils/supabase'
 import { AuthError } from '@supabase/supabase-js'
+import { supabaseClient } from '@utils/supabase'
 
 // Refactored signOut function
 export const signOut = async (): Promise<{ data: null; error: AuthError | null }> => {

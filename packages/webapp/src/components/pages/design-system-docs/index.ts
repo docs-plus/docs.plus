@@ -20,21 +20,20 @@ export { DesignSystemDocsProvider, useDesignSystemDocs } from './context/DesignS
 
 // Components
 export {
-  Sidebar,
-  Header,
-  CopyButton,
-  CodeBlock,
-  SectionHeader,
-  ComponentCard,
-  ColorSwatch,
-  GettingStartedSection,
-  FoundationsSection,
-  ComponentsSection,
-  EditorComponentsSection,
-  PatternsSection,
   AccessibilitySection,
-  ImplementationSection
-} from './components'
+  CodeBlock,
+  ColorSwatch,
+  ComponentCard,
+  ComponentsSection,
+  CopyButton,
+  EditorComponentsSection,
+  FoundationsSection,
+  GettingStartedSection,
+  Header,
+  ImplementationSection,
+  PatternsSection,
+  SectionHeader,
+  Sidebar} from './components'
 
 // Types
 export type * from './types'

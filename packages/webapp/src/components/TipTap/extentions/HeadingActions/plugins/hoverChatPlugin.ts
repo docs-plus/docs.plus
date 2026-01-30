@@ -1,14 +1,14 @@
+import { AddCommentMD,ChatLeftSVG } from '@icons'
+import { CHAT_COMMENT,CHAT_OPEN } from '@services/eventsHub'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view'
-import {
-  createDecorationPluginState,
-  createDecorationPluginProps
-} from '../../plugins/decorationHelpers'
-import { HEADING_ACTIONS_CLASSES, type HeadingNodeData } from '../types'
-import { TIPTAP_NODES, type ProseMirrorNode, type Editor } from '@types'
-import { ChatLeftSVG, AddCommentMD } from '@icons'
+import { type Editor,type ProseMirrorNode, TIPTAP_NODES } from '@types'
 import * as PubSub from 'pubsub-js'
-import { CHAT_OPEN, CHAT_COMMENT } from '@services/eventsHub'
+
+import {
+  createDecorationPluginProps,
+  createDecorationPluginState} from '../../plugins/decorationHelpers'
+import { HEADING_ACTIONS_CLASSES, type HeadingNodeData } from '../types'
 
 /** ProseMirror widget factory signature */
 type WidgetFactory = (view: EditorView, getPos: () => number | undefined) => HTMLElement

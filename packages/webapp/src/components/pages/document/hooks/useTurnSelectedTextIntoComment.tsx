@@ -1,7 +1,7 @@
-import { useCallback } from 'react'
+import { CHAT_COMMENT } from '@services/eventsHub'
 import { Editor } from '@tiptap/core'
 import PubSub from 'pubsub-js'
-import { CHAT_COMMENT } from '@services/eventsHub'
+import { useCallback } from 'react'
 
 const useTurnSelectedTextIntoComment = () => {
   const createComment = useCallback((editor: Editor) => {

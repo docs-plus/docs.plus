@@ -5,24 +5,24 @@
  */
 
 import {
-  MdInfo,
-  MdPlayArrow,
-  MdDescription,
-  MdPeople,
+  MdAdd,
   MdAnalytics,
   MdBookmark,
-  MdFilterList,
-  MdAdd,
-  MdInsertDriveFile,
-  MdEdit,
-  MdShare,
-  MdDelete,
-  MdMoreVert,
   MdChevronLeft,
-  MdChevronRight
-} from 'react-icons/md'
-import { useDesignSystem } from '../../context/DesignSystemContext'
+  MdChevronRight,
+  MdDelete,
+  MdDescription,
+  MdEdit,
+  MdFilterList,
+  MdInfo,
+  MdInsertDriveFile,
+  MdMoreVert,
+  MdPeople,
+  MdPlayArrow,
+  MdShare} from 'react-icons/md'
+
 import { DEMO_DOCUMENTS, KEYBOARD_SHORTCUTS } from '../../constants/demoData'
+import { useDesignSystem } from '../../context/DesignSystemContext'
 import { StatCard } from '../cards'
 
 export const DashboardTab = () => {

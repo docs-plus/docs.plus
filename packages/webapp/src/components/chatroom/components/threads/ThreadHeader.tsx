@@ -1,5 +1,5 @@
-import { useChatStore } from '@stores'
 import CloseButton from '@components/ui/CloseButton'
+import { useChatStore } from '@stores'
 
 export const ThreadHeader = () => {
   const clearThread = useChatStore((state: any) => state.clearThread)

@@ -1,8 +1,9 @@
 import { Editor } from '@tiptap/core'
 import { EditorView } from '@tiptap/pm/view'
+
 import { hideCurrentToolbar } from '../helpers/floating-toolbar'
+import { Copy, copyToClipboard,createHTMLElement, LinkOff, Pencil } from '../utils'
 import editHyperlinkPopover from './editHyperlinkPopover'
-import { createHTMLElement, Copy, LinkOff, Pencil, copyToClipboard } from '../utils'
 
 type HyperlinkModalOptions = {
   editor: Editor

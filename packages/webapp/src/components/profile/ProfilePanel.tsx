@@ -1,23 +1,23 @@
-import { useState } from 'react'
-import dynamic from 'next/dynamic'
-import {
-  LuUser,
-  LuFileText,
-  LuShield,
-  LuBell,
-  LuChevronRight,
-  LuChevronLeft,
-  LuLogOut,
-  LuLightbulb,
-  LuBug,
-  LuStar,
-  LuExternalLink
-} from 'react-icons/lu'
-import { FaGithub } from 'react-icons/fa'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { useAuthStore } from '@stores'
+import dynamic from 'next/dynamic'
+import { useState } from 'react'
+import { FaGithub } from 'react-icons/fa'
+import {
+  LuBell,
+  LuBug,
+  LuChevronLeft,
+  LuChevronRight,
+  LuExternalLink,
+  LuFileText,
+  LuLightbulb,
+  LuLogOut,
+  LuShield,
+  LuStar,
+  LuUser} from 'react-icons/lu'
+
 import { useSignOut } from './hooks/useSignOut'
 
 // Dynamic imports for content panels

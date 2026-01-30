@@ -1,12 +1,13 @@
-import { TIPTAP_NODES } from '@types'
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
+import { TIPTAP_NODES } from '@types'
+
 import {
+  createHeadingNodeFromSelection,
   createThisBlockMap,
+  findPrevBlock,
   getHeadingsBlocksMap,
   getRangeBlocks,
-  findPrevBlock,
   insertRemainingHeadings,
-  createHeadingNodeFromSelection,
   putTextSelectionEndNode
 } from './helper'
 import { CommandArgs, HeadingAttributes } from './types'

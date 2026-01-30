@@ -12,7 +12,7 @@
  * - Hierarchical digest: Document → Channel → Messages
  */
 
-import type { NotificationType, DigestDocument, _DigestNotification } from '../../types/email.types'
+import type { _DigestNotification,DigestDocument, NotificationType } from '../../types/email.types'
 
 // ============================================================================
 // DESIGN TOKENS (from docs.plus design system)

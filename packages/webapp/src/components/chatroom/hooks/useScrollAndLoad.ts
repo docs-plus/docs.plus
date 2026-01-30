@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useMemo } from 'react'
 import { useChatStore } from '@stores'
-import { useChatroomContext } from '../ChatroomContext'
 import type { Virtualizer } from '@tanstack/react-virtual'
 import { TChannelSettings } from '@types'
+import { useCallback, useEffect, useMemo } from 'react'
+
+import { useChatroomContext } from '../ChatroomContext'
 
 interface UseScrollAndLoadReturn {
   isReadyToDisplayMessages: boolean

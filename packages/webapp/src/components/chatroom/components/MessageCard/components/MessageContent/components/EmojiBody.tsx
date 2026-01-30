@@ -1,7 +1,8 @@
-import { useMessageCardContext } from '../../../MessageCardContext'
-import { useEffect, useMemo, useState } from 'react'
 import { isOnlyEmoji, splitEmojis } from '@utils/index'
 import { getEmojiDataFromNative } from 'emoji-mart'
+import { useEffect, useMemo, useState } from 'react'
+
+import { useMessageCardContext } from '../../../MessageCardContext'
 
 export const EmojiBody = () => {
   const { message } = useMessageCardContext()

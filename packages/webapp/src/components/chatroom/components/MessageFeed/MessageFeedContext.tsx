@@ -1,13 +1,12 @@
-import React, { createContext, useContext, useRef, useCallback } from 'react'
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import {
-  useScrollAndLoad,
-  useInfiniteLoadMessages,
   useAutoScrollForNewMessages,
-  useHighlightMessage
-} from '@components/chatroom/hooks'
-import type { Virtualizer } from '@tanstack/react-virtual'
+  useHighlightMessage,
+  useInfiniteLoadMessages,
+  useScrollAndLoad} from '@components/chatroom/hooks'
 import { useChatStore } from '@stores'
+import type { Virtualizer } from '@tanstack/react-virtual'
+import React, { createContext, useCallback,useContext, useRef } from 'react'
 
 interface MessageFeedContextValue {
   isLoadingMore: boolean

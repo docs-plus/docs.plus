@@ -7,25 +7,25 @@
  */
 
 import { createClient } from '@supabase/supabase-js'
-import { emailLogger } from '../logger'
-import { sendEmail } from './providers'
-import {
-  getEmailSubject,
-  buildNotificationEmailHtml,
-  buildNotificationEmailText,
-  buildDigestEmailHtml,
-  buildDigestEmailText,
-  buildListUnsubscribeHeaders,
-  type UnsubscribeLinks
-} from './templates'
+
 import type {
+  DigestEmailRequest,
   EmailJobData,
   EmailResult,
   EmailStatusCallback,
-  NotificationEmailRequest,
-  DigestEmailRequest,
-  GenericEmailRequest
-} from '../../types/email.types'
+  GenericEmailRequest,
+  NotificationEmailRequest} from '../../types/email.types'
+import { emailLogger } from '../logger'
+import { sendEmail } from './providers'
+import {
+  buildDigestEmailHtml,
+  buildDigestEmailText,
+  buildListUnsubscribeHeaders,
+  buildNotificationEmailHtml,
+  buildNotificationEmailText,
+  getEmailSubject,
+  type UnsubscribeLinks
+} from './templates'
 
 /**
  * Fetch unsubscribe links from Supabase for a user

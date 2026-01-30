@@ -4,19 +4,19 @@
  * Settings view with quick actions and account stats.
  */
 
-import {
-  MdSettings,
-  MdStarOutline,
-  MdLightbulbOutline,
-  MdBugReport,
-  MdDownload,
-  MdDescription,
-  MdFavorite,
-  MdStar,
-  MdWarning,
-  MdDelete
-} from 'react-icons/md'
 import { PanelHeader } from '@components/ui'
+import {
+  MdBugReport,
+  MdDelete,
+  MdDescription,
+  MdDownload,
+  MdFavorite,
+  MdLightbulbOutline,
+  MdSettings,
+  MdStar,
+  MdStarOutline,
+  MdWarning} from 'react-icons/md'
+
 import { ActionCard } from '../cards'
 
 export const SettingsTab = () => (

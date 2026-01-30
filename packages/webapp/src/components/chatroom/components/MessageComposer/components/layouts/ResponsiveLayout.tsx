@@ -1,5 +1,6 @@
 import { useStore } from '@stores'
-import { MobileLayout, DesktopLayout } from '.'
+
+import { DesktopLayout,MobileLayout } from '.'
 
 const Editor = () => {
   const {

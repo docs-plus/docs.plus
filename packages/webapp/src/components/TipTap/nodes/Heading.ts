@@ -1,22 +1,22 @@
-import { Node, mergeAttributes, InputRule, callOrReturn } from '@tiptap/core'
-import changeHeadingLevel from '../extentions/changeHeadingLevel'
-import wrapContenWithHeading from '../extentions/wrapContenWithHeading'
-import changeHeading2paragraphs from '../extentions/changeHeading2paragraphs'
-import deleteSelectedRange from '../extentions/deleteSelectedRange'
+import { callOrReturn,InputRule, mergeAttributes, Node } from '@tiptap/core'
 import {
-  TIPTAP_NODES,
-  type ProseMirrorNode,
   type CommandProps,
   type DOMOutputSpec,
+  type ProseMirrorNode,
+  TIPTAP_NODES,
   type ViewMutationRecord
 } from '@types'
+
+import changeHeading2paragraphs from '../extentions/changeHeading2paragraphs'
+import changeHeadingLevel from '../extentions/changeHeadingLevel'
+import deleteSelectedRange from '../extentions/deleteSelectedRange'
 import { getNodeState } from '../extentions/helper'
 import {
   createCopyPastePlugin,
-  createRangeSelectionPlugin,
-  createHierarchyValidationPlugin
-} from '../extentions/plugins'
+  createHierarchyValidationPlugin,
+  createRangeSelectionPlugin} from '../extentions/plugins'
 import { HeadingAttributes } from '../extentions/types'
+import wrapContenWithHeading from '../extentions/wrapContenWithHeading'
 
 const Heading = Node.create({
   name: TIPTAP_NODES.HEADING_TYPE,
@@ -286,4 +286,4 @@ const Heading = Node.create({
   }
 })
 
-export { Heading, Heading as default }
+export { Heading as default,Heading }

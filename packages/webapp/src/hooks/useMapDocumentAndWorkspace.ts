@@ -1,9 +1,9 @@
-import { upsertWorkspace, getChannels, getChannelsWithMessageCounts } from '@api'
-import { useAuthStore, useChatStore } from '@stores'
-import { useEffect, useState } from 'react'
+import { getChannels, getChannelsWithMessageCounts,upsertWorkspace } from '@api'
 import Config from '@config'
+import { useAuthStore, useChatStore } from '@stores'
 import { Channel } from '@types'
 import { logger } from '@utils/logger'
+import { useEffect, useState } from 'react'
 
 interface DocMetadata {
   documentId: string

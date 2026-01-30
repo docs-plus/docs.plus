@@ -1,5 +1,5 @@
+import { useAuthStore, useChatStore,useStore } from '@stores'
 import debounce from 'lodash/debounce'
-import { useStore, useAuthStore, useChatStore } from '@stores'
 
 // Enum to represent the different states of typing indicator.
 export enum TypingIndicatorType {

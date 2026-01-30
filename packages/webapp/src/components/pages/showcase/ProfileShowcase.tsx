@@ -4,31 +4,31 @@
  * Showcase page for Profile & Account Management features.
  */
 
-import { useState } from 'react'
+import { Avatar } from '@components/ui'
 import Head from 'next/head'
+import { useState } from 'react'
+import { FaDiscord,FaGithub, FaGoogle } from 'react-icons/fa'
 import {
   MdAccountCircle,
+  MdCheck,
+  MdDelete,
+  MdDevices,
+  MdEdit,
   MdEmail,
+  MdHistory,
+  MdInfo,
+  MdLanguage,
+  MdLink,
   MdLock,
+  MdLogout,
+  MdNotifications,
+  MdPalette,
+  MdPhotoCamera,
+  MdSecurity,
   MdVisibility,
   MdVisibilityOff,
-  MdCheck,
-  MdEdit,
-  MdPhotoCamera,
-  MdNotifications,
-  MdSecurity,
-  MdLanguage,
-  MdPalette,
-  MdLogout,
-  MdDelete,
-  MdWarning,
-  MdLink,
-  MdDevices,
-  MdHistory,
-  MdInfo
-} from 'react-icons/md'
-import { FaGoogle, FaGithub, FaDiscord } from 'react-icons/fa'
-import { Avatar } from '@components/ui'
+  MdWarning} from 'react-icons/md'
+
 import { ShowcaseLayout } from './layouts'
 
 // Demo data

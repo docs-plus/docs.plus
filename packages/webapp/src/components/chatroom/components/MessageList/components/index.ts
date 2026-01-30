@@ -1,3 +1,3 @@
-export * from './MessageLoop'
-export * from './MessageListContextMenu'
 export * from './LoadingSpinner'
+export * from './MessageListContextMenu'
+export * from './MessageLoop'

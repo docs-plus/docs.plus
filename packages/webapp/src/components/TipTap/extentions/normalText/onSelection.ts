@@ -1,12 +1,12 @@
 import { TextSelection } from '@tiptap/pm/state'
+
 import {
-  getSelectionRangeBlocks,
+  convertHeadingsToParagraphs,
   extractParagraphsAndHeadings,
-  insertRemainingHeadings,
-  convertHeadingsToParagraphs
-} from '../helper'
-import onHeading from './onHeading'
+  getSelectionRangeBlocks,
+  insertRemainingHeadings} from '../helper'
 import { NormalTextArgs } from '../types'
+import onHeading from './onHeading'
 
 const onSelection = ({ state, tr, editor }: NormalTextArgs): boolean => {
   const { selection, doc } = state

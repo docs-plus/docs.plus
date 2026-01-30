@@ -1,5 +1,5 @@
-import { immer } from 'zustand/middleware/immer'
 import { TMessageWithUser } from '@api'
+import { immer } from 'zustand/middleware/immer'
 
 export type TMessage = TMessageWithUser
 

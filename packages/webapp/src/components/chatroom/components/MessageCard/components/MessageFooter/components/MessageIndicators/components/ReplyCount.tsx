@@ -1,7 +1,7 @@
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
+import { getMetadataProperty } from '@utils/metadata'
 import { CgMailReply } from 'react-icons/cg'
 import { twMerge } from 'tailwind-merge'
-import { getMetadataProperty } from '@utils/metadata'
 
 type Props = {
   className?: string
