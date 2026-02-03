@@ -1,6 +1,6 @@
 generator client {
   provider        = "prisma-client-js"
-  previewFeatures = ["fullTextSearch", "driverAdapters"]
+  previewFeatures = ["fullTextSearchPostgres"]
 }
 
 datasource db {
@@ -16,16 +16,18 @@ enum Role {
 model Documents {
   id            Int              @id @default(autoincrement())
   documentId    String
-  version       Int              @default(1) // Tracks version number
-  commitMessage String? // Optional commit message
+  version       Int              @default(1)
+  commitMessage String?
   data          Bytes
   createdAt     DateTime         @default(now())
   updatedAt     DateTime         @updatedAt
-  metadata      DocumentMetadata @relation(fields: [documentId], references: [documentId])
+  metadata      DocumentMetadata @relation(fields: [documentId], references: [documentId], onDelete: Cascade)
   collaborators DocumentUsers[]
 
-  @@unique([documentId, version], name: "Documents_documentId_version_unique") // Prevents duplicate versions
-  @@index([documentId, version]) // Allows fast querying by version
+  @@unique([documentId, version], name: "Documents_documentId_version_unique")
+  @@index([documentId]) // Dedicated index for fetch queries
+  @@index([documentId, version]) // Composite for version queries
+  @@index([createdAt])
 }
 
 model DocumentMetadata {
@@ -39,20 +41,51 @@ model DocumentMetadata {
   updatedAt   DateTime @updatedAt
   documentId  String   @unique
   readOnly    Boolean  @default(false)
-  // This field stores the user ID from the 'user' table in Supabase auth
   ownerId     String?
-  // This field stores the user's email as a backup. It ensures data mapping to the user even if we lose the 'user' table in Supabase.
   email       String?
 
   documents Documents[]
+
+  @@index([ownerId])
 }
 
 model DocumentUsers {
-  documentId Int
+  documentPk Int
   userId     String
   role       Role?     @default(collaborator)
   email      String?
-  document   Documents @relation(fields: [documentId], references: [id])
+  document   Documents @relation(fields: [documentPk], references: [id], onDelete: Cascade)
 
-  @@id([documentId, userId])
+  @@id([documentPk, userId])
+  @@index([userId])
+}
+
+// ============================================================================
+// Idempotency Tables
+// Prevent duplicate sends on worker retries
+// ============================================================================
+
+model EmailSentLog {
+  id             String   @id @default(cuid())
+  idempotencyKey String   @unique // email:{jobId}
+  messageId      String? // SMTP/provider message ID
+  recipient      String
+  emailType      String? // notification type
+  sentAt         DateTime @default(now())
+  expiresAt      DateTime @default(dbgenerated("NOW() + INTERVAL '7 days'"))
+
+  @@index([expiresAt])
+  @@index([recipient, sentAt])
+}
+
+model PushSentLog {
+  id                String   @id @default(cuid())
+  idempotencyKey    String   @unique // push:{jobId}
+  userId            String
+  subscriptionCount Int      @default(0) // How many devices received
+  sentAt            DateTime @default(now())
+  expiresAt         DateTime @default(dbgenerated("NOW() + INTERVAL '7 days'"))
+
+  @@index([expiresAt])
+  @@index([userId, sentAt])
 }
