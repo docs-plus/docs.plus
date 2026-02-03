@@ -2,14 +2,15 @@ import { markNotificationAsRead } from '@api'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useStore } from '@stores'
 import PubSub from 'pubsub-js'
-import { useCallback,useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 
 import {
   getPermissionStatus,
   isPushSupported,
   isSubscribed as checkSubscribed,
   registerPushSubscription,
-  unregisterPushSubscription} from '../lib/push-notifications'
+  unregisterPushSubscription
+} from '../lib/push-notifications'
 
 export type SubscribeResult = 'success' | 'denied' | 'dismissed' | 'error'
 

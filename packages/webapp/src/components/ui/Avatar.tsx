@@ -1,9 +1,9 @@
 import { UserProfileDialog } from '@components/ui/dialogs/UserProfileDialog'
 import Config from '@config'
-import { initials,lorelei, rings, shapes } from '@dicebear/collection'
+import { initials, lorelei, rings, shapes } from '@dicebear/collection'
 import { createAvatar } from '@dicebear/core'
 import { useStore } from '@stores'
-import { forwardRef,useCallback, useMemo, useState } from 'react'
+import { forwardRef, useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 type AvatarCollectionKey = 'lorelei' | 'shapes' | 'rings' | 'initials'

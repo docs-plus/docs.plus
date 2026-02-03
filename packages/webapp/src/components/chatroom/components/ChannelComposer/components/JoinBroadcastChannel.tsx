@@ -4,7 +4,7 @@ import { useApi } from '@hooks/useApi'
 import { useAuthStore, useChatStore } from '@stores'
 import { TChannelSettings } from '@types'
 import { supabaseClient } from '@utils/supabase'
-import { useCallback, useEffect, useMemo,useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { LuBell, LuBellOff, LuUserPlus } from 'react-icons/lu'
 
 import { useChatroomContext } from '../../../ChatroomContext'

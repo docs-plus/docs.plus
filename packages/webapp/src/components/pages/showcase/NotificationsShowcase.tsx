@@ -29,7 +29,8 @@ import {
   MdSearch,
   MdShare,
   MdStar,
-  MdStarBorder} from 'react-icons/md'
+  MdStarBorder
+} from 'react-icons/md'
 
 import { ShowcaseLayout } from './layouts'
 

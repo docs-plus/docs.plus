@@ -1,6 +1,6 @@
 import { useNotificationToggle } from '@components/chatroom/hooks/useNotificationToggle'
 import Button from '@components/ui/Button'
-import { LuAtSign,LuBell, LuBellOff } from 'react-icons/lu'
+import { LuAtSign, LuBell, LuBellOff } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {

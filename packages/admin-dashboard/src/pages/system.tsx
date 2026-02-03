@@ -12,13 +12,14 @@ import {
   LuCircleCheck,
   LuClock,
   LuDatabase,
-  LuServer} from 'react-icons/lu'
+  LuServer
+} from 'react-icons/lu'
 
 import { StatCard } from '@/components/cards/StatCard'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
 import { checkApiHealth } from '@/services/api'
-import { checkDatabaseHealth,fetchTableSizes } from '@/services/supabase'
+import { checkDatabaseHealth, fetchTableSizes } from '@/services/supabase'
 import type { ServiceStatus } from '@/types'
 import { formatTime } from '@/utils/format'
 

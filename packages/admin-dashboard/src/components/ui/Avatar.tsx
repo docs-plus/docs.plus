@@ -1,4 +1,4 @@
-import { useCallback,useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl'

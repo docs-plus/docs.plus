@@ -6,7 +6,8 @@ import {
   findPrevBlock,
   getPrevHeadingList,
   getRangeBlocks,
-  getSelectionRangeBlocks} from '../helper'
+  getSelectionRangeBlocks
+} from '../helper'
 import { NormalTextArgs } from '../types'
 import { HeadingBlockInfo, SelectionBlock } from '../types'
 

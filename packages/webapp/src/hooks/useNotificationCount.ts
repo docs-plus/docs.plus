@@ -1,5 +1,5 @@
 import { getUnreadNotificationCount } from '@api'
-import { useAuthStore,useStore } from '@stores'
+import { useAuthStore, useStore } from '@stores'
 import { RealtimeChannel } from '@supabase/supabase-js'
 import { supabaseClient } from '@utils/supabase'
 import { useEffect, useRef } from 'react'

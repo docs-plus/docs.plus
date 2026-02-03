@@ -1,4 +1,4 @@
-import React, { ReactElement,useRef, useState } from 'react'
+import React, { ReactElement, useRef, useState } from 'react'
 import { VscPinnedDirty } from 'react-icons/vsc'
 
 type PinnedMessage = {

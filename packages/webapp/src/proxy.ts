@@ -1,5 +1,5 @@
 import { logger } from '@utils/logger'
-import { type NextRequest,NextResponse } from 'next/server'
+import { type NextRequest, NextResponse } from 'next/server'
 
 /**
  * Middleware for request handling, error redirects, and logging

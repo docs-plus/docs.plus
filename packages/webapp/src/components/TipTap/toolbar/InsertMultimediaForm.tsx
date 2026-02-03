@@ -4,10 +4,10 @@ import { usePopoverState } from '@components/ui/Popover'
 import TextInput from '@components/ui/TextInput'
 import { useStore } from '@stores'
 import { TIPTAP_NODES } from '@types'
-import React, { useCallback, useEffect, useRef,useState } from 'react'
-import { FaSoundcloud, FaVimeo, FaXTwitter,FaYoutube } from 'react-icons/fa6'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { FaSoundcloud, FaVimeo, FaXTwitter, FaYoutube } from 'react-icons/fa6'
 import { FiFilm } from 'react-icons/fi'
-import { MdAudiotrack,MdCloudUpload, MdOutlineImage } from 'react-icons/md'
+import { MdAudiotrack, MdCloudUpload, MdOutlineImage } from 'react-icons/md'
 
 // Types and Interfaces
 type MediaType = 'Picture' | 'Video' | 'Audio' | 'Youtube' | 'Vimeo' | 'SoundCloud' | 'x.com'

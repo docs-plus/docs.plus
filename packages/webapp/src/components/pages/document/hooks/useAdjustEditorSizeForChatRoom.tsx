@@ -1,5 +1,5 @@
 import { useChatStore } from '@stores'
-import { RefObject,useEffect } from 'react'
+import { RefObject, useEffect } from 'react'
 
 export const useAdjustEditorSizeForChatRoom = (editorWrapperRef: RefObject<HTMLDivElement>) => {
   const chatRoom = useChatStore((state) => state.chatRoom)

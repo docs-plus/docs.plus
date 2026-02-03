@@ -1,4 +1,4 @@
-import { type ReactNode,useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { LuChevronDown, LuChevronRight } from 'react-icons/lu'
 
 interface CollapsibleSectionProps {

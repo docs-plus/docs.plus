@@ -7,7 +7,8 @@ import {
   LuReply,
   LuSmile,
   LuTriangleAlert,
-  LuUsers} from 'react-icons/lu'
+  LuUsers
+} from 'react-icons/lu'
 
 const NotificationIcon = ({ type, size = 16 }: { type: string; size?: number }) => {
   const iconProps = { size, className: 'text-base-content/60' }

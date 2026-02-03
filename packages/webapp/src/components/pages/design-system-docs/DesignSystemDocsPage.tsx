@@ -23,7 +23,8 @@ import {
   Header,
   ImplementationSection,
   PatternsSection,
-  Sidebar} from './components'
+  Sidebar
+} from './components'
 import { DesignSystemDocsProvider } from './context/DesignSystemDocsContext'
 
 /**

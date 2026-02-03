@@ -6,7 +6,7 @@
 
 import { ReactNode } from 'react'
 
-import { ChatPanel,Header, Sidebar } from '../components'
+import { ChatPanel, Header, Sidebar } from '../components'
 import { useDesignSystem } from '../context/DesignSystemContext'
 
 interface DashboardLayoutProps {

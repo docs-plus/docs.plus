@@ -9,8 +9,9 @@ import {
   useDismiss,
   useFloating,
   useInteractions,
-  useRole} from '@floating-ui/react'
-import { cloneElement, isValidElement, ReactNode,useEffect, useRef, useState } from 'react'
+  useRole
+} from '@floating-ui/react'
+import { cloneElement, isValidElement, ReactNode, useEffect, useRef, useState } from 'react'
 
 interface TooltipProps {
   title: ReactNode

@@ -1,5 +1,5 @@
 import merge from 'lodash/merge'
-import React, { createContext, useContext, useEffect,useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 
 type TSettings = {
   displayChannelBar?: boolean

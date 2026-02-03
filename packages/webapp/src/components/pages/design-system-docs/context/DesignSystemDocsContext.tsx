@@ -5,7 +5,7 @@
  */
 
 import { copyToClipboard as copyToClipboardUtil } from '@utils/clipboard'
-import { createContext, ReactNode, useCallback, useContext, useMemo, useRef,useState } from 'react'
+import { createContext, ReactNode, useCallback, useContext, useMemo, useRef, useState } from 'react'
 
 import { NAV_SECTIONS } from '../constants'
 import type { SearchResult } from '../types'

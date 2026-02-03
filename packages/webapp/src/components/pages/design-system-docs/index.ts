@@ -33,7 +33,8 @@ export {
   ImplementationSection,
   PatternsSection,
   SectionHeader,
-  Sidebar} from './components'
+  Sidebar
+} from './components'
 
 // Types
 export type * from './types'

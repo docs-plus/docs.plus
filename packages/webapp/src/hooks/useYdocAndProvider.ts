@@ -1,6 +1,6 @@
 import { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
-import { useEffect, useRef,useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import * as Y from 'yjs'
 
 /**

@@ -8,7 +8,7 @@ import { useSupabase } from '@hooks/useSupabase'
 import { useStore } from '@stores'
 import type { PostgrestError } from '@supabase/supabase-js'
 import { useEffect, useMemo } from 'react'
-import { MdLink,MdMailOutline, MdPhone } from 'react-icons/md'
+import { MdLink, MdMailOutline, MdPhone } from 'react-icons/md'
 
 interface UserProfileDialogProps {
   userId: string

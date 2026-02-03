@@ -5,7 +5,8 @@ import {
   LuFileText,
   LuLayoutDashboard,
   LuMessageSquare,
-  LuUsers} from 'react-icons/lu'
+  LuUsers
+} from 'react-icons/lu'
 
 export interface NavItem {
   href: string

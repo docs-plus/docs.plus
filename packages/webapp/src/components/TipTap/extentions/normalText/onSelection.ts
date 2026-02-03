@@ -4,7 +4,8 @@ import {
   convertHeadingsToParagraphs,
   extractParagraphsAndHeadings,
   getSelectionRangeBlocks,
-  insertRemainingHeadings} from '../helper'
+  insertRemainingHeadings
+} from '../helper'
 import { NormalTextArgs } from '../types'
 import onHeading from './onHeading'
 

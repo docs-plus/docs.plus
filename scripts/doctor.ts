@@ -122,7 +122,9 @@ function printResult(result: CheckResult) {
   }
   const reset = '\x1b[0m'
 
-  console.log(`${icons[result.status]} ${colors[result.status]}${result.name}${reset}: ${result.message}`)
+  console.log(
+    `${icons[result.status]} ${colors[result.status]}${result.name}${reset}: ${result.message}`
+  )
   if (result.details) {
     console.log(`   ${result.details}`)
   }
@@ -481,7 +483,9 @@ async function main() {
   const warned = allResults.filter((r) => r.status === 'warn').length
   const skipped = allResults.filter((r) => r.status === 'skip').length
 
-  console.log(`\n📊 Summary: ${passed} passed, ${failed} failed, ${warned} warnings, ${skipped} skipped\n`)
+  console.log(
+    `\n📊 Summary: ${passed} passed, ${failed} failed, ${warned} warnings, ${skipped} skipped\n`
+  )
 
   if (hasFailures) {
     console.log('❌ Some checks failed. Please fix the issues above.\n')

@@ -5,7 +5,8 @@ import {
   flip,
   offset,
   Placement,
-  shift} from '@floating-ui/dom'
+  shift
+} from '@floating-ui/dom'
 
 // Logger utility for production debugging
 class Logger {

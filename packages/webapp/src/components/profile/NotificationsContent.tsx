@@ -4,7 +4,7 @@ import SearchableSelect from '@components/ui/SearchableSelect'
 import Toggle from '@components/ui/Toggle'
 import { usePushNotifications } from '@hooks/usePushNotifications'
 import { useAuthStore } from '@stores'
-import { useCallback, useEffect, useMemo,useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { MdEmail, MdNotifications, MdSchedule } from 'react-icons/md'
 
 interface NotificationsContentProps {

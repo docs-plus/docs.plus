@@ -7,7 +7,7 @@
 import { Avatar } from '@components/ui'
 import Head from 'next/head'
 import { useState } from 'react'
-import { FaDiscord,FaGithub, FaGoogle } from 'react-icons/fa'
+import { FaDiscord, FaGithub, FaGoogle } from 'react-icons/fa'
 import {
   MdAccountCircle,
   MdCheck,
@@ -27,7 +27,8 @@ import {
   MdSecurity,
   MdVisibility,
   MdVisibilityOff,
-  MdWarning} from 'react-icons/md'
+  MdWarning
+} from 'react-icons/md'
 
 import { ShowcaseLayout } from './layouts'
 

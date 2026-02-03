@@ -2,7 +2,7 @@ import { AddCommentMD } from '@icons'
 import { CHAT_COMMENT } from '@services/eventsHub'
 import type { ResolvedPos } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
-import { type Editor, type EditorView,type Selection, TIPTAP_NODES } from '@types'
+import { type Editor, type EditorView, type Selection, TIPTAP_NODES } from '@types'
 import PubSub from 'pubsub-js'
 
 import { HEADING_ACTIONS_CLASSES } from '../types'

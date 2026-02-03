@@ -8,7 +8,8 @@ import {
   useLongPressInteraction,
   useMenuPositioning,
   useMenuVisibility,
-  useMessageHighlighting} from '../../hooks'
+  useMessageHighlighting
+} from '../../hooks'
 import { ContextActionsMenu } from './components/ContextActionsMenu'
 import { HighlightedMessageCard } from './components/HighlightedMessageCard'
 

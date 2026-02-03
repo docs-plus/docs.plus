@@ -4,8 +4,8 @@
  * Mobile header with menu toggle and theme switch.
  */
 
-import { useEffect,useState } from 'react'
-import { MdDarkMode,MdLightMode, MdMenu } from 'react-icons/md'
+import { useEffect, useState } from 'react'
+import { MdDarkMode, MdLightMode, MdMenu } from 'react-icons/md'
 
 import { useDesignSystemDocs } from '../../context/DesignSystemDocsContext'
 

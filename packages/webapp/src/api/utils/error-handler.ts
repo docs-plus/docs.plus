@@ -3,7 +3,7 @@
  * Provides consistent error handling across all API functions
  */
 
-import { PostgrestError,PostgrestResponse } from '@supabase/supabase-js'
+import { PostgrestError, PostgrestResponse } from '@supabase/supabase-js'
 import { logger } from '@utils/logger'
 
 export class ApiError extends Error {

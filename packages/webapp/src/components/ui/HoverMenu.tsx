@@ -12,7 +12,8 @@ import {
   useFloating,
   useHover,
   useInteractions,
-  useRole} from '@floating-ui/react'
+  useRole
+} from '@floating-ui/react'
 import debounce from 'lodash/debounce'
 import {
   createContext,
@@ -24,7 +25,8 @@ import {
   useEffect,
   useMemo,
   useRef,
-  useState} from 'react'
+  useState
+} from 'react'
 import { twMerge } from 'tailwind-merge'
 
 // Global state for managing multiple HoverMenus

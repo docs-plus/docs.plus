@@ -9,7 +9,7 @@ import { Provider } from '@supabase/supabase-js'
 import { useMutation } from '@tanstack/react-query'
 import { createClient } from '@utils/supabase/component'
 import { useState } from 'react'
-import { LuMail,LuSparkles } from 'react-icons/lu'
+import { LuMail, LuSparkles } from 'react-icons/lu'
 
 interface SignInFormProps {
   /** Visual variant - 'card' adds border/padding, 'inline' has none */

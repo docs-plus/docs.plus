@@ -7,7 +7,8 @@ import {
   fetchNotificationReach,
   fetchRetentionMetrics,
   fetchTopActiveDocuments,
-  fetchUserLifecycleSegments} from '@/services/api'
+  fetchUserLifecycleSegments
+} from '@/services/api'
 
 /**
  * Hook for fetching retention metrics (DAU/WAU/MAU)

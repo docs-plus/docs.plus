@@ -11,7 +11,8 @@ import {
   MdOutlineArticle,
   MdPalette,
   MdPeople,
-  MdSettings} from 'react-icons/md'
+  MdSettings
+} from 'react-icons/md'
 
 import type {
   DemoDocument,

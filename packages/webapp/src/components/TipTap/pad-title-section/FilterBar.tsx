@@ -1,5 +1,5 @@
 import Button from '@components/ui/Button'
-import { REMOVE_FILTER,RESET_FILTER } from '@services/eventsHub'
+import { REMOVE_FILTER, RESET_FILTER } from '@services/eventsHub'
 import { useStore } from '@stores'
 import PubSub from 'pubsub-js'
 import { useCallback } from 'react'

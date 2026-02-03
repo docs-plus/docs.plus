@@ -4,7 +4,7 @@
  * Centralized state management for the design system demo page.
  */
 
-import { createContext, ReactNode,useCallback, useContext, useState } from 'react'
+import { createContext, ReactNode, useCallback, useContext, useState } from 'react'
 
 import type { TabType, ThemeType } from '../types'
 

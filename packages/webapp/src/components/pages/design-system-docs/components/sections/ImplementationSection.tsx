@@ -4,9 +4,9 @@
  * File structure, naming conventions, and contributing guidelines.
  */
 
-import { MdFolder, MdGroupWork,MdTextFormat } from 'react-icons/md'
+import { MdFolder, MdGroupWork, MdTextFormat } from 'react-icons/md'
 
-import { CodeBlock,SectionHeader } from '../shared'
+import { CodeBlock, SectionHeader } from '../shared'
 
 export const ImplementationSection = () => {
   return (

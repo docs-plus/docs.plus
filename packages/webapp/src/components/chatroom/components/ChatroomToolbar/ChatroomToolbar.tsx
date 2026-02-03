@@ -5,7 +5,8 @@ import {
   CloseButton,
   NotificationToggle,
   ParticipantsList,
-  ShareButton} from './components'
+  ShareButton
+} from './components'
 
 type Props = {
   children: React.ReactNode

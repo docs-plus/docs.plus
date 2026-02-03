@@ -6,7 +6,8 @@ import { buildOptimizedDecorations } from './decoration'
 import {
   BuildDecorationsFunction,
   createDecorationPluginProps,
-  createDecorationPluginState} from './decorationHelpers'
+  createDecorationPluginState
+} from './decorationHelpers'
 
 export interface MediaResizeGripperOptions {
   acceptedNodes: string[]

@@ -1,5 +1,5 @@
 import { ReactNode } from 'react'
-import { LuDownload,LuRefreshCw } from 'react-icons/lu'
+import { LuDownload, LuRefreshCw } from 'react-icons/lu'
 
 interface HeaderProps {
   title: string

@@ -1,5 +1,5 @@
 import { FaBehance, FaDribbble, FaPatreon } from 'react-icons/fa'
-import { FaFacebook, FaReddit, FaTwitter, FaWhatsapp,FaYoutube } from 'react-icons/fa'
+import { FaFacebook, FaReddit, FaTwitter, FaWhatsapp, FaYoutube } from 'react-icons/fa'
 import {
   FaAmazon,
   FaApple,
@@ -21,8 +21,9 @@ import {
   FaTumblr,
   FaTwitch,
   FaVimeo,
-  FaVk} from 'react-icons/fa'
-import { SiBento, SiCalendly, SiLine, SiLinktree,SiThreads } from 'react-icons/si'
+  FaVk
+} from 'react-icons/fa'
+import { SiBento, SiCalendly, SiLine, SiLinktree, SiThreads } from 'react-icons/si'
 
 export const SOCIAL_MEDIA_ICONS: {
   [key: string]: {

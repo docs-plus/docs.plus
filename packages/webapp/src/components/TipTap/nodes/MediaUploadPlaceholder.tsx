@@ -1,7 +1,7 @@
-import { mergeAttributes,Node } from '@tiptap/core'
-import { NodeViewProps, NodeViewWrapper,ReactNodeViewRenderer } from '@tiptap/react'
+import { mergeAttributes, Node } from '@tiptap/core'
+import { NodeViewProps, NodeViewWrapper, ReactNodeViewRenderer } from '@tiptap/react'
 import React from 'react'
-import { HiOutlineMusicalNote, HiOutlinePhoto,HiOutlineVideoCamera } from 'react-icons/hi2'
+import { HiOutlineMusicalNote, HiOutlinePhoto, HiOutlineVideoCamera } from 'react-icons/hi2'
 
 // Constants
 const CONTAINER_WIDTH = 400

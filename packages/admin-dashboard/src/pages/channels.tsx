@@ -8,7 +8,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 import toast from 'react-hot-toast'
-import { LuFileText,LuHash, LuRadio } from 'react-icons/lu'
+import { LuFileText, LuHash, LuRadio } from 'react-icons/lu'
 
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'

@@ -16,10 +16,11 @@ export {
   useTocActions,
   useTocAutoScroll,
   useTocDrag,
-  useUnreadCount} from './hooks'
+  useUnreadCount
+} from './hooks'
 
 // Utils
-export { buildNestedToc,scrollToDocTitle, scrollToHeading } from './utils'
+export { buildNestedToc, scrollToDocTitle, scrollToHeading } from './utils'
 
 // Types (re-export from @types)
-export type { TocContextMenuState,TocItem as TocItemType } from '@types'
+export type { TocContextMenuState, TocItem as TocItemType } from '@types'

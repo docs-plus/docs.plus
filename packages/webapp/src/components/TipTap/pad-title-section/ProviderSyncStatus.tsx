@@ -1,6 +1,6 @@
 import { Tooltip } from '@components/ui/Tooltip'
 import { useStore } from '@stores'
-import { MdCloudDone, MdCloudOff, MdCloudQueue, MdSync, MdWifi,MdWifiOff } from 'react-icons/md'
+import { MdCloudDone, MdCloudOff, MdCloudQueue, MdSync, MdWifi, MdWifiOff } from 'react-icons/md'
 
 const ProviderSyncStatus = () => {
   const { providerStatus } = useStore((state) => state.settings)

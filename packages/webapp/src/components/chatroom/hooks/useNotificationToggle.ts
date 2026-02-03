@@ -1,4 +1,4 @@
-import { getChannelNotifState,updateChannelNotifState } from '@api'
+import { getChannelNotifState, updateChannelNotifState } from '@api'
 import { useApi } from '@hooks/useApi'
 import { useAuthStore, useChatStore } from '@stores'
 import { useCallback, useEffect, useState } from 'react'

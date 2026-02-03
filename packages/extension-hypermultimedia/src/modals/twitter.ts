@@ -1,4 +1,4 @@
-import { MediaPlacement,mediaPlacement } from '../utils/media-placement'
+import { MediaPlacement, mediaPlacement } from '../utils/media-placement'
 
 export const twitterModal = ({
   editor,

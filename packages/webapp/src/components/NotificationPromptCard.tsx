@@ -10,7 +10,7 @@
 import * as toast from '@components/toast'
 import { usePushNotifications } from '@hooks/usePushNotifications'
 import { useAuthStore } from '@stores'
-import { useCallback,useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { LuBell, LuX } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 

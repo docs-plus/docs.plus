@@ -1,6 +1,6 @@
 import { clsx } from 'clsx'
 import { ReactNode } from 'react'
-import { LuTrendingDown,LuTrendingUp } from 'react-icons/lu'
+import { LuTrendingDown, LuTrendingUp } from 'react-icons/lu'
 
 interface StatCardProps {
   title: string

@@ -1,10 +1,10 @@
 import DocumentSimpleLoader from '@components/skeleton/DocumentSimpleLoader'
 import DocumentWithPictureLoader from '@components/skeleton/DocumentWithPictureLoader'
-import { useEditorFocusScroll,useEnableEditor } from '@hooks/useCaretPosition'
+import { useEditorFocusScroll, useEnableEditor } from '@hooks/useCaretPosition'
 import useDoubleTap from '@hooks/useDoubleTap'
 import { useStore } from '@stores'
 import { EditorContent as TiptapEditor } from '@tiptap/react'
-import { useCallback,useRef } from 'react'
+import { useCallback, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 const RenderLoader = ({ className }: { className?: string }) => {

@@ -49,7 +49,8 @@ import {
   MdShare,
   MdTableChart,
   MdUndo,
-  MdVisibility} from 'react-icons/md'
+  MdVisibility
+} from 'react-icons/md'
 
 import { ShowcaseLayout } from './layouts'
 

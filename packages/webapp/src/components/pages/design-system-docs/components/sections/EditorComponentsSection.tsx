@@ -23,9 +23,10 @@ import {
   MdRedo,
   MdShare,
   MdTableChart,
-  MdUndo} from 'react-icons/md'
+  MdUndo
+} from 'react-icons/md'
 
-import { CodeBlock, ComponentCard,SectionHeader } from '../shared'
+import { CodeBlock, ComponentCard, SectionHeader } from '../shared'
 
 export const EditorComponentsSection = () => {
   return (

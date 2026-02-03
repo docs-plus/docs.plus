@@ -8,9 +8,10 @@ import {
   useClick,
   useDismiss,
   useFloating,
-  useInteractions} from '@floating-ui/react'
-import { useCallback, useEffect, useMemo,useRef, useState } from 'react'
-import { MdCheck,MdExpandMore, MdSearch } from 'react-icons/md'
+  useInteractions
+} from '@floating-ui/react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { MdCheck, MdExpandMore, MdSearch } from 'react-icons/md'
 import { twMerge } from 'tailwind-merge'
 
 export interface SearchableSelectOption {

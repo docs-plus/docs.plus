@@ -1,5 +1,5 @@
 import { DecorationSet } from '@tiptap/pm/view'
-import { type EditorState, type ProseMirrorNode,type Transaction } from '@types'
+import { type EditorState, type ProseMirrorNode, type Transaction } from '@types'
 
 /**
  * Helper functions for optimizing ProseMirror decorations performance

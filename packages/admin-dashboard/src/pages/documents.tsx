@@ -1,14 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
-import { useCallback,useState } from 'react'
+import { useCallback, useState } from 'react'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 import toast from 'react-hot-toast'
-import { LuChartBar,LuEye, LuFileText, LuLock, LuUsers } from 'react-icons/lu'
+import { LuChartBar, LuEye, LuFileText, LuLock, LuUsers } from 'react-icons/lu'
 
 import { StatCard } from '@/components/cards/StatCard'
 import { ActionsDropdown, DeleteModal } from '@/components/documents'
@@ -22,7 +22,8 @@ import {
   deleteDocument,
   fetchDocuments,
   fetchDocumentStats,
-  updateDocumentFlags} from '@/services/api'
+  updateDocumentFlags
+} from '@/services/api'
 import type { Document } from '@/types'
 import { exportToCSV } from '@/utils/export'
 import { formatDate, formatDateTime } from '@/utils/format'

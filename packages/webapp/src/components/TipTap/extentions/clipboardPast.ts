@@ -1,4 +1,4 @@
-import { Fragment,Slice } from '@tiptap/pm/model'
+import { Fragment, Slice } from '@tiptap/pm/model'
 import { TextSelection } from '@tiptap/pm/state'
 import {
   type Editor,
@@ -6,7 +6,8 @@ import {
   type ProseMirrorNode,
   TIPTAP_NODES,
   type Transaction,
-  TRANSACTION_META} from '@types'
+  TRANSACTION_META
+} from '@types'
 
 import {
   adjustHeadingLevelsForContext,
@@ -15,7 +16,8 @@ import {
   getSelectionRangeSlice,
   insertHeadingsByNodeBlocks,
   linearizeHeadingNodes,
-  transformClipboardToStructured} from './helper'
+  transformClipboardToStructured
+} from './helper'
 
 /**
  * Removes empty nodes from both the beginning and end of a content array

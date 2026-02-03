@@ -1,6 +1,6 @@
-import { useFocusedHeadingStore,useStore } from '@stores'
+import { useFocusedHeadingStore, useStore } from '@stores'
 import debounce from 'lodash/debounce'
-import { RefObject,useCallback, useEffect, useMemo, useRef } from 'react'
+import { RefObject, useCallback, useEffect, useMemo, useRef } from 'react'
 
 export { useFocusedHeadingStore }
 

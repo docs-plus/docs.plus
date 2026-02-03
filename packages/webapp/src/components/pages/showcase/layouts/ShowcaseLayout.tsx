@@ -6,7 +6,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/router'
-import { ReactNode, useCallback,useState } from 'react'
+import { ReactNode, useCallback, useState } from 'react'
 import {
   MdAccountCircle,
   MdArrowBack,
@@ -18,7 +18,8 @@ import {
   MdLightMode,
   MdMenu,
   MdNotifications,
-  MdTextFields} from 'react-icons/md'
+  MdTextFields
+} from 'react-icons/md'
 
 interface NavItem {
   href: string

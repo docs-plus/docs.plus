@@ -4,7 +4,7 @@ import { MarkType } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { EditorView } from '@tiptap/pm/view'
 
-import { createFloatingToolbar,hideCurrentToolbar } from '../helpers/floating-toolbar'
+import { createFloatingToolbar, hideCurrentToolbar } from '../helpers/floating-toolbar'
 
 // Define type for the ClickHandlerOptions
 type ClickHandlerOptions = {

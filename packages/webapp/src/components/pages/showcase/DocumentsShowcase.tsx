@@ -33,7 +33,8 @@ import {
   MdStar,
   MdStarBorder,
   MdTableChart,
-  MdViewList} from 'react-icons/md'
+  MdViewList
+} from 'react-icons/md'
 
 import { ShowcaseLayout } from './layouts'
 

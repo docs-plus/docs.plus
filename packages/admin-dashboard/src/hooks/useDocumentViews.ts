@@ -4,7 +4,8 @@ import {
   fetchDocumentViewStats,
   fetchTopViewedDocuments,
   fetchViewsSummary,
-  fetchViewsTrend} from '@/services/api'
+  fetchViewsTrend
+} from '@/services/api'
 
 /**
  * Hook for fetching document views summary

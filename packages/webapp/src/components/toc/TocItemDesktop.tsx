@@ -3,14 +3,14 @@ import Button from '@components/ui/Button'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { useSortable } from '@dnd-kit/sortable'
 import { ChatLeft } from '@icons'
-import { useChatStore, useFocusedHeadingStore,useStore } from '@stores'
+import { useChatStore, useFocusedHeadingStore, useStore } from '@stores'
 import type { TocItem as TocItemType } from '@types'
 import { useCallback, useMemo, useState } from 'react'
 import { MdKeyboardArrowRight, MdOutlineDragIndicator } from 'react-icons/md'
 import { twMerge } from 'tailwind-merge'
 
-import { useActiveHeading,usePresentUsers, useTocActions, useUnreadCount } from './hooks'
-import { buildNestedToc,scrollToHeading } from './utils'
+import { useActiveHeading, usePresentUsers, useTocActions, useUnreadCount } from './hooks'
+import { buildNestedToc, scrollToHeading } from './utils'
 
 interface TocItemDesktopProps {
   item: TocItemType

@@ -7,7 +7,8 @@ import {
   getPointerPosition,
   meetsConstraints,
   resetGripperPosition,
-  updateNodeDimensions} from './utils'
+  updateNodeDimensions
+} from './utils'
 
 export default function handleSideClampsMove(
   clamp: HTMLElement,

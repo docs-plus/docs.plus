@@ -1,5 +1,5 @@
-import { getPaginatedLastReadedNotifications,getUnreadNotificationsPaginated } from '@api'
-import { useAuthStore,useStore } from '@stores'
+import { getPaginatedLastReadedNotifications, getUnreadNotificationsPaginated } from '@api'
+import { useAuthStore, useStore } from '@stores'
 import { TNotification, TTab } from '@types'
 import { useCallback, useEffect, useRef, useState } from 'react'
 

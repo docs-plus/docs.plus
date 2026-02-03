@@ -19,7 +19,8 @@ import {
   MdMoreVert,
   MdPeople,
   MdPlayArrow,
-  MdShare} from 'react-icons/md'
+  MdShare
+} from 'react-icons/md'
 
 import { DEMO_DOCUMENTS, KEYBOARD_SHORTCUTS } from '../../constants/demoData'
 import { useDesignSystem } from '../../context/DesignSystemContext'

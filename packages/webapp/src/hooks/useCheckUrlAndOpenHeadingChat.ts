@@ -1,5 +1,5 @@
 import { CHAT_OPEN } from '@services/eventsHub'
-import { useAuthStore,useStore } from '@stores'
+import { useAuthStore, useStore } from '@stores'
 import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 import { useEffect } from 'react'

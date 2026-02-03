@@ -1,8 +1,8 @@
 // Navigation
-export { Header,Sidebar } from './navigation'
+export { Header, Sidebar } from './navigation'
 
 // Shared
-export { CodeBlock, ColorSwatch,ComponentCard, CopyButton, SectionHeader } from './shared'
+export { CodeBlock, ColorSwatch, ComponentCard, CopyButton, SectionHeader } from './shared'
 
 // Sections
 export {
@@ -12,4 +12,5 @@ export {
   FoundationsSection,
   GettingStartedSection,
   ImplementationSection,
-  PatternsSection} from './sections'
+  PatternsSection
+} from './sections'

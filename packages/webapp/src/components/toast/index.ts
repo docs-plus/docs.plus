@@ -35,7 +35,7 @@
 
 export { Error } from './Error'
 export { Info } from './Info'
-export { dismiss, dismissAll,Loading } from './Loading'
+export { dismiss, dismissAll, Loading } from './Loading'
 export { Neutral } from './Neutral'
 export { Success } from './Success'
 export { ToastNotification } from './ToastNotification'

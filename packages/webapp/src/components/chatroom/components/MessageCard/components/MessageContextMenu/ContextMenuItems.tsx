@@ -13,7 +13,7 @@ import { useAuthStore, useChatStore } from '@stores'
 import { TMsgRow } from '@types'
 import { hasMetadataProperty } from '@utils/metadata'
 import React, { useMemo } from 'react'
-import { BsFillPinAngleFill,BsFillPinFill, BsForwardFill } from 'react-icons/bs'
+import { BsFillPinAngleFill, BsFillPinFill, BsForwardFill } from 'react-icons/bs'
 import {
   MdBookmarkRemove,
   MdCheck,
@@ -23,7 +23,8 @@ import {
   MdOutlineEdit,
   MdOutlineEmojiEmotions,
   MdOutlineFileOpen,
-  MdOutlineLink} from 'react-icons/md'
+  MdOutlineLink
+} from 'react-icons/md'
 
 import { MenuItem } from '../../../../../ui/ContextMenu'
 import { calculateEmojiPickerPosition } from '../../helpers'

@@ -14,7 +14,8 @@ import {
   Redo,
   Stric,
   Underline,
-  Undo} from '@icons'
+  Undo
+} from '@icons'
 import React from 'react'
 import { IoSend } from 'react-icons/io5'
 import {
@@ -22,7 +23,8 @@ import {
   MdCode,
   MdFormatColorText,
   MdOutlineAdd,
-  MdOutlineEmojiEmotions} from 'react-icons/md'
+  MdOutlineEmojiEmotions
+} from 'react-icons/md'
 import { RiAtLine, RiCodeBlock } from 'react-icons/ri'
 import { TbBlockquote } from 'react-icons/tb'
 

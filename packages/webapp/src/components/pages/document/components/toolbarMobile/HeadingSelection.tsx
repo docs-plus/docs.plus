@@ -1,5 +1,5 @@
 import Button from '@components/ui/Button'
-import React, { useCallback, useEffect,useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { MdAdd, MdOutlineRemove } from 'react-icons/md'
 
 type HeadingSelectionProps = {

@@ -10,7 +10,8 @@ import {
   LuMessageSquare,
   LuMonitor,
   LuUserCheck,
-  LuUsers} from 'react-icons/lu'
+  LuUsers
+} from 'react-icons/lu'
 
 import { StatCard } from '@/components/cards/StatCard'
 import {
@@ -21,7 +22,8 @@ import {
   UserLifecycleChart,
   UserTypeBreakdown,
   ViewsSummaryCards,
-  ViewsTrendChart} from '@/components/charts'
+  ViewsTrendChart
+} from '@/components/charts'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
 import { ChartErrorBoundary } from '@/components/ui/ChartErrorBoundary'
@@ -31,7 +33,8 @@ import { useTopViewedDocuments, useViewsSummary, useViewsTrend } from '@/hooks/u
 import {
   useDauTrend,
   useRetentionMetrics,
-  useUserLifecycleSegments} from '@/hooks/useRetentionMetrics'
+  useUserLifecycleSegments
+} from '@/hooks/useRetentionMetrics'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {

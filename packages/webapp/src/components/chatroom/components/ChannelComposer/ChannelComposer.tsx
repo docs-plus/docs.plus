@@ -12,7 +12,8 @@ import {
   JoinDirectChannel,
   JoinGroupChannel,
   JoinPrivateChannel,
-  SignInToJoinChannel} from './components'
+  SignInToJoinChannel
+} from './components'
 
 /**
  * Props for ChannelComposer component

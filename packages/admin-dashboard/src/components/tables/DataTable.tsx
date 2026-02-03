@@ -4,7 +4,8 @@ import {
   LuArrowUp,
   LuArrowUpDown,
   LuChevronLeft,
-  LuChevronRight} from 'react-icons/lu'
+  LuChevronRight
+} from 'react-icons/lu'
 
 export type SortDirection = 'asc' | 'desc'
 

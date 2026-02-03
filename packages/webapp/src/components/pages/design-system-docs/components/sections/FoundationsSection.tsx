@@ -11,7 +11,8 @@ import {
   MdRoundedCorner,
   MdSpaceBar,
   MdSpeed,
-  MdTextFields} from 'react-icons/md'
+  MdTextFields
+} from 'react-icons/md'
 
 import {
   DARK_THEME_COLORS,
@@ -20,8 +21,9 @@ import {
   SHADOW_SCALE,
   SPACING_SCALE,
   TIMING_SCALE,
-  Z_INDEX_SCALE} from '../../constants'
-import { ColorSwatch, CopyButton,SectionHeader } from '../shared'
+  Z_INDEX_SCALE
+} from '../../constants'
+import { ColorSwatch, CopyButton, SectionHeader } from '../shared'
 
 export const FoundationsSection = () => {
   const [activeTheme, setActiveTheme] = useState<'light' | 'dark'>('light')

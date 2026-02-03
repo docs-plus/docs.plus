@@ -1,4 +1,4 @@
-import { LuActivity,LuTrendingDown, LuTrendingUp, LuUsers } from 'react-icons/lu'
+import { LuActivity, LuTrendingDown, LuTrendingUp, LuUsers } from 'react-icons/lu'
 
 import type { RetentionMetrics } from '@/types'
 

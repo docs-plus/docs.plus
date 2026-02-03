@@ -41,9 +41,10 @@ import {
   MdToggleOn,
   MdUploadFile,
   MdVisibility,
-  MdVisibilityOff} from 'react-icons/md'
+  MdVisibilityOff
+} from 'react-icons/md'
 
-import { CodeBlock,ComponentCard, SectionHeader } from '../shared'
+import { CodeBlock, ComponentCard, SectionHeader } from '../shared'
 
 export const ComponentsSection = () => {
   const [showLoadingDemo, setShowLoadingDemo] = useState(false)

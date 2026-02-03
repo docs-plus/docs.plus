@@ -12,9 +12,10 @@ import {
   MdHelpOutline,
   MdHourglassEmpty,
   MdInbox,
-  MdPeople} from 'react-icons/md'
+  MdPeople
+} from 'react-icons/md'
 
-import { CodeBlock,SectionHeader } from '../shared'
+import { CodeBlock, SectionHeader } from '../shared'
 
 export const PatternsSection = () => {
   return (

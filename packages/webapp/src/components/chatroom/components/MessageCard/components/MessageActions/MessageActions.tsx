@@ -12,7 +12,8 @@ import {
   QuickActions,
   ReadStatusDisplay,
   ReplyButton,
-  ReplyInThreadButton} from './components'
+  ReplyInThreadButton
+} from './components'
 import { HoverMenuActions } from './HoverMenuActions'
 
 interface Props {

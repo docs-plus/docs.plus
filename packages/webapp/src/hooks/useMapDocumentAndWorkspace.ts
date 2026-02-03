@@ -1,4 +1,4 @@
-import { getChannels, getChannelsWithMessageCounts,upsertWorkspace } from '@api'
+import { getChannels, getChannelsWithMessageCounts, upsertWorkspace } from '@api'
 import Config from '@config'
 import { useAuthStore, useChatStore } from '@stores'
 import { Channel } from '@types'

@@ -2,10 +2,10 @@ import AppendHeadingButton from '@components/pages/document/components/AppendHea
 import { ContextMenu } from '@components/ui/ContextMenu'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
-import React, { useCallback,useRef, useState } from 'react'
+import React, { useCallback, useRef, useState } from 'react'
 import { MdAccountTree } from 'react-icons/md'
 
-import { DropIndicatorPortal,pointerYCollision, tocDragModifier } from './dnd'
+import { DropIndicatorPortal, pointerYCollision, tocDragModifier } from './dnd'
 import { useToc, useTocAutoScroll, useTocDrag } from './hooks'
 import { TocContextMenu } from './TocContextMenu'
 import { TocHeader } from './TocHeader'

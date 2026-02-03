@@ -15,7 +15,8 @@ import {
   DocumentsTab,
   FormsTab,
   SettingsTab,
-  TeamTab} from './components'
+  TeamTab
+} from './components'
 import { DesignSystemProvider, useDesignSystem } from './context/DesignSystemContext'
 import { DashboardLayout } from './layouts'
 

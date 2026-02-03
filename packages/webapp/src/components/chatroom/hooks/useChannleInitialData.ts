@@ -5,7 +5,7 @@ import { useAuthStore, useChatStore, useStore } from '@stores'
 import { TChannelSettings } from '@types'
 import { groupedMessages } from '@utils/index'
 import debounce from 'lodash/debounce'
-import { useCallback,useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import slugify from 'slugify'
 
 interface UseChannelInitialData {

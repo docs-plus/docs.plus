@@ -1,8 +1,8 @@
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 import { useStore } from '@stores'
-import React, { useEffect,useState } from 'react'
-import { MdInsertLink, MdOutlineComment,MdOutlineImage, MdTextFormat } from 'react-icons/md'
+import React, { useEffect, useState } from 'react'
+import { MdInsertLink, MdOutlineComment, MdOutlineImage, MdTextFormat } from 'react-icons/md'
 
 import FormatSelection from './FormatSelection'
 import HeadingSelection from './HeadingSelection'

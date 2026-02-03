@@ -4,7 +4,7 @@ import { Decoration, DecorationSet } from '@tiptap/pm/view'
 import { ContentWrapperBlock, EditorEventData, TIPTAP_EVENTS, TIPTAP_NODES } from '@types'
 import * as PubSub from 'pubsub-js'
 
-import { createDecorationPluginProps,createDecorationPluginState } from './decorationHelpers'
+import { createDecorationPluginProps, createDecorationPluginState } from './decorationHelpers'
 
 function extractContentWrapperBlocks(doc: ProseMirrorNode): ContentWrapperBlock[] {
   const result: ContentWrapperBlock[] = []

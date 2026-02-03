@@ -7,15 +7,16 @@ import { RESET_FILTER } from '@services/eventsHub'
 import { useStore } from '@stores'
 import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
-import React, { useCallback, useEffect, useMemo,useState } from 'react'
-import { LuCheck,LuChevronDown, LuFilterX, LuSearch, LuX } from 'react-icons/lu'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
+import { LuCheck, LuChevronDown, LuFilterX, LuSearch, LuX } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
 import FilterBar from '../pad-title-section/FilterBar'
 import {
   applySearchThroughHeading,
   highlightTocHeadings,
-  searchThroughHeading} from './toolbarUtils'
+  searchThroughHeading
+} from './toolbarUtils'
 import { useBooleanLocalStorageState } from './toolbarUtils'
 
 interface ToggleSectionProps {

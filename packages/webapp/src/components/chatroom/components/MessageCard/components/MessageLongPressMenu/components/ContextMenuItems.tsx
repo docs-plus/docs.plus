@@ -13,7 +13,7 @@ import { TMsgRow } from '@types'
 import { hasMetadataProperty } from '@utils/metadata'
 import { motion } from 'motion/react'
 import React, { useMemo } from 'react'
-import { BsFillPinAngleFill,BsFillPinFill, BsForwardFill } from 'react-icons/bs'
+import { BsFillPinAngleFill, BsFillPinFill, BsForwardFill } from 'react-icons/bs'
 import {
   MdBookmarkRemove,
   MdCheck,
@@ -22,7 +22,8 @@ import {
   MdOutlineComment,
   MdOutlineEdit,
   MdOutlineFileOpen,
-  MdOutlineLink} from 'react-icons/md'
+  MdOutlineLink
+} from 'react-icons/md'
 
 import { useMessageLongPressMenu } from '../MessageLongPressMenu'
 

@@ -4,11 +4,11 @@ import TextInput from '@components/ui/TextInput'
 import { useAuthStore } from '@stores'
 import type { Profile } from '@types'
 import { useState } from 'react'
-import { MdAdd, MdDelete, MdEmail, MdLink, MdOpenInNew,MdPhone } from 'react-icons/md'
+import { MdAdd, MdDelete, MdEmail, MdLink, MdOpenInNew, MdPhone } from 'react-icons/md'
 
-import { SOCIAL_MEDIA_DOMAINS,SOCIAL_MEDIA_ICONS } from './constants'
+import { SOCIAL_MEDIA_DOMAINS, SOCIAL_MEDIA_ICONS } from './constants'
 import { useProfileUpdate } from './hooks/useProfileUpdate'
-import { ELinkType,ILinkItem } from './types'
+import { ELinkType, ILinkItem } from './types'
 
 // Link validation helper
 const validateLink = (url: string): { valid: boolean; type?: ELinkType; error?: string } => {

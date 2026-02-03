@@ -4,7 +4,7 @@
  * Displays a statistic with trend indicator.
  */
 
-import { MdTrendingDown,MdTrendingUp } from 'react-icons/md'
+import { MdTrendingDown, MdTrendingUp } from 'react-icons/md'
 
 interface StatCardProps {
   title: string

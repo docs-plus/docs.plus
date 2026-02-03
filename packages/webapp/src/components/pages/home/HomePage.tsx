@@ -10,7 +10,7 @@ import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { useAuthStore, useStore } from '@stores'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
-import { ChangeEvent,KeyboardEvent, useState } from 'react'
+import { ChangeEvent, KeyboardEvent, useState } from 'react'
 import { FaDiscord } from 'react-icons/fa'
 import {
   LuBuilding2,
@@ -20,7 +20,8 @@ import {
   LuGraduationCap,
   LuMessageCircle,
   LuRocket,
-  LuUsers} from 'react-icons/lu'
+  LuUsers
+} from 'react-icons/lu'
 import slugify from 'slugify'
 
 const SignInForm = dynamic(() => import('@components/auth/SignInForm'), {

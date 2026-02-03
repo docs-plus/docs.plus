@@ -9,7 +9,8 @@ import {
   meetsConstraints,
   resetGripperPosition,
   setupKeyboardListeners,
-  updateNodeDimensions} from './utils'
+  updateNodeDimensions
+} from './utils'
 
 export default function handleCornerClampsMove(
   clamp: HTMLElement,

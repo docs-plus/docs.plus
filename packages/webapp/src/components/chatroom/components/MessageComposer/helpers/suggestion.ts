@@ -5,7 +5,8 @@ import {
   hide,
   offset as floatingOffset,
   shift,
-  size} from '@floating-ui/dom'
+  size
+} from '@floating-ui/dom'
 import { ReactRenderer } from '@tiptap/react'
 
 import MentionList from './MentionList'

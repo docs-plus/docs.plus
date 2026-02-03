@@ -15,7 +15,8 @@ import {
   MdSettings,
   MdStar,
   MdStarOutline,
-  MdWarning} from 'react-icons/md'
+  MdWarning
+} from 'react-icons/md'
 
 import { ActionCard } from '../cards'
 

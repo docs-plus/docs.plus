@@ -10,7 +10,7 @@ import { useNotificationCount } from '@hooks/useNotificationCount'
 import { useStore } from '@stores'
 import { useAuthStore } from '@stores'
 import React, { useState } from 'react'
-import { BiCheck, BiRedo,BiUndo } from 'react-icons/bi'
+import { BiCheck, BiRedo, BiUndo } from 'react-icons/bi'
 import { MdMenu, MdNotifications } from 'react-icons/md'
 
 import DocTitle from '../DocTitle'

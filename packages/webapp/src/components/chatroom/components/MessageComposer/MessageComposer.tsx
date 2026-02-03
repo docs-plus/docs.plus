@@ -1,4 +1,4 @@
-import { createThreadMessage, sendCommentMessage,sendMessage, updateMessage } from '@api'
+import { createThreadMessage, sendCommentMessage, sendMessage, updateMessage } from '@api'
 import SignInForm from '@components/auth/SignInForm'
 import { showNotificationPrompt } from '@components/NotificationPromptCard'
 import * as toast from '@components/toast'
@@ -6,14 +6,15 @@ import {
   clearComposerState,
   ComposerState,
   getComposerState,
-  setComposerStateDebounced} from '@db/messageComposerDB'
+  setComposerStateDebounced
+} from '@db/messageComposerDB'
 import { useApi } from '@hooks/useApi'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { EditorContent } from '@tiptap/react'
 import { TChannelSettings } from '@types'
 import { chunkHtmlContent } from '@utils/chunkHtmlContent'
 import { isOnlyEmoji } from '@utils/emojis'
-import { sanitizeChunk,sanitizeMessageContent } from '@utils/sanitizeContent'
+import { sanitizeChunk, sanitizeMessageContent } from '@utils/sanitizeContent'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -32,7 +33,7 @@ import CommentContext from './components/Context/CommentContext'
 import EditContext from './components/Context/EditContext'
 import ReplyContext from './components/Context/ReplyContext'
 import { Input } from './components/Input'
-import { DesktopLayout, Editor,MobileLayout } from './components/layouts'
+import { DesktopLayout, Editor, MobileLayout } from './components/layouts'
 import {
   BlockquoteButton,
   BoldButton,
@@ -43,7 +44,8 @@ import {
   ItalicButton,
   OrderedListButton,
   StrikethroughButton,
-  Toolbar} from './components/Toolbar'
+  Toolbar
+} from './components/Toolbar'
 import { MessageComposerContext } from './context/MessageComposerContext'
 import { useTiptapEditor } from './hooks/useTiptapEditor'
 import { MobileWrapper } from './Mobile'

@@ -1,6 +1,6 @@
 import { useCopyMessageLinkHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageLinkHandler'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
-import { MdCheck,MdOutlineLink } from 'react-icons/md'
+import { MdCheck, MdOutlineLink } from 'react-icons/md'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {

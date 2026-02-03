@@ -4,8 +4,8 @@ import Icon from '@components/TipTap/toolbar/Icon'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import { Modal, ModalContent } from '@components/ui/Dialog'
 import Loading from '@components/ui/Loading'
-import { Popover, PopoverContent,PopoverTrigger } from '@components/ui/Popover'
-import { ClearMark, ImageBox,Link } from '@icons'
+import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/Popover'
+import { ClearMark, ImageBox, Link } from '@icons'
 import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToClipboard'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 import { useAuthStore, useStore } from '@stores'
@@ -18,7 +18,8 @@ import {
   MdCheck,
   MdOutlineFileCopy,
   MdOutlineFolder,
-  MdOutlinePrint} from 'react-icons/md'
+  MdOutlinePrint
+} from 'react-icons/md'
 
 import { FilterPanelSkeleton } from './FilterPanelSkeleton'
 import { GearPanelSkeleton } from './GearPanelSkeleton'

@@ -1,7 +1,7 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import Button from '@components/ui/Button'
 import { useChatStore } from '@stores'
-import React, { useCallback,useEffect, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { FaChevronDown } from 'react-icons/fa6'
 
 import { useMessageFeedContext } from '../MessageFeedContext'

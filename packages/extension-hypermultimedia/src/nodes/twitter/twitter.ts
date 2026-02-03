@@ -6,7 +6,8 @@ import {
   fetchOEmbedHtml,
   isValidTwitterUrl,
   loadTwitterScript,
-  TWITTER_URL_REGEX_GLOBAL} from './helper'
+  TWITTER_URL_REGEX_GLOBAL
+} from './helper'
 
 interface LayoutOptions {
   margin?: string

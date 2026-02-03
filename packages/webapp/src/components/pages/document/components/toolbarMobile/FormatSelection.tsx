@@ -9,7 +9,8 @@ import {
   MdFormatItalic,
   MdFormatListBulleted,
   MdFormatListNumbered,
-  MdFormatUnderlined} from 'react-icons/md'
+  MdFormatUnderlined
+} from 'react-icons/md'
 import { MdOutlineStrikethroughS } from 'react-icons/md'
 
 const FormatSelection = ({ isVisible, editor }: { isVisible: boolean; editor: Editor }) => {

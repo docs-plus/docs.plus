@@ -5,7 +5,7 @@
  */
 
 import { Avatar } from '@components/ui'
-import { MdClose, MdHelpOutline, MdLogout,MdOpenInNew, MdStarOutline } from 'react-icons/md'
+import { MdClose, MdHelpOutline, MdLogout, MdOpenInNew, MdStarOutline } from 'react-icons/md'
 
 import { NAV_ITEMS } from '../../constants/demoData'
 import { useDesignSystem } from '../../context/DesignSystemContext'

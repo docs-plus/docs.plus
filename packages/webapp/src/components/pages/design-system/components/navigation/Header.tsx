@@ -16,7 +16,8 @@ import {
   MdMenu,
   MdNotifications,
   MdSearch,
-  MdSettings} from 'react-icons/md'
+  MdSettings
+} from 'react-icons/md'
 
 import { useDesignSystem } from '../../context/DesignSystemContext'
 

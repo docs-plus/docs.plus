@@ -1,13 +1,14 @@
-import { useEffect,useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   LuCalendar,
   LuHistory,
   LuMessageSquare,
   LuTrash2,
   LuTriangleAlert,
-  LuUser} from 'react-icons/lu'
+  LuUser
+} from 'react-icons/lu'
 
-import { type DeletionImpact,getDocumentDeletionImpact } from '@/services/api'
+import { type DeletionImpact, getDocumentDeletionImpact } from '@/services/api'
 import type { Document } from '@/types'
 import { formatDate } from '@/utils/format'
 

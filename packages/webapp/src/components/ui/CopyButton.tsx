@@ -1,7 +1,7 @@
 import useCopyToClipboard, { UseCopyToClipboardOptions } from '@hooks/useCopyToClipboard'
 import { forwardRef, useCallback } from 'react'
 import { IconType } from 'react-icons'
-import { MdCheck,MdContentCopy } from 'react-icons/md'
+import { MdCheck, MdContentCopy } from 'react-icons/md'
 import { twMerge } from 'tailwind-merge'
 
 export type CopyButtonSize = 'xs' | 'sm' | 'md' | 'lg'

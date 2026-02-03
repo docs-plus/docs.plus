@@ -17,7 +17,8 @@ import {
   MdNotifications,
   MdPlayArrow,
   MdStop,
-  MdWarning} from 'react-icons/md'
+  MdWarning
+} from 'react-icons/md'
 
 export const ComponentsTab = () => {
   const [activeComponentTab, setActiveComponentTab] = useState(0)

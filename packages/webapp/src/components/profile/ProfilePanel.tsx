@@ -16,7 +16,8 @@ import {
   LuLogOut,
   LuShield,
   LuStar,
-  LuUser} from 'react-icons/lu'
+  LuUser
+} from 'react-icons/lu'
 
 import { useSignOut } from './hooks/useSignOut'
 

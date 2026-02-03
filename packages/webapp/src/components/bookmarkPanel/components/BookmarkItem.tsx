@@ -5,7 +5,7 @@ import Button from '@components/ui/Button'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore } from '@stores'
 import PubSub from 'pubsub-js'
-import { LuArchive, LuBookmarkCheck, LuBookmarkMinus,LuEye, LuLink } from 'react-icons/lu'
+import { LuArchive, LuBookmarkCheck, LuBookmarkMinus, LuEye, LuLink } from 'react-icons/lu'
 
 import { formatTimeAgo } from '../../notificationPanel/helpers'
 import { usePopoverState } from '../../ui/Popover'

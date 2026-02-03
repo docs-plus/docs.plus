@@ -12,7 +12,7 @@ import { Transaction } from '@tiptap/pm/state'
 import type { ImageOptions } from '../../types'
 import { generateShortId } from '../../utils/utils'
 import { inputRegex } from './helper'
-import { HyperImagePastePlugin,HyperImagePlugin } from './plugin'
+import { HyperImagePastePlugin, HyperImagePlugin } from './plugin'
 
 export const Image = Node.create<ImageOptions>({
   name: 'Image',

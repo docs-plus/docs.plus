@@ -1,4 +1,4 @@
-import { LuEye,LuFileText, LuUsers } from 'react-icons/lu'
+import { LuEye, LuFileText, LuUsers } from 'react-icons/lu'
 
 import { APP_URL } from '@/constants/config'
 import type { TopViewedDocument } from '@/types'

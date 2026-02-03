@@ -1,4 +1,4 @@
-import { ReactNode,useCallback, useEffect, useState } from 'react'
+import { ReactNode, useCallback, useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface FlipWordItem {

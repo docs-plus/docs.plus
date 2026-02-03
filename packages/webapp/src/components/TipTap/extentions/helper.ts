@@ -18,7 +18,8 @@ import {
   LastH1Inserted,
   NodeState,
   PrevBlockResult,
-  SelectionBlock} from './types'
+  SelectionBlock
+} from './types'
 
 /**
  * Get a list of previous headings within a specified range in the document.

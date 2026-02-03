@@ -3,7 +3,7 @@ import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 
 import handleCornerClampsMove from './handleCornerClampsMove'
 import handleSideClampsMove from './handleSideClampsMove'
-import { ClampType,MediaGripperInfo } from './types'
+import { ClampType, MediaGripperInfo } from './types'
 
 function createClamp(extraClass: ClampType): HTMLDivElement {
   const clamp = document.createElement('div')

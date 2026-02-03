@@ -1,4 +1,4 @@
-import { getChannelsByWorkspaceAndUserids,upsertWorkspace } from '@api'
+import { getChannelsByWorkspaceAndUserids, upsertWorkspace } from '@api'
 import { getDeviceInfo } from '@helpers'
 import { fetchDocument } from '@utils/fetchDocument'
 import { logger } from '@utils/logger'

@@ -9,7 +9,7 @@ export const randstr = (prefix: string = ''): string => {
 }
 
 // Re-export clipboard utilities from dedicated module
-export { copyRichContentToClipboard,copyToClipboard } from './clipboard'
+export { copyRichContentToClipboard, copyToClipboard } from './clipboard'
 
 //
 export const getPostAtDOM = (editor: any, id: string = '1') => {

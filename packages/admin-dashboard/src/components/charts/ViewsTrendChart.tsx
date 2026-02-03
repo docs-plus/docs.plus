@@ -7,7 +7,8 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis} from 'recharts'
+  YAxis
+} from 'recharts'
 
 import type { ViewsTrendPoint } from '@/types'
 

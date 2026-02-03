@@ -10,9 +10,10 @@ import {
   MdPalette,
   MdPattern,
   MdRocketLaunch,
-  MdWidgets} from 'react-icons/md'
+  MdWidgets
+} from 'react-icons/md'
 
-import { CodeBlock,SectionHeader } from '../shared'
+import { CodeBlock, SectionHeader } from '../shared'
 
 export const GettingStartedSection = () => {
   return (

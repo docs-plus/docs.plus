@@ -1,6 +1,6 @@
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
 import { useStore } from '@stores'
-import { useEffect,useState } from 'react'
+import { useEffect, useState } from 'react'
 import { BsReddit } from 'react-icons/bs'
 import { FaFacebook } from 'react-icons/fa'
 import { FaLinkedin, FaSquareXTwitter, FaWhatsapp } from 'react-icons/fa6'
@@ -9,7 +9,8 @@ import {
   MdClose,
   MdContentCopy,
   MdIosShare,
-  MdOutlineAlternateEmail} from 'react-icons/md'
+  MdOutlineAlternateEmail
+} from 'react-icons/md'
 
 const socialSharingMap = {
   facebook: 'https://www.facebook.com/sharer.php?u=',

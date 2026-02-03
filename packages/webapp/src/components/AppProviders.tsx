@@ -13,7 +13,7 @@ import { useInitialSteps } from '@hooks/useInitialSteps'
 import { useOnAuthStateChange } from '@hooks/useOnAuthStateChange'
 import useServiceWorker from '@hooks/useServiceWorker'
 import { eventsHub } from '@services/eventsHub'
-import { applyEditorPreferences,useEditorPreferences } from '@stores'
+import { applyEditorPreferences, useEditorPreferences } from '@stores'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 

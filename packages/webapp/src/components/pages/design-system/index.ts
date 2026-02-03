@@ -53,7 +53,8 @@ export {
   SettingsTab,
   Sidebar,
   StatCard,
-  TeamTab} from './components'
+  TeamTab
+} from './components'
 
 // Types
 export type {
@@ -68,7 +69,8 @@ export type {
   TabType,
   ThemeType,
   UserRole,
-  UserStatus} from './types'
+  UserStatus
+} from './types'
 
 // Constants
 export {

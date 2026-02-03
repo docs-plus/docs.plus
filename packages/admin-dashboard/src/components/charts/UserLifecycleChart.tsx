@@ -1,4 +1,4 @@
-import { LuTriangleAlert,LuUserCheck, LuUserPlus, LuUserX } from 'react-icons/lu'
+import { LuTriangleAlert, LuUserCheck, LuUserPlus, LuUserX } from 'react-icons/lu'
 
 import type { UserLifecycleSegments } from '@/types'
 

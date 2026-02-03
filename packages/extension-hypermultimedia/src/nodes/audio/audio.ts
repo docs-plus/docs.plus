@@ -6,7 +6,8 @@ import {
   createStyleString,
   createTooltip,
   generateShortId,
-  StyleLayoutOptions} from '../../utils/utils'
+  StyleLayoutOptions
+} from '../../utils/utils'
 import { inputRegex } from './helper'
 
 interface AudioAttributes {

@@ -7,7 +7,8 @@ import {
   ResponsiveContainer,
   Tooltip,
   XAxis,
-  YAxis} from 'recharts'
+  YAxis
+} from 'recharts'
 
 import type { DauTrendPoint } from '@/types'
 

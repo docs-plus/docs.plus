@@ -1,7 +1,7 @@
 import { searchWorkspaceUsers } from '@api'
 import { useApi } from '@hooks/useApi'
 import { useStore } from '@stores'
-import React, { forwardRef, useEffect, useImperativeHandle, useRef,useState } from 'react'
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react'
 
 import MentionItem from './MentionItem'
 

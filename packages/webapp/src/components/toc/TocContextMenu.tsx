@@ -6,7 +6,8 @@ import {
   MdLink,
   MdOutlineInfo,
   MdOutlineUnfoldLess,
-  MdOutlineUnfoldMore} from 'react-icons/md'
+  MdOutlineUnfoldMore
+} from 'react-icons/md'
 
 import { useTocActions } from './hooks'
 

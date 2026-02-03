@@ -95,4 +95,4 @@ class Logger {
 export const logger = new Logger()
 
 // Export types for use in other files
-export type { LogContext,LogLevel }
+export type { LogContext, LogLevel }

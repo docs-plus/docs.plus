@@ -1,7 +1,7 @@
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import { CommentReference,MessageBody, ReplyReference } from './components'
+import { CommentReference, MessageBody, ReplyReference } from './components'
 
 interface Props {
   className?: string

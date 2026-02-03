@@ -1,4 +1,4 @@
-import { Fragment,Slice } from '@tiptap/pm/model'
+import { Fragment, Slice } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Editor } from '@tiptap/react'
 

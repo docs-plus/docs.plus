@@ -3,7 +3,7 @@ import Button from '@components/ui/Button'
 import TextInput from '@components/ui/TextInput'
 import { useAuthStore } from '@stores'
 import { useState } from 'react'
-import { MdInfo,MdSecurity } from 'react-icons/md'
+import { MdInfo, MdSecurity } from 'react-icons/md'
 
 interface SecurityContentProps {
   onBack?: () => void

@@ -4,8 +4,8 @@ import TextInput from '@components/ui/TextInput'
 import { useQuery } from '@tanstack/react-query'
 import axios from 'axios'
 import { debounce } from 'lodash'
-import { useCallback,useState } from 'react'
-import { LuChevronLeft, LuChevronRight,LuFileText, LuSearch } from 'react-icons/lu'
+import { useCallback, useState } from 'react'
+import { LuChevronLeft, LuChevronRight, LuFileText, LuSearch } from 'react-icons/lu'
 
 interface DocumentsContentProps {
   onBack?: () => void
