@@ -84,22 +84,16 @@ function PushPipelineFlow({
       name: 'DB Trigger',
       icon: LuDatabase,
       status: pipeline?.triggerConfigured ? 'ok' : 'error',
-      detail: pipeline?.gatewayUrl ? `→ ${pipeline.gatewayUrl}` : 'Not configured'
+      detail: pipeline?.triggerConfigured ? 'pgmq enqueue' : 'Not configured'
     },
     {
-      name: 'pg_net HTTP',
+      name: 'pgmq Queue',
       icon: LuWifi,
-      status: pipeline?.pgNetTotal
-        ? pipeline.pgNetSuccess > 0
-          ? 'ok'
-          : 'warning'
-        : pipeline?.triggerConfigured
-          ? 'ok'
-          : 'error',
-      detail: pipeline ? `${pipeline.pgNetSuccess}/${pipeline.pgNetTotal} success` : 'No data'
+      status: pipeline?.queueDepth !== undefined ? 'ok' : 'warning',
+      detail: pipeline ? `${pipeline.queueDepth} in queue` : 'No data'
     },
     {
-      name: 'Push Gateway',
+      name: 'Consumer',
       icon: LuServer,
       status: gatewayHealth?.status === 'healthy' ? 'ok' : gatewayHealth?.status || 'error',
       detail: gatewayHealth
@@ -599,9 +593,9 @@ export default function NotificationsPage() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="text-base-content/60 text-sm">Gateway URL</span>
-                        <code className="bg-base-200 max-w-[200px] truncate rounded px-2 py-1 text-xs">
-                          {pipelineStats?.gatewayUrl || 'Not configured'}
+                        <span className="text-base-content/60 text-sm">Queue Depth</span>
+                        <code className="bg-base-200 rounded px-2 py-1 text-xs">
+                          {pipelineStats?.queueDepth ?? 0}
                         </code>
                       </div>
                       <div className="flex items-center justify-between">
@@ -609,10 +603,10 @@ export default function NotificationsPage() {
                         <StatusBadge status={pipelineStats?.triggerConfigured ? 'ok' : 'error'} />
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-base-content/60 text-sm">Service Key</span>
-                        <StatusBadge
-                          status={pipelineStats?.serviceKeyConfigured ? 'ok' : 'error'}
-                        />
+                        <span className="text-base-content/60 text-sm">Messages Processed</span>
+                        <code className="bg-base-200 rounded px-2 py-1 text-xs">
+                          {pipelineStats?.messagesProcessed ?? 0}
+                        </code>
                       </div>
                     </div>
                     <div className="space-y-2">

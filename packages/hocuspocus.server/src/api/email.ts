@@ -1,87 +1,54 @@
 /**
  * Email API Router
  *
- * Exposes email gateway as HTTP endpoints.
- * Called by Supabase pg_net for sending notification emails.
+ * ARCHITECTURE (pgmq Consumer):
+ *   Supabase email_queue → pg_cron → pgmq → pgmqConsumer → BullMQ → SMTP
+ *
+ * The /api/email/send endpoint has been removed.
+ * Emails are now queued via pgmq and consumed by the worker.
+ *
+ * Remaining endpoints:
+ * - /api/email/send-generic: Internal generic email sending
+ * - /api/email/send-digest: Digest emails
+ * - /api/email/health: Health check
+ * - /api/email/unsubscribe: One-click unsubscribe
+ *
+ * @see docs/NOTIFICATION_ARCHITECTURE_COMPARISON.md
  */
 
+import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
+import { z } from 'zod'
 
 import { emailGateway } from '../lib/email'
 import { emailLogger } from '../lib/logger'
-import type {
-  DigestEmailRequest,
-  GenericEmailRequest,
-  NotificationEmailRequest} from '../types/email.types'
+import { sendDigestEmailSchema, sendGenericEmailSchema } from '../schemas/email.schema'
 import { verifyServiceRole } from './utils/serviceRole'
 
 const emailRouter = new Hono()
-
-/**
- * POST /api/email/send
- *
- * Send a notification email.
- * Called by Supabase process_email_queue function.
- */
-emailRouter.post('/send', async (c) => {
-  // Verify authorization
-  const authHeader = c.req.header('Authorization')
-  if (!verifyServiceRole(authHeader)) {
-    emailLogger.warn({ ip: c.req.header('x-forwarded-for') }, 'Unauthorized email send attempt')
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
-
-  try {
-    const payload = await c.req.json<NotificationEmailRequest>()
-
-    // Validate required fields
-    if (!payload.to || !payload.queue_id) {
-      return c.json({ error: 'Missing required fields: to, queue_id' }, 400)
-    }
-
-    const result = await emailGateway.sendNotificationEmail(payload)
-
-    if (result.success) {
-      return c.json({
-        success: true,
-        message_id: result.message_id,
-        queue_id: result.queue_id
-      })
-    }
-
-    return c.json(
-      {
-        success: false,
-        error: result.error,
-        queue_id: result.queue_id
-      },
-      500
-    )
-  } catch (err) {
-    emailLogger.error({ err }, 'Error processing email send request')
-    return c.json({ error: 'Internal server error' }, 500)
-  }
-})
 
 /**
  * POST /api/email/send-generic
  *
  * Send a generic email (for internal use).
  */
-emailRouter.post('/send-generic', async (c) => {
+emailRouter.post('/send-generic', zValidator('json', sendGenericEmailSchema), async (c) => {
   const authHeader = c.req.header('Authorization')
   if (!verifyServiceRole(authHeader)) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
   try {
-    const payload = await c.req.json<GenericEmailRequest>()
+    const payload = c.req.valid('json')
 
-    if (!payload.to || !payload.subject || !payload.html) {
-      return c.json({ error: 'Missing required fields: to, subject, html' }, 400)
-    }
-
-    const result = await emailGateway.sendGenericEmail(payload)
+    // Transform to GenericEmailRequest (to must be array)
+    const result = await emailGateway.sendGenericEmail({
+      to: [payload.to],
+      subject: payload.subject,
+      html: payload.html,
+      text: payload.text,
+      reply_to: payload.replyTo
+    })
 
     if (result.success) {
       return c.json({ success: true, message_id: result.message_id })
@@ -100,20 +67,30 @@ emailRouter.post('/send-generic', async (c) => {
  * Send a digest email (daily or weekly summary).
  * Called by Supabase cron job.
  */
-emailRouter.post('/send-digest', async (c) => {
+emailRouter.post('/send-digest', zValidator('json', sendDigestEmailSchema), async (c) => {
   const authHeader = c.req.header('Authorization')
   if (!verifyServiceRole(authHeader)) {
     return c.json({ error: 'Unauthorized' }, 401)
   }
 
   try {
-    const payload = await c.req.json<DigestEmailRequest>()
+    const payload = c.req.valid('json')
 
-    if (!payload.to || !payload.frequency || !payload.documents || payload.documents.length === 0) {
-      return c.json({ error: 'Missing required fields: to, frequency, documents' }, 400)
-    }
-
-    const result = await emailGateway.sendDigestEmail(payload)
+    // Transform to DigestEmailRequest
+    const result = await emailGateway.sendDigestEmail({
+      to: payload.to,
+      recipient_name: payload.user_name || 'User',
+      recipient_id: 'api-request', // Not a real user, just API call
+      frequency: payload.frequency,
+      documents: payload.documents.map((doc) => ({
+        name: doc.title || doc.slug,
+        slug: doc.slug,
+        url: `${process.env.APP_URL || 'https://docs.plus'}/${doc.slug}`,
+        channels: [] // Simplified - no channel breakdown for API-triggered digests
+      })),
+      period_start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      period_end: new Date().toISOString()
+    })
 
     if (result.success) {
       return c.json({ success: true, message_id: result.message_id })
@@ -218,7 +195,14 @@ emailRouter.get('/unsubscribe', async (c) => {
       )
     }
 
-    const result = await response.json()
+    const result = (await response.json()) as {
+      success: boolean
+      user_id?: string
+      action?: string
+      action_description?: string
+      message?: string
+      email?: string
+    }
 
     if (result.success) {
       emailLogger.info(
@@ -233,7 +217,7 @@ emailRouter.get('/unsubscribe', async (c) => {
         buildUnsubscribeHtml({
           success: true,
           title: 'Unsubscribed',
-          message: result.message,
+          message: result.message || 'You have been unsubscribed successfully.',
           _actionDescription: result.action_description,
           email: result.email,
           action: result.action,
@@ -271,54 +255,59 @@ emailRouter.get('/unsubscribe', async (c) => {
  * RFC 8058 List-Unsubscribe-Post handler for one-click unsubscribe.
  * Email clients send POST with "List-Unsubscribe=One-Click" in body.
  */
-emailRouter.post('/unsubscribe', async (c) => {
-  const token = c.req.query('token')
+emailRouter.post(
+  '/unsubscribe',
+  zValidator('query', z.object({ token: z.string().min(1) })),
+  async (c) => {
+    const { token } = c.req.valid('query')
 
-  if (!token) {
-    return c.json({ error: 'Missing token' }, 400)
-  }
+    try {
+      const supabaseUrl = process.env.SUPABASE_URL
+      const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-  try {
-    const supabaseUrl = process.env.SUPABASE_URL
-    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+      if (!supabaseUrl || !serviceRoleKey) {
+        return c.json({ error: 'Service not configured' }, 500)
+      }
 
-    if (!supabaseUrl || !serviceRoleKey) {
-      return c.json({ error: 'Service not configured' }, 500)
-    }
-
-    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/process_unsubscribe`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`
-      },
-      body: JSON.stringify({ p_token: token })
-    })
-
-    if (!response.ok) {
-      return c.json({ error: 'Failed to process unsubscribe' }, 500)
-    }
-
-    const result = await response.json()
-
-    if (result.success) {
-      emailLogger.info(
-        {
-          user_id: result.user_id,
-          action: result.action
+      const response = await fetch(`${supabaseUrl}/rest/v1/rpc/process_unsubscribe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`
         },
-        'User unsubscribed via List-Unsubscribe-Post'
-      )
-      return c.json({ success: true })
-    }
+        body: JSON.stringify({ p_token: token })
+      })
 
-    return c.json({ error: result.error || 'Invalid token' }, 400)
-  } catch (err) {
-    emailLogger.error({ err }, 'Error processing List-Unsubscribe-Post')
-    return c.json({ error: 'Internal error' }, 500)
+      if (!response.ok) {
+        return c.json({ error: 'Failed to process unsubscribe' }, 500)
+      }
+
+      const result = (await response.json()) as {
+        success: boolean
+        user_id?: string
+        action?: string
+        error?: string
+      }
+
+      if (result.success) {
+        emailLogger.info(
+          {
+            user_id: result.user_id,
+            action: result.action
+          },
+          'User unsubscribed via List-Unsubscribe-Post'
+        )
+        return c.json({ success: true })
+      }
+
+      return c.json({ error: result.error || 'Invalid token' }, 400)
+    } catch (err) {
+      emailLogger.error({ err }, 'Error processing List-Unsubscribe-Post')
+      return c.json({ error: 'Internal error' }, 500)
+    }
   }
-})
+)
 
 // =============================================================================
 // UNSUBSCRIBE HTML BUILDER

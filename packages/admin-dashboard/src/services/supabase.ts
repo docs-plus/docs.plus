@@ -5,7 +5,6 @@ import type {
   ChannelStats,
   EmailStats,
   NotificationStats,
-  PgNetResponse,
   PushPipelineStats,
   PushStats,
   PushSubscriptionDetail,
@@ -336,24 +335,23 @@ export async function checkDatabaseHealth(): Promise<{ status: string; latency: 
 // =============================================================================
 
 /**
- * Fetch push pipeline configuration stats using RPC
+ * Fetch push pipeline stats for admin debugging
+ * Uses pgmq architecture - no more pg_net
  */
 export async function fetchPushPipelineStats(): Promise<PushPipelineStats> {
-  // Use the existing get_push_notification_stats RPC if available
+  // Use the get_push_notification_stats RPC (pgmq version)
   const { data: rpcData, error: rpcError } = await supabase.rpc('get_push_notification_stats')
 
   if (!rpcError && rpcData) {
     return {
-      triggerConfigured: rpcData.config_status === 'ok',
-      gatewayUrl: rpcData.gateway_url || null,
-      serviceKeyConfigured: rpcData.config_status === 'ok',
-      pgNetTotal: rpcData.total_notifications || 0,
-      pgNetSuccess: rpcData.successful_pushes || 0,
-      pgNetFailed: rpcData.failed_pushes || 0,
-      totalSubscriptions: rpcData.total_subscriptions || 0,
-      activeSubscriptions: rpcData.active_subscriptions || 0,
-      failedSubscriptions: rpcData.failed_subscriptions || 0,
-      lastPushSent: rpcData.last_push_attempt || null,
+      triggerConfigured: rpcData.architecture === 'pgmq_consumer',
+      queueDepth: rpcData.queue?.depth || 0,
+      messagesProcessed: 0, // Backend tracks this
+      messagesFailed: 0,
+      totalSubscriptions: rpcData.subscriptions?.total || 0,
+      activeSubscriptions: rpcData.subscriptions?.active || 0,
+      failedSubscriptions: rpcData.subscriptions?.failed || 0,
+      lastPushSent: rpcData.last_activity || null,
       lastPushError: null
     }
   }
@@ -372,33 +370,16 @@ export async function fetchPushPipelineStats(): Promise<PushPipelineStats> {
   ])
 
   return {
-    triggerConfigured: true, // Assume true, we can't check without RPC
-    gatewayUrl: null,
-    serviceKeyConfigured: true,
-    pgNetTotal: 0,
-    pgNetSuccess: 0,
-    pgNetFailed: 0,
+    triggerConfigured: true,
+    queueDepth: 0,
+    messagesProcessed: 0,
+    messagesFailed: 0,
     totalSubscriptions: totalResult.count || 0,
     activeSubscriptions: activeResult.count || 0,
     failedSubscriptions: failedResult.count || 0,
     lastPushSent: null,
     lastPushError: null
   }
-}
-
-/**
- * Fetch recent pg_net HTTP responses (for debugging push delivery)
- */
-export async function fetchRecentPgNetResponses(limit = 10): Promise<PgNetResponse[]> {
-  // Try to query pg_net response table via RPC (needs to be exposed)
-  const { data, error } = await supabase.rpc('get_recent_pg_net_responses', { p_limit: limit })
-
-  if (error || !data) {
-    // pg_net responses might not be accessible, return empty
-    return []
-  }
-
-  return data as PgNetResponse[]
 }
 
 /**

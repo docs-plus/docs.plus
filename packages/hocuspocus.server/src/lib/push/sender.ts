@@ -11,7 +11,8 @@ import { config } from '../../config/env'
 import type {
   PushNotificationRequest,
   PushSendResult,
-  PushSubscription} from '../../types/push.types'
+  PushSubscription
+} from '../../types/push.types'
 import { pushLogger } from '../logger'
 
 // Configure web-push with VAPID credentials

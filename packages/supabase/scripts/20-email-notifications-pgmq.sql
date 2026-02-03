@@ -1,35 +1,34 @@
--- -----------------------------------------------------------------------------
--- Email Notifications Schema
--- -----------------------------------------------------------------------------
--- Email notification system that works alongside push notifications.
--- Supports immediate, daily digest, and fallback email delivery.
+-- =============================================================================
+-- Email Notifications Schema (pgmq Architecture)
+-- =============================================================================
 --
--- DEPLOYMENT CHECKLIST:
+-- ARCHITECTURE:
+--   Notification Insert → email_queue table → pgmq queue → Backend Consumer → SMTP
 --
--- 1. BACKEND EMAIL GATEWAY (hocuspocus.server):
---    Set these environment variables in your hocuspocus.server:
---    - SMTP_HOST (your SMTP server)
---    - SMTP_PORT (usually 587)
---    - SMTP_USER (your SMTP username)
---    - SMTP_PASS (your SMTP password)
---    - EMAIL_FROM (e.g., "Docs.plus <notifications@yourdomain.com>")
---    - SUPABASE_SERVICE_ROLE_KEY (for status callbacks)
+-- WHY pgmq INSTEAD OF pg_net?
+--   ✅ Never lose messages (queue persists even if backend is down)
+--   ✅ No exposed HTTP endpoint (security improvement)
+--   ✅ Auto-retry built into queue semantics
+--   ✅ Same pattern as push notifications (consistency)
+--   ✅ $0 cost at any scale
 --
--- 2. SET BACKEND URL:
---    Update internal.email_gateway_url() with your backend URL
+-- REQUIRES:
+--   - 14-realtime-replica.sql (pgmq extension)
 --
--- The email gateway is a single source of truth for all email operations.
--- Emails are sent via the backend SMTP system, not external APIs.
--- -----------------------------------------------------------------------------
+-- @see docs/NOTIFICATION_ARCHITECTURE_COMPARISON.md
+-- =============================================================================
 
--- 1. Email Queue Table
--- Stores emails pending delivery with scheduling support
+
+-- =============================================================================
+-- 1. Email Queue Table (source of truth for scheduled emails)
+-- =============================================================================
+
 create table if not exists public.email_queue (
     id uuid default gen_random_uuid() primary key,
     notification_id uuid references public.notifications(id) on delete cascade,
     user_id uuid not null references public.users(id) on delete cascade,
     email_type text not null check (email_type in ('immediate', 'digest', 'fallback')),
-    status text not null default 'pending' check (status in ('pending', 'sent', 'failed', 'skipped')),
+    status text not null default 'pending' check (status in ('pending', 'processing', 'sent', 'failed', 'skipped')),
     scheduled_for timestamptz not null default now(),
     attempts int default 0 not null,
     sent_at timestamptz,
@@ -37,16 +36,13 @@ create table if not exists public.email_queue (
     created_at timestamptz default now() not null
 );
 
--- Index for efficient queue processing
 create index if not exists idx_email_queue_pending
     on public.email_queue(scheduled_for)
     where status = 'pending';
 
--- Index for user lookups
 create index if not exists idx_email_queue_user
     on public.email_queue(user_id, status);
 
--- RLS: Users can only view their own email queue (admin can see all via service role)
 alter table public.email_queue enable row level security;
 
 drop policy if exists "Users can view own email queue" on public.email_queue;
@@ -56,11 +52,25 @@ create policy "Users can view own email queue" on public.email_queue
 comment on table public.email_queue is 'Queue for email notifications with scheduling support';
 
 
--- 2. Helper: Check if user has email enabled
+-- =============================================================================
+-- 2. Create pgmq Queue for Email
+-- =============================================================================
+
+select pgmq.create_non_partitioned('email_notifications_queue');
+
+comment on table pgmq.q_email_notifications_queue is
+'pgmq queue for email notification delivery. Consumed by hocuspocus-worker.';
+
+
+-- =============================================================================
+-- 3. Helper Functions
+-- =============================================================================
+
 create or replace function internal.is_email_enabled(p_user_id uuid)
 returns boolean
 language sql
 stable
+set search_path = public
 as $$
     select coalesce(
         (profile_data->'notification_preferences'->>'email_enabled')::boolean,
@@ -70,14 +80,11 @@ as $$
     where id = p_user_id;
 $$;
 
-comment on function internal.is_email_enabled(uuid) is 'Checks if user has email notifications enabled';
-
-
--- 3. Helper: Get user email preferences
 create or replace function internal.get_email_preferences(p_user_id uuid)
 returns jsonb
 language sql
 stable
+set search_path = public
 as $$
     select coalesce(
         profile_data->'notification_preferences',
@@ -88,36 +95,15 @@ as $$
 $$;
 
 
--- 3.5 Helper: Get email gateway configuration
-create or replace function internal.get_email_gateway_config()
-returns table (
-    gateway_url text,
-    service_key text
-)
-language sql
-stable
-security definer
-as $$
-    select
-        -- Backend email gateway URL (hocuspocus.server)
-        -- Use environment variable or default to localhost for dev
-        coalesce(
-            current_setting('app.email_gateway_url', true),
-            'http://localhost:4000/api/email/send'
-        ) as gateway_url,
-        -- Supabase service role key for authorization
-        current_setting('supabase.service_role_key', true) as service_key;
-$$;
+-- =============================================================================
+-- 4. Queue Email on Notification Insert
+-- =============================================================================
 
-comment on function internal.get_email_gateway_config() is 'Returns email gateway URL and service key';
-
-
--- 4. Queue email for notification
--- Called by the notification trigger to queue emails based on user preferences
 create or replace function public.queue_email_notification()
 returns trigger
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
     prefs jsonb;
@@ -127,47 +113,40 @@ declare
     schedule_time timestamptz;
     user_tz text;
 begin
-    -- Only process inserts
     if tg_op != 'INSERT' then
         return new;
     end if;
 
-    -- Get user's email preferences
     prefs := internal.get_email_preferences(new.receiver_user_id);
 
-    -- Check if email is enabled
     if not coalesce((prefs->>'email_enabled')::boolean, false) then
         return new;
     end if;
 
-    -- Check if this notification type is enabled for email
     case new.type::text
         when 'mention' then
             should_queue := coalesce((prefs->>'email_mentions')::boolean, true);
         when 'reply' then
             should_queue := coalesce((prefs->>'email_replies')::boolean, true);
         when 'reaction' then
-            should_queue := coalesce((prefs->>'email_reactions')::boolean, false); -- Default off for reactions
+            should_queue := coalesce((prefs->>'email_reactions')::boolean, false);
         else
-            should_queue := true; -- Allow other types
+            should_queue := true;
     end case;
 
     if not should_queue then
         return new;
     end if;
 
-    -- Determine email frequency and schedule
     email_frequency := coalesce(prefs->>'email_frequency', 'daily');
     user_tz := coalesce(prefs->>'timezone', 'UTC');
 
     case email_frequency
         when 'immediate' then
             queue_type := 'immediate';
-            -- Wait 15 minutes before sending (give push a chance)
             schedule_time := now() + interval '15 minutes';
         when 'daily' then
             queue_type := 'digest';
-            -- Schedule for next 9 AM in user's timezone
             begin
                 schedule_time := (
                     date_trunc('day', now() at time zone user_tz) + interval '1 day' + interval '9 hours'
@@ -177,7 +156,6 @@ begin
             end;
         when 'weekly' then
             queue_type := 'digest';
-            -- Schedule for next Monday 9 AM in user's timezone
             begin
                 schedule_time := (
                     date_trunc('week', now() at time zone user_tz) + interval '1 week' + interval '9 hours'
@@ -186,7 +164,6 @@ begin
                 schedule_time := date_trunc('week', now()) + interval '1 week' + interval '9 hours';
             end;
         else
-            -- 'never' or unknown - don't queue
             return new;
     end case;
 
@@ -201,22 +178,20 @@ begin
             quiet_start := (prefs->>'quiet_hours_start')::time;
             quiet_end := (prefs->>'quiet_hours_end')::time;
 
-            -- Handle overnight quiet hours
             if quiet_start > quiet_end then
                 if now_time >= quiet_start or now_time <= quiet_end then
-                    return new; -- Skip during quiet hours
+                    return new;
                 end if;
             else
                 if now_time >= quiet_start and now_time <= quiet_end then
-                    return new; -- Skip during quiet hours
+                    return new;
                 end if;
             end if;
         exception when others then
-            null; -- Continue if quiet hours check fails
+            null;
         end;
     end if;
 
-    -- Queue the email
     insert into public.email_queue (
         notification_id,
         user_id,
@@ -233,38 +208,30 @@ begin
 end;
 $$;
 
-comment on function public.queue_email_notification() is 'Queues email notifications based on user preferences';
-
--- Trigger: queue email when notification is created
 drop trigger if exists trigger_queue_email_notification on public.notifications;
 create trigger trigger_queue_email_notification
     after insert on public.notifications
     for each row execute function public.queue_email_notification();
 
 
--- 5. Process email queue (called by pg_cron)
--- Sends pending emails that are due via the backend email gateway
+-- =============================================================================
+-- 5. Process Email Queue → Enqueue to pgmq (pg_cron)
+-- =============================================================================
+-- This function moves due emails from email_queue to pgmq for backend processing
+
 create or replace function public.process_email_queue()
 returns jsonb
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
-    config record;
-    pending_emails record;
-    processed int := 0;
+    pending_email record;
+    enqueued int := 0;
     skipped int := 0;
-    failed int := 0;
     doc_slug text;
 begin
-    -- Get email gateway configuration
-    select * into config from internal.get_email_gateway_config();
-    if config.gateway_url is null then
-        return jsonb_build_object('error', 'Email gateway not configured');
-    end if;
-
-    -- Process pending emails that are due
-    for pending_emails in
+    for pending_email in
         select
             eq.id as queue_id,
             eq.notification_id,
@@ -289,91 +256,163 @@ begin
           and eq.scheduled_for <= now()
           and eq.attempts < 3
         order by eq.scheduled_for
-        limit 50 -- Process in batches
+        limit 100
+        for update of eq skip locked
     loop
-        -- Skip if notification was already read
-        if pending_emails.readed_at is not null then
+        -- Skip if already read
+        if pending_email.readed_at is not null then
             update public.email_queue
             set status = 'skipped',
                 error_message = 'Notification already read'
-            where id = pending_emails.queue_id;
+            where id = pending_email.queue_id;
             skipped := skipped + 1;
             continue;
         end if;
 
-        -- Try to get document slug from channel if available
+        -- Get document slug
         doc_slug := null;
-        if pending_emails.channel_id is not null then
+        if pending_email.channel_id is not null then
             begin
                 select slug into doc_slug
                 from public.channels
-                where id = pending_emails.channel_id
+                where id = pending_email.channel_id
                 limit 1;
             exception when others then
                 null;
             end;
         end if;
 
-        -- Send email via backend gateway (hocuspocus.server)
-        begin
-            perform net.http_post(
-                url := config.gateway_url,
-                headers := jsonb_build_object(
-                    'Content-Type', 'application/json',
-                    'Authorization', 'Bearer ' || config.service_key
-                ),
-                body := jsonb_build_object(
-                    'queue_id', pending_emails.queue_id::text,
-                    'to', pending_emails.recipient_email,
-                    'recipient_name', coalesce(pending_emails.recipient_name, ''),
-                    'recipient_id', pending_emails.recipient_id::text,
-                    'sender_name', coalesce(pending_emails.sender_name, 'Someone'),
-                    'sender_id', pending_emails.sender_id::text,
-                    'sender_avatar_url', pending_emails.sender_avatar_url,
-                    'notification_type', pending_emails.notification_type,
-                    'message_preview', coalesce(pending_emails.message_preview, ''),
-                    'channel_id', pending_emails.channel_id,
-                    'document_slug', doc_slug
-                )
-            );
+        -- Mark as processing
+        update public.email_queue
+        set status = 'processing',
+            attempts = attempts + 1
+        where id = pending_email.queue_id;
 
-            -- Increment attempts (backend will update status on completion)
-            update public.email_queue
-            set attempts = attempts + 1
-            where id = pending_emails.queue_id;
+        -- Enqueue to pgmq for backend consumption
+        perform pgmq.send(
+            'email_notifications_queue',
+            jsonb_build_object(
+                'queue_id', pending_email.queue_id::text,
+                'to', pending_email.recipient_email,
+                'recipient_name', coalesce(pending_email.recipient_name, ''),
+                'recipient_id', pending_email.recipient_id::text,
+                'sender_name', coalesce(pending_email.sender_name, 'Someone'),
+                'sender_id', pending_email.sender_id::text,
+                'sender_avatar_url', pending_email.sender_avatar_url,
+                'notification_type', pending_email.notification_type,
+                'message_preview', coalesce(pending_email.message_preview, ''),
+                'channel_id', pending_email.channel_id,
+                'document_slug', doc_slug,
+                'enqueued_at', now()::text
+            )
+        );
 
-            processed := processed + 1;
-        exception when others then
-            update public.email_queue
-            set attempts = attempts + 1,
-                error_message = sqlerrm
-            where id = pending_emails.queue_id;
-            failed := failed + 1;
-        end;
+        enqueued := enqueued + 1;
     end loop;
 
     return jsonb_build_object(
-        'processed', processed,
+        'enqueued', enqueued,
         'skipped', skipped,
-        'failed', failed
+        'timestamp', now()
     );
 end;
 $$;
 
-comment on function public.process_email_queue() is 'Processes pending email queue, sends due emails';
+comment on function public.process_email_queue() is
+'Moves due emails from email_queue to pgmq for backend consumption. Run via pg_cron.';
 
 
--- 6. Schedule email queue processing (every 5 minutes)
+-- =============================================================================
+-- 6. Consumer Helper: Read Email Queue
+-- =============================================================================
+
+create or replace function public.consume_email_queue(
+    p_batch_size int default 50,
+    p_visibility_timeout int default 60
+)
+returns table (
+    msg_id bigint,
+    payload jsonb,
+    enqueued_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    return query
+    select
+        m.msg_id,
+        m.message as payload,
+        m.enqueued_at
+    from pgmq.read('email_notifications_queue', p_visibility_timeout, p_batch_size) m;
+end;
+$$;
+
+comment on function public.consume_email_queue(int, int) is
+'Reads email messages from pgmq queue. Called by backend consumer.';
+
+
+-- =============================================================================
+-- 7. Consumer Helper: Acknowledge Message
+-- =============================================================================
+
+create or replace function public.ack_email_message(p_msg_id bigint)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    return pgmq.delete('email_notifications_queue', p_msg_id);
+end;
+$$;
+
+comment on function public.ack_email_message(bigint) is
+'Acknowledges (deletes) a processed email message from pgmq.';
+
+
+-- =============================================================================
+-- 8. Update Email Queue Status (called by backend after sending)
+-- =============================================================================
+
+create or replace function public.update_email_status(
+    p_queue_id uuid,
+    p_status text,
+    p_error_message text default null
+)
+returns boolean
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    update public.email_queue
+    set status = p_status,
+        sent_at = case when p_status = 'sent' then now() else sent_at end,
+        error_message = p_error_message
+    where id = p_queue_id;
+
+    return found;
+end;
+$$;
+
+comment on function public.update_email_status(uuid, text, text) is
+'Updates email queue status after processing. Called by backend.';
+
+
+-- =============================================================================
+-- 9. Schedule Email Queue Processing (pg_cron)
+-- =============================================================================
+
 do $$
 begin
-    -- Remove old job if exists
     perform cron.unschedule('process_email_queue')
     where exists (select 1 from cron.job where jobname = 'process_email_queue');
 
-    -- Schedule new job
     perform cron.schedule(
         'process_email_queue',
-        '*/5 * * * *',
+        '*/2 * * * *',  -- Every 2 minutes
         'select public.process_email_queue();'
     );
 exception when others then
@@ -382,28 +421,29 @@ end;
 $$;
 
 
--- 7. Cleanup old processed emails (daily)
+-- =============================================================================
+-- 10. Cleanup Functions
+-- =============================================================================
+
 create or replace function public.cleanup_email_queue()
 returns void
 language plpgsql
 security definer
+set search_path = public
 as $$
 begin
-    -- Delete emails older than 30 days that were sent or skipped
     delete from public.email_queue
     where created_at < now() - interval '30 days'
       and status in ('sent', 'skipped');
 
-    -- Mark failed emails with 3+ attempts as permanently failed
     update public.email_queue
     set status = 'failed',
         error_message = coalesce(error_message, '') || ' (max attempts reached)'
     where attempts >= 3
-      and status = 'pending';
+      and status = 'processing';
 end;
 $$;
 
--- Schedule cleanup (daily at 3 AM)
 do $$
 begin
     perform cron.unschedule('cleanup_email_queue')
@@ -420,86 +460,89 @@ end;
 $$;
 
 
--- 8. Get email notification stats (for admin/debugging)
+-- =============================================================================
+-- 11. Stats Function
+-- =============================================================================
+
 create or replace function public.get_email_notification_stats()
 returns jsonb
-language sql
+language plpgsql
 security definer
 stable
+set search_path = public
 as $$
-    select jsonb_build_object(
-        'total_queued', (select count(*) from public.email_queue),
-        'pending', (select count(*) from public.email_queue where status = 'pending'),
-        'sent', (select count(*) from public.email_queue where status = 'sent'),
-        'skipped', (select count(*) from public.email_queue where status = 'skipped'),
-        'failed', (select count(*) from public.email_queue where status = 'failed'),
+declare
+    queue_depth bigint;
+begin
+    -- Get pgmq queue depth
+    select count(*) into queue_depth
+    from pgmq.q_email_notifications_queue;
+
+    return jsonb_build_object(
+        'architecture', 'pgmq_consumer',
+        'queue', jsonb_build_object(
+            'name', 'email_notifications_queue',
+            'depth', queue_depth
+        ),
+        'email_queue', jsonb_build_object(
+            'total', (select count(*) from public.email_queue),
+            'pending', (select count(*) from public.email_queue where status = 'pending'),
+            'processing', (select count(*) from public.email_queue where status = 'processing'),
+            'sent', (select count(*) from public.email_queue where status = 'sent'),
+            'skipped', (select count(*) from public.email_queue where status = 'skipped'),
+            'failed', (select count(*) from public.email_queue where status = 'failed')
+        ),
         'users_with_email_enabled', (
             select count(*)
             from public.users
             where (profile_data->'notification_preferences'->>'email_enabled')::boolean = true
         )
     );
+end;
 $$;
 
-comment on function public.get_email_notification_stats() is 'Returns email notification system statistics';
-
 
 -- =============================================================================
--- UNSUBSCRIBE FUNCTIONALITY (Stateless HMAC Tokens)
--- =============================================================================
--- Implements one-click unsubscribe without login using signed tokens.
--- Follows RFC 8058 for List-Unsubscribe-Post support.
---
--- Token format: base64(JSON payload) + "." + hmac_signature
--- No database storage required - tokens are cryptographically verified.
+-- 12. Unsubscribe Functions (unchanged from v1)
 -- =============================================================================
 
--- 9. Get unsubscribe secret key (from Supabase Vault or settings)
 create or replace function internal.get_unsubscribe_secret()
 returns text
 language sql
 stable
 security definer
+set search_path = public
 as $$
-    -- Use Supabase Vault if available, otherwise fall back to settings
-    -- In production, store this in Supabase Vault for better security
     select coalesce(
         current_setting('app.unsubscribe_secret', true),
-        -- Fallback: derive from service role key (not ideal but works)
         encode(sha256(coalesce(current_setting('app.settings.service_role_key', true), 'default-dev-secret')::bytea), 'hex')
     );
 $$;
 
-
--- 10. Generate signed unsubscribe token
--- Returns a token that can be verified without database lookup
 create or replace function public.generate_unsubscribe_token(
     p_user_id uuid,
-    p_action text  -- 'mentions', 'replies', 'reactions', 'digest', 'all'
+    p_action text
 )
 returns text
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
     secret text;
     payload jsonb;
     payload_b64 text;
     signature text;
-    token text;
 begin
-    -- Validate action
     if p_action not in ('mentions', 'replies', 'reactions', 'digest', 'all') then
         raise exception 'Invalid unsubscribe action: %', p_action;
     end if;
 
-    -- Get secret
     secret := internal.get_unsubscribe_secret();
     if secret is null or secret = '' then
         raise exception 'Unsubscribe secret not configured';
     end if;
 
-    -- Build payload
     payload := jsonb_build_object(
         'uid', p_user_id,
         'act', p_action,
@@ -507,36 +550,21 @@ begin
         'iat', extract(epoch from now())::bigint
     );
 
-    -- Encode payload
     payload_b64 := encode(convert_to(payload::text, 'UTF8'), 'base64');
-    -- Remove padding for URL safety
     payload_b64 := replace(replace(replace(payload_b64, '=', ''), '+', '-'), '/', '_');
 
-    -- Generate HMAC signature
-    signature := encode(
-        hmac(payload_b64::bytea, secret::bytea, 'sha256'),
-        'base64'
-    );
-    -- URL-safe base64
+    signature := encode(hmac(payload_b64::bytea, secret::bytea, 'sha256'), 'base64');
     signature := replace(replace(replace(signature, '=', ''), '+', '-'), '/', '_');
 
-    -- Combine: payload.signature
-    token := payload_b64 || '.' || signature;
-
-    return token;
+    return payload_b64 || '.' || signature;
 end;
 $$;
 
-comment on function public.generate_unsubscribe_token(uuid, text) is 
-'Generates a signed unsubscribe token for one-click email unsubscribe. Token is stateless and verified via HMAC.';
-
-
--- 11. Verify and decode unsubscribe token
--- Returns the payload if valid, null if invalid or expired
 create or replace function internal.verify_unsubscribe_token(p_token text)
 returns jsonb
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
     secret text;
@@ -548,35 +576,27 @@ declare
     payload jsonb;
     expiry bigint;
 begin
-    -- Split token into payload and signature
     parts := string_to_array(p_token, '.');
     if array_length(parts, 1) != 2 then
-        return null;  -- Invalid format
+        return null;
     end if;
 
     payload_b64 := parts[1];
     provided_sig := parts[2];
 
-    -- Get secret
     secret := internal.get_unsubscribe_secret();
     if secret is null or secret = '' then
         return null;
     end if;
 
-    -- Verify signature
-    expected_sig := encode(
-        hmac(payload_b64::bytea, secret::bytea, 'sha256'),
-        'base64'
-    );
+    expected_sig := encode(hmac(payload_b64::bytea, secret::bytea, 'sha256'), 'base64');
     expected_sig := replace(replace(replace(expected_sig, '=', ''), '+', '-'), '/', '_');
 
     if expected_sig != provided_sig then
-        return null;  -- Invalid signature
+        return null;
     end if;
 
-    -- Decode payload (restore standard base64)
     payload_b64 := replace(replace(payload_b64, '-', '+'), '_', '/');
-    -- Add padding if needed
     case length(payload_b64) % 4
         when 2 then payload_b64 := payload_b64 || '==';
         when 3 then payload_b64 := payload_b64 || '=';
@@ -587,29 +607,23 @@ begin
         payload_json := convert_from(decode(payload_b64, 'base64'), 'UTF8');
         payload := payload_json::jsonb;
     exception when others then
-        return null;  -- Invalid payload
+        return null;
     end;
 
-    -- Check expiry
     expiry := (payload->>'exp')::bigint;
     if expiry < extract(epoch from now()) then
-        return null;  -- Token expired
+        return null;
     end if;
 
     return payload;
 end;
 $$;
 
-comment on function internal.verify_unsubscribe_token(text) is 
-'Verifies an unsubscribe token and returns the payload if valid, null otherwise.';
-
-
--- 12. Process unsubscribe action
--- Called by the API endpoint to actually update user preferences
 create or replace function public.process_unsubscribe(p_token text)
 returns jsonb
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
     payload jsonb;
@@ -618,11 +632,8 @@ declare
     v_user_email text;
     prefs jsonb;
     new_prefs jsonb;
-    update_path text[];
-    update_value jsonb;
     action_description text;
 begin
-    -- Verify token
     payload := internal.verify_unsubscribe_token(p_token);
     if payload is null then
         return jsonb_build_object(
@@ -632,11 +643,9 @@ begin
         );
     end if;
 
-    -- Extract user ID and action
     v_user_id := (payload->>'uid')::uuid;
     v_action := payload->>'act';
 
-    -- Get current user and preferences
     select email, coalesce(profile_data->'notification_preferences', '{}'::jsonb)
     into v_user_email, prefs
     from public.users
@@ -650,7 +659,6 @@ begin
         );
     end if;
 
-    -- Apply the unsubscribe action
     case v_action
         when 'mentions' then
             new_prefs := jsonb_set(prefs, '{email_mentions}', 'false'::jsonb);
@@ -675,7 +683,6 @@ begin
             );
     end case;
 
-    -- Update user preferences
     update public.users
     set profile_data = jsonb_set(
         coalesce(profile_data, '{}'::jsonb),
@@ -684,7 +691,6 @@ begin
     )
     where id = v_user_id;
 
-    -- Return success with details for confirmation page
     return jsonb_build_object(
         'success', true,
         'action', v_action,
@@ -696,12 +702,6 @@ begin
 end;
 $$;
 
-comment on function public.process_unsubscribe(text) is 
-'Processes an unsubscribe request using a signed token. Updates user email preferences without requiring authentication.';
-
-
--- 13. Generate unsubscribe URL for a user
--- Helper function to build the full unsubscribe URL with token
 create or replace function public.get_unsubscribe_url(
     p_user_id uuid,
     p_action text,
@@ -710,31 +710,22 @@ create or replace function public.get_unsubscribe_url(
 returns text
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
     token text;
     base_url text;
 begin
-    -- Generate token
     token := public.generate_unsubscribe_token(p_user_id, p_action);
-
-    -- Get base URL
     base_url := coalesce(
         p_base_url,
         current_setting('app.base_url', true),
         'https://docs.plus'
     );
-
     return base_url || '/unsubscribe?token=' || token;
 end;
 $$;
 
-comment on function public.get_unsubscribe_url(uuid, text, text) is 
-'Generates a full unsubscribe URL with signed token for use in email templates.';
-
-
--- 14. Generate all unsubscribe links for email footer
--- Returns a JSON object with all unsubscribe URLs for a user
 create or replace function public.get_email_footer_links(
     p_user_id uuid,
     p_base_url text default null
@@ -742,6 +733,7 @@ create or replace function public.get_email_footer_links(
 returns jsonb
 language plpgsql
 security definer
+set search_path = public
 as $$
 declare
     base_url text;
@@ -763,5 +755,11 @@ begin
 end;
 $$;
 
-comment on function public.get_email_footer_links(uuid, text) is 
-'Generates all unsubscribe links for email footers. Returns URLs for each notification type plus manage preferences link.';
+
+-- =============================================================================
+-- 13. Drop Deprecated Functions
+-- =============================================================================
+
+drop function if exists internal.get_email_gateway_config() cascade;
+drop function if exists internal.http_post_signed(text, jsonb, jsonb, text) cascade;
+

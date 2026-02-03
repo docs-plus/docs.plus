@@ -285,12 +285,12 @@ export interface PushGatewayHealth {
 }
 
 /**
- * Check push gateway health (hocuspocus.server /api/push/health)
+ * Check push gateway health (hocuspocus.server /health/push)
  */
 export async function checkPushGatewayHealth(): Promise<PushGatewayHealth> {
   const start = Date.now()
   try {
-    const response = await fetch(`${API_URL}/api/push/health`, {
+    const response = await fetch(`${API_URL}/health/push`, {
       signal: AbortSignal.timeout(5000)
     })
     const latency = Date.now() - start

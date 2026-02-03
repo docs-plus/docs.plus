@@ -8,7 +8,8 @@ create extension if not exists pg_cron;
 create extension if not exists pgmq;
 
 -- Enable 'pg_net' extension for async HTTP requests from the database
--- Used for calling Edge Functions from triggers (e.g., push notifications)
+-- Used for calling backend from triggers (email notifications)
+-- Note: Push notifications now use pgmq Consumer pattern instead of pg_net
 create extension if not exists pg_net;
 
 -- Additional extensions may be enabled here as needed

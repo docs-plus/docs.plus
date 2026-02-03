@@ -14,7 +14,7 @@
 4. [Documents API](#documents-api)
 5. [Media API](#media-api)
 6. [Email API](#email-api)
-7. [Push Notifications API](#push-notifications-api)
+7. [Push Notifications](#push-notifications)
 8. [Admin API](#admin-api)
 9. [Error Handling](#error-handling)
 
@@ -231,34 +231,17 @@ Retrieve a media file.
 
 Base path: `/api/email`
 
-**Note:** These endpoints require service role authentication.
+> **Architecture Change:** Email notifications now use **pgmq Consumer** architecture.
+> The `/api/email/send` HTTP endpoint has been removed.
 
-### POST /api/email/send
+Email notifications are triggered directly from Supabase via database triggers:
 
-Send a notification email. Called by Supabase triggers.
+1. Notification created → `email_queue` table populated
+2. `pg_cron` moves due emails to pgmq queue
+3. `hocuspocus-worker` polls queue and processes via BullMQ
+4. SMTP provider sends email
 
-**Request Body:**
-
-```json
-{
-  "to": "user@example.com",
-  "queue_id": "queue-uuid",
-  "notification_type": "mention",
-  "sender_name": "John Doe",
-  "document_title": "Project Notes",
-  "action_url": "https://docs.plus/d/project-notes"
-}
-```
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "message_id": "msg-uuid",
-  "queue_id": "queue-uuid"
-}
-```
+**See:** `docs/PUSH_NOTIFICATION_PGMQ.md` for architecture details (same pattern).
 
 ### POST /api/email/send-generic
 
@@ -309,51 +292,37 @@ RFC 8058 List-Unsubscribe-Post handler for email clients.
 
 ---
 
-## Push Notifications API
+## Push Notifications
 
-Base path: `/api/push`
+> **Architecture Change:** Push notifications now use **pgmq Consumer** architecture.
+> The `/api/push` HTTP endpoint has been removed.
 
-**Note:** These endpoints require service role authentication.
+Push notifications are triggered directly from Supabase via database triggers:
 
-### POST /api/push/send
+1. Notification created → Trigger enqueues to `pgmq` queue
+2. `hocuspocus-worker` polls queue and processes via BullMQ
+3. Web Push API sends to user devices
 
-Send a push notification to a user.
+**See:** `docs/PUSH_NOTIFICATION_PGMQ.md` for full architecture details.
 
-**Request Body:**
+### Client-Side Subscription
 
-```json
-{
-  "user_id": "user-uuid",
-  "notification_id": "notif-uuid",
-  "type": "mention",
-  "sender_name": "John Doe",
-  "sender_avatar": "https://...",
-  "message_preview": "mentioned you in...",
-  "action_url": "https://docs.plus/d/..."
-}
+Use the Supabase RPC functions to manage push subscriptions:
+
+```javascript
+// Register device
+await supabase.rpc('register_push_subscription', {
+  p_device_id: 'unique-device-id',
+  p_device_name: 'Chrome on MacBook',
+  p_platform: 'web',
+  p_push_credentials: { endpoint: '...', keys: { p256dh: '...', auth: '...' } }
+})
+
+// Unregister
+await supabase.rpc('unregister_push_subscription', {
+  p_device_id: 'unique-device-id'
+})
 ```
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "sent": 2,
-  "total": 2,
-  "results": [
-    { "endpoint": "...", "success": true },
-    { "endpoint": "...", "success": true }
-  ]
-}
-```
-
-### GET /api/push/health
-
-Get push gateway health status.
-
-### GET /api/push/status
-
-Check if push service is operational.
 
 ---
 

@@ -13,8 +13,10 @@
 import { Queue, Worker } from 'bullmq'
 
 import { config } from '../../config/env'
-import type { PushJobData } from '../../types/push.types'
+import type { PushDLQData, PushJobData } from '../../types/push.types'
+import { toBullMQConnection } from '../../types/redis.types'
 import { pushLogger } from '../logger'
+import { prisma } from '../prisma'
 import { createRedisConnection } from '../redis'
 import { sendPushNotification } from './sender'
 
@@ -25,13 +27,14 @@ const bullmqConnectionOptions = {
   maxRetriesPerRequest: null,
   enableReadyCheck: true,
   enableOfflineQueue: true,
-  commandTimeout: parseInt(process.env.REDIS_COMMAND_TIMEOUT || '60000', 10),
-  connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || '30000', 10),
-  keepAlive: parseInt(process.env.REDIS_KEEPALIVE || '30000', 10)
+  commandTimeout: config.redis.commandTimeout,
+  connectTimeout: config.redis.connectTimeout,
+  keepAlive: config.redis.keepAlive
 }
 
 // Queue connection (for adding jobs - used by rest-api)
-const queueConnection = createRedisConnection(bullmqConnectionOptions)
+const redisClient = createRedisConnection(bullmqConnectionOptions)
+const queueConnection = toBullMQConnection(redisClient)
 
 if (!queueConnection) {
   pushLogger.warn('Redis not configured - push queue will not be available')
@@ -42,8 +45,7 @@ if (!queueConnection) {
  */
 const pushQueue = queueConnection
   ? new Queue<PushJobData>(PUSH_QUEUE_NAME, {
-      // Cast to any to avoid ioredis version mismatch in node_modules
-      connection: queueConnection as any,
+      connection: queueConnection,
       defaultJobOptions: {
         attempts: 3,
         backoff: {
@@ -54,17 +56,33 @@ const pushQueue = queueConnection
           count: 100,
           age: 24 * 3600 // 24 hours
         },
-        removeOnFail: {
-          count: 50,
-          age: 7 * 24 * 3600 // 7 days
+        removeOnFail: false // Keep failed jobs - moved to DLQ manually
+      }
+    })
+  : null
+
+/**
+ * Dead Letter Queue for permanently failed push notifications
+ */
+const pushDeadLetterQueue = queueConnection
+  ? new Queue<PushDLQData>('push-notifications-dlq', {
+      connection: queueConnection,
+      defaultJobOptions: {
+        removeOnComplete: {
+          count: 200,
+          age: 30 * 24 * 3600 // 30 days
         }
       }
     })
   : null
 
-// Queue error handler
+// Queue error handlers
 pushQueue?.on('error', (err: Error) => {
   pushLogger.error({ err }, 'Push queue error')
+})
+
+pushDeadLetterQueue?.on('error', (err: Error) => {
+  pushLogger.error({ err }, 'Push DLQ error')
 })
 
 let pushWorker: Worker<PushJobData> | null = null
@@ -76,7 +94,7 @@ export async function queuePush(data: PushJobData): Promise<string | null> {
   if (!pushQueue) return null
 
   try {
-    const job = await pushQueue.add('send-push' as any, data, {
+    const job = await pushQueue.add('send-push', data, {
       priority: 1 // High priority for push notifications
     })
     pushLogger.debug({ jobId: job.id }, 'Push notification queued')
@@ -97,7 +115,8 @@ export function createPushWorker(): Worker<PushJobData> | null {
   if (pushWorker) return pushWorker
 
   // Worker needs DEDICATED connection (blocking commands)
-  const workerConnection = createRedisConnection(bullmqConnectionOptions)
+  const workerRedis = createRedisConnection(bullmqConnectionOptions)
+  const workerConnection = toBullMQConnection(workerRedis)
   if (!workerConnection) {
     pushLogger.error('Cannot create push worker - Redis not configured')
     return null
@@ -106,21 +125,87 @@ export function createPushWorker(): Worker<PushJobData> | null {
   pushWorker = new Worker<PushJobData>(
     PUSH_QUEUE_NAME,
     async (job) => {
+      const idempotencyKey = `push:${job.id}`
+
       pushLogger.debug({ jobId: job.id, type: job.data.type }, 'Processing push job')
 
-      if (job.data.type === 'notification') {
-        const result = await sendPushNotification(job.data.payload)
-        if (!result.success && result.error) {
-          throw new Error(result.error)
-        }
-        return result
-      }
+      try {
+        // ============================================================
+        // IDEMPOTENCY CHECK: Prevent duplicate sends on retry
+        // ============================================================
+        const existingSend = await prisma.pushSentLog.findUnique({
+          where: { idempotencyKey }
+        })
 
-      throw new Error(`Unknown push job type: ${job.data.type}`)
+        if (existingSend) {
+          pushLogger.info(
+            { jobId: job.id, subscriptionCount: existingSend.subscriptionCount },
+            'Push already sent (idempotent skip)'
+          )
+          return {
+            success: true,
+            sent: existingSend.subscriptionCount,
+            deduplicated: true
+          }
+        }
+
+        // ============================================================
+        // SEND PUSH NOTIFICATION
+        // ============================================================
+        if (job.data.type === 'notification') {
+          const result = await sendPushNotification(job.data.payload)
+
+          // ============================================================
+          // RECORD SUCCESSFUL SEND (before returning)
+          // ============================================================
+          if (result.success) {
+            const userId = job.data.payload.user_id || 'unknown'
+
+            await prisma.pushSentLog
+              .create({
+                data: {
+                  idempotencyKey,
+                  userId: String(userId),
+                  subscriptionCount: result.sent || 0
+                }
+              })
+              .catch((recordErr: Error) => {
+                // Log but don't fail - push was sent successfully
+                pushLogger.warn(
+                  { err: recordErr, jobId: job.id },
+                  'Failed to record push send in idempotency log'
+                )
+              })
+          }
+
+          if (!result.success && result.error) {
+            throw new Error(result.error)
+          }
+          return result
+        }
+
+        throw new Error(`Unknown push job type: ${job.data.type}`)
+      } catch (err) {
+        const error = err instanceof Error ? err : new Error(String(err))
+
+        // Move to DLQ on final attempt
+        if (job.attemptsMade >= (job.opts.attempts || 3)) {
+          pushLogger.error({ jobId: job.id }, 'Push exhausted retries, moving to DLQ')
+
+          const dlqData: PushDLQData = {
+            ...job.data,
+            originalJobId: job.id ?? undefined,
+            failureReason: error.message,
+            failedAt: new Date().toISOString()
+          }
+          await pushDeadLetterQueue?.add('failed-push', dlqData)
+        }
+
+        throw err // Re-throw to trigger retry
+      }
     },
     {
-      // Cast to any to avoid ioredis version mismatch in node_modules
-      connection: workerConnection as any,
+      connection: workerConnection,
       concurrency: config.push.gateway.workerConcurrency,
       limiter: {
         max: config.push.gateway.rateLimitMax,
@@ -211,6 +296,9 @@ export async function closePushQueue(): Promise<void> {
   }
   if (pushQueue) {
     await pushQueue.close()
+  }
+  if (pushDeadLetterQueue) {
+    await pushDeadLetterQueue.close()
   }
   pushLogger.info('Push queue closed')
 }

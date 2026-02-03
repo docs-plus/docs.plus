@@ -15,10 +15,11 @@ import type {
   EmailJobData,
   EmailResult,
   GenericEmailRequest,
-  NotificationEmailRequest} from '../../types/email.types'
+  NotificationEmailRequest
+} from '../../types/email.types'
 import { emailLogger } from '../logger'
-import { getProviderStatus,isAnyProviderConfigured, verifyProvider } from './providers'
-import { closeEmailQueue,createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
+import { getProviderStatus, isAnyProviderConfigured, verifyProvider } from './providers'
+import { closeEmailQueue, createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
 import { sendEmailViaProvider } from './sender'
 
 /**

@@ -1,17 +1,13 @@
 /**
  * Email Gateway Module
  *
- * Usage:
- *   import { emailGateway } from './lib/email'
- *   await emailGateway.sendNotificationEmail(request)
+ * ARCHITECTURE (pgmq Consumer):
+ *   Supabase email_queue → pg_cron → pgmq → pgmqConsumer → BullMQ → SMTP
  *
- * Configuration:
- *   EMAIL_PROVIDER: 'smtp' | 'resend' | 'sendgrid' (optional)
- *   EMAIL_FROM: Sender email address
+ * The pgmqConsumer polls the Supabase queue every 2 seconds.
+ * BullMQ worker sends emails via configured provider.
  *
- *   SMTP: SMTP_HOST, SMTP_USER, SMTP_PASS
- *   Resend: RESEND_API_KEY
- *   SendGrid: SENDGRID_API_KEY
+ * @see docs/NOTIFICATION_ARCHITECTURE_COMPARISON.md
  */
 
 // Types
@@ -28,7 +24,8 @@ export type {
   EmailStatusCallback,
   GenericEmailRequest,
   NotificationEmailRequest,
-  NotificationType} from '../../types/email.types'
+  NotificationType
+} from '../../types/email.types'
 export type { EmailMessage, EmailProvider, SendResult } from './providers'
 
 // Templates
@@ -37,15 +34,23 @@ export {
   buildDigestEmailText,
   buildNotificationEmailHtml,
   buildNotificationEmailText,
-  getEmailSubject} from './templates'
+  getEmailSubject
+} from './templates'
 
 // Core
-export { getProviderStatus,isAnyProviderConfigured, sendEmail, verifyProvider } from './providers'
-export { createEmailWorker,getEmailQueueHealth, queueEmail } from './queue'
+export { getProviderStatus, isAnyProviderConfigured, sendEmail, verifyProvider } from './providers'
+export { createEmailWorker, getEmailQueueHealth, queueEmail } from './queue'
 export { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
 
 // Service (main entry point)
-export { emailGateway,EmailGatewayService } from './service'
+export { emailGateway, EmailGatewayService } from './service'
+
+// pgmq Consumer - polls Supabase queue
+export {
+  getEmailQueueConsumerHealth,
+  startEmailQueueConsumer,
+  stopEmailQueueConsumer
+} from './pgmqConsumer'
 
 // Legacy
 export { sendNewDocumentNotification } from './document-notification'

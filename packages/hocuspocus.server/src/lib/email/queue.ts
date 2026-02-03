@@ -5,10 +5,13 @@
  * Handles retries, rate limiting, and dead letter queue.
  */
 
-import { Job,Queue, Worker } from 'bullmq'
+import { Job, Queue, Worker } from 'bullmq'
 
-import type { EmailJobData, EmailResult } from '../../types/email.types'
+import { config } from '../../config/env'
+import type { EmailDLQData, EmailJobData, EmailResult } from '../../types/email.types'
+import { toBullMQConnection } from '../../types/redis.types'
 import { emailLogger } from '../logger'
+import { prisma } from '../prisma'
 import { createRedisConnection } from '../redis'
 import { sendEmailViaProvider, updateSupabaseEmailStatus } from './sender'
 
@@ -17,13 +20,14 @@ const bullmqConnectionOptions = {
   maxRetriesPerRequest: null,
   enableReadyCheck: true,
   enableOfflineQueue: true,
-  commandTimeout: parseInt(process.env.REDIS_COMMAND_TIMEOUT || '60000', 10),
-  connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || '30000', 10),
-  keepAlive: parseInt(process.env.REDIS_KEEPALIVE || '30000', 10)
+  commandTimeout: config.redis.commandTimeout,
+  connectTimeout: config.redis.connectTimeout,
+  keepAlive: config.redis.keepAlive
 }
 
 // Queue connection
-const queueConnection = createRedisConnection(bullmqConnectionOptions)
+const redisClient = createRedisConnection(bullmqConnectionOptions)
+const queueConnection = toBullMQConnection(redisClient)
 
 if (!queueConnection) {
   emailLogger.warn('Redis not configured - email queue will not be available')
@@ -55,7 +59,7 @@ export const EmailQueue = queueConnection
  * Dead Letter Queue for permanently failed emails
  */
 export const EmailDeadLetterQueue = queueConnection
-  ? new Queue<EmailJobData>('email-notifications-dlq', {
+  ? new Queue<EmailDLQData>('email-notifications-dlq', {
       connection: queueConnection,
       defaultJobOptions: {
         removeOnComplete: {
@@ -81,7 +85,8 @@ export function createEmailWorker() {
   }
 
   // Worker needs dedicated connection (uses blocking commands)
-  const workerConnection = createRedisConnection(bullmqConnectionOptions)
+  const workerRedis = createRedisConnection(bullmqConnectionOptions)
+  const workerConnection = toBullMQConnection(workerRedis)
 
   if (!workerConnection) {
     emailLogger.error('Failed to create worker Redis connection')
@@ -93,11 +98,61 @@ export function createEmailWorker() {
     async (job: Job<EmailJobData>): Promise<EmailResult> => {
       const { data } = job
       const startTime = Date.now()
+      const idempotencyKey = `email:${job.id}`
 
       emailLogger.info({ jobId: job.id, type: data.type }, 'Processing email job')
 
       try {
+        // ============================================================
+        // IDEMPOTENCY CHECK: Prevent duplicate sends on retry
+        // ============================================================
+        const existingSend = await prisma.emailSentLog.findUnique({
+          where: { idempotencyKey }
+        })
+
+        if (existingSend) {
+          emailLogger.info(
+            { jobId: job.id, originalMessageId: existingSend.messageId },
+            'Email already sent (idempotent skip)'
+          )
+          return {
+            success: true,
+            message_id: existingSend.messageId || undefined,
+            deduplicated: true
+          }
+        }
+
+        // ============================================================
+        // SEND EMAIL
+        // ============================================================
         const result = await sendEmailViaProvider(data)
+
+        // ============================================================
+        // RECORD SUCCESSFUL SEND (before returning)
+        // ============================================================
+        if (result.success) {
+          // Get recipient (all email types have 'to')
+          const recipient = Array.isArray(data.payload.to)
+            ? data.payload.to[0] || 'unknown'
+            : data.payload.to
+
+          await prisma.emailSentLog
+            .create({
+              data: {
+                idempotencyKey,
+                messageId: result.message_id || null,
+                recipient: String(recipient),
+                emailType: data.type
+              }
+            })
+            .catch((logErr: unknown) => {
+              // Log but don't fail - email was sent successfully
+              emailLogger.warn(
+                { err: logErr, jobId: job.id },
+                'Failed to record email send in idempotency log'
+              )
+            })
+        }
 
         // Update Supabase email_queue status
         if (data.type === 'notification' && 'queue_id' in data.payload) {
@@ -128,12 +183,13 @@ export function createEmailWorker() {
         if (job.attemptsMade >= (job.opts.attempts || 3)) {
           emailLogger.error({ jobId: job.id }, 'Email exhausted retries, moving to DLQ')
 
-          await EmailDeadLetterQueue?.add('failed-email', {
+          const dlqData: EmailDLQData = {
             ...data,
-            originalJobId: job.id,
+            originalJobId: job.id ?? undefined,
             failureReason: error.message,
             failedAt: new Date().toISOString()
-          } as any)
+          }
+          await EmailDeadLetterQueue?.add('failed-email', dlqData)
 
           // Update Supabase with permanent failure
           if (data.type === 'notification' && 'queue_id' in data.payload) {
@@ -150,10 +206,10 @@ export function createEmailWorker() {
     },
     {
       connection: workerConnection,
-      concurrency: parseInt(process.env.EMAIL_WORKER_CONCURRENCY || '3', 10),
+      concurrency: config.email.gateway.workerConcurrency,
       limiter: {
-        max: parseInt(process.env.EMAIL_RATE_LIMIT_MAX || '50', 10),
-        duration: parseInt(process.env.EMAIL_RATE_LIMIT_DURATION || '60000', 10) // 50 per minute
+        max: config.email.gateway.rateLimitMax,
+        duration: config.email.gateway.rateLimitDuration
       },
       // Lock settings for job ownership (prevents duplicate processing across workers)
       lockDuration: 60000, // 1 min - email sending typically fast

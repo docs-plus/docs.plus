@@ -277,13 +277,7 @@ export interface PushGatewayHealth {
   error?: string
 }
 
-export interface PgNetResponse {
-  id: number
-  status_code: number | null
-  content: string | null
-  created: string
-  error_msg?: string | null
-}
+// PgNetResponse removed - pgmq architecture doesn't use pg_net
 
 export interface PushSubscriptionDetail {
   id: string
@@ -301,12 +295,10 @@ export interface PushSubscriptionDetail {
 export interface PushPipelineStats {
   // Database trigger stats
   triggerConfigured: boolean
-  gatewayUrl: string | null
-  serviceKeyConfigured: boolean
-  // pg_net stats (last 24h)
-  pgNetTotal: number
-  pgNetSuccess: number
-  pgNetFailed: number
+  // pgmq queue stats
+  queueDepth: number
+  messagesProcessed: number
+  messagesFailed: number
   // Push subscription stats
   totalSubscriptions: number
   activeSubscriptions: number
@@ -322,7 +314,7 @@ export interface RecentPushAttempt {
   notification_type: string
   receiver_username: string | null
   created_at: string
-  pg_net_status: number | null
+  queue_status: string | null
   push_sent: boolean
   error?: string | null
 }
@@ -330,7 +322,6 @@ export interface RecentPushAttempt {
 export interface PushDebugStats {
   gateway: PushGatewayHealth
   pipeline: PushPipelineStats
-  recentPgNetResponses: PgNetResponse[]
   failedSubscriptions: PushSubscriptionDetail[]
   recentAttempts: RecentPushAttempt[]
 }

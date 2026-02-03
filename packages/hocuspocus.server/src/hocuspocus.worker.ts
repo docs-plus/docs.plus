@@ -1,11 +1,47 @@
 import { Hono } from 'hono'
 
-import { emailGateway } from './lib/email'
+import {
+  emailGateway,
+  getEmailQueueConsumerHealth,
+  startEmailQueueConsumer,
+  stopEmailQueueConsumer
+} from './lib/email'
 import { workerLogger } from './lib/logger'
-import { shutdownDatabase } from './lib/prisma'
-import { pushGateway } from './lib/push'
+import { prisma, shutdownDatabase } from './lib/prisma'
+import {
+  getPushQueueConsumerHealth,
+  pushGateway,
+  startPushQueueConsumer,
+  stopPushQueueConsumer
+} from './lib/push'
 import { createDocumentWorker } from './lib/queue'
 import { disconnectRedis, getRedisClient, waitForRedisReady } from './lib/redis'
+
+// =============================================================================
+// Cleanup expired idempotency logs (runs every hour)
+// =============================================================================
+const CLEANUP_INTERVAL_MS = parseInt(process.env.IDEMPOTENCY_CLEANUP_INTERVAL_MS || '3600000', 10) // 1 hour
+
+async function cleanupExpiredLogs() {
+  try {
+    const [emailResult, pushResult] = await Promise.all([
+      prisma.emailSentLog.deleteMany({ where: { expiresAt: { lt: new Date() } } }),
+      prisma.pushSentLog.deleteMany({ where: { expiresAt: { lt: new Date() } } })
+    ])
+
+    if (emailResult.count > 0 || pushResult.count > 0) {
+      workerLogger.info(
+        { emailDeleted: emailResult.count, pushDeleted: pushResult.count },
+        '🧹 Cleaned up expired idempotency logs'
+      )
+    }
+  } catch (err) {
+    workerLogger.warn({ err }, 'Failed to cleanup expired idempotency logs')
+  }
+}
+
+// Schedule cleanup interval
+let cleanupInterval: ReturnType<typeof setInterval> | null = null
 
 const WORKER_HEALTH_PORT = parseInt(process.env.WORKER_HEALTH_PORT || '4002', 10)
 
@@ -47,6 +83,29 @@ workerLogger.info('📧 Email gateway worker initialized')
 await pushGateway.initialize(true)
 workerLogger.info('🔔 Push gateway worker initialized')
 
+// Start pgmq consumers for notifications (polls Supabase queues)
+// This is the new architecture - replaces pg_net HTTP calls for reliability
+const pushConsumerStarted = startPushQueueConsumer()
+const emailConsumerStarted = startEmailQueueConsumer()
+
+if (pushConsumerStarted) {
+  workerLogger.info('📬 Push notification pgmq consumer started (polling every 2s)')
+} else {
+  workerLogger.warn('⚠️ Push notification pgmq consumer not started - check Supabase config')
+}
+
+if (emailConsumerStarted) {
+  workerLogger.info('📧 Email notification pgmq consumer started (polling every 2s)')
+} else {
+  workerLogger.warn('⚠️ Email notification pgmq consumer not started - check Supabase config')
+}
+
+// Start idempotency log cleanup interval
+cleanupInterval = setInterval(cleanupExpiredLogs, CLEANUP_INTERVAL_MS)
+// Run once on startup to clean any stale logs
+cleanupExpiredLogs()
+workerLogger.info({ intervalMs: CLEANUP_INTERVAL_MS }, '🧹 Idempotency log cleanup scheduled')
+
 // Create health check endpoint for worker
 const healthApp = new Hono()
 
@@ -55,8 +114,14 @@ healthApp.get('/health', async (c) => {
   const docWorkerPaused = documentWorker.isPaused()
   const emailHealth = await emailGateway.getHealth()
   const pushHealth = await pushGateway.getHealth()
+  const pushConsumerHealth = getPushQueueConsumerHealth()
+  const emailConsumerHealth = getEmailQueueConsumerHealth()
 
-  const allHealthy = docWorkerRunning && !docWorkerPaused
+  const allHealthy =
+    docWorkerRunning &&
+    !docWorkerPaused &&
+    pushConsumerHealth.running &&
+    emailConsumerHealth.running
 
   return c.json({
     status: allHealthy ? 'healthy' : 'unhealthy',
@@ -75,12 +140,26 @@ healthApp.get('/health', async (c) => {
       push: {
         pending: pushHealth.pending_jobs,
         failed: pushHealth.failed_jobs,
-        configured: pushHealth.configured
+        vapid_configured: pushHealth.vapid_configured
+      }
+    },
+    pgmq_consumers: {
+      push: {
+        running: pushConsumerHealth.running,
+        messagesProcessed: pushConsumerHealth.metrics.messagesProcessed,
+        messagesFailed: pushConsumerHealth.metrics.messagesFailed,
+        lastPollAt: pushConsumerHealth.metrics.lastPollAt
+      },
+      email: {
+        running: emailConsumerHealth.running,
+        messagesProcessed: emailConsumerHealth.metrics.messagesProcessed,
+        messagesFailed: emailConsumerHealth.metrics.messagesFailed,
+        lastPollAt: emailConsumerHealth.metrics.lastPollAt
       }
     },
     services: {
       redis: redis ? 'connected' : 'disconnected',
-      database: 'connected' // Prisma validates on startup
+      database: 'connected'
     }
   })
 })
@@ -138,6 +217,12 @@ const shutdown = async () => {
     // Stop health server first to fail health checks
     healthServer.stop()
 
+    // Stop cleanup interval
+    if (cleanupInterval) {
+      clearInterval(cleanupInterval)
+      cleanupInterval = null
+    }
+
     // Stop accepting new jobs on all workers
     await documentWorker.pause()
     workerLogger.info('Document worker paused')
@@ -147,7 +232,9 @@ const shutdown = async () => {
     const shutdownPromise = Promise.all([
       documentWorker.close(),
       emailGateway.shutdown(),
-      pushGateway.shutdown()
+      pushGateway.shutdown(),
+      stopPushQueueConsumer(),
+      stopEmailQueueConsumer()
     ])
 
     const timeoutPromise = new Promise((_, reject) =>

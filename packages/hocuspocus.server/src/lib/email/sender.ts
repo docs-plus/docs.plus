@@ -14,7 +14,8 @@ import type {
   EmailResult,
   EmailStatusCallback,
   GenericEmailRequest,
-  NotificationEmailRequest} from '../../types/email.types'
+  NotificationEmailRequest
+} from '../../types/email.types'
 import { emailLogger } from '../logger'
 import { sendEmail } from './providers'
 import {

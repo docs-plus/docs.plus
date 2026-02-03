@@ -5,12 +5,11 @@ import documentsRouter from './api/documents'
 import emailRouter from './api/email'
 import healthRouter from './api/health'
 import hypermultimediaRouter from './api/hypermultimedia'
-import pushRouter from './api/push'
 import { emailGateway } from './lib/email'
 import { restApiLogger } from './lib/logger'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { pushGateway } from './lib/push'
-import { disconnectRedis,getRedisClient } from './lib/redis'
+import { disconnectRedis, getRedisClient } from './lib/redis'
 import { setupMiddleware } from './middleware'
 import { checkEnvBolean } from './utils'
 
@@ -45,7 +44,8 @@ app.route('/health', healthRouter)
 app.route('/api/documents', documentsRouter)
 app.route('/api/plugins/hypermultimedia', hypermultimediaRouter)
 app.route('/api/email', emailRouter)
-app.route('/api/push', pushRouter)
+// NOTE: /api/push endpoint removed - push notifications now use pgmq Consumer architecture
+// See: docs/PUSH_NOTIFICATION_PGMQ.md
 app.route('/api/admin', adminRouter)
 
 // Initialize gateways (queue-only mode - workers run in hocuspocus-worker)
