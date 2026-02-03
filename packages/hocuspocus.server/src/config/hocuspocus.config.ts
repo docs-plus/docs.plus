@@ -46,7 +46,6 @@ const configureExtensions = () => {
         onDisconnect: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_DISCONNECT),
         onUpgrade: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_UPGRADE),
         onRequest: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_REQUEST),
-        onListen: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_LISTEN),
         onDestroy: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_DESTROY),
         onConfigure: checkEnvBolean(process.env.HOCUSPOCUS_LOGGER_ON_CONFIGURE)
       })
@@ -76,9 +75,10 @@ const configureExtensions = () => {
         try {
           const doc = await prisma.documents.findFirst({
             where: { documentId: documentName },
-            orderBy: { id: 'desc' }
+            orderBy: { version: 'desc' },
+            select: { data: true }
           })
-          return doc ? doc.data : generateDefaultState()
+          return doc?.data ?? generateDefaultState()
         } catch (err) {
           dbLogger.error({ err }, 'Error fetching document data')
           await prisma.$disconnect()
@@ -112,12 +112,21 @@ const configureExtensions = () => {
 
         try {
           // Primary: Add job to queue for async processing
-          await StoreDocumentQueue.add('store-document', {
-            documentName,
-            state: stateBase64,
-            context,
-            commitMessage
-          })
+          // Use deterministic jobId to deduplicate saves within a 10s window
+          // This prevents duplicate saves when multiple instances try to save the same doc
+          const timeWindow = Math.floor(Date.now() / 10000) // 10 second windows
+          const jobId = `doc:${documentName}:${timeWindow}`
+
+          await StoreDocumentQueue.add(
+            'store-document',
+            {
+              documentName,
+              state: stateBase64,
+              context,
+              commitMessage
+            },
+            { jobId }
+          )
         } catch (err) {
           // Fallback: Direct DB save when queue fails (Redis OOM, connection error)
           dbLogger.warn({ err, documentName }, 'Queue unavailable, falling back to direct save')
@@ -188,7 +197,7 @@ export default () => {
     },
 
     onRequest(data: any) {
-      return new Promise((resolve, reject) => {
+      return new Promise<void>((resolve, reject) => {
         const { request, response } = data
 
         if (request.url === '/health') {
