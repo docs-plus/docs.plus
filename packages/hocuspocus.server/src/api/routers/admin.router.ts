@@ -1,5 +1,14 @@
+import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 
+import {
+  daysQuerySchema,
+  deleteDocumentSchema,
+  listDocumentsQuerySchema,
+  paginationQuerySchema,
+  trendQuerySchema,
+  updateDocumentSchema
+} from '../../schemas/admin.schema'
 import * as adminController from '../controllers/admin.controller'
 import { adminAuthMiddleware } from '../middleware/adminAuth'
 
@@ -18,16 +27,28 @@ admin.get('/users/document-counts', adminController.getUserDocumentCounts)
 admin.get('/documents/stats', adminController.getDocumentStats)
 
 // List documents with pagination
-admin.get('/documents', adminController.listDocuments)
+admin.get(
+  '/documents',
+  zValidator('query', listDocumentsQuerySchema),
+  adminController.listDocuments
+)
 
 // Update document flags
-admin.patch('/documents/:id', adminController.updateDocument)
+admin.patch(
+  '/documents/:id',
+  zValidator('json', updateDocumentSchema),
+  adminController.updateDocument
+)
 
 // Get deletion impact (what will be deleted)
 admin.get('/documents/:id/deletion-impact', adminController.getDocumentDeletionImpact)
 
 // Delete document (requires confirmSlug in body)
-admin.delete('/documents/:id', adminController.deleteDocument)
+admin.delete(
+  '/documents/:id',
+  zValidator('json', deleteDocumentSchema),
+  adminController.deleteDocument
+)
 
 // =============================================================================
 // Document View Analytics
@@ -37,10 +58,18 @@ admin.delete('/documents/:id', adminController.deleteDocument)
 admin.get('/stats/views', adminController.getViewsSummary)
 
 // Get top viewed documents
-admin.get('/stats/views/top', adminController.getTopViewedDocuments)
+admin.get(
+  '/stats/views/top',
+  zValidator('query', paginationQuerySchema),
+  adminController.getTopViewedDocuments
+)
 
 // Get view trends (for charts)
-admin.get('/stats/views/trend', adminController.getViewsTrend)
+admin.get(
+  '/stats/views/trend',
+  zValidator('query', trendQuerySchema),
+  adminController.getViewsTrend
+)
 
 // Get single document view stats
 admin.get('/documents/:slug/views', adminController.getDocumentViewStats)
@@ -56,16 +85,28 @@ admin.get('/stats/retention', adminController.getRetentionMetrics)
 admin.get('/stats/user-lifecycle', adminController.getUserLifecycleSegments)
 
 // Get DAU trend
-admin.get('/stats/dau-trend', adminController.getDauTrend)
+admin.get('/stats/dau-trend', zValidator('query', daysQuerySchema), adminController.getDauTrend)
 
 // Get activity by hour (for heatmap)
-admin.get('/stats/activity-heatmap', adminController.getActivityByHour)
+admin.get(
+  '/stats/activity-heatmap',
+  zValidator('query', daysQuerySchema),
+  adminController.getActivityByHour
+)
 
 // Get top active documents (by messages)
-admin.get('/stats/top-active-documents', adminController.getTopActiveDocuments)
+admin.get(
+  '/stats/top-active-documents',
+  zValidator('query', paginationQuerySchema),
+  adminController.getTopActiveDocuments
+)
 
 // Get communication stats
-admin.get('/stats/communication', adminController.getCommunicationStats)
+admin.get(
+  '/stats/communication',
+  zValidator('query', daysQuerySchema),
+  adminController.getCommunicationStats
+)
 
 // Get notification reach
 admin.get('/stats/notification-reach', adminController.getNotificationReach)

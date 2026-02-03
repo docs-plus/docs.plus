@@ -73,6 +73,7 @@ export interface EmailResult {
   message_id?: string
   error?: string
   queue_id?: string
+  deduplicated?: boolean // True if this was an idempotent skip
 }
 
 /**
@@ -83,6 +84,15 @@ export interface EmailJobData {
   payload: NotificationEmailRequest | GenericEmailRequest | DigestEmailRequest
   attempts?: number
   created_at: string
+}
+
+/**
+ * Email Dead Letter Queue job data
+ */
+export interface EmailDLQData extends EmailJobData {
+  originalJobId?: string
+  failureReason: string
+  failedAt: string
 }
 
 /**

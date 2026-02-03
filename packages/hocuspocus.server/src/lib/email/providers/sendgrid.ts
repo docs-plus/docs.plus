@@ -53,7 +53,9 @@ export const sendgridProvider: EmailProviderInterface = {
         return { success: true, messageId }
       }
 
-      const errorData = await response.json().catch(() => ({}))
+      const errorData = (await response.json().catch(() => ({}))) as {
+        errors?: { message?: string }[]
+      }
       const error = errorData.errors?.[0]?.message || `HTTP ${response.status}`
       emailLogger.error({ status: response.status, error, to: message.to }, 'SendGrid API error')
       return { success: false, error }

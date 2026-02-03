@@ -1,7 +1,9 @@
 import { Prisma } from '@prisma/client'
-import { Job,Queue, Worker } from 'bullmq'
+import { Job, Queue, Worker } from 'bullmq'
 
-import type { _DeadLetterJobData,StoreDocumentData } from '../types'
+import { config } from '../config/env'
+import type { DeadLetterJobData, StoreDocumentData } from '../types'
+import { toBullMQConnection } from '../types/redis.types'
 import { sendNewDocumentNotification } from './email/document-notification'
 import { queueLogger } from './logger'
 import { prisma } from './prisma'
@@ -72,13 +74,14 @@ const bullmqConnectionOptions = {
   maxRetriesPerRequest: null, // BullMQ requirement - allows unlimited retries
   enableReadyCheck: true,
   enableOfflineQueue: true,
-  commandTimeout: parseInt(process.env.REDIS_COMMAND_TIMEOUT || '60000', 10),
-  connectTimeout: parseInt(process.env.REDIS_CONNECT_TIMEOUT || '30000', 10),
-  keepAlive: parseInt(process.env.REDIS_KEEPALIVE || '30000', 10)
+  commandTimeout: config.redis.commandTimeout,
+  connectTimeout: config.redis.connectTimeout,
+  keepAlive: config.redis.keepAlive
 }
 
 // Queue connection (non-blocking operations)
-const queueConnection = createRedisConnection(bullmqConnectionOptions)
+const redisClient = createRedisConnection(bullmqConnectionOptions)
+const queueConnection = toBullMQConnection(redisClient)
 
 if (!queueConnection) {
   queueLogger.error('Failed to create Redis connection for BullMQ Queue')
@@ -89,11 +92,12 @@ if (!queueConnection) {
 // BullMQ uses BRPOPLPUSH which blocks the connection
 const createWorkerConnection = () => {
   const conn = createRedisConnection(bullmqConnectionOptions)
-  if (!conn) {
+  const bullmqConn = toBullMQConnection(conn)
+  if (!bullmqConn) {
     queueLogger.error('Failed to create Redis connection for BullMQ Worker')
     throw new Error('Redis configuration required for worker operations')
   }
-  return conn
+  return bullmqConn
 }
 
 // Main queue for storing documents
@@ -114,7 +118,7 @@ export const StoreDocumentQueue = new Queue<StoreDocumentData>('store-documents'
 })
 
 // Dead Letter Queue for permanently failed jobs
-export const DeadLetterQueue = new Queue<StoreDocumentData>('store-documents-dlq', {
+export const DeadLetterQueue = new Queue<DeadLetterJobData>('store-documents-dlq', {
   connection: queueConnection,
   defaultJobOptions: {
     removeOnComplete: {
@@ -233,12 +237,13 @@ export const createDocumentWorker = () => {
         // If this is the final attempt, move to dead letter queue
         if (job.attemptsMade >= (job.opts.attempts || 5)) {
           queueLogger.error({ jobId: job.id }, 'Job exhausted all retries. Moving to DLQ')
-          await DeadLetterQueue.add('failed-document', {
+          const dlqData: DeadLetterJobData = {
             ...data,
-            originalJobId: job.id,
+            originalJobId: job.id ?? undefined,
             failureReason: err instanceof Error ? err.message : 'Unknown error',
             failedAt: new Date().toISOString()
-          } as any)
+          }
+          await DeadLetterQueue.add('failed-document', dlqData)
         }
 
         throw err // Re-throw to trigger retry
@@ -246,10 +251,10 @@ export const createDocumentWorker = () => {
     },
     {
       connection: workerConnection,
-      concurrency: parseInt(process.env.BULLMQ_CONCURRENCY || '5', 10),
+      concurrency: config.bullmq.concurrency,
       limiter: {
-        max: parseInt(process.env.BULLMQ_RATE_LIMIT_MAX || '300', 10),
-        duration: parseInt(process.env.BULLMQ_RATE_LIMIT_DURATION || '1000', 10)
+        max: config.bullmq.rateLimitMax,
+        duration: config.bullmq.rateLimitDuration
       },
       // Lock settings for job ownership (prevents duplicate processing)
       // lockDuration: How long a job is "owned" by this worker before others can take it

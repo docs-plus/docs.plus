@@ -3,9 +3,9 @@ import { createClient } from '@supabase/supabase-js'
 import ShortUniqueId from 'short-unique-id'
 import slugify from 'slugify'
 
-import { _NotFoundError, handlePrismaError, ValidationError } from '../../lib/errors'
+import { handlePrismaError, ValidationError } from '../../lib/errors'
 import { documentsServiceLogger } from '../../lib/logger'
-import type { CreateDocumentParams, SearchDocumentsParams,UpdateDocumentParams } from '../../types'
+import type { CreateDocumentParams, SearchDocumentsParams, UpdateDocumentParams } from '../../types'
 
 export const getOwnerProfile = async (userId: string) => {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) return null

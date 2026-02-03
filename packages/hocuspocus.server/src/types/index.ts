@@ -1,4 +1,3 @@
-export * from './context.types'
 export * from './document.types'
 export * from './email.types'
 export * from './health.types'

@@ -1,13 +1,13 @@
-import { PrismaClient } from '@prisma/client'
 import { createClient } from '@supabase/supabase-js'
-import type { Context } from 'hono'
 
-const prisma = new PrismaClient()
+import { config } from '../../config/env'
+import { parseSupabaseArray, supabaseUsersArraySchema } from '../../schemas/supabase.schema'
+import type { AppContext } from '../../types/hono.types'
 
 // Supabase client for view stats (uses service role for RPC calls)
 const getSupabaseClient = () => {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const url = config.supabase.url
+  const key = config.supabase.serviceRoleKey
   if (!url || !key) return null
   return createClient(url, key, { auth: { persistSession: false } })
 }
@@ -16,7 +16,8 @@ const getSupabaseClient = () => {
  * Get overall dashboard statistics
  * Aggregates data from Prisma (documents)
  */
-export async function getDashboardStats(c: Context) {
+export async function getDashboardStats(c: AppContext) {
+  const prisma = c.get('prisma')
   try {
     const [totalDocuments, privateDocuments, readOnlyDocuments, totalVersions, recentDocuments] =
       await Promise.all([
@@ -53,7 +54,8 @@ export async function getDashboardStats(c: Context) {
 /**
  * Get document-specific statistics
  */
-export async function getDocumentStats(c: Context) {
+export async function getDocumentStats(c: AppContext) {
+  const prisma = c.get('prisma')
   try {
     const [total, privateCount, readOnlyCount, totalVersions] = await Promise.all([
       prisma.documentMetadata.count(),
@@ -89,7 +91,8 @@ export async function getDocumentStats(c: Context) {
 /**
  * List documents with pagination, sorting, including owner and member count
  */
-export async function listDocuments(c: Context) {
+export async function listDocuments(c: AppContext) {
+  const prisma = c.get('prisma')
   try {
     const page = parseInt(c.req.query('page') || '1')
     const limit = Math.min(parseInt(c.req.query('limit') || '20'), 100)
@@ -186,20 +189,11 @@ export async function listDocuments(c: Context) {
           console.log('[Admin] Owner IDs from Prisma:', ownerIds)
 
           const usersRes = await fetch(queryUrl, { headers })
-          const users = await usersRes.json()
-          console.log('[Admin] Supabase response:', JSON.stringify(users, null, 2))
-          if (Array.isArray(users)) {
-            const userMap = new Map(
-              users.map(
-                (u: {
-                  id: string
-                  username: string | null
-                  email: string | null
-                  avatar_url: string | null
-                  avatar_updated_at: string | null
-                }) => [u.id, u]
-              )
-            )
+          const usersRaw = await usersRes.json()
+          const users = parseSupabaseArray(supabaseUsersArraySchema, usersRaw)
+
+          if (users) {
+            const userMap = new Map(users.map((u) => [u.id, u]))
             console.log('[Admin] User map keys:', [...userMap.keys()])
 
             docsWithDefaults.forEach((doc) => {
@@ -308,7 +302,8 @@ export async function listDocuments(c: Context) {
 /**
  * Update document flags (isPrivate, readOnly)
  */
-export async function updateDocument(c: Context) {
+export async function updateDocument(c: AppContext) {
+  const prisma = c.get('prisma')
   try {
     const id = parseInt(c.req.param('id'), 10)
     if (isNaN(id)) {
@@ -365,7 +360,8 @@ export async function updateDocument(c: Context) {
  * Get deletion impact - check what will be deleted with owner and channel info
  * Leverages database CASCADE deletes, so we only need to check if workspace exists
  */
-export async function getDocumentDeletionImpact(c: Context) {
+export async function getDocumentDeletionImpact(c: AppContext) {
+  const prisma = c.get('prisma')
   try {
     const id = parseInt(c.req.param('id'), 10)
     if (isNaN(id)) {
@@ -460,7 +456,8 @@ export async function getDocumentDeletionImpact(c: Context) {
  * Delete document and all related data across both databases
  * Uses database CASCADE to automatically clean up related Supabase data
  */
-export async function deleteDocument(c: Context) {
+export async function deleteDocument(c: AppContext) {
+  const prisma = c.get('prisma')
   try {
     const id = parseInt(c.req.param('id'), 10)
     if (isNaN(id)) {
@@ -535,7 +532,8 @@ export async function deleteDocument(c: Context) {
 /**
  * Get document counts per user (for Users page)
  */
-export async function getUserDocumentCounts(c: Context) {
+export async function getUserDocumentCounts(c: AppContext) {
+  const prisma = c.get('prisma')
   try {
     // Group documents by ownerId and count
     const counts = await prisma.documentMetadata.groupBy({
@@ -567,7 +565,7 @@ export async function getUserDocumentCounts(c: Context) {
  * Get document views summary (overall stats)
  * Calls get_document_views_summary() RPC
  */
-export async function getViewsSummary(c: Context) {
+export async function getViewsSummary(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
     if (!supabase) {
@@ -592,7 +590,8 @@ export async function getViewsSummary(c: Context) {
  * Get top viewed documents
  * Calls get_top_viewed_documents(limit, days) RPC
  */
-export async function getTopViewedDocuments(c: Context) {
+export async function getTopViewedDocuments(c: AppContext) {
+  const prisma = c.get('prisma')
   try {
     const supabase = getSupabaseClient()
     if (!supabase) {
@@ -638,7 +637,7 @@ export async function getTopViewedDocuments(c: Context) {
  * Get document views trend (daily data for charts)
  * Calls get_document_views_trend(slug, days) RPC
  */
-export async function getViewsTrend(c: Context) {
+export async function getViewsTrend(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
     if (!supabase) {
@@ -669,7 +668,7 @@ export async function getViewsTrend(c: Context) {
  * Get single document view stats
  * Calls get_document_view_stats(slug) RPC
  */
-export async function getDocumentViewStats(c: Context) {
+export async function getDocumentViewStats(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
     if (!supabase) {
@@ -704,7 +703,7 @@ export async function getDocumentViewStats(c: Context) {
 /**
  * Get retention metrics (DAU/WAU/MAU)
  */
-export async function getRetentionMetrics(c: Context) {
+export async function getRetentionMetrics(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
     if (!supabase) {
@@ -728,7 +727,7 @@ export async function getRetentionMetrics(c: Context) {
 /**
  * Get user lifecycle segments
  */
-export async function getUserLifecycleSegments(c: Context) {
+export async function getUserLifecycleSegments(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
     if (!supabase) {
@@ -752,7 +751,7 @@ export async function getUserLifecycleSegments(c: Context) {
 /**
  * Get DAU trend over time
  */
-export async function getDauTrend(c: Context) {
+export async function getDauTrend(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
     if (!supabase) {
@@ -780,7 +779,7 @@ export async function getDauTrend(c: Context) {
 /**
  * Get activity by hour (for heatmap)
  */
-export async function getActivityByHour(c: Context) {
+export async function getActivityByHour(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
     if (!supabase) {
@@ -808,7 +807,8 @@ export async function getActivityByHour(c: Context) {
 /**
  * Get top active documents
  */
-export async function getTopActiveDocuments(c: Context) {
+export async function getTopActiveDocuments(c: AppContext) {
+  const prisma = c.get('prisma')
   try {
     const supabase = getSupabaseClient()
     if (!supabase) {
@@ -853,7 +853,7 @@ export async function getTopActiveDocuments(c: Context) {
 /**
  * Get communication stats
  */
-export async function getCommunicationStats(c: Context) {
+export async function getCommunicationStats(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
     if (!supabase) {
@@ -881,7 +881,7 @@ export async function getCommunicationStats(c: Context) {
 /**
  * Get notification reach
  */
-export async function getNotificationReach(c: Context) {
+export async function getNotificationReach(c: AppContext) {
   try {
     const supabase = getSupabaseClient()
     if (!supabase) {

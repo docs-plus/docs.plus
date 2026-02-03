@@ -1,115 +1,155 @@
-process.env.NODE_ENV = process.env.NODE_ENV || 'development'
+/**
+ * Application Configuration
+ *
+ * Uses validated environment variables from env.schema.ts.
+ * All env vars are type-safe and validated at startup.
+ */
+
+import { env } from './env.schema'
+
+export { env }
 
 export const config = {
   // Server
   app: {
-    port: parseInt(process.env.APP_PORT || '3001', 10),
-    name: process.env.APP_NAME || 'hocuspocus',
-    env: process.env.NODE_ENV || 'development'
+    port: env.APP_PORT,
+    name: env.APP_NAME,
+    env: env.NODE_ENV
   },
 
   // Hocuspocus
   hocuspocus: {
-    port: parseInt(process.env.HOCUSPOCUS_PORT || '3002', 10),
+    port: env.HOCUSPOCUS_PORT,
     logger: {
-      enabled: process.env.HOCUSPOCUS_LOGGER === 'true',
-      onConnect: process.env.HOCUSPOCUS_LOGGER_ON_CONNECT === 'true',
-      onDisconnect: process.env.HOCUSPOCUS_LOGGER_ON_DISCONNECT === 'true',
-      onLoadDocument: process.env.HOCUSPOCUS_LOGGER_ON_LOAD_DOCUMENT === 'true',
-      onChange: process.env.HOCUSPOCUS_LOGGER_ON_CHANGE === 'true',
-      onUpgrade: process.env.HOCUSPOCUS_LOGGER_ON_UPGRADE === 'true',
-      onRequest: process.env.HOCUSPOCUS_LOGGER_ON_REQUEST === 'true',
-      onListen: process.env.HOCUSPOCUS_LOGGER_ON_LISTEN === 'true',
-      onDestroy: process.env.HOCUSPOCUS_LOGGER_ON_DESTROY === 'true',
-      onConfigure: process.env.HOCUSPOCUS_LOGGER_ON_CONFIGURE === 'true'
+      enabled: env.HOCUSPOCUS_LOGGER,
+      onConnect: env.HOCUSPOCUS_LOGGER_ON_CONNECT,
+      onDisconnect: env.HOCUSPOCUS_LOGGER_ON_DISCONNECT,
+      onLoadDocument: env.HOCUSPOCUS_LOGGER_ON_LOAD_DOCUMENT,
+      onChange: env.HOCUSPOCUS_LOGGER_ON_CHANGE,
+      onUpgrade: env.HOCUSPOCUS_LOGGER_ON_UPGRADE,
+      onRequest: env.HOCUSPOCUS_LOGGER_ON_REQUEST,
+      onListen: env.HOCUSPOCUS_LOGGER_ON_LISTEN,
+      onDestroy: env.HOCUSPOCUS_LOGGER_ON_DESTROY,
+      onConfigure: env.HOCUSPOCUS_LOGGER_ON_CONFIGURE
     },
     throttle: {
-      enabled: process.env.HOCUSPOCUS_THROTTLE === 'true',
-      attempts: parseInt(process.env.HOCUSPOCUS_THROTTLE_ATTEMPTS || '10', 10),
-      banTime: parseInt(process.env.HOCUSPOCUS_THROTTLE_BANTIME || '60000', 10)
+      enabled: env.HOCUSPOCUS_THROTTLE,
+      attempts: env.HOCUSPOCUS_THROTTLE_ATTEMPTS,
+      banTime: env.HOCUSPOCUS_THROTTLE_BANTIME
     }
   },
 
   // Database
   database: {
-    url: process.env.DATABASE_URL || ''
+    url: env.DATABASE_URL
   },
 
   // Redis
   redis: {
-    enabled: process.env.REDIS === 'true',
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379', 10)
+    enabled: env.REDIS,
+    host: env.REDIS_HOST,
+    port: env.REDIS_PORT,
+    tls: env.REDIS_TLS,
+    connectTimeout: env.REDIS_CONNECT_TIMEOUT,
+    commandTimeout: env.REDIS_COMMAND_TIMEOUT,
+    keepAlive: env.REDIS_KEEPALIVE,
+    maxRetries: env.REDIS_MAX_RETRIES
   },
 
   // Storage
   storage: {
     local: {
-      enabled: process.env.PERSIST_TO_LOCAL_STORAGE === 'true',
-      path: process.env.LOCAL_STORAGE_PATH || './temp'
+      enabled: env.PERSIST_TO_LOCAL_STORAGE,
+      path: env.LOCAL_STORAGE_PATH
     },
     s3: {
-      endpoint: process.env.DO_STORAGE_ENDPOINT || '',
-      region: process.env.DO_STORAGE_REGION || 'us-east-1',
-      bucket: process.env.DO_STORAGE_BUCKET || '',
-      accessKeyId: process.env.DO_STORAGE_ACCESS_KEY_ID || '',
-      secretAccessKey: process.env.DO_STORAGE_SECRET_ACCESS_KEY || '',
-      maxFileSize: parseInt(process.env.DO_STORAGE_MAX_FILE_SIZE || '4194304', 10)
+      endpoint: env.DO_STORAGE_ENDPOINT,
+      region: env.DO_STORAGE_REGION,
+      bucket: env.DO_STORAGE_BUCKET,
+      accessKeyId: env.DO_STORAGE_ACCESS_KEY_ID,
+      secretAccessKey: env.DO_STORAGE_SECRET_ACCESS_KEY,
+      maxFileSize: env.DO_STORAGE_MAX_FILE_SIZE
     }
   },
 
   // Supabase
   supabase: {
-    url: process.env.SUPABASE_URL || '',
-    anonKey: process.env.SUPABASE_ANON_KEY || ''
+    url: env.SUPABASE_URL,
+    anonKey: env.SUPABASE_ANON_KEY,
+    serviceRoleKey: env.SUPABASE_SERVICE_ROLE_KEY
   },
 
   // Security
   security: {
-    allowedOrigins: (process.env.ALLOWED_ORIGINS || '')
-      .split(',')
-      .map((origin) => origin.trim())
-      .filter(Boolean),
-    rateLimitMax: parseInt(process.env.RATE_LIMIT_MAX || '100', 10)
+    jwtSecret: env.JWT_SECRET,
+    allowedOrigins: env.ALLOWED_ORIGINS,
+    rateLimitMax: env.RATE_LIMIT_MAX
   },
 
   // Email (SMTP via Nodemailer)
   email: {
-    fromEmail: process.env.EMAIL_FROM || process.env.SMTP_USER || 'noreply@docs.plus',
-    notificationEmails: (process.env.NEW_DOCUMENT_NOTIFICATION_EMAILS || '')
-      .split(',')
-      .map((email) => email.trim())
-      .filter((email) => email.length > 0 && email.includes('@')),
-    appUrl: process.env.APP_URL || 'https://docs.plus',
+    fromEmail: env.EMAIL_FROM || env.SMTP_USER || 'noreply@docs.plus',
+    fromName: env.SMTP_FROM_NAME,
+    notificationEmails: env.NEW_DOCUMENT_NOTIFICATION_EMAILS.filter((email) => email.includes('@')),
+    appUrl: env.APP_URL,
     smtp: {
-      host: process.env.SMTP_HOST || '',
-      port: parseInt(process.env.SMTP_PORT || '587', 10),
-      secure: process.env.SMTP_SECURE === 'true',
-      user: process.env.SMTP_USER || '',
-      pass: process.env.SMTP_PASS || ''
+      host: env.SMTP_HOST,
+      port: env.SMTP_PORT,
+      secure: env.SMTP_SECURE,
+      user: env.SMTP_USER,
+      pass: env.SMTP_PASS
     },
-    // Email Gateway settings
     gateway: {
-      workerConcurrency: parseInt(process.env.EMAIL_WORKER_CONCURRENCY || '3', 10),
-      rateLimitMax: parseInt(process.env.EMAIL_RATE_LIMIT_MAX || '50', 10),
-      rateLimitDuration: parseInt(process.env.EMAIL_RATE_LIMIT_DURATION || '60000', 10)
+      workerConcurrency: env.EMAIL_WORKER_CONCURRENCY,
+      rateLimitMax: env.EMAIL_RATE_LIMIT_MAX,
+      rateLimitDuration: env.EMAIL_RATE_LIMIT_DURATION
     }
   },
 
   // Push Notifications (VAPID for Web Push)
   push: {
     vapid: {
-      publicKey: process.env.VAPID_PUBLIC_KEY || '',
-      privateKey: process.env.VAPID_PRIVATE_KEY || '',
-      subject: process.env.VAPID_SUBJECT || 'mailto:support@docs.plus'
+      publicKey: env.VAPID_PUBLIC_KEY,
+      privateKey: env.VAPID_PRIVATE_KEY,
+      subject: env.VAPID_SUBJECT
     },
-    // Push Gateway settings
     gateway: {
-      workerConcurrency: parseInt(process.env.PUSH_WORKER_CONCURRENCY || '5', 10),
-      rateLimitMax: parseInt(process.env.PUSH_RATE_LIMIT_MAX || '100', 10),
-      rateLimitDuration: parseInt(process.env.PUSH_RATE_LIMIT_DURATION || '60000', 10)
+      workerConcurrency: env.PUSH_WORKER_CONCURRENCY,
+      rateLimitMax: env.PUSH_RATE_LIMIT_MAX,
+      rateLimitDuration: env.PUSH_RATE_LIMIT_DURATION
     }
+  },
+
+  // BullMQ
+  bullmq: {
+    concurrency: env.BULLMQ_CONCURRENCY,
+    rateLimitMax: env.BULLMQ_RATE_LIMIT_MAX,
+    rateLimitDuration: env.BULLMQ_RATE_LIMIT_DURATION
+  },
+
+  // Database Pool
+  dbPool: {
+    size: env.DB_POOL_SIZE,
+    idleTimeout: env.DB_IDLE_TIMEOUT,
+    connectTimeout: env.DB_CONNECT_TIMEOUT,
+    statementTimeout: env.DB_STATEMENT_TIMEOUT,
+    queryTimeout: env.DB_QUERY_TIMEOUT
+  },
+
+  // Worker
+  worker: {
+    errorThreshold: env.WORKER_ERROR_THRESHOLD,
+    errorWindowMs: env.WORKER_ERROR_WINDOW_MS,
+    shutdownTimeoutMs: env.WORKER_SHUTDOWN_TIMEOUT_MS,
+    idempotencyCleanupIntervalMs: env.IDEMPOTENCY_CLEANUP_INTERVAL_MS
+  },
+
+  // Logging
+  logging: {
+    level: env.LOG_LEVEL
   }
 } as const
+
+export type Config = typeof config
 
 export default config

@@ -2,7 +2,7 @@ import type { Extension } from '@hocuspocus/server'
 
 import { redisLogger } from '../lib/logger'
 import { getRedisSubscriber } from '../lib/redis'
-import type { RedisClient,SaveConfirmation } from '../types'
+import type { RedisClient, SaveConfirmation } from '../types'
 
 export class RedisSubscriberExtension implements Extension {
   private subscriber: RedisClient | null = null

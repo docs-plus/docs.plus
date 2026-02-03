@@ -79,3 +79,12 @@ export interface PushJobData {
   payload: PushNotificationRequest
   created_at: string
 }
+
+/**
+ * Push Dead Letter Queue job data
+ */
+export interface PushDLQData extends PushJobData {
+  originalJobId?: string
+  failureReason: string
+  failedAt: string
+}

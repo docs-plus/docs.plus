@@ -1,139 +1,129 @@
-import type { PrismaClient } from '@prisma/client'
+/**
+ * Documents Controller
+ *
+ * Handles document CRUD operations.
+ * Validation is done in the router via zValidator - controllers receive pre-validated data.
+ */
 
 import { AppError, getErrorResponse } from '../../lib/errors'
 import { documentsControllerLogger } from '../../lib/logger'
+import type {
+  CreateDocumentInput,
+  DocumentQueryInput,
+  UpdateDocumentMetadataInput
+} from '../../schemas/document.schema'
+import type { AppContext } from '../../types/hono.types'
 import * as documentsService from '../services/documents.service'
 import * as mediaService from '../services/media.service'
-// import { extractUserFromToken } from '../utils/auth'
 
-export const getDocumentBySlug = async (c: any) => {
-  const prisma = c.get('prisma') as PrismaClient
+// Helper to get validated data with proper typing
+const getValidJson = <T>(c: AppContext): T => (c.req as any).valid('json') as T
+const getValidQuery = <T>(c: AppContext): T => (c.req as any).valid('query') as T
+
+// Standard error response handler
+const handleError = (c: AppContext, error: unknown, context: Record<string, unknown> = {}) => {
+  documentsControllerLogger.error({ err: error, ...context }, 'Document operation failed')
+  const statusCode = (error instanceof AppError ? error.statusCode : 500) as 400 | 404 | 500
+  return c.json(
+    getErrorResponse(error instanceof Error ? error : new Error(String(error))),
+    statusCode
+  )
+}
+
+export const getDocumentBySlug = async (c: AppContext): Promise<Response> => {
+  const prisma = c.get('prisma')
   const docName = c.req.param('docName')
-  // const { userId } = c.req.valid('query')
-  // const token = c.req.header('token')
-
-  // const user = await extractUserFromToken(token, userId)
 
   try {
     const doc = await documentsService.getDocumentBySlug(prisma, docName)
 
     if (!doc) {
-      return c.json({ Success: true, data: documentsService.createDraftDocument(docName) })
+      return c.json({ success: true, data: documentsService.createDraftDocument(docName) })
     }
 
-    return c.json({ Success: true, data: doc })
+    return c.json({ success: true, data: doc })
   } catch (error) {
-    documentsControllerLogger.error({ err: error, docName }, 'Error fetching document')
-
-    const statusCode = error instanceof AppError ? error.statusCode : 500
-    return c.json(getErrorResponse(error as Error), statusCode)
+    return handleError(c, error, { docName })
   }
 }
 
-export const listDocuments = async (c: any) => {
-  const prisma = c.get('prisma') as PrismaClient
-  const {
-    title,
-    keywords: reqKeywords,
-    description,
-    limit: reqLimit,
-    offset: reqOffset
-  } = c.req.valid('query')
+export const listDocuments = async (c: AppContext): Promise<Response> => {
+  const prisma = c.get('prisma')
+  const query = getValidQuery<DocumentQueryInput>(c)
 
-  const limit = parseInt(reqLimit, 10) || 10
-  const offset = parseInt(reqOffset, 10) || 0
+  const limit = parseInt(query.limit || '10', 10)
+  const offset = parseInt(query.offset || '0', 10)
 
   try {
     const result = await documentsService.searchDocuments(prisma, {
-      title,
-      keywords: reqKeywords,
-      description,
+      title: query.title,
+      keywords: query.keywords,
+      description: query.description,
       limit,
       offset
     })
 
-    return c.json({ Success: true, data: result })
+    return c.json({ success: true, data: result })
   } catch (error) {
-    documentsControllerLogger.error({ err: error }, 'Error listing documents')
-
-    const statusCode = error instanceof AppError ? error.statusCode : 500
-    return c.json(getErrorResponse(error as Error), statusCode)
+    return handleError(c, error)
   }
 }
 
-export const createDocument = async (c: any) => {
-  const prisma = c.get('prisma') as PrismaClient
-  const { title, slug, description, keywords } = c.req.valid('json')
+export const createDocument = async (c: AppContext): Promise<Response> => {
+  const prisma = c.get('prisma')
+  const body = getValidJson<CreateDocumentInput>(c)
 
   try {
     const doc = await documentsService.createDocument(prisma, {
-      slug,
-      title,
-      description,
-      keywords
+      slug: body.slug,
+      title: body.title,
+      description: body.description,
+      keywords: body.keywords
     })
 
-    return c.json({ Success: true, data: doc })
+    return c.json({ success: true, data: doc })
   } catch (error) {
-    documentsControllerLogger.error({ err: error, slug }, 'Error creating document')
-
-    const statusCode = error instanceof AppError ? error.statusCode : 500
-    return c.json(getErrorResponse(error as Error), statusCode)
+    return handleError(c, error, { slug: body.slug })
   }
 }
 
-export const updateDocument = async (c: any) => {
-  const prisma = c.get('prisma') as PrismaClient
+export const updateDocument = async (c: AppContext): Promise<Response> => {
+  const prisma = c.get('prisma')
   const docId = c.req.param('docId')
-  const { title, description, keywords, readOnly } = c.req.valid('json')
+  const body = getValidJson<UpdateDocumentMetadataInput>(c)
 
   try {
-    const doc = await documentsService.updateDocument(prisma, docId, {
-      title,
-      description,
-      keywords,
-      readOnly
-    })
-
-    return c.json({ Success: true, data: doc })
+    const doc = await documentsService.updateDocument(prisma, docId, body)
+    return c.json({ success: true, data: doc })
   } catch (error) {
-    documentsControllerLogger.error({ err: error, docId }, 'Error updating document')
-
-    const statusCode = error instanceof AppError ? error.statusCode : 500
-    return c.json(getErrorResponse(error as Error), statusCode)
+    return handleError(c, error, { docId })
   }
 }
 
-export const getMedia = async (c: any) => {
+export const getMedia = async (c: AppContext): Promise<Response> => {
   const { documentId, mediaId } = c.req.param()
 
   try {
     return await mediaService.getMedia(documentId, mediaId, c)
   } catch (error) {
-    documentsControllerLogger.error({ err: error, documentId, mediaId }, 'Error fetching media')
-
-    const statusCode = error instanceof AppError ? error.statusCode : 500
-    return c.json(getErrorResponse(error as Error), statusCode)
+    return handleError(c, error, { documentId, mediaId })
   }
 }
 
-export const uploadMedia = async (c: any) => {
+export const uploadMedia = async (c: AppContext): Promise<Response> => {
   const documentId = c.req.param('documentId')
 
   try {
     const formData = await c.req.formData()
-    const mediaFile = formData.get('mediaFile') as File
+    const mediaFile = formData.get('mediaFile')
 
-    if (!mediaFile) {
-      return c.json({ error: 'No files were uploaded' }, 400)
+    if (!mediaFile || typeof mediaFile === 'string') {
+      return c.json({ error: 'No valid file was uploaded' }, 400)
     }
 
     const result = await mediaService.uploadMedia(documentId, mediaFile)
     return c.json(result, 201)
   } catch (error) {
-    documentsControllerLogger.error({ err: error, documentId }, 'Error uploading file')
-
-    const statusCode = error instanceof AppError ? error.statusCode : 500
-    return c.json(getErrorResponse(error as Error), statusCode)
+    return handleError(c, error, { documentId })
   }
 }

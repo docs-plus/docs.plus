@@ -12,7 +12,7 @@
  * - Hierarchical digest: Document → Channel → Messages
  */
 
-import type { _DigestNotification,DigestDocument, NotificationType } from '../../types/email.types'
+import type { DigestDocument, NotificationType } from '../../types/email.types'
 
 // ============================================================================
 // DESIGN TOKENS (from docs.plus design system)
@@ -20,7 +20,6 @@ import type { _DigestNotification,DigestDocument, NotificationType } from '../..
 
 const APP_NAME = 'docs.plus'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_URL || 'https://docs.plus'
-const _API_URL = process.env._API_URL || 'https://api.docs.plus'
 
 // Colors
 const COLORS = {
@@ -417,11 +416,11 @@ export function buildDigestEmailHtml(params: {
   recipientName: string
   frequency: 'daily' | 'weekly'
   documents: DigestDocument[]
-  _periodStart: string
-  _periodEnd: string
+  periodStart: string
+  periodEnd: string
   unsubscribeLinks?: UnsubscribeLinks
 }): string {
-  const { recipientName, frequency, documents, _periodStart, _periodEnd, unsubscribeLinks } = params
+  const { recipientName, frequency, documents, unsubscribeLinks } = params
   const periodLabel = frequency === 'daily' ? 'today' : 'this week'
 
   // Count total notifications

@@ -41,13 +41,13 @@ export const resendProvider: EmailProviderInterface = {
       })
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}))
+        const errorData = (await response.json().catch(() => ({}))) as { message?: string }
         const error = errorData.message || `HTTP ${response.status}`
         emailLogger.error({ status: response.status, error, to: message.to }, 'Resend API error')
         return { success: false, error }
       }
 
-      const data = await response.json()
+      const data = (await response.json()) as { id: string }
       emailLogger.info({ messageId: data.id, to: message.to }, 'Email sent via Resend')
       return { success: true, messageId: data.id }
     } catch (err) {

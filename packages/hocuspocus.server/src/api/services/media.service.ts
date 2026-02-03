@@ -4,7 +4,8 @@ import mime from 'mime'
 import {
   InternalServerError,
   PayloadTooLargeError,
-  UnsupportedMediaTypeError} from '../../lib/errors'
+  UnsupportedMediaTypeError
+} from '../../lib/errors'
 import { mediaServiceLogger } from '../../lib/logger'
 import { extractFileType } from '../../lib/storage/fileType'
 import * as localStorage from '../../lib/storage/storage.local'

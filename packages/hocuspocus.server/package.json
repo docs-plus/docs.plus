@@ -17,9 +17,9 @@
     "test": "bun test",
     "test:watch": "bun test --watch",
     "test:coverage": "bun test --coverage",
-    "prisma:init:migrations": "prisma migrate dev --name init",
-    "prisma:migrate:dev": "prisma migrate dev",
-    "prisma:generate": "bunx prisma generate --schema=./prisma/schema.prisma",
+    "prisma:init:migrations": "bun --env-file ../../.env.local prisma migrate dev --name init",
+    "prisma:migrate:dev": "bun --env-file ../../.env.local prisma migrate dev",
+    "prisma:generate": "bun --env-file ../../.env.local prisma generate --schema=./prisma/schema.prisma",
     "fix:migration": "bun scripts/fix-migration.ts",
     "update:packages": "bunx npm-check-updates -u"
   },
