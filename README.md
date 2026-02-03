@@ -203,55 +203,22 @@ You still need to configure your cloud project:
 - Run SQL scripts from `packages/supabase/scripts/` in order via SQL Editor
 - Configure queues and permissions (same as local setup)
 
-**Step 4: Configure Push Notifications (Vault)** 🔔
+**Backend Environment Variables:**
 
-Push notifications require configuration stored in Supabase Vault. Run these SQL commands in the **SQL Editor**:
+```env
+# Supabase connection (for pgmq polling)
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
 
-```sql
--- Add secrets to Vault
-SELECT vault.create_secret(
-    'https://your-backend-url.com',  -- Your Hocuspocus backend URL
-    'hocuspocus_url',
-    'Hocuspocus backend URL for push notifications'
-);
-
-SELECT vault.create_secret(
-    'your-service-role-key-here',  -- From Settings → API → service_role
-    'service_role_key',
-    'Supabase service role key'
-);
-
--- Update the push config function to read from Vault
-CREATE OR REPLACE FUNCTION internal.get_push_config()
-RETURNS table (edge_url text, service_key text)
-LANGUAGE plpgsql
-SECURITY DEFINER
-AS $$
-DECLARE
-    v_hocuspocus_url text;
-    v_service_key text;
-BEGIN
-    SELECT decrypted_secret INTO v_hocuspocus_url
-    FROM vault.decrypted_secrets WHERE name = 'hocuspocus_url';
-
-    SELECT decrypted_secret INTO v_service_key
-    FROM vault.decrypted_secrets WHERE name = 'service_role_key';
-
-    IF v_hocuspocus_url IS NULL OR v_service_key IS NULL THEN
-        RETURN;
-    END IF;
-
-    RETURN QUERY SELECT
-        v_hocuspocus_url || '/api/push/send',
-        v_service_key;
-END;
-$$;
-
--- Verify configuration
-SELECT * FROM internal.get_push_config();
+# VAPID keys for Web Push
+VAPID_PUBLIC_KEY=your-vapid-public-key
+VAPID_PRIVATE_KEY=your-vapid-private-key
+VAPID_SUBJECT=mailto:support@yourdomain.com
 ```
 
-**Note:** Supabase Cloud doesn't allow `ALTER DATABASE SET` for custom parameters, so we use Vault for secure secret storage.
+Generate VAPID keys: `npx web-push generate-vapid-keys`
+
+See `docs/PUSH_NOTIFICATION_PGMQ.md` for detailed architecture.
 
 **Step 5: Configure OAuth Redirect URLs** 🔐
 

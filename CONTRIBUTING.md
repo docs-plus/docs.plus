@@ -25,7 +25,8 @@ By participating in this project, you agree to maintain a respectful and inclusi
 Before you begin, ensure you have:
 
 - 🐳 **Docker** & **Docker Compose** v2+ - [Install](https://docs.docker.com/get-docker/)
-- 🚀 **Bun** >=1.3.2 - [Install](https://bun.sh/docs/installation)
+- 🚀 **Bun** >=1.3.7 - [Install](https://bun.sh/docs/installation)
+- 📦 **Node.js** >=24.11.0 (for some tooling)
 - 🗄️ **Supabase CLI** - [Install](https://supabase.com/docs/guides/cli/installation)
 - **Git** - [Install](https://git-scm.com/downloads)
 
@@ -48,6 +49,14 @@ Before you begin, ensure you have:
 
 ```bash
 bun install
+```
+
+### 1.5 Run Doctor (Optional)
+
+Check your environment is correctly set up:
+
+```bash
+bun run doctor
 ```
 
 ### 2. Environment Configuration
@@ -232,12 +241,20 @@ Aim for good test coverage, especially for:
    git rebase main
    ```
 
-3. **Run tests**:
+3. **Run checks** (lint + format + types):
+
+   ```bash
+   bun run check
+   ```
+
+   Or individually:
 
    ```bash
    bun run lint
    bun run format:check
-   bun run build
+   bun run typecheck:webapp
+   bun run typecheck:admin
+   bun run typecheck:backend
    ```
 
 4. **Test locally**:
@@ -288,13 +305,16 @@ docs.plus/
 │   │   └── cypress/         # E2E tests
 │   ├── hocuspocus.server/   # ⚡ REST API, WebSocket, Workers
 │   │   ├── src/
-│   │   │   ├── api/         # API routes
-│   │   │   ├── lib/         # Shared libraries
-│   │   │   └── middleware/  # Middleware
-│   │   └── tests/           # Unit & integration tests
-│   ├── supabase/            # 🗄️ Database migrations
-│   │   └── scripts/         # SQL scripts
+│   │   │   ├── api/         # REST API routes & controllers
+│   │   │   ├── lib/         # Shared libraries (email, push, etc.)
+│   │   │   ├── middleware/  # Hono middleware
+│   │   │   └── config/      # Configuration & env schemas
+│   │   └── prisma/          # Prisma schema & migrations
+│   ├── admin-dashboard/     # 🛠️ Admin interface (Next.js)
+│   ├── supabase/            # 🗄️ Supabase configuration
+│   │   └── scripts/         # SQL migration scripts
 │   └── extension-*/         # 🔌 TipTap extensions
+├── .github/workflows/       # 🔄 CI/CD pipelines
 ├── docker-compose.dev.yml   # 🐳 Development setup
 ├── docker-compose.prod.yml  # 🚀 Production setup
 └── Makefile                 # 🛠️ Build commands
@@ -316,6 +336,7 @@ We welcome contributions in all areas:
 
 - 💬 **Discord**: [Join our server](https://discord.com/invite/25JPG38J59) for real-time help
 - 🐛 **Issues**: [GitHub Issues](https://github.com/docs-plus/docs.plus/issues) for bug reports
+- 🔒 **Security**: See [SECURITY.md](SECURITY.md) for reporting vulnerabilities
 - 📧 **Email**: [contact@newspeak.house](mailto:contact@newspeak.house)
 
 ## 🙏 Thank You!
