@@ -67,12 +67,13 @@ export async function sendPushNotification(
 
   const supabase = getSupabaseClient()
 
-  // Get user's active web push subscriptions
+  // Get user's active push subscriptions (web + iOS PWA + Android PWA)
+  // All PWA platforms use VAPID - same endpoint/keys format
   const { data: subscriptions, error: fetchError } = await supabase
     .from('push_subscriptions')
     .select('*')
     .eq('user_id', request.user_id)
-    .eq('platform', 'web')
+    .in('platform', ['web', 'ios', 'android'])
     .eq('is_active', true)
 
   if (fetchError) {

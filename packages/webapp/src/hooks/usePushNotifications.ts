@@ -8,11 +8,15 @@ import {
   getPermissionStatus,
   isPushSupported,
   isSubscribed as checkSubscribed,
+  onPermissionChange,
+  PushError,
+  refreshSubscriptionIfNeeded,
   registerPushSubscription,
   unregisterPushSubscription
 } from '../lib/push-notifications'
 
 export type SubscribeResult = 'success' | 'denied' | 'dismissed' | 'error'
+export type { PushErrorCode } from '../lib/push-notifications'
 
 // Event for notification state changes (used by notification panel to refresh)
 export const NOTIFICATION_STATE_CHANGED = Symbol('notification.stateChanged')
@@ -23,8 +27,11 @@ interface UsePushNotificationsReturn {
   isSubscribed: boolean
   isLoading: boolean
   error: string | null
+  errorCode: string | null
+  isRecoverable: boolean
   subscribe: () => Promise<SubscribeResult>
   unsubscribe: () => Promise<boolean>
+  refreshSubscription: () => Promise<void>
 }
 
 /**
@@ -38,18 +45,60 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [errorCode, setErrorCode] = useState<string | null>(null)
+  const [isRecoverable, setIsRecoverable] = useState(false)
 
-  // Check subscription status on mount
+  // Check subscription status and refresh if needed on mount
   useEffect(() => {
     if (!isSupported) {
       setIsLoading(false)
       return
     }
 
-    checkSubscribed()
-      .then(setIsSubscribed)
-      .catch(() => {})
-      .finally(() => setIsLoading(false))
+    const timeoutId = setTimeout(() => setIsLoading(false), 3000)
+
+    const initSubscription = async () => {
+      try {
+        const subscribed = await checkSubscribed()
+        setIsSubscribed(subscribed)
+
+        // If subscribed, check if refresh is needed
+        if (subscribed) {
+          const refreshResult = await refreshSubscriptionIfNeeded()
+          if (refreshResult === 'refreshed') {
+            // Subscription was refreshed successfully
+          } else if (refreshResult === 'failed') {
+            // Refresh failed, but don't show error to user - subscription might still work
+          }
+        }
+      } catch {
+        // Ignore errors during init
+      } finally {
+        clearTimeout(timeoutId)
+        setIsLoading(false)
+      }
+    }
+
+    initSubscription()
+  }, [isSupported])
+
+  // Listen for permission changes (user revokes in browser settings)
+  useEffect(() => {
+    if (!isSupported) return
+
+    const unsubscribe = onPermissionChange((newPermission) => {
+      setPermission(newPermission)
+
+      // If permission was revoked, update subscribed state
+      if (newPermission === 'denied') {
+        setIsSubscribed(false)
+        setError('Notifications permission was revoked')
+        setErrorCode('PERMISSION_DENIED')
+        setIsRecoverable(false)
+      }
+    })
+
+    return unsubscribe
   }, [isSupported])
 
   // Listen for notification clicks from service worker
@@ -125,11 +174,15 @@ export function usePushNotifications(): UsePushNotificationsReturn {
   const subscribe = useCallback(async (): Promise<SubscribeResult> => {
     if (!isSupported) {
       setError('Push notifications not supported')
+      setErrorCode('NOT_SUPPORTED')
+      setIsRecoverable(false)
       return 'error'
     }
 
     setIsLoading(true)
     setError(null)
+    setErrorCode(null)
+    setIsRecoverable(false)
 
     try {
       const subscriptionId = await registerPushSubscription()
@@ -139,41 +192,38 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         return 'success'
       }
 
-      // Subscription returned null (shouldn't happen now with throws, but handle gracefully)
-      const currentPermission = Notification.permission
-      setPermission(currentPermission)
-
-      if (currentPermission === 'denied') {
-        setError('Notifications blocked by browser')
-        return 'denied'
-      }
-
-      // User dismissed the browser permission prompt
-      if (currentPermission === 'default') {
-        return 'dismissed'
-      }
-
+      // Shouldn't reach here with new error handling, but handle gracefully
       setError('Failed to subscribe')
+      setErrorCode('UNKNOWN')
       return 'error'
     } catch (err) {
+      // Handle typed PushError
+      if (err instanceof PushError) {
+        setError(err.message)
+        setErrorCode(err.code)
+        setIsRecoverable(err.recoverable)
+
+        // Update permission state
+        const currentPermission = Notification.permission
+        setPermission(currentPermission)
+
+        // Map error codes to result types
+        switch (err.code) {
+          case 'PERMISSION_DENIED':
+            return 'denied'
+          case 'PERMISSION_DISMISSED':
+            return 'dismissed'
+          default:
+            return 'error'
+        }
+      }
+
+      // Handle unknown errors
       const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-
-      // Check if it's a configuration error (server-side issue)
-      if (errorMessage.includes('not configured')) {
-        setError(errorMessage)
-        return 'error'
-      }
-
-      // Check browser permission state
-      const currentPermission = Notification.permission
-      setPermission(currentPermission)
-
-      if (currentPermission === 'denied') {
-        setError('Notifications blocked by browser')
-        return 'denied'
-      }
-
       setError(errorMessage)
+      setErrorCode('UNKNOWN')
+      setIsRecoverable(true) // Unknown errors might be transient
+
       return 'error'
     } finally {
       setIsLoading(false)
@@ -185,6 +235,8 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
     setIsLoading(true)
     setError(null)
+    setErrorCode(null)
+    setIsRecoverable(false)
 
     try {
       const success = await unregisterPushSubscription()
@@ -193,14 +245,39 @@ export function usePushNotifications(): UsePushNotificationsReturn {
         return true
       }
       setError('Failed to unsubscribe')
+      setErrorCode('UNKNOWN')
       return false
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Unknown error')
+      setErrorCode('UNKNOWN')
       return false
     } finally {
       setIsLoading(false)
     }
   }, [isSupported])
+
+  // Manual refresh subscription (e.g., from settings page)
+  const refreshSubscription = useCallback(async (): Promise<void> => {
+    if (!isSupported || !isSubscribed) return
+
+    setIsLoading(true)
+    setError(null)
+
+    try {
+      const result = await refreshSubscriptionIfNeeded()
+      if (result === 'failed') {
+        setError('Failed to refresh subscription')
+        setErrorCode('SUBSCRIPTION_FAILED')
+        setIsRecoverable(true)
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unknown error')
+      setErrorCode('UNKNOWN')
+      setIsRecoverable(true)
+    } finally {
+      setIsLoading(false)
+    }
+  }, [isSupported, isSubscribed])
 
   return {
     isSupported,
@@ -208,8 +285,11 @@ export function usePushNotifications(): UsePushNotificationsReturn {
     isSubscribed,
     isLoading,
     error,
+    errorCode,
+    isRecoverable,
     subscribe,
-    unsubscribe
+    unsubscribe,
+    refreshSubscription
   }
 }
 

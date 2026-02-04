@@ -7,7 +7,9 @@
  * Design: Matches toast notification system (theme-aware, rounded-2xl, shadow-xl)
  * Position: Top-left for visibility without blocking main content
  */
+import { showIOSInstallPrompt } from '@components/pwa'
 import * as toast from '@components/toast'
+import { usePlatformDetection } from '@hooks/usePlatformDetection'
 import { usePushNotifications } from '@hooks/usePushNotifications'
 import { useAuthStore } from '@stores'
 import { useCallback, useEffect, useState } from 'react'
@@ -42,53 +44,21 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
   const [isVisible, setIsVisible] = useState(false)
   const [isAnimating, setIsAnimating] = useState(false)
   const profile = useAuthStore((state) => state.profile)
-  const { isSupported, permission, isSubscribed, isLoading, subscribe } = usePushNotifications()
+  const { subscribe } = usePushNotifications()
+  const { platform, isPWAInstalled, iosSupportsWebPush } = usePlatformDetection()
 
-  // Check if we should show the prompt
-  const shouldShowPrompt = useCallback(() => {
-    if (!isSupported || isLoading || !profile || isSubscribed) return false
-    if (permission !== 'default') return false
-
-    // Check if user dismissed permanently
-    const dismissed = localStorage.getItem(STORAGE_KEY)
-    if (dismissed === 'permanent') return false
-
-    // Check if snoozed (user clicked "Later")
-    const snoozedUntil = localStorage.getItem(SNOOZED_UNTIL_KEY)
-    if (snoozedUntil && Date.now() < parseInt(snoozedUntil, 10)) return false
-
-    // Check prompt count (max 3 times) - only for non-snoozed prompts
-    const count = parseInt(localStorage.getItem(PROMPT_COUNT_KEY) || '0', 10)
-    if (count >= 3) return false
-
+  // Check if we should show the prompt (for iOS PWA detection)
+  const shouldShow = useCallback(() => {
+    // iOS: Push only works if PWA is installed AND iOS 16.4+
+    if (platform === 'ios') {
+      if (!iosSupportsWebPush) return false
+      if (!isPWAInstalled) {
+        showIOSInstallPrompt()
+        return false
+      }
+    }
     return true
-  }, [isSupported, isLoading, profile, isSubscribed, permission])
-
-  // Show the prompt with animation
-  const show = useCallback(() => {
-    if (!shouldShowPrompt()) return
-
-    // Only increment count if NOT returning from a snooze
-    // This way "Later" doesn't consume one of the 3 prompts
-    const snoozedUntil = localStorage.getItem(SNOOZED_UNTIL_KEY)
-    const isReturnFromSnooze = snoozedUntil && Date.now() >= parseInt(snoozedUntil, 10)
-
-    if (!isReturnFromSnooze) {
-      const count = parseInt(localStorage.getItem(PROMPT_COUNT_KEY) || '0', 10)
-      localStorage.setItem(PROMPT_COUNT_KEY, String(count + 1))
-    }
-
-    // Clear expired snooze
-    if (isReturnFromSnooze) {
-      localStorage.removeItem(SNOOZED_UNTIL_KEY)
-    }
-
-    // Delay before showing (let user see their action complete)
-    setTimeout(() => {
-      setIsVisible(true)
-      requestAnimationFrame(() => setIsAnimating(true))
-    }, 2000)
-  }, [shouldShowPrompt])
+  }, [platform, isPWAInstalled, iosSupportsWebPush])
 
   // Hide with animation
   const hide = useCallback((permanent = false) => {
@@ -139,12 +109,49 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
     hide(true)
   }
 
-  // Listen for show event
+  // Listen for show event - handle immediately without waiting for hook
   useEffect(() => {
-    const handler = () => show()
+    const handler = async () => {
+      if (!profile) return
+
+      // Check iOS PWA requirements first
+      if (!shouldShow()) return
+
+      // Check notification permission directly
+      const currentPermission = 'Notification' in window ? Notification.permission : 'unsupported'
+
+      // If permission already granted, register the subscription
+      if (currentPermission === 'granted') {
+        const result = await subscribe()
+        if (result === 'success') {
+          toast.Success("Notifications enabled! You'll never miss a reply.")
+        }
+        return
+      }
+
+      // If permission is default, show the prompt card
+      if (currentPermission === 'default') {
+        // Check localStorage dismissals
+        const dismissed = localStorage.getItem(STORAGE_KEY)
+        if (dismissed === 'permanent') return
+
+        const snoozedUntil = localStorage.getItem(SNOOZED_UNTIL_KEY)
+        if (snoozedUntil && Date.now() < parseInt(snoozedUntil, 10)) return
+
+        const count = parseInt(localStorage.getItem(PROMPT_COUNT_KEY) || '0', 10)
+        if (count >= 3) return
+
+        // Increment count and show
+        localStorage.setItem(PROMPT_COUNT_KEY, String(count + 1))
+        setTimeout(() => {
+          setIsVisible(true)
+          requestAnimationFrame(() => setIsAnimating(true))
+        }, 2000)
+      }
+    }
     window.addEventListener(SHOW_PROMPT_EVENT, handler)
     return () => window.removeEventListener(SHOW_PROMPT_EVENT, handler)
-  }, [show])
+  }, [profile, subscribe, shouldShow])
 
   if (!isVisible) return null
 
