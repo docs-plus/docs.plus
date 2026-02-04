@@ -1,61 +1,62 @@
-# Multi-stage Dockerfile for Admin Dashboard
-# Build context should be monorepo root (../../)
+# =============================================================================
+# Admin Dashboard - Next.js Standalone Dockerfile
+# =============================================================================
+# This is a STANDALONE Next.js app with no internal workspace dependencies.
+# Build context: packages/admin-dashboard/
+# =============================================================================
 
-# ============================================================================
-# Stage 1: Base
-# ============================================================================
-FROM oven/bun:1-alpine AS base
+# -----------------------------------------------------------------------------
+# Stage 1: Dependencies
+# -----------------------------------------------------------------------------
+FROM oven/bun:1-alpine AS deps
+
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Copy package files (context is packages/admin-dashboard/)
+COPY package.json bun.lock* ./
+
+# Install all dependencies (including devDependencies for build)
+RUN bun install
+
+# -----------------------------------------------------------------------------
+# Stage 2: Build
+# -----------------------------------------------------------------------------
+FROM oven/bun:1-alpine AS builder
 
 RUN apk add --no-cache libc6-compat nodejs
 
 WORKDIR /app
 
-# ============================================================================
-# Stage 2: Dependencies
-# ============================================================================
-FROM base AS deps
-
-# Copy root package files
-COPY package.json bun.lock* ./
-COPY packages/admin-dashboard/package.json ./packages/admin-dashboard/
-
-# Install from root (only admin-dashboard workspace)
-RUN bun install --filter "@docs.plus/admin-dashboard"
-
-# ============================================================================
-# Stage 3: Build
-# ============================================================================
-FROM base AS builder
-
-WORKDIR /app
-
-ARG NODE_ENV=production
+# Build args for Next.js public env vars (baked into client bundle)
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_API_URL
+ARG NEXT_PUBLIC_APP_URL
 
-ENV NEXT_TELEMETRY_DISABLED=1 \
-    NODE_ENV=${NODE_ENV} \
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
     NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL} \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY} \
-    NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
+    NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
+    NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/package.json ./package.json
-COPY --from=deps /app/bun.lock* ./
 
-COPY packages/admin-dashboard ./packages/admin-dashboard
-COPY tsconfig.json ./
+# Copy all source files (context is packages/admin-dashboard/)
+COPY . .
 
-WORKDIR /app/packages/admin-dashboard
-# Use build:ci (no dotenv dependency - env vars already set via ARG/ENV)
+# Build Next.js app (standalone output configured in next.config)
 RUN bun run build:ci
 
-# ============================================================================
-# Stage 4: Runner
-# ============================================================================
-FROM base AS runner
+# -----------------------------------------------------------------------------
+# Stage 3: Runner (Production)
+# -----------------------------------------------------------------------------
+FROM oven/bun:1-alpine AS runner
+
+RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
@@ -64,12 +65,15 @@ ENV NODE_ENV=production \
     PORT=3100 \
     HOSTNAME="0.0.0.0"
 
+# Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-COPY --from=builder --chown=nextjs:nodejs /app/packages/admin-dashboard/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/packages/admin-dashboard/.next/static ./packages/admin-dashboard/.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/packages/admin-dashboard/public ./packages/admin-dashboard/public
+# Copy standalone build output
+# Next.js standalone creates: .next/standalone/server.js
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
 
 USER nextjs
 
@@ -78,4 +82,4 @@ EXPOSE 3100
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD bun -e "fetch('http://localhost:3100/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
 
-CMD ["bun", "packages/admin-dashboard/server.js"]
+CMD ["bun", "server.js"]

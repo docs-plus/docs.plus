@@ -1,14 +1,46 @@
 # ============================================================================
-# Staging CI/CD Pipeline - Traefik Deployment
+# Staging CI/CD Pipeline - Unified Quality Gates + Deployment
+# ============================================================================
+#
+# Pipeline Stages:
+#   1. Quality Gates (parallel): lint, typecheck, security
+#   2. Build Verification: extensions + apps
+#   3. Deploy: Docker build + deployment to staging
+#
+# Triggers:
+#   - Push to dev: Full pipeline (deploy requires 'build' in commit)
+#   - Pull request to dev: Quality gates + build only
+#
 # ============================================================================
 
-name: CI-Staging
+name: CI/CD Staging
 
 on:
   push:
     branches: [dev]
   pull_request:
     branches: [dev]
+  workflow_dispatch:
+    inputs:
+      skip_quality_gates:
+        description: 'Skip quality gates (emergency deploy)'
+        required: false
+        default: 'false'
+        type: boolean
+      force_deploy:
+        description: 'Force deployment (bypass commit message check)'
+        required: false
+        default: 'false'
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Principle of least privilege - only request needed permissions
+permissions:
+  contents: read
+  actions: read
 
 env:
   ENV_SOURCE: /opt/projects/stage.docs.plus/.env
@@ -16,11 +48,142 @@ env:
   COMPOSE_FILE: docker-compose.prod.yml
   DEPLOY_TAG: ${{ github.sha }}
 
+# ============================================================================
+# STAGE 1: QUALITY GATES (parallel, fast feedback)
+# ============================================================================
 jobs:
+  lint:
+    name: 🔍 Lint & Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🥟 Setup Environment
+        uses: ./.github/actions/setup-bun
+
+      - name: 🔍 ESLint
+        run: bun run lint
+
+      - name: 🎨 Prettier Check
+        run: bun run format:check
+
+  typecheck:
+    name: 📝 Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🥟 Setup Environment
+        uses: ./.github/actions/setup-bun
+
+      - name: 🔧 Build Extensions (required for types)
+        run: |
+          bun run --filter @docs.plus/extension-hyperlink build
+          bun run --filter @docs.plus/extension-hypermultimedia build
+          bun run --filter @docs.plus/extension-indent build
+          bun run --filter @docs.plus/extension-inline-code build
+
+      - name: 📝 Type Check All
+        run: bun run check:types
+
+  security:
+    name: 🔒 Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🥟 Setup Environment
+        uses: ./.github/actions/setup-bun
+        with:
+          ignore-scripts: 'true'
+
+      - name: 🔍 Bun Audit
+        run: |
+          echo "🔍 Checking for vulnerabilities..."
+          bun pm audit 2>&1 | tee audit-results.txt || true
+
+          CRITICAL=$(grep -ci "critical" audit-results.txt 2>/dev/null || echo "0")
+          HIGH=$(grep -ci "high" audit-results.txt 2>/dev/null || echo "0")
+
+          echo "📊 Summary: Critical=$CRITICAL, High=$HIGH"
+
+          # Warning only on staging (don't block)
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "⚠️ Vulnerabilities found (warning only on staging)"
+          fi
+          echo "✅ Security check complete"
+
+  # ============================================================================
+  # STAGE 2: BUILD VERIFICATION
+  # ============================================================================
+  build:
+    name: 🏗️ Build Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint, typecheck, security]
+    if: |
+      always() &&
+      (needs.lint.result == 'success' || inputs.skip_quality_gates == true) &&
+      (needs.typecheck.result == 'success' || inputs.skip_quality_gates == true) &&
+      (needs.security.result == 'success' || needs.security.result == 'skipped' || inputs.skip_quality_gates == true)
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🥟 Setup Environment
+        uses: ./.github/actions/setup-bun
+
+      - name: 🔧 Build TipTap Extensions
+        run: |
+          bun run --filter @docs.plus/extension-hyperlink build
+          bun run --filter @docs.plus/extension-hypermultimedia build
+          bun run --filter @docs.plus/extension-indent build
+          bun run --filter @docs.plus/extension-inline-code build
+
+      - name: 🏗️ Build Webapp
+        run: bun run --filter @docs.plus/webapp build:ci
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
+
+      - name: 🏗️ Build Admin Dashboard
+        run: bun run --filter @docs.plus/admin-dashboard build:ci
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3003' }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
+
+  # ============================================================================
+  # STAGE 3: STAGING DEPLOYMENT
+  # ============================================================================
   deploy:
-    name: 🎨 Deploy to Staging
+    name: 🎨 Deploy Staging
     runs-on: stage.docs.plus
-    if: contains(github.event.head_commit.message, 'build') && (contains(github.event.head_commit.message, 'front') || contains(github.event.head_commit.message, 'back'))
+    timeout-minutes: 30
+    needs: [build]
+    if: |
+      github.ref == 'refs/heads/dev' &&
+      github.event_name == 'push' &&
+      needs.build.result == 'success' &&
+      (
+        (contains(github.event.head_commit.message, 'build') &&
+         (contains(github.event.head_commit.message, 'front') || contains(github.event.head_commit.message, 'back')))
+        || github.event.inputs.force_deploy == 'true'
+      )
+    environment:
+      name: staging
+      url: https://stage.docs.plus
 
     steps:
       - name: 📦 Checkout Code
@@ -52,36 +215,50 @@ jobs:
           source ${{ env.ENV_FILE }}
           set +a
 
-          docker-compose -f ${{ env.COMPOSE_FILE }} \
+          docker compose -f ${{ env.COMPOSE_FILE }} \
             --env-file ${{ env.ENV_FILE }} \
             build --parallel
 
       - name: 🚀 Deploy Services
         run: |
-          docker-compose -f ${{ env.COMPOSE_FILE }} \
+          docker compose -f ${{ env.COMPOSE_FILE }} \
             --env-file ${{ env.ENV_FILE }} \
             up -d \
             --remove-orphans \
             --scale webapp=1 \
             --scale rest-api=1 \
             --scale hocuspocus-server=1 \
-            --scale hocuspocus-worker=1
+            --scale hocuspocus-worker=1 \
+            --scale admin-dashboard=1
 
       - name: ⏳ Wait for Services
         run: sleep 20
 
       - name: 🩺 Health Checks
         run: |
+          echo "📊 Infrastructure:"
           for svc in traefik docsplus-redis; do
-            docker ps --filter "name=$svc" | grep -q "$svc" && echo "✅ $svc running" || echo "⚠️ $svc not found"
+            docker ps --filter "name=$svc" | grep -q "$svc" && echo "  ✅ $svc running" || echo "  ⚠️ $svc not found"
           done
 
-          for svc in webapp rest-api hocuspocus-server hocuspocus-worker; do
+          echo "📊 Services:"
+          for svc in webapp rest-api hocuspocus-server hocuspocus-worker admin-dashboard; do
             COUNT=$(docker ps --filter "name=${svc}" --format "{{.Names}}" | wc -l)
-            echo "✅ $svc: $COUNT container(s)"
+            echo "  ✅ $svc: $COUNT container(s)"
           done
+
+      - name: 🧹 Cleanup
+        continue-on-error: true # Cleanup failure shouldn't fail deployment
+        run: |
+          docker image prune -f
+          echo "✅ Cleanup complete"
 
       - name: 📊 Summary
         run: |
+          echo "======================================"
           echo "✅ STAGING DEPLOYMENT SUCCESSFUL"
+          echo "======================================"
+          echo "Tag: ${{ env.DEPLOY_TAG }}"
+          echo ""
           docker ps --format "table {{.Names}}\t{{.Status}}" | head -15
+          echo "======================================"

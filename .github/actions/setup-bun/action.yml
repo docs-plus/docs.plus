@@ -1,0 +1,56 @@
+# ============================================================================
+# Composite Action: Setup Bun Environment
+# ============================================================================
+# Reusable action for consistent Bun setup across all workflows
+# ============================================================================
+
+name: 'Setup Bun Environment'
+description: 'Checkout code, setup Bun, and install dependencies with caching'
+
+inputs:
+  bun-version:
+    description: 'Bun version to install'
+    required: false
+    default: 'latest'
+  install-deps:
+    description: 'Whether to install dependencies'
+    required: false
+    default: 'true'
+  frozen-lockfile:
+    description: 'Use frozen lockfile for installs'
+    required: false
+    default: 'true'
+  ignore-scripts:
+    description: 'Ignore postinstall scripts'
+    required: false
+    default: 'false'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 🥟 Setup Bun
+      uses: oven-sh/setup-bun@v2 # Pin to SHA in production: @4bc047ad259df6fc24a6c9b0f9a0cb08cf17fbe5
+      with:
+        bun-version: ${{ inputs.bun-version }}
+
+    - name: 📦 Cache Bun dependencies
+      if: inputs.install-deps == 'true'
+      uses: actions/cache@v4 # Pin to SHA in production: @0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
+      with:
+        path: |
+          ~/.bun/install/cache
+          node_modules
+          packages/*/node_modules
+        key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-bun-
+
+    - name: 📥 Install Dependencies
+      if: inputs.install-deps == 'true'
+      shell: bash
+      run: |
+        ARGS="--frozen-lockfile"
+        if [ "${{ inputs.ignore-scripts }}" = "true" ]; then
+          ARGS="$ARGS --ignore-scripts"
+        fi
+        bun install $ARGS

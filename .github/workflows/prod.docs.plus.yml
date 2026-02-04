@@ -1,23 +1,57 @@
 # ============================================================================
-# Production CI/CD Pipeline - Traefik Zero-Downtime Deployment
+# Production CI/CD Pipeline - Unified Quality Gates + Deployment
 # ============================================================================
+#
+# Pipeline Stages:
+#   1. Quality Gates (parallel): lint, typecheck, security
+#   2. Build Verification: extensions + apps
+#   3. Deploy: Docker build + Blue-Green rolling deployment
+#
+# Triggers:
+#   - Push to main: Full pipeline (deploy requires 'build' in commit)
+#   - Pull request to main: Quality gates + build only
+#   - Weekly schedule: Security audit only
 #
 # Architecture:
 #   Traefik (SSL/LB) → Services (auto-discovered via Docker labels)
 #
 # Deployment Strategy:
-#   Blue-Green rolling: New containers start → health check passes → old removed
-#   Traefik automatically routes to healthy containers only
+#   Blue-Green rolling: New containers start → health check → old removed
 #
 # ============================================================================
 
-name: CI-Production
+name: CI/CD Production
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+  schedule:
+    # Weekly security scan (Sunday midnight UTC)
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+    inputs:
+      skip_quality_gates:
+        description: 'Skip quality gates (emergency deploy)'
+        required: false
+        default: 'false'
+        type: boolean
+      force_deploy:
+        description: 'Force deployment (bypass commit message check)'
+        required: false
+        default: 'false'
+        type: boolean
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+# Principle of least privilege - only request needed permissions
+permissions:
+  contents: read
+  actions: read
+  security-events: write # For security scan results
 
 env:
   ENV_SOURCE: /opt/projects/prod.docs.plus/.env
@@ -25,11 +59,163 @@ env:
   COMPOSE_FILE: docker-compose.prod.yml
   DEPLOY_TAG: ${{ github.sha }}
 
+# ============================================================================
+# STAGE 1: QUALITY GATES (parallel, fast feedback)
+# ============================================================================
 jobs:
+  lint:
+    name: 🔍 Lint & Format
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    if: github.event_name != 'schedule'
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🥟 Setup Environment
+        uses: ./.github/actions/setup-bun
+
+      - name: 🔍 ESLint
+        run: bun run lint
+
+      - name: 🎨 Prettier Check
+        run: bun run format:check
+
+  typecheck:
+    name: 📝 Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.event_name != 'schedule'
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🥟 Setup Environment
+        uses: ./.github/actions/setup-bun
+
+      - name: 🔧 Build Extensions (required for types)
+        run: |
+          bun run --filter @docs.plus/extension-hyperlink build
+          bun run --filter @docs.plus/extension-hypermultimedia build
+          bun run --filter @docs.plus/extension-indent build
+          bun run --filter @docs.plus/extension-inline-code build
+
+      - name: 📝 Type Check All
+        run: bun run check:types
+
+  security:
+    name: 🔒 Security Audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🥟 Setup Environment
+        uses: ./.github/actions/setup-bun
+        with:
+          ignore-scripts: 'true'
+
+      - name: 🔍 Bun Audit
+        run: |
+          echo "🔍 Checking for known vulnerabilities..."
+          bun pm audit 2>&1 | tee audit-results.txt || AUDIT_FAILED=true
+
+          # Count vulnerabilities
+          CRITICAL=$(grep -ci "critical" audit-results.txt 2>/dev/null || echo "0")
+          HIGH=$(grep -ci "high" audit-results.txt 2>/dev/null || echo "0")
+
+          echo ""
+          echo "📊 Summary: Critical=$CRITICAL, High=$HIGH"
+
+          # Fail on critical/high
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "❌ Critical/High vulnerabilities found!"
+            exit 1
+          fi
+          echo "✅ No critical/high vulnerabilities"
+
+      - name: 📤 Upload Audit Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-audit-${{ github.sha }}
+          path: audit-results.txt
+          retention-days: 30
+
+  # ============================================================================
+  # STAGE 2: BUILD VERIFICATION
+  # ============================================================================
+  build:
+    name: 🏗️ Build Verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: [lint, typecheck, security]
+    if: |
+      always() &&
+      github.event_name != 'schedule' &&
+      (needs.lint.result == 'success' || inputs.skip_quality_gates == true) &&
+      (needs.typecheck.result == 'success' || inputs.skip_quality_gates == true) &&
+      (needs.security.result == 'success' || needs.security.result == 'skipped' || inputs.skip_quality_gates == true)
+    outputs:
+      build_status: ${{ steps.build_result.outputs.status }}
+
+    steps:
+      - name: 📦 Checkout
+        uses: actions/checkout@v4
+
+      - name: 🥟 Setup Environment
+        uses: ./.github/actions/setup-bun
+
+      - name: 🔧 Build TipTap Extensions
+        run: |
+          bun run --filter @docs.plus/extension-hyperlink build
+          bun run --filter @docs.plus/extension-hypermultimedia build
+          bun run --filter @docs.plus/extension-indent build
+          bun run --filter @docs.plus/extension-inline-code build
+
+      - name: 🏗️ Build Webapp
+        run: bun run --filter @docs.plus/webapp build:ci
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
+
+      - name: 🏗️ Build Admin Dashboard
+        run: bun run --filter @docs.plus/admin-dashboard build:ci
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
+          NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3003' }}
+          NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
+
+      - name: 📊 Set Build Result
+        id: build_result
+        if: always()
+        run: echo "status=${{ job.status }}" >> $GITHUB_OUTPUT
+
+  # ============================================================================
+  # STAGE 3: PRODUCTION DEPLOYMENT
+  # ============================================================================
   deploy:
-    name: 🚀 Deploy to Production
+    name: 🚀 Deploy Production
     runs-on: prod.docs.plus
-    if: contains(github.event.head_commit.message, 'build') && (contains(github.event.head_commit.message, 'front') || contains(github.event.head_commit.message, 'back'))
+    timeout-minutes: 30
+    needs: [build]
+    if: |
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' &&
+      needs.build.result == 'success' &&
+      (
+        (contains(github.event.head_commit.message, 'build') &&
+         (contains(github.event.head_commit.message, 'front') || contains(github.event.head_commit.message, 'back')))
+        || github.event.inputs.force_deploy == 'true'
+      )
+    environment:
+      name: production
+      url: https://docs.plus
 
     steps:
       - name: 📦 Checkout Code
@@ -47,7 +233,6 @@ jobs:
 
       - name: 🔐 Prepare Environment
         run: |
-          # Copy production env file
           cp "${{ env.ENV_SOURCE }}" "${{ env.ENV_FILE }}"
           echo "DEPLOY_TAG=${{ env.DEPLOY_TAG }}" >> "${{ env.ENV_FILE }}"
           echo "✅ Environment ready"
@@ -56,7 +241,6 @@ jobs:
         run: |
           echo "🔨 Building images with tag: ${{ env.DEPLOY_TAG }}"
 
-          # Load env vars for build args
           set -a
           source ${{ env.ENV_FILE }}
           set +a
@@ -67,20 +251,18 @@ jobs:
 
           echo "✅ Images built"
 
-      - name: 🔧 Ensure Infrastructure (Traefik + Redis)
+      - name: 🔧 Ensure Infrastructure
         run: |
-          echo "🔧 Ensuring infrastructure is running..."
+          echo "🔧 Ensuring infrastructure..."
 
-          # Create network if not exists
           docker network create docsplus-network 2>/dev/null || true
 
-          # Start Traefik and Redis with --no-recreate (don't restart if running)
-          # This prevents Traefik restart which causes downtime
+          # Start Traefik and Redis (--no-recreate prevents restart)
           docker compose -f ${{ env.COMPOSE_FILE }} \
             --env-file ${{ env.ENV_FILE }} \
             up -d --no-recreate traefik redis
 
-          # Only if Traefik is not running at all, start it
+          # Check Traefik
           if ! docker ps --filter "name=traefik" --filter "status=running" | grep -q traefik; then
             echo "⚠️ Traefik not running, starting..."
             docker compose -f ${{ env.COMPOSE_FILE }} \
@@ -89,25 +271,20 @@ jobs:
             sleep 15
           fi
 
-          # Wait for Traefik to be healthy
-          echo "⏳ Waiting for Traefik health..."
+          # Wait for healthy
+          echo "⏳ Waiting for Traefik..."
           for i in {1..30}; do
             if docker ps --filter "name=traefik" --filter "health=healthy" | grep -q traefik; then
-              echo "✅ Traefik is healthy"
+              echo "✅ Traefik healthy"
               break
             fi
-            if [ $i -eq 30 ]; then
-              echo "⚠️ Traefik health timeout, but continuing..."
-            fi
+            [ $i -eq 30 ] && echo "⚠️ Traefik health timeout, continuing..."
             sleep 2
           done
 
-      - name: 🚀 Deploy Services (Zero-Downtime)
+      - name: 🚀 Deploy Services (Blue-Green)
         run: |
           echo "🚀 Starting zero-downtime deployment..."
-
-          # True zero-downtime: Scale UP first, then Docker removes old containers
-          # Strategy: Double capacity → wait for health → scale down (Docker auto-removes old)
 
           deploy_service() {
             local SERVICE=$1
@@ -118,14 +295,14 @@ jobs:
             echo ""
             echo "📦 Deploying $SERVICE (current: $CURRENT, target: $TARGET)..."
 
-            # Scale UP to add new containers (keeps old ones running)
+            # Scale UP first (keeps old containers)
             if [ "$SCALE_UP" -gt "$CURRENT" ]; then
-              echo "⬆️  Scaling up to $SCALE_UP containers..."
+              echo "⬆️  Scaling up to $SCALE_UP..."
               docker compose -f ${{ env.COMPOSE_FILE }} \
                 --env-file ${{ env.ENV_FILE }} \
                 up -d --no-deps --scale ${SERVICE}=${SCALE_UP} ${SERVICE}
 
-              # Wait for new containers to be healthy
+              # Wait for healthy
               echo "⏳ Waiting for healthy containers..."
               for i in {1..30}; do
                 HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${SERVICE}" --filter "health=healthy" -q | wc -l)
@@ -138,7 +315,7 @@ jobs:
               done
             fi
 
-            # Scale back to target (Docker removes old unhealthy containers automatically)
+            # Scale to target (removes old containers)
             echo "📏 Scaling to target: $TARGET..."
             docker compose -f ${{ env.COMPOSE_FILE }} \
               --env-file ${{ env.ENV_FILE }} \
@@ -147,7 +324,7 @@ jobs:
             sleep 2
           }
 
-          # Deploy services one by one
+          # Deploy all services
           deploy_service "webapp" 2
           deploy_service "rest-api" 2
           deploy_service "hocuspocus-server" 2
@@ -160,12 +337,10 @@ jobs:
       - name: 🩺 Verify Deployment
         run: |
           echo "🩺 Verifying deployment..."
-
-          # Wait a bit for everything to stabilize
           sleep 10
 
-          # Check all core services
-          echo "📊 Service Status:"
+          # Check infrastructure
+          echo "📊 Infrastructure:"
           for svc in traefik docsplus-redis; do
             if docker ps --filter "name=$svc" --filter "status=running" | grep -q "$svc"; then
               echo "  ✅ $svc: running"
@@ -176,7 +351,8 @@ jobs:
             fi
           done
 
-          # Check scaled services
+          # Check services
+          echo "📊 Services:"
           for svc in webapp rest-api hocuspocus-server hocuspocus-worker admin-dashboard; do
             RUNNING=$(docker ps --filter "label=com.docker.compose.service=${svc}" --filter "status=running" --format "{{.Names}}" | wc -l)
             HEALTHY=$(docker ps --filter "label=com.docker.compose.service=${svc}" --filter "health=healthy" --format "{{.Names}}" | wc -l)
@@ -189,49 +365,38 @@ jobs:
             fi
           done
 
-          # Health check via Traefik endpoints
+          # Test endpoints
           echo ""
           echo "🔍 Testing endpoints..."
 
-          # Test main site
           for i in {1..20}; do
             HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" https://docs.plus/ 2>/dev/null || echo "000")
             if [ "$HTTP_CODE" = "200" ]; then
               echo "  ✅ https://docs.plus/ → $HTTP_CODE"
               break
             fi
-            if [ $i -eq 20 ]; then
-              echo "  ⚠️ https://docs.plus/ → $HTTP_CODE (may still be provisioning)"
-            fi
+            [ $i -eq 20 ] && echo "  ⚠️ https://docs.plus/ → $HTTP_CODE (may still be provisioning)"
             sleep 3
           done
 
-          # Test API health
           HTTP_CODE=$(curl -sf -o /dev/null -w "%{http_code}" https://prodback.docs.plus/api/health 2>/dev/null || echo "000")
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "  ✅ https://prodback.docs.plus/api/health → $HTTP_CODE"
-          else
-            echo "  ⚠️ https://prodback.docs.plus/api/health → $HTTP_CODE"
-          fi
+          [ "$HTTP_CODE" = "200" ] && echo "  ✅ API health → $HTTP_CODE" || echo "  ⚠️ API health → $HTTP_CODE"
 
           echo ""
           echo "✅ Deployment verified"
 
-      - name: 🔄 Ensure Services from Production Directory
+      - name: 🔄 Sync Production Directory
         run: |
           cd /opt/projects/prod.docs.plus/app/docs.plus/docs.plus
           docker compose -f ${{ env.COMPOSE_FILE }} --env-file ${{ env.ENV_FILE }} up -d \
             rest-api hocuspocus-server hocuspocus-worker webapp admin-dashboard
-          echo "✅ Services running"
+          echo "✅ Production directory synced"
 
       - name: 🧹 Cleanup
+        continue-on-error: true # Cleanup failure shouldn't fail deployment
         run: |
-          # Remove dangling images
           docker image prune -f
-
-          # Remove old images (older than 24h)
           docker image prune -f --filter "until=24h" 2>/dev/null || true
-
           echo "✅ Cleanup complete"
 
       - name: 📊 Summary
@@ -254,8 +419,6 @@ jobs:
         run: |
           echo "⚠️ Deployment failed - attempting recovery..."
 
-          # Don't do aggressive rollback - just ensure services are running
-          # Traefik will route to whatever containers are healthy
           cd /opt/projects/prod.docs.plus/app/docs.plus/docs.plus
           docker compose -f ${{ env.COMPOSE_FILE }} --env-file ${{ env.ENV_FILE }} \
             up -d --no-recreate 2>/dev/null || true
@@ -263,13 +426,18 @@ jobs:
           echo "📊 Current state:"
           docker ps --format "table {{.Names}}\t{{.Status}}" | head -15
 
-  # ===========================================================================
-  # UPTIME KUMA (Monitoring)
-  # ===========================================================================
+  # ============================================================================
+  # UPTIME KUMA (Optional monitoring service)
+  # ============================================================================
   deploy-uptime-kuma:
     name: 🔔 Deploy Uptime Kuma
     runs-on: prod.docs.plus
-    if: contains(github.event.head_commit.message, 'build') && contains(github.event.head_commit.message, 'uptime-kuma')
+    timeout-minutes: 10
+    if: |
+      github.ref == 'refs/heads/main' &&
+      github.event_name == 'push' &&
+      contains(github.event.head_commit.message, 'build') &&
+      contains(github.event.head_commit.message, 'uptime-kuma')
 
     steps:
       - name: 🚀 Deploy
