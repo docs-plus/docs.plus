@@ -28,6 +28,7 @@ import {
 } from 'react-icons/lu'
 
 import { StatCard } from '@/components/cards/StatCard'
+import { PushSubscriptionStats } from '@/components/charts/PushSubscriptionStats'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
 import { CollapsibleSection } from '@/components/ui/CollapsibleSection'
@@ -71,6 +72,28 @@ function StatusBadge({
   )
 }
 
+// Get queue status color and label
+function getQueueStatus(pipeline: PushPipelineStats | null): {
+  status: 'ok' | 'warning' | 'error'
+  label: string
+} {
+  if (!pipeline) return { status: 'warning', label: 'Loading...' }
+
+  const consumerStatus = pipeline.consumerStatus || 'idle'
+  switch (consumerStatus) {
+    case 'idle':
+      return { status: 'ok', label: 'Idle (0 queued)' }
+    case 'healthy':
+      return { status: 'ok', label: `${pipeline.queueDepth} in queue` }
+    case 'backlog':
+      return { status: 'warning', label: `Backlog: ${pipeline.queueDepth}` }
+    case 'critical':
+      return { status: 'error', label: `Critical: ${pipeline.queueDepth}` }
+    default:
+      return { status: 'ok', label: `${pipeline.queueDepth} in queue` }
+  }
+}
+
 // Push Pipeline Flow Visualization
 function PushPipelineFlow({
   pipeline,
@@ -79,18 +102,20 @@ function PushPipelineFlow({
   pipeline: PushPipelineStats | null
   gatewayHealth: PushGatewayHealth | null
 }) {
+  const queueStatus = getQueueStatus(pipeline)
+
   const steps = [
     {
-      name: 'DB Trigger',
+      name: 'Notification',
       icon: LuDatabase,
-      status: pipeline?.triggerConfigured ? 'ok' : 'error',
-      detail: pipeline?.triggerConfigured ? 'pgmq enqueue' : 'Not configured'
+      status: 'ok' as const,
+      detail: 'DB trigger → pgmq'
     },
     {
       name: 'pgmq Queue',
       icon: LuWifi,
-      status: pipeline?.queueDepth !== undefined ? 'ok' : 'warning',
-      detail: pipeline ? `${pipeline.queueDepth} in queue` : 'No data'
+      status: queueStatus.status,
+      detail: queueStatus.label
     },
     {
       name: 'Consumer',
@@ -101,7 +126,7 @@ function PushPipelineFlow({
         : 'Checking...'
     },
     {
-      name: 'BullMQ Queue',
+      name: 'BullMQ',
       icon: LuClock,
       status: gatewayHealth?.queueConnected ? 'ok' : 'error',
       detail: gatewayHealth?.queueConnected
@@ -125,7 +150,7 @@ function PushPipelineFlow({
 
   return (
     <div className="bg-base-100 rounded-box border-base-300 border p-5">
-      <h3 className="mb-4 text-lg font-semibold">Push Notification Pipeline</h3>
+      <h3 className="mb-4 text-lg font-semibold">Push Notification Pipeline (pgmq)</h3>
       <div className="flex flex-wrap items-center justify-between gap-2">
         {steps.map((step, i) => (
           <div key={step.name} className="flex items-center gap-2">
@@ -537,6 +562,9 @@ export default function NotificationsPage() {
               />
             </div>
           </div>
+
+          {/* Push Subscription Analytics */}
+          <PushSubscriptionStats />
 
           {/* Email Notifications */}
           <div>
