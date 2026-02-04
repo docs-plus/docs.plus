@@ -53,10 +53,19 @@ echo ""
 # ============================================
 if echo "$CHANGED_FILES" | grep -q "packages/admin-dashboard/"; then
     echo "📦 Building admin-dashboard..."
-    if bun run --filter "@docs.plus/admin-dashboard" build:local >/dev/null 2>&1; then
+    # Use direct next build with production mode and minimal env vars
+    if cd packages/admin-dashboard && \
+       NODE_ENV=production \
+       NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 \
+       NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy-key-for-build-check \
+       NEXT_PUBLIC_API_URL=http://localhost:3003 \
+       NEXT_PUBLIC_APP_URL=http://localhost:3000 \
+       npx next build >/dev/null 2>&1; then
         echo "  ✅ admin-dashboard build OK"
+        cd ../..
     else
         echo "  ❌ admin-dashboard build failed"
+        cd ../..
         FAILED=1
     fi
 else
@@ -70,6 +79,35 @@ if [ $FAILED -ne 0 ]; then
 fi
 
 echo ""
-echo "🚀 All pre-push checks passed. Proceeding with push."
+
+# ============================================
+# 3. Build Webapp (only if changed)
+# ============================================
+if echo "$CHANGED_FILES" | grep -q "packages/webapp/"; then
+    echo "📦 Building webapp..."
+    # Use direct next build with production mode and minimal env vars
+    # (matches CI pr-check workflow - just validates build, not real deployment)
+    if cd packages/webapp && \
+       NODE_ENV=production \
+       NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 \
+       NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy-key-for-build-check \
+       npx next build >/dev/null 2>&1; then
+        echo "  ✅ webapp build OK"
+        cd ../..
+    else
+        echo "  ❌ webapp build failed"
+        cd ../..
+        FAILED=1
+    fi
+else
+    echo "📦 No webapp changes detected, skipping build"
+fi
+
+if [ $FAILED -ne 0 ]; then
+    echo ""
+    echo "❌ Webapp build failed. Push aborted."
+    exit 1
+fi
+
 echo ""
-echo "💡 Note: Webapp build is handled by CI/CD pipeline."
+echo "🚀 All pre-push checks passed. Proceeding with push."

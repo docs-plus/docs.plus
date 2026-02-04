@@ -44,14 +44,25 @@ jobs:
       # - name: 📝 Type check (backend)
       #   run: bun run typecheck:backend
 
+      - name: 🔧 Build TipTap extensions
+        run: |
+          bun run --filter @docs.plus/extension-hyperlink build
+          bun run --filter @docs.plus/extension-hypermultimedia build
+          bun run --filter @docs.plus/extension-indent build
+          bun run --filter @docs.plus/extension-inline-code build
+
       - name: 🏗️ Build webapp
-        run: bun run --filter @docs.plus/webapp build:local
+        run: cd packages/webapp && npx next build
         env:
+          NODE_ENV: production
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
 
       - name: 🏗️ Build admin
-        run: bun run --filter @docs.plus/admin-dashboard build:local
+        run: cd packages/admin-dashboard && npx next build
         env:
+          NODE_ENV: production
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
+          NEXT_PUBLIC_API_URL: http://localhost:3003
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
