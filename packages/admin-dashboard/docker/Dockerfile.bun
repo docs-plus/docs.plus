@@ -49,7 +49,8 @@ COPY packages/admin-dashboard ./packages/admin-dashboard
 COPY tsconfig.json ./
 
 WORKDIR /app/packages/admin-dashboard
-RUN bun run build
+# Use build:ci (no dotenv dependency - env vars already set via ARG/ENV)
+RUN bun run build:ci
 
 # ============================================================================
 # Stage 4: Runner

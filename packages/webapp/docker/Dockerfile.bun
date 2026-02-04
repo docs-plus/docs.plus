@@ -122,8 +122,9 @@ COPY .prettierrc.json ./
 COPY tsconfig.json ./
 
 # Build Next.js app (standalone output configured in next.config.js)
+# Use build:ci (no dotenv dependency - env vars already set via ARG/ENV)
 WORKDIR /app/packages/webapp
-RUN bun run build
+RUN bun run build:ci
 
 # ============================================================================
 # Stage 5: Runner - Production runtime
