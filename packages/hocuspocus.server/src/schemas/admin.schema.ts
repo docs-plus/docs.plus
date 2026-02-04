@@ -42,6 +42,11 @@ export const daysQuerySchema = z.object({
   days: z.string().regex(/^\d+$/).optional().default('7')
 })
 
+export const batchTrendsQuerySchema = z.object({
+  slugs: z.string().min(1, 'At least one slug required'),
+  days: z.string().regex(/^\d+$/).optional().default('7')
+})
+
 // =============================================================================
 // Export Types
 // =============================================================================

@@ -1,16 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 
 // Disable static generation - pages require auth which needs client-side router
 export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 import toast from 'react-hot-toast'
-import { LuChartBar, LuEye, LuFileText, LuLock, LuUsers } from 'react-icons/lu'
+import { LuChartBar, LuEye, LuFileText, LuLock, LuUser, LuUsers } from 'react-icons/lu'
 
 import { StatCard } from '@/components/cards/StatCard'
+import { Sparkline } from '@/components/charts'
 import { ActionsDropdown, DeleteModal } from '@/components/documents'
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
@@ -20,6 +21,7 @@ import { SearchInput } from '@/components/ui/SearchInput'
 import { useTableParams } from '@/hooks/useTableParams'
 import {
   deleteDocument,
+  fetchBatchDocumentTrends,
   fetchDocuments,
   fetchDocumentStats,
   updateDocumentFlags
@@ -52,6 +54,16 @@ export default function DocumentsPage() {
   } = useQuery({
     queryKey: ['admin', 'documents', 'stats'],
     queryFn: fetchDocumentStats
+  })
+
+  // Get document slugs for batch trend fetch
+  const docSlugs = useMemo(() => data?.data?.map((d) => d.docId) || [], [data?.data])
+
+  // Fetch sparkline trends for current page
+  const { data: trends } = useQuery({
+    queryKey: ['admin', 'documents', 'trends', docSlugs],
+    queryFn: () => fetchBatchDocumentTrends(docSlugs, 7),
+    enabled: docSlugs.length > 0
   })
 
   // Mutation for updating document flags
@@ -131,6 +143,7 @@ export default function DocumentsPage() {
       { key: 'owner', header: 'Owner' },
       { key: 'memberCount', header: 'Members' },
       { key: 'views7d', header: 'Views (7d)' },
+      { key: 'uniqueUsers7d', header: 'Visitors (7d)' },
       { key: 'isPrivate', header: 'Private' },
       { key: 'readOnly', header: 'Read Only' },
       { key: 'versionCount', header: 'Versions' },
@@ -219,6 +232,32 @@ export default function DocumentsPage() {
             {doc.views7d !== undefined ? doc.views7d.toLocaleString() : '—'}
           </span>
         </div>
+      )
+    },
+    {
+      key: 'uniqueUsers7d',
+      header: 'Visitors (7d)',
+      sortable: true,
+      render: (doc: Document) => (
+        <div className="flex items-center gap-1.5">
+          <LuUser className="text-base-content/40 h-4 w-4" />
+          <span className="text-sm font-medium">
+            {doc.uniqueUsers7d !== undefined ? doc.uniqueUsers7d.toLocaleString() : '—'}
+          </span>
+        </div>
+      )
+    },
+    {
+      key: 'trend',
+      header: 'Trend',
+      render: (doc: Document) => (
+        <Sparkline
+          data={trends?.[doc.docId] || []}
+          width={60}
+          height={20}
+          strokeColor="oklch(var(--p))"
+          fillColor="oklch(var(--p))"
+        />
       )
     },
     {

@@ -30,7 +30,10 @@ export interface Document {
   memberCount: number
   // View analytics (optional - may not be present if view tracking not enabled)
   views7d?: number
+  uniqueUsers7d?: number
   viewsTotal?: number
+  // Sparkline trend data (7-day)
+  viewsTrend?: number[]
 }
 
 export interface DocumentStats {
@@ -293,10 +296,12 @@ export interface PushSubscriptionDetail {
 }
 
 export interface PushPipelineStats {
-  // Database trigger stats
+  // pgmq consumer status
   triggerConfigured: boolean
+  consumerStatus?: 'idle' | 'healthy' | 'backlog' | 'critical'
   // pgmq queue stats
   queueDepth: number
+  oldestMessageAge?: number // seconds
   messagesProcessed: number
   messagesFailed: number
   // Push subscription stats
@@ -324,4 +329,44 @@ export interface PushDebugStats {
   pipeline: PushPipelineStats
   failedSubscriptions: PushSubscriptionDetail[]
   recentAttempts: RecentPushAttempt[]
+}
+
+// =============================================================================
+// Push Subscription Analytics Types (v6.3.0)
+// =============================================================================
+
+export interface PushSubscriptionAnalytics {
+  // Platform breakdown
+  platforms: {
+    web: number
+    ios: number
+    android: number
+    desktop: number
+    total: number
+  }
+  // Subscription health
+  health: {
+    fresh: number // < 7 days
+    ok: number // 7-30 days
+    stale: number // > 30 days
+    avgAgeDays: number
+  }
+  // Lifecycle
+  lifecycle: {
+    newThisWeek: number
+    churnedThisWeek: number // became inactive
+    total: number
+  }
+  // Errors (from last_error field)
+  errors: {
+    total: number
+    byType: Record<string, number>
+  }
+}
+
+export interface PlatformTrendPoint {
+  date: string
+  web: number
+  ios: number
+  android: number
 }

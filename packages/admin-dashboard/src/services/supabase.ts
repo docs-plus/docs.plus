@@ -336,27 +336,41 @@ export async function checkDatabaseHealth(): Promise<{ status: string; latency: 
 
 /**
  * Fetch push pipeline stats for admin debugging
- * Uses pgmq architecture - no more pg_net
+ * Uses pgmq architecture with get_push_queue_stats() RPC
  */
 export async function fetchPushPipelineStats(): Promise<PushPipelineStats> {
-  // Use the get_push_notification_stats RPC (pgmq version)
-  const { data: rpcData, error: rpcError } = await supabase.rpc('get_push_notification_stats')
+  // Use the get_push_queue_stats RPC (pgmq version)
+  const { data: rpcData, error: rpcError } = await supabase.rpc('get_push_queue_stats')
 
   if (!rpcError && rpcData) {
+    // RPC returns: queue_length, oldest_message_age_seconds, active_subscriptions,
+    // inactive_subscriptions, failed_subscriptions, consumer_status
+    const data = rpcData as {
+      queue_length: number
+      oldest_message_age_seconds: number
+      active_subscriptions: number
+      inactive_subscriptions: number
+      failed_subscriptions: number
+      consumer_status: 'idle' | 'healthy' | 'backlog' | 'critical'
+    }
     return {
-      triggerConfigured: rpcData.architecture === 'pgmq_consumer',
-      queueDepth: rpcData.queue?.depth || 0,
+      triggerConfigured: true, // pgmq consumer is always configured
+      queueDepth: data.queue_length,
       messagesProcessed: 0, // Backend tracks this
       messagesFailed: 0,
-      totalSubscriptions: rpcData.subscriptions?.total || 0,
-      activeSubscriptions: rpcData.subscriptions?.active || 0,
-      failedSubscriptions: rpcData.subscriptions?.failed || 0,
-      lastPushSent: rpcData.last_activity || null,
-      lastPushError: null
+      totalSubscriptions: data.active_subscriptions + data.inactive_subscriptions,
+      activeSubscriptions: data.active_subscriptions,
+      failedSubscriptions: data.failed_subscriptions,
+      lastPushSent: null, // Would need separate tracking
+      lastPushError: null,
+      // Extra fields for enhanced display
+      consumerStatus: data.consumer_status,
+      oldestMessageAge: data.oldest_message_age_seconds
     }
   }
 
-  // Fallback: Query tables directly
+  // Fallback: Query tables directly if RPC fails
+  console.warn('get_push_queue_stats RPC failed, using fallback:', rpcError?.message)
   const [activeResult, failedResult, totalResult] = await Promise.all([
     supabase
       .from('push_subscriptions')
@@ -378,7 +392,9 @@ export async function fetchPushPipelineStats(): Promise<PushPipelineStats> {
     activeSubscriptions: activeResult.count || 0,
     failedSubscriptions: failedResult.count || 0,
     lastPushSent: null,
-    lastPushError: null
+    lastPushError: null,
+    consumerStatus: 'idle',
+    oldestMessageAge: 0
   }
 }
 
@@ -466,4 +482,204 @@ export async function fetchRecentPushActivity(limit = 10): Promise<PushSubscript
     last_used_at: sub.last_used_at as string | null,
     created_at: sub.created_at as string
   }))
+}
+
+// =============================================================================
+// User Notification Subscriptions (for Users page)
+// =============================================================================
+
+export interface UserNotificationSubs {
+  web: boolean
+  ios: boolean
+  android: boolean
+  email: boolean
+}
+
+/**
+ * Fetch notification subscriptions for all users (batch)
+ * Returns a map of user_id -> subscription platforms
+ */
+export async function fetchUserNotificationSubscriptions(): Promise<
+  Record<string, UserNotificationSubs>
+> {
+  // Fetch push subscriptions (active only)
+  const { data: pushSubs, error: pushError } = await supabase
+    .from('push_subscriptions')
+    .select('user_id, platform')
+    .eq('is_active', true)
+
+  if (pushError) {
+    console.error('Failed to fetch push subscriptions:', pushError)
+  }
+
+  // Fetch email preferences from users table
+  const { data: users, error: usersError } = await supabase
+    .from('users')
+    .select('id, profile_data')
+    .not('profile_data', 'is', null)
+
+  if (usersError) {
+    console.error('Failed to fetch user email preferences:', usersError)
+  }
+
+  // Build result map
+  const result: Record<string, UserNotificationSubs> = {}
+
+  // Process push subscriptions
+  ;(pushSubs || []).forEach((sub) => {
+    const userId = sub.user_id
+    if (!result[userId]) {
+      result[userId] = { web: false, ios: false, android: false, email: false }
+    }
+    const platform = sub.platform as 'web' | 'ios' | 'android'
+    if (platform === 'web' || platform === 'ios' || platform === 'android') {
+      result[userId][platform] = true
+    }
+  })
+
+  // Process email preferences
+  ;(users || []).forEach((user) => {
+    const userId = user.id
+    if (!result[userId]) {
+      result[userId] = { web: false, ios: false, android: false, email: false }
+    }
+    // Check if email notifications are enabled in profile_data
+    const profileData = user.profile_data as Record<string, unknown> | null
+    const notifPrefs = profileData?.notification_preferences as Record<string, unknown> | undefined
+    result[userId].email = notifPrefs?.email_enabled === true
+  })
+
+  return result
+}
+
+// =============================================================================
+// Push Subscription Analytics (v6.3.0)
+// =============================================================================
+
+import type { PlatformTrendPoint, PushSubscriptionAnalytics } from '@/types'
+
+/**
+ * Fetch comprehensive push subscription analytics
+ * Single efficient query with all metrics
+ */
+export async function fetchPushSubscriptionAnalytics(): Promise<PushSubscriptionAnalytics> {
+  const now = new Date()
+  const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+
+  // Fetch all subscriptions with needed fields
+  const { data: subs, error } = await supabase
+    .from('push_subscriptions')
+    .select('platform, updated_at, created_at, is_active, failed_count, last_error')
+
+  if (error) {
+    console.error('Failed to fetch push analytics:', error)
+    return getEmptyAnalytics()
+  }
+
+  const allSubs = subs || []
+  const activeSubs = allSubs.filter((s) => s.is_active)
+
+  // Platform breakdown
+  const platforms = { web: 0, ios: 0, android: 0, desktop: 0, total: activeSubs.length }
+  activeSubs.forEach((s) => {
+    const p = s.platform as keyof typeof platforms
+    if (p in platforms) platforms[p]++
+  })
+
+  // Subscription health (based on updated_at)
+  let fresh = 0,
+    ok = 0,
+    stale = 0,
+    totalAgeDays = 0
+  activeSubs.forEach((s) => {
+    const updatedAt = new Date(s.updated_at)
+    const ageDays = (now.getTime() - updatedAt.getTime()) / (1000 * 60 * 60 * 24)
+    totalAgeDays += ageDays
+    if (ageDays < 7) fresh++
+    else if (ageDays <= 30) ok++
+    else stale++
+  })
+  const avgAgeDays = activeSubs.length > 0 ? Math.round(totalAgeDays / activeSubs.length) : 0
+
+  // Lifecycle
+  const newThisWeek = allSubs.filter((s) => s.is_active && new Date(s.created_at) >= weekAgo).length
+  const churnedThisWeek = allSubs.filter(
+    (s) => !s.is_active && new Date(s.updated_at) >= weekAgo
+  ).length
+
+  // Errors (parse last_error for common patterns)
+  const errors: Record<string, number> = {}
+  let totalErrors = 0
+  allSubs
+    .filter((s) => s.failed_count > 0 && s.last_error)
+    .forEach((s) => {
+      totalErrors++
+      // Extract error type from last_error
+      const errorType = categorizeError(s.last_error || '')
+      errors[errorType] = (errors[errorType] || 0) + 1
+    })
+
+  return {
+    platforms,
+    health: { fresh, ok, stale, avgAgeDays },
+    lifecycle: { newThisWeek, churnedThisWeek, total: allSubs.length },
+    errors: { total: totalErrors, byType: errors }
+  }
+}
+
+/**
+ * Categorize error message into standard error codes
+ */
+function categorizeError(errorMsg: string): string {
+  const lower = errorMsg.toLowerCase()
+  if (lower.includes('expired') || lower.includes('410')) return 'EXPIRED'
+  if (lower.includes('denied') || lower.includes('permission')) return 'PERMISSION_DENIED'
+  if (lower.includes('not found') || lower.includes('404')) return 'NOT_FOUND'
+  if (lower.includes('unauthorized') || lower.includes('401')) return 'UNAUTHORIZED'
+  if (lower.includes('timeout') || lower.includes('timed out')) return 'TIMEOUT'
+  if (lower.includes('network') || lower.includes('connection')) return 'NETWORK_ERROR'
+  return 'OTHER'
+}
+
+function getEmptyAnalytics(): PushSubscriptionAnalytics {
+  return {
+    platforms: { web: 0, ios: 0, android: 0, desktop: 0, total: 0 },
+    health: { fresh: 0, ok: 0, stale: 0, avgAgeDays: 0 },
+    lifecycle: { newThisWeek: 0, churnedThisWeek: 0, total: 0 },
+    errors: { total: 0, byType: {} }
+  }
+}
+
+/**
+ * Fetch platform subscription trend over time (last 30 days)
+ */
+export async function fetchPlatformTrend(days = 30): Promise<PlatformTrendPoint[]> {
+  const startDate = new Date()
+  startDate.setDate(startDate.getDate() - days)
+
+  const { data, error } = await supabase
+    .from('push_subscriptions')
+    .select('platform, created_at')
+    .eq('is_active', true)
+    .gte('created_at', startDate.toISOString())
+    .order('created_at', { ascending: true })
+
+  if (error) {
+    console.error('Failed to fetch platform trend:', error)
+    return []
+  }
+
+  // Group by date and platform
+  const byDate: Record<string, { web: number; ios: number; android: number }> = {}
+  ;(data || []).forEach((s) => {
+    const date = s.created_at.split('T')[0]
+    if (!byDate[date]) byDate[date] = { web: 0, ios: 0, android: 0 }
+    const platform = s.platform as 'web' | 'ios' | 'android'
+    if (platform in byDate[date]) byDate[date][platform]++
+  })
+
+  // Convert to cumulative trend
+  return Object.entries(byDate)
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([date, counts]) => ({ date, ...counts }))
 }

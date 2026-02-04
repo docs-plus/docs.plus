@@ -165,7 +165,9 @@ export async function listDocuments(c: AppContext) {
       ownerName: null as string | null,
       ownerAvatarUrl: null as string | null,
       ownerAvatarUpdatedAt: null as string | null,
-      memberCount: 0
+      memberCount: 0,
+      views7d: 0,
+      uniqueUsers7d: 0
     }))
 
     // Batch fetch owner names and member counts from Supabase
@@ -265,6 +267,39 @@ export async function listDocuments(c: AppContext) {
           console.error('Failed to fetch member counts:', err)
         }
       }
+
+      // Batch fetch view stats
+      if (slugs.length > 0) {
+        try {
+          const quotedSlugs = slugs.map((s) => `"${s}"`).join(',')
+          const viewStatsRes = await fetch(
+            `${supabaseUrl}/rest/v1/document_view_stats?document_slug=in.(${quotedSlugs})&select=document_slug,views_7d,unique_users_7d`,
+            { headers }
+          )
+          const viewStats = await viewStatsRes.json()
+
+          if (Array.isArray(viewStats)) {
+            const statsMap = new Map(
+              viewStats.map(
+                (s: { document_slug: string; views_7d: number; unique_users_7d: number }) => [
+                  s.document_slug,
+                  { views7d: s.views_7d, uniqueUsers7d: s.unique_users_7d }
+                ]
+              )
+            )
+
+            docsWithDefaults.forEach((doc) => {
+              const stats = statsMap.get(doc.docId)
+              if (stats) {
+                doc.views7d = stats.views7d
+                doc.uniqueUsers7d = stats.uniqueUsers7d
+              }
+            })
+          }
+        } catch (err) {
+          console.error('Failed to fetch view stats:', err)
+        }
+      }
     }
 
     return c.json({
@@ -284,7 +319,9 @@ export async function listDocuments(c: AppContext) {
         ownerEmail: doc.ownerEmail,
         ownerAvatarUrl: doc.ownerAvatarUrl,
         ownerAvatarUpdatedAt: doc.ownerAvatarUpdatedAt,
-        memberCount: doc.memberCount
+        memberCount: doc.memberCount,
+        views7d: doc.views7d,
+        uniqueUsers7d: doc.uniqueUsers7d
       })),
       pagination: {
         page,
@@ -660,6 +697,84 @@ export async function getViewsTrend(c: AppContext) {
     return c.json(data || [])
   } catch (error) {
     console.error('Failed to get views trend:', error)
+    return c.json({ error: 'Failed to fetch trend data' }, 500)
+  }
+}
+
+/**
+ * Get batch document view trends (for sparklines)
+ * Returns last N days of views for multiple documents
+ */
+export async function getBatchDocumentTrends(c: AppContext) {
+  try {
+    const supabase = getSupabaseClient()
+    if (!supabase) {
+      return c.json({ error: 'Supabase not configured' }, 500)
+    }
+
+    const slugsParam = c.req.query('slugs') || ''
+    const days = parseInt(c.req.query('days') || '7')
+    const slugs = slugsParam.split(',').filter(Boolean)
+
+    if (slugs.length === 0) {
+      return c.json({})
+    }
+
+    // Calculate date range
+    const endDate = new Date()
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days)
+    const startDateStr = startDate.toISOString().split('T')[0]
+
+    // Fetch daily views for all slugs in batch
+    const { data, error } = await supabase
+      .from('document_views_daily')
+      .select('document_slug, view_date, views')
+      .in('document_slug', slugs)
+      .gte('view_date', startDateStr)
+      .order('view_date', { ascending: true })
+
+    if (error) {
+      console.error('Failed to get batch trends:', error)
+      return c.json({ error: 'Failed to fetch trend data' }, 500)
+    }
+
+    // Group by document slug and create arrays of daily views
+    const trendsBySlug: Record<string, number[]> = {}
+    slugs.forEach((slug) => {
+      trendsBySlug[slug] = []
+    })
+
+    // Create a map of all dates we need
+    const dateMap: Record<string, Record<string, number>> = {}
+    for (let d = new Date(startDate); d <= endDate; d.setDate(d.getDate() + 1)) {
+      const dateStr = d.toISOString().split('T')[0]
+      dateMap[dateStr] = {}
+      slugs.forEach((slug) => {
+        dateMap[dateStr][slug] = 0
+      })
+    }
+
+    // Fill in actual data
+    ;(data || []).forEach((row: { document_slug: string; view_date: string; views: number }) => {
+      const dateStr =
+        typeof row.view_date === 'string'
+          ? row.view_date
+          : new Date(row.view_date).toISOString().split('T')[0]
+      if (dateMap[dateStr]) {
+        dateMap[dateStr][row.document_slug] = row.views
+      }
+    })
+
+    // Build arrays
+    const sortedDates = Object.keys(dateMap).sort()
+    slugs.forEach((slug) => {
+      trendsBySlug[slug] = sortedDates.map((date) => dateMap[date][slug] || 0)
+    })
+
+    return c.json(trendsBySlug)
+  } catch (error) {
+    console.error('Failed to get batch trends:', error)
     return c.json({ error: 'Failed to fetch trend data' }, 500)
   }
 }

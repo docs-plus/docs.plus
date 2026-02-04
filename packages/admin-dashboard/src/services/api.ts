@@ -217,6 +217,21 @@ export async function fetchDocumentViewStats(slug: string): Promise<DocumentView
   return fetchApi(`/api/admin/documents/${slug}/views`)
 }
 
+/**
+ * Fetch batch document trends for sparklines
+ */
+export async function fetchBatchDocumentTrends(
+  slugs: string[],
+  days = 7
+): Promise<Record<string, number[]>> {
+  if (slugs.length === 0) return {}
+  const params = new URLSearchParams({
+    slugs: slugs.join(','),
+    days: String(days)
+  })
+  return fetchApi(`/api/admin/stats/views/batch-trends?${params.toString()}`)
+}
+
 // =============================================================================
 // User Retention Analytics API (Phase 8)
 // =============================================================================

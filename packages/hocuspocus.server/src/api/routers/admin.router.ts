@@ -2,6 +2,7 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 
 import {
+  batchTrendsQuerySchema,
   daysQuerySchema,
   deleteDocumentSchema,
   listDocumentsQuerySchema,
@@ -73,6 +74,13 @@ admin.get(
 
 // Get single document view stats
 admin.get('/documents/:slug/views', adminController.getDocumentViewStats)
+
+// Get batch document trends (for sparklines in table)
+admin.get(
+  '/stats/views/batch-trends',
+  zValidator('query', batchTrendsQuerySchema),
+  adminController.getBatchDocumentTrends
+)
 
 // =============================================================================
 // User Retention Analytics
