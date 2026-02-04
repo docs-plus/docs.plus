@@ -70,10 +70,11 @@ RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
 # Copy standalone build output
-# Next.js standalone creates: .next/standalone/server.js
+# Next.js standalone creates: .next/standalone/app/server.js (monorepo structure)
+# Static and public files must be placed relative to server.js location
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./app/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./app/public
 
 USER nextjs
 
@@ -82,4 +83,5 @@ EXPOSE 3100
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD bun -e "fetch('http://localhost:3100/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
 
-CMD ["bun", "server.js"]
+# server.js is at app/server.js in standalone output
+CMD ["bun", "app/server.js"]
