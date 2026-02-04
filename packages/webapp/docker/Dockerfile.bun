@@ -36,12 +36,15 @@ FROM base AS deps
 COPY package.json bun.lock* ./
 COPY packages/eslint-config ./packages/eslint-config
 
-# Copy package.json files for all packages (needed for workspace resolution)
+# Copy ALL workspace package.json files (required for bun lockfile resolution)
 COPY packages/extension-hyperlink/package.json ./packages/extension-hyperlink/
 COPY packages/extension-hypermultimedia/package.json ./packages/extension-hypermultimedia/
 COPY packages/extension-indent/package.json ./packages/extension-indent/
 COPY packages/extension-inline-code/package.json ./packages/extension-inline-code/
 COPY packages/webapp/package.json ./packages/webapp/
+COPY packages/admin-dashboard/package.json ./packages/admin-dashboard/
+COPY packages/hocuspocus.server/package.json ./packages/hocuspocus.server/
+COPY packages/supabase/package.json ./packages/supabase/
 
 # Install all dependencies (Docker layer cache handles caching naturally)
 # Skip Cypress binary download to save time and network
