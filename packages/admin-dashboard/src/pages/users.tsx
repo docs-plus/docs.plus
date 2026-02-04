@@ -9,11 +9,12 @@ import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
 import { DataTable } from '@/components/tables/DataTable'
 import { Avatar } from '@/components/ui/Avatar'
+import { NotificationBadges } from '@/components/ui/NotificationBadges'
 import { SearchInput } from '@/components/ui/SearchInput'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { useTableParams } from '@/hooks/useTableParams'
 import { fetchUserDocumentCounts } from '@/services/api'
-import { fetchUsers } from '@/services/supabase'
+import { fetchUserNotificationSubscriptions, fetchUsers } from '@/services/supabase'
 import type { User } from '@/types'
 import { exportToCSV } from '@/utils/export'
 import { formatDate, formatDateTime } from '@/utils/format'
@@ -23,7 +24,13 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 
-type UserWithDocs = User & { document_count: number }
+type UserWithExtras = User & {
+  document_count: number
+  notif_web: boolean
+  notif_ios: boolean
+  notif_android: boolean
+  notif_email: boolean
+}
 
 export default function UsersPage() {
   // URL-synced table state
@@ -43,14 +50,27 @@ export default function UsersPage() {
     queryFn: fetchUserDocumentCounts
   })
 
-  // Merge document counts into user data for display
-  const usersWithDocCounts = useMemo(() => {
+  // Fetch notification subscriptions per user
+  const { data: notifSubs } = useQuery({
+    queryKey: ['admin', 'users', 'notification-subs'],
+    queryFn: fetchUserNotificationSubscriptions
+  })
+
+  // Merge document counts and notification subs into user data
+  const usersWithExtras = useMemo(() => {
     if (!data?.data) return []
-    return data.data.map((user) => ({
-      ...user,
-      document_count: docCounts?.[user.id] ?? 0
-    }))
-  }, [data?.data, docCounts])
+    return data.data.map((user) => {
+      const subs = notifSubs?.[user.id]
+      return {
+        ...user,
+        document_count: docCounts?.[user.id] ?? 0,
+        notif_web: subs?.web ?? false,
+        notif_ios: subs?.ios ?? false,
+        notif_android: subs?.android ?? false,
+        notif_email: subs?.email ?? false
+      }
+    })
+  }, [data?.data, docCounts, notifSubs])
 
   // Real-time subscription to users table
   const handleRealtimeChange = useCallback(() => {
@@ -63,15 +83,19 @@ export default function UsersPage() {
   })
 
   const handleExport = () => {
-    if (!usersWithDocCounts.length) {
+    if (!usersWithExtras.length) {
       toast.error('No data to export')
       return
     }
-    exportToCSV(usersWithDocCounts, `users-${new Date().toISOString().split('T')[0]}`, [
+    exportToCSV(usersWithExtras, `users-${new Date().toISOString().split('T')[0]}`, [
       { key: 'username', header: 'Username' },
       { key: 'email', header: 'Email' },
       { key: 'full_name', header: 'Full Name' },
       { key: 'document_count', header: 'Documents' },
+      { key: 'notif_web', header: 'Push Web' },
+      { key: 'notif_ios', header: 'Push iOS' },
+      { key: 'notif_android', header: 'Push Android' },
+      { key: 'notif_email', header: 'Email Notif' },
       { key: 'status', header: 'Status' },
       { key: 'created_at', header: 'Joined' },
       { key: 'online_at', header: 'Last Active' }
@@ -84,7 +108,7 @@ export default function UsersPage() {
       key: 'username',
       header: 'Username',
       sortable: true,
-      render: (user: UserWithDocs) => (
+      render: (user: UserWithExtras) => (
         <div className="flex items-center gap-3">
           <Avatar
             userId={user.id}
@@ -102,18 +126,18 @@ export default function UsersPage() {
       key: 'email',
       header: 'Email',
       sortable: true,
-      render: (user: UserWithDocs) => <span className="text-sm">{user.email || '-'}</span>
+      render: (user: UserWithExtras) => <span className="text-sm">{user.email || '-'}</span>
     },
     {
       key: 'full_name',
       header: 'Name',
       sortable: true,
-      render: (user: UserWithDocs) => user.full_name || '-'
+      render: (user: UserWithExtras) => user.full_name || '-'
     },
     {
       key: 'document_count',
-      header: 'Documents',
-      render: (user: UserWithDocs) => (
+      header: 'Docs',
+      render: (user: UserWithExtras) => (
         <div className="flex items-center gap-1.5">
           <LuFileText className="text-base-content/40 h-4 w-4" />
           <span className="text-sm font-medium">{user.document_count}</span>
@@ -121,10 +145,22 @@ export default function UsersPage() {
       )
     },
     {
+      key: 'notifications',
+      header: 'Notifications',
+      render: (user: UserWithExtras) => (
+        <NotificationBadges
+          web={user.notif_web}
+          ios={user.notif_ios}
+          android={user.notif_android}
+          email={user.notif_email}
+        />
+      )
+    },
+    {
       key: 'status',
       header: 'Status',
       sortable: true,
-      render: (user: UserWithDocs) => (
+      render: (user: UserWithExtras) => (
         <div className="flex items-center gap-2">
           <LuCircle
             className={`h-3 w-3 fill-current ${
@@ -143,13 +179,15 @@ export default function UsersPage() {
       key: 'created_at',
       header: 'Joined',
       sortable: true,
-      render: (user: UserWithDocs) => <span className="text-sm">{formatDate(user.created_at)}</span>
+      render: (user: UserWithExtras) => (
+        <span className="text-sm">{formatDate(user.created_at)}</span>
+      )
     },
     {
       key: 'online_at',
       header: 'Last Active',
       sortable: true,
-      render: (user: UserWithDocs) => (
+      render: (user: UserWithExtras) => (
         <span className="text-base-content/60 text-sm">
           {user.online_at ? formatDateTime(user.online_at) : '-'}
         </span>
@@ -192,7 +230,7 @@ export default function UsersPage() {
           <div className="bg-base-100 rounded-box border-base-300 border">
             <DataTable
               columns={columns}
-              data={usersWithDocCounts}
+              data={usersWithExtras}
               loading={isLoading}
               pagination={{
                 page,
