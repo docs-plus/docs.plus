@@ -8,6 +8,7 @@
     "dev:local": "dotenv -e ../../.env.local -- next dev --turbopack",
     "build": "dotenv -e ../../.env.production -- next build",
     "build:local": "dotenv -e ../../.env.local -- next build",
+    "build:ci": "next build",
     "start": "node .next/standalone/packages/webapp/server.js",
     "start:local": "dotenv -e ../../.env.local -- node .next/standalone/packages/webapp/server.js",
     "start:prod": "PORT=3001 bun .next/standalone/packages/webapp/server.js",

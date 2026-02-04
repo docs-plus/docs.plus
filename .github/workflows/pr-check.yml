@@ -52,16 +52,14 @@ jobs:
           bun run --filter @docs.plus/extension-inline-code build
 
       - name: 🏗️ Build webapp
-        run: cd packages/webapp && npx next build
+        run: bun run --filter @docs.plus/webapp build:ci
         env:
-          NODE_ENV: production
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
 
       - name: 🏗️ Build admin
-        run: cd packages/admin-dashboard && npx next build
+        run: bun run --filter @docs.plus/admin-dashboard build:ci
         env:
-          NODE_ENV: production
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL || 'http://localhost:54321' }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
           NEXT_PUBLIC_API_URL: http://localhost:3003
