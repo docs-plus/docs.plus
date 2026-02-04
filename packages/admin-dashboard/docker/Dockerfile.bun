@@ -22,10 +22,8 @@ WORKDIR /app
 # Copy package files first (layer cached until these change)
 COPY package.json bun.lock* ./
 
-# Install with BuildKit cache mount for bun's global cache
-# This persists across builds, making subsequent installs MUCH faster
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile
+# Install dependencies (Docker layer cache handles caching naturally)
+RUN bun install --frozen-lockfile
 
 # -----------------------------------------------------------------------------
 # Stage 2: Build
@@ -55,9 +53,8 @@ COPY --from=deps /app/node_modules ./node_modules
 # Copy source files (layer invalidates when source changes)
 COPY . .
 
-# Build with Next.js cache mount for faster rebuilds
-RUN --mount=type=cache,target=/app/.next/cache \
-    bun run build:ci
+# Build Next.js application
+RUN bun run build:ci
 
 # -----------------------------------------------------------------------------
 # Stage 3: Runner (Production)

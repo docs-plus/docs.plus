@@ -43,11 +43,10 @@ COPY packages/extension-indent/package.json ./packages/extension-indent/
 COPY packages/extension-inline-code/package.json ./packages/extension-inline-code/
 COPY packages/webapp/package.json ./packages/webapp/
 
-# Install all dependencies with BuildKit cache mount
+# Install all dependencies (Docker layer cache handles caching naturally)
 # Skip Cypress binary download to save time and network
 ENV CYPRESS_INSTALL_BINARY=0
-RUN --mount=type=cache,target=/root/.bun/install/cache \
-    bun install --frozen-lockfile
+RUN bun install --frozen-lockfile
 
 # ============================================================================
 # Stage 3: Build Extensions - Build extension packages first
@@ -128,11 +127,10 @@ COPY packages/eslint-config ./packages/eslint-config
 COPY .prettierrc.json ./
 COPY tsconfig.json ./
 
-# Build Next.js app with cache mount for faster rebuilds
+# Build Next.js app
 # Use build:ci (no dotenv dependency - env vars already set via ARG/ENV)
 WORKDIR /app/packages/webapp
-RUN --mount=type=cache,target=/app/packages/webapp/.next/cache \
-    bun run build:ci
+RUN bun run build:ci
 
 # ============================================================================
 # Stage 5: Runner - Production runtime
