@@ -180,6 +180,12 @@ services:
       - 'traefik.http.routers.rest-api.tls.certresolver=letsencrypt'
       - 'traefik.http.routers.rest-api.service=rest-api'
       - 'traefik.http.routers.rest-api.middlewares=security-headers@file,rate-limit-api@file,retry@file'
+      # Health routes (prodback.docs.plus/health/*) - for admin dashboard monitoring
+      - 'traefik.http.routers.rest-api-health.rule=Host(`prodback.docs.plus`) && PathPrefix(`/health`)'
+      - 'traefik.http.routers.rest-api-health.entrypoints=websecure'
+      - 'traefik.http.routers.rest-api-health.tls.certresolver=letsencrypt'
+      - 'traefik.http.routers.rest-api-health.service=rest-api'
+      - 'traefik.http.routers.rest-api-health.middlewares=security-headers@file'
       - 'traefik.http.services.rest-api.loadbalancer.server.port=4000'
       # Health check - only route to healthy containers
       - 'traefik.http.services.rest-api.loadbalancer.healthcheck.path=/health'
