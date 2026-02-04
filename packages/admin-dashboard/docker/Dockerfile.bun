@@ -1,7 +1,12 @@
+# syntax=docker/dockerfile:1.4
 # =============================================================================
 # Admin Dashboard - Next.js Standalone Dockerfile
 # =============================================================================
-# This is a STANDALONE Next.js app with no internal workspace dependencies.
+# Industry-standard multi-stage build with:
+#   - BuildKit cache mounts for fast dependency installs
+#   - Proper layer ordering for maximum cache hits
+#   - Minimal production image
+#
 # Build context: packages/admin-dashboard/
 # =============================================================================
 
@@ -14,11 +19,13 @@ RUN apk add --no-cache libc6-compat
 
 WORKDIR /app
 
-# Copy package files (context is packages/admin-dashboard/)
+# Copy package files first (layer cached until these change)
 COPY package.json bun.lock* ./
 
-# Install all dependencies (including devDependencies for build)
-RUN bun install
+# Install with BuildKit cache mount for bun's global cache
+# This persists across builds, making subsequent installs MUCH faster
+RUN --mount=type=cache,target=/root/.bun/install/cache \
+    bun install --frozen-lockfile
 
 # -----------------------------------------------------------------------------
 # Stage 2: Build
@@ -45,11 +52,12 @@ ENV NODE_ENV=production \
 # Copy dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Copy all source files (context is packages/admin-dashboard/)
+# Copy source files (layer invalidates when source changes)
 COPY . .
 
-# Build Next.js app (standalone output configured in next.config)
-RUN bun run build:ci
+# Build with Next.js cache mount for faster rebuilds
+RUN --mount=type=cache,target=/app/.next/cache \
+    bun run build:ci
 
 # -----------------------------------------------------------------------------
 # Stage 3: Runner (Production)
@@ -65,7 +73,7 @@ ENV NODE_ENV=production \
     PORT=3100 \
     HOSTNAME="0.0.0.0"
 
-# Create non-root user
+# Create non-root user for security
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 

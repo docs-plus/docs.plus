@@ -1,56 +1,52 @@
 # ============================================================================
 # Composite Action: Setup Bun Environment
 # ============================================================================
-# Reusable action for consistent Bun setup across all workflows
+# Reusable Bun setup with caching. Key invalidates on bun.lock changes.
+# Increment cache-version to manually bust cache when needed.
 # ============================================================================
 
 name: 'Setup Bun Environment'
-description: 'Checkout code, setup Bun, and install dependencies with caching'
+description: 'Setup Bun with cached dependencies'
 
 inputs:
   bun-version:
-    description: 'Bun version to install'
-    required: false
+    description: 'Bun version'
     default: 'latest'
-  install-deps:
-    description: 'Whether to install dependencies'
-    required: false
-    default: 'true'
-  frozen-lockfile:
-    description: 'Use frozen lockfile for installs'
-    required: false
-    default: 'true'
   ignore-scripts:
-    description: 'Ignore postinstall scripts'
-    required: false
+    description: 'Skip postinstall scripts (for security job)'
     default: 'false'
+  cache-version:
+    description: 'Increment to bust cache (v1, v2, etc)'
+    default: 'v1'
+
+outputs:
+  cache-hit:
+    description: 'Whether cache was hit'
+    value: ${{ steps.cache.outputs.cache-hit }}
 
 runs:
   using: 'composite'
   steps:
     - name: 🥟 Setup Bun
-      uses: oven-sh/setup-bun@v2 # Pin to SHA in production: @4bc047ad259df6fc24a6c9b0f9a0cb08cf17fbe5
+      uses: oven-sh/setup-bun@v2
       with:
         bun-version: ${{ inputs.bun-version }}
 
-    - name: 📦 Cache Bun dependencies
-      if: inputs.install-deps == 'true'
-      uses: actions/cache@v4 # Pin to SHA in production: @0c45773b623bea8c8e75f6c82b208c3cf94ea4f9
+    - name: 📦 Cache Dependencies
+      id: cache
+      uses: actions/cache@v4
       with:
         path: |
           ~/.bun/install/cache
           node_modules
           packages/*/node_modules
-        key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+        key: ${{ runner.os }}-bun-${{ inputs.cache-version }}-${{ hashFiles('**/bun.lock') }}
         restore-keys: |
+          ${{ runner.os }}-bun-${{ inputs.cache-version }}-
           ${{ runner.os }}-bun-
 
     - name: 📥 Install Dependencies
-      if: inputs.install-deps == 'true'
       shell: bash
       run: |
-        ARGS="--frozen-lockfile"
-        if [ "${{ inputs.ignore-scripts }}" = "true" ]; then
-          ARGS="$ARGS --ignore-scripts"
-        fi
-        bun install $ARGS
+        [ "${{ steps.cache.outputs.cache-hit }}" = "true" ] && echo "✅ Cache HIT" || echo "📦 Installing..."
+        bun install --frozen-lockfile ${{ inputs.ignore-scripts == 'true' && '--ignore-scripts' || '' }}

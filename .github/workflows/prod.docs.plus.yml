@@ -238,13 +238,18 @@ jobs:
           echo "✅ Environment ready"
 
       - name: 🏗️ Build Docker Images
+        env:
+          DOCKER_BUILDKIT: 1
+          COMPOSE_DOCKER_CLI_BUILD: 1
         run: |
           echo "🔨 Building images with tag: ${{ env.DEPLOY_TAG }}"
+          echo "🚀 BuildKit enabled for faster cached builds"
 
           set -a
           source ${{ env.ENV_FILE }}
           set +a
 
+          # Build with BuildKit and parallel execution
           docker compose -f ${{ env.COMPOSE_FILE }} \
             --env-file ${{ env.ENV_FILE }} \
             build --parallel
