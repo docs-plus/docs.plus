@@ -1,6 +1,6 @@
 import type { User } from '@supabase/supabase-js'
 import { useRouter } from 'next/router'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { supabase } from '@/lib/supabase'
 import { logError } from '@/utils/logger'
@@ -17,6 +17,15 @@ export function useAdminAuth(): AdminAuthState {
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
 
+  // Track if initial auth check is done to prevent re-running
+  const authCheckedRef = useRef(false)
+  const subscriptionRef = useRef<{ unsubscribe: () => void } | null>(null)
+
+  // Stable navigation function using ref
+  const navigateTo = useCallback((path: string) => {
+    router.replace(path)
+  }, [])
+
   useEffect(() => {
     // Wait for router to be ready (prevents SSG/SSR issues)
     if (!router.isReady) return
@@ -27,6 +36,10 @@ export function useAdminAuth(): AdminAuthState {
       return
     }
 
+    // Only run auth check once per mount
+    if (authCheckedRef.current) return
+    authCheckedRef.current = true
+
     async function checkAuth() {
       try {
         const {
@@ -34,7 +47,7 @@ export function useAdminAuth(): AdminAuthState {
         } = await supabase.auth.getUser()
 
         if (!authUser) {
-          router.replace('/login')
+          navigateTo('/login')
           return
         }
 
@@ -47,14 +60,14 @@ export function useAdminAuth(): AdminAuthState {
 
         if (error) {
           logError('Failed to check admin status:', error)
-          router.replace('/unauthorized')
+          navigateTo('/unauthorized')
           return
         }
 
         const isAdminUser = !!adminData
 
         if (!isAdminUser) {
-          router.replace('/unauthorized')
+          navigateTo('/unauthorized')
           return
         }
 
@@ -62,7 +75,7 @@ export function useAdminAuth(): AdminAuthState {
         setIsAdmin(true)
       } catch (error) {
         logError('Auth check failed:', error)
-        router.replace('/login')
+        navigateTo('/login')
       } finally {
         setLoading(false)
       }
@@ -70,36 +83,45 @@ export function useAdminAuth(): AdminAuthState {
 
     checkAuth()
 
-    // Listen for auth state changes
-    const {
-      data: { subscription }
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_OUT') {
-        setUser(null)
-        setIsAdmin(false)
-        router.replace('/login')
-      } else if (event === 'SIGNED_IN' && session?.user) {
-        // Check if user is in admin_users table
-        const { data: adminData } = await supabase
-          .from('admin_users')
-          .select('user_id')
-          .eq('user_id', session.user.id)
-          .maybeSingle()
+    // Listen for auth state changes (only subscribe once)
+    if (!subscriptionRef.current) {
+      const {
+        data: { subscription }
+      } = supabase.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_OUT') {
+          setUser(null)
+          setIsAdmin(false)
+          authCheckedRef.current = false // Reset so next login triggers check
+          navigateTo('/login')
+        } else if (event === 'SIGNED_IN' && session?.user) {
+          // Check if user is in admin_users table
+          const { data: adminData } = await supabase
+            .from('admin_users')
+            .select('user_id')
+            .eq('user_id', session.user.id)
+            .maybeSingle()
 
-        const isAdminUser = !!adminData
+          const isAdminUser = !!adminData
 
-        if (isAdminUser) {
-          setUser(session.user)
-          setIsAdmin(true)
-          router.replace('/')
-        } else {
-          router.replace('/unauthorized')
+          if (isAdminUser) {
+            setUser(session.user)
+            setIsAdmin(true)
+            navigateTo('/')
+          } else {
+            navigateTo('/unauthorized')
+          }
         }
-      }
-    })
+      })
+      subscriptionRef.current = subscription
+    }
 
-    return () => subscription.unsubscribe()
-  }, [router, router.isReady])
+    return () => {
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe()
+        subscriptionRef.current = null
+      }
+    }
+  }, [router.isReady, router.pathname, navigateTo])
 
   return { user, loading, isAdmin }
 }

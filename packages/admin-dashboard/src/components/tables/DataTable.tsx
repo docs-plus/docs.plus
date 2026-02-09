@@ -16,7 +16,7 @@ export interface SortConfig {
 
 interface Column<T> {
   key: keyof T | string
-  header: string
+  header: ReactNode
   render?: (item: T) => ReactNode
   className?: string
   sortable?: boolean
