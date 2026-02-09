@@ -48,9 +48,34 @@ export const batchTrendsQuerySchema = z.object({
 })
 
 // =============================================================================
+// Stale Documents Audit Schemas (Phase 13)
+// =============================================================================
+
+export const staleDocumentsQuerySchema = z.object({
+  page: z.string().regex(/^\d+$/).optional().default('1'),
+  limit: z.string().regex(/^\d+$/).optional().default('20'),
+  minScore: z.string().regex(/^\d+$/).optional().default('0'),
+  maxVersions: z.string().regex(/^\d+$/).optional(),
+  maxContentSize: z.string().regex(/^\d+$/).optional(),
+  minAgeDays: z.string().regex(/^\d+$/).optional().default('7'),
+  sortBy: z
+    .enum(['stale_score', 'version_count', 'content_chars', 'age_days', 'days_inactive'])
+    .optional()
+    .default('stale_score'),
+  sortDir: z.enum(['asc', 'desc']).optional().default('desc')
+})
+
+export const bulkDeleteSchema = z.object({
+  slugs: z.array(z.string()).min(1).max(100),
+  dryRun: z.boolean().optional().default(false)
+})
+
+// =============================================================================
 // Export Types
 // =============================================================================
 
 export type ListDocumentsQuery = z.infer<typeof listDocumentsQuerySchema>
 export type UpdateDocumentInput = z.infer<typeof updateDocumentSchema>
 export type DeleteDocumentInput = z.infer<typeof deleteDocumentSchema>
+export type StaleDocumentsQuery = z.infer<typeof staleDocumentsQuerySchema>
+export type BulkDeleteInput = z.infer<typeof bulkDeleteSchema>

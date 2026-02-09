@@ -3,10 +3,12 @@ import { Hono } from 'hono'
 
 import {
   batchTrendsQuerySchema,
+  bulkDeleteSchema,
   daysQuerySchema,
   deleteDocumentSchema,
   listDocumentsQuerySchema,
   paginationQuerySchema,
+  staleDocumentsQuerySchema,
   trendQuerySchema,
   updateDocumentSchema
 } from '../../schemas/admin.schema'
@@ -118,5 +120,29 @@ admin.get(
 
 // Get notification reach
 admin.get('/stats/notification-reach', adminController.getNotificationReach)
+
+// =============================================================================
+// Stale Documents Audit (Phase 13)
+// =============================================================================
+
+// Get stale documents summary
+admin.get('/documents/stale/summary', adminController.getStaleDocumentsSummary)
+
+// List stale documents with filters
+admin.get(
+  '/documents/stale',
+  zValidator('query', staleDocumentsQuerySchema),
+  adminController.listStaleDocuments
+)
+
+// Get document content preview
+admin.get('/documents/:slug/preview', adminController.getDocumentPreview)
+
+// Bulk delete stale documents
+admin.post(
+  '/documents/stale/bulk-delete',
+  zValidator('json', bulkDeleteSchema),
+  adminController.bulkDeleteStaleDocuments
+)
 
 export default admin
