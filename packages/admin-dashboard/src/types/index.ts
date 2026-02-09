@@ -370,3 +370,62 @@ export interface PlatformTrendPoint {
   ios: number
   android: number
 }
+
+// =============================================================================
+// Stale Documents Audit Types (Phase 13)
+// =============================================================================
+
+export type StaleSeverity = 'critical' | 'high' | 'medium' | 'low'
+
+export interface DocumentStructure {
+  headings: number
+  paragraphs: number
+}
+
+export interface StaleDocument {
+  slug: string
+  title: string | null
+  created_at: string
+  updated_at: string
+  is_private: boolean
+  version_count: number
+  age_days: number
+  days_inactive: number
+  stale_score: number
+  stale_reason: string
+  owner_id: string | null
+  owner_name: string | null
+  owner_email: string | null
+  owner_avatar_url: string | null
+  structure: DocumentStructure
+  // View analytics (industry-standard staleness detection)
+  views_7d: number
+  views_30d: number
+}
+
+export interface StaleDocumentsSummary {
+  total_stale: number
+  truly_abandoned: number // No views AND no edits for 90+ days
+  ghost_document: number // Never viewed, barely edited
+  declining: number // No recent views, no recent edits
+  low_engagement: number // Minimal activity
+  recoverable_bytes: number
+}
+
+export interface StaleDocumentPreview {
+  slug: string
+  title: string | null
+  content_preview: string
+  version_count: number
+  created_at: string
+  updated_at: string
+  owner: {
+    username: string | null
+    email: string | null
+  } | null
+  deletion_impact: {
+    workspace_id: string | null
+    channel_count: number
+    message_count: number
+  }
+}

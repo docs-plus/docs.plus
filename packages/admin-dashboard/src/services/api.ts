@@ -390,3 +390,73 @@ export async function checkEmailGatewayHealth(): Promise<EmailGatewayHealth> {
     }
   }
 }
+
+// =============================================================================
+// Stale Documents Audit API (Phase 13)
+// =============================================================================
+
+import type { StaleDocument, StaleDocumentPreview, StaleDocumentsSummary } from '@/types'
+
+/**
+ * Fetch stale documents summary statistics
+ */
+export async function fetchStaleDocumentsSummary(): Promise<StaleDocumentsSummary> {
+  return fetchApi('/api/admin/documents/stale/summary')
+}
+
+/**
+ * Fetch paginated stale documents list with filters
+ */
+export async function fetchStaleDocuments(
+  page: number,
+  limit = 20,
+  options?: {
+    minScore?: number
+    maxVersions?: number
+    maxContentSize?: number
+    minAgeDays?: number
+    sortBy?: string
+    sortDir?: 'asc' | 'desc'
+  }
+): Promise<PaginatedResponse<StaleDocument>> {
+  const params = new URLSearchParams({
+    page: String(page),
+    limit: String(limit)
+  })
+  if (options?.minScore !== undefined) params.set('minScore', String(options.minScore))
+  if (options?.maxVersions !== undefined) params.set('maxVersions', String(options.maxVersions))
+  if (options?.maxContentSize !== undefined)
+    params.set('maxContentSize', String(options.maxContentSize))
+  if (options?.minAgeDays !== undefined) params.set('minAgeDays', String(options.minAgeDays))
+  if (options?.sortBy) params.set('sortBy', options.sortBy)
+  if (options?.sortDir) params.set('sortDir', options.sortDir)
+
+  return fetchApi(`/api/admin/documents/stale?${params.toString()}`)
+}
+
+/**
+ * Get document content preview for stale document audit
+ */
+export async function fetchDocumentPreview(slug: string): Promise<StaleDocumentPreview> {
+  return fetchApi(`/api/admin/documents/${slug}/preview`)
+}
+
+/**
+ * Bulk delete stale documents
+ */
+export async function bulkDeleteStaleDocuments(
+  slugs: string[],
+  dryRun = false
+): Promise<{
+  success: boolean
+  deleted: number
+  failed: number
+  workspacesDeleted: number
+  deletedDocuments: { slug: string; title: string | null }[]
+  failedDocuments: { slug: string; error: string }[]
+}> {
+  return fetchApi('/api/admin/documents/stale/bulk-delete', {
+    method: 'POST',
+    body: JSON.stringify({ slugs, dryRun })
+  })
+}
