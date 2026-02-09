@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
+import Link from 'next/link'
 import { useCallback, useMemo, useState } from 'react'
 
 // Disable static generation - pages require auth which needs client-side router
@@ -8,7 +9,15 @@ export const getServerSideProps: GetServerSideProps = async () => {
   return { props: {} }
 }
 import toast from 'react-hot-toast'
-import { LuChartBar, LuEye, LuFileText, LuLock, LuUser, LuUsers } from 'react-icons/lu'
+import {
+  LuChartBar,
+  LuEye,
+  LuFileText,
+  LuFileWarning,
+  LuLock,
+  LuUser,
+  LuUsers
+} from 'react-icons/lu'
 
 import { StatCard } from '@/components/cards/StatCard'
 import { Sparkline } from '@/components/charts'
@@ -24,6 +33,7 @@ import {
   fetchBatchDocumentTrends,
   fetchDocuments,
   fetchDocumentStats,
+  fetchStaleDocumentsSummary,
   updateDocumentFlags
 } from '@/services/api'
 import type { Document } from '@/types'
@@ -54,6 +64,12 @@ export default function DocumentsPage() {
   } = useQuery({
     queryKey: ['admin', 'documents', 'stats'],
     queryFn: fetchDocumentStats
+  })
+
+  // Fetch stale documents summary for the audit button badge
+  const { data: staleSummary } = useQuery({
+    queryKey: ['admin', 'stale-documents', 'summary'],
+    queryFn: fetchStaleDocumentsSummary
   })
 
   // Get document slugs for batch trend fetch
@@ -315,6 +331,17 @@ export default function DocumentsPage() {
         />
 
         <div className="space-y-6 p-6">
+          {/* Quick Actions */}
+          <div className="flex items-center gap-2">
+            <Link href="/documents/stale" className="btn btn-ghost btn-sm gap-2">
+              <LuFileWarning className="h-4 w-4" />
+              Audit Stale Documents
+              {staleSummary && staleSummary.total_stale > 0 && (
+                <span className="badge badge-warning badge-sm">{staleSummary.total_stale}</span>
+              )}
+            </Link>
+          </div>
+
           {/* Stats */}
           <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
             <StatCard
