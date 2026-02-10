@@ -48,9 +48,29 @@ export const unsubscribeQuerySchema = z.object({
 })
 
 // =============================================================================
+// Bounce Webhook Schema
+// =============================================================================
+
+export const emailBounceSchema = z.object({
+  email: z.string().email('Invalid email address'),
+  bounce_type: z.enum(['hard', 'soft', 'complaint']),
+  provider: z.string().max(50).optional(),
+  reason: z.string().max(1000).optional()
+})
+
+// =============================================================================
+// Template Preview Schema
+// =============================================================================
+
+export const templatePreviewSchema = z.object({
+  type: z.enum(['notification', 'digest'])
+})
+
+// =============================================================================
 // Export Types
 // =============================================================================
 
 export type SendNotificationEmailInput = z.infer<typeof sendNotificationEmailSchema>
 export type SendGenericEmailInput = z.infer<typeof sendGenericEmailSchema>
 export type SendDigestEmailInput = z.infer<typeof sendDigestEmailSchema>
+export type EmailBounceInput = z.infer<typeof emailBounceSchema>

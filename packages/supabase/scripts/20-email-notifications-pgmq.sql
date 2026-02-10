@@ -53,6 +53,30 @@ comment on table public.email_queue is 'Queue for email notifications with sched
 
 
 -- =============================================================================
+-- 1b. Email Bounces Table (deliverability tracking)
+-- =============================================================================
+-- Tracks hard/soft bounces and complaints from email providers.
+-- Hard bounces auto-suppress future sends to that address.
+
+create table if not exists public.email_bounces (
+    id uuid default gen_random_uuid() primary key,
+    email text not null,
+    bounce_type text not null check (bounce_type in ('hard', 'soft', 'complaint')),
+    provider text,
+    reason text,
+    created_at timestamptz default now() not null
+);
+
+create index if not exists idx_email_bounces_email
+    on public.email_bounces(email, bounce_type)
+    where bounce_type = 'hard';
+
+alter table public.email_bounces enable row level security;
+
+comment on table public.email_bounces is 'Tracks email bounces and complaints for deliverability management';
+
+
+-- =============================================================================
 -- 2. Create pgmq Queue for Email
 -- =============================================================================
 
@@ -93,6 +117,165 @@ as $$
     from public.users
     where id = p_user_id;
 $$;
+
+
+-- Check if an email address is suppressed due to hard bounces (last 90 days)
+create or replace function internal.is_email_suppressed(p_email text)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select exists(
+        select 1 from public.email_bounces
+        where email = lower(p_email)
+          and bounce_type = 'hard'
+          and created_at > now() - interval '90 days'
+    );
+$$;
+
+
+-- Per-user daily email rate limit check
+create or replace function internal.check_email_rate_limit(
+    p_user_id uuid,
+    p_max_per_day int default 50
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select coalesce(
+        (select count(*) < p_max_per_day
+         from public.email_queue
+         where user_id = p_user_id
+           and status = 'sent'
+           and sent_at > now() - interval '24 hours'),
+        true
+    );
+$$;
+
+
+-- Mask an email address for display: john.doe@example.com → j***@example.com
+create or replace function internal.mask_email(p_email text)
+returns text
+language sql
+immutable
+as $$
+    select
+        case
+            when p_email is null or p_email = '' then ''
+            when position('@' in p_email) = 0 then '***'
+            else left(split_part(p_email, '@', 1), 1) || '***@' || split_part(p_email, '@', 2)
+        end;
+$$;
+
+comment on function internal.mask_email(text) is
+'Masks an email address for display, showing only first char and domain.';
+
+
+-- Clear bounce info from a user's notification preferences
+create or replace function internal.clear_email_bounce_info(p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    update public.users
+    set profile_data = jsonb_set(
+        coalesce(profile_data, '{}'::jsonb),
+        '{notification_preferences}',
+        (coalesce(profile_data->'notification_preferences', '{}'::jsonb) - 'email_bounce_info')
+    )
+    where id = p_user_id
+      and profile_data->'notification_preferences' ? 'email_bounce_info';
+end;
+$$;
+
+comment on function internal.clear_email_bounce_info(uuid) is
+'Removes email_bounce_info from user notification preferences after re-enable or email update.';
+
+
+-- Record a bounce event and auto-suppress on hard bounce
+create or replace function public.record_email_bounce(
+    p_email text,
+    p_bounce_type text,
+    p_provider text default null,
+    p_reason text default null
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_id uuid;
+    v_user_id uuid;
+    v_masked_email text;
+begin
+    if p_bounce_type not in ('hard', 'soft', 'complaint') then
+        raise exception 'Invalid bounce_type: %. Must be hard, soft, or complaint.', p_bounce_type;
+    end if;
+
+    insert into public.email_bounces (email, bounce_type, provider, reason)
+    values (lower(p_email), p_bounce_type, p_provider, p_reason)
+    returning id into v_id;
+
+    -- Auto-disable email notifications and notify user on hard bounce / complaint
+    if p_bounce_type in ('hard', 'complaint') then
+        -- Find the user
+        select id into v_user_id
+        from public.users
+        where lower(email) = lower(p_email);
+
+        if v_user_id is not null then
+            v_masked_email := internal.mask_email(p_email);
+
+            -- Disable email + store bounce info in preferences
+            update public.users
+            set profile_data = jsonb_set(
+                jsonb_set(
+                    coalesce(profile_data, '{}'::jsonb),
+                    '{notification_preferences,email_enabled}',
+                    'false'::jsonb
+                ),
+                '{notification_preferences,email_bounce_info}',
+                jsonb_build_object(
+                    'email', v_masked_email,
+                    'reason', coalesce(p_reason, 'Email delivery failed'),
+                    'bounced_at', now()::text
+                )
+            )
+            where id = v_user_id;
+
+            -- Insert system_alert notification so user sees it in-app
+            insert into public.notifications (
+                receiver_user_id,
+                sender_user_id,
+                type,
+                message_preview,
+                action_url,
+                created_at
+            ) values (
+                v_user_id,
+                null,
+                'system_alert',
+                'Email delivery to ' || v_masked_email || ' failed. Your email notifications have been paused. Tap to review.',
+                '/settings/notifications',
+                now()
+            );
+        end if;
+    end if;
+
+    return v_id;
+end;
+$$;
+
+comment on function public.record_email_bounce(text, text, text, text) is
+'Records an email bounce/complaint. Hard bounces auto-disable email, store bounce info, and notify user.';
 
 
 -- =============================================================================
@@ -253,6 +436,7 @@ begin
         join public.users u on u.id = eq.user_id
         left join public.users s on s.id = n.sender_user_id
         where eq.status = 'pending'
+          and eq.email_type = 'immediate'
           and eq.scheduled_for <= now()
           and eq.attempts < 3
         order by eq.scheduled_for
@@ -264,6 +448,26 @@ begin
             update public.email_queue
             set status = 'skipped',
                 error_message = 'Notification already read'
+            where id = pending_email.queue_id;
+            skipped := skipped + 1;
+            continue;
+        end if;
+
+        -- Skip if email address is suppressed (hard bounced)
+        if internal.is_email_suppressed(pending_email.recipient_email) then
+            update public.email_queue
+            set status = 'skipped',
+                error_message = 'Email address suppressed (hard bounce)'
+            where id = pending_email.queue_id;
+            skipped := skipped + 1;
+            continue;
+        end if;
+
+        -- Skip if user exceeded daily rate limit
+        if not internal.check_email_rate_limit(pending_email.user_id) then
+            update public.email_queue
+            set status = 'skipped',
+                error_message = 'Daily email rate limit exceeded'
             where id = pending_email.queue_id;
             skipped := skipped + 1;
             continue;
@@ -319,7 +523,167 @@ end;
 $$;
 
 comment on function public.process_email_queue() is
-'Moves due emails from email_queue to pgmq for backend consumption. Run via pg_cron.';
+'Moves due immediate emails from email_queue to pgmq for backend consumption. Run via pg_cron.';
+
+
+-- =============================================================================
+-- 5b. Compile Digest Emails → Enqueue to pgmq (pg_cron)
+-- =============================================================================
+-- Groups pending digest items per user into a single pgmq message.
+-- Backend consumer transforms the flat list into Document→Channel→Notification hierarchy.
+
+create or replace function public.compile_digest_emails()
+returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+    v_user record;
+    v_compiled int := 0;
+    v_skipped int := 0;
+    v_app_url text;
+    v_notifications jsonb;
+    v_queue_ids uuid[];
+begin
+    v_app_url := coalesce(current_setting('app.base_url', true), 'https://docs.plus');
+
+    -- Pre-pass: mark digest items with already-read notifications as skipped
+    update public.email_queue eq
+    set status = 'skipped',
+        error_message = 'Notification already read'
+    from public.notifications n
+    where eq.notification_id = n.id
+      and eq.status = 'pending'
+      and eq.email_type = 'digest'
+      and eq.scheduled_for <= now()
+      and n.readed_at is not null;
+
+    -- Process each user with pending digest entries
+    for v_user in
+        select distinct
+            eq.user_id,
+            u.email as recipient_email,
+            u.display_name as recipient_name,
+            coalesce(
+                u.profile_data->'notification_preferences'->>'email_frequency',
+                'daily'
+            ) as frequency
+        from public.email_queue eq
+        join public.users u on u.id = eq.user_id
+        where eq.status = 'pending'
+          and eq.email_type = 'digest'
+          and eq.scheduled_for <= now()
+          and eq.attempts < 3
+    loop
+        -- Skip if user disabled email
+        if not internal.is_email_enabled(v_user.user_id) then
+            update public.email_queue
+            set status = 'skipped',
+                error_message = 'Email disabled by user'
+            where user_id = v_user.user_id
+              and status = 'pending'
+              and email_type = 'digest'
+              and scheduled_for <= now();
+            v_skipped := v_skipped + 1;
+            continue;
+        end if;
+
+        -- Skip if email suppressed (hard bounced)
+        if internal.is_email_suppressed(v_user.recipient_email) then
+            update public.email_queue
+            set status = 'skipped',
+                error_message = 'Email address suppressed (hard bounce)'
+            where user_id = v_user.user_id
+              and status = 'pending'
+              and email_type = 'digest'
+              and scheduled_for <= now();
+            v_skipped := v_skipped + 1;
+            continue;
+        end if;
+
+        -- Lock and collect queue item IDs
+        select array_agg(id)
+        into v_queue_ids
+        from (
+            select eq.id
+            from public.email_queue eq
+            where eq.user_id = v_user.user_id
+              and eq.status = 'pending'
+              and eq.email_type = 'digest'
+              and eq.scheduled_for <= now()
+              and eq.attempts < 3
+            for update of eq skip locked
+        ) locked_items;
+
+        if v_queue_ids is null or array_length(v_queue_ids, 1) = 0 then
+            continue;
+        end if;
+
+        -- Collect notification data for locked items (only unread)
+        select jsonb_agg(
+            jsonb_build_object(
+                'notification_type', n.type,
+                'sender_name', coalesce(s.display_name, 'Someone'),
+                'sender_avatar_url', s.avatar_url,
+                'message_preview', coalesce(n.message_preview, ''),
+                'channel_id', n.channel_id,
+                'channel_name', coalesce(c.name, 'General'),
+                'workspace_id', c.workspace_id,
+                'workspace_name', coalesce(w.name, c.slug),
+                'workspace_slug', coalesce(w.slug, c.slug),
+                'created_at', n.created_at
+            )
+            order by n.created_at
+        )
+        into v_notifications
+        from public.email_queue eq
+        join public.notifications n on n.id = eq.notification_id
+        left join public.users s on s.id = n.sender_user_id
+        left join public.channels c on c.id = n.channel_id
+        left join public.workspaces w on w.id = c.workspace_id
+        where eq.id = any(v_queue_ids);
+
+        -- Skip if nothing to compile
+        if v_notifications is null or jsonb_array_length(v_notifications) = 0 then
+            v_skipped := v_skipped + 1;
+            continue;
+        end if;
+
+        -- Mark all items as processing
+        update public.email_queue
+        set status = 'processing',
+            attempts = attempts + 1
+        where id = any(v_queue_ids);
+
+        -- Send compiled digest to pgmq as a single message
+        perform pgmq.send(
+            'email_notifications_queue',
+            jsonb_build_object(
+                'type', 'digest',
+                'recipient_email', v_user.recipient_email,
+                'recipient_name', coalesce(v_user.recipient_name, ''),
+                'recipient_id', v_user.user_id::text,
+                'frequency', v_user.frequency,
+                'queue_ids', to_jsonb(v_queue_ids),
+                'notifications', v_notifications,
+                'enqueued_at', now()::text
+            )
+        );
+
+        v_compiled := v_compiled + 1;
+    end loop;
+
+    return jsonb_build_object(
+        'compiled', v_compiled,
+        'skipped', v_skipped,
+        'timestamp', now()
+    );
+end;
+$$;
+
+comment on function public.compile_digest_emails() is
+'Compiles pending digest notifications per user into a single pgmq message. Run via pg_cron.';
 
 
 -- =============================================================================
@@ -412,11 +776,27 @@ begin
 
     perform cron.schedule(
         'process_email_queue',
-        '*/2 * * * *',  -- Every 2 minutes
+        '*/2 * * * *',  -- Every 2 minutes (immediate emails only)
         'select public.process_email_queue();'
     );
 exception when others then
     raise notice 'pg_cron not available, skipping email queue scheduling';
+end;
+$$;
+
+-- Schedule digest compilation (every 15 minutes)
+do $$
+begin
+    perform cron.unschedule('compile_digest_emails')
+    where exists (select 1 from cron.job where jobname = 'compile_digest_emails');
+
+    perform cron.schedule(
+        'compile_digest_emails',
+        '*/15 * * * *',  -- Every 15 minutes (catches different timezone 9am slots)
+        'select public.compile_digest_emails();'
+    );
+exception when others then
+    raise notice 'pg_cron not available, skipping digest compilation scheduling';
 end;
 $$;
 

@@ -806,6 +806,7 @@ BEGIN
                 n.message_id,
                 n.channel_id,
                 n.message_preview,
+                n.action_url,
                 n.created_at,
                 JSON_BUILD_OBJECT(
                     'id',               u.id,
@@ -816,7 +817,7 @@ BEGIN
                     'avatar_updated_at',u.avatar_updated_at
                 ) AS sender
             FROM public.notifications AS n
-            JOIN public.channels      AS c ON c.id = n.channel_id
+            LEFT JOIN public.channels AS c ON c.id = n.channel_id
             LEFT JOIN public.users    AS u ON u.id = n.sender_user_id
             WHERE n.receiver_user_id = auth.uid()
               AND n.readed_at IS NULL
@@ -826,8 +827,10 @@ BEGIN
                 OR n.type::text = _type
               )
               -- If _workspace_id is NULL, no workspace filter; otherwise match.
+              -- System notifications (no channel) are always included.
               AND (
                 _workspace_id IS NULL
+                OR n.channel_id IS NULL
                 OR c.workspace_id = _workspace_id
               )
             ORDER BY n.created_at DESC

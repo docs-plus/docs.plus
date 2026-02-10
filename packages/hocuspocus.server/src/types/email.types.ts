@@ -161,3 +161,15 @@ export interface EmailStatusCallback {
   sent_at?: string
   error_message?: string
 }
+
+/**
+ * Bounce event from email provider webhook
+ */
+export type BounceType = 'hard' | 'soft' | 'complaint'
+
+export interface EmailBounceEvent {
+  email: string
+  bounce_type: BounceType
+  provider?: string
+  reason?: string
+}

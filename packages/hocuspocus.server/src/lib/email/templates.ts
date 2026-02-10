@@ -406,6 +406,147 @@ Unsubscribe: ${APP_URL}/unsubscribe
 }
 
 // ============================================================================
+// NEW DOCUMENT NOTIFICATION EMAIL
+// ============================================================================
+
+/**
+ * Build new document notification email HTML (admin/internal notification)
+ */
+export function buildNewDocumentEmailHtml(params: {
+  documentName: string
+  documentUrl: string
+  creatorName: string
+  creatorEmail?: string
+  creatorAvatarUrl?: string
+  createdAt: string
+  slug: string
+  documentId: string
+}): string {
+  const {
+    documentName,
+    documentUrl,
+    creatorName,
+    creatorEmail,
+    creatorAvatarUrl,
+    createdAt,
+    slug,
+    documentId
+  } = params
+
+  const avatarHtml = buildAvatarHtml(creatorName, creatorAvatarUrl, 48)
+
+  const content = `
+    <p style="margin: 0 0 ${SPACING.xl}; color: ${COLORS.text}; font-size: 16px; font-weight: 600;">
+      New Document Created
+    </p>
+
+    <!-- Creator Card -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: ${COLORS.background}; border-radius: ${RADIUS.lg}; border: 1px solid ${COLORS.border}; margin-bottom: ${SPACING.xl};">
+      <tr>
+        <td style="padding: ${SPACING.xl};">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+              <td width="60" valign="top">
+                ${avatarHtml}
+              </td>
+              <td style="padding-left: ${SPACING.md};" valign="top">
+                <p style="margin: 0 0 ${SPACING.xs}; color: ${COLORS.text}; font-size: 15px; font-weight: 600;">
+                  ${creatorName}
+                </p>
+                ${creatorEmail ? `<p style="margin: 0; color: ${COLORS.textMuted}; font-size: 13px;">${creatorEmail}</p>` : ''}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+
+    <!-- Document Details -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: ${SPACING.xl};">
+      <tr>
+        <td style="padding: ${SPACING.sm} 0; border-bottom: 1px solid ${COLORS.border};">
+          <strong style="color: ${COLORS.text}; font-size: 13px;">Name</strong>
+        </td>
+        <td style="padding: ${SPACING.sm} 0; border-bottom: 1px solid ${COLORS.border}; color: ${COLORS.textMuted}; font-size: 13px;">
+          ${documentName}
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: ${SPACING.sm} 0; border-bottom: 1px solid ${COLORS.border};">
+          <strong style="color: ${COLORS.text}; font-size: 13px;">Slug</strong>
+        </td>
+        <td style="padding: ${SPACING.sm} 0; border-bottom: 1px solid ${COLORS.border};">
+          <code style="background: ${COLORS.borderLight}; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: ${COLORS.textMuted};">${slug}</code>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: ${SPACING.sm} 0; border-bottom: 1px solid ${COLORS.border};">
+          <strong style="color: ${COLORS.text}; font-size: 13px;">ID</strong>
+        </td>
+        <td style="padding: ${SPACING.sm} 0; border-bottom: 1px solid ${COLORS.border};">
+          <code style="background: ${COLORS.borderLight}; padding: 2px 6px; border-radius: 4px; font-size: 11px; color: ${COLORS.textLight};">${documentId}</code>
+        </td>
+      </tr>
+      <tr>
+        <td style="padding: ${SPACING.sm} 0;">
+          <strong style="color: ${COLORS.text}; font-size: 13px;">Created</strong>
+        </td>
+        <td style="padding: ${SPACING.sm} 0; color: ${COLORS.textMuted}; font-size: 13px;">
+          ${createdAt}
+        </td>
+      </tr>
+    </table>
+
+    <!-- CTA Button -->
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr>
+        <td align="center">
+          ${buildButton('View Document', documentUrl)}
+        </td>
+      </tr>
+    </table>
+  `
+
+  const footerLinks = `
+    <a href="${APP_URL}" style="color: ${COLORS.primary}; text-decoration: none;">Go to ${APP_NAME}</a>
+  `
+
+  return baseLayout(content, footerLinks)
+}
+
+/**
+ * Build new document notification email plain text
+ */
+export function buildNewDocumentEmailText(params: {
+  documentName: string
+  documentUrl: string
+  creatorName: string
+  creatorEmail?: string
+  slug: string
+  documentId: string
+  createdAt: string
+}): string {
+  const { documentName, documentUrl, creatorName, creatorEmail, slug, documentId, createdAt } =
+    params
+
+  return `
+New Document Created
+
+Created By: ${creatorName}${creatorEmail ? ` (${creatorEmail})` : ''}
+
+Name: ${documentName}
+Slug: ${slug}
+Document ID: ${documentId}
+Created At: ${createdAt}
+
+View Document: ${documentUrl}
+
+---
+This is an automated notification from ${APP_NAME}
+`.trim()
+}
+
+// ============================================================================
 // DIGEST EMAIL (Grouped by Document → Channel)
 // ============================================================================
 

@@ -19,7 +19,14 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js'
 
 import { config } from '../../config/env'
-import type { NotificationEmailRequest, NotificationType } from '../../types/email.types'
+import type {
+  DigestChannel,
+  DigestDocument,
+  DigestEmailRequest,
+  DigestNotification,
+  NotificationEmailRequest,
+  NotificationType
+} from '../../types/email.types'
 import { emailLogger } from '../logger'
 import { queueEmail } from './queue'
 
@@ -31,20 +38,41 @@ const VISIBILITY_TIMEOUT = 60 // Seconds before message becomes visible again
 interface EmailQueueMessage {
   msg_id: number
   payload: {
-    queue_id: string
-    to: string
-    recipient_name: string
-    recipient_id: string
-    sender_name: string
-    sender_id: string
-    sender_avatar_url: string | null
-    notification_type: string
-    message_preview: string
-    channel_id: string | null
-    document_slug: string | null
+    // Individual notification fields
+    queue_id?: string
+    to?: string
+    recipient_name?: string
+    recipient_id?: string
+    sender_name?: string
+    sender_id?: string
+    sender_avatar_url?: string | null
+    notification_type?: string
+    message_preview?: string
+    channel_id?: string | null
+    document_slug?: string | null
     enqueued_at: string
+    // Digest-specific fields (set by compile_digest_emails)
+    type?: 'digest'
+    recipient_email?: string
+    frequency?: string
+    queue_ids?: string[]
+    notifications?: DigestRawNotification[]
   }
   enqueued_at: string
+}
+
+/** Raw notification data from SQL compile_digest_emails */
+interface DigestRawNotification {
+  notification_type: string
+  sender_name: string
+  sender_avatar_url: string | null
+  message_preview: string
+  channel_id: string | null
+  channel_name: string
+  workspace_id: string | null
+  workspace_name: string
+  workspace_slug: string
+  created_at: string
 }
 
 // Singleton Supabase client
@@ -155,23 +183,165 @@ async function updateEmailStatus(
 }
 
 /**
- * Process a single queue message
+ * Build DigestDocument[] hierarchy from flat notification list.
+ * Groups by workspace (document) → channel → notifications.
+ */
+function buildDigestDocuments(
+  notifications: DigestRawNotification[],
+  appUrl: string
+): DigestDocument[] {
+  const workspaceMap = new Map<
+    string,
+    {
+      name: string
+      slug: string
+      channels: Map<string, { name: string; id: string; notifications: DigestNotification[] }>
+    }
+  >()
+
+  for (const n of notifications) {
+    const wsKey = n.workspace_slug || 'unknown'
+
+    if (!workspaceMap.has(wsKey)) {
+      workspaceMap.set(wsKey, {
+        name: n.workspace_name || wsKey,
+        slug: n.workspace_slug || wsKey,
+        channels: new Map()
+      })
+    }
+
+    const ws = workspaceMap.get(wsKey)!
+    const chKey = n.channel_id || 'general'
+
+    if (!ws.channels.has(chKey)) {
+      ws.channels.set(chKey, {
+        name: n.channel_name || 'General',
+        id: n.channel_id || '',
+        notifications: []
+      })
+    }
+
+    ws.channels.get(chKey)!.notifications.push({
+      type: n.notification_type as NotificationType,
+      sender_name: n.sender_name,
+      sender_avatar_url: n.sender_avatar_url || undefined,
+      message_preview: n.message_preview,
+      action_url: n.channel_id
+        ? `${appUrl}/${n.workspace_slug}?chatroom=${n.channel_id}`
+        : `${appUrl}/${n.workspace_slug}`,
+      created_at: n.created_at
+    })
+  }
+
+  return Array.from(workspaceMap.values()).map((ws) => ({
+    name: ws.name,
+    slug: ws.slug,
+    url: `${appUrl}/${ws.slug}`,
+    channels: Array.from(ws.channels.values()).map(
+      (ch): DigestChannel => ({
+        name: ch.name,
+        id: ch.id,
+        url: ch.id ? `${appUrl}/${ws.slug}?chatroom=${ch.id}` : `${appUrl}/${ws.slug}`,
+        notifications: ch.notifications
+      })
+    )
+  }))
+}
+
+/**
+ * Process a compiled digest message from pgmq
+ */
+async function processDigestMessage(
+  msgId: number,
+  payload: EmailQueueMessage['payload']
+): Promise<boolean> {
+  const appUrl = process.env.APP_URL || 'https://docs.plus'
+
+  try {
+    const documents = buildDigestDocuments(payload.notifications || [], appUrl)
+
+    const digestPayload: DigestEmailRequest = {
+      to: payload.recipient_email!,
+      recipient_name: payload.recipient_name || 'User',
+      recipient_id: payload.recipient_id!,
+      frequency: (payload.frequency as 'daily' | 'weekly') || 'daily',
+      documents,
+      period_start: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      period_end: new Date().toISOString()
+    }
+
+    const jobId = await queueEmail({
+      type: 'digest',
+      payload: digestPayload,
+      created_at: new Date().toISOString()
+    })
+
+    if (!jobId) {
+      emailLogger.warn({ msgId }, 'Failed to queue digest email job')
+      return false
+    }
+
+    const acked = await ackMessage(msgId)
+    if (!acked) {
+      emailLogger.warn({ msgId }, 'Failed to ack digest message - may be reprocessed')
+    }
+
+    // Update all queue items as sent (BullMQ will handle actual delivery)
+    const queueIds = payload.queue_ids || []
+    for (const queueId of queueIds) {
+      await updateEmailStatus(queueId, 'sent')
+    }
+
+    emailLogger.info(
+      {
+        msgId,
+        jobId,
+        to: payload.recipient_email,
+        notifications: (payload.notifications || []).length
+      },
+      'Digest email queued from pgmq'
+    )
+
+    metrics.messagesProcessed++
+    metrics.lastMessageAt = new Date()
+    return true
+  } catch (err) {
+    emailLogger.error({ err, msgId }, 'Error processing digest queue message')
+    metrics.messagesFailed++
+
+    // Mark all queue items as failed
+    const queueIds = payload.queue_ids || []
+    for (const queueId of queueIds) {
+      await updateEmailStatus(queueId, 'failed', String(err))
+    }
+
+    return false
+  }
+}
+
+/**
+ * Process a single queue message (notification or digest)
  */
 async function processMessage(message: EmailQueueMessage): Promise<boolean> {
   const { msg_id, payload } = message
 
+  // Route digest messages to dedicated handler
+  if (payload.type === 'digest') {
+    return processDigestMessage(msg_id, payload)
+  }
+
   try {
     // Build email payload for BullMQ worker
     const emailPayload: NotificationEmailRequest = {
-      queue_id: payload.queue_id,
-      to: payload.to,
-      recipient_name: payload.recipient_name,
-      recipient_id: payload.recipient_id,
-      sender_name: payload.sender_name,
+      queue_id: payload.queue_id!,
+      to: payload.to!,
+      recipient_name: payload.recipient_name || '',
+      recipient_id: payload.recipient_id || '',
+      sender_name: payload.sender_name || 'Someone',
       sender_id: payload.sender_id,
       sender_avatar_url: payload.sender_avatar_url || undefined,
-      notification_type: payload.notification_type as NotificationType,
-      message_preview: payload.message_preview,
+      notification_type: (payload.notification_type as NotificationType) || 'message',
+      message_preview: payload.message_preview || '',
       channel_id: payload.channel_id || undefined,
       document_slug: payload.document_slug || undefined
     }
@@ -208,7 +378,9 @@ async function processMessage(message: EmailQueueMessage): Promise<boolean> {
     metrics.messagesFailed++
 
     // Update status as failed in Supabase
-    await updateEmailStatus(payload.queue_id, 'failed', String(err))
+    if (payload.queue_id) {
+      await updateEmailStatus(payload.queue_id, 'failed', String(err))
+    }
 
     return false
   }

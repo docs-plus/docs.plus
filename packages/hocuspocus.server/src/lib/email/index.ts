@@ -12,10 +12,12 @@
 
 // Types
 export type {
+  BounceType,
   DigestChannel,
   DigestDocument,
   DigestEmailRequest,
   DigestNotification,
+  EmailBounceEvent,
   EmailFrequency,
   EmailGatewayHealth,
   EmailJobData,
@@ -32,6 +34,8 @@ export type { EmailMessage, EmailProvider, SendResult } from './providers'
 export {
   buildDigestEmailHtml,
   buildDigestEmailText,
+  buildNewDocumentEmailHtml,
+  buildNewDocumentEmailText,
   buildNotificationEmailHtml,
   buildNotificationEmailText,
   getEmailSubject

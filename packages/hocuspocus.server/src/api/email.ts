@@ -17,12 +17,18 @@
  */
 
 import { zValidator } from '@hono/zod-validator'
+import { createClient } from '@supabase/supabase-js'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
 import { emailGateway } from '../lib/email'
+import { buildDigestEmailHtml, buildNotificationEmailHtml } from '../lib/email/templates'
 import { emailLogger } from '../lib/logger'
-import { sendDigestEmailSchema, sendGenericEmailSchema } from '../schemas/email.schema'
+import {
+  emailBounceSchema,
+  sendDigestEmailSchema,
+  sendGenericEmailSchema
+} from '../schemas/email.schema'
 import { verifyServiceRole } from './utils/serviceRole'
 
 const emailRouter = new Hono()
@@ -128,6 +134,156 @@ emailRouter.get('/status', (c) => {
     operational: emailGateway.isOperational(),
     timestamp: new Date().toISOString()
   })
+})
+
+// =============================================================================
+// BOUNCE WEBHOOK
+// =============================================================================
+
+/**
+ * POST /api/email/bounce
+ *
+ * Record an email bounce event from a provider.
+ * Hard bounces auto-disable email for the affected user.
+ */
+emailRouter.post('/bounce', zValidator('json', emailBounceSchema), async (c) => {
+  const authHeader = c.req.header('Authorization')
+  if (!verifyServiceRole(authHeader)) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  try {
+    const { email, bounce_type, provider, reason } = c.req.valid('json')
+
+    const supabaseUrl = process.env.SUPABASE_URL
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+    if (!supabaseUrl || !serviceRoleKey) {
+      return c.json({ error: 'Supabase not configured' }, 500)
+    }
+
+    const supabase = createClient(supabaseUrl, serviceRoleKey)
+
+    const { data, error } = await supabase.rpc('record_email_bounce', {
+      p_email: email,
+      p_bounce_type: bounce_type,
+      p_provider: provider || null,
+      p_reason: reason || null
+    })
+
+    if (error) {
+      emailLogger.error({ err: error, email, bounce_type }, 'Failed to record bounce')
+      return c.json({ error: 'Failed to record bounce' }, 500)
+    }
+
+    emailLogger.info({ email, bounce_type, provider }, 'Email bounce recorded')
+
+    return c.json({
+      success: true,
+      bounce_id: data,
+      auto_suppressed: bounce_type === 'hard'
+    })
+  } catch (err) {
+    emailLogger.error({ err }, 'Error processing bounce webhook')
+    return c.json({ error: 'Internal server error' }, 500)
+  }
+})
+
+// =============================================================================
+// TEMPLATE PREVIEW (development/testing)
+// =============================================================================
+
+/**
+ * GET /api/email/preview/:type
+ *
+ * Render an email template with sample data for visual testing.
+ * Types: notification, digest
+ */
+emailRouter.get('/preview/:type', async (c) => {
+  const authHeader = c.req.header('Authorization')
+  if (!verifyServiceRole(authHeader)) {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+
+  const type = c.req.param('type')
+  const appUrl = process.env.APP_URL || 'https://docs.plus'
+
+  if (type === 'notification') {
+    const html = buildNotificationEmailHtml({
+      recipientName: 'Jane Smith',
+      senderName: 'John Doe',
+      notificationType: 'mention',
+      messagePreview:
+        "Hey @Jane, can you review the latest changes to the API docs? I've updated the authentication section.",
+      actionUrl: `${appUrl}/api-documentation?chatroom=general`,
+      documentName: 'API Documentation',
+      channelName: 'general'
+    })
+    return c.html(html)
+  }
+
+  if (type === 'digest') {
+    const html = buildDigestEmailHtml({
+      recipientName: 'Jane Smith',
+      frequency: 'daily',
+      documents: [
+        {
+          name: 'API Documentation',
+          slug: 'api-documentation',
+          url: `${appUrl}/api-documentation`,
+          channels: [
+            {
+              name: 'general',
+              id: 'ch-001',
+              url: `${appUrl}/api-documentation?chatroom=ch-001`,
+              notifications: [
+                {
+                  type: 'mention',
+                  sender_name: 'John Doe',
+                  message_preview: 'Hey @Jane, can you review the auth section?',
+                  action_url: `${appUrl}/api-documentation?chatroom=ch-001`,
+                  created_at: new Date(Date.now() - 3600000).toISOString()
+                },
+                {
+                  type: 'reply',
+                  sender_name: 'Alice Chen',
+                  message_preview: "I've added the rate limiting docs as discussed.",
+                  action_url: `${appUrl}/api-documentation?chatroom=ch-001`,
+                  created_at: new Date(Date.now() - 7200000).toISOString()
+                }
+              ]
+            }
+          ]
+        },
+        {
+          name: 'Product Roadmap',
+          slug: 'product-roadmap',
+          url: `${appUrl}/product-roadmap`,
+          channels: [
+            {
+              name: 'q1-planning',
+              id: 'ch-002',
+              url: `${appUrl}/product-roadmap?chatroom=ch-002`,
+              notifications: [
+                {
+                  type: 'reaction',
+                  sender_name: 'Bob Wilson',
+                  message_preview: 'Reacted to your message about the timeline',
+                  action_url: `${appUrl}/product-roadmap?chatroom=ch-002`,
+                  created_at: new Date(Date.now() - 14400000).toISOString()
+                }
+              ]
+            }
+          ]
+        }
+      ],
+      periodStart: new Date(Date.now() - 86400000).toISOString(),
+      periodEnd: new Date().toISOString()
+    })
+    return c.html(html)
+  }
+
+  return c.json({ error: `Unknown template type: ${type}. Use "notification" or "digest".` }, 400)
 })
 
 // =============================================================================
