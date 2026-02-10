@@ -20,6 +20,7 @@ import {
   LuGraduationCap,
   LuMessageCircle,
   LuRocket,
+  LuUser,
   LuUsers
 } from 'react-icons/lu'
 import slugify from 'slugify'
@@ -89,7 +90,7 @@ const HomePage = ({ hostname }: HomePageProps) => {
         <header className="flex shrink-0 items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex items-center gap-2">
             <DocsPlus size={28} className="sm:size-10" />
-            <span className="text-base-content text-lg font-bold sm:text-2xl">docs.plus</span>
+            <span className="text-base-content mt-1 text-lg font-bold sm:text-2xl">docs.plus</span>
           </div>
 
           {isAuthServiceAvailable && (
@@ -111,13 +112,13 @@ const HomePage = ({ hostname }: HomePageProps) => {
                   />
                 </button>
               ) : (
-                <Button
-                  variant="primary"
-                  size="sm"
-                  className="rounded-selector px-5 font-semibold"
-                  onClick={() => setIsSignInOpen(true)}>
-                  Sign in
-                </Button>
+                <button
+                  type="button"
+                  className="bg-primary/10 text-primary/50 hover:bg-primary/15 hover:text-primary/70 flex size-11 cursor-pointer items-center justify-center rounded-full transition-colors sm:size-12"
+                  onClick={() => setIsSignInOpen(true)}
+                  aria-label="Sign in">
+                  <LuUser className="size-5 sm:size-6" />
+                </button>
               )}
             </div>
           )}
@@ -138,23 +139,23 @@ const HomePage = ({ hostname }: HomePageProps) => {
                 <span className="sm:hidden">Open-source docs for</span>{' '}
                 <TypingText
                   texts={[
-                    { text: 'teams', icon: <LuUsers size={14} />, className: 'text-blue-600' },
+                    { text: 'teams', icon: <LuUsers size={14} />, className: 'text-primary' },
                     {
                       text: 'communities',
                       icon: <LuGlobe size={14} />,
-                      className: 'text-violet-600'
+                      className: 'text-accent'
                     },
                     {
                       text: 'classrooms',
                       icon: <LuGraduationCap size={14} />,
-                      className: 'text-emerald-600'
+                      className: 'text-secondary'
                     },
-                    { text: 'projects', icon: <LuRocket size={14} />, className: 'text-amber-600' },
-                    { text: 'meetups', icon: <LuCalendar size={14} />, className: 'text-rose-600' },
+                    { text: 'projects', icon: <LuRocket size={14} />, className: 'text-warning' },
+                    { text: 'meetups', icon: <LuCalendar size={14} />, className: 'text-error' },
                     {
                       text: 'organizations',
                       icon: <LuBuilding2 size={14} />,
-                      className: 'text-teal-600'
+                      className: 'text-info'
                     }
                   ]}
                   className="font-semibold"
@@ -173,7 +174,7 @@ const HomePage = ({ hostname }: HomePageProps) => {
                 variant="primary"
                 shape="block"
                 size="lg"
-                className="mb-6 text-base font-bold shadow-sm sm:mb-8"
+                className="mb-6 text-base font-bold sm:mb-8"
                 onClick={() => navigateToDocument()}
                 disabled={isLoading}
                 loading={isLoading}>
@@ -188,9 +189,10 @@ const HomePage = ({ hostname }: HomePageProps) => {
               </div>
 
               {/* Document Name Input */}
-              <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+              <div className="flex flex-col gap-3 sm:flex-row">
                 <TextInput
                   wrapperClassName="flex-1"
+                  size="lg"
                   label={`${hostname}/`}
                   type="text"
                   required
@@ -208,7 +210,8 @@ const HomePage = ({ hostname }: HomePageProps) => {
                 />
                 <Button
                   variant="neutral"
-                  className="px-6"
+                  size="lg"
+                  className="w-full px-8 sm:h-auto sm:w-auto"
                   onClick={() => navigateToDocument()}
                   disabled={isLoading || !documentName}>
                   Open
