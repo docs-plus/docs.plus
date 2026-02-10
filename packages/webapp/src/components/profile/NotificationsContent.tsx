@@ -5,6 +5,7 @@ import Toggle from '@components/ui/Toggle'
 import { usePushNotifications } from '@hooks/usePushNotifications'
 import { useAuthStore } from '@stores'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { LuTriangleAlert } from 'react-icons/lu'
 import { MdEmail, MdNotifications, MdSchedule } from 'react-icons/md'
 
 interface NotificationsContentProps {
@@ -18,6 +19,12 @@ interface ToggleRowProps {
   checked: boolean
   onChange: (checked: boolean) => void
   disabled?: boolean
+}
+
+interface EmailBounceInfo {
+  email: string
+  reason: string
+  bounced_at: string
 }
 
 interface NotificationPreferences {
@@ -35,6 +42,8 @@ interface NotificationPreferences {
   email_replies?: boolean
   email_reactions?: boolean
   email_frequency?: 'immediate' | 'daily' | 'weekly' | 'never'
+  // Bounce info (set by system when hard bounce occurs)
+  email_bounce_info?: EmailBounceInfo
 }
 
 // Get user's browser timezone
@@ -379,9 +388,23 @@ const NotificationsContent = ({ onBack: _onBack }: NotificationsContentProps) =>
     [profile, setProfile]
   )
 
-  // Handle preference change
+  // Handle preference change — clears bounce info when user re-enables email
   const handlePreferenceChange = (key: keyof NotificationPreferences, value: boolean | string) => {
     const newPrefs = { ...preferences, [key]: value }
+
+    // Clear bounce info when user explicitly enables email
+    if (key === 'email_enabled' && value === true && newPrefs.email_bounce_info) {
+      delete newPrefs.email_bounce_info
+    }
+
+    setPreferences(newPrefs)
+    savePreferences(newPrefs)
+  }
+
+  // Handle re-enable from bounce banner: clear bounce info + enable email
+  const handleClearBounceAndEnable = () => {
+    const newPrefs = { ...preferences, email_enabled: true }
+    delete newPrefs.email_bounce_info
     setPreferences(newPrefs)
     savePreferences(newPrefs)
   }
@@ -553,6 +576,34 @@ const NotificationsContent = ({ onBack: _onBack }: NotificationsContentProps) =>
           <MdEmail size={20} className="text-primary" />
           <h2 className="text-base-content text-base font-semibold">Email Notifications</h2>
         </div>
+
+        {/* Bounce warning banner */}
+        {preferences.email_bounce_info && (
+          <div className="border-warning/30 bg-warning/10 mb-3 rounded-xl border p-4">
+            <div className="flex items-start gap-3">
+              <LuTriangleAlert size={20} className="text-warning mt-0.5 shrink-0" />
+              <div className="min-w-0 flex-1">
+                <p className="text-base-content text-sm font-medium">Email delivery failed</p>
+                <p className="text-base-content/70 mt-1 text-xs">
+                  We couldn't deliver emails to{' '}
+                  <span className="font-medium">{preferences.email_bounce_info.email}</span>. Your
+                  email notifications have been paused.
+                </p>
+                <p className="text-base-content/50 mt-1 text-xs">
+                  Update your email address or re-enable to try again.
+                </p>
+                <div className="mt-3 flex gap-2">
+                  <button
+                    onClick={handleClearBounceAndEnable}
+                    disabled={saving}
+                    className="btn btn-warning btn-soft btn-xs">
+                    Re-enable
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="divide-base-300 divide-y">
           <ToggleRow
