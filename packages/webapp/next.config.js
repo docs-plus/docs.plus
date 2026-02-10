@@ -44,7 +44,7 @@ module.exports = withPWA({
 
   // Performance optimizations
   poweredByHeader: false,
-  generateEtags: false,
+  generateEtags: true,
   compress: true,
 
   // Build optimizations (swcMinify is now default in Next.js 15)
@@ -227,6 +227,36 @@ module.exports = withPWA({
     }
 
     return [
+      // ── Service Worker: MUST revalidate on every navigation ──
+      // Per Google PWA best practices: browsers check for sw.js updates
+      // on every navigation, but HTTP cache can prevent the fetch.
+      // no-cache ensures the browser always revalidates with the server.
+      // https://web.dev/articles/service-worker-lifecycle#updates
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' }
+        ]
+      },
+      {
+        source: '/workbox-:hash.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' }
+        ]
+      },
+      {
+        source: '/service-worker.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' }
+        ]
+      },
+      {
+        source: '/manifest.json',
+        headers: [{ key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' }]
+      },
       {
         source: '/:path*',
         headers: createSecureHeaders({
@@ -256,44 +286,6 @@ module.exports = withPWA({
           xFrameOptions: 'DENY',
           xXSSProtection: '1; mode=block'
         })
-      },
-      // ── Service Worker: MUST NOT be cached ──
-      // Without these, browsers/CDNs may serve stale sw.js and
-      // the PWA will never detect a new version after deploy.
-      {
-        source: '/sw.js',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate'
-          },
-          {
-            key: 'Content-Type',
-            value: 'application/javascript; charset=utf-8'
-          }
-        ]
-      },
-      {
-        source: '/service-worker.js',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate'
-          },
-          {
-            key: 'Content-Type',
-            value: 'application/javascript; charset=utf-8'
-          }
-        ]
-      },
-      {
-        source: '/workbox-:hash.js',
-        headers: [
-          {
-            key: 'Cache-Control',
-            value: 'no-cache, no-store, must-revalidate'
-          }
-        ]
       },
       {
         source: '/robots.txt',
