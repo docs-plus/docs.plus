@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* global console, process */
 
 /**
  * PWA Icon Generator for Docs.plus
