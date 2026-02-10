@@ -4,10 +4,10 @@
  * A friendly, non-intrusive UI that explains the value of notifications
  * before triggering the browser's permission prompt.
  *
- * Design: Matches toast notification system (theme-aware, rounded-2xl, shadow-xl)
+ * Design: Unified prompt card pattern (matches PWAInstallPrompt)
  * Position: Top-left for visibility without blocking main content
  */
-import { showIOSInstallPrompt } from '@components/pwa'
+import { showPWAInstallPrompt } from '@components/pwa'
 import * as toast from '@components/toast'
 import { usePlatformDetection } from '@hooks/usePlatformDetection'
 import { usePushNotifications } from '@hooks/usePushNotifications'
@@ -53,7 +53,7 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
     if (platform === 'ios') {
       if (!iosSupportsWebPush) return false
       if (!isPWAInstalled) {
-        showIOSInstallPrompt()
+        showPWAInstallPrompt()
         return false
       }
     }
@@ -169,53 +169,52 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
       )}>
       <div
         className={twMerge(
-          // Match toast design system
-          'flex items-start gap-4 rounded-2xl px-5 py-4',
+          // Unified prompt card — matches PWAInstallPrompt
+          'rounded-box flex flex-col gap-4 px-5 py-4',
           // Theme-aware background
           'bg-neutral text-neutral-content',
           'dark:bg-base-100 dark:text-base-content',
           // Depth
           'shadow-xl',
-          // Border for definition
-          'border-base-content/10 border'
+          // Border
+          'border-base-300 border'
         )}>
-        {/* Primary indicator bar */}
-        <span className="bg-primary mt-0.5 h-12 w-1 shrink-0 rounded-full" aria-hidden="true" />
-
-        {/* Content */}
-        <div className="min-w-0 flex-1">
-          {/* Header with icon and close */}
-          <div className="mb-2 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
-              <LuBell size={18} className="text-primary" />
-              <h3 className="text-sm font-semibold">Never miss a reply!</h3>
-            </div>
-            <button
-              onClick={handleClose}
-              className="hover:bg-base-content/10 -mt-1 -mr-2 cursor-pointer rounded-lg p-1.5 opacity-60 transition-all hover:opacity-100"
-              aria-label="Dismiss permanently">
-              <LuX size={16} />
-            </button>
-          </div>
-
-          {/* Description */}
-          <p className="mb-4 text-sm leading-relaxed opacity-70">
-            Get instant notifications when someone mentions you or replies to your messages.
-          </p>
-
-          {/* Actions */}
+        {/* Header: icon badge + title/subtitle + close */}
+        <div className="flex items-start justify-between gap-3">
           <div className="flex items-center gap-3">
-            <button
-              onClick={handleEnable}
-              className="bg-primary hover:bg-primary/90 text-primary-content cursor-pointer rounded-xl px-4 py-2 text-sm font-medium transition-colors">
-              Enable Notifications
-            </button>
-            <button
-              onClick={handleLater}
-              className="hover:bg-base-content/10 cursor-pointer rounded-xl px-4 py-2 text-sm font-medium opacity-70 transition-all hover:opacity-100">
-              Later
-            </button>
+            <div className="bg-primary/10 rounded-selector p-2">
+              <LuBell size={24} className="text-primary" />
+            </div>
+            <div>
+              <h3 className="text-sm font-semibold">Never miss a reply!</h3>
+              <p className="text-xs opacity-60">Stay in the loop</p>
+            </div>
           </div>
+          <button
+            onClick={handleClose}
+            className="hover:bg-base-content/10 rounded-selector -mt-1 -mr-2 cursor-pointer p-1.5 opacity-60 transition-all hover:opacity-100"
+            aria-label="Dismiss permanently">
+            <LuX size={16} />
+          </button>
+        </div>
+
+        {/* Description */}
+        <p className="text-sm leading-relaxed opacity-70">
+          Get instant notifications when someone mentions you or replies to your messages.
+        </p>
+
+        {/* Actions — secondary left, primary right (matches PWA prompt) */}
+        <div className="flex items-center justify-end gap-3 pt-1">
+          <button
+            onClick={handleLater}
+            className="hover:bg-base-content/10 rounded-selector cursor-pointer px-4 py-2 text-sm font-medium opacity-70 transition-all hover:opacity-100">
+            Later
+          </button>
+          <button
+            onClick={handleEnable}
+            className="bg-primary hover:bg-primary/90 text-primary-content rounded-selector cursor-pointer px-4 py-2 text-sm font-medium transition-colors">
+            Enable
+          </button>
         </div>
       </div>
     </div>

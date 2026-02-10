@@ -4,7 +4,7 @@ import '@config'
 
 import GoogleAnalytics from '@components/GoogleAnalytics'
 import NotificationPromptCard from '@components/NotificationPromptCard'
-import { IOSInstallPrompt, PWAInstallPrompt } from '@components/pwa'
+import { PWAInstallPrompt } from '@components/pwa'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
@@ -46,7 +46,6 @@ export default function MyApp({ Component, pageProps }: any) {
       <Header />
       <GoogleAnalytics />
       <NotificationPromptCard />
-      <IOSInstallPrompt />
       <PWAInstallPrompt />
       <AppProviders isMobileInitial={isMobileInitial} />
       <QueryClientProvider client={queryClient}>

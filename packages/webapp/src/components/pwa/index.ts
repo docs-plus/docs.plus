@@ -1,2 +1,1 @@
-export { IOSInstallPrompt, showIOSInstallPrompt } from './IOSInstallPrompt'
-export { PWAInstallPrompt, usePWAInstall } from './PWAInstallPrompt'
+export { PWAInstallPrompt, showPWAInstallPrompt, usePWAInstall } from './PWAInstallPrompt'

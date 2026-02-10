@@ -3,6 +3,13 @@
  *
  * Detects device platform, PWA installation status, and push support.
  * Used for PWA install prompts and platform-specific push notification flows.
+ *
+ * iPadOS note:
+ * ─────────────────────────────────────────────────────────────
+ * iPadOS 13+ reports as desktop Safari (same UA as macOS Safari).
+ * We use maxTouchPoints > 1 to distinguish iPad from Mac.
+ * This is the industry-standard detection method used by Google, Apple docs, etc.
+ * ─────────────────────────────────────────────────────────────
  */
 import { useCallback, useEffect, useState } from 'react'
 
@@ -24,17 +31,56 @@ export interface PlatformInfo {
 }
 
 /**
- * Detect iOS version from user agent
+ * Detect iOS version from user agent.
+ * For iPadOS (which reports as macOS), we can't get the exact version from UA,
+ * but if we detect it as iPad via touch points, we know it's 13+ (the first iPadOS).
  */
-function getIOSVersion(): number | null {
+function getIOSVersion(isIPad: boolean): number | null {
   if (typeof window === 'undefined') return null
 
   const ua = navigator.userAgent
+
+  // iPhone/iPod — version is in UA
   const match = ua.match(/OS (\d+)_(\d+)/)
   if (match) {
     return parseFloat(`${match[1]}.${match[2]}`)
   }
+
+  // iPadOS 13+ — reports as macOS, extract version from Mac OS X version
+  // iPadOS version tracks macOS version starting from iPadOS 13
+  if (isIPad) {
+    const macMatch = ua.match(/Mac OS X (\d+)[._](\d+)/)
+    if (macMatch) {
+      // macOS 10.15 = iPadOS 13, macOS 11 = iPadOS 14, etc.
+      const major = parseInt(macMatch[1], 10)
+      const minor = parseInt(macMatch[2], 10)
+      if (major === 10 && minor >= 15) return 13 + (minor - 15) // 10.15 = 13, 10.16 = 14...
+      if (major >= 11) return major + 2 // macOS 11 = iPadOS 14, 12 = 15, etc.
+    }
+    // If we can't parse, assume modern (iPadOS 13+) since only iPadOS 13+ spoofs desktop UA
+    return 16.4
+  }
+
   return null
+}
+
+/**
+ * Detect if device is an iPad (including iPadOS 13+ which spoofs as Mac).
+ * Uses the maxTouchPoints heuristic — Macs have 0, iPads have 5+.
+ */
+function isIPadDevice(): boolean {
+  if (typeof window === 'undefined') return false
+
+  const ua = navigator.userAgent
+
+  // Classic iPad detection (pre-iPadOS 13)
+  if (/iPad/.test(ua)) return true
+
+  // iPadOS 13+ detection: reports as Macintosh but has touch support
+  // Real Macs have maxTouchPoints === 0 (or undefined)
+  if (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1) return true
+
+  return false
 }
 
 /**
@@ -55,8 +101,9 @@ function detectPlatform(): PlatformInfo {
 
   const ua = navigator.userAgent
 
-  // Platform detection
-  const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream
+  // Platform detection (order matters: iPad check before general Mac check)
+  const iPad = isIPadDevice()
+  const isIOS = iPad || (/iPhone|iPod/.test(ua) && !(window as any).MSStream)
   const isAndroid = /Android/.test(ua)
   const platform: 'ios' | 'android' | 'desktop' = isIOS ? 'ios' : isAndroid ? 'android' : 'desktop'
 
@@ -80,7 +127,7 @@ function detectPlatform(): PlatformInfo {
     'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window
 
   // iOS version and web push support (iOS 16.4+)
-  const iosVersion = isIOS ? getIOSVersion() : null
+  const iosVersion = isIOS ? getIOSVersion(iPad) : null
   const iosSupportsWebPush = iosVersion !== null && iosVersion >= 16.4
 
   return {
@@ -130,7 +177,7 @@ export function usePlatformDetection() {
 
   /**
    * Check if user should see iOS install prompt
-   * - On iOS
+   * - On iOS (including iPadOS)
    * - Not installed as PWA
    * - iOS 16.4+ (supports web push)
    */
