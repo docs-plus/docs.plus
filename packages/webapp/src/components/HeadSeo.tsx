@@ -1,13 +1,32 @@
 import { useStore } from '@stores'
 import Head from 'next/head'
 
+/**
+ * HeadSeo — Client-side dynamic meta tag updates.
+ *
+ * IMPORTANT: This component runs CLIENT-SIDE only (inside ssr:false DocumentPage).
+ * Social crawlers (Slack, Discord, Twitter, Facebook, iMessage) will NEVER see these tags.
+ * Server-rendered OG tags for crawlers are in [...slugs].tsx (via getServerSideProps).
+ *
+ * This component handles:
+ * - Dynamic <title> updates as user navigates (client-side SPA navigation)
+ * - Dynamic meta description/keywords updates
+ * - Client-side SEO hints (mostly for SPA navigation, not for crawlers)
+ *
+ * Tags NOT set here (owned by _document.tsx or page components):
+ * - og:type, og:site_name → _document.tsx (global)
+ * - og:title, og:description, og:url, og:image → [...slugs].tsx (SSR per-page)
+ * - twitter:card → _document.tsx (global)
+ * - twitter:title, twitter:description, twitter:image → [...slugs].tsx (SSR per-page)
+ */
+
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://docs.plus'
+
 const DEFAULT_METADATA = {
   title: 'docs.plus',
   description:
     'docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge in a hierarchical manner. Collaborate on documents and share knowledge in a structured, logical way.',
-  url: 'http://docs.plus',
-  keywords: 'docs, collaborative, real-time, knowledge, open-source',
-  image: '/icons/android-chrome-512x512.png'
+  keywords: 'docs, collaborative, real-time, knowledge, open-source'
 }
 
 const HeadSeo = () => {
@@ -16,7 +35,7 @@ const HeadSeo = () => {
   const buildMetadata = ({ title, description, keywords, slug }: any) => ({
     title: title || DEFAULT_METADATA.title,
     description: description || DEFAULT_METADATA.description,
-    url: slug ? `${DEFAULT_METADATA.url}/${slug}` : DEFAULT_METADATA.url,
+    url: slug ? `${SITE_URL}/${slug}` : SITE_URL,
     keywords: typeof keywords === 'string' ? keywords : DEFAULT_METADATA.keywords
   })
 
@@ -27,18 +46,6 @@ const HeadSeo = () => {
       <title>{seoMetadata.title}</title>
       <meta name="description" content={seoMetadata.description} />
       <meta name="keywords" content={seoMetadata.keywords} />
-      <meta name="robots" content="noindex, nofollow, noarchive, nosnippet, notranslate" />
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:url" content={seoMetadata.url} />
-      <meta name="twitter:title" content={seoMetadata.title} />
-      <meta name="twitter:description" content={seoMetadata.description} />
-      <meta name="twitter:image" content={DEFAULT_METADATA.image} />
-      <meta property="og:type" content="website" />
-      <meta property="og:title" content={seoMetadata.title} />
-      <meta property="og:description" content={seoMetadata.description} />
-      <meta property="og:site_name" content={DEFAULT_METADATA.title} />
-      <meta property="og:url" content={seoMetadata.url} />
-      <meta property="og:image" content={DEFAULT_METADATA.image} />
     </Head>
   )
 }
