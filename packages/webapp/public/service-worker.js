@@ -1,10 +1,20 @@
 // -----------------------------------------------------------------------------
 // Service Worker Extension for Docs.plus
-// Handles: User status updates, Push notifications
-// Version: 2.3.0 - Imported by Workbox sw.js via importScripts
+// Handles: Lifecycle (activate/claim), User status updates, Push notifications
+// Version: 2.4.0 - Imported by Workbox sw.js via importScripts
 // -----------------------------------------------------------------------------
 
 console.info("[SW Extension] Push notification handlers loaded");
+
+// ── Lifecycle: claim clients on activate ──
+// When a new SW activates (after SKIP_WAITING), immediately claim all
+// open tabs/windows so they start using the new SW without requiring
+// a manual page reload. This is critical for mobile PWA where the user
+// may not close/reopen the app.
+self.addEventListener("activate", (event) => {
+  console.info("[SW Extension] Activating — claiming all clients…");
+  event.waitUntil(self.clients.claim());
+});
 
 // Message handler for cross-tab communication and SW updates
 self.addEventListener("message", (event) => {
@@ -12,7 +22,7 @@ self.addEventListener("message", (event) => {
 
   // Handle SKIP_WAITING from update hook (Workbox also handles this)
   if (data && data.type === "SKIP_WAITING") {
-    console.info("[SW Extension] Received SKIP_WAITING, activating new version...");
+    console.info("[SW Extension] Received SKIP_WAITING, activating new version…");
     self.skipWaiting();
     return;
   }

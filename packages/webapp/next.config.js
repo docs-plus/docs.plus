@@ -257,6 +257,44 @@ module.exports = withPWA({
           xXSSProtection: '1; mode=block'
         })
       },
+      // ── Service Worker: MUST NOT be cached ──
+      // Without these, browsers/CDNs may serve stale sw.js and
+      // the PWA will never detect a new version after deploy.
+      {
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate'
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/javascript; charset=utf-8'
+          }
+        ]
+      },
+      {
+        source: '/service-worker.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate'
+          },
+          {
+            key: 'Content-Type',
+            value: 'application/javascript; charset=utf-8'
+          }
+        ]
+      },
+      {
+        source: '/workbox-:hash.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate'
+          }
+        ]
+      },
       {
         source: '/robots.txt',
         headers: [
