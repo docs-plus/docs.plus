@@ -1,34 +1,29 @@
 {
   "id": "docs-plus-pwa",
-  "name": "Docs.plus",
-  "short_name": "Docs.plus",
-  "description": "Docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge efficiently.",
+  "name": "docs.plus",
+  "short_name": "docs.plus",
+  "description": "docs.plus is an open-source, real-time collaborative tool that enables communities to share and organize knowledge efficiently.",
   "lang": "en",
   "dir": "ltr",
   "categories": ["productivity", "utilities", "education"],
-  "background_color": "#ffffff",
-  "theme_color": "#2778ff",
-  "display": "standalone",
-  "orientation": "any",
+
   "start_url": "/",
   "scope": "/",
+
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+
+  "theme_color": "#2778ff",
+  "background_color": "#ffffff",
+
   "prefer_related_applications": false,
+
+  "launch_handler": {
+    "client_mode": "navigate-existing"
+  },
+
   "icons": [
-    {
-      "src": "/icons/favicon.ico",
-      "type": "image/x-icon",
-      "sizes": "48x48"
-    },
-    {
-      "src": "/icons/favicon-16x16.png",
-      "type": "image/png",
-      "sizes": "16x16"
-    },
-    {
-      "src": "/icons/favicon-32x32.png",
-      "type": "image/png",
-      "sizes": "32x32"
-    },
     {
       "src": "/icons/logo.svg",
       "type": "image/svg+xml",
@@ -48,37 +43,32 @@
       "purpose": "any"
     },
     {
-      "src": "/icons/apple-touch-icon.png",
-      "type": "image/png",
-      "sizes": "180x180",
-      "purpose": "any"
-    },
-    {
       "src": "/icons/maskable_icon_x192.png",
-      "sizes": "192x192",
       "type": "image/png",
+      "sizes": "192x192",
       "purpose": "maskable"
     },
     {
       "src": "/icons/maskable_icon_x384.png",
-      "sizes": "384x384",
       "type": "image/png",
+      "sizes": "384x384",
       "purpose": "maskable"
     },
     {
       "src": "/icons/maskable_icon_x512.png",
-      "sizes": "512x512",
       "type": "image/png",
+      "sizes": "512x512",
       "purpose": "maskable"
     }
   ],
+
   "screenshots": [
     {
       "src": "/icons/screenshot1.jpg",
       "type": "image/jpeg",
       "sizes": "1244x1370",
       "form_factor": "wide",
-      "label": "Docs.plus collaborative editor"
+      "label": "docs.plus collaborative editor"
     },
     {
       "src": "/icons/screenshot2.jpg",
@@ -93,9 +83,30 @@
       "sizes": "1244x1370",
       "form_factor": "wide",
       "label": "Knowledge sharing"
+    },
+    {
+      "src": "/icons/screenshot1.jpg",
+      "type": "image/jpeg",
+      "sizes": "1244x1370",
+      "form_factor": "narrow",
+      "label": "docs.plus mobile editor"
     }
   ],
+
   "shortcuts": [
+    {
+      "name": "New Document",
+      "short_name": "New Doc",
+      "url": "/new",
+      "description": "Create a new document",
+      "icons": [
+        {
+          "src": "/icons/android-chrome-192x192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
     {
       "name": "Demo",
       "short_name": "Demo",
@@ -109,5 +120,15 @@
         }
       ]
     }
-  ]
+  ],
+
+  "share_target": {
+    "action": "/",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
 }

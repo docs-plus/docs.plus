@@ -157,6 +157,7 @@
     "next-unused": "^0.0.6",
     "postcss": "^8.5.6",
     "prettier": "^3.6.2",
-    "prettier-plugin-tailwindcss": "^0.7.1"
+    "prettier-plugin-tailwindcss": "^0.7.1",
+    "sharp": "^0.34.5"
   }
 }
