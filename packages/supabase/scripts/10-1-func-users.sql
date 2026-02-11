@@ -31,6 +31,14 @@ DECLARE
   user_full_name TEXT;
   user_avatar_url TEXT;
 BEGIN
+  -- Skip profile creation for anonymous users entirely.
+  -- Anonymous users (created by Supabase Anonymous Auth for document view tracking)
+  -- don't need public.users entries — they have no email, no profile.
+  -- The webapp's useOnAuthStateChange also skips getUserProfile for anonymous users.
+  IF new.is_anonymous = true THEN
+    RETURN new;
+  END IF;
+
   -- Extract full_name from metadata (Google uses 'name', others might use 'full_name')
   user_full_name := COALESCE(
     new.raw_user_meta_data->>'full_name',
@@ -79,8 +87,7 @@ BEGIN
     final_username := pg_catalog.left(sanitized_username || '_' || name_suffix::TEXT, 30);
   END LOOP;
 
-  -- Insert user record with all required fields
-  -- Ensure email is not NULL (required constraint)
+  -- Ensure email is not NULL (required by public.users constraint)
   IF new.email IS NULL THEN
     RAISE EXCEPTION 'Email is required for user creation';
   END IF;
@@ -141,7 +148,7 @@ COMMENT ON TRIGGER trigger_update_user_online_at ON public.users IS 'Automatical
  * Description: Checks if a user is actively online based on status and recent activity.
  * Parameters: p_user_id - The UUID of the user to check
  * Returns: TRUE if user has status='ONLINE' AND online_at within last 2 minutes
- * 
+ *
  * Usage: Used by push notification trigger to skip push for active users.
  * The 2-minute threshold is more aggressive than the cron cleanup (also 2 min)
  * to ensure we catch users who are actively engaged.
@@ -159,7 +166,7 @@ AS $$
     );
 $$;
 
-COMMENT ON FUNCTION internal.is_user_online(uuid) IS 
+COMMENT ON FUNCTION internal.is_user_online(uuid) IS
 'Checks if user is actively online. Returns true if status is ONLINE and online_at is within last 2 minutes.';
 
 -- Grant execute to service_role for push notification trigger
