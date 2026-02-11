@@ -372,9 +372,9 @@ Production-ready setup for **mid-level scale deployments** (small-medium teams, 
 
 **Architecture:** 🏗️
 
-- 📈 Horizontal scaling: REST API (2), WebSocket (3), Worker (2), Webapp (2)
-- 🔀 Nginx reverse proxy with load balancing
-- ⚡ Resource limits and health checks
+- 📈 Horizontal scaling: REST API (2), WebSocket (2), Worker (2), Webapp (2)
+- 🔀 Traefik v3 reverse proxy with automatic SSL (Let's Encrypt) and load balancing
+- ⚡ Resource limits, health checks, and zero-downtime blue-green deploys
 - 📊 Production-optimized logging and connection pooling
 
 ### Setup

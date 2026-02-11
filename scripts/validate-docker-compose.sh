@@ -37,7 +37,7 @@ fi
 echo ""
 echo "📦 Checking service definitions..."
 
-EXPECTED_SERVICES=("traefik" "redis" "rest-api" "hocuspocus-server" "hocuspocus-worker" "webapp")
+EXPECTED_SERVICES=("traefik" "redis" "rest-api" "hocuspocus-server" "hocuspocus-worker" "webapp" "admin-dashboard")
 for service in "${EXPECTED_SERVICES[@]}"; do
   if docker compose -f docker-compose.prod.yml config --services | grep -q "^${service}$"; then
     echo -e "${GREEN}  ✅ $service defined${NC}"
@@ -116,6 +116,7 @@ check_healthcheck "rest-api" "4000"
 check_healthcheck "hocuspocus-server" "4001"
 check_healthcheck "hocuspocus-worker" "4002"
 check_healthcheck "webapp" "3000"
+check_healthcheck "admin-dashboard" "3100"
 
 # Check graceful shutdown
 echo ""
@@ -144,6 +145,7 @@ check_grace_period "rest-api"
 check_grace_period "hocuspocus-server"
 check_grace_period "hocuspocus-worker"
 check_grace_period "webapp"
+check_grace_period "admin-dashboard"
 
 # Check dependencies
 echo ""
@@ -189,6 +191,7 @@ check_traefik_route() {
 check_traefik_route "rest-api" "prodback.docs.plus"
 check_traefik_route "hocuspocus-server" "prodback.docs.plus"
 check_traefik_route "webapp" "docs.plus"
+check_traefik_route "admin-dashboard" "admin.docs.plus"
 
 # Check network
 echo ""

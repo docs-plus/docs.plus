@@ -162,7 +162,7 @@ echo ""
 HEALTHY=0
 TOTAL=0
 
-for service in rest-api hocuspocus-server hocuspocus-worker webapp; do
+for service in rest-api hocuspocus-server hocuspocus-worker webapp admin-dashboard; do
   COUNT=$(docker ps --filter "label=com.docker.compose.service=${service}" -q | wc -l | tr -d ' ')
   HEALTHY_COUNT=$(docker ps --filter "label=com.docker.compose.service=${service}" --filter "health=healthy" -q | wc -l | tr -d ' ')
 
@@ -179,7 +179,7 @@ done
 echo ""
 echo "Overall: $HEALTHY/$TOTAL containers healthy"
 
-if [ "$HEALTHY" -ge 6 ]; then
+if [ "$HEALTHY" -ge 7 ]; then
   echo ""
   echo -e "${GREEN}✅ ROLLBACK SUCCESSFUL${NC}"
   echo ""

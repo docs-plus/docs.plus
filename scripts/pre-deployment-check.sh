@@ -106,7 +106,7 @@ echo "🔧 Checking service definitions..."
 
 SERVICES=$(docker compose -f docker-compose.prod.yml config --services 2>/dev/null)
 
-for service in traefik redis rest-api hocuspocus-server hocuspocus-worker webapp; do
+for service in traefik redis rest-api hocuspocus-server hocuspocus-worker webapp admin-dashboard; do
   if echo "$SERVICES" | grep -q "^${service}$"; then
     check_pass "Service '$service' defined"
   else
@@ -138,6 +138,7 @@ check_image "rest-api" "docsplus-rest-api"
 check_image "hocuspocus-server" "docsplus-hocuspocus"
 check_image "hocuspocus-worker" "docsplus-hocuspocus"
 check_image "webapp" "docsplus-webapp"
+check_image "admin-dashboard" "docsplus-admin"
 
 echo ""
 
@@ -146,7 +147,7 @@ echo ""
 # =============================================================================
 echo "🏥 Verifying health checks..."
 
-for service in rest-api hocuspocus-server hocuspocus-worker webapp; do
+for service in rest-api hocuspocus-server hocuspocus-worker webapp admin-dashboard; do
   if echo "$CONFIG" | grep -A 30 "name: ${service}" | grep -q "healthcheck:"; then
     check_pass "$service has healthcheck"
   else
@@ -161,7 +162,7 @@ echo ""
 # =============================================================================
 echo "🛑 Checking graceful shutdown config..."
 
-for service in rest-api hocuspocus-server hocuspocus-worker webapp; do
+for service in rest-api hocuspocus-server hocuspocus-worker webapp admin-dashboard; do
   if echo "$CONFIG" | grep -A 30 "name: ${service}" | grep -q "stop_grace_period:"; then
     check_pass "$service has stop_grace_period"
   else
@@ -254,6 +255,12 @@ if echo "$CONFIG" | grep -A 50 "name: hocuspocus-server" | grep -q "prodback.doc
   check_pass "Hocuspocus routes to prodback.docs.plus"
 else
   check_warn "Hocuspocus Traefik routing may need verification"
+fi
+
+if echo "$CONFIG" | grep -A 50 "name: admin-dashboard" | grep -q "admin.docs.plus"; then
+  check_pass "Admin dashboard routes to admin.docs.plus"
+else
+  check_warn "Admin dashboard Traefik routing may need verification"
 fi
 
 echo ""
