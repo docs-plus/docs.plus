@@ -1,7 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
 import type { Context, Next } from 'hono'
 
+import { adminLogger } from '../../lib/logger'
 import { verifySupabaseToken } from '../../utils/jwt'
+import { getSupabaseClient } from '../utils/supabase'
 
 /**
  * Admin authentication middleware
@@ -25,18 +26,14 @@ export async function adminAuthMiddleware(c: Context, next: Next) {
   }
 
   // Check if user exists in admin_users table
-  const supabaseUrl = process.env.SUPABASE_URL
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+  const supabase = getSupabaseClient()
 
-  if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not configured')
+  if (!supabase) {
+    adminLogger.error('SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY not configured')
     return c.json({ error: 'Server configuration error' }, 500)
   }
 
   try {
-    // Use service role key to bypass RLS and check admin_users table
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
-
     const { data: adminData, error } = await supabase
       .from('admin_users')
       .select('user_id')
@@ -44,7 +41,7 @@ export async function adminAuthMiddleware(c: Context, next: Next) {
       .maybeSingle()
 
     if (error) {
-      console.error('Failed to check admin status:', error)
+      adminLogger.error({ err: error }, 'Failed to check admin status')
       return c.json({ error: 'Failed to verify admin status' }, 500)
     }
 
@@ -58,7 +55,7 @@ export async function adminAuthMiddleware(c: Context, next: Next) {
 
     await next()
   } catch (error) {
-    console.error('Admin auth middleware error:', error)
+    adminLogger.error({ err: error }, 'Admin auth middleware error')
     return c.json({ error: 'Authentication failed' }, 500)
   }
 }

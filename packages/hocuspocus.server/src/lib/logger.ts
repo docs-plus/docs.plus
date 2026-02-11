@@ -160,3 +160,9 @@ export const pushLogger = logger.child(
   { module: 'push' },
   { level: envLevel(process.env.PUSH_LOG_LEVEL, baseLevel) }
 )
+
+// Admin Dashboard
+export const adminLogger = logger.child(
+  { module: 'admin' },
+  { level: envLevel(process.env.ADMIN_LOG_LEVEL, baseLevel) }
+)
