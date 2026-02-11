@@ -1,9 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
 import { useCallback, useMemo } from 'react'
 import toast from 'react-hot-toast'
-import { LuCircle, LuFileText, LuRadio } from 'react-icons/lu'
+import { LuCircle, LuFileText, LuRadio, LuShieldCheck, LuShieldOff } from 'react-icons/lu'
 
 import { AdminLayout } from '@/components/layout/AdminLayout'
 import { Header } from '@/components/layout/Header'
@@ -11,9 +11,10 @@ import { DataTable } from '@/components/tables/DataTable'
 import { Avatar } from '@/components/ui/Avatar'
 import { NotificationBadges } from '@/components/ui/NotificationBadges'
 import { SearchInput } from '@/components/ui/SearchInput'
+import { useAdminAuth } from '@/hooks/useAdminAuth'
 import { useRealtimeSubscription } from '@/hooks/useRealtimeSubscription'
 import { useTableParams } from '@/hooks/useTableParams'
-import { fetchUserDocumentCounts } from '@/services/api'
+import { fetchAdminUserIds, fetchUserDocumentCounts, toggleAdminRole } from '@/services/api'
 import { fetchUserNotificationSubscriptions, fetchUsers } from '@/services/supabase'
 import type { User } from '@/types'
 import { exportToCSV } from '@/utils/export'
@@ -30,9 +31,13 @@ type UserWithExtras = User & {
   notif_ios: boolean
   notif_android: boolean
   notif_email: boolean
+  is_admin: boolean
 }
 
 export default function UsersPage() {
+  const queryClient = useQueryClient()
+  const { user: currentUser } = useAdminAuth()
+
   // URL-synced table state
   const { page, search, sortKey, sortDirection, setPage, setSearch, handleSort } = useTableParams({
     defaultSortKey: 'created_at',
@@ -56,7 +61,27 @@ export default function UsersPage() {
     queryFn: fetchUserNotificationSubscriptions
   })
 
-  // Merge document counts and notification subs into user data
+  // Fetch admin user IDs
+  const { data: adminUsers } = useQuery({
+    queryKey: ['admin', 'users', 'admin-ids'],
+    queryFn: fetchAdminUserIds
+  })
+
+  const adminIdSet = useMemo(() => new Set(adminUsers?.map((a) => a.user_id) || []), [adminUsers])
+
+  // Toggle admin mutation
+  const toggleAdminMutation = useMutation({
+    mutationFn: toggleAdminRole,
+    onSuccess: (result) => {
+      toast.success(result.is_admin ? 'Admin role granted' : 'Admin role revoked')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users', 'admin-ids'] })
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || 'Failed to toggle admin role')
+    }
+  })
+
+  // Merge document counts, notification subs, and admin status into user data
   const usersWithExtras = useMemo(() => {
     if (!data?.data) return []
     return data.data.map((user) => {
@@ -67,10 +92,11 @@ export default function UsersPage() {
         notif_web: subs?.web ?? false,
         notif_ios: subs?.ios ?? false,
         notif_android: subs?.android ?? false,
-        notif_email: subs?.email ?? false
+        notif_email: subs?.email ?? false,
+        is_admin: adminIdSet.has(user.id)
       }
     })
-  }, [data?.data, docCounts, notifSubs])
+  }, [data?.data, docCounts, notifSubs, adminIdSet])
 
   // Real-time subscription to users table
   const handleRealtimeChange = useCallback(() => {
@@ -103,6 +129,43 @@ export default function UsersPage() {
     toast.success('Exported users to CSV')
   }
 
+  const handleToggleAdmin = useCallback(
+    (user: UserWithExtras) => {
+      const isSelf = user.id === currentUser?.id
+      if (isSelf) {
+        toast.error('Cannot change your own admin status')
+        return
+      }
+
+      const action = user.is_admin ? 'revoke admin from' : 'grant admin to'
+      toast(
+        (t) => (
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-medium">{user.is_admin ? 'Revoke' : 'Grant'} admin role?</p>
+            <p className="text-xs opacity-70">
+              This will {action} <strong>{user.username || user.email}</strong>.
+            </p>
+            <div className="flex gap-2">
+              <button
+                className={`btn btn-xs ${user.is_admin ? 'btn-warning' : 'btn-primary'}`}
+                onClick={() => {
+                  toggleAdminMutation.mutate(user.id)
+                  toast.dismiss(t.id)
+                }}>
+                Confirm
+              </button>
+              <button className="btn btn-ghost btn-xs" onClick={() => toast.dismiss(t.id)}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        ),
+        { duration: 10000 }
+      )
+    },
+    [currentUser?.id, toggleAdminMutation]
+  )
+
   const columns = [
     {
       key: 'username',
@@ -118,7 +181,15 @@ export default function UsersPage() {
             email={user.email}
             size="md"
           />
-          <span className="font-medium">{user.username || '-'}</span>
+          <div className="flex items-center gap-2">
+            <span className="font-medium">{user.username || '-'}</span>
+            {user.is_admin && (
+              <span className="badge badge-primary badge-xs gap-1">
+                <LuShieldCheck className="h-3 w-3" />
+                Admin
+              </span>
+            )}
+          </div>
         </div>
       )
     },
@@ -192,6 +263,32 @@ export default function UsersPage() {
           {user.online_at ? formatDateTime(user.online_at) : '-'}
         </span>
       )
+    },
+    {
+      key: 'actions',
+      header: '',
+      render: (user: UserWithExtras) => {
+        const isSelf = user.id === currentUser?.id
+        return (
+          <div
+            className="tooltip tooltip-left"
+            data-tip={
+              isSelf ? 'Cannot change own role' : user.is_admin ? 'Revoke admin' : 'Make admin'
+            }>
+            <button
+              type="button"
+              className={`btn btn-ghost btn-sm btn-square ${user.is_admin ? 'text-primary' : 'text-base-content/30 hover:text-primary'}`}
+              onClick={() => handleToggleAdmin(user)}
+              disabled={isSelf || toggleAdminMutation.isPending}>
+              {user.is_admin ? (
+                <LuShieldCheck className="h-4 w-4" />
+              ) : (
+                <LuShieldOff className="h-4 w-4" />
+              )}
+            </button>
+          </div>
+        )
+      }
     }
   ]
 
