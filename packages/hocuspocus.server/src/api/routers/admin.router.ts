@@ -2,10 +2,17 @@ import { zValidator } from '@hono/zod-validator'
 import { Hono } from 'hono'
 
 import {
+  auditEmailBouncesQuerySchema,
+  auditFailedSubsQuerySchema,
   batchTrendsQuerySchema,
   bulkDeleteSchema,
   daysQuerySchema,
   deleteDocumentSchema,
+  disableFailedSubsSchema,
+  ghostAccountsQuerySchema,
+  ghostBulkDeleteSchema,
+  ghostCleanupAnonymousSchema,
+  ghostResendSchema,
   listDocumentsQuerySchema,
   paginationQuerySchema,
   staleDocumentsQuerySchema,
@@ -25,6 +32,12 @@ admin.get('/stats', adminController.getDashboardStats)
 
 // Get document counts per user (for Users page)
 admin.get('/users/document-counts', adminController.getUserDocumentCounts)
+
+// Get all admin user IDs (for badge rendering in Users table)
+admin.get('/users/admins', adminController.getAdminUserIds)
+
+// Toggle admin role for a user (grant or revoke)
+admin.post('/users/:id/toggle-admin', adminController.toggleAdminRole)
 
 // Get document statistics (from Prisma)
 admin.get('/documents/stats', adminController.getDocumentStats)
@@ -143,6 +156,84 @@ admin.post(
   '/documents/stale/bulk-delete',
   zValidator('json', bulkDeleteSchema),
   adminController.bulkDeleteStaleDocuments
+)
+
+// =============================================================================
+// Failed Notifications Audit (Phase 17)
+// =============================================================================
+
+// Combined notification health score (push + email delivery rates)
+admin.get('/audit/notifications/health', adminController.getNotificationHealth)
+
+// Push failure breakdown by error category + platform
+admin.get('/audit/notifications/push-failures', adminController.getPushFailureSummary)
+
+// Email failure + bounce breakdown
+admin.get('/audit/notifications/email-failures', adminController.getEmailFailureSummary)
+
+// Detailed failed push subscriptions list
+admin.get(
+  '/audit/notifications/failed-subscriptions',
+  zValidator('query', auditFailedSubsQuerySchema),
+  adminController.getFailedPushSubscriptions
+)
+
+// Email bounce list with user info
+admin.get(
+  '/audit/notifications/email-bounces',
+  zValidator('query', auditEmailBouncesQuerySchema),
+  adminController.getEmailBounces
+)
+
+// Bulk disable expired/dead push subscriptions
+admin.post(
+  '/audit/notifications/disable-failed',
+  zValidator('json', disableFailedSubsSchema),
+  adminController.disableFailedSubscriptions
+)
+
+// BullMQ Dead Letter Queue contents (push + email)
+admin.get('/audit/notifications/dlq', adminController.getDeadLetterQueueContents)
+
+// =============================================================================
+// Ghost Accounts Audit (Phase 15)
+// =============================================================================
+
+// List ghost accounts (detection via Admin API + public.users cross-ref)
+admin.get(
+  '/audit/ghost-accounts',
+  zValidator('query', ghostAccountsQuerySchema),
+  adminController.getGhostAccounts
+)
+
+// Summary stats across all ghost categories
+admin.get('/audit/ghost-accounts/summary', adminController.getGhostAccountsSummary)
+
+// FK dependency check before deleting a specific user
+admin.get('/audit/ghost-accounts/:id/impact', adminController.getGhostDeletionImpact)
+
+// Smart-delete single ghost (hard or soft based on FK deps)
+admin.delete('/audit/ghost-accounts/:id', adminController.deleteGhostAccount)
+
+// Bulk smart-delete ghost accounts (max 50)
+admin.post(
+  '/audit/ghost-accounts/bulk-delete',
+  zValidator('json', ghostBulkDeleteSchema),
+  adminController.bulkDeleteGhostAccounts
+)
+
+// Resend magic link confirmation for unconfirmed ghost
+admin.post(
+  '/audit/ghost-accounts/resend-confirmation',
+  zValidator('json', ghostResendSchema),
+  adminController.resendGhostConfirmation
+)
+
+// Bulk cleanup stale anonymous sessions
+admin.post(
+  '/audit/ghost-accounts/cleanup-anonymous',
+  zValidator('json', ghostCleanupAnonymousSchema),
+  adminController.cleanupAnonymousSessions
 )
 
 export default admin

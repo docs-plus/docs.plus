@@ -8,6 +8,7 @@
 import type { PrismaClient } from '@prisma/client'
 import type { Context } from 'hono'
 
+import type { SupabaseUser } from '../utils/jwt'
 import type { RedisClient } from './redis.types'
 
 // =============================================================================
@@ -18,6 +19,10 @@ declare module 'hono' {
   interface ContextVariableMap {
     prisma: PrismaClient
     redis: RedisClient | null
+    /** Set by adminAuthMiddleware — JWT subject (user UUID) */
+    userId: string
+    /** Set by adminAuthMiddleware — decoded JWT payload */
+    user: SupabaseUser
   }
 }
 
@@ -32,6 +37,8 @@ export type AppContext = Context<{
   Variables: {
     prisma: PrismaClient
     redis: RedisClient | null
+    userId: string
+    user: SupabaseUser
   }
 }>
 
