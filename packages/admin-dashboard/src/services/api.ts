@@ -2,15 +2,31 @@ import { API_URL } from '@/constants/config'
 import { supabase } from '@/lib/supabase'
 import type {
   ActivityHeatmapPoint,
+  AuditFailedSubscription,
   CommunicationStats,
   DashboardDocumentStats,
   DauTrendPoint,
+  DisableResult,
+  DLQContents,
   Document,
   DocumentStats,
   DocumentViewStats,
+  EmailBounce,
+  EmailFailureSummary,
+  GhostAccountsResponse,
+  GhostBulkDeleteResult,
+  GhostCleanupResult,
+  GhostDeleteResult,
+  GhostDeletionImpact,
+  GhostSummary,
+  NotificationHealth,
   NotificationReach,
   PaginatedResponse,
+  PushFailureSummary,
   RetentionMetrics,
+  StaleDocument,
+  StaleDocumentPreview,
+  StaleDocumentsSummary,
   TopActiveDocument,
   TopViewedDocument,
   UserLifecycleSegments,
@@ -84,6 +100,22 @@ export async function fetchDocumentStats(): Promise<DocumentStats> {
  */
 export async function fetchUserDocumentCounts(): Promise<Record<string, number>> {
   return fetchApi('/api/admin/users/document-counts')
+}
+
+/**
+ * Fetch all admin user IDs (for badge rendering in Users table)
+ */
+export async function fetchAdminUserIds(): Promise<Array<{ user_id: string; created_at: string }>> {
+  return fetchApi('/api/admin/users/admins')
+}
+
+/**
+ * Toggle admin role for a user (grant or revoke)
+ */
+export async function toggleAdminRole(
+  userId: string
+): Promise<{ success: boolean; is_admin: boolean }> {
+  return fetchApi(`/api/admin/users/${userId}/toggle-admin`, { method: 'POST' })
 }
 
 /**
@@ -395,8 +427,6 @@ export async function checkEmailGatewayHealth(): Promise<EmailGatewayHealth> {
 // Stale Documents Audit API (Phase 13)
 // =============================================================================
 
-import type { StaleDocument, StaleDocumentPreview, StaleDocumentsSummary } from '@/types'
-
 /**
  * Fetch stale documents summary statistics
  */
@@ -458,5 +488,154 @@ export async function bulkDeleteStaleDocuments(
   return fetchApi('/api/admin/documents/stale/bulk-delete', {
     method: 'POST',
     body: JSON.stringify({ slugs, dryRun })
+  })
+}
+
+// =============================================================================
+// Failed Notifications Audit API (Phase 17)
+// =============================================================================
+
+/**
+ * Fetch combined notification health (push + email delivery rates)
+ */
+export async function fetchNotificationHealth(): Promise<NotificationHealth> {
+  return fetchApi('/api/admin/audit/notifications/health')
+}
+
+/**
+ * Fetch push failure breakdown by error category + platform
+ */
+export async function fetchPushFailureSummary(): Promise<PushFailureSummary[]> {
+  return fetchApi('/api/admin/audit/notifications/push-failures')
+}
+
+/**
+ * Fetch email failure + bounce breakdown
+ */
+export async function fetchEmailFailureSummary(): Promise<EmailFailureSummary[]> {
+  return fetchApi('/api/admin/audit/notifications/email-failures')
+}
+
+/**
+ * Fetch detailed failed push subscriptions with user info
+ */
+export async function fetchAuditFailedSubscriptions(
+  minFailures = 1,
+  limit = 100
+): Promise<AuditFailedSubscription[]> {
+  const params = new URLSearchParams({
+    minFailures: String(minFailures),
+    limit: String(limit)
+  })
+  return fetchApi(`/api/admin/audit/notifications/failed-subscriptions?${params.toString()}`)
+}
+
+/**
+ * Fetch email bounces with user info
+ */
+export async function fetchEmailBounces(options?: {
+  bounceType?: string
+  days?: number
+  limit?: number
+}): Promise<EmailBounce[]> {
+  const params = new URLSearchParams()
+  if (options?.bounceType) params.set('bounceType', options.bounceType)
+  if (options?.days) params.set('days', String(options.days))
+  if (options?.limit) params.set('limit', String(options.limit))
+  return fetchApi(`/api/admin/audit/notifications/email-bounces?${params.toString()}`)
+}
+
+/**
+ * Bulk disable failed push subscriptions
+ */
+export async function disableFailedSubscriptions(
+  minFailures: number,
+  errorPattern?: string,
+  subscriptionIds?: string[]
+): Promise<DisableResult> {
+  return fetchApi('/api/admin/audit/notifications/disable-failed', {
+    method: 'POST',
+    body: JSON.stringify({ minFailures, errorPattern, subscriptionIds })
+  })
+}
+
+/**
+ * Fetch BullMQ Dead Letter Queue contents (push + email)
+ */
+export async function fetchDLQContents(limit = 20): Promise<DLQContents> {
+  return fetchApi(`/api/admin/audit/notifications/dlq?limit=${limit}`)
+}
+
+// =============================================================================
+// Ghost Accounts Audit (Phase 15)
+// =============================================================================
+
+/**
+ * Fetch ghost accounts list with classification
+ */
+export async function fetchGhostAccounts(options?: {
+  minAgeDays?: number
+  ghostType?: string
+  page?: number
+  perPage?: number
+}): Promise<GhostAccountsResponse> {
+  const params = new URLSearchParams()
+  if (options?.minAgeDays) params.set('minAgeDays', String(options.minAgeDays))
+  if (options?.ghostType) params.set('ghostType', options.ghostType)
+  if (options?.page) params.set('page', String(options.page))
+  if (options?.perPage) params.set('perPage', String(options.perPage))
+  return fetchApi(`/api/admin/audit/ghost-accounts?${params.toString()}`)
+}
+
+/**
+ * Fetch ghost accounts summary stats
+ */
+export async function fetchGhostSummary(): Promise<GhostSummary> {
+  return fetchApi('/api/admin/audit/ghost-accounts/summary')
+}
+
+/**
+ * Fetch deletion impact for a specific user
+ */
+export async function fetchGhostDeletionImpact(userId: string): Promise<GhostDeletionImpact> {
+  return fetchApi(`/api/admin/audit/ghost-accounts/${userId}/impact`)
+}
+
+/**
+ * Smart-delete a single ghost account
+ */
+export async function deleteGhostAccount(userId: string): Promise<GhostDeleteResult> {
+  return fetchApi(`/api/admin/audit/ghost-accounts/${userId}`, {
+    method: 'DELETE'
+  })
+}
+
+/**
+ * Bulk smart-delete ghost accounts
+ */
+export async function bulkDeleteGhostAccounts(userIds: string[]): Promise<GhostBulkDeleteResult> {
+  return fetchApi('/api/admin/audit/ghost-accounts/bulk-delete', {
+    method: 'POST',
+    body: JSON.stringify({ userIds })
+  })
+}
+
+/**
+ * Resend confirmation email for unconfirmed ghost
+ */
+export async function resendGhostConfirmation(email: string): Promise<{ success: boolean }> {
+  return fetchApi('/api/admin/audit/ghost-accounts/resend-confirmation', {
+    method: 'POST',
+    body: JSON.stringify({ email })
+  })
+}
+
+/**
+ * Bulk cleanup stale anonymous sessions
+ */
+export async function cleanupAnonymousSessions(minAgeDays = 90): Promise<GhostCleanupResult> {
+  return fetchApi('/api/admin/audit/ghost-accounts/cleanup-anonymous', {
+    method: 'POST',
+    body: JSON.stringify({ minAgeDays })
   })
 }

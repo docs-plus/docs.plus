@@ -3,8 +3,10 @@ import {
   LuActivity,
   LuBell,
   LuFileText,
+  LuGhost,
   LuLayoutDashboard,
   LuMessageSquare,
+  LuShieldAlert,
   LuUsers
 } from 'react-icons/lu'
 
@@ -12,6 +14,11 @@ export interface NavItem {
   href: string
   label: string
   icon: IconType
+}
+
+export interface NavSection {
+  title?: string
+  items: NavItem[]
 }
 
 /**
@@ -25,4 +32,12 @@ export const navItems: NavItem[] = [
   { href: '/channels', label: 'Channels', icon: LuMessageSquare },
   { href: '/notifications', label: 'Notifications', icon: LuBell },
   { href: '/system', label: 'System', icon: LuActivity }
+]
+
+/**
+ * Audit section items — grouped separately in sidebar
+ */
+export const auditItems: NavItem[] = [
+  { href: '/audit/notifications', label: 'Notification Audit', icon: LuShieldAlert },
+  { href: '/audit/ghost-accounts', label: 'Ghost Accounts', icon: LuGhost }
 ]

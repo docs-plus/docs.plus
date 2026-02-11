@@ -3,7 +3,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { LuLayoutDashboard, LuLogOut } from 'react-icons/lu'
 
-import { navItems } from '@/constants/navigation'
+import { auditItems, navItems } from '@/constants/navigation'
 import { supabase } from '@/lib/supabase'
 
 import { ThemeToggle } from './ThemeToggle'
@@ -46,6 +46,34 @@ export function Sidebar() {
             </Link>
           )
         })}
+
+        {/* Audit Section */}
+        {auditItems.length > 0 && (
+          <>
+            <div className="!mt-4 mb-1 px-3 text-xs font-semibold tracking-wider uppercase opacity-50">
+              Audit
+            </div>
+            {auditItems.map((item) => {
+              const isActive = router.pathname === item.href
+              const Icon = item.icon
+
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={clsx(
+                    'flex items-center gap-3 rounded-lg px-3 py-2 transition-colors',
+                    isActive
+                      ? 'bg-primary text-primary-content'
+                      : 'hover:bg-base-300 text-base-content'
+                  )}>
+                  <Icon className="h-5 w-5" />
+                  <span>{item.label}</span>
+                </Link>
+              )
+            })}
+          </>
+        )}
       </nav>
 
       {/* Footer */}

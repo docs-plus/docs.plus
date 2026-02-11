@@ -412,6 +412,174 @@ export interface StaleDocumentsSummary {
   recoverable_bytes: number
 }
 
+// =============================================================================
+// Failed Notifications Audit Types (Phase 17)
+// =============================================================================
+
+export interface NotificationHealth {
+  push: {
+    total_subscriptions: number
+    active_subscriptions: number
+    failed_subscriptions: number
+    disabled_subscriptions: number
+    expired_subscriptions: number
+    delivery_rate: number
+  }
+  email: {
+    total_queued: number
+    sent: number
+    failed: number
+    pending: number
+    skipped: number
+    hard_bounces: number
+    soft_bounces: number
+    complaints: number
+    delivery_rate: number
+  }
+}
+
+export interface PushFailureSummary {
+  error_category: string
+  platform: string
+  failure_count: number
+  affected_users: number
+  last_failure_at: string
+  sample_errors: string[]
+}
+
+export interface EmailFailureSummary {
+  source: 'queue' | 'bounce'
+  error_category: string
+  failure_count: number
+  affected_users: number
+  last_failure_at: string
+}
+
+export interface AuditFailedSubscription {
+  subscription_id: string
+  user_id: string
+  username: string | null
+  user_email: string | null
+  platform: string
+  error_category: string
+  last_error: string | null
+  failed_count: number
+  is_active: boolean
+  last_failure_at: string
+  created_at: string
+}
+
+export interface EmailBounce {
+  bounce_id: string
+  email: string
+  bounce_type: string
+  provider: string | null
+  reason: string | null
+  user_id: string | null
+  username: string | null
+  bounced_at: string
+}
+
+export interface DLQJob {
+  id: string
+  name: string
+  data: Record<string, unknown>
+  timestamp: number
+  failedReason: string | null
+}
+
+export interface DLQContents {
+  push: { jobs: DLQJob[]; count: number }
+  email: { jobs: DLQJob[]; count: number }
+}
+
+export interface DisableResult {
+  success: boolean
+  disabled_count: number
+  subscription_ids: string[]
+}
+
+// =============================================================================
+// Ghost Accounts Audit (Phase 15)
+// =============================================================================
+
+export type GhostType =
+  | 'unconfirmed_magic_link'
+  | 'abandoned_sso'
+  | 'stale_unconfirmed'
+  | 'never_signed_in'
+  | 'no_public_profile'
+  | 'stale_anonymous'
+  | 'orphaned_anonymous'
+
+export interface GhostAccount {
+  id: string
+  email: string | null
+  provider: string
+  created_at: string
+  email_confirmed_at: string | null
+  last_sign_in_at: string | null
+  is_anonymous: boolean
+  age_days: number
+  ghost_type: GhostType
+  has_public_profile: boolean
+}
+
+export interface GhostAccountsResponse {
+  ghosts: GhostAccount[]
+  total: number
+  page: number
+  perPage: number
+  totalPages: number
+}
+
+export interface GhostSummary {
+  total_ghosts: number
+  total_auth_users: number
+  oldest_ghost_days: number
+  by_type: Record<GhostType, number>
+  public_users: {
+    total_public_users: number
+    never_active_count: number
+    soft_deleted_count: number
+    active_count: number
+  }
+}
+
+export interface GhostDeletionImpact {
+  message_count: number
+  channel_memberships: number
+  push_subscriptions: number
+  email_queue_items: number
+  notifications_received: number
+  has_blocking_messages: boolean
+}
+
+export interface GhostDeleteResult {
+  success: boolean
+  strategy: 'hard_delete' | 'soft_delete'
+  reason?: string
+}
+
+export interface GhostBulkDeleteResult {
+  success: boolean
+  hard_deleted: number
+  soft_deleted: number
+  failed: number
+  errors: string[]
+}
+
+export interface GhostCleanupResult {
+  success: boolean
+  deleted: number
+  failed: number
+  remaining: number
+}
+
+// =============================================================================
+// Stale Documents (Phase 13)
+// =============================================================================
+
 export interface StaleDocumentPreview {
   slug: string
   title: string | null
