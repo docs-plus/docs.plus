@@ -120,14 +120,9 @@ export function NotificationPromptCard({ className }: NotificationPromptCardProp
       // Check notification permission directly
       const currentPermission = 'Notification' in window ? Notification.permission : 'unsupported'
 
-      // If permission already granted, register the subscription
-      if (currentPermission === 'granted') {
-        const result = await subscribe()
-        if (result === 'success') {
-          toast.Success("Notifications enabled! You'll never miss a reply.")
-        }
-        return
-      }
+      // Already granted — subscription is managed by usePushNotifications() on mount.
+      // No need to re-subscribe on every action.
+      if (currentPermission === 'granted') return
 
       // If permission is default, show the prompt card
       if (currentPermission === 'default') {
