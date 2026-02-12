@@ -125,9 +125,12 @@ export const useChannelInitialData = (
   }, [channelId])
 
   const updateChannelState = async (channelData: any) => {
-    const userId = useAuthStore.getState()?.session?.id || ''
+    // Use profile.id (not session.id) — profile only exists for real users
+    // who have a row in public.users. Anonymous/stale sessions have a session
+    // UUID that does NOT exist in public.users, causing FK violations.
+    const userId = useAuthStore.getState()?.profile?.id || ''
 
-    if (channelData.channel_member_info) {
+    if (userId && channelData.channel_member_info) {
       addChannelMember(channelId, {
         ...channelData.channel_member_info,
         id: userId
@@ -135,7 +138,6 @@ export const useChannelInitialData = (
     }
     // TODO: refactor/revise needed
     if (userId && !channelData.is_user_channel_member) {
-      // join channel
       await join2Channel({
         channel_id: channelId,
         member_id: userId
