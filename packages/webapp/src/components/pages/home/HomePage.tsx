@@ -259,12 +259,14 @@ const HomePage = ({ hostname }: HomePageProps) => {
           <div className="flex items-center gap-3">
             <a
               href="https://github.com/docs-plus/docs.plus"
+              target="_blank"
               className="bg-neutral text-neutral-content hover:bg-neutral/90 flex items-center gap-2 rounded-full px-4 py-2 text-xs font-medium transition-colors sm:text-sm">
               <LuGithub size={16} />
               <span>GitHub</span>
             </a>
             <a
               href="https://github.com/docs-plus/docs.plus/discussions"
+              target="_blank"
               className="border-base-300 text-base-content hover:bg-base-200 flex items-center gap-2 rounded-full border px-4 py-2 text-xs font-medium transition-colors sm:text-sm">
               <LuMessageCircle size={16} />
               <span>Discuss</span>
@@ -277,6 +279,7 @@ const HomePage = ({ hostname }: HomePageProps) => {
           {/* Discord */}
           <a
             href="https://discord.com/invite/25JPG38J59"
+            target="_blank"
             className="flex items-center gap-2 rounded-full bg-[#5865F2] px-4 py-2 text-xs font-medium text-white transition-colors hover:bg-[#4752C4] sm:text-sm">
             <FaDiscord size={16} />
             <span>Discord</span>
