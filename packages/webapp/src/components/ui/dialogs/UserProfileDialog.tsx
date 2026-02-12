@@ -1,6 +1,6 @@
 import { getUserProfileForModal } from '@api'
-import { SOCIAL_MEDIA_ICONS } from '@components/profile/constants'
-import { ILinkItem } from '@components/profile/types'
+import { SOCIAL_MEDIA_ICONS } from '@components/settings/constants'
+import { LinkItem } from '@components/settings/types'
 import { Avatar } from '@components/ui/Avatar'
 import CloseButtonUI from '@components/ui/CloseButton'
 import Loading from '@components/ui/Loading'
@@ -14,14 +14,14 @@ interface UserProfileDialogProps {
   userId: string
 }
 
-type RawLink = Partial<ILinkItem> & {
-  metadata?: Partial<ILinkItem['metadata']>
+type RawLink = Partial<LinkItem> & {
+  metadata?: Partial<LinkItem['metadata']>
 }
 
 type SanitizedLink = {
   key: string
   url: string
-  type: ILinkItem['type'] | string
+  type: LinkItem['type'] | string
   title: string
   description?: string
   themeColor?: string
@@ -47,7 +47,7 @@ const sanitizeLinks = (rawLinks: unknown): SanitizedLink[] => {
     const metadata =
       link.metadata && typeof link.metadata === 'object'
         ? link.metadata
-        : ({} as Partial<ILinkItem['metadata']>)
+        : ({} as Partial<LinkItem['metadata']>)
 
     const title = isNonEmptyString(metadata?.title) ? metadata.title.trim() : url
     const description = isNonEmptyString(metadata?.description)

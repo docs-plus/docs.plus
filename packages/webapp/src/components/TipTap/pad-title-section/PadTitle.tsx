@@ -1,5 +1,5 @@
 import SignInForm from '@components/auth/SignInForm'
-import ProfilePanel from '@components/profile/ProfilePanel'
+import SettingsPanel from '@components/settings/SettingsPanel'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { Modal, ModalContent } from '@components/ui/Dialog'
@@ -148,9 +148,9 @@ const PadTitle = () => {
 
       {/* Profile Modal */}
       <Modal open={isProfileModalOpen} onOpenChange={setProfileModalOpen}>
-        <ModalContent size={user ? '5xl' : 'md'} className="overflow-hidden rounded-2xl p-0">
+        <ModalContent size={user ? '5xl' : 'md'} className="rounded-box overflow-hidden p-0">
           {user ? (
-            <ProfilePanel onClose={() => setProfileModalOpen(false)} />
+            <SettingsPanel onClose={() => setProfileModalOpen(false)} />
           ) : (
             <div className="w-full p-6 sm:p-8">
               <SignInForm variant="inline" />

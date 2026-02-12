@@ -29,7 +29,7 @@ const InsertMultimediaForm = dynamic(() => import('./InsertMultimediaForm'), {
   loading: () => <Loading />
 })
 
-const ProfilePanel = dynamic(() => import('@components/profile/ProfilePanel'), {
+const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
   loading: () => <Loading />
 })
 
@@ -283,8 +283,8 @@ const ToolbarDesktop = () => {
         </div>
       </div>
       <Modal open={isModalOpen} onOpenChange={setModalOpen}>
-        <ModalContent size="4xl" className="overflow-hidden rounded-2xl p-0">
-          <ProfilePanel defaultTab="documents" onClose={() => setModalOpen(false)} />
+        <ModalContent size="4xl" className="rounded-box overflow-hidden p-0">
+          <SettingsPanel defaultTab="documents" onClose={() => setModalOpen(false)} />
         </ModalContent>
       </Modal>
     </>

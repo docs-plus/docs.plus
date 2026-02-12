@@ -28,7 +28,7 @@ import slugify from 'slugify'
 const SignInForm = dynamic(() => import('@components/auth/SignInForm'), {
   loading: () => <Loading />
 })
-const ProfilePanel = dynamic(() => import('@components/profile/ProfilePanel'), {
+const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
   loading: () => <Loading />
 })
 
@@ -290,8 +290,8 @@ const HomePage = ({ hostname }: HomePageProps) => {
       {/* Profile Modal */}
       {user && (
         <Modal open={isProfileOpen} onOpenChange={setIsProfileOpen}>
-          <ModalContent size="4xl" className="overflow-hidden rounded-2xl p-0">
-            <ProfilePanel onClose={() => setIsProfileOpen(false)} />
+          <ModalContent size="4xl" className="rounded-box overflow-hidden p-0">
+            <SettingsPanel onClose={() => setIsProfileOpen(false)} />
           </ModalContent>
         </Modal>
       )}

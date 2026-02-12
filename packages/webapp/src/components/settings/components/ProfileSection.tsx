@@ -10,16 +10,11 @@ import type { Profile } from '@types'
 import { supabaseClient } from '@utils/supabase'
 import { debounce } from 'lodash'
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { CgSpinner } from 'react-icons/cg'
-import { MdCameraAlt } from 'react-icons/md'
+import { LuCamera, LuLink, LuUser } from 'react-icons/lu'
 
-import { useProfileUpdate } from './hooks/useProfileUpdate'
-import { useUsernameValidation } from './hooks/useUsernameValidation'
+import { useProfileUpdate } from '../hooks/useProfileUpdate'
+import { useUsernameValidation } from '../hooks/useUsernameValidation'
 import SocialLinks from './SocialLinks'
-
-interface ProfileContentProps {
-  onBack?: () => void
-}
 
 const USERNAME_DEBOUNCE_MS = 1000
 
@@ -50,7 +45,7 @@ const updateAvatarInDB = async (avatarUrl: string | null, userId: string) => {
   }
 }
 
-const ProfileContent = ({ onBack: _onBack }: ProfileContentProps) => {
+const ProfileSection = () => {
   const user = useAuthStore((state) => state.profile)
   const setProfile = useAuthStore((state) => state.setProfile)
   const { loading, handleSave } = useProfileUpdate()
@@ -96,17 +91,12 @@ const ProfileContent = ({ onBack: _onBack }: ProfileContentProps) => {
         const filePath = `public/${user.id}.png`
         const bucketAddress = Config.app.profile.getAvatarURL(user.id, Date.now().toString())
 
-        const [uploadResult, dbResult] = await Promise.allSettled([
-          uploadFileToStorage(Config.app.profile.avatarBucketName, filePath, file),
-          updateAvatarInDB(bucketAddress, user.id)
-        ])
+        // Sequential: upload first, then update DB on success
+        await uploadFileToStorage(Config.app.profile.avatarBucketName, filePath, file)
+        await updateAvatarInDB(bucketAddress, user.id)
 
-        if (uploadResult.status === 'rejected' || dbResult.status === 'rejected') {
-          toast.Error('Error uploading avatar, please try again.')
-        } else {
-          setHasCustomAvatar(true)
-          toast.Success('Avatar uploaded successfully!')
-        }
+        setHasCustomAvatar(true)
+        toast.Success('Avatar uploaded successfully!')
       } catch (error) {
         console.error(error)
         toast.Error('Error uploading avatar, please try again.')
@@ -121,17 +111,12 @@ const ProfileContent = ({ onBack: _onBack }: ProfileContentProps) => {
     if (!user) return
 
     try {
-      const [dbResult, storageResult] = await Promise.allSettled([
-        updateAvatarInDB(null, user.id),
-        removeFileFromStorage(Config.app.profile.avatarBucketName, `public/${user.id}.png`)
-      ])
+      // Sequential: update DB first, then remove from storage
+      await updateAvatarInDB(null, user.id)
+      await removeFileFromStorage(Config.app.profile.avatarBucketName, `public/${user.id}.png`)
 
-      if (dbResult.status === 'rejected' || storageResult.status === 'rejected') {
-        toast.Error('Error removing avatar, please try again.')
-      } else {
-        setHasCustomAvatar(false)
-        toast.Success('Avatar removed successfully!')
-      }
+      setHasCustomAvatar(false)
+      toast.Success('Avatar removed successfully!')
     } catch (error) {
       console.error(error)
       toast.Error('Error removing avatar, please try again.')
@@ -195,15 +180,16 @@ const ProfileContent = ({ onBack: _onBack }: ProfileContentProps) => {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Profile Picture */}
-      <section className="bg-base-100 rounded-2xl p-4 shadow-sm sm:p-6">
+      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
         <div className="flex items-center gap-5">
           <div className="relative">
             <Button
               onClick={handleAvatarClick}
-              className="group border-base-300 hover:border-primary relative size-24 overflow-hidden rounded-2xl border-2 p-0 transition-all hover:shadow-md"
-              disabled={uploading}>
+              className="group border-base-300 hover:border-primary rounded-box relative size-24 overflow-hidden border-2 p-0 transition-all hover:shadow-md"
+              disabled={uploading}
+              aria-label="Upload profile picture">
               <Avatar
                 id={user?.id}
                 src={user?.avatar_url}
@@ -215,11 +201,12 @@ const ProfileContent = ({ onBack: _onBack }: ProfileContentProps) => {
               <div
                 className={`absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity ${
                   uploading ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
-                }`}>
+                }`}
+                aria-hidden="true">
                 {uploading ? (
-                  <CgSpinner size={22} className="animate-spin text-white" />
+                  <span className="loading loading-spinner loading-md text-white" />
                 ) : (
-                  <MdCameraAlt size={22} className="text-white" />
+                  <LuCamera size={22} className="text-white" />
                 )}
               </div>
             </Button>
@@ -229,10 +216,11 @@ const ProfileContent = ({ onBack: _onBack }: ProfileContentProps) => {
               accept="image/*"
               onChange={handleAvatarChange}
               className="hidden"
+              aria-label="Choose profile picture file"
             />
           </div>
           <div className="flex flex-col gap-2">
-            <h3 className="text-base-content text-base font-semibold">Profile Picture</h3>
+            <h2 className="text-base-content text-base font-semibold">Profile Picture</h2>
             <p className="text-base-content/60 text-sm">Upload a photo (max 256KB)</p>
             <div className="flex gap-2">
               <Button
@@ -241,7 +229,7 @@ const ProfileContent = ({ onBack: _onBack }: ProfileContentProps) => {
                 btnStyle="soft"
                 size="sm"
                 disabled={uploading}
-                startIcon={MdCameraAlt}>
+                startIcon={LuCamera}>
                 Upload
               </Button>
               {hasCustomAvatar && (
@@ -259,8 +247,11 @@ const ProfileContent = ({ onBack: _onBack }: ProfileContentProps) => {
       </section>
 
       {/* Account Info + Bio Combined */}
-      <section className="bg-base-100 rounded-2xl p-4 shadow-sm sm:p-6">
-        <h2 className="text-base-content mb-4 text-base font-semibold">Account Information</h2>
+      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+        <div className="mb-3 flex items-center gap-2">
+          <LuUser size={20} className="text-primary" />
+          <h2 className="text-base-content text-base font-semibold">Account Information</h2>
+        </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {/* Full Name */}
           <TextInput
@@ -297,10 +288,13 @@ const ProfileContent = ({ onBack: _onBack }: ProfileContentProps) => {
       </section>
 
       {/* Social Links */}
-      <section className="bg-base-100 rounded-2xl p-4 shadow-sm sm:p-6">
-        <div className="mb-4">
-          <h2 className="text-base-content text-base font-semibold">Connect & Social Links</h2>
-          <p className="text-base-content/60 mt-0.5 text-sm">
+      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+        <div className="mb-3">
+          <div className="flex items-center gap-2">
+            <LuLink size={20} className="text-primary" />
+            <h2 className="text-base-content text-base font-semibold">Connect & Social Links</h2>
+          </div>
+          <p className="text-base-content/60 mt-0.5 pl-7 text-sm">
             Add your profiles so others can connect with you.
           </p>
         </div>
@@ -326,4 +320,4 @@ const ProfileContent = ({ onBack: _onBack }: ProfileContentProps) => {
   )
 }
 
-export default ProfileContent
+export default ProfileSection

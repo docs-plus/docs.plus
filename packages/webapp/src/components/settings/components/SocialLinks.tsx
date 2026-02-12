@@ -4,25 +4,25 @@ import TextInput from '@components/ui/TextInput'
 import { useAuthStore } from '@stores'
 import type { Profile } from '@types'
 import { useState } from 'react'
-import { MdAdd, MdDelete, MdEmail, MdLink, MdOpenInNew, MdPhone } from 'react-icons/md'
+import { LuExternalLink, LuLink, LuMail, LuPhone, LuPlus, LuTrash2 } from 'react-icons/lu'
 
-import { SOCIAL_MEDIA_DOMAINS, SOCIAL_MEDIA_ICONS } from './constants'
-import { useProfileUpdate } from './hooks/useProfileUpdate'
-import { ELinkType, ILinkItem } from './types'
+import { SOCIAL_MEDIA_DOMAINS, SOCIAL_MEDIA_ICONS } from '../constants'
+import { useProfileUpdate } from '../hooks/useProfileUpdate'
+import { LinkItem, LinkType } from '../types'
 
 // Link validation helper
-const validateLink = (url: string): { valid: boolean; type?: ELinkType; error?: string } => {
+const validateLink = (url: string): { valid: boolean; type?: LinkType; error?: string } => {
   const trimmedUrl = url.trim()
 
   // Phone number detection
   const phoneRegex = /^(?:\+?\d{1,4}[-.\s]?)?\(?\d{1,}\)?[-.\s]?\d{1,}[-.\s]?\d{1,}$/
   if (phoneRegex.test(trimmedUrl.replace(/\s+/g, ''))) {
-    return { valid: true, type: ELinkType.Phone }
+    return { valid: true, type: LinkType.Phone }
   }
 
   // Email detection
   if (/^mailto:/.test(trimmedUrl) || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedUrl)) {
-    return { valid: true, type: ELinkType.Email }
+    return { valid: true, type: LinkType.Email }
   }
 
   // URL validation
@@ -30,7 +30,7 @@ const validateLink = (url: string): { valid: boolean; type?: ELinkType; error?: 
     const formattedUrl = trimmedUrl.startsWith('http') ? trimmedUrl : `https://${trimmedUrl}`
     const parsedUrl = new URL(formattedUrl)
     const domain = parsedUrl.hostname.replace('www.', '').toLowerCase()
-    const type = SOCIAL_MEDIA_DOMAINS.includes(domain) ? ELinkType.Social : ELinkType.Simple
+    const type = SOCIAL_MEDIA_DOMAINS.includes(domain) ? LinkType.Social : LinkType.Simple
     return { valid: true, type }
   } catch {
     return { valid: false, error: 'Invalid URL format!' }
@@ -38,29 +38,29 @@ const validateLink = (url: string): { valid: boolean; type?: ELinkType; error?: 
 }
 
 // Get icon for link type
-const getLinkIcon = (link: ILinkItem) => {
-  if (link.type === ELinkType.Email) return MdEmail
-  if (link.type === ELinkType.Phone) return MdPhone
+const getLinkIcon = (link: LinkItem) => {
+  if (link.type === LinkType.Email) return LuMail
+  if (link.type === LinkType.Phone) return LuPhone
 
-  if (link.type === ELinkType.Social) {
+  if (link.type === LinkType.Social) {
     try {
       const formattedUrl = link.url.startsWith('http') ? link.url : `https://${link.url}`
       const domain = new URL(formattedUrl).hostname.replace('www.', '').toLowerCase()
-      return SOCIAL_MEDIA_ICONS[domain]?.icon || MdLink
+      return SOCIAL_MEDIA_ICONS[domain]?.icon || LuLink
     } catch {
-      return MdLink
+      return LuLink
     }
   }
 
-  return MdLink
+  return LuLink
 }
 
 // Get formatted href for link
-const getFormattedHref = (link: ILinkItem): string => {
+const getFormattedHref = (link: LinkItem): string => {
   switch (link.type) {
-    case ELinkType.Email:
+    case LinkType.Email:
       return link.url.startsWith('mailto:') ? link.url : `mailto:${link.url}`
-    case ELinkType.Phone:
+    case LinkType.Phone:
       return link.url.startsWith('tel:') ? link.url : `tel:${link.url}`
     default:
       return link.url.startsWith('http') ? link.url : `https://${link.url}`
@@ -68,8 +68,8 @@ const getFormattedHref = (link: ILinkItem): string => {
 }
 
 // Get icon color for social links
-const getIconColor = (link: ILinkItem): string | undefined => {
-  if (link.type !== ELinkType.Social) return undefined
+const getIconColor = (link: LinkItem): string | undefined => {
+  if (link.type !== LinkType.Social) return undefined
   try {
     const formattedUrl = link.url.startsWith('http') ? link.url : `https://${link.url}`
     const domain = new URL(formattedUrl).hostname.replace('www.', '').toLowerCase()
@@ -87,7 +87,7 @@ const SocialLinks = () => {
   const [newLink, setNewLink] = useState('')
   const [loading, setLoading] = useState(false)
 
-  const links = (user?.profile_data?.linkTree ?? []) as ILinkItem[]
+  const links = (user?.profile_data?.linkTree ?? []) as LinkItem[]
 
   const handleAddLink = async () => {
     if (!user || !newLink.trim()) return
@@ -116,7 +116,7 @@ const SocialLinks = () => {
         return
       }
 
-      const link: ILinkItem = {
+      const link: LinkItem = {
         url: newLink.trim(),
         type: type!,
         metadata
@@ -149,8 +149,8 @@ const SocialLinks = () => {
     await handleSave({ successToast: 'Link removed successfully!' })
   }
 
-  const handleLinkClick = (e: React.MouseEvent, link: ILinkItem) => {
-    if (link.type === ELinkType.Phone || link.type === ELinkType.Email) {
+  const handleLinkClick = (e: React.MouseEvent, link: LinkItem) => {
+    if (link.type === LinkType.Phone || link.type === LinkType.Email) {
       return // Let default behavior handle these
     }
     e.preventDefault()
@@ -178,7 +178,7 @@ const SocialLinks = () => {
           disabled={isLoading || !newLink.trim()}
           loading={isLoading}
           variant="primary"
-          startIcon={!isLoading ? MdAdd : undefined}
+          startIcon={!isLoading ? LuPlus : undefined}
           className="mt-auto min-w-10 px-3"
         />
       </div>
@@ -195,10 +195,10 @@ const SocialLinks = () => {
             return (
               <div
                 key={link.url}
-                className="bg-base-200 hover:bg-base-300 group flex items-center gap-3 rounded-xl p-2.5 transition-all">
+                className="bg-base-200 hover:bg-base-300 group rounded-box flex items-center gap-3 p-2.5 transition-all">
                 {/* Icon */}
-                <div className="bg-base-100 flex size-8 shrink-0 items-center justify-center rounded-lg shadow-sm">
-                  {link.type === ELinkType.Simple && link.metadata?.icon ? (
+                <div className="bg-base-100 rounded-field flex size-8 shrink-0 items-center justify-center shadow-sm">
+                  {link.type === LinkType.Simple && link.metadata?.icon ? (
                     <img
                       src={link.metadata.icon}
                       alt=""
@@ -209,7 +209,7 @@ const SocialLinks = () => {
                     />
                   ) : (
                     <Icon
-                      className={`size-4 ${link.type === ELinkType.Social ? '' : 'text-base-content/60'}`}
+                      className={`size-4 ${link.type === LinkType.Social ? '' : 'text-base-content/60'}`}
                       style={iconColor ? { color: iconColor } : undefined}
                     />
                   )}
@@ -222,8 +222,8 @@ const SocialLinks = () => {
                     onClick={(e) => handleLinkClick(e, link)}
                     className="text-base-content hover:text-primary flex items-center gap-1 truncate text-sm font-medium transition-colors">
                     {link.metadata?.title || link.url}
-                    {link.type !== ELinkType.Email && link.type !== ELinkType.Phone && (
-                      <MdOpenInNew size={14} className="text-base-content/50 shrink-0" />
+                    {link.type !== LinkType.Email && link.type !== LinkType.Phone && (
+                      <LuExternalLink size={14} className="text-base-content/50 shrink-0" />
                     )}
                   </a>
                   {link.metadata?.description && (
@@ -241,7 +241,7 @@ const SocialLinks = () => {
                   shape="circle"
                   className="text-base-content/50 hover:bg-error/10 hover:text-error opacity-0 transition-opacity group-hover:opacity-100"
                   title="Remove link"
-                  startIcon={MdDelete}
+                  startIcon={LuTrash2}
                 />
               </div>
             )
@@ -249,14 +249,14 @@ const SocialLinks = () => {
         </div>
       )}
 
-      {/* Empty state */}
+      {/* Empty state — aligned with design system pattern */}
       {links.length === 0 && (
-        <div className="border-base-300 flex flex-col items-center justify-center rounded-xl border-2 border-dashed py-6 text-center">
-          <div className="bg-base-200 mb-2 flex size-10 items-center justify-center rounded-full">
-            <MdLink size={20} className="text-base-content/50" />
+        <div className="border-base-300 rounded-box flex flex-col items-center justify-center border-2 border-dashed py-6 text-center">
+          <div className="bg-base-200 mb-2 flex size-12 items-center justify-center rounded-full">
+            <LuLink size={24} className="text-base-content/40" />
           </div>
-          <p className="text-base-content text-xs font-medium">No links added yet</p>
-          <p className="text-base-content/50 mt-0.5 text-xs">Add your social profiles above</p>
+          <p className="text-base-content/60 text-sm font-medium">No links added yet</p>
+          <p className="text-base-content/40 mt-0.5 text-sm">Add your social profiles above</p>
         </div>
       )}
     </div>

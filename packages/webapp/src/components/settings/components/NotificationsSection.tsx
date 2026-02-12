@@ -1,16 +1,17 @@
 import { updateUser } from '@api'
+import { showPWAInstallPrompt } from '@components/pwa'
 import * as toast from '@components/toast'
+import Button from '@components/ui/Button'
 import SearchableSelect from '@components/ui/SearchableSelect'
+import Select from '@components/ui/Select'
 import Toggle from '@components/ui/Toggle'
+import { usePlatformDetection } from '@hooks/usePlatformDetection'
 import { usePushNotifications } from '@hooks/usePushNotifications'
 import { useAuthStore } from '@stores'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { LuTriangleAlert } from 'react-icons/lu'
-import { MdEmail, MdNotifications, MdSchedule } from 'react-icons/md'
+import { LuBell, LuClock, LuInfo, LuMail, LuSmartphone, LuTriangleAlert } from 'react-icons/lu'
 
-interface NotificationsContentProps {
-  onBack?: () => void
-}
+import type { NotificationPreferences } from '../types'
 
 interface ToggleRowProps {
   id: string
@@ -19,31 +20,6 @@ interface ToggleRowProps {
   checked: boolean
   onChange: (checked: boolean) => void
   disabled?: boolean
-}
-
-interface EmailBounceInfo {
-  email: string
-  reason: string
-  bounced_at: string
-}
-
-interface NotificationPreferences {
-  // Push preferences
-  push_mentions?: boolean
-  push_replies?: boolean
-  push_reactions?: boolean
-  quiet_hours_enabled?: boolean
-  quiet_hours_start?: string
-  quiet_hours_end?: string
-  timezone?: string
-  // Email preferences
-  email_enabled?: boolean
-  email_mentions?: boolean
-  email_replies?: boolean
-  email_reactions?: boolean
-  email_frequency?: 'immediate' | 'daily' | 'weekly' | 'never'
-  // Bounce info (set by system when hard bounce occurs)
-  email_bounce_info?: EmailBounceInfo
 }
 
 // Get user's browser timezone
@@ -161,58 +137,6 @@ const TIMEZONE_ALIASES: Record<string, string> = {
   'Pacific/Auckland': 'New Zealand'
 }
 
-// Common time presets for quiet hours (every 30 min)
-const TIME_OPTIONS = [
-  '00:00',
-  '00:30',
-  '01:00',
-  '01:30',
-  '02:00',
-  '02:30',
-  '03:00',
-  '03:30',
-  '04:00',
-  '04:30',
-  '05:00',
-  '05:30',
-  '06:00',
-  '06:30',
-  '07:00',
-  '07:30',
-  '08:00',
-  '08:30',
-  '09:00',
-  '09:30',
-  '10:00',
-  '10:30',
-  '11:00',
-  '11:30',
-  '12:00',
-  '12:30',
-  '13:00',
-  '13:30',
-  '14:00',
-  '14:30',
-  '15:00',
-  '15:30',
-  '16:00',
-  '16:30',
-  '17:00',
-  '17:30',
-  '18:00',
-  '18:30',
-  '19:00',
-  '19:30',
-  '20:00',
-  '20:30',
-  '21:00',
-  '21:30',
-  '22:00',
-  '22:30',
-  '23:00',
-  '23:30'
-]
-
 // Format time for display (24h to 12h with AM/PM)
 const formatTimeDisplay = (time: string): string => {
   const [hours, minutes] = time.split(':').map(Number)
@@ -220,6 +144,22 @@ const formatTimeDisplay = (time: string): string => {
   const displayHours = hours % 12 || 12
   return `${displayHours}:${minutes.toString().padStart(2, '0')} ${period}`
 }
+
+// Common time presets for quiet hours (every 30 min) — SelectOption format
+const TIME_OPTIONS: { value: string; label: string }[] = Array.from({ length: 48 }, (_, i) => {
+  const hours = String(Math.floor(i / 2)).padStart(2, '0')
+  const minutes = i % 2 === 0 ? '00' : '30'
+  const value = `${hours}:${minutes}`
+  return { value, label: formatTimeDisplay(value) }
+})
+
+// Email frequency options
+const EMAIL_FREQUENCY_OPTIONS: { value: string; label: string }[] = [
+  { value: 'immediate', label: 'Immediately (after 15 min if unread)' },
+  { value: 'daily', label: 'Daily digest (9 AM)' },
+  { value: 'weekly', label: 'Weekly digest (Mondays)' },
+  { value: 'never', label: 'Never' }
+]
 
 // Get timezone offset string
 const getTimezoneOffset = (tz: string): string => {
@@ -320,9 +260,71 @@ const ToggleRow = ({ id, label, description, checked, onChange, disabled }: Togg
   </div>
 )
 
-const NotificationsContent = ({ onBack: _onBack }: NotificationsContentProps) => {
+// --- iOS PWA Notice ---
+// Shown when iOS user is in Safari (not PWA) and push requires "Add to Home Screen"
+
+interface IOSPWANoticeProps {
+  iosSupportsWebPush: boolean
+}
+
+const IOSPWANotice = ({ iosSupportsWebPush }: IOSPWANoticeProps) => {
+  if (!iosSupportsWebPush) {
+    // iOS < 16.4 — push is not available at all
+    return (
+      <div className="border-base-300 bg-base-200 rounded-box border p-4">
+        <div className="flex items-start gap-3">
+          <LuInfo size={20} className="text-base-content/60 mt-0.5 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="text-base-content text-sm font-medium">Not available on this device</p>
+            <p className="text-base-content/60 mt-1 text-xs">
+              Push notifications require iOS 16.4 or later. Update your device to enable this
+              feature.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // iOS ≥ 16.4 but not in PWA mode — guide user to install
+  return (
+    <div className="border-primary/20 bg-primary/5 rounded-box border p-4">
+      <div className="flex items-start gap-3">
+        <div className="bg-primary/10 mt-0.5 shrink-0 rounded-full p-1.5">
+          <LuSmartphone size={18} className="text-primary" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-base-content text-sm font-medium">Add to Home Screen to enable</p>
+          <p className="text-base-content/60 mt-1 text-xs leading-relaxed">
+            On iOS, push notifications only work when the app is installed on your home screen. Add
+            docs.plus to your home screen to receive notifications.
+          </p>
+          <Button
+            onClick={() => showPWAInstallPrompt()}
+            variant="primary"
+            btnStyle="soft"
+            size="sm"
+            startIcon={LuSmartphone}
+            className="mt-3">
+            Add to Home Screen
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// --- Main Component ---
+
+const NotificationsSection = () => {
   const profile = useAuthStore((state) => state.profile)
   const setProfile = useAuthStore((state) => state.setProfile)
+
+  // Platform detection (iOS PWA requirements)
+  const { platform, isPWAInstalled, iosSupportsWebPush } = usePlatformDetection()
+
+  // iOS in Safari (not PWA) — push won't work, show install guidance
+  const isIOSBrowser = platform === 'ios' && !isPWAInstalled
 
   // Push notification state
   const { isSupported, isSubscribed, isLoading, permission, error, subscribe, unsubscribe } =
@@ -443,65 +445,70 @@ const NotificationsContent = ({ onBack: _onBack }: NotificationsContentProps) =>
   return (
     <div className="space-y-4">
       {/* Push Notifications */}
-      <section className="bg-base-100 rounded-2xl p-4 shadow-sm sm:p-6">
-        <div className="mb-2 flex items-center gap-2">
-          <MdNotifications size={20} className="text-primary" />
+      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+        <div className="mb-3 flex items-center gap-2">
+          <LuBell size={20} className="text-primary" />
           <h2 className="text-base-content text-base font-semibold">Push Notifications</h2>
         </div>
 
-        <div className="divide-base-300 divide-y">
-          <ToggleRow
-            id="push-notifications"
-            label="Enable push notifications"
-            description={
-              isPushBlocked
-                ? 'Blocked by browser. Enable in browser settings.'
-                : isSupported
-                  ? 'Get notified about mentions, replies, and reactions.'
-                  : 'Push notifications are not supported in this browser.'
-            }
-            checked={isPushEnabled}
-            onChange={handlePushChange}
-            disabled={isLoading || !isSupported || isPushBlocked}
-          />
+        {/* iOS Safari: show install-as-app guidance instead of toggle */}
+        {isIOSBrowser ? (
+          <IOSPWANotice iosSupportsWebPush={iosSupportsWebPush} />
+        ) : (
+          <div className="divide-base-300 divide-y">
+            <ToggleRow
+              id="push-notifications"
+              label="Enable push notifications"
+              description={
+                isPushBlocked
+                  ? 'Blocked by browser. Enable in browser settings.'
+                  : isSupported
+                    ? 'Get notified about mentions, replies, and reactions.'
+                    : 'Push notifications are not supported in this browser.'
+              }
+              checked={isPushEnabled}
+              onChange={handlePushChange}
+              disabled={isLoading || !isSupported || isPushBlocked}
+            />
 
-          {/* Notification type preferences - only show when push is enabled */}
-          {isPushEnabled && (
-            <>
-              <ToggleRow
-                id="push-mentions"
-                label="Mentions"
-                description="When someone mentions you with @"
-                checked={preferences.push_mentions ?? true}
-                onChange={(checked) => handlePreferenceChange('push_mentions', checked)}
-                disabled={saving}
-              />
-              <ToggleRow
-                id="push-replies"
-                label="Replies"
-                description="When someone replies to your message"
-                checked={preferences.push_replies ?? true}
-                onChange={(checked) => handlePreferenceChange('push_replies', checked)}
-                disabled={saving}
-              />
-              <ToggleRow
-                id="push-reactions"
-                label="Reactions"
-                description="When someone reacts to your message"
-                checked={preferences.push_reactions ?? true}
-                onChange={(checked) => handlePreferenceChange('push_reactions', checked)}
-                disabled={saving}
-              />
-            </>
-          )}
-        </div>
+            {/* Notification type preferences - only show when push is enabled */}
+            {isPushEnabled && (
+              <>
+                <ToggleRow
+                  id="push-mentions"
+                  label="Mentions"
+                  description="When someone mentions you with @"
+                  checked={preferences.push_mentions ?? true}
+                  onChange={(checked) => handlePreferenceChange('push_mentions', checked)}
+                  disabled={saving}
+                />
+                <ToggleRow
+                  id="push-replies"
+                  label="Replies"
+                  description="When someone replies to your message"
+                  checked={preferences.push_replies ?? true}
+                  onChange={(checked) => handlePreferenceChange('push_replies', checked)}
+                  disabled={saving}
+                />
+                <ToggleRow
+                  id="push-reactions"
+                  label="Reactions"
+                  description="When someone reacts to your message"
+                  checked={preferences.push_reactions ?? true}
+                  onChange={(checked) => handlePreferenceChange('push_reactions', checked)}
+                  disabled={saving}
+                />
+              </>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Quiet Hours */}
       {isPushEnabled && (
-        <section className="bg-base-100 rounded-2xl p-4 shadow-sm sm:p-6">
-          <div className="mb-2 flex items-center gap-2">
-            <MdSchedule size={20} className="text-primary" />
+        <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+          <div className="mb-3 flex items-center gap-2">
+            <LuClock size={20} className="text-primary" />
             <h2 className="text-base-content text-base font-semibold">Quiet Hours</h2>
           </div>
 
@@ -518,44 +525,26 @@ const NotificationsContent = ({ onBack: _onBack }: NotificationsContentProps) =>
             {preferences.quiet_hours_enabled && (
               <>
                 <div className="flex items-center gap-3 py-3">
-                  <div className="flex-1">
-                    <label
-                      htmlFor="quiet-start"
-                      className="text-base-content mb-1 block text-sm font-medium">
-                      From
-                    </label>
-                    <select
-                      id="quiet-start"
-                      value={preferences.quiet_hours_start || '22:00'}
-                      onChange={(e) => handlePreferenceChange('quiet_hours_start', e.target.value)}
-                      className="select select-bordered select-sm w-full"
-                      disabled={saving}>
-                      {TIME_OPTIONS.map((time) => (
-                        <option key={time} value={time}>
-                          {formatTimeDisplay(time)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="flex-1">
-                    <label
-                      htmlFor="quiet-end"
-                      className="text-base-content mb-1 block text-sm font-medium">
-                      To
-                    </label>
-                    <select
-                      id="quiet-end"
-                      value={preferences.quiet_hours_end || '08:00'}
-                      onChange={(e) => handlePreferenceChange('quiet_hours_end', e.target.value)}
-                      className="select select-bordered select-sm w-full"
-                      disabled={saving}>
-                      {TIME_OPTIONS.map((time) => (
-                        <option key={time} value={time}>
-                          {formatTimeDisplay(time)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  <Select
+                    id="quiet-start"
+                    label="From"
+                    labelPosition="above"
+                    value={preferences.quiet_hours_start || '22:00'}
+                    onChange={(val) => handlePreferenceChange('quiet_hours_start', val)}
+                    options={TIME_OPTIONS}
+                    disabled={saving}
+                    wrapperClassName="flex-1"
+                  />
+                  <Select
+                    id="quiet-end"
+                    label="To"
+                    labelPosition="above"
+                    value={preferences.quiet_hours_end || '08:00'}
+                    onChange={(val) => handlePreferenceChange('quiet_hours_end', val)}
+                    options={TIME_OPTIONS}
+                    disabled={saving}
+                    wrapperClassName="flex-1"
+                  />
                 </div>
                 <div className="py-3">
                   <TimezoneSelect
@@ -571,15 +560,15 @@ const NotificationsContent = ({ onBack: _onBack }: NotificationsContentProps) =>
       )}
 
       {/* Email Notifications */}
-      <section className="bg-base-100 rounded-2xl p-4 shadow-sm sm:p-6">
-        <div className="mb-2 flex items-center gap-2">
-          <MdEmail size={20} className="text-primary" />
+      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+        <div className="mb-3 flex items-center gap-2">
+          <LuMail size={20} className="text-primary" />
           <h2 className="text-base-content text-base font-semibold">Email Notifications</h2>
         </div>
 
         {/* Bounce warning banner */}
         {preferences.email_bounce_info && (
-          <div className="border-warning/30 bg-warning/10 mb-3 rounded-xl border p-4">
+          <div className="border-warning/30 bg-warning/10 rounded-box mb-3 border p-4">
             <div className="flex items-start gap-3">
               <LuTriangleAlert size={20} className="text-warning mt-0.5 shrink-0" />
               <div className="min-w-0 flex-1">
@@ -593,12 +582,14 @@ const NotificationsContent = ({ onBack: _onBack }: NotificationsContentProps) =>
                   Update your email address or re-enable to try again.
                 </p>
                 <div className="mt-3 flex gap-2">
-                  <button
+                  <Button
                     onClick={handleClearBounceAndEnable}
                     disabled={saving}
-                    className="btn btn-warning btn-soft btn-xs">
+                    variant="warning"
+                    btnStyle="soft"
+                    size="xs">
                     Re-enable
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -645,25 +636,17 @@ const NotificationsContent = ({ onBack: _onBack }: NotificationsContentProps) =>
 
               {/* Email frequency */}
               <div className="py-3">
-                <label
-                  htmlFor="email-frequency"
-                  className="text-base-content mb-1 block text-sm font-medium">
-                  Email frequency
-                </label>
-                <p className="text-base-content/60 mb-2 text-xs">
-                  How often would you like to receive email notifications?
-                </p>
-                <select
+                <Select
                   id="email-frequency"
+                  label="Email frequency"
+                  labelPosition="above"
                   value={preferences.email_frequency || 'daily'}
-                  onChange={(e) => handlePreferenceChange('email_frequency', e.target.value)}
-                  className="select select-bordered select-sm w-full max-w-xs"
-                  disabled={saving}>
-                  <option value="immediate">Immediately (after 15 min if unread)</option>
-                  <option value="daily">Daily digest (9 AM)</option>
-                  <option value="weekly">Weekly digest (Mondays)</option>
-                  <option value="never">Never</option>
-                </select>
+                  onChange={(val) => handlePreferenceChange('email_frequency', val)}
+                  options={EMAIL_FREQUENCY_OPTIONS}
+                  disabled={saving}
+                  helperText="How often would you like to receive email notifications?"
+                  wrapperClassName="max-w-xs"
+                />
               </div>
             </>
           )}
@@ -673,4 +656,4 @@ const NotificationsContent = ({ onBack: _onBack }: NotificationsContentProps) =>
   )
 }
 
-export default NotificationsContent
+export default NotificationsSection

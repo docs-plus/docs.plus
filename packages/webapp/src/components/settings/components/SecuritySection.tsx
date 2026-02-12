@@ -3,13 +3,9 @@ import Button from '@components/ui/Button'
 import TextInput from '@components/ui/TextInput'
 import { useAuthStore } from '@stores'
 import { useState } from 'react'
-import { MdInfo, MdSecurity } from 'react-icons/md'
+import { LuInfo, LuShield } from 'react-icons/lu'
 
-interface SecurityContentProps {
-  onBack?: () => void
-}
-
-const SecurityContent = ({ onBack: _onBack }: SecurityContentProps) => {
+const SecuritySection = () => {
   const user = useAuthStore((state) => state.profile)
   const [showChangeEmail, setShowChangeEmail] = useState(false)
   const [newEmail, setNewEmail] = useState('')
@@ -21,12 +17,12 @@ const SecurityContent = ({ onBack: _onBack }: SecurityContentProps) => {
   return (
     <div className="space-y-4">
       {/* Email Section */}
-      <section className="bg-base-100 rounded-2xl p-4 shadow-sm sm:p-6">
-        <div className="mb-4 flex items-center gap-2">
-          <MdSecurity size={20} className="text-primary" />
+      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+        <div className="mb-3 flex items-center gap-2">
+          <LuShield size={20} className="text-primary" />
           <h2 className="text-base-content text-base font-semibold">Account Email</h2>
         </div>
-        <p className="text-base-content/60 mb-4 text-xs sm:text-sm">
+        <p className="text-base-content/60 mb-3 text-xs sm:text-sm">
           The email address associated with your docs.plus account.
         </p>
 
@@ -85,8 +81,8 @@ const SecurityContent = ({ onBack: _onBack }: SecurityContentProps) => {
       </section>
 
       {/* Info notice */}
-      <div className="bg-base-200 flex items-start gap-3 rounded-xl p-4">
-        <MdInfo size={20} className="text-primary mt-0.5 shrink-0" />
+      <div className="bg-base-200 rounded-box flex items-start gap-3 p-4">
+        <LuInfo size={20} className="text-primary mt-0.5 shrink-0" />
         <div>
           <p className="text-base-content text-sm font-semibold">Security Notice</p>
           <p className="text-base-content/60 mt-0.5 text-xs sm:text-sm">
@@ -99,4 +95,4 @@ const SecurityContent = ({ onBack: _onBack }: SecurityContentProps) => {
   )
 }
 
-export default SecurityContent
+export default SecuritySection

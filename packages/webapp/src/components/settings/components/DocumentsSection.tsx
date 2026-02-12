@@ -7,13 +7,32 @@ import { debounce } from 'lodash'
 import { useCallback, useState } from 'react'
 import { LuChevronLeft, LuChevronRight, LuFileText, LuSearch } from 'react-icons/lu'
 
-interface DocumentsContentProps {
-  onBack?: () => void
+interface DocumentOwner {
+  avatar_url?: string
+  avatar_updated_at?: string
+  display_name?: string
+  status?: string
+  id?: string
+}
+
+interface Document {
+  id: string
+  title: string
+  slug: string
+  ownerId?: string
+  owner?: DocumentOwner
+  user?: DocumentOwner
+  updatedAt: string
+}
+
+interface DocumentsResponse {
+  docs: Document[]
+  total: number
 }
 
 const ITEMS_PER_PAGE = 9
 
-const DocumentsContent = ({ onBack: _onBack }: DocumentsContentProps) => {
+const DocumentsSection = () => {
   const [currentPage, setCurrentPage] = useState(0)
   const [searchQuery, setSearchQuery] = useState('')
   const [inputValue, setInputValue] = useState('')
@@ -25,13 +44,13 @@ const DocumentsContent = ({ onBack: _onBack }: DocumentsContentProps) => {
         Number(page) * ITEMS_PER_PAGE
       }${search ? '&title=' + search : ''}`
     )
-    return response.data.data
+    return response.data.data as DocumentsResponse
   }
 
-  const { isLoading, isError, data } = useQuery(
-    ['documents', currentPage, searchQuery],
-    fetchDocuments
-  )
+  const { isLoading, isError, data } = useQuery({
+    queryKey: ['documents', currentPage, searchQuery],
+    queryFn: fetchDocuments
+  })
 
   const debouncedSearch = useCallback(
     debounce((value: string) => {
@@ -64,7 +83,7 @@ const DocumentsContent = ({ onBack: _onBack }: DocumentsContentProps) => {
     const half = Math.floor(maxVisible / 2)
 
     let start = Math.max(0, currentPage - half)
-    let end = Math.min(totalPages - 1, start + maxVisible - 1)
+    const end = Math.min(totalPages - 1, start + maxVisible - 1)
 
     if (end - start + 1 < maxVisible) {
       start = Math.max(0, end - maxVisible + 1)
@@ -126,7 +145,7 @@ const DocumentsContent = ({ onBack: _onBack }: DocumentsContentProps) => {
   return (
     <div className="space-y-4">
       {/* Search */}
-      <section className="bg-base-100 border-base-300 rounded-box border p-4 sm:p-6">
+      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
         <TextInput
           labelPosition="floating"
           startIcon={LuSearch}
@@ -137,16 +156,16 @@ const DocumentsContent = ({ onBack: _onBack }: DocumentsContentProps) => {
       </section>
 
       {/* Documents Table */}
-      <section className="bg-base-100 border-base-300 rounded-box border p-4 sm:p-6">
+      <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
         {isLoading ? (
           <div className="flex items-center justify-center py-12">
             <span className="loading loading-spinner loading-lg text-primary" />
           </div>
         ) : isError ? (
-          <div className="alert alert-error rounded-xl">
+          <div className="alert alert-error rounded-box">
             <span>Failed to load documents. Please try again.</span>
           </div>
-        ) : data?.total > 0 ? (
+        ) : data?.total && data.total > 0 ? (
           <>
             <div className="overflow-x-auto">
               <table className="table-zebra table w-full">
@@ -158,7 +177,7 @@ const DocumentsContent = ({ onBack: _onBack }: DocumentsContentProps) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {data?.docs.map((doc: any) => (
+                  {data?.docs.map((doc) => (
                     <tr
                       key={doc.id}
                       className="hover:bg-base-200 cursor-pointer transition-colors"
@@ -248,4 +267,4 @@ const DocumentsContent = ({ onBack: _onBack }: DocumentsContentProps) => {
   )
 }
 
-export default DocumentsContent
+export default DocumentsSection

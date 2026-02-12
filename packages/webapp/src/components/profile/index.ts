@@ -1,7 +1,0 @@
-export { default as DocumentsContent } from './DocumentsContent'
-export { default as NotificationsContent } from './NotificationsContent'
-export { default as ProfileContent } from './ProfileContent'
-export { default as ProfilePanel } from './ProfilePanel'
-export { default as SecurityContent } from './SecurityContent'
-export { default as SocialLinks } from './SocialLinks'
-export * from './types'
