@@ -16,10 +16,15 @@ interface ChatConfig {
   systemUserId: string
 }
 
+interface LinksConfig {
+  githubRepoUrl: string
+}
+
 interface Config {
   app: AppConfig
   editor: EditorConfig
   chat: ChatConfig
+  links: LinksConfig
 }
 
 export type { Config }
