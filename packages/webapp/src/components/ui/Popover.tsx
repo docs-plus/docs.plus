@@ -101,7 +101,16 @@ export const usePopoverContext = () => {
 }
 
 export const usePopoverState = () => {
-  const context = usePopoverContext()
+  const context = React.useContext(PopoverContext)
+
+  if (context == null) {
+    return {
+      isOpen: false,
+      setOpen: (() => {}) as React.Dispatch<React.SetStateAction<boolean>>,
+      close: () => {}
+    }
+  }
+
   return {
     isOpen: context.open,
     setOpen: context.setOpen,
