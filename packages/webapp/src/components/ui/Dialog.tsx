@@ -104,12 +104,14 @@ export const ModalContent = function ModalContent({
 
   return (
     <FloatingPortal>
-      <FloatingOverlay className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-sm" lockScroll>
+      <FloatingOverlay
+        className="bg-base-content/40 fixed inset-0 z-50 backdrop-blur-sm"
+        lockScroll>
         <div className="fixed inset-0 flex items-center justify-center p-4">
           <FloatingFocusManager context={context}>
             <div
               ref={ref}
-              className={`animate-in fade-in-0 zoom-in-95 outline-none ${sizeClasses[size]} max-h-[90vh] overflow-y-auto rounded-2xl bg-white shadow-xl shadow-slate-900/10 duration-200 ${className}`}
+              className={`animate-in fade-in-0 zoom-in-95 outline-none ${sizeClasses[size]} rounded-box bg-base-100 flex max-h-[90vh] flex-col overflow-hidden shadow-xl duration-200 ${className}`}
               aria-labelledby={id}
               aria-describedby={id}
               id={id}
