@@ -1,4 +1,4 @@
-import { MdClose } from 'react-icons/md'
+import { LuX } from 'react-icons/lu'
 
 import Button from './Button'
 
@@ -37,7 +37,7 @@ const CloseButton = ({
       variant="ghost"
       size={size}
       shape="circle"
-      startIcon={MdClose}
+      startIcon={LuX}
       className={`text-base-content/50 hover:text-base-content ${className}`}
       aria-label={ariaLabel}
     />

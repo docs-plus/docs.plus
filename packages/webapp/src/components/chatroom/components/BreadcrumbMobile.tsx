@@ -3,7 +3,7 @@ import { TIPTAP_NODES } from '@types'
 import { getPostAtDOM } from '@utils/index'
 import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
-import { RiArrowRightSLine } from 'react-icons/ri'
+import { LuChevronRight } from 'react-icons/lu'
 import slugify from 'slugify'
 
 const BreadcrumbMobile = () => {
@@ -26,6 +26,8 @@ const BreadcrumbMobile = () => {
     if (posAtDOM === -1) {
       posAtDOM = getPostAtDOM(editor, '1')
     }
+    if (posAtDOM == null || posAtDOM < 0) return
+
     const nodePos = editor.view.state.doc.resolve(posAtDOM) as any
 
     const headingPath = nodePos.path
@@ -56,36 +58,39 @@ const BreadcrumbMobile = () => {
     setHeadingPath(headingAddress)
   }, [headingId, editor, providerSyncing, loading])
 
-  if (workspaceId === headingId) return <>{metadata.title}</>
+  // Document root — single title
+  if (workspaceId === headingId) {
+    return (
+      <div className="min-w-0 flex-1">
+        <p className="text-base-content truncate text-sm font-medium">{metadata.title}</p>
+      </div>
+    )
+  }
+
   if (!headingPath.length) return null
 
+  const ancestors = headingPath.slice(0, -1)
+  const current = headingPath[headingPath.length - 1]
+
   return (
-    <nav className="flex" aria-label="BreadcrumbMobile">
-      <ul className="menu menu-horizontal menu-sm flex items-center p-0">
-        {headingPath.map((heading: any, index: number) => {
-          return (
-            <React.Fragment key={index}>
-              {index === 0 ? (
-                // <IoMdGitBranch size={18} className="mr-1" />
-                ''
-              ) : (
-                <RiArrowRightSLine size={20} />
-              )}
-              <li key={index} aria-current={headingPath.length - 1 === index ? 'page' : undefined}>
-                <div className="flex items-center px-1 whitespace-nowrap">
-                  {headingPath.length - 1 === index ? (
-                    <span className="">{heading.text}</span>
-                  ) : (
-                    <a href={heading.url} target="_blank" className="">
-                      {heading.text}
-                    </a>
-                  )}
-                </div>
-              </li>
+    <nav className="min-w-0 flex-1" aria-label="Breadcrumb">
+      {/* Line 1: Ancestor path (only if there are ancestors) */}
+      {ancestors.length > 0 && (
+        <div className="text-base-content/50 flex min-w-0 items-center gap-0.5 truncate text-xs leading-tight">
+          {ancestors.map((h: any, i: number) => (
+            <React.Fragment key={i}>
+              {i > 0 && <LuChevronRight size={10} className="shrink-0" />}
+              <span className="truncate">{h.text}</span>
             </React.Fragment>
-          )
-        })}
-      </ul>
+          ))}
+        </div>
+      )}
+      {/* Line 2: Current heading — always visible, full width */}
+      <p
+        className="text-base-content truncate text-sm leading-tight font-medium"
+        aria-current="page">
+        {current.text}
+      </p>
     </nav>
   )
 }

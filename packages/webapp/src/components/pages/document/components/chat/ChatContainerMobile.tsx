@@ -1,5 +1,4 @@
 import Chatroom from '@components/chatroom/Chatroom'
-import BreadcrumbMobile from '@components/chatroom/components/BreadcrumbMobile'
 import { EmojiPanel } from '@components/chatroom/components/EmojiPanel'
 import { ChannelProvider } from '@components/chatroom/context/ChannelProvider'
 import { useChatStore } from '@stores'
@@ -34,9 +33,6 @@ const ChatContainerMobile = () => {
     <>
       <ChannelProvider initChannelId={chatRoom.headingId} initSettings={initSettings}>
         <Chatroom variant="mobile" className="flex h-full flex-auto flex-col overflow-hidden">
-          <div className="border-b border-gray-200 bg-gray-100 py-1">
-            <BreadcrumbMobile />
-          </div>
           <Chatroom.MessageFeed showScrollToBottom={true}>
             <Chatroom.MessageFeed.MessageList className="overflow-x-hidden">
               <Chatroom.MessageFeed.MessageList.Loop>

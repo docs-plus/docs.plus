@@ -22,7 +22,10 @@ export const CloseButton = ({ className }: Props) => {
       size="xs"
       shape="square"
       onClick={handelCloseChatRoom}
-      className={twMerge('hover:bg-base-300', className)}
+      className={twMerge(
+        'text-base-content/60 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none',
+        className
+      )}
       aria-label="Close chatroom">
       <LuX size={16} />
     </Button>

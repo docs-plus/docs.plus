@@ -1,10 +1,12 @@
 import { useNotificationToggle } from '@components/chatroom/hooks/useNotificationToggle'
 import Button from '@components/ui/Button'
+import { ButtonSize } from '@components/ui/Button'
 import { LuAtSign, LuBell, LuBellOff } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {
   className?: string
+  size?: ButtonSize
 }
 
 const notificationConfig = {
@@ -22,24 +24,26 @@ const notificationConfig = {
   }
 }
 
-export const NotificationToggle = ({ className }: Props) => {
+export const NotificationToggle = ({ className, size = 'xs' }: Props) => {
   const { notificationState, loading, handleToggle } = useNotificationToggle()
 
   const config = notificationConfig[notificationState]
   const Icon = config.icon
 
   return (
-    <div className="tooltip tooltip-bottom" data-tip={config.label}>
-      <Button
-        variant="ghost"
-        size="xs"
-        shape="square"
-        loading={loading}
-        onClick={handleToggle}
-        className={twMerge('hover:bg-base-300', className)}
-        aria-label={`Notifications: ${config.label}`}>
-        <Icon size={16} />
-      </Button>
-    </div>
+    <Button
+      variant="ghost"
+      size={size}
+      shape="square"
+      loading={loading}
+      onClick={handleToggle}
+      title={config.label}
+      className={twMerge(
+        'text-base-content/60 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none',
+        className
+      )}
+      aria-label={`Notifications: ${config.label}`}>
+      <Icon size={size === 'xs' ? 14 : 16} />
+    </Button>
   )
 }

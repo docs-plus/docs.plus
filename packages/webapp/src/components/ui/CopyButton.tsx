@@ -1,7 +1,7 @@
 import useCopyToClipboard, { UseCopyToClipboardOptions } from '@hooks/useCopyToClipboard'
 import { forwardRef, useCallback } from 'react'
 import { IconType } from 'react-icons'
-import { MdCheck, MdContentCopy } from 'react-icons/md'
+import { LuCheck, LuCopy } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
 export type CopyButtonSize = 'xs' | 'sm' | 'md' | 'lg'
@@ -14,9 +14,9 @@ export interface CopyButtonProps extends UseCopyToClipboardOptions {
   size?: CopyButtonSize
   /** Button variant */
   variant?: CopyButtonVariant
-  /** Custom icon to show (default: MdContentCopy) */
+  /** Custom icon to show (default: LuCopy) */
   icon?: IconType
-  /** Custom success icon (default: MdCheck) */
+  /** Custom success icon (default: LuCheck) */
   successIcon?: IconType
   /** Show label text alongside icon */
   label?: string
@@ -28,6 +28,8 @@ export interface CopyButtonProps extends UseCopyToClipboardOptions {
   tooltip?: string
   /** Whether to use circle shape (icon-only button) */
   circle?: boolean
+  /** Whether to use square shape (icon-only button in toolbars) */
+  square?: boolean
   /** Callback when copy button is clicked (receives the text) */
   onClick?: (text: string) => void
 }
@@ -77,13 +79,14 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
       text,
       size = 'sm',
       variant = 'ghost',
-      icon: Icon = MdContentCopy,
-      successIcon: SuccessIcon = MdCheck,
+      icon: Icon = LuCopy,
+      successIcon: SuccessIcon = LuCheck,
       label,
       successLabel = 'Copied!',
       className,
       tooltip,
       circle = false,
+      square = false,
       onClick,
       // Hook options
       resetDelay,
@@ -109,8 +112,9 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
 
     const { btn: btnSize, icon: iconSize, gap } = sizeConfig[size]
 
-    // Determine if we're showing a label
-    const showLabel = label || (copied && successLabel)
+    // Icon-only shapes (square/circle) never show labels — only icon animation
+    const isIconOnly = square || circle
+    const showLabel = !isIconOnly && (label || (copied && successLabel))
     const currentLabel = copied ? successLabel : label
 
     return (
@@ -124,6 +128,7 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
           btnSize,
           variantConfig[variant],
           circle && 'btn-circle',
+          square && 'btn-square',
           showLabel && gap,
           className
         )}

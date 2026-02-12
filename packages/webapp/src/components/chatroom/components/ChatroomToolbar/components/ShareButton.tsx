@@ -1,4 +1,4 @@
-import CopyButton from '@components/ui/CopyButton'
+import CopyButton, { CopyButtonSize } from '@components/ui/CopyButton'
 import { useChatStore } from '@stores'
 import { useMemo } from 'react'
 import { LuLink } from 'react-icons/lu'
@@ -6,12 +6,14 @@ import { twMerge } from 'tailwind-merge'
 
 type Props = {
   className?: string
+  size?: CopyButtonSize
   successMessage?: string
   errorMessage?: string
 }
 
 export const ShareButton = ({
   className,
+  size = 'xs',
   successMessage = 'Chatroom URL copied',
   errorMessage = 'Failed to copy URL'
 }: Props) => {
@@ -29,10 +31,14 @@ export const ShareButton = ({
   return (
     <CopyButton
       text={chatRoomUrl}
-      size="xs"
+      size={size}
       variant="ghost"
+      square
       icon={LuLink}
-      className={twMerge('hover:bg-base-300', className)}
+      className={twMerge(
+        'text-base-content/60 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none',
+        className
+      )}
       tooltip="Copy link"
       successMessage={successMessage}
       errorMessage={errorMessage}

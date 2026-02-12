@@ -62,11 +62,11 @@ const DesktopEditor = () => {
 
           {/* Chatroom Panel */}
           <Chatroom variant="desktop">
-            <Chatroom.Toolbar className="border-base-300 bg-base-100 relative z-50 flex w-full items-center gap-2 border-b px-2 py-1">
+            <Chatroom.Toolbar>
               <Chatroom.Toolbar.Breadcrumb />
               <div className="ml-auto flex shrink-0 items-center gap-1.5">
                 <Chatroom.Toolbar.ParticipantsList />
-                <div className="bg-base-200 flex items-center rounded-md">
+                <div className="bg-base-200 rounded-selector flex items-center">
                   <Chatroom.Toolbar.ShareButton />
                   <Chatroom.Toolbar.NotificationToggle />
                   <Chatroom.Toolbar.CloseButton />
