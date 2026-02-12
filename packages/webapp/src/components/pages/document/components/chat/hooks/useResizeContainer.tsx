@@ -6,7 +6,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
  * @see Notes/Design_System_Global_v2.md
  */
 const CHAT_MIN_HEIGHT = 320 // Minimum height for Chat panel
-const CHAT_MAX_HEIGHT = 520 // Maximum height for Chat panel
+const CHAT_MAX_HEIGHT = 1200 // Maximum height for Chat panel
 const CHAT_DEFAULT_HEIGHT = 410 // Default height
 const LOCAL_STORAGE_KEY = 'docsy:chat-height'
 
@@ -15,7 +15,7 @@ const LOCAL_STORAGE_KEY = 'docsy:chat-height'
  *
  * Design System Requirements:
  * - Min height: 320px
- * - Max height: 520px (or 70% of viewport, whichever is smaller)
+ * - Max height: 1200px (or 85% of viewport, whichever is smaller)
  * - Persist height per user
  * - During drag, disable text selection
  *
@@ -34,7 +34,7 @@ const useResizeContainer = () => {
   useEffect(() => {
     try {
       const storedHeight = localStorage.getItem(LOCAL_STORAGE_KEY)
-      const maxHeight = Math.min(CHAT_MAX_HEIGHT, window.innerHeight * 0.7)
+      const maxHeight = Math.min(CHAT_MAX_HEIGHT, window.innerHeight * 0.85)
 
       if (storedHeight) {
         const parsed = parseInt(storedHeight, 10)
@@ -68,7 +68,7 @@ const useResizeContainer = () => {
 
       const startY = e.clientY
       const startHeight = containerRef.current.clientHeight
-      const maxHeight = Math.min(CHAT_MAX_HEIGHT, window.innerHeight * 0.7)
+      const maxHeight = Math.min(CHAT_MAX_HEIGHT, window.innerHeight * 0.85)
 
       // Disable text selection and set resize cursor
       document.body.style.userSelect = 'none'
@@ -108,7 +108,7 @@ const useResizeContainer = () => {
   // Handle window resize - validate height constraints
   useEffect(() => {
     const handleWindowResize = () => {
-      const maxHeight = Math.min(CHAT_MAX_HEIGHT, window.innerHeight * 0.7)
+      const maxHeight = Math.min(CHAT_MAX_HEIGHT, window.innerHeight * 0.85)
 
       if (storeHeight > maxHeight) {
         setOrUpdateChatPannelHeight(maxHeight)
