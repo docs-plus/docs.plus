@@ -490,9 +490,6 @@
 
     .btnFold {
       opacity: 1 !important;
-      left: -16px !important;
-      padding-right: 4px;
-      width: 21px !important;
     }
   }
 
@@ -505,48 +502,6 @@
 
     :where(.menu li) {
       flex-wrap: nowrap;
-    }
-  }
-
-  .btn_openChatBox {
-    position: absolute;
-    right: 0.5rem;
-    display: flex;
-    width: 2rem;
-    height: 2rem;
-    align-items: center;
-    justify-content: center;
-    border-radius: 0.75rem;
-    background-color: var(--bg-docy);
-    padding: 0.5rem;
-
-    svg,
-    .chatLeft {
-      fill: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: auto;
-    }
-
-    .chatLeft {
-      position: relative;
-      top: 1px;
-    }
-
-    &[data-unread-count]:not([data-unread-count='']) .chatLeft {
-      display: none;
-    }
-
-    &::before {
-      content: attr(data-unread-count);
-      color: #fff;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      // Entry animation
-      animation: badge-entry 0.3s ease-out forwards;
     }
   }
 }

@@ -44,25 +44,30 @@ export function TocHeader({ variant }: TocHeaderProps) {
 
   if (variant === 'mobile') {
     return (
-      <div className="border-base-300 border-b">
+      <div className="border-base-300 bg-base-100 sticky top-0 z-10 border-b">
         <div className="group relative flex items-center justify-between py-2">
           <span className="text-base-content text-lg font-bold">{docMetadata?.title}</span>
-          <span
-            className="btn_openChatBox bg-neutral text-neutral-content flex items-center justify-end overflow-hidden"
+          <button
+            className="flex size-8 items-center justify-center rounded-full"
             onClick={handleChatClick}
-            data-unread-count={unreadCount > 0 ? unreadCount : ''}>
-            <ChatLeft
-              className={`chatLeft fill-neutral-content ${isActive && '!fill-accent'}`}
-              size={14}
-            />
-          </span>
+            aria-label={unreadCount > 0 ? `${unreadCount} unread — open chat` : 'Open chat'}>
+            {unreadCount > 0 ? (
+              <UnreadBadge count={unreadCount} size="sm" variant="error" />
+            ) : (
+              <ChatLeft
+                fill="currentColor"
+                className={`text-base-content/40 ${isActive && 'text-accent'}`}
+                size={18}
+              />
+            )}
+          </button>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="border-base-300 relative w-full border-b pb-1">
+    <div className="border-base-300 bg-base-200 relative sticky top-0 z-10 w-full border-b pt-2 pb-1">
       <div
         className={`group hover:bg-base-300/50 flex cursor-pointer items-center justify-between gap-0.5 rounded-md p-1 px-2 pr-3 ${isActive && 'activeTocBorder bg-base-300'}`}
         onClick={handleClick}>

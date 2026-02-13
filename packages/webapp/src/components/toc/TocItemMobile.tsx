@@ -1,8 +1,11 @@
+import Button from '@components/ui/Button'
 import { useModal } from '@components/ui/ModalDrawer'
-import { CaretRight, ChatLeft } from '@icons'
+import UnreadBadge from '@components/ui/UnreadBadge'
+import { ChatLeft } from '@icons'
 import { useChatStore, useFocusedHeadingStore, useStore } from '@stores'
 import type { TocItem as TocItemType } from '@types'
 import { useCallback } from 'react'
+import { MdKeyboardArrowRight } from 'react-icons/md'
 import { twMerge } from 'tailwind-merge'
 
 import { useActiveHeading, useTocActions, useUnreadCount } from './hooks'
@@ -39,7 +42,7 @@ export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps
       if (!editor) return
 
       setActiveHeading(item.id)
-      setFocusedHeadingWithLock(item.id) // Lock focus during smooth scroll
+      setFocusedHeadingWithLock(item.id)
       scrollToHeading(editor, item.id, { openChatRoom: false })
       modal?.close?.()
     },
@@ -76,38 +79,45 @@ export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps
   )
 
   const aClassName = twMerge(
-    'group relative rounded !py-2',
-    isActive && 'active activeTocBorder bg-gray-300',
+    'group relative rounded !py-2 pr-10',
+    isActive && 'active activeTocBorder bg-base-300',
     item.level === 1 && 'ml-3'
   )
 
   return (
     <li className={liClassName} data-id={item.id}>
       <a className={aClassName} onClick={handleClick} href={`?${item.id}`} data-id={item.id}>
-        {/* Fold/Unfold button - only show if has children */}
+        {/* Fold/Unfold button — matches desktop (in-flow, same size) for tree-line alignment */}
         {hasChildren && (
-          <span
-            className={twMerge('btnFold tooltip tooltip-top', item.open ? 'opened' : 'closed')}
+          <Button
+            variant="ghost"
+            size="xs"
+            shape="square"
+            className={twMerge('btnFold size-5 min-w-5 !p-0', item.open ? 'opened' : 'closed')}
             onClick={handleToggle}
-            data-tip="Toggle">
-            <CaretRight size={17} fill="#363636" />
-          </span>
+            aria-label={item.open ? 'Collapse section' : 'Expand section'}
+            startIcon={<MdKeyboardArrowRight size={18} className="text-base-content" />}
+          />
         )}
 
         {/* Heading text */}
         <span className="toc__link wrap-anywhere">{item.textContent}</span>
 
-        {/* Chat button */}
-        <span className="block w-8 pl-8" />
-        <span
-          className="btn_openChatBox bg-neutral text-neutral-content flex items-center justify-end overflow-hidden"
+        {/* Chat button — absolute right, consistent across nesting levels */}
+        <button
+          className="absolute top-1/2 right-1 flex size-8 -translate-y-1/2 items-center justify-center rounded-full"
           onClick={handleChatClick}
-          data-unread-count={unreadCount > 0 ? unreadCount : ''}>
-          <ChatLeft
-            className={twMerge('chatLeft fill-neutral-content', isActive && '!fill-accent')}
-            size={14}
-          />
-        </span>
+          aria-label={unreadCount > 0 ? `${unreadCount} unread — open chat` : 'Open chat'}>
+          {unreadCount > 0 ? (
+            <UnreadBadge count={unreadCount} size="sm" variant="error" />
+          ) : (
+            <ChatLeft
+              fill="currentColor"
+              className={twMerge('text-base-content/40', isActive && 'text-accent')}
+              size={18}
+            />
+          )}
+        </button>
       </a>
 
       {/* Nested children */}
