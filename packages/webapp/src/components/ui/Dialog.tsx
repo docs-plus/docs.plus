@@ -72,12 +72,14 @@ export function Modal({
 
 type Props = {
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl' | '3xl' | '4xl' | '5xl' | 'full'
+  align?: 'center' | 'top'
   className?: string
   children: React.ReactNode
 } & Omit<React.HTMLProps<HTMLDivElement>, 'size'>
 
 export const ModalContent = function ModalContent({
   size = 'md',
+  align = 'center',
   className = '',
   children,
   ...restProps
@@ -107,7 +109,12 @@ export const ModalContent = function ModalContent({
       <FloatingOverlay
         className="bg-base-content/40 fixed inset-0 z-50 backdrop-blur-sm"
         lockScroll>
-        <div className="fixed inset-0 flex items-center justify-center p-4">
+        <div
+          className={`fixed inset-0 flex justify-center p-4 ${
+            align === 'top'
+              ? 'items-start pt-[max(env(safe-area-inset-top,1rem),1rem)]'
+              : 'items-center'
+          }`}>
           <FloatingFocusManager context={context}>
             <div
               ref={ref}

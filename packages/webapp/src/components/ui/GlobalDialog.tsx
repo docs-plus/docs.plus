@@ -16,7 +16,7 @@ export function GlobalDialog() {
 
   return (
     <Modal open={isOpen} onOpenChange={handleOpenChange}>
-      <ModalContent size={config.size} className={config.className}>
+      <ModalContent size={config.size} align={config.align} className={config.className}>
         {content}
       </ModalContent>
     </Modal>

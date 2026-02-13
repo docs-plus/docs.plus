@@ -7,10 +7,10 @@ import { Modal, ModalContent } from '@components/ui/Dialog'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { useBottomSheet } from '@hooks/useBottomSheet'
 import { useNotificationCount } from '@hooks/useNotificationCount'
-import { useStore } from '@stores'
-import { useAuthStore } from '@stores'
+import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
+import { useAuthStore, useStore } from '@stores'
 import dynamic from 'next/dynamic'
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { BiCheck, BiRedo, BiUndo } from 'react-icons/bi'
 import { MdMenu, MdNotifications } from 'react-icons/md'
 
@@ -18,7 +18,6 @@ const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel')
   loading: () => <SettingsPanelSkeleton />
 })
 
-import DocTitle from '../DocTitle'
 import FilterBar from './FilterBar'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
 
@@ -128,12 +127,130 @@ const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
   )
 }
 
+// ---------------------------------------------------------------------------
+// TitleEditContent – rendered inside the global dialog via openDialog()
+// ---------------------------------------------------------------------------
+
+const TitleEditContent = () => {
+  const { metadata, hocuspocusProvider } = useStore((state) => state.settings)
+  const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
+  const closeDialog = useStore((state) => state.closeDialog)
+  const { isLoading, mutate } = useUpdateDocMetadata()
+  const [value, setValue] = useState('')
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  // Populate + auto-select on mount (dialog just opened)
+  useEffect(() => {
+    setValue(metadata?.title || '')
+    const timer = setTimeout(() => inputRef.current?.select(), 120)
+    return () => clearTimeout(timer)
+  }, [])
+
+  const handleSave = () => {
+    const trimmed = value.trim()
+    if (!trimmed || trimmed === metadata?.title) {
+      closeDialog()
+      return
+    }
+
+    mutate(
+      { title: trimmed, documentId: metadata.documentId },
+      {
+        onSuccess: (responseData) => {
+          const updated = (responseData as any).data ?? responseData
+          setWorkspaceSetting('metadata', { ...metadata, title: updated.title })
+          hocuspocusProvider?.sendStateless(JSON.stringify({ type: 'docTitle', state: updated }))
+          closeDialog()
+        }
+      }
+    )
+  }
+
+  return (
+    <div className="p-5">
+      <label
+        htmlFor="mobile-doc-title-input"
+        className="text-base-content mb-3 block text-base font-semibold">
+        Rename Document Title
+      </label>
+
+      <input
+        ref={inputRef}
+        id="mobile-doc-title-input"
+        type="text"
+        className="input input-bordered w-full"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') handleSave()
+          if (e.key === 'Escape') closeDialog()
+        }}
+        placeholder="Document title"
+        autoComplete="off"
+        maxLength={200}
+      />
+
+      <div className="mt-4 flex justify-end gap-2">
+        <Button variant="ghost" size="sm" onClick={closeDialog}>
+          Cancel
+        </Button>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={handleSave}
+          disabled={isLoading || !value.trim()}>
+          {isLoading ? 'Saving…' : 'Save'}
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+// ---------------------------------------------------------------------------
+// MobilePadTitle – sticky header for the mobile document view
+// ---------------------------------------------------------------------------
+
 const MobilePadTitle = () => {
   const user = useAuthStore((state) => state.profile)
   const {
-    editor: { isEditable, instance: editor }
+    editor: { isEditable, instance: editor },
+    metadata,
+    hocuspocusProvider
   } = useStore((state) => state.settings)
+  const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
+  const openDialog = useStore((state) => state.openDialog)
   const [isProfileModalOpen, setProfileModalOpen] = useState(false)
+
+  // Keep the store title in sync with remote changes from other users.
+  // On desktop this is handled by the always-mounted DocTitle component;
+  // on mobile we need our own listener since DocTitle is not rendered.
+  //
+  // A ref is used so the handler always reads the latest metadata without
+  // causing the effect to re-subscribe on every metadata change.
+  const metadataRef = useRef(metadata)
+  metadataRef.current = metadata
+
+  useEffect(() => {
+    if (!hocuspocusProvider) return
+
+    const handler = ({ payload }: any) => {
+      try {
+        const msg = JSON.parse(payload)
+        if (msg.type === 'docTitle') {
+          setWorkspaceSetting('metadata', { ...metadataRef.current, title: msg.state.title })
+        }
+      } catch {
+        /* ignore malformed payloads */
+      }
+    }
+
+    hocuspocusProvider.on('stateless', handler)
+    return () => hocuspocusProvider.off('stateless', handler)
+  }, [hocuspocusProvider, setWorkspaceSetting])
+
+  const handleTitleClick = () => {
+    openDialog(<TitleEditContent />, { size: 'sm', align: 'top', className: 'mt-14' })
+  }
 
   return (
     <>
@@ -149,9 +266,12 @@ const MobilePadTitle = () => {
               {isEditable ? (
                 <UndoRedoButtons editor={editor} className="ml-2" />
               ) : (
-                <div className="min-w-0 flex-1 overflow-hidden">
-                  <DocTitle className="truncate text-sm font-medium" />
-                </div>
+                <button
+                  type="button"
+                  className="min-w-0 flex-1 truncate text-left text-lg font-semibold"
+                  onClick={handleTitleClick}>
+                  {metadata?.title || 'Untitled'}
+                </button>
               )}
             </div>
 

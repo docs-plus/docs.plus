@@ -3,6 +3,7 @@ import { immer } from 'zustand/middleware/immer'
 
 export interface DialogConfig {
   size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
+  align?: 'center' | 'top'
   className?: string
   dismissible?: boolean
 }
