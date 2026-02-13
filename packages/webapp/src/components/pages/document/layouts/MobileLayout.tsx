@@ -35,14 +35,14 @@ const MobileLayout = () => {
 
   return (
     <div className={`mobileLayoutRoot tiptap flex w-full flex-col ${deviceClass}`}>
-      <div className="sticky top-0 z-20 w-full bg-white">
+      <div className="bg-base-100 sticky top-0 z-20 w-full">
         <MobilePadTitle />
       </div>
       <MobileLeftSidePanel />
       <MobileEditor />
       <EditFAB />
       <BottomSheet />
-      <div className="mobileToolbarBottom sticky bottom-0 left-0 z-20 w-full bg-white">
+      <div className="mobileToolbarBottom bg-base-100 sticky bottom-0 left-0 z-20 w-full">
         <ToolbarMobile />
       </div>
     </div>

@@ -1,13 +1,12 @@
-import DocTitle from '@components/TipTap/DocTitle'
+import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
 import { TocMobile } from '@components/toc'
 import Button from '@components/ui/Button'
-import CloseButton from '@components/ui/CloseButton'
 import { useModal } from '@components/ui/ModalDrawer'
 import { DocsPlus } from '@icons'
 import { useSheetStore, useStore } from '@stores'
 import Link from 'next/link'
 import React from 'react'
-import { MdFilterAlt, MdHistory } from 'react-icons/md'
+import { LuFilter, LuHistory, LuX } from 'react-icons/lu'
 
 interface TocModalProps {
   filterModalRef?: React.RefObject<unknown>
@@ -25,51 +24,66 @@ const TocModal = ({ filterModalRef: _filterModalRef }: TocModalProps) => {
   }
 
   return (
-    <div className="z-30 h-full w-full max-w-[80%] min-w-[80%] bg-white">
+    <div className="bg-base-100 z-30 h-full w-full max-w-[80%] min-w-[80%]">
       <div className="modalWrapper z-30 flex size-full flex-col overflow-hidden">
-        {/* Header */}
-        <header className="sticky top-0 z-20 flex shrink-0 items-center justify-between border-b border-slate-200 bg-white px-3 py-3">
-          <div className="flex items-center gap-2">
-            <Link
-              href="/"
-              className="hover:text-primary flex size-8 items-center justify-center text-slate-800 outline-0 transition-colors">
-              <DocsPlus size={70} />
-            </Link>
-            <DocTitle className="mt-0 max-w-[50vw] overflow-hidden" />
-          </div>
+        {/* Header — logo + action toolbar */}
+        <header className="border-base-300 bg-base-100 sticky top-0 z-20 flex shrink-0 items-center justify-between border-b px-4 py-2">
+          <Link
+            href="/"
+            className="text-base-content hover:text-primary flex items-center gap-1.5 outline-0 transition-colors"
+            aria-label="Go to home">
+            <DocsPlus size={36} />
+            <span className="text-base-content mt-1.5 font-semibold">docs.plus</span>
+          </Link>
 
-          <div className="flex items-center gap-1">
+          <div className="bg-base-200 rounded-box flex items-center gap-0.5 p-0.5">
             <Button
               aria-label="View history"
               variant="ghost"
-              size="sm"
-              shape="circle"
-              className="text-base-content/60 hover:text-base-content"
+              size="md"
+              shape="square"
+              iconSize={18}
+              className="text-base-content/60 hover:text-base-content hover:bg-base-300 rounded-field focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none"
               onClick={() => {
                 closeModal?.()
                 window.location.hash = 'history'
               }}
-              startIcon={MdHistory}
+              startIcon={LuHistory}
             />
             <Button
               aria-label="Open filters"
               variant="ghost"
-              size="sm"
-              shape="circle"
-              className="text-base-content/60 hover:text-base-content"
+              size="md"
+              shape="square"
+              iconSize={18}
+              className="text-base-content/60 hover:text-base-content hover:bg-base-300 rounded-field focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none"
               onClick={() => {
                 openSheet('filters')
                 closeModal?.()
               }}
-              startIcon={MdFilterAlt}
+              startIcon={LuFilter}
             />
-            <CloseButton onClick={() => closeModal?.()} aria-label="Close sidebar" />
+            <Button
+              aria-label="Close sidebar"
+              variant="ghost"
+              size="md"
+              shape="square"
+              iconSize={18}
+              className="text-base-content/60 hover:text-base-content hover:bg-base-300 rounded-field focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none"
+              onClick={() => closeModal?.()}
+              startIcon={LuX}
+            />
           </div>
         </header>
 
-        {/* Content */}
-        <div className="flex-1 overflow-y-auto bg-slate-50">
-          <TocMobile className="tiptap__toc size-full pb-4 pl-2" />
+        {/* Content — scrollable TOC list */}
+        <div className="bg-base-200 flex-1 overflow-y-auto">
+          <TocMobile className="tiptap__toc w-full pb-4 !pl-2" hideAppendButton />
+        </div>
+
+        {/* Sticky footer — add heading button */}
+        <div className="border-base-300 bg-base-100 shrink-0 border-t">
+          <AppendHeadingButton className="" />
         </div>
       </div>
     </div>
