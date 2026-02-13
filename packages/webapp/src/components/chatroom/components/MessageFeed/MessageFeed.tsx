@@ -26,7 +26,7 @@ const MessageFeed = ({ className, children, showScrollToBottom = true }: Props) 
           <div
             ref={messageContainerRef}
             className={twMerge(
-              'message-feed scrollbar-custom scrollbar-thin relative h-full overflow-y-auto',
+              'message-feed scrollbar-custom scrollbar-thin relative min-h-0 flex-1 overflow-y-auto',
               className
             )}>
             {children}

@@ -6,6 +6,7 @@ import { useCallback } from 'react'
 import { calculateEmojiPickerPosition } from '../../../../MessageCard/helpers'
 import { useMessageComposer } from '../../../hooks/useMessageComposer'
 import Button from '../../ui/Button'
+
 type Props = React.HTMLAttributes<HTMLButtonElement> & {
   className?: string
   size?: number
@@ -31,19 +32,17 @@ export const EmojiButton = ({ className, size = 20, ...props }: Props) => {
   const { editor } = useMessageComposer()
   const { toggleEmojiPicker } = useChatStore()
   const { switchSheet } = useSheetStore()
-  const { chatRoom } = useChatStore()
-  const {
-    settings: {
-      editor: { isMobile }
-    }
-  } = useStore((state) => state)
+  const headingId = useChatStore((state) => state.chatRoom.headingId)
+  const isMobile = useStore((state) => state.settings.editor.isMobile)
 
   const openEmojiPickerHandler = useCallback(() => {
     if (!editor) return
 
     if (isMobile) {
+      // Switch to the emoji picker sheet, preserving chatroom reference
+      // so BottomSheet can restore the chatroom when the picker closes.
       switchSheet('emojiPicker', {
-        chatRoomState: { ...chatRoom }
+        chatRoomState: { headingId: headingId ?? '' }
       })
     } else {
       const caretPosition = getCaretPosition(editor)
@@ -56,7 +55,7 @@ export const EmojiButton = ({ className, size = 20, ...props }: Props) => {
         'inserEmojiToEditor'
       )
     }
-  }, [editor, chatRoom])
+  }, [editor, isMobile, switchSheet, headingId, toggleEmojiPicker])
 
   return (
     <Button
@@ -64,6 +63,7 @@ export const EmojiButton = ({ className, size = 20, ...props }: Props) => {
       onPress={openEmojiPickerHandler}
       tooltip="Emoji"
       tooltipPosition="tooltip-top"
+      aria-label="Open emoji picker"
       {...props}>
       <Icon type="MdOutlineEmojiEmotions" size={size} />
     </Button>

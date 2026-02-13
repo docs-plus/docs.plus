@@ -1,43 +1,74 @@
 import { emojiReaction } from '@api'
 import { useCloseOnResize } from '@hooks/useCloseOnResize'
-import { CHAT_OPEN } from '@services/eventsHub'
+import type { SheetDataMap } from '@stores'
 import { useChatStore, useSheetStore } from '@stores'
-import React from 'react'
+import { retryWithBackoff } from '@utils/retryWithBackoff'
 import { createPortal } from 'react-dom'
 
 import { useEmojiPanelContext } from './context/EmojiPanelContext'
 import { Picker } from './Picker'
 
+/**
+ * EmojiSelector
+ * -------------
+ * Renders the emoji Picker and handles emoji-select for both desktop
+ * and mobile variants.
+ *
+ * Desktop: portal-positioned picker near the caret.
+ * Mobile:  rendered inline inside the BottomSheet's emojiPicker content area.
+ */
 export const EmojiSelector = () => {
   const { variant } = useEmojiPanelContext()
   const { sheetData } = useSheetStore()
   const { emojiPicker, closeEmojiPicker } = useChatStore()
   const { editorInstance } = useChatStore((state) => state.chatRoom)
 
-  // TODO: this is only work for mobile
   const emojiSelectHandler = (emoji: any) => {
-    if (variant === 'mobile' && emojiPicker.eventType !== 'react2Message') {
-      const { headingId } = sheetData.chatRoomState
+    const nativeEmoji: string = emoji.native
 
-      PubSub.publish(CHAT_OPEN, {
-        headingId: headingId,
-        insertContent: emoji.native,
-        clearSheetState: true
-      })
-    } else if (emojiPicker.eventType === 'react2Message' && variant === 'mobile') {
-      emojiReaction(emojiPicker.selectedMessage, emoji.native)
-      // close the emoji picker
+    // ------------------------------------------------------------------
+    // Mobile: emoji selected from the composer's emoji picker sheet
+    // ------------------------------------------------------------------
+    if (variant === 'mobile' && emojiPicker.eventType !== 'react2Message') {
+      const emojiData = sheetData as SheetDataMap['emojiPicker']
+      const headingId = emojiData?.chatRoomState?.headingId
+
+      if (!headingId) return
+
+      // Switch back to the chatroom sheet and insert the emoji once the
+      // editor is mounted and the sheet animation has finished.
+      useSheetStore.getState().switchSheet('chatroom', { headingId })
+
+      retryWithBackoff(
+        () => {
+          const { editorInstance } = useChatStore.getState().chatRoom
+          const { sheetState, isSheetOpen } = useSheetStore.getState()
+
+          if (sheetState === 'open' && editorInstance && isSheetOpen('chatroom')) {
+            editorInstance.chain().focus().insertContent(nativeEmoji).run()
+            return true
+          }
+          return false
+        },
+        { maxAttempts: 6, initialDelayMs: 400, maxDelayMs: 1000 }
+      )
+      return
+    }
+
+    // ------------------------------------------------------------------
+    // React-to-message: add reaction (both mobile & desktop)
+    // ------------------------------------------------------------------
+    if (emojiPicker.eventType === 'react2Message') {
+      emojiReaction(emojiPicker.selectedMessage, nativeEmoji)
       closeEmojiPicker()
       return
-    } else if (emojiPicker.eventType === 'react2Message') {
-      emojiReaction(emojiPicker.selectedMessage, emoji.native)
-
-      // close the emoji picker
-      closeEmojiPicker()
-    } else {
-      editorInstance?.commands.insertContent(emoji.native)
-      closeEmojiPicker()
     }
+
+    // ------------------------------------------------------------------
+    // Desktop: insert emoji at caret in the composer editor
+    // ------------------------------------------------------------------
+    editorInstance?.commands.insertContent(nativeEmoji)
+    closeEmojiPicker()
   }
 
   useCloseOnResize()
@@ -45,7 +76,6 @@ export const EmojiSelector = () => {
   if (variant === 'desktop') {
     return createPortal(
       <div
-        className=""
         style={{
           position: 'fixed',
           top: `${emojiPicker.position?.top || 0}px`,

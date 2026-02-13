@@ -76,7 +76,7 @@ export const MessageFeedProvider: React.FC<{
 
   return (
     <MessageFeedContext.Provider value={value} key={channelId}>
-      <div className="message-feed-container relative flex size-full h-full flex-col overflow-hidden">
+      <div className="message-feed-container relative flex min-h-0 w-full flex-1 flex-col overflow-hidden">
         {children}
       </div>
     </MessageFeedContext.Provider>
