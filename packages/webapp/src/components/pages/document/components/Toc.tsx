@@ -18,7 +18,7 @@ const TOC = ({ className = '' }: { className?: string }) => {
 
   return (
     <ScrollArea
-      className={`${className} tiptap__toc h-full w-full`}
+      className={`${className} tiptap__toc h-full w-full !pt-0`}
       orientation="vertical"
       scrollbarSize="thin"
       hideScrollbar>
