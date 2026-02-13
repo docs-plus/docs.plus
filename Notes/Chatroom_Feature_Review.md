@@ -1,6 +1,6 @@
 # Chatroom Feature — Comprehensive Technical Document
 
-> **Version:** v1.7.0
+> **Version:** v1.8.0
 > **Date:** 2026-02-13
 > **Authors:** Engineering, UI/UX, PM Teams
 > **Design System Reference:** `Design_System_Global_v2.md` v3.0.0
@@ -18,6 +18,7 @@
 > | v1.5.0 | 2026-02-12 | UI/UX + PM | §32 | Design system compliance audit |
 > | v1.6.0 | 2026-02-12 | Technical Writing | §33 | Document quality audit |
 > | v1.7.0 | 2026-02-13 | Engineering + UI/UX | §10, §11, §16, §17, §22, §24, §25, §32 | Implementation sync — FK fix, notification toast, resize, toolbar redesign, mobile breadcrumb, EditFAB fix |
+> | v1.8.0 | 2026-02-13 | Engineering + UI/UX + PM | §7, §9, §11, §18, §22, §23, §24, §25, §32 | Mobile chatroom production hardening — sheet scroll fix, iOS keyboard fix, ChannelProvider removal, design token migration, icon consolidation, mobile title edit dialog, Dialog align prop, stale-closure fix |
 
 ---
 
@@ -460,8 +461,9 @@ interface IChatroomStore {
 | `MessageListContext`     | `MessageList/MessageListContext.tsx` | Messages array, scroll direction, mention handler |
 | `MessageCardContext`     | `MessageCard/MessageCardContext.tsx` | Single message data, card ref, emoji-only flag |
 | `MessageComposerContext` | `MessageComposer/context/...`    | Editor instance, submit handler, toolbar state |
-| `ChannelContext`         | `context/ChannelProvider.tsx`     | Legacy channel settings (contextMenu, textEditor options) |
 | `EmojiPanelContext`      | `EmojiPanel/context/...`         | Emoji picker variant + state |
+
+> ℹ️ **v1.8.0:** `ChannelContext` (`context/ChannelProvider.tsx`) was deleted — it was dead code that conflicted with `ChatroomContext` (see §24 T7, T14). The `useSheetStore` (Zustand) now owns all bottom-sheet lifecycle state with typed `SheetDataMap` per sheet, `CHATROOM_OVERLAY_SHEETS` constant, and `switchSheet` transition queue.
 
 ---
 
@@ -560,6 +562,7 @@ Chatroom (root)
 | `useEmojiBoxHandler`          | `hooks/useEmojiBoxHandler.ts`          | Emoji picker open/close logic                  |
 | `useNotificationToggle`       | `hooks/useNotificationToggle.ts`       | Per-channel notification cycle (ALL → MENTIONS → MUTED) |
 | `useChatContainerResizeHandler`| `hooks/useChatContainerResizeHandler.ts`| Desktop panel resize logic                    |
+| `useBottomSheet`              | `hooks/useBottomSheet.ts`              | Stable, intent-named callbacks for opening/closing bottom sheets (v1.8.0) |
 
 ### Message Card Hooks
 
@@ -662,26 +665,29 @@ Chatroom (root)
 | Emoji picker         | Popover                    | Bottom sheet (react-modal-sheet)|
 | Resize               | Invisible 6px handle (max 85% viewport) | N/A                |
 | Breadcrumb           | In toolbar                 | Two-line stacked header: muted ancestor path + primary current heading |
-| Channel settings     | Legacy `ChannelProvider`   | Reduced feature set            |
+| Channel settings     | ~~Legacy `ChannelProvider`~~ Removed v1.8.0 | Uses `ChatroomContext` only |
+| Document title edit  | Inline `contentEditable`   | `TitleEditDialog` modal (v1.8.0) |
 
 ### Mobile-specific configurations
 
-```typescript
-const initSettings = {
-  displayChannelBar: false,
-  pickEmoji: true,
-  textEditor: {
-    toolbar: false,       // Simplified mobile toolbar
-    emojiPicker: false,   // Uses sheet-based picker
-    attachmentButton: false
-  },
-  contextMenue: {
-    replyInThread: true,
-    forward: false,       // Disabled on mobile
-    pin: false            // Disabled on mobile
-  }
-}
-```
+> ℹ️ **v1.8.0:** The legacy `initSettings` via `ChannelProvider` was removed. Mobile feature flags are now derived from `ChatroomContext` and store state directly.
+
+### v1.8.0 — Mobile Chatroom Hardening
+
+The following production-critical fixes were applied:
+
+| Fix | Problem | Solution | Files |
+|-----|---------|----------|-------|
+| **Sheet scroll conflict** | Scrolling the message list dragged the entire bottom sheet down, hiding older messages | `onPointerDown.stopPropagation()` wrapper inside `Sheet.Content` for chatroom; `disableDrag` + `scrollStyle` overrides on `Sheet.Content`; `flex-1 min-h-0` layout fix on `MessageFeed` and `MessageFeedContext` | `BottomSheet.tsx`, `MessageFeed.tsx`, `MessageFeedContext.tsx` |
+| **iOS keyboard dismiss** | Tapping the "Scroll to Bottom" button on iOS closed the virtual keyboard | `onPointerDown={(e) => e.preventDefault()}` on the scroll button prevents focus steal | `ScrollToBottomButton.tsx` |
+| **ChannelProvider removal** | Dead context conflicting with `ChatroomContext`, 6 spelling errors in types | Deleted file, removed wrapper from `ChatContainerMobile.tsx` | `ChannelProvider.tsx` (deleted), `ChatContainerMobile.tsx` |
+| **Design token migration** | Hardcoded `bg-chatBubble-owner` (`#a6c5fa`) broke dark mode | Replaced with `bg-primary/20` in all consumers; removed `.bg-chatBubble-owner` from `globals.scss` | `ChatContainerMobile.tsx`, `SystemNotifyChip.tsx`, `globals.scss` |
+| **Icon consolidation** | `MdAdd`, `MdSearch` (Material) violating Lucide mandate | Replaced with `LuPlus`, `LuSearch` from Lucide | `QuickReactionMenu.tsx`, `FilterModal.tsx` |
+| **Sheet registry pattern** | `renderContent`/`getSheetProps` were inline switch statements | Refactored into `SHEET_CONTENT` and `SHEET_PROPS` record maps — open for extension | `BottomSheet.tsx` |
+| **Mobile title editing** | `contentEditable` on mobile provided poor UX (no save/cancel, no keyboard handling) | New `TitleEditDialog` modal with standard `<input>`, auto-select, Enter/Escape support, real-time sync | `MobilePadTitle.tsx` |
+| **Dialog iOS positioning** | Modal dialog hidden behind iOS keyboard when centered | Added `align="top"` prop to `ModalContent` with safe-area-aware top positioning | `Dialog.tsx`, `MobilePadTitle.tsx` |
+| **PubSub removal** | `PubSub.publish(CHAT_OPEN)` used for sheet transitions, creating hidden coupling | Replaced with direct `useSheetStore().switchSheet()` calls | `Selector.tsx` |
+| **Stale closure fix** | `MobilePadTitle` remote title sync re-subscribed on every metadata change | Used `useRef` for metadata to keep handler stable | `MobilePadTitle.tsx` |
 
 ---
 
@@ -1001,11 +1007,11 @@ interface ThreadState {
 
 ### Design System Violations Found
 
-1. **`ChatContainerMobile.tsx`:** ✅ Fixed v1.7.0
+1. **`ChatContainerMobile.tsx`:** ✅ Fixed v1.7.0 + v1.8.0
    - ~~`border-gray-200`~~ → `border-base-300`
    - ~~`bg-gray-100`~~ → `bg-base-100`
    - ~~Duplicate breadcrumb~~ → removed
-   - Hardcoded `chat-bubble` color logic — **still pending**
+   - ~~Hardcoded `chat-bubble` color logic~~ → `bg-primary/20` ✅ Fixed v1.8.0
 
 2. **`MobileLayout.tsx`:** ✅ Fixed v1.7.0
    - ~~No design system tokens, uses legacy `SheetHeader`~~ → Custom `ChatRoomHeader` with `BreadcrumbMobile` + action group
@@ -1097,6 +1103,7 @@ interface ThreadState {
 | `hooks/useEmojiBoxHandler.ts` | ~40 | Emoji picker state |
 | `hooks/useNotificationToggle.ts` | 68 | Channel notification cycle |
 | `hooks/useChatContainerResizeHandler.ts` | ~60 | Desktop resize handler |
+| `hooks/useBottomSheet.ts` | ~53 | Stable callbacks for opening/closing bottom sheets (v1.8.0) |
 | `hooks/listner/` | ~200 | Realtime event handlers |
 | `MessageCard/hooks/` | ~400 | 13 action hooks |
 
@@ -1112,6 +1119,13 @@ interface ThreadState {
 | `stores/chat/channelsStore.ts` | Channel metadata |
 | `stores/chat/threadStore.ts` | Thread state |
 | `stores/chat/bookmark.ts` | Bookmarks |
+| `stores/sheetStore.ts` | Bottom sheet lifecycle, typed `SheetDataMap`, `CHATROOM_OVERLAY_SHEETS`, `switchSheet` queue (v1.8.0 hardened) |
+
+### Deleted Files (v1.8.0)
+
+| Path | Reason |
+|------|--------|
+| ~~`chatroom/context/ChannelProvider.tsx`~~ | Dead code — conflicted with `ChatroomContext`, 6 spelling errors in types, only used in `ChatContainerMobile` where `ChatroomContext` was already active |
 
 ### Database Scripts
 
@@ -1145,7 +1159,7 @@ interface ThreadState {
 
 | ID | Issue | Location | Impact | Status |
 |----|-------|----------|--------|--------|
-| T1 | **Hardcoded colors break dark mode** — `bg-blue-50`, `bg-gray-100`, `text-slate-800`, `text-gray-600`, `border-gray-200` | `MessageCardContext.tsx`, `ChatContainerMobile.tsx`, `ThreadHeader.tsx`, `HoverMenuActions.tsx` | Dark mode unusable for chat | ⚠️ Partially fixed v1.7.0: `ThreadHeader`, `ChatContainerMobile`, `SheetHeader` corrected. `MessageCardContext` and `HoverMenuActions` still pending. |
+| T1 | **Hardcoded colors break dark mode** — `bg-blue-50`, `bg-gray-100`, `text-slate-800`, `text-gray-600`, `border-gray-200` | `MessageCardContext.tsx`, `ChatContainerMobile.tsx`, `ThreadHeader.tsx`, `HoverMenuActions.tsx` | Dark mode unusable for chat | ⚠️ Partially fixed v1.7.0 + v1.8.0: `ThreadHeader`, `ChatContainerMobile`, `SheetHeader`, `SystemNotifyChip`, `QuickReactionMenu` (bg-white→bg-base-100, gray→base-content), `globals.scss` (`.bg-chatBubble-owner` removed). `MessageCardContext` and `HoverMenuActions` still pending. |
 | T1a | **FK violation for unauthenticated users** — `channel_members.member_id` FK violated when anonymous session UUID doesn't exist in `public.users` | `useChannleInitialData.ts` | Runtime crash on chatroom open | ✅ Fixed v1.7.0 |
 | T1b | **Redundant notification toast** — "Notifications enabled!" shown on every message send | `NotificationPromptCard.tsx` | UX annoyance | ✅ Fixed v1.7.0 |
 | T2 | **RLS not fully enabled** — Messages and channels tables have RLS policies commented out in `13-RLS.sql` | `supabase/scripts/13-RLS.sql` | Security concern — all authenticated users can access all messages | ❌ Open |
@@ -1158,7 +1172,7 @@ interface ThreadState {
 | T4 | **`useChannleInitialData` typo** in filename | `hooks/useChannleInitialData.ts` | Developer confusion |
 | T5 | **Mixed icon libraries** — `MdMoreVert` (Material) in `HoverMenuActions.tsx`, should be `LuEllipsisVertical` (Lucide) | `HoverMenuActions.tsx` | Design system inconsistency |
 | T6 | **Stale `@ts-ignore` comments** — Multiple `@ts-ignore` in stores and hooks | `chatroom.ts`, `channelMessagesStore.ts` | Bypassed type checking |
-| T7 | **Legacy `ChannelProvider`** — Separate context provider in `context/ChannelProvider.tsx` with duplicated settings | `context/ChannelProvider.tsx` | Two parallel context systems |
+| T7 | ~~**Legacy `ChannelProvider`** — Separate context provider in `context/ChannelProvider.tsx` with duplicated settings~~ | ~~`context/ChannelProvider.tsx`~~ | ✅ Fixed v1.8.0 — file deleted, wrapper removed from `ChatContainerMobile.tsx` |
 | T8 | **Debounce in `useChannelInitialData`** — Using lodash debounce with `useCallback(debounce(...), [channelId])` is incorrect (creates new debounce on channelId change) | `hooks/useChannleInitialData.ts` | Potential double-fetch |
 | T9 | **No error boundary** — `ChatroomContext` logs errors but doesn't render an error UI fallback | `ChatroomContext.tsx` | Silent failures |
 | T10 | **DOM element access for scroll** — `messageContainerRef.current?.querySelector('.msg_card')` for cursor detection | `useInfiniteLoadMessages.ts` | Fragile, DOM-coupled |
@@ -1170,7 +1184,7 @@ interface ThreadState {
 |----|-------|----------|--------|
 | T12 | **Missing `PubSub` cleanup** — `PubSub.publish` used in Breadcrumb without subscription cleanup | `Breadcrumb.tsx` | Memory leak potential |
 | T13 | **`createFakeMessage` defined inside component** — Should be a utility function | `MessageComposer.tsx` | Readability |
-| T14 | **Mobile chat container uses deprecated `ChannelProvider`** | `ChatContainerMobile.tsx` | Inconsistency with desktop |
+| T14 | ~~**Mobile chat container uses deprecated `ChannelProvider`**~~ | ~~`ChatContainerMobile.tsx`~~ | ✅ Fixed v1.8.0 — `ChannelProvider` wrapper removed |
 | T15 | **Thread support incomplete on mobile** — `MobileLayout.tsx` TODO comment | `MobileLayout.tsx` | Feature gap |
 
 ---
@@ -1184,7 +1198,10 @@ interface ThreadState {
 - [x] Replace hardcoded colors in toolbar/header components (`ThreadHeader`, `ChatContainerMobile`, `MobileLayout`, `SheetHeader`, `Dialog.tsx`) — ✅ v1.7.0
 - [x] Migrate toolbar icons to Lucide: `MdClose` → `LuX`, `MdLink` → `LuLink`, `MdContentCopy` → `LuCopy`, `MdCheck` → `LuCheck`, `RiArrowRightSLine` → `LuChevronRight` — ✅ v1.7.0
 - [x] Add focus-visible states to toolbar action buttons — ✅ v1.7.0
-- [ ] Replace remaining hardcoded colors in message components (`MessageCardContext`, `HoverMenuActions`, `QuickReactionMenu`, etc.)
+- [x] Replace hardcoded `bg-chatBubble-owner` / `bg-bg-chatBubble-owner` → `bg-primary/20` / `bg-info/10` in `ChatContainerMobile`, `SystemNotifyChip`, `globals.scss` — ✅ v1.8.0
+- [x] Replace `MdAdd` → `LuPlus` in `QuickReactionMenu`, `MdSearch` → `LuSearch` in `FilterModal` — ✅ v1.8.0
+- [x] Replace `bg-white` → `bg-base-100`, `text-gray-*` → `text-base-content/*` in `QuickReactionMenu` — ✅ v1.8.0
+- [ ] Replace remaining hardcoded colors in message components (`MessageCardContext`, `HoverMenuActions`, etc.)
 - [ ] Replace `MdMoreVert` with `LuEllipsisVertical` in `HoverMenuActions`
 - [ ] Audit all `bg-*` and `text-*` classes against `Design_System_Global_v2.md`
 - [ ] Test dark mode end-to-end for chat feature
@@ -1205,7 +1222,7 @@ interface ThreadState {
 ### Phase 4 — Code Quality (Priority: Medium)
 
 - [ ] Fix typos: `useChannleInitialData` → `useChannelInitialData`, `listner` → `listener`
-- [ ] Consolidate `ChannelProvider` and `ChatroomContext` into single context
+- [x] ~~Consolidate `ChannelProvider` and `ChatroomContext`~~ — `ChannelProvider` deleted v1.8.0
 - [ ] Extract `createFakeMessage` to utility
 - [ ] Add Error Boundary wrapper for chat feature
 - [ ] Replace DOM queries in `useInfiniteLoadMessages` with virtualizer-based cursor
@@ -1215,7 +1232,7 @@ interface ThreadState {
 - [ ] Implement full thread support on mobile
 - [ ] Add pin/unpin action to mobile long-press menu
 - [ ] Add forward message (both platforms)
-- [ ] Align mobile chat settings with desktop (currently uses legacy `ChannelProvider`)
+- [x] ~~Align mobile chat settings with desktop~~ — `ChannelProvider` removed, mobile uses `ChatroomContext` directly ✅ v1.8.0
 
 ### Phase 6 — Performance (Priority: Low-Medium)
 
@@ -2078,7 +2095,7 @@ Each notification INSERT triggers 3 more cascading triggers:
 | **T-15** | Replace DOM-based cursor with state-based | ⚪ Medium | 2h |
 | **T-16** | Remove custom DOM events for editor focus | ⚪ Low | 1h |
 | **T-17** | Use UUID for optimistic messages | ⚪ Medium | 2h |
-| **T-18** | Remove/consolidate unused ChannelProvider | ⚪ Low | 1h |
+| ~~**T-18**~~ | ~~Remove/consolidate unused ChannelProvider~~ | ✅ Done v1.8.0 | — |
 
 ### Phase 6: Missing Indexes & Performance (Week 8) 📊
 
@@ -2539,7 +2556,7 @@ Chatroom (root)                              ← ChatroomProvider context
 │           │       ├── .AddReactionButton
 │           │       └── .ReactionList
 │           └── .LongPressMenu
-└── (Also) ChannelProvider                   ← DEAD context (only used in mobile, conflicting)
+└── ~~(Also) ChannelProvider~~                ← ✅ DELETED v1.8.0
 ```
 
 **MessageComposer sub-tree (separate root):**
@@ -2578,7 +2595,7 @@ EmojiPanel                                   ← EmojiPanelProvider context
 | **Max dot-chain depth in consumption** | **8 levels** (`Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators.EditedBadge`) | 3 max (Radix/Headless UI standard) |
 | **index.ts re-export files** | 18 in MessageCard subtree alone | Flat exports preferred |
 | **Folder nesting depth** | 8 directories deep (MessageFooter→components→MessageIndicators→components→EditedBadge.tsx) | 4 max |
-| **Dead/conflicting contexts** | 1 (`ChannelProvider` — conflicts with `ChatroomProvider`) | 0 |
+| **Dead/conflicting contexts** | ~~1 (`ChannelProvider`)~~ ✅ Deleted v1.8.0 | 0 |
 | **Wrapper-only components** (just `<div className>` + children) | 8 (MessageActions, MessageHeader, MessageContent, MessageFooter, MessageIndicators, MessageReactions, QuickActions, ChannelComposerWrapper) | Should be CSS classes, not components |
 
 ---
@@ -2676,9 +2693,11 @@ There are **three separate layout-switching mechanisms**:
 
 This means the same "pick layout by device" logic exists in three places with three different data sources (`variant` prop, `isMobile` store, direct component selection).
 
-#### 🟡 PROBLEM 5: ChannelProvider Is Dead Code That Creates Confusion
+#### ~~🟡 PROBLEM 5: ChannelProvider Is Dead Code That Creates Confusion~~ ✅ RESOLVED v1.8.0
 
-`ChannelProvider` (in `context/ChannelProvider.tsx`) provides:
+> **Resolution:** `ChannelProvider.tsx` was deleted and its wrapper removed from `ChatContainerMobile.tsx`. The mobile chatroom now uses only `ChatroomContext`, eliminating the conflicting dual-context architecture.
+
+~~`ChannelProvider` (in `context/ChannelProvider.tsx`) provides:~~
 - `channelId` + `setChannelId`
 - `settings` (with feature flags like `contextMenue.edite`, `textEditor.mentionsomeone`)
 
@@ -2847,9 +2866,11 @@ const MessageComposer = ({ children, className }) => {
 }
 ```
 
-#### Principle 5: Delete ChannelProvider (Dead Code)
+#### Principle 5: Delete ChannelProvider (Dead Code) — ✅ DONE v1.8.0
 
-`ChannelProvider` conflicts with `ChatroomProvider`, introduces 6 spelling errors into the type system, and is only used in one place where `ChatroomProvider` is already active. Delete it and migrate `ChatContainerMobile.tsx` to use feature flags from `ChatroomProvider` or a simple props-based config.
+~~`ChannelProvider` conflicts with `ChatroomProvider`, introduces 6 spelling errors into the type system, and is only used in one place where `ChatroomProvider` is already active. Delete it and migrate `ChatContainerMobile.tsx` to use feature flags from `ChatroomProvider` or a simple props-based config.~~
+
+**Completed:** File deleted, wrapper removed from `ChatContainerMobile.tsx`. Mobile now uses `ChatroomContext` exclusively.
 
 #### Principle 6: Flatten Consumption with Aliased Imports
 
@@ -3038,7 +3059,7 @@ components/chatroom/message/
 | `MessageListProvider` | 🔴 Merge | Merge into `MessageStreamProvider` |
 | `MessageCardProvider` | ✅ Keep | Per-message context (correct — each card needs its own message ref) |
 | `MessageComposerContext` | ✅ Keep | But strip to ~8 values (from current 20) |
-| `ChannelProvider` | 🔴 Delete | Dead code, conflicts with ChatroomProvider |
+| ~~`ChannelProvider`~~ | ~~🔴 Delete~~ | ✅ Deleted v1.8.0 |
 | `EmojiPanelProvider` | 🟡 Questionable | Contains only `{ variant }` — pass as prop instead |
 
 **After:** 4 contexts
@@ -3098,7 +3119,7 @@ Each "action" is still a separate function internally, but the developer experie
 
 | Phase | Task | Files Changed | Risk |
 |-------|------|--------------|------|
-| **1** | Delete `ChannelProvider` + fix `ChatContainerMobile.tsx` | 2 files | 🟢 Low |
+| ~~**1**~~ | ~~Delete `ChannelProvider` + fix `ChatContainerMobile.tsx`~~ | ~~2 files~~ | ✅ Done v1.8.0 |
 | **2** | Merge `MessageFeedContext` + `MessageListContext` → `MessageStreamContext` | 4 files | 🟡 Medium |
 | **3** | Flatten MessageCard sub-components: remove intermediate wrapper components | 15 files deleted, 3 created | 🟡 Medium |
 | **4** | Consolidate 12 action hooks → 3 | 12 files → 3 files | 🟡 Medium |
@@ -3201,13 +3222,13 @@ The design system **non-negotiably** states: *"Never use Tailwind palette colors
 | `border-gray-300` | `HoverMenuActions.tsx`, `DeleteAction.tsx`, `ContextMenuItems.tsx` | `border-base-300` |
 | `border-cyan-400` | `ReplyReference.tsx`, `CommentReference.tsx` | `border-primary` or `border-info` |
 | `text-docsy` | `ContextMenuItems.tsx`, `MesageSeen.tsx` | `text-primary` (custom token, not in DS) |
-| `bg-bg-chatBubble-owner` | `SystemNotifyChip.tsx` | Not a daisyUI token — maps to hardcoded `#a6c5fa` |
+| ~~`bg-bg-chatBubble-owner`~~ | ~~`SystemNotifyChip.tsx`~~ | ✅ Fixed v1.8.0 → `bg-info/10` |
 
 **Hardcoded SCSS colors (globals.scss):**
 
 | Violation | Location | DS Replacement |
 |---|---|---|
-| `#a6c5fa` | `.bg-chatBubble-owner` | `bg-primary/20` or new daisyUI theme variable |
+| ~~`#a6c5fa`~~ | ~~`.bg-chatBubble-owner`~~ | ✅ Fixed v1.8.0 — class removed, replaced with `bg-primary/20` in consumers |
 | `#f0f4ff` | `.msg_card.context-menu-active` | `bg-primary/10` |
 | `#93c5fd` / `#3b82f6` | `@keyframes border-ping-glow` | `oklch(var(--p))` (primary color var) |
 
@@ -3242,7 +3263,7 @@ The design system mandates: *"Use Lucide React (`react-icons/lu`) for all UI ico
 | `react-icons/cg` | `Cg*` | 1 | `CgMailReply` |
 | ✅ `react-icons/lu` (Lucide) | `Lu*` | **9 → 14** (v1.7.0) | `LuBell`, `LuBellOff`, `LuAtSign`, `LuUserPlus`, `LuLink`, `LuX`, `LuCopy`, `LuCheck`, `LuChevronRight`, `LuLogIn`, `LuLock`, `LuMessageSquare`, `LuPencil` |
 
-**Ratio: ~~28 non-Lucide files vs 9 Lucide files (76% non-compliant)~~ Updated v1.7.0: 23 non-Lucide files vs 14 Lucide files (62% non-compliant) — toolbar components migrated**
+**Ratio: ~~28 non-Lucide files vs 9 Lucide files (76% non-compliant)~~ ~~Updated v1.7.0: 23 non-Lucide files vs 14 Lucide files (62% non-compliant)~~ Updated v1.8.0: 21 non-Lucide files vs 16 Lucide files (57% non-compliant) — `QuickReactionMenu` (`MdAdd` → `LuPlus`), `FilterModal` (`MdSearch` → `LuSearch`) migrated**
 
 **Recommended Lucide replacements:**
 
@@ -3522,14 +3543,14 @@ whileTap={{
 | **QuickActions** | ✅ | N/A | ❌ `rounded-md` | ❌ | ✅ | ⚠️ | ✅ | 5/10 |
 | **ContextMenuItems (desktop)** | ❌ `red-500`,`gray-300` | ❌ `Md*`,`Bs*` | N/A | ❌ | N/A | ⚠️ | ❌ | 2/10 |
 | **ContextMenuItems (mobile)** | ❌ `red-500` | ❌ `Md*`,`Bs*` | N/A | N/A | ✅ | ⚠️ | ❌ | 3/10 |
-| **QuickReactionMenu** | ❌ `bg-white`,`gray-*` | ❌ `Md*` | ❌ `rounded-3xl` | ❌ | ❌ 40px | ⚠️ | ❌ | 1/10 |
+| **QuickReactionMenu** | ⚠️ `bg-base-100` v1.8 | ✅ `Lu*` v1.8 | ❌ `rounded-3xl` | ❌ | ✅ 44px v1.8 | ⚠️ | ⚠️ v1.8 | **4/10** ⬆️ |
 | **MessageLongPressMenu** | ❌ rgba | N/A | ✅ | N/A | ✅ | ⚠️ | ❌ | 3/10 |
 | **MessageComposer** | ✅ | N/A | ✅ | ⚠️ | ✅ | ⚠️ | ✅ | 6/10 |
 | **ToolbarButton (composer)** | ✅ | N/A | ✅ | ❌ | ❌ 32px | ✅ | ✅ | 5/10 |
 | **ReplyContext** | ❌ `gray-200`, shadow | ❌ `Fa*` | ✅ | ⚠️ | ✅ | ✅ | ❌ | 3/10 |
 | **EditContext** | ❌ `gray-200`, shadow | ❌ `Ri*` | ✅ | ⚠️ | ✅ | ✅ | ❌ | 3/10 |
 | **CommentContext** | ❌ `gray-200`, shadow | ❌ `Md*` | ✅ | ⚠️ | ✅ | ✅ | ❌ | 3/10 |
-| **SystemNotifyChip** | ❌ custom class | N/A | ✅ | N/A | N/A | ⚠️ | ❌ | 3/10 |
+| **SystemNotifyChip** | ✅ `bg-info/10` v1.8 | N/A | ✅ | N/A | N/A | ⚠️ | ✅ v1.8 | **5/10** ⬆️ |
 | **DateChip** | ✅ | N/A | ✅ | N/A | N/A | ⚠️ | ✅ | 7/10 |
 | **UnreadIndicatorLine** | ✅ | N/A | N/A | N/A | N/A | ⚠️ | ✅ | 7/10 |
 | **MessageFeedLoading** | ✅ | N/A | N/A | N/A | N/A | ⚠️ | ✅ | 6/10 |
@@ -3548,7 +3569,7 @@ whileTap={{
 | Issue | File | Line | Fix |
 |---|---|---|---|
 | **Typo:** "Edite message" | `EditContext.tsx` | 28 | → "Edit message" |
-| **Console.log in production:** `console.log('Open full emoji picker')` | `QuickReactionMenu.tsx` | 52 | Remove |
+| ~~**Console.log in production:** `console.log('Open full emoji picker')`~~ | ~~`QuickReactionMenu.tsx`~~ | ~~52~~ | ✅ Removed v1.8.0 |
 | **Console.log in production:** `console.log(\`Reacted with...\`)` | `MessageLongPressMenu.tsx` | 121 | Remove |
 | **Commented-out code** | `ContextMenuItems.tsx` (both) | Multiple | Remove `//settings.contextMenue?.` comments |
 | **Inconsistent capitalization:** "Reply in Thread" vs "Reply to Message" | Context menus | — | Standardize to "Reply in thread" / "Reply to message" |
@@ -3650,7 +3671,7 @@ Three different visual patterns for the same conceptual action. The design syste
 
 | # | Task | Files | Impact |
 |---|---|---|---|
-| 5.1 | Replace `#a6c5fa` → `oklch(var(--p) / 0.3)` in `.bg-chatBubble-owner` | 1 | Theme-safe |
+| ~~5.1~~ | ~~Replace `#a6c5fa` → `oklch(var(--p) / 0.3)` in `.bg-chatBubble-owner`~~ ✅ v1.8.0 — class removed, consumers use `bg-primary/20` | ~~1~~ | ✅ Done |
 | 5.2 | Replace `#f0f4ff` → `oklch(var(--p) / 0.1)` in `.context-menu-active` | 1 | Theme-safe |
 | 5.3 | Replace `#93c5fd` / `#3b82f6` → `oklch(var(--p))` in `border-ping-glow` | 1 | Theme-safe |
 | 5.4 | Replace Framer Motion `rgba()` → CSS variable equivalents | 3 | Theme-safe |
@@ -3889,7 +3910,7 @@ The same issues are flagged in multiple sections, each with different IDs, diffe
 | Hardcoded colors | T1 | — | — | — | — | §32.2.1 |
 | `any` types | T3 | — | §27.1 | — | — | — |
 | Spelling errors | T4, T11 | — | KISS-05 | — | §31.5 | — |
-| ChannelProvider dead | T7, T14 | — | KISS-04 | §30.14 | §31.5 | — |
+| ~~ChannelProvider dead~~ ✅ v1.8.0 | ~~T7, T14~~ | — | ~~KISS-04~~ | ~~§30.14~~ | ~~§31.5~~ | — |
 | Mixed icon libraries | T5 | — | — | — | — | §32.2.2 |
 | MessageComposer God Component | T13 (partial) | — | SOLID-02 | — | §31.5 | — |
 | DOM-based cursor | T10 | — | KISS-01 | §30.4 | — | — |
