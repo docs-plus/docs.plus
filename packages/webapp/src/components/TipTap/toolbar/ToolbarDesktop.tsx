@@ -1,4 +1,5 @@
 import { BookmarkPanelSkeleton } from '@components/bookmarkPanel/components/BookmarkPanelSkeleton'
+import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import ToolbarSkeleton from '@components/skeleton/ToolbarLoader'
 import Icon from '@components/TipTap/toolbar/Icon'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
@@ -30,7 +31,7 @@ const InsertMultimediaForm = dynamic(() => import('./InsertMultimediaForm'), {
 })
 
 const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
-  loading: () => <Loading />
+  loading: () => <SettingsPanelSkeleton />
 })
 
 const GearModal = dynamic(() => import('./GearModal'), {

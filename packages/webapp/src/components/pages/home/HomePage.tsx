@@ -1,5 +1,6 @@
 import HeadSeo from '@components/HeadSeo'
 import { DocsPlus } from '@components/icons/Icons'
+import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { Modal, ModalContent } from '@components/ui/Dialog'
@@ -29,7 +30,7 @@ const SignInForm = dynamic(() => import('@components/auth/SignInForm'), {
   loading: () => <Loading />
 })
 const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
-  loading: () => <Loading />
+  loading: () => <SettingsPanelSkeleton />
 })
 
 interface HomePageProps {

@@ -1,5 +1,5 @@
 import SignInForm from '@components/auth/SignInForm'
-import SettingsPanel from '@components/settings/SettingsPanel'
+import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import { Modal, ModalContent } from '@components/ui/Dialog'
@@ -16,6 +16,10 @@ import { FaRegBell } from 'react-icons/fa'
 import { MdGroup, MdHistory } from 'react-icons/md'
 
 import { NotificationPanelSkeleton } from '../../notificationPanel/components/NotificationPanelSkeleton'
+
+const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
+  loading: () => <SettingsPanelSkeleton />
+})
 import DocTitle from '../DocTitle'
 import FilterBar from './FilterBar'
 import PresentUsers from './PresentUsers'

@@ -1,5 +1,5 @@
 import SignInForm from '@components/auth/SignInForm'
-import SettingsPanel from '@components/settings/SettingsPanel'
+import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
@@ -9,9 +9,14 @@ import { useBottomSheet } from '@hooks/useBottomSheet'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 import { useStore } from '@stores'
 import { useAuthStore } from '@stores'
+import dynamic from 'next/dynamic'
 import React, { useState } from 'react'
 import { BiCheck, BiRedo, BiUndo } from 'react-icons/bi'
 import { MdMenu, MdNotifications } from 'react-icons/md'
+
+const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
+  loading: () => <SettingsPanelSkeleton />
+})
 
 import DocTitle from '../DocTitle'
 import FilterBar from './FilterBar'

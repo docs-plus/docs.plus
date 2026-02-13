@@ -193,7 +193,7 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
     <div className="bg-base-100 flex min-h-0 flex-1 flex-col overflow-hidden md:h-[min(85vh,800px)] md:flex-none md:flex-row">
       {/* Sidebar — full width on mobile, fixed width on desktop */}
       <aside
-        className={`border-base-300 bg-base-100 flex w-full shrink-0 flex-col md:w-72 md:border-r lg:w-80 ${
+        className={`border-base-300 bg-base-100 flex min-h-0 w-full flex-1 flex-col md:w-72 md:flex-none md:shrink-0 md:border-r lg:w-80 ${
           showContent ? 'hidden md:flex' : 'flex'
         }`}
         role="navigation"
