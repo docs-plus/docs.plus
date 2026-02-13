@@ -50,7 +50,7 @@ export const SystemNotifyChip = ({ message }: Props) => {
         className="msg_card chat my-2 flex justify-center pb-1"
         onClick={handleMentionClick}
         ref={cardRef}>
-        <div className="badge bg-bg-chatBubble-owner py-3">
+        <div className="badge bg-info/10 py-3">
           <span
             className="mention text-primary cursor-pointer !p-0 font-semibold"
             data-type="mention"
@@ -59,7 +59,7 @@ export const SystemNotifyChip = ({ message }: Props) => {
             @{message?.user_details?.username}
           </span>
           <span>joined</span>
-          <span className="bg-bg-chatBubble-owner flex items-center gap-1 py-0.5">
+          <span className="bg-info/10 flex items-center gap-1 py-0.5">
             <DocsPlus size={12} className="mb-1" />
             <span className="font-medium underline">{docMetadata.title}</span>
             {'-'}{' '}
@@ -75,7 +75,7 @@ export const SystemNotifyChip = ({ message }: Props) => {
   if (metadataType === 'channel_created') {
     return (
       <div className="msg_card chat my-4 flex justify-center pb-1" ref={cardRef}>
-        <div className="badge bg-bg-chatBubble-owner border-none">
+        <div className="badge bg-info/10 border-none">
           Heading created -{' '}
           {formatDistanceToNow(new Date(message.created_at), {
             addSuffix: true
@@ -87,7 +87,7 @@ export const SystemNotifyChip = ({ message }: Props) => {
 
   return (
     <div className="msg_card chat my-4 flex justify-center pb-1" ref={cardRef}>
-      <div className="badge bg-bg-chatBubble-owner border-none">{message.content}</div>
+      <div className="badge bg-info/10 border-none">{message.content}</div>
     </div>
   )
 }

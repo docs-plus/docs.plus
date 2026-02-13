@@ -2,9 +2,13 @@ import { useChatStore } from '@stores'
 import { TMsgRow } from '@types'
 import { motion } from 'motion/react'
 import { forwardRef } from 'react'
-import { MdAdd } from 'react-icons/md'
+import { LuPlus } from 'react-icons/lu'
 
 import { useMessageLongPressMenu } from '../MessageLongPressMenu'
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
 
 interface EmojiReaction {
   id: string
@@ -21,7 +25,11 @@ interface QuickReactionMenuProps {
   message: TMsgRow
 }
 
-const availableEmojiReactions: EmojiReaction[] = [
+// ---------------------------------------------------------------------------
+// Constants
+// ---------------------------------------------------------------------------
+
+const QUICK_REACTIONS: EmojiReaction[] = [
   { id: '+1', label: 'Like', native: '👍' },
   { id: 'heart', label: 'Love', native: '❤️' },
   { id: 'joy', label: 'Laugh', native: '😂' },
@@ -35,24 +43,34 @@ const availableEmojiReactions: EmojiReaction[] = [
   { id: 'sob', label: 'Sob', native: '😭' }
 ]
 
+/** Shared tap animation for reaction buttons. */
+const TAP_ANIMATION = {
+  scale: 0.9,
+  backgroundColor: 'rgba(0,0,0,0.1)',
+  transition: { duration: 0.1 }
+}
+
+/** Min 44×44 touch target per WCAG / Apple HIG. */
+const REACTION_BTN_CLASS =
+  'flex size-11 flex-shrink-0 touch-manipulation snap-center scroll-ml-6 items-center justify-center rounded-full select-none'
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
 export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuProps>(
   ({ position, isVisible, isInteractive = true, onReactionSelect, className, message }, ref) => {
-    // const { switchSheet } = useSheetStore()
     const { openEmojiPicker } = useChatStore()
     const { hideMenu } = useMessageLongPressMenu()
+
     const handleReactionClick = (reaction: EmojiReaction) => {
       if (!isInteractive) return
-      onReactionSelect(reaction.native) // Pass native emoji instead of ID
+      onReactionSelect(reaction.native)
       hideMenu()
     }
 
     const handleMoreEmojisClick = () => {
       if (!isInteractive) return
-      // TODO: Open full emoji picker
-      console.log('Open full emoji picker')
-      // switchSheet('emojiPicker', {
-      //   chatRoomState: { ...chatRoom }
-      // })
       openEmojiPicker({ top: 0, left: 0 }, 'react2Message', message, null)
       hideMenu()
     }
@@ -60,7 +78,9 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
     return (
       <div
         ref={ref}
-        className={`overflow-hidden rounded-3xl bg-white shadow-lg transition-all duration-200 ease-out ${className || ''}`}
+        role="toolbar"
+        aria-label="Quick reactions"
+        className={`bg-base-100 overflow-hidden rounded-3xl shadow-lg transition-all duration-200 ease-out ${className ?? ''}`}
         style={{
           position: 'fixed',
           left: position.x,
@@ -83,51 +103,48 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
             msOverflowStyle: 'none'
           }}>
           <div className="flex">
-            {availableEmojiReactions.map((reactionOption) => (
+            {QUICK_REACTIONS.map((reaction) => (
               <motion.button
-                key={reactionOption.id}
-                onTap={() => {
-                  if (!isInteractive) return
-                  handleReactionClick(reactionOption)
-                }}
-                whileTap={{
-                  scale: 0.9,
-                  backgroundColor: 'rgba(0,0,0,0.1)',
-                  transition: { duration: 0.1 }
-                }}
-                className={`flex size-10 flex-shrink-0 touch-manipulation snap-center scroll-ml-6 items-center justify-center rounded-full ${
+                key={reaction.id}
+                onTap={() => handleReactionClick(reaction)}
+                whileTap={isInteractive ? TAP_ANIMATION : undefined}
+                className={`${REACTION_BTN_CLASS} ${
                   isInteractive
-                    ? 'cursor-pointer select-none'
+                    ? 'cursor-pointer'
                     : 'pointer-events-none cursor-not-allowed opacity-60'
                 }`}
                 disabled={!isInteractive}
-                title={reactionOption.label}>
-                {/* @ts-ignore */}
-                <em-emoji set="native" id={reactionOption.id} size="1.6em"></em-emoji>
+                aria-label={`React with ${reaction.label}`}
+                title={reaction.label}>
+                {/* @ts-expect-error – em-emoji is a web component from @emoji-mart */}
+                <em-emoji set="native" id={reaction.id} size="1.6em" />
               </motion.button>
             ))}
+
+            {/* "More emojis" button — sticky to right edge */}
             <motion.button
-              onTap={() => {
-                if (!isInteractive) return
-                handleMoreEmojisClick()
-              }}
-              whileTap={{
-                scale: 0.9,
-                backgroundColor: 'rgba(0,0,0,0.15)',
-                transition: { duration: 0.1 }
-              }}
-              className={`sticky right-0 flex size-10 touch-manipulation items-center justify-center rounded-full bg-gray-200 shadow-lg select-none ${
+              onTap={handleMoreEmojisClick}
+              whileTap={
+                isInteractive
+                  ? { ...TAP_ANIMATION, backgroundColor: 'rgba(0,0,0,0.15)' }
+                  : undefined
+              }
+              className={`bg-base-200 sticky right-0 flex size-11 touch-manipulation items-center justify-center rounded-full shadow-lg select-none ${
                 isInteractive
                   ? 'cursor-pointer'
                   : 'pointer-events-none cursor-not-allowed opacity-60'
               }`}
               disabled={!isInteractive}
+              aria-label="More emojis"
               title="More emojis"
               style={{
                 boxShadow:
                   '-20px 0 20px -10px rgba(0, 0, 0, 0.15), -10px 0 10px -5px rgba(0, 0, 0, 0.1), -5px 0 5px -2px rgba(0, 0, 0, 0.05)'
               }}>
-              <MdAdd size={26} className={`${isInteractive ? 'text-gray-600' : 'text-gray-400'}`} />
+              <LuPlus
+                size={22}
+                className={isInteractive ? 'text-base-content/60' : 'text-base-content/40'}
+              />
             </motion.button>
           </div>
         </div>

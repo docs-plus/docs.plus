@@ -3,8 +3,8 @@ import Button from '@components/ui/Button'
 import TextInput from '@components/ui/TextInput'
 import { useSheetStore } from '@stores'
 import { useRouter } from 'next/router'
-import React, { useEffect, useRef, useState } from 'react'
-import { MdSearch } from 'react-icons/md'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
+import { LuSearch } from 'react-icons/lu'
 
 const FilterModal = () => {
   const filterSearchRef = useRef<HTMLInputElement>(null)
@@ -14,11 +14,11 @@ const FilterModal = () => {
   const router = useRouter()
   const { isSheetOpen } = useSheetStore((state) => state)
 
-  const countHeadings = () => {
+  const countHeadings = useCallback(() => {
     const headings = document.querySelectorAll('.title')
     setTotalHeading(headings.length)
     return headings
-  }
+  }, [])
 
   useEffect(() => {
     if (search.length === 0) {
@@ -26,33 +26,28 @@ const FilterModal = () => {
       return
     }
     const headings = countHeadings()
+    const regex = new RegExp(search, 'i')
+    const matched = Array.from(headings).filter((h) => regex.test(h.textContent || ''))
+    setTotalSearch(matched.length)
+  }, [search, countHeadings])
 
-    const filterHeadings = (headingsList: NodeListOf<Element>) => {
-      const regex = new RegExp(search, 'i')
-      const filteredHeadings = Array.from(headingsList).filter((heading) =>
-        regex.test(heading.textContent || '')
-      )
-      setTotalSearch(filteredHeadings.length)
-    }
-
-    filterHeadings(headings)
-  }, [search])
-
-  const searchThroughHeading = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    setSearch((e.target as HTMLInputElement).value)
-
-    if (e.key === 'Enter') applySearch()
-  }
-
-  const applySearch = () => {
+  const applySearch = useCallback(() => {
     const searchValue = filterSearchRef.current?.value
     const mainDoc = router.query.slugs?.[0]
     if (searchValue) window.location.href = `/${mainDoc}/${encodeURIComponent(searchValue)}`
-  }
+  }, [router.query.slugs])
+
+  const handleKeyUp = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      setSearch((e.target as HTMLInputElement).value)
+      if (e.key === 'Enter') applySearch()
+    },
+    [applySearch]
+  )
 
   useEffect(() => {
     if (isSheetOpen('filters')) countHeadings()
-  }, [isSheetOpen])
+  }, [isSheetOpen, countHeadings])
 
   return (
     <div className="bg-base-100 h-full max-h-96 w-full rounded-t-2xl p-4 pt-0">
@@ -62,9 +57,9 @@ const FilterModal = () => {
       <div className="flex items-center gap-2">
         <TextInput
           id="filterModalBottom"
-          startIcon={MdSearch}
+          startIcon={LuSearch}
           placeholder="Find in document..."
-          onKeyUp={searchThroughHeading}
+          onKeyUp={handleKeyUp}
           ref={filterSearchRef}
           className="flex-1"
         />
