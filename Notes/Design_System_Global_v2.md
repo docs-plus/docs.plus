@@ -1,6 +1,6 @@
 # docs.plus Design System (Global)
 
-> **Version:** 3.1.0
+> **Version:** 3.2.0
 > **Last updated:** 2026-02-13
 > **Owners:** UI/UX Team
 
@@ -57,6 +57,29 @@ If an element can scroll, it must use the shared `ScrollArea` component:
 - `scrollbarSize="thin"` — for subtle scrollbars in side panels
 
 Never create nested scroll regions.
+
+### 2.4 — Sticky headers inside scroll containers
+
+When a header must pin at the top of a scrollable region:
+
+1. **`sticky top-0 z-10`** on the header element
+2. **Background token** must match the panel background (`bg-base-200` for sidebars, `bg-base-100` for modals) — prevents items bleeding through
+3. **Eliminate container `padding-top`** — if the scroll container (e.g. `ScrollArea`) has SCSS `padding-top`, override it with `!pt-0` and move the spacing to the header's own `pt-*`. Otherwise a gap forms above the sticky header where scrolling items are visible.
+4. **`border-b border-base-300`** below the header for a clean separator
+
+```tsx
+/* ✅ Correct — header owns the spacing, no scroll-container padding gap */
+<ScrollArea className="tiptap__toc h-full w-full !pt-0">
+  <TocHeader className="sticky top-0 z-10 bg-base-200 pt-2 border-b border-base-300" />
+  <ul>{/* scrollable items */}</ul>
+</ScrollArea>
+
+/* ❌ Wrong — padding on scroll container creates a gap above the sticky header */
+<ScrollArea className="pt-2">
+  <TocHeader className="sticky top-0 z-10 bg-base-200" />
+  <ul>{/* items peek through the 8px gap */}</ul>
+</ScrollArea>
+```
 
 **Exception:** The TipTap editor (`.editorWrapper`) uses native scroll due to complex scroll dependencies (IntersectionObserver for TOC, ProseMirror cursor/selection/drag, performance). Its scrollbar is styled via CSS to match:
 
@@ -144,9 +167,17 @@ Use Lucide React (`react-icons/lu`) for all UI icons:
 | Size | px | Usage |
 |------|----|-------|
 | xs | 14 | Small inline icons |
-| sm | 16 | Buttons, options, minor UI |
-| md | 18 | Section headings, nav items |
+| sm | 16 | Desktop toolbar buttons, options, minor UI |
+| md | 18 | Mobile toolbar buttons, section headings, nav items |
 | lg | 20 | Primary actions, panel headers |
+
+**Icon size must match button size context:**
+
+| Button size | Icon size | Context |
+|-------------|-----------|---------|
+| `btn-sm` (32px) | 16px | Desktop icon-only buttons |
+| `btn-md` (40px) | 18px | Mobile icon-only buttons, nav actions |
+| `btn-lg` (48px) | 20px | Primary mobile CTAs |
 
 - Prefer `Lu*` over `Md*`, `Ri*`, `Io*` when available
 - Colors: inherit from parent or use `text-base-content/60` for muted
@@ -208,8 +239,38 @@ Sizes: `btn-xs`, `btn-sm`, `btn-md`, `btn-lg`
 |------|---------|
 | CTA buttons (Save, Sign Out) use `md` | `<Button variant="primary">Save Changes</Button>` |
 | Inline action buttons match input height | Input `md` → button `md` |
-| Icon-only buttons use smallest appropriate size | `<Button variant="ghost" size="sm">` |
+| Desktop icon-only buttons use `sm` (32px) | `<Button variant="ghost" size="sm" shape="square">` |
+| Mobile icon-only buttons use `md` (40px) | `<Button variant="ghost" size="md" shape="square">` |
 | Don't mix sizes within the same row/section | All buttons in a row = same size |
+
+#### Mobile button sizing (non-negotiable)
+
+`btn-sm` (32px) is a **desktop density** size. On mobile, it fails the 44×44px touch-target minimum (§9.2).
+
+| daisyUI size | Height | Touch-safe? | Use on mobile? |
+|--------------|--------|-------------|----------------|
+| `btn-xs` | 24px | ❌ | Never |
+| `btn-sm` | 32px | ❌ | Never for primary actions — desktop only |
+| `btn-md` | 40px | ✅ (~44px with padding) | **Default for mobile icon-only buttons** |
+| `btn-lg` | 48px | ✅ | Mobile CTAs, bottom-sheet actions |
+
+**Grouped toolbar pattern (mobile):**
+
+```tsx
+{/* Container: pill-shaped background, inner gap for hover separation */}
+<div className="bg-base-200 rounded-box flex items-center gap-0.5 p-0.5">
+  <Button variant="ghost" size="md" shape="square" iconSize={18}
+    className="rounded-field text-base-content/60 hover:text-base-content hover:bg-base-300
+               focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none"
+    startIcon={LuHistory} />
+  <Button variant="ghost" size="md" shape="square" iconSize={18}
+    className="rounded-field ..." startIcon={LuFilter} />
+  <Button variant="ghost" size="md" shape="square" iconSize={18}
+    className="rounded-field ..." startIcon={LuX} />
+</div>
+```
+
+Key tokens: container `rounded-box bg-base-200 p-0.5 gap-0.5`, button `rounded-field` (nested radius hierarchy), `size="md"` + `iconSize={18}`.
 
 ### 5.2 Inputs
 
@@ -715,6 +776,19 @@ Mobile layout: TOC → slide-over, Chat → slide-over, Editor → full screen.
 ### 9.2 Touch targets
 
 Minimum **44×44px** for tap areas (`min-h-[44px]` on buttons, nav items, links).
+
+**DaisyUI size → touch-target mapping:**
+
+| daisyUI size | Rendered height | Meets 44px? | Mobile usage |
+|--------------|-----------------|-------------|--------------|
+| `btn-xs` | 24px | ❌ | Never |
+| `btn-sm` | 32px | ❌ | Desktop-only density |
+| `btn-md` | 40px | ✅ (with container padding) | **Icon-only toolbar buttons** |
+| `btn-lg` | 48px | ✅ | Primary CTAs, bottom actions |
+
+> **Rule:** Any `btn-sm` in a mobile-visible component is a touch-target violation. Use `btn-md` minimum. See §5.1 "Mobile button sizing" for the full pattern.
+
+**Grouped buttons:** When buttons are adjacent (e.g. toolbar), wrap in `bg-base-200 rounded-box p-0.5 gap-0.5` — the 2px padding + gap prevent hover states from merging and give each button breathing room.
 
 ### 9.3 Platform-specific UX (iOS / Android / Desktop)
 
