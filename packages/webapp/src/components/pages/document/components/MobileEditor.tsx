@@ -1,4 +1,5 @@
 import useEditableDocControl from '@components/pages/document/hooks/useEditableDocControl'
+import { useHeadingScrollSpy } from '@components/toc/hooks'
 import { useUnreadSync } from '@hooks/useUnreadSync'
 import { useRef } from 'react'
 
@@ -12,6 +13,9 @@ const Editor = () => {
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
 
   useEditableDocControl()
+
+  // IntersectionObserver-based scroll spy for TOC highlighting (mirrors DesktopEditor)
+  useHeadingScrollSpy(editorWrapperRef)
 
   // Sync unread counts to all badges via UNREAD_SYNC event (CSS handles visuals)
   useUnreadSync()

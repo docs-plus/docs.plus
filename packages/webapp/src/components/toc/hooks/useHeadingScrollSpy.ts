@@ -124,15 +124,28 @@ export function useTocAutoScroll() {
     () =>
       debounce((id: string) => {
         const item = document.querySelector(`.toc__item[data-id="${id}"]`)
-        const container = document.querySelector('.toc__list')?.parentElement
-        if (!item || !container) return
+        if (!item) return
+
+        // Walk up to the nearest scrollable ancestor (ScrollArea, overflow-y-auto div, etc.)
+        const container = findScrollParent(item)
+        if (!container) return
 
         const containerRect = container.getBoundingClientRect()
         const itemRect = item.getBoundingClientRect()
 
-        if (itemRect.top < containerRect.top || itemRect.bottom > containerRect.bottom) {
+        const isAbove = itemRect.top < containerRect.top
+        const isBelow = itemRect.bottom > containerRect.bottom
+
+        if (isAbove) {
+          // Scroll just enough to reveal the item near the top (with 20px breathing room)
           container.scrollTo({
-            top: itemRect.top - containerRect.top + container.scrollTop - 10,
+            top: container.scrollTop + (itemRect.top - containerRect.top) - 20,
+            behavior: 'smooth'
+          })
+        } else if (isBelow) {
+          // Scroll just enough to reveal the item near the bottom (with 20px breathing room)
+          container.scrollTo({
+            top: container.scrollTop + (itemRect.bottom - containerRect.bottom) + 20,
             behavior: 'smooth'
           })
         }
@@ -144,4 +157,15 @@ export function useTocAutoScroll() {
     if (focusedHeadingId) scrollToItem(focusedHeadingId)
     return () => scrollToItem.cancel()
   }, [focusedHeadingId, scrollToItem])
+}
+
+/** Walks up the DOM to find the nearest scrollable ancestor */
+function findScrollParent(el: Element | null): HTMLElement | null {
+  let current = el?.parentElement ?? null
+  while (current) {
+    const { overflowY } = getComputedStyle(current)
+    if (overflowY === 'auto' || overflowY === 'scroll') return current
+    current = current.parentElement
+  }
+  return null
 }
