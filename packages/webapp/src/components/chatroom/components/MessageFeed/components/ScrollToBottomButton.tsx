@@ -78,6 +78,7 @@ export const ScrollToBottom = () => {
   return (
     <Button
       onClick={scrollToBottomHandler}
+      onPointerDown={(e) => e.preventDefault()}
       variant="primary"
       shape="circle"
       className={`absolute right-2 z-20 transition-all duration-300 ${
