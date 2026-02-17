@@ -1,11 +1,11 @@
 import { join2Channel } from '@api'
 import Button from '@components/ui/Button'
 import { useApi } from '@hooks/useApi'
+import { Icons } from '@icons'
 import { useAuthStore, useChatStore } from '@stores'
 import { TChannelSettings } from '@types'
 import { supabaseClient } from '@utils/supabase'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { LuBell, LuBellOff, LuUserPlus } from 'react-icons/lu'
 
 import { useChatroomContext } from '../../../ChatroomContext'
 
@@ -92,7 +92,7 @@ export default function JoinBroadcastChannel() {
           variant="ghost"
           shape="wide"
           size="sm"
-          startIcon={mute ? LuBell : LuBellOff}
+          startIcon={mute ? Icons.notifications : Icons.notificationsOff}
           onClick={() => muteHandler(!mute)}>
           {mute ? 'Unmute notifications' : 'Mute notifications'}
         </Button>
@@ -101,7 +101,7 @@ export default function JoinBroadcastChannel() {
           variant="primary"
           shape="wide"
           size="sm"
-          startIcon={LuUserPlus}
+          startIcon={Icons.userPlus}
           onClick={joinUserToChannel}
           loading={loading}>
           Join Channel

@@ -1,9 +1,9 @@
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
 import Button from '@components/ui/Button'
+import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import { useChatStore } from '@stores'
 import { useCallback, useMemo } from 'react'
-import { MdOutlineAddReaction } from 'react-icons/md'
 
 import { calculateEmojiPickerPosition } from '../../../../../helpers'
 
@@ -42,7 +42,7 @@ const AddReactionButton = ({ className: _className }: Props) => {
       size="xs"
       className="badge bg-base-300 cursor-pointer border-none !px-2"
       onClick={openEmojiPickerHandler}
-      startIcon={<MdOutlineAddReaction size={18} />}
+      startIcon={<Icons.emojiAdd size={18} />}
     />
   )
 }

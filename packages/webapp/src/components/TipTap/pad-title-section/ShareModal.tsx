@@ -1,16 +1,10 @@
 import useCopyToClipboard from '@hooks/useCopyToClipboard'
+import { Icons } from '@icons'
 import { useStore } from '@stores'
 import { useEffect, useState } from 'react'
 import { BsReddit } from 'react-icons/bs'
 import { FaFacebook } from 'react-icons/fa'
 import { FaLinkedin, FaSquareXTwitter, FaWhatsapp } from 'react-icons/fa6'
-import {
-  MdCheck,
-  MdClose,
-  MdContentCopy,
-  MdIosShare,
-  MdOutlineAlternateEmail
-} from 'react-icons/md'
 
 const socialSharingMap = {
   facebook: 'https://www.facebook.com/sharer.php?u=',
@@ -33,8 +27,8 @@ const socialButtons = [
     key: 'twitter',
     icon: FaSquareXTwitter,
     label: 'X',
-    color: 'text-black',
-    hoverBg: 'hover:bg-black'
+    color: 'text-base-content',
+    hoverBg: 'hover:bg-base-content'
   },
   {
     key: 'linkedin',
@@ -59,10 +53,10 @@ const socialButtons = [
   },
   {
     key: 'email',
-    icon: MdOutlineAlternateEmail,
+    icon: Icons.mail,
     label: 'Email',
-    color: 'text-slate-500',
-    hoverBg: 'hover:bg-slate-500'
+    color: 'text-base-content/50',
+    hoverBg: 'hover:bg-base-content'
   }
 ]
 
@@ -113,7 +107,7 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
         <button
           onClick={() => setIsOpen(false)}
           className="btn btn-ghost btn-sm btn-circle text-base-content/40 hover:text-base-content -mt-1 -mr-2">
-          <MdClose size={20} />
+          <Icons.close size={20} />
         </button>
       </div>
 
@@ -132,7 +126,7 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
               onClick={webShareAPI}
               title="More sharing options"
               className="btn btn-ghost btn-sm btn-square text-base-content/50 hover:text-base-content">
-              <MdIosShare size={18} />
+              <Icons.shareNative size={18} />
             </button>
           )}
           <button
@@ -140,12 +134,12 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
             className={`btn btn-sm gap-1.5 px-4 font-medium ${copied ? 'btn-success' : 'btn-primary'}`}>
             {copied ? (
               <>
-                <MdCheck size={16} />
+                <Icons.check size={16} />
                 Copied
               </>
             ) : (
               <>
-                <MdContentCopy size={14} />
+                <Icons.copy size={14} />
                 Copy
               </>
             )}

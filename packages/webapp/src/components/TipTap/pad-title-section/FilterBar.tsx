@@ -1,10 +1,9 @@
 import Button from '@components/ui/Button'
+import { Icons } from '@icons'
 import { REMOVE_FILTER, RESET_FILTER } from '@services/eventsHub'
 import { useStore } from '@stores'
 import PubSub from 'pubsub-js'
 import { useCallback } from 'react'
-import { MdClose } from 'react-icons/md'
-import { TbFilterX } from 'react-icons/tb'
 import { twMerge } from 'tailwind-merge'
 
 const CloseButton = ({ onClick }: { onClick: () => void }) => (
@@ -15,15 +14,15 @@ const CloseButton = ({ onClick }: { onClick: () => void }) => (
     shape="circle"
     className="text-base-content/50 hover:text-base-content ml-1.5"
     aria-label="Remove filter"
-    startIcon={<MdClose size={14} />}
+    startIcon={<Icons.close size={14} />}
   />
 )
 
 const Chip = ({ type, text, onMouseEnter, onMouseLeave }: any) => {
   const colorMap = {
-    child: 'text-gray-700 bg-gray-100 border-gray-300',
-    parent: 'text-blue-700 bg-blue-100 border-blue-300',
-    neutral: 'text-red-700 bg-red-100 border-red-300 cursor-not-allowed'
+    child: 'text-base-content/70 bg-base-200 border-base-300',
+    parent: 'text-info bg-info/10 border-info/30',
+    neutral: 'text-error bg-error/10 border-error/30 cursor-not-allowed'
   }
 
   const removeFilterHandler = (slug: any) => {
@@ -33,7 +32,7 @@ const Chip = ({ type, text, onMouseEnter, onMouseLeave }: any) => {
   return (
     <div
       className={twMerge(
-        `m-1 flex cursor-pointer items-center justify-center rounded-md border bg-white px-2 py-1 font-medium`,
+        `bg-base-100 m-1 flex cursor-pointer items-center justify-center rounded-md border px-2 py-1 font-medium`,
         colorMap[type as keyof typeof colorMap]
       )}
       onMouseEnter={onMouseEnter}
@@ -110,7 +109,7 @@ const FilterBar = ({
           size="xs"
           className="ml-3 text-xs font-medium opacity-0 transition-all group-hover:opacity-100"
           onClick={resetFilterHandler}
-          startIcon={<TbFilterX size={14} />}>
+          startIcon={<Icons.filterX size={14} />}>
           Reset
         </Button>
       )}

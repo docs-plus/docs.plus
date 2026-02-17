@@ -11,13 +11,13 @@ export const Tab = ({ label, count, isActive, onClick }: TabProps) => {
   return (
     <a
       role="tab"
-      className={`tab flex flex-nowrap items-center gap-2 text-nowrap ${isActive ? 'bg-white shadow' : ''}`}
+      className={`tab flex flex-nowrap items-center gap-2 text-nowrap ${isActive ? 'bg-base-100 shadow' : ''}`}
       onClick={onClick}>
-      <span className={`mt-0.5 font-semibold ${isActive ? 'text-indigo-600' : ''}`}>{label}</span>
+      <span className={`mt-0.5 font-semibold ${isActive ? 'text-primary' : ''}`}>{label}</span>
       {count !== undefined && count > 0 && (
         <span
           className={`bg-base-200 rounded-md px-1 text-xs leading-5 font-extrabold ${
-            isActive ? 'text-indigo-600' : 'bg-base-300'
+            isActive ? 'text-primary' : 'bg-base-300'
           }`}>
           {count}
         </span>

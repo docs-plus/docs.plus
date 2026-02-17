@@ -1,6 +1,6 @@
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
+import { Icons } from '@icons'
 import { getMetadataProperty } from '@utils/metadata'
-import { CgMailReply } from 'react-icons/cg'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {
@@ -15,7 +15,7 @@ export const ReplyCount = ({ className }: Props) => {
 
   return (
     <div className={twMerge('flex items-center', className)}>
-      <CgMailReply size={16} className="text-base-content text-opacity-50" />
+      <Icons.reply size={16} className="text-base-content/50" />
       <span className="text-xs">{counts}</span>
     </div>
   )

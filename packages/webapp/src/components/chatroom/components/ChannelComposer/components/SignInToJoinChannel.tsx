@@ -1,6 +1,6 @@
 import Button from '@components/ui/Button'
+import { Icons } from '@icons'
 import { useChatStore } from '@stores'
-import { LuLogIn } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
 import { useChatroomContext } from '../../../ChatroomContext'
@@ -30,7 +30,7 @@ export default function SignInToJoinChannel({ className }: { className?: string 
         variant="primary"
         shape="wide"
         size="sm"
-        startIcon={LuLogIn}
+        startIcon={Icons.logIn}
         onClick={openSignInModalHandler}>
         Sign in to join
       </Button>

@@ -1,5 +1,5 @@
+import { Icons } from '@icons'
 import React, { ReactElement, useRef, useState } from 'react'
-import { VscPinnedDirty } from 'react-icons/vsc'
 
 type PinnedMessage = {
   content: string
@@ -54,7 +54,7 @@ export default function PinnedMessagesSlider({
         ))}
       </div>
 
-      <VscPinnedDirty size={24} className="text-base-content/50 m-2 rotate-45" />
+      <Icons.pin size={24} className="text-base-content/50 m-2 rotate-45" />
     </div>
   )
 }

@@ -1,9 +1,9 @@
 import { join2Channel } from '@api'
 import Button from '@components/ui/Button'
 import { useApi } from '@hooks/useApi'
+import { Icons } from '@icons'
 import { useAuthStore, useChatStore } from '@stores'
 import { useCallback, useMemo } from 'react'
-import { LuUserPlus } from 'react-icons/lu'
 
 import { useChatroomContext } from '../../../ChatroomContext'
 
@@ -51,7 +51,7 @@ export default function JoinGroupChannel() {
         variant="primary"
         shape="wide"
         size="sm"
-        startIcon={LuUserPlus}
+        startIcon={Icons.userPlus}
         onClick={joinToChannel}
         loading={loading}>
         Join Channel

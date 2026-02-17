@@ -1,5 +1,5 @@
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
-import { IoCheckmarkDoneSharp, IoCheckmarkSharp } from 'react-icons/io5'
+import { Icons } from '@icons'
 
 type Props = {
   className?: string
@@ -12,9 +12,9 @@ const MessageSeen = ({ className }: Props) => {
   return (
     <div className={className}>
       {!message.readed_at ? (
-        <IoCheckmarkSharp className="text-base-content size-4 text-gray-400" />
+        <Icons.check className="text-base-content/40 size-4" />
       ) : (
-        <IoCheckmarkDoneSharp className="text-base-content text-docsy size-4" />
+        <Icons.checkDouble className="text-primary size-4" />
       )}
     </div>
   )

@@ -1,5 +1,5 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
-import { MdAccessTime } from 'react-icons/md'
+import { Icons } from '@icons'
 import { twMerge } from 'tailwind-merge'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
@@ -21,7 +21,7 @@ export const Timestamp = ({ className }: Props) => {
           className
         )}
         style={{ width: '30px' }}>
-        <MdAccessTime className="text-xs" />
+        <Icons.clock className="text-xs" />
       </div>
     )
   return (

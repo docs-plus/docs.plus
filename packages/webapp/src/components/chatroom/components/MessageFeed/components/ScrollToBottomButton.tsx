@@ -1,8 +1,8 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import Button from '@components/ui/Button'
+import { Icons } from '@icons'
 import { useChatStore } from '@stores'
 import React, { useCallback, useEffect, useState } from 'react'
-import { FaChevronDown } from 'react-icons/fa6'
 
 import { useMessageFeedContext } from '../MessageFeedContext'
 
@@ -86,7 +86,7 @@ export const ScrollToBottom = () => {
           ? 'bottom-3 opacity-100 delay-200'
           : 'pointer-events-none bottom-[-60px] opacity-0'
       }`}
-      startIcon={<FaChevronDown size={23} color="#fff" />}
+      startIcon={<Icons.chevronDown size={23} className="text-primary-content" />}
     />
   )
 }
