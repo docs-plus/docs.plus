@@ -1,4 +1,5 @@
 import Button from '@components/ui/Button'
+import { Tooltip } from '@components/ui/Tooltip'
 import {
   autoUpdate,
   flip,
@@ -342,7 +343,7 @@ const HoverMenuContent: FC<HoverMenuContentProps> = ({ children }) => {
           maxWidth: '100%'
         }}
         {...context.getFloatingProps()}
-        className="join bg-base-300 z-50 flex flex-row rounded-md shadow-xs">
+        className="join border-base-300 bg-base-200 z-50 flex flex-row rounded-lg border shadow-md">
         {children}
       </div>
     </FloatingPortal>
@@ -356,15 +357,18 @@ export interface HoverMenuItemProps {
 }
 
 export const HoverMenuItem: FC<HoverMenuItemProps> = ({ children, tooltip, className }) => {
-  return (
-    <div
-      className={twMerge(
-        'btn btn-sm btn-square join-item btn-ghost tooltip tooltip-left',
-        className
-      )}
-      data-tip={tooltip}>
+  const item = (
+    <div className={twMerge('btn btn-sm btn-square join-item btn-ghost', className)}>
       {children}
     </div>
+  )
+
+  if (!tooltip) return item
+
+  return (
+    <Tooltip title={tooltip} placement="left">
+      {item}
+    </Tooltip>
   )
 }
 
@@ -464,18 +468,20 @@ export const HoverMenuDropdown: FC<HoverMenuDropdownProps> = ({
 
   return (
     <DropdownContext.Provider value={dropdownContextValue}>
-      {/* Trigger Button */}
-      <Button
-        ref={dropdown.refs.setReference}
-        {...dropdown.getReferenceProps()}
-        variant="ghost"
-        size="sm"
-        shape="square"
-        className={twMerge('join-item tooltip tooltip-left', className)}
-        data-tip={tooltip}
-        disabled={disabled}>
-        {trigger}
-      </Button>
+      {/* Trigger Button — span wrapper isolates Tooltip ref from dropdown ref */}
+      <Tooltip title={tooltip} placement="left" open={dropdown.open ? false : undefined}>
+        <span className={twMerge('join-item inline-flex', className)}>
+          <Button
+            ref={dropdown.refs.setReference}
+            {...dropdown.getReferenceProps()}
+            variant="ghost"
+            size="sm"
+            shape="square"
+            disabled={disabled}>
+            {trigger}
+          </Button>
+        </span>
+      </Tooltip>
 
       {/* Dropdown Content */}
       {dropdown.open && (

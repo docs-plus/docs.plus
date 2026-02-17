@@ -1,6 +1,9 @@
+import { Placement } from '@floating-ui/react'
 import React, { ButtonHTMLAttributes, forwardRef } from 'react'
 import { IconType } from 'react-icons'
 import { twMerge } from 'tailwind-merge'
+
+import { Tooltip } from './Tooltip'
 
 /**
  * daisyUI Button sizes
@@ -79,6 +82,15 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
    * Additional CSS classes
    */
   className?: string
+  /**
+   * Tooltip text — renders a Floating UI Tooltip around the button
+   */
+  tooltip?: string
+  /**
+   * Tooltip placement (Floating UI Placement)
+   * @default 'top'
+   */
+  tooltipPlacement?: Placement
 }
 
 /**
@@ -196,6 +208,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       iconSize,
       className,
       disabled,
+      tooltip,
+      tooltipPlacement,
       type = 'button',
       ...props
     },
@@ -204,7 +218,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     const buttonClasses = buildButtonClasses(variant, btnStyle, size, shape)
     const resolvedIconSize = iconSize ?? getDefaultIconSize(size)
 
-    return (
+    const button = (
       <button
         ref={ref}
         type={type}
@@ -228,6 +242,14 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           </>
         )}
       </button>
+    )
+
+    if (!tooltip) return button
+
+    return (
+      <Tooltip title={tooltip} placement={tooltipPlacement}>
+        {button}
+      </Tooltip>
     )
   }
 )

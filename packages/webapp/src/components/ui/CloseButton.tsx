@@ -1,4 +1,4 @@
-import { LuX } from 'react-icons/lu'
+import { Icons } from '@icons'
 
 import Button from './Button'
 
@@ -37,7 +37,7 @@ const CloseButton = ({
       variant="ghost"
       size={size}
       shape="circle"
-      startIcon={LuX}
+      startIcon={Icons.close}
       className={`text-base-content/50 hover:text-base-content ${className}`}
       aria-label={ariaLabel}
     />

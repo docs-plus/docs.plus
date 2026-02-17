@@ -1,7 +1,8 @@
+import { Tooltip } from '@components/ui/Tooltip'
 import useCopyToClipboard, { UseCopyToClipboardOptions } from '@hooks/useCopyToClipboard'
+import { Icons } from '@icons'
 import { forwardRef, useCallback } from 'react'
 import { IconType } from 'react-icons'
-import { LuCheck, LuCopy } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
 export type CopyButtonSize = 'xs' | 'sm' | 'md' | 'lg'
@@ -79,8 +80,8 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
       text,
       size = 'sm',
       variant = 'ghost',
-      icon: Icon = LuCopy,
-      successIcon: SuccessIcon = LuCheck,
+      icon: Icon = Icons.copy,
+      successIcon: SuccessIcon = Icons.check,
       label,
       successLabel = 'Copied!',
       className,
@@ -117,7 +118,7 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
     const showLabel = !isIconOnly && (label || (copied && successLabel))
     const currentLabel = copied ? successLabel : label
 
-    return (
+    const button = (
       <button
         ref={ref}
         type="button"
@@ -131,9 +132,7 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
           square && 'btn-square',
           showLabel && gap,
           className
-        )}
-        title={tooltip}
-        data-tip={tooltip}>
+        )}>
         {/* Icon container with animation */}
         <span className="relative inline-flex items-center justify-center">
           {/* Copy icon - fades out when copied */}
@@ -162,6 +161,10 @@ const CopyButton = forwardRef<HTMLButtonElement, CopyButtonProps>(
         )}
       </button>
     )
+
+    if (!tooltip) return button
+
+    return <Tooltip title={tooltip}>{button}</Tooltip>
   }
 )
 

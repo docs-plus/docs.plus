@@ -141,7 +141,8 @@ export const PopoverTrigger = React.forwardRef<
   React.HTMLProps<HTMLElement> & PopoverTriggerProps
 >(function PopoverTrigger({ children, asChild = false, ...props }, propRef) {
   const context = usePopoverContext()
-  const childrenRef = (children as any).ref
+  // React 19: ref is a regular prop — read from both locations
+  const childrenRef = (children as any)?.props?.ref ?? (children as any)?.ref ?? null
   const ref = useMergeRefs([
     context.refs.setReference,
     propRef,
@@ -150,13 +151,14 @@ export const PopoverTrigger = React.forwardRef<
 
   // `asChild` allows the user to pass any element as the anchor
   if (asChild && React.isValidElement(children)) {
+    // Strip ref from child props so it doesn't overwrite our merged ref (React 19)
+    const { ref: _, ...childPropsWithoutRef } = (children as React.ReactElement<any>).props ?? {}
     return React.cloneElement(
       children,
       context.getReferenceProps({
-        ref,
         ...props,
-        // @ts-ignore
-        ...children.props,
+        ...childPropsWithoutRef,
+        ref,
         'data-state': context.open ? 'open' : 'closed'
       })
     )

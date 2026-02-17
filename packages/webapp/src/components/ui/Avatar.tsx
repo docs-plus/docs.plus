@@ -1,7 +1,9 @@
 import { UserProfileDialog } from '@components/ui/dialogs/UserProfileDialog'
+import { Tooltip } from '@components/ui/Tooltip'
 import Config from '@config'
 import { initials, lorelei, rings, shapes } from '@dicebear/collection'
 import { createAvatar } from '@dicebear/core'
+import { Placement } from '@floating-ui/react'
 import { useStore } from '@stores'
 import { forwardRef, useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -57,10 +59,10 @@ export interface AvatarProps extends Omit<React.ComponentPropsWithoutRef<'div'>,
   imageClassName?: string
   /** Additional props for the image element */
   imageProps?: React.ComponentPropsWithoutRef<'img'>
-  /** Tooltip text (daisyUI) */
+  /** Tooltip text */
   tooltip?: string
-  /** Tooltip position (daisyUI) */
-  tooltipPosition?: 'tooltip-top' | 'tooltip-bottom' | 'tooltip-left' | 'tooltip-right'
+  /** Tooltip placement (Floating UI) */
+  tooltipPosition?: Placement
 }
 
 /**
@@ -159,8 +161,6 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
       '!overflow-visible',
       displayPresence && (online ? 'avatar-online' : 'avatar-offline'),
       isTyping && 'avatar-typing',
-      tooltip && 'tooltip',
-      tooltip && tooltipPosition,
       cursorClass,
       className
     )
@@ -171,7 +171,7 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
       'rounded-full',
       'object-cover',
       'bg-slate-100',
-      'shadow-[inset_0_0_0_1px_rgba(0,0,0,0.06)]',
+      'shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--color-base-content)_6%,transparent)]',
       cursorClass,
       imageClassName,
       justImage && className,
@@ -194,11 +194,21 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
       return imgElement
     }
 
-    return (
-      <div {...restProps} className={containerClass} onClick={handleClick} data-tip={tooltip}>
+    const container = (
+      <div {...restProps} className={containerClass} onClick={handleClick}>
         {imgElement}
       </div>
     )
+
+    if (tooltip) {
+      return (
+        <Tooltip title={tooltip} placement={tooltipPosition}>
+          {container}
+        </Tooltip>
+      )
+    }
+
+    return container
   }
 )
 
