@@ -112,7 +112,7 @@ export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps
           ) : (
             <Icons.chatroom
               className={twMerge('text-base-content/40', isActive && 'text-accent')}
-              size={18}
+              size={20}
             />
           )}
         </button>

@@ -48,14 +48,14 @@ const ContextMenuItems = ({ message }: Props) => {
   const messageButtonList = [
     {
       title: 'Reply',
-      icon: <Icons.reply size={20} />,
+      icon: <Icons.reply size={18} />,
       onClickFn: () => replyInMessageHandler(message),
       display: true, //settings.contextMenue?.reply ?? true,
       className: ''
     },
     {
       title: 'Add reaction',
-      icon: <Icons.emoji size={20} />,
+      icon: <Icons.emoji size={18} />,
       onClickFn: (e: React.MouseEvent) => {
         if (e.target) {
           const coordinates = (e.target as HTMLElement).getBoundingClientRect()
@@ -76,9 +76,9 @@ const ContextMenuItems = ({ message }: Props) => {
     {
       title: linkCopied ? 'Copied!' : 'Copy Link',
       icon: linkCopied ? (
-        <Icons.check size={20} className="text-success" />
+        <Icons.check size={18} className="text-success" />
       ) : (
-        <Icons.link size={20} />
+        <Icons.link size={18} />
       ),
       onClickFn: () => copyMessageLinkHandler(message),
       display: true, //settings.contextMenue?.copyLink ?? true,
@@ -88,9 +88,9 @@ const ContextMenuItems = ({ message }: Props) => {
       title: 'Bookmark',
       icon:
         message.is_bookmarked || message.bookmark_id ? (
-          <Icons.bookmarkMinus size={20} />
+          <Icons.bookmarkMinus size={18} />
         ) : (
-          <Icons.bookmarkPlus size={20} />
+          <Icons.bookmarkPlus size={18} />
         ),
       onClickFn: () => bookmarkMessageHandler(message),
       display: true, //settings.contextMenue?.bookmark ?? true,
@@ -98,14 +98,14 @@ const ContextMenuItems = ({ message }: Props) => {
     },
     {
       title: 'Copy to Doc',
-      icon: <Icons.fileOpen size={20} />,
+      icon: <Icons.fileOpen size={18} />,
       onClickFn: () => copyMessageToDocHandler(message),
       display: true, //settings.contextMenue?.copyToDoc ?? true,
       className: ''
     },
     {
       title: 'Reply in Thread',
-      icon: <Icons.thread size={20} />,
+      icon: <Icons.thread size={18} />,
       onClickFn: () => replyInThreadHandler(message),
       display: true, //settings.contextMenue?.replyInThread ?? true,
       className: 'text-primary'
@@ -113,28 +113,28 @@ const ContextMenuItems = ({ message }: Props) => {
 
     {
       title: 'Forward',
-      icon: <Icons.forward size={20} />,
+      icon: <Icons.forward size={18} />,
       onClickFn: () => {}, //openModal('forwardMessageModal', messageData),
       display: false, //settings.contextMenue?.forward ?? true,
       className: ''
     },
     {
       title: isPinned ? 'Unpin' : 'Pin',
-      icon: isPinned ? <Icons.pinOff size={20} /> : <Icons.pin size={20} />,
+      icon: isPinned ? <Icons.pinOff size={18} /> : <Icons.pin size={18} />,
       onClickFn: () => pinMessageHandler(message),
       display: false, //settings.contextMenue?.pin ?? true,
       className: ''
     },
     {
       title: 'Edit',
-      icon: <Icons.edit size={20} />,
+      icon: <Icons.edit size={18} />,
       onClickFn: () => editMessageHandler(message),
       display: isOwner, //true, //settings.contextMenue?.edite ?? true,
       className: 'border-t pt-1 mt-1 border-base-300'
     },
     {
       title: 'Delete',
-      icon: <Icons.trash size={20} />,
+      icon: <Icons.trash size={18} />,
       onClickFn: () => {
         openDialog(<DeleteMessageConfirmationDialog message={message} />, {
           size: 'sm'

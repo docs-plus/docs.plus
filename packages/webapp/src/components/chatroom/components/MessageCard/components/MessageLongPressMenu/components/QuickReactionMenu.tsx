@@ -146,7 +146,7 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
                   '-20px 0 20px -10px color-mix(in oklch, var(--color-base-content) 15%, transparent), -10px 0 10px -5px color-mix(in oklch, var(--color-base-content) 10%, transparent), -5px 0 5px -2px color-mix(in oklch, var(--color-base-content) 5%, transparent)'
               }}>
               <Icons.plus
-                size={22}
+                size={20}
                 className={isInteractive ? 'text-base-content/60' : 'text-base-content/40'}
               />
             </motion.button>

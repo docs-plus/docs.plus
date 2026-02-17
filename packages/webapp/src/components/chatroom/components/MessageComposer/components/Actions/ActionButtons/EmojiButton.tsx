@@ -28,7 +28,7 @@ const getCaretPosition = (editor: Editor) => {
   }
 }
 
-export const EmojiButton = ({ className, size = 20, ...props }: Props) => {
+export const EmojiButton = ({ className, size = 18, ...props }: Props) => {
   const { editor } = useMessageComposer()
   const { toggleEmojiPicker } = useChatStore()
   const { switchSheet } = useSheetStore()

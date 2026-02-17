@@ -18,7 +18,7 @@ export const EditAction = () => {
   return (
     <li>
       <a className="flex items-center gap-2" onClick={() => editMessageHandler(message)}>
-        <Icons.edit size={20} />
+        <Icons.edit size={18} />
         Edit Message
       </a>
     </li>

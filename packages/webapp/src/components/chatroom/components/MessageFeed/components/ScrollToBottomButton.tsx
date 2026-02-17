@@ -86,7 +86,7 @@ export const ScrollToBottom = () => {
           ? 'bottom-3 opacity-100 delay-200'
           : 'pointer-events-none bottom-[-60px] opacity-0'
       }`}
-      startIcon={<Icons.chevronDown size={23} className="text-primary-content" />}
+      startIcon={<Icons.chevronDown size={20} className="text-primary-content" />}
     />
   )
 }

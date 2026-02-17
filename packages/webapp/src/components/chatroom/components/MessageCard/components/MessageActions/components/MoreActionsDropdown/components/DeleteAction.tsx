@@ -28,7 +28,7 @@ export const DeleteAction = () => {
         <a
           className="text-error flex cursor-pointer items-center gap-2"
           onClick={handleDeleteClick}>
-          <Icons.trash size={20} />
+          <Icons.trash size={18} />
           Delete Message
         </a>
       </li>

@@ -19,7 +19,7 @@ export const ReplyInThreadButton = ({ className }: Props) => {
       shape="square"
       className={`join-item ${className || ''}`}
       onClick={() => replyInThreadHandler(message)}
-      startIcon={<Icons.thread size={20} className="text-primary" />}
+      startIcon={<Icons.thread size={18} className="text-primary" />}
       tooltip="Reply in thread"
       tooltipPlacement="left"
     />

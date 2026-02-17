@@ -42,7 +42,7 @@ const AddReactionButton = ({ className: _className }: Props) => {
       size="xs"
       className="badge bg-base-300 cursor-pointer border-none !px-2"
       onClick={openEmojiPickerHandler}
-      startIcon={<Icons.emojiAdd size={18} />}
+      startIcon={<Icons.emojiAdd size={14} />}
     />
   )
 }

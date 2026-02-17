@@ -175,7 +175,7 @@ export function TocItemDesktop({
             ) : (
               <Icons.chatroom
                 className="btnChat text-base-content/40 group-hover:text-primary hover:text-primary cursor-pointer transition-colors"
-                size={18}
+                size={20}
               />
             )}
           </span>

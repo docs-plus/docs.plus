@@ -14,11 +14,11 @@ export const BookmarkButton = ({ className }: Props) => {
   const profile = useAuthStore((state) => state.profile)
 
   const icon = bookmarkLoading ? (
-    <div className="border-base-content/30 border-t-base-content/70 size-5 animate-spin rounded-full border-2" />
+    <div className="border-base-content/30 border-t-base-content/70 size-[18px] animate-spin rounded-full border-2" />
   ) : message.is_bookmarked || message.bookmark_id ? (
-    <Icons.bookmarkMinus size={20} className="text-info" />
+    <Icons.bookmarkMinus size={18} className="text-info" />
   ) : (
-    <Icons.bookmarkPlus size={20} className="text-base-content/70" />
+    <Icons.bookmarkPlus size={18} className="text-base-content/70" />
   )
 
   return (

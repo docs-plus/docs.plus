@@ -22,17 +22,17 @@ export const DesktopLayout = () => {
       </MsgComposer.Context>
       <div className="border-base-300 rounded-md border bg-transparent shadow-md">
         <MsgComposer.Toolbar className="bg-base-300/60 h-10 rounded-t-md border-b p-2 px-1">
-          <MsgComposer.BoldButton size={10} />
-          <MsgComposer.ItalicButton size={10} />
-          <MsgComposer.StrikethroughButton size={14} />
+          <MsgComposer.BoldButton size={16} />
+          <MsgComposer.ItalicButton size={16} />
+          <MsgComposer.StrikethroughButton size={16} />
           <div className="divided" />
-          <MsgComposer.HyperlinkButton size={18} />
+          <MsgComposer.HyperlinkButton size={16} />
           <MsgComposer.BulletListButton size={16} />
           <MsgComposer.OrderedListButton size={16} />
           <div className="divided" />
-          <MsgComposer.BlockquoteButton size={20} />
-          <MsgComposer.CodeButton size={20} />
-          <MsgComposer.CodeBlockButton size={20} />
+          <MsgComposer.BlockquoteButton size={16} />
+          <MsgComposer.CodeButton size={16} />
+          <MsgComposer.CodeBlockButton size={16} />
         </MsgComposer.Toolbar>
 
         <MsgComposer.Input />

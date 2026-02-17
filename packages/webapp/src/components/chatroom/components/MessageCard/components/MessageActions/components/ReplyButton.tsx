@@ -18,7 +18,7 @@ export const ReplyButton = () => {
       shape="square"
       className="join-item"
       onClick={() => replyInMessageHandler(message)}
-      startIcon={<Icons.reply size={20} className="text-base-content/70" />}
+      startIcon={<Icons.reply size={18} className="text-base-content/70" />}
       tooltip="Reply to Message"
       tooltipPlacement="left"
     />

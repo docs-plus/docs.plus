@@ -8,7 +8,7 @@ type Props = React.HTMLAttributes<HTMLButtonElement> & {
   size?: number
 }
 
-export const SendButton = ({ className, size = 20, ...props }: Props) => {
+export const SendButton = ({ className, size = 18, ...props }: Props) => {
   const { editor, loading, submitMessage } = useMessageComposer()
 
   return (

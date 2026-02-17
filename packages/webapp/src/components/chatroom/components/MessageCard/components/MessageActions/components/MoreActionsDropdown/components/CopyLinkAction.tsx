@@ -18,12 +18,12 @@ export const CopyLinkAction = ({ className }: Props) => {
       <a className="flex items-center gap-2" onClick={() => copyMessageLinkHandler(message)}>
         {copied ? (
           <>
-            <Icons.check size={22} className="text-success" />
+            <Icons.check size={18} className="text-success" />
             <span className="text-success">Copied!</span>
           </>
         ) : (
           <>
-            <Icons.link size={22} />
+            <Icons.link size={18} />
             Copy Link
           </>
         )}

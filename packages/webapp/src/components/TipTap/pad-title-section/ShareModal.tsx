@@ -107,7 +107,7 @@ const ShareModal = ({ setIsOpen }: ShareModalProps) => {
         <button
           onClick={() => setIsOpen(false)}
           className="btn btn-ghost btn-sm btn-circle text-base-content/40 hover:text-base-content -mt-1 -mr-2">
-          <Icons.close size={20} />
+          <Icons.close size={16} />
         </button>
       </div>
 

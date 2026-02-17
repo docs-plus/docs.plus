@@ -10,7 +10,7 @@ interface Props extends React.ComponentProps<typeof Button> {
 
 export const ToggleToolbarButton = ({
   className,
-  size = 20,
+  size = 18,
   iconType = 'MdFormatColorText',
   ...props
 }: Props) => {

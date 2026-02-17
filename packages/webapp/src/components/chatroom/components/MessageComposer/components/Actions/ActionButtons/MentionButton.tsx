@@ -7,7 +7,7 @@ type Props = React.HTMLAttributes<HTMLButtonElement> & {
   size?: number
 }
 
-export const MentionButton = ({ className, size = 20, ...props }: Props) => {
+export const MentionButton = ({ className, size = 18, ...props }: Props) => {
   const { editor } = useMessageComposer()
   return (
     <Button

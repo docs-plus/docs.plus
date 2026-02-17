@@ -41,7 +41,7 @@ export const EmojiReactionButton = ({ className }: Props) => {
       className={`join-item ${className || ''}`}
       disabled={!profile}
       onClick={openEmojiPickerHandler}
-      startIcon={<Icons.emoji size={20} className="text-base-content/70" />}
+      startIcon={<Icons.emoji size={18} className="text-base-content/70" />}
       tooltip="Add Reaction"
       tooltipPlacement="left"
     />

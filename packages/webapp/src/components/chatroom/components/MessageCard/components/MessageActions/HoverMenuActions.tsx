@@ -12,7 +12,7 @@ export const HoverMenuActions = () => {
 
       <HoverMenuDropdown
         tooltip="More Actions"
-        trigger={<Icons.moreVertical size={20} className="text-base-content/60" />}>
+        trigger={<Icons.moreVertical size={18} className="text-base-content/60" />}>
         <Chatroom.MessageFeed.MessageList.MessageCard.Actions.CopyToDoc />
         <Chatroom.MessageFeed.MessageList.MessageCard.Actions.CopyLink />
         <Chatroom.MessageFeed.MessageList.MessageCard.Actions.GroupAuth

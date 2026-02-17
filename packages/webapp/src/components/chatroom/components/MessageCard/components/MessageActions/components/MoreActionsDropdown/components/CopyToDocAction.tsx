@@ -11,7 +11,7 @@ export const CopyToDocAction = () => {
   return (
     <li>
       <a className="flex items-center gap-2" onClick={() => copyMessageToDocHandler(message)}>
-        <Icons.fileOpen size={20} />
+        <Icons.fileOpen size={18} />
         Copy to doc
       </a>
     </li>
