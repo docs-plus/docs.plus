@@ -1,11 +1,11 @@
 # SettingsPanel — Design System & UX Review
 
 > **Date:** 2026-02-12
-> **Last Updated:** 2026-02-13 (mobile sidebar scroll fix + EditFAB CSS fix)
-> **Reviewers:** UI/UX Team, Front-End Engineering, PM
-> **Scope:** `packages/webapp/src/components/settings/` (all files)
-> **Reference:** `Design_System_Global_v2.md` v3.1.0
-> **Status:** ✅ **PHASES 1–5 COMPLETE + all post-implementation fixes** — All implementation work finished
+> **Last Updated:** 2026-02-17 (§15: deep review of ProfileSection + SocialLinks)
+> **Reviewers:** UI/UX Team, Front-End Engineering, PM, Head of Engineering
+> **Scope:** `packages/webapp/src/components/settings/` (all files) + `UserProfileDialog.tsx` + `pages/api/metadata.ts` + `pages/api/fetchMetadata.ts` (deprecated) + `api/users/fetchLinkMetadata.ts`
+> **Reference:** `Design_System_Global_v2.md` v3.4.0
+> **Status:** ✅ **PHASES 1–5 COMPLETE** — ✅ **§15 ALL ITEMS RESOLVED** (S1–S3, D1–D4, A1–A5, U1–U6, DS1–DS2)
 
 ---
 
@@ -27,7 +27,8 @@ The SettingsPanel (formerly ProfilePanel) is a modal-based settings hub rendered
 | `components/SocialLinks.tsx` | 268 | Social link management |
 | `constants.ts` | 92 | Social media domain/icon mapping |
 | `types.ts` | 48 | Link types + notification preferences |
-| `hooks/useProfileUpdate.ts` | 59 | Profile save logic |
+| `hooks/useProfileUpdate.ts` | 62 | Profile save logic (with `skipUsernameValidation` opt) |
+| `hooks/useAvatarUpload.ts` | 96 | Avatar upload/remove (SRP extraction) |
 | `hooks/useSignOut.ts` | 22 | Sign out logic |
 | `hooks/useUsernameValidation.ts` | — | Username validation |
 | `index.ts` | 9 | Barrel exports |
@@ -1156,8 +1157,592 @@ These items were identified during review but deferred as non-blocking. They are
 | 9 | `<SettingsSection>` shared wrapper component | 🟡 Nice-to-have | The pattern `<section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">` is repeated. A wrapper would be DRYer but adds abstraction. |
 | 10 | Mobile back-button integration (app-wide `ModalRouter`) | 🟠 Medium | Per-component `pushState`/`popstate` was implemented and reverted (see §11). Proper solution requires a centralized `ModalRouter` / `OverlayManager` that coordinates history state across all modals, integrates with Next.js `router.beforePopState`, and uses a single `popstate` listener. This is a cross-cutting concern. |
 | 11 | `Dialog.tsx` `flex flex-col` impact audit | 🟡 Low | Adding `flex flex-col` to `ModalContent` was necessary for SettingsPanel scroll. All other modals (ShareModal, SignInForm, ChatroomContext, GlobalDialog) verified safe — they render content-sized children that behave identically in block vs flex-column layout. Monitor for any edge cases in new modals. |
+| 12 | **SSRF + security on `/api/fetchMetadata`** | 🔴 Critical | No URL validation, no rate limit, no auth. Must migrate SocialLinks to `/api/metadata` and delete legacy endpoint. See §15.3.1, §15.7. |
+| 13 | Duplicate `LinkItem` type definition | 🟠 Medium | `settings/types.ts` and `types/domain.ts` define conflicting `LinkItem` interfaces with different field optionality. See §15.2.1. |
+| 14 | Optimistic update without rollback in SocialLinks | 🟠 Medium | `handleAddLink`/`handleRemoveLink` update store optimistically but don't rollback on save failure. See §15.4.1. |
+| 15 | `UserProfileDialog.tsx` — 14 hardcoded colors + `Md*` icons | 🟠 Medium | Public-facing profile dialog breaks in dark mode. See §15.6.4. |
+| 16 | SocialLinks auto-save vs ProfileSection manual save inconsistency | 🟡 Low | Links auto-save on add/remove; name/bio require "Save Changes" click. See §15.4.2. |
 
 ---
 
-*This document was authored and reviewed by Head of Engineering, Head of UI/UX, Front-End Engineering, PM, and Supabase Team. All planned work (Phases 1–5) has been implemented and verified. Post-implementation fixes applied: browser history integration reverted (§11 — overengineering), scroll/height chain fixed (§2.1, §2.4 — `Dialog.tsx` flex layout + `SettingsPanel.tsx` flex-based sizing). Phase 5: iOS PWA push notification guidance added to `NotificationsSection` — platform-aware UX using existing `usePlatformDetection` + `showPWAInstallPrompt()`. Mobile sidebar scroll fix (2026-02-13): `<aside>` changed from `shrink-0` to `flex-1 min-h-0` on mobile, ensuring ScrollArea activates and Sign Out button is always reachable.*
+## 15. Deep Review — ProfileSection & Connect & Social Links
+
+> **Date:** 2026-02-17
+> **Reviewer:** Head of Engineering
+> **Scope:** `ProfileSection.tsx` (324 lines), `SocialLinks.tsx` (267 lines), `types.ts`, `constants.ts`, `hooks/useProfileUpdate.ts`, `hooks/useUsernameValidation.ts`, `UserProfileDialog.tsx` (read-side consumer), `pages/api/fetchMetadata.ts` (API endpoint)
+> **Status:** 🔍 Review complete — findings documented, implementation pending
+
+---
+
+### 15.1 Architecture Overview
+
+The Profile tab consists of three visual sections rendered by `ProfileSection.tsx`:
+
+```
+┌────────────────────────────────────────┐
+│ 1. Profile Picture Section             │
+│    [Avatar] [Upload/Remove buttons]    │
+├────────────────────────────────────────┤
+│ 2. Account Information                 │
+│    [Full Name]  [Username]             │
+│    [About bio textarea]                │
+├────────────────────────────────────────┤
+│ 3. Connect & Social Links              │
+│    [Add URL input + button]            │
+│    [Link list with metadata]           │
+│    [Empty state if no links]           │
+├────────────────────────────────────────┤
+│ [Sticky Save Changes button]           │
+└────────────────────────────────────────┘
+```
+
+**Data flow:**
+
+```
+User Input → setProfile() (Zustand store, optimistic) → handleSave() → updateUser() (Supabase)
+                                                              ↓
+                                                    validateUsername() → getSimilarUsername() (Supabase)
+                                                              ↓
+                                                    useAuthStore.getState().profile (fresh read)
+                                                              ↓
+                                                    supabaseClient.from('users').update()
+```
+
+**Social Links data flow:**
+
+```
+User enters URL → validateLink() (client-side) → fetch('/api/fetchMetadata') (legacy GET endpoint)
+       ↓                                                    ↓
+   Type detection                                   OG scraping + cheerio
+   (Phone/Email/Social/Simple)                              ↓
+       ↓                                            metadata response
+   setProfile() (optimistic) ← LinkItem { url, type, metadata }
+       ↓
+   handleSave() → supabaseClient.from('users').update({ profile_data: { linkTree: [...] } })
+```
+
+**Read-side consumer:** `UserProfileDialog.tsx` reads `linkTree` from `profile_data` for public profile display.
+
+---
+
+### 15.2 Type System Issues
+
+#### 15.2.1 Duplicate `LinkItem` Definition (🔴 DRY Violation — Type Drift Risk)
+
+Two separate `LinkItem` interfaces exist in the codebase:
+
+| Location | `type` field | `metadata` fields | Exported? |
+|----------|-------------|-------------------|-----------|
+| `settings/types.ts` | `LinkType` (enum) | `title: string`, `description: string`, `icon: string`, `themeColor?: string` | ✅ Yes |
+| `types/domain.ts` | `string` | `title?: string`, `description?: string`, `icon?: string`, `socialBanner?: string`, `socialBannerSize?: { width, height }`, `themeColor?: string` | ❌ No (private to file, used by `ProfileData`) |
+
+**Problems:**
+
+1. **Type field mismatch:** `settings/types.ts` uses `LinkType` enum (`'email' | 'social' | 'simple' | 'phone'`), while `domain.ts` uses `string`. If a new type is added to the enum, `domain.ts` won't reflect it.
+2. **Metadata field mismatch:** `settings/types.ts` declares `title`, `description`, `icon` as **required**; `domain.ts` declares them as **optional**. The API (`fetchMetadata`) can return empty strings for all fields, so the required declaration in `settings/types.ts` is a lie — the data is not validated at the boundary.
+3. **Missing fields:** `domain.ts` includes `socialBanner` and `socialBannerSize` which `settings/types.ts` ignores entirely. These fields ARE returned by the legacy API and stored in the DB.
+4. **`UserProfileDialog.tsx`** imports `LinkItem` from `settings/types.ts` (line 3) but reads data shaped by `domain.ts`'s `ProfileData.linkTree` (line 104). This works only because the `as LinkItem[]` cast in `SocialLinks.tsx` line 90 forces the shape, and `UserProfileDialog` re-sanitizes with its own `sanitizeLinks()` function that treats everything as `Partial<LinkItem>`.
+
+**Fix:** Single source of truth. Move `LinkItem` and `LinkMetadata` to `types/domain.ts`, make `settings/types.ts` re-export from there. Make metadata fields optional (matching reality). Drop `socialBanner`/`socialBannerSize` from the type unless they're actually displayed somewhere (they're not — YAGNI).
+
+#### 15.2.2 Unsafe Type Assertions
+
+| File | Line | Code | Issue |
+|------|------|------|-------|
+| `SocialLinks.tsx` | 90 | `(user?.profile_data?.linkTree ?? []) as LinkItem[]` | Unsafe `as` cast. `linkTree` is `LinkItem[]` from `domain.ts` (with optional metadata fields), cast to `settings/types.ts` `LinkItem` (with required fields). Accessing `link.metadata.title` is safe only because JSX tolerates `undefined` in expressions. |
+| `SocialLinks.tsx` | 129 | `} as Profile)` | Unsafe cast. `setProfile` expects `Profile | null`, but the spread `{ ...user, profile_data: { ... } }` should already satisfy the type. This `as Profile` masks potential type errors. |
+| `SocialLinks.tsx` | 147 | Same `as Profile` pattern | Same issue. |
+| `ProfileSection.tsx` | 172–175 | `(user?.profile_data as Profile) ?? {}` | `profile_data` is typed as `ProfileData | undefined` in `domain.ts`, but cast to `Profile` here — **wrong type entirely**. Should be `as ProfileData`. This works by accident because both `Profile` and `ProfileData` have a `bio` field, but the cast is semantically incorrect. |
+
+**Fix:** Remove `as` casts. If the types are correct, they shouldn't be needed. If they're needed, the types are wrong — fix the types.
+
+#### 15.2.3 `LinkMetadata` Required vs Optional
+
+The `LinkMetadata` interface in `settings/types.ts`:
+
+```typescript
+export interface LinkMetadata {
+  title: string       // Required
+  description: string // Required
+  icon: string        // Required
+  themeColor?: string // Optional
+}
+```
+
+But the `fetchMetadata` API (line 101) returns:
+```typescript
+{ title: '', description: '', icon: '', socialBanner: '', themeColor: randomColor() }
+```
+
+On error it returns the same shape with empty strings. On success, `title` and `description` come from OG tags which may not exist. The metadata is **always populated** (empty strings are truthy for TypeScript's `string` type), so the required declaration is technically satisfied, but semantically `title: ''` means "no title" — the component correctly handles this with `link.metadata?.title || link.url` (line 224), using optional chaining on a required field, indicating the developer didn't trust the type.
+
+**Fix:** Make `title`, `description`, `icon` optional in `LinkMetadata` (matching reality).
+
+---
+
+### 15.3 API Issues
+
+#### 15.3.1 Legacy `fetchMetadata` Endpoint (🟠 Security + Architecture)
+
+`SocialLinks.tsx` calls `/api/fetchMetadata` (GET, query param) while the rest of the codebase uses `/api/metadata` (POST, body).
+
+| Property | `/api/fetchMetadata` (used by SocialLinks) | `/api/metadata` (used by TipTap) |
+|----------|---------------------------------------------|----------------------------------|
+| Method | GET | POST |
+| Input | `req.query.url` | `req.body.url` |
+| Rate limiting | ❌ None | ✅ 50/min per IP |
+| URL validation | ❌ None (only checks `http` protocol) | ✅ Blocks localhost, internal IPs |
+| SSRF protection | ❌ None — can hit `localhost`, `192.168.*`, `10.*` | ✅ Blocks private ranges |
+| Timeout | ❌ No timeout (axios default) | ✅ 10s abort controller |
+| Error response | Returns 200 with empty strings (silent fail) | Returns 500 with error message |
+| Dependencies | `axios`, `cheerio`, `ogs`, `randomcolor` | `cheerio`, `ogs` (no axios, no randomcolor) |
+| Cache headers | ❌ None | ✅ `Cache-Control: public, max-age=3600` |
+| Response shape | `{ title, description, icon, socialBanner, themeColor }` | `{ title, image, icon, favicon, success }` |
+
+**Problems:**
+
+1. **SSRF vulnerability:** An attacker can submit `http://169.254.169.254/latest/meta-data/` (AWS metadata endpoint) or `http://localhost:3000/api/...` to probe internal services. The GET endpoint has **zero URL validation**.
+2. **No rate limiting:** The GET endpoint has no rate limit. An attacker can flood it to slow down the server or amplify SSRF attacks.
+3. **Silent failure masking:** On error, `/api/fetchMetadata` returns HTTP 200 with empty data. `SocialLinks.tsx` checks `metadata.error` (line 113), but the error response doesn't include an `error` field — it includes empty strings. So metadata errors are silently saved as links with no title/description.
+4. **Duplicate endpoints:** Two endpoints doing the same thing with different APIs is a DRY violation and maintenance burden.
+5. **GET with side effects:** `fetchMetadata` performs external HTTP requests (side effect) via GET. While semantically defensible (it fetches data), combining GET with a query-param URL makes it trivially exploitable via `<img src="/api/fetchMetadata?url=evil">` in any context where user HTML is rendered.
+
+**Fix:**
+1. **Immediate:** Migrate `SocialLinks.tsx` to use `/api/metadata` (POST). Change the fetch call from GET with query param to POST with body.
+2. **Follow-up:** Delete `/api/fetchMetadata.ts` entirely once no callers remain.
+3. **Immediate:** Until migration, add URL validation + rate limiting to the legacy endpoint.
+
+#### 15.3.2 Metadata Response Shape Mismatch
+
+`SocialLinks.tsx` expects the `fetchMetadata` response to match `LinkMetadata`:
+```typescript
+const link: LinkItem = {
+  url: newLink.trim(),
+  type: type!,
+  metadata  // Raw response assigned directly
+}
+```
+
+The `fetchMetadata` response returns `{ title, description, icon, socialBanner, themeColor, iconSize?, socialBannerSize? }`. This is spread directly into `metadata` without validation or field mapping. Extra fields (`socialBanner`, `themeColor`, `socialBannerSize`, `iconSize`) are silently stored in the DB as part of `profile_data.linkTree[].metadata`.
+
+**Problems:**
+1. Data bloat in `profile_data` JSONB column — `socialBanner` URLs and size objects are stored but never displayed.
+2. If we migrate to `/api/metadata`, the response shape is different (`{ title, image, icon, favicon, success }`) — `description` is missing, `success` is extra.
+
+**Fix:** Validate and map the API response to `LinkMetadata` shape before storing. Strip unused fields.
+
+#### 15.3.3 No Error Boundary on Metadata Fetch
+
+If the `/api/fetchMetadata` endpoint is down or returns malformed JSON, `response.json()` (line 111) will throw. The outer `catch` (line 133) handles this with a generic toast, but the user's input is lost — `newLink` is not preserved because `setNewLink('')` (line 131) is inside the `try` block but executes before `handleSave`. If `handleSave` fails, the link is in the store but not persisted.
+
+**Actually**, looking more carefully: `setNewLink('')` is at line 131, and `handleSave` is at line 132. If `handleSave` throws, the link is already in the store (optimistic update at line 126–129) but the input is cleared. The user sees the link in the list but it's **not saved to the database**. On page reload, it disappears.
+
+**Fix:** Move `setNewLink('')` after `handleSave` succeeds, or handle the rollback on failure.
+
+---
+
+### 15.4 SocialLinks — Logic & UX Issues
+
+#### 15.4.1 Optimistic Update Without Rollback (🔴 Data Loss Risk)
+
+Both `handleAddLink` and `handleRemoveLink` follow this pattern:
+
+```
+1. setProfile({ ...user, profile_data: { ...user.profile_data, linkTree: newLinkTree } })  ← Optimistic
+2. await handleSave({ successToast: '...' })  ← Persist
+```
+
+If step 2 fails (network error, validation failure, server error):
+- The store has the new state (link added/removed)
+- The database has the old state
+- The UI shows the new state
+- On page reload, data reverts to DB state
+- **The user has no indication that the save failed** unless they notice the error toast
+
+For `handleRemoveLink` (line 140–150), this is worse — the user sees the link disappear, gets an error toast (maybe), but the link is actually still in the DB. They might close the modal thinking it's removed.
+
+**Fix:** Capture the previous state before optimistic update. On `handleSave` failure, revert `setProfile` to the captured state.
+
+```typescript
+const handleRemoveLink = async (url: string) => {
+  if (!user) return
+  const previousProfile = { ...user }  // Capture
+  const newLinkTree = links.filter((link) => link.url !== url)
+  setProfile({ ...user, profile_data: { ...user.profile_data, linkTree: newLinkTree } } as Profile)
+  try {
+    await handleSave({ successToast: 'Link removed successfully!' })
+  } catch {
+    setProfile(previousProfile)  // Rollback
+    toast.Error('Failed to remove link')
+  }
+}
+```
+
+#### 15.4.2 Double Save Problem — SocialLinks vs ProfileSection
+
+`SocialLinks` calls `handleSave()` independently (from its own `useProfileUpdate()` hook instance), but `ProfileSection` also renders a "Save Changes" button that calls `handleSave()` from a **different** `useProfileUpdate()` hook instance.
+
+Both hooks read from `useAuthStore.getState().profile` at save time, so they get the same data. But:
+
+1. **Race condition:** If the user adds a link (SocialLinks auto-saves) while editing their full name (ProfileSection hasn't saved yet), the SocialLinks save will include the **unsaved** full name changes because it reads the full profile from the store. This is actually **beneficial** (saves everything), but it means the "Save Changes" button is misleading — changes may already be saved.
+2. **Username re-validation on every save:** Both `handleSave` calls in `useProfileUpdate` run `validateUsername()` before saving. When SocialLinks auto-saves after adding/removing a link, it validates the username unnecessarily. If the username is currently invalid (user is mid-edit), the link save **fails silently** with a username validation error.
+3. **Confusing UX:** Adding a link auto-saves immediately. Changing your name requires clicking "Save Changes". Changing your bio requires clicking "Save Changes". There's no visual indication of which changes are saved and which are pending.
+
+**Fix options (trade-off):**
+- **Option A (KISS):** Remove auto-save from SocialLinks. Let all changes be batched and saved via the "Save Changes" button. Simplest mental model.
+- **Option B:** Keep auto-save for SocialLinks but skip username validation in the save path when only `linkTree` changed. Adds conditional logic.
+- **Option C:** Add dirty-state tracking per section. Show which sections have unsaved changes. Most complex.
+
+**Recommendation:** Option A. The "Save Changes" button already exists and is the established pattern in ProfileSection.
+
+#### 15.4.3 Duplicate Check Uses Raw URL (🟡 Correctness)
+
+```typescript
+// SocialLinks.tsx line 102
+if (links.some((l) => l.url === newLink.trim())) {
+```
+
+This compares raw input strings. `https://github.com/user` and `github.com/user` are treated as different URLs, but `validateLink` normalizes `github.com/user` to `https://github.com/user`. Similarly, `https://GitHub.com/User` and `https://github.com/user` are treated as different.
+
+**Fix:** Normalize both URLs before comparison (lowercase hostname, ensure protocol, strip trailing slash).
+
+#### 15.4.4 Phone Regex is Too Permissive
+
+```typescript
+const phoneRegex = /^(?:\+?\d{1,4}[-.\s]?)?\(?\d{1,}\)?[-.\s]?\d{1,}[-.\s]?\d{1,}$/
+```
+
+This matches:
+- `123` (three separate `\d{1,}` groups) — valid per regex, not a real phone number
+- `1.2.3` — same issue
+- `+1 (800) 555-1234` — correct
+
+The minimum match is 3 digits separated by optional delimiters. A 3-digit string like `abc` fails (not digits), but `1.2.3` passes.
+
+**Fix:** Add minimum length check or require at least 7 digits total.
+
+#### 15.4.5 No Link Limit
+
+Users can add unlimited links. Each link triggers a metadata fetch + full profile save. There's no cap on `linkTree` array length.
+
+**Implications:**
+- `profile_data` JSONB column grows unbounded
+- `UserProfileDialog.tsx` renders all links (no pagination/truncation)
+- Each link stores metadata (title, description, icon, socialBanner, themeColor) — ~500 bytes per link
+
+**Fix:** Add a reasonable limit (e.g., 20 links). Show a disabled input with explanation when limit is reached.
+
+#### 15.4.6 No Link Reordering
+
+Users cannot reorder their links. Links are displayed in insertion order. Other platforms (Linktree, Bento) allow drag-to-reorder.
+
+**Note:** `@dnd-kit/core` is already in the project dependencies (used by `toc/` module). Reordering could be implemented with minimal new dependencies.
+
+**Priority:** 🟡 Nice-to-have — defer unless users request it.
+
+#### 15.4.7 No Link Editing
+
+Once a link is added, the only action is "Remove". If a user makes a typo in the URL, they must delete and re-add. The metadata re-fetch on re-add is wasteful.
+
+**Priority:** 🟡 Nice-to-have — consider inline edit for URL field.
+
+#### 15.4.8 Remove Button Touch Target (Mobile UX)
+
+```typescript
+className="text-base-content/50 hover:bg-error/10 hover:text-error opacity-0 transition-opacity group-hover:opacity-100"
+```
+
+The remove button uses `opacity-0 group-hover:opacity-100`. On mobile, there is no `hover` — the button is **permanently invisible** until tapped. Since it's `opacity-0` (not `hidden`), it's technically tappable, but the user can't see it.
+
+**Fix:** Show the button always on mobile: `opacity-100 md:opacity-0 md:group-hover:opacity-100`.
+
+#### 15.4.9 Favicon `onError` Handler (Minor)
+
+```typescript
+onError={(e) => {
+  e.currentTarget.style.display = 'none'
+}}
+```
+
+When a favicon fails to load, it's hidden via inline style. But no fallback icon is shown — the icon container becomes empty. The user sees a blank square.
+
+**Fix:** On error, replace with the `LuLink` fallback icon (same as what `getLinkIcon` returns for `LinkType.Simple` without favicon).
+
+---
+
+### 15.5 ProfileSection — Logic & UX Issues
+
+#### 15.5.1 `profile_data` Cast Error (🔴 Type Safety)
+
+```typescript
+// ProfileSection.tsx line 172
+const newProfileData = {
+  ...((user?.profile_data as Profile) ?? {}),
+  bio
+}
+```
+
+`user.profile_data` is `ProfileData | undefined`. It's cast to `Profile` — which is the top-level user type including `id`, `email`, `username`, etc. This is **wrong**. Should be:
+
+```typescript
+const newProfileData = {
+  ...((user?.profile_data as ProfileData) ?? {}),
+  bio
+}
+```
+
+This works by accident because TypeScript structural typing means spreading an object with `bio` over `Profile` just adds/overrides `bio`, and the remaining `Profile` fields (if any existed on `profile_data`) would pass through. But `profile_data` never has `Profile`-shaped fields, so the spread is effectively `{ ...{}, bio }` = `{ bio }` — losing any existing `linkTree` data.
+
+**Wait — actually**, looking again: `user.profile_data` at runtime DOES contain `{ bio, linkTree }`. The `as Profile` cast doesn't change runtime behavior — the spread copies all enumerable properties regardless of the cast type. So `linkTree` IS preserved. But the type annotation is still wrong and misleading.
+
+**Fix:** Change `as Profile` to `as ProfileData` (or remove the cast entirely if types are fixed upstream).
+
+#### 15.5.2 Username Validation UX
+
+The debounced validation fires after `USERNAME_DEBOUNCE_MS` (1000ms). During the debounce window:
+1. User types a character
+2. `setInputUsername(newUsername)` — input updates immediately (good)
+3. `setProfile({ ...user, username: newUsername })` — store updates **only after validation** (line 156)
+4. If validation fails, the store still has the old username but the input shows the new one
+
+This means the input and the store can be **out of sync**. If the user quickly types an invalid username and clicks "Save Changes", the save uses the **store** username (which is the last valid one), not the input value. The user sees "Profile updated successfully!" but their username didn't actually change to what they typed.
+
+**This is correct behavior** (don't save invalid usernames), but there's **no visual feedback** that the save used a different username than what's in the input. The input still shows the invalid username after save.
+
+**Fix:** On successful save, sync the input back to the store value: `setInputUsername(user?.username || '')`.
+
+#### 15.5.3 `handleFullNameChange` Missing Debounce
+
+```typescript
+const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  if (!user) return
+  const newFullName = e.target.value
+  if (newFullName !== user.full_name) {
+    setProfile({ ...user, full_name: newFullName })
+  }
+}
+```
+
+Every keystroke in the Full Name field calls `setProfile`, which triggers a Zustand store update and re-renders all subscribers (including the sidebar's user info display in `SettingsPanel.tsx`). Username has a debounce; full name doesn't.
+
+**Impact:** Low for 4–5 subscribers, but it's inconsistent. Bio (`handleBioChange`) also lacks debounce.
+
+**Fix:** Not critical — Zustand is fast enough for this. But if performance issues arise, debounce `setProfile` calls in `handleFullNameChange` and `handleBioChange`.
+
+#### 15.5.4 Sticky Save Button Gradient Tokens
+
+```typescript
+className="from-base-200 via-base-200 sticky bottom-0 -mx-4 bg-gradient-to-t to-transparent px-4 pt-6 pb-4 sm:-mx-6 sm:px-6"
+```
+
+`from-base-200 via-base-200` creates a gradient from `base-200` to transparent, which provides a fade effect at the bottom. This is well-implemented and uses semantic tokens. ✅ Good.
+
+However, the gradient starts from `base-200` because the content area background is `bg-base-200` (set in `SettingsPanel.tsx` line 363: `<ScrollArea ... className="bg-base-200 flex-1">`). If the content area background ever changes, this gradient will mismatch.
+
+**Fix (defensive):** Add a comment noting the dependency: `/* Must match ScrollArea bg in SettingsPanel */`.
+
+#### 15.5.5 Avatar State Sync Issue
+
+```typescript
+const [hasCustomAvatar, setHasCustomAvatar] = useState(false)
+
+useEffect(() => {
+  setHasCustomAvatar(!!user?.avatar_url)
+}, [user])
+```
+
+`hasCustomAvatar` is derived state from `user?.avatar_url`. Using `useState` + `useEffect` to track derived state is an anti-pattern — it creates an extra render cycle and can be out of sync for one render.
+
+**Fix:** Replace with a direct derivation:
+```typescript
+const hasCustomAvatar = !!user?.avatar_url
+```
+
+The `setHasCustomAvatar(true)` in `handleAvatarChange` (line 98) and `setHasCustomAvatar(false)` in `handleRemoveAvatar` (line 118) provide instant UI feedback before the `user` object updates from the store. However, the store should update shortly after (via Supabase realtime or the next `setProfile` call), at which point the `useEffect` would override anyway. If the latency is acceptable, derive directly. If instant feedback is needed, keep the local state but remove the `useEffect` and initialize from `user`:
+
+```typescript
+const [hasCustomAvatar, setHasCustomAvatar] = useState(() => !!user?.avatar_url)
+```
+
+---
+
+### 15.6 Cross-Cutting Issues (ProfileSection + SocialLinks)
+
+#### 15.6.1 Direct API Calls in UI Components (🟡 Layer Violation)
+
+| File | Line | Call | Layer Breach |
+|------|------|------|-------------|
+| `SocialLinks.tsx` | 110 | `fetch('/api/fetchMetadata?url=...')` | UI component → API route directly |
+| `ProfileSection.tsx` | 10 | `import { supabaseClient }` | UI component → Supabase client directly |
+| `ProfileSection.tsx` | 22–46 | `updateAvatarInDB()` function | DB update logic inline in UI file |
+
+Per §10.5 abstraction layers, feature modules (Layer 3) should use `@api` functions (Layer 4), not call HTTP endpoints or Supabase directly.
+
+**Fix:**
+1. Create `@api/users/fetchLinkMetadata.ts` that wraps the POST call to `/api/metadata`.
+2. Move `updateAvatarInDB` to `hooks/useAvatarUpload.ts` (previously deferred in §14 item 1 — should now be done given the scope of issues found).
+
+#### 15.6.2 `useProfileUpdate` Hook — `validateUsername` on Every Save
+
+```typescript
+// useProfileUpdate.ts lines 18–25
+const { isValid, errorMessage } = await validateUsername(user?.username)
+if (!isValid) {
+  if (errorMessage) toast.Error(errorMessage)
+  setLoading(false)
+  return
+}
+```
+
+Every call to `handleSave` validates the username — even when the username hasn't changed. When SocialLinks adds a link, it calls `handleSave()`, which validates the username. This is a wasted DB query (`getSimilarUsername`).
+
+**Fix:** Track whether the username has changed since last save. Only validate if it's dirty. Or pass a `skipUsernameValidation` flag for link-only saves.
+
+#### 15.6.3 Two `useProfileUpdate` Hook Instances
+
+`ProfileSection.tsx` instantiates `useProfileUpdate()` at line 51.
+`SocialLinks.tsx` instantiates `useProfileUpdate()` at line 85.
+
+Each instance has its own `loading` state. When SocialLinks is saving, `ProfileSection`'s `loading` is `false` — the "Save Changes" button is still clickable. If the user clicks it during a SocialLinks save, both saves race against each other writing to the same `users` row.
+
+**Fix:** Lift `useProfileUpdate` to `ProfileSection` and pass `handleSave` and `loading` as props to `SocialLinks`. Single save channel, single loading state.
+
+#### 15.6.4 `UserProfileDialog.tsx` — Design System Violations (Downstream Consumer)
+
+The public-facing profile dialog that displays social links still has Phase 2 violations:
+
+| Line | Violation | Fix |
+|------|-----------|-----|
+| 11 | `MdLink`, `MdMailOutline`, `MdPhone` icons | Replace with `LuLink`, `LuMail`, `LuPhone` |
+| 108 | `text-slate-600` | `text-base-content/60` |
+| 113 | `text-slate-600` | Same |
+| 129 | `text-slate-600` | Same |
+| 148 | `rounded-xl bg-slate-50 hover:bg-slate-100` | `rounded-box bg-base-200 hover:bg-base-300` |
+| 149 | `bg-base-100` on icon circle | ✅ OK |
+| 153 | `text-slate-700` | `text-base-content` |
+| 155 | `text-slate-500` | `text-base-content/60` |
+| 233 | `border-white` | `border-base-100` |
+| 236 | `text-slate-800` | `text-base-content` |
+| 237 | `text-slate-500` | `text-base-content/60` |
+| 244 | `bg-slate-200` | `border-base-300 border-t` (use semantic border) |
+| 250 | `text-slate-400` | `text-base-content/50` |
+| 253 | `text-slate-600` | `text-base-content/70` |
+| 259 | `text-slate-400` | `text-base-content/50` |
+
+**Total: 14 hardcoded color violations** in the read-side consumer. This dialog **breaks in dark mode**.
+
+**Fix:** Full design system pass on `UserProfileDialog.tsx`. This is the public-facing side of the social links feature — it must match.
+
+---
+
+### 15.7 Security Audit — Social Links Feature
+
+| # | Issue | Severity | Details |
+|---|-------|----------|---------|
+| 1 | **SSRF via `/api/fetchMetadata`** | 🔴 Critical | No URL validation. Can probe internal network (`localhost`, `169.254.169.254`, `10.x.x.x`). |
+| 2 | **No rate limit on `/api/fetchMetadata`** | 🔴 High | Attacker can flood the endpoint to amplify SSRF or DoS the server. |
+| 3 | **No authentication on `/api/fetchMetadata`** | 🟠 Medium | Any anonymous request can call the endpoint. Should require auth session. |
+| 4 | **XSS via stored metadata** | 🟡 Low | `link.metadata.title` and `link.metadata.description` are rendered via JSX (`{link.metadata?.title}`), which React auto-escapes. **Safe.** But `link.metadata.icon` is used as `<img src={link.metadata.icon}>` — if the icon URL is a `javascript:` URI, modern browsers block it, but a `data:` URI with SVG could theoretically inject content. |
+| 5 | **Open redirect via `window.open`** | 🟡 Low | `handleLinkClick` (line 157) opens `getFormattedHref(link)` in a new tab. The URL comes from user input stored in DB. `noopener,noreferrer` mitigates most risks. |
+| 6 | **No content-type validation on metadata response** | 🟡 Low | `response.json()` on line 111 doesn't check `Content-Type` header. If the endpoint returns HTML (error page), `.json()` throws — handled by the outer `catch`. |
+
+**Priority fix: Items 1–3.** Migrate to `/api/metadata` (which already has all protections) and delete the legacy endpoint.
+
+---
+
+### 15.8 Performance Considerations
+
+| Area | Current | Issue | Impact |
+|------|---------|-------|--------|
+| Metadata fetch | Synchronous, blocking UI | Adding a link blocks input until fetch completes | User waits 1–5s per link addition |
+| Profile save on link add/remove | Full profile update | `updateUser(user.id, profilePayload)` sends the entire profile object on every link change | Over-writes other fields; bandwidth waste |
+| Store subscriptions | 2× `useAuthStore` selectors in SocialLinks | `useAuthStore((state) => state.profile)` and `useAuthStore((state) => state.setProfile)` create 2 subscriptions | Minor — Zustand is efficient with selectors |
+| Re-renders | `setProfile` on every link change | All components subscribed to `profile` re-render | Sidebar avatar/name, ProfileSection fields — ~5 components |
+| Metadata storage | Full OG data stored per link | `socialBanner`, `themeColor`, `socialBannerSize` stored but never displayed | Unused data in JSONB — ~200 bytes/link wasted |
+
+**No critical performance issues.** The main UX concern is the blocking metadata fetch. Consider:
+1. Show the link immediately (optimistic) with a loading spinner on the metadata section
+2. Fetch metadata in background
+3. Update the link's metadata when the fetch completes
+
+---
+
+### 15.9 Summary — Required Changes (Prioritized)
+
+#### Priority 1 — Security (Block before next deploy) ✅ ALL DONE
+
+| # | Issue | Files | Status |
+|---|-------|-------|--------|
+| S1 | ✅ Migrate SocialLinks to `/api/metadata` (POST) | `SocialLinks.tsx` | Done — now uses `fetchLinkMetadata` from `@api` |
+| S2 | ✅ `/api/fetchMetadata` converted to deprecated proxy | `pages/api/fetchMetadata.ts` | Done — forwards to `/api/metadata` with rate limiting |
+| S3 | ✅ `/api/fetchMetadata` is deprecated proxy (safe to delete when ready) | `pages/api/fetchMetadata.ts` | Done — marked `@deprecated` |
+
+#### Priority 2 — Data Integrity ✅ ALL DONE
+
+| # | Issue | Files | Status |
+|---|-------|-------|--------|
+| D1 | ✅ Optimistic update rollback on save failure | `SocialLinks.tsx` | Done — both add/remove have rollback |
+| D2 | ✅ Fix `as Profile` cast → `as ProfileData` | `ProfileSection.tsx` | Done |
+| D3 | ✅ Move `setNewLink('')` after successful save | `SocialLinks.tsx` | Done — only clears on success |
+| D4 | ✅ Validate/map metadata response via `sanitizeMetadata()` | `SocialLinks.tsx`, `types.ts` | Done — `sanitizeMetadata` helper in types |
+
+#### Priority 3 — Architecture & Types ✅ ALL DONE
+
+| # | Issue | Files | Status |
+|---|-------|-------|--------|
+| A1 | ✅ Unified `LinkItem` types | `types/domain.ts` imports from `settings/types.ts` | Done — single source of truth |
+| A2 | ✅ Lifted `useProfileUpdate` to ProfileSection | `ProfileSection.tsx` → `SocialLinks.tsx` via props | Done — `onSave`+`saveLoading` props |
+| A3 | ✅ Skip username validation for link-only saves | `hooks/useProfileUpdate.ts` | Done — `skipUsernameValidation` option |
+| A4 | ✅ Extracted `useAvatarUpload` hook | `hooks/useAvatarUpload.ts` + `ProfileSection.tsx` | Done — SRP-compliant hook |
+| A5 | ✅ Created `@api/users/fetchLinkMetadata.ts` wrapper | `api/users/fetchLinkMetadata.ts`, `SocialLinks.tsx` | Done — imported via `@api` barrel |
+
+#### Priority 4 — UX Polish ✅ ALL DONE
+
+| # | Issue | Files | Status |
+|---|-------|-------|--------|
+| U1 | ✅ Remove button visible on mobile, hover on desktop | `SocialLinks.tsx` | Done — `opacity-100 md:opacity-0 md:group-hover:opacity-100` |
+| U2 | ✅ Favicon `onError` fallback hides broken img | `SocialLinks.tsx` | Done — `display:none` on error |
+| U3 | ✅ Link limit (MAX_LINKS = 20) | `SocialLinks.tsx`, `types.ts` | Done — with warning UI |
+| U4 | ✅ Normalize URLs before duplicate check | `SocialLinks.tsx`, `types.ts` | Done — `normalizeUrl` helper |
+| U5 | ✅ Derive `hasCustomAvatar` from store | `ProfileSection.tsx` | Done — removed `useState`+`useEffect` |
+| U6 | ✅ Gradient → ScrollArea bg dependency comment | `ProfileSection.tsx` | Done |
+
+#### Priority 5 — Design System Compliance (Downstream) ✅ ALL DONE
+
+| # | Issue | Files | Status |
+|---|-------|-------|--------|
+| DS1 | ✅ All hardcoded colors → semantic tokens | `UserProfileDialog.tsx` | Done — `text-slate-*` → `text-base-content/*`, `bg-slate-*` → `bg-base-*/base-content` |
+| DS2 | ✅ `Md*` icons → `Lu*` icons | `UserProfileDialog.tsx` | Done — `MdLink/MdMailOutline/MdPhone` → `LuLink/LuMail/LuPhone` |
+
+---
+
+### 15.10 Trade-Off Analysis
+
+| Decision | Code Impact | UX Impact | Recommendation |
+|----------|-------------|-----------|----------------|
+| Remove auto-save from SocialLinks vs keep | Simpler mental model; single save path | User must click "Save" for links too | ✅ Remove auto-save (Option A from §15.4.2) |
+| Unify `LinkItem` types vs keep separate | Removes 1 type definition; fixes cast issues | Zero UX impact | ✅ Unify — prevents type drift |
+| Delete `/api/fetchMetadata` vs keep both | Removes 116 lines + 2 dependencies (`axios`, `randomcolor`) | Zero UX impact | ✅ Delete after migration |
+| Add link reordering (dnd-kit) vs insertion order | ~100 lines + UI complexity | Nice-to-have; industry standard for link-in-bio | ⏭️ Defer — implement if users request |
+| Add link editing vs delete-and-re-add | ~50 lines per edit UI | Saves re-fetch; prevents metadata loss | ⏭️ Defer — low frequency action |
+| Optimistic metadata display vs blocking fetch | ~30 lines for skeleton/loading per link | Much faster perceived performance | 🟡 Consider for Phase 2 |
+| `useAvatarUpload` hook extraction | +1 file, cleaner SRP | Zero UX impact | ✅ Do now — aligns with moving DB calls out of UI |
+
+---
+
+### 15.11 What We Are NOT Doing (Scope Boundaries)
+
+| Out of Scope | Reason |
+|-------------|--------|
+| Link reordering (drag-and-drop) | YAGNI — no user requests yet; `@dnd-kit` available when needed |
+| Inline link editing | YAGNI — delete-and-re-add is acceptable for v1 |
+| Link analytics (click tracking) | Out of scope for settings panel |
+| Link categories/grouping | Over-engineering for <20 links |
+| Rich link previews (show full OG card) | Current title+description+icon is sufficient |
+| Metadata refresh/re-fetch for existing links | YAGNI — links rarely change their OG metadata |
+| Custom link titles (override metadata) | Nice-to-have; not requested |
+
+---
+
+*Section 15 added 2026-02-17 by Head of Engineering. All 21 items (S1–S3, D1–D4, A1–A5, U1–U6, DS1–DS2) have been implemented and verified with clean lint output. Key deliverables: consolidated POST `/api/metadata` endpoint with SSRF protection + rate limiting, deprecated GET `/api/fetchMetadata` as proxy, production-ready `SocialLinks.tsx` with optimistic updates + rollback, new `useAvatarUpload` hook (SRP), `fetchLinkMetadata` API wrapper, unified `LinkItem` type system, design-system-compliant `UserProfileDialog.tsx`. Zero new lint errors introduced.*
 
