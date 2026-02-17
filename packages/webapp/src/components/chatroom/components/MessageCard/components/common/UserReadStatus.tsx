@@ -47,13 +47,13 @@ export const UserReadStatus = ({
   if (!message.readed_at) return null
 
   const content = (
-    <div className={twMerge('flex items-center gap-2 py-0 pt-2', className)}>
+    <div className={twMerge('flex items-center gap-2 pt-2', className)}>
       <span className="text-base-content/50 text-xs">
         {!message.readed_at ? (
-          <Icons.check className="text-base-content text-base-content/40 size-4" />
+          <Icons.check size={16} className="text-base-content/40" />
         ) : (
-          <span className="flex items-center gap-3">
-            <Icons.checkDouble className="text-base-content text-base-content/40 size-4" />
+          <span className="flex items-center gap-2">
+            <Icons.checkDouble size={16} className="text-base-content/40" />
             {readUsers.length} seen
           </span>
         )}
