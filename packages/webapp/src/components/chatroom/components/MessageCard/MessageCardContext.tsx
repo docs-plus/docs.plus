@@ -87,7 +87,7 @@ export const MessageCardProvider: React.FC<{
         className={twMerge(
           'message-card group/msgcard chat msg_card relative rounded-md pl-3 transition-colors',
           variant !== 'mobile' && (message.is_bookmarked || message.bookmark_id)
-            ? 'my-1 bg-blue-50 hover:bg-blue-100'
+            ? 'bg-primary/5 hover:bg-primary/10 my-1'
             : variant !== 'mobile' && 'hover:bg-base-200',
           'transition-colors duration-150',
           variant === 'mobile'

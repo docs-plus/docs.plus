@@ -1,7 +1,7 @@
 import { useNotificationToggle } from '@components/chatroom/hooks/useNotificationToggle'
 import Button from '@components/ui/Button'
 import { ButtonSize } from '@components/ui/Button'
-import { LuAtSign, LuBell, LuBellOff } from 'react-icons/lu'
+import { Icons } from '@icons'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {
@@ -11,15 +11,15 @@ type Props = {
 
 const notificationConfig = {
   ALL: {
-    icon: LuBell,
+    icon: Icons.notifications,
     label: 'All notifications'
   },
   MENTIONS: {
-    icon: LuAtSign,
+    icon: Icons.mention,
     label: 'Mentions only'
   },
   MUTED: {
-    icon: LuBellOff,
+    icon: Icons.notificationsOff,
     label: 'Muted'
   }
 }

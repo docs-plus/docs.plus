@@ -132,7 +132,7 @@ export default forwardRef((props, ref) => {
           />
         ))
       ) : (
-        <div className="item px-3 py-1 text-gray-500">No results found</div>
+        <div className="item text-base-content/50 px-3 py-1">No results found</div>
       )}
     </div>
   )

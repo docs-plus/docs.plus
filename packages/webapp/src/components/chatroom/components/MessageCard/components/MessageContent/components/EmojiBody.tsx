@@ -1,3 +1,4 @@
+import { Tooltip } from '@components/ui/Tooltip'
 import { isOnlyEmoji, splitEmojis } from '@utils/index'
 import { getEmojiDataFromNative } from 'emoji-mart'
 import { useEffect, useMemo, useState } from 'react'
@@ -49,14 +50,14 @@ export const EmojiBody = () => {
   }, [emojiArray, contentIsOnlyEmoji])
 
   return (
-    <div className={`flex w-full flex-wrap gap-1`}>
+    <div className="flex w-full flex-wrap gap-2">
       {emojiArray.map((emoji: string, index: number) => (
-        <div key={index} className="tooltip tooltip-right" data-tip={emojiTitles[index] || 'emoji'}>
-          {
-            // @ts-ignore
-            <em-emoji native={emoji} set="native" size="4rem"></em-emoji>
-          }
-        </div>
+        <Tooltip key={index} title={emojiTitles[index] || 'emoji'} placement="top">
+          <div className="hover:bg-base-200 flex items-center justify-center rounded-xl p-1 transition-colors">
+            {/* @ts-expect-error – em-emoji is a web component from @emoji-mart */}
+            <em-emoji native={emoji} set="native" size="4rem" />
+          </div>
+        </Tooltip>
       ))}
     </div>
   )

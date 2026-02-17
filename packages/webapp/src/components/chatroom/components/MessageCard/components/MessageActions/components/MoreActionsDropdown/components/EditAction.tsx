@@ -1,8 +1,8 @@
 import { useEditMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useEditMessageHandler'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
+import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import { useMemo } from 'react'
-import { MdOutlineEdit } from 'react-icons/md'
 
 export const EditAction = () => {
   const { message } = useMessageCardContext()
@@ -18,7 +18,7 @@ export const EditAction = () => {
   return (
     <li>
       <a className="flex items-center gap-2" onClick={() => editMessageHandler(message)}>
-        <MdOutlineEdit size={20} />
+        <Icons.edit size={20} />
         Edit Message
       </a>
     </li>

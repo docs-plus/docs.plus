@@ -1,6 +1,6 @@
 import { useReplyInMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useReplyInMessageHandler'
-import { ReplyMD } from '@components/icons/Icons'
 import Button from '@components/ui/Button'
+import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
@@ -11,17 +11,16 @@ export const ReplyButton = () => {
   const profile = useAuthStore((state) => state.profile)
 
   return (
-    <div>
-      <Button
-        disabled={!profile}
-        variant="ghost"
-        size="sm"
-        shape="square"
-        className="join-item tooltip tooltip-left"
-        data-tip="Reply to Message"
-        onClick={() => replyInMessageHandler(message)}
-        startIcon={<ReplyMD size={20} className="text-base-content/70" />}
-      />
-    </div>
+    <Button
+      disabled={!profile}
+      variant="ghost"
+      size="sm"
+      shape="square"
+      className="join-item"
+      onClick={() => replyInMessageHandler(message)}
+      startIcon={<Icons.reply size={20} className="text-base-content/70" />}
+      tooltip="Reply to Message"
+      tooltipPlacement="left"
+    />
   )
 }

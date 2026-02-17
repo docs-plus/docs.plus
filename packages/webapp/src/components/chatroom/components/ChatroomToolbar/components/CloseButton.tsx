@@ -1,8 +1,8 @@
 import Button from '@components/ui/Button'
+import { Icons } from '@icons'
 import { CHAT_CLOSE } from '@services/eventsHub'
 import { useChatStore } from '@stores'
 import PubSub from 'pubsub-js'
-import { LuX } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {
@@ -27,7 +27,7 @@ export const CloseButton = ({ className }: Props) => {
         className
       )}
       aria-label="Close chatroom">
-      <LuX size={16} />
+      <Icons.close size={16} />
     </Button>
   )
 }

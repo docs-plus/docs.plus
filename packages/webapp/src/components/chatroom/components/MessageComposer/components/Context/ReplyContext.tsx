@@ -1,5 +1,5 @@
 import CloseButton from '@components/ui/CloseButton'
-import { FaReply } from 'react-icons/fa'
+import { Icons } from '@icons'
 
 import { useChatroomContext } from '../../../../ChatroomContext'
 import { useAutoScrollOnMessageContext } from '../../hooks/useAutoScrollOnMessageContext'
@@ -23,8 +23,8 @@ const ReplyContext = ({ onDismiss }: { onDismiss?: () => void }) => {
   if (replyMessageMemory.channel_id !== channelId) return null
 
   return (
-    <div className="text-base-content -mb-1 flex w-full items-center justify-between rounded-t-lg border border-b-0 border-gray-200 px-4 py-2 shadow-[0_-2px_6px_-1px_rgba(0,0,0,0.1)]">
-      <FaReply size={24} />
+    <div className="text-base-content border-base-300 -mb-1 flex w-full items-center justify-between rounded-t-lg border border-b-0 px-4 py-2 shadow-sm">
+      <Icons.reply size={24} />
       <div className="text-base-content flex w-full flex-col justify-start pl-3 text-base">
         <span className="text-primary font-semibold antialiased">
           Reply to

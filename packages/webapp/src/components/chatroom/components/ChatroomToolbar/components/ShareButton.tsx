@@ -1,7 +1,7 @@
 import CopyButton, { CopyButtonSize } from '@components/ui/CopyButton'
+import { Icons } from '@icons'
 import { useChatStore } from '@stores'
 import { useMemo } from 'react'
-import { LuLink } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {
@@ -34,7 +34,7 @@ export const ShareButton = ({
       size={size}
       variant="ghost"
       square
-      icon={LuLink}
+      icon={Icons.link}
       className={twMerge(
         'text-base-content/60 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none',
         className

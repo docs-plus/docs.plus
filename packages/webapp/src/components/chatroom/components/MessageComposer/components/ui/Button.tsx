@@ -1,4 +1,5 @@
 import SharedButton from '@components/ui/Button'
+import { Placement } from '@floating-ui/react'
 import { Editor } from '@tiptap/react'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -9,7 +10,7 @@ interface ToolbarButtonProps {
   onPress?: (event: React.MouseEvent | React.TouchEvent) => void
   children?: React.ReactNode
   tooltip?: string
-  tooltipPosition?: 'tooltip-top' | 'tooltip-bottom' | 'tooltip-left' | 'tooltip-right'
+  tooltipPosition?: Placement
   className?: string
   isActive?: boolean
   disabled?: boolean
@@ -17,7 +18,17 @@ interface ToolbarButtonProps {
 
 const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
   (
-    { type, editor, onPress, children, tooltip, tooltipPosition, className, isActive, disabled },
+    {
+      type,
+      editor,
+      onPress,
+      children,
+      tooltip,
+      tooltipPosition = 'bottom',
+      className,
+      isActive,
+      disabled
+    },
     ref
   ) => {
     const isButtonActive = isActive || editor?.isActive(type || '')
@@ -29,17 +40,17 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
         size="sm"
         shape="square"
         className={twMerge(
-          'tooltip tooltip-bottom size-8 cursor-pointer touch-manipulation border-0 p-0 antialiased',
+          'size-8 cursor-pointer touch-manipulation border-0 p-0 antialiased',
           isButtonActive && 'is-active btn-active',
-          tooltipPosition,
           className
         )}
         onClick={(e) => {
           e.preventDefault()
           onPress?.(e)
         }}
-        data-tip={tooltip}
-        disabled={disabled}>
+        disabled={disabled}
+        tooltip={tooltip}
+        tooltipPlacement={tooltipPosition}>
         {children}
       </SharedButton>
     )

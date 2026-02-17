@@ -1,3 +1,4 @@
+import { Icons } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore, useStore } from '@stores'
 import { TIPTAP_NODES } from '@types'
@@ -5,7 +6,6 @@ import { getPostAtDOM } from '@utils/index'
 import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 import React, { useCallback, useEffect, useState } from 'react'
-import { LuChevronRight } from 'react-icons/lu'
 import slugify from 'slugify'
 import { twMerge } from 'tailwind-merge'
 
@@ -104,7 +104,9 @@ export const Breadcrumb = ({ className }: Props) => {
               key={index}
               className="flex min-w-0 items-center gap-1"
               aria-current={isLast ? 'page' : undefined}>
-              {index > 0 && <LuChevronRight size={14} className="text-base-content/40 shrink-0" />}
+              {index > 0 && (
+                <Icons.chevronRight size={14} className="text-base-content/40 shrink-0" />
+              )}
               {isLast ? (
                 <button
                   onClick={(e) => scroll2Heading(e, heading)}

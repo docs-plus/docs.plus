@@ -7,23 +7,12 @@ import { useEditMessageHandler } from '@components/chatroom/components/MessageCa
 import { usePinMessageHandler } from '@components/chatroom/components/MessageCard/hooks/usePinMessageHandler'
 import { useReplyInMessageHandler } from '@components/chatroom/components/MessageCard/hooks/useReplyInMessageHandler'
 import { useReplyInThreadHandler } from '@components/chatroom/components/MessageCard/hooks/useReplyInThreadHandler'
-import { ReplyMD } from '@components/icons/Icons'
+import { Icons } from '@icons'
 import { useAuthStore } from '@stores'
 import { TMsgRow } from '@types'
 import { hasMetadataProperty } from '@utils/metadata'
 import { motion } from 'motion/react'
 import React, { useMemo } from 'react'
-import { BsFillPinAngleFill, BsFillPinFill, BsForwardFill } from 'react-icons/bs'
-import {
-  MdBookmarkRemove,
-  MdCheck,
-  MdDeleteOutline,
-  MdOutlineBookmarkAdd,
-  MdOutlineComment,
-  MdOutlineEdit,
-  MdOutlineFileOpen,
-  MdOutlineLink
-} from 'react-icons/md'
 
 import { useMessageLongPressMenu } from '../MessageLongPressMenu'
 
@@ -58,7 +47,7 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
   const messageButtonList = [
     {
       title: 'Reply',
-      icon: <ReplyMD size={20} />,
+      icon: <Icons.reply size={20} />,
       onClickFn: () => replyInMessageHandler(message),
       display: true, //settings.contextMenue?.reply ?? true,
       className: ''
@@ -66,9 +55,9 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
     {
       title: linkCopied ? 'Copied!' : 'Copy Link',
       icon: linkCopied ? (
-        <MdCheck size={20} className="text-success" />
+        <Icons.check size={20} className="text-success" />
       ) : (
-        <MdOutlineLink size={20} />
+        <Icons.link size={20} />
       ),
       onClickFn: () => copyMessageLinkHandler(message),
       display: true, //settings.contextMenue?.copyLink ?? true,
@@ -78,9 +67,9 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
       title: 'Bookmark',
       icon:
         message.is_bookmarked || message.bookmark_id ? (
-          <MdBookmarkRemove size={20} />
+          <Icons.bookmarkMinus size={20} />
         ) : (
-          <MdOutlineBookmarkAdd size={20} />
+          <Icons.bookmarkPlus size={20} />
         ),
       onClickFn: () => bookmarkMessageHandler(message),
       display: true, //settings.contextMenue?.bookmark ?? true,
@@ -88,50 +77,50 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
     },
     {
       title: 'Copy to Doc',
-      icon: <MdOutlineFileOpen size={20} />,
+      icon: <Icons.fileOpen size={20} />,
       onClickFn: () => copyMessageToDocHandler(message),
       display: true, //settings.contextMenue?.copyToDoc ?? true,
       className: ''
     },
     {
       title: 'Reply in Thread',
-      icon: <MdOutlineComment size={20} />,
+      icon: <Icons.thread size={20} />,
       onClickFn: () => replyInThreadHandler(message),
       display: true, //settings.contextMenue?.replyInThread ?? true,
-      className: 'text-docsy'
+      className: 'text-primary'
     },
 
     {
       title: 'Forward',
-      icon: <BsForwardFill size={20} />,
+      icon: <Icons.forward size={20} />,
       onClickFn: () => {}, //openModal('forwardMessageModal', messageData),
       display: false, //settings.contextMenue?.forward ?? true,
       className: ''
     },
     {
       title: isPinned ? 'Unpin' : 'Pin',
-      icon: isPinned ? <BsFillPinAngleFill size={20} /> : <BsFillPinFill size={20} />,
+      icon: isPinned ? <Icons.pinOff size={20} /> : <Icons.pin size={20} />,
       onClickFn: () => pinMessageHandler(message),
       display: false, //settings.contextMenue?.pin ?? true,
       className: ''
     },
     {
       title: 'Edit',
-      icon: <MdOutlineEdit size={20} />,
+      icon: <Icons.edit size={20} />,
       onClickFn: () => editMessageHandler(message),
       display: isOwner, //true, //settings.contextMenue?.edite ?? true,
       className: 'border-t pt-1 mt-1 border-base-300'
     },
     {
       title: 'Delete',
-      icon: <MdDeleteOutline size={20} />,
+      icon: <Icons.trash size={20} />,
       onClickFn: () => {
         openDialog(<DeleteMessageConfirmationDialog message={message} />, {
           size: 'sm'
         })
       },
       display: isOwner, //true, //settings.contextMenue?.delete ?? true,
-      className: 'text-red-500'
+      className: 'text-error'
     }
   ]
 
@@ -149,7 +138,7 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
               }}
               whileTap={{
                 scale: 0.98,
-                backgroundColor: 'rgba(0,0,0,0.05)',
+                backgroundColor: 'color-mix(in oklch, var(--color-base-content) 10%, transparent)',
                 transition: { duration: 0.1 }
               }}
               className={`${item.className} ${!isInteractive ? 'pointer-events-none cursor-not-allowed opacity-60' : 'cursor-pointer select-none'} flex touch-manipulation items-center`}>

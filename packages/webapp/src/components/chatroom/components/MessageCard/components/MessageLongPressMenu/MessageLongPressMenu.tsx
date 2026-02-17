@@ -146,7 +146,7 @@ export const MessageLongPressMenu = ({ children, message }: Props) => {
               className="fixed inset-0 z-50 overflow-auto transition-all duration-200 ease-out"
               style={{
                 backdropFilter: 'blur(6px)',
-                backgroundColor: 'rgba(0,0,0,0.2)',
+                backgroundColor: 'color-mix(in oklch, var(--color-base-content) 20%, transparent)',
                 opacity: isMenuEnterAnimationActive ? 1 : 0
               }}
               onClick={closeLongPressMenu}>

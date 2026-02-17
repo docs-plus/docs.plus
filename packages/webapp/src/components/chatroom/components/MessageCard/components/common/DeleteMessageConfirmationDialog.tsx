@@ -1,8 +1,8 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import Button from '@components/ui/Button'
 import PanelHeader from '@components/ui/PanelHeader'
+import { Icons } from '@icons'
 import { TMsgRow } from '@types'
-import { MdDeleteOutline } from 'react-icons/md'
 
 import { useDeleteMessageHandler } from '../../hooks/useDeleteMessageHandler'
 
@@ -23,14 +23,14 @@ export const DeleteMessageConfirmationDialog = ({ message }: Props) => {
     <div className="flex flex-col gap-4 p-4 sm:p-6">
       {/* Header */}
       <PanelHeader
-        icon={MdDeleteOutline}
+        icon={Icons.trash}
         title="Delete Message"
         description="This action cannot be undone"
         variant="error"
       />
 
       {/* Content */}
-      <p className="text-sm text-slate-600">
+      <p className="text-base-content/70 text-sm">
         Are you sure you want to delete this message? This will permanently remove it from the
         conversation.
       </p>

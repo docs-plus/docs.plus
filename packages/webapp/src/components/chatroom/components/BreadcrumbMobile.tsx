@@ -1,9 +1,9 @@
+import { Icons } from '@icons'
 import { useChatStore, useStore } from '@stores'
 import { TIPTAP_NODES } from '@types'
 import { getPostAtDOM } from '@utils/index'
 import { useRouter } from 'next/router'
 import React, { useEffect, useState } from 'react'
-import { LuChevronRight } from 'react-icons/lu'
 import slugify from 'slugify'
 
 const BreadcrumbMobile = () => {
@@ -79,7 +79,7 @@ const BreadcrumbMobile = () => {
         <div className="text-base-content/50 flex min-w-0 items-center gap-0.5 truncate text-xs leading-tight">
           {ancestors.map((h: any, i: number) => (
             <React.Fragment key={i}>
-              {i > 0 && <LuChevronRight size={10} className="shrink-0" />}
+              {i > 0 && <Icons.chevronRight size={10} className="shrink-0" />}
               <span className="truncate">{h.text}</span>
             </React.Fragment>
           ))}

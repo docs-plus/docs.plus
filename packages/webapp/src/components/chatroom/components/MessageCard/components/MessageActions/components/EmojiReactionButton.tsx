@@ -1,7 +1,7 @@
 import Button from '@components/ui/Button'
+import { Icons } from '@icons'
 import { useAuthStore, useChatStore } from '@stores'
 import { useCallback, useRef } from 'react'
-import { MdOutlineEmojiEmotions } from 'react-icons/md'
 
 import { calculateEmojiPickerPosition } from '../../../helpers'
 import { useMessageCardContext } from '../../../MessageCardContext'
@@ -38,11 +38,12 @@ export const EmojiReactionButton = ({ className }: Props) => {
       variant="ghost"
       size="sm"
       shape="square"
-      className={`join-item tooltip tooltip-left ${className || ''}`}
-      data-tip="Add Reaction"
+      className={`join-item ${className || ''}`}
       disabled={!profile}
       onClick={openEmojiPickerHandler}
-      startIcon={<MdOutlineEmojiEmotions size={20} className="text-base-content/70" />}
+      startIcon={<Icons.emoji size={20} className="text-base-content/70" />}
+      tooltip="Add Reaction"
+      tooltipPlacement="left"
     />
   )
 }

@@ -1,4 +1,4 @@
-import { MdOutlineBookmark } from 'react-icons/md'
+import { Icons } from '@icons'
 import { twMerge } from 'tailwind-merge'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
@@ -15,10 +15,10 @@ export const BookmarkIndicator = ({ className }: Props) => {
   return (
     <div
       className={twMerge(
-        'flex items-center gap-1 pt-1 pb-4 text-xs font-medium text-blue-600',
+        'text-primary flex items-center gap-1 pt-1 pb-4 text-xs font-medium',
         className
       )}>
-      <MdOutlineBookmark size={16} />
+      <Icons.bookmark size={16} />
       <span>Saved for later</span>
     </div>
   )

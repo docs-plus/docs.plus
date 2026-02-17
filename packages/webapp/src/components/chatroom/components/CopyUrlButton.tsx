@@ -1,5 +1,5 @@
 import CopyButton from '@components/ui/CopyButton'
-import { LuLink } from 'react-icons/lu'
+import { Icons } from '@icons'
 
 interface CopyUrlButtonProps {
   url?: string
@@ -24,7 +24,7 @@ export const CopyUrlButton = ({
       size="xs"
       variant="ghost"
       circle
-      icon={LuLink}
+      icon={Icons.link}
       className={className}
       tooltip={dataTip}
       successMessage={successMessage}

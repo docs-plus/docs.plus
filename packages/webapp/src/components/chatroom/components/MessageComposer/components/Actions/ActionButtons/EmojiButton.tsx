@@ -62,7 +62,7 @@ export const EmojiButton = ({ className, size = 20, ...props }: Props) => {
       className={className}
       onPress={openEmojiPickerHandler}
       tooltip="Emoji"
-      tooltipPosition="tooltip-top"
+      tooltipPosition="top"
       aria-label="Open emoji picker"
       {...props}>
       <Icon type="MdOutlineEmojiEmotions" size={size} />

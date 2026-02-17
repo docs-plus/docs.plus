@@ -21,7 +21,7 @@ export const ToggleToolbarButton = ({
       className={className}
       onPress={toggleToolbar}
       tooltip="Toolbar"
-      tooltipPosition="tooltip-top"
+      tooltipPosition="top"
       isActive={!isToolbarOpen}
       {...props}>
       <Icon type={iconType} size={size} />

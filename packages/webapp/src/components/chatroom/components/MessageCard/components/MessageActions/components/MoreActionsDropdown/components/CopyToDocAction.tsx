@@ -1,6 +1,6 @@
 import { useCopyMessageToDocHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageToDocHandler'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
-import { MdOutlineFileOpen } from 'react-icons/md'
+import { Icons } from '@icons'
 
 export const CopyToDocAction = () => {
   const { copyMessageToDocHandler } = useCopyMessageToDocHandler()
@@ -11,7 +11,7 @@ export const CopyToDocAction = () => {
   return (
     <li>
       <a className="flex items-center gap-2" onClick={() => copyMessageToDocHandler(message)}>
-        <MdOutlineFileOpen size={20} />
+        <Icons.fileOpen size={20} />
         Copy to doc
       </a>
     </li>

@@ -15,7 +15,7 @@ export const ReplyReference = () => {
   if (!message.reply_to_message_id) return null
 
   return (
-    <div className="bg-base-200 text-base-content mb-1 w-[98%] rounded border-l-4 border-cyan-400 p-1">
+    <div className="bg-base-200 text-base-content border-info mb-1 w-[98%] rounded border-l-4 p-1">
       <div className="chat-header text-xs font-bold">
         <>
           <div className="text-xs font-bold">{userReplyTo}</div>

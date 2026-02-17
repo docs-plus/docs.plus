@@ -36,9 +36,9 @@ const MobileToolbar = () => {
             iconType="Close"
             onPress={toggleToolbar}
             size={22}
-            className="btn-square shrink-0 !bg-gray-200"
+            className="btn-square !bg-base-200 shrink-0"
           />
-          <div className="mx-2 h-6 w-px shrink-0 bg-gray-300" />
+          <div className="bg-base-300 mx-2 h-6 w-px shrink-0" />
           <div className="flex-1 overflow-hidden">
             <div
               className="hide-scrollbar -mb-1 flex snap-x snap-mandatory items-center gap-3 overflow-x-auto overflow-y-hidden scroll-smooth pb-1"
@@ -84,7 +84,7 @@ const MobileToolbar = () => {
 export const MobileLayout = () => {
   return (
     <div className="chat_editor_container flex w-full flex-col">
-      <MsgComposer className="rounded-t-md border border-b-0 border-gray-300 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)]">
+      <MsgComposer className="border-base-300 rounded-t-md border border-b-0 shadow-sm">
         <MsgComposer.MobileWrapper>
           <MsgComposer.Context>
             <MsgComposer.ReplyContext />
@@ -93,7 +93,7 @@ export const MobileLayout = () => {
           </MsgComposer.Context>
 
           <div className="flex flex-row items-end gap-2 px-2 py-1.5">
-            <MsgComposer.AttachmentButton size={22} className="btn-square bg-gray-200" />
+            <MsgComposer.AttachmentButton size={22} className="btn-square bg-base-200" />
             <MsgComposer.Input className="py-0.5" />
           </div>
           <MobileToolbar />

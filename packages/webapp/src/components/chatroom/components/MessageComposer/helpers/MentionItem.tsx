@@ -1,6 +1,6 @@
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
-import { MdGroups } from 'react-icons/md'
+import { Icons } from '@icons'
 
 const MentionItem = ({ item, index, selectedIndex, onSelect }: any) => (
   <div key={item.id} className="mention-item">
@@ -11,14 +11,13 @@ const MentionItem = ({ item, index, selectedIndex, onSelect }: any) => (
       }`}
       onClick={() => onSelect(index)}>
       {item.isEveryoneOption ? (
-        <MdGroups className="text-base-content/70 mr-2 size-8" />
+        <Icons.share className="text-base-content/70 mr-2 size-8" />
       ) : (
         <Avatar
           id={item.id}
           src={item.avatar_url || ''}
           avatarUpdatedAt={item.avatar_updated_at || null}
           alt={item.full_name || item.display_name || item.username}
-          data-tip={item.display_name || 'anonymous'}
           className="mr-2 size-8"
         />
       )}

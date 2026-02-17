@@ -26,12 +26,7 @@ export const ParticipantsList = ({ className }: Props) => {
 
   return (
     <div className={twMerge('flex items-center', className)}>
-      <AvatarStack
-        size="sm"
-        users={presentUsers}
-        showStatus={true}
-        tooltipPosition="tooltip-bottom"
-      />
+      <AvatarStack size="sm" users={presentUsers} showStatus={true} tooltipPosition="bottom" />
     </div>
   )
 }

@@ -1,6 +1,6 @@
 import { useCopyMessageLinkHandler } from '@components/chatroom/components/MessageCard/hooks/useCopyMessageLinkHandler'
 import { useMessageCardContext } from '@components/chatroom/components/MessageCard/MessageCardContext'
-import { MdCheck, MdOutlineLink } from 'react-icons/md'
+import { Icons } from '@icons'
 import { twMerge } from 'tailwind-merge'
 
 type Props = {
@@ -18,12 +18,12 @@ export const CopyLinkAction = ({ className }: Props) => {
       <a className="flex items-center gap-2" onClick={() => copyMessageLinkHandler(message)}>
         {copied ? (
           <>
-            <MdCheck size={22} className="text-success" />
+            <Icons.check size={22} className="text-success" />
             <span className="text-success">Copied!</span>
           </>
         ) : (
           <>
-            <MdOutlineLink size={22} />
+            <Icons.link size={22} />
             Copy Link
           </>
         )}

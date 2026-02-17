@@ -1,4 +1,4 @@
-import { DocsPlus } from '@icons'
+import { DocsPlusIcon } from '@icons'
 import { useStore } from '@stores'
 import { TMsgRow } from '@types'
 import { getMetadataProperty } from '@utils/metadata'
@@ -60,7 +60,7 @@ export const SystemNotifyChip = ({ message }: Props) => {
           </span>
           <span>joined</span>
           <span className="bg-info/10 flex items-center gap-1 py-0.5">
-            <DocsPlus size={12} className="mb-1" />
+            <DocsPlusIcon size={12} className="mb-1" />
             <span className="font-medium underline">{docMetadata.title}</span>
             {'-'}{' '}
             {formatDistanceToNow(new Date(message.created_at), {

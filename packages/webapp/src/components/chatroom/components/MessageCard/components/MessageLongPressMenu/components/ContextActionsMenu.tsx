@@ -29,7 +29,7 @@ export const ContextActionsMenu = forwardRef<HTMLUListElement, ContextActionsMen
         }}
         onClick={(e) => e.stopPropagation()}>
         <LongPressMenuItems message={message} isInteractive={isInteractive} />
-        <div className="mt-1 border-t border-gray-300 pt-1">
+        <div className="border-base-300 mt-1 border-t pt-1">
           <UserReadStatus message={message} />
         </div>
       </ul>

@@ -1,8 +1,8 @@
 import { NotificationToggle } from '@components/chatroom/components/ChatroomToolbar/components/NotificationToggle'
 import { ShareButton } from '@components/chatroom/components/ChatroomToolbar/components/ShareButton'
 import Button from '@components/ui/Button'
+import { Icons } from '@icons'
 import { useChatStore, useSheetStore } from '@stores'
-import { LuX } from 'react-icons/lu'
 
 import BreadcrumbMobile from '../../BreadcrumbMobile'
 
@@ -33,7 +33,7 @@ const ChatRoomHeader = () => {
             onClick={handleClose}
             className="text-base-content/60 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none"
             aria-label="Close chat">
-            <LuX size={16} />
+            <Icons.close size={16} />
           </Button>
         </div>
       </div>

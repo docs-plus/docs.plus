@@ -42,8 +42,8 @@ const ReactionList = ({ className }: Props) => {
             className={twMerge(
               'badge bg-base-300 relative flex items-center justify-center gap-0 !p-0',
               currentUserReacted
-                ? 'border-docsy cursor-pointer border-1'
-                : 'cursor-default border-gray-300',
+                ? 'border-primary cursor-pointer border-1'
+                : 'border-base-300 cursor-default',
               className
             )}
             key={index}

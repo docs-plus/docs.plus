@@ -20,7 +20,7 @@ export const DesktopLayout = () => {
         <MsgComposer.EditContext />
         <MsgComposer.CommentContext />
       </MsgComposer.Context>
-      <div className="rounded-md border border-gray-300 bg-transparent shadow-md">
+      <div className="border-base-300 rounded-md border bg-transparent shadow-md">
         <MsgComposer.Toolbar className="bg-base-300/60 h-10 rounded-t-md border-b p-2 px-1">
           <MsgComposer.BoldButton size={10} />
           <MsgComposer.ItalicButton size={10} />

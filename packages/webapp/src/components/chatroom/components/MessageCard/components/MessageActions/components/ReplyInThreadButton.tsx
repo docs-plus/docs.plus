@@ -1,6 +1,6 @@
 import { useReplyInThreadHandler } from '@components/chatroom/components/MessageCard/hooks/useReplyInThreadHandler'
 import Button from '@components/ui/Button'
-import { MdOutlineComment } from 'react-icons/md'
+import { Icons } from '@icons'
 
 import { useMessageCardContext } from '../../../MessageCardContext'
 
@@ -17,10 +17,11 @@ export const ReplyInThreadButton = ({ className }: Props) => {
       variant="ghost"
       size="sm"
       shape="square"
-      className={`join-item tooltip tooltip-left ${className || ''}`}
-      data-tip="Reply in thread"
+      className={`join-item ${className || ''}`}
       onClick={() => replyInThreadHandler(message)}
-      startIcon={<MdOutlineComment size={20} className="text-primary" />}
+      startIcon={<Icons.thread size={20} className="text-primary" />}
+      tooltip="Reply in thread"
+      tooltipPlacement="left"
     />
   )
 }

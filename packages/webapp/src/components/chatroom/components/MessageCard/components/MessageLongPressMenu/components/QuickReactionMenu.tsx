@@ -1,8 +1,8 @@
+import { Icons } from '@icons'
 import { useChatStore } from '@stores'
 import { TMsgRow } from '@types'
 import { motion } from 'motion/react'
 import { forwardRef } from 'react'
-import { LuPlus } from 'react-icons/lu'
 
 import { useMessageLongPressMenu } from '../MessageLongPressMenu'
 
@@ -46,7 +46,7 @@ const QUICK_REACTIONS: EmojiReaction[] = [
 /** Shared tap animation for reaction buttons. */
 const TAP_ANIMATION = {
   scale: 0.9,
-  backgroundColor: 'rgba(0,0,0,0.1)',
+  backgroundColor: 'color-mix(in oklch, var(--color-base-content) 15%, transparent)',
   transition: { duration: 0.1 }
 }
 
@@ -126,7 +126,11 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
               onTap={handleMoreEmojisClick}
               whileTap={
                 isInteractive
-                  ? { ...TAP_ANIMATION, backgroundColor: 'rgba(0,0,0,0.15)' }
+                  ? {
+                      ...TAP_ANIMATION,
+                      backgroundColor:
+                        'color-mix(in oklch, var(--color-base-content) 20%, transparent)'
+                    }
                   : undefined
               }
               className={`bg-base-200 sticky right-0 flex size-11 touch-manipulation items-center justify-center rounded-full shadow-lg select-none ${
@@ -139,9 +143,9 @@ export const QuickReactionMenu = forwardRef<HTMLDivElement, QuickReactionMenuPro
               title="More emojis"
               style={{
                 boxShadow:
-                  '-20px 0 20px -10px rgba(0, 0, 0, 0.15), -10px 0 10px -5px rgba(0, 0, 0, 0.1), -5px 0 5px -2px rgba(0, 0, 0, 0.05)'
+                  '-20px 0 20px -10px color-mix(in oklch, var(--color-base-content) 15%, transparent), -10px 0 10px -5px color-mix(in oklch, var(--color-base-content) 10%, transparent), -5px 0 5px -2px color-mix(in oklch, var(--color-base-content) 5%, transparent)'
               }}>
-              <LuPlus
+              <Icons.plus
                 size={22}
                 className={isInteractive ? 'text-base-content/60' : 'text-base-content/40'}
               />

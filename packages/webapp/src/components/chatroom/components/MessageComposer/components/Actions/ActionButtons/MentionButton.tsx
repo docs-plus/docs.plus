@@ -17,7 +17,7 @@ export const MentionButton = ({ className, size = 20, ...props }: Props) => {
         editor?.chain().focus().insertContent('@').run()
       }}
       tooltip="Mention"
-      tooltipPosition="tooltip-top"
+      tooltipPosition="top"
       {...props}>
       <Icon type="RiAtLine" size={size} />
     </Button>
