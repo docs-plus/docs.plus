@@ -1,6 +1,6 @@
 # docs.plus Design System (Global)
 
-> **Version:** 3.5.0
+> **Version:** 3.6.0
 > **Last updated:** 2026-02-17
 > **Owners:** UI/UX Team
 
@@ -287,8 +287,23 @@ export const Icons = {
 | `btn-md` (40px) | 18px | Mobile icon-only buttons, nav actions |
 | `btn-lg` (48px) | 20px | Primary mobile CTAs |
 
+**Icon size by UI context (standardized v1.10.0):**
+
+| Context | Icon size | Examples |
+|---------|-----------|----------|
+| Desktop toolbar buttons | 16px | Editor toolbar (bold, italic, link, image, etc.) |
+| Desktop message composer toolbar | 16px | Composer formatting buttons |
+| Hover action buttons (chatroom) | 18px | Emoji, reply, thread, bookmark, more actions |
+| Menu items with text labels | 18px | Context menu entries, dropdown actions |
+| Composer action buttons | 18px | Emoji picker, mention, send, toggle toolbar |
+| TOC sidebar icons | 20px | Chat bubble icon on TOC items |
+| Scroll-to-bottom / mobile standalone | 20px | `ScrollToBottomButton`, mobile quick reaction "+" |
+| Inline status indicators | 16px | Read status checkmarks, message seen |
+| Small inline icons | 14px | Add-reaction "+" on reaction pills |
+
 - Colors: inherit from parent or use `text-base-content/60` for muted
 - Every icon-only button MUST have a tooltip (§5.12)
+- Use the `size` prop, not `className="size-*"` — the prop ensures consistent rendering across icon libraries
 
 ---
 
@@ -407,6 +422,8 @@ Validation states: `input-success`, `input-error`
 5. **ARIA** — `aria-haspopup="listbox"`, `aria-expanded`, `aria-activedescendant`, `role="option"`, `aria-selected`, unique `id`s.
 6. **Panel** — `bg-base-100 border-base-300 rounded-box border shadow-lg z-50`.
 7. **Options** — `px-3 py-2 text-sm`, hover `bg-base-200`, selected `text-primary font-medium` + `Icons.check`.
+8. **Icons** — All icons (`chevronDown`, `check`, `search`) use the `Icons` registry (§3.5) — never raw `Lu*` imports.
+9. **ScrollArea** — Dropdown option lists use the shared `ScrollArea` component (§2.4) — never raw `overflow-y-auto`.
 
 > ⚠️ **DaisyUI `select` gotcha:** On a `<button>`, the `select` class adds an arrow via `background-image`. Add `bg-none` to remove it and `pr-3` to fix padding. Both components handle this.
 
@@ -509,6 +526,7 @@ interface SearchableSelectOption {
 | Trigger disabled | `select-disabled cursor-not-allowed` |
 | Chevron | `Icons.chevronDown` 16px, `rotate-180` when open, `duration-200` |
 | Panel | `bg-base-100 border-base-300 rounded-box border shadow-lg z-50` |
+| Option list | `ScrollArea` with `maxHeight` prop — never raw `overflow-y-auto` |
 | Option | `px-3 py-2 text-sm transition-colors` |
 | Option highlighted | `bg-base-200` |
 | Option selected | `text-primary font-medium` + `Icons.check` 16px |

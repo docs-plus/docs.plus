@@ -1023,9 +1023,10 @@ interface ThreadState {
 4. **`ThreadHeader.tsx`:** ✅ Fixed v1.7.0
    - ~~`text-slate-800`~~ → `text-base-content`
 
-5. **`HoverMenuActions.tsx`:** ❌ Still pending
-   - `text-gray-600` on `MdMoreVert` → should be `text-base-content/60`
-   - Uses `MdMoreVert` (Material icon) instead of `Lu*` (Lucide) per design system
+5. **`HoverMenuActions.tsx`:** ⚠️ Partially fixed
+   - ~~Uses `MdMoreVert` (Material icon)~~ → `Icons.moreVertical` via Icons registry ✅ v1.9.0
+   - ~~Inconsistent icon sizing~~ → Standardized to 18px for all hover action buttons ✅ v1.10.0
+   - `text-gray-600` / `border-gray-300` hardcoded colors still pending migration to semantic tokens
 
 6. **`MobileLayout.tsx`:** ✅ Fixed v1.7.0
    - ~~`bg-transparent` on buttons~~ → Proper `Button variant="ghost"` with semantic colors
@@ -1159,7 +1160,7 @@ interface ThreadState {
 
 | ID | Issue | Location | Impact | Status |
 |----|-------|----------|--------|--------|
-| T1 | **Hardcoded colors break dark mode** — `bg-blue-50`, `bg-gray-100`, `text-slate-800`, `text-gray-600`, `border-gray-200` | `MessageCardContext.tsx`, `ChatContainerMobile.tsx`, `ThreadHeader.tsx`, `HoverMenuActions.tsx` | Dark mode unusable for chat | ⚠️ Partially fixed v1.7.0 + v1.8.0: `ThreadHeader`, `ChatContainerMobile`, `SheetHeader`, `SystemNotifyChip`, `QuickReactionMenu` (bg-white→bg-base-100, gray→base-content), `globals.scss` (`.bg-chatBubble-owner` removed). `MessageCardContext` and `HoverMenuActions` still pending. |
+| T1 | **Hardcoded colors break dark mode** — `bg-blue-50`, `bg-gray-100`, `text-slate-800`, `text-gray-600`, `border-gray-200` | `MessageCardContext.tsx`, `ChatContainerMobile.tsx`, `ThreadHeader.tsx`, `HoverMenuActions.tsx` | Dark mode unusable for chat | ⚠️ Partially fixed v1.7.0 + v1.8.0 + v1.9.0: `ThreadHeader`, `ChatContainerMobile`, `SheetHeader`, `SystemNotifyChip`, `QuickReactionMenu` (bg-white→bg-base-100, gray→base-content), `globals.scss` (`.bg-chatBubble-owner` removed), `HoverMenuActions` icons migrated to `Icons` registry. `MessageCardContext` hardcoded colors still pending. |
 | T1a | **FK violation for unauthenticated users** — `channel_members.member_id` FK violated when anonymous session UUID doesn't exist in `public.users` | `useChannleInitialData.ts` | Runtime crash on chatroom open | ✅ Fixed v1.7.0 |
 | T1b | **Redundant notification toast** — "Notifications enabled!" shown on every message send | `NotificationPromptCard.tsx` | UX annoyance | ✅ Fixed v1.7.0 |
 | T2 | **RLS not fully enabled** — Messages and channels tables have RLS policies commented out in `13-RLS.sql` | `supabase/scripts/13-RLS.sql` | Security concern — all authenticated users can access all messages | ❌ Open |
@@ -1170,7 +1171,7 @@ interface ThreadState {
 | ID | Issue | Location | Impact |
 |----|-------|----------|--------|
 | T4 | **`useChannleInitialData` typo** in filename | `hooks/useChannleInitialData.ts` | Developer confusion |
-| T5 | **Mixed icon libraries** — `MdMoreVert` (Material) in `HoverMenuActions.tsx`, should be `LuEllipsisVertical` (Lucide) | `HoverMenuActions.tsx` | Design system inconsistency |
+| T5 | ~~**Mixed icon libraries** — `MdMoreVert` (Material) in `HoverMenuActions.tsx`, should be `LuEllipsisVertical` (Lucide)~~ | `HoverMenuActions.tsx` | ✅ Fixed v1.9.0 — migrated to `Icons.moreVertical` via Icons registry |
 | T6 | **Stale `@ts-ignore` comments** — Multiple `@ts-ignore` in stores and hooks | `chatroom.ts`, `channelMessagesStore.ts` | Bypassed type checking |
 | T7 | ~~**Legacy `ChannelProvider`** — Separate context provider in `context/ChannelProvider.tsx` with duplicated settings~~ | ~~`context/ChannelProvider.tsx`~~ | ✅ Fixed v1.8.0 — file deleted, wrapper removed from `ChatContainerMobile.tsx` |
 | T8 | **Debounce in `useChannelInitialData`** — Using lodash debounce with `useCallback(debounce(...), [channelId])` is incorrect (creates new debounce on channelId change) | `hooks/useChannleInitialData.ts` | Potential double-fetch |
@@ -1207,8 +1208,10 @@ interface ThreadState {
 - [x] Replace `FilterBar.tsx` hardcoded chip colors (`text-blue-700`, `text-red-700`) → semantic tokens (`text-info`, `text-error`) — ✅ v1.9.0
 - [x] Replace `Tabs.tsx` `text-indigo-600` → `text-primary` — ✅ v1.9.0
 - [x] Fix `StyleSelect.tsx` `editor: any` → `Editor` from `@tiptap/core` with module augmentation for custom commands — ✅ v1.9.0
+- [x] Standardize icon sizing across all chatroom components (hover actions 18px, menu items 18px, toolbar 16px, composer actions 18px, TOC icons 20px) — ✅ v1.10.0
+- [x] Fix `UserReadStatus.tsx` inconsistencies: duplicate classes, `className="size-4"` → `size={16}`, redundant padding, inconsistent gap — ✅ v1.10.0
+- [x] Migrate `Select.tsx` and `SearchableSelect.tsx` to `Icons` registry + `ScrollArea` component — ✅ v1.10.0
 - [ ] Replace remaining hardcoded colors in message components (`MessageCardContext`, `HoverMenuActions`, etc.)
-- [ ] Replace `MdMoreVert` with `LuEllipsisVertical` in `HoverMenuActions`
 - [ ] Audit all `bg-*` and `text-*` classes against `Design_System_Global_v2.md`
 - [ ] Test dark mode end-to-end for chat feature
 
@@ -3190,7 +3193,7 @@ The chatroom feature was built **before** the Design System v3.0 was formalized.
 | Design System Section | Score | Status |
 |---|---|---|
 | §2.1 — Semantic color tokens | **3/10** | 🔴 Critical — 35+ hardcoded color violations |
-| §2.3 — ScrollArea for all scroll | **1/10** | 🔴 Critical — Zero ScrollArea usage |
+| §2.3 — ScrollArea for all scroll | **3/10** | 🟡 Warning — Shared UI (`Select`, `SearchableSelect`) migrated ✅ v1.10.0; chatroom-specific still pending |
 | §3.2 — Radius tokens | **5/10** | 🟡 Warning — Arbitrary radii in 5+ components |
 | §3.5 — Lucide icons only | **10/10** | 🟢 Complete — All chatroom icons migrated to `Icons` registry ✅ v1.9.0 |
 | §5.1 — Button consistency | **7/10** | 🟢 Good — Shared `Button` used in most places |
@@ -3325,18 +3328,22 @@ The design system states: *"Visible focus states (don't remove outline without r
 
 ---
 
-#### 32.2.4 🔴 CRITICAL — Zero ScrollArea Usage (Violates §2.3)
+#### 32.2.4 🟡 WARNING — Limited ScrollArea Usage (Violates §2.3)
 
 The design system states: *"If an element can scroll, it must use the shared ScrollArea component"*
 
-**Current state: ZERO imports of `ScrollArea` in the chatroom directory**
+**Current state: Shared UI components (`Select`, `SearchableSelect`) migrated to `ScrollArea` (v1.10.0). Chatroom-specific scrollable elements still pending.**
 
 Scrollable elements using native scroll:
-- Message feed list (virtual scroll via Tanstack Virtual)
+- Message feed list (virtual scroll via Tanstack Virtual) — **valid exception** (same as TipTap editor in §2.3)
 - `QuickReactionMenu` — uses `overflow-x-auto` + `scrollbar-hide` + inline `scrollbarWidth: 'none'`
 - Mention list dropdown — `overflow-y-auto`
 
-**Note:** The message feed uses Tanstack Virtual, which requires a native scroll container. This is a valid exception (similar to the TipTap editor exception in §2.3). However, the `QuickReactionMenu` and `MentionList` should use `ScrollArea`.
+**Migrated to `ScrollArea`:**
+- `Select.tsx` dropdown options list — ✅ v1.10.0
+- `SearchableSelect.tsx` dropdown options list — ✅ v1.10.0
+
+**Still pending:** `QuickReactionMenu` and `MentionList` should use `ScrollArea`.
 
 ---
 
@@ -3545,7 +3552,7 @@ whileTap={{
 | **MessageSeen** | ❌ `gray-400` | ❌ `Io*` | N/A | N/A | N/A | ❌ | ❌ | 2/10 |
 | **ReactionList** | ✅ | N/A | ✅ | ❌ | ⚠️ | ⚠️ | ✅ | 5/10 |
 | **AddReactionButton** | ✅ | ❌ `Md*` | ✅ | ❌ | ⚠️ | ⚠️ | ✅ | 4/10 |
-| **HoverMenuActions** | ❌ `gray-600`,`gray-300` | ❌ `Md*` | ✅ | ❌ | ✅ | ⚠️ | ❌ | 3/10 |
+| **HoverMenuActions** | ❌ `gray-600`,`gray-300` | ✅ `Icons` v1.9.0 | ✅ | ❌ | ✅ | ⚠️ | ❌ | 4/10 ⬆️ |
 | **QuickActions** | ✅ | N/A | ❌ `rounded-md` | ❌ | ✅ | ⚠️ | ✅ | 5/10 |
 | **ContextMenuItems (desktop)** | ❌ `red-500`,`gray-300` | ❌ `Md*`,`Bs*` | N/A | ❌ | N/A | ⚠️ | ❌ | 2/10 |
 | **ContextMenuItems (mobile)** | ❌ `red-500` | ❌ `Md*`,`Bs*` | N/A | N/A | ✅ | ⚠️ | ❌ | 3/10 |
@@ -3647,9 +3654,11 @@ Three different visual patterns for the same conceptual action. The design syste
 | 2.5 | Replace `Fa*` → `Lu*` (reply) | 1 | Visual consistency |
 | 2.6 | Replace `Io*` → `Lu*` (checkmarks) | 1 | Visual consistency |
 | 2.7 | Replace `Cg*` → `Lu*` (reply) | 1 | Visual consistency |
-| 2.8 | Verify icon sizes match DS (14/16/18/20px) | All | Consistent sizing |
+| 2.8 | ~~Verify icon sizes match DS (14/16/18/20px)~~ ✅ v1.10.0 — All chatroom, composer, toolbar, TOC, and shared UI icons standardized | All | ✅ Done |
 
 **Estimated effort: 2 days. Purely visual change. QA with screenshot comparison.**
+
+> ✅ **v1.10.0 icon sizing audit results:** Hover action buttons → 18px, context/dropdown menu items → 18px, editor toolbar → 16px, composer toolbar → 16px, composer actions → 18px, TOC sidebar → 20px, scroll-to-bottom → 20px, inline status → 16px, tiny inline → 14px. `UserReadStatus.tsx` fixed: `className="size-4"` → `size={16}`, duplicate classes removed, padding/gap normalized.
 
 #### Phase 3 — Radius & Scroll Compliance (1 day)
 
@@ -3660,6 +3669,8 @@ Three different visual patterns for the same conceptual action. The design syste
 | 3.3 | Replace `rounded-lg` → `rounded-field` / `rounded-selector` | ~3 | DS token |
 | 3.4 | Migrate `QuickReactionMenu` scroll to `ScrollArea` | 1 | Scroll consistency |
 | 3.5 | Migrate `MentionList` scroll to `ScrollArea` | 1 | Scroll consistency |
+| 3.6 | ~~Migrate `Select.tsx` dropdown to `ScrollArea`~~ ✅ v1.10.0 | 1 | ✅ Done |
+| 3.7 | ~~Migrate `SearchableSelect.tsx` dropdown to `ScrollArea`~~ ✅ v1.10.0 | 1 | ✅ Done |
 
 #### Phase 4 — Accessibility (2-3 days)
 
@@ -3709,9 +3720,9 @@ Three different visual patterns for the same conceptual action. The design syste
 | Metric | Before (Current) | After (All Phases) |
 |---|---|---|
 | Hardcoded colors | **35+** | **0** |
-| Non-Lucide icon imports | **28 files** | **0** |
+| Non-Lucide icon imports | **28 files** | **0** (chatroom ✅ v1.9.0, shared UI ✅ v1.10.0) |
 | Focus states | **0** | **All interactive** |
-| ScrollArea usage | **0** | **All scrollable** (except virtual list) |
+| ScrollArea usage | **0** → **2** (`Select`, `SearchableSelect` ✅ v1.10.0) | **All scrollable** (except virtual list) |
 | Arbitrary radii | **5+** | **0** |
 | Dark mode violations | **18+ components** | **0** |
 | Touch target violations | **4 components** | **0** |
