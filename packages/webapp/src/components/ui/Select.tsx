@@ -10,11 +10,12 @@ import {
   useFloating,
   useInteractions
 } from '@floating-ui/react'
+import { Icons } from '@icons'
 import { useCallback, useEffect, useId, useRef, useState } from 'react'
-import { LuCheck, LuChevronDown } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
 import { useSelectExclusion } from './hooks/useSelectExclusion'
+import { ScrollArea } from './ScrollArea'
 
 // --- Types ---
 
@@ -313,7 +314,7 @@ const Select = ({
       <span className={twMerge('truncate', !selectedOption && 'text-base-content/50')}>
         {displayLabel}
       </span>
-      <LuChevronDown
+      <Icons.chevronDown
         size={16}
         className={twMerge(
           'text-base-content/50 shrink-0 transition-transform duration-200',
@@ -330,40 +331,42 @@ const Select = ({
       <div
         ref={refs.setFloating}
         style={floatingStyles}
-        className="bg-base-100 border-base-300 rounded-box z-50 overflow-y-auto border shadow-lg"
+        className="bg-base-100 border-base-300 rounded-box z-50 flex flex-col overflow-hidden border shadow-lg"
         onKeyDown={handleKeyDown}
         role="listbox"
         aria-activedescendant={
           highlightedIndex >= 0 ? `${id}-option-${highlightedIndex}` : undefined
         }
         {...getFloatingProps()}>
-        <div ref={listRef} className="py-1">
-          {options.map((option, index) => {
-            const isSelected = option.value === value
-            const isHighlighted = index === highlightedIndex
+        <ScrollArea scrollbarSize="thin" preserveWidth={false} className="min-h-0 flex-1">
+          <div ref={listRef} className="py-1">
+            {options.map((option, index) => {
+              const isSelected = option.value === value
+              const isHighlighted = index === highlightedIndex
 
-            return (
-              <button
-                key={option.value}
-                id={`${id}-option-${index}`}
-                type="button"
-                disabled={option.disabled}
-                onClick={() => !option.disabled && handleSelect(option.value)}
-                onMouseEnter={() => !option.disabled && setHighlightedIndex(index)}
-                className={twMerge(
-                  'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors',
-                  isHighlighted && 'bg-base-200',
-                  isSelected && 'text-primary font-medium',
-                  option.disabled && 'text-base-content/30 cursor-not-allowed'
-                )}
-                role="option"
-                aria-selected={isSelected}>
-                <span className="min-w-0 flex-1 truncate">{option.label}</span>
-                {isSelected && <LuCheck size={16} className="text-primary shrink-0" />}
-              </button>
-            )
-          })}
-        </div>
+              return (
+                <button
+                  key={option.value}
+                  id={`${id}-option-${index}`}
+                  type="button"
+                  disabled={option.disabled}
+                  onClick={() => !option.disabled && handleSelect(option.value)}
+                  onMouseEnter={() => !option.disabled && setHighlightedIndex(index)}
+                  className={twMerge(
+                    'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors',
+                    isHighlighted && 'bg-base-200',
+                    isSelected && 'text-primary font-medium',
+                    option.disabled && 'text-base-content/30 cursor-not-allowed'
+                  )}
+                  role="option"
+                  aria-selected={isSelected}>
+                  <span className="min-w-0 flex-1 truncate">{option.label}</span>
+                  {isSelected && <Icons.check size={16} className="text-primary shrink-0" />}
+                </button>
+              )
+            })}
+          </div>
+        </ScrollArea>
       </div>
     </FloatingPortal>
   )

@@ -10,11 +10,12 @@ import {
   useFloating,
   useInteractions
 } from '@floating-ui/react'
+import { Icons } from '@icons'
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react'
-import { LuCheck, LuChevronDown, LuSearch } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
 import { useSelectExclusion } from './hooks/useSelectExclusion'
+import { ScrollArea } from './ScrollArea'
 import type { SelectSize } from './Select'
 
 // --- Types ---
@@ -251,7 +252,7 @@ const SearchableSelect = ({
         <span className={twMerge('truncate', !selectedOption && 'text-base-content/50')}>
           {displayValue}
         </span>
-        <LuChevronDown
+        <Icons.chevronDown
           size={16}
           className={twMerge(
             'text-base-content/50 shrink-0 transition-transform duration-200',
@@ -275,7 +276,7 @@ const SearchableSelect = ({
             {/* Search Input */}
             <div className="border-base-300 shrink-0 border-b p-2">
               <div className="relative">
-                <LuSearch
+                <Icons.search
                   size={16}
                   className="text-base-content/40 pointer-events-none absolute top-1/2 left-2.5 -translate-y-1/2"
                 />
@@ -294,48 +295,50 @@ const SearchableSelect = ({
             </div>
 
             {/* Options List */}
-            <div
-              ref={listRef}
-              className="flex-1 overflow-y-auto"
-              style={{ maxHeight }}
-              role="listbox">
-              {filteredOptions.length === 0 ? (
-                <div className="text-base-content/50 px-3 py-4 text-center text-sm">
-                  {emptyMessage}
-                </div>
-              ) : (
-                filteredOptions.map((option, index) => {
-                  const isSelected = option.value === value
-                  const isHighlighted = index === highlightedIndex
+            <ScrollArea
+              scrollbarSize="thin"
+              preserveWidth={false}
+              className="min-h-0 flex-1"
+              style={{ maxHeight }}>
+              <div ref={listRef} role="listbox">
+                {filteredOptions.length === 0 ? (
+                  <div className="text-base-content/50 px-3 py-4 text-center text-sm">
+                    {emptyMessage}
+                  </div>
+                ) : (
+                  filteredOptions.map((option, index) => {
+                    const isSelected = option.value === value
+                    const isHighlighted = index === highlightedIndex
 
-                  return (
-                    <button
-                      key={option.value}
-                      id={`${id}-option-${index}`}
-                      type="button"
-                      onClick={() => handleSelect(option.value)}
-                      onMouseEnter={() => setHighlightedIndex(index)}
-                      className={twMerge(
-                        'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors',
-                        isHighlighted && 'bg-base-200',
-                        isSelected && 'text-primary font-medium'
-                      )}
-                      role="option"
-                      aria-selected={isSelected}>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate">{option.label}</span>
-                        {option.description && (
-                          <span className="text-base-content/50 block truncate text-xs">
-                            {option.description}
-                          </span>
+                    return (
+                      <button
+                        key={option.value}
+                        id={`${id}-option-${index}`}
+                        type="button"
+                        onClick={() => handleSelect(option.value)}
+                        onMouseEnter={() => setHighlightedIndex(index)}
+                        className={twMerge(
+                          'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors',
+                          isHighlighted && 'bg-base-200',
+                          isSelected && 'text-primary font-medium'
                         )}
-                      </span>
-                      {isSelected && <LuCheck size={16} className="text-primary shrink-0" />}
-                    </button>
-                  )
-                })
-              )}
-            </div>
+                        role="option"
+                        aria-selected={isSelected}>
+                        <span className="min-w-0 flex-1">
+                          <span className="block truncate">{option.label}</span>
+                          {option.description && (
+                            <span className="text-base-content/50 block truncate text-xs">
+                              {option.description}
+                            </span>
+                          )}
+                        </span>
+                        {isSelected && <Icons.check size={16} className="text-primary shrink-0" />}
+                      </button>
+                    )
+                  })
+                )}
+              </div>
+            </ScrollArea>
           </div>
         </FloatingPortal>
       )}
