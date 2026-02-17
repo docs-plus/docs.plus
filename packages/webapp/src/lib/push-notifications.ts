@@ -7,6 +7,8 @@
 
 import { createClient } from '@utils/supabase/component'
 
+import { getDevicePlatform } from './platform'
+
 // VAPID public key - set this in your environment
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY
 
@@ -85,23 +87,11 @@ function getDeviceId(): string {
 }
 
 /**
- * Detect platform for push subscription
- * Returns 'ios' for iOS devices, 'android' for Android, 'web' for desktop
+ * Detect platform for push subscription.
+ * Delegates to the shared platform utility (src/lib/platform.ts).
  */
 function getPlatform(): 'ios' | 'android' | 'web' {
-  if (typeof window === 'undefined') return 'web'
-
-  const ua = navigator.userAgent
-
-  // iOS detection (iPhone, iPad, iPod)
-  const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream
-  if (isIOS) return 'ios'
-
-  // Android detection
-  const isAndroid = /Android/.test(ua)
-  if (isAndroid) return 'android'
-
-  return 'web'
+  return getDevicePlatform()
 }
 
 /**

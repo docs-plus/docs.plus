@@ -173,7 +173,7 @@ as $$
         from public.users
         where id = p_user_id
         and status = 'ONLINE'
-        and last_seen_at > now() - interval '2 minutes'
+        and online_at > now() - interval '2 minutes'
     );
 $$;
 

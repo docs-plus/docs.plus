@@ -152,18 +152,22 @@ self.addEventListener("push", (event) => {
   // The sender_avatar comes from the push payload (set in 19-push-notifications.sql)
   const notificationIcon = data.sender_avatar || "/icons/android-chrome-192x192.png";
 
+  // Use notification_id as tag so each notification is unique on iOS.
+  // iOS Safari does NOT support `renotify` — using a generic tag like "mention"
+  // would cause each new mention to silently replace the previous one.
+  const tag = data.notification_id || `${data.type}-${Date.now()}`;
+
   const options = {
     body: body,
     icon: notificationIcon,
     badge: "/icons/favicon-32x32.png",
-    tag: data.type || "default",
+    tag: tag,
     renotify: true,
     requireInteraction: false,
     data: {
       url: data.action_url || "/",
       notification_id: data.notification_id,
     },
-    vibrate: [200, 100, 200],
     // Include image preview if message has an attachment
     ...(data.image_url && { image: data.image_url }),
   };
