@@ -1,7 +1,7 @@
 # docs.plus Design System (Global)
 
-> **Version:** 3.2.0
-> **Last updated:** 2026-02-13
+> **Version:** 3.5.0
+> **Last updated:** 2026-02-17
 > **Owners:** UI/UX Team
 
 This document defines **how docs.plus should look and behave** — visual foundations, layout patterns, component rules, interaction patterns, and accessibility requirements.
@@ -48,7 +48,23 @@ Tailwind utilities are allowed for:
 - Typography scale: `text-sm`, `text-base`, `font-medium`, `leading-*`
 - State utilities: `hidden`, `block`, `opacity-*`, `transition-*`, `duration-*`
 
-### 2.3 — All scroll must use ScrollArea
+### 2.3 — Legacy SCSS hardcoded colors (migration in progress)
+
+The following SCSS files contain hardcoded hex/rgba colors that predate the DaisyUI theme system. They **will break in dark mode**. New code MUST use semantic tokens — never add new hardcoded colors. Legacy fixes happen as files are touched (boy-scout rule).
+
+| Priority | File | ~Count | Impact |
+|----------|------|--------|--------|
+| P0 | `globals.scss` (ProseMirror, tippy, hypermultimedia) | ~80 | Editor + media breaks in dark mode |
+| P1 | `styles.scss` (hyperlink popovers, dropdown menus, media toolbar) | ~40 | Popovers + menus break |
+| P2 | `mobile.scss`, `desktop.scss` | ~20 | Layout + heading actions break |
+| P3 | `chat_editor.scss` | ~15 | Chat code blocks + links break |
+| P4 | Component partials (`_dialog.scss`, `_tooltip.scss`, `_popover.scss`, `_heading-actions.scss`) | ~10 | Minor overlays |
+
+> **`:root` CSS vars** (`--color-docsy`, `--bg-docy`, `--caret-color`, `--caret-color-inverse`) are also hardcoded in `globals.scss`. They should map to DaisyUI vars (e.g., `--caret-color: oklch(var(--p))`) or be replaced with Tailwind classes (`caret-primary`).
+
+> **Scrollbar classes** (`.scrollbar-custom`, `.scrollbar-hide`, `.scrollbar-primary`) use `rgba()` values. Use `oklch(var(--bc) / 0.3)` syntax for theme-awareness when migrating.
+
+### 2.4 — All scroll must use ScrollArea
 
 If an element can scroll, it must use the shared `ScrollArea` component:
 
@@ -58,7 +74,7 @@ If an element can scroll, it must use the shared `ScrollArea` component:
 
 Never create nested scroll regions.
 
-### 2.4 — Sticky headers inside scroll containers
+### 2.5 — Sticky headers inside scroll containers
 
 When a header must pin at the top of a scrollable region:
 
@@ -96,7 +112,7 @@ When a header must pin at the top of a scrollable region:
 
 ### 3.1 Color system (daisyUI themes)
 
-Two themes: **Light** (`docsplus`) and **Dark** (`docsplus-dark`, GitHub-inspired).
+Three themes: **Light** (`docsplus`), **Dark** (`docsplus-dark`, GitHub-inspired), and **Dark HC** (`docsplus-dark-hc`, projector/classroom-optimized).
 
 #### Semantic roles
 
@@ -105,12 +121,14 @@ Two themes: **Light** (`docsplus`) and **Dark** (`docsplus-dark`, GitHub-inspire
 | **Primary** | `bg-primary` / `text-primary` | Main CTAs, links (#1a73e8 / #6ea8ff) |
 | **Secondary** | `bg-secondary` / `text-secondary` | Presence/collab (#0f9d7a / #2fbf9b) |
 | **Accent** | `bg-accent` / `text-accent` | Highlights/bookmarks (#eab308 / #e3b341) |
-| **Neutral** | `bg-neutral` / `text-neutral` | Secondary actions, chrome (#334155 / #8b9bb0) |
+| **Neutral** | `bg-neutral` / `text-neutral` | Secondary actions, chrome (#334155 / #8b9bb0 / #94a3b8) |
 | **Base** | `bg-base-100/200/300` | Surfaces + elevation |
-| **Success** | `bg-success` / `text-success` | Confirmation (#16a34a / #22c55e) |
-| **Warning** | `bg-warning` / `text-warning` | Caution (#ea580c / #fb7a3a) |
-| **Error** | `bg-error` / `text-error` | Destructive/errors (#dc2626 / #ff6b6b) |
-| **Info** | `bg-info` / `text-info` | Informational (#0284c7 / #38bdf8) |
+| **Success** | `bg-success` / `text-success` | Confirmation (#16a34a / #22c55e / #34d399) |
+| **Warning** | `bg-warning` / `text-warning` | Caution (#ea580c / #fb7a3a / #fb923c) |
+| **Error** | `bg-error` / `text-error` | Destructive/errors (#dc2626 / #ff6b6b / #f87171) |
+| **Info** | `bg-info` / `text-info` | Informational (#0284c7 / #38bdf8 / #38bdf8) |
+
+> Format: light hex / dark hex / dark-hc hex. Where dark and dark-hc share the same value, only one is shown.
 
 > Warning and Accent should remain distinct to avoid meaning confusion.
 
@@ -129,6 +147,26 @@ Two themes: **Light** (`docsplus`) and **Dark** (`docsplus-dark`, GitHub-inspire
 > Prefer `text-base-content/50` or `/60` over `text-neutral` for muted text — better theme consistency.
 
 > `base-100` uses soft white (`#fafbfc`) instead of pure white to reduce eye strain.
+
+#### Theme initialization lifecycle
+
+1. **SSR** (`_document.tsx`): `data-theme="docsplus"` on `<html>` — sets the initial theme for server-rendered HTML
+2. **Anti-FOUC inline script** (`_document.tsx` `<body>` top): reads persisted preference from `localStorage` and applies `data-theme` **before React hydration** — prevents flash
+3. **Zustand hydration** (`themeStore.ts`): `onRehydrateStorage` re-resolves and applies the persisted preference on the client
+4. **Toggle**: `useThemeStore.getState().setPreference(preference)` — updates store + DOM in one call
+
+**Four-state preference model:**
+
+| Preference | Resolved theme |
+|------------|---------------|
+| `"light"` | `docsplus` |
+| `"system"` | `docsplus` or `docsplus-dark` (depends on OS) |
+| `"dark"` | `docsplus-dark` |
+| `"dark-hc"` | `docsplus-dark-hc` |
+
+> The `dark:` Tailwind variant maps to both `docsplus-dark` AND `docsplus-dark-hc` via `@custom-variant`. Use `dark:` for any dark-mode-specific overrides — it works for all dark themes automatically.
+
+> See [Theme_Light_Dark.md](./Theme_Light_Dark.md) §2.3 and §4B for full color tables and projector washout analysis.
 
 ### 3.2 Radius
 
@@ -162,11 +200,81 @@ Weights: `font-medium` for emphasis, `font-semibold` for headers.
 
 ### 3.5 Icons
 
-Use Lucide React (`react-icons/lu`) for all UI icons:
+#### Icon Registry (single source of truth)
+
+All UI icons are accessed through the centralized **`Icons` registry** (`@components/icons/registry.ts`). Components **never** import individual icons from `react-icons/*` directly — they import from `@icons` instead.
+
+```tsx
+// ✅ Correct — semantic name from the registry
+import { Icons } from '@icons'
+<Icons.bold size={16} />
+<Icons.notifications size={18} />
+<Button startIcon={Icons.history} />
+
+// 🚫 Wrong — direct icon library import
+import { LuBold } from 'react-icons/lu'
+<LuBold size={16} />
+```
+
+**Why a registry?**
+
+1. **Swap once, update everywhere** — changing an icon (e.g., `bookmark` from outline → filled) is a single-line change in `registry.ts`
+2. **Consistent naming** — semantic names (`Icons.edit`, `Icons.trash`) vs library names (`LuPencil`, `LuTrash2`) that vary across icon sets
+3. **Library decoupling** — the entire codebase is shielded from breaking changes if the underlying icon library changes
+4. **Discoverability** — autocomplete `Icons.` shows every available icon in the project
+
+**Registry location:** `packages/webapp/src/components/icons/registry.ts`
+**Import alias:** `@icons` (configured in `tsconfig.json` paths)
+
+#### Naming convention
+
+- **camelCase**, describes the **action/concept**, NOT the icon visual
+- ✅ `bold`, `image`, `orderedList`, `edit`, `notifications`
+- 🚫 `bIcon`, `LuImage`, `numberList`, `pencilIcon`
+
+#### Available icon categories
+
+| Category | Icons |
+|----------|-------|
+| **Text Formatting** | `bold`, `italic`, `underline`, `strikethrough`, `highlight`, `clearFormatting`, `textColor`, `textFormat` |
+| **Lists** | `orderedList`, `bulletList`, `taskList` |
+| **Insert / Rich Content** | `link`, `image`, `comment`, `reply`, `thread`, `moreVertical` |
+| **Editor Actions** | `undo`, `redo`, `print`, `copy`, `check`, `settings`, `bookmark`, `bookmarkPlus`, `bookmarkMinus`, `bookmarkCheck`, `filter`, `filterX`, `documents`, `search`, `pencil`, `edit`, `penOff`, `fileText`, `fileOpen`, `splitVertical`, `externalLink` |
+| **Navigation** | `back`, `menu`, `close`, `history`, `chevronRight`, `chevronDown`, `chevronUp`, `chevronLeft` |
+| **Communication** | `share`, `user`, `notifications`, `notificationsOff`, `notificationsActive`, `chatroom` |
+| **TOC** | `crosshair`, `foldVertical`, `unfoldVertical`, `trash`, `info`, `gripVertical`, `listTree`, `plus`, `pin`, `pinOff`, `forward` |
+| **Status** | `cloud`, `cloudOff` |
+| **Code** | `code`, `codeBlock`, `blockquote` |
+| **Misc** | `emoji`, `mention`, `send`, `archive`, `eye`, `mail`, `megaphone`, `messagesSquare`, `alert` |
+| **Brand** | `discord` |
+
+#### Adding new icons
+
+1. Import the Lucide icon in `registry.ts`
+2. Add a semantic entry under the correct category
+3. Use it as `Icons.yourNewName` — done
+
+```ts
+// registry.ts
+import { LuSparkles } from 'react-icons/lu'
+
+export const Icons = {
+  // ...existing entries...
+  sparkles: LuSparkles,
+}
+```
+
+#### Library convention
+
+- **All icons use Lucide** (`react-icons/lu`) for visual consistency
+- **Brand icons** use Font Awesome (`react-icons/fa`) when no Lucide equivalent exists (e.g., `discord`)
+- **Exception:** A handful of legacy files (settings, design-system docs) still import directly from `react-icons/*`. These are being migrated incrementally — new code MUST use the registry. All chatroom components were migrated to the registry in v1.9.0
+
+#### Icon sizing
 
 | Size | px | Usage |
 |------|----|-------|
-| xs | 14 | Small inline icons |
+| xs | 14 | Small inline icons, breadcrumb separators |
 | sm | 16 | Desktop toolbar buttons, options, minor UI |
 | md | 18 | Mobile toolbar buttons, section headings, nav items |
 | lg | 20 | Primary actions, panel headers |
@@ -179,9 +287,8 @@ Use Lucide React (`react-icons/lu`) for all UI icons:
 | `btn-md` (40px) | 18px | Mobile icon-only buttons, nav actions |
 | `btn-lg` (48px) | 20px | Primary mobile CTAs |
 
-- Prefer `Lu*` over `Md*`, `Ri*`, `Io*` when available
 - Colors: inherit from parent or use `text-base-content/60` for muted
-- **Exception:** Brand icons (`Fa*`, `Si*`) for social media logos with no Lucide equivalent
+- Every icon-only button MUST have a tooltip (§5.12)
 
 ---
 
@@ -262,11 +369,11 @@ Sizes: `btn-xs`, `btn-sm`, `btn-md`, `btn-lg`
   <Button variant="ghost" size="md" shape="square" iconSize={18}
     className="rounded-field text-base-content/60 hover:text-base-content hover:bg-base-300
                focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none"
-    startIcon={LuHistory} />
+    startIcon={Icons.history} />
   <Button variant="ghost" size="md" shape="square" iconSize={18}
-    className="rounded-field ..." startIcon={LuFilter} />
+    className="rounded-field ..." startIcon={Icons.filter} />
   <Button variant="ghost" size="md" shape="square" iconSize={18}
-    className="rounded-field ..." startIcon={LuX} />
+    className="rounded-field ..." startIcon={Icons.close} />
 </div>
 ```
 
@@ -299,7 +406,7 @@ Validation states: `input-success`, `input-error`
 4. **Keyboard** — ArrowDown/Up navigate, Enter/Space select, Escape/Tab close, Home/End.
 5. **ARIA** — `aria-haspopup="listbox"`, `aria-expanded`, `aria-activedescendant`, `role="option"`, `aria-selected`, unique `id`s.
 6. **Panel** — `bg-base-100 border-base-300 rounded-box border shadow-lg z-50`.
-7. **Options** — `px-3 py-2 text-sm`, hover `bg-base-200`, selected `text-primary font-medium` + `LuCheck`.
+7. **Options** — `px-3 py-2 text-sm`, hover `bg-base-200`, selected `text-primary font-medium` + `Icons.check`.
 
 > ⚠️ **DaisyUI `select` gotcha:** On a `<button>`, the `select` class adds an arrow via `background-image`. Add `bg-none` to remove it and `pr-3` to fix padding. Both components handle this.
 
@@ -400,11 +507,11 @@ interface SearchableSelectOption {
 | Trigger | `select w-full text-left bg-none pr-3 flex items-center justify-between` |
 | Trigger active | `select-primary` |
 | Trigger disabled | `select-disabled cursor-not-allowed` |
-| Chevron | `LuChevronDown` 16px, `rotate-180` when open, `duration-200` |
+| Chevron | `Icons.chevronDown` 16px, `rotate-180` when open, `duration-200` |
 | Panel | `bg-base-100 border-base-300 rounded-box border shadow-lg z-50` |
 | Option | `px-3 py-2 text-sm transition-colors` |
 | Option highlighted | `bg-base-200` |
-| Option selected | `text-primary font-medium` + `LuCheck` 16px |
+| Option selected | `text-primary font-medium` + `Icons.check` 16px |
 | Option disabled | `text-base-content/30 cursor-not-allowed` |
 | Search input | `bg-base-200 rounded-md text-sm` |
 | Empty state | `text-base-content/50 text-sm text-center` |
@@ -425,9 +532,11 @@ Use the shared toast module (not `react-hot-toast` directly):
 ### 5.6 Empty states
 
 ```tsx
+import { Icons } from '@icons'
+
 <div className="flex flex-col items-center justify-center space-y-3 py-8">
   <div className="bg-base-200 flex size-12 items-center justify-center rounded-full">
-    <LuInbox size={24} className="text-base-content/40" />
+    <Icons.archive size={24} className="text-base-content/40" />
   </div>
   <div className="text-center">
     <p className="text-base-content/60 font-medium">Your inbox is empty!</p>
@@ -567,17 +676,83 @@ For list items (notifications, bookmarks, messages):
 
 Key tokens: container `rounded-box border-base-300 border p-3`, hover `hover:bg-base-200`, avatar `shrink-0`, content `min-w-0 flex-1`, name `font-medium`, timestamp `text-base-content/50 text-xs`.
 
-### 5.10 Channel access states
+### 5.10 Chat bubbles (mobile)
+
+Mobile chat uses DaisyUI's `chat` component with owner/other differentiation:
+
+| Variant | Style |
+|---------|-------|
+| Owner message | `chat-bubble bg-primary/20 before:hidden` |
+| Other's message | Default `chat-bubble` (DaisyUI theme-aware) |
+| Non-group-start (continuation) | `ml-9 before:hidden` (hide tail, indent to align with avatar) |
+| System notification | `badge bg-info/10 border-none` |
+
+**Owner bubble rationale:** `bg-primary/20` instead of a hardcoded color ensures the bubble adapts to both light and dark themes. The `before:hidden` removes the DaisyUI chat-bubble tail for a cleaner look on mobile.
+
+### 5.11 Channel access states
 
 | State | Component | Style |
 |---|---|---|
-| Sign in required | Button with `LuLogIn` | `variant="primary"` |
-| Join channel | Button with `LuUserPlus` | `variant="primary"` |
-| Private channel | Info pill | `bg-base-200 text-base-content/60` + `LuLock` |
-| Direct message | Info pill | `bg-base-200 text-base-content/60` + `LuMessageSquare` |
-| Mute toggle | Button | `variant="ghost"` + `LuBell`/`LuBellOff` |
+| Sign in required | Button with `LuLogIn`* | `variant="primary"` |
+| Join channel | Button with `LuUserPlus`* | `variant="primary"` |
+| Private channel | Info pill | `bg-base-200 text-base-content/60` + `LuLock`* |
+| Direct message | Info pill | `bg-base-200 text-base-content/60` + `Icons.thread` |
+| Mute toggle | Button | `variant="ghost"` + `Icons.notifications`/`Icons.notificationsOff` |
+
+> \* These icons (`LuLogIn`, `LuUserPlus`, `LuLock`) are still direct imports pending migration to the registry. Add to `registry.ts` as `logIn`, `userPlus`, `lock` when those files are touched.
 
 Container: `border-base-300 bg-base-100 border-t p-3`
+
+### 5.12 Tooltips
+
+Tooltips provide contextual labels on hover for icon-only buttons and abbreviated UI elements.
+
+**Library:** `@floating-ui/react` (same as Popover, Select, HoverMenu)
+
+🚫 **NEVER use DaisyUI CSS tooltips** (`tooltip tooltip-top data-tip="..."`). They are CSS-only, can't flip/shift, can't portal, and can't be disabled on touch devices.
+
+✅ **Always use the `Tooltip` component** from `@components/ui/Tooltip`, or use the built-in `tooltip` prop on `Button` and `Avatar`.
+
+#### Which pattern to use
+
+| Scenario | Pattern |
+|----------|---------|
+| Button with tooltip | `<Button tooltip="Bold" tooltipPlacement="bottom">` |
+| Avatar with tooltip | `<Avatar tooltip="Profile" tooltipPosition="bottom" />` |
+| Any other element | `<Tooltip title="Label"><span>...</span></Tooltip>` |
+| Raw DOM (ProseMirror plugins) | Native `title` attribute (no React available) |
+
+#### Tooltip props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `title` | `ReactNode` | — | Tooltip content (required) |
+| `children` | `ReactNode` | — | Trigger element — must accept ref |
+| `placement` | `Placement` | `'top'` | Floating UI placement |
+| `showDelay` | `number` | `200` | Delay before showing (ms) |
+| `hideDelay` | `number` | `0` | Delay before hiding (ms) |
+| `className` | `string` | `''` | Extra class on the tooltip bubble |
+| `open` | `boolean` | — | Controlled open state |
+| `onOpenChange` | `(open: boolean) => void` | — | Controlled callback |
+
+#### Styling
+
+```
+bg-neutral text-neutral-content rounded px-2 py-1 font-mono text-xs z-50
+```
+
+Arrow: `bg-neutral` rotated square, positioned with Floating UI `arrow` middleware.
+
+#### Touch-only device handling
+
+The `Tooltip` component automatically detects touch-only devices via `window.matchMedia('(hover: hover)')` and skips rendering the tooltip entirely. No per-component opt-out needed.
+
+#### Rules
+
+1. **Keep tooltips to 1–3 words** — "Bold", "Add Reaction", "Reply in thread"
+2. **Never put interactive content in tooltips** — use Popover for that
+3. **Every icon-only button MUST have a tooltip** — accessibility requirement
+4. **Tooltip placement follows spatial context** — toolbar buttons use `bottom`, sidebar items use `right`
 
 ---
 
@@ -617,7 +792,49 @@ Per-component `pushState`/`popstate` is **not safe** in this codebase:
 
 **Future solution:** A centralized `ModalRouter` / `OverlayManager` with a single `popstate` listener, coordinating with `router.beforePopState` and managing a stack of open overlays. NOT per-component.
 
-### 6.2 Popover panels (Toolbar dropdowns)
+### 6.2 Bottom sheets (mobile)
+
+**Library:** `react-modal-sheet`
+
+On mobile, panels that are split-view on desktop (TOC, Chatroom, Notifications, Filters) become **bottom sheets**.
+
+#### Z-index layering
+
+| Layer | z-index | Sheet type |
+|-------|---------|------------|
+| Primary sheet | `z-10` | Chatroom, Notifications, Filters |
+| Overlay sheet | `z-40` | Emoji picker (sits above primary sheet) |
+| Floating UI | `z-50` | Dialogs, portals, dropdowns |
+
+#### Sheet switching
+
+Use `switchSheet()` from `useBottomSheet` — it queues the new sheet to open **after** the current one finishes its close animation. Never open two sheets simultaneously.
+
+```tsx
+// ✅ Correct — waits for close animation
+switchSheet('emojiPicker', { chatRoomState: { headingId } })
+
+// 🚫 Wrong — race condition
+closeSheet()
+openSheet('emojiPicker', data)
+```
+
+#### Sheet vs Dialog
+
+| Need | Use |
+|------|-----|
+| Content panel (messages, list, feed) | Bottom sheet |
+| Inline edit with keyboard (title rename, input) | Dialog via `openDialog()` |
+| Emoji picker from composer | `switchSheet('emojiPicker')` |
+| Emoji picker from reaction menu | Overlay `<Sheet>` inside `ChatContainerMobile` |
+
+**Why dialogs for keyboard inputs:** On iOS, bottom sheets fight with the virtual keyboard for viewport space. Dialogs with `align="top"` position above the keyboard naturally.
+
+#### Sheet state machine
+
+The sheet store tracks animation lifecycle: `closed → opening → open → closing → closed`. The `switchSheet` method queues a pending sheet that auto-opens when `closing → closed` completes.
+
+### 6.3 Popover panels (Toolbar dropdowns)
 
 Toolbar popovers (Notifications, Bookmarks, Filter, Settings):
 
@@ -685,6 +902,44 @@ className="rounded-box border-base-300 bg-base-100 z-50 w-[28rem] overflow-hidde
 </div>
 ```
 
+### 6.4 Tooltips (floating overlay)
+
+Tooltips are rendered via `FloatingPortal` at `<body>` level. See §5.12 for component API.
+
+**Technical requirements:**
+
+| Requirement | Value | Why |
+|-------------|-------|-----|
+| Strategy | `strategy: 'fixed'` | Absolute positioning in a portal can extend document bounds → scrollbar flicker → `autoUpdate` feedback loop. Fixed positions relative to viewport — no overflow possible. |
+| Middleware | `offset(8)`, `flip()`, `shift()`, `arrow()` | 8px gap, auto-flip on viewport edges, shift to stay visible, arrow indicator |
+| Interaction | `useHover` from Floating UI | Never reinvent hover with manual `useState` + `setTimeout` — see §12 Pitfall 11 |
+| Portal | `FloatingPortal` | Avoids `overflow: hidden` clipping from parent containers |
+| z-index | `z-50` | Same as all Floating UI overlays (§6.2 Z-index layering) |
+| Touch devices | Auto-disabled | `window.matchMedia('(hover: hover)')` — see §5.12 |
+
+### 6.5 Dark mode overlay compliance (non-negotiable)
+
+All overlay/floating components MUST include these tokens for dark mode visibility. In dark mode, `base-100` is the page background — an overlay without a border or shadow is invisible.
+
+| Token | Classes | Why |
+|-------|---------|-----|
+| Border | `border border-base-300` | Separates overlay from dark background |
+| Background | `bg-base-100` or `bg-base-200` | `bg-base-100` for modals/panels, `bg-base-200` for inline menus |
+| Shadow | `shadow-xl` or `shadow-lg` | `shadow-xs`/`shadow-sm` are invisible on dark backgrounds |
+
+**Components that must comply:**
+
+| Component | Required classes |
+|-----------|----------------|
+| Dialog / Modal | `bg-base-100 border border-base-300 shadow-xl` |
+| Context Menu | `bg-base-100 border border-base-300 shadow-xl rounded-xl` |
+| HoverMenu | `bg-base-200 border border-base-300 shadow-md rounded-lg` |
+| Toast | `dark:bg-base-200 dark:border-base-300 dark:border` |
+| Popover panels | `bg-base-100 border border-base-300 shadow-xl` |
+| Tooltip | `bg-neutral text-neutral-content` (always visible — uses `neutral` token) |
+
+> ✅ Fixed 2026-02-16: Dialog, ContextMenu, HoverMenu, Toast all updated to include borders and elevated backgrounds for dark mode.
+
 ---
 
 ## 7. Settings / Forms panels
@@ -692,9 +947,11 @@ className="rounded-box border-base-300 bg-base-100 z-50 w-[28rem] overflow-hidde
 ### 7.1 Section card pattern
 
 ```tsx
+import { Icons } from '@icons'
+
 <section className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
   <h2 className="text-base-content mb-3 flex items-center gap-2 text-base font-semibold">
-    <LuUser size={18} className="text-base-content/70" />
+    <Icons.user size={18} className="text-base-content/70" />
     Section Title
   </h2>
   {/* Section content */}
@@ -843,17 +1100,21 @@ Before merging UI changes:
 
 **Theming** — No `slate-*`/`zinc-*`/`white`/`black`, semantic colors only, dark mode safe (§2.1)
 
-**Tokens** — Radius from §3.2 only, icons `Lu*` from §3.5, spacing from §3.3
+**Tokens** — Radius from §3.2 only, icons via `Icons` registry from §3.5 (never raw `Lu*`/`Md*` imports), spacing from §3.3
 
 **Components** — No native `<select>` (§5.3), no one-off styling, buttons same-sized in context (§5.1), forms use `form-control` (§7.2), headings follow hierarchy (§7.3)
 
 **Layout** — `ScrollArea` for scroll (§2.3), no nested scroll, no conflicting display classes (`md:block md:flex`)
 
-**Overlays** — Close button visible, `ModalContent` is flex, no `h-[100dvh]` inside `max-h-[90vh]` (§6.1)
+**Overlays** — Close button visible, `ModalContent` is flex, no `h-[100dvh]` inside `max-h-[90vh]` (§6.1), dark mode compliant borders/shadows (§6.5)
+
+**Tooltips** — Uses `Tooltip` component or built-in `tooltip` prop (§5.12), no DaisyUI CSS tooltips, no manual hover management (§12 Pitfall 11), icon-only buttons have tooltips
+
+**Floating UI** — Uses built-in interaction hooks (`useHover`/`useClick`), `strategy: 'fixed'` for portals (§12 Pitfall 12), `cloneElement` strips `ref` from child props (§12 Pitfall 13)
 
 **UX** — Panel-specific skeletons (§5.7), infinite scroll (§5.8), 44px touch targets (§9.2), platform-gated features have actionable notices (§9.3)
 
-**Code** — No `bg-${variant}` interpolation (§12 Pitfall 1), no unused props, no `any` types, no Hungarian notation
+**Code** — No `bg-${variant}` interpolation (§12 Pitfall 1), no unused props, no `any` types, no Hungarian notation, no native `<button>` where `<Button>` component should be used
 
 **Accessibility** — `aria-label` on icon buttons, `role="navigation"`, keyboard nav, heading order, labeled form fields (§10)
 
@@ -930,25 +1191,145 @@ Users don't know *why* or *what to do*. Replace with platform-aware actionable n
 
 Dead `onClose`, `onBack` = UX bugs. If a prop exists, wire it or remove it. (§6.1)
 
+### 🚫 Pitfall 9 — Compound component nesting > 3 levels
+
+Dot-notation deeper than 3 levels (e.g., `Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators.EditedBadge`) hurts discoverability and makes refactoring brittle. Max depth: **3 levels**. Beyond that, use flat named exports.
+
+```tsx
+// ❌ 6 levels deep — no IDE can autocomplete this
+<Chatroom.MessageFeed.MessageList.MessageCard.Footer.Indicators.EditedBadge />
+
+// ✅ Flat — discoverable, refactorable
+<MessageCard.EditedBadge />
+// or just:
+<EditedBadge />
+```
+
+### 🚫 Pitfall 10 — Polling for readiness instead of reacting
+
+Using `retryWithBackoff` / `setInterval` to wait for an editor or sheet to be ready is imperative. Prefer reactive patterns (effects that respond to state changes):
+
+```tsx
+// ❌ Polling
+retryWithBackoff(() => {
+  const { editorInstance } = useChatStore.getState().chatRoom
+  if (editorInstance) { editorInstance.insertContent(emoji); return true }
+  return false
+}, { maxAttempts: 6 })
+
+// ✅ Reactive
+useEffect(() => {
+  if (sheetState === 'open' && pendingEmoji && editorInstance) {
+    editorInstance.chain().focus().insertContent(pendingEmoji).run()
+    clearPendingEmoji()
+  }
+}, [sheetState, pendingEmoji, editorInstance])
+```
+
+### 🚫 Pitfall 11 — Manual hover management in Floating UI (✅ Fixed 2026-02-16)
+
+Reinventing hover with `useState(isHovering)` + `setTimeout` timers + custom `onMouseEnter`/`onMouseLeave` **bypasses Floating UI's interaction system**. The manual `onOpenChange` never synced with `useFloating`'s internal state — so `useDismiss`, `whileElementsMounted`, and position calculation were all disconnected.
+
+```tsx
+// ❌ Manual — disconnected from Floating UI
+const [isHovering, setIsHovering] = useState(false)
+const showTimer = useRef<NodeJS.Timeout>()
+getReferenceProps({
+  onMouseEnter: () => { showTimer.current = setTimeout(() => setIsHovering(true), 200) },
+  onMouseLeave: () => { clearTimeout(showTimer.current); setIsHovering(false) }
+})
+
+// ✅ Built-in — fully integrated with useFloating
+const hover = useHover(context, { delay: { open: 200, close: 0 }, move: false })
+const { getReferenceProps, getFloatingProps } = useInteractions([hover, dismiss, role])
+```
+
+Every Floating UI component in this project (`Popover`, `Select`, `HoverMenu`, `Tooltip`) now uses the built-in interaction hooks. (§6.4)
+
+### 🚫 Pitfall 12 — `strategy: 'absolute'` in FloatingPortal (✅ Fixed 2026-02-16)
+
+When a floating element renders in a `FloatingPortal` (at `<body>` level) with `strategy: 'absolute'`, its coordinates are relative to the document. If the element appears near the bottom edge, absolute coordinates extend the `<body>` → scrollbar appears → viewport resizes → `autoUpdate` fires → repositions → scrollbar disappears → **infinite scroll/glitch feedback loop**.
+
+```tsx
+// ❌ Causes scroll glitch in portals
+useFloating({ /* strategy defaults to 'absolute' */ })
+
+// ✅ Fixed — no document overflow possible
+useFloating({ strategy: 'fixed' })
+```
+
+Use `strategy: 'fixed'` for all portalled tooltips. (§6.4)
+
+### 🚫 Pitfall 13 — React 19 `ref`-as-prop breaking `cloneElement` (✅ Fixed 2026-02-16)
+
+In React 19, `ref` is a **regular prop** in `element.props.ref`, not a separate `element.ref` field. Any `cloneElement` that spreads `...child.props` **silently overwrites** a merged ref:
+
+```tsx
+// ❌ In React 19, child.props.ref overwrites our mergedRef
+cloneElement(child, {
+  ref: mergedRef,        // set first...
+  ...child.props         // ...overwritten by child.props.ref!
+})
+
+// ✅ Strip ref from child props, place merged ref LAST
+const { ref: _, ...propsWithoutRef } = child.props ?? {}
+cloneElement(child, getReferenceProps({
+  ...propsWithoutRef,
+  ref: mergedRef         // MUST come last
+}))
+```
+
+**Also read child ref from both locations** for React 18+19 compatibility:
+
+```tsx
+const childRef = isValidElement(children)
+  ? (children as any).props?.ref ?? (children as any).ref ?? null
+  : null
+const mergedRef = useMergeRefs([refs.setReference, childRef])
+```
+
+Affected components: `Tooltip.tsx`, `Popover.tsx` (`PopoverTrigger asChild`).
+
 ---
 
 ## 13. Component inventory
+
+### Icons
+
+| Export | Location | Purpose |
+|---|---|---|
+| `Icons` | `@icons` (`@components/icons/registry.ts`) | Centralized icon registry — single source of truth. All ~75 UI icons accessible via `Icons.name`. See §3.5 |
+| `IconName` | `@icons` | TypeScript union type of all registered icon names (for type-safe icon props) |
 
 ### Shared UI
 
 | Component | Location | Purpose |
 |---|---|---|
-| `Button` | `@components/ui/Button` | Buttons with variants, sizes, icons |
+| `Button` | `@components/ui/Button` | Buttons with variants, sizes, icons. Built-in `tooltip` + `tooltipPlacement` props |
 | `TextInput` | `@components/ui/TextInput` | Text inputs with labels, validation |
-| `Select` | `@components/ui/Select` | Custom dropdown |
+| `Tooltip` | `@components/ui/Tooltip` | Floating UI tooltip (hover, `strategy: 'fixed'`, portal, touch-disabled) |
+| `Popover` | `@components/ui/Popover` | Floating UI click popover (`PopoverTrigger`, `PopoverContent`, `PopoverClose`) |
+| `HoverMenu` | `@components/ui/HoverMenu` | Floating UI hover menu (`HoverMenuTrigger`, `HoverMenuContent`, `HoverMenuItem`) |
+| `Select` | `@components/ui/Select` | Custom dropdown (Floating UI + keyboard nav) |
 | `SearchableSelect` | `@components/ui/SearchableSelect` | Dropdown with search |
 | `ScrollArea` | `@components/ui/ScrollArea` | Styled scrollable containers |
 | `ResizeHandle` | `@components/ui/ResizeHandle` | Panel resize handles |
-| `Avatar` | `@components/ui/Avatar` | User avatars |
+| `Avatar` | `@components/ui/Avatar` | User avatars. Built-in `tooltip` + `tooltipPosition` props |
+| `Tabs` | `@components/ui/Tabs` | Tab navigation |
 | `CopyButton` | `@components/ui/CopyButton` | Copy-to-clipboard (supports `square` + `circle` shapes for icon-only buttons) |
-| `CloseButton` | `@components/ui/CloseButton` | Close/dismiss (`LuX`) |
+| `CloseButton` | `@components/ui/CloseButton` | Close/dismiss (`Icons.close`) |
 | `UnreadBadge` | `@components/ui/UnreadBadge` | Notification count badges |
 | `Toggle` | `@components/ui/Toggle` | Toggle switches |
+| `GlobalDialog` | `@components/ui/GlobalDialog` | Renders the global dialog from `dialogStore` |
+| `Modal` / `ModalContent` | `@components/ui/Dialog` | Floating UI modal with `align` prop |
+
+### Editor Toolbar
+
+| Component | Location | Purpose |
+|---|---|---|
+| `EditorToolbar` | `@components/TipTap/toolbar/EditorToolbar` | Main desktop editor toolbar (formatting, media, settings) |
+| `StyleSelect` | `@components/TipTap/toolbar/StyleSelect` | Block style dropdown (paragraph, headings) — uses global `Select` |
+| `ToolbarButton` | `@components/TipTap/toolbar/ToolbarButton` | Generic toolbar button with tooltip + active state |
 
 ### Panels
 
@@ -984,6 +1365,16 @@ Dead `onClose`, `onBack` = UX bugs. If a prop exists, wire it or remove it. (§6
 | `useProfileUpdate` | `@components/settings/hooks/useProfileUpdate` | Profile save logic |
 | `useSignOut` | `@components/settings/hooks/useSignOut` | Sign out logic |
 | `useUsernameValidation` | `@components/settings/hooks/useUsernameValidation` | Username validation |
+| `useBottomSheet` | `@hooks/useBottomSheet` | Simplified bottom sheet API (`openSheet`, `closeSheet`, `switchSheet`) |
+| `useUpdateDocMetadata` | `@hooks/useUpdateDocMetadata` | React Query mutation for document metadata |
+
+### Stores (Zustand)
+
+| Store | Location | Purpose |
+|---|---|---|
+| `sheetStore` | `@stores/sheetStore` | Bottom sheet state machine (`SheetType`, `switchSheet`, overlay detection) |
+| `dialogStore` | `@stores/dialogStore` | Global dialog state (`openDialog`, `closeDialog`, `DialogConfig`) |
+| `chatStore` | `@stores/chatStore` | Chat room state (editor instance, emoji picker, message focus) |
 
 ---
 

@@ -997,7 +997,7 @@ interface ThreadState {
 
 | Aspect                    | Status | Notes                                                    |
 |---------------------------|--------|----------------------------------------------------------|
-| Semantic colors           | ⚠️     | `bg-base-100/200/300` mostly used, but some hardcoded `bg-gray-*`, `bg-blue-50`, `text-gray-600`, `text-slate-800` — **Toolbar + ThreadHeader + ChatContainerMobile + SheetHeader fixed in v1.7.0** |
+| Semantic colors           | ⚠️     | `bg-base-100/200/300` mostly used, but some hardcoded `bg-gray-*`, `bg-blue-50`, `text-gray-600`, `text-slate-800` — **Toolbar + ThreadHeader + ChatContainerMobile + SheetHeader fixed in v1.7.0** — **ProviderSyncStatus status colors (`text-green-600`, `text-orange-500`, `text-red-500` → `text-success/warning/error`), FilterBar chip colors, Tabs active color, ShareModal email color fixed in v1.9.0** |
 | Border radius tokens      | ⚠️     | Desktop toolbar now uses `rounded-selector` (v1.7.0), some `rounded-md` remain in message components |
 | Touch targets             | ✅ Partial | Mobile toolbar action buttons now use `size="sm"` for 44px targets (v1.7.0); composer and reaction buttons still need work |
 | Dark mode                 | ⚠️     | `Dialog.tsx` fixed in v1.7.0 (`bg-base-100`, `bg-base-content/40`); remaining violations in message components |
@@ -1201,6 +1201,12 @@ interface ThreadState {
 - [x] Replace hardcoded `bg-chatBubble-owner` / `bg-bg-chatBubble-owner` → `bg-primary/20` / `bg-info/10` in `ChatContainerMobile`, `SystemNotifyChip`, `globals.scss` — ✅ v1.8.0
 - [x] Replace `MdAdd` → `LuPlus` in `QuickReactionMenu`, `MdSearch` → `LuSearch` in `FilterModal` — ✅ v1.8.0
 - [x] Replace `bg-white` → `bg-base-100`, `text-gray-*` → `text-base-content/*` in `QuickReactionMenu` — ✅ v1.8.0
+- [x] Migrate all chatroom icon imports to centralized `Icons` registry — ✅ v1.9.0 (11 files: `ScrollToBottomButton`, `PinnedMessagesSlider`, `Timestamp`, `AddReactionButton`, `ReplyCount`, `MesageSeen`, `UserReadStatus`, `JoinBroadcastChannel`, `SignInToJoinChannel`, `JoinPrivateChannel`, `JoinGroupChannel`)
+- [x] Replace `ProviderSyncStatus.tsx` Material Design icons → `Icons` registry + semantic status colors (`text-success`, `text-warning`, `text-error`) — ✅ v1.9.0
+- [x] Replace `ShareModal.tsx` `react-icons/md` imports → `Icons` registry + semantic email color — ✅ v1.9.0
+- [x] Replace `FilterBar.tsx` hardcoded chip colors (`text-blue-700`, `text-red-700`) → semantic tokens (`text-info`, `text-error`) — ✅ v1.9.0
+- [x] Replace `Tabs.tsx` `text-indigo-600` → `text-primary` — ✅ v1.9.0
+- [x] Fix `StyleSelect.tsx` `editor: any` → `Editor` from `@tiptap/core` with module augmentation for custom commands — ✅ v1.9.0
 - [ ] Replace remaining hardcoded colors in message components (`MessageCardContext`, `HoverMenuActions`, etc.)
 - [ ] Replace `MdMoreVert` with `LuEllipsisVertical` in `HoverMenuActions`
 - [ ] Audit all `bg-*` and `text-*` classes against `Design_System_Global_v2.md`
@@ -3186,7 +3192,7 @@ The chatroom feature was built **before** the Design System v3.0 was formalized.
 | §2.1 — Semantic color tokens | **3/10** | 🔴 Critical — 35+ hardcoded color violations |
 | §2.3 — ScrollArea for all scroll | **1/10** | 🔴 Critical — Zero ScrollArea usage |
 | §3.2 — Radius tokens | **5/10** | 🟡 Warning — Arbitrary radii in 5+ components |
-| §3.5 — Lucide icons only | **3/10** | 🔴 Critical — 20+ files use non-Lucide icons |
+| §3.5 — Lucide icons only | **10/10** | 🟢 Complete — All chatroom icons migrated to `Icons` registry ✅ v1.9.0 |
 | §5.1 — Button consistency | **7/10** | 🟢 Good — Shared `Button` used in most places |
 | §5.7 — Skeleton patterns | **2/10** | 🔴 Critical — No message card skeletons |
 | §5.10 — Channel access states | **9/10** | 🟢 Excellent — Near-perfect compliance |
@@ -3250,20 +3256,20 @@ The design system **non-negotiably** states: *"Never use Tailwind palette colors
 
 The design system mandates: *"Use Lucide React (`react-icons/lu`) for all UI icons"*
 
-**Current state: 6 different icon libraries used**
+**Current state: ~~6 different icon libraries used~~ All chatroom icons migrated to `Icons` registry (v1.9.0)**
 
 | Library | Import Prefix | Files Using | Example Icons |
 |---|---|---|---|
-| `react-icons/md` (Material) | `Md*` | **20+** | `MdDeleteOutline`, `MdOutlineEdit`, `MdMoreVert`, `MdOutlineBookmarkAdd`, `MdOutlineEmojiEmotions`, `MdCheck`, `MdOutlineLink`, `MdOutlineComment`, `MdOutlineFileOpen`, `MdInsertComment`, `MdAccessTime`, `MdAdd`, `MdGroups`, `MdLink`, `MdOutlineAddReaction` |
-| `react-icons/bs` (Bootstrap) | `Bs*` | 2 | `BsFillPinAngleFill`, `BsFillPinFill`, `BsForwardFill` |
-| `react-icons/vsc` (VS Code) | `Vsc*` | 1 | `VscPinnedDirty` |
-| `react-icons/ri` (Remix) | `Ri*` | 2 | `RiArrowRightSLine`, `RiPencilFill` |
-| `react-icons/fa` (FontAwesome) | `Fa*` | 1 | `FaReply` |
-| `react-icons/io5` (Ionicons) | `Io*` | 1 | `IoCheckmarkSharp`, `IoCheckmarkDoneSharp` |
-| `react-icons/cg` | `Cg*` | 1 | `CgMailReply` |
-| ✅ `react-icons/lu` (Lucide) | `Lu*` | **9 → 14** (v1.7.0) | `LuBell`, `LuBellOff`, `LuAtSign`, `LuUserPlus`, `LuLink`, `LuX`, `LuCopy`, `LuCheck`, `LuChevronRight`, `LuLogIn`, `LuLock`, `LuMessageSquare`, `LuPencil` |
+| `react-icons/md` (Material) | `Md*` | ~~**20+**~~ → **0 in chatroom** | ~~`MdAccessTime`, `MdOutlineAddReaction`, `MdSync`, `MdCloudDone`~~ → migrated to `Icons` registry |
+| `react-icons/bs` (Bootstrap) | `Bs*` | ~~2~~ → **0 in chatroom** | ~~`BsFillPinAngleFill`, `BsFillPinFill`, `BsForwardFill`~~ → `Icons.pin`, `Icons.pinOff`, `Icons.forward` |
+| `react-icons/vsc` (VS Code) | `Vsc*` | ~~1~~ → **0** | ~~`VscPinnedDirty`~~ → `Icons.pin` ✅ v1.9.0 |
+| `react-icons/ri` (Remix) | `Ri*` | ~~2~~ → **0** | ~~`RiArrowRightSLine`, `RiPencilFill`~~ → `Icons.chevronRight`, `Icons.pencil` |
+| `react-icons/fa` (FontAwesome) | `Fa*` | ~~1~~ → **0** | ~~`FaReply`~~ → `Icons.reply` |
+| `react-icons/io5` (Ionicons) | `Io*` | ~~1~~ → **0** | ~~`IoCheckmarkSharp`, `IoCheckmarkDoneSharp`~~ → `Icons.check`, `Icons.checkDouble` ✅ v1.9.0 |
+| `react-icons/cg` | `Cg*` | ~~1~~ → **0** | ~~`CgMailReply`~~ → `Icons.reply` ✅ v1.9.0 |
+| ✅ `react-icons/lu` (Lucide via `Icons` registry) | `Icons.*` | **all chatroom files** | All icons now accessed through centralized `Icons` registry (`@icons`) |
 
-**Ratio: ~~28 non-Lucide files vs 9 Lucide files (76% non-compliant)~~ ~~Updated v1.7.0: 23 non-Lucide files vs 14 Lucide files (62% non-compliant)~~ Updated v1.8.0: 21 non-Lucide files vs 16 Lucide files (57% non-compliant) — `QuickReactionMenu` (`MdAdd` → `LuPlus`), `FilterModal` (`MdSearch` → `LuSearch`) migrated**
+**Ratio: ~~28 non-Lucide files vs 9 Lucide files (76% non-compliant)~~ ~~Updated v1.7.0: 62% non-compliant~~ ~~Updated v1.8.0: 57% non-compliant~~ Updated v1.9.0: **0% non-compliant in chatroom** — all 11 remaining files migrated to `Icons` registry**
 
 **Recommended Lucide replacements:**
 
