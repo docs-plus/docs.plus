@@ -286,10 +286,10 @@ const MediaTypeButton: React.FC<MediaTypeButtonProps> = ({ type, isActive, onCli
     <Button
       variant={isActive ? 'primary' : 'ghost'}
       size="sm"
-      className="join-item tooltip flex-1"
-      data-tip={type}
+      className="join-item flex-1"
       onClick={onClick}
       startIcon={<IconComponent size={18} />}
+      tooltip={type}
     />
   )
 }
@@ -345,14 +345,14 @@ const UploadDropzone: React.FC<UploadDropzoneProps> = ({ onFileUpload }) => {
 
   return (
     <>
-      <div className="divider m-1 text-sm text-gray-500">OR</div>
+      <div className="divider text-base-content/50 m-1 text-sm">OR</div>
       <div className="flex w-full items-center justify-center">
         <label
           htmlFor="dropzone-file"
           className={`flex h-36 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors ${
             isDragOver
               ? 'border-blue-400 bg-blue-50'
-              : 'border-gray-300 bg-gray-50 hover:bg-gray-100'
+              : 'border-base-300 bg-base-200 hover:bg-base-300'
           }`}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -360,12 +360,12 @@ const UploadDropzone: React.FC<UploadDropzoneProps> = ({ onFileUpload }) => {
           <div className="flex flex-col items-center justify-center pt-5 pb-6">
             <MdCloudUpload
               size={30}
-              className={`mb-2 ${isDragOver ? 'text-blue-500' : 'text-gray-500'}`}
+              className={`mb-2 ${isDragOver ? 'text-primary' : 'text-base-content/50'}`}
             />
-            <p className="mb-2 text-sm text-gray-500">
+            <p className="text-base-content/50 mb-2 text-sm">
               <span className="font-semibold">Click to upload</span> or drag and drop
             </p>
-            <p className="text-xs text-gray-500">Picture, Video or Audio (MAX. 4MB)</p>
+            <p className="text-base-content/50 text-xs">Picture, Video or Audio (MAX. 4MB)</p>
           </div>
           <input
             id="dropzone-file"

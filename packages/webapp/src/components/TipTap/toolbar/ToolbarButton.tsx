@@ -1,15 +1,16 @@
 import Button from '@components/ui/Button'
+import { Placement } from '@floating-ui/react'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ToolbarButtonProps {
   type?: string
-  editor?: any // Consider replacing 'any' with a more specific editor type if available
+  editor?: any
   onClick?: (event: React.MouseEvent | React.TouchEvent) => void
   onTouchEnd?: (event: React.TouchEvent) => void
   children: React.ReactNode
   tooltip?: string
-  position?: string
+  tooltipPlacement?: Placement
   className?: string
   isActive?: boolean
   disabled?: boolean
@@ -24,7 +25,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
       onTouchEnd,
       children,
       tooltip,
-      position,
+      tooltipPlacement = 'bottom',
       className,
       isActive,
       disabled
@@ -36,16 +37,12 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     return (
       <Button
         ref={ref}
-        className={twMerge(
-          'btn-ghost btn-sm tooltip tooltip-bottom size-8 p-0 outline-none',
-          buttonClass,
-          position,
-          className
-        )}
+        className={twMerge('btn-ghost btn-sm size-8 p-0 outline-none', buttonClass, className)}
         onClick={onClick}
         onTouchEnd={onTouchEnd}
-        data-tip={tooltip}
-        disabled={disabled}>
+        disabled={disabled}
+        tooltip={tooltip}
+        tooltipPlacement={tooltipPlacement}>
         {children}
       </Button>
     )

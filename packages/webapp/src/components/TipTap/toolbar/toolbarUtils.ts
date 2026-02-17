@@ -99,11 +99,11 @@ export const highlightTocHeadings = (headings: Element[]): void => {
     const isHeadingInList = headingIds.includes(tocItem.getAttribute('data-id'))
 
     if (isHeadingInList) {
-      tocItem.classList.add('bg-yellow-200')
-      tocItem.classList.remove('text-black')
+      tocItem.classList.add('bg-warning/20')
+      tocItem.classList.remove('text-base-content')
     } else {
-      tocItem.classList.add('text-black')
-      tocItem.classList.remove('bg-yellow-200')
+      tocItem.classList.add('text-base-content')
+      tocItem.classList.remove('bg-warning/20')
     }
   })
 }

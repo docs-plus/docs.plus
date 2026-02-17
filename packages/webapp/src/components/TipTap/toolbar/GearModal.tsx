@@ -5,10 +5,10 @@ import { usePopoverState } from '@components/ui/Popover'
 import Textarea from '@components/ui/Textarea'
 import Toggle from '@components/ui/Toggle'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
+import { Icons } from '@icons'
 import { useAuthStore, useEditorPreferences, useStore } from '@stores'
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
-import { LuFileText, LuSquareSplitVertical } from 'react-icons/lu'
 import { TagsInput } from 'react-tag-input-component'
 import { twMerge } from 'tailwind-merge'
 
@@ -151,7 +151,7 @@ const GearModal = ({ className, onClose }: GearModalProps) => {
         <div className="collapse-arrow rounded-box border-base-300 bg-base-100 collapse border">
           <input type="radio" className="peer" name="gear-accordion" />
           <div className="collapse-title text-base-content flex items-center gap-2 font-medium">
-            <LuSquareSplitVertical size={16} className="text-base-content/50" />
+            <Icons.splitVertical size={16} className="text-base-content/50" />
             Page Preferences
           </div>
           <div className="collapse-content border-base-300 border-t px-4">
@@ -176,7 +176,7 @@ const GearModal = ({ className, onClose }: GearModalProps) => {
         <div className="collapse-arrow rounded-box border-base-300 bg-base-100 collapse border">
           <input type="radio" className="peer" name="gear-accordion" defaultChecked />
           <div className="collapse-title text-base-content flex items-center gap-2 font-medium">
-            <LuFileText size={16} className="text-base-content/50" />
+            <Icons.fileText size={16} className="text-base-content/50" />
             Document Preferences
           </div>
           <div className="collapse-content border-base-300 border-t px-4 pt-4">

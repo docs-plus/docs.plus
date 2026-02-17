@@ -3,12 +3,12 @@ import CloseButton from '@components/ui/CloseButton'
 import { usePopoverState } from '@components/ui/Popover'
 import TextInput from '@components/ui/TextInput'
 import Toggle from '@components/ui/Toggle'
+import { Icons } from '@icons'
 import { RESET_FILTER } from '@services/eventsHub'
 import { useStore } from '@stores'
 import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
-import { LuCheck, LuChevronDown, LuFilterX, LuSearch, LuX } from 'react-icons/lu'
 import { twMerge } from 'tailwind-merge'
 
 import FilterBar from '../pad-title-section/FilterBar'
@@ -156,7 +156,7 @@ const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalP
         <div className="relative">
           <TextInput
             id="filterSearchBox"
-            startIcon={LuSearch}
+            startIcon={Icons.search}
             value={filterInput}
             onKeyUp={handleSearch}
             onChange={(e) => setFilterInput(e.target.value.trim())}
@@ -180,7 +180,7 @@ const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalP
               className="text-base-content/50"
               onClick={() => setIsSectionOpen(!isSectionOpen)}
               aria-label="Toggle options">
-              <LuChevronDown
+              <Icons.chevronDown
                 size={16}
                 className={`transition-transform duration-200 ${isSectionOpen ? 'rotate-180' : ''}`}
               />
@@ -207,7 +207,7 @@ const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalP
           <div className="rounded-box border-base-300 bg-base-100 border p-4">
             <div className="mb-3 flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <LuCheck className="text-success size-4" />
+                <Icons.check className="text-success size-4" />
                 <span className="text-base-content text-sm font-medium">Active Filters</span>
               </div>
               <Button
@@ -215,7 +215,7 @@ const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalP
                 size="xs"
                 className="text-base-content/50 hover:text-error gap-1"
                 onClick={resetFilterHandler}
-                startIcon={LuFilterX}>
+                startIcon={Icons.filterX}>
                 Reset
               </Button>
             </div>
@@ -232,7 +232,7 @@ const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalP
           className="flex-1"
           disabled={sortedSlugs.length === 0 && !filterInput}
           onClick={handleClearAll}
-          startIcon={LuX}>
+          startIcon={Icons.close}>
           Clear
         </Button>
         <Button
