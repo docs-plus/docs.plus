@@ -59,7 +59,7 @@ type ThemeStorePersist = (
 export const useThemeStore = create<ThemeStore>(
   (persist as ThemeStorePersist)(
     (set) => ({
-      preference: 'system',
+      preference: 'light',
       resolvedTheme: 'docsplus',
       hydrated: false,
 

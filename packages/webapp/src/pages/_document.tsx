@@ -100,7 +100,7 @@ export default function Document() {
             This is the same approach used by next-themes and GitHub. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var s=JSON.parse(localStorage.getItem('docsplus-theme')||'{}');var p=(s.state&&s.state.preference)||'system';var t=p==='dark-hc'?'docsplus-dark-hc':p==='dark'?'docsplus-dark':p==='light'?'docsplus':window.matchMedia('(prefers-color-scheme:dark)').matches?'docsplus-dark':'docsplus';document.documentElement.setAttribute('data-theme',t)}catch(e){}})()`
+            __html: `(function(){try{var s=JSON.parse(localStorage.getItem('docsplus-theme')||'{}');var p=(s.state&&s.state.preference)||'light';var t=p==='dark-hc'?'docsplus-dark-hc':p==='dark'?'docsplus-dark':p==='light'?'docsplus':window.matchMedia('(prefers-color-scheme:dark)').matches?'docsplus-dark':'docsplus';document.documentElement.setAttribute('data-theme',t)}catch(e){}})()`
           }}
         />
         <Main />

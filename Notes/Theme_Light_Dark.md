@@ -90,10 +90,12 @@ themeStore.ts (single source of truth)
 | 🌙 Dark | `"dark"` | `docsplus-dark` | Always dark |
 | 🎯 Dark HC | `"dark-hc"` | `docsplus-dark-hc` | High contrast dark for projectors |
 
+**Default: `"light"`** — new users see the light theme on first visit. The "System" option is available in Settings → Appearance for users who prefer to follow their OS setting.
+
 **Anti-FOUC inline script** in `_document.tsx` runs before React hydration:
 ```js
 // Reads persisted Zustand state from localStorage and applies data-theme immediately
-var p = (state.preference) || 'system';
+var p = (state.preference) || 'light';
 var t = p==='dark-hc' ? 'docsplus-dark-hc'
       : p==='dark'    ? 'docsplus-dark'
       : p==='light'   ? 'docsplus'
@@ -435,7 +437,7 @@ Since the theme toggle is instant, `prefers-reduced-motion` has no bearing on it
 | 🌙 Dark | `"dark"` | `docsplus-dark` | Always dark, ignores OS setting |
 | 🎯 Dark HC | `"dark-hc"` | `docsplus-dark-hc` | High contrast dark for projectors/classrooms |
 
-**Default: `"system"`** — respects the user's OS-level accessibility and comfort settings out of the box.
+**Default: `"light"`** — new users always start with the light theme. Users can switch to "System" in Settings → Appearance to follow their OS preference.
 
 **Implementation (complete):**
 
@@ -476,27 +478,34 @@ Components using `bg-white`, `text-gray-*`, `bg-[#hex]` instead of semantic toke
 <div className="bg-base-100 text-base-content/60 border-base-300">
 ```
 
-### 7.4 ⚠️ `:root` Variables Not Theme-Aware
+### 7.4 ✅ `:root` Variables Now Theme-Aware (Fixed 2026-02-16)
 
+Previously, `:root` hardcoded `--color-docsy: #2778ff` and `--caret-color: #2778ff`, which broke the caret and brand color in dark mode.
+
+**What was fixed:**
 ```scss
 :root {
-  --color-docsy: #2778ff;   /* Always brand blue, even in dark mode */
-  --caret-color: #2778ff;   /* Blue caret on dark blue canvas = poor visibility */
+  --color-docsy: var(--color-primary);
+  --caret-color: var(--color-primary);
+  --caret-color-inverse: var(--color-primary-content);
 }
 ```
 
-**Fix:** Replace with `caret-color: var(--color-primary)` in `.ProseMirror`, or move values into theme blocks.
+Both resolve to the active theme's primary color, so the caret and brand color adapt automatically in all three themes.
 
-### 7.5 ⚠️ PWA `theme-color` Is Static
+### 7.5 ✅ PWA `theme-color` Is Now Dynamic (Fixed 2026-02-16)
+
+Previously, a single static `theme-color` meta tag was used. Now `_document.tsx` ships two tags with `prefers-color-scheme` media queries:
 
 ```tsx
-const THEME_COLOR = '#2778ff'  // Always brand blue, regardless of theme
+const THEME_COLOR_LIGHT = '#fafbfc' // base-100 light
+const THEME_COLOR_DARK = '#0b1220'  // base-100 dark
+
+<meta name="theme-color" content={THEME_COLOR_LIGHT} media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content={THEME_COLOR_DARK} media="(prefers-color-scheme: dark)" />
 ```
 
-**Fix:** Add a second meta tag:
-```html
-<meta name="theme-color" media="(prefers-color-scheme: dark)" content="#0b1220" />
-```
+The browser chrome, status bar, and task switcher now match the active OS color scheme.
 
 ### 7.6 ✅ Overlay Component Dark Mode Compliance (Fixed 2026-02-16)
 
