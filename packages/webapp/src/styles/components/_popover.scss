@@ -1,10 +1,11 @@
 .Popover {
-  background-color: white;
-  box-shadow: 0 2px 4px rgba(0, 10, 20, 0.1);
-  border: 1px solid #ddd;
+  background-color: var(--color-base-100);
+  color: var(--color-base-content);
+  box-shadow: 0 2px 4px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+  border: 1px solid var(--color-base-300);
   font-size: 90%;
   padding: 4px 8px;
-  border-radius: 4px;
+  border-radius: var(--radius-field);
   box-sizing: border-box;
   width: max-content;
   max-width: calc(100vw - 10px);

@@ -4,17 +4,22 @@
 }
 
 .dropdown-content {
-  filter: drop-shadow(0 1px 1px rgb(0 0 0 / 0.05));
+  filter: drop-shadow(0 1px 1px color-mix(in oklch, var(--color-base-content) 5%, transparent));
 }
 
-.tooltip:before {
-  padding: 0.25rem 0.5rem !important;
-  // -webkit-font-smoothing: auto !important;
-  // -moz-osx-font-smoothing: auto !important;
-  background: black !important;
-  // border-radius: 0.375rem /* 6px */ !important;
-  // --tw-text-opacity: 1 !important;
-  // color: rgb(255 255 255 / var(--tw-text-opacity)) !important;
-  font-size: 12px !important/* 12px */;
-  line-height: 1rem !important /* 16px */;
+// Tooltip overrides – tighten sizing, enforce theme tokens on both body & arrow.
+// DaisyUI v5 uses --tt-bg for the body (:before) and the mask-arrow (:after).
+.tooltip {
+  --tt-bg: var(--color-neutral);
+
+  &:before,
+  & > .tooltip-content {
+    padding: 0.25rem 0.5rem !important;
+    color: var(--color-neutral-content) !important;
+    border-radius: 0.375rem !important;
+    font-size: 12px !important;
+    line-height: 1rem !important;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
 }

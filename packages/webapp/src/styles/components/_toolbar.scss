@@ -14,16 +14,16 @@
 
   button {
     &.is-active {
-      background-color: oklch(var(--p) / 0.1);
-      color: oklch(var(--p));
+      background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
+      color: var(--color-primary);
 
       svg {
-        fill: oklch(var(--p));
+        fill: var(--color-primary);
       }
     }
 
     &[disabled]:hover {
-      color: oklch(var(--bc) / 0.4);
+      color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
       background-color: transparent;
     }
   }
@@ -31,8 +31,8 @@
   &__main {
     pointer-events: auto;
     box-shadow:
-      0 -4px 6px -1px rgba(0, 0, 0, 0.1),
-      0 -2px 4px -1px rgba(0, 0, 0, 0.06);
+      0 -4px 6px -1px color-mix(in oklch, var(--color-base-content) 10%, transparent),
+      0 -2px 4px -1px color-mix(in oklch, var(--color-base-content) 6%, transparent);
   }
 
   &__format-selection {
@@ -44,7 +44,7 @@
 .chatroom__toolbar {
   border-top-width: 1px;
   border-bottom-width: 1px;
-  border-color: oklch(var(--b3));
+  border-color: var(--color-base-300);
 
   .divided {
     display: inline-block;
@@ -54,21 +54,21 @@
     margin-top: 6px;
     margin-bottom: 6px;
     border-left-width: 1px;
-    border-color: oklch(var(--b3));
+    border-color: var(--color-base-300);
   }
 
   button {
     &.is-active {
-      background-color: oklch(var(--p) / 0.1);
-      color: oklch(var(--p));
+      background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
+      color: var(--color-primary);
 
       svg {
-        fill: oklch(var(--p));
+        fill: var(--color-primary);
       }
     }
 
     &[disabled]:hover {
-      color: oklch(var(--bc) / 0.4);
+      color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
       background-color: transparent;
     }
   }
@@ -76,7 +76,7 @@
   .gearModal,
   .filterModal {
     width: 430px;
-    background: oklch(var(--b1));
+    background: var(--color-base-100);
     border-radius: var(--rounded-box);
 
     .content {
@@ -93,7 +93,7 @@
 button {
   &[disabled] {
     svg {
-      fill: oklch(var(--bc) / 0.4);
+      fill: color-mix(in oklch, var(--color-base-content) 40%, transparent);
     }
   }
 }

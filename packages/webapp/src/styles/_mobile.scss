@@ -1,6 +1,4 @@
-:root {
-  --bg-docy: #2778ff;
-}
+// --bg-docy is now set theme-aware in globals.scss :root
 
 // iOS Safari keyboard fix - lock html/body to prevent scroll glitches
 html.m_mobile {
@@ -101,7 +99,7 @@ html.m_mobile #__next {
     caret-color: var(--caret-color) !important;
     -webkit-user-select: text !important;
     user-select: text !important;
-    -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+    -webkit-tap-highlight-color: color-mix(in oklch, var(--color-base-content) 10%, transparent);
 
     /* iOS Safari caret positioning fix */
     touch-action: manipulation; /* Prevent double-tap zoom interference */
@@ -184,10 +182,10 @@ html.m_mobile #__next {
           width: auto;
           height: 28px;
           min-height: 28px !important;
-          background-color: var(--bg-docy, #2778ff);
+          background-color: var(--color-primary);
           border-radius: 8px 0 0 8px !important;
           border: none;
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 2px 6px color-mix(in oklch, var(--color-base-content) 20%, transparent);
 
           // Override size classes
           &.size-12 {
@@ -222,9 +220,9 @@ html.m_mobile #__next {
               min-width: 20px;
               height: 20px;
               padding: 0 4px;
-              background-color: rgba(0, 0, 0, 0.25);
+              background-color: color-mix(in oklch, var(--color-base-content) 25%, transparent);
               border-radius: 6px;
-              color: #fff;
+              color: var(--color-primary-content);
               font-size: 11px;
               font-weight: 600;
               order: -1;
@@ -288,27 +286,27 @@ html.m_mobile #__next {
 
 .edit-fab {
   box-shadow:
-    0 3px 5px -1px rgba(0, 0, 0, 0.2),
-    0 6px 10px 0 rgba(0, 0, 0, 0.14),
-    0 1px 18px 0 rgba(0, 0, 0, 0.12);
+    0 3px 5px -1px color-mix(in oklch, var(--color-base-content) 20%, transparent),
+    0 6px 10px 0 color-mix(in oklch, var(--color-base-content) 14%, transparent),
+    0 1px 18px 0 color-mix(in oklch, var(--color-base-content) 12%, transparent);
 }
 
 .headingSelection {
   &.is-active {
-    background-color: #e8f0fe;
-    color: #1a73e8;
+    background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
+    color: var(--color-primary);
     border: none;
-    box-shadow: 0 0 0 1px #1a73e870;
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-primary) 44%, transparent);
 
     svg {
-      fill: #1a73e8;
+      fill: var(--color-primary);
     }
 
     button {
       &:disabled {
-        color: #9e9e9e;
+        color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
         svg {
-          fill: #9e9e9e;
+          fill: color-mix(in oklch, var(--color-base-content) 40%, transparent);
         }
       }
     }

@@ -1,5 +1,3 @@
-$bg-root: #f8f9fa;
-
 body.indentHeading {
   &.h1SectionBreak {
     div.heading {
@@ -13,7 +11,7 @@ body.indentHeading {
   }
 
   div.heading {
-    border-left: 3px solid rgba(#0d0d0d, 0.1);
+    border-left: 3px solid color-mix(in oklch, var(--color-base-content) 10%, transparent);
     padding-left: 1rem;
     position: relative;
     margin-top: 1rem;
@@ -21,13 +19,13 @@ body.indentHeading {
     .title::before {
       content: attr(level);
       position: absolute;
-      background-color: tomato;
+      background-color: var(--color-error);
       font-size: 12px !important;
       height: 20px;
       width: 20px;
       top: -16px;
       left: -28px;
-      color: #fff;
+      color: var(--color-error-content);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -54,8 +52,8 @@ body.h1SectionBreak {
       &[level='1'] {
         padding: 2.5rem;
         padding-bottom: 1.5rem;
-        border-top: 1px solid #e1e6e7;
-        border-bottom: 1px solid #e1e6e7;
+        border-top: 1px solid var(--color-base-300);
+        border-bottom: 1px solid var(--color-base-300);
         border-radius: 4px;
         margin-bottom: 1rem;
       }
@@ -95,7 +93,7 @@ body.h1SectionBreak {
 
         &:last-of-type {
           border: none !important;
-          border-bottom: 1px solid #e1e6e7 !important;
+          border-bottom: 1px solid var(--color-base-300) !important;
           // border-radius: 0 0 4px 4px !important;
           border-radius: 0 !important;
         }
@@ -110,12 +108,12 @@ body.h1SectionBreak {
       padding: 2.5rem;
       padding-bottom: 0.2rem;
       margin-top: 0;
-      border: 1px solid #e1e6e7;
+      border: 1px solid var(--color-base-300);
       border-bottom: none;
       border-top: none;
 
       &:first-of-type {
-        border-top: 1px solid #e1e6e7;
+        border-top: 1px solid var(--color-base-300);
         border-radius: 4px;
       }
 
@@ -124,7 +122,7 @@ body.h1SectionBreak {
       }
 
       &:last-of-type {
-        border-bottom: 1px solid #e1e6e7;
+        border-bottom: 1px solid var(--color-base-300);
         padding-bottom: 1.5rem;
         border-radius: 4px;
       }

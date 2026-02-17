@@ -8,12 +8,13 @@
   position: absolute;
   z-index: 50;
   backdrop-filter: blur(4px);
-  background-color: rgb(203 213 225 / 0.2);
+  background-color: color-mix(in oklch, var(--color-base-content) 20%, transparent);
 }
 
 .Dialog {
   margin: 15px;
-  background-color: white;
+  background-color: var(--color-base-100);
+  color: var(--color-base-content);
   padding: 15px;
-  border-radius: 4px;
+  border-radius: var(--radius-box);
 }

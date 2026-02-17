@@ -13,7 +13,7 @@ import { useInitialSteps } from '@hooks/useInitialSteps'
 import { useOnAuthStateChange } from '@hooks/useOnAuthStateChange'
 import useServiceWorker from '@hooks/useServiceWorker'
 import { eventsHub } from '@services/eventsHub'
-import { applyEditorPreferences, useEditorPreferences } from '@stores'
+import { applyEditorPreferences, resolveTheme, useEditorPreferences, useThemeStore } from '@stores'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
@@ -24,6 +24,7 @@ interface AppProvidersProps {
 export default function AppProviders({ isMobileInitial }: AppProvidersProps) {
   const router = useRouter()
   const { preferences, hydrated } = useEditorPreferences()
+  const { preference: themePreference, hydrated: themeHydrated } = useThemeStore()
 
   useServiceWorker()
   useOnAuthStateChange()
@@ -36,6 +37,13 @@ export default function AppProviders({ isMobileInitial }: AppProvidersProps) {
   useEffect(() => {
     if (hydrated) applyEditorPreferences(preferences)
   }, [hydrated, preferences])
+
+  // Apply theme on hydration (covers page reload / first visit)
+  useEffect(() => {
+    if (!themeHydrated) return
+    const resolved = resolveTheme(themePreference)
+    document.documentElement.setAttribute('data-theme', resolved)
+  }, [themeHydrated, themePreference])
 
   useEffect(() => {
     if (!router.isReady) return

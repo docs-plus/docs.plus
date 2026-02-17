@@ -1,13 +1,14 @@
 @import 'tailwindcss';
 @plugin 'daisyui';
 
+/* Map Tailwind's dark: variant to DaisyUI's data-theme attribute.
+   Without this, dark: classes only respond to OS prefers-color-scheme,
+   NOT the in-app theme toggle. */
+@custom-variant dark (&:where([data-theme="docsplus-dark"] *, [data-theme="docsplus-dark"], [data-theme="docsplus-dark-hc"] *, [data-theme="docsplus-dark-hc"]));
+
 /* ============================================
-   docs.plus Theme System
-   Light & Dark themes with consistent design language
-   ============================================ */
-/* ============================================
-   docs.plus Theme System (Mature v2)
-   Calm, professional, docs-first
+   docs.plus Theme System v3
+   Light · Dark · Dark High Contrast (projector)
    ============================================ */
 
 @plugin 'daisyui/theme' {
@@ -74,7 +75,7 @@
   /* NEUTRALS */
   --color-base-100: #0b1220; /* deep blue-black */
   --color-base-200: #0f172a; /* surface */
-  --color-base-300: #1e293b; /* borders */
+  --color-base-300: #2d3f57; /* borders (lifted for visibility — matches GitHub Dark ratio) */
   --color-base-content: #e5e7eb; /* soft white */
 
   /* PRIMARY (brand blue, darker-friendly) */
@@ -119,17 +120,78 @@
   --noise: 0;
 }
 
+/* ============================================
+   Dark High Contrast — Projector / Classroom
+   Wider surface scale, brighter borders, thicker strokes.
+   Optimized for low-quality displays and washed-out projectors.
+   ============================================ */
+@plugin 'daisyui/theme' {
+  name: 'docsplus-dark-hc';
+  default: false;
+  prefersdark: false;
+  color-scheme: 'dark';
+
+  /* NEUTRALS — wider surface scale for projector visibility */
+  --color-base-100: #0f172a; /* slate-900 canvas (lifted from regular dark) */
+  --color-base-200: #1e293b; /* slate-800 surface (clear step-up) */
+  --color-base-300: #475569; /* slate-600 borders (2.36:1 vs canvas — projector-safe) */
+  --color-base-content: #f1f5f9; /* slate-100 (brighter text for projection) */
+
+  /* PRIMARY (brand blue — same as dark) */
+  --color-primary: #7ab4ff; /* slightly brighter for projection */
+  --color-primary-content: #0f172a;
+
+  /* SECONDARY (collaboration / presence) */
+  --color-secondary: #34d399; /* emerald-400 (brighter for projection) */
+  --color-secondary-content: #071a14;
+
+  /* ACCENT (highlights / bookmarks / comments) */
+  --color-accent: #fbbf24; /* amber-400 (brighter gold) */
+  --color-accent-content: #0f172a;
+
+  /* NEUTRAL (chrome / icons) */
+  --color-neutral: #94a3b8; /* slate-400 (brighter for projection) */
+  --color-neutral-content: #0f172a;
+
+  /* STATUS — brighter for projection */
+  --color-info: #38bdf8; /* sky-400 */
+  --color-info-content: #0f172a;
+
+  --color-success: #34d399; /* emerald-400 */
+  --color-success-content: #071a14;
+
+  --color-warning: #fb923c; /* orange-400 */
+  --color-warning-content: #0f172a;
+
+  --color-error: #f87171; /* red-400 */
+  --color-error-content: #0f172a;
+
+  /* SHAPE SYSTEM (same structure, thicker borders for visibility) */
+  --radius-selector: 0.5rem;
+  --radius-field: 0.5rem;
+  --radius-box: 1rem;
+
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 2px; /* thicker borders for projector visibility */
+
+  --depth: 0;
+  --noise: 0;
+}
+
 @theme {
-  --color-docsy: #2778ff;
-  --bg-docy: #2778ff;
+  --color-docsy: oklch(54.6% 0.245 262.881);
+  --bg-docy: oklch(54.6% 0.245 262.881);
 }
 
 :root {
   --font-family: 'Helvetica, Arial, sans-serif';
-  --color-docsy: #2778ff;
-  --text-docsy: #2778ff;
-  --caret-color: #2778ff;
-  --caret-color-inverse: #ffffff;
+  /* Theme-aware aliases — resolve to the active DaisyUI theme's tokens */
+  --color-docsy: var(--color-primary);
+  --text-docsy: var(--color-primary);
+  --bg-docy: var(--color-primary);
+  --caret-color: var(--color-primary);
+  --caret-color-inverse: var(--color-primary-content);
 }
 
 * {
@@ -195,14 +257,15 @@ html:not(.m_mobile) {
   .hyperlink-preview-modal,
   .hyperlink-set-modal,
   .hyperlink-edit-modal {
-    background-color: #fff;
+    background-color: var(--color-base-100);
+    color: var(--color-base-content);
     border-radius: 10px;
-    border: 1px solid #dadce0;
+    border: 1px solid var(--color-base-300);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 6px 6px;
-    box-shadow: 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+    box-shadow: 0 1px 3px 1px color-mix(in oklch, var(--color-base-content) 15%, transparent);
     margin-top: -6px;
 
     &__metadata {
@@ -239,7 +302,7 @@ html:not(.m_mobile) {
       justify-content: center;
       transition: background-color 0.1s ease-in-out;
       &:hover {
-        background-color: #eee;
+        background-color: var(--color-base-200);
       }
       > svg {
         width: 16px;
@@ -252,11 +315,13 @@ html:not(.m_mobile) {
       align-items: flex-end;
       width: 100%;
       input {
-        border: 1px solid #dadce0;
+        border: 1px solid var(--color-base-300);
         border-radius: 6px;
         padding: 0.4rem 0.8rem;
         margin-bottom: 0.2rem;
         width: 100%;
+        background-color: var(--color-base-100);
+        color: var(--color-base-content);
         &:last-of-type {
           margin-bottom: 0;
         }
@@ -269,10 +334,9 @@ html:not(.m_mobile) {
           padding: 4px 14px;
           width: 70px;
           margin-bottom: 0.2rem;
-          color: #1a73e8;
+          color: var(--color-primary);
           &:hover {
-            background: rgba(26, 115, 232, 0.04);
-            color: #174ea6;
+            background: color-mix(in oklch, var(--color-primary) 4%, transparent);
           }
         }
       }
@@ -286,7 +350,7 @@ html:not(.m_mobile) {
 
 .hypermultimedia {
   iframe {
-    background-color: #fafafa;
+    background-color: var(--color-base-200);
   }
 
   &__resize-gripper {
@@ -301,8 +365,8 @@ html:not(.m_mobile) {
       left: 0;
       width: 100%;
       height: 100%;
-      border: 2px solid #1976d2;
-      box-shadow: 0 0px 6px rgba(0, 0, 0, 0.2);
+      border: 2px solid var(--color-primary);
+      box-shadow: 0 0px 6px color-mix(in oklch, var(--color-base-content) 20%, transparent);
     }
     .media-resize-clamp {
       // width: 10px;
@@ -317,12 +381,12 @@ html:not(.m_mobile) {
         top: 0;
         left: 50%;
         transform: translateX(-50%);
-        background-color: #1976d2;
+        background-color: var(--color-primary);
         width: 40px;
         height: 6px;
         border-radius: 3px;
         transition: all 0.1s ease;
-        box-shadow: 0 0px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 0px 4px color-mix(in oklch, var(--color-base-content) 10%, transparent);
       }
 
       &::before {
@@ -331,27 +395,27 @@ html:not(.m_mobile) {
         top: 50%;
         left: 0;
         transform: translateY(-50%);
-        background-color: #1976d2;
+        background-color: var(--color-primary);
         width: 6px;
         height: 40px;
         border-radius: 3px;
         transition: all 0.1s ease;
-        box-shadow: 0 0px 4px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 0px 4px color-mix(in oklch, var(--color-base-content) 10%, transparent);
       }
 
       &:hover {
         &::after,
         &::before {
-          background-color: #2060c6;
-          box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+          background-color: var(--color-primary);
+          box-shadow: 0 4px 8px color-mix(in oklch, var(--color-base-content) 20%, transparent);
         }
       }
 
       &:active {
         &::after,
         &::before {
-          background-color: #2060c6;
-          box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+          background-color: var(--color-primary);
+          box-shadow: 0 2px 4px color-mix(in oklch, var(--color-base-content) 40%, transparent);
         }
       }
 
@@ -370,7 +434,7 @@ html:not(.m_mobile) {
           transform: translateX(-50%);
           width: 1.5px;
           height: 30px;
-          background-color: #1a73e8;
+          background-color: var(--color-primary);
         }
       }
 
@@ -540,39 +604,42 @@ html:not(.m_mobile) {
 
   &__modal {
     padding: 8px 8px;
-    background-color: #fff;
+    background-color: var(--color-base-100);
+    color: var(--color-base-content);
     border-radius: 6px;
     display: flex;
     align-items: center;
     box-shadow:
-      0 4px 6px -1px rgba(0, 0, 0, 0.1),
-      0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    border: 1px solid rgba(0, 0, 0, 0.1);
+      0 4px 6px -1px color-mix(in oklch, var(--color-base-content) 10%, transparent),
+      0 2px 4px -1px color-mix(in oklch, var(--color-base-content) 6%, transparent);
+    border: 1px solid var(--color-base-300);
     flex-direction: row;
     flex-wrap: wrap;
     justify-content: flex-start;
 
     &__divider {
-      border-left: 2px solid #e5e7eb;
+      border-left: 2px solid var(--color-base-300);
       height: 5px;
       margin: 6px 10px;
     }
 
     select {
       border-radius: 0.375rem;
-      border-color: #d1d5db;
+      border-color: var(--color-base-300);
       padding: 0.5rem 0.5rem;
+      background-color: var(--color-base-100);
+      color: var(--color-base-content);
       &:hover {
-        background-color: #eee;
+        background-color: var(--color-base-200);
       }
     }
 
     button {
-      border-color: #d1d5db;
+      border-color: var(--color-base-300);
       padding: 8px;
       border-radius: 0.375rem;
       &:hover {
-        background-color: #eee;
+        background-color: var(--color-base-200);
       }
     }
 
@@ -582,15 +649,15 @@ html:not(.m_mobile) {
     }
 
     &--active {
-      background-color: #1a73e8;
-      fill: #fff;
+      background-color: var(--color-primary);
+      fill: var(--color-primary-content);
       &:hover {
         svg {
-          fill: black;
+          fill: var(--color-base-content);
         }
       }
       svg {
-        fill: #fff;
+        fill: var(--color-primary-content);
       }
     }
   }
@@ -642,13 +709,13 @@ ol {
 
 /* This styles the scrollbar thumb (the part you drag) */
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.2); /* semi-transparent black */
+  background: color-mix(in oklch, var(--color-base-content) 20%, transparent);
   border-radius: 6px; /* rounded corners */
 }
 
 /* This styles the scrollbar thumb on hover */
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.3); /* slightly darker on hover */
+  background: color-mix(in oklch, var(--color-base-content) 30%, transparent);
 }
 
 /* Hide the scrollbar by default */
@@ -658,7 +725,7 @@ ol {
 }
 
 .scrollable-container:hover::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.3);
+  background: color-mix(in oklch, var(--color-base-content) 30%, transparent);
 }
 
 .ProseMirror,
@@ -674,7 +741,7 @@ ol {
   }
 
   p.is-editor-empty:first-child::before {
-    color: #adb5bd;
+    color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
     content: attr(data-placeholder);
     float: left;
     height: 0;
@@ -682,8 +749,8 @@ ol {
   }
 
   .collaboration-cursor__caret {
-    border-left: 1px solid #0d0d0d;
-    border-right: 1px solid #0d0d0d;
+    border-left: 1px solid var(--color-base-content);
+    border-right: 1px solid var(--color-base-content);
     margin-left: -1px;
     margin-right: -1px;
     pointer-events: none;
@@ -693,7 +760,7 @@ ol {
 
   .collaboration-cursor__label {
     border-radius: 3px 3px 3px 0;
-    color: #0d0d0d;
+    color: var(--color-base-content);
     font-size: 12px;
     font-weight: 600;
     left: -1px;
@@ -709,7 +776,7 @@ ol {
     border-radius: 50%;
     width: 30px;
     height: 30px;
-    border: 2px solid #eeee;
+    border: 2px solid var(--color-base-300);
     position: absolute;
     background-size: contain;
     top: -38px;
@@ -753,8 +820,8 @@ ol {
   }
 
   code {
-    background-color: rgba(#616161, 0.1);
-    color: #616161;
+    background-color: color-mix(in oklch, var(--color-base-content) 10%, transparent);
+    color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
   }
 
   img {
@@ -763,29 +830,29 @@ ol {
   }
 
   blockquote {
-    border-left: 2px solid #f1f3f5;
+    border-left: 2px solid var(--color-base-300);
     margin: 0;
     padding: 0.2rem 0.4rem;
   }
 
   hr {
     border: none;
-    border-top: 2px solid #fff;
+    border-top: 2px solid var(--color-base-300);
     margin: 2rem 0;
   }
 
   .is-empty::before {
     content: attr(data-placeholder);
     float: left;
-    color: #adb5bd;
+    color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
     pointer-events: none;
     height: 0;
   }
 
   pre {
-    background: #0d0d0d;
+    background: var(--color-neutral);
     border-radius: 0.5rem;
-    color: #fff;
+    color: var(--color-neutral-content);
     font-family: 'JetBrainsMono', monospace;
     overflow: auto;
     padding: 2px 10px;
@@ -799,7 +866,7 @@ ol {
 
     .hljs-comment,
     .hljs-quote {
-      color: #616161;
+      color: color-mix(in oklch, var(--color-neutral-content) 60%, transparent);
     }
 
     .hljs-variable,
@@ -812,7 +879,7 @@ ol {
     .hljs-name,
     .hljs-selector-id,
     .hljs-selector-class {
-      color: #f98181;
+      color: var(--color-error);
     }
 
     .hljs-number,
@@ -822,23 +889,23 @@ ol {
     .hljs-literal,
     .hljs-type,
     .hljs-params {
-      color: #fbbc88;
+      color: var(--color-warning);
     }
 
     .hljs-string,
     .hljs-symbol,
     .hljs-bullet {
-      color: #b9f18d;
+      color: var(--color-success);
     }
 
     .hljs-title,
     .hljs-section {
-      color: #faf594;
+      color: var(--color-accent);
     }
 
     .hljs-keyword,
     .hljs-selector-tag {
-      color: #70cff8;
+      color: var(--color-info);
     }
 
     .hljs-emphasis {
@@ -859,7 +926,7 @@ ol {
 
     td,
     th {
-      border: 2px solid #ced4da;
+      border: 2px solid var(--color-base-300);
       box-sizing: border-box;
       min-width: 1em;
       padding: 3px 5px;
@@ -872,13 +939,13 @@ ol {
     }
 
     th {
-      background-color: #f1f3f5;
+      background-color: var(--color-base-200);
       font-weight: bold;
       text-align: left;
     }
 
     .selectedCell:after {
-      background: rgba(200, 200, 255, 0.4);
+      background: color-mix(in oklch, var(--color-primary) 20%, transparent);
       content: '';
       left: 0;
       right: 0;
@@ -890,7 +957,7 @@ ol {
     }
 
     .column-resize-handle {
-      background-color: #adf;
+      background-color: var(--color-info);
       bottom: -2px;
       position: absolute;
       right: -2px;
@@ -948,7 +1015,7 @@ ol {
 
 /* Bubble menu */
 .bubble-menu {
-  box-shadow: 0 0px 20px 4px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 0px 20px 4px color-mix(in oklch, var(--color-base-content) 6%, transparent);
   button {
     font-size: 16px;
     font-weight: 400;
@@ -964,11 +1031,11 @@ ol {
     align-items: center;
     gap: 4px;
     padding: 6px 10px;
-    background: #1a1a1a;
+    background: var(--color-neutral);
     border-radius: 10px;
     box-shadow:
-      0 4px 20px rgba(0, 0, 0, 0.3),
-      0 2px 6px rgba(0, 0, 0, 0.2);
+      0 4px 20px color-mix(in oklch, var(--color-base-content) 30%, transparent),
+      0 2px 6px color-mix(in oklch, var(--color-base-content) 20%, transparent);
   }
 
   .bubble-menu-group {
@@ -980,7 +1047,7 @@ ol {
   .bubble-menu-divider {
     width: 1px;
     height: 24px;
-    background: rgba(255, 255, 255, 0.2);
+    background: color-mix(in oklch, var(--color-neutral-content) 20%, transparent);
     margin: 0 6px;
   }
 
@@ -993,19 +1060,19 @@ ol {
     height: 40px;
     border-radius: 8px;
     background: transparent;
-    color: rgba(255, 255, 255, 0.9);
+    color: color-mix(in oklch, var(--color-neutral-content) 90%, transparent);
     transition: all 0.12s ease;
     -webkit-tap-highlight-color: transparent;
     touch-action: manipulation;
 
     &:active {
-      background: rgba(255, 255, 255, 0.15);
+      background: color-mix(in oklch, var(--color-neutral-content) 15%, transparent);
       transform: scale(0.92);
     }
 
     // Copied state
     &.copied {
-      color: #4ade80;
+      color: var(--color-success);
     }
   }
 
@@ -1020,7 +1087,7 @@ ol {
     height: 40px;
     border-radius: 8px;
     background: transparent;
-    color: var(--color-docsy, #2778ff);
+    color: var(--color-primary);
     font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
@@ -1033,7 +1100,7 @@ ol {
     }
 
     &:active {
-      background: rgba(39, 120, 255, 0.15);
+      background: color-mix(in oklch, var(--color-primary) 15%, transparent);
       transform: scale(0.95);
     }
   }
@@ -1047,10 +1114,10 @@ ol {
 @keyframes bg-ping-animation {
   0%,
   100% {
-    background-color: #eef2ff;
+    background-color: var(--color-base-200);
   }
   50% {
-    background-color: #c7d2fe;
+    background-color: var(--color-base-300);
   }
 }
 
@@ -1068,10 +1135,10 @@ ol {
 @keyframes bg-ping-primary {
   0%,
   100% {
-    background-color: rgba(39, 120, 255, 0.1);
+    background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
   }
   50% {
-    background-color: rgba(39, 120, 255, 0.3);
+    background-color: color-mix(in oklch, var(--color-primary) 30%, transparent);
   }
 }
 
@@ -1079,12 +1146,12 @@ ol {
 @keyframes border-ping-animation {
   0%,
   100% {
-    border-color: #c7d2fe;
-    box-shadow: 0 0 5px rgba(129, 140, 248, 0.1);
+    border-color: var(--color-base-300);
+    box-shadow: 0 0 5px color-mix(in oklch, var(--color-primary) 10%, transparent);
   }
   50% {
-    border-color: #818cf8;
-    box-shadow: 0 0 8px rgba(129, 140, 248, 0.5);
+    border-color: var(--color-primary);
+    box-shadow: 0 0 8px color-mix(in oklch, var(--color-primary) 50%, transparent);
   }
 }
 
@@ -1108,14 +1175,14 @@ ol {
 @keyframes border-ping-primary {
   0%,
   100% {
-    border-color: rgba(39, 120, 255, 0.4);
-    box-shadow: 0 0 5px rgba(39, 120, 255, 0.1);
+    border-color: color-mix(in oklch, var(--color-primary) 40%, transparent);
+    box-shadow: 0 0 5px color-mix(in oklch, var(--color-primary) 10%, transparent);
   }
   50% {
-    border-color: rgba(39, 120, 255, 0.9);
+    border-color: color-mix(in oklch, var(--color-primary) 90%, transparent);
     box-shadow:
-      0 0 12px rgba(39, 120, 255, 0.3),
-      0 0 5px rgba(39, 120, 255, 0.5);
+      0 0 12px color-mix(in oklch, var(--color-primary) 30%, transparent),
+      0 0 5px color-mix(in oklch, var(--color-primary) 50%, transparent);
   }
 }
 
@@ -1131,14 +1198,14 @@ ol {
 @keyframes border-ping-glow {
   0%,
   100% {
-    border-color: #93c5fd;
-    box-shadow: 0 0 5px rgba(59, 130, 246, 0.2);
+    border-color: color-mix(in oklch, var(--color-primary) 60%, transparent);
+    box-shadow: 0 0 5px color-mix(in oklch, var(--color-primary) 20%, transparent);
   }
   50% {
-    border-color: #3b82f6;
+    border-color: var(--color-primary);
     box-shadow:
-      0 0 15px rgba(59, 130, 246, 0.6),
-      0 0 5px rgba(59, 130, 246, 0.8);
+      0 0 15px color-mix(in oklch, var(--color-primary) 60%, transparent),
+      0 0 5px color-mix(in oklch, var(--color-primary) 80%, transparent);
   }
 }
 
@@ -1223,7 +1290,7 @@ ol {
 
 /* Context menu active state for message cards */
 .msg_card.context-menu-active {
-  background-color: #f0f4ff !important;
+  background-color: color-mix(in oklch, var(--color-primary) 8%, transparent) !important;
   // border-left: 3px solid #3b82f6 !important;
   // transform: translateX(2px) !important;
   // transition: all 0.2s ease-in-out !important;
@@ -1251,7 +1318,7 @@ ol {
 .scrollbar-custom {
   /* Firefox */
   scrollbar-width: thin;
-  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+  scrollbar-color: color-mix(in oklch, var(--color-base-content) 40%, transparent) transparent;
 
   /* Smooth scrolling */
   scroll-behavior: smooth;
@@ -1270,7 +1337,7 @@ ol {
 }
 
 .scrollbar-custom::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
+  background: color-mix(in oklch, var(--color-base-content) 40%, transparent);
   border-radius: 8px;
   border: 2px solid transparent;
   background-clip: content-box;
@@ -1278,12 +1345,12 @@ ol {
 }
 
 .scrollbar-custom::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
+  background: color-mix(in oklch, var(--color-base-content) 60%, transparent);
   background-clip: content-box;
 }
 
 .scrollbar-custom::-webkit-scrollbar-thumb:active {
-  background: rgba(148, 163, 184, 0.8);
+  background: color-mix(in oklch, var(--color-base-content) 80%, transparent);
   background-clip: content-box;
 }
 
@@ -1337,43 +1404,43 @@ ol {
 
 /* Hover state - reveal the scrollbar */
 .scrollbar-hide:hover {
-  scrollbar-color: rgba(148, 163, 184, 0.4) transparent;
+  scrollbar-color: color-mix(in oklch, var(--color-base-content) 40%, transparent) transparent;
 }
 
 .scrollbar-hide:hover::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
+  background: color-mix(in oklch, var(--color-base-content) 40%, transparent);
   border-radius: 8px;
   border: 1px solid transparent;
   background-clip: content-box;
 }
 
 .scrollbar-hide:hover::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.6);
+  background: color-mix(in oklch, var(--color-base-content) 60%, transparent);
   background-clip: content-box;
 }
 
 /* Primary color scrollbar variant */
 .scrollbar-primary {
-  scrollbar-color: rgba(39, 120, 255, 0.4) transparent;
+  scrollbar-color: color-mix(in oklch, var(--color-primary) 40%, transparent) transparent;
 }
 
 .scrollbar-primary::-webkit-scrollbar-thumb {
-  background: rgba(39, 120, 255, 0.4);
+  background: color-mix(in oklch, var(--color-primary) 40%, transparent);
 }
 
 .scrollbar-primary::-webkit-scrollbar-thumb:hover {
-  background: rgba(39, 120, 255, 0.6);
+  background: color-mix(in oklch, var(--color-primary) 60%, transparent);
 }
 
 /* Dark scrollbar variant */
 .scrollbar-dark {
-  scrollbar-color: rgba(30, 41, 59, 0.5) transparent;
+  scrollbar-color: color-mix(in oklch, var(--color-neutral) 50%, transparent) transparent;
 }
 
 .scrollbar-dark::-webkit-scrollbar-thumb {
-  background: rgba(30, 41, 59, 0.5);
+  background: color-mix(in oklch, var(--color-neutral) 50%, transparent);
 }
 
 .scrollbar-dark::-webkit-scrollbar-thumb:hover {
-  background: rgba(30, 41, 59, 0.7);
+  background: color-mix(in oklch, var(--color-neutral) 70%, transparent);
 }

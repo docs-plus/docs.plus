@@ -44,11 +44,11 @@
   .ha-wrap.has-selection > .ha-group[data-unread-count]:not([data-unread-count='']) {
     flex-direction: column;
     align-items: center;
-    background-color: var(--bg-docy, #fff);
+    background-color: var(--color-base-100);
     box-shadow:
-      0 1px 3px 0 rgba(0, 0, 0, 0.1),
-      0 1px 2px 0 rgba(0, 0, 0, 0.06),
-      0 0 0 1px rgba(0, 0, 0, 0.05);
+      0 1px 3px 0 color-mix(in oklch, var(--color-base-content) 10%, transparent),
+      0 1px 2px 0 color-mix(in oklch, var(--color-base-content) 6%, transparent),
+      0 0 0 1px color-mix(in oklch, var(--color-base-content) 5%, transparent);
     gap: 2px;
     border-radius: 46%;
 
