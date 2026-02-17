@@ -1,0 +1,50 @@
+<p style="margin: 0 0 <%= it.h.SPACING.xl %>; color: <%= it.h.COLORS.text %>; font-size: 16px; line-height: 1.5;">
+  Hi <%= it.recipientName || 'there' %>,
+</p>
+
+<% if (it.documentName || it.channelName) { %>
+<p style="margin: 0 0 <%= it.h.SPACING.lg %>; color: <%= it.h.COLORS.textMuted %>; font-size: 13px;">
+  <% if (it.documentName) { %>
+    <span style="color: <%= it.h.COLORS.text %>; font-weight: 500;"><%= it.documentName %></span>
+  <% } %>
+  <% if (it.documentName && it.channelName) { %> › <% } %>
+  <% if (it.channelName) { %>
+    <span>#<%= it.channelName %></span>
+  <% } %>
+</p>
+<% } %>
+
+<!-- Notification Card -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: <%= it.h.COLORS.background %>; border-radius: <%= it.h.RADIUS.lg %>; border: 1px solid <%= it.h.COLORS.border %>;">
+  <tr>
+    <td style="padding: <%= it.h.SPACING.xl %>;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td width="56" valign="top">
+            <%~ it.h.avatar(it.senderName, it.senderAvatarUrl, 44) %>
+          </td>
+          <td style="padding-left: <%= it.h.SPACING.md %>;" valign="top">
+            <p style="margin: 0 0 <%= it.h.SPACING.xs %>; color: <%= it.h.COLORS.primary %>; font-size: 14px; font-weight: 600;">
+              <%= it.subject %>
+            </p>
+            <% if (it.messagePreview) { %>
+            <p style="margin: 0; color: <%= it.h.COLORS.textMuted %>; font-size: 15px; line-height: 1.5;">
+              "<%= it.h.truncate(it.messagePreview, 150) %>"
+            </p>
+            <% } %>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<!-- CTA Button -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    <td align="center" style="padding-top: <%= it.h.SPACING.xl %>;">
+      <%~ it.h.button('View Message', it.actionUrl) %>
+    </td>
+  </tr>
+</table>
+

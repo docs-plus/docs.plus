@@ -1,0 +1,119 @@
+<p style="margin: 0 0 <%= it.h.SPACING.lg %>; color: <%= it.h.COLORS.text %>; font-size: 16px; line-height: 1.5;">
+  Hi <%= it.recipientName || 'there' %>,
+</p>
+
+<p style="margin: 0 0 <%= it.h.SPACING.xl %>; color: <%= it.h.COLORS.textMuted %>; font-size: 15px; line-height: 1.5;">
+  Here's your <strong style="color: <%= it.h.COLORS.text %>;"><%= it.frequency %> digest</strong> with
+  <strong style="color: <%= it.h.COLORS.primary %>;"><%= it.totalNotifications %> notification<%= it.totalNotifications !== 1 ? 's' : '' %></strong>
+  from <%= it.periodLabel %>.
+</p>
+
+<!-- Documents -->
+<% it.documents.forEach(function(doc) { %>
+
+<!-- Document Section -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: <%= it.h.SPACING.xl %>;">
+  <!-- Document Header -->
+  <tr>
+    <td style="padding-bottom: <%= it.h.SPACING.md %>;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td>
+            <a href="<%= doc.url %>" style="color: <%= it.h.COLORS.text %>; font-size: 15px; font-weight: 600; text-decoration: none;">
+              📄 <%= doc.name %>
+            </a>
+          </td>
+          <td align="right">
+            <a href="<%= doc.url %>" style="color: <%= it.h.COLORS.primary %>; font-size: 12px; text-decoration: none;">Open →</a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- Channels -->
+  <tr>
+    <td>
+      <% doc.channels.forEach(function(channel) { %>
+
+      <!-- Channel Section -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: <%= it.h.SPACING.md %>;">
+        <tr>
+          <td style="background-color: <%= it.h.COLORS.background %>; border-radius: <%= it.h.RADIUS.md %>; border: 1px solid <%= it.h.COLORS.border %>;">
+
+            <!-- Channel Header -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding: <%= it.h.SPACING.md %> <%= it.h.SPACING.lg %>; border-bottom: 1px solid <%= it.h.COLORS.border %>;">
+                  <a href="<%= channel.url %>" style="color: <%= it.h.COLORS.text %>; font-size: 13px; font-weight: 600; text-decoration: none;">
+                    # <%= channel.name %>
+                  </a>
+                  <span style="color: <%= it.h.COLORS.textLight %>; font-size: 12px; margin-left: <%= it.h.SPACING.sm %>;">
+                    <%= channel.notifications.length %> message<%= channel.notifications.length !== 1 ? 's' : '' %>
+                  </span>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Channel Notifications -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding: <%= it.h.SPACING.sm %> <%= it.h.SPACING.lg %>;">
+              <% var shown = channel.notifications.slice(0, 5); %>
+              <% shown.forEach(function(n) { %>
+
+              <!-- Notification Item -->
+              <tr>
+                <td style="padding: <%= it.h.SPACING.sm %> 0; border-bottom: 1px solid <%= it.h.COLORS.borderLight %>;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td width="40" valign="top">
+                        <%~ it.h.avatar(n.sender_name, n.sender_avatar_url, 32) %>
+                      </td>
+                      <td style="padding-left: <%= it.h.SPACING.sm %>;" valign="top">
+                        <p style="margin: 0; color: <%= it.h.COLORS.text %>; font-size: 13px; font-weight: 500;">
+                          <span style="color: <%= it.h.COLORS.primary %>;"><%= it.h.notificationIcon(n.type) %></span> <%= n.sender_name %>
+                        </p>
+                        <% if (n.message_preview) { %>
+                        <p style="margin: <%= it.h.SPACING.xs %> 0 0; color: <%= it.h.COLORS.textMuted %>; font-size: 12px; line-height: 1.4;">
+                          <%= it.h.truncate(n.message_preview, 80) %>
+                        </p>
+                        <% } %>
+                      </td>
+                      <td width="50" align="right" valign="middle">
+                        <a href="<%= n.action_url %>" style="color: <%= it.h.COLORS.primary %>; font-size: 12px; text-decoration: none; font-weight: 500;">View</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              <% }) %>
+
+              <% if (channel.notifications.length > 5) { %>
+              <tr>
+                <td style="padding: <%= it.h.SPACING.sm %> 0; color: <%= it.h.COLORS.textLight %>; font-size: 11px; text-align: center;">
+                  +<%= channel.notifications.length - 5 %> more in this channel
+                </td>
+              </tr>
+              <% } %>
+
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <% }) %>
+    </td>
+  </tr>
+</table>
+
+<% }) %>
+
+<!-- CTA Button -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    <td align="center" style="padding-top: <%= it.h.SPACING.lg %>;">
+      <%~ it.h.button('View All Notifications', it.notificationsUrl) %>
+    </td>
+  </tr>
+</table>
+

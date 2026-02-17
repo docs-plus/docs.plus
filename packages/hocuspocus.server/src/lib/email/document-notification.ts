@@ -5,10 +5,12 @@
  * Uses the shared template system for consistent design.
  */
 
+import { renderNewDocumentEmail } from '@docs.plus/email-templates'
+
 import type { EmailJobData, GenericEmailRequest } from '../../types/email.types'
 import { emailLogger } from '../logger'
 import { sendEmailViaProvider } from './sender'
-import { buildNewDocumentEmailHtml, buildNewDocumentEmailText } from './templates'
+import { buildNewDocumentEmailText } from './templates'
 
 interface NewDocumentEmailParams {
   documentId: string
@@ -55,7 +57,7 @@ export const sendNewDocumentNotification = async (
   const documentUrl = `${appUrl}/${params.slug}`
   const creatorDisplay = params.creatorName || params.creatorEmail || 'Anonymous'
 
-  const html = buildNewDocumentEmailHtml({
+  const html = renderNewDocumentEmail({
     documentName: params.documentName,
     documentUrl,
     creatorName: creatorDisplay,

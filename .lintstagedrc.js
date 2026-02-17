@@ -13,10 +13,16 @@
 
 module.exports = {
   // TypeScript/React files in src directories
-  'packages/**/src/**/*.{ts,tsx}': ['eslint --fix --max-warnings=0', 'prettier --write'],
+  'packages/**/src/**/*.{ts,tsx}': [
+    'eslint --fix --max-warnings=0 --no-warn-ignored',
+    'prettier --write'
+  ],
 
   // JavaScript/React files in src directories
-  'packages/**/src/**/*.{js,jsx}': ['eslint --fix --max-warnings=0', 'prettier --write'],
+  'packages/**/src/**/*.{js,jsx}': [
+    'eslint --fix --max-warnings=0 --no-warn-ignored',
+    'prettier --write'
+  ],
 
   // Public directory files (service workers, etc.) - format only
   'packages/**/public/**/*.{js,ts}': ['prettier --write'],

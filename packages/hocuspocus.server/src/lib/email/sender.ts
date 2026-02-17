@@ -6,6 +6,13 @@
  * Includes RFC 8058 List-Unsubscribe headers for one-click unsubscribe.
  */
 
+import {
+  buildListUnsubscribeHeaders,
+  getEmailSubject,
+  renderDigestEmail,
+  renderNotificationEmail,
+  type UnsubscribeLinks
+} from '@docs.plus/email-templates'
 import { createClient } from '@supabase/supabase-js'
 
 import type {
@@ -18,15 +25,7 @@ import type {
 } from '../../types/email.types'
 import { emailLogger } from '../logger'
 import { sendEmail } from './providers'
-import {
-  buildDigestEmailHtml,
-  buildDigestEmailText,
-  buildListUnsubscribeHeaders,
-  buildNotificationEmailHtml,
-  buildNotificationEmailText,
-  getEmailSubject,
-  type UnsubscribeLinks
-} from './templates'
+import { buildDigestEmailText, buildNotificationEmailText } from './templates'
 
 /**
  * Fetch unsubscribe links from Supabase for a user
@@ -101,7 +100,7 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
           headers = buildListUnsubscribeHeaders(unsubscribeLinks.unsubscribe_all)
         }
 
-        html = buildNotificationEmailHtml({
+        html = renderNotificationEmail({
           recipientName: payload.recipient_name,
           senderName: payload.sender_name,
           notificationType: payload.notification_type,
@@ -147,7 +146,7 @@ export async function sendEmailViaProvider(data: EmailJobData): Promise<EmailRes
           headers = buildListUnsubscribeHeaders(unsubscribeLinks.unsubscribe_all)
         }
 
-        html = buildDigestEmailHtml({
+        html = renderDigestEmail({
           recipientName: payload.recipient_name,
           frequency: payload.frequency,
           documents: payload.documents,

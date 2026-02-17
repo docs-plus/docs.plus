@@ -1,0 +1,658 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`renderNotificationEmail snapshot 1`] = `
+"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>docs.plus</title>
+  <!--[if mso]>
+  <style type="text/css">
+    table { border-collapse: collapse; }
+    .content { width: 600px !important; }
+  </style>
+  <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" class="content" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: #1a73e8; padding: 24px 32px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 600; letter-spacing: -0.3px;">docs.plus</h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 32px;">
+              <p style="margin: 0 0 24px; color: #1f2937; font-size: 16px; line-height: 1.5;">
+  Hi Jane Smith,
+</p>
+
+
+<p style="margin: 0 0 16px; color: #6b7280; font-size: 13px;">
+  
+    <span style="color: #1f2937; font-weight: 500;">API Documentation</span>
+  
+   › 
+  
+    <span>#general</span>
+  
+</p>
+
+
+<!-- Notification Card -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 10px; border: 1px solid #e5e7eb;">
+  <tr>
+    <td style="padding: 24px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td width="56" valign="top">
+            <table role="presentation" cellpadding="0" cellspacing="0" style="width: 44px; height: 44px; border-radius: 50%; background: #1a73e8;">
+    <tr>
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 17px; font-family: Arial, sans-serif;">
+        J
+      </td>
+    </tr>
+  </table>
+          </td>
+          <td style="padding-left: 12px;" valign="top">
+            <p style="margin: 0 0 4px; color: #1a73e8; font-size: 14px; font-weight: 600;">
+              John Doe mentioned you
+            </p>
+            
+            <p style="margin: 0; color: #6b7280; font-size: 15px; line-height: 1.5;">
+              "Hey @Jane, can you review the API docs?"
+            </p>
+            
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<!-- CTA Button -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    <td align="center" style="padding-top: 24px;">
+      <a href="https://docs.plus/api-docs?chatroom=general" style="display: inline-block; background: #1a73e8; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; ">View Message</a>
+    </td>
+  </tr>
+</table>
+
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 32px; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px; text-align: center; line-height: 1.5;">
+                You're receiving this because you have email notifications enabled.
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 12px; text-align: center;">
+                
+    <a href="https://docs.plus/settings/notifications" style="color: #1a73e8; text-decoration: none;">Manage preferences</a>
+    <span style="color: #e5e7eb; margin: 0 8px;">|</span>
+    <a href="https://docs.plus/unsubscribe" style="color: #1a73e8; text-decoration: none;">Unsubscribe</a>
+  
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+        <!-- Copyright -->
+        <p style="margin: 24px 0 0; color: #9ca3af; font-size: 11px; text-align: center;">
+          &copy; 2026 docs.plus. All rights reserved.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+
+"
+`;
+
+exports[`renderDigestEmail snapshot 1`] = `
+"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>docs.plus</title>
+  <!--[if mso]>
+  <style type="text/css">
+    table { border-collapse: collapse; }
+    .content { width: 600px !important; }
+  </style>
+  <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" class="content" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: #1a73e8; padding: 24px 32px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 600; letter-spacing: -0.3px;">docs.plus</h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 32px;">
+              <p style="margin: 0 0 16px; color: #1f2937; font-size: 16px; line-height: 1.5;">
+  Hi Jane Smith,
+</p>
+
+<p style="margin: 0 0 24px; color: #6b7280; font-size: 15px; line-height: 1.5;">
+  Here's your <strong style="color: #1f2937;">daily digest</strong> with
+  <strong style="color: #1a73e8;">2 notifications</strong>
+  from today.
+</p>
+
+<!-- Documents -->
+
+
+<!-- Document Section -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+  <!-- Document Header -->
+  <tr>
+    <td style="padding-bottom: 12px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td>
+            <a href="https://docs.plus/api-docs" style="color: #1f2937; font-size: 15px; font-weight: 600; text-decoration: none;">
+              📄 API Documentation
+            </a>
+          </td>
+          <td align="right">
+            <a href="https://docs.plus/api-docs" style="color: #1a73e8; font-size: 12px; text-decoration: none;">Open →</a>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- Channels -->
+  <tr>
+    <td>
+      
+
+      <!-- Channel Section -->
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 12px;">
+        <tr>
+          <td style="background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
+
+            <!-- Channel Header -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="padding: 12px 16px; border-bottom: 1px solid #e5e7eb;">
+                  <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1f2937; font-size: 13px; font-weight: 600; text-decoration: none;">
+                    # general
+                  </a>
+                  <span style="color: #9ca3af; font-size: 12px; margin-left: 8px;">
+                    2 messages
+                  </span>
+                </td>
+              </tr>
+            </table>
+
+            <!-- Channel Notifications -->
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding: 8px 16px;">
+              
+              
+
+              <!-- Notification Item -->
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td width="40" valign="top">
+                        <table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
+    <tr>
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Arial, sans-serif;">
+        J
+      </td>
+    </tr>
+  </table>
+                      </td>
+                      <td style="padding-left: 8px;" valign="top">
+                        <p style="margin: 0; color: #1f2937; font-size: 13px; font-weight: 500;">
+                          <span style="color: #1a73e8;">@</span> John Doe
+                        </p>
+                        
+                        <p style="margin: 4px 0 0; color: #6b7280; font-size: 12px; line-height: 1.4;">
+                          Hey @Jane, review the auth section?
+                        </p>
+                        
+                      </td>
+                      <td width="50" align="right" valign="middle">
+                        <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 12px; text-decoration: none; font-weight: 500;">View</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              
+
+              <!-- Notification Item -->
+              <tr>
+                <td style="padding: 8px 0; border-bottom: 1px solid #f3f4f6;">
+                  <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                      <td width="40" valign="top">
+                        <table role="presentation" cellpadding="0" cellspacing="0" style="width: 32px; height: 32px; border-radius: 50%; background: #1a73e8;">
+    <tr>
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 12px; font-family: Arial, sans-serif;">
+        A
+      </td>
+    </tr>
+  </table>
+                      </td>
+                      <td style="padding-left: 8px;" valign="top">
+                        <p style="margin: 0; color: #1f2937; font-size: 13px; font-weight: 500;">
+                          <span style="color: #1a73e8;">↩</span> Alice Chen
+                        </p>
+                        
+                        <p style="margin: 4px 0 0; color: #6b7280; font-size: 12px; line-height: 1.4;">
+                          Added rate limiting docs.
+                        </p>
+                        
+                      </td>
+                      <td width="50" align="right" valign="middle">
+                        <a href="https://docs.plus/api-docs?chatroom=ch-001" style="color: #1a73e8; font-size: 12px; text-decoration: none; font-weight: 500;">View</a>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+
+              
+
+              
+
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      
+    </td>
+  </tr>
+</table>
+
+
+
+<!-- CTA Button -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    <td align="center" style="padding-top: 16px;">
+      <a href="https://docs.plus/notifications" style="display: inline-block; background: #1a73e8; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; ">View All Notifications</a>
+    </td>
+  </tr>
+</table>
+
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 32px; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px; text-align: center; line-height: 1.5;">
+                You're receiving this because you have email notifications enabled.
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 12px; text-align: center;">
+                
+    <a href="https://docs.plus/settings/notifications" style="color: #1a73e8; text-decoration: none;">Manage preferences</a>
+    <span style="color: #e5e7eb; margin: 0 8px;">|</span>
+    <a href="https://docs.plus/unsubscribe" style="color: #1a73e8; text-decoration: none;">Unsubscribe from all</a>
+  
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+        <!-- Copyright -->
+        <p style="margin: 24px 0 0; color: #9ca3af; font-size: 11px; text-align: center;">
+          &copy; 2026 docs.plus. All rights reserved.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+
+"
+`;
+
+exports[`renderNewDocumentEmail snapshot 1`] = `
+"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>docs.plus</title>
+  <!--[if mso]>
+  <style type="text/css">
+    table { border-collapse: collapse; }
+    .content { width: 600px !important; }
+  </style>
+  <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #f5f5f5; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" class="content" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: #1a73e8; padding: 24px 32px; text-align: center;">
+              <h1 style="margin: 0; color: #ffffff; font-size: 22px; font-weight: 600; letter-spacing: -0.3px;">docs.plus</h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: 32px;">
+              <p style="margin: 0 0 24px; color: #1f2937; font-size: 16px; font-weight: 600;">
+  New Document Created
+</p>
+
+<!-- Creator Card -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f9fafb; border-radius: 10px; border: 1px solid #e5e7eb; margin-bottom: 24px;">
+  <tr>
+    <td style="padding: 24px;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td width="60" valign="top">
+            <table role="presentation" cellpadding="0" cellspacing="0" style="width: 48px; height: 48px; border-radius: 50%; background: #1a73e8;">
+    <tr>
+      <td align="center" valign="middle" style="color: #ffffff; font-weight: 600; font-size: 19px; font-family: Arial, sans-serif;">
+        A
+      </td>
+    </tr>
+  </table>
+          </td>
+          <td style="padding-left: 12px;" valign="top">
+            <p style="margin: 0 0 4px; color: #1f2937; font-size: 15px; font-weight: 600;">
+              Alice Chen
+            </p>
+            
+            <p style="margin: 0; color: #6b7280; font-size: 13px;">alice@example.com</p>
+            
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<!-- Document Details -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 24px;">
+  <tr>
+    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+      <strong style="color: #1f2937; font-size: 13px;">Name</strong>
+    </td>
+    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb; color: #6b7280; font-size: 13px;">
+      Product Roadmap Q1
+    </td>
+  </tr>
+  <tr>
+    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+      <strong style="color: #1f2937; font-size: 13px;">Slug</strong>
+    </td>
+    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+      <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 12px; color: #6b7280;">product-roadmap-q1</code>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+      <strong style="color: #1f2937; font-size: 13px;">ID</strong>
+    </td>
+    <td style="padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+      <code style="background: #f3f4f6; padding: 2px 6px; border-radius: 4px; font-size: 11px; color: #9ca3af;">doc-abc-123</code>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding: 8px 0;">
+      <strong style="color: #1f2937; font-size: 13px;">Created</strong>
+    </td>
+    <td style="padding: 8px 0; color: #6b7280; font-size: 13px;">
+      2026-02-17T12:00:00Z
+    </td>
+  </tr>
+</table>
+
+<!-- CTA Button -->
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+  <tr>
+    <td align="center">
+      <a href="https://docs.plus/product-roadmap-q1" style="display: inline-block; background: #1a73e8; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; ">View Document</a>
+    </td>
+  </tr>
+</table>
+
+
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: 24px 32px; border-top: 1px solid #e5e7eb; background-color: #f9fafb;">
+              <p style="margin: 0 0 8px; color: #9ca3af; font-size: 12px; text-align: center; line-height: 1.5;">
+                You're receiving this because you have email notifications enabled.
+              </p>
+              <p style="margin: 0; color: #9ca3af; font-size: 12px; text-align: center;">
+                
+    <a href="https://docs.plus" style="color: #1a73e8; text-decoration: none;">Go to docs.plus</a>
+  
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+        <!-- Copyright -->
+        <p style="margin: 24px 0 0; color: #9ca3af; font-size: 11px; text-align: center;">
+          &copy; 2026 docs.plus. All rights reserved.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+
+"
+`;
+
+exports[`renderUnsubscribePage snapshot — success 1`] = `
+"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unsubscribed - docs.plus</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      padding: 48px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+    .icon { margin-bottom: 24px; }
+    h1 {
+      color: #1f2937;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .message {
+      color: #6b7280;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    .email {
+      color: #9ca3af;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+    .actions { margin-top: 24px; }
+    .logo {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .logo-text {
+      color: #9ca3af;
+      font-size: 14px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+      
+    </div>
+    <h1>Unsubscribed</h1>
+    <p class="message">You have been unsubscribed.</p>
+    
+    <p class="email">jane@example.com</p>
+    
+    
+    <div class="actions">
+      
+        <a href="https://docs.plus/settings/notifications" style="display: inline-block; background: #1a73e8; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; margin: 8px;">Manage Preferences</a>
+      
+        <a href="https://docs.plus" style="display: inline-block; background: #ffffff; color: #1a73e8; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; border: 1px solid #1a73e8; margin: 8px;">Go to docs.plus</a>
+      
+    </div>
+    
+    <div class="logo">
+      <span class="logo-text">docs.plus</span>
+    </div>
+  </div>
+</body>
+</html>
+
+"
+`;
+
+exports[`renderUnsubscribePage snapshot — error 1`] = `
+"<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invalid Link - docs.plus</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .card {
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      padding: 48px;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+    .icon { margin-bottom: 24px; }
+    h1 {
+      color: #1f2937;
+      font-size: 24px;
+      font-weight: 600;
+      margin-bottom: 12px;
+    }
+    .message {
+      color: #6b7280;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 8px;
+    }
+    .email {
+      color: #9ca3af;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+    .actions { margin-top: 24px; }
+    .logo {
+      margin-top: 32px;
+      padding-top: 24px;
+      border-top: 1px solid #e5e7eb;
+    }
+    .logo-text {
+      color: #9ca3af;
+      font-size: 14px;
+      font-weight: 500;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">
+      
+        <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+      
+    </div>
+    <h1>Invalid Link</h1>
+    <p class="message">The link is expired.</p>
+    
+    
+    <div class="actions">
+      
+        <a href="https://docs.plus/settings/notifications" style="display: inline-block; background: #1a73e8; color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; margin: 8px;">Manage Preferences</a>
+      
+    </div>
+    
+    <div class="logo">
+      <span class="logo-text">docs.plus</span>
+    </div>
+  </div>
+</body>
+</html>
+
+"
+`;

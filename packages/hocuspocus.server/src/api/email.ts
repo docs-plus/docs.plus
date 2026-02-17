@@ -16,13 +16,17 @@
  * @see docs/NOTIFICATION_ARCHITECTURE_COMPARISON.md
  */
 
+import {
+  renderDigestEmail,
+  renderNotificationEmail,
+  renderUnsubscribePage
+} from '@docs.plus/email-templates'
 import { zValidator } from '@hono/zod-validator'
 import { createClient } from '@supabase/supabase-js'
 import { Hono } from 'hono'
 import { z } from 'zod'
 
 import { emailGateway } from '../lib/email'
-import { buildDigestEmailHtml, buildNotificationEmailHtml } from '../lib/email/templates'
 import { emailLogger } from '../lib/logger'
 import {
   emailBounceSchema,
@@ -209,7 +213,7 @@ emailRouter.get('/preview/:type', async (c) => {
   const appUrl = process.env.APP_URL || 'https://docs.plus'
 
   if (type === 'notification') {
-    const html = buildNotificationEmailHtml({
+    const html = renderNotificationEmail({
       recipientName: 'Jane Smith',
       senderName: 'John Doe',
       notificationType: 'mention',
@@ -223,7 +227,7 @@ emailRouter.get('/preview/:type', async (c) => {
   }
 
   if (type === 'digest') {
-    const html = buildDigestEmailHtml({
+    const html = renderDigestEmail({
       recipientName: 'Jane Smith',
       frequency: 'daily',
       documents: [
@@ -302,7 +306,7 @@ emailRouter.get('/unsubscribe', async (c) => {
 
   if (!token) {
     return c.html(
-      buildUnsubscribeHtml({
+      renderUnsubscribePage({
         success: false,
         title: 'Invalid Link',
         message: 'This unsubscribe link is missing required information.',
@@ -319,7 +323,7 @@ emailRouter.get('/unsubscribe', async (c) => {
     if (!supabaseUrl || !serviceRoleKey) {
       emailLogger.error('Supabase credentials not configured for unsubscribe')
       return c.html(
-        buildUnsubscribeHtml({
+        renderUnsubscribePage({
           success: false,
           title: 'Service Error',
           message: 'Unable to process your request. Please try again later.',
@@ -342,7 +346,7 @@ emailRouter.get('/unsubscribe', async (c) => {
     if (!response.ok) {
       emailLogger.error({ status: response.status }, 'Supabase RPC failed')
       return c.html(
-        buildUnsubscribeHtml({
+        renderUnsubscribePage({
           success: false,
           title: 'Error',
           message: 'Unable to process your request. The link may be invalid or expired.',
@@ -370,13 +374,11 @@ emailRouter.get('/unsubscribe', async (c) => {
       )
 
       return c.html(
-        buildUnsubscribeHtml({
+        renderUnsubscribePage({
           success: true,
           title: 'Unsubscribed',
           message: result.message || 'You have been unsubscribed successfully.',
-          _actionDescription: result.action_description,
           email: result.email,
-          action: result.action,
           showManageLink: true,
           showUndoLink: true,
           token: token
@@ -385,7 +387,7 @@ emailRouter.get('/unsubscribe', async (c) => {
     }
 
     return c.html(
-      buildUnsubscribeHtml({
+      renderUnsubscribePage({
         success: false,
         title: 'Unable to Unsubscribe',
         message: result.message || 'The unsubscribe link is invalid or has expired.',
@@ -395,7 +397,7 @@ emailRouter.get('/unsubscribe', async (c) => {
   } catch (err) {
     emailLogger.error({ err }, 'Error processing unsubscribe')
     return c.html(
-      buildUnsubscribeHtml({
+      renderUnsubscribePage({
         success: false,
         title: 'Error',
         message: 'An unexpected error occurred. Please try again later.',
@@ -464,126 +466,5 @@ emailRouter.post(
     }
   }
 )
-
-// =============================================================================
-// UNSUBSCRIBE HTML BUILDER
-// =============================================================================
-
-interface UnsubscribePageParams {
-  success: boolean
-  title: string
-  message: string
-  _actionDescription?: string
-  email?: string
-  action?: string
-  showManageLink?: boolean
-  showUndoLink?: boolean
-  token?: string
-}
-
-function buildUnsubscribeHtml(params: UnsubscribePageParams): string {
-  const {
-    success,
-    title,
-    message,
-    _actionDescription,
-    email,
-    showManageLink,
-    showUndoLink,
-    token
-  } = params
-
-  const APP_URL = process.env.APP_URL || process.env.NEXT_PUBLIC_APP_URL || 'https://docs.plus'
-  const APP_NAME = 'docs.plus'
-
-  const icon = success
-    ? '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>'
-    : '<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>'
-
-  const actions: string[] = []
-
-  if (showManageLink) {
-    actions.push(
-      `<a href="${APP_URL}/settings/notifications" style="display: inline-block; background: #1a73e8; color: white; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; margin: 8px;">Manage Preferences</a>`
-    )
-  }
-
-  if (showUndoLink && token) {
-    actions.push(
-      `<a href="${APP_URL}" style="display: inline-block; background: white; color: #1a73e8; text-decoration: none; padding: 12px 24px; border-radius: 8px; font-size: 14px; font-weight: 500; border: 1px solid #1a73e8; margin: 8px;">Go to ${APP_NAME}</a>`
-    )
-  }
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${title} - ${APP_NAME}</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-      background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%);
-      min-height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-    }
-    .card {
-      background: white;
-      border-radius: 16px;
-      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
-      padding: 48px;
-      max-width: 480px;
-      width: 100%;
-      text-align: center;
-    }
-    .icon { margin-bottom: 24px; }
-    h1 {
-      color: #1f2937;
-      font-size: 24px;
-      font-weight: 600;
-      margin-bottom: 12px;
-    }
-    .message {
-      color: #6b7280;
-      font-size: 16px;
-      line-height: 1.6;
-      margin-bottom: 8px;
-    }
-    .email {
-      color: #9ca3af;
-      font-size: 14px;
-      margin-bottom: 32px;
-    }
-    .actions { margin-top: 24px; }
-    .logo {
-      margin-top: 32px;
-      padding-top: 24px;
-      border-top: 1px solid #e5e7eb;
-    }
-    .logo-text {
-      color: #9ca3af;
-      font-size: 14px;
-      font-weight: 500;
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="icon">${icon}</div>
-    <h1>${title}</h1>
-    <p class="message">${message}</p>
-    ${email ? `<p class="email">${email}</p>` : ''}
-    ${actions.length > 0 ? `<div class="actions">${actions.join('')}</div>` : ''}
-    <div class="logo">
-      <span class="logo-text">${APP_NAME}</span>
-    </div>
-  </div>
-</body>
-</html>`
-}
 
 export default emailRouter

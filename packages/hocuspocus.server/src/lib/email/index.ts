@@ -30,15 +30,22 @@ export type {
 } from '../../types/email.types'
 export type { EmailMessage, EmailProvider, SendResult } from './providers'
 
-// Templates
+// HTML templates (from shared package)
+export type { UnsubscribeLinks } from '@docs.plus/email-templates'
 export {
-  buildDigestEmailHtml,
+  buildListUnsubscribeHeaders,
+  getEmailSubject,
+  renderDigestEmail,
+  renderNewDocumentEmail,
+  renderNotificationEmail,
+  renderUnsubscribePage
+} from '@docs.plus/email-templates'
+
+// Plain-text builders (local)
+export {
   buildDigestEmailText,
-  buildNewDocumentEmailHtml,
   buildNewDocumentEmailText,
-  buildNotificationEmailHtml,
-  buildNotificationEmailText,
-  getEmailSubject
+  buildNotificationEmailText
 } from './templates'
 
 // Core

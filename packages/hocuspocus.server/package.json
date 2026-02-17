@@ -35,6 +35,7 @@
     "prisma": "^6.19.0"
   },
   "dependencies": {
+    "@docs.plus/email-templates": "workspace:*",
     "@hocuspocus/extension-database": "^3.4.0",
     "@hocuspocus/extension-logger": "^3.4.0",
     "@hocuspocus/extension-redis": "^3.4.0",

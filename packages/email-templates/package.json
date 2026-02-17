@@ -1,0 +1,17 @@
+{
+  "name": "@docs.plus/email-templates",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Email templates and rendering engine for docs.plus",
+  "type": "module",
+  "main": "index.ts",
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "eta": "^3.5.0"
+  },
+  "devDependencies": {
+    "bun-types": "latest"
+  }
+}

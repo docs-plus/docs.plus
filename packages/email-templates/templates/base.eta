@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title><%= it.h.APP_NAME %></title>
+  <!--[if mso]>
+  <style type="text/css">
+    table { border-collapse: collapse; }
+    .content { width: 600px !important; }
+  </style>
+  <![endif]-->
+</head>
+<body style="margin: 0; padding: 0; font-family: <%~ it.h.FONT_STACK %>; background-color: <%= it.h.COLORS.outerBg %>; -webkit-font-smoothing: antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: <%= it.h.COLORS.outerBg %>;">
+    <tr>
+      <td align="center" style="padding: 40px 20px;">
+        <table role="presentation" class="content" width="600" cellpadding="0" cellspacing="0" style="background-color: <%= it.h.COLORS.white %>; border-radius: <%= it.h.RADIUS.xl %>; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.07);">
+
+          <!-- Header -->
+          <tr>
+            <td style="background: <%= it.h.COLORS.primary %>; padding: <%= it.h.SPACING.xl %> <%= it.h.SPACING.xxl %>; text-align: center;">
+              <h1 style="margin: 0; color: <%= it.h.COLORS.white %>; font-size: 22px; font-weight: 600; letter-spacing: -0.3px;"><%= it.h.APP_NAME %></h1>
+            </td>
+          </tr>
+
+          <!-- Content -->
+          <tr>
+            <td style="padding: <%= it.h.SPACING.xxl %>;">
+              <%~ it.body %>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="padding: <%= it.h.SPACING.xl %> <%= it.h.SPACING.xxl %>; border-top: 1px solid <%= it.h.COLORS.border %>; background-color: <%= it.h.COLORS.background %>;">
+              <p style="margin: 0 0 <%= it.h.SPACING.sm %>; color: <%= it.h.COLORS.textLight %>; font-size: 12px; text-align: center; line-height: 1.5;">
+                You're receiving this because you have email notifications enabled.
+              </p>
+              <p style="margin: 0; color: <%= it.h.COLORS.textLight %>; font-size: 12px; text-align: center;">
+                <%~ it.footerHtml %>
+              </p>
+            </td>
+          </tr>
+
+        </table>
+
+        <!-- Copyright -->
+        <p style="margin: <%= it.h.SPACING.xl %> 0 0; color: <%= it.h.COLORS.textLight %>; font-size: 11px; text-align: center;">
+          &copy; <%= it.year %> <%= it.h.APP_NAME %>. All rights reserved.
+        </p>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>
+
