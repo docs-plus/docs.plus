@@ -27,11 +27,12 @@ import { Head, Html, Main, NextScript } from 'next/document'
  */
 
 const APP_NAME = 'docs.plus'
-const THEME_COLOR = '#2778ff'
+const THEME_COLOR_LIGHT = '#fafbfc' // base-100 light
+const THEME_COLOR_DARK = '#0b1220' // base-100 dark
 
 export default function Document() {
   return (
-    <Html lang="en" data-theme="docsyLight">
+    <Html lang="en" data-theme="docsplus">
       <Head>
         {/* Character encoding - must be first */}
         <meta charSet="utf-8" />
@@ -49,8 +50,13 @@ export default function Document() {
         <meta name="application-name" content={APP_NAME} />
 
         {/* Theme color - browser chrome, status bar, task switcher */}
-        <meta name="theme-color" content={THEME_COLOR} />
-        <meta name="msapplication-TileColor" content={THEME_COLOR} />
+        <meta
+          name="theme-color"
+          content={THEME_COLOR_LIGHT}
+          media="(prefers-color-scheme: light)"
+        />
+        <meta name="theme-color" content={THEME_COLOR_DARK} media="(prefers-color-scheme: dark)" />
+        <meta name="msapplication-TileColor" content={THEME_COLOR_LIGHT} />
 
         {/* ── Favicons (browser tab only — NOT in manifest) ── */}
         <link rel="icon" type="image/x-icon" href="/icons/favicon.ico" />
@@ -65,7 +71,7 @@ export default function Document() {
         <link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-touch-icon-120x120.png" />
 
         {/* Safari pinned tab icon (monochrome SVG) */}
-        <link rel="mask-icon" href="/icons/logo.svg" color={THEME_COLOR} />
+        <link rel="mask-icon" href="/icons/logo.svg" color={THEME_COLOR_LIGHT} />
 
         {/* ── Disable auto-detection ────────────────────────── */}
         <meta name="format-detection" content="telephone=no" />
@@ -89,6 +95,14 @@ export default function Document() {
         <meta name="twitter:card" content="summary_large_image" />
       </Head>
       <body>
+        {/* Inline theme script — runs before React hydration to prevent FOUC for dark-mode users.
+            Reads the persisted Zustand store from localStorage and applies `data-theme` immediately.
+            This is the same approach used by next-themes and GitHub. */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var s=JSON.parse(localStorage.getItem('docsplus-theme')||'{}');var p=(s.state&&s.state.preference)||'system';var t=p==='dark-hc'?'docsplus-dark-hc':p==='dark'?'docsplus-dark':p==='light'?'docsplus':window.matchMedia('(prefers-color-scheme:dark)').matches?'docsplus-dark':'docsplus';document.documentElement.setAttribute('data-theme',t)}catch(e){}})()`
+          }}
+        />
         <Main />
         <NextScript />
       </body>

@@ -314,7 +314,7 @@ const getCollaborationCaretConfig = (provider: HocuspocusProvider) => {
       avatar.classList.add('collaboration-cursor__avatar')
       avatar.setAttribute(
         'style',
-        `background-image: url(${avatarAddress}); background-color:#ddd; border-color: ${caretUser.color};`
+        `background-image: url(${avatarAddress}); background-color: var(--color-base-300); border-color: ${caretUser.color};`
       )
 
       const label = document.createElement('div')

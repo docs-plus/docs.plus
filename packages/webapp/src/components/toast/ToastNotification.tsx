@@ -67,9 +67,9 @@ export const ToastNotification = (
           // Base styles
           'pointer-events-auto flex max-w-md items-center gap-3',
           'rounded-2xl px-4 py-3',
-          // Theme-aware background: dark on light, light on dark
+          // Theme-aware background: dark on light, elevated surface on dark
           'bg-neutral text-neutral-content',
-          'dark:bg-base-100 dark:text-base-content',
+          'dark:border-base-300 dark:bg-base-200 dark:text-base-content dark:border',
           // Shadow for depth
           'shadow-xl',
           // Animation

@@ -2,11 +2,11 @@ import AppendHeadingButton from '@components/pages/document/components/AppendHea
 import { TocMobile } from '@components/toc'
 import Button from '@components/ui/Button'
 import { useModal } from '@components/ui/ModalDrawer'
-import { DocsPlus } from '@icons'
+import { DocsPlusIcon } from '@icons'
+import { Icons } from '@icons'
 import { useSheetStore, useStore } from '@stores'
 import Link from 'next/link'
 import React from 'react'
-import { LuFilter, LuHistory, LuX } from 'react-icons/lu'
 
 interface TocModalProps {
   filterModalRef?: React.RefObject<unknown>
@@ -32,7 +32,7 @@ const TocModal = ({ filterModalRef: _filterModalRef }: TocModalProps) => {
             href="/"
             className="text-base-content hover:text-primary flex items-center gap-1.5 outline-0 transition-colors"
             aria-label="Go to home">
-            <DocsPlus size={36} />
+            <DocsPlusIcon size={36} />
             <span className="text-base-content mt-1.5 font-semibold">docs.plus</span>
           </Link>
 
@@ -48,7 +48,7 @@ const TocModal = ({ filterModalRef: _filterModalRef }: TocModalProps) => {
                 closeModal?.()
                 window.location.hash = 'history'
               }}
-              startIcon={LuHistory}
+              startIcon={Icons.history}
             />
             <Button
               aria-label="Open filters"
@@ -61,7 +61,7 @@ const TocModal = ({ filterModalRef: _filterModalRef }: TocModalProps) => {
                 openSheet('filters')
                 closeModal?.()
               }}
-              startIcon={LuFilter}
+              startIcon={Icons.filter}
             />
             <Button
               aria-label="Close sidebar"
@@ -71,7 +71,7 @@ const TocModal = ({ filterModalRef: _filterModalRef }: TocModalProps) => {
               iconSize={18}
               className="text-base-content/60 hover:text-base-content hover:bg-base-300 rounded-field focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none"
               onClick={() => closeModal?.()}
-              startIcon={LuX}
+              startIcon={Icons.close}
             />
           </div>
         </header>

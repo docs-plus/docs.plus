@@ -1,3 +1,4 @@
+import { Placement } from '@floating-ui/react'
 import { twMerge } from 'tailwind-merge'
 
 import { Avatar, type AvatarSize } from './ui/Avatar'
@@ -10,15 +11,13 @@ type StackUser = {
   status?: string | null
 }
 
-type TooltipPosition = 'tooltip-top' | 'tooltip-bottom' | 'tooltip-left' | 'tooltip-right'
-
 interface AvatarStackProps {
   /** Array of user objects to display */
   users?: StackUser[]
   /** Avatar size preset */
   size?: AvatarSize
-  /** Tooltip position for each avatar */
-  tooltipPosition?: TooltipPosition
+  /** Tooltip placement for each avatar */
+  tooltipPosition?: Placement
   /** Show status indicator on avatars */
   showStatus?: boolean
   /** Enable click to open profile */
@@ -90,7 +89,7 @@ const TEXT_CLASSES: Record<AvatarSize, string> = {
 export function AvatarStack({
   users = [],
   size = 'md',
-  tooltipPosition = 'tooltip-bottom',
+  tooltipPosition = 'bottom',
   showStatus = false,
   clickable = true,
   maxDisplay = 4,

@@ -1,7 +1,7 @@
 import Controllers from '@components/pages/editor/Controllers'
 import { createDocumentFromStructure } from '@components/pages/editor/helpers/createDocumentFromStructure'
 import editorConfig from '@components/TipTap/TipTap'
-import ToolbarDesktop from '@components/TipTap/toolbar/ToolbarDesktop'
+import EditorToolbar from '@components/TipTap/toolbar/EditorToolbar'
 import { TocDesktop } from '@components/toc/TocDesktop'
 import { moveHeadingById } from '@components/toc/utils/moveHeading'
 import { applyEditorPreferences, useEditorPreferences, useStore } from '@stores'
@@ -74,7 +74,7 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
     <div className="flex h-screen flex-col overflow-hidden">
       {/* Toolbar */}
       <div className="toolbars w-full shrink-0 bg-white">
-        <ToolbarDesktop />
+        <EditorToolbar />
         <Controllers editor={editor} />
       </div>
 

@@ -7,7 +7,7 @@ import { HiOutlineMusicalNote, HiOutlinePhoto, HiOutlineVideoCamera } from 'reac
 const CONTAINER_WIDTH = 400
 const MIN_CONTAINER_SIZE = 120
 const MIN_HEIGHT = 80
-const ICON_CLASS = 'w-12 h-12 text-gray-400'
+const ICON_CLASS = 'w-12 h-12 text-base-content/40'
 
 // Types
 type FileType = 'image' | 'video' | 'audio'
@@ -72,7 +72,7 @@ const ImagePreview: React.FC<{
   if (shouldScale) {
     return (
       <div
-        className="relative w-full overflow-hidden rounded-md bg-gray-100"
+        className="bg-base-200 relative w-full overflow-hidden rounded-md"
         style={{ aspectRatio: `${width} / ${height}` }}>
         <img src={localUrl} alt={fileName} className="h-full w-full object-cover" />
         <div className="absolute inset-0 flex items-center justify-center">
@@ -92,7 +92,7 @@ const ImagePreview: React.FC<{
 
   return (
     <div
-      className="relative mx-auto overflow-hidden rounded-md bg-gray-100"
+      className="bg-base-200 relative mx-auto overflow-hidden rounded-md"
       style={{ width: containerSize, height: containerHeight }}>
       <img src={localUrl} alt={fileName} className="mx-auto" style={{ width, height }} />
       <div className="absolute inset-0 flex items-center justify-center">
@@ -115,12 +115,12 @@ const IconFallback: React.FC<{
   progress: number
   onCancel: () => void
 }> = ({ fileType, fileName, progress, onCancel }) => (
-  <div className="relative my-4 overflow-hidden rounded-lg bg-gray-100">
+  <div className="bg-base-200 relative my-4 overflow-hidden rounded-lg">
     <div className="flex flex-col items-center justify-center px-8 py-16">
       <div className="mb-4">
         <FileTypeIcon fileType={fileType} />
       </div>
-      <p className="mb-2 max-w-xs truncate text-center text-sm text-gray-600">{fileName}</p>
+      <p className="text-base-content/60 mb-2 max-w-xs truncate text-center text-sm">{fileName}</p>
     </div>
 
     <div className="absolute right-4 bottom-4 flex items-center justify-center font-mono">

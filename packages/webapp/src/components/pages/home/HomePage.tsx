@@ -1,5 +1,4 @@
 import HeadSeo from '@components/HeadSeo'
-import { DocsPlus } from '@components/icons/Icons'
 import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
@@ -8,6 +7,7 @@ import Loading from '@components/ui/Loading'
 import TextInput from '@components/ui/TextInput'
 import TypingText from '@components/ui/TypingText'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
+import { DocsPlusIcon } from '@icons'
 import { useAuthStore, useStore } from '@stores'
 import dynamic from 'next/dynamic'
 import { useRouter } from 'next/router'
@@ -90,18 +90,21 @@ const HomePage = ({ hostname }: HomePageProps) => {
         {/* Header */}
         <header className="flex shrink-0 items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex items-center gap-2">
-            <DocsPlus size={28} className="sm:size-10" />
+            <DocsPlusIcon size={28} className="sm:size-10" />
             <span className="text-base-content mt-1 text-lg font-bold sm:text-2xl">docs.plus</span>
           </div>
 
           {isAuthServiceAvailable && (
             <div className="flex items-center gap-2">
               {user ? (
-                <button
-                  type="button"
-                  className="tooltip tooltip-bottom cursor-pointer transition-transform hover:scale-105"
+                <Button
+                  variant="ghost"
+                  shape="circle"
+                  size="lg"
+                  className="border-0 p-0 transition-transform hover:scale-105"
                   onClick={() => setIsProfileOpen(true)}
-                  data-tip="Profile">
+                  tooltip="Profile"
+                  tooltipPlacement="bottom">
                   <Avatar
                     src={user.avatar_url}
                     avatarUpdatedAt={user.avatar_updated_at}
@@ -109,17 +112,19 @@ const HomePage = ({ hostname }: HomePageProps) => {
                     alt={user.display_name}
                     clickable={false}
                     size="lg"
-                    className="border-base-300 border shadow-md"
+                    className="border-base-300 pointer-events-none border shadow-md"
                   />
-                </button>
+                </Button>
               ) : (
-                <button
-                  type="button"
-                  className="bg-primary/10 text-primary/50 hover:bg-primary/15 hover:text-primary/70 flex size-11 cursor-pointer items-center justify-center rounded-full transition-colors sm:size-12"
+                <Button
+                  shape="circle"
+                  className="bg-primary/10 text-primary/50 hover:bg-primary/15 hover:text-primary/70 size-11 border-0 sm:size-12"
                   onClick={() => setIsSignInOpen(true)}
-                  aria-label="Sign in">
+                  aria-label="Sign in"
+                  tooltip="Sign in"
+                  tooltipPlacement="bottom">
                   <LuUser className="size-5 sm:size-6" />
-                </button>
+                </Button>
               )}
             </div>
           )}

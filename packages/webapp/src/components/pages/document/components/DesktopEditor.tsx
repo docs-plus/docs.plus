@@ -1,6 +1,6 @@
 import { Chatroom } from '@components/chatroom'
 import { useMessageFeedContext } from '@components/chatroom/components/MessageFeed/MessageFeedContext'
-import ToolbarDesktop from '@components/TipTap/toolbar/ToolbarDesktop'
+import EditorToolbar from '@components/TipTap/toolbar/EditorToolbar'
 import { useHeadingScrollSpy } from '@components/toc/hooks'
 import { HoverMenu } from '@components/ui/HoverMenu'
 import ResizeHandle from '@components/ui/ResizeHandle'
@@ -46,7 +46,7 @@ const DesktopEditor = () => {
     <>
       {/* Toolbar - Design System: bg-base-100 for primary canvas elements */}
       <div className="toolbars bg-base-100 border-base-300 fixed bottom-0 z-[9] h-auto w-full border-t sm:relative sm:block sm:border-t-0">
-        <ToolbarDesktop />
+        <EditorToolbar />
       </div>
 
       {/* Main editor layout - 3 panel structure */}

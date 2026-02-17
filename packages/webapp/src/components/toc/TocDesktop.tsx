@@ -2,8 +2,8 @@ import AppendHeadingButton from '@components/pages/document/components/AppendHea
 import { ContextMenu } from '@components/ui/ContextMenu'
 import { DndContext, DragOverlay } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { Icons } from '@icons'
 import React, { useCallback, useRef, useState } from 'react'
-import { MdAccountTree } from 'react-icons/md'
 
 import { DropIndicatorPortal, pointerYCollision, tocDragModifier } from './dnd'
 import { useToc, useTocAutoScroll, useTocDrag } from './hooks'
@@ -89,7 +89,7 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
         <SortableContext items={flatItems.map((f) => f.id)} strategy={verticalListSortingStrategy}>
           <ul className={`toc__list menu w-full p-0 ${activeId ? 'is-dragging' : ''}`}>
             <ContextMenu
-              className="menu bg-base-100 absolute z-20 m-0 rounded-md p-2 shadow-md outline-none"
+              className="menu bg-base-100 border-base-300 absolute z-20 m-0 rounded-xl border p-1.5 shadow-xl outline-none"
               parrentRef={contextMenuRef}
               onBeforeShow={handleBeforeShow}
               onClose={handleContextMenuClose}>
@@ -141,7 +141,7 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
                     ? { width: sourceRect.width, minHeight: sourceRect.height, height: 'auto' }
                     : undefined
                 }>
-                {descendantCount > 0 && <MdAccountTree className="toc-tree-icon" size={14} />}
+                {descendantCount > 0 && <Icons.listTree className="toc-tree-icon" size={14} />}
                 <span className="toc__link wrap-anywhere">{activeItem.textContent}</span>
                 {descendantCount > 0 && (
                   <span className="toc-descendant-badge">+{descendantCount}</span>

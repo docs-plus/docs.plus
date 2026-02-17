@@ -1,10 +1,10 @@
 import SheetHeader from '@components/SheetHeader'
 import Button from '@components/ui/Button'
 import TextInput from '@components/ui/TextInput'
+import { Icons } from '@icons'
 import { useSheetStore } from '@stores'
 import { useRouter } from 'next/router'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
-import { LuSearch } from 'react-icons/lu'
 
 const FilterModal = () => {
   const filterSearchRef = useRef<HTMLInputElement>(null)
@@ -57,7 +57,7 @@ const FilterModal = () => {
       <div className="flex items-center gap-2">
         <TextInput
           id="filterModalBottom"
-          startIcon={LuSearch}
+          startIcon={Icons.search}
           placeholder="Find in document..."
           onKeyUp={handleKeyUp}
           ref={filterSearchRef}

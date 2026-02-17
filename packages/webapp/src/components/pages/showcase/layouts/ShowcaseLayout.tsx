@@ -4,6 +4,7 @@
  * Shared layout for all showcase pages with navigation and theme support.
  */
 
+import { useThemeStore } from '@stores'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import { ReactNode, useCallback, useState } from 'react'
@@ -69,17 +70,16 @@ interface ShowcaseLayoutProps {
 
 export const ShowcaseLayout = ({ children, title, description }: ShowcaseLayoutProps) => {
   const router = useRouter()
-  const [theme, setTheme] = useState<'docsplus' | 'docsplus-dark'>('docsplus')
+  const resolvedTheme = useThemeStore((s) => s.resolvedTheme)
+  const setPreference = useThemeStore((s) => s.setPreference)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const toggleTheme = useCallback(() => {
-    const newTheme = theme === 'docsplus' ? 'docsplus-dark' : 'docsplus'
-    setTheme(newTheme)
-    document.documentElement.setAttribute('data-theme', newTheme)
-  }, [theme])
+    setPreference(resolvedTheme === 'docsplus' ? 'dark' : 'light')
+  }, [resolvedTheme, setPreference])
 
   return (
-    <div className="bg-base-100 min-h-screen" data-theme={theme}>
+    <div className="bg-base-100 min-h-screen">
       {/* Header */}
       <header className="border-base-300 bg-base-100 sticky top-0 z-30 border-b">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
@@ -125,8 +125,10 @@ export const ShowcaseLayout = ({ children, title, description }: ShowcaseLayoutP
             <button
               onClick={toggleTheme}
               className="btn btn-ghost btn-circle btn-sm transition-transform hover:rotate-12"
-              aria-label={theme === 'docsplus' ? 'Switch to dark mode' : 'Switch to light mode'}>
-              {theme === 'docsplus' ? <MdDarkMode size={20} /> : <MdLightMode size={20} />}
+              aria-label={
+                resolvedTheme === 'docsplus' ? 'Switch to dark mode' : 'Switch to light mode'
+              }>
+              {resolvedTheme === 'docsplus' ? <MdDarkMode size={20} /> : <MdLightMode size={20} />}
             </button>
 
             {/* Mobile Menu Toggle */}

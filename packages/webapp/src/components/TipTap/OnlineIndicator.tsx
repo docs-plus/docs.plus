@@ -1,4 +1,4 @@
-import { OfflineCloud, OnlineCloud } from '@icons'
+import { Icons } from '@icons'
 import React, { useEffect, useState } from 'react'
 
 const OnlineIndicator = ({ className }: { className: string }) => {
@@ -42,12 +42,12 @@ const OnlineIndicator = ({ className }: { className: string }) => {
             isOnline ? 'online' : 'offline'
           }`}>
           {isOnline ? (
-            <span className="flex justify-center align-baseline text-xs font-medium text-gray-500">
-              <OnlineCloud className="mr-2" /> Saved to docsplus
+            <span className="text-base-content/50 flex justify-center align-baseline text-xs font-medium">
+              <Icons.cloud className="mr-2" /> Saved to docsplus
             </span>
           ) : (
-            <span className="flex justify-center align-baseline text-xs font-medium text-gray-500">
-              <OfflineCloud className="mr-2" />
+            <span className="text-base-content/50 flex justify-center align-baseline text-xs font-medium">
+              <Icons.cloudOff className="mr-2" />
               Working offline
             </span>
           )}

@@ -1,9 +1,9 @@
 import SidebarLoader from '@components/skeleton/SidebarLoader'
 import Button from '@components/ui/Button'
 import { useModal } from '@components/ui/ModalDrawer'
+import { Icons } from '@icons'
 import { useStore } from '@stores'
 import { useState } from 'react'
-import { MdExpandLess, MdExpandMore } from 'react-icons/md'
 import { twMerge } from 'tailwind-merge'
 
 import {
@@ -88,9 +88,9 @@ const DayGroup = ({
         className="bg-base-200 hover:bg-base-300 flex w-full cursor-pointer items-center justify-between rounded-none px-4 py-2.5 transition-colors">
         <span className="text-base-content text-sm font-semibold">{label}</span>
         {isOpen ? (
-          <MdExpandLess className="text-base-content/50" size={18} />
+          <Icons.chevronUp className="text-base-content/50" size={18} />
         ) : (
-          <MdExpandMore className="text-base-content/50" size={18} />
+          <Icons.chevronDown className="text-base-content/50" size={18} />
         )}
       </Button>
 
@@ -245,9 +245,9 @@ const SessionItem = ({
         {/* Expand icon */}
         <div className="pt-0.5">
           {isExpanded ? (
-            <MdExpandLess className="text-base-content/50" size={16} />
+            <Icons.chevronUp className="text-base-content/50" size={16} />
           ) : (
-            <MdExpandMore className="text-base-content/50" size={16} />
+            <Icons.chevronDown className="text-base-content/50" size={16} />
           )}
         </div>
       </Button>

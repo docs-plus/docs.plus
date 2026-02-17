@@ -1,11 +1,10 @@
 import Button from '@components/ui/Button'
 import { useModal } from '@components/ui/ModalDrawer'
 import UnreadBadge from '@components/ui/UnreadBadge'
-import { ChatLeft } from '@icons'
+import { Icons } from '@icons'
 import { useChatStore, useFocusedHeadingStore, useStore } from '@stores'
 import type { TocItem as TocItemType } from '@types'
 import { useCallback } from 'react'
-import { MdKeyboardArrowRight } from 'react-icons/md'
 import { twMerge } from 'tailwind-merge'
 
 import { useActiveHeading, useTocActions, useUnreadCount } from './hooks'
@@ -96,7 +95,7 @@ export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps
             className={twMerge('btnFold size-5 min-w-5 !p-0', item.open ? 'opened' : 'closed')}
             onClick={handleToggle}
             aria-label={item.open ? 'Collapse section' : 'Expand section'}
-            startIcon={<MdKeyboardArrowRight size={18} className="text-base-content" />}
+            startIcon={<Icons.chevronRight size={18} className="text-base-content" />}
           />
         )}
 
@@ -111,8 +110,7 @@ export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps
           {unreadCount > 0 ? (
             <UnreadBadge count={unreadCount} size="sm" variant="error" />
           ) : (
-            <ChatLeft
-              fill="currentColor"
+            <Icons.chatroom
               className={twMerge('text-base-content/40', isActive && 'text-accent')}
               size={18}
             />

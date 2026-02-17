@@ -1,8 +1,8 @@
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
+import { Icons } from '@icons'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 import { useStore } from '@stores'
 import React, { useEffect, useState } from 'react'
-import { MdInsertLink, MdOutlineComment, MdOutlineImage, MdTextFormat } from 'react-icons/md'
 
 import FormatSelection from './FormatSelection'
 import HeadingSelection from './HeadingSelection'
@@ -27,15 +27,21 @@ const ToolbarMobile = () => {
   const buttons = [
     {
       name: 'hyperlink',
-      icon: MdInsertLink,
+      icon: Icons.link,
       action: 'setHyperlink',
       size: 26,
       tooltip: 'Insert Link'
     },
-    { name: 'image', icon: MdOutlineImage, action: 'addImage', size: 24, tooltip: 'Insert Image' },
+    {
+      name: 'image',
+      icon: Icons.image,
+      action: 'addImage',
+      size: 24,
+      tooltip: 'Insert Image'
+    },
     {
       name: 'comment',
-      icon: MdOutlineComment,
+      icon: Icons.thread,
       action: 'addComment',
       size: 24,
       tooltip: 'Add Comment'
@@ -107,7 +113,7 @@ const ToolbarMobile = () => {
             handleButtonClick(event, 'toggleFormatSelection')
           }}
           type="formats">
-          <MdTextFormat size={30} />
+          <Icons.textFormat size={30} />
         </ToolbarButton>
       </div>
     </div>

@@ -1,7 +1,8 @@
 import AvatarStack from '@components/AvatarStack'
 import { useModal } from '@components/ui/ModalDrawer'
+import { Tooltip } from '@components/ui/Tooltip'
 import UnreadBadge from '@components/ui/UnreadBadge'
-import { ChatLeft } from '@icons'
+import { Icons } from '@icons'
 import { useChatStore, useStore } from '@stores'
 
 import { usePresentUsers, useTocActions, useUnreadCount } from './hooks'
@@ -54,8 +55,7 @@ export function TocHeader({ variant }: TocHeaderProps) {
             {unreadCount > 0 ? (
               <UnreadBadge count={unreadCount} size="sm" variant="error" />
             ) : (
-              <ChatLeft
-                fill="currentColor"
+              <Icons.chatroom
                 className={`text-base-content/40 ${isActive && 'text-accent'}`}
                 size={18}
               />
@@ -72,27 +72,21 @@ export function TocHeader({ variant }: TocHeaderProps) {
         className={`group hover:bg-base-300/50 flex cursor-pointer items-center justify-between gap-0.5 rounded-md p-1 px-2 pr-3 ${isActive && 'activeTocBorder bg-base-300'}`}
         onClick={handleClick}>
         <span className="text-base-content text-lg font-bold">{docMetadata?.title}</span>
-        <span
-          className="btn_chat tooltip tooltip-top relative ml-auto"
-          onClick={handleChatClick}
-          data-tip="Chat Room">
-          {unreadCount > 0 ? (
-            <UnreadBadge count={unreadCount} size="sm" />
-          ) : (
-            <ChatLeft
-              className="btnChat text-base-content/60 hover:text-primary ml-1 cursor-pointer transition-all"
-              size={16}
-            />
-          )}
-        </span>
+        <Tooltip title="Chat Room" placement="top">
+          <span className="btn_chat relative ml-auto" onClick={handleChatClick}>
+            {unreadCount > 0 ? (
+              <UnreadBadge count={unreadCount} size="sm" />
+            ) : (
+              <Icons.chatroom
+                className="btnChat text-base-content/60 hover:text-primary ml-1 cursor-pointer transition-colors"
+                size={16}
+              />
+            )}
+          </span>
+        </Tooltip>
         <div className="absolute -right-9">
           {presentUsers.length > 0 && (
-            <AvatarStack
-              size="sm"
-              users={presentUsers}
-              showStatus={true}
-              tooltipPosition="tooltip-left"
-            />
+            <AvatarStack size="sm" users={presentUsers} showStatus={true} tooltipPosition="left" />
           )}
         </div>
       </div>

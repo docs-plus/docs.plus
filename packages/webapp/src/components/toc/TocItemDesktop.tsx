@@ -1,12 +1,12 @@
 import AvatarStack from '@components/AvatarStack'
 import Button from '@components/ui/Button'
+import { Tooltip } from '@components/ui/Tooltip'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { useSortable } from '@dnd-kit/sortable'
-import { ChatLeft } from '@icons'
+import { Icons } from '@icons'
 import { useChatStore, useFocusedHeadingStore, useStore } from '@stores'
 import type { TocItem as TocItemType } from '@types'
 import { useCallback, useMemo, useState } from 'react'
-import { MdKeyboardArrowRight, MdOutlineDragIndicator } from 'react-icons/md'
 import { twMerge } from 'tailwind-merge'
 
 import { useActiveHeading, usePresentUsers, useTocActions, useUnreadCount } from './hooks'
@@ -106,7 +106,7 @@ export function TocItemDesktop({
 
   const aClassName = twMerge(
     'group relative rounded has-drag-handle whitespace-pre-line hyphens-auto',
-    isActive && 'active activeTocBorder bg-gray-300'
+    isActive && 'active activeTocBorder bg-base-300'
   )
 
   return (
@@ -129,7 +129,7 @@ export function TocItemDesktop({
           {...sortable.listeners}
           onMouseEnter={() => setIsHoveringHandle(true)}
           onMouseLeave={() => setIsHoveringHandle(false)}
-          startIcon={<MdOutlineDragIndicator size={18} />}
+          startIcon={<Icons.gripVertical size={18} />}
         />
 
         {/* Level picker on hover */}
@@ -156,13 +156,11 @@ export function TocItemDesktop({
             variant="ghost"
             size="xs"
             shape="square"
-            className={twMerge(
-              'btnFold tooltip tooltip-top size-5 min-w-5 !p-0',
-              item.open ? 'opened' : 'closed'
-            )}
+            className={twMerge('btnFold size-5 min-w-5 !p-0', item.open ? 'opened' : 'closed')}
             onClick={handleToggle}
-            data-tip="Toggle"
-            startIcon={<MdKeyboardArrowRight size={18} fill="#363636" />}
+            startIcon={<Icons.chevronRight size={18} className="text-base-content/80" />}
+            tooltip="Toggle"
+            tooltipPlacement="top"
           />
         )}
 
@@ -170,19 +168,18 @@ export function TocItemDesktop({
         <span className="toc__link hyphens-auto whitespace-pre-line">{item.textContent}</span>
 
         {/* Chat button */}
-        <span
-          className="btn_chat tooltip tooltip-left relative ml-auto size-5 min-w-5"
-          onClick={handleChatClick}
-          data-tip="Chat Room">
-          {unreadCount > 0 ? (
-            <UnreadBadge count={unreadCount} size="sm" />
-          ) : (
-            <ChatLeft
-              className="btnChat group-hover:fill-docsy cursor-pointer transition-all hover:fill-indigo-900"
-              size={18}
-            />
-          )}
-        </span>
+        <Tooltip title="Chat Room" placement="left">
+          <span className="btn_chat relative ml-auto size-5 min-w-5" onClick={handleChatClick}>
+            {unreadCount > 0 ? (
+              <UnreadBadge count={unreadCount} size="sm" />
+            ) : (
+              <Icons.chatroom
+                className="btnChat text-base-content/40 group-hover:text-primary hover:text-primary cursor-pointer transition-colors"
+                size={18}
+              />
+            )}
+          </span>
+        </Tooltip>
 
         {/* Present users */}
         {hasPresentUsers && (
@@ -192,7 +189,7 @@ export function TocItemDesktop({
               size="sm"
               users={presentUsers}
               showStatus={true}
-              tooltipPosition="tooltip-left"
+              tooltipPosition="left"
             />
           </div>
         )}

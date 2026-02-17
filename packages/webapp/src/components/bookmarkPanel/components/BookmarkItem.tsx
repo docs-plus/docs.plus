@@ -2,10 +2,10 @@ import { archiveBookmark, markBookmarkAsRead, toggleMessageBookmark } from '@api
 import * as toast from '@components/toast'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
+import { Icons } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore } from '@stores'
 import PubSub from 'pubsub-js'
-import { LuArchive, LuBookmarkCheck, LuBookmarkMinus, LuEye, LuLink } from 'react-icons/lu'
 
 import { formatTimeAgo } from '../../notificationPanel/helpers'
 import { usePopoverState } from '../../ui/Popover'
@@ -153,9 +153,10 @@ export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {
                 variant="ghost"
                 size="sm"
                 shape="square"
-                className="join-item tooltip tooltip-left text-info hover:bg-info/10"
-                data-tip="View in chat"
-                startIcon={LuEye}
+                className="join-item text-info hover:bg-info/10"
+                startIcon={Icons.eye}
+                tooltip="View in chat"
+                tooltipPlacement="left"
               />
             </div>
           </div>
@@ -173,12 +174,12 @@ export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {
         <div className="mt-2 flex w-full items-center justify-between">
           <Button
             onClick={() => handleRemoveBookmark(bookmark)}
-            data-tip="Delete Bookmark"
             variant="ghost"
             size="sm"
             shape="square"
-            className="tooltip text-base-content/50 hover:bg-error/10 hover:text-error"
-            startIcon={LuBookmarkMinus}
+            className="text-base-content/50 hover:bg-error/10 hover:text-error"
+            startIcon={Icons.bookmarkMinus}
+            tooltip="Delete Bookmark"
           />
           <div className="join">
             {bookmarkActiveTab !== 'archive' && (
@@ -187,9 +188,9 @@ export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {
                 variant="ghost"
                 size="sm"
                 shape="square"
-                className="join-item tooltip text-base-content/50 hover:bg-base-200"
-                data-tip={bookmark.bookmark_archived_at ? 'Unarchive' : 'Archive'}
-                startIcon={LuArchive}
+                className="join-item text-base-content/50 hover:bg-base-200"
+                startIcon={Icons.archive}
+                tooltip={bookmark.bookmark_archived_at ? 'Unarchive' : 'Archive'}
               />
             )}
             {bookmarkActiveTab !== 'read' && (
@@ -198,19 +199,20 @@ export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {
                 variant="ghost"
                 size="sm"
                 shape="square"
-                className="join-item tooltip text-base-content/50 hover:bg-base-200"
-                data-tip={bookmark.bookmark_marked_at ? 'Mark as unread' : 'Mark as read'}
-                startIcon={LuBookmarkCheck}
+                className="join-item text-base-content/50 hover:bg-base-200"
+                startIcon={Icons.bookmarkCheck}
+                tooltip={bookmark.bookmark_marked_at ? 'Mark as unread' : 'Mark as read'}
               />
             )}
             <Button
               onClick={() => handleCopyUrl(bookmark)}
-              data-tip="Copy URL"
               variant="ghost"
               size="sm"
               shape="square"
-              className="join-item tooltip tooltip-left text-base-content/50 hover:bg-base-200"
-              endIcon={<LuLink size={16} className="-rotate-45" />}
+              className="join-item text-base-content/50 hover:bg-base-200"
+              endIcon={<Icons.link size={16} className="-rotate-45" />}
+              tooltip="Copy URL"
+              tooltipPlacement="left"
             />
           </div>
         </div>

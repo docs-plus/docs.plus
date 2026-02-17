@@ -8,8 +8,9 @@ import type { GetServerSideProps } from 'next'
 import Head from 'next/head'
 
 export const getServerSideProps: GetServerSideProps = async () => ({ props: {} })
+import { useThemeStore } from '@stores'
 import Link from 'next/link'
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import {
   MdAccountCircle,
   MdArrowBack,
@@ -66,16 +67,15 @@ const SHOWCASE_PAGES = [
 ]
 
 export default function ShowcaseIndex() {
-  const [theme, setTheme] = useState<'docsplus' | 'docsplus-dark'>('docsplus')
+  const resolvedTheme = useThemeStore((s) => s.resolvedTheme)
+  const setPreference = useThemeStore((s) => s.setPreference)
 
   const toggleTheme = useCallback(() => {
-    const newTheme = theme === 'docsplus' ? 'docsplus-dark' : 'docsplus'
-    setTheme(newTheme)
-    document.documentElement.setAttribute('data-theme', newTheme)
-  }, [theme])
+    setPreference(resolvedTheme === 'docsplus' ? 'dark' : 'light')
+  }, [resolvedTheme, setPreference])
 
   return (
-    <div className="bg-base-100 min-h-screen" data-theme={theme}>
+    <div className="bg-base-100 min-h-screen">
       <Head>
         <title>Showcase | docs.plus</title>
         <meta name="description" content="Explore docs.plus features and design patterns" />
@@ -101,8 +101,10 @@ export default function ShowcaseIndex() {
           <button
             onClick={toggleTheme}
             className="btn btn-ghost btn-circle btn-sm transition-transform hover:rotate-12"
-            aria-label={theme === 'docsplus' ? 'Switch to dark mode' : 'Switch to light mode'}>
-            {theme === 'docsplus' ? <MdDarkMode size={20} /> : <MdLightMode size={20} />}
+            aria-label={
+              resolvedTheme === 'docsplus' ? 'Switch to dark mode' : 'Switch to light mode'
+            }>
+            {resolvedTheme === 'docsplus' ? <MdDarkMode size={20} /> : <MdLightMode size={20} />}
           </button>
         </div>
       </header>

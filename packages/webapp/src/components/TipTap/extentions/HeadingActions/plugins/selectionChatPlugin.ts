@@ -1,4 +1,4 @@
-import { AddCommentMD } from '@icons'
+import { AddCommentSVG } from '@icons'
 import { CHAT_COMMENT } from '@services/eventsHub'
 import type { ResolvedPos } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
@@ -39,7 +39,7 @@ const getOrCreateButton = (): HTMLButtonElement => {
   if (cachedButton) return cachedButton
 
   cachedButton = document.createElement('button')
-  cachedButton.innerHTML = AddCommentMD({ size: 22, fill: '#fff' })
+  cachedButton.innerHTML = AddCommentSVG({ size: 22, fill: 'currentColor' })
   cachedButton.classList.add(
     HEADING_ACTIONS_CLASSES.selectionChatBtn,
     'btn',
@@ -48,11 +48,9 @@ const getOrCreateButton = (): HTMLButtonElement => {
     'size-12',
     'min-h-10',
     'shadow-md',
-    'z-1',
-    'tooltip',
-    'tooltip-right'
+    'z-1'
   )
-  cachedButton.setAttribute('data-tip', 'Add comment')
+  cachedButton.setAttribute('title', 'Add comment')
   cachedButton.style.position = 'absolute'
 
   return cachedButton

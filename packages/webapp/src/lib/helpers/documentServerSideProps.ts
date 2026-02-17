@@ -60,7 +60,7 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
     }
   }
 
-  const { isMobile, os } = getDeviceInfo(context)
+  const { isMobile, deviceType, os } = getDeviceInfo(context)
 
   const supabase = createClient(context)
 
@@ -107,6 +107,7 @@ export const documentServerSideProps = async (context: GetServerSidePropsContext
         channels: channels || null,
         docMetadata,
         isMobile,
+        deviceType,
         os,
         session
       }

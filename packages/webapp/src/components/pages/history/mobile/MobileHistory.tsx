@@ -30,7 +30,7 @@ const MobileHistory = () => {
 
   return (
     <div
-      className={`pad tiptap history_editor relative flex flex-col border-solid border-gray-300`}>
+      className={`pad tiptap history_editor border-base-300 relative flex flex-col border-solid`}>
       <Toolbar />
       <EditorContent />
       <MobileLeftSidePanel />

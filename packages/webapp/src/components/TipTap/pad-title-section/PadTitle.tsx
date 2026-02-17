@@ -6,14 +6,13 @@ import { Modal, ModalContent } from '@components/ui/Dialog'
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/Popover'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { useNotificationCount } from '@hooks/useNotificationCount'
-import { DocsPlus } from '@icons'
+import { DocsPlusIcon } from '@icons'
+import { Icons } from '@icons'
 import { useStore } from '@stores'
 import { useAuthStore } from '@stores'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 import React, { useState } from 'react'
-import { FaRegBell } from 'react-icons/fa'
-import { MdGroup, MdHistory } from 'react-icons/md'
 
 import { NotificationPanelSkeleton } from '../../notificationPanel/components/NotificationPanelSkeleton'
 
@@ -52,7 +51,7 @@ const PadTitle = () => {
         <div className="flex flex-1 items-center gap-2">
           {/* Logo */}
           <Link href="/" className="shrink-0">
-            <DocsPlus size={34} />
+            <DocsPlusIcon size={34} />
           </Link>
 
           {/* Document title + sync status */}
@@ -74,7 +73,7 @@ const PadTitle = () => {
           <Button
             variant="primary"
             btnStyle={user ? 'outline' : undefined}
-            startIcon={MdGroup}
+            startIcon={Icons.share}
             onClick={() => setShareModalOpen(true)}>
             Share
           </Button>
@@ -84,10 +83,10 @@ const PadTitle = () => {
             <Button
               variant="ghost"
               shape="circle"
-              className="tooltip tooltip-bottom"
               onClick={() => (window.location.hash = 'history')}
-              data-tip="History">
-              <MdHistory size={20} className="text-base-content/70" />
+              tooltip="History"
+              tooltipPlacement="bottom">
+              <Icons.history size={20} className="text-base-content/70" />
             </Button>
           )}
 
@@ -95,12 +94,8 @@ const PadTitle = () => {
           {isAuthServiceAvailable && user && (
             <Popover placement="bottom-end">
               <PopoverTrigger asChild>
-                <Button
-                  variant="ghost"
-                  shape="circle"
-                  className="tooltip tooltip-bottom relative"
-                  data-tip="Notifications">
-                  <FaRegBell size={18} className="text-primary" />
+                <Button variant="ghost" shape="circle" className="relative">
+                  <Icons.notifications size={18} className="text-primary" />
                   <UnreadBadge
                     count={unreadCount}
                     size="sm"
@@ -119,20 +114,23 @@ const PadTitle = () => {
           {isAuthServiceAvailable && (
             <>
               {user ? (
-                <button
-                  type="button"
-                  className="tooltip tooltip-bottom cursor-pointer"
+                <Button
+                  variant="ghost"
+                  shape="circle"
+                  size="lg"
+                  className="border-0 p-0"
                   onClick={() => setProfileModalOpen(true)}
-                  data-tip="Profile">
+                  tooltip="Profile"
+                  tooltipPlacement="bottom">
                   <Avatar
                     id={user.id}
                     src={user.avatar_url}
                     avatarUpdatedAt={user.avatar_updated_at}
                     clickable={false}
                     size="lg"
-                    className="border-base-300 border shadow-md"
+                    className="border-base-300 pointer-events-none border shadow-md"
                   />
-                </button>
+                </Button>
               ) : (
                 <Button variant="neutral" onClick={() => setProfileModalOpen(true)}>
                   Sign in

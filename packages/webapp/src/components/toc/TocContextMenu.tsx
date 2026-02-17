@@ -1,13 +1,6 @@
 import { MenuItem, useContextMenuContext } from '@components/ui/ContextMenu'
-import {
-  MdCenterFocusStrong,
-  MdChat,
-  MdDelete,
-  MdLink,
-  MdOutlineInfo,
-  MdOutlineUnfoldLess,
-  MdOutlineUnfoldMore
-} from 'react-icons/md'
+import { Tooltip } from '@components/ui/Tooltip'
+import { Icons } from '@icons'
 
 import { useTocActions } from './hooks'
 
@@ -30,70 +23,67 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
   const menuItems = [
     {
       title: 'Chat Room',
-      icon: <MdChat size={18} />,
+      icon: <Icons.chatroom size={16} />,
       onClick: () => openChatroom(headingId, { scrollTo: true }),
-      className: 'text-docsy'
+      className: 'text-primary'
     },
     {
       title: isOpen ? 'Fold Section' : 'Unfold Section',
-      icon: isOpen ? <MdOutlineUnfoldLess size={18} /> : <MdOutlineUnfoldMore size={18} />,
-      onClick: () => onToggle(headingId)
+      icon: isOpen ? <Icons.foldVertical size={16} /> : <Icons.unfoldVertical size={16} />,
+      onClick: () => onToggle(headingId),
+      className: ''
     },
     {
       title: 'Focus Section',
-      icon: <MdCenterFocusStrong size={18} />,
-      onClick: () => focusSection(headingId)
+      icon: <Icons.crosshair size={16} />,
+      onClick: () => focusSection(headingId),
+      className: ''
     },
     {
       title: 'Link Section',
-      icon: <MdLink size={18} />,
-      onClick: () => copyLink(headingId)
-    },
-    {
-      title: (
-        <>
-          Delete Section
-          <span className="tooltip tooltip-right flex items-center gap-2">
-            <span className="tooltip-content w-48 text-pretty">
-              Delete this heading and all nested sub-headings beneath it
-            </span>
-            <MdOutlineInfo size={18} />
-          </span>
-        </>
-      ),
-      icon: <MdDelete size={18} />,
-      onClick: () => deleteSection(headingId),
-      className: 'mt-1 border-t border-gray-300 pt-1 text-red-500'
+      icon: <Icons.link size={16} />,
+      onClick: () => copyLink(headingId),
+      className: ''
     }
   ]
+
+  const dangerItem = {
+    title: (
+      <span className="flex items-center gap-1.5">
+        Delete Section
+        <Tooltip
+          title="Delete this heading and all nested sub-headings beneath it"
+          placement="right"
+          className="max-w-48 text-pretty">
+          <span className="flex items-center">
+            <Icons.info size={14} className="opacity-60" />
+          </span>
+        </Tooltip>
+      </span>
+    ),
+    icon: <Icons.trash size={16} />,
+    onClick: () => deleteSection(headingId)
+  }
 
   const insertItems = [
     {
       title: 'Heading',
-      icon: <span className="bg-docsy/80 rounded-md px-1 text-xs font-bold text-white">H1</span>,
+      badge: 'H1',
       onClick: () => {
         // TODO: Implement insert H1 handler
       },
-      className: 'bg-base-300 my-1 rounded-md'
+      highlight: true
     },
     {
       title: 'Above',
-      icon: (
-        <span className="bg-docsy/80 rounded-md px-1 text-xs font-bold text-white">
-          H{headingLevel}
-        </span>
-      ),
+      badge: `H${headingLevel}`,
       onClick: () => {
         // TODO: Implement insert above handler
       }
     },
     {
       title: 'Below',
-      icon: (
-        <span className="bg-docsy/80 rounded-md px-1 text-xs font-bold text-white">
-          H{headingLevel}
-        </span>
-      ),
+      badge: `H${headingLevel}`,
       onClick: () => {
         // TODO: Implement insert below handler
       }
@@ -102,35 +92,55 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
 
   return (
     <>
+      {/* Primary actions */}
       {menuItems.map((item, index) => (
         <MenuItem
           key={index}
-          className={item.className}
+          className={`${item.className} rounded-lg`}
           onClick={() => {
             item.onClick()
             setIsOpen(false)
           }}>
-          <a className="flex items-center gap-2">
-            {item.icon}
-            {item.title}
+          <a className="hover:bg-base-200 flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors">
+            <span className="flex-shrink-0 opacity-70">{item.icon}</span>
+            <span className="font-medium">{item.title}</span>
           </a>
         </MenuItem>
       ))}
-      <li className="mt-1 border-t border-gray-300 pt-1">
+
+      {/* Danger zone — separated */}
+      <MenuItem
+        className="border-base-300 mt-1 rounded-lg border-t pt-1"
+        onClick={() => {
+          dangerItem.onClick()
+          setIsOpen(false)
+        }}>
+        <a className="hover:bg-error/10 text-error flex items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm transition-colors">
+          <span className="flex-shrink-0">{dangerItem.icon}</span>
+          <span className="font-medium">{dangerItem.title}</span>
+        </a>
+      </MenuItem>
+
+      {/* Insert sub-menu */}
+      <li className="border-base-300 mt-1 border-t pt-1">
         <details>
-          <summary>Insert</summary>
-          <ul>
+          <summary className="hover:bg-base-200 rounded-lg px-2.5 py-2 text-sm font-medium transition-colors">
+            Insert
+          </summary>
+          <ul className="bg-base-100 mt-0.5 space-y-0.5 rounded-lg p-1">
             {insertItems.map((item, index) => (
               <MenuItem
                 key={index}
-                className={item.className}
+                className={item.highlight ? 'bg-base-200 rounded-md' : 'rounded-md'}
                 onClick={() => {
                   item.onClick()
                   setIsOpen(false)
                 }}>
-                <a className="flex items-center gap-2">
-                  {item.icon}
-                  {item.title}
+                <a className="hover:bg-base-200 flex items-center gap-2.5 rounded-md px-2.5 py-1.5 text-sm transition-colors">
+                  <span className="bg-primary/80 text-primary-content inline-flex items-center justify-center rounded px-1.5 text-xs leading-5 font-bold">
+                    {item.badge}
+                  </span>
+                  <span>{item.title}</span>
                 </a>
               </MenuItem>
             ))}

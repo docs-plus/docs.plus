@@ -1,76 +1,29 @@
-import {
-  LuAtSign,
-  LuMail,
-  LuMegaphone,
-  LuMessageSquare,
-  LuMessagesSquare,
-  LuReply,
-  LuSmile,
-  LuTriangleAlert,
-  LuUsers
-} from 'react-icons/lu'
+import { Tooltip } from '@components/ui/Tooltip'
+import { Icons } from '@icons'
 
 const NotificationIcon = ({ type, size = 16 }: { type: string; size?: number }) => {
   const iconProps = { size, className: 'text-base-content/60' }
 
-  switch (type) {
-    case 'mention':
-      return (
-        <span className="tooltip tooltip-right" data-tip="Mention">
-          <LuAtSign {...iconProps} />
-        </span>
-      )
-    case 'message':
-      return (
-        <span className="tooltip tooltip-right" data-tip="Message">
-          <LuMessageSquare {...iconProps} />
-        </span>
-      )
-    case 'reply':
-      return (
-        <span className="tooltip tooltip-right" data-tip="Reply">
-          <LuReply {...iconProps} />
-        </span>
-      )
-    case 'reaction':
-      return (
-        <span className="tooltip tooltip-right" data-tip="Reaction">
-          <LuSmile {...iconProps} />
-        </span>
-      )
-    case 'thread_message':
-      return (
-        <span className="tooltip tooltip-right" data-tip="Thread Message">
-          <LuMessagesSquare {...iconProps} />
-        </span>
-      )
-    case 'channel_event':
-      return (
-        <span className="tooltip tooltip-right" data-tip="Channel Event">
-          <LuMegaphone {...iconProps} />
-        </span>
-      )
-    case 'direct_message':
-      return (
-        <span className="tooltip tooltip-right" data-tip="Direct Message">
-          <LuMail {...iconProps} />
-        </span>
-      )
-    case 'invitation':
-      return (
-        <span className="tooltip tooltip-right" data-tip="Invitation">
-          <LuUsers {...iconProps} />
-        </span>
-      )
-    case 'system_alert':
-      return (
-        <span className="tooltip tooltip-right" data-tip="System Alert">
-          <LuTriangleAlert {...iconProps} />
-        </span>
-      )
-    default:
-      return null
+  const iconMap: Record<string, { icon: React.ReactNode; label: string }> = {
+    mention: { icon: <Icons.mention {...iconProps} />, label: 'Mention' },
+    message: { icon: <Icons.thread {...iconProps} />, label: 'Message' },
+    reply: { icon: <Icons.reply {...iconProps} />, label: 'Reply' },
+    reaction: { icon: <Icons.emoji {...iconProps} />, label: 'Reaction' },
+    thread_message: { icon: <Icons.messagesSquare {...iconProps} />, label: 'Thread Message' },
+    channel_event: { icon: <Icons.megaphone {...iconProps} />, label: 'Channel Event' },
+    direct_message: { icon: <Icons.mail {...iconProps} />, label: 'Direct Message' },
+    invitation: { icon: <Icons.share {...iconProps} />, label: 'Invitation' },
+    system_alert: { icon: <Icons.alert {...iconProps} />, label: 'System Alert' }
   }
+
+  const entry = iconMap[type]
+  if (!entry) return null
+
+  return (
+    <Tooltip title={entry.label} placement="right">
+      <span>{entry.icon}</span>
+    </Tooltip>
+  )
 }
 
 export default NotificationIcon

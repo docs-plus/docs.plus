@@ -1,4 +1,4 @@
-import { AddCommentMD, ChatLeftSVG } from '@icons'
+import { AddCommentSVG, ChatLeftSVG } from '@icons'
 import { CHAT_COMMENT, CHAT_OPEN } from '@services/eventsHub'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, type EditorView } from '@tiptap/pm/view'
@@ -24,12 +24,10 @@ const createChatButton = (headingId: string, editor: Editor): HTMLButtonElement 
     'btn-primary',
     'size-12',
     'min-h-10',
-    'shadow-md',
-    'tooltip',
-    'tooltip-right'
+    'shadow-md'
   )
   button.setAttribute('type', 'button')
-  button.setAttribute('data-tip', 'Open chat')
+  button.setAttribute('title', 'Open chat')
   button.dataset.headingId = headingId
 
   Object.assign(button.style, {
@@ -41,7 +39,7 @@ const createChatButton = (headingId: string, editor: Editor): HTMLButtonElement 
   button.innerHTML = ChatLeftSVG({
     size: 20,
     className: 'chatLeft',
-    fill: '#fff'
+    fill: 'currentColor'
   })
 
   button.addEventListener('click', (e: Event) => {
@@ -71,14 +69,12 @@ const createCommentButton = (headingId: string, editor: Editor): HTMLButtonEleme
     'btn-primary',
     'size-12',
     'min-h-10',
-    'shadow-md',
-    'tooltip',
-    'tooltip-right'
+    'shadow-md'
   )
   button.setAttribute('type', 'button')
-  button.setAttribute('data-tip', 'Add comment')
+  button.setAttribute('title', 'Add comment')
 
-  button.innerHTML = AddCommentMD({ size: 22, fill: '#fff' })
+  button.innerHTML = AddCommentSVG({ size: 22, fill: 'currentColor' })
 
   button.addEventListener('click', (e: Event) => {
     e.preventDefault()

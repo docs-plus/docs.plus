@@ -1,10 +1,10 @@
 import Button from '@components/ui/Button'
 import { useModal } from '@components/ui/ModalDrawer'
+import { Icons } from '@icons'
 import { useStore } from '@stores'
 import { TIPTAP_NODES } from '@types'
 import { scrollToHeading } from '@utils/scrollToHeading'
 import React, { useCallback } from 'react'
-import { MdAdd } from 'react-icons/md'
 
 // Constants for timing and positioning
 const SCROLL_DELAY_MS = 150
@@ -97,10 +97,9 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
         btnStyle="outline"
         size="sm"
         shape="block"
-        className="tooltip"
-        data-tip="Add headings"
         onClick={appendHeadingToEnd}
-        startIcon={MdAdd}
+        startIcon={Icons.plus}
+        tooltip="Add headings"
       />
     </div>
   )

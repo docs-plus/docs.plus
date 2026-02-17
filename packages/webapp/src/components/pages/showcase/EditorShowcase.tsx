@@ -325,9 +325,14 @@ export const EditorShowcase = () => {
               <div className="mr-2 hidden items-center gap-2 sm:flex">
                 <div className="avatar-group -space-x-2">
                   {COLLABORATORS.map((user) => (
-                    <div key={user.id} className="tooltip tooltip-bottom" data-tip={user.name}>
-                      <Avatar id={user.id} size="sm" clickable={false} />
-                    </div>
+                    <Avatar
+                      key={user.id}
+                      id={user.id}
+                      size="sm"
+                      clickable={false}
+                      tooltip={user.name}
+                      tooltipPosition="bottom"
+                    />
                   ))}
                 </div>
                 <span className="text-base-content/60 text-xs">3 editing</span>

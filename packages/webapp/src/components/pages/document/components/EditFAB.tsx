@@ -1,6 +1,6 @@
 import Button from '@components/ui/Button'
 import { useCaretPosition, useEnableEditor } from '@hooks/useCaretPosition'
-import { Pencil } from '@icons'
+import { Icons } from '@icons'
 import React, { useCallback } from 'react'
 
 /**
@@ -24,7 +24,7 @@ const EditFAB = () => {
       variant="primary"
       shape="circle"
       className="edit-fab fixed right-6 bottom-8 z-20 size-16"
-      startIcon={<Pencil size={28} />}
+      startIcon={<Icons.pencil size={28} />}
     />
   )
 }

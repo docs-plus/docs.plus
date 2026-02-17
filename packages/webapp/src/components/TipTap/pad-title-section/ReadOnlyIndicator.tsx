@@ -1,4 +1,4 @@
-import { PenSlash } from '@icons'
+import { Icons } from '@icons'
 import { useStore } from '@stores'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
@@ -21,7 +21,7 @@ const ReadOnlyIndicator = ({ className }: any) => {
   }, [hocuspocusProvider])
 
   const classes = twMerge(
-    'rounded-md p-2 ml-4 hover:border-docsy transition-all hover:drop-shadow-md flex align-middle items-center justify-center border text-gray-500',
+    'rounded-md p-2 ml-4 hover:border-primary transition-all hover:drop-shadow-md flex align-middle items-center justify-center border text-base-content/50',
     className
   )
 
@@ -30,7 +30,7 @@ const ReadOnlyIndicator = ({ className }: any) => {
   return (
     <>
       <div className={classes}>
-        <PenSlash size={13} fill="#ccc" />
+        <Icons.penOff size={13} className="text-base-content/40" />
         <p className="ml-3 hidden text-xs font-bold antialiased sm:flex">Read-only</p>
       </div>
     </>

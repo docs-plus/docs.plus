@@ -5,6 +5,7 @@
  */
 
 import { Avatar } from '@components/ui'
+import { Tooltip } from '@components/ui/Tooltip'
 import Head from 'next/head'
 import { useState } from 'react'
 import {
@@ -464,9 +465,11 @@ export const DocumentsShowcase = () => {
                               </span>
                             )}
                           </div>
-                          <div className="tooltip tooltip-left" data-tip={accessData.label}>
-                            <accessData.icon size={16} className="text-base-content/40" />
-                          </div>
+                          <Tooltip title={accessData.label} placement="left">
+                            <span>
+                              <accessData.icon size={16} className="text-base-content/40" />
+                            </span>
+                          </Tooltip>
                         </div>
                       </div>
                     </div>

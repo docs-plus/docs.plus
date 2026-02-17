@@ -14,11 +14,18 @@ import { useRouter } from 'next/router'
 type DocumentPageProps = {
   docMetadata: any
   isMobile: boolean
+  deviceType?: 'desktop' | 'mobile' | 'tablet'
   channels: any
   accessToken: string
 }
 
-const DocumentPage = ({ docMetadata, isMobile, channels, accessToken }: DocumentPageProps) => {
+const DocumentPage = ({
+  docMetadata,
+  isMobile,
+  deviceType = 'desktop',
+  channels,
+  accessToken
+}: DocumentPageProps) => {
   const router = useRouter()
   const slugs = (router.query.slugs as string[]) || []
   const { loading } = useMapDocumentAndWorkspace(docMetadata, channels)
@@ -28,8 +35,6 @@ const DocumentPage = ({ docMetadata, isMobile, channels, accessToken }: Document
 
   useDocumentMetadata(slugs, docMetadata)
   useInitiateDocumentAndWorkspace(docMetadata)
-  // Pass deviceType for document view analytics
-  const deviceType = isMobile ? 'mobile' : 'desktop'
   const { provider } = useYdocAndProvider({ accessToken, deviceType })
   const { join2WorkspaceLoading } = useJoinWorkspace({
     documentId: docMetadata.documentId,

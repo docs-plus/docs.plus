@@ -8,11 +8,10 @@ import UnreadBadge from '@components/ui/UnreadBadge'
 import { useBottomSheet } from '@hooks/useBottomSheet'
 import { useNotificationCount } from '@hooks/useNotificationCount'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
+import { Icons } from '@icons'
 import { useAuthStore, useStore } from '@stores'
 import dynamic from 'next/dynamic'
 import React, { useEffect, useRef, useState } from 'react'
-import { BiCheck, BiRedo, BiUndo } from 'react-icons/bi'
-import { MdMenu, MdNotifications } from 'react-icons/md'
 
 const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel'), {
   loading: () => <SettingsPanelSkeleton />
@@ -35,7 +34,7 @@ const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
   if (isEditable) {
     return (
       <ToolbarButton className="text-primary size-8">
-        <BiCheck size={32} />
+        <Icons.check size={32} />
       </ToolbarButton>
     )
   }
@@ -45,7 +44,7 @@ const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
       htmlFor="mobile_left_side_panel"
       aria-label="close sidebar"
       className="btn btn-ghost btn-square size-9">
-      <MdMenu size={28} className="text-base-content" />
+      <Icons.menu size={28} className="text-base-content" />
     </label>
   )
 }
@@ -56,16 +55,18 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
       <Button
         variant="ghost"
         shape="circle"
-        className="tooltip tooltip-bottom p-0"
+        size="md"
+        className="border-0 p-0"
         onClick={onProfileClick}
-        data-tip="Profile">
+        tooltip="Profile"
+        tooltipPlacement="bottom">
         <Avatar
           id={user.id}
           avatarUpdatedAt={user.avatar_updated_at}
           clickable={false}
           src={user.avatar_url}
           size="md"
-          className="border-base-300 cursor-pointer border shadow-md"
+          className="border-base-300 pointer-events-none border shadow-md"
         />
       </Button>
     )
@@ -86,10 +87,11 @@ const NotificationButton = () => {
   return (
     <Button
       variant="ghost"
-      className="tooltip tooltip-bottom relative p-2"
-      data-tip="Notifications"
-      onClick={openNotifications}>
-      <MdNotifications
+      className="relative p-2"
+      onClick={openNotifications}
+      tooltip="Notifications"
+      tooltipPlacement="bottom">
+      <Icons.notificationsActive
         size={24}
         className={unreadCount > 0 ? 'text-primary' : 'text-base-content/70'}
       />
@@ -112,14 +114,14 @@ const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
           editor={editor}
           type="undo"
           className="size-9">
-          <BiUndo size={24} />
+          <Icons.undo size={24} />
         </ToolbarButton>
         <ToolbarButton
           onClick={() => editor?.commands.redo()}
           editor={editor}
           type="redo"
           className="size-9">
-          <BiRedo size={24} />
+          <Icons.redo size={24} />
         </ToolbarButton>
       </div>
       <div className="divider divider-horizontal mx-2" />

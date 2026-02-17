@@ -24,7 +24,7 @@ const DocumentPage = dynamic(() => import('@components/pages/document/DocumentPa
 const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://docs.plus'
 const DEFAULT_OG_IMAGE = `${SITE_URL}/icons/android-chrome-512x512.png`
 
-const Document = ({ docMetadata, isMobile, channels, session }: any) => {
+const Document = ({ docMetadata, isMobile, deviceType, channels, session }: any) => {
   useAddDeviceTypeHtmlClass(isMobile)
 
   // Build SSR-safe OG metadata from server-fetched docMetadata
@@ -65,6 +65,7 @@ const Document = ({ docMetadata, isMobile, channels, session }: any) => {
       <DocumentPage
         docMetadata={docMetadata}
         isMobile={isMobile}
+        deviceType={deviceType || (isMobile ? 'mobile' : 'desktop')}
         channels={channels}
         accessToken={session?.access_token}
       />

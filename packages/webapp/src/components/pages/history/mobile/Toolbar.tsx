@@ -1,5 +1,5 @@
 import Button from '@components/ui/Button'
-import { MdArrowBack, MdMenu } from 'react-icons/md'
+import { Icons } from '@icons'
 
 import { formatVersionDate } from '../helpers'
 import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
@@ -10,28 +10,28 @@ const Toolbar = () => {
   const versionInfo = useGetVersionInfo()()
 
   return (
-    <div className="docTitle sticky top-0 left-0 z-10 h-auto w-full bg-white">
-      <div className="relative z-10 flex min-h-12 w-full flex-col items-center border-b border-gray-300 bg-white p-2">
+    <div className="docTitle bg-base-100 sticky top-0 left-0 z-10 h-auto w-full">
+      <div className="border-base-300 bg-base-100 relative z-10 flex min-h-12 w-full flex-col items-center border-b p-2">
         <div className="flex w-full flex-row items-center justify-between gap-1">
           <Button
             variant="ghost"
             size="sm"
-            className="tooltip tooltip-right"
-            data-tip="Back to the Editor"
             onClick={() => (window.location.hash = '')}
             aria-label="Back to Editor"
-            startIcon={MdArrowBack}
+            startIcon={Icons.back}
             iconSize={22}
+            tooltip="Back to the Editor"
+            tooltipPlacement="right"
           />
           <div className="divider divider-horizontal m-0 h-10 p-0" />
 
           {versionInfo && !versionInfo.isLatestVersion && (
             <Button
               variant="primary"
-              className="tooltip tooltip-bottom"
               onClick={handleRestore}
-              data-tip={`Restore document to ${versionInfo.version} version`}
-              aria-label="Restore this version">
+              aria-label="Restore this version"
+              tooltip={`Restore document to ${versionInfo.version} version`}
+              tooltipPlacement="bottom">
               Restore this version
             </Button>
           )}
@@ -49,7 +49,7 @@ const Toolbar = () => {
             htmlFor="mobile_history_panel"
             aria-label="close sidebar"
             className="btn btn-ghost drawer-button shrink-0 px-2">
-            <MdMenu size={30} />
+            <Icons.menu size={30} />
           </label>
         </div>
       </div>
