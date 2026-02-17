@@ -3,25 +3,11 @@
  * Types representing real-world concepts in the application
  */
 
+import type { LinkItem } from '@components/settings/types'
+
 import { Database } from './supabase'
 
-// Profile-related types
-interface LinkItem {
-  url: string
-  type: string
-  metadata: {
-    title?: string
-    description?: string
-    icon?: string
-    socialBanner?: string
-    socialBannerSize?: {
-      width: number
-      height: number
-    }
-    themeColor?: string
-  }
-}
-
+// Profile-related types — LinkItem is the canonical source from settings/types
 export interface ProfileData {
   bio?: string
   linkTree?: LinkItem[]

@@ -36,8 +36,11 @@ type HyperlinkModalOptions = {
 
 interface MetadataResponse {
   title: string
+  description?: string
   image?: string
   icon?: string
+  favicon?: string
+  themeColor?: string
   success: true
 }
 

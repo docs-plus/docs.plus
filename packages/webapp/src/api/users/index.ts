@@ -1,3 +1,4 @@
+export * from './fetchLinkMetadata'
 export * from './getSimilarUsername'
 export * from './getUserById'
 export * from './getUserProfileForModal'

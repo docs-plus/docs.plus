@@ -1,6 +1,7 @@
 import { getUserProfileForModal } from '@api'
-import { SOCIAL_MEDIA_ICONS } from '@components/settings/constants'
-import { LinkItem } from '@components/settings/types'
+import { getSocialColor, getSocialIcon } from '@components/settings/constants'
+import type { LinkItem } from '@components/settings/types'
+import { getGoogleFaviconUrl } from '@components/settings/types'
 import { Avatar } from '@components/ui/Avatar'
 import CloseButtonUI from '@components/ui/CloseButton'
 import Loading from '@components/ui/Loading'
@@ -8,7 +9,9 @@ import { useSupabase } from '@hooks/useSupabase'
 import { useStore } from '@stores'
 import type { PostgrestError } from '@supabase/supabase-js'
 import { useEffect, useMemo } from 'react'
-import { MdLink, MdMailOutline, MdPhone } from 'react-icons/md'
+import { LuLink, LuMail, LuPhone } from 'react-icons/lu'
+
+// --- Types ---
 
 interface UserProfileDialogProps {
   userId: string
@@ -29,6 +32,8 @@ type SanitizedLink = {
 
 type UserProfileResponse = Awaited<ReturnType<typeof getUserProfileForModal>>
 type UserProfileRecord = NonNullable<UserProfileResponse['data']>
+
+// --- Helpers ---
 
 const isNonEmptyString = (value: unknown): value is string =>
   typeof value === 'string' && value.trim().length > 0
@@ -70,6 +75,59 @@ const sanitizeLinks = (rawLinks: unknown): SanitizedLink[] => {
   }, [])
 }
 
+// --- Link icon renderer (uses constants lookup — DRY) ---
+
+const getLinkIcon = (link: SanitizedLink) => {
+  if (link.type === 'email') {
+    return <LuMail className="text-base-content/60 size-5" aria-hidden="true" />
+  }
+
+  if (link.type === 'phone') {
+    return <LuPhone className="text-base-content/60 size-5" aria-hidden="true" />
+  }
+
+  // Brand icon for known social domains
+  if (link.type === 'social') {
+    try {
+      const domain = new URL(link.url).hostname.replace('www.', '')
+      const SocialIcon = getSocialIcon(domain)
+      const color = getSocialColor(domain)
+      if (SocialIcon) {
+        return <SocialIcon className="size-5" style={color ? { color } : undefined} />
+      }
+    } catch {
+      // fall through to favicon
+    }
+  }
+
+  // Google Favicon for any URL-based link without a brand icon
+  const faviconUrl = getGoogleFaviconUrl(link.url)
+  if (faviconUrl) {
+    return (
+      <>
+        <img
+          src={faviconUrl}
+          alt=""
+          className="size-5 rounded-sm object-contain"
+          loading="lazy"
+          onError={(e) => {
+            e.currentTarget.style.display = 'none'
+            const fallback = e.currentTarget.nextElementSibling as HTMLElement | null
+            if (fallback) fallback.style.display = 'flex'
+          }}
+        />
+        <span className="hidden items-center justify-center">
+          <LuLink className="text-base-content/60 size-5" aria-hidden="true" />
+        </span>
+      </>
+    )
+  }
+
+  return <LuLink className="text-base-content/60 size-5" aria-hidden="true" />
+}
+
+// --- Component ---
+
 export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
   const closeDialog = useStore((state) => state.closeDialog)
   const {
@@ -103,32 +161,6 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
 
   const links = useMemo(() => sanitizeLinks(userData?.profile_data?.linkTree), [userData])
 
-  const getLinkIcon = (link: SanitizedLink) => {
-    if (link.type === 'email') {
-      return <MdMailOutline className="size-5 text-slate-600" aria-hidden="true" />
-    }
-
-    if (link.type === 'phone') {
-      return <MdPhone className="size-5 text-slate-600" aria-hidden="true" />
-    }
-
-    if (link.type === 'social') {
-      try {
-        const domain = new URL(link.url).hostname.replace('www.', '')
-        const SocialIcon = SOCIAL_MEDIA_ICONS[domain]?.icon
-        if (SocialIcon) {
-          return (
-            <SocialIcon className="size-5" style={{ color: SOCIAL_MEDIA_ICONS[domain].color }} />
-          )
-        }
-      } catch {
-        // Ignore parsing failures and fall back to the default icon below.
-      }
-    }
-
-    return <MdLink className="size-5 text-slate-600" aria-hidden="true" />
-  }
-
   const renderLinkItem = (link: SanitizedLink) => {
     const href =
       link.type === 'email'
@@ -145,14 +177,14 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
         href={href}
         target={openInNewTab ? '_blank' : undefined}
         rel={openInNewTab ? 'noopener noreferrer' : undefined}
-        className="flex items-center gap-3 rounded-xl bg-slate-50 p-3 transition-colors hover:bg-slate-100">
-        <span className="flex size-9 shrink-0 items-center justify-center rounded-full bg-white shadow-sm">
+        className="bg-base-200 hover:bg-base-300 flex items-center gap-3 rounded-xl p-3 transition-colors">
+        <span className="bg-base-100 flex size-9 shrink-0 items-center justify-center rounded-full shadow-sm">
           {getLinkIcon(link)}
         </span>
         <div className="min-w-0 flex-1">
-          <span className="block truncate text-sm font-medium text-slate-700">{link.title}</span>
+          <span className="text-base-content block truncate text-sm font-medium">{link.title}</span>
           {link.description && (
-            <span className="block truncate text-xs text-slate-500">{link.description}</span>
+            <span className="text-base-content/60 block truncate text-xs">{link.description}</span>
           )}
         </div>
       </a>
@@ -167,8 +199,8 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
       <div className="flex flex-col gap-4 p-4 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-800">No user selected</h2>
-            <p className="text-sm text-slate-500">Choose a user to see their profile.</p>
+            <h2 className="text-base-content text-lg font-semibold">No user selected</h2>
+            <p className="text-base-content/60 text-sm">Choose a user to see their profile.</p>
           </div>
           <CloseButton />
         </div>
@@ -189,8 +221,10 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
       <div className="flex flex-col gap-4 p-4 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-800">Unable to load profile</h2>
-            <p className="text-sm text-slate-500">{error.message || 'Please try again later.'}</p>
+            <h2 className="text-base-content text-lg font-semibold">Unable to load profile</h2>
+            <p className="text-base-content/60 text-sm">
+              {error.message || 'Please try again later.'}
+            </p>
           </div>
           <CloseButton />
         </div>
@@ -203,8 +237,10 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
       <div className="flex flex-col gap-4 p-4 sm:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-800">User not available</h2>
-            <p className="text-sm text-slate-500">We couldn&apos;t load this profile right now.</p>
+            <h2 className="text-base-content text-lg font-semibold">User not available</h2>
+            <p className="text-base-content/60 text-sm">
+              We couldn&apos;t load this profile right now.
+            </p>
           </div>
           <CloseButton />
         </div>
@@ -222,7 +258,7 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
   return (
     <div className="flex max-h-[80vh] flex-col">
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white p-4 sm:p-6">
+      <div className="bg-base-100 sticky top-0 z-10 p-4 sm:p-6">
         <div className="flex items-center gap-4">
           <Avatar
             id={userData.id || userId}
@@ -230,33 +266,33 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
             avatarUpdatedAt={userData.avatar_updated_at}
             alt={fullName}
             clickable={false}
-            className="size-14 shrink-0 rounded-full border-2 border-white object-cover shadow-md sm:size-16"
+            className="border-base-100 size-14 shrink-0 rounded-full border-2 object-cover shadow-md sm:size-16"
           />
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-lg font-bold text-slate-800 sm:text-xl">{fullName}</h2>
-            {username && <p className="truncate text-sm text-slate-500">@{username}</p>}
+            <h2 className="text-base-content truncate text-lg font-bold sm:text-xl">{fullName}</h2>
+            {username && <p className="text-base-content/60 truncate text-sm">@{username}</p>}
           </div>
           <CloseButton />
         </div>
       </div>
 
       {/* Divider */}
-      {(bio || hasContactInfo) && <div className="h-px bg-slate-200" />}
+      {(bio || hasContactInfo) && <div className="bg-base-300 h-px" />}
 
       {/* Content */}
       <div className="flex-1 overflow-y-auto p-4 sm:p-6">
         {bio && (
           <div className="mb-6">
-            <h3 className="mb-2 text-sm font-semibold tracking-wide text-slate-400 uppercase">
+            <h3 className="text-base-content/50 mb-2 text-sm font-semibold tracking-wide uppercase">
               About
             </h3>
-            <p className="text-sm whitespace-pre-line text-slate-600 sm:text-base">{bio}</p>
+            <p className="text-base-content/70 text-sm whitespace-pre-line sm:text-base">{bio}</p>
           </div>
         )}
 
         {hasContactInfo && (
           <div>
-            <h3 className="mb-3 text-sm font-semibold tracking-wide text-slate-400 uppercase">
+            <h3 className="text-base-content/50 mb-3 text-sm font-semibold tracking-wide uppercase">
               Links
             </h3>
             <div className="flex flex-col gap-2">{links.map(renderLinkItem)}</div>

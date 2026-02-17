@@ -1,129 +1,55 @@
-import { removeFileFromStorage, uploadFileToStorage } from '@api'
 import * as toast from '@components/toast'
 import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import Textarea from '@components/ui/Textarea'
 import TextInput from '@components/ui/TextInput'
-import Config from '@config'
 import { useAuthStore } from '@stores'
-import type { Profile } from '@types'
-import { supabaseClient } from '@utils/supabase'
+import type { ProfileData } from '@types'
 import { debounce } from 'lodash'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { LuCamera, LuLink, LuUser } from 'react-icons/lu'
 
+import { useAvatarUpload } from '../hooks/useAvatarUpload'
 import { useProfileUpdate } from '../hooks/useProfileUpdate'
 import { useUsernameValidation } from '../hooks/useUsernameValidation'
 import SocialLinks from './SocialLinks'
 
 const USERNAME_DEBOUNCE_MS = 1000
 
-// Helper to update avatar in DB
-const updateAvatarInDB = async (avatarUrl: string | null, userId: string) => {
-  try {
-    const avatar_updated_at = avatarUrl ? new Date().toISOString() : null
-
-    const { error: dbError } = await supabaseClient
-      .from('users')
-      .update({ avatar_updated_at })
-      .match({ id: userId })
-
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const { error: authError } = await supabaseClient.auth.updateUser({
-      data: { avatar_updated_at, c_avatar_url: avatarUrl }
-    })
-
-    if (dbError || authError) {
-      throw dbError || authError
-    }
-
-    return true
-  } catch (error) {
-    console.error(error)
-    throw error
-  }
-}
-
 const ProfileSection = () => {
   const user = useAuthStore((state) => state.profile)
   const setProfile = useAuthStore((state) => state.setProfile)
   const { loading, handleSave } = useProfileUpdate()
   const { validateUsername } = useUsernameValidation()
+  const { uploading, handleUpload, handleRemove } = useAvatarUpload()
 
-  // Avatar state
+  // Avatar — derived from store, file input ref for hidden <input>
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [uploading, setUploading] = useState(false)
-  const [hasCustomAvatar, setHasCustomAvatar] = useState(false)
+  const hasCustomAvatar = !!user?.avatar_url
 
   // Username state
   const [inputUsername, setInputUsername] = useState(user?.username || '')
   const [usernameError, setUsernameError] = useState<boolean | undefined>(undefined)
   const latestUsernameRef = useRef<string>('')
 
-  useEffect(() => {
-    setHasCustomAvatar(!!user?.avatar_url)
-  }, [user])
+  // --- Avatar handlers ---
 
-  // Avatar handlers
   const handleAvatarClick = useCallback(() => {
     fileInputRef.current?.click()
   }, [])
 
   const handleAvatarChange = useCallback(
-    async (event: React.ChangeEvent<HTMLInputElement>) => {
+    (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0]
-      if (!file || !user) return
-
-      if (file.size > 256000) {
-        toast.Error('Avatar must be less than 256KB')
-        return
-      }
-
-      if (!file.type.includes('image')) {
-        toast.Error('Avatar must be an image')
-        return
-      }
-
-      setUploading(true)
-
-      try {
-        const filePath = `public/${user.id}.png`
-        const bucketAddress = Config.app.profile.getAvatarURL(user.id, Date.now().toString())
-
-        // Sequential: upload first, then update DB on success
-        await uploadFileToStorage(Config.app.profile.avatarBucketName, filePath, file)
-        await updateAvatarInDB(bucketAddress, user.id)
-
-        setHasCustomAvatar(true)
-        toast.Success('Avatar uploaded successfully!')
-      } catch (error) {
-        console.error(error)
-        toast.Error('Error uploading avatar, please try again.')
-      } finally {
-        setUploading(false)
-      }
+      if (file) handleUpload(file)
+      // Reset input so re-selecting the same file triggers onChange
+      if (event.target) event.target.value = ''
     },
-    [user]
+    [handleUpload]
   )
 
-  const handleRemoveAvatar = useCallback(async () => {
-    if (!user) return
+  // --- Username validation with debounce ---
 
-    try {
-      // Sequential: update DB first, then remove from storage
-      await updateAvatarInDB(null, user.id)
-      await removeFileFromStorage(Config.app.profile.avatarBucketName, `public/${user.id}.png`)
-
-      setHasCustomAvatar(false)
-      toast.Success('Avatar removed successfully!')
-    } catch (error) {
-      console.error(error)
-      toast.Error('Error removing avatar, please try again.')
-    }
-  }, [user])
-
-  // Username validation with debounce
   const debouncedValidate = useCallback(
     debounce((username: string, resolve: (value: boolean) => void) => {
       validateUsername(username).then(({ isValid, errorMessage }) => {
@@ -157,6 +83,8 @@ const ProfileSection = () => {
     }
   }
 
+  // --- Field handlers ---
+
   const handleFullNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!user) return
     const newFullName = e.target.value
@@ -168,8 +96,8 @@ const ProfileSection = () => {
   const handleBioChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     if (!user) return
     const bio = e.target.value
-    const newProfileData = {
-      ...((user?.profile_data as Profile) ?? {}),
+    const newProfileData: ProfileData = {
+      ...((user?.profile_data as ProfileData) ?? {}),
       bio
     }
     setProfile({ ...user, profile_data: newProfileData })
@@ -178,6 +106,8 @@ const ProfileSection = () => {
   const handleSubmit = () => {
     handleSave()
   }
+
+  // --- Render ---
 
   return (
     <div className="space-y-4">
@@ -234,7 +164,7 @@ const ProfileSection = () => {
               </Button>
               {hasCustomAvatar && (
                 <Button
-                  onClick={handleRemoveAvatar}
+                  onClick={handleRemove}
                   variant="ghost"
                   size="sm"
                   className="text-base-content/60 hover:text-error">
@@ -298,13 +228,14 @@ const ProfileSection = () => {
             Add your profiles so others can connect with you.
           </p>
         </div>
-        <SocialLinks />
+        <SocialLinks onSave={handleSave} saveLoading={loading} />
       </section>
 
       {/* Spacer to account for sticky footer */}
       <div className="h-16" />
 
-      {/* Save Button - Sticky at bottom */}
+      {/* Save Button — Sticky at bottom
+          Gradient must match ScrollArea bg in SettingsPanel (bg-base-200) */}
       <div className="from-base-200 via-base-200 sticky bottom-0 -mx-4 bg-gradient-to-t to-transparent px-4 pt-6 pb-4 sm:-mx-6 sm:px-6">
         <Button
           onClick={handleSubmit}

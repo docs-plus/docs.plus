@@ -16,6 +16,7 @@ import {
   LuGithub,
   LuLightbulb,
   LuLogOut,
+  LuPalette,
   LuShield,
   LuStar,
   LuUser
@@ -28,6 +29,7 @@ import { useSignOut } from './hooks/useSignOut'
 const SETTINGS_TABS: { id: TabType; label: string; icon: typeof LuUser }[] = [
   { id: 'profile', label: 'Profile', icon: LuUser },
   { id: 'documents', label: 'Documents', icon: LuFileText },
+  { id: 'appearance', label: 'Appearance', icon: LuPalette },
   { id: 'security', label: 'Security', icon: LuShield },
   { id: 'notifications', label: 'Notifications', icon: LuBell }
 ]
@@ -54,7 +56,7 @@ const SUPPORT_LINKS = [
 
 // --- Types ---
 
-type TabType = 'profile' | 'documents' | 'security' | 'notifications'
+type TabType = 'profile' | 'documents' | 'appearance' | 'security' | 'notifications'
 
 interface SettingsPanelProps {
   /** Initial active tab */
@@ -117,6 +119,23 @@ const SecuritySkeleton = () => (
   </div>
 )
 
+const AppearanceSkeleton = () => (
+  <div className="space-y-4">
+    <div className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
+      <div className="mb-3 flex items-center gap-2">
+        <div className="skeleton size-5 rounded" />
+        <div className="skeleton rounded-field h-5 w-24" />
+      </div>
+      <div className="skeleton rounded-field mb-4 h-3 w-64" />
+      <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+        {[1, 2, 3, 4].map((i) => (
+          <div key={i} className="skeleton rounded-box h-[44px] w-full sm:h-28 sm:flex-1" />
+        ))}
+      </div>
+    </div>
+  </div>
+)
+
 const NotificationsSkeleton = () => (
   <div className="space-y-4">
     <div className="bg-base-100 rounded-box p-4 shadow-sm sm:p-6">
@@ -141,6 +160,9 @@ const ProfileSection = dynamic(() => import('./components/ProfileSection'), {
 })
 const DocumentsSection = dynamic(() => import('./components/DocumentsSection'), {
   loading: () => <DocumentsSkeleton />
+})
+const AppearanceSection = dynamic(() => import('./components/AppearanceSection'), {
+  loading: () => <AppearanceSkeleton />
 })
 const SecuritySection = dynamic(() => import('./components/SecuritySection'), {
   loading: () => <SecuritySkeleton />
@@ -180,6 +202,8 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
         return <ProfileSection />
       case 'documents':
         return <DocumentsSection />
+      case 'appearance':
+        return <AppearanceSection />
       case 'security':
         return <SecuritySection />
       case 'notifications':
