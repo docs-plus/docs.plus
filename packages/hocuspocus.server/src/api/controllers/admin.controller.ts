@@ -211,39 +211,29 @@ export async function listDocuments(c: AppContext) {
       }
     }
 
-    // Batch fetch workspaces and member counts
+    // Batch fetch workspace member counts via admin RPC (single query)
     if (slugs.length > 0) {
       try {
-        const quotedSlugs = slugs.map((s) => `"${s}"`).join(',')
-        const workspacesRes = await supabaseRest(
-          `workspaces?slug=in.(${quotedSlugs})&select=id,slug`
-        )
-        if (workspacesRes) {
-          const workspaces = await workspacesRes.json()
+        const supabase = getSupabaseClient()
+        if (supabase) {
+          const { data: memberData, error: memberError } = await supabase.rpc(
+            'admin_get_document_member_counts',
+            { p_slugs: slugs }
+          )
 
-          if (Array.isArray(workspaces) && workspaces.length > 0) {
-            const workspaceIds = workspaces.map((w: { id: string }) => w.id)
-            const slugToWorkspaceId = new Map(
-              workspaces.map((w: { id: string; slug: string }) => [w.slug, w.id])
+          if (memberError) {
+            adminLogger.error({ err: memberError }, 'RPC admin_get_document_member_counts failed')
+          } else if (Array.isArray(memberData)) {
+            const memberMap = new Map(
+              memberData.map((row: { slug: string; member_count: number }) => [
+                row.slug,
+                row.member_count
+              ])
             )
-
-            const quotedWorkspaceIds = workspaceIds.map((id: string) => `"${id}"`).join(',')
-            const membersRes = await supabaseRest(
-              `workspace_members?workspace_id=in.(${quotedWorkspaceIds})&left_at=is.null&select=workspace_id`
-            )
-            if (membersRes) {
-              const members = await membersRes.json()
-              if (Array.isArray(members)) {
-                const memberCounts = new Map<string, number>()
-                members.forEach((m: { workspace_id: string }) => {
-                  memberCounts.set(m.workspace_id, (memberCounts.get(m.workspace_id) || 0) + 1)
-                })
-                docsWithDefaults.forEach((doc) => {
-                  const workspaceId = slugToWorkspaceId.get(doc.docId)
-                  if (workspaceId) doc.memberCount = memberCounts.get(workspaceId) || 0
-                })
-              }
-            }
+            docsWithDefaults.forEach((doc) => {
+              const count = memberMap.get(doc.docId)
+              if (count !== undefined) doc.memberCount = count
+            })
           }
         }
       } catch (err) {

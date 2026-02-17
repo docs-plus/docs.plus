@@ -32,7 +32,7 @@ export function ViewsSummaryCards({ data, loading }: ViewsSummaryCardsProps) {
     },
     {
       label: 'Bounce Rate',
-      value: data ? `${Math.round((data.bounce_rate ?? 0) * 100)}%` : '0%',
+      value: data ? `${Math.round(data.bounce_rate ?? 0)}%` : '0%',
       icon: LuTrendingUp,
       color: 'text-warning',
       bg: 'bg-warning/10',

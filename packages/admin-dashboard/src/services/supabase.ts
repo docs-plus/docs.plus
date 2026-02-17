@@ -340,11 +340,12 @@ export async function checkDatabaseHealth(): Promise<{ status: string; latency: 
  */
 export async function fetchPushPipelineStats(): Promise<PushPipelineStats> {
   // Use the get_push_queue_stats RPC (pgmq version)
+  // Returns: queue_length, oldest_message_age_seconds, active_subscriptions,
+  // inactive_subscriptions, failed_subscriptions, consumer_status,
+  // messages_processed (from pgmq archive), last_push_sent (from push_subscriptions)
   const { data: rpcData, error: rpcError } = await supabase.rpc('get_push_queue_stats')
 
   if (!rpcError && rpcData) {
-    // RPC returns: queue_length, oldest_message_age_seconds, active_subscriptions,
-    // inactive_subscriptions, failed_subscriptions, consumer_status
     const data = rpcData as {
       queue_length: number
       oldest_message_age_seconds: number
@@ -352,18 +353,19 @@ export async function fetchPushPipelineStats(): Promise<PushPipelineStats> {
       inactive_subscriptions: number
       failed_subscriptions: number
       consumer_status: 'idle' | 'healthy' | 'backlog' | 'critical'
+      messages_processed: number
+      last_push_sent: string | null
     }
     return {
-      triggerConfigured: true, // pgmq consumer is always configured
+      triggerConfigured: true,
       queueDepth: data.queue_length,
-      messagesProcessed: 0, // Backend tracks this
+      messagesProcessed: data.messages_processed,
       messagesFailed: 0,
       totalSubscriptions: data.active_subscriptions + data.inactive_subscriptions,
       activeSubscriptions: data.active_subscriptions,
       failedSubscriptions: data.failed_subscriptions,
-      lastPushSent: null, // Would need separate tracking
+      lastPushSent: data.last_push_sent,
       lastPushError: null,
-      // Extra fields for enhanced display
       consumerStatus: data.consumer_status,
       oldestMessageAge: data.oldest_message_age_seconds
     }
@@ -399,87 +401,53 @@ export async function fetchPushPipelineStats(): Promise<PushPipelineStats> {
 }
 
 /**
- * Fetch failed push subscriptions with details
+ * Fetch failed push subscriptions with details (all users, bypasses RLS)
+ * Uses admin_get_failed_push_subs RPC (SECURITY DEFINER)
  */
 export async function fetchFailedPushSubscriptions(limit = 10): Promise<PushSubscriptionDetail[]> {
-  const { data, error } = await supabase
-    .from('push_subscriptions')
-    .select(
-      `
-      id,
-      user_id,
-      device_name,
-      platform,
-      is_active,
-      failed_count,
-      last_error,
-      last_used_at,
-      created_at,
-      users!inner(username)
-    `
-    )
-    .gt('failed_count', 0)
-    .order('failed_count', { ascending: false })
-    .limit(limit)
+  const { data, error } = await supabase.rpc('admin_get_failed_push_subs', { p_limit: limit })
 
   if (error) {
     console.error('Failed to fetch failed push subscriptions:', error)
     return []
   }
 
-  return (data || []).map((sub: Record<string, unknown>) => ({
+  return ((data as Array<Record<string, unknown>> | null) || []).map((sub) => ({
     id: sub.id as string,
     user_id: sub.user_id as string,
-    username: (sub.users as { username: string | null } | null)?.username || null,
-    device_name: sub.device_name as string | null,
+    username: (sub.username as string) || null,
+    device_name: (sub.device_name as string) || null,
     platform: sub.platform as string,
     is_active: sub.is_active as boolean,
     failed_count: sub.failed_count as number,
-    last_error: sub.last_error as string | null,
-    last_used_at: sub.last_used_at as string | null,
+    last_error: (sub.last_error as string) || null,
+    last_used_at: (sub.last_used_at as string) || null,
     created_at: sub.created_at as string
   }))
 }
 
 /**
- * Fetch recent push subscriptions activity
+ * Fetch recent push activity for all users (bypasses RLS)
+ * Uses admin_get_recent_push_activity RPC (SECURITY DEFINER)
  */
 export async function fetchRecentPushActivity(limit = 10): Promise<PushSubscriptionDetail[]> {
-  const { data, error } = await supabase
-    .from('push_subscriptions')
-    .select(
-      `
-      id,
-      user_id,
-      device_name,
-      platform,
-      is_active,
-      failed_count,
-      last_error,
-      last_used_at,
-      created_at,
-      users!inner(username)
-    `
-    )
-    .eq('is_active', true)
-    .order('last_used_at', { ascending: false, nullsFirst: false })
-    .limit(limit)
+  const { data, error } = await supabase.rpc('admin_get_recent_push_activity', { p_limit: limit })
 
   if (error) {
     console.error('Failed to fetch recent push activity:', error)
     return []
   }
 
-  return (data || []).map((sub: Record<string, unknown>) => ({
+  return ((data as Array<Record<string, unknown>> | null) || []).map((sub) => ({
     id: sub.id as string,
     user_id: sub.user_id as string,
-    username: (sub.users as { username: string | null } | null)?.username || null,
-    device_name: sub.device_name as string | null,
+    username: (sub.username as string) || null,
+    device_name: (sub.device_name as string) || null,
     platform: sub.platform as string,
     is_active: sub.is_active as boolean,
     failed_count: sub.failed_count as number,
-    last_error: sub.last_error as string | null,
-    last_used_at: sub.last_used_at as string | null,
+    last_error: (sub.last_error as string) || null,
+    last_used_at: (sub.last_used_at as string) || null,
     created_at: sub.created_at as string
   }))
 }
@@ -498,21 +466,22 @@ export interface UserNotificationSubs {
 /**
  * Fetch notification subscriptions for all users (batch)
  * Returns a map of user_id -> subscription platforms
+ *
+ * Uses the `admin_get_user_notification_subs` RPC (SECURITY DEFINER) so that
+ * the admin can read all users' push subscriptions regardless of RLS on
+ * `push_subscriptions` (which restricts reads to `auth.uid() = user_id`).
  */
 export async function fetchUserNotificationSubscriptions(): Promise<
   Record<string, UserNotificationSubs>
 > {
-  // Fetch push subscriptions (active only)
-  const { data: pushSubs, error: pushError } = await supabase
-    .from('push_subscriptions')
-    .select('user_id, platform')
-    .eq('is_active', true)
+  // Fetch push subscriptions via admin RPC (bypasses RLS)
+  const { data: rpcData, error: rpcError } = await supabase.rpc('admin_get_user_notification_subs')
 
-  if (pushError) {
-    console.error('Failed to fetch push subscriptions:', pushError)
+  if (rpcError) {
+    console.error('Failed to fetch push subscriptions via RPC:', rpcError)
   }
 
-  // Fetch email preferences from users table
+  // Fetch email preferences from users table (no RLS on users)
   const { data: users, error: usersError } = await supabase
     .from('users')
     .select('id, profile_data')
@@ -525,15 +494,16 @@ export async function fetchUserNotificationSubscriptions(): Promise<
   // Build result map
   const result: Record<string, UserNotificationSubs> = {}
 
-  // Process push subscriptions
-  ;(pushSubs || []).forEach((sub) => {
-    const userId = sub.user_id
+  // Process push subscriptions from RPC (each row = { user_id, platforms: string[] })
+  ;((rpcData as Array<{ user_id: string; platforms: string[] }>) || []).forEach((row) => {
+    const userId = row.user_id
     if (!result[userId]) {
       result[userId] = { web: false, ios: false, android: false, email: false }
     }
-    const platform = sub.platform as 'web' | 'ios' | 'android'
-    if (platform === 'web' || platform === 'ios' || platform === 'android') {
-      result[userId][platform] = true
+    for (const platform of row.platforms) {
+      if (platform === 'web' || platform === 'ios' || platform === 'android') {
+        result[userId][platform] = true
+      }
     }
   })
 

@@ -37,7 +37,7 @@ select from pgmq.create('push_notifications');
 
 comment on table pgmq.q_push_notifications is
 'Queue for push notification events. Consumed by hocuspocus.server backend.
-Events are processed in order and deleted after successful processing.';
+Events are processed in order and archived after successful processing.';
 
 -- =============================================================================
 -- 2. Push Subscriptions Table
@@ -54,6 +54,7 @@ create table if not exists public.push_subscriptions (
     is_active boolean default true not null,
     failed_count int default 0 not null,
     last_error text,
+    last_used_at timestamptz,
     created_at timestamptz default now() not null,
     updated_at timestamptz default now() not null,
 
@@ -330,19 +331,19 @@ Returns batch of messages with visibility timeout.';
 grant execute on function public.consume_push_queue(int, int) to service_role;
 
 
--- Acknowledge processed message (delete from queue)
+-- Acknowledge processed message (archive to pgmq.a_push_notifications for stats)
 create or replace function public.ack_push_message(p_msg_id bigint)
 returns boolean
 language sql
 security definer
 set search_path = public
 as $$
-    select pgmq.delete('push_notifications', p_msg_id);
+    select pgmq.archive('push_notifications', p_msg_id);
 $$;
 
 comment on function public.ack_push_message(bigint) is
 'Acknowledges a push notification message was processed successfully.
-Deletes the message from the queue.';
+Archives the message (moves to pgmq.a_push_notifications) for stats tracking.';
 
 grant execute on function public.ack_push_message(bigint) to service_role;
 
@@ -411,6 +412,7 @@ comment on function public.unregister_push_subscription(text) is
 -- 7. Admin/Monitoring Functions
 -- =============================================================================
 
+-- 7a. Push queue stats (pipeline health, archive counts, last push sent)
 create or replace function public.get_push_queue_stats()
 returns jsonb
 language sql
@@ -423,11 +425,18 @@ as $$
             extract(epoch from (now() - min(enqueued_at))) as oldest_msg_age_sec
         from pgmq.q_push_notifications
     ),
+    archive_stats as (
+        select
+            count(*) as messages_processed,
+            max(archived_at) as last_archived_at
+        from pgmq.a_push_notifications
+    ),
     subscription_stats as (
         select
             count(*) filter (where is_active) as active_subscriptions,
             count(*) filter (where not is_active) as inactive_subscriptions,
-            count(*) filter (where failed_count > 0) as failed_subscriptions
+            count(*) filter (where failed_count > 0) as failed_subscriptions,
+            max(last_used_at) as last_push_sent
         from public.push_subscriptions
     )
     select jsonb_build_object(
@@ -436,6 +445,8 @@ as $$
         'active_subscriptions', coalesce(s.active_subscriptions, 0),
         'inactive_subscriptions', coalesce(s.inactive_subscriptions, 0),
         'failed_subscriptions', coalesce(s.failed_subscriptions, 0),
+        'messages_processed', coalesce(a.messages_processed, 0),
+        'last_push_sent', coalesce(s.last_push_sent, a.last_archived_at),
         'consumer_status', case
             when coalesce(q.queue_length, 0) = 0 then 'idle'
             when coalesce(q.queue_length, 0) < 100 then 'healthy'
@@ -443,11 +454,141 @@ as $$
             else 'critical'
         end
     )
-    from queue_stats q, subscription_stats s;
+    from queue_stats q, archive_stats a, subscription_stats s;
 $$;
 
 comment on function public.get_push_queue_stats() is
-'Returns push notification system health including queue status and subscription stats.';
+'Returns push notification system health including queue status, archive stats, and subscription stats.';
+
+grant execute on function public.get_push_queue_stats() to authenticated;
+grant execute on function public.get_push_queue_stats() to service_role;
+
+
+-- 7b. Admin: aggregated push subscription platforms per user (bypasses RLS)
+create or replace function public.admin_get_user_notification_subs()
+returns table (
+    user_id uuid,
+    platforms text[]
+)
+language sql
+stable
+security definer
+set search_path = public
+as $$
+    select
+        ps.user_id,
+        array_agg(distinct ps.platform) as platforms
+    from public.push_subscriptions ps
+    where ps.is_active = true
+      and public.is_admin(auth.uid())
+    group by ps.user_id;
+$$;
+
+comment on function public.admin_get_user_notification_subs() is
+'Returns aggregated push subscription platforms per user. Admin-only, bypasses RLS.';
+
+revoke execute on function public.admin_get_user_notification_subs() from anon;
+grant execute on function public.admin_get_user_notification_subs() to authenticated;
+
+
+-- 7c. Admin: recent push activity across all users (bypasses RLS)
+create or replace function public.admin_get_recent_push_activity(p_limit int default 10)
+returns table (
+    id uuid,
+    user_id uuid,
+    username text,
+    device_name text,
+    platform text,
+    is_active boolean,
+    failed_count int,
+    last_error text,
+    last_used_at timestamptz,
+    created_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    if not public.is_admin(auth.uid()) then
+        raise exception 'Access denied: user is not an admin.';
+    end if;
+
+    return query
+    select
+        ps.id,
+        ps.user_id,
+        u.username,
+        ps.device_name,
+        ps.platform,
+        ps.is_active,
+        ps.failed_count,
+        ps.last_error,
+        ps.last_used_at,
+        ps.created_at
+    from public.push_subscriptions ps
+    join public.users u on ps.user_id = u.id
+    where ps.is_active = true
+    order by ps.last_used_at desc nulls last
+    limit p_limit;
+end;
+$$;
+
+comment on function public.admin_get_recent_push_activity(int) is
+'Returns recent push subscription activity across all users. Admin-only, bypasses RLS.';
+
+revoke execute on function public.admin_get_recent_push_activity(int) from anon;
+grant execute on function public.admin_get_recent_push_activity(int) to authenticated;
+
+
+-- 7d. Admin: failed push subscriptions across all users (bypasses RLS)
+create or replace function public.admin_get_failed_push_subs(p_limit int default 10)
+returns table (
+    id uuid,
+    user_id uuid,
+    username text,
+    device_name text,
+    platform text,
+    is_active boolean,
+    failed_count int,
+    last_error text,
+    last_used_at timestamptz,
+    created_at timestamptz
+)
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    if not public.is_admin(auth.uid()) then
+        raise exception 'Access denied: user is not an admin.';
+    end if;
+
+    return query
+    select
+        ps.id,
+        ps.user_id,
+        u.username,
+        ps.device_name,
+        ps.platform,
+        ps.is_active,
+        ps.failed_count,
+        ps.last_error,
+        ps.last_used_at,
+        ps.created_at
+    from public.push_subscriptions ps
+    join public.users u on ps.user_id = u.id
+    where ps.failed_count > 0
+    order by ps.failed_count desc
+    limit p_limit;
+end;
+$$;
+
+comment on function public.admin_get_failed_push_subs(int) is
+'Returns failed push subscriptions across all users. Admin-only, bypasses RLS.';
+
+revoke execute on function public.admin_get_failed_push_subs(int) from anon;
+grant execute on function public.admin_get_failed_push_subs(int) to authenticated;
 
 
 -- =============================================================================
