@@ -4,11 +4,11 @@ import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import TextInput from '@components/ui/TextInput'
 import { useSupabase } from '@hooks/useSupabase'
-import { GoogleGIcon } from '@icons'
 import { Provider } from '@supabase/supabase-js'
 import { useMutation } from '@tanstack/react-query'
 import { createClient } from '@utils/supabase/component'
 import { useState } from 'react'
+import { FcGoogle } from 'react-icons/fc'
 import { LuMail, LuSparkles } from 'react-icons/lu'
 
 interface SignInFormProps {
@@ -159,7 +159,7 @@ const SignInForm = ({
             onClick={() => handleOAuthSignIn('google')}
             loading={googleLoading}
             disabled={isAnyLoading}
-            startIcon={<GoogleGIcon className="size-5" />}>
+            startIcon={<FcGoogle className="size-5" />}>
             Continue with Google
           </Button>
 

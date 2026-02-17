@@ -1,0 +1,265 @@
+---
+alwaysApply: false
+---
+# React 19 + Floating UI — Project Conventions & Pitfalls
+
+This project uses **React 19.2**, **@floating-ui/react 0.27**, **daisyUI 5**, and **Tailwind CSS 4**.
+
+---
+
+## 1. React 19: `ref` Is a Regular Prop (CRITICAL)
+
+In React 19, `ref` moved from a special element field into `element.props.ref`.
+This breaks the common `cloneElement` + spread pattern silently.
+
+### The Bug
+
+```tsx
+// ❌ BROKEN in React 19 — child.props.ref overwrites our ref
+cloneElement(child, {
+  ref: ourMergedRef,       // set first...
+  ...child.props           // ...overwritten by child.props.ref!
+})
+```
+
+### The Fix
+
+```tsx
+// ✅ CORRECT — strip ref, place merged ref LAST
+const { ref: _, ...propsWithoutRef } = child.props ?? {}
+cloneElement(child, getReferenceProps({
+  ...propsWithoutRef,
+  ref: mergedRef  // MUST come last to take precedence
+}))
+```
+
+### Reading a Child's Ref (React 18 + 19 compatible)
+
+```tsx
+// Read from both locations for cross-version compatibility
+const childRef = isValidElement(children)
+  ? (children as any).props?.ref ?? (children as any).ref ?? null
+  : null
+```
+
+### Where This Applies
+
+- `Tooltip.tsx` — wraps arbitrary children via `cloneElement`
+- `Popover.tsx` — `PopoverTrigger asChild` uses `cloneElement`
+- Any component using `cloneElement` with `useMergeRefs`
+
+---
+
+## 2. Floating UI: Use Built-in Interaction Hooks
+
+### Rule
+
+**NEVER** reinvent hover/click/focus with manual `useState` + `setTimeout`.
+**ALWAYS** use Floating UI's interaction hooks.
+
+| Interaction | Hook | Example |
+|---|---|---|
+| Hover | `useHover(context, opts)` | Tooltip, HoverMenu |
+| Click | `useClick(context, opts)` | Popover, Select |
+| Dismiss | `useDismiss(context)` | All floating components |
+| Role | `useRole(context, { role })` | All (a11y) |
+| Focus | `useFocus(context)` | Tooltip (keyboard a11y) |
+
+### Why
+
+Manual hover state management bypasses Floating UI's `onOpenChange` flow.
+This causes `useDismiss`, `whileElementsMounted`, and position calculation to be disconnected from the actual open state.
+
+### Pattern (from Tooltip.tsx)
+
+```tsx
+const [open, setOpen] = useState(false)
+
+const { refs, floatingStyles, context } = useFloating({
+  open,
+  onOpenChange: setOpen,     // Single source of truth
+  whileElementsMounted: autoUpdate,
+  middleware: [offset(8), flip(), shift()]
+})
+
+const hover = useHover(context, { delay: { open: 200, close: 0 } })
+const dismiss = useDismiss(context)
+const role = useRole(context, { role: 'tooltip' })
+
+const { getReferenceProps, getFloatingProps } = useInteractions([hover, dismiss, role])
+```
+
+---
+
+## 3. Floating UI: Use `strategy: 'fixed'` for Portalled Tooltips
+
+### Rule
+
+When a floating element renders in a `FloatingPortal` (at `<body>` level), use `strategy: 'fixed'`.
+
+### Why
+
+- `strategy: 'absolute'` can extend the document body → scrollbar appears → viewport resizes → `autoUpdate` fires → repositions → scrollbar disappears → **infinite feedback loop** (scroll glitch)
+- `strategy: 'fixed'` positions relative to the viewport — **no document overflow possible**
+
+```tsx
+const { refs, floatingStyles, context } = useFloating({
+  strategy: 'fixed',  // ✅ Prevents scroll glitches in portals
+  // ...
+})
+```
+
+---
+
+## 4. React Rules of Hooks: No Conditional Returns Before Hooks
+
+### Rule
+
+**NEVER** place an early return before any hook call, even if the condition is a module-level constant.
+
+```tsx
+// ❌ BROKEN — hooks after conditional return
+function Tooltip({ children }) {
+  if (!canHover) return <>{children}</>  // early return!
+  const [open, setOpen] = useState(false)  // hook AFTER conditional
+}
+
+// ✅ CORRECT — all hooks first, then early return
+function Tooltip({ children }) {
+  const [open, setOpen] = useState(false)  // hooks FIRST
+  // ... all other hooks ...
+  if (!canHover) return <>{children}</>    // early return AFTER hooks
+}
+```
+
+---
+
+## 5. Ref Composition with `useMergeRefs`
+
+### Rule
+
+When `cloneElement` replaces a child's ref, the original is lost. Always use `useMergeRefs` from `@floating-ui/react`.
+
+```tsx
+import { useMergeRefs } from '@floating-ui/react'
+
+const childRef = isValidElement(children)
+  ? (children as any).props?.ref ?? (children as any).ref ?? null
+  : null
+const mergedRef = useMergeRefs([refs.setReference, childRef])
+```
+
+This ensures:
+- Floating UI gets its reference measurement (`refs.setReference`)
+- The parent keeps its DOM handle (e.g., `forwardRef` callback)
+
+---
+
+## 6. Component-Level Tooltip Integration
+
+### Rule
+
+Tooltips should be integrated INTO components, not wrapped externally.
+
+```tsx
+// ❌ Repetitive external wrapping
+<Tooltip title="Bold"><Button>B</Button></Tooltip>
+
+// ✅ Built-in tooltip props
+<Button tooltip="Bold" tooltipPlacement="bottom">B</Button>
+<Avatar tooltip="Profile" tooltipPosition="bottom" />
+```
+
+### Components with Built-in Tooltip Support
+
+| Component | Props | Notes |
+|---|---|---|
+| `Button` | `tooltip`, `tooltipPlacement` | Wraps in `<Tooltip>` internally |
+| `Avatar` | `tooltip`, `tooltipPosition` | Wraps in `<Tooltip>` internally |
+
+### When to Use `<Tooltip>` Directly
+
+- Non-Button/Avatar elements (e.g., `<div>`, `<span>`)
+- Complex trigger elements
+- Design system demos
+
+---
+
+## 7. Touch-Only Device Handling
+
+### Rule
+
+Tooltips are hover-based — disable on touch-only devices using CSS media query.
+
+```tsx
+const canHover =
+  typeof window !== 'undefined'
+    ? window.matchMedia('(hover: hover)').matches
+    : true  // SSR fallback: assume hover
+```
+
+Place the check AFTER all hooks, as an early return:
+
+```tsx
+// All hooks called above...
+if (!canHover) return <>{children}</>
+```
+
+---
+
+## 8. Floating UI Component Architecture
+
+All Floating UI components in this project follow the same pattern:
+
+```
+useFloating()           → positioning engine
+useInteractions([...])  → event handlers
+useMergeRefs([...])     → ref composition
+getReferenceProps()     → props for trigger element
+getFloatingProps()      → props for floating element
+FloatingPortal          → renders at body level
+```
+
+### Existing Components
+
+| Component | Interaction Hook | Strategy | Portal |
+|---|---|---|---|
+| `Tooltip` | `useHover` | `fixed` | Yes |
+| `Popover` | `useClick` | `absolute` (default) | Yes |
+| `Select` | `useClick` | `absolute` (default) | Yes |
+| `SearchableSelect` | `useClick` | `absolute` (default) | Yes |
+| `HoverMenu` | `useHover` | `absolute` (override to `fixed` in style) | Yes |
+| `Dialog` | — (controlled) | — | Yes |
+
+---
+
+## 9. Naming Conventions
+
+| Pattern | Convention | Example |
+|---|---|---|
+| Toolbar component | `EditorToolbar` (not `ToolbarDesktop`) | Feature-first naming |
+| Select variant | `StyleSelect` (not `SelectHeadingBox`) | Purpose-first naming |
+| Constants | `ICON_SIZE`, `PANEL_CLASS` | UPPER_SNAKE for module constants |
+| Dynamic imports | `MediaInsertPanel` (not `InsertMultimediaForm`) | UI-facing name |
+| Props | `tooltipPlacement` (not `tooltipPosition`) | Matches Floating UI `Placement` type |
+
+---
+
+## 10. Dark Theme Compliance
+
+All overlay/floating components MUST include:
+
+```tsx
+// Border for visibility on dark backgrounds
+className="border border-base-300"
+
+// Elevated background (not base-100 which matches page bg in dark)
+className="bg-base-200"
+
+// Sufficient shadow
+className="shadow-xl"  // or shadow-lg, not shadow-xs
+```
+
+### Components Affected
+
+- `ContextMenu`, `Dialog`, `HoverMenu`, `Toast`, `Popover`, `Select`
