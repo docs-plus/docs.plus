@@ -18,6 +18,7 @@ import {
   TextInput,
   Toggle
 } from '@components/ui'
+import { Tooltip } from '@components/ui/Tooltip'
 import { useState } from 'react'
 import {
   MdAccountCircle,
@@ -823,19 +824,19 @@ export const ComponentsSection = () => {
         />
 
         <ComponentCard
-          title="Tooltips"
-          code={`<div className="tooltip" data-tip="Hello!">
+          title="Tooltips (Floating UI)"
+          code={`<Tooltip title="Hello!" placement="top">
   <button className="btn">Hover me</button>
-</div>`}>
-          <div className="tooltip" data-tip="Hello!">
+</Tooltip>`}>
+          <Tooltip title="Hello!">
             <button className="btn btn-sm">Hover me</button>
-          </div>
-          <div className="tooltip tooltip-primary" data-tip="Primary styled">
+          </Tooltip>
+          <Tooltip title="Primary styled" placement="top">
             <button className="btn btn-primary btn-sm">Primary</button>
-          </div>
-          <div className="tooltip tooltip-bottom" data-tip="Bottom tooltip">
+          </Tooltip>
+          <Tooltip title="Bottom tooltip" placement="bottom">
             <button className="btn btn-sm">Bottom</button>
-          </div>
+          </Tooltip>
         </ComponentCard>
 
         <div className="mt-6">

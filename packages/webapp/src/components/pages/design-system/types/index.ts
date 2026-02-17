@@ -13,7 +13,7 @@ export type TabType =
   | 'forms'
   | 'settings'
 
-export type ThemeType = 'docsplus' | 'docsplus-dark'
+export type ThemeType = 'docsplus' | 'docsplus-dark' | 'docsplus-dark-hc'
 
 export type UserStatus = 'online' | 'away' | 'offline'
 

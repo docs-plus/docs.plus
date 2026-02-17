@@ -8,6 +8,7 @@
  */
 
 import { Avatar } from '@components/ui'
+import { Tooltip } from '@components/ui/Tooltip'
 import { useState } from 'react'
 import {
   MdCheckCircle,
@@ -291,26 +292,26 @@ export const ComponentsTab = () => {
           </div>
         </div>
 
-        {/* Tooltips */}
+        {/* Tooltips (Floating UI) */}
         <div className="card border-base-300 bg-base-100 border shadow-sm">
           <div className="card-body">
             <h3 className="card-title text-base">Tooltips</h3>
             <div className="flex flex-wrap justify-center gap-4">
-              <div className="tooltip tooltip-top" data-tip="Top tooltip">
+              <Tooltip title="Top tooltip" placement="top">
                 <button className="btn btn-sm">Top</button>
-              </div>
-              <div className="tooltip tooltip-bottom" data-tip="Bottom tooltip">
+              </Tooltip>
+              <Tooltip title="Bottom tooltip" placement="bottom">
                 <button className="btn btn-sm">Bottom</button>
-              </div>
-              <div className="tooltip tooltip-left" data-tip="Left tooltip">
+              </Tooltip>
+              <Tooltip title="Left tooltip" placement="left">
                 <button className="btn btn-sm">Left</button>
-              </div>
-              <div className="tooltip tooltip-right" data-tip="Right tooltip">
+              </Tooltip>
+              <Tooltip title="Right tooltip" placement="right">
                 <button className="btn btn-sm">Right</button>
-              </div>
-              <div className="tooltip tooltip-primary" data-tip="Primary color">
+              </Tooltip>
+              <Tooltip title="Primary color" placement="top">
                 <button className="btn btn-primary btn-sm">Primary</button>
-              </div>
+              </Tooltip>
             </div>
           </div>
         </div>

@@ -4,13 +4,14 @@
  * Centralized state management for the design system demo page.
  */
 
+import { type ResolvedTheme, useThemeStore } from '@stores'
 import { createContext, ReactNode, useCallback, useContext, useState } from 'react'
 
-import type { TabType, ThemeType } from '../types'
+import type { TabType } from '../types'
 
 interface DesignSystemContextValue {
-  // Theme
-  theme: ThemeType
+  // Theme (delegated to global themeStore)
+  theme: ResolvedTheme
   toggleTheme: () => void
 
   // Navigation
@@ -44,8 +45,9 @@ interface DesignSystemProviderProps {
 }
 
 export const DesignSystemProvider = ({ children }: DesignSystemProviderProps) => {
-  // Theme state
-  const [theme, setTheme] = useState<ThemeType>('docsplus')
+  // Theme — delegated to global themeStore (single source of truth)
+  const resolvedTheme = useThemeStore((s) => s.resolvedTheme)
+  const setPreference = useThemeStore((s) => s.setPreference)
 
   // Navigation state
   const [activeTab, setActiveTabState] = useState<TabType>('dashboard')
@@ -63,10 +65,8 @@ export const DesignSystemProvider = ({ children }: DesignSystemProviderProps) =>
   const [chatMessage, setChatMessage] = useState('')
 
   const toggleTheme = useCallback(() => {
-    const newTheme = theme === 'docsplus' ? 'docsplus-dark' : 'docsplus'
-    setTheme(newTheme)
-    document.documentElement.setAttribute('data-theme', newTheme)
-  }, [theme])
+    setPreference(resolvedTheme === 'docsplus' ? 'dark' : 'light')
+  }, [resolvedTheme, setPreference])
 
   // Smooth tab transitions
   const setActiveTab = useCallback(
@@ -83,7 +83,7 @@ export const DesignSystemProvider = ({ children }: DesignSystemProviderProps) =>
   )
 
   const value: DesignSystemContextValue = {
-    theme,
+    theme: resolvedTheme,
     toggleTheme,
     activeTab,
     setActiveTab,

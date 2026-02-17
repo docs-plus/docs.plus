@@ -302,10 +302,10 @@ export const EditorComponentsSection = () => {
 <AvatarStack users={activeUsers} size="sm" maxDisplay={4} />`}
           importStatement="import AvatarStack from '@components/AvatarStack'">
           <div className="flex -space-x-2">
-            <Avatar id="presence-1" size="sm" clickable={false} className="ring-2 ring-white" />
-            <Avatar id="presence-2" size="sm" clickable={false} className="ring-2 ring-white" />
-            <Avatar id="presence-3" size="sm" clickable={false} className="ring-2 ring-white" />
-            <div className="flex size-8 items-center justify-center rounded-full bg-slate-700 text-xs font-semibold text-white ring-2 ring-white">
+            <Avatar id="presence-1" size="sm" clickable={false} className="ring-base-100 ring-2" />
+            <Avatar id="presence-2" size="sm" clickable={false} className="ring-base-100 ring-2" />
+            <Avatar id="presence-3" size="sm" clickable={false} className="ring-base-100 ring-2" />
+            <div className="bg-neutral text-neutral-content ring-base-100 flex size-8 items-center justify-center rounded-full text-xs font-semibold ring-2">
               +3
             </div>
           </div>

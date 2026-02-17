@@ -204,7 +204,7 @@ export default MyComponent`}
             </div>
             <div className="divide-y divide-slate-100">
               <div className="flex items-start gap-4 p-4">
-                <div className="bg-primary flex size-8 shrink-0 items-center justify-center rounded-full font-bold text-white">
+                <div className="bg-primary text-primary-content flex size-8 shrink-0 items-center justify-center rounded-full font-bold">
                   1
                 </div>
                 <div>
@@ -216,7 +216,7 @@ export default MyComponent`}
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
-                <div className="bg-primary flex size-8 shrink-0 items-center justify-center rounded-full font-bold text-white">
+                <div className="bg-primary text-primary-content flex size-8 shrink-0 items-center justify-center rounded-full font-bold">
                   2
                 </div>
                 <div>
@@ -228,7 +228,7 @@ export default MyComponent`}
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
-                <div className="bg-primary flex size-8 shrink-0 items-center justify-center rounded-full font-bold text-white">
+                <div className="bg-primary text-primary-content flex size-8 shrink-0 items-center justify-center rounded-full font-bold">
                   3
                 </div>
                 <div>
@@ -239,7 +239,7 @@ export default MyComponent`}
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
-                <div className="bg-primary flex size-8 shrink-0 items-center justify-center rounded-full font-bold text-white">
+                <div className="bg-primary text-primary-content flex size-8 shrink-0 items-center justify-center rounded-full font-bold">
                   4
                 </div>
                 <div>
@@ -251,7 +251,7 @@ export default MyComponent`}
                 </div>
               </div>
               <div className="flex items-start gap-4 p-4">
-                <div className="bg-primary flex size-8 shrink-0 items-center justify-center rounded-full font-bold text-white">
+                <div className="bg-primary text-primary-content flex size-8 shrink-0 items-center justify-center rounded-full font-bold">
                   5
                 </div>
                 <div>

@@ -23,7 +23,7 @@ export const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm transition-opacity duration-300 lg:hidden"
+          className="bg-base-content/50 fixed inset-0 z-40 backdrop-blur-sm transition-opacity duration-300 lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
           role="button"
           aria-label="Close menu"

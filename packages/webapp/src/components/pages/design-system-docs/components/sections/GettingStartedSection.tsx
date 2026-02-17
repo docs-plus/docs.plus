@@ -69,7 +69,7 @@ export const GettingStartedSection = () => {
 
         <div className="space-y-4">
           <div className="flex gap-4 rounded-xl border border-slate-100 bg-white p-4">
-            <div className="bg-primary flex size-8 shrink-0 items-center justify-center rounded-full font-bold text-white">
+            <div className="bg-primary text-primary-content flex size-8 shrink-0 items-center justify-center rounded-full font-bold">
               1
             </div>
             <div>
@@ -84,7 +84,7 @@ export const GettingStartedSection = () => {
           </div>
 
           <div className="flex gap-4 rounded-xl border border-slate-100 bg-white p-4">
-            <div className="bg-primary flex size-8 shrink-0 items-center justify-center rounded-full font-bold text-white">
+            <div className="bg-primary text-primary-content flex size-8 shrink-0 items-center justify-center rounded-full font-bold">
               2
             </div>
             <div>
@@ -98,7 +98,7 @@ export const GettingStartedSection = () => {
           </div>
 
           <div className="flex gap-4 rounded-xl border border-slate-100 bg-white p-4">
-            <div className="bg-primary flex size-8 shrink-0 items-center justify-center rounded-full font-bold text-white">
+            <div className="bg-primary text-primary-content flex size-8 shrink-0 items-center justify-center rounded-full font-bold">
               3
             </div>
             <div>
