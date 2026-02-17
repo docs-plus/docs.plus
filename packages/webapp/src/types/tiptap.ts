@@ -107,6 +107,15 @@ export type TransactionMetaKey = (typeof TRANSACTION_META)[keyof typeof TRANSACT
 // Core Editor Types (Re-exports from TipTap/ProseMirror)
 // ============================================================================
 
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    heading: {
+      normalText: () => ReturnType
+      wrapBlock: (attributes: { level: number }) => ReturnType
+    }
+  }
+}
+
 /**
  * TipTap editor instance type
  * Using 'any' for flexibility with custom commands.
