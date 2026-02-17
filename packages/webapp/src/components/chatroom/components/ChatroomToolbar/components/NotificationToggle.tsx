@@ -24,7 +24,7 @@ const notificationConfig = {
   }
 }
 
-export const NotificationToggle = ({ className, size = 'xs' }: Props) => {
+export const NotificationToggle = ({ className, size = 'sm' }: Props) => {
   const { notificationState, loading, handleToggle } = useNotificationToggle()
 
   const config = notificationConfig[notificationState]

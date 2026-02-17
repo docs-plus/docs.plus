@@ -19,7 +19,7 @@ export const CloseButton = ({ className }: Props) => {
   return (
     <Button
       variant="ghost"
-      size="xs"
+      size="sm"
       shape="square"
       onClick={handelCloseChatRoom}
       className={twMerge(

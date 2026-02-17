@@ -13,7 +13,7 @@ type Props = {
 
 export const ShareButton = ({
   className,
-  size = 'xs',
+  size = 'sm',
   successMessage = 'Chatroom URL copied',
   errorMessage = 'Failed to copy URL'
 }: Props) => {
