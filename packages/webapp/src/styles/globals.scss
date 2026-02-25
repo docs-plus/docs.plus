@@ -1,3 +1,4 @@
+@use './task-list-placeholder' as taskListPlaceholder;
 @import 'tailwindcss';
 @plugin 'daisyui';
 
@@ -783,28 +784,10 @@ ol {
     left: -22px;
   }
 
-  ul[data-type='taskList'] {
-    list-style: none;
-    padding: 0;
-
-    p {
-      margin: 0;
-    }
-
-    li {
-      display: flex;
-
-      > label {
-        flex: 0 0 auto;
-        margin-right: 0.5rem;
-        user-select: none;
-      }
-
-      > div {
-        flex: 1 1 auto;
-      }
-    }
-  }
+  // Keep task-list placeholder behavior centralized in one source.
+  // Consumers can override only this variable when a different tint is needed.
+  --task-list-placeholder-color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
+  @include taskListPlaceholder.task-list-placeholder-overrides(var(--task-list-placeholder-color));
 
   ul,
   ol {

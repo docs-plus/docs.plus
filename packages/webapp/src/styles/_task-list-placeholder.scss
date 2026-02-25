@@ -1,0 +1,51 @@
+@mixin task-list-placeholder-overrides($placeholder-color) {
+  ul[data-type='taskList'] {
+    list-style: none;
+    padding: 0;
+
+    p {
+      margin: 0;
+      position: relative;
+    }
+
+    li {
+      display: flex;
+      justify-content: flex-start;
+      align-items: flex-start;
+
+      // Placeholder decorations can land on task-item wrappers.
+      // Disable these pseudo placeholders to keep checkbox rows anchored.
+      &.is-empty::before {
+        content: none;
+        width: auto;
+        float: none;
+      }
+
+      > label {
+        flex: 0 0 auto;
+        margin-right: 0.5rem;
+        user-select: none;
+      }
+
+      > div {
+        flex: 1 1 auto;
+        min-width: 0;
+
+        &.is-empty::before,
+        > p.is-empty::before {
+          content: attr(data-placeholder);
+          width: auto;
+          float: none;
+          display: inline-block;
+          position: absolute;
+          top: 0;
+          left: 0;
+          height: auto;
+          pointer-events: none;
+          color: $placeholder-color;
+          white-space: nowrap;
+        }
+      }
+    }
+  }
+}
