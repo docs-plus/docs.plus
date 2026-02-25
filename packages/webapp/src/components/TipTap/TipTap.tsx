@@ -40,11 +40,12 @@ import { TextAlign } from '@tiptap/extension-text-align'
 import { Typography } from '@tiptap/extension-typography'
 import { Underline } from '@tiptap/extension-underline'
 import { UniqueID } from '@tiptap/extension-unique-id'
-import { Gapcursor, Placeholder, UndoRedo } from '@tiptap/extensions'
+import { Gapcursor, UndoRedo } from '@tiptap/extensions'
 import { UseEditorOptions } from '@tiptap/react'
 import {
   type Editor as TipTapEditor,
   type ProseMirrorNode,
+  type ResolvedPos,
   TIPTAP_NODES,
   type Transaction
 } from '@types'
@@ -76,17 +77,19 @@ import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
 import Paragraph from './nodes/Paragraph'
 import Text from './nodes/Text'
 import { IOSCaretFix } from './plugins/iosCaretFixPlugin'
+import { OptimizedPlaceholder } from './plugins/optimizedPlaceholderPlugin'
 
 const lowlight = createLowlight()
+type LowlightLanguage = Parameters<typeof lowlight.register>[1]
 lowlight.register('html', html)
 lowlight.register('css', css)
 lowlight.register('js', js)
 lowlight.register('ts', ts)
 lowlight.register('markdown', md)
-lowlight.register('python', python as any)
+lowlight.register('python', python as unknown as LowlightLanguage)
 lowlight.register('yaml', yaml)
 lowlight.register('json', json)
-lowlight.register('bash', bash as any)
+lowlight.register('bash', bash as unknown as LowlightLanguage)
 
 const scrollDown = () => {
   const url = new URL(window.location.href)
@@ -101,28 +104,71 @@ const scrollDown = () => {
 interface PlaceholderData {
   node: ProseMirrorNode
   editor: TipTapEditor
+  pos?: number
+  $anchor?: ResolvedPos
 }
 
-const generatePlaceholderText = (data: PlaceholderData): string | null => {
-  const { node, editor } = data
-  const nodeType = node.type.name
-  if (!editor.isFocused) return null
+const TASK_ITEM_NODE_TYPE = 'taskItem'
+const TASK_ITEM_PLACEHOLDER_TEXT = 'Task item'
 
-  if (nodeType === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
-    const level = node.attrs.level
-    return `Heading ${level}`
-  } else if (nodeType === TIPTAP_NODES.PARAGRAPH_TYPE) {
-    const { $head } = editor.view.state.selection
-
-    // Access internal 'path' property of ResolvedPos for heading breadcrumb
-    const headingPath = ($head as unknown as { path: ProseMirrorNode[] }).path
-      .filter((x: ProseMirrorNode) => x?.type?.name === TIPTAP_NODES.HEADING_TYPE)
-      .map((x: ProseMirrorNode) => x.firstChild?.textContent)
-
-    return `${headingPath.join(' / ')}`
+const getResolvedPosForPlaceholder = (editor: TipTapEditor, pos?: number): ResolvedPos => {
+  if (typeof pos === 'number') {
+    try {
+      return editor.state.doc.resolve(pos)
+    } catch {
+      // Fall back to current selection when decoration position can't be resolved.
+    }
   }
 
-  return null
+  return editor.view.state.selection.$head
+}
+
+const isInsideTaskItem = (resolvedPos: ResolvedPos): boolean => {
+  for (let depth = resolvedPos.depth; depth > 0; depth--) {
+    if (resolvedPos.node(depth).type.name === TASK_ITEM_NODE_TYPE) {
+      return true
+    }
+  }
+
+  return false
+}
+
+const getHeadingBreadcrumb = (resolvedPos: ResolvedPos): string => {
+  const breadcrumb: string[] = []
+
+  for (let depth = 0; depth <= resolvedPos.depth; depth++) {
+    const nodeAtDepth = resolvedPos.node(depth)
+    if (nodeAtDepth.type.name !== TIPTAP_NODES.HEADING_TYPE) continue
+
+    const headingTitle = nodeAtDepth.firstChild?.textContent?.trim()
+    if (headingTitle) breadcrumb.push(headingTitle)
+  }
+
+  return breadcrumb.join(' / ')
+}
+
+const generatePlaceholderText = ({
+  node,
+  editor,
+  pos,
+  $anchor
+}: PlaceholderData): string | null => {
+  if (!editor.isFocused) return null
+
+  const nodeType = node.type.name
+  if (nodeType === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
+    return `Heading ${node.attrs.level}`
+  }
+
+  if (nodeType !== TIPTAP_NODES.PARAGRAPH_TYPE) return null
+
+  const resolvedPos = $anchor || getResolvedPosForPlaceholder(editor, pos)
+  if (isInsideTaskItem(resolvedPos)) {
+    return TASK_ITEM_PLACEHOLDER_TEXT
+  }
+
+  const headingBreadcrumb = getHeadingBreadcrumb(resolvedPos)
+  return headingBreadcrumb || null
 }
 
 // TODO: editor extensions should be dynamic
@@ -218,8 +264,7 @@ const Editor = ({
     TableRow,
     TableHeader,
     TableCell,
-    Placeholder.configure({
-      includeChildren: true,
+    OptimizedPlaceholder.configure({
       showOnlyWhenEditable: false,
       placeholder: (data: PlaceholderData) => generatePlaceholderText(data) || ''
     }),
@@ -236,7 +281,9 @@ const Editor = ({
       })
     ]
 
-    if (localPersistence && docName) {
+    const canUseIndexedDb = typeof window !== 'undefined' && typeof window.indexedDB !== 'undefined'
+
+    if (localPersistence && docName && canUseIndexedDb) {
       const ydoc = new Y.Doc()
       new IndexeddbPersistence(docName, ydoc)
 
@@ -298,10 +345,18 @@ const getCollaborationCaretConfig = (provider: HocuspocusProvider) => {
     avatarUrl: profile?.avatar_url || null
   }
 
+  interface CollaborationCaretUser {
+    color: string
+    id: string
+    name: string
+    avatarUpdatedAt?: string | null
+    avatarUrl?: string | null
+  }
+
   return {
     provider,
     user,
-    render: (caretUser: Record<string, any>): HTMLElement => {
+    render: (caretUser: CollaborationCaretUser): HTMLElement => {
       const cursor = document.createElement('span')
       cursor.classList.add('collaboration-cursor__caret')
       cursor.setAttribute('style', `border-color: ${caretUser.color};`)
