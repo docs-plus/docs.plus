@@ -13,7 +13,8 @@ import type { EditorView } from '@types'
 const isIOSSafari = (): boolean => {
   if (typeof window === 'undefined' || typeof navigator === 'undefined') return false
   const ua = navigator.userAgent
-  const isIOS = /iPad|iPhone|iPod/.test(ua) && !(window as any).MSStream
+  const windowWithMSStream = window as Window & { MSStream?: unknown }
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !windowWithMSStream.MSStream
   const isSafari = /Safari/.test(ua) && !/Chrome/.test(ua) && !/CriOS/.test(ua)
   return isIOS && isSafari
 }

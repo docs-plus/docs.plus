@@ -67,7 +67,7 @@ const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalP
 
   const [totalSearch, setTotalSearch] = useState(0)
   const [filterInput, setFilterInput] = useState('')
-  const [filteredHeadings, setFilteredHeadings] = useState([])
+  const [filteredHeadings, setFilteredHeadings] = useState<Element[]>([])
   const [filterAlgorithm, setFilterAlgorithm] = useBooleanLocalStorageState(
     'setting.filterAlgorithm',
     false
@@ -81,7 +81,10 @@ const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalP
   } = useStore((state) => state.settings)
 
   const datalist = useMemo(
-    () => filteredHeadings.map((heading: any) => heading.textContent),
+    () =>
+      filteredHeadings
+        .map((heading) => heading.textContent)
+        .filter((heading): heading is string => typeof heading === 'string' && heading.length > 0),
     [filteredHeadings]
   )
 
@@ -101,9 +104,9 @@ const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalP
   }, [totalSearch, totalHeading, filteredHeadings])
 
   const handleSearch = useCallback(
-    (e: any) => {
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
       const { totalSearch: newTotalSearch, filteredHeadings: newFilteredHeadings } =
-        searchThroughHeading(e) as any
+        searchThroughHeading(e.currentTarget.value)
       setFilteredHeadings(newFilteredHeadings)
       setTotalSearch(newTotalSearch)
 

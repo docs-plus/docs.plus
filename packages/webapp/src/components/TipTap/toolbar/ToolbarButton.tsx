@@ -1,11 +1,12 @@
 import Button from '@components/ui/Button'
 import { Placement } from '@floating-ui/react'
+import type { Editor } from '@tiptap/core'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface ToolbarButtonProps {
   type?: string
-  editor?: any
+  editor?: Editor | null
   onClick?: (event: React.MouseEvent | React.TouchEvent) => void
   onTouchEnd?: (event: React.TouchEvent) => void
   children: React.ReactNode
@@ -32,7 +33,7 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     },
     ref
   ) => {
-    const buttonClass = isActive || editor?.isActive(type) ? 'is-active' : ''
+    const buttonClass = isActive || (type ? editor?.isActive(type) : false) ? 'is-active' : ''
 
     return (
       <Button

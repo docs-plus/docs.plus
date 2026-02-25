@@ -32,8 +32,7 @@ interface SearchResult {
   totalHeadings: number
 }
 
-export const searchThroughHeading = (e: React.ChangeEvent<HTMLInputElement>): SearchResult => {
-  const search = e.target.value
+export const searchThroughHeading = (search: string): SearchResult => {
   const headings = document.querySelectorAll('.title')
 
   const filteredHeadings = Array.from(headings).filter((heading) => {

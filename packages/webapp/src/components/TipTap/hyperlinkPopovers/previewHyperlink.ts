@@ -22,7 +22,7 @@ type HyperlinkModalOptions = {
   validate?: (url: string) => boolean
   view: EditorView
   link: HTMLAnchorElement
-  node?: any
+  node?: unknown
   nodePos: number
   event: MouseEvent
   linkCoords: {
@@ -31,7 +31,7 @@ type HyperlinkModalOptions = {
     width: number
     height: number
   }
-  attrs: Record<string, any>
+  attrs: Record<string, unknown>
 }
 
 interface MetadataResponse {
@@ -103,7 +103,7 @@ const hrefEventHandller = (href: string) => (event: MouseEvent) => {
 // Create SVG icon element
 const createSvgIcon = (iconName: string, className: string = ''): HTMLElement => {
   // Get the icon function from our iconList
-  const iconFunction = (Icons as any)[iconName]
+  const iconFunction = (Icons as Record<string, (props: { size?: number }) => string>)[iconName]
 
   if (iconFunction && typeof iconFunction === 'function') {
     const iconContainer = createHTMLElement('div', {
@@ -231,8 +231,8 @@ export default function previewHyperlink(options: HyperlinkModalOptions) {
   const metadataContainer = createHTMLElement('div', { className: 'metadata' })
 
   // Check if metadata already exists in node attributes
-  const existingTitle = attrs?.title
-  const existingImage = attrs?.image
+  const existingTitle = typeof attrs?.title === 'string' ? attrs.title : undefined
+  const existingImage = typeof attrs?.image === 'string' ? attrs.image : undefined
 
   if (existingTitle) {
     // Use existing metadata
@@ -250,8 +250,10 @@ export default function previewHyperlink(options: HyperlinkModalOptions) {
 
   removeButton.addEventListener('click', () => {
     hideCurrentToolbar()
-    // @ts-ignore - unsetHyperlink is a valid command but TypeScript types aren't picking it up in Docker builds
-    return editor.chain().focus().unsetHyperlink().run()
+    const chain = editor.chain().focus() as unknown as {
+      unsetHyperlink: () => { run: () => boolean }
+    }
+    return chain.unsetHyperlink().run()
   })
 
   editButton.addEventListener('click', () => {

@@ -10,11 +10,42 @@ import useUpdateDocMetadata from '../../hooks/useUpdateDocMetadata'
 
 const SAVED_INDICATOR_DURATION = 2000 // ms
 
+interface StatelessPayloadEvent {
+  payload: string
+}
+
+interface DocTitleMessage {
+  type: 'docTitle'
+  state: {
+    title: string
+    [key: string]: unknown
+  }
+}
+
+interface MetadataMutationResponse {
+  title: string
+  [key: string]: unknown
+}
+
+const extractMetadataMutationResponse = (response: unknown): MetadataMutationResponse => {
+  if (
+    typeof response === 'object' &&
+    response !== null &&
+    'data' in response &&
+    typeof response.data === 'object' &&
+    response.data !== null
+  ) {
+    return response.data as MetadataMutationResponse
+  }
+
+  return response as MetadataMutationResponse
+}
+
 const DocTitle = ({ className }: { className?: string }) => {
   const { isLoading, isSuccess, mutate, data } = useUpdateDocMetadata()
   const [title, setTitle] = useState<string | undefined>('')
   const [showSaved, setShowSaved] = useState(false)
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const { hocuspocusProvider, metadata: docMetadata } = useStore((state) => state.settings)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
@@ -78,7 +109,6 @@ const DocTitle = ({ className }: { className?: string }) => {
 
     // Use a TreeWalker to find the correct position for the caret
     const walker = document.createTreeWalker(currentTarget, NodeFilter.SHOW_TEXT, null)
-    let node: Node | null = null
     let charCount = 0
 
     while (walker.nextNode()) {
@@ -86,11 +116,9 @@ const DocTitle = ({ className }: { className?: string }) => {
       const nodeLength = currentNode.nodeValue?.length || 0
 
       if (charCount + nodeLength >= preCaretPosition) {
-        node = currentNode
         const offset = preCaretPosition - charCount
         const newRange = document.createRange()
-        // @ts-ignore
-        newRange.setStart(node, offset)
+        newRange.setStart(currentNode, offset)
         newRange.collapse(true)
         newSelection.addRange(newRange)
         return
@@ -110,8 +138,8 @@ const DocTitle = ({ className }: { className?: string }) => {
   useEffect(() => {
     if (!hocuspocusProvider) return
 
-    const readOnlyStateHandler = ({ payload }: any) => {
-      const msg = JSON.parse(payload)
+    const readOnlyStateHandler = ({ payload }: StatelessPayloadEvent) => {
+      const msg = JSON.parse(payload) as DocTitleMessage
       if (msg.type === 'docTitle') {
         setTitle(msg.state.title)
         // also update the docMetadata in the store
@@ -126,10 +154,9 @@ const DocTitle = ({ className }: { className?: string }) => {
 
   useEffect(() => {
     if (isSuccess && data) {
-      // @ts-ignore
-      setTitle(data.data.title)
-      // @ts-ignore
-      hocuspocusProvider.sendStateless(JSON.stringify({ type: 'docTitle', state: data.data }))
+      const updated = extractMetadataMutationResponse(data)
+      setTitle(updated.title)
+      hocuspocusProvider?.sendStateless(JSON.stringify({ type: 'docTitle', state: updated }))
 
       // Clear any existing timeout
       if (timeoutRef.current) clearTimeout(timeoutRef.current)

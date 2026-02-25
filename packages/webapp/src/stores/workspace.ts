@@ -7,7 +7,17 @@ type EditorSettings = {
   loading: boolean
   applyingFilters?: boolean
   selectionPos?: number
-  filterResult: { sortedSlugs: string[]; selectedNodes: any[] }
+  filterResult: {
+    sortedSlugs: Array<{
+      type: 'parent' | 'child'
+      text: string
+      existsInParent: boolean
+    }>
+    selectedNodes: Array<{
+      filterBy?: string
+      rootPath: Set<string>
+    }>
+  }
   isMobile?: boolean
   presentUsers?: any
   isEditable: boolean

@@ -3,7 +3,8 @@ import Button from '@components/ui/Button'
 import { usePopoverState } from '@components/ui/Popover'
 import TextInput from '@components/ui/TextInput'
 import { useStore } from '@stores'
-import { TIPTAP_NODES } from '@types'
+import type { Editor } from '@tiptap/core'
+import { type ProseMirrorNode, TIPTAP_NODES } from '@types'
 import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { FaSoundcloud, FaVimeo, FaXTwitter, FaYoutube } from 'react-icons/fa6'
 import { FiFilm } from 'react-icons/fi'
@@ -24,6 +25,32 @@ interface ImageDimensions {
   aspectRatio: number
   originalWidth?: number
   originalHeight?: number
+}
+
+interface DocumentMetadata {
+  documentId: string
+}
+
+interface UploadedMediaResponse {
+  fileAddress: string
+  fileType: keyof typeof FILE_TYPE_MAP
+}
+
+interface UploadPlaceholderAttributes {
+  src: string
+  width?: number
+  height?: number
+}
+
+interface EditorFileUploadEventDetail {
+  file: File
+  editor: Editor
+}
+
+type MediaCommandPayload = {
+  src: string
+  width?: number
+  height?: number
 }
 
 // Constants
@@ -163,14 +190,32 @@ const getImageDimensions = async (file: File): Promise<ImageDimensions & { local
   })
 }
 
+const runMediaCommand = (
+  editor: Editor,
+  commandName: string,
+  payload: MediaCommandPayload
+): void => {
+  const chain = editor.chain().focus()
+  const typedChain = chain as unknown as Record<
+    string,
+    (attrs: MediaCommandPayload) => { run: () => boolean }
+  >
+  const command = typedChain[commandName]
+  if (typeof command !== 'function') {
+    throw new Error(`Unsupported media command: ${commandName}`)
+  }
+  command(payload).run()
+}
+
 // Custom Hooks
-const useUploadManager = (editor: any) => {
+const useUploadManager = (editor: Editor | null) => {
   const uploadFile = useCallback(
-    async (file: File, docMetadata: any) => {
+    async (file: File, docMetadata: DocumentMetadata) => {
+      if (!editor) return
       const uploadId = generateUploadId()
       const fileType = getFileType(file)
 
-      let imageData = {}
+      let imageData: Partial<ImageDimensions & { localUrl: string }> = {}
       if (fileType === 'image') {
         imageData = await getImageDimensions(file)
       }
@@ -201,7 +246,7 @@ const useUploadManager = (editor: any) => {
 
         if (!response.ok) throw new Error('Upload failed')
 
-        const result = await response.json()
+        const result = (await response.json()) as UploadedMediaResponse
         const mediaURL = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/plugins/hypermultimedia/${result.fileAddress}`
 
         if (!result.fileType) {
@@ -213,7 +258,7 @@ const useUploadManager = (editor: any) => {
         const { state } = editor
         let placeholderPos: number | null = null
 
-        state.doc.descendants((node: any, pos: number) => {
+        state.doc.descendants((node: ProseMirrorNode, pos: number) => {
           if (
             node.type.name === TIPTAP_NODES.MEDIA_UPLOAD_PLACEHOLDER_TYPE &&
             node.attrs.uploadId === uploadId
@@ -225,11 +270,13 @@ const useUploadManager = (editor: any) => {
 
         if (placeholderPos !== null) {
           const tr = state.tr
-          const nodeAttrs: any = { src: mediaURL }
+          const nodeAttrs: UploadPlaceholderAttributes = { src: mediaURL }
 
-          if (mediaType === 'Image' && imageData) {
-            if ((imageData as any).width) nodeAttrs.width = (imageData as any).width
-            if ((imageData as any).height) nodeAttrs.height = (imageData as any).height
+          if (mediaType === 'Image' && typeof imageData.width === 'number') {
+            nodeAttrs.width = imageData.width
+          }
+          if (mediaType === 'Image' && typeof imageData.height === 'number') {
+            nodeAttrs.height = imageData.height
           }
 
           tr.replaceWith(
@@ -249,7 +296,7 @@ const useUploadManager = (editor: any) => {
         const { state } = editor
         let placeholderPos: number | null = null
 
-        state.doc.descendants((node: any, pos: number) => {
+        state.doc.descendants((node: ProseMirrorNode, pos: number) => {
           if (
             node.type.name === TIPTAP_NODES.MEDIA_UPLOAD_PLACEHOLDER_TYPE &&
             node.attrs.uploadId === uploadId
@@ -382,7 +429,7 @@ const UploadDropzone: React.FC<UploadDropzoneProps> = ({ onFileUpload }) => {
 
 interface MediaFormProps {
   onSubmit: (url: string, type: MediaType) => void
-  editor: any
+  editor: Editor | null
 }
 
 const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
@@ -395,8 +442,9 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
 
   // Listen for clipboard file uploads from the extension
   useEffect(() => {
-    const handleEditorFileUpload = (event: CustomEvent) => {
-      const { file, editor: eventEditor } = event.detail
+    const handleEditorFileUpload = (event: Event) => {
+      if (!(event instanceof CustomEvent)) return
+      const { file, editor: eventEditor } = event.detail as EditorFileUploadEventDetail
 
       // Only handle if this is for our editor instance
       if (eventEditor === editor && file && docMetadata) {
@@ -404,10 +452,10 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
       }
     }
 
-    document.addEventListener('editorFileUpload', handleEditorFileUpload as EventListener)
+    document.addEventListener('editorFileUpload', handleEditorFileUpload)
 
     return () => {
-      document.removeEventListener('editorFileUpload', handleEditorFileUpload as EventListener)
+      document.removeEventListener('editorFileUpload', handleEditorFileUpload)
     }
   }, [editor, uploadFile, docMetadata])
 
@@ -514,30 +562,23 @@ const InsertMultimediaForm = () => {
             img.src = mediaUrl
           })
 
-          // @ts-ignore
-          editor
-            .chain()
-            .focus()
-            [command]({
-              src: mediaUrl,
-              width: imageData.width,
-              height: imageData.height
-            })
-            .run()
+          runMediaCommand(editor, command, {
+            src: mediaUrl,
+            width: imageData.width,
+            height: imageData.height
+          })
         } else {
-          // @ts-ignore
-          editor.chain().focus()[command]({ src: mediaUrl }).run()
+          runMediaCommand(editor, command, { src: mediaUrl })
         }
       } catch (error) {
         console.error('Media insertion error:', error)
-        // @ts-ignore
-        editor.chain().focus()[MEDIA_CONFIG[mediaType].command]({ src: mediaUrl }).run()
+        runMediaCommand(editor, MEDIA_CONFIG[mediaType].command, { src: mediaUrl })
       }
     },
     [editor]
   )
 
-  return <MediaForm onSubmit={insertMedia} editor={editor} />
+  return <MediaForm onSubmit={insertMedia} editor={editor ?? null} />
 }
 
 export default InsertMultimediaForm

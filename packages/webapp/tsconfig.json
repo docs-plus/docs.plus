@@ -41,12 +41,10 @@
   },
   "include": [
     "next-env.d.ts",
-    "**/*.ts",
-    "**/*.tsx",
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/pages/**/*.tsx",
     "src/middleware.ts"
   ],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", "cypress", "src/**/__tests__", "src/**/testUtils"]
 }

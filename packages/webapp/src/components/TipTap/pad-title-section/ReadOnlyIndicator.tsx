@@ -3,16 +3,28 @@ import { useStore } from '@stores'
 import { useEffect, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-const ReadOnlyIndicator = ({ className }: any) => {
+interface ReadOnlyIndicatorProps {
+  className?: string
+}
+
+interface StatelessPayloadEvent {
+  payload: string
+}
+
+const ReadOnlyIndicator = ({ className }: ReadOnlyIndicatorProps) => {
   const { hocuspocusProvider, metadata } = useStore((state) => state.settings)
   const [isReadOnly, setIsReadOnly] = useState(metadata?.readOnly)
 
   useEffect(() => {
     if (!hocuspocusProvider) return
 
-    const readOnlyStateHandler = ({ payload }: any) => {
-      const msg = JSON.parse(payload)
-      if (msg.type === 'readOnly') setIsReadOnly(msg.state)
+    const readOnlyStateHandler = ({ payload }: StatelessPayloadEvent) => {
+      try {
+        const msg = JSON.parse(payload)
+        if (msg.type === 'readOnly') setIsReadOnly(Boolean(msg.state))
+      } catch {
+        // Ignore malformed payloads.
+      }
     }
 
     hocuspocusProvider.on('stateless', readOnlyStateHandler)

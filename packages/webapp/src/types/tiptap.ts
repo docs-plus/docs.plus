@@ -64,7 +64,14 @@ export const TIPTAP_NODES = {
   ORDEREDLIST_TYPE: 'orderedList',
   LISTITEM_TYPE: 'listItem',
   HARD_BREAK_TYPE: 'hardBreak',
-  MEDIA_UPLOAD_PLACEHOLDER_TYPE: 'mediaUploadPlaceholder'
+  MEDIA_UPLOAD_PLACEHOLDER_TYPE: 'mediaUploadPlaceholder',
+  BLOCKQUOTE_TYPE: 'blockquote',
+  CODE_BLOCK_TYPE: 'codeBlock',
+  IMAGE_TYPE: 'image',
+  TABLE_TYPE: 'table',
+  TASK_LIST_TYPE: 'taskList',
+  TASK_ITEM_TYPE: 'taskItem',
+  HORIZONTAL_RULE_TYPE: 'horizontalRule'
 } as const
 
 /**

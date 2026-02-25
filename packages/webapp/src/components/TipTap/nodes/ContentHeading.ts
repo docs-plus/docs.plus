@@ -1,16 +1,14 @@
-// TODO: Refactor this file, it's too long and hard to understand
-
 import { mergeAttributes, Node } from '@tiptap/core'
 import { DOMOutputSpec } from '@tiptap/pm/model'
 import { TIPTAP_NODES } from '@types'
 
+import { isFirstHeadingInDocument } from '../extentions/helper/selection'
 import onHeading from '../extentions/normalText/onHeading'
 
 // Tiptap Node
 const HeadingsTitle = Node.create({
   name: TIPTAP_NODES.CONTENT_HEADING_TYPE,
   content: 'inline*',
-  group: 'block',
   defining: true,
   isolating: true,
   // draggable: false,
@@ -19,7 +17,7 @@ const HeadingsTitle = Node.create({
   addOptions() {
     return {
       HTMLAttributes: {
-        class: 'title'
+        class: `title ${TIPTAP_NODES.CONTENT_HEADING_TYPE}`
       },
       levels: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
       id: null
@@ -67,8 +65,7 @@ const HeadingsTitle = Node.create({
         const { selection } = editor.state
         const { $anchor, $from, from } = selection
 
-        // it mean first heading node
-        if (from === 2) return false
+        if (isFirstHeadingInDocument(editor.state.doc, from)) return false
 
         // const blockStartPos = $from.start(1) - 1
         // const currentHLevel = getNodeHLevel($from.doc, blockStartPos)

@@ -10,6 +10,7 @@ import { useNotificationCount } from '@hooks/useNotificationCount'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
 import { useAuthStore, useStore } from '@stores'
+import type { Editor } from '@tiptap/core'
 import dynamic from 'next/dynamic'
 import React, { useEffect, useRef, useState } from 'react'
 
@@ -21,13 +22,48 @@ import FilterBar from './FilterBar'
 import ReadOnlyIndicator from './ReadOnlyIndicator'
 
 interface UserProfileButtonProps {
-  user: any
+  user: {
+    id?: string
+    avatar_updated_at?: string | null
+    avatar_url?: string | null
+  } | null
   onProfileClick: () => void
 }
 
 interface UndoRedoButtonsProps {
-  editor: any
+  editor: Editor | null
   className?: string
+}
+
+interface StatelessPayloadEvent {
+  payload: string
+}
+
+interface DocTitleMessage {
+  type: 'docTitle'
+  state: {
+    title: string
+    [key: string]: unknown
+  }
+}
+
+interface MetadataMutationResponse {
+  title: string
+  [key: string]: unknown
+}
+
+const extractMetadataMutationResponse = (response: unknown): MetadataMutationResponse => {
+  if (
+    typeof response === 'object' &&
+    response !== null &&
+    'data' in response &&
+    typeof response.data === 'object' &&
+    response.data !== null
+  ) {
+    return response.data as MetadataMutationResponse
+  }
+
+  return response as MetadataMutationResponse
 }
 
 const EditableToggle = ({ isEditable }: { isEditable: boolean }) => {
@@ -159,7 +195,7 @@ const TitleEditContent = () => {
       { title: trimmed, documentId: metadata.documentId },
       {
         onSuccess: (responseData) => {
-          const updated = (responseData as any).data ?? responseData
+          const updated = extractMetadataMutationResponse(responseData)
           setWorkspaceSetting('metadata', { ...metadata, title: updated.title })
           hocuspocusProvider?.sendStateless(JSON.stringify({ type: 'docTitle', state: updated }))
           closeDialog()
@@ -235,9 +271,9 @@ const MobilePadTitle = () => {
   useEffect(() => {
     if (!hocuspocusProvider) return
 
-    const handler = ({ payload }: any) => {
+    const handler = ({ payload }: StatelessPayloadEvent) => {
       try {
-        const msg = JSON.parse(payload)
+        const msg = JSON.parse(payload) as DocTitleMessage
         if (msg.type === 'docTitle') {
           setWorkspaceSetting('metadata', { ...metadataRef.current, title: msg.state.title })
         }
@@ -266,7 +302,7 @@ const MobilePadTitle = () => {
               <EditableToggle isEditable={isEditable} />
 
               {isEditable ? (
-                <UndoRedoButtons editor={editor} className="ml-2" />
+                <UndoRedoButtons editor={editor ?? null} className="ml-2" />
               ) : (
                 <button
                   type="button"

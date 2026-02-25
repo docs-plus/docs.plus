@@ -1,10 +1,31 @@
 import { mergeAttributes, Node } from '@tiptap/core'
 import { TextSelection } from '@tiptap/pm/state'
-import { type DOMOutputSpec, TIPTAP_NODES, TRANSACTION_META, type ViewMutationRecord } from '@types'
+import {
+  type DOMOutputSpec,
+  type ProseMirrorNode,
+  type ResolvedPos,
+  TIPTAP_NODES,
+  TRANSACTION_META,
+  type ViewMutationRecord
+} from '@types'
 
 import deleteSelectedRange from '../extentions/deleteSelectedRange'
 import { getNodeState } from '../extentions/helper'
+import { isEntireDocumentSelected } from '../extentions/helper/selection'
 import { createCrinklePlugin } from '../extentions/plugins'
+
+const getClosestAncestorNodeByTypeName = (
+  $pos: ResolvedPos,
+  targetTypeName: string
+): ProseMirrorNode | null => {
+  for (let depth = $pos.depth; depth >= 0; depth--) {
+    const node = $pos.node(depth)
+    if (node?.type?.name === targetTypeName) {
+      return node
+    }
+  }
+  return null
+}
 
 function expandElement(
   elem: HTMLElement,
@@ -64,6 +85,16 @@ function expandElement(
   elem.addEventListener('transitionend', callback)
 }
 
+/**
+ * ContentWrapper — the body container inside each heading section.
+ * Holds block content (paragraphs, lists, etc.) followed by child headings.
+ *
+ * NON-COLLABORATIVE BY DESIGN: The fold/unfold animation state for
+ * contentWrapper sections is stored per-browser in localStorage + IndexedDB
+ * via getNodeState/headingTogglePlugin. Each collaborator sees their own
+ * fold state independently. This is intentional — fold state is a user
+ * preference, not document state.
+ */
 const ContentWrapper = Node.create({
   name: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
   content: '(block)* heading*',
@@ -168,7 +199,7 @@ const ContentWrapper = Node.create({
           if (mutation.type === 'selection') {
             return false
           }
-          return !dom.contains(mutation.target as any) || dom === mutation.target
+          return !dom.contains(mutation.target as globalThis.Node) || dom === mutation.target
         },
         update: (updatedNode) => {
           if (updatedNode.type !== this.type) {
@@ -199,11 +230,7 @@ const ContentWrapper = Node.create({
             return false
           }
 
-          // Check if selection covers entire document content
-          // Due to document schema hierarchy, content starts at position 2 and ends at docSize - 3
-          const docSize = editor.state.doc.content.size
-          const isEntireDocument = $anchor.pos === 2 && $head.pos === docSize - 3
-          if (isEntireDocument) return false
+          if (isEntireDocumentSelected(editor.state.doc, $anchor.pos, $head.pos)) return false
 
           return deleteSelectedRange(editor)
         }
@@ -232,14 +259,16 @@ const ContentWrapper = Node.create({
           if ($anchor.nodeBefore === null) {
             // If there's a text node following the current node
             if ($anchor.nodeAfter?.type.name === TIPTAP_NODES.TEXT_TYPE) {
-              const paragraphNode = ($anchor as any).path.findLast(
-                (node: any) => node?.type?.name === TIPTAP_NODES.PARAGRAPH_TYPE
+              const paragraphNode = getClosestAncestorNodeByTypeName(
+                $anchor,
+                TIPTAP_NODES.PARAGRAPH_TYPE
               )
+              if (!paragraphNode) return false
               const paragraphContent = paragraphNode.content.toJSON()
 
               // Filter out the "hardBreak" nodes from the paragraph content
               const filteredContent = paragraphContent.filter(
-                (node: any) => node.type.name !== TIPTAP_NODES.HARD_BREAK_TYPE
+                (node: { type?: string }) => node.type !== TIPTAP_NODES.HARD_BREAK_TYPE
               )
 
               const cloneCurrentNodeAsParagraph = {
@@ -274,33 +303,47 @@ const ContentWrapper = Node.create({
 
         return false
       },
-      // Escape node on double enter
+      // When the cursor is in the heading zone of a contentWrapper (after child
+      // headings), Enter should create a new sibling heading — not a paragraph.
+      // We build a structurally valid heading node (contentHeading + contentWrapper)
+      // instead of using setNode, which would produce an invalid heading.
       Enter: () => {
         const { state } = this.editor.view
-        const { selection } = state
+        const { schema, selection } = state
         const { $from } = selection
 
-        // Check if we're in a ContentWrapper
         const contentWrapper = $from.node($from.depth - 1)
         if (contentWrapper?.type?.name !== TIPTAP_NODES.CONTENT_WRAPPER_TYPE) {
           return false
         }
 
-        // Check if there's a heading before the cursor in this ContentWrapper
-        let hasHeadingBefore = false
+        let lastHeadingLevel: number | null = null
         contentWrapper.forEach((node, offset) => {
           if (node.type.name === TIPTAP_NODES.HEADING_TYPE && offset < $from.parentOffset) {
-            hasHeadingBefore = true
+            lastHeadingLevel = node.firstChild?.attrs?.level ?? null
           }
         })
 
-        if (hasHeadingBefore) {
-          // If there's a heading before, only allow creating new headings
-          return this.editor.commands.setNode(TIPTAP_NODES.HEADING_TYPE)
+        if (lastHeadingLevel === null) {
+          return false
         }
 
-        // If no heading before, allow normal paragraph insertion
-        return false // Let Tiptap handle default Enter behavior
+        const headingNode = schema.nodes[TIPTAP_NODES.HEADING_TYPE].create(
+          { level: lastHeadingLevel },
+          [
+            schema.nodes[TIPTAP_NODES.CONTENT_HEADING_TYPE].create({ level: lastHeadingLevel }),
+            schema.nodes[TIPTAP_NODES.CONTENT_WRAPPER_TYPE].create(null, [
+              schema.nodes[TIPTAP_NODES.PARAGRAPH_TYPE].create()
+            ])
+          ]
+        )
+
+        const insertPos = $from.end($from.depth - 1)
+        const tr = state.tr.insert(insertPos, headingNode)
+        const cursorPos = insertPos + 2
+        tr.setSelection(TextSelection.create(tr.doc, cursorPos))
+        this.editor.view.dispatch(tr)
+        return true
       }
     }
   },

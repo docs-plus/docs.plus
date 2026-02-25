@@ -99,11 +99,21 @@ const FormatSelection = ({ isVisible, editor }: { isVisible: boolean; editor: Ed
 
         <ToolbarButton
           onTouchEnd={() => {
-            const range = editor.view.state.selection.ranges[0]
-            if (range.$from === range.$to) {
-              editor.commands.clearNodes()
-            } else {
-              editor.commands.unsetAllMarks()
+            try {
+              const selection = editor.state.selection
+
+              if (!selection.empty) {
+                editor.chain().focus().unsetAllMarks().run()
+                return
+              }
+
+              const cleared = editor.chain().focus().clearNodes().run()
+              if (!cleared) {
+                editor.chain().focus().unsetAllMarks().run()
+              }
+            } catch (error) {
+              console.warn('[FormatSelection] clear formatting fallback', error)
+              editor.chain().focus().unsetAllMarks().run()
             }
           }}
           editor={editor}

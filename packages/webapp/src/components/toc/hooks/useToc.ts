@@ -36,19 +36,28 @@ function isHeadingRelatedChange(transaction: Transaction): boolean {
   transaction.steps.forEach((step) => {
     const stepMap = step.getMap()
     stepMap.forEach((oldStart, oldEnd, newStart, newEnd) => {
+      // Clamp ranges to document bounds — undo/redo can produce ranges
+      // that exceed the before/after doc size, causing nodesBetween to crash.
+      const clampedOldEnd = Math.min(oldEnd, transaction.before.content.size)
+      const clampedOldStart = Math.min(oldStart, clampedOldEnd)
+      const clampedNewEnd = Math.min(newEnd, transaction.doc.content.size)
+      const clampedNewStart = Math.min(newStart, clampedNewEnd)
+
       // Check old doc for affected headings
-      transaction.before.nodesBetween(oldStart, oldEnd, (node) => {
-        if (
-          node.type.name === TIPTAP_NODES.HEADING_TYPE ||
-          node.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
-        ) {
-          affectsHeadings = true
-          return false // Stop iteration
-        }
-      })
+      if (clampedOldStart < clampedOldEnd) {
+        transaction.before.nodesBetween(clampedOldStart, clampedOldEnd, (node) => {
+          if (
+            node.type.name === TIPTAP_NODES.HEADING_TYPE ||
+            node.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
+          ) {
+            affectsHeadings = true
+            return false // Stop iteration
+          }
+        })
+      }
       // Check new doc for affected headings
-      if (!affectsHeadings) {
-        transaction.doc.nodesBetween(newStart, newEnd, (node) => {
+      if (!affectsHeadings && clampedNewStart < clampedNewEnd) {
+        transaction.doc.nodesBetween(clampedNewStart, clampedNewEnd, (node) => {
           if (
             node.type.name === TIPTAP_NODES.HEADING_TYPE ||
             node.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE

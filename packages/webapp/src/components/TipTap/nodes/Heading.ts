@@ -3,26 +3,49 @@ import {
   type CommandProps,
   type DOMOutputSpec,
   type ProseMirrorNode,
+  type ResolvedPos,
   TIPTAP_NODES,
   type ViewMutationRecord
 } from '@types'
 
-import changeHeading2paragraphs from '../extentions/changeHeading2paragraphs'
 import changeHeadingLevel from '../extentions/changeHeadingLevel'
+import changeHeadingToParagraphs from '../extentions/changeHeadingToParagraphs'
 import deleteSelectedRange from '../extentions/deleteSelectedRange'
-import { getNodeState } from '../extentions/helper'
+import { getNodeState, getPasteContextLevel } from '../extentions/helper'
+import { isEntireDocumentSelected } from '../extentions/helper/selection'
 import {
   createCopyPastePlugin,
   createHierarchyValidationPlugin,
   createRangeSelectionPlugin
 } from '../extentions/plugins'
 import { HeadingAttributes } from '../extentions/types'
-import wrapContenWithHeading from '../extentions/wrapContenWithHeading'
+import wrapContentWithHeading from '../extentions/wrapContentWithHeading'
+
+const syncHeadingDomId = (dom: HTMLElement, content: HTMLElement, headingId: string) => {
+  if (headingId) {
+    dom.setAttribute('data-id', headingId)
+    content.setAttribute('data-id', headingId)
+    return
+  }
+
+  dom.removeAttribute('data-id')
+  content.removeAttribute('data-id')
+}
+
+const getClosestAncestorHeading = ($pos: ResolvedPos): ProseMirrorNode | null => {
+  for (let depth = $pos.depth; depth >= 0; depth--) {
+    const nodeAtDepth = $pos.node(depth)
+    if (nodeAtDepth?.type?.name === TIPTAP_NODES.HEADING_TYPE) {
+      return nodeAtDepth
+    }
+  }
+  return null
+}
 
 const Heading = Node.create({
   name: TIPTAP_NODES.HEADING_TYPE,
   content: 'contentHeading contentWrapper',
-  group: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
+  group: 'section',
   defining: true,
   isolating: true,
   allowGapCursor: false,
@@ -47,7 +70,7 @@ const Heading = Node.create({
   },
 
   addNodeView() {
-    return ({ getPos, node, HTMLAttributes }) => {
+    return ({ node, HTMLAttributes }) => {
       const dom = document.createElement('div')
 
       const headingId = node.attrs.id || ''
@@ -67,7 +90,7 @@ const Heading = Node.create({
       const content = document.createElement('div')
 
       content.classList.add('wrapBlock')
-      content.setAttribute('data-id', headingId)
+      syncHeadingDomId(dom, content, headingId)
       dom.append(content)
 
       return {
@@ -81,29 +104,18 @@ const Heading = Node.create({
         update: (updatedNode) => {
           if (updatedNode.type.name !== this.name) return false
 
-          // Update the level attribute when it changes
+          // Keep update side-effect free: only sync DOM attributes.
+          // Dispatching transactions from node view update can cause re-entrant update cycles.
           const newLevel = updatedNode.firstChild?.attrs.level
           if (newLevel && dom.getAttribute('level') !== newLevel.toString()) {
             dom.setAttribute('level', newLevel)
           }
 
           const prevHeadingId = dom.getAttribute('data-id') || ''
-          const newHeadingId = updatedNode.attrs.id
+          const newHeadingId = updatedNode.attrs.id || ''
 
-          // TODO: this is temporary solution, need to find better way for this
-          if (!prevHeadingId.length && newHeadingId) {
-            dom.setAttribute('data-id', newHeadingId)
-            content.setAttribute('data-id', newHeadingId)
-
-            // Update the node's ID
-            if (this.editor && this.editor.state) {
-              const { tr } = this.editor.state
-              const pos = getPos()
-              if (pos !== undefined) {
-                tr.setNodeMarkup(pos, null, { ...updatedNode.attrs, id: newHeadingId })
-                this.editor.view.dispatch(tr)
-              }
-            }
+          if (prevHeadingId !== newHeadingId) {
+            syncHeadingDomId(dom, content, newHeadingId)
           }
 
           return true
@@ -112,17 +124,28 @@ const Heading = Node.create({
     }
   },
   parseHTML() {
-    return [{ tag: 'div' }]
+    return [
+      // Primary parser for current schema-generated heading nodes.
+      { tag: `div[data-type="${this.name}"]` },
+      // Backward-compatible parser for legacy serialized markup.
+      { tag: `div.${TIPTAP_NODES.HEADING_TYPE}[level]` }
+    ]
   },
   renderHTML({ HTMLAttributes }): DOMOutputSpec {
-    return ['div', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0]
+    return [
+      'div',
+      mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
+        'data-type': this.name
+      }),
+      0
+    ]
   },
   addCommands() {
     return {
       normalText:
         () =>
         ({ state, tr, dispatch, editor }: CommandProps) => {
-          changeHeading2paragraphs({ state, tr, dispatch, editor })
+          changeHeadingToParagraphs({ state, tr, dispatch, editor })
           return true
         },
       wrapBlock:
@@ -137,25 +160,20 @@ const Heading = Node.create({
             return true
           }
 
-          wrapContenWithHeading({ state, tr, dispatch, editor }, attributes)
-          return true
-        },
-      ensureContentWrapper:
-        () =>
-        ({ tr, state, dispatch }: CommandProps) => {
-          const { doc, schema } = state
-          doc.descendants((node: ProseMirrorNode, pos: number) => {
-            if (node.type.name === TIPTAP_NODES.HEADING_TYPE && !node.childCount) {
-              const contentWrapper = schema.nodes.contentWrapper.create()
-              tr.insert(pos + node.nodeSize, contentWrapper)
-            }
-          })
-          if (dispatch) dispatch(tr)
+          wrapContentWithHeading({ state, tr, dispatch, editor }, attributes)
           return true
         }
-    } as any // Custom commands - proper declaration requires extending TipTap's RawCommands
+    }
   },
   addKeyboardShortcuts() {
+    const levelShortcuts: Record<string, () => boolean> = {}
+    for (const level of this.options.levels as number[]) {
+      levelShortcuts[`Mod-Alt-${level}`] = () =>
+        this.editor.commands.wrapBlock({
+          level
+        })
+    }
+
     return {
       Delete: () => {
         const { $anchor, $head } = this.editor.state.selection
@@ -164,11 +182,7 @@ const Heading = Node.create({
 
         console.info('[Heading] Delete key pressed')
 
-        // Check if selection covers entire document content
-        // Due to document schema hierarchy, content starts at position 2 and ends at docSize - 3
-        const docSize = this.editor.state.doc.content.size
-        const isEntireDocument = $anchor.pos === 2 && $head.pos === docSize - 3
-        if (isEntireDocument) return false
+        if (isEntireDocumentSelected(this.editor.state.doc, $anchor.pos, $head.pos)) return false
 
         // if user select a range of content, then hit any key, remove the selected content
         return deleteSelectedRange(this.editor)
@@ -188,9 +202,8 @@ const Heading = Node.create({
 
         // if a user Enter in the contentHeading block,
         // should go to the next block, which is contentWrapper
-        const parent = ($head as any).path
-          .filter((x: any) => x?.type?.name)
-          .findLast((x: any) => x.type.name === this.name)
+        const parent = getClosestAncestorHeading($head)
+        if (!parent) return false
 
         // INFO: if the content is hide, do not anything
         // ! this open in the Heading block is wrong and Have to change, It's opposite
@@ -203,9 +216,12 @@ const Heading = Node.create({
         // some times the contentWrapper cleaned up, so it should be create first
         // otherwise just the cursour must move to contnetWrapper
         // TODO: find better way for this 4
+        const parentLastChild = parent.lastChild
+        const parentLastChildFirstChild = parentLastChild?.firstChild
+
         if (
-          parent?.content?.content.length === 1 ||
-          parent.lastChild?.firstChild?.type.name === TIPTAP_NODES.HEADING_TYPE
+          parent.childCount === 1 ||
+          parentLastChildFirstChild?.type.name === TIPTAP_NODES.HEADING_TYPE
         ) {
           // If there is not any contentWrapper
           // if first child of the heading is another heading
@@ -213,8 +229,9 @@ const Heading = Node.create({
           // console.log(parent.lastChild.content.lastChild.type.name === "heading")
           // if the contentWrapper does not contain any content
           if (
-            parent.lastChild.content.size === 0 ||
-            parent.lastChild?.firstChild?.content.size === 0
+            !parentLastChild ||
+            parentLastChild.content.size === 0 ||
+            parentLastChildFirstChild?.content.size === 0
           ) {
             return editor.commands.insertContentAt($anchor.pos, {
               type: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
@@ -237,20 +254,9 @@ const Heading = Node.create({
 
         return editor.chain().insertContentAt(nextLine, '<p></p>').scrollIntoView().run()
       },
-      ...this.options.levels.reduce(
-        (items: any, level: number) => ({
-          ...items,
-          ...{
-            [`Mod-Alt-${level}`]: () =>
-              (this.editor.commands as any).wrapBlock({
-                level: level
-              })
-          }
-        }),
-        {}
-      ),
+      ...levelShortcuts,
       // Add shortcut for normal text (level 0)
-      'Mod-Alt-0': () => (this.editor.commands as any).normalText()
+      'Mod-Alt-0': () => this.editor.commands.normalText()
     }
   },
   addInputRules() {
@@ -266,11 +272,20 @@ const Heading = Node.create({
         find: config.find,
         handler: (data) => {
           const { state, range, match } = data
-          // const $start = state.doc.resolve(range.from)
           const attributes = callOrReturn(config.getAttributes, undefined, match) || {}
 
+          // HN-10 §6.1: child level must be > parent level.
+          // If typing "######" inside an H8, creating H6 would violate this rule.
+          // Delete the hashes but skip heading creation — let the hierarchy
+          // validation plugin avoid having to extract and reposition.
+          const contextLevel = getPasteContextLevel(state.doc, range.from)
+          if (contextLevel > 0 && (attributes as HeadingAttributes).level <= contextLevel) {
+            state.tr.delete(range.from, range.to)
+            return
+          }
+
           state.tr.delete(range.from, range.to)
-          wrapContenWithHeading(
+          wrapContentWithHeading(
             { ...data, tr: state.tr, editor: this.editor },
             attributes as HeadingAttributes
           )

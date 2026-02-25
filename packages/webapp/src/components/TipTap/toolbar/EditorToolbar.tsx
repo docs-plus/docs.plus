@@ -10,7 +10,7 @@ import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToC
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
 import { useAuthStore, useStore } from '@stores'
 import dynamic from 'next/dynamic'
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 
 import { FilterPanelSkeleton } from './FilterPanelSkeleton'
 import { GearPanelSkeleton } from './GearPanelSkeleton'
@@ -59,11 +59,39 @@ const EditorToolbar = () => {
 
   const { createComment } = useTurnSelectedTextIntoComment()
   const { copyDocumentToClipboard, copied } = useCopyDocumentToClipboard(editor ?? null)
+  const clearFormattingSelectionRef = useRef<{
+    from: number
+    to: number
+    empty: boolean
+  } | null>(null)
+
+  useEffect(() => {
+    if (!editor) return
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const isMod = event.metaKey || event.ctrlKey
+      if (!isMod || !event.altKey) return
+      if (event.key.toLowerCase() !== 'm') return
+
+      event.preventDefault()
+      createComment(editor)
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [editor, createComment])
 
   if (loading || providerSyncing || !editor) return <ToolbarSkeleton />
 
   /** Returns `is-active` class when the given editor mark/node is active */
   const active = (type: string) => (editor.isActive(type) ? 'is-active' : '')
+
+  const setHyperlink = () => {
+    const chain = editor.chain().focus() as unknown as {
+      setHyperlink: () => { run: () => boolean }
+    }
+    chain.setHyperlink().run()
+  }
 
   return (
     <>
@@ -78,6 +106,7 @@ const EditorToolbar = () => {
           variant="ghost"
           size="sm"
           shape="square"
+          data-testid="toolbar-bold"
           className={active('bold')}
           onClick={() => editor.chain().focus().toggleBold().run()}
           tooltip="Bold (⌘+B)">
@@ -88,6 +117,7 @@ const EditorToolbar = () => {
           variant="ghost"
           size="sm"
           shape="square"
+          data-testid="toolbar-italic"
           className={active('italic')}
           onClick={() => editor.chain().focus().toggleItalic().run()}
           tooltip="Italic (⌘+I)">
@@ -98,6 +128,7 @@ const EditorToolbar = () => {
           variant="ghost"
           size="sm"
           shape="square"
+          data-testid="toolbar-underline"
           className={active('underline')}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           tooltip="Underline (⌘+U)">
@@ -108,6 +139,7 @@ const EditorToolbar = () => {
           variant="ghost"
           size="sm"
           shape="square"
+          data-testid="toolbar-strike"
           className={active('strike')}
           onClick={() => editor.chain().focus().toggleStrike().run()}
           tooltip="Strikethrough (⌘+⇧+S)">
@@ -122,6 +154,7 @@ const EditorToolbar = () => {
           variant="ghost"
           size="sm"
           shape="square"
+          data-testid="toolbar-ordered-list"
           className={active('orderedList')}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           tooltip="Ordered List (⌘+⇧+7)">
@@ -132,6 +165,7 @@ const EditorToolbar = () => {
           variant="ghost"
           size="sm"
           shape="square"
+          data-testid="toolbar-bullet-list"
           className={active('bulletList')}
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           tooltip="Bullet List (⌘+⇧+8)">
@@ -142,6 +176,7 @@ const EditorToolbar = () => {
           variant="ghost"
           size="sm"
           shape="square"
+          data-testid="toolbar-task-list"
           className={active('taskList')}
           onClick={() => editor.chain().focus().toggleTaskList().run()}
           tooltip="Task List (⌘+⇧+9)">
@@ -169,6 +204,7 @@ const EditorToolbar = () => {
           variant="ghost"
           size="sm"
           shape="square"
+          data-testid="toolbar-comment"
           className={active('chatComment')}
           onClick={() => createComment(editor)}
           tooltip="Comment (⌘+⌥+M)">
@@ -179,11 +215,9 @@ const EditorToolbar = () => {
           variant="ghost"
           size="sm"
           shape="square"
+          data-testid="toolbar-hyperlink"
           className={active('hyperlink')}
-          onClick={() => {
-            // @ts-ignore – setHyperlink is valid but not in Docker build TS types
-            editor.chain().focus().setHyperlink().run()
-          }}
+          onClick={setHyperlink}
           tooltip="Hyperlink (⌘+K)">
           <Icons.link size={ICON_SIZE} />
         </Button>
@@ -192,9 +226,10 @@ const EditorToolbar = () => {
           variant="ghost"
           size="sm"
           shape="square"
+          data-testid="toolbar-highlight"
           className={active('highlight')}
           onClick={() => editor.chain().focus().toggleHighlight().run()}
-          tooltip="Highlight (⌘+H)">
+          tooltip="Highlight (⌘+⇧+H)">
           <Icons.highlight size={ICON_SIZE} />
         </Button>
 
@@ -204,12 +239,54 @@ const EditorToolbar = () => {
           variant="ghost"
           size="sm"
           shape="square"
+          data-testid="toolbar-clear-formatting"
+          onMouseDown={(event) => {
+            event.preventDefault()
+            const selection = editor.state.selection
+            clearFormattingSelectionRef.current = {
+              from: selection.from,
+              to: selection.to,
+              empty: selection.empty
+            }
+          }}
           onClick={() => {
-            const range = editor.view.state.selection.ranges[0]
-            if (range.$from === range.$to) {
-              editor.commands.clearNodes()
-            } else {
-              editor.commands.unsetAllMarks()
+            try {
+              const preservedSelection = clearFormattingSelectionRef.current
+              clearFormattingSelectionRef.current = null
+
+              if (
+                preservedSelection &&
+                !preservedSelection.empty &&
+                preservedSelection.from < preservedSelection.to
+              ) {
+                editor
+                  .chain()
+                  .focus()
+                  .setTextSelection({
+                    from: preservedSelection.from,
+                    to: preservedSelection.to
+                  })
+                  .unsetAllMarks()
+                  .run()
+                return
+              }
+
+              const selection = editor.state.selection
+
+              // Keep selected-text behavior deterministic: remove marks only.
+              if (!selection.empty) {
+                editor.chain().focus().unsetAllMarks().run()
+                return
+              }
+
+              // For collapsed selection, try node reset first, then safely fallback.
+              const cleared = editor.chain().focus().clearNodes().run()
+              if (!cleared) {
+                editor.chain().focus().unsetAllMarks().run()
+              }
+            } catch (error) {
+              console.warn('[EditorToolbar] clear formatting fallback', error)
+              editor.chain().focus().unsetAllMarks().run()
             }
           }}
           tooltip="Clear Formatting">
