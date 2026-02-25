@@ -14,6 +14,17 @@ const customJestConfig = {
     // Use babel-jest to transform js/ts files with the next/babel preset
     '^.+\\.(js|jsx|ts|tsx)$': ['babel-jest', { presets: ['next/babel'] }]
   },
+  coverageProvider: 'babel',
+  coverageDirectory: '<rootDir>/.nyc_output',
+  coverageReporters: ['json', 'text-summary', 'lcov'],
+  collectCoverageFrom: [
+    'src/**/*.{js,jsx,ts,tsx}',
+    '!src/**/*.d.ts',
+    '!src/**/__tests__/**',
+    '!src/**/types/**',
+    '!src/**/*.stories.{js,jsx,ts,tsx}',
+    '!src/**/index.{js,jsx,ts,tsx}'
+  ],
   moduleNameMapper: {
     // Handle module aliases (same as in tsconfig.json)
     '^@components/(.*)$': '<rootDir>/src/components/$1',

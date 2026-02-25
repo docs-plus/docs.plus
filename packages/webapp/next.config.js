@@ -2,6 +2,8 @@
 
 const runtimeCaching = require('next-pwa/cache')
 const isProduction = process.env.NODE_ENV === 'production'
+const isCoverageInstrumentation =
+  process.env.COVERAGE === 'true' || process.env.CYPRESS_COVERAGE === 'true'
 const path = require('path')
 const { createSecureHeaders } = require('next-secure-headers')
 const withPWA = require('next-pwa')({
@@ -80,6 +82,40 @@ module.exports = withPWA({
 
   // Server external packages (moved from experimental in Next.js 15)
   serverExternalPackages: ['@tiptap/pm'],
+
+  webpack: (config) => {
+    if (isCoverageInstrumentation) {
+      config.module.rules.push({
+        test: /\.(js|jsx|ts|tsx)$/,
+        include: [path.join(__dirname, 'src')],
+        exclude: [/node_modules/, /\.d\.ts$/, /__tests__/, /\.test\./, /\.spec\./, /\.cy\./],
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['next/babel'],
+            plugins: [
+              [
+                'istanbul',
+                {
+                  include: ['src/**/*.{js,jsx,ts,tsx}'],
+                  exclude: [
+                    'cypress/**/*',
+                    'src/**/*.cy.{js,jsx,ts,tsx}',
+                    'src/**/*.test.{js,jsx,ts,tsx}',
+                    'src/**/__tests__/**',
+                    'src/**/*.d.ts'
+                  ]
+                }
+              ]
+            ]
+          }
+        },
+        enforce: 'post'
+      })
+    }
+
+    return config
+  },
 
   sassOptions: {
     silenceDeprecations: ['legacy-js-api', 'import']
