@@ -1,4 +1,6 @@
+import { ReplaceAroundStep, ReplaceStep } from '@tiptap/pm/transform'
 import { type ProseMirrorNode, TIPTAP_NODES, type Transaction } from '@types'
+import { logger } from '@utils/logger'
 
 interface HeadingInfo {
   pos: number
@@ -6,6 +8,67 @@ interface HeadingInfo {
   endPos: number
   contentWrapperPos: number
   contentWrapperEndPos: number
+}
+
+const sliceContainsHeadingNode = (step: ReplaceStep | ReplaceAroundStep): boolean => {
+  let containsHeading = false
+  step.slice.content.descendants((node) => {
+    if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
+      containsHeading = true
+      return false
+    }
+    return true
+  })
+  return containsHeading
+}
+
+const isTextOnlySlice = (step: ReplaceStep | ReplaceAroundStep): boolean => {
+  if (step.slice.content.childCount === 0) return true
+
+  let isTextOnly = true
+  step.slice.content.descendants((node) => {
+    if (!node.isText) {
+      isTextOnly = false
+      return false
+    }
+    return true
+  })
+  return isTextOnly
+}
+
+/**
+ * Fast-path guard: determines whether a transaction can affect heading hierarchy.
+ *
+ * We skip full hierarchy scans for plain text insertions because they cannot
+ * create/repair structural heading violations.
+ */
+export const transactionMayAffectHierarchy = (tr: Transaction): boolean => {
+  if (!tr.docChanged) return false
+
+  return tr.steps.some((step) => {
+    if (!(step instanceof ReplaceStep || step instanceof ReplaceAroundStep)) {
+      return true
+    }
+
+    if (step.from !== step.to) {
+      // Text-only deletions/replacements within inline content cannot
+      // reshape heading structure. Heading minimum nodeSize is ~8, so
+      // small ranges with empty/text-only slices are guaranteed to stay
+      // within a single text block.
+      const rangeSize = step.to - step.from
+      if (rangeSize < 8 && (step.slice.content.size === 0 || isTextOnlySlice(step))) {
+        return false
+      }
+      if (sliceContainsHeadingNode(step)) return true
+      return true
+    }
+
+    if (sliceContainsHeadingNode(step)) {
+      return true
+    }
+
+    return !isTextOnlySlice(step)
+  })
 }
 
 /**
@@ -27,22 +90,31 @@ export const validateAndFixHeadingHierarchy = (tr: Transaction): Transaction => 
     const violations = findHierarchyViolations(tr.doc)
 
     for (const violation of violations) {
+      let fixed = false
+
       if (violation.type === 'h1-nested') {
-        // H1 cannot be nested - extract it to document root
-        extractH1ToRoot(tr, violation)
-        hasChanges = true
-        break // Re-scan after modification
+        fixed = extractH1ToRoot(tr, violation)
       } else if (violation.type === 'invalid-child-level') {
-        // Child level <= parent level - extract the child
-        extractInvalidChild(tr, violation)
+        fixed = extractInvalidChild(tr, violation)
+      }
+
+      if (fixed) {
         hasChanges = true
         break // Re-scan after modification
+      }
+
+      // If the fix failed (intermediate invalid state), stop trying —
+      // further fixes on a partially-corrupted transaction will also fail.
+      if (!fixed && violation.type) {
+        logger.warn('[validateHeadingHierarchy] Aborting fix loop — cannot safely restructure')
+        hasChanges = false
+        break
       }
     }
   }
 
   if (iterations >= MAX_ITERATIONS) {
-    console.error('[validateHeadingHierarchy] Max iterations reached, possible infinite loop')
+    logger.error('[validateHeadingHierarchy] Max iterations reached, possible infinite loop')
   }
 
   return tr
@@ -126,66 +198,110 @@ function findHierarchyViolations(doc: ProseMirrorNode): HierarchyViolation[] {
 }
 
 /**
- * Extracts a nested H1 to the document root (after its current containing H1)
+ * Extracts a nested H1 to the document root (after its current containing H1).
+ *
+ * Uses ReplaceStep via maybeStep to avoid intermediate invalid states —
+ * tr.delete() + tr.insert() can leave a contentWrapper with content that
+ * violates its spec (e.g. interleaved blocks/headings), causing
+ * contentMatchAt to throw on the subsequent insert.
  */
-function extractH1ToRoot(tr: Transaction, violation: HierarchyViolation): void {
+function extractH1ToRoot(tr: Transaction, violation: HierarchyViolation): boolean {
   const { childPos, childEndPos, parentPos, parentEndPos } = violation
 
-  // Find the root H1 that contains this nested H1
   let rootH1EndPos = parentEndPos
-  let _searchPos = parentPos
 
   tr.doc.nodesBetween(0, parentPos, (node, pos) => {
     if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
       const level = node.firstChild?.attrs?.level || 1
-      if (level === 1 && pos + node.nodeSize > parentPos) {
+      if (level === 1 && pos < parentPos && pos + node.nodeSize > parentPos) {
         rootH1EndPos = pos + node.nodeSize
       }
     }
   })
 
-  // Get the node to move
-  const nodeToMove = tr.doc.slice(childPos, childEndPos)
-
-  // Delete from current position
-  tr.delete(childPos, childEndPos)
-
-  // Insert after the root H1
-  const mappedInsertPos = tr.mapping.map(rootH1EndPos)
-  tr.insert(mappedInsertPos, nodeToMove.content)
-
-  console.info(
-    `[validateHeadingHierarchy] Extracted nested H1 from pos ${childPos} to ${mappedInsertPos}`
-  )
+  try {
+    const nodeToMove = tr.doc.slice(childPos, childEndPos)
+    tr.delete(childPos, childEndPos)
+    const mappedInsertPos = tr.mapping.map(rootH1EndPos)
+    tr.insert(mappedInsertPos, nodeToMove.content)
+    logger.info(
+      `[validateHeadingHierarchy] Extracted nested H1 from pos ${childPos} to ${mappedInsertPos}`
+    )
+    return true
+  } catch {
+    logger.warn(
+      '[validateHeadingHierarchy] extractH1ToRoot failed — intermediate state has invalid content, skipping fix'
+    )
+    return false
+  }
 }
 
 /**
  * Extracts a child heading that has invalid level (≤ parent level)
- * and makes it a sibling after the parent
+ * and makes it a sibling after the parent.
+ *
+ * Wrapped in try/catch because tr.delete() can leave a contentWrapper
+ * in a state where its content no longer matches (block)* heading*,
+ * causing the subsequent tr.insert() to throw via contentMatchAt.
  */
-function extractInvalidChild(tr: Transaction, violation: HierarchyViolation): void {
+function extractInvalidChild(tr: Transaction, violation: HierarchyViolation): boolean {
   const { childPos, childEndPos, parentEndPos } = violation
 
-  // Get the node to move
-  const nodeToMove = tr.doc.slice(childPos, childEndPos)
-
-  // Delete from current position
-  tr.delete(childPos, childEndPos)
-
-  // Insert after the parent heading
-  const mappedInsertPos = tr.mapping.map(parentEndPos)
-  tr.insert(mappedInsertPos, nodeToMove.content)
-
-  console.info(
-    `[validateHeadingHierarchy] Extracted invalid child (level ${violation.childLevel}) from parent (level ${violation.parentLevel})`
-  )
+  try {
+    const nodeToMove = tr.doc.slice(childPos, childEndPos)
+    tr.delete(childPos, childEndPos)
+    const mappedInsertPos = tr.mapping.map(parentEndPos)
+    tr.insert(mappedInsertPos, nodeToMove.content)
+    logger.info(
+      `[validateHeadingHierarchy] Extracted invalid child (level ${violation.childLevel}) from parent (level ${violation.parentLevel})`
+    )
+    return true
+  } catch {
+    logger.warn(
+      '[validateHeadingHierarchy] extractInvalidChild failed — intermediate state has invalid content, skipping fix'
+    )
+    return false
+  }
 }
 
 /**
- * Checks if document has any hierarchy violations without fixing them
+ * Checks if document has any hierarchy violations without fixing them.
+ * Bail-early: stops scanning on the first violation found.
+ * Only descends into nodes that can contain headings (doc, contentWrapper),
+ * skipping paragraphs, lists, and text nodes entirely.
  */
 export const hasHierarchyViolations = (doc: ProseMirrorNode): boolean => {
-  return findHierarchyViolations(doc).length > 0
+  const headingStack: { pos: number; level: number; endPos: number }[] = []
+  let found = false
+
+  doc.descendants((node, pos) => {
+    if (found) return false
+
+    if (node.type.name !== TIPTAP_NODES.HEADING_TYPE) {
+      // Only descend into nodes that can contain headings
+      return node.type.name === 'doc' || node.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE
+    }
+
+    const level = node.firstChild?.attrs?.level || 1
+    const endPos = pos + node.nodeSize
+
+    while (headingStack.length > 0 && pos >= headingStack[headingStack.length - 1].endPos) {
+      headingStack.pop()
+    }
+
+    if (headingStack.length > 0) {
+      const parent = headingStack[headingStack.length - 1]
+      if (level === 1 || level <= parent.level) {
+        found = true
+        return false
+      }
+    }
+
+    headingStack.push({ pos, level, endPos })
+    return true
+  })
+
+  return found
 }
 
 /**

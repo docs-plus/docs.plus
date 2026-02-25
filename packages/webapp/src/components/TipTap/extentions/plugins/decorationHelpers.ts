@@ -1,3 +1,4 @@
+import { ReplaceAroundStep, ReplaceStep } from '@tiptap/pm/transform'
 import { DecorationSet } from '@tiptap/pm/view'
 import { type EditorState, type ProseMirrorNode, type Transaction } from '@types'
 
@@ -31,32 +32,53 @@ export function createOptimizedDecorationApply(
   return function (tr: Transaction, old: DecorationSet): DecorationSet {
     if (!tr.docChanged) return old
 
-    // Map existing decorations to new document positions
     const mapped = old.map(tr.mapping, tr.doc)
-    let needsRebuild = false
 
-    // Only rebuild if target nodes were structurally changed
-    tr.steps.forEach((step) => {
-      const stepWithSlice = step as any
-      if (stepWithSlice.jsonID === 'replace' || stepWithSlice.jsonID === 'replaceAround') {
-        const slice = stepWithSlice.slice
-        if (slice && slice.content) {
-          // Check if the slice contains target node types
-          slice.content.descendants((node: ProseMirrorNode) => {
-            if (targetNodeTypes.includes(node.type.name)) {
-              needsRebuild = true
-              return false // Stop iteration
-            }
-          })
+    // Fast path: text-only changes (typing, backspace within text) cannot
+    // add or remove structural nodes, so mapped decorations are always correct.
+    // This avoids the expensive find() array comparison on every keystroke.
+    const isTextOnly = tr.steps.every((step) => {
+      if (step instanceof ReplaceAroundStep) return false
+      if (!(step instanceof ReplaceStep)) return false
+      const { slice } = step
+      // Empty slice = deletion. Small range (< 8) means it's within inline
+      // content (heading minimum nodeSize is ~8). Large range could span
+      // structural boundaries and delete heading/contentWrapper nodes.
+      if (slice.content.childCount === 0) return step.to - step.from < 8
+      let textOnly = true
+      slice.content.descendants((node: ProseMirrorNode) => {
+        if (!node.isInline) {
+          textOnly = false
+          return false
         }
+        return true
+      })
+      return textOnly
+    })
+    if (isTextOnly) return mapped
+
+    // Structural change path: check if inserted content contains target nodes
+    let needsRebuild = false
+    tr.steps.forEach((step) => {
+      if (needsRebuild) return
+      if (!(step instanceof ReplaceStep || step instanceof ReplaceAroundStep)) return
+      const { slice } = step
+      if (slice && slice.content) {
+        slice.content.descendants((node: ProseMirrorNode) => {
+          if (targetNodeTypes.includes(node.type.name)) {
+            needsRebuild = true
+            return false
+          }
+        })
       }
     })
 
-    // Check if any decorations were unmapped (node was deleted)
+    // Detect deleted target nodes: when a heading is removed, its decoration
+    // is unmapped, reducing the count. Only runs for structural changes (rare).
     if (!needsRebuild) {
-      const currentDecorations = mapped.find()
-      const originalDecorations = old.find()
-      needsRebuild = currentDecorations.length !== originalDecorations.length
+      const currentCount = mapped.find().length
+      const originalCount = old.find().length
+      needsRebuild = currentCount !== originalCount
     }
 
     return needsRebuild ? buildDecorationsFunc(tr.doc) : mapped
@@ -90,8 +112,8 @@ export function createDecorationPluginState(
  */
 export function createDecorationPluginProps(): DecorationPluginProps {
   return {
-    decorations(state: EditorState): DecorationSet {
-      return (this as any).getState(state)
+    decorations(this: { getState: (state: EditorState) => DecorationSet }, state: EditorState) {
+      return this.getState(state)
     }
   }
 }

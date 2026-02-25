@@ -1,7 +1,12 @@
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { TRANSACTION_META } from '@types'
+import { logger } from '@utils/logger'
 
-import { hasHierarchyViolations, validateAndFixHeadingHierarchy } from '../validateHeadingHierarchy'
+import {
+  hasHierarchyViolations,
+  transactionMayAffectHierarchy,
+  validateAndFixHeadingHierarchy
+} from '../validateHeadingHierarchy'
 
 const hierarchyValidationPluginKey = new PluginKey('hierarchyValidation')
 
@@ -14,6 +19,11 @@ const hierarchyValidationPluginKey = new PluginKey('hierarchyValidation')
  * - Child level must be > parent level
  */
 export const createHierarchyValidationPlugin = (): Plugin => {
+  // Run at least one full validation scan after plugin initialization.
+  // This ensures legacy/invalid loaded docs are healed even if the first user edit
+  // is a text-only change that would otherwise be skipped by fast-path heuristics.
+  let hasRunInitialValidation = false
+
   return new Plugin({
     key: hierarchyValidationPluginKey,
 
@@ -36,24 +46,36 @@ export const createHierarchyValidationPlugin = (): Plugin => {
       )
       if (shouldSkip) return null
 
+      // Fast path: plain text insertions cannot violate heading hierarchy.
+      const canAffectHierarchy = transactions.some((tr) => transactionMayAffectHierarchy(tr))
+      const shouldForceInitialValidation = !hasRunInitialValidation
+      if (!canAffectHierarchy && !shouldForceInitialValidation) return null
+
       // Check if there are any violations
-      if (!hasHierarchyViolations(newState.doc)) {
+      const hasViolations = hasHierarchyViolations(newState.doc)
+      hasRunInitialValidation = true
+      if (!hasViolations) {
         return null
       }
 
-      console.warn('[HierarchyValidationPlugin] Found hierarchy violations, fixing...')
+      logger.warn('[HierarchyValidationPlugin] Found hierarchy violations, fixing...')
 
-      // Create a new transaction to fix violations
       const tr = newState.tr
       tr.setMeta('hierarchyValidationFix', true)
-      tr.setMeta(TRANSACTION_META.ADD_TO_HISTORY, false) // Don't add fix to history
+      tr.setMeta(TRANSACTION_META.ADD_TO_HISTORY, false)
 
-      // Apply fixes
-      validateAndFixHeadingHierarchy(tr)
+      try {
+        validateAndFixHeadingHierarchy(tr)
+      } catch (error) {
+        logger.error(
+          '[HierarchyValidationPlugin] Fix threw — discarding fix transaction to prevent editor crash',
+          error as Error
+        )
+        return null
+      }
 
-      // Only return if changes were made
       if (tr.docChanged) {
-        console.info('[HierarchyValidationPlugin] Fixed hierarchy violations')
+        logger.info('[HierarchyValidationPlugin] Fixed hierarchy violations')
         return tr
       }
 
