@@ -1,6 +1,7 @@
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Editor } from '@tiptap/react'
 import { TIPTAP_NODES } from '@types'
+import { logger } from '@utils/logger'
 
 import deleteSelectedRange from '../deleteSelectedRange'
 
@@ -26,14 +27,14 @@ export function createRangeSelectionPlugin(editor: Editor): Plugin {
         // TODO: Handle this case later
         // if the $ancher parent is contentheading then return false
         if (isAnchorInContentHeading) {
-          console.info(
+          logger.info(
             '[Heading][RangeSelection]: contentHeading detected, we do not need to handle this'
           )
           // if both $anchor and $head parents are content headings, do nothing
           return isHeadInContentHeading ? false : true
         }
 
-        console.info('[Heading] Range selection delete')
+        logger.info('[Heading] Range selection delete')
         // if user select a range of content, then hit any key, remove the selected content
         return deleteSelectedRange(editor)
       }

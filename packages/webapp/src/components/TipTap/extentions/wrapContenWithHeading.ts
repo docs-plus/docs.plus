@@ -1,5 +1,6 @@
 import { Selection, TextSelection } from '@tiptap/pm/state'
 import { TIPTAP_NODES } from '@types'
+import { logger } from '@utils/logger'
 
 import changeHeadingLevelBackward from './changeHeadingLevel-backward'
 import {
@@ -8,6 +9,7 @@ import {
   findPrevBlock,
   getEndPosSelection,
   getHeadingsBlocksMap,
+  getInsertionPos,
   getPrevHeadingPos,
   getRangeBlocks,
   insertRemainingHeadings,
@@ -20,25 +22,30 @@ const wrapContentWithHeading = (
   attributes: HeadingAttributes,
   newSelection: Selection | null = null
 ): boolean => {
-  console.info('[Heading]: Wrap up Content With Heading')
+  logger.info('[Heading]: Wrap up Content With Heading')
   const { state, tr } = arrg
   const { selection, doc } = state
-  const { $from, $to } = (newSelection || selection) as any
-  const { start, end } = $from.blockRange($to)
+  const targetSelection = newSelection || selection
+  const { $from, $to } = targetSelection
+  const selectionBlockRange = $from.blockRange($to)
+  if (!selectionBlockRange) return false
+  const { start, end } = selectionBlockRange
 
   const cominglevel = attributes.level
   const block = createThisBlockMap(state)
 
   // TODO: check this statment for comment, (block.edge.start !== -1)
-  const parentLevel =
-    (block.edge.start !== -1 && doc?.nodeAt(block.edge.start)?.content?.content[0]?.attrs.level) ||
-    doc?.nodeAt(block.start)?.attrs.level
+  const edgeNode = block.edge.start !== -1 ? doc?.nodeAt(block.edge.start) : null
+  const edgeNodeFirstChildLevel =
+    edgeNode && edgeNode.childCount > 0 ? edgeNode.child(0)?.attrs?.level : undefined
+  const parentLevel = edgeNodeFirstChildLevel || doc?.nodeAt(block.start)?.attrs.level
 
   let newStartPos = start
 
   const fromParent = $from.parent.type.name
   if (fromParent === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
     const headSelection = $from.blockRange($to)
+    if (!headSelection) return false
     // const headingLevel = headSelection.parent.attrs.level
 
     if (headSelection.parent.type.name === TIPTAP_NODES.HEADING_TYPE) {
@@ -51,7 +58,7 @@ const wrapContentWithHeading = (
   // in this case all content below must cut and wrapp with the new heading
   // And the depth should be the same as the sibling Heading
   if (cominglevel === parentLevel) {
-    console.info('[Heading]: create a new heading with same level')
+    logger.info('[Heading]: create a new heading with same level')
 
     let titleEndPos = $to.end(1)
     let titleStartPos = $from.start(1) - 1
@@ -64,11 +71,11 @@ const wrapContentWithHeading = (
 
     paragraphs =
       paragraphs.length === 0
-        ? ([block.paragraph] as any as SelectionBlock[])
+        ? ([block.paragraph] as SelectionBlock[])
         : (paragraphs as SelectionBlock[])
 
     if (doc?.nodeAt(start)?.type?.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE) {
-      console.error(
+      logger.error(
         '[Heading][wrapContentWithHeading]: Cannot wrap content - content wrapper already exists at this position'
       )
       return false
@@ -91,9 +98,9 @@ const wrapContentWithHeading = (
     let mapHPost = titleHMap.filter(
       (x) => x.startBlockPos < start && x.startBlockPos >= prevHStartPos
     )
-    let { prevBlock, shouldNested } = findPrevBlock(mapHPost, cominglevel)
-
-    const insertFirstNodes = prevBlock!.endBlockPos - (shouldNested ? 2 : 0)
+    const result = findPrevBlock(mapHPost, cominglevel)
+    const insertFirstNodes = getInsertionPos(result)
+    if (insertFirstNodes === null) return false
     tr.insert(insertFirstNodes, headingNode)
 
     const targetPos = Math.min(
@@ -116,16 +123,16 @@ const wrapContentWithHeading = (
 
   // Create a new Heading block as a child of the current Heading block
   if (cominglevel > parentLevel) {
-    console.info('[Heading]: Create a new Heading block as a child of the current Heading block')
+    logger.info('[Heading]: Create a new Heading block as a child of the current Heading block')
 
     const startPos = getEndPosSelection(doc, state)
     const rangeBlocks = getRangeBlocks(doc, $from.pos, end)
     const hasLevelOneHeading = rangeBlocks.some(
-      (block) => block.type === TIPTAP_NODES.HEADING_TYPE && block.attrs!.level === 1
+      (block) => block.type === TIPTAP_NODES.HEADING_TYPE && block.le === 1
     )
 
     if (hasLevelOneHeading) {
-      console.error(
+      logger.error(
         '[Heading]: Cannot wrap content with heading when there is a level 1 heading in the range'
       )
       return false
@@ -161,7 +168,7 @@ const wrapContentWithHeading = (
     tr.setSelection(updatedSelection)
 
     titleStartPos = newSelection ? $from.start(1) : $from.start(1) - 1
-    titleEndPos = newSelection ? (tr as any).curSelection.$to.end(1) : tr.mapping.map($to.end(1))
+    titleEndPos = newSelection ? tr.selection.$to.end(1) : tr.mapping.map($to.end(1))
 
     try {
       insertRemainingHeadings({
@@ -174,13 +181,13 @@ const wrapContentWithHeading = (
       })
       return true
     } catch (error) {
-      console.error('[Heading][wrapContentWithHeading]: error insertRemainingHeadings', error)
+      logger.error('[Heading][wrapContentWithHeading]: error insertRemainingHeadings', error)
       return false
     }
   }
 
   if (cominglevel < parentLevel) {
-    console.info(
+    logger.info(
       '[Heading]: break the current Heading chain, cominglevel is grether than parentLevel'
     )
 

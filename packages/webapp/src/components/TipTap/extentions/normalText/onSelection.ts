@@ -1,4 +1,5 @@
 import { TextSelection } from '@tiptap/pm/state'
+import { logger } from '@utils/logger'
 
 import {
   convertHeadingsToParagraphs,
@@ -22,7 +23,7 @@ const onSelection = ({ state, tr, editor }: NormalTextArgs): boolean => {
 
   // check if the selected content start in contentheading/heading node
   if (selectedContents[0]?.level) {
-    console.info('[Heading]: selected content start with heading node')
+    logger.info('[Heading]: selected content start with heading node')
     onHeading({ state, tr, editor } as NormalTextArgs)
     return true
   }

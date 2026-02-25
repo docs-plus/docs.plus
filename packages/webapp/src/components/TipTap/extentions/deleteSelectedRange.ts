@@ -1,10 +1,11 @@
 import { Editor } from '@tiptap/core'
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
-import { TextSelection } from '@tiptap/pm/state'
-import { EditorState, Transaction } from '@tiptap/pm/state'
+import { EditorState, TextSelection, Transaction } from '@tiptap/pm/state'
 import { HTML_ENTITIES, TIPTAP_NODES } from '@types'
+import { logger } from '@utils/logger'
 
 import { getSelectionRangeBlocks, getSelectionRangeSlice, insertRemainingHeadings } from './helper'
+import { isEntireDocumentSelected } from './helper/selection'
 import { SelectionBlock } from './types'
 
 interface HandleHeadingBlockParams {
@@ -106,10 +107,8 @@ const deleteSelectedRange = (editor: Editor): boolean => {
   const { state } = editor
   const { selection, doc, tr } = state
   const { $from, $to, from, to, $anchor, $head } = selection
-  const docSize = doc.content.size
 
-  // if the selection is the whole document, then let default behavior
-  if (docSize === $to.pos && $from.pos === 0) return false
+  if (isEntireDocumentSelected(doc, $from.pos, $to.pos)) return false
 
   const blockRange = $from.blockRange($to)
   const titleStartPos = $from.start(1) - 1
@@ -118,12 +117,26 @@ const deleteSelectedRange = (editor: Editor): boolean => {
   const toOffset = to - ($head?.textOffset || 0)
 
   if (doc.resolve(to).parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
-    // TODO: handle this case later
-    // throw new Error('Selection starts within a content heading')
-    console.error(
-      '[delete Selected Range]: Selection starts within a content heading, not handdle '
-    )
-    return true
+    // When selection ends inside a contentHeading, ProseMirror's default delete
+    // doesn't understand the heading schema and can merge contentHeading text
+    // into a preceding paragraph, destroying heading structure.
+    // Extend the selection boundary to the end of the parent heading's
+    // contentWrapper so the delete operates on a clean structural boundary.
+    const $resolvedTo = doc.resolve(to)
+    for (let depth = $resolvedTo.depth; depth >= 1; depth--) {
+      if ($resolvedTo.node(depth).type.name === TIPTAP_NODES.HEADING_TYPE) {
+        const headingEnd = $resolvedTo.end(depth)
+        const extendedTr = state.tr.delete(from, headingEnd)
+        const focusSel = new TextSelection(extendedTr.doc.resolve(from))
+        extendedTr.setSelection(focusSel)
+        if (editor.view?.dispatch) {
+          editor.view.dispatch(extendedTr)
+          return true
+        }
+        break
+      }
+    }
+    return false
   }
   try {
     const titleSelectionRange = getSelectionRangeSlice(doc, state, to, titleEndPos)
@@ -163,10 +176,13 @@ const deleteSelectedRange = (editor: Editor): boolean => {
     const focusSelection = new TextSelection(tr.doc.resolve(from))
     tr.setSelection(focusSelection)
 
-    if (tr && editor.view?.dispatch) editor.view?.dispatch(tr)
+    if (tr && editor.view?.dispatch) {
+      editor.view?.dispatch(tr)
+      return true
+    }
     return false
   } catch (error) {
-    console.error('[heading][deleteSelectedRange] error', error)
+    logger.error('[heading][deleteSelectedRange] error', error)
     return false
   }
 }

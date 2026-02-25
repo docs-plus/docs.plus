@@ -1,61 +1,71 @@
 import { TextSelection } from '@tiptap/pm/state'
-import { TIPTAP_NODES, TRANSACTION_META } from '@types'
+import { type EditorState, TIPTAP_NODES, type Transaction, TRANSACTION_META } from '@types'
+import { logger } from '@utils/logger'
 
 import {
   convertHeadingsToParagraphs,
   findPrevBlock,
+  getInsertionPos,
   getPrevHeadingList,
   getRangeBlocks,
   getSelectionRangeBlocks
 } from '../helper'
-import { NormalTextArgs } from '../types'
-import { HeadingBlockInfo, SelectionBlock } from '../types'
+import { isFirstHeadingInDocument } from '../helper/selection'
+import { HeadingBlockInfo, NormalTextArgs, SelectionBlock } from '../types'
 
 const processHeadings = (
-  state: any,
-  tr: any,
+  state: EditorState,
+  tr: Transaction,
   headingPositions: HeadingBlockInfo[],
-  headings: any[]
+  headings: SelectionBlock[]
 ): boolean => {
+  let currentHeadingPositions = headingPositions
+
   // Process each heading
   headings.forEach((heading) => {
     // Normalize heading structure
     const normalizedHeading = normalizeHeading(heading)
 
     // Calculate start and end block positions for mapping
-    const startBlockPos = headingPositions[0].startBlockPos
-    const endBlockPos = tr.mapping.map(headingPositions[0].endBlockPos)
+    const startBlockPos = currentHeadingPositions[0].startBlockPos
+    const endBlockPos = tr.mapping.map(currentHeadingPositions[0].endBlockPos)
 
     // Update the previous heading list
-    headingPositions = getPrevHeadingList(tr, startBlockPos, endBlockPos)
+    currentHeadingPositions = getPrevHeadingList(tr, startBlockPos, endBlockPos)
 
     // Create a new node from the normalized heading
     const headingNode = state.schema.nodeFromJSON(normalizedHeading)
 
-    // Find the previous block and determine if it should be nested
-    const { prevBlock, shouldNested } = findPrevBlock(headingPositions, normalizedHeading.le)
+    const result = findPrevBlock(currentHeadingPositions, normalizedHeading.le)
+    const headingInsertPos = getInsertionPos(result)
+    if (headingInsertPos === null) return
 
-    // Insert the new node at the appropriate position
-    tr.insert(prevBlock!.endBlockPos - (shouldNested ? 2 : 0), headingNode)
+    tr.insert(headingInsertPos, headingNode)
   })
 
   return true
 }
 
 // Normalize the heading object by setting default values if necessary
-const normalizeHeading = (heading: any): any => {
-  if (!heading.le) {
-    return {
-      ...heading,
-      le: heading.content[0].attrs.level,
-      startBlockPos: 0
-    }
+export const normalizeHeading = (heading: SelectionBlock): SelectionBlock & { le: number } => {
+  const levelFromHeading = typeof heading.le === 'number' ? heading.le : heading.level
+  const levelFromContent = heading.content?.[0]?.attrs?.level
+  const normalizedLevel =
+    typeof levelFromHeading === 'number'
+      ? levelFromHeading
+      : typeof levelFromContent === 'number'
+        ? levelFromContent
+        : 1
+
+  return {
+    ...heading,
+    le: normalizedLevel,
+    startBlockPos: heading.startBlockPos ?? 0
   }
-  return heading
 }
 
 // Separate content blocks into paragraphs and headings
-const partitionContentBlocks = (
+export const partitionContentBlocks = (
   contentBlocks: SelectionBlock[]
 ): { paragraphs: SelectionBlock[]; headings: SelectionBlock[] } => {
   const paragraphs = contentBlocks.filter((block) => block.type !== TIPTAP_NODES.HEADING_TYPE)
@@ -68,8 +78,8 @@ const onHeading = (args: NormalTextArgs): void => {
   const { selection, doc } = state
   const { $from, $to, from, to } = selection
 
-  if ($from.pos - $from.textOffset === 2) {
-    console.warn('[NormalText]: First heading title, skipping')
+  if (isFirstHeadingInDocument(doc, $from.pos - $from.textOffset)) {
+    logger.warn('[NormalText]: First heading title, skipping')
     return
   }
 
@@ -115,9 +125,9 @@ const onHeading = (args: NormalTextArgs): void => {
   )
   prevHeadingNode = prevHeadingNodes.at(-1)
 
-  // Find the previous block and determine if it should be nested
-  const { prevBlock, shouldNested } = findPrevBlock([prevHeadingNode!], prevHeadingNode!.le + 1)
-  const insertPos = prevBlock!.endBlockPos - (shouldNested ? 2 : 0)
+  const result = findPrevBlock([prevHeadingNode!], prevHeadingNode!.le + 1)
+  const insertPos = getInsertionPos(result)
+  if (insertPos === null) return
 
   // Insert the new nodes at the calculated position
   tr.insert(insertPos, contentNodes)
@@ -128,7 +138,7 @@ const onHeading = (args: NormalTextArgs): void => {
 
   // Process the remaining headings
 
-  processHeadings(state, tr, [prevBlock!], remainingHeadings)
+  processHeadings(state, tr, [prevHeadingNode!], remainingHeadings)
 
   // Trigger TOC update
   tr.setMeta(TRANSACTION_META.RENDER_TOC, true)

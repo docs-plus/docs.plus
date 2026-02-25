@@ -1,3 +1,5 @@
+import { logger } from '@utils/logger'
+
 import onHeading from './normalText/onHeading'
 import onSelection from './normalText/onSelection'
 import { CommandArgs } from './types'
@@ -8,10 +10,10 @@ const changeHeading2Paragrapht = (arrg: CommandArgs): boolean | void => {
   const { $anchor, $head } = selection
 
   if ($anchor.pos === $head.pos) {
-    console.info('[Heading], normalText on Heading block')
+    logger.info('[Heading], normalText on Heading block')
     return onHeading({ ...arrg, view: editor.view })
   } else {
-    console.info('[Heading], normalText on selection')
+    logger.info('[Heading], normalText on selection')
     return onSelection({ ...arrg, view: editor.view })
   }
 }
