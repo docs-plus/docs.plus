@@ -182,11 +182,10 @@ describe('Complex Heading Level Changes', { testIsolation: false }, () => {
     cy.visitEditor({ docName: 'heading-change-complex-test' })
   })
 
-  // Helper function to check heading attributes after level change
   const verifyHeadingLevel = (headingText, expectedLevel) => {
     cy.get('.heading')
-      .contains(headingText)
-      .closest('.heading')
+      .filter((_i, el) => el.querySelector('.title')?.textContent?.trim() === headingText)
+      .first()
       .should('have.attr', 'level', expectedLevel.toString())
   }
 
@@ -268,17 +267,20 @@ describe('Complex Heading Level Changes', { testIsolation: false }, () => {
     cycleHeadingLevels('Modules', 7)
   })
 
-  it('should handle level changes in multi-section document structure', () => {
-    // Create another complex document
-    cy.createDocument(MultiSectionDocumentStructure)
-    cy.wait(1000) // Ensure document is fully rendered
+  const multiSectionHeadings = [
+    { title: 'First Section Overview', level: 2 },
+    { title: 'Important Details', level: 4 },
+    { title: 'Specific Points', level: 7 },
+    { title: 'Direct Subsection', level: 4 },
+    { title: 'Another Direct Subsection', level: 5 }
+  ]
 
-    // Test heading level changes on specific headings
-    cycleHeadingLevels('First Section Overview', 2)
-    cycleHeadingLevels('Important Details', 4)
-    cycleHeadingLevels('Specific Points', 7)
-    cycleHeadingLevels('Direct Subsection', 4)
-    cycleHeadingLevels('Another Direct Subsection', 5)
+  multiSectionHeadings.forEach(({ title, level }) => {
+    it(`should handle level cycle for "${title}" (H${level}) in multi-section structure`, () => {
+      cy.createDocument(MultiSectionDocumentStructure)
+      cy.wait(1000)
+      cycleHeadingLevels(title, level)
+    })
   })
 
   it('should handle level changes in asymmetric document structure', () => {
@@ -350,46 +352,38 @@ describe('Complex Heading Level Changes', { testIsolation: false }, () => {
     })
   })
 
-  it('should handle random heading level changes in complex structures', () => {
+  it('should handle deterministic heading level changes in complex structures', () => {
     // Create the complex document
     cy.createDocument(AsymmetricDocumentStructure)
     cy.wait(1000) // Ensure document is fully rendered
 
-    // Programmatically test random headings
-    const randomHeadings = [
-      { title: 'Introduction to Topic', level: 2 },
-      { title: 'Technical Considerations', level: 2 },
-      { title: 'Implementation Strategy', level: 3 },
-      { title: 'Current State', level: 4 },
-      { title: 'Recent Developments', level: 5 }
+    // Deterministic matrix to avoid flaky random outcomes
+    const changeMatrix = [
+      { title: 'Introduction to Topic', from: 2, to: 4 },
+      { title: 'Technical Considerations', from: 2, to: 5 },
+      { title: 'Implementation Strategy', from: 3, to: 6 },
+      { title: 'Current State', from: 4, to: 7 },
+      { title: 'Recent Developments', from: 5, to: 8 }
     ]
 
-    // Test each random heading
-    randomHeadings.forEach((heading) => {
-      // Try a random level between 2 and 9
-      const randomLevel = Math.floor(Math.random() * 8) + 2 // Generates 2-9
+    changeMatrix.forEach((item) => {
+      cy.log(`Testing deterministic change: "${item.title}" level ${item.from} -> level ${item.to}`)
 
-      cy.log(
-        `Testing random heading: "${heading.title}" level ${heading.level} -> level ${randomLevel}`
-      )
-
-      cy.applyHeadingLevelChange(heading.title, heading.level, randomLevel).then((result) => {
-        cy.log(`Random level change result: ${JSON.stringify(result)}`)
+      cy.applyHeadingLevelChange(item.title, item.from, item.to).then((result) => {
+        cy.log(`Deterministic level change result: ${JSON.stringify(result)}`)
 
         // If the change applied, verify it and then change back
         if (result.applied) {
-          verifyHeadingLevel(heading.title, randomLevel)
+          verifyHeadingLevel(item.title, item.to)
 
           // Change back to original level
-          cy.applyHeadingLevelChange(heading.title, randomLevel, heading.level).then(
-            (resetResult) => {
-              cy.log(`Reset result: ${JSON.stringify(resetResult)}`)
+          cy.applyHeadingLevelChange(item.title, item.to, item.from).then((resetResult) => {
+            cy.log(`Reset result: ${JSON.stringify(resetResult)}`)
 
-              if (resetResult.applied) {
-                verifyHeadingLevel(heading.title, heading.level)
-              }
+            if (resetResult.applied) {
+              verifyHeadingLevel(item.title, item.from)
             }
-          )
+          })
         }
       })
     })

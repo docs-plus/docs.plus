@@ -1,49 +1,37 @@
-// @ts-nocheck
-import { BulletList } from '@tiptap/extension-list'
-import cypress from 'cypress'
 /// <reference types="cypress" />
-// ***********************************************
-// This example commands.ts shows you how to
-// create various custom commands and overwrite
-// existing commands.
-//
-// For more comprehensive examples of custom
-// commands please read more here:
-// https://on.cypress.io/custom-commands
-// ***********************************************
-//
-//
-// -- This is a parent command --
-// Cypress.Commands.add('login', (email, password) => { ... })
-//
-//
-// -- This is a child command --
-// Cypress.Commands.add('drag', { prevSubject: 'element'}, (subject, options) => { ... })
-//
-//
-// -- This is a dual command --
-// Cypress.Commands.add('dismiss', { prevSubject: 'optional'}, (subject, options) => { ... })
-//
-//
-// -- This will overwrite an existing command --
-// Cypress.Commands.overwrite('visit', (originalFn, url, options) => { ... })
-//
-// declare global {
-//   namespace Cypress {
-//     interface Chainable {
-//       login(email: string, password: string): Chainable<void>
-//       drag(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-//       dismiss(subject: string, options?: Partial<TypeOptions>): Chainable<Element>
-//       visit(originalFn: CommandOriginalFn, url: string, options: Partial<VisitOptions>): Chainable<Element>
-//     }
-//   }
-// }
 
-// Add this type and constant at the top level
-type TestContent = {
+// ---------------------------------------------------------------------------
+// Typed window globals exposed by the app at runtime for Cypress tests.
+// See: src/pages/editor.tsx, src/components/pages/editor/Controllers.tsx
+// ---------------------------------------------------------------------------
+type SelectionLevel = 'element' | 'parent' | 'section' | 'heading' | 'list' | 'document'
+
+interface EditorWindow {
+  /** TipTap editor instance – set in editor.tsx */
+  _editor?: import('@tiptap/core').Editor
+  /** Programmatic document builder – set in editor.tsx */
+  _createDocumentFromStructure?: (doc: Record<string, unknown>) => boolean
+  /** Programmatic heading move – set in editor.tsx */
+  _moveHeading?: (
+    sourceId: string,
+    targetId: string,
+    position: 'before' | 'after',
+    level?: number
+  ) => boolean
+  /** Hierarchical selection helpers – set in Controllers.tsx */
+  _editorSelect?: (level: SelectionLevel) => void
+  _editorSelectAndCopy?: (level: SelectionLevel) => void
+  _editorSelectElement?: (level: SelectionLevel) => void
+}
+
+// ---------------------------------------------------------------------------
+// Test data constants
+// ---------------------------------------------------------------------------
+interface TestContent {
   short: string
   medium: string
   long: string
+  empty: string
 }
 
 export const TEST_CONTENT: TestContent = {
@@ -82,9 +70,6 @@ function generatePredictableText(sentenceCount: number): string {
 import { registerDocumentValidator } from '../fixtures/docTestHelper'
 registerDocumentValidator()
 
-// Define the SelectionLevel type if it's not already defined
-type SelectionLevel = 'element' | 'parent' | 'section' | 'heading' | 'list' | 'document'
-
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Cypress {
@@ -98,8 +83,8 @@ declare global {
       enter(times?: number): Chainable<Element>
       getEditor(): Chainable<Element>
       createDocument(doc: any): Chainable<Element>
-      createOrderedList(items: any)
-      createBulletList(items: any)
+      createOrderedList(items: Array<{ text: string; indent?: number }>): Chainable<void>
+      createBulletList(items: Array<{ text: string; indent?: number }>): Chainable<void>
       createIndentHeading(content: {
         level: number
         title: string
@@ -237,127 +222,152 @@ Cypress.Commands.add('clearInlineNode', () => {
   cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Shift', 'End'])
 })
 
-Cypress.Commands.add('createOrderedList', (items) => {
-  if (!items.length) return
+Cypress.Commands.add(
+  'createOrderedList',
+  function (items: Array<{ text: string; indent?: number }>) {
+    if (!items.length) return
 
-  cy.get('.docy_editor > .tiptap.ProseMirror')
-    .type(items[0].text)
-    .realPress(['Shift', 'Meta', '7']) // Create ordered list
-    .realPress(['Enter'])
-
-  let currentIndent = 0
-  // Start from index 1 since we've already handled the first item
-  items.slice(1).forEach((item, index, array) => {
-    const targetIndent = item.indent || 0
-    const indentDiff = targetIndent - currentIndent
-
-    // Handle indentation/outdentation
-    if (indentDiff > 0) {
-      // Indent: press Tab for each level
-      for (let i = 0; i < indentDiff; i++) {
-        cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Tab'])
-      }
-    } else if (indentDiff < 0) {
-      // Outdent: press Shift+Tab for each level
-      for (let i = 0; i < Math.abs(indentDiff); i++) {
-        cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Shift', 'Tab'])
-      }
-    }
-
-    // Only press Enter if it's not the last item
-    const isLastItem = index === array.length - 1
     cy.get('.docy_editor > .tiptap.ProseMirror')
-      .type(item.text)
-      .then(() => {
-        if (!isLastItem) {
-          cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Enter'])
-        } else {
-          // Calculate number of enters based on indent level to exit the ordered list
-          const enterCount = targetIndent === 0 ? 2 : targetIndent + 2
-          cy.enter(enterCount)
+      .type(items[0].text)
+      .realPress(['Shift', 'Meta', '7']) // Create ordered list
+      .realPress(['Enter'])
+
+    let currentIndent = 0
+    // Start from index 1 since we've already handled the first item
+    items
+      .slice(1)
+      .forEach(
+        (
+          item: { text: string; indent?: number },
+          index: number,
+          array: Array<{ text: string; indent?: number }>
+        ) => {
+          const targetIndent = item.indent || 0
+          const indentDiff = targetIndent - currentIndent
+
+          // Handle indentation/outdentation
+          if (indentDiff > 0) {
+            // Indent: press Tab for each level
+            for (let i = 0; i < indentDiff; i++) {
+              cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Tab'])
+            }
+          } else if (indentDiff < 0) {
+            // Outdent: press Shift+Tab for each level
+            for (let i = 0; i < Math.abs(indentDiff); i++) {
+              cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Shift', 'Tab'])
+            }
+          }
+
+          // Only press Enter if it's not the last item
+          const isLastItem = index === array.length - 1
+          cy.get('.docy_editor > .tiptap.ProseMirror')
+            .type(item.text)
+            .then(() => {
+              if (!isLastItem) {
+                cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Enter'])
+              } else {
+                // Calculate number of enters based on indent level to exit the ordered list
+                const enterCount = targetIndent === 0 ? 2 : targetIndent + 2
+                cy.enter(enterCount)
+              }
+            })
+
+          currentIndent = targetIndent
         }
-      })
+      )
+  }
+)
 
-    currentIndent = targetIndent
-  })
-})
+Cypress.Commands.add(
+  'createBulletList',
+  function (items: Array<{ text: string; indent?: number }>) {
+    if (!items.length) return
 
-Cypress.Commands.add('createBulletList', (items) => {
-  if (!items.length) return
-
-  cy.get('.docy_editor > .tiptap.ProseMirror')
-    .type(items[0].text)
-    .realPress(['Shift', 'Meta', '8']) // Create bullet list
-    .realPress(['Enter'])
-
-  let currentIndent = 0
-  // Start from index 1 since we've already handled the first item
-  items.slice(1).forEach((item, index, array) => {
-    const targetIndent = item.indent || 0
-    const indentDiff = targetIndent - currentIndent
-
-    // Handle indentation/outdentation
-    if (indentDiff > 0) {
-      // Indent: press Tab for each level
-      for (let i = 0; i < indentDiff; i++) {
-        cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Tab'])
-      }
-    } else if (indentDiff < 0) {
-      // Outdent: press Shift+Tab for each level
-      for (let i = 0; i < Math.abs(indentDiff); i++) {
-        cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Shift', 'Tab'])
-      }
-    }
-
-    // Only press Enter if it's not the last item
-    const isLastItem = index === array.length - 1
     cy.get('.docy_editor > .tiptap.ProseMirror')
-      .type(item.text)
-      .then(() => {
-        if (!isLastItem) {
-          cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Enter'])
-        } else {
-          // Calculate number of enters based on indent level to exit the bullet list
-          const enterCount = targetIndent === 0 ? 2 : targetIndent + 2
-          cy.enter(enterCount)
+      .type(items[0].text)
+      .realPress(['Shift', 'Meta', '8']) // Create bullet list
+      .realPress(['Enter'])
+
+    let currentIndent = 0
+    // Start from index 1 since we've already handled the first item
+    items
+      .slice(1)
+      .forEach(
+        (
+          item: { text: string; indent?: number },
+          index: number,
+          array: Array<{ text: string; indent?: number }>
+        ) => {
+          const targetIndent = item.indent || 0
+          const indentDiff = targetIndent - currentIndent
+
+          // Handle indentation/outdentation
+          if (indentDiff > 0) {
+            // Indent: press Tab for each level
+            for (let i = 0; i < indentDiff; i++) {
+              cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Tab'])
+            }
+          } else if (indentDiff < 0) {
+            // Outdent: press Shift+Tab for each level
+            for (let i = 0; i < Math.abs(indentDiff); i++) {
+              cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Shift', 'Tab'])
+            }
+          }
+
+          // Only press Enter if it's not the last item
+          const isLastItem = index === array.length - 1
+          cy.get('.docy_editor > .tiptap.ProseMirror')
+            .type(item.text)
+            .then(() => {
+              if (!isLastItem) {
+                cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Enter'])
+              } else {
+                // Calculate number of enters based on indent level to exit the bullet list
+                const enterCount = targetIndent === 0 ? 2 : targetIndent + 2
+                cy.enter(enterCount)
+              }
+            })
+
+          currentIndent = targetIndent
         }
-      })
+      )
+  }
+)
 
-    currentIndent = targetIndent
-  })
-})
-
-Cypress.Commands.add('createIndentHeading', (content) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+Cypress.Commands.add('createIndentHeading', (content: any) => {
   const editor = cy.get('.docy_editor > .tiptap.ProseMirror')
   const { level, title, contents } = content
 
   editor
     .type(title)
-    .realPress(['Alt', 'Meta', String(level)])
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .realPress(['Alt', 'Meta', String(level)] as any)
     .realPress('Enter')
 
   // Skip content processing if contents array is empty or undefined
   if (!contents || contents.length === 0) return
 
-  for (const content of contents) {
-    switch (content?.type) {
+  for (const item of contents) {
+    switch (item?.type) {
       case 'paragraph':
-        cy.createParagraph(content.content)
+        cy.createParagraph(item.content)
         break
       case 'orderedList':
-        cy.createOrderedList(content.content)
+        cy.createOrderedList(item.content)
         break
       case 'bulletList':
-        cy.createBulletList(content.content)
+        cy.createBulletList(item.content)
         break
       case 'heading':
-        cy.createIndentHeading(content)
+        cy.createIndentHeading(item)
         break
     }
   }
 })
 
-Cypress.Commands.add('createDocument', (doc) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+Cypress.Commands.add('createDocument', (doc: any) => {
   // Normalize doc to { sections: [...] } format
   let normalizedDoc = doc
   if (Array.isArray(doc)) {
@@ -367,10 +377,11 @@ Cypress.Commands.add('createDocument', (doc) => {
   }
 
   // Use fast direct insertion via window._createDocumentFromStructure
-  cy.window().then((win) => {
+  cy.window().then((w) => {
+    const win = w as unknown as EditorWindow
     if (typeof win._createDocumentFromStructure === 'function') {
       // Fast path: direct insertion (no typing simulation)
-      const success = win._createDocumentFromStructure(normalizedDoc)
+      const success = win._createDocumentFromStructure(normalizedDoc as Record<string, unknown>)
       if (!success) {
         throw new Error('Failed to create document via _createDocumentFromStructure')
       }
@@ -394,7 +405,8 @@ Cypress.Commands.add('createDocument', (doc) => {
   })
 })
 
-Cypress.Commands.add('createSection', (section) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+Cypress.Commands.add('createSection', (section: any) => {
   const { title, contents = [], isFirst = false } = section
   const editor = cy.get('.docy_editor > .tiptap.ProseMirror')
 
@@ -475,21 +487,26 @@ Cypress.Commands.add('createParagraph', (content) => {
   }
 })
 
-Cypress.Commands.add('Document', (title, content) => {
+// @ts-expect-error — 'Document' is a legacy custom command not in the Chainable interface
+Cypress.Commands.add('Document', (title: string, _content?: string) => {
   const editor = cy.get('.docy_editor > .tiptap.ProseMirror')
   editor.click().type('{selectall}{del}', { release: false })
   editor.type(title).type('{enter}').type(TEST_CONTENT.short)
 })
 
-Cypress.Commands.add('createHeading', (title: string, headingLevel = 2, sentencesCount) => {
-  const editor = cy
-  get('.docy_editor > .tiptap.ProseMirror')
-    .type(`${title}`)
-    .realPress(['Alt', 'Meta', String(headingLevel) as KeyOrShortcut])
-  if (sentencesCount) {
-    editor.type(generatePredictableText(sentencesCount))
+Cypress.Commands.add(
+  'createHeading',
+  (title: string, headingLevel = 2, sentencesCount?: number) => {
+    const editor = cy
+      .get('.docy_editor > .tiptap.ProseMirror')
+      .type(`${title}`)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .realPress(['Alt', 'Meta', String(headingLevel)] as any)
+    if (sentencesCount) {
+      editor.type(generatePredictableText(sentencesCount))
+    }
   }
-})
+)
 
 Cypress.Commands.add('enter', (times = 1) => {
   for (let i = 0; i < times; i++) {
@@ -497,406 +514,484 @@ Cypress.Commands.add('enter', (times = 1) => {
   }
 })
 
+// @ts-expect-error — custom command return type differs from Chainable<Element>
 Cypress.Commands.add('getEditor', () => {
-  return cy.window().then((win) => win._editor)
+  return cy.window().then((win) => (win as unknown as EditorWindow)._editor)
 })
 
-Cypress.Commands.add('visitEditor', ({ persist = false, docName, clearDoc = false } = {}) => {
-  if (persist && docName) {
-    cy.visit(`http://localhost:3001/editor?localPersistence=${persist}&docName=${docName}`)
-  } else {
-    cy.visit(`http://localhost:3001/editor`)
+Cypress.Commands.add(
+  'visitEditor',
+  ({
+    persist = false,
+    docName,
+    clearDoc = false
+  }: { persist?: boolean; docName?: string; clearDoc?: boolean } = {}) => {
+    const runnerEnv = (Cypress.config('env') || {}) as Record<string, unknown>
+    const configuredBaseUrl = runnerEnv.EDITOR_BASE_URL
+    const configuredConfigBaseUrl = Cypress.config('baseUrl')
+    const baseUrl =
+      typeof configuredBaseUrl === 'string' && configuredBaseUrl.length > 0
+        ? configuredBaseUrl
+        : typeof configuredConfigBaseUrl === 'string' && configuredConfigBaseUrl.length > 0
+          ? configuredConfigBaseUrl
+          : 'http://localhost:3001'
+    const editorUrl = `${baseUrl.replace(/\/$/, '')}/editor`
+
+    if (persist && docName) {
+      cy.visit(`${editorUrl}?localPersistence=${persist}&docName=${docName}`)
+    } else {
+      cy.visit(editorUrl)
+    }
+    cy.get('.docy_editor > .tiptap.ProseMirror').should('be.visible')
+    if (clearDoc) {
+      cy.get('.docy_editor > .tiptap.ProseMirror')
+        .click()
+        .realPress(['Meta', 'a', 'Backspace'])
+        .wait(100)
+    }
   }
-  cy.get('.docy_editor > .tiptap.ProseMirror').should('be.visible')
-  if (clearDoc) {
-    cy.get('.docy_editor > .tiptap.ProseMirror')
-      .click()
-      .realPress(['Meta', 'a', 'Backspace'])
-      .wait(100)
-  }
-})
+)
 
-Cypress.Commands.add('copySelectionToClipboard', { prevSubject: 'element' }, ($element) => {
-  const doc = $element[0].ownerDocument
-  const selection = doc.getSelection()
-  const range = selection.rangeCount ? selection.getRangeAt(0) : null
+// @ts-expect-error — Cypress prevSubject typing limitation
+Cypress.Commands.add(
+  'copySelectionToClipboard',
+  { prevSubject: 'element' },
+  ($element: JQuery<HTMLElement>) => {
+    const doc = $element[0].ownerDocument
+    const selection = doc.getSelection()
+    const range = selection?.rangeCount ? selection.getRangeAt(0) : null
 
-  if (!range || selection.isCollapsed) {
-    throw new Error('No content selected to copy.')
-  }
+    if (!range || !selection || selection.isCollapsed) {
+      throw new Error('No content selected to copy.')
+    }
 
-  const fragment = range.cloneContents()
-  const div = doc.createElement('div')
-  div.appendChild(fragment)
-  const html = div.innerHTML
+    const fragment = range.cloneContents()
+    const div = doc.createElement('div')
+    div.appendChild(fragment)
+    const html = div.innerHTML
 
-  return cy.window().then((win) => {
-    const clipboardItem = new win.ClipboardItem({
-      'text/html': new Blob([html], { type: 'text/html' })
+    return cy.window().then((win) => {
+      const clipboardItem = new win.ClipboardItem({
+        'text/html': new Blob([html], { type: 'text/html' })
+      })
+
+      return win.navigator.clipboard.write([clipboardItem])
     })
+  }
+)
 
-    return win.navigator.clipboard.write([clipboardItem])
-  })
-})
+Cypress.Commands.add(
+  'pasteClipboardHtml',
+  { prevSubject: 'element' },
+  ($element: JQuery<HTMLElement>) => {
+    cy.window().then((win) => {
+      return win.navigator.clipboard.read().then(async (items: ClipboardItem[]) => {
+        for (const item of items) {
+          if (item.types.includes('text/html')) {
+            const blob = await item.getType('text/html')
+            const html = await blob.text()
 
-Cypress.Commands.add('pasteClipboardHtml', { prevSubject: 'element' }, ($element) => {
-  cy.window().then((win) => {
-    return win.navigator.clipboard.read().then(async (items) => {
-      for (const item of items) {
-        if (item.types.includes('text/html')) {
-          const blob = await item.getType('text/html')
-          const html = await blob.text()
+            const pasteEvent = new ClipboardEvent('paste', {
+              clipboardData: new DataTransfer(),
+              bubbles: true,
+              cancelable: true
+            })
 
-          const pasteEvent = new ClipboardEvent('paste', {
-            clipboardData: new DataTransfer(),
-            bubbles: true,
-            cancelable: true
-          })
-
-          pasteEvent.clipboardData.setData('text/html', html)
-          $element[0].dispatchEvent(pasteEvent)
-          return
+            pasteEvent.clipboardData!.setData('text/html', html)
+            $element[0].dispatchEvent(pasteEvent)
+            return
+          }
         }
-      }
-      throw new Error('No HTML content found in clipboard.')
+        throw new Error('No HTML content found in clipboard.')
+      })
     })
-  })
-})
+  }
+)
 
-Cypress.Commands.add('putPosCaretInHeading', (level, headingText, position = 'end') => {
-  return cy.window().then((win) => {
-    // Get the Tiptap editor instance
-    const editor = win._editor
+// @ts-expect-error — custom command return type differs from Chainable<Element>
+Cypress.Commands.add(
+  'putPosCaretInHeading',
+  (level: number, headingText: string, position: 'start' | 'end' | number = 'end') => {
+    return cy.window().then((w) => {
+      const win = w as unknown as EditorWindow
+      const editor = win._editor
 
-    if (!editor) {
-      throw new Error(
-        'Tiptap editor not found. Make sure it is initialized and accessible as window._editor'
-      )
-    }
-
-    // Find the heading node in the Tiptap document
-    let headingFound = false
-    let headingPos = 0
-    let headingNode = null
-
-    editor.state.doc.descendants((node, pos) => {
-      if (headingFound) return false // Skip if already found
-
-      // in real world, user can not put caret in heading node pos, the caret will be place in contentheading node pos
-      if (
-        node.type.name === 'contentHeading' &&
-        node.attrs.level === level &&
-        node.textContent.includes(headingText)
-      ) {
-        headingFound = true
-        headingPos = pos
-        headingNode = node
-        return false // Stop traversal
-      }
-    })
-
-    if (!headingFound || !headingNode) {
-      throw new Error(`Heading level ${level} with text "${headingText}" not found in the document`)
-    }
-
-    // Calculate the position for the cursor
-    let targetPos = headingPos + 1 // Default to start of heading content
-
-    if (position === 'end') {
-      targetPos = headingPos + headingNode.nodeSize - 1
-    } else if (typeof position === 'number') {
-      if (position >= 0) {
-        // Add position to the start position, but ensure it's within bounds
-        targetPos = Math.min(headingPos + 1 + position, headingPos + headingNode.nodeSize - 1)
-      } else {
-        // Handle negative positions (counting from the end)
-        // -1 means end of node, -2 means one step before the end, etc.
-        targetPos = headingPos + headingNode.nodeSize + position
-
-        // Ensure we don't go before the start of the heading content
-        targetPos = Math.max(targetPos, headingPos + 1)
-      }
-    }
-
-    // Set the selection in the editor
-    editor.commands.setTextSelection(targetPos)
-    editor.commands.focus()
-
-    // Return the element for Cypress chaining
-    return cy.get('.ProseMirror-focused')
-  })
-})
-
-Cypress.Commands.add('validateHeadingLevelChange', (headingText, currentLevel, newLevel) => {
-  return cy.window().then((win) => {
-    const editor = win._editor
-
-    if (!editor) {
-      throw new Error('Tiptap editor not found.')
-    }
-
-    let headingNode = null
-    let headingPos = null
-    let parentNode = null
-    let childNodes = []
-    let siblings = []
-
-    // Find the target heading
-    editor.state.doc.descendants((node, pos, parent) => {
-      if (
-        node.type.name === 'heading' &&
-        node.attrs.level === currentLevel &&
-        node.textContent.includes(headingText)
-      ) {
-        headingNode = node
-        headingPos = pos
-        return false
-      }
-    })
-
-    if (!headingNode) {
-      throw new Error(`Heading level ${currentLevel} with text "${headingText}" not found`)
-    }
-
-    // Find parent heading (if exists)
-    let parentFound = false
-    let parentPos = null
-
-    editor.state.doc.descendants((node, pos) => {
-      if (parentFound || pos >= headingPos) return false
-
-      if (node.type.name === 'heading') {
-        // Check if this is a potential parent (lower level number = higher in hierarchy)
-        // Parent must have lower level number than current heading
-        if (node.attrs.level < currentLevel) {
-          parentNode = node
-          parentPos = pos
-        }
-      }
-    })
-
-    // Find child headings
-    editor.state.doc.nodesBetween(headingPos, editor.state.doc.content.size, (node, pos) => {
-      // Skip the heading itself
-      if (pos === headingPos) return true
-
-      // If we encounter a heading with level <= current heading's level, we've moved past its scope
-      if (node.type.name === 'heading' && node.attrs.level <= currentLevel) {
-        return false
+      if (!editor) {
+        throw new Error(
+          'Tiptap editor not found. Make sure it is initialized and accessible as window._editor'
+        )
       }
 
-      // If we find a heading with level > current heading's level, it's a child
-      if (node.type.name === 'heading' && node.attrs.level > currentLevel) {
-        childNodes.push({ node, pos })
-      }
+      // Find the heading node in the Tiptap document
+      let headingFound = false
+      let headingPos = 0
+      let headingNodeSize = 0
 
-      return true
-    })
-
-    // Find sibling headings (same level headings within the same parent)
-    if (parentNode) {
-      let inParentScope = false
       editor.state.doc.descendants((node, pos) => {
-        if (pos === parentPos) {
-          inParentScope = true
-          return true
-        }
+        if (headingFound) return false // Skip if already found
 
-        // If we encounter a heading with level <= parent's level, we've moved past its scope
+        // in real world, user can not put caret in heading node pos, the caret will be place in contentheading node pos
         if (
-          inParentScope &&
-          node.type.name === 'heading' &&
-          node.attrs.level <= parentNode.attrs.level
+          node.type.name === 'contentHeading' &&
+          node.attrs.level === level &&
+          node.textContent.includes(headingText)
         ) {
-          inParentScope = false
+          headingFound = true
+          headingPos = pos
+          headingNodeSize = node.nodeSize
+          return false // Stop traversal
+        }
+      })
+
+      if (!headingFound || !headingNodeSize) {
+        throw new Error(
+          `Heading level ${level} with text "${headingText}" not found in the document`
+        )
+      }
+
+      const nodeSize = headingNodeSize
+
+      // Calculate the position for the cursor
+      let targetPos = headingPos + 1 // Default to start of heading content
+
+      if (position === 'end') {
+        targetPos = headingPos + nodeSize - 1
+      } else if (typeof position === 'number') {
+        if (position >= 0) {
+          // Add position to the start position, but ensure it's within bounds
+          targetPos = Math.min(headingPos + 1 + position, headingPos + nodeSize - 1)
+        } else {
+          // Handle negative positions (counting from the end)
+          // -1 means end of node, -2 means one step before the end, etc.
+          targetPos = headingPos + nodeSize + position
+
+          // Ensure we don't go before the start of the heading content
+          targetPos = Math.max(targetPos, headingPos + 1)
+        }
+      }
+
+      // Set the selection in the editor
+      editor.commands.setTextSelection(targetPos)
+      editor.commands.focus()
+
+      // Return the element for Cypress chaining
+      return cy.get('.ProseMirror-focused')
+    })
+  }
+)
+
+// @ts-expect-error — custom command return type differs from Chainable<Element>
+Cypress.Commands.add(
+  'validateHeadingLevelChange',
+  (headingText: string, currentLevel: number, newLevel: number) => {
+    return cy.window().then((w) => {
+      const win = w as unknown as EditorWindow
+      const editor = win._editor
+
+      if (!editor) {
+        throw new Error('Tiptap editor not found.')
+      }
+
+      let headingNode: ReturnType<typeof editor.state.doc.nodeAt> = null
+      let headingPos: number | null = null
+      let parentNode: ReturnType<typeof editor.state.doc.nodeAt> = null
+      const childNodes: Array<{
+        node: NonNullable<ReturnType<typeof editor.state.doc.nodeAt>>
+        pos: number
+      }> = []
+      const siblings: Array<{
+        node: NonNullable<ReturnType<typeof editor.state.doc.nodeAt>>
+        pos: number
+      }> = []
+
+      // Find the target heading
+      editor.state.doc.descendants((node, pos, parent) => {
+        if (
+          node.type.name === 'heading' &&
+          node.attrs.level === currentLevel &&
+          node.textContent.includes(headingText)
+        ) {
+          headingNode = node
+          headingPos = pos
+          return false
+        }
+      })
+
+      if (!headingNode || headingPos === null) {
+        throw new Error(`Heading level ${currentLevel} with text "${headingText}" not found`)
+      }
+
+      // Find parent heading (if exists)
+      let parentFound = false
+      let parentPos: number | null = null
+
+      editor.state.doc.descendants((node, pos) => {
+        if (parentFound || pos >= headingPos!) return false
+
+        if (node.type.name === 'heading') {
+          // Check if this is a potential parent (lower level number = higher in hierarchy)
+          // Parent must have lower level number than current heading
+          if (node.attrs.level < currentLevel) {
+            parentNode = node
+            parentPos = pos
+          }
+        }
+      })
+
+      // Find child headings
+      editor.state.doc.nodesBetween(headingPos!, editor.state.doc.content.size, (node, pos) => {
+        // Skip the heading itself
+        if (pos === headingPos) return true
+
+        // If we encounter a heading with level <= current heading's level, we've moved past its scope
+        if (node.type.name === 'heading' && node.attrs.level <= currentLevel) {
           return false
         }
 
-        // If we're in the parent's scope and find a heading with the same level as our target
-        if (
-          inParentScope &&
-          node.type.name === 'heading' &&
-          node.attrs.level === currentLevel &&
-          pos !== headingPos
-        ) {
-          siblings.push({ node, pos })
+        // If we find a heading with level > current heading's level, it's a child
+        if (node.type.name === 'heading' && node.attrs.level > currentLevel) {
+          childNodes.push({ node, pos })
         }
 
         return true
       })
-    }
 
-    // VALIDATION RULES
-
-    // Rule 1: Heading levels 2-9 must be nested within a section (level 1)
-    // This is implicitly handled by the editor structure, as all content should be in sections
-
-    // Rule 2: New level must be between 2-9
-    if (newLevel < 2 || newLevel > 9) {
-      return { valid: false, reason: `Heading level must be between 2-9, got ${newLevel}` }
-    }
-
-    // Rule 3: If parent exists, new level must be greater than parent level
-    if (parentNode && newLevel <= parentNode.attrs.level) {
-      return {
-        valid: false,
-        reason: `New level ${newLevel} must be greater than parent level ${parentNode.attrs.level}`
-      }
-    }
-
-    // Rule 4: If children exist, new level must be less than all child levels
-    // Note: If this rule fails, child headings need to be updated to maintain proper hierarchy
-    // Use applyHeadingLevelChange with updateChildren: true to handle this automatically
-    const invalidChildren = childNodes.filter((child) => child.node.attrs.level <= newLevel)
-    if (invalidChildren.length > 0) {
-      return {
-        valid: false,
-        reason: `New level ${newLevel} must be less than child levels (found ${invalidChildren.length} children with level <= ${newLevel})`,
-        affectedChildren: invalidChildren.length
-      }
-    }
-
-    // Rule 5: If siblings exist after the change, they should be at the same level as the new level
-    // This is more of a warning than an error
-    if (siblings.length > 0) {
-      return {
-        valid: true,
-        warning: `Changing level to ${newLevel} will make this heading inconsistent with its ${siblings.length} siblings at level ${currentLevel}`
-      }
-    }
-
-    return { valid: true }
-  })
-})
-
-Cypress.Commands.add('applyHeadingLevelChange', (headingText, currentLevel, newLevel) => {
-  return cy.validateHeadingLevelChange(headingText, currentLevel, newLevel).then((result) => {
-    // Log the validation result
-    if (result.valid) {
-      if (result.warning) {
-        cy.log(`Warning: ${result.warning}`)
-      } else {
-        cy.log(`Validation passed: Changing heading from level ${currentLevel} to ${newLevel}`)
-      }
-    } else {
-      cy.log(`Error: ${result.reason}`)
-    }
-
-    // Only proceed if validation passed
-    if (result.valid) {
-      return cy.window().then((win) => {
-        const editor = win._editor
-
-        if (!editor) {
-          throw new Error('Tiptap editor not found.')
-        }
-
-        // Find the target heading position
-        let headingFound = false
-        let headingPos = null
-
+      // Find sibling headings (same level headings within the same parent)
+      if (parentNode && parentPos !== null) {
+        let inParentScope = false
+        const parentLevel = (parentNode as { attrs: { level: number } }).attrs.level
         editor.state.doc.descendants((node, pos) => {
-          if (headingFound) return false
+          if (pos === parentPos) {
+            inParentScope = true
+            return true
+          }
 
-          if (
-            node.type.name === 'heading' &&
-            node.attrs.level === currentLevel &&
-            node.textContent.includes(headingText)
-          ) {
-            headingFound = true
-            headingPos = pos
+          // If we encounter a heading with level <= parent's level, we've moved past its scope
+          if (inParentScope && node.type.name === 'heading' && node.attrs.level <= parentLevel) {
+            inParentScope = false
             return false
           }
-        })
 
-        if (!headingFound || headingPos === null) {
-          throw new Error(`Heading level ${currentLevel} with text "${headingText}" not found`)
-        }
-
-        // Create a sequence of actions to perform
-        const actions = []
-
-        // Update the main heading
-        actions.push(() => {
-          cy.log(`Updating main heading "${headingText}" from level ${currentLevel} to ${newLevel}`)
-          return cy
-            .putPosCaretInHeading(currentLevel, headingText, 'start')
-            .realPress(['Alt', 'Meta', `${newLevel}`])
-        })
-
-        // Execute all actions in sequence
-        const executeActions = (index = 0) => {
-          if (index >= actions.length) {
-            // All done, verify the change was successful
-            return cy
-              .get('.heading')
-              .contains(headingText)
-              .closest('.heading')
-              .should('have.attr', 'level', `${newLevel}`)
-              .then(() => {
-                return cy.wrap({
-                  applied: true,
-                  previousLevel: currentLevel,
-                  newLevel,
-                  warnings: result.warning
-                })
-              })
+          // If we're in the parent's scope and find a heading with the same level as our target
+          if (
+            inParentScope &&
+            node.type.name === 'heading' &&
+            node.attrs.level === currentLevel &&
+            pos !== headingPos
+          ) {
+            siblings.push({ node, pos })
           }
 
-          // Execute the current action, then move to the next
-          return actions[index]().then(() => {
-            return executeActions(index + 1)
-          })
+          return true
+        })
+      }
+
+      // VALIDATION RULES
+
+      // Rule 1: Heading levels 2-9 must be nested within a section (level 1)
+      // This is implicitly handled by the editor structure, as all content should be in sections
+
+      // Rule 2: New level must be between 2-9
+      if (newLevel < 2 || newLevel > 9) {
+        return { valid: false, reason: `Heading level must be between 2-9, got ${newLevel}` }
+      }
+
+      // Rule 3: If parent exists, new level must be greater than parent level
+      const parentAttrsLevel = parentNode
+        ? (parentNode as unknown as { attrs: { level: number } }).attrs.level
+        : null
+      if (parentNode && parentAttrsLevel !== null && newLevel <= parentAttrsLevel) {
+        return {
+          valid: false,
+          reason: `New level ${newLevel} must be greater than parent level ${parentAttrsLevel}`
+        }
+      }
+
+      // Rule 4: If children exist, new level must be less than all child levels
+      // Note: If this rule fails, child headings need to be updated to maintain proper hierarchy
+      // Use applyHeadingLevelChange with updateChildren: true to handle this automatically
+      const invalidChildren = childNodes.filter((child) => child.node.attrs.level <= newLevel)
+      if (invalidChildren.length > 0) {
+        return {
+          valid: false,
+          reason: `New level ${newLevel} must be less than child levels (found ${invalidChildren.length} children with level <= ${newLevel})`,
+          affectedChildren: invalidChildren.length
+        }
+      }
+
+      // Rule 5: If siblings exist after the change, they should be at the same level as the new level
+      // This is more of a warning than an error
+      if (siblings.length > 0) {
+        return {
+          valid: true,
+          warning: `Changing level to ${newLevel} will make this heading inconsistent with its ${siblings.length} siblings at level ${currentLevel}`
+        }
+      }
+
+      return { valid: true }
+    })
+  }
+)
+
+// @ts-expect-error — custom command return type differs from Chainable<Element>
+Cypress.Commands.add(
+  'applyHeadingLevelChange',
+  (headingText: string, currentLevel: number, newLevel: number) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return cy
+      .validateHeadingLevelChange(headingText, currentLevel, newLevel)
+      .then((result: any) => {
+        // Log the validation result
+        if (result.valid) {
+          if (result.warning) {
+            cy.log(`Warning: ${result.warning}`)
+          } else {
+            cy.log(`Validation passed: Changing heading from level ${currentLevel} to ${newLevel}`)
+          }
+        } else {
+          cy.log(`Error: ${result.reason}`)
         }
 
-        // Start executing the action sequence
-        return executeActions()
+        // Only proceed if validation passed
+        if (result.valid) {
+          return cy.window().then((w) => {
+            const win = w as unknown as EditorWindow
+            const editor = win._editor
+
+            if (!editor) {
+              throw new Error('Tiptap editor not found.')
+            }
+
+            // Find the target heading position
+            let headingFound = false
+            let headingPos: number | null = null
+
+            editor.state.doc.descendants((node, pos) => {
+              if (headingFound) return false
+
+              if (
+                node.type.name === 'heading' &&
+                node.attrs.level === currentLevel &&
+                node.textContent.includes(headingText)
+              ) {
+                headingFound = true
+                headingPos = pos
+                return false
+              }
+            })
+
+            if (!headingFound || headingPos === null) {
+              throw new Error(`Heading level ${currentLevel} with text "${headingText}" not found`)
+            }
+
+            // Create a sequence of actions to perform
+            const actions: Array<() => Cypress.Chainable> = []
+
+            // Update the main heading
+            actions.push(() => {
+              cy.log(
+                `Updating main heading "${headingText}" from level ${currentLevel} to ${newLevel}`
+              )
+              return (
+                (
+                  cy as unknown as {
+                    putPosCaretInHeading: (
+                      level: number,
+                      text: string,
+                      pos: string
+                    ) => Cypress.Chainable
+                  }
+                )
+                  .putPosCaretInHeading(currentLevel, headingText, 'start')
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  .realPress(['Alt', 'Meta', `${newLevel}`] as any)
+              )
+            })
+
+            // Execute all actions in sequence
+            const executeActions = (index = 0): Cypress.Chainable => {
+              if (index >= actions.length) {
+                // All done, verify the change was successful.
+                // Use exact title matching to avoid substring collisions
+                // (e.g. "Direct Subsection" matching "Another Direct Subsection").
+                return cy
+                  .get('.heading')
+                  .filter((_i, el) => {
+                    const title = el.querySelector('.title')?.textContent?.trim()
+                    return title === headingText
+                  })
+                  .first()
+                  .should('have.attr', 'level', `${newLevel}`)
+                  .then(() => {
+                    return cy.wrap({
+                      applied: true,
+                      previousLevel: currentLevel,
+                      newLevel,
+                      warnings: result.warning
+                    })
+                  })
+              }
+
+              // Execute the current action, then move to the next
+              return actions[index]().then(() => {
+                return executeActions(index + 1)
+              })
+            }
+
+            // Start executing the action sequence
+            return executeActions()
+          })
+        } else {
+          // Return failure result
+          return cy.wrap({
+            applied: false,
+            reason: result.reason
+          })
+        }
       })
-    } else {
-      // Return failure result
-      return cy.wrap({
-        applied: false,
-        reason: result.reason
-      })
-    }
-  })
-})
+  }
+)
 
 // Select content at the specified hierarchical level
+// @ts-expect-error — Cypress prevSubject overload typing limitation
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 Cypress.Commands.add(
   'clickAndSelect',
-  { prevSubject: 'element' },
-  (subject, level: SelectionLevel) => {
+  { prevSubject: 'optional' },
+  (subject: any, level: SelectionLevel) => {
     // First click on the element
     cy.wrap(subject).click()
 
     // Then use the _editorSelect function
     return cy.window().then((win) => {
-      // @ts-ignore - the _editorSelect function is added to window in Controllers.tsx
-      win._editorSelect(level)
+      const editorWin = win as unknown as EditorWindow
+      editorWin._editorSelect?.(level)
       return cy.wrap(subject)
     })
   }
 )
 
 // Select and copy content at the specified hierarchical level
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// @ts-expect-error — Cypress prevSubject overload typing limitation
 Cypress.Commands.add(
   'clickAndSelectCopy',
-  { prevSubject: 'element' },
-  ($element, level: SelectionLevel) => {
+  { prevSubject: 'optional' },
+  ($element: any, level: SelectionLevel) => {
     // First click on the element
     cy.wrap($element).realClick().realPress('Home')
 
     // Then use the _editorSelectAndCopy function
     return cy.window().then((win) => {
-      // @ts-ignore - the _editorSelectAndCopy function is added to window in Controllers.tsx
-      win._editorSelectAndCopy(level)
+      const editorWin = win as unknown as EditorWindow
+      editorWin._editorSelectAndCopy?.(level)
       return cy.wrap($element)
     })
   }
 )
 
-Cypress.Commands.add('createSelection', (options) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+Cypress.Commands.add('createSelection', (options: any) => {
   const {
     editorSelector = '.docy_editor > .tiptap.ProseMirror',
     startSection,
@@ -909,7 +1004,8 @@ Cypress.Commands.add('createSelection', (options) => {
     endPosition = 'end'
   } = options
 
-  return cy.window().then(async (win) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return cy.window().then((win: any) => {
     const editor = win.document.querySelector(editorSelector)
     if (!editor) throw new Error(`Editor element not found with selector: ${editorSelector}`)
 
@@ -943,11 +1039,11 @@ Cypress.Commands.add('createSelection', (options) => {
     setRangePosition(range, endElement, endPosition, false)
 
     // Apply the selection
-    selection.removeAllRanges()
-    selection.addRange(range)
+    selection?.removeAllRanges()
+    selection?.addRange(range)
 
     // Sync with TipTap editor selection synchronously
-    const tiptapEditor = (win as any)._editor
+    const tiptapEditor = (win as unknown as EditorWindow)._editor
     if (tiptapEditor) {
       const view = tiptapEditor.view
       if (view) {
@@ -967,7 +1063,18 @@ Cypress.Commands.add('createSelection', (options) => {
     return cy.wrap({ startElement, endElement, range }).wait(100)
   })
 
-  function findElement({ editor, section, heading, paragraph }) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  function findElement({
+    editor,
+    section,
+    heading,
+    paragraph
+  }: {
+    editor: any
+    section?: any
+    heading?: any
+    paragraph?: any
+  }): any {
     let element = editor
 
     // Find section if specified
@@ -981,8 +1088,8 @@ Cypress.Commands.add('createSelection', (options) => {
       if (typeof section === 'object') {
         // Find by properties like title content
         const { title } = section
-        foundSection = sections.find((s) => {
-          const titleElement = s.querySelector('.title')
+        foundSection = sections.find((s: unknown) => {
+          const titleElement = (s as Element).querySelector('.title')
           return titleElement && titleElement.textContent?.includes(title)
         })
       } else if (typeof section === 'number') {
@@ -1004,9 +1111,10 @@ Cypress.Commands.add('createSelection', (options) => {
       if (typeof heading === 'object') {
         // Find by properties
         const { level, title } = heading
-        foundHeading = headings.find((h) => {
-          const titleElement = h.querySelector('.title')
-          const headingLevel = parseInt(h.getAttribute('level') || '0')
+        foundHeading = headings.find((h: unknown) => {
+          const el = h as Element
+          const titleElement = el.querySelector('.title')
+          const headingLevel = parseInt(el.getAttribute('level') || '0')
           return (
             (!level || headingLevel === level) &&
             (!title || (titleElement && titleElement.textContent?.includes(title)))
@@ -1029,7 +1137,9 @@ Cypress.Commands.add('createSelection', (options) => {
       if (typeof paragraph === 'object') {
         // Find by content
         const { text } = paragraph
-        foundParagraph = paragraphs.find((p) => text && p.textContent?.includes(text))
+        foundParagraph = paragraphs.find(
+          (p: unknown) => text && (p as Element).textContent?.includes(text)
+        )
       } else if (typeof paragraph === 'number') {
         // Find by index
         foundParagraph = paragraphs[paragraph - 1] // 1-based index
@@ -1042,7 +1152,12 @@ Cypress.Commands.add('createSelection', (options) => {
     return element
   }
 
-  function setRangePosition(range, element, position, isStart) {
+  function setRangePosition(
+    range: Range,
+    element: Node,
+    position: 'start' | 'end' | number,
+    isStart: boolean
+  ): void {
     if (element.nodeType === Node.TEXT_NODE) {
       // Handle text node
       if (position === 'start') {
@@ -1115,7 +1230,7 @@ Cypress.Commands.add('createSelection', (options) => {
     }
   }
 
-  function findFirstTextNode(element) {
+  function findFirstTextNode(element: Node): Node | null {
     if (element.nodeType === Node.TEXT_NODE) return element
 
     // Search for first text node in children
@@ -1129,7 +1244,7 @@ Cypress.Commands.add('createSelection', (options) => {
     return null
   }
 
-  function findLastTextNode(element) {
+  function findLastTextNode(element: Node): Node | null {
     if (element.nodeType === Node.TEXT_NODE) return element
 
     // Search for last text node in children, reversed order
@@ -1159,7 +1274,7 @@ Cypress.Commands.add(
     }
 
     // Get the editor element
-    return cy.get('.tiptap__editor').then(($editor) => {
+    return cy.get('.docy_editor').then(($editor) => {
       const errors: string[] = []
       const structure: any[] = []
 
@@ -1349,7 +1464,8 @@ Cypress.Commands.add(
         }
 
         // Call the programmatic move function exposed on window
-        cy.window().then((win) => {
+        cy.window().then((w) => {
+          const win = w as unknown as EditorWindow
           if (typeof win._moveHeading !== 'function') {
             throw new Error('window._moveHeading is not available. Make sure editor is loaded.')
           }

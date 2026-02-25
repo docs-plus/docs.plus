@@ -68,7 +68,7 @@ describe('Ordered List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Click the ordered list button in the toolbar
-      cy.get('button[data-tip="Ordered List (⌘+⇧+7)"]').click()
+      cy.get('[data-testid="toolbar-ordered-list"]').click()
 
       // Type the first list item
       cy.get('.docy_editor ol > li').realType('First item in ordered list')

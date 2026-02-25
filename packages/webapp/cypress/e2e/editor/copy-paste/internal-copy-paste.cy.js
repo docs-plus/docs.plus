@@ -5,7 +5,7 @@
  * Tests for copying and pasting content within the same document.
  * These tests exercise the full clipboard pipeline:
  * - transformCopied (on copy)
- * - transformPastedHTML + transformPasted/clipboardPast (on paste)
+ * - transformPastedHTML + transformPasted/clipboardPaste (on paste)
  */
 
 import { section, heading, paragraph } from '../../../fixtures/docMaker'

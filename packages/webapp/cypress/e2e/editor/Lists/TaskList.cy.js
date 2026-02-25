@@ -69,7 +69,7 @@ describe('Task List', { testIsolation: false }, () => {
       cy.get('@paragraph').click()
 
       // Click the task list button in the toolbar
-      cy.get('button[data-tip="Task List (⌘+⇧+9)"]').click()
+      cy.get('[data-testid="toolbar-task-list"]').click()
 
       // Type the first list item
       cy.get('.docy_editor ul > li').realType('First task in list')

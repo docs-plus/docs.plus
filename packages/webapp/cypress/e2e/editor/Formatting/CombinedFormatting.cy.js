@@ -1,221 +1,222 @@
-import { TEST_TITLE } from '../../../support/commands'
-import { section } from '../../../fixtures/docMaker'
+/* eslint-disable no-undef */
 
-const DocumentStructure = {
+import { heading, paragraph, section } from '../../../fixtures/docMaker'
+import { TEST_TITLE } from '../../../support/commands'
+
+const SimpleDocument = {
   documentName: TEST_TITLE.HelloDocy,
   sections: [section(TEST_TITLE.short, [])]
 }
 
-describe('Combined Formatting', { testIsolation: false }, () => {
-  before(() => {
-    cy.visitEditor({ persist: true, docName: 'combined-formatting-doc' })
+const ComplexHierarchyDocument = {
+  documentName: TEST_TITLE.HelloDocy,
+  sections: [
+    section('Section 1', [heading(2, 'S1-H2', [heading(4, 'S1-H4', [paragraph('leaf 1')])])]),
+    section('Section 2', [heading(3, 'S2-H3', [paragraph('leaf 2')])]),
+    section('Section 3', [heading(2, 'S3-H2', [heading(5, 'S3-H5', [paragraph('leaf 3')])])]),
+    section('Section 4', [heading(2, 'S4-H2', [heading(3, 'S4-H3', [heading(7, 'S4-H7', [])])])]),
+    section('Section 5', [heading(4, 'S5-H4', [paragraph('leaf 5')])]),
+    section('Section 6', [heading(2, 'S6-H2', [heading(8, 'S6-H8', [paragraph('leaf 6')])])]),
+    section('Section 7', [heading(9, 'S7-H9', [paragraph('leaf 7')])])
+  ]
+}
+
+const getParagraph = () =>
+  cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p').first().as('paragraph')
+
+const selectTarget = (text, start, end) =>
+  cy.createSelection({
+    startSection: 1,
+    startParagraph: { text },
+    startPosition: start,
+    endSection: 1,
+    endParagraph: { text },
+    endPosition: end
   })
 
-  // create a simple document with a heading and a paragraph
-  it('should create a simple document with a heading and a paragraph', () => {
-    cy.createDocument(DocumentStructure)
+describe('Combined Formatting', () => {
+  beforeEach(() => {
+    cy.visitEditor({ persist: false, clearDoc: true, docName: 'combined-formatting' })
+    cy.wait(150)
   })
 
-  describe('Combined formatting with keyboard shortcuts', () => {
-    it('should apply multiple formats (bold + italic) to text', () => {
-      // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+  it('applies all primary marks to selected text', () => {
+    const text = 'alpha combo omega'
 
-      // First, click on the paragraph to focus it
-      cy.get('@paragraph').click()
+    cy.createDocument(SimpleDocument)
+    cy.wait(200)
+    getParagraph().click()
+    cy.get('@paragraph').realType(text)
 
-      // Type regular text
-      cy.get('@paragraph').type('This text has ')
+    selectTarget(text, 6, 11)
+    cy.get('.docy_editor').realPress(['Meta', 'b'])
+    cy.get('.docy_editor').realPress(['Meta', 'i'])
+    cy.get('.docy_editor').realPress(['Meta', 'u'])
+    cy.get('.docy_editor').realPress(['Meta', 'Shift', 's'])
 
-      // Apply bold and italic formatting
-      cy.get('.docy_editor').realPress(['Meta', 'b'])
-      cy.get('.docy_editor').realPress(['Meta', 'i'])
-
-      // Type formatted text
-      cy.get('@paragraph').type('bold and italic')
-
-      // Turn off formatting
-      cy.get('.docy_editor').realPress(['Meta', 'i'])
-      cy.get('.docy_editor').realPress(['Meta', 'b'])
-
-      // Continue typing
-      cy.get('@paragraph').type(' formatting applied.')
-
-      // Verify the formatted text
-      cy.get('.docy_editor strong em').should('exist').and('contain', 'bold and italic')
-    })
-
-    it('should apply all formatting (bold + italic + underline + strike) to text', () => {
-      // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
-
-      // Type regular text
-      cy.get('@paragraph').type('This text has ')
-
-      // Apply all formatting types
-      cy.get('.docy_editor').realPress(['Meta', 'b'])
-      cy.get('.docy_editor').realPress(['Meta', 'i'])
-      cy.get('.docy_editor').realPress(['Meta', 'u'])
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', 's'])
-
-      // Type formatted text
-      cy.get('@paragraph').type('all formats')
-
-      // Turn off formatting
-      cy.get('.docy_editor').realPress(['Meta', 'Shift', 's'])
-      cy.get('.docy_editor').realPress(['Meta', 'u'])
-      cy.get('.docy_editor').realPress(['Meta', 'i'])
-      cy.get('.docy_editor').realPress(['Meta', 'b'])
-
-      // Continue typing
-      cy.get('@paragraph').type(' applied to it.')
-
-      // Verify all formatting was applied
-      cy.get('.docy_editor strong em s u').should('exist').and('contain', 'all formats')
-    })
+    cy.get('@paragraph').find('strong').should('contain', 'combo')
+    cy.get('@paragraph').find('em').should('contain', 'combo')
+    cy.get('@paragraph').find('u').should('contain', 'combo')
+    cy.get('@paragraph').find('s').should('contain', 'combo')
+    cy.get('@paragraph').should('contain', text)
+    cy.assertFullSchemaValid()
   })
 
-  describe('Combined formatting with toolbar buttons', () => {
-    beforeEach(() => {
-      cy.createDocument(DocumentStructure)
-    })
+  it('applies combined marks with toolbar buttons and keeps unformatted suffix clean', () => {
+    cy.createDocument(SimpleDocument)
+    cy.wait(200)
+    getParagraph().click()
 
-    it('should apply multiple formats (bold + underline) using toolbar buttons', () => {
-      // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+    cy.get('@paragraph').realType('Prefix ')
+    cy.get('[data-testid="toolbar-bold"]').click()
+    cy.get('[data-testid="toolbar-underline"]').click()
+    cy.get('@paragraph').realType('toolbar-combo')
+    cy.get('[data-testid="toolbar-underline"]').click()
+    cy.get('[data-testid="toolbar-bold"]').click()
+    cy.get('@paragraph').realType(' suffix')
 
-      // First, click on the paragraph to focus it
-      cy.get('@paragraph').click()
-
-      // Type regular text
-      cy.get('@paragraph').type('This text has ')
-
-      // Apply bold and underline formatting using toolbar
-      cy.get('button[data-tip="Bold (⌘+B)"]').click()
-      cy.get('button[data-tip="Underline (⌘+U)"]').click()
-
-      // Type formatted text
-      cy.get('@paragraph').type('bold and underline')
-
-      // Turn off formatting
-      cy.get('button[data-tip="Underline (⌘+U)"]').click()
-      cy.get('button[data-tip="Bold (⌘+B)"]').click()
-
-      // Continue typing
-      cy.get('@paragraph').type(' formatting applied.')
-
-      // Verify the formatted text
-      cy.get('.docy_editor strong u').should('exist').and('contain', 'bold and underline')
-    })
+    cy.get('@paragraph').find('strong').should('contain', 'toolbar-combo')
+    cy.get('@paragraph').find('u').should('contain', 'toolbar-combo')
+    cy.get('@paragraph').should('contain', 'Prefix toolbar-combo suffix')
+    cy.assertFullSchemaValid()
   })
 
-  describe('Applying and removing combined formatting', () => {
-    beforeEach(() => {
-      cy.createDocument(DocumentStructure)
-    })
+  it('clears all marks for selected text via command path while preserving content', () => {
+    const text = 'prefix formatted-part suffix'
 
-    it('should apply combined formatting and then remove individual formats one by one', () => {
-      // Get the paragraph element and focus it
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
-        .click()
+    cy.createDocument(SimpleDocument)
+    cy.wait(200)
+    getParagraph().click()
+    cy.get('@paragraph').realType(text)
 
-      // Type beginning text without formatting
-      cy.get('@paragraph').realType('This contains ')
+    cy.window().then((win) => {
+      const editor = win._editor
+      const target = 'formatted-part'
 
-      // Apply multiple formats
-      cy.get('.docy_editor').realPress(['Meta', 'b'])
-      cy.get('.docy_editor').realPress(['Meta', 'i'])
-      cy.get('.docy_editor').realPress(['Meta', 'u'])
+      const findRangeBySubstring = () => {
+        let from = null
+        let to = null
 
-      // Type with all formats applied
-      cy.get('@paragraph').realType('multi-formatted text')
+        editor.state.doc.descendants((node, pos) => {
+          if (from !== null) return false
+          if (!node.isText || !node.text) return true
 
-      // Turn off all formatting
-      cy.get('.docy_editor').realPress(['Meta', 'u'])
-      cy.get('.docy_editor').realPress(['Meta', 'i'])
-      cy.get('.docy_editor').realPress(['Meta', 'b'])
+          const idx = node.text.indexOf(target)
+          if (idx === -1) return true
 
-      // Type remaining text
-      cy.get('@paragraph').realType(' in this paragraph.')
+          from = pos + idx
+          to = from + target.length
+          return false
+        })
 
-      // Verify all formatting was applied
-      cy.get('.docy_editor strong em u').should('exist').and('contain', 'multi-formatted text')
-
-      // Go back to the formatted text and select it
-      cy.get('@paragraph').click() // Focus
-      cy.get('@paragraph').realPress('Home') // Start of paragraph
-
-      // Move to the start of formatted text (14 characters)
-      for (let i = 0; i < 14; i++) {
-        cy.get('@paragraph').realPress('ArrowRight')
+        if (from === null || to === null) {
+          throw new Error(`Could not locate "${target}" in editor document`)
+        }
+        return { from, to }
       }
 
-      // Select the formatted text (19 characters)
-      for (let i = 0; i < 20; i++) {
-        cy.get('@paragraph').realPress(['Shift', 'ArrowRight'])
+      const range = findRangeBySubstring()
+
+      editor.commands.setTextSelection(range)
+      editor
+        .chain()
+        .focus()
+        .toggleBold()
+        .toggleItalic()
+        .toggleUnderline()
+        .toggleStrike()
+        .toggleHighlight()
+        .run()
+    })
+
+    cy.get('@paragraph').find('strong').should('contain', 'formatted-part')
+    cy.get('@paragraph').find('em').should('contain', 'formatted-part')
+    cy.get('@paragraph').find('u').should('contain', 'formatted-part')
+    cy.get('@paragraph').find('s').should('contain', 'formatted-part')
+    cy.get('@paragraph').find('mark').should('contain', 'formatted-part')
+
+    cy.window().then((win) => {
+      const editor = win._editor
+      const target = 'formatted-part'
+
+      let from = null
+      let to = null
+      editor.state.doc.descendants((node, pos) => {
+        if (from !== null) return false
+        if (!node.isText || !node.text) return true
+        const idx = node.text.indexOf(target)
+        if (idx === -1) return true
+        from = pos + idx
+        to = from + target.length
+        return false
+      })
+
+      if (from === null || to === null) {
+        throw new Error(`Could not locate "${target}" in editor document`)
       }
 
-      cy.wait(500)
-
-      // Remove underline first
-      cy.get('.docy_editor').realPress(['Meta', 'u'])
-
-      // Verify underline is removed but other formatting remains
-      cy.get('.docy_editor u').should('not.exist')
-      cy.get('.docy_editor strong em').should('exist').and('contain', 'multi-formatted text')
-
-      // Remove italic next
-      cy.get('.docy_editor').realPress(['Meta', 'i'])
-
-      // Verify italic is removed but bold remains
-      cy.get('.docy_editor em').should('not.exist')
-      cy.get('.docy_editor strong').should('exist').and('contain', 'multi-formatted text')
-
-      // Finally remove bold
-      cy.get('.docy_editor').realPress(['Meta', 'b'])
-
-      // Verify all formatting is removed
-      cy.get('.docy_editor strong').should('not.exist')
+      editor.commands.setTextSelection({ from, to })
+      editor
+        .chain()
+        .focus()
+        .unsetBold()
+        .unsetItalic()
+        .unsetUnderline()
+        .unsetStrike()
+        .toggleHighlight()
+        .run()
     })
 
-    it('should be able to add and remove combined formatting using multiple toolbar buttons', () => {
-      // Get the paragraph element and focus it
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
-        .click()
+    cy.get('@paragraph').find('strong').should('not.exist')
+    cy.get('@paragraph').find('em').should('not.exist')
+    cy.get('@paragraph').find('u').should('not.exist')
+    cy.get('@paragraph').find('s').should('not.exist')
+    cy.get('@paragraph').find('mark').should('not.exist')
+    cy.get('@paragraph').should('contain', text)
+    cy.assertFullSchemaValid()
+  })
 
-      // Type regular text
-      cy.get('@paragraph').type('Regular text followed by ')
+  it('keeps schema valid when clear formatting toolbar action is clicked on selection', () => {
+    const text = 'prefix toolbar-clear suffix'
 
-      // Apply all formattings using toolbar buttons
-      cy.get('button[data-tip="Bold (⌘+B)"]').click()
-      cy.get('button[data-tip="Italic (⌘+I)"]').click()
-      cy.get('button[data-tip="Underline (⌘+U)"]').click()
-      cy.get('button[data-tip="Strike (⌘+⇧+S)"]').click()
+    cy.createDocument(SimpleDocument)
+    cy.wait(200)
+    getParagraph().click()
+    cy.get('@paragraph').realType(text)
 
-      // Type with all formats
-      cy.get('@paragraph').type('all formatting combined')
+    selectTarget(text, 7, 20)
+    cy.get('.docy_editor').realPress(['Meta', 'b'])
+    cy.get('@paragraph').find('strong').should('contain', 'toolbar-clear')
 
-      // Remove all formatting using toolbar buttons
-      cy.get('button[data-tip="Strike (⌘+⇧+S)"]').click()
-      cy.get('button[data-tip="Underline (⌘+U)"]').click()
-      cy.get('button[data-tip="Italic (⌘+I)"]').click()
-      cy.get('button[data-tip="Bold (⌘+B)"]').click()
+    selectTarget(text, 7, 20)
+    cy.get('[data-testid="toolbar-clear-formatting"]').click()
 
-      // Type more regular text
-      cy.get('@paragraph').type(' and back to regular.')
+    cy.get('@paragraph').should('contain', text)
+    cy.assertFullSchemaValid()
+  })
 
-      // Verify the text had all formatting applied
-      cy.get('.docy_editor strong em s u').should('exist').and('contain', 'all formatting combined')
+  it('supports combined formatting in deep headings across a 7-section forest', () => {
+    cy.createDocument(ComplexHierarchyDocument)
+    cy.wait(350)
+
+    cy.get('.docy_editor > .tiptap > .heading[level="1"]').should('have.length', 7)
+
+    cy.putPosCaretInHeading(7, 'S4-H7', 'end')
+    cy.get('.docy_editor').realPress(['Meta', 'b'])
+    cy.get('.docy_editor').realPress(['Meta', 'i'])
+    cy.get('[data-testid="toolbar-highlight"]').click()
+    cy.get('.docy_editor > .tiptap.ProseMirror').realType(' formatted')
+    cy.get('[data-testid="toolbar-highlight"]').click()
+    cy.get('.docy_editor').realPress(['Meta', 'i'])
+    cy.get('.docy_editor').realPress(['Meta', 'b'])
+
+    cy.get('.heading[level="7"] .title').within(() => {
+      cy.get('strong').should('exist')
+      cy.get('em').should('exist')
+      cy.get('mark').should('exist')
+      cy.contains('formatted')
     })
+
+    cy.assertFullSchemaValid()
   })
 })

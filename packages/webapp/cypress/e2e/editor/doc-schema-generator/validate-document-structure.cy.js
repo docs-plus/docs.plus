@@ -5,7 +5,9 @@ import {
   listItem,
   orderedList,
   section,
-  bulletList
+  bulletList,
+  unsafeHeading,
+  unsafeSection
 } from '../../../fixtures/docMaker'
 
 const validDoc1 = {
@@ -64,14 +66,15 @@ const validDoc2 = {
   ]
 }
 
+// Intentionally invalid structures — use unsafe builders to bypass construction-time validation
 const invalidDoc1 = {
   documentName: 'Invalid Document Structure Example',
   sections: [
-    section('First Section', [
+    unsafeSection('First Section', [
       paragraph(TEST_CONTENT.short),
-      heading(3, 'Invalid H3 Heading', [
+      unsafeHeading(3, 'Invalid H3 Heading', [
         paragraph(TEST_CONTENT.medium),
-        heading(2, 'Invalid H2 Heading', [paragraph(TEST_CONTENT.short)])
+        unsafeHeading(2, 'Invalid H2 Heading', [paragraph(TEST_CONTENT.short)])
       ])
     ])
   ]
@@ -80,22 +83,22 @@ const invalidDoc1 = {
 const invalidDoc2 = {
   documentName: 'Invalid Document Structure Example',
   sections: [
-    section('First Section', [
+    unsafeSection('First Section', [
       paragraph(TEST_CONTENT.short),
-      heading(2, 'Valid H2 Heading', [
+      unsafeHeading(2, 'Valid H2 Heading', [
         paragraph(TEST_CONTENT.medium),
-        heading(4, 'Valid H4 Heading', [
+        unsafeHeading(4, 'Valid H4 Heading', [
           paragraph(TEST_CONTENT.short),
-          heading(3, 'Invalid H3 Heading', [paragraph(TEST_CONTENT.short)])
+          unsafeHeading(3, 'Invalid H3 Heading', [paragraph(TEST_CONTENT.short)])
         ])
       ])
     ]),
-    section('Second Section', [
+    unsafeSection('Second Section', [
       paragraph(TEST_CONTENT.short),
-      heading(3, 'Valid H3 Heading', [paragraph(TEST_CONTENT.short)]),
-      section('Third Section', [
+      unsafeHeading(3, 'Valid H3 Heading', [paragraph(TEST_CONTENT.short)]),
+      unsafeSection('Third Section', [
         paragraph(TEST_CONTENT.short),
-        heading(5, 'Valid H5 Heading', [paragraph(TEST_CONTENT.short)])
+        unsafeHeading(5, 'Valid H5 Heading', [paragraph(TEST_CONTENT.short)])
       ])
     ])
   ]
@@ -167,27 +170,27 @@ describe('Document structure validation examples', () => {
       ]
     }
 
-    // Invalid: Child heading with level <= parent
+    // Invalid: Child heading with level <= parent (use unsafe builders)
     const invalidHierarchy = {
       documentName: 'Invalid Hierarchy',
       sections: [
-        section('Test Section', [
+        unsafeSection('Test Section', [
           paragraph('Test paragraph'),
-          heading(4, 'H4 Heading', [
+          unsafeHeading(4, 'H4 Heading', [
             paragraph('Test paragraph'),
-            heading(3, 'H3 Heading', [paragraph('Test paragraph')])
+            unsafeHeading(3, 'H3 Heading', [paragraph('Test paragraph')])
           ])
         ])
       ]
     }
 
-    // Invalid: Nested sections
+    // Invalid: Nested sections (use unsafe builders)
     const invalidNestedSections = {
       documentName: 'Invalid Nested Sections',
       sections: [
-        section('Test Section', [
+        unsafeSection('Test Section', [
           paragraph('Test paragraph'),
-          section('Nested Section', [paragraph('Test paragraph')])
+          unsafeSection('Nested Section', [paragraph('Test paragraph')])
         ])
       ]
     }

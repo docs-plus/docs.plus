@@ -268,6 +268,59 @@ describe('HN-10 Schema Validation', () => {
       cy.get('.heading[level="2"]').eq(1).should('contain', 'Second H2')
       cy.get('.heading[level="2"]').eq(2).should('contain', 'Third H2')
     })
+
+    it('handles complex forest with 7 H1 sections and deep mixed nesting', () => {
+      const complexForestDoc = {
+        documentName: TEST_TITLE.HelloDocy,
+        sections: [
+          section('Section 1', [
+            paragraph(TEST_CONTENT.ShortContent),
+            heading(2, 'S1-H2', [heading(4, 'S1-H4', [heading(6, 'S1-H6', [paragraph('leaf')])])])
+          ]),
+          section('Section 2', [heading(3, 'S2-H3', [paragraph(TEST_CONTENT.ShortContent)])]),
+          section('Section 3', [
+            heading(2, 'S3-H2-A', [paragraph('A')]),
+            heading(5, 'S3-H5-B', [paragraph('B')])
+          ]),
+          section('Section 4', [
+            heading(2, 'S4-H2', [heading(3, 'S4-H3', [heading(7, 'S4-H7', [paragraph('deep')])])])
+          ]),
+          section('Section 5', [heading(4, 'S5-H4', [paragraph('S5 body')])]),
+          section('Section 6', [
+            heading(2, 'S6-H2', [heading(8, 'S6-H8', [paragraph('S6 deep')])])
+          ]),
+          section('Section 7', [heading(9, 'S7-H9', [paragraph('S7 body')])])
+        ]
+      }
+
+      cy.createDocument(complexForestDoc)
+      cy.wait(700)
+
+      // Must contain more than 6 root sections (H1 starts)
+      cy.get('.docy_editor > .tiptap > .heading[level="1"]').should('have.length', 7)
+
+      // Sample deep nesting checks across different sections
+      cy.get('.heading[level="1"] .heading[level="2"] .heading[level="4"] .heading[level="6"]')
+        .should('exist')
+        .and('contain', 'S1-H6')
+      cy.get('.heading[level="1"] .heading[level="2"] .heading[level="3"] .heading[level="7"]')
+        .should('exist')
+        .and('contain', 'S4-H7')
+      cy.get('.heading[level="1"] .heading[level="2"] .heading[level="8"]')
+        .should('exist')
+        .and('contain', 'S6-H8')
+      cy.get('.heading[level="1"] .heading[level="9"]').should('exist').and('contain', 'S7-H9')
+
+      // HN-10: H1 must never be nested
+      cy.get('.heading[level="1"] .heading[level="1"]').should('not.exist')
+
+      cy.validateDocumentSchema().then((pmResult) => {
+        expect(pmResult.valid).to.equal(true)
+      })
+      cy.validateDOMSchema().then((domResult) => {
+        expect(domResult.valid).to.equal(true)
+      })
+    })
   })
 
   describe('Level 10 Edge Cases', () => {

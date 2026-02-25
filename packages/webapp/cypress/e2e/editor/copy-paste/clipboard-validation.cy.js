@@ -70,7 +70,7 @@ describe('Clipboard Pipeline Validation', () => {
     })
   })
 
-  describe('clipboardPast Function Validation', () => {
+  describe('clipboardPaste Function Validation', () => {
     it('should handle paste in contentHeading (title)', () => {
       cy.createDocument([section('Original Title', [paragraph('Content')])])
       cy.wait(500)

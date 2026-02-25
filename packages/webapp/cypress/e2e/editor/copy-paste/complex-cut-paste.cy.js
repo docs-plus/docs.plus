@@ -17,7 +17,6 @@ describe('Complex Cut/Paste Operations', () => {
   beforeEach(() => {
     cy.visitEditor({ persist: false, clearDoc: true })
     cy.get('.docy_editor', { timeout: 15000 }).should('be.visible')
-    cy.on('uncaught:exception', () => false) // Handle potential errors gracefully
   })
 
   /**

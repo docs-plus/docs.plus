@@ -80,177 +80,173 @@ describe('document creation', { testIsolation: false }, () => {
   })
 
   describe('First section verification', () => {
-    let firstSection
-
-    beforeEach(() => {
-      firstSection = cy.get('.docy_editor .heading[level="1"]').first()
-    })
+    const getFirstSection = () => cy.get('.docy_editor .heading[level="1"]').first()
 
     it('Verifies section title and initial content', () => {
       // Verify title
-      firstSection.find('.title').first().should('contain.text', TEST_TITLE.short)
+      getFirstSection().find('.title').first().should('contain.text', TEST_TITLE.short)
 
       // Verify initial paragraphs (inside contentWrapper > contents)
-      firstSection
-        .find('> .contentWrapper .contents > p')
+      getFirstSection()
+        .find('.contentWrapper .contents > p')
         .eq(0)
         .should('contain.text', TEST_CONTENT.short)
-      firstSection
-        .find('> .contentWrapper .contents > p')
+      getFirstSection()
+        .find('.contentWrapper .contents > p')
         .eq(1)
         .should('contain.text', TEST_CONTENT.short)
     })
 
     it('Verifies ordered list structure', () => {
-      firstSection.find('ol').within(() => {
-        cy.get('li').should('have.length', 2)
-        cy.get('li').eq(0).should('contain.text', 'Initial point')
-        cy.get('li').eq(1).should('contain.text', 'Supporting detail')
-      })
+      getFirstSection()
+        .find('ol')
+        .within(() => {
+          cy.get('li').should('have.length', 2)
+          cy.get('li').eq(0).should('contain.text', 'Initial point')
+          cy.get('li').eq(1).should('contain.text', 'Supporting detail')
+        })
     })
 
     it('Verifies level-2 headings structure', () => {
-      // Get all level-2 headings in first section
-      firstSection.find('.heading[level="2"]').should('have.length', 3)
+      const getH2 = (idx) => getFirstSection().find('.heading[level="2"]').eq(idx)
 
-      // First level-2 heading
-      const firstL2Heading = firstSection.find('.heading[level="2"]').eq(0)
-      firstL2Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
-      firstL2Heading
-        .find('> .contentWrapper .contents > p')
+      getFirstSection().find('.heading[level="2"]').should('have.length', 3)
+
+      // First level-2 heading: title, paragraphs, and nested headings
+      getH2(0).find('.title').first().should('contain.text', TEST_TITLE.short)
+      getH2(0)
+        .find('> .wrapBlock > .contentWrapper .contents > p')
         .eq(0)
         .should('contain.text', TEST_CONTENT.medium)
-      firstL2Heading
-        .find('> .contentWrapper .contents > p')
+      getH2(0)
+        .find('> .wrapBlock > .contentWrapper .contents > p')
         .eq(1)
         .should('contain.text', TEST_CONTENT.short)
 
-      const l3Heading = firstL2Heading.find('.heading[level="3"]')
-      // Verify nested level-3 heading in first level-2 heading
-      l3Heading.should('have.length', 1)
-      l3Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
-      l3Heading
-        .find('> .contentWrapper .contents > p')
+      // Level-3 heading inside first level-2
+      getH2(0).find('.heading[level="3"]').should('have.length', 1)
+      getH2(0)
+        .find('.heading[level="3"]')
+        .find('.title')
+        .first()
+        .should('contain.text', TEST_TITLE.short)
+      getH2(0)
+        .find('.heading[level="3"] > .wrapBlock > .contentWrapper .contents > p')
         .first()
         .should('contain.text', TEST_CONTENT.short)
 
-      // Verify level-4 heading inside level-3
-      const l4Heading = l3Heading.find('.heading[level="4"]')
-      l4Heading.should('have.length', 1)
-      l4Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
-      l4Heading
-        .find('> .contentWrapper .contents > p')
+      // Level-4 heading inside level-3
+      getH2(0).find('.heading[level="4"]').should('have.length', 1)
+      getH2(0)
+        .find('.heading[level="4"]')
+        .find('.title')
+        .first()
+        .should('contain.text', TEST_TITLE.short)
+      getH2(0)
+        .find('.heading[level="4"] > .wrapBlock > .contentWrapper .contents > p')
         .first()
         .should('contain.text', TEST_CONTENT.short)
 
       // Second level-2 heading
-      const secondL2Heading = firstSection.find('.heading[level="2"]').eq(1)
-      secondL2Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
-      secondL2Heading
-        .find('> .contentWrapper .contents > p')
+      getH2(1).find('.title').first().should('contain.text', TEST_TITLE.short)
+      getH2(1)
+        .find('> .wrapBlock > .contentWrapper .contents > p')
         .first()
         .should('contain.text', TEST_CONTENT.medium)
 
       // Third level-2 heading
-      const thirdL2Heading = firstSection.find('.heading[level="2"]').eq(2)
-      thirdL2Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
-      thirdL2Heading
-        .find('> .contentWrapper .contents > p')
+      getH2(2).find('.title').first().should('contain.text', TEST_TITLE.short)
+      getH2(2)
+        .find('> .wrapBlock > .contentWrapper .contents > p')
         .eq(0)
         .should('contain.text', TEST_CONTENT.medium)
-      thirdL2Heading
-        .find('> .contentWrapper .contents > p')
+      getH2(2)
+        .find('> .wrapBlock > .contentWrapper .contents > p')
         .eq(1)
         .should('contain.text', TEST_CONTENT.short)
     })
   })
 
   describe('Second section verification', () => {
-    let secondSection
-
-    beforeEach(() => {
-      secondSection = cy.get('.docy_editor .heading[level="1"]').eq(1)
-    })
+    const getSecondSection = () => cy.get('.docy_editor .heading[level="1"]').eq(1)
 
     it('Verifies section title and content', () => {
-      secondSection.find('.title').first().should('contain.text', TEST_TITLE.medium)
-      secondSection
-        .find('> .contentWrapper .contents > p')
+      getSecondSection().find('.title').first().should('contain.text', TEST_TITLE.medium)
+      getSecondSection()
+        .find('.contentWrapper .contents > p')
         .eq(0)
         .should('contain.text', TEST_CONTENT.medium)
-      secondSection
-        .find('> .contentWrapper .contents > p')
+      getSecondSection()
+        .find('.contentWrapper .contents > p')
         .eq(1)
         .should('contain.text', TEST_CONTENT.short)
     })
 
     it('Verifies level-3 heading and its nested content', () => {
-      const l3Heading = secondSection.find('.heading[level="3"]')
-      l3Heading.should('have.length', 1)
-      l3Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
-      l3Heading
-        .find('> .contentWrapper .contents > p')
+      const getH3 = () => getSecondSection().find('.heading[level="3"]')
+
+      getH3().should('have.length', 1)
+      getH3().find('.title').first().should('contain.text', TEST_TITLE.short)
+      getH3()
+        .find('> .wrapBlock > .contentWrapper .contents > p')
         .first()
         .should('contain.text', TEST_CONTENT.short)
 
-      // Verify level-4 heading inside level-3
-      const l4Heading = l3Heading.find('.heading[level="4"]')
-      l4Heading.should('have.length', 1)
-      l4Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
-      l4Heading
-        .find('> .contentWrapper .contents > p')
+      // Level-4 heading inside level-3
+      getH3().find('.heading[level="4"]').should('have.length', 1)
+      getH3()
+        .find('.heading[level="4"]')
+        .find('.title')
+        .first()
+        .should('contain.text', TEST_TITLE.short)
+      getH3()
+        .find('.heading[level="4"] > .wrapBlock > .contentWrapper .contents > p')
         .first()
         .should('contain.text', TEST_CONTENT.short)
     })
   })
 
   describe('Third section verification', () => {
-    let thirdSection
-
-    beforeEach(() => {
-      thirdSection = cy.get('.docy_editor .heading[level="1"]').eq(2)
-    })
+    const getThirdSection = () => cy.get('.docy_editor .heading[level="1"]').eq(2)
 
     it('Verifies section title and content', () => {
-      thirdSection.find('.title').first().should('contain.text', TEST_TITLE.short)
-      thirdSection
-        .find('> .contentWrapper .contents > p')
+      getThirdSection().find('.title').first().should('contain.text', TEST_TITLE.short)
+      getThirdSection()
+        .find('.contentWrapper .contents > p')
         .eq(0)
         .should('contain.text', TEST_CONTENT.medium)
-      thirdSection
-        .find('> .contentWrapper .contents > p')
+      getThirdSection()
+        .find('.contentWrapper .contents > p')
         .eq(1)
         .should('contain.text', TEST_CONTENT.short)
     })
 
     it('Verifies level-8 heading and its content', () => {
-      const l8Heading = thirdSection.find('.heading[level="8"]')
-      l8Heading.should('have.length', 1)
-      l8Heading.find('.title').first().should('contain.text', TEST_TITLE.short)
-      l8Heading
-        .find('> .contentWrapper .contents > p')
+      const getH8 = () => getThirdSection().find('.heading[level="8"]')
+
+      getH8().should('have.length', 1)
+      getH8().find('.title').first().should('contain.text', TEST_TITLE.short)
+      getH8()
+        .find('> .wrapBlock > .contentWrapper .contents > p')
         .first()
         .should('contain.text', TEST_CONTENT.short)
     })
 
     it('Verifies nested bullet list structure', () => {
-      const l8Heading = thirdSection.find('.heading[level="8"]')
+      const getH8 = () => getThirdSection().find('.heading[level="8"]')
 
-      l8Heading
+      getH8()
         .find('ul')
         .first()
         .within(() => {
           cy.get('li').should('have.length', 4)
           cy.get('li').eq(0).should('contain.text', 'Initial point')
-
-          // Verify nested list items with proper indentation
           cy.get('li').eq(1).should('contain.text', 'Supporting detail 1')
           cy.get('li').eq(2).should('contain.text', 'Supporting detail 2')
           cy.get('li').eq(3).should('contain.text', 'Supporting detail 3')
         })
 
-      // Verify paragraph after list
-      l8Heading.find('ul').first().next('p').should('contain.text', TEST_CONTENT.short)
+      getH8().find('ul').first().next('p').should('contain.text', TEST_CONTENT.short)
     })
   })
 })

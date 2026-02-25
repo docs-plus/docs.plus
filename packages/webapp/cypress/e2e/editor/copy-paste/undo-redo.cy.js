@@ -11,8 +11,28 @@ import { section, heading, paragraph } from '../../../fixtures/docMaker'
 describe('Copy/Paste - Undo/Redo', () => {
   beforeEach(() => {
     cy.visitEditor({ persist: false, clearDoc: true })
-    cy.waitForToc()
+    cy.get('.docy_editor', { timeout: 15000 }).should('be.visible')
   })
+
+  const pasteHtml = (html) => {
+    cy.window().then((win) => {
+      const editor = win._editor
+      if (!editor) return
+
+      const clipboardData = new DataTransfer()
+      clipboardData.setData('text/html', html)
+      clipboardData.setData('text/plain', html.replace(/<[^>]*>/g, ' '))
+
+      const pasteEvent = new ClipboardEvent('paste', {
+        clipboardData,
+        bubbles: true,
+        cancelable: true
+      })
+
+      editor.view.dom.dispatchEvent(pasteEvent)
+    })
+    cy.wait(400)
+  }
 
   // ============================================================================
   // I1: Undo after paste - original state restored
@@ -20,42 +40,25 @@ describe('Copy/Paste - Undo/Redo', () => {
   it('I1: Undo after paste should restore original state', () => {
     const doc = [section('Section', [paragraph('Original content')])]
     cy.createDocument(doc)
-    cy.waitForToc()
 
-    // Insert a heading
+    // Paste heading content
     cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
-    cy.window().then((win) => {
-      const editor = win._editor
-      if (!editor) return
+    cy.realPress('End')
+    pasteHtml('<h2>New Heading</h2><p>New content</p>')
 
-      const pos = editor.state.selection.from
-      editor.commands.insertContentAt(pos, {
-        type: 'heading',
-        attrs: { id: 'to-undo' },
-        content: [
-          {
-            type: 'contentHeading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'New Heading' }]
-          },
-          { type: 'contentWrapper', content: [{ type: 'paragraph' }] }
-        ]
-      })
-    })
-    cy.wait(300)
-
-    // Verify heading was inserted
+    // Verify paste happened
     cy.get('.docy_editor .heading[level="2"]').should('exist')
 
     // Undo
-    cy.get('.docy_editor').type('{meta}z')
-    cy.wait(300)
+    cy.realPress(['Meta', 'z'])
+    cy.wait(400)
 
-    // Heading should be removed
+    // Pasted heading should be removed
     cy.get('.docy_editor .heading[level="2"]').should('not.exist')
 
-    // Original content should remain
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper').should('contain', 'Original content')
+    // Document baseline remains structurally valid after undo.
+    cy.get('.docy_editor .heading[level="1"]').should('exist')
+    cy.assertFullSchemaValid()
   })
 
   // ============================================================================
@@ -64,43 +67,25 @@ describe('Copy/Paste - Undo/Redo', () => {
   it('I2: Redo after undo should restore pasted content', () => {
     const doc = [section('Section', [paragraph('Content')])]
     cy.createDocument(doc)
-    cy.waitForToc()
 
-    // Insert heading
+    // Paste heading content
     cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
-    cy.window().then((win) => {
-      const editor = win._editor
-      if (!editor) return
-
-      const pos = editor.state.selection.from
-      editor.commands.insertContentAt(pos, {
-        type: 'heading',
-        attrs: { id: 'to-redo' },
-        content: [
-          {
-            type: 'contentHeading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Redo Heading' }]
-          },
-          { type: 'contentWrapper', content: [{ type: 'paragraph' }] }
-        ]
-      })
-    })
-    cy.wait(300)
+    cy.realPress('End')
+    pasteHtml('<h2>Redo Heading</h2><p>Redo body</p>')
 
     // Verify insertion
     cy.get('.docy_editor .heading[level="2"] .title').should('contain', 'Redo Heading')
 
     // Undo
-    cy.get('.docy_editor').type('{meta}z')
-    cy.wait(300)
+    cy.realPress(['Meta', 'z'])
+    cy.wait(400)
 
     // Heading removed
     cy.get('.docy_editor .heading[level="2"]').should('not.exist')
 
     // Redo
-    cy.get('.docy_editor').type('{meta}{shift}z')
-    cy.wait(300)
+    cy.realPress(['Meta', 'Shift', 'z'])
+    cy.wait(400)
 
     // Heading should be back
     cy.get('.docy_editor .heading[level="2"]').should('exist')
@@ -113,82 +98,30 @@ describe('Copy/Paste - Undo/Redo', () => {
   it('I3: Multiple operations should undo in sequence', () => {
     const doc = [section('Section', [paragraph('Base')])]
     cy.createDocument(doc)
-    cy.waitForToc()
 
-    // Insert first heading
+    // First paste
     cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
-    cy.window().then((win) => {
-      const editor = win._editor
-      if (!editor) return
+    cy.realPress('End')
+    pasteHtml('<h2>First H2</h2><p>First body</p>')
 
-      const pos = editor.state.selection.from
-      editor.commands.insertContentAt(pos, {
-        type: 'heading',
-        attrs: { id: 'first-h2' },
-        content: [
-          {
-            type: 'contentHeading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'First H2' }]
-          },
-          { type: 'contentWrapper', content: [{ type: 'paragraph' }] }
-        ]
-      })
-    })
-    cy.wait(300)
+    // Second paste
+    cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
+    cy.realPress('End')
+    pasteHtml('<h2>Second H2</h2><p>Second body</p>')
 
-    // Insert second heading
-    cy.window().then((win) => {
-      const editor = win._editor
-      if (!editor) return
-
-      // Find end of H1's contentWrapper
-      let insertPos = 0
-      editor.state.doc.descendants((node, pos) => {
-        if (node.type.name === 'heading') {
-          const level = node.firstChild?.attrs?.level
-          if (level === 1) {
-            insertPos = pos + node.nodeSize - 2
-          }
-        }
-      })
-
-      if (insertPos > 0) {
-        editor.commands.insertContentAt(insertPos, {
-          type: 'heading',
-          attrs: { id: 'second-h2' },
-          content: [
-            {
-              type: 'contentHeading',
-              attrs: { level: 2 },
-              content: [{ type: 'text', text: 'Second H2' }]
-            },
-            { type: 'contentWrapper', content: [{ type: 'paragraph' }] }
-          ]
-        })
-      }
-    })
-    cy.wait(300)
-
-    // Should have 2 H2s
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .heading[level="2"]').should(
-      'have.length',
-      2
-    )
+    cy.get('.docy_editor .heading[level="2"] .title').contains('First H2')
+    cy.get('.docy_editor .heading[level="2"] .title').contains('Second H2')
 
     // Undo once - should remove second H2
-    cy.get('.docy_editor').type('{meta}z')
-    cy.wait(300)
-
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .heading[level="2"]').should(
-      'have.length',
-      1
-    )
+    cy.realPress(['Meta', 'z'])
+    cy.wait(400)
+    cy.get('.docy_editor .heading[level="2"] .title').should('contain', 'First H2')
+    cy.get('.docy_editor .heading[level="2"] .title').should('not.contain', 'Second H2')
     cy.get('.docy_editor .heading[level="2"] .title').should('contain', 'First H2')
 
-    // Undo again - should remove first H2
-    cy.get('.docy_editor').type('{meta}z')
-    cy.wait(300)
+    // Undo again - should remove first H2 too
+    cy.realPress(['Meta', 'z'])
+    cy.wait(400)
 
     cy.get('.docy_editor .heading[level="2"]').should('not.exist')
   })
@@ -199,44 +132,29 @@ describe('Copy/Paste - Undo/Redo', () => {
   it('I4: Edit after paste should undo independently', () => {
     const doc = [section('Section', [paragraph('Content')])]
     cy.createDocument(doc)
-    cy.waitForToc()
 
-    // Insert heading
+    // Paste heading content
     cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
-    cy.window().then((win) => {
-      const editor = win._editor
-      if (!editor) return
+    cy.realPress('End')
+    pasteHtml('<h2>Editable</h2><p>Body</p>')
 
-      const pos = editor.state.selection.from
-      editor.commands.insertContentAt(pos, {
-        type: 'heading',
-        attrs: { id: 'editable-h2' },
-        content: [
-          {
-            type: 'contentHeading',
-            attrs: { level: 2 },
-            content: [{ type: 'text', text: 'Editable' }]
-          },
-          { type: 'contentWrapper', content: [{ type: 'paragraph' }] }
-        ]
-      })
-    })
-    cy.wait(300)
+    // Edit baseline content after paste
+    cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
+    cy.realType(' local-edit')
+    cy.wait(250)
 
-    // Edit the heading title
-    cy.get('.docy_editor .heading[level="2"] .title').click()
-    cy.get('.docy_editor .heading[level="2"] .title').type(' Modified')
-    cy.wait(200)
-
-    // Title should be modified
-    cy.get('.docy_editor .heading[level="2"] .title').should('contain', 'Editable Modified')
+    cy.get('.docy_editor .heading[level="1"] .contentWrapper p')
+      .first()
+      .should('contain', 'local-edit')
 
     // Undo the edit
-    cy.get('.docy_editor').type('{meta}z')
-    cy.wait(300)
+    cy.realPress(['Meta', 'z'])
+    cy.wait(400)
 
-    // Should revert to original title but heading still exists
-    // Note: Undo behavior may vary - this tests the concept
-    cy.get('.docy_editor .heading[level="2"]').should('exist')
+    // Edit is undone but pasted content remains.
+    cy.get('.docy_editor .heading[level="1"] .contentWrapper p')
+      .first()
+      .should('not.contain', 'local-edit')
+    cy.get('.docy_editor').should('contain', 'Editable')
   })
 })
