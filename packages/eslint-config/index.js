@@ -19,6 +19,8 @@ module.exports = [
       '**/.next/**',
       '**/.turbo/**',
       '**/coverage/**',
+      '**/.nyc_output/**',
+      '**/lcov-report/**',
 
       // Config files (JS configs shouldn't lint themselves)
       '**/*.config.js',

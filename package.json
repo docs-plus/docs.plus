@@ -52,6 +52,9 @@
     "update:all-packages": "sh ./scripts/update-packages.sh",
     "reinstall:all-packages": "sh ./scripts/reinstall-packages.sh",
     "pre-push": "bun scripts/pre-push.ts",
+    "test:all": "sh ./scripts/run-tests.sh",
+    "test:unit": "sh ./scripts/run-tests.sh --unit",
+    "test:e2e": "sh ./scripts/run-tests.sh --e2e",
     "cypress:open": "bunx cypress open",
     "cypress:run": "bunx cypress run"
   },

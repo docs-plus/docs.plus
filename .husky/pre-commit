@@ -1,8 +1,15 @@
 #!/bin/sh
 
-echo "🔍 Running pre-commit checks..."
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$REPO_ROOT" ]; then
+    echo "❌ Could not resolve repository root. Commit aborted."
+    exit 1
+fi
 
-# Run lint-staged (ESLint, Prettier, Stylelint on staged files)
-bun run lint:staged
+HOOK_SCRIPT="$REPO_ROOT/scripts/hooks/pre-commit.sh"
+if [ ! -f "$HOOK_SCRIPT" ]; then
+    echo "❌ Missing hook script: $HOOK_SCRIPT"
+    exit 1
+fi
 
-echo "✅ Pre-commit checks passed."
+exec sh "$HOOK_SCRIPT" "$@"

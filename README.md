@@ -477,6 +477,12 @@ docs.plus/
 
 PRs welcome! See [contributing guidelines](CONTRIBUTING.md) for details.
 
+**First contribution? Start here:**
+
+- Pick an issue labeled [good first issue](https://github.com/docs-plus/docs.plus/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22) or [help wanted](https://github.com/docs-plus/docs.plus/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22help%20wanted%22).
+- Confirm your setup with `bun run check` before opening a PR.
+- Use our issue and PR templates to speed up review.
+
 ## 📄 License
 
 MIT License - See [LICENSE.md](LICENSE.md)
@@ -485,7 +491,7 @@ MIT License - See [LICENSE.md](LICENSE.md)
 
 - 💬 **Discord**: [Join our server](https://discord.com/invite/25JPG38J59)
 - 🐦 **Twitter**: [@docsdotplus](https://twitter.com/docsdotplus)
-- 🐙 **GitHub**: [docs.plus](https://github.com/nwspk/docs.plus)
+- 🐙 **GitHub**: [docs.plus](https://github.com/docs-plus/docs.plus)
 - 📧 **Email**: [contact@newspeak.house](mailto:contact@newspeak.house)
 
 ---

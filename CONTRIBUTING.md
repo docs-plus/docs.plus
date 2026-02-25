@@ -168,12 +168,31 @@ We use **ESLint** for code quality. Fix linting issues:
 bun run lint:fix
 ```
 
-### Pre-commit Hooks
+### Git Hooks (Husky)
 
-We use **Husky** and **lint-staged** to automatically format and lint code before commits. These hooks run automatically, but you can manually trigger them:
+We use **Husky** to enforce local quality gates before code reaches remote branches.
+
+- `.husky/*` contains lightweight wrapper scripts.
+- `scripts/hooks/*.sh` contains the actual hook logic.
+- Active hooks:
+  - `pre-commit`: runs `bun run lint:staged` (staged-file lint/format checks)
+  - `commit-msg`: validates commit message format
+  - `pre-push`: runs selective build checks and always runs `bun run check` for **every push**
+  - `post-merge`: runs `bun install` when `package.json` or `bun.lock` changes
+
+You can trigger hooks manually:
 
 ```bash
-bun run lint:staged
+# pre-commit (staged file checks)
+sh .husky/pre-commit
+
+# commit message validation
+echo "feat(webapp): verify hook docs" > /tmp/commit-msg.txt
+sh .husky/commit-msg /tmp/commit-msg.txt
+
+# pre-push simulation (no real push)
+printf 'refs/heads/feature/demo 0000000000000000000000000000000000000000 refs/heads/feature/demo 0000000000000000000000000000000000000000\n' | \
+  sh .husky/pre-push origin https://github.com/docs-plus/docs.plus.git
 ```
 
 ### TypeScript
@@ -246,6 +265,8 @@ Aim for good test coverage, especially for:
    ```bash
    bun run check
    ```
+
+   This is also enforced automatically by `pre-push` for every `git push`.
 
    Or individually:
 

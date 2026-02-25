@@ -1,104 +1,15 @@
 #!/bin/sh
 
-echo "🔍 Pre-push checks starting..."
-echo ""
-
-# Get changed files compared to origin/main (or HEAD~1 if on main)
-BRANCH=$(git rev-parse --abbrev-ref HEAD)
-if [ "$BRANCH" = "main" ] || [ "$BRANCH" = "master" ]; then
-    CHANGED_FILES=$(git diff --name-only HEAD~1 2>/dev/null || echo "")
-else
-    CHANGED_FILES=$(git diff --name-only origin/main...HEAD 2>/dev/null || git diff --name-only HEAD~1 2>/dev/null || echo "")
-fi
-
-# Track overall status
-FAILED=0
-
-# ============================================
-# 1. Build TipTap Extensions (only if changed)
-# ============================================
-EXTENSIONS="extension-hyperlink extension-hypermultimedia extension-indent extension-inline-code"
-NEEDS_BUILD=""
-
-for ext in $EXTENSIONS; do
-    if echo "$CHANGED_FILES" | grep -q "packages/${ext}/"; then
-        NEEDS_BUILD="$NEEDS_BUILD $ext"
-    fi
-done
-
-if [ -n "$NEEDS_BUILD" ]; then
-    echo "📦 Building changed TipTap extensions..."
-    for ext in $NEEDS_BUILD; do
-        if bun run --filter "@docs.plus/${ext}" build >/dev/null 2>&1; then
-            echo "  ✅ ${ext}"
-        else
-            echo "  ❌ ${ext} build failed"
-            FAILED=1
-        fi
-    done
-else
-    echo "📦 No extension changes detected, skipping extension builds"
-fi
-
-if [ $FAILED -ne 0 ]; then
-    echo ""
-    echo "❌ Extension builds failed. Push aborted."
+REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null)
+if [ -z "$REPO_ROOT" ]; then
+    echo "❌ Could not resolve repository root. Push aborted."
     exit 1
 fi
 
-echo ""
-
-# ============================================
-# 2. Build Admin Dashboard (only if changed)
-# ============================================
-if echo "$CHANGED_FILES" | grep -q "packages/admin-dashboard/"; then
-    echo "📦 Building admin-dashboard..."
-    # Use bun workspace filter with build:ci script (same as CI)
-    if NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 \
-       NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy-key \
-       NEXT_PUBLIC_API_URL=http://localhost:3003 \
-       NEXT_PUBLIC_APP_URL=http://localhost:3000 \
-       bun run --filter @docs.plus/admin-dashboard build:ci >/dev/null 2>&1; then
-        echo "  ✅ admin-dashboard build OK"
-    else
-        echo "  ❌ admin-dashboard build failed"
-        FAILED=1
-    fi
-else
-    echo "📦 No admin-dashboard changes detected, skipping build"
-fi
-
-if [ $FAILED -ne 0 ]; then
-    echo ""
-    echo "❌ Admin dashboard build failed. Push aborted."
+HOOK_SCRIPT="$REPO_ROOT/scripts/hooks/pre-push.sh"
+if [ ! -f "$HOOK_SCRIPT" ]; then
+    echo "❌ Missing hook script: $HOOK_SCRIPT"
     exit 1
 fi
 
-echo ""
-
-# ============================================
-# 3. Build Webapp (only if changed)
-# ============================================
-if echo "$CHANGED_FILES" | grep -q "packages/webapp/"; then
-    echo "📦 Building webapp..."
-    # Use bun workspace filter with build:ci script (same as CI)
-    if NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321 \
-       NEXT_PUBLIC_SUPABASE_ANON_KEY=dummy-key \
-       bun run --filter @docs.plus/webapp build:ci >/dev/null 2>&1; then
-        echo "  ✅ webapp build OK"
-    else
-        echo "  ❌ webapp build failed"
-        FAILED=1
-    fi
-else
-    echo "📦 No webapp changes detected, skipping build"
-fi
-
-if [ $FAILED -ne 0 ]; then
-    echo ""
-    echo "❌ Webapp build failed. Push aborted."
-    exit 1
-fi
-
-echo ""
-echo "🚀 All pre-push checks passed. Proceeding with push."
+exec sh "$HOOK_SCRIPT" "$@"
