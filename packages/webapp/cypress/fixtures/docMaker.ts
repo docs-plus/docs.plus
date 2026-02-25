@@ -17,13 +17,10 @@ type HeadingContent = {
   type: 'heading'
   title: string
   level: number
-  contents: Array<ParagraphContent | ListContent>
+  contents: DocContent[]
 }
 
 type DocContent = ParagraphContent | ListContent | HeadingContent
-
-// Update the original HeadingContent type to use the new types
-type HeadingContents = ParagraphContent | ListContent
 
 // Basic content elements
 export const paragraph = (content: string) => ({
@@ -46,8 +43,33 @@ export const bulletList = (items: any[]) => ({
   content: items
 })
 
-export const heading = (level: number, title: string, contents: HeadingContent[]) => {
-  // HN-10: Levels are 1-10, but level 1 is reserved for sections
+/**
+ * Validates that all child headings inside `contents` satisfy HN-10 STACK-ATTACH:
+ *   child.level > parentLevel
+ *
+ * Catches invalid test documents at construction time rather than at test runtime.
+ */
+const validateChildLevels = (
+  parentLevel: number,
+  parentTitle: string,
+  contents: DocContent[]
+): void => {
+  for (const item of contents) {
+    if (item.type !== 'heading') continue
+
+    const child = item as HeadingContent
+    if (child.level <= parentLevel) {
+      throw new Error(
+        `HN-10 violation: child H${child.level} "${child.title}" must be > parent H${parentLevel} "${parentTitle}"`
+      )
+    }
+    // Recurse into grandchildren
+    validateChildLevels(child.level, child.title, child.contents)
+  }
+}
+
+export const heading = (level: number, title: string, contents: DocContent[]) => {
+  // HN-10 §1: Levels 2-10 for sub-headings (level 1 is reserved for sections)
   if (level < 2 || level > 10) {
     throw new Error('Heading level must be between 2-10. Level 1 is reserved for sections.')
   }
@@ -56,16 +78,44 @@ export const heading = (level: number, title: string, contents: HeadingContent[]
     throw new Error('Heading title cannot be empty')
   }
 
+  // HN-10 §5 STACK-ATTACH: child level must be > parent level
+  validateChildLevels(level, title, contents)
+
   return {
-    type: 'heading',
+    type: 'heading' as const,
     title,
     level,
     contents
   }
 }
 
-export const section = (title: string, contents: HeadingContents[]) => ({
-  type: 'section',
+export const section = (title: string, contents: DocContent[]) => {
+  // HN-10 §3.3: Sections start at H1 (level 1). All direct children must be > 1.
+  validateChildLevels(1, title, contents)
+
+  return {
+    type: 'section' as const,
+    title,
+    contents
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Unsafe builders — for negative/invalid-structure tests ONLY.
+// These bypass HN-10 validation so tests can verify the validator itself.
+// ---------------------------------------------------------------------------
+
+/** Creates a heading without HN-10 validation. Use ONLY in negative test cases. */
+export const unsafeHeading = (level: number, title: string, contents: DocContent[]) => ({
+  type: 'heading' as const,
+  title,
+  level,
+  contents
+})
+
+/** Creates a section without HN-10 validation. Use ONLY in negative test cases. */
+export const unsafeSection = (title: string, contents: DocContent[]) => ({
+  type: 'section' as const,
   title,
   contents
 })

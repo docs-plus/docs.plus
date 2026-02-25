@@ -1,6 +1,9 @@
 import { findPrevBlock } from '../helper'
 
 // INFO: test description written by AI
+// UPDATED: All expectations now match STACK-ATTACH algorithm (HN-10 §5.2):
+//   findLast(x => x.le < headingLevel) → shouldNested: true (heading becomes child)
+//   If no match found → fallback to last block, shouldNested: false
 
 describe('findPrevBlock Function - 1', () => {
   const testMap = [
@@ -14,32 +17,35 @@ describe('findPrevBlock Function - 1', () => {
     { le: 9, depth: 6, startBlockPos: 566, endBlockPos: 647 }
   ]
 
-  test('should return the correct previous block and set shouldNested to false when heading level matches a block', () => {
+  test('STACK-ATTACH: level 3 finds nearest ancestor with le < 3 → H2, nested', () => {
     const result = findPrevBlock(testMap, 3)
-    expect(result.prevBlock).toEqual({ le: 3, depth: 4, startBlockPos: 510, endBlockPos: 649 })
-    expect(result.shouldNested).toBe(false)
+    // findLast(x => x.le < 3) → {le: 2} (H2 at pos 411)
+    expect(result.prevBlock).toEqual({ le: 2, depth: 2, startBlockPos: 411, endBlockPos: 651 })
+    expect(result.shouldNested).toBe(true)
   })
 
-  test('should return the first block with a greater heading level and set shouldNested to true when no exact match exists', () => {
+  test('STACK-ATTACH: level 7 finds nearest ancestor with le < 7 → H3, nested', () => {
     const result = findPrevBlock(testMap, 7)
     expect(result.prevBlock).toEqual({ le: 3, depth: 4, startBlockPos: 510, endBlockPos: 649 })
     expect(result.shouldNested).toBe(true)
   })
 
-  test('should return the last block and set shouldNested to false if its level is less than or equal to the heading level', () => {
+  test('STACK-ATTACH: level 9 finds nearest ancestor with le < 9 → H3, nested', () => {
     const result = findPrevBlock(testMap, 9)
-    expect(result.prevBlock).toEqual({ le: 9, depth: 6, startBlockPos: 566, endBlockPos: 647 })
-    expect(result.shouldNested).toBe(false)
+    // findLast(x => x.le < 9) → {le: 3} (H3 at pos 510)
+    expect(result.prevBlock).toEqual({ le: 3, depth: 4, startBlockPos: 510, endBlockPos: 649 })
+    expect(result.shouldNested).toBe(true)
   })
 
-  test('should return the block with the next lower heading level and set shouldNested to true when no equal or greater heading exists', () => {
+  test('STACK-ATTACH: level 6 finds nearest ancestor with le < 6 → H3, nested', () => {
     const result = findPrevBlock(testMap, 6)
     expect(result.prevBlock).toEqual({ le: 3, depth: 4, startBlockPos: 510, endBlockPos: 649 })
     expect(result.shouldNested).toBe(true)
   })
 
-  test('should return the first block and set shouldNested to false when heading level is lower than all blocks', () => {
+  test('STACK-ATTACH: level 1 has no ancestor (no le < 1) → fallback same-level H1, not nested', () => {
     const result = findPrevBlock(testMap, 1)
+    // findLast(x => x.le < 1) → null → same-level sibling: findLast(x => x.le === 1) → H1
     expect(result.prevBlock).toEqual({ le: 1, depth: 0, startBlockPos: 150, endBlockPos: 653 })
     expect(result.shouldNested).toBe(false)
   })
@@ -50,25 +56,26 @@ describe('findPrevBlock Function - 1', () => {
     expect(result.shouldNested).toBe(false)
   })
 
-  test('should return the last block with a smaller level and set shouldNested to true if its level is smaller than the heading level', () => {
+  test('STACK-ATTACH: level 5 finds nearest ancestor with le < 5 → H3, nested', () => {
     const result = findPrevBlock(testMap, 5)
     expect(result.prevBlock).toEqual({ le: 3, depth: 4, startBlockPos: 510, endBlockPos: 649 })
     expect(result.shouldNested).toBe(true)
   })
 
-  test('should return the closest block with a smaller heading when a larger heading exists', () => {
+  test('STACK-ATTACH: level 2 finds nearest ancestor with le < 2 → H1, nested', () => {
     const result = findPrevBlock(testMap, 2)
-    expect(result.prevBlock).toEqual({ le: 2, depth: 2, startBlockPos: 411, endBlockPos: 651 })
-    expect(result.shouldNested).toBe(false)
+    // findLast(x => x.le < 2) → {le: 1} (H1 at pos 150)
+    expect(result.prevBlock).toEqual({ le: 1, depth: 0, startBlockPos: 150, endBlockPos: 653 })
+    expect(result.shouldNested).toBe(true)
   })
 
-  test('should return the block with the highest heading and set shouldNested to true when no block has an equal heading', () => {
+  test('STACK-ATTACH: level 10 finds nearest ancestor with le < 10 → H9, nested', () => {
     const result = findPrevBlock(testMap, 10)
     expect(result.prevBlock).toEqual({ le: 9, depth: 6, startBlockPos: 566, endBlockPos: 647 })
     expect(result.shouldNested).toBe(true)
   })
 
-  test('should set shouldNested to true when the previous block has a lower heading', () => {
+  test('STACK-ATTACH: level 4 finds nearest ancestor with le < 4 → H3, nested', () => {
     const result = findPrevBlock(testMap, 4)
     expect(result.prevBlock).toEqual({ le: 3, depth: 4, startBlockPos: 510, endBlockPos: 649 })
     expect(result.shouldNested).toBe(true)
@@ -85,45 +92,120 @@ describe('findPrevBlock Function - 2', () => {
     { le: 9, depth: 6, startBlockPos: 644, endBlockPos: 725 }
   ]
 
-  test('should return the previous block and set shouldNested to false when heading level matches exactly', () => {
+  test('STACK-ATTACH: level 2 finds nearest ancestor with le < 2 → H1, nested', () => {
     const result = findPrevBlock(testMap, 2)
-    expect(result.prevBlock).toEqual({ le: 2, depth: 2, startBlockPos: 411, endBlockPos: 729 })
-    expect(result.shouldNested).toBe(false)
+    // findLast(x => x.le < 2) → {le: 1} (H1 at pos 150)
+    expect(result.prevBlock).toEqual({ le: 1, depth: 0, startBlockPos: 150, endBlockPos: 731 })
+    expect(result.shouldNested).toBe(true)
   })
 
-  test('should return the closest previous block with a greater or smaller level and set shouldNested to true when no exact match exists', () => {
+  test('STACK-ATTACH: level 4 finds nearest ancestor with le < 4 → H3, nested', () => {
     const result = findPrevBlock(testMap, 4)
     expect(result.prevBlock).toEqual({ le: 3, depth: 4, startBlockPos: 588, endBlockPos: 727 })
     expect(result.shouldNested).toBe(true)
   })
 
-  test('should return the closest previous block with a smaller level and set shouldNested to true when multiple levels are greater', () => {
+  test('STACK-ATTACH: level 7 finds nearest ancestor with le < 7 → H3, nested', () => {
     const result = findPrevBlock(testMap, 7)
     expect(result.prevBlock).toEqual({ le: 3, depth: 4, startBlockPos: 588, endBlockPos: 727 })
     expect(result.shouldNested).toBe(true)
   })
 
-  test('should return the first block and set shouldNested to false when heading level is less than the smallest level', () => {
+  test('STACK-ATTACH: level 1 has no ancestor (no le < 1) → fallback same-level H1, not nested', () => {
     const result = findPrevBlock(testMap, 1)
+    // findLast(x => x.le < 1) → null → same-level sibling: findLast(x => x.le === 1) → H1
     expect(result.prevBlock).toEqual({ le: 1, depth: 0, startBlockPos: 150, endBlockPos: 731 })
     expect(result.shouldNested).toBe(false)
   })
 
-  test('should return the last block and set shouldNested to true when heading level is greater than all levels in the map', () => {
+  test('STACK-ATTACH: level 10 finds nearest ancestor with le < 10 → H9, nested', () => {
     const result = findPrevBlock(testMap, 10)
     expect(result.prevBlock).toEqual({ le: 9, depth: 6, startBlockPos: 644, endBlockPos: 725 })
     expect(result.shouldNested).toBe(true)
   })
 
-  test('should return the last block and set shouldNested to false if the last block has a level less than or equal to the heading level', () => {
+  test('STACK-ATTACH: level 9 finds nearest ancestor with le < 9 → H3, nested', () => {
     const result = findPrevBlock(testMap, 9)
-    expect(result.prevBlock).toEqual({ le: 9, depth: 6, startBlockPos: 644, endBlockPos: 725 })
-    expect(result.shouldNested).toBe(false)
+    // findLast(x => x.le < 9) → {le: 3} (H3 at pos 588)
+    expect(result.prevBlock).toEqual({ le: 3, depth: 4, startBlockPos: 588, endBlockPos: 727 })
+    expect(result.shouldNested).toBe(true)
   })
 
-  test('should return the last matching block and set shouldNested to true when heading level is between some blocks', () => {
+  test('STACK-ATTACH: level 8 finds nearest ancestor with le < 8 → H3, nested', () => {
     const result = findPrevBlock(testMap, 8)
     expect(result.prevBlock).toEqual({ le: 3, depth: 4, startBlockPos: 588, endBlockPos: 727 })
     expect(result.shouldNested).toBe(true)
+  })
+})
+
+describe('findPrevBlock Function - Edge Cases', () => {
+  test('single H1 block: level 2 should nest inside H1', () => {
+    const map = [{ le: 1, depth: 0, startBlockPos: 0, endBlockPos: 100 }]
+    const result = findPrevBlock(map, 2)
+    expect(result.prevBlock).toEqual(map[0])
+    expect(result.shouldNested).toBe(true)
+  })
+
+  test('single H1 block: level 1 should be sibling (fallback)', () => {
+    const map = [{ le: 1, depth: 0, startBlockPos: 0, endBlockPos: 100 }]
+    const result = findPrevBlock(map, 1)
+    expect(result.prevBlock).toEqual(map[0])
+    expect(result.shouldNested).toBe(false)
+  })
+
+  test('non-sequential jump: H1 → H4 nests inside H1', () => {
+    const map = [{ le: 1, depth: 0, startBlockPos: 0, endBlockPos: 200 }]
+    const result = findPrevBlock(map, 4)
+    expect(result.prevBlock).toEqual(map[0])
+    expect(result.shouldNested).toBe(true)
+  })
+
+  test('non-sequential jump: H1 → H10 nests inside H1', () => {
+    const map = [{ le: 1, depth: 0, startBlockPos: 0, endBlockPos: 200 }]
+    const result = findPrevBlock(map, 10)
+    expect(result.prevBlock).toEqual(map[0])
+    expect(result.shouldNested).toBe(true)
+  })
+
+  test('deep chain: [1,2,3,4,5] → level 3 nests inside H2', () => {
+    const map = [
+      { le: 1, depth: 0, startBlockPos: 0, endBlockPos: 500 },
+      { le: 2, depth: 2, startBlockPos: 50, endBlockPos: 450 },
+      { le: 3, depth: 4, startBlockPos: 100, endBlockPos: 400 },
+      { le: 4, depth: 6, startBlockPos: 150, endBlockPos: 350 },
+      { le: 5, depth: 8, startBlockPos: 200, endBlockPos: 300 }
+    ]
+    const result = findPrevBlock(map, 3)
+    expect(result.prevBlock).toEqual(map[1]) // H2
+    expect(result.shouldNested).toBe(true)
+  })
+
+  test('same-level siblings: [1,2,2,2] → level 2 nests inside H1', () => {
+    const map = [
+      { le: 1, depth: 0, startBlockPos: 0, endBlockPos: 500 },
+      { le: 2, depth: 2, startBlockPos: 50, endBlockPos: 200 },
+      { le: 2, depth: 2, startBlockPos: 200, endBlockPos: 350 },
+      { le: 2, depth: 2, startBlockPos: 350, endBlockPos: 480 }
+    ]
+    const result = findPrevBlock(map, 2)
+    expect(result.prevBlock).toEqual(map[0]) // H1
+    expect(result.shouldNested).toBe(true)
+  })
+
+  test('all same level: [3,3,3] → level 3 returns fallback (last block, not nested)', () => {
+    const map = [
+      { le: 3, depth: 0, startBlockPos: 0, endBlockPos: 100 },
+      { le: 3, depth: 0, startBlockPos: 100, endBlockPos: 200 },
+      { le: 3, depth: 0, startBlockPos: 200, endBlockPos: 300 }
+    ]
+    const result = findPrevBlock(map, 3)
+    expect(result.prevBlock).toEqual(map[2]) // last block
+    expect(result.shouldNested).toBe(false)
+  })
+
+  test('empty map returns null prevBlock', () => {
+    const result = findPrevBlock([], 5)
+    expect(result.prevBlock).toBeNull()
+    expect(result.shouldNested).toBe(false)
   })
 })
