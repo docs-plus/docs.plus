@@ -1,12 +1,27 @@
+/**
+ * Heading fold/unfold toggle plugin.
+ *
+ * NON-COLLABORATIVE BY DESIGN: Fold state is persisted per-browser in
+ * IndexedDB (primary) and localStorage (cache). Each collaborator sees their
+ * own fold state independently. This is intentional — fold state is a user
+ * preference, not document state. Syncing it via Yjs would force all
+ * collaborators into the same view, which is undesirable.
+ */
 import { db } from '@db/headingCrinckleDB'
 import { useStore } from '@stores'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { EditorEventData, TIPTAP_EVENTS, TipTapEditor, TRANSACTION_META } from '@types'
+import { logger } from '@utils/logger'
 import * as PubSub from 'pubsub-js'
 
 interface HeadingState {
   headingId: string
   crinkleOpen: boolean
+}
+
+interface StoredHeadingState extends HeadingState {
+  docId?: string
+  level?: number
 }
 
 let isProcessing = false
@@ -78,14 +93,15 @@ const handleHeadingToggle = ({ headingId }: EditorEventData): void => {
       crinkleOpen: !nodeState.crinkleOpen,
       level: currentNode.attrs.level
     })
-    .then(() => {
-      database.toArray().then((data: any[]) => {
-        localStorage.setItem('headingMap', JSON.stringify(data))
-      })
-      dispatch()
+    .then(() => database.toArray())
+    .then((data: StoredHeadingState[]) => {
+      localStorage.setItem('headingMap', JSON.stringify(data))
     })
     .catch((err: Error) => {
-      console.error(err)
+      logger.error('[headingTogglePlugin] Failed to persist fold state', err)
+    })
+    .finally(() => {
+      dispatch()
       isProcessing = false
     })
 }
