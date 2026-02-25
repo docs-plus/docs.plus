@@ -1,4 +1,5 @@
 import { TIPTAP_NODES } from '@types'
+import { logger } from '@utils/logger'
 
 import {
   createHeadingNodeFromSelection,
@@ -6,6 +7,7 @@ import {
   findPrevBlock,
   getEndPosSelection,
   getHeadingsBlocksMap,
+  getInsertionPos,
   getPrevHeadingPos,
   getRangeBlocks,
   insertRemainingHeadings,
@@ -19,27 +21,28 @@ const changeHeadingLevelForward = (arrg: CommandArgs, attributes: HeadingAttribu
   const { $from, $to } = selection
   const { start } = $from.blockRange($to)!
 
-  console.info('[Heading]: change heading level forwarding')
+  logger.info('[Heading]: change heading level forwarding')
 
   const comingLevel = attributes.level
   const block = createThisBlockMap(state)
 
   const titleStartPos = $from.start(1) - 1
-  const titleEndPos = $to.end(1)
+  const sectionEndPos = $to.end(1)
 
   let newStartPos = start
+  let headingEndPos = sectionEndPos
 
   const fromParent = $from.parent.type.name
   if (fromParent === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
     const headSelection = $from.blockRange($to)!
     if (headSelection.parent.type.name === TIPTAP_NODES.HEADING_TYPE) {
-      // INFO: 2 is the offset of the heading node
       newStartPos = headSelection.$from.pos - headSelection.$from.parentOffset - 2
+      headingEndPos = newStartPos + headSelection.parent.nodeSize
     }
   }
 
   const startPos = getEndPosSelection(doc, state)
-  const contentWrapper = getRangeBlocks(doc, startPos, titleEndPos)
+  const contentWrapper = getRangeBlocks(doc, startPos, headingEndPos)
 
   const contentWrapperParagraphs = contentWrapper.filter(
     (x) => x.type !== TIPTAP_NODES.HEADING_TYPE
@@ -56,29 +59,27 @@ const changeHeadingLevelForward = (arrg: CommandArgs, attributes: HeadingAttribu
     contentWrapperParagraphs
   )
 
-  tr.delete(newStartPos, titleEndPos)
+  tr.delete(newStartPos, headingEndPos)
 
-  let titleHMap = getHeadingsBlocksMap(tr.doc, titleStartPos, tr.mapping.map(titleEndPos))
+  let titleHMap = getHeadingsBlocksMap(tr.doc, titleStartPos, tr.mapping.map(sectionEndPos))
   const { prevHStartPos } = getPrevHeadingPos(tr.doc, titleStartPos, newStartPos)
   let mapHPost = titleHMap.filter(
     (x) => x.startBlockPos < newStartPos && x.startBlockPos >= prevHStartPos
   )
-  let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
-
-  const insertPos = prevBlock!.endBlockPos - (shouldNested ? 2 : 0)
+  const result = findPrevBlock(mapHPost, comingLevel)
+  const insertPos = getInsertionPos(result)
+  if (insertPos === null) return false
   tr.insert(insertPos, newHeadingNode)
 
-  // set the cursor to the end of the heading
   const updatedSelection = putTextSelectionEndNode(tr, insertPos, newHeadingNode)
   tr.setSelection(updatedSelection)
 
-  // after all that, we need to loop through the rest of remaing heading to append
   return insertRemainingHeadings({
     state,
     tr,
     headings: contentWrapperHeadings,
     titleStartPos,
-    titleEndPos: tr.mapping.map(titleEndPos),
+    titleEndPos: tr.mapping.map(sectionEndPos),
     prevHStartPos: titleStartPos
   })
 }

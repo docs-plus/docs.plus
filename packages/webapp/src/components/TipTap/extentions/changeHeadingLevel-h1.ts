@@ -1,11 +1,13 @@
 import { Node as ProseMirrorNode } from '@tiptap/pm/model'
 import { TIPTAP_NODES } from '@types'
+import { logger } from '@utils/logger'
 
 import {
   createHeadingNodeFromSelection,
   createThisBlockMap,
   findPrevBlock,
   getHeadingsBlocksMap,
+  getInsertionPos,
   getRangeBlocks,
   insertRemainingHeadings,
   putTextSelectionEndNode
@@ -18,10 +20,10 @@ const changeHeadingLevelH1 = (arrg: CommandArgs, attributes: HeadingAttributes):
   const { $from, $to } = selection
   const { start } = $from.blockRange($to)!
 
-  console.info('[Heading]: change heading Level h1')
+  logger.info('[Heading]: change heading Level h1')
 
   if (start === 1 && $from.pos - $from.parentOffset === 2) {
-    console.info('[Heading]: The first heading cannot be changed to a lower heading level')
+    logger.info('[Heading]: The first heading cannot be changed to a lower heading level')
     return true
   }
 
@@ -39,9 +41,7 @@ const changeHeadingLevelH1 = (arrg: CommandArgs, attributes: HeadingAttributes):
 
   // TODO: handel this case later
   if ($from.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE && $from.pos !== $to.pos) {
-    console.error(
-      '[Heading]: Cannot change heading level when content is selected within a heading'
-    )
+    logger.error('[Heading]: Cannot change heading level when content is selected within a heading')
     return false
   }
 
@@ -67,7 +67,7 @@ const changeHeadingLevelH1 = (arrg: CommandArgs, attributes: HeadingAttributes):
   let mapHPost = titleHMap.filter(
     (x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos
   )
-  let { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
+  const result = findPrevBlock(mapHPost, comingLevel)
 
   const newHeadingNode = createHeadingNodeFromSelection(
     doc,
@@ -82,8 +82,9 @@ const changeHeadingLevelH1 = (arrg: CommandArgs, attributes: HeadingAttributes):
   // remove content from the current positon to the end of the heading
   tr.delete(titleStartPos, titleEndPos)
 
-  // then add the new heading with the content
-  const insertPos = tr.mapping.map(prevBlock!.endBlockPos - (shouldNested ? 2 : 0))
+  const rawInsertPos = getInsertionPos(result)
+  if (rawInsertPos === null) return false
+  const insertPos = tr.mapping.map(rawInsertPos)
 
   tr.insert(insertPos, newHeadingNode)
 

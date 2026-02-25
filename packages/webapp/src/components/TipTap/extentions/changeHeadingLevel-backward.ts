@@ -1,5 +1,5 @@
-import { Node as _ProseMirrorNode } from '@tiptap/pm/model'
 import { TIPTAP_NODES } from '@types'
+import { logger } from '@utils/logger'
 
 import {
   createHeadingNodeFromSelection,
@@ -7,6 +7,7 @@ import {
   findPrevBlock,
   getEndPosSelection,
   getHeadingsBlocksMap,
+  getInsertionPos,
   getPrevHeadingPos,
   getRangeBlocks,
   insertRemainingHeadings,
@@ -24,15 +25,23 @@ const changeHeadingLevelBackward = (
   const { $from, $to } = selection
   const { start } = $from.blockRange($to)!
 
-  console.info('[Heading]: Backward process, comingLevel < currentHLevel')
+  logger.info('[Heading]: Backward process, comingLevel < currentHLevel')
 
   const comingLevel = attributes.level
   const block = createThisBlockMap(state)
   const titleStartPos = $from.start(1) - 1
-  const titleEndPos = $from.end(1)
+  const sectionEndPos = $from.end(1)
+
+  let headingEndPos = sectionEndPos
+  for (let d = $from.depth; d >= 1; d--) {
+    if ($from.node(d).type.name === TIPTAP_NODES.HEADING_TYPE) {
+      headingEndPos = $from.after(d)
+      break
+    }
+  }
 
   const startPos = getEndPosSelection(doc, state)
-  const contentWrapper = getRangeBlocks(doc, startPos, titleEndPos)
+  const contentWrapper = getRangeBlocks(doc, startPos, headingEndPos)
 
   const contentWrapperParagraphs = contentWrapper.filter(
     (x) => x.type !== TIPTAP_NODES.HEADING_TYPE
@@ -40,7 +49,12 @@ const changeHeadingLevelBackward = (
   const contentWrapperHeadings = contentWrapper.filter((x) => x.type === TIPTAP_NODES.HEADING_TYPE)
 
   if (asWrapper && contentWrapperParagraphs.length === 0) {
-    contentWrapperParagraphs.push(block.empty as any)
+    contentWrapperParagraphs.push({
+      depth: 0,
+      startBlockPos: 0,
+      endBlockPos: 0,
+      type: block.empty.type
+    })
   }
 
   const node = createHeadingNodeFromSelection(
@@ -53,21 +67,21 @@ const changeHeadingLevelBackward = (
     contentWrapperParagraphs
   )
 
-  tr.delete(start - 1, titleEndPos)
+  tr.delete(start - 1, headingEndPos)
 
-  const titleHMap = getHeadingsBlocksMap(tr.doc, titleStartPos, tr.mapping.map(titleEndPos))
+  const titleHMap = getHeadingsBlocksMap(tr.doc, titleStartPos, tr.mapping.map(sectionEndPos))
 
-  const { prevHStartPos } = getPrevHeadingPos(tr.doc, start - 1, tr.mapping.map(titleEndPos))
+  const { prevHStartPos } = getPrevHeadingPos(tr.doc, start - 1, tr.mapping.map(sectionEndPos))
 
   const mapHPost = titleHMap.filter(
     (x) => x.startBlockPos < start - 1 && x.startBlockPos >= prevHStartPos
   )
 
-  const { prevBlock, shouldNested } = findPrevBlock(mapHPost, comingLevel)
+  const result = findPrevBlock(mapHPost, comingLevel)
   const insertPos =
     comingLevel === 1
       ? titleHMap.at(0)!.endBlockPos
-      : prevBlock!.endBlockPos - (shouldNested ? 2 : 0)
+      : (getInsertionPos(result) ?? titleHMap.at(0)!.endBlockPos)
 
   tr.insert(insertPos, node)
 
@@ -76,7 +90,7 @@ const changeHeadingLevelBackward = (
 
   const lastH1Inserted = {
     startBlockPos: Math.min(tr.mapping.map(titleStartPos), tr.doc.content.size),
-    endBlockPos: Math.min(tr.mapping.map(titleEndPos), tr.doc.content.size)
+    endBlockPos: Math.min(tr.mapping.map(sectionEndPos), tr.doc.content.size)
   }
 
   if (comingLevel === 1) {
@@ -90,7 +104,7 @@ const changeHeadingLevelBackward = (
     tr,
     headings: contentWrapperHeadings,
     titleStartPos: comingLevel === 1 ? lastH1Inserted.startBlockPos : titleStartPos,
-    titleEndPos: comingLevel === 1 ? lastH1Inserted.endBlockPos : tr.mapping.map(titleEndPos),
+    titleEndPos: comingLevel === 1 ? lastH1Inserted.endBlockPos : tr.mapping.map(sectionEndPos),
     prevHStartPos:
       comingLevel === 1 ? lastH1Inserted.startBlockPos : titleHMap.at(-1)!.startBlockPos
   })
