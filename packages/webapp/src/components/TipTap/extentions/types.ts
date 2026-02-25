@@ -31,7 +31,20 @@ export interface HeadingBlockInfo {
   endBlockPos: number
   endContentPos?: number
   index?: number
-  node?: any
+  node?: ProseMirrorNode | JSONNode
+}
+
+export interface JSONMark {
+  type: string
+  attrs?: Record<string, unknown>
+}
+
+export interface JSONNode {
+  type: string
+  attrs?: Record<string, unknown>
+  content?: JSONNode[]
+  marks?: JSONMark[]
+  text?: string
 }
 
 export interface SelectionBlock {
@@ -39,17 +52,19 @@ export interface SelectionBlock {
   startBlockPos: number
   endBlockPos: number
   type: string
-  content?: any[]
-  attrs?: any
+  content?: JSONNode[]
+  attrs?: Record<string, unknown>
+  text?: string
+  marks?: JSONMark[]
   level?: number
   le?: number
-  node?: ProseMirrorNode
+  node?: ProseMirrorNode | JSONNode
 }
 
 export interface BlockMap {
   parent: { start: number; end: number }
   edge: { start: number; end: number }
-  ancesster: { start: number; end: number }
+  ancestor: { start: number; end: number }
   start: number
   end: number
   depth: number
@@ -74,13 +89,20 @@ export interface HeadingPosition {
   prevHEndPos: number
 }
 
+export interface HeadingTraversalMetrics {
+  headingWindowScans: number
+  headingNodesVisited: number
+  topLevelBoundaryScans: number
+}
+
 export interface InsertHeadingsParams {
   state: EditorState
   tr: Transaction
-  headings: any[]
+  headings: Array<SelectionBlock | JSONNode>
   titleStartPos: number
   titleEndPos: number
   prevHStartPos: number
+  traversalMetrics?: HeadingTraversalMetrics
 }
 
 export interface LastH1Inserted {
