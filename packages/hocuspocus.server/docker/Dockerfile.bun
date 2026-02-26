@@ -1,32 +1,23 @@
 # =============================================================================
-# Multi-stage Dockerfile for Hocuspocus Server
-# Build context MUST be monorepo root (.) so workspace dep @docs.plus/email-templates resolves.
+# Hocuspocus Backend (REST, WebSocket, Worker) — minimal image
+# Build context: monorepo root (.). Copies only what this backend needs.
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# Stage 1: Base - Install dependencies (monorepo layout)
-# -----------------------------------------------------------------------------
-# Use latest Bun 1.x (floating tag); same tag across all Dockerfiles for cohesion
 FROM oven/bun:1-slim AS base
 WORKDIR /app
 
-# Build argument for Prisma (only needed for client generation, not actual connection)
 ARG DATABASE_URL
 ENV DATABASE_URL=${DATABASE_URL:-postgresql://dummy:dummy@localhost:5432/dummy}
 
-# Install system dependencies (clean apt lists first to avoid stale mirrors)
 RUN rm -rf /var/lib/apt/lists/* && \
     apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    openssl \
-    && rm -rf /var/lib/apt/lists/*
+    ca-certificates openssl && rm -rf /var/lib/apt/lists/*
 
-# Copy root workspace files
+# Backend closure: root + email-templates + hocuspocus.server. Stub package.json for
+# other workspaces so lockfile resolution succeeds without copying their source.
 COPY package.json bun.lock* bunfig.toml ./
-# Copy full packages needed for hocuspocus (email-templates is a workspace dep)
 COPY packages/email-templates ./packages/email-templates
 COPY packages/hocuspocus.server ./packages/hocuspocus.server
-# Stub package.json for other workspaces so lockfile matches (no install from these)
 COPY packages/admin-dashboard/package.json ./packages/admin-dashboard/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/extension-hyperlink/package.json ./packages/extension-hyperlink/
@@ -36,78 +27,34 @@ COPY packages/extension-inline-code/package.json ./packages/extension-inline-cod
 COPY packages/supabase/package.json ./packages/supabase/
 COPY packages/webapp/package.json ./packages/webapp/
 
-# Install dependencies (resolves @docs.plus/email-templates from workspace)
-# --ignore-scripts: avoid root "prepare" (husky) and other lifecycle scripts in Docker
 RUN bun install --frozen-lockfile --production --ignore-scripts
 
-# Prisma generate (schema lives in packages/hocuspocus.server/prisma)
-# Pin to Prisma 6.19.0: project schema uses url=env(); Prisma 7 requires prisma.config.ts
-RUN cd packages/hocuspocus.server && bunx prisma@6.19.0 generate
-
-# Pre-install Prisma CLI for runtime migrations (pin 6.19.0)
-RUN bun add -d prisma@6.19.0 --no-save || true
-
+# Production runs its own install + generate; no need to generate in base.
 # -----------------------------------------------------------------------------
-# Stage 2: Production - Minimal runtime image (flat /app = hocuspocus.server layout)
-# Do NOT copy node_modules from base: Bun symlinks break across stages (hono,
-# @hocuspocus/server etc. not found). Run bun install in this stage instead.
+# Production: same layout, fresh install in stage (no node_modules copy)
 # -----------------------------------------------------------------------------
 FROM oven/bun:1-slim AS production
 WORKDIR /app
 
-# Install runtime dependencies only
 RUN rm -rf /var/lib/apt/lists/* && \
     apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates \
-    openssl \
-    netcat-openbsd \
-    && rm -rf /var/lib/apt/lists/*
-
-# Create non-root user for security
+    ca-certificates openssl && rm -rf /var/lib/apt/lists/*
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-# Copy workspace layout from base (no node_modules)
 COPY --from=base /app/package.json /app/bun.lock* /app/bunfig.toml ./
 COPY --from=base /app/packages ./packages
 
-# Fresh install so node_modules is real (Bun symlinks from base would break here)
 RUN bun install --frozen-lockfile --production --ignore-scripts
+RUN cd packages/hocuspocus.server && bunx prisma@6.19.0 generate
 
-# Prisma generate (schema in packages/hocuspocus.server/prisma)
-RUN cd packages/hocuspocus.server && bunx prisma@6 generate
-
-# Copy entrypoint before we remove packages
 COPY --from=base /app/packages/hocuspocus.server/scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Flat layout: keep packages/email-templates (workspace dep), rest at /app
-RUN mv packages/hocuspocus.server/src . && \
-    mv packages/hocuspocus.server/prisma . && \
-    cp packages/hocuspocus.server/package.json . && \
-    mv packages/email-templates /tmp/email-templates && \
-    rm -rf packages && \
-    mkdir -p packages && \
-    mv /tmp/email-templates packages/email-templates
-
-# Add workspaces so "workspace:*" @docs.plus/email-templates resolves; then re-install
-# so node_modules is for /app only (no symlinks into deleted packages/) and hono is found.
-# Remove root lockfile so Bun resolves only this workspace (hocuspocus + email-templates).
-RUN bun -e "const p=require('./package.json'); p.workspaces=['packages']; require('fs').writeFileSync('package.json', JSON.stringify(p,null,2));"
-RUN rm -f bun.lock bun.lockb && bun install --production --ignore-scripts
-
-# Pre-download Prisma CLI for migrations (pin 6.19.0)
-RUN bunx --bun prisma@6.19.0 --version || true
-
-# Create temp directory for file uploads
-RUN mkdir -p /app/temp/hypermultimedia && \
-    chown -R appuser:appuser /app
+# appuser must own /app so runtime can create ./temp/hypermultimedia/... (storage.local.ts uses mkdir recursive)
+RUN chown -R appuser:appuser /app
 
 USER appuser
-
 EXPOSE 4000 4001 4002
-
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD bun --version || exit 1
-
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD bun --version || exit 1
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
 CMD ["bun", "src/index.ts"]

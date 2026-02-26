@@ -6,11 +6,26 @@ name: docsplus
 
 services:
   rest-api:
+    env_file: .env.local
+    deploy:
+      replicas: 1
     ports:
       - '4000:4000'
   hocuspocus-server:
+    env_file: .env.local
+    deploy:
+      replicas: 1
     ports:
       - '4001:4001'
   hocuspocus-worker:
+    env_file: .env.local
+    deploy:
+      replicas: 1
     ports:
       - '4002:4002'
+
+# Prod compose declares docsplus-network as external (for Traefik). For local backend-only runs, create it.
+networks:
+  docsplus-network:
+    external: false
+    name: docsplus-network

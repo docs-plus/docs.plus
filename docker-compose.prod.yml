@@ -143,7 +143,7 @@ services:
     restart: always
     stop_grace_period: 30s
     stop_signal: SIGTERM
-    command: bun /app/src/index.ts
+    command: bun src/index.ts
     environment:
       NODE_ENV: production
       APP_PORT: 4000
@@ -240,7 +240,7 @@ services:
     restart: always
     stop_grace_period: 30s
     stop_signal: SIGTERM
-    command: bun /app/src/hocuspocus.server.ts
+    command: bun src/hocuspocus.server.ts
     environment:
       NODE_ENV: production
       HOCUSPOCUS_PORT: 4001
@@ -338,7 +338,7 @@ services:
     # Grace period must exceed lockDuration (2min) to allow jobs to complete
     stop_grace_period: 150s
     stop_signal: SIGTERM
-    command: bun /app/src/hocuspocus.worker.ts
+    command: bun src/hocuspocus.worker.ts
     environment:
       NODE_ENV: production
       WORKER_HEALTH_PORT: 4002
