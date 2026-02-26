@@ -1,0 +1,92 @@
+# =============================================================================
+# Root .dockerignore - Used when build context is . (monorepo root)
+# Keeps context small and avoids leaking secrets or dev artifacts
+# =============================================================================
+
+# Dependencies (reinstalled in image)
+node_modules
+**/node_modules
+.bun
+**/.bun
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+*.local
+
+# Git and IDE
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+**/.DS_Store
+
+# CI/CD (not needed in image)
+.github
+.gitlab-ci.yml
+.travis.yml
+.circleci
+
+# Documentation and notes (not needed at runtime)
+*.md
+!README.md
+docs
+**/docs
+Notes
+**/Notes
+
+# Testing and coverage
+coverage
+**/coverage
+.nyc_output
+**/.nyc_output
+cypress/screenshots
+cypress/videos
+cypress/downloads
+**/*.test.ts
+**/*.spec.ts
+**/__tests__
+**/__mocks__
+
+# Build outputs (rebuilt in image)
+.next
+**/.next
+dist
+**/dist
+out
+**/out
+build
+**/build
+.turbo
+**/.turbo
+
+# Logs and cache
+*.log
+*.tsbuildinfo
+**/*.tsbuildinfo
+.cache
+**/.cache
+temp
+**/temp
+tmp
+**/tmp
+
+# Docker (avoid recursive context)
+Dockerfile*
+docker-compose*.yml
+.dockerignore
+
+# Keys and certs (never in image)
+*.pem
+*.key
