@@ -12,9 +12,8 @@ if [ -f "/app/node_modules/.bin/prisma" ]; then
   echo "📦 Using Prisma CLI from node_modules (fast)..."
   timeout 30 /app/node_modules/.bin/prisma migrate deploy || MIGRATION_FAILED=1
 elif command -v bunx >/dev/null 2>&1; then
-  echo "📦 Using bunx prisma (checks local cache first)..."
-  # bunx checks local node_modules and cache before downloading
-  timeout 30 bunx prisma migrate deploy || MIGRATION_FAILED=1
+  echo "📦 Using bunx prisma@6.19.0 (schema uses url=env(); Prisma 7 requires prisma.config.ts)..."
+  timeout 30 bunx prisma@6.19.0 migrate deploy || MIGRATION_FAILED=1
 else
   echo "⚠️  Prisma CLI not found, skipping migrations..."
 fi

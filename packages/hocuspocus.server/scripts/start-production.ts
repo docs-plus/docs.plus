@@ -9,7 +9,7 @@ async function startProduction() {
 
     // Run database migrations
     console.log(chalk.yellow('📦 Running database migrations...'))
-    await $`bunx prisma migrate deploy`
+    await $`bunx prisma@6.19.0 migrate deploy`
 
     console.log(chalk.green('✅ Migrations completed successfully'))
 
@@ -27,7 +27,7 @@ async function startProduction() {
         console.log(chalk.green('✅ Migration fixed, retrying...'))
 
         // Retry migrations
-        await $`bunx prisma migrate deploy`
+        await $`bunx prisma@6.19.0 migrate deploy`
         console.log(chalk.green('✅ Migrations completed successfully'))
 
         // Start the main application

@@ -41,11 +41,11 @@ COPY packages/webapp/package.json ./packages/webapp/
 RUN bun install --frozen-lockfile --production --ignore-scripts
 
 # Prisma generate (schema lives in packages/hocuspocus.server/prisma)
-# Pin to Prisma 6: project schema uses url=env(); Prisma 7 requires prisma.config.ts
-RUN cd packages/hocuspocus.server && bunx prisma@6 generate
+# Pin to Prisma 6.19.0: project schema uses url=env(); Prisma 7 requires prisma.config.ts
+RUN cd packages/hocuspocus.server && bunx prisma@6.19.0 generate
 
-# Pre-install Prisma CLI for runtime migrations
-RUN bun add -d prisma@^6.19.0 --no-save || true
+# Pre-install Prisma CLI for runtime migrations (pin 6.19.0)
+RUN bun add -d prisma@6.19.0 --no-save || true
 
 # -----------------------------------------------------------------------------
 # Stage 2: Production - Minimal runtime image (flat /app = hocuspocus.server layout)
@@ -86,8 +86,8 @@ RUN mv packages/hocuspocus.server/src . && \
     cp packages/hocuspocus.server/package.json . && \
     rm -rf packages
 
-# Pre-download Prisma CLI for migrations
-RUN bunx --bun prisma@^6.19.0 --version || true
+# Pre-download Prisma CLI for migrations (pin 6.19.0)
+RUN bunx --bun prisma@6.19.0 --version || true
 
 # Create temp directory for file uploads
 RUN mkdir -p /app/temp/hypermultimedia && \
