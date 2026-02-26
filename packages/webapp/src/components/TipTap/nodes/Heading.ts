@@ -85,7 +85,7 @@ const Heading = Node.create({
 
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value as string))
 
-      dom.classList.add(nodeState.crinkleOpen ? 'opend' : 'closed')
+      dom.classList.add(nodeState.crinkleOpen ? 'opened' : 'closed')
 
       const content = document.createElement('div')
 

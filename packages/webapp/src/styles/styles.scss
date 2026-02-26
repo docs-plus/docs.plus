@@ -225,7 +225,7 @@ $crinkle-transition: ease-out;
       }
     }
 
-    &.opend,
+    &.opened,
     &.opening {
       > .wrapBlock {
         height: 100%;
@@ -242,7 +242,7 @@ $crinkle-transition: ease-out;
       }
     }
 
-    &.opend {
+    &.opened {
       > .wrapBlock > .foldWrapper {
         display: none;
       }

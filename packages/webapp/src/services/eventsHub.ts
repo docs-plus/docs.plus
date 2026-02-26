@@ -58,7 +58,7 @@ export const eventsHub = (router: NextRouter) => {
   PubSub.subscribe(CHAT_COMMENT, (msg, data: TChatCommentData) => {
     const { content, html, headingId } = data
     const { workspaceId } = useStore.getState().settings
-    const { headingId: opendHeadingId } = useChatStore.getState().chatRoom
+    const { headingId: openedHeadingId } = useChatStore.getState().chatRoom
     const user = useAuthStore.getState().profile
 
     const setCommentMessageMemory = useChatStore.getState().setCommentMessageMemory
@@ -76,7 +76,7 @@ export const eventsHub = (router: NextRouter) => {
       user
     })
 
-    if (headingId === opendHeadingId) return destroyChatRoom()
+    if (headingId === openedHeadingId) return destroyChatRoom()
 
     setTimeout(() => {
       if (workspaceId) {
@@ -103,13 +103,13 @@ export const eventsHub = (router: NextRouter) => {
 
     const { workspaceId } = useStore.getState().settings
     const user = useAuthStore.getState().profile
-    const { headingId: opendHeadingId } = useChatStore.getState().chatRoom
+    const { headingId: openedHeadingId } = useChatStore.getState().chatRoom
 
     const setChatRoom = useChatStore.getState().setChatRoom
     const destroyChatRoom = useChatStore.getState().destroyChatRoom
     const switchChatRoom = useChatStore.getState().switchChatRoom
 
-    if (opendHeadingId === headingId && toggleRoom) return destroyChatRoom()
+    if (openedHeadingId === headingId && toggleRoom) return destroyChatRoom()
 
     switchChatRoom(headingId)
 

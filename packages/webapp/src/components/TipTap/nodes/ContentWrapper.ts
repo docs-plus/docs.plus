@@ -47,7 +47,7 @@ function expandElement(
   wrapperBlock.style.transition = 'none'
 
   elem.classList.add('overflow-hidden')
-  headingSection.classList.remove('opend', 'closed', 'closing', 'opening')
+  headingSection.classList.remove('opened', 'closed', 'closing', 'opening')
   headingSection.classList.add(open ? 'opening' : 'closing')
 
   elem.classList.toggle(collapseClass)
@@ -71,10 +71,10 @@ function expandElement(
 
     if (open) {
       headingSection.classList.remove('closed', 'closing', 'opening')
-      headingSection.classList.add('opend')
+      headingSection.classList.add('opened')
       elem.classList.remove('overflow-hidden')
     } else {
-      headingSection.classList.remove('opening', 'opend', 'closing')
+      headingSection.classList.remove('opening', 'opened', 'closing')
       headingSection.classList.add('closed')
       elem.classList.add('overflow-hidden')
     }
@@ -160,7 +160,7 @@ const ContentWrapper = Node.create({
         dom.classList.add('overflow-hidden', 'collapsed', 'closed')
       } else {
         dom.classList.remove('overflow-hidden', 'collapsed', 'closed')
-        dom.classList.add('opend')
+        dom.classList.add('opened')
       }
 
       Object.entries(attributes).forEach(([key, value]) => dom.setAttribute(key, value as string))

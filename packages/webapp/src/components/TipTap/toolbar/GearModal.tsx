@@ -199,7 +199,7 @@ const GearModal = ({ className, onClose }: GearModalProps) => {
                   className="text-base-content mb-2 block text-sm font-medium">
                   Keywords
                 </label>
-                <span className="documentKeywordTnput">
+                <span className="documentKeywordInput">
                   <TagsInput
                     value={tags}
                     onChange={handleTagsChange}
