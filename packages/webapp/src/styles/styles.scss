@@ -846,6 +846,24 @@ $crinkle-transition: ease-out;
   }
 }
 
+/* ---------------------------------------------------------------------------
+   react-modal-sheet — theme-aware so sheets (chatroom, notifications, filters,
+   emoji picker) respect light/dark/dark-hc. Library defaults are light-only.
+   --------------------------------------------------------------------------- */
+.react-modal-sheet-container {
+  background-color: var(--color-base-100) !important;
+  border-top-left-radius: var(--radius-box, 1rem);
+  border-top-right-radius: var(--radius-box, 1rem);
+}
+
+.react-modal-sheet-content {
+  background-color: var(--color-base-100) !important;
+}
+
+.react-modal-sheet-backdrop {
+  background: color-mix(in oklch, var(--color-base-content) 40%, transparent) !important;
+}
+
 .react-modal-sheet-header {
   padding-top: 4px !important;
   height: 20px !important;

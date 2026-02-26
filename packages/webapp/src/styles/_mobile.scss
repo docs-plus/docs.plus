@@ -291,6 +291,18 @@ html.m_mobile #__next {
     0 1px 18px 0 color-mix(in oklch, var(--color-base-content) 12%, transparent);
 }
 
+[data-theme='docsplus-dark'] .edit-fab,
+[data-theme='docsplus-dark-hc'] .edit-fab {
+  box-shadow:
+    0 4px 6px -1px color-mix(in oklch, var(--color-base-content) 12%, transparent),
+    0 8px 12px 0 color-mix(in oklch, var(--color-base-content) 8%, transparent);
+}
+
+[data-theme='docsplus-dark'] .ha-single.btnOpenChatBox,
+[data-theme='docsplus-dark-hc'] .ha-single.btnOpenChatBox {
+  box-shadow: 0 2px 6px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+}
+
 .headingSelection {
   &.is-active {
     background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
