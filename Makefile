@@ -3,7 +3,7 @@
 # Manages: Hocuspocus Server + Webapp + Infrastructure
 # =============================================================================
 
-.PHONY: help build build-dev validate-prod-build up-prod up-dev up-local infra-up infra-down infra-logs dev-local dev-backend dev-webapp dev-admin dev-rest dev-ws dev-worker down logs logs-webapp logs-backend restart clean scale scale-webapp scale-hocuspocus ps stats supabase-start supabase-stop supabase-status deploy-prod rollback-prod status-prod logs-traefik
+.PHONY: help build build-dev validate-prod-build build-backend-prod run-backend-prod-local up-prod up-dev up-local infra-up infra-down infra-logs dev-local dev-backend dev-webapp dev-admin dev-rest dev-ws dev-worker down logs logs-webapp logs-backend restart clean scale scale-webapp scale-hocuspocus ps stats supabase-start supabase-stop supabase-status deploy-prod rollback-prod status-prod logs-traefik
 
 help:
 	@echo "Docsplus Full Stack Docker Commands"
@@ -12,6 +12,8 @@ help:
 	@echo "  make build             - Build all services (production)"
 	@echo "  make build-dev         - Build all services (development)"
 	@echo "  make validate-prod-build - Build prod images with stub env (no .env.production needed)"
+	@echo "  make build-backend-prod  - Build only backend prod images (rest-api, hocuspocus, worker)"
+	@echo "  make run-backend-prod-local - Run backend prod images locally (needs .env.local)"
 	@echo ""
 	@echo "Running:"
 	@echo "  make up-prod           - Start all services (production)"
@@ -74,6 +76,23 @@ validate-prod-build:
 	@test -f scripts/env.production.build-stub || (echo "❌ scripts/env.production.build-stub missing"; exit 1)
 	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.prod.yml --env-file scripts/env.production.build-stub build --parallel
 	@echo "✅ Production build validation passed"
+
+# Build only backend (rest-api, hocuspocus-server, hocuspocus-worker) prod images. Same image, 3 services.
+# Use before pushing to verify backend Dockerfile builds; then run with run-backend-prod-local.
+build-backend-prod:
+	@echo "🏗️  Building backend production images (rest-api, hocuspocus-server, hocuspocus-worker)..."
+	@test -f scripts/env.production.build-stub || (echo "❌ scripts/env.production.build-stub missing"; exit 1)
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.prod.yml --env-file scripts/env.production.build-stub build rest-api hocuspocus-server hocuspocus-worker
+	@echo "✅ Backend production images built"
+
+# Run backend prod images locally: Redis + rest-api + hocuspocus-server + hocuspocus-worker (1 replica each).
+# Uses .env.local for DATABASE_URL and secrets. No Traefik; override publishes 4000/4001/4002.
+run-backend-prod-local: build-backend-prod
+	@test -f .env.local || (echo "❌ .env.local required (DATABASE_URL, SUPABASE_*, JWT_SECRET, etc.)"; exit 1)
+	@echo "🚀 Starting backend (prod images) + Redis locally..."
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.prod.yml -f docker-compose.backend-local.override.yml --env-file .env.local up -d redis rest-api hocuspocus-server hocuspocus-worker
+	@echo "✅ Backend running. REST: http://localhost:4000  WS: ws://localhost:4001  Health: http://localhost:4000/health"
+	@echo "  make logs-backend  - view logs"
 
 build-dev:
 	@echo "🏗️  Building all services (development)..."

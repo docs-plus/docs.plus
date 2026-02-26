@@ -1,0 +1,16 @@
+# Override for running backend prod images locally (no Traefik).
+# Use: docker compose -f docker-compose.prod.yml -f docker-compose.backend-local.override.yml --env-file .env.local up -d redis rest-api hocuspocus-server hocuspocus-worker
+# Then: REST http://localhost:4000  WS ws://localhost:4001  Worker health localhost:4002
+
+name: docsplus
+
+services:
+  rest-api:
+    ports:
+      - '4000:4000'
+  hocuspocus-server:
+    ports:
+      - '4001:4001'
+  hocuspocus-worker:
+    ports:
+      - '4002:4002'

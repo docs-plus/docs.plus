@@ -80,15 +80,20 @@ RUN cd packages/hocuspocus.server && bunx prisma@6 generate
 COPY --from=base /app/packages/hocuspocus.server/scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Flat layout for runtime: /app/src, /app/prisma, /app/node_modules, /app/package.json
+# Flat layout: keep packages/email-templates (workspace dep), rest at /app
 RUN mv packages/hocuspocus.server/src . && \
     mv packages/hocuspocus.server/prisma . && \
     cp packages/hocuspocus.server/package.json . && \
-    rm -rf packages
+    mv packages/email-templates /tmp/email-templates && \
+    rm -rf packages && \
+    mkdir -p packages && \
+    mv /tmp/email-templates packages/email-templates
 
-# Re-install so node_modules is for /app only (no symlinks into deleted packages/)
-# Otherwise hono etc. are only in packages/.../node_modules and break after rm -rf packages
-RUN bun install --frozen-lockfile --production --ignore-scripts
+# Add workspaces so "workspace:*" @docs.plus/email-templates resolves; then re-install
+# so node_modules is for /app only (no symlinks into deleted packages/) and hono is found.
+# Remove root lockfile so Bun resolves only this workspace (hocuspocus + email-templates).
+RUN bun -e "const p=require('./package.json'); p.workspaces=['packages']; require('fs').writeFileSync('package.json', JSON.stringify(p,null,2));"
+RUN rm -f bun.lock bun.lockb && bun install --production --ignore-scripts
 
 # Pre-download Prisma CLI for migrations (pin 6.19.0)
 RUN bunx --bun prisma@6.19.0 --version || true
