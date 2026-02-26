@@ -38,9 +38,9 @@ elif [ "$#" -eq 2 ] && [ "$1" = "bun" ] && echo "$2" | grep -q "^src/"; then
   FILE=$(echo "$2" | sed 's/^src\///')
   echo "🔄 Converting: bun src/$FILE -> bun /app/src/$FILE"
   exec bun "/app/src/$FILE"
-elif echo "$*" | grep -q "bun.*src/"; then
-  # Handle any bun command with src/ path
-  if echo "$*" | grep -q "--watch"; then
+elif echo "$*" | grep -q -e "bun.*src/"; then
+  # Handle any bun command with src/ path (-e prevents --watch being parsed as grep option on BusyBox)
+  if echo "$*" | grep -q -e "--watch"; then
     FILE=$(echo "$*" | sed 's/.*bun.*--watch.*src\///' | sed 's/ .*//')
     echo "🔄 Converting: bun --watch src/$FILE -> bun --watch /app/src/$FILE"
     exec bun --watch "/app/src/$FILE"
