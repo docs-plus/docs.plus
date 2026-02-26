@@ -77,8 +77,14 @@
   // Dark: softer shadow so no light halo on dark canvas
   [data-theme='docsplus-dark'] &:hover .ha-wrap.has-selection > .ha-group,
   [data-theme='docsplus-dark-hc'] &:hover .ha-wrap.has-selection > .ha-group,
-  [data-theme='docsplus-dark'] & .ha-wrap.has-selection > .ha-group[data-unread-count]:not([data-unread-count='']),
-  [data-theme='docsplus-dark-hc'] & .ha-wrap.has-selection > .ha-group[data-unread-count]:not([data-unread-count='']) {
+  [data-theme='docsplus-dark']
+    &
+    .ha-wrap.has-selection
+    > .ha-group[data-unread-count]:not([data-unread-count='']),
+  [data-theme='docsplus-dark-hc']
+    &
+    .ha-wrap.has-selection
+    > .ha-group[data-unread-count]:not([data-unread-count='']) {
     box-shadow:
       0 1px 3px 0 color-mix(in oklch, var(--color-base-content) 6%, transparent),
       0 1px 2px 0 color-mix(in oklch, var(--color-base-content) 4%, transparent),

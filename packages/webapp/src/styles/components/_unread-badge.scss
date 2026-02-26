@@ -24,9 +24,9 @@
     height: $size;
     padding: 0 6px;
 
-    // Error color (red) - !important to override btn/daisyUI styles
-    background-color: var(--color-error, #ef4444) !important;
-    color: var(--color-error-content, #fff) !important;
+    // Theme-aware error color — !important to override btn/daisyUI styles
+    background-color: var(--color-error) !important;
+    color: var(--color-error-content) !important;
     border-radius: calc($size / 2);
 
     font-size: $font-size;

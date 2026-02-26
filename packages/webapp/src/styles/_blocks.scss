@@ -114,7 +114,7 @@
     caret-color: inherit;
   }
 
-  /* Elements with white/light backgrounds need explicit caret color */
+  /* Elements with white/light backgrounds (e.g. inline styles) need explicit caret color; selectors intentionally match hex/word */
   .heading[level='1'],
   [style*='background-color: #fff'],
   [style*='background-color: white'],
