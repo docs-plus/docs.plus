@@ -1,0 +1,42 @@
+---
+description: Project uses Bun as package manager and runtime in a monorepo workspace
+alwaysApply: true
+---
+
+# Bun Monorepo
+
+This project (`docs.plus`) uses **Bun** — not npm, yarn, or pnpm.
+
+## Package Management
+
+- Install deps: `bun install` (never `npm install` or `yarn`)
+- Add a dep: `bun add <pkg>` / `bun add -d <pkg>`
+- Run scripts: `bun run <script>`
+- Execute binaries: `bunx <bin>` (not `npx`)
+- Lockfile: `bun.lock` (never `package-lock.json` or `yarn.lock`)
+
+## Monorepo Structure
+
+Workspaces are defined in the root `package.json` under `"workspaces": ["packages/*"]`.
+
+Key packages:
+
+- `@docs.plus/webapp` — Next.js frontend
+- `@docs.plus/hocuspocus` — backend server
+- `@docs.plus/admin-dashboard` — admin UI
+
+## Running Workspace Commands
+
+```bash
+bun run --filter @docs.plus/webapp dev
+bun run --filter '*' build
+```
+
+## Engines
+
+- Node >= 24.11.0
+- Bun >= 1.3.7
+
+## Docker (multi-stage builds)
+
+- **Do not copy `node_modules` between stages.** Bun uses symlinks into a virtual store; copied `node_modules` in another stage break (e.g. `require('next-pwa/cache')` → MODULE_NOT_FOUND). Any stage that runs `next build`, extension builds, or loads config that requires() deps must run `bun install --frozen-lockfile` in that stage and copy only `package.json`, `bun.lock`, and workspace tree.

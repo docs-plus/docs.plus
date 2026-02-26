@@ -40,7 +40,8 @@ COPY packages/webapp/package.json ./packages/webapp/
 RUN bun install --frozen-lockfile --production --ignore-scripts
 
 # Prisma generate (schema lives in packages/hocuspocus.server/prisma)
-RUN cd packages/hocuspocus.server && bunx prisma generate
+# Pin to Prisma 6: project schema uses url=env(); Prisma 7 requires prisma.config.ts
+RUN cd packages/hocuspocus.server && bunx prisma@6 generate
 
 # Pre-install Prisma CLI for runtime migrations
 RUN bun add -d prisma@^6.19.0 --no-save || true

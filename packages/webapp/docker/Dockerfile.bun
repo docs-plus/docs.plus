@@ -46,6 +46,11 @@ COPY packages/admin-dashboard/package.json ./packages/admin-dashboard/
 COPY packages/hocuspocus.server/package.json ./packages/hocuspocus.server/
 COPY packages/supabase/package.json ./packages/supabase/
 COPY packages/email-templates ./packages/email-templates
+# Copy extension source so workspace deps (e.g. @tiptap/core for DTS build) are installed and resolvable
+COPY packages/extension-hyperlink ./packages/extension-hyperlink
+COPY packages/extension-hypermultimedia ./packages/extension-hypermultimedia
+COPY packages/extension-indent ./packages/extension-indent
+COPY packages/extension-inline-code ./packages/extension-inline-code
 
 # Install all dependencies (Docker layer cache handles caching naturally)
 # Skip Cypress binary download to save time and network
@@ -55,20 +60,26 @@ RUN bun install --frozen-lockfile
 # ============================================================================
 # Stage 3: Build Extensions - Build extension packages first
 # ============================================================================
+# We run a fresh bun install here (not copy node_modules from deps) because Bun's
+# node_modules uses symlinks into a virtual store; copying to another stage breaks
+# resolution so the extension DTS build cannot find @tiptap/core, @tiptap/pm, etc.
+# ============================================================================
 FROM base AS build-extensions
 
 WORKDIR /app
 
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=deps /app/package.json ./package.json
-COPY --from=deps /app/bun.lock* ./
+# Copy workspace layout from deps (no node_modules)
+COPY --from=deps /app/package.json /app/bun.lock* ./
+COPY --from=deps /app/packages ./packages
 
-# Copy extension source files
+# Overwrite extension source with context (in case deps had stale copy)
 COPY packages/extension-hyperlink ./packages/extension-hyperlink
 COPY packages/extension-hypermultimedia ./packages/extension-hypermultimedia
 COPY packages/extension-indent ./packages/extension-indent
 COPY packages/extension-inline-code ./packages/extension-inline-code
+
+ENV CYPRESS_INSTALL_BINARY=0
+RUN bun install --frozen-lockfile
 
 # Build extension packages (required by webapp)
 RUN cd packages/extension-hyperlink && bun run build
@@ -113,28 +124,25 @@ ENV NEXT_TELEMETRY_DISABLED=1 \
     NEXT_PUBLIC_TURNSTILE_SITE_KEY=${NEXT_PUBLIC_TURNSTILE_SITE_KEY} \
     NEXT_PUBLIC_VAPID_PUBLIC_KEY=${NEXT_PUBLIC_VAPID_PUBLIC_KEY}
 
-# Copy dependencies and built extensions
-COPY --from=deps /app/node_modules ./node_modules
+# Copy workspace layout from build-extensions (built extensions + full packages). Do NOT copy
+# node_modules from deps: Bun's node_modules uses symlinks into a virtual store; copying breaks
+# resolution so next.config.js cannot require('next-pwa/cache'), etc.
 COPY --from=deps /app/package.json ./package.json
 COPY --from=deps /app/bun.lock* ./
-# Copy all extension source files (needed for TypeScript type resolution during Next.js build)
-COPY --from=build-extensions /app/packages/extension-hyperlink ./packages/extension-hyperlink
-COPY --from=build-extensions /app/packages/extension-hypermultimedia ./packages/extension-hypermultimedia
-COPY --from=build-extensions /app/packages/extension-indent ./packages/extension-indent
-COPY --from=build-extensions /app/packages/extension-inline-code ./packages/extension-inline-code
+COPY --from=build-extensions /app/packages ./packages
 
-# Copy webapp source
+# Overwrite with context so we have latest webapp and shared config
 COPY packages/webapp ./packages/webapp
-
-# Copy shared config files needed for build
 COPY packages/eslint-config ./packages/eslint-config
 COPY .prettierrc.json ./
 COPY tsconfig.json ./
 
-# Build Next.js app
-# Use build:ci (no dotenv dependency - env vars already set via ARG/ENV)
+ENV CYPRESS_INSTALL_BINARY=0
+RUN bun install --frozen-lockfile
+
+# Build Next.js app (bunx resolves next from root node_modules; "next build" is build:ci)
 WORKDIR /app/packages/webapp
-RUN bun run build:ci
+RUN bunx next build
 
 # ============================================================================
 # Stage 5: Runner - Production runtime
