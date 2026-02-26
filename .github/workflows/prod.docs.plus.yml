@@ -95,7 +95,20 @@ jobs:
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
 
+      - name: 📦 Restore extension build cache
+        id: cache-ext
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages/extension-hyperlink/dist
+            packages/extension-hypermultimedia/dist
+            packages/extension-indent/dist
+            packages/extension-inline-code/dist
+          key: ext-${{ runner.os }}-${{ hashFiles('bun.lock', 'packages/extension-hyperlink/package.json', 'packages/extension-hypermultimedia/package.json', 'packages/extension-indent/package.json', 'packages/extension-inline-code/package.json', 'packages/extension-hyperlink/src/**', 'packages/extension-hypermultimedia/src/**', 'packages/extension-indent/src/**', 'packages/extension-inline-code/src/**') }}
+          restore-keys: ext-${{ runner.os }}-
+
       - name: 🔧 Build Extensions (required for types)
+        if: steps.cache-ext.outputs.cache-hit != 'true'
         run: |
           bun run --filter @docs.plus/extension-hyperlink build
           bun run --filter @docs.plus/extension-hypermultimedia build
@@ -170,7 +183,20 @@ jobs:
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
 
+      - name: 📦 Restore extension build cache
+        id: cache-ext
+        uses: actions/cache@v4
+        with:
+          path: |
+            packages/extension-hyperlink/dist
+            packages/extension-hypermultimedia/dist
+            packages/extension-indent/dist
+            packages/extension-inline-code/dist
+          key: ext-${{ runner.os }}-${{ hashFiles('bun.lock', 'packages/extension-hyperlink/package.json', 'packages/extension-hypermultimedia/package.json', 'packages/extension-indent/package.json', 'packages/extension-inline-code/package.json', 'packages/extension-hyperlink/src/**', 'packages/extension-hypermultimedia/src/**', 'packages/extension-indent/src/**', 'packages/extension-inline-code/src/**') }}
+          restore-keys: ext-${{ runner.os }}-
+
       - name: 🔧 Build TipTap Extensions
+        if: steps.cache-ext.outputs.cache-hit != 'true'
         run: |
           bun run --filter @docs.plus/extension-hyperlink build
           bun run --filter @docs.plus/extension-hypermultimedia build
@@ -228,14 +254,6 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 1
-
-      - name: 🥟 Setup Bun
-        uses: oven-sh/setup-bun@v2
-        with:
-          bun-version: latest
-
-      - name: 📥 Install Dependencies
-        run: bun install --frozen-lockfile --ignore-scripts
 
       - name: 🔐 Prepare Environment
         run: |
