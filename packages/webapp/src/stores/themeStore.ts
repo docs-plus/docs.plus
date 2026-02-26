@@ -41,6 +41,11 @@ export function resolveTheme(preference: ThemePreference): ResolvedTheme {
   return 'docsplus'
 }
 
+/** Map resolved theme to emoji-mart theme (Picker). Single place for this contract. */
+export function getEmojiMartTheme(resolved: ResolvedTheme): 'light' | 'dark' {
+  return resolved === 'docsplus' ? 'light' : 'dark'
+}
+
 /** Apply theme to the DOM (instant swap — see Theme_Light_Dark.md §6.6) */
 function applyTheme(theme: ResolvedTheme) {
   if (typeof document === 'undefined') return
