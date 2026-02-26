@@ -4,7 +4,7 @@ const ToolbarSkeleton = () => {
       {/* Text formatting dropdown */}
       <div className="skeleton h-6 w-24 rounded" />
 
-      <div className="h-5 w-px bg-slate-200" />
+      <div className="bg-base-300 h-5 w-px" />
 
       {/* Formatting buttons */}
       <div className="flex gap-1">
@@ -13,7 +13,7 @@ const ToolbarSkeleton = () => {
         <div className="skeleton size-7 rounded" />
       </div>
 
-      <div className="h-5 w-px bg-slate-200" />
+      <div className="bg-base-300 h-5 w-px" />
 
       {/* More buttons */}
       <div className="flex gap-1">
@@ -25,7 +25,7 @@ const ToolbarSkeleton = () => {
       {/* Right side actions */}
       <div className="ml-auto flex gap-2">
         <div className="skeleton size-7 rounded" />
-        <div className="h-5 w-px bg-slate-200" />
+        <div className="bg-base-300 h-5 w-px" />
         <div className="skeleton size-7 rounded" />
         <div className="skeleton size-7 rounded" />
       </div>

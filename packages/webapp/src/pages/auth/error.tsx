@@ -30,10 +30,10 @@ const AuthErrorPage = () => {
   }
 
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-slate-50 p-4">
+    <div className="bg-base-200 flex min-h-[100dvh] items-center justify-center p-4">
       <div className="w-full max-w-md">
         {/* Error card */}
-        <div className="rounded-2xl bg-white p-6 shadow-xl shadow-slate-200/50 sm:p-8">
+        <div className="rounded-box bg-base-100 p-6 shadow-xl sm:p-8">
           {/* Icon */}
           <div className="mb-6 flex justify-center">
             <div className="bg-error/10 flex size-16 items-center justify-center rounded-full">
@@ -42,33 +42,37 @@ const AuthErrorPage = () => {
           </div>
 
           {/* Title */}
-          <h1 className="mb-2 text-center text-2xl font-bold text-slate-800">
+          <h1 className="text-base-content mb-2 text-center text-2xl font-bold">
             Authentication Error
           </h1>
-          <p className="mb-6 text-center text-sm text-slate-500">
+          <p className="text-base-content/60 mb-6 text-center text-sm">
             Something went wrong during authentication.
           </p>
 
           {/* Error details */}
           <div className="border-error/20 bg-error/5 mb-6 space-y-3 rounded-xl border p-4">
             <div>
-              <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">Error</p>
-              <p className="font-medium text-slate-800">{errorDetails.error}</p>
+              <p className="text-base-content/50 text-xs font-medium tracking-wide uppercase">
+                Error
+              </p>
+              <p className="text-base-content font-medium">{errorDetails.error}</p>
             </div>
 
             {errorDetails.errorCode && (
               <div>
-                <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">Code</p>
-                <p className="font-mono text-sm text-slate-700">{errorDetails.errorCode}</p>
+                <p className="text-base-content/50 text-xs font-medium tracking-wide uppercase">
+                  Code
+                </p>
+                <p className="text-base-content/80 font-mono text-sm">{errorDetails.errorCode}</p>
               </div>
             )}
 
             {errorDetails.errorDescription && (
               <div>
-                <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
+                <p className="text-base-content/50 text-xs font-medium tracking-wide uppercase">
                   Details
                 </p>
-                <p className="text-sm text-slate-600">{errorDetails.errorDescription}</p>
+                <p className="text-base-content/70 text-sm">{errorDetails.errorDescription}</p>
               </div>
             )}
           </div>
@@ -89,7 +93,7 @@ const AuthErrorPage = () => {
         </div>
 
         {/* Help text */}
-        <p className="mt-6 text-center text-sm text-slate-500">
+        <p className="text-base-content/60 mt-6 text-center text-sm">
           If this problem persists, please{' '}
           <a
             href="https://docs.plus/support"

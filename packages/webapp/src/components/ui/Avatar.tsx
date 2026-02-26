@@ -151,12 +151,12 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
     const cursorClass = clickable && id ? 'cursor-pointer' : 'cursor-default'
 
     // Container uses daisyUI avatar class with custom styling
-    // Uses subtle gray ring instead of white border for visibility on any background
+    // Theme-aware base so fallback/placeholder works in light and dark
     const containerClass = twMerge(
       'avatar',
       sizeClass,
       'rounded-full',
-      'bg-slate-100',
+      'bg-base-200',
       '!ring-1 ring-base-300',
       '!overflow-visible',
       displayPresence && (online ? 'avatar-online' : 'avatar-offline'),
@@ -170,7 +170,7 @@ export const Avatar = forwardRef<HTMLImageElement, AvatarProps>(
       'size-full',
       'rounded-full',
       'object-cover',
-      'bg-slate-100',
+      'bg-base-200',
       'shadow-[inset_0_0_0_1px_color-mix(in_oklch,var(--color-base-content)_6%,transparent)]',
       cursorClass,
       imageClassName,

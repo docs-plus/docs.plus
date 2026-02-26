@@ -73,7 +73,7 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
   return (
     <div className="flex h-screen flex-col overflow-hidden">
       {/* Toolbar */}
-      <div className="toolbars w-full shrink-0 bg-white">
+      <div className="toolbars bg-base-100 w-full shrink-0">
         <EditorToolbar />
         <Controllers editor={editor} />
       </div>

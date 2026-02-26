@@ -183,7 +183,7 @@ const DocTitle = ({ className }: { className?: string }) => {
         <div
           dangerouslySetInnerHTML={{ __html: title || '' }}
           contentEditable
-          className="truncate rounded-sm border border-transparent px-1 py-0 text-lg font-medium hover:border-slate-400"
+          className="hover:border-base-300 truncate rounded-sm border border-transparent px-1 py-0 text-lg font-medium"
           style={{ flex: 1 }}
           onBlur={saveData}
           onKeyDown={(e) => {
