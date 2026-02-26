@@ -1,10 +1,10 @@
 # =============================================================================
 # Multi-stage Dockerfile for Hocuspocus Server
-# Optimized for production with minimal image size
+# Build context MUST be monorepo root (.) so workspace dep @docs.plus/email-templates resolves.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# Stage 1: Base - Install dependencies
+# Stage 1: Base - Install dependencies (monorepo layout)
 # -----------------------------------------------------------------------------
 FROM oven/bun:1-slim AS base
 WORKDIR /app
@@ -20,31 +20,38 @@ RUN rm -rf /var/lib/apt/lists/* && \
     openssl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy package files
+# Copy root workspace files
 COPY package.json bun.lock* bunfig.toml ./
-COPY prisma ./prisma/
+# Copy full packages needed for hocuspocus (email-templates is a workspace dep)
+COPY packages/email-templates ./packages/email-templates
+COPY packages/hocuspocus.server ./packages/hocuspocus.server
+# Stub package.json for other workspaces so lockfile matches (no install from these)
+COPY packages/admin-dashboard/package.json ./packages/admin-dashboard/
+COPY packages/eslint-config/package.json ./packages/eslint-config/
+COPY packages/extension-hyperlink/package.json ./packages/extension-hyperlink/
+COPY packages/extension-hypermultimedia/package.json ./packages/extension-hypermultimedia/
+COPY packages/extension-indent/package.json ./packages/extension-indent/
+COPY packages/extension-inline-code/package.json ./packages/extension-inline-code/
+COPY packages/supabase/package.json ./packages/supabase/
+COPY packages/webapp/package.json ./packages/webapp/
 
-# Install dependencies (including prisma CLI for migrations)
-RUN bun install --frozen-lockfile --production
+# Install dependencies (resolves @docs.plus/email-templates from workspace)
+# --ignore-scripts: avoid root "prepare" (husky) and other lifecycle scripts in Docker
+RUN bun install --frozen-lockfile --production --ignore-scripts
 
-# Pre-install Prisma CLI for runtime migrations (avoids slow downloads at container startup)
-# Pin to Prisma 6.x to match package.json - Prisma 7 has breaking changes
+# Prisma generate (schema lives in packages/hocuspocus.server/prisma)
+RUN cd packages/hocuspocus.server && bunx prisma generate
+
+# Pre-install Prisma CLI for runtime migrations
 RUN bun add -d prisma@^6.19.0 --no-save || true
 
-# Generate Prisma client
-RUN bunx prisma generate
-
-# Copy and setup entrypoint script for development
-COPY scripts/docker-entrypoint.sh /app/scripts/docker-entrypoint.sh
-RUN chmod +x /app/scripts/docker-entrypoint.sh
-
 # -----------------------------------------------------------------------------
-# Stage 2: Production - Minimal runtime image
+# Stage 2: Production - Minimal runtime image (flat /app = hocuspocus.server layout)
 # -----------------------------------------------------------------------------
 FROM oven/bun:1-slim AS production
 WORKDIR /app
 
-# Install runtime dependencies only (clean apt lists first to avoid stale mirrors)
+# Install runtime dependencies only
 RUN rm -rf /var/lib/apt/lists/* && \
     apt-get update && apt-get install -y --no-install-recommends \
     ca-certificates \
@@ -55,44 +62,30 @@ RUN rm -rf /var/lib/apt/lists/* && \
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-# Copy dependencies from base
+# Copy dependencies from base (hoisted node_modules includes email-templates + Prisma client)
 COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/prisma ./prisma
+COPY --from=base /app/packages/hocuspocus.server/prisma ./prisma
 
-# Copy and setup entrypoint script (as root)
-COPY scripts/docker-entrypoint.sh /usr/local/bin/
+# Copy entrypoint and app source (from base; no context COPY so Dockerfile works with context .)
+COPY --from=base /app/packages/hocuspocus.server/scripts/docker-entrypoint.sh /usr/local/bin/
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-# Pre-download Prisma CLI and make it available globally
-# bunx downloads to /tmp, so we'll install it properly for appuser to use
-RUN bunx --bun prisma@^6.19.0 --version || echo "Prisma download failed" && \
-    PRISMA_PATH=$(find /tmp -name "prisma" -type f -executable 2>/dev/null | head -1) && \
-    if [ -n "$PRISMA_PATH" ]; then \
-      mkdir -p /usr/local/lib/prisma && \
-      cp -r $(dirname $(dirname "$PRISMA_PATH"))/* /usr/local/lib/prisma/ 2>/dev/null || true; \
-    fi
+COPY --from=base /app/packages/hocuspocus.server/src ./src
+COPY --from=base /app/packages/hocuspocus.server/package.json ./package.json
 
-# Copy source code
-COPY --chown=appuser:appuser . .
+# Pre-download Prisma CLI for migrations
+RUN bunx --bun prisma@^6.19.0 --version || true
 
 # Create temp directory for file uploads
 RUN mkdir -p /app/temp/hypermultimedia && \
     chown -R appuser:appuser /app
 
-# Switch to non-root user
 USER appuser
 
-# Expose ports for all services
 EXPOSE 4000 4001 4002
 
-# Health check (can be overridden per service)
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
     CMD bun --version || exit 1
 
-# Set entrypoint
 ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
-
-# Default command (will be overridden by docker-compose)
 CMD ["bun", "src/index.ts"]
-
-

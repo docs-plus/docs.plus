@@ -45,6 +45,7 @@ COPY packages/webapp/package.json ./packages/webapp/
 COPY packages/admin-dashboard/package.json ./packages/admin-dashboard/
 COPY packages/hocuspocus.server/package.json ./packages/hocuspocus.server/
 COPY packages/supabase/package.json ./packages/supabase/
+COPY packages/email-templates ./packages/email-templates
 
 # Install all dependencies (Docker layer cache handles caching naturally)
 # Skip Cypress binary download to save time and network

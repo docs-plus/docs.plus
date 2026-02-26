@@ -135,8 +135,8 @@ services:
     image: docsplus-rest-api:${DEPLOY_TAG:-latest}
     env_file: .env.production
     build:
-      context: ./packages/hocuspocus.server
-      dockerfile: docker/Dockerfile.bun
+      context: .
+      dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
       target: production
       args:
         DATABASE_URL: ${DATABASE_URL}
@@ -232,8 +232,8 @@ services:
     image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
     env_file: .env.production
     build:
-      context: ./packages/hocuspocus.server
-      dockerfile: docker/Dockerfile.bun
+      context: .
+      dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
       target: production
       args:
         DATABASE_URL: ${DATABASE_URL}
@@ -329,8 +329,8 @@ services:
     image: docsplus-hocuspocus:${DEPLOY_TAG:-latest}
     env_file: .env.production
     build:
-      context: ./packages/hocuspocus.server
-      dockerfile: docker/Dockerfile.bun
+      context: .
+      dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
       target: production
       args:
         DATABASE_URL: ${DATABASE_URL}
