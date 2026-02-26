@@ -49,6 +49,8 @@ RUN bun add -d prisma@^6.19.0 --no-save || true
 
 # -----------------------------------------------------------------------------
 # Stage 2: Production - Minimal runtime image (flat /app = hocuspocus.server layout)
+# Do NOT copy node_modules from base: Bun symlinks break across stages (hono,
+# @hocuspocus/server etc. not found). Run bun install in this stage instead.
 # -----------------------------------------------------------------------------
 FROM oven/bun:1-slim AS production
 WORKDIR /app
@@ -64,16 +66,25 @@ RUN rm -rf /var/lib/apt/lists/* && \
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
 
-# Copy dependencies from base (hoisted node_modules includes email-templates + Prisma client)
-COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/packages/hocuspocus.server/prisma ./prisma
+# Copy workspace layout from base (no node_modules)
+COPY --from=base /app/package.json /app/bun.lock* /app/bunfig.toml ./
+COPY --from=base /app/packages ./packages
 
-# Copy entrypoint and app source (from base; no context COPY so Dockerfile works with context .)
-COPY --from=base /app/packages/hocuspocus.server/scripts/docker-entrypoint.sh /usr/local/bin/
+# Fresh install so node_modules is real (Bun symlinks from base would break here)
+RUN bun install --frozen-lockfile --production --ignore-scripts
+
+# Prisma generate (schema in packages/hocuspocus.server/prisma)
+RUN cd packages/hocuspocus.server && bunx prisma@6 generate
+
+# Copy entrypoint before we remove packages
+COPY --from=base /app/packages/hocuspocus.server/scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 
-COPY --from=base /app/packages/hocuspocus.server/src ./src
-COPY --from=base /app/packages/hocuspocus.server/package.json ./package.json
+# Flat layout for runtime: /app/src, /app/prisma, /app/node_modules, /app/package.json
+RUN mv packages/hocuspocus.server/src . && \
+    mv packages/hocuspocus.server/prisma . && \
+    cp packages/hocuspocus.server/package.json . && \
+    rm -rf packages
 
 # Pre-download Prisma CLI for migrations
 RUN bunx --bun prisma@^6.19.0 --version || true
