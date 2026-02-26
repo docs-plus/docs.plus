@@ -14,13 +14,15 @@ export const Input = ({ className }: { className?: string }) => {
   }, [messageDraftMemory, editor])
 
   return (
-    <div className={twMerge('flex-1 px-1 py-2 text-base sm:px-2', className)} tabIndex={1}>
+    <div
+      className={twMerge('text-base-content flex-1 px-1 py-2 text-base sm:px-2', className)}
+      tabIndex={1}>
       <EditorContent
         id="chatroom-editor"
         tabIndex={2}
         ref={editorRef}
         className={twMerge(
-          'max-h-52 w-full overflow-auto wrap-anywhere break-all whitespace-pre-line transition-all duration-200 ease-in-out',
+          'text-base-content max-h-52 w-full overflow-auto wrap-anywhere break-all whitespace-pre-line transition-all duration-200 ease-in-out',
           isEmojiOnly ? 'text-xl sm:text-2xl' : 'text-base'
         )}
         editor={editor}

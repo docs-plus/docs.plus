@@ -84,7 +84,7 @@ const MobileToolbar = () => {
 export const MobileLayout = () => {
   return (
     <div className="chat_editor_container flex w-full flex-col">
-      <MsgComposer className="border-base-300 rounded-t-md border border-b-0 shadow-sm">
+      <MsgComposer className="bg-base-100 border-base-300 rounded-t-md border border-b-0 shadow-sm">
         <MsgComposer.MobileWrapper>
           <MsgComposer.Context>
             <MsgComposer.ReplyContext />
