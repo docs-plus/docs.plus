@@ -6,6 +6,7 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Base - Install dependencies (monorepo layout)
 # -----------------------------------------------------------------------------
+# Use latest Bun 1.x (floating tag); same tag across all Dockerfiles for cohesion
 FROM oven/bun:1-slim AS base
 WORKDIR /app
 

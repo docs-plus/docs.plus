@@ -243,6 +243,18 @@ jobs:
           echo "DEPLOY_TAG=${{ env.DEPLOY_TAG }}" >> "${{ env.ENV_FILE }}"
           echo "✅ Environment ready"
 
+      - name: 📂 Verify build context (monorepo root)
+        run: |
+          if [ ! -d packages/email-templates ]; then
+            echo "::error::packages/email-templates missing. Build context must be repo root (context: .). Check checkout and that this commit includes the workspace."
+            exit 1
+          fi
+          grep -q 'email-templates' packages/hocuspocus.server/docker/Dockerfile.bun && grep -q 'email-templates' packages/webapp/docker/Dockerfile.bun || {
+            echo "::error::Dockerfiles must COPY packages/email-templates. Merge the commit that adds @docs.plus/email-templates to prod Dockerfiles."
+            exit 1
+          }
+          echo "✅ Build context OK (repo root, email-templates present)"
+
       - name: 🏗️ Build Docker Images
         env:
           DOCKER_BUILDKIT: 1
@@ -254,7 +266,7 @@ jobs:
           source ${{ env.ENV_FILE }}
           set +a
 
-          # Build with parallel execution
+          # Build with parallel execution (must run from repo root so context: . includes packages/)
           docker compose -f ${{ env.COMPOSE_FILE }} \
             --env-file ${{ env.ENV_FILE }} \
             build --parallel

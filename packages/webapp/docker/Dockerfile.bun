@@ -13,17 +13,18 @@
 # ============================================================================
 # Stage 1: Base - Common setup
 # ============================================================================
-FROM oven/bun:1-alpine AS base
+# Use latest Bun 1.x (floating tag); same tag across all Dockerfiles for cohesion
+FROM oven/bun:1-slim AS base
 
-# Install system dependencies
-# Note: Build tools (python3, make, g++) kept for potential native dependencies
-# Most dependencies are pure JS, but some packages may have optional native modules
-RUN apk add --no-cache \
-    libc6-compat \
+# Install system dependencies (Debian slim; build tools for potential native deps)
+RUN rm -rf /var/lib/apt/lists/* && \
+    apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates \
     python3 \
     make \
     g++ \
-    nodejs
+    nodejs \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -156,9 +157,9 @@ ENV NODE_ENV=production \
     PORT=3000 \
     HOSTNAME="0.0.0.0"
 
-# Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+# Create non-root user (Debian slim: groupadd/useradd)
+RUN groupadd -r -g 1001 nodejs && \
+    useradd -r -u 1001 -g nodejs nextjs
 
 # Copy standalone build output to root (Next.js standalone expects to run from its own root)
 # Standalone already includes server.js, node_modules, and minimal dependencies

@@ -37,6 +37,11 @@ bun run --filter '*' build
 - Node >= 24.11.0
 - Bun >= 1.3.7
 
+## Docker base image (single source of truth)
+
+- All Dockerfiles use **one tag**: `oven/bun:1-slim` (latest Bun 1.x, floating; no hardcoded patch version).
+- Same tag everywhere: do not mix `1-alpine` / `1-slim` or add a patch (e.g. `1.3.9-slim`); use `1-slim` so rebuilds get the latest 1.x automatically.
+
 ## Docker (multi-stage builds)
 
 - **Do not copy `node_modules` between stages.** Bun uses symlinks into a virtual store; copied `node_modules` in another stage break (e.g. `require('next-pwa/cache')` → MODULE_NOT_FOUND). Any stage that runs `next build`, extension builds, or loads config that requires() deps must run `bun install --frozen-lockfile` in that stage and copy only `package.json`, `bun.lock`, and workspace tree.

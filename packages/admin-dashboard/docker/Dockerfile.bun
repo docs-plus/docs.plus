@@ -13,9 +13,12 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Dependencies
 # -----------------------------------------------------------------------------
-FROM oven/bun:1-alpine AS deps
+# Use latest Bun 1.x (floating tag); same tag across all Dockerfiles for cohesion
+FROM oven/bun:1-slim AS deps
 
-RUN apk add --no-cache libc6-compat
+RUN rm -rf /var/lib/apt/lists/* && \
+    apt-get update && apt-get install -y --no-install-recommends ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -28,9 +31,11 @@ RUN bun install --frozen-lockfile
 # -----------------------------------------------------------------------------
 # Stage 2: Build
 # -----------------------------------------------------------------------------
-FROM oven/bun:1-alpine AS builder
+FROM oven/bun:1-slim AS builder
 
-RUN apk add --no-cache libc6-compat nodejs
+RUN rm -rf /var/lib/apt/lists/* && \
+    apt-get update && apt-get install -y --no-install-recommends ca-certificates nodejs && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -59,9 +64,11 @@ RUN bun run build:ci
 # -----------------------------------------------------------------------------
 # Stage 3: Runner (Production)
 # -----------------------------------------------------------------------------
-FROM oven/bun:1-alpine AS runner
+FROM oven/bun:1-slim AS runner
 
-RUN apk add --no-cache libc6-compat
+RUN rm -rf /var/lib/apt/lists/* && \
+    apt-get update && apt-get install -y --no-install-recommends ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -70,9 +77,9 @@ ENV NODE_ENV=production \
     PORT=3100 \
     HOSTNAME="0.0.0.0"
 
-# Create non-root user for security
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nextjs
+# Create non-root user for security (Debian slim: groupadd/useradd)
+RUN groupadd -r -g 1001 nodejs && \
+    useradd -r -u 1001 -g nodejs nextjs
 
 # Copy standalone build output
 # Next.js standalone creates: .next/standalone/app/server.js (monorepo structure)
