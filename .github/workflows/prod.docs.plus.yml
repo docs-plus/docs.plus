@@ -152,7 +152,7 @@ jobs:
   build:
     name: 🏗️ Build Verification
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     needs: [lint, typecheck, security]
     if: |
       always() &&
@@ -190,6 +190,12 @@ jobs:
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'dummy-key' }}
           NEXT_PUBLIC_API_URL: ${{ secrets.NEXT_PUBLIC_API_URL || 'http://localhost:3003' }}
           NEXT_PUBLIC_APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'http://localhost:3000' }}
+
+      - name: 🐳 Build production Docker images
+        env:
+          DOCKER_BUILDKIT: 1
+          COMPOSE_DOCKER_CLI_BUILD: 1
+        run: docker compose -f ${{ env.COMPOSE_FILE }} --env-file scripts/env.production.build-stub build --parallel
 
       - name: 📊 Set Build Result
         id: build_result

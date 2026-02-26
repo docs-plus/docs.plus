@@ -3,7 +3,7 @@
 # Manages: Hocuspocus Server + Webapp + Infrastructure
 # =============================================================================
 
-.PHONY: help build build-dev up-prod up-dev up-local infra-up infra-down infra-logs dev-local dev-backend dev-webapp dev-admin dev-rest dev-ws dev-worker down logs logs-webapp logs-backend restart clean scale scale-webapp scale-hocuspocus ps stats supabase-start supabase-stop supabase-status deploy-prod rollback-prod status-prod logs-traefik
+.PHONY: help build build-dev validate-prod-build up-prod up-dev up-local infra-up infra-down infra-logs dev-local dev-backend dev-webapp dev-admin dev-rest dev-ws dev-worker down logs logs-webapp logs-backend restart clean scale scale-webapp scale-hocuspocus ps stats supabase-start supabase-stop supabase-status deploy-prod rollback-prod status-prod logs-traefik
 
 help:
 	@echo "Docsplus Full Stack Docker Commands"
@@ -11,6 +11,7 @@ help:
 	@echo "Building:"
 	@echo "  make build             - Build all services (production)"
 	@echo "  make build-dev         - Build all services (development)"
+	@echo "  make validate-prod-build - Build prod images with stub env (no .env.production needed)"
 	@echo ""
 	@echo "Running:"
 	@echo "  make up-prod           - Start all services (production)"
@@ -65,6 +66,14 @@ build:
 	@echo "🏗️  Building all services (production)..."
 	@docker compose -f docker-compose.prod.yml --env-file .env.production build
 	@echo "✅ All services built"
+
+# Build prod images with stub env — run before push to catch Docker build failures.
+# Does not require .env.production. Uses same compose + BuildKit as CI deploy.
+validate-prod-build:
+	@echo "🏗️  Validating production Docker build (stub env)..."
+	@test -f scripts/env.production.build-stub || (echo "❌ scripts/env.production.build-stub missing"; exit 1)
+	DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker compose -f docker-compose.prod.yml --env-file scripts/env.production.build-stub build --parallel
+	@echo "✅ Production build validation passed"
 
 build-dev:
 	@echo "🏗️  Building all services (development)..."
