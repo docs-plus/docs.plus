@@ -8,18 +8,18 @@ import {
   type ViewMutationRecord
 } from '@types'
 
-import changeHeadingLevel from '../extentions/changeHeadingLevel'
-import changeHeadingToParagraphs from '../extentions/changeHeadingToParagraphs'
-import deleteSelectedRange from '../extentions/deleteSelectedRange'
-import { getNodeState, getPasteContextLevel } from '../extentions/helper'
-import { isEntireDocumentSelected } from '../extentions/helper/selection'
+import changeHeadingLevel from '../extensions/changeHeadingLevel'
+import changeHeadingToParagraphs from '../extensions/changeHeadingToParagraphs'
+import deleteSelectedRange from '../extensions/deleteSelectedRange'
+import { getNodeState, getPasteContextLevel } from '../extensions/helper'
+import { isEntireDocumentSelected } from '../extensions/helper/selection'
 import {
   createCopyPastePlugin,
   createHierarchyValidationPlugin,
   createRangeSelectionPlugin
-} from '../extentions/plugins'
-import { HeadingAttributes } from '../extentions/types'
-import wrapContentWithHeading from '../extentions/wrapContentWithHeading'
+} from '../extensions/plugins'
+import { HeadingAttributes } from '../extensions/types'
+import wrapContentWithHeading from '../extensions/wrapContentWithHeading'
 
 const syncHeadingDomId = (dom: HTMLElement, content: HTMLElement, headingId: string) => {
   if (headingId) {

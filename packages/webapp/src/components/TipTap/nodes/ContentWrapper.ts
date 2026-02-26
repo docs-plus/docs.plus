@@ -9,10 +9,10 @@ import {
   type ViewMutationRecord
 } from '@types'
 
-import deleteSelectedRange from '../extentions/deleteSelectedRange'
-import { getNodeState } from '../extentions/helper'
-import { isEntireDocumentSelected } from '../extentions/helper/selection'
-import { createCrinklePlugin } from '../extentions/plugins'
+import deleteSelectedRange from '../extensions/deleteSelectedRange'
+import { getNodeState } from '../extensions/helper'
+import { isEntireDocumentSelected } from '../extensions/helper/selection'
+import { createCrinklePlugin } from '../extensions/plugins'
 
 const getClosestAncestorNodeByTypeName = (
   $pos: ResolvedPos,

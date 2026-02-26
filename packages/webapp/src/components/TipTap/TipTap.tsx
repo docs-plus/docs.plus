@@ -61,7 +61,7 @@ import ShortUniqueId from 'short-unique-id'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
 
-import { HeadingActionsExtension } from './extentions/HeadingActions'
+import { HeadingActionsExtension } from './extensions/HeadingActions'
 import previewHyperlink from './hyperlinkPopovers/previewHyperlink'
 import ContentHeading from './nodes/ContentHeading'
 import ContentWrapper from './nodes/ContentWrapper'

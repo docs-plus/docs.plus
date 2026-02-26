@@ -1,4 +1,4 @@
-import { getNodeState } from '@components/TipTap/extentions/helper'
+import { getNodeState } from '@components/TipTap/extensions/helper'
 import { useStore } from '@stores'
 import type { TocItem } from '@types'
 import { TIPTAP_EVENTS, TIPTAP_NODES, type Transaction, TRANSACTION_META } from '@types'

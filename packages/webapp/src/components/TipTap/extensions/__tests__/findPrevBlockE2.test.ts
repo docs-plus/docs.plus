@@ -123,11 +123,11 @@ describe('getInsertionPos helper (DRY)', () => {
 
 describe('SOLID: callers must not use non-null assertions on prevBlock', () => {
   const callerFiles = [
-    'src/components/TipTap/extentions/wrapContentWithHeading.ts',
-    'src/components/TipTap/extentions/changeHeadingLevel-forward.ts',
-    'src/components/TipTap/extentions/changeHeadingLevel-backward.ts',
-    'src/components/TipTap/extentions/changeHeadingLevel-h1.ts',
-    'src/components/TipTap/extentions/normalText/onHeading.ts'
+    'src/components/TipTap/extensions/wrapContentWithHeading.ts',
+    'src/components/TipTap/extensions/changeHeadingLevel-forward.ts',
+    'src/components/TipTap/extensions/changeHeadingLevel-backward.ts',
+    'src/components/TipTap/extensions/changeHeadingLevel-h1.ts',
+    'src/components/TipTap/extensions/normalText/onHeading.ts'
   ]
 
   test.each(callerFiles)('%s must not use prevBlock! (non-null assertion)', async (filePath) => {
@@ -140,7 +140,7 @@ describe('SOLID: callers must not use non-null assertions on prevBlock', () => {
   test('headingMap.ts exports getInsertionPos helper', async () => {
     const fs = await import('fs')
     const content = fs.readFileSync(
-      'src/components/TipTap/extentions/helper/headingMap.ts',
+      'src/components/TipTap/extensions/helper/headingMap.ts',
       'utf-8'
     )
     expect(content).toContain('export const getInsertionPos')

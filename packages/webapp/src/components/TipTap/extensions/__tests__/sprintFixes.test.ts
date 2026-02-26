@@ -28,7 +28,7 @@ describe('E-9: headingTogglePlugin uses .finally() for isProcessing reset', () =
   it('the handleHeadingToggle function uses .finally() to guarantee cleanup', async () => {
     const fs = await import('fs')
     const filePath =
-      'src/components/TipTap/extentions/HeadingActions/plugins/headingTogglePlugin.ts'
+      'src/components/TipTap/extensions/HeadingActions/plugins/headingTogglePlugin.ts'
     const fileContent = fs.readFileSync(filePath, 'utf-8')
 
     expect(fileContent).toContain('.finally(')
@@ -39,7 +39,7 @@ describe('E-9: headingTogglePlugin uses .finally() for isProcessing reset', () =
   it('uses logger instead of console.error', async () => {
     const fs = await import('fs')
     const filePath =
-      'src/components/TipTap/extentions/HeadingActions/plugins/headingTogglePlugin.ts'
+      'src/components/TipTap/extensions/HeadingActions/plugins/headingTogglePlugin.ts'
     const fileContent = fs.readFileSync(filePath, 'utf-8')
 
     expect(fileContent).toContain("import { logger } from '@utils/logger'")
@@ -54,7 +54,7 @@ describe('E-9: headingTogglePlugin uses .finally() for isProcessing reset', () =
 describe('E-10: nodeState.ts uses centralized logger', () => {
   it('nodeState.ts imports and uses logger, not console.error', async () => {
     const fs = await import('fs')
-    const filePath = 'src/components/TipTap/extentions/helper/nodeState.ts'
+    const filePath = 'src/components/TipTap/extensions/helper/nodeState.ts'
     const fileContent = fs.readFileSync(filePath, 'utf-8')
 
     expect(fileContent).toContain("import { logger } from '@utils/logger'")
@@ -163,7 +163,7 @@ describe('E-3: insertHeadingsByNodeBlocks does not share H1 bookmark across iter
 
   it('source code snapshots lastH1Inserted with spread operator', async () => {
     const fs = await import('fs')
-    const filePath = 'src/components/TipTap/extentions/helper/headingMap.ts'
+    const filePath = 'src/components/TipTap/extensions/helper/headingMap.ts'
     const fileContent = fs.readFileSync(filePath, 'utf-8')
 
     // Verify the snapshot pattern exists
@@ -180,7 +180,7 @@ describe('E-3: insertHeadingsByNodeBlocks does not share H1 bookmark across iter
 describe('extractH1ToRoot: position guard excludes self-matches', () => {
   it('the guard includes pos < parentPos to avoid matching the parent itself', async () => {
     const fs = await import('fs')
-    const filePath = 'src/components/TipTap/extentions/validateHeadingHierarchy.ts'
+    const filePath = 'src/components/TipTap/extensions/validateHeadingHierarchy.ts'
     const fileContent = fs.readFileSync(filePath, 'utf-8')
 
     expect(fileContent).toContain(
@@ -260,7 +260,7 @@ describe('extractH1ToRoot: position guard excludes self-matches', () => {
 describe('E-5: deleteSelectedRange source handles contentHeading boundary', () => {
   it('does not blindly return false when selection ends in contentHeading', async () => {
     const fs = await import('fs')
-    const filePath = 'src/components/TipTap/extentions/deleteSelectedRange.ts'
+    const filePath = 'src/components/TipTap/extensions/deleteSelectedRange.ts'
     const fileContent = fs.readFileSync(filePath, 'utf-8')
 
     // Should NOT have the old pattern of immediately returning false

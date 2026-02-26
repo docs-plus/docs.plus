@@ -2,8 +2,8 @@ import { mergeAttributes, Node } from '@tiptap/core'
 import { DOMOutputSpec } from '@tiptap/pm/model'
 import { TIPTAP_NODES } from '@types'
 
-import { isFirstHeadingInDocument } from '../extentions/helper/selection'
-import onHeading from '../extentions/normalText/onHeading'
+import { isFirstHeadingInDocument } from '../extensions/helper/selection'
+import onHeading from '../extensions/normalText/onHeading'
 
 // Tiptap Node
 const ContentHeading = Node.create({

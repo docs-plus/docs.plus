@@ -116,7 +116,7 @@ describe('E-4: first-heading detection is structural, not magic number', () => {
 
   it('onHeading.ts uses isFirstHeadingInDocument instead of magic number', async () => {
     const fs = await import('fs')
-    const filePath = 'src/components/TipTap/extentions/normalText/onHeading.ts'
+    const filePath = 'src/components/TipTap/extensions/normalText/onHeading.ts'
     const fileContent = fs.readFileSync(filePath, 'utf-8')
 
     // Must NOT have the magic number pattern
@@ -141,7 +141,7 @@ describe('T-3: fold state is documented as intentionally non-collaborative', () 
 
   it('nodeState.ts documents fold state as local-only', async () => {
     const fs = await import('fs')
-    const filePath = 'src/components/TipTap/extentions/helper/nodeState.ts'
+    const filePath = 'src/components/TipTap/extensions/helper/nodeState.ts'
     const fileContent = fs.readFileSync(filePath, 'utf-8')
 
     expect(fileContent).toContain('NON-COLLABORATIVE BY DESIGN')
@@ -150,7 +150,7 @@ describe('T-3: fold state is documented as intentionally non-collaborative', () 
   it('headingTogglePlugin.ts documents fold state as local-only', async () => {
     const fs = await import('fs')
     const filePath =
-      'src/components/TipTap/extentions/HeadingActions/plugins/headingTogglePlugin.ts'
+      'src/components/TipTap/extensions/HeadingActions/plugins/headingTogglePlugin.ts'
     const fileContent = fs.readFileSync(filePath, 'utf-8')
 
     expect(fileContent).toContain('NON-COLLABORATIVE BY DESIGN')
@@ -164,7 +164,7 @@ describe('T-3: fold state is documented as intentionally non-collaborative', () 
 describe('E-1: H1 pasted inside a section inserts after current root H1', () => {
   it('clipboardPaste.ts inserts H1 after the root H1 section, not at doc end', async () => {
     const fs = await import('fs')
-    const filePath = 'src/components/TipTap/extentions/clipboardPaste.ts'
+    const filePath = 'src/components/TipTap/extensions/clipboardPaste.ts'
     const fileContent = fs.readFileSync(filePath, 'utf-8')
 
     // Must NOT insert at doc.content.size unconditionally
