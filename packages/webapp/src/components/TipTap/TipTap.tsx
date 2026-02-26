@@ -1,7 +1,4 @@
 import Config from '@config'
-// Links and Media
-// import previewHyperlinkModal from './hyperlinkModals/previewHyperlink'
-// import setHyperlinks from './hyperlinkModals/setHyperlink'
 import { createHyperlinkPopover, Hyperlink } from '@docs.plus/extension-hyperlink'
 import {
   HyperMultimediaKit,

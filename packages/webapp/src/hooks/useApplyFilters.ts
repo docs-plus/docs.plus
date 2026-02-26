@@ -1,4 +1,4 @@
-import { db, TDocFilter } from '@db/headingCrinckleDB'
+import { db, TDocFilter } from '@db/headingCrinkleDB'
 import { useStore } from '@stores'
 import { useRouter } from 'next/router'
 import { useEffect, useState } from 'react'

@@ -6,7 +6,7 @@ import { isFirstHeadingInDocument } from '../extentions/helper/selection'
 import onHeading from '../extentions/normalText/onHeading'
 
 // Tiptap Node
-const HeadingsTitle = Node.create({
+const ContentHeading = Node.create({
   name: TIPTAP_NODES.CONTENT_HEADING_TYPE,
   content: 'inline*',
   defining: true,
@@ -153,4 +153,4 @@ const HeadingsTitle = Node.create({
   }
 })
 
-export { HeadingsTitle as default, HeadingsTitle }
+export { ContentHeading, ContentHeading as default }

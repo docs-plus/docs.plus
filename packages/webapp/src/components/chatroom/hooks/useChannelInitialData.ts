@@ -1,5 +1,5 @@
 import { fetchChannelInitialData, upsertChannel } from '@api'
-import { join2Channel } from '@api'
+import { joinChannel } from '@api'
 import Config from '@config'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { TChannelSettings } from '@types'
@@ -87,7 +87,7 @@ export const useChannelInitialData = (
     )
     setWorkspaceChannelSetting(
       channelId,
-      'totalMsgSincLastRead',
+      'totalMsgSinceLastRead',
       channelData?.total_messages_since_last_read
     )
 
@@ -138,11 +138,11 @@ export const useChannelInitialData = (
     }
     // TODO: refactor/revise needed
     if (userId && !channelData.is_user_channel_member) {
-      await join2Channel({
+      await joinChannel({
         channel_id: channelId,
         member_id: userId
       }).catch((error) => {
-        console.error('[useChannelInitialData] join2Channel error', error)
+        console.error('[useChannelInitialData] joinChannel error', error)
         throw error
       })
 

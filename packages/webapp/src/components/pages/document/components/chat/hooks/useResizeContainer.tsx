@@ -23,8 +23,8 @@ const LOCAL_STORAGE_KEY = 'docsy:chat-height'
  */
 const useResizeContainer = () => {
   const containerRef = useRef<HTMLDivElement>(null)
-  const setOrUpdateChatPannelHeight = useChatStore((state) => state.setOrUpdateChatPannelHeight)
-  const { pannelHeight: storeHeight } = useChatStore((state) => state.chatRoom)
+  const setOrUpdateChatPanelHeight = useChatStore((state) => state.setOrUpdateChatPanelHeight)
+  const { panelHeight: storeHeight } = useChatStore((state) => state.chatRoom)
   const [isResizing, setIsResizing] = useState(false)
   const {
     editor: { instance: editor }
@@ -39,16 +39,16 @@ const useResizeContainer = () => {
       if (storedHeight) {
         const parsed = parseInt(storedHeight, 10)
         if (!isNaN(parsed)) {
-          setOrUpdateChatPannelHeight(Math.min(maxHeight, Math.max(CHAT_MIN_HEIGHT, parsed)))
+          setOrUpdateChatPanelHeight(Math.min(maxHeight, Math.max(CHAT_MIN_HEIGHT, parsed)))
           return
         }
       }
       // No stored value - use default
-      setOrUpdateChatPannelHeight(Math.min(maxHeight, CHAT_DEFAULT_HEIGHT))
+      setOrUpdateChatPanelHeight(Math.min(maxHeight, CHAT_DEFAULT_HEIGHT))
     } catch {
       // Ignore localStorage errors
     }
-  }, [setOrUpdateChatPannelHeight])
+  }, [setOrUpdateChatPanelHeight])
 
   // Persist height changes
   useEffect(() => {
@@ -84,7 +84,7 @@ const useResizeContainer = () => {
 
         // Clamp to min/max constraints
         const clampedHeight = Math.min(maxHeight, Math.max(CHAT_MIN_HEIGHT, newHeight))
-        setOrUpdateChatPannelHeight(clampedHeight)
+        setOrUpdateChatPanelHeight(clampedHeight)
       }
 
       const stopDrag = () => {
@@ -102,7 +102,7 @@ const useResizeContainer = () => {
       document.addEventListener('mousemove', doDrag)
       document.addEventListener('mouseup', stopDrag)
     },
-    [editor, setOrUpdateChatPannelHeight]
+    [editor, setOrUpdateChatPanelHeight]
   )
 
   // Handle window resize - validate height constraints
@@ -111,15 +111,15 @@ const useResizeContainer = () => {
       const maxHeight = Math.min(CHAT_MAX_HEIGHT, window.innerHeight * 0.85)
 
       if (storeHeight > maxHeight) {
-        setOrUpdateChatPannelHeight(maxHeight)
+        setOrUpdateChatPanelHeight(maxHeight)
       } else if (storeHeight < CHAT_MIN_HEIGHT) {
-        setOrUpdateChatPannelHeight(CHAT_MIN_HEIGHT)
+        setOrUpdateChatPanelHeight(CHAT_MIN_HEIGHT)
       }
     }
 
     window.addEventListener('resize', handleWindowResize)
     return () => window.removeEventListener('resize', handleWindowResize)
-  }, [storeHeight, setOrUpdateChatPannelHeight])
+  }, [storeHeight, setOrUpdateChatPanelHeight])
 
   return {
     handleMouseDown,

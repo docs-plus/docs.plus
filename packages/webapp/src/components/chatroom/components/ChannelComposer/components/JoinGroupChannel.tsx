@@ -1,4 +1,4 @@
-import { join2Channel } from '@api'
+import { joinChannel } from '@api'
 import Button from '@components/ui/Button'
 import { useApi } from '@hooks/useApi'
 import { Icons } from '@icons'
@@ -11,7 +11,7 @@ export default function JoinGroupChannel() {
   const { channelId } = useChatroomContext()
 
   const user = useAuthStore((state) => state.profile)
-  const { loading, request: request2JoinChannel } = useApi(join2Channel, null, false)
+  const { loading, request: request2JoinChannel } = useApi(joinChannel, null, false)
   const setOrUpdateChannel = useChatStore((state) => state.setOrUpdateChannel)
   const channelChat = useChatStore((state) => state.channels)
   const channel = useMemo(() => channelChat.get(channelId) ?? {}, [channelChat, channelId])

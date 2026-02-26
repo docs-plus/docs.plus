@@ -198,7 +198,7 @@ const constructSortedSlugs = (
   return [...parentMapSlugs, ...childMapSlugs]
 }
 
-const handelLinearAlgorithm = (headingTree: any, slugs: string[]): FilterResult => {
+const handleLinearAlgorithm = (headingTree: any, slugs: string[]): FilterResult => {
   const refinedFilteredNodes: any[] = []
 
   filterTreeDFS(headingTree, slugs, refinedFilteredNodes)
@@ -243,7 +243,7 @@ const getHeadingsFilterMap = (slugs: string[], headings: HTMLElement[]): FilterR
   }
 
   if (filterLinearAlgorithm === 'true') {
-    return handelLinearAlgorithm(headingTree, slugs)
+    return handleLinearAlgorithm(headingTree, slugs)
   }
 
   // Calculate weights for each slug

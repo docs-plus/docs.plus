@@ -1,7 +1,7 @@
 import { Database } from '@types'
 import { supabaseClient } from '@utils/supabase'
 
-type TMsgPaginnatedArg = {
+type TMsgPaginatedArg = {
   input_channel_id: string
   limit_count?: number
   cursor_timestamp?: string | null
@@ -21,7 +21,7 @@ type TMsgResponse = {
   pagination_cursors: TPaginationCursors
 }
 
-export const fetchMessagesPaginated = async (arg: TMsgPaginnatedArg): Promise<TMsgResponse> => {
+export const fetchMessagesPaginated = async (arg: TMsgPaginatedArg): Promise<TMsgResponse> => {
   return supabaseClient
     .rpc('get_channel_messages_paginated', {
       input_channel_id: arg.input_channel_id,

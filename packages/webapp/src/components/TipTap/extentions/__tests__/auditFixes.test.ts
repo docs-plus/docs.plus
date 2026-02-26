@@ -4,7 +4,7 @@
  * V-1: ContentWrapper Enter handler must create structurally valid headings
  *      (contentHeading + contentWrapper children), not use setNode.
  * V-2: ensureContentWrapper command was dead code and has been removed.
- * E-6: wrapContenWithHeading H1-in-range guard must use block.le (the
+ * E-6: wrapContentWithHeading H1-in-range guard must use block.le (the
  *      canonical heading level from contentHeading), not block.attrs.level.
  *
  * These tests use the shared testSchema helpers and real ProseMirror state
@@ -227,7 +227,7 @@ describe('E-6: H1-in-range guard must use block.le for heading level', () => {
     const blocks = getRangeBlocks(doc, targetCwStart, targetCwEnd)
     const headingBlocks = blocks.filter((b) => b.type === TIPTAP_NODES.HEADING_TYPE)
 
-    // The guard in wrapContenWithHeading.ts should use block.le === 1
+    // The guard in wrapContentWithHeading.ts should use block.le === 1
     const hasH1ViaLe = headingBlocks.some((block) => block.le === 1)
     expect(hasH1ViaLe).toBe(true)
   })

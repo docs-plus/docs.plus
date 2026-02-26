@@ -19,7 +19,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useChatroomContext } from '../../ChatroomContext'
-import { messageInsert } from '../../hooks/listner/helpers'
+import { messageInsert } from '../../hooks/listener/helpers'
 import {
   Actions,
   AttachmentButton,

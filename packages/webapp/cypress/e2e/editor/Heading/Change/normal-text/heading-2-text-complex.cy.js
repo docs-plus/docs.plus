@@ -245,7 +245,7 @@ describe('Convert Headings to Text - Complex Cases', () => {
       // Verify conversion worked correctly
       verifyHeadingConversion(target.text, expectedDocumentAfter)
 
-      // should verify dome structure
+      // should verify DOM structure
       cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
         expect(result.valid).to.be.true
         expect(result.errors).have.length(0)

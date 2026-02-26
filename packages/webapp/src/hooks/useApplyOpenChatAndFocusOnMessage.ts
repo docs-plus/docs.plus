@@ -7,12 +7,12 @@ export default function useApplyOpenChatAndFocusOnMessage() {
   const {
     settings: {
       editor: { providerSyncing, loading },
-      joined2Workspace
+      joinedWorkspace
     }
   } = useStore((state) => state)
 
   useEffect(() => {
-    if (loading || providerSyncing || !joined2Workspace) return
+    if (loading || providerSyncing || !joinedWorkspace) return
     const url = new URL(window.location.href)
     const act = url.searchParams.get('act')
     const channelId = url.searchParams.get('c_id')
@@ -25,7 +25,7 @@ export default function useApplyOpenChatAndFocusOnMessage() {
         fetchMsgsFromId: messageId
       })
     }
-  }, [loading, providerSyncing, joined2Workspace])
+  }, [loading, providerSyncing, joinedWorkspace])
 
   return null
 }

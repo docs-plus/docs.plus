@@ -11,7 +11,7 @@ import useEditorReadOnly from './useEditorReadOnly'
 import useHandleDraftOnFocus from './useHandleDraftOnFocus'
 import useInitializeNewDocument from './useInitializeNewDocument'
 import useNewDocumentTip from './useNewDocumentTip'
-import useProviderAwarness from './useProviderAwarness'
+import useProviderAwareness from './useProviderAwareness'
 
 const useEditorAndProvider = ({ provider }: { provider: any }) => {
   const { editor: editorSetting } = useStore((state) => state.settings)
@@ -27,7 +27,7 @@ const useEditorAndProvider = ({ provider }: { provider: any }) => {
   useHandleDraftOnFocus({ editor, provider })
   useCheckUrlAndOpenHeadingChat()
 
-  useProviderAwarness()
+  useProviderAwareness()
   useEditorEditableState()
   useEditorReadOnly()
   useApplyFilters()

@@ -10,7 +10,6 @@
     "prepare": "husky",
     "postinstall": "bun run --filter @docs.plus/hocuspocus prisma:generate || true",
     "doctor": "bun scripts/doctor.ts",
-    "start": "sh ./scripts/run_dev.sh",
     "update:packages": "bunx npm-check-updates -u",
     "start:webapp": "cd packages/webapp && bun run start",
     "dev": "bun --filter @docs.plus/webapp run dev",

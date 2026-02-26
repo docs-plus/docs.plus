@@ -12,7 +12,7 @@ type Props = {
 export const CloseButton = ({ className }: Props) => {
   const chatRoom = useChatStore((state) => state.chatRoom)
 
-  const handelCloseChatRoom = () => {
+  const handleCloseChatRoom = () => {
     PubSub.publish(CHAT_CLOSE, { headingId: chatRoom.headingId })
   }
 
@@ -21,7 +21,7 @@ export const CloseButton = ({ className }: Props) => {
       variant="ghost"
       size="sm"
       shape="square"
-      onClick={handelCloseChatRoom}
+      onClick={handleCloseChatRoom}
       className={twMerge(
         'text-base-content/60 hover:text-base-content hover:bg-base-300 focus-visible:ring-primary/30 focus-visible:ring-2 focus-visible:outline-none',
         className

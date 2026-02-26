@@ -1,7 +1,7 @@
 import {
-  dbChannelMessageCountsListner,
-  dbChannelsListner
-} from '@components/chatroom/hooks/listner/dbChannelsListner'
+  dbChannelMessageCountsListener,
+  dbChannelsListener
+} from '@components/chatroom/hooks/listener/dbChannelsListener'
 import { useAuthStore, useChatStore, useStore } from '@stores'
 import { RealtimeChannel } from '@supabase/supabase-js'
 import { supabaseClient } from '@utils/supabase'
@@ -49,7 +49,7 @@ export const useCatchUserPresences = () => {
             table: 'channel_message_counts',
             filter: `workspace_id=eq.${workspaceId}`
           },
-          dbChannelMessageCountsListner
+          dbChannelMessageCountsListener
         )
         .subscribe()
       return
@@ -79,7 +79,7 @@ export const useCatchUserPresences = () => {
           table: 'channels',
           filter: `workspace_id=eq.${workspaceId}`
         },
-        dbChannelsListner
+        dbChannelsListener
       )
       .on('presence', { event: 'join' }, ({ newPresences }) => {
         // when a new user joins the channel, I need to send the current users status to the new user

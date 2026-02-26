@@ -30,7 +30,7 @@ export const useLongPressInteraction = () => {
   const handleLongPressFinish = useCallback((_event: any) => {
     setIsMessagePressed(false)
     setIsLongPressCompleted(true) // Mark as completed - buttons become active
-    updateChatRoom('disableScroll', true)
+    updateChatRoom('isScrollEnabled', false)
   }, [])
 
   const handleLongPressCancel = useCallback((event: any) => {
@@ -48,7 +48,7 @@ export const useLongPressInteraction = () => {
       }
     }
 
-    updateChatRoom('disableScroll', false)
+    updateChatRoom('isScrollEnabled', true)
     messageCardElementRef.current = null // Clear reference
   }, [])
 
@@ -73,7 +73,7 @@ export const useLongPressInteraction = () => {
 
   const setLongPressCompleted = useCallback((completed: boolean) => {
     setIsLongPressCompleted(completed)
-    updateChatRoom('disableScroll', false)
+    updateChatRoom('isScrollEnabled', true)
   }, [])
 
   return {

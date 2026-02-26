@@ -36,12 +36,12 @@ const DocumentPage = ({
   useDocumentMetadata(slugs, docMetadata)
   useInitiateDocumentAndWorkspace(docMetadata)
   const { provider } = useYdocAndProvider({ accessToken, deviceType })
-  const { join2WorkspaceLoading } = useJoinWorkspace({
+  const { joinWorkspaceLoading } = useJoinWorkspace({
     documentId: docMetadata.documentId,
     loading
   })
 
-  if (loading || providerSyncing || join2WorkspaceLoading) {
+  if (loading || providerSyncing || joinWorkspaceLoading) {
     return (
       <>
         <HeadSeo />

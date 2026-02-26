@@ -7,7 +7,7 @@
  * preference, not document state. Syncing it via Yjs would force all
  * collaborators into the same view, which is undesirable.
  */
-import { db } from '@db/headingCrinckleDB'
+import { db } from '@db/headingCrinkleDB'
 import { useStore } from '@stores'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { EditorEventData, TIPTAP_EVENTS, TipTapEditor, TRANSACTION_META } from '@types'

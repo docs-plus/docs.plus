@@ -1,4 +1,4 @@
-import { db, initDB } from '@db/headingCrinckleDB'
+import { db, initDB } from '@db/headingCrinkleDB'
 import { useEffect, useLayoutEffect } from 'react'
 
 interface DocMetadata {

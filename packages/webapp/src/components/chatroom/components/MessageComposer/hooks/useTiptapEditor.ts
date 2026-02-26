@@ -43,7 +43,7 @@ lowlight.register('bash', bash as any)
 
 import { isOnlyEmoji } from '@utils/emojis'
 
-import { handleTypingIndicator, TypingIndicatorType } from '../helpers/handelTypeingIndicator'
+import { handleTypingIndicator, TypingIndicatorType } from '../helpers/handleTypingIndicator'
 
 export const useTiptapEditor = ({
   loading,

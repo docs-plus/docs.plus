@@ -26,7 +26,7 @@ export type TMsgRow = Database['public']['Tables']['messages']['Row'] & {
 }
 
 // API request types
-export type TSendMsgeArgs = {
+export type TSendMessageArgs = {
   content: TMsgRow['content']
   channel_id: TMsgRow['channel_id']
   user_id: TMsgRow['user_id']

@@ -16,11 +16,11 @@ import {
 import { CommandArgs, HeadingAttributes } from './types'
 
 const changeHeadingLevelBackward = (
-  arrg: CommandArgs,
+  args: CommandArgs,
   attributes: HeadingAttributes,
   asWrapper: boolean = false
 ): boolean => {
-  const { state, tr } = arrg
+  const { state, tr } = args
   const { selection, doc } = state
   const { $from, $to } = selection
   const { start } = $from.blockRange($to)!

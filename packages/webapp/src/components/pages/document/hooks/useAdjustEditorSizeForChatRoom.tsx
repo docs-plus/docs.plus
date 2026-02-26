@@ -14,6 +14,6 @@ export const useAdjustEditorSizeForChatRoom = (editorWrapperRef: RefObject<HTMLD
       return
     }
 
-    editorWrapper.style.marginBottom = `${chatRoom.pannelHeight}px`
-  }, [editorWrapperRef.current, chatRoom.pannelHeight, chatRoom.documentId])
+    editorWrapper.style.marginBottom = `${chatRoom.panelHeight}px`
+  }, [editorWrapperRef.current, chatRoom.panelHeight, chatRoom.documentId])
 }

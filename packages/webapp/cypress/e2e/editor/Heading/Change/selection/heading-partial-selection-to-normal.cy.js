@@ -124,7 +124,7 @@ const mixedContentExpectedStructure = {
     ]),
     section('Partial Selection Section', [
       paragraph('Introduction paragraph for partial selection testing'),
-      heading(2, 'Partials Selection Parent', [
+      heading(2, 'Partial Selection Parent', [
         paragraph('Content before partial selection'),
         heading(3, 'First Child', [paragraph('This will be partially selected')]),
         heading(3, 'Middle Child', [paragraph('This will be completely selected')]),

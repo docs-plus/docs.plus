@@ -26,7 +26,7 @@
       "@context/*": ["src/context/*"],
       "@public/*": ["public/*"],
       "@icons": ["src/components/icons/index.ts"],
-      "@tiptapEditor": ["src/components/tiptap/*"],
+      "@tiptapEditor": ["src/components/TipTap/*"],
       "@pages": ["src/components/pages/*"],
       "@stores": ["src/stores/index.ts"],
       "@types": ["src/types/index.ts"],

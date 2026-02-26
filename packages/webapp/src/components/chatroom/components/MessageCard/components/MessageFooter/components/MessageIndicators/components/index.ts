@@ -1,3 +1,3 @@
 export * from './EditedBadge'
-export * from './MesageSeen'
+export * from './MessageSeen'
 export * from './ReplyCount'

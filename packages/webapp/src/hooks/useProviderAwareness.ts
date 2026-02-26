@@ -26,7 +26,7 @@ const getCursorUser = (user: any) => {
   }
 }
 
-const useProviderAwarness = () => {
+const useProviderAwareness = () => {
   const user = useAuthStore((state) => state.profile)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const {
@@ -66,4 +66,4 @@ const useProviderAwarness = () => {
   }, [provider, user])
 }
 
-export default useProviderAwarness
+export default useProviderAwareness

@@ -1,2 +1,2 @@
-export * from './dbChannelsListner'
+export * from './dbChannelsListener'
 export * from './dbMessagesListener'

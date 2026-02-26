@@ -13,7 +13,7 @@ type TJoin2WorkspaceParams = {
  * @param workspaceId - The ID of the workspace to join
  * @returns A promise that resolves to a boolean indicating if the operation was successful
  */
-export const join2Workspace = async (
+export const joinWorkspace = async (
   arg: TJoin2WorkspaceParams
 ): Promise<PostgrestResponse<TJoin2WorkspaceReturn>> => {
   return supabaseClient.rpc('join_workspace', {

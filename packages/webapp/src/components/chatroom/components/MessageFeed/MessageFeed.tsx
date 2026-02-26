@@ -3,8 +3,8 @@ import { twMerge } from 'tailwind-merge'
 
 import { MessageList } from '../MessageList'
 import { ScrollToBottom } from './components'
-import { MessageFeedError } from './components/OverLayers/MessageFeedError'
-import { MessageFeedLoading } from './components/OverLayers/MessageFeedLoading'
+import { MessageFeedError } from './components/FeedStates/MessageFeedError'
+import { MessageFeedLoading } from './components/FeedStates/MessageFeedLoading'
 import { PinnedMessages } from './components/PinnedMessages'
 import { MessageFeedProvider } from './MessageFeedContext'
 

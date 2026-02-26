@@ -29,6 +29,5 @@ export type TChannelSettings = {
   lastReadMessageId?: string | null
   lastReadMessageTimestamp?: Date
   totalMsgSinceLastRead?: number
-  totalMsgSincLastRead?: number
   member_count?: number
 }

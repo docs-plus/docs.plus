@@ -8,15 +8,15 @@ type TChatRoom = {
   headingId?: string
   documentId?: string
   open: boolean
-  pannelHeight: number
+  panelHeight: number
   userPickingEmoji?: any
   replyMessageMemory?: any
-  editeMessageMemory?: any
+  editMessageMemory?: any
   fetchMsgsFromId?: string
   editorInstance?: any
   editorRef?: any
   isReadyToDisplayMessages?: boolean
-  disableScroll?: boolean
+  isScrollEnabled?: boolean
 }
 
 interface IChatroomStore {
@@ -33,7 +33,7 @@ interface IChatroomStore {
   closeChatRoom: () => void
   toggleChatRoom: () => void
   destroyChatRoom: () => void
-  setOrUpdateChatPannelHeight: (height: number) => void
+  setOrUpdateChatPanelHeight: (height: number) => void
   setOrUpdateChatRoom: (key: keyof TChatRoom, value: any) => void
   switchChatRoom: (channelId: string) => void
 }
@@ -58,16 +58,16 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     documentId: undefined,
     headingPath: [],
     open: false,
-    pannelHeight: 410,
+    panelHeight: 410,
     userPickingEmoji: undefined,
     replyMessageMemory: undefined,
-    editeMessageMemory: undefined,
+    editMessageMemory: undefined,
     commentMessageMemory: undefined,
     fetchMsgsFromId: undefined,
     editorInstance: undefined,
     editorRef: undefined,
     isReadyToDisplayMessages: false,
-    disableScroll: false
+    isScrollEnabled: true
   },
 
   updateChatRoom: (key, value) => {
@@ -98,9 +98,9 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
     })
   },
 
-  setOrUpdateChatPannelHeight: (height) => {
+  setOrUpdateChatPanelHeight: (height) => {
     set((state) => {
-      state.chatRoom.pannelHeight = height
+      state.chatRoom.panelHeight = height
     })
   },
 
@@ -142,7 +142,7 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
         documentId: undefined,
         headingPath: [],
         open: false,
-        pannelHeight: state.chatRoom.pannelHeight,
+        panelHeight: state.chatRoom.panelHeight,
         editorInstance: undefined,
         editorRef: undefined
       }

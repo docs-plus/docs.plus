@@ -4,7 +4,7 @@ import { supabaseClient } from '@utils/supabase'
 
 type TNotification = Database['public']['Tables']['notifications']['Row']
 
-export const getLastReadedNotification = async (
+export const getLastReadNotification = async (
   userId: string,
   workspaceId: string
 ): Promise<
@@ -20,7 +20,7 @@ export const getLastReadedNotification = async (
     .throwOnError()
 }
 
-export const getPaginatedLastReadedNotifications = async (
+export const getPaginatedLastReadNotifications = async (
   userId: string,
   workspaceId: string,
   page: number = 1,

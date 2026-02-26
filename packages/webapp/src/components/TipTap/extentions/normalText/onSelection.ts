@@ -33,13 +33,13 @@ const onSelection = ({ state, tr, editor }: NormalTextArgs): boolean => {
 
   const [paragraphs, headings] = extractParagraphsAndHeadings(restSelectionContents)
 
-  const newConent = [
+  const newContent = [
     ...convertHeadingsToParagraphs(selectedContents).map((node) => state.schema.nodeFromJSON(node)),
     ...paragraphs.map((node) => state.schema.nodeFromJSON(node))
   ]
 
   tr.deleteRange(selectedContents.at(0)!.startBlockPos, titleEndPos)
-  tr.insert(selectedContents.at(0)!.startBlockPos, newConent)
+  tr.insert(selectedContents.at(0)!.startBlockPos, newContent)
 
   // update selection position
   const focusSelection = new TextSelection(tr.doc.resolve(from))

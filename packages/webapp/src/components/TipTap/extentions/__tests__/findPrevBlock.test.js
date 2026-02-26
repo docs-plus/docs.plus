@@ -1,11 +1,6 @@
 import { findPrevBlock } from '../helper'
 
-// INFO: test description written by AI
-// UPDATED: All expectations now match STACK-ATTACH algorithm (HN-10 §5.2):
-//   findLast(x => x.le < headingLevel) → shouldNested: true (heading becomes child)
-//   If no match found → fallback to last block, shouldNested: false
-
-describe('findPrevBlock Function - 1', () => {
+describe('findPrevBlock Function', () => {
   const testMap = [
     { le: 1, depth: 0, startBlockPos: 150, endBlockPos: 653 },
     { le: 3, depth: 2, startBlockPos: 194, endBlockPos: 411 },

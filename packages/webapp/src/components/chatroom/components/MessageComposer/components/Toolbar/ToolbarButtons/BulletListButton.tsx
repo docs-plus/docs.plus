@@ -1,6 +1,6 @@
 import Icon from '@components/TipTap/toolbar/Icon'
 
-import { useMessageComposer } from '../../../hooks/indext'
+import { useMessageComposer } from '../../../hooks'
 import Button from '../../ui/Button'
 
 type Props = {

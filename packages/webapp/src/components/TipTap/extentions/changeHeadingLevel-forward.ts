@@ -15,8 +15,8 @@ import {
 } from './helper'
 import { CommandArgs, HeadingAttributes } from './types'
 
-const changeHeadingLevelForward = (arrg: CommandArgs, attributes: HeadingAttributes): boolean => {
-  const { state, tr } = arrg
+const changeHeadingLevelForward = (args: CommandArgs, attributes: HeadingAttributes): boolean => {
+  const { state, tr } = args
   const { selection, doc } = state
   const { $from, $to } = selection
   const { start } = $from.blockRange($to)!

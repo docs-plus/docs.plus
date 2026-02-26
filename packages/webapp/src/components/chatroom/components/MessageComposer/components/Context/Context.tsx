@@ -1,6 +1,6 @@
 import { twMerge } from 'tailwind-merge'
 
-import { useMessageComposer } from '../../hooks/indext'
+import { useMessageComposer } from '../../hooks'
 import { useHandleEscKey } from '../../hooks/useHandleEscKey'
 import CommentContext from './CommentContext'
 import EditContext from './EditContext'

@@ -207,46 +207,6 @@ describe('Heading Deletion Tests', { testIsolation: false }, () => {
     })
   })
 
-  // it('should recreate the document for the next test', () => {
-  //   // Clear the document and recreate it
-  //   cy.createDocument(ComplexDocumentStructure)
-
-  //   cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
-  //     expect(result.valid).to.be.true
-  //
-  //   })
-  // })
-
-  // TODO: delete key is not working
-  // it('should delete heading using delete key at end of heading', () => {
-  //   // Position cursor at the end of the heading we want to delete
-  //   cy.putPosCaretInHeading(4, 'Target Heading', 'end')
-
-  //   // At the end of a heading, we need to press delete enough times to delete content after
-  //   // the heading (the paragraph under the heading) plus one more to delete the heading structure
-  //   const paragraphContentLength = TEST_CONTENT.short.length
-
-  //   // Delete the content after the heading
-  //   for (let i = 0; i < paragraphContentLength; i++) {
-  //     cy.get('.docy_editor').realPress('Delete')
-  //   }
-
-  //   // Delete the heading structure
-  //   cy.get('.docy_editor').realPress('Delete')
-
-  //   // Wait for changes to apply
-  //   cy.wait(500)
-
-  //   // Verify the heading no longer exists as a heading
-  //   cy.get('.heading[level="4"] .title').contains('Target Heading').should('not.exist')
-
-  //   // Validate structure after deletion
-  //   cy.validateDocumentStructure(expectedStructureAfterEndDeletion).then((result) => {
-  //     expect(result.valid).to.be.true
-  //
-  //   })
-  // })
-
   it('should recreate the document for the next test', () => {
     // Clear the document and recreate it
     cy.createDocument(ComplexDocumentStructure)
@@ -290,34 +250,6 @@ describe('Heading Deletion Tests', { testIsolation: false }, () => {
       expect(result.valid).to.be.true
     })
   })
-
-  // TODO: delete key is not working
-  // it('should merge content with parent when using delete key at start of heading', () => {
-  //   // Position cursor at the start of the heading we want to delete
-  //   cy.putPosCaretInHeading(4, 'Target Heading', 'start')
-
-  //   // Press delete once to delete the heading and merge content with parent
-  //   cy.get('.docy_editor').realPress('Delete')
-
-  //   // Wait for changes to apply
-  //   cy.wait(500)
-
-  //   // Verify the heading no longer exists as a separate heading
-  //   cy.get('.heading[level="4"] .title').contains('Target Heading').should('not.exist')
-
-  //   // Verify the text is now part of the parent paragraph
-  //   cy.get('.heading[level="3"]')
-  //     .contains('Key Concepts')
-  //     .closest('.heading[level="3"]')
-  //     .contains(TEST_CONTENT.short + 'Target Heading')
-  //     .should('exist')
-
-  //   // Validate the merged structure
-  //   cy.validateDocumentStructure(expectedStructureAfterStartDeletion).then((result) => {
-  //     expect(result.valid).to.be.true
-  //
-  //   })
-  // })
 
   it('should delete heading when caret is in the middle and partial text remains', () => {
     // Position cursor in the middle of the heading we want to delete

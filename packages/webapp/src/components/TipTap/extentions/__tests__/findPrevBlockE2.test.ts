@@ -123,7 +123,7 @@ describe('getInsertionPos helper (DRY)', () => {
 
 describe('SOLID: callers must not use non-null assertions on prevBlock', () => {
   const callerFiles = [
-    'src/components/TipTap/extentions/wrapContenWithHeading.ts',
+    'src/components/TipTap/extentions/wrapContentWithHeading.ts',
     'src/components/TipTap/extentions/changeHeadingLevel-forward.ts',
     'src/components/TipTap/extentions/changeHeadingLevel-backward.ts',
     'src/components/TipTap/extentions/changeHeadingLevel-h1.ts',

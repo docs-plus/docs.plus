@@ -86,7 +86,7 @@ describe('Convert Heading to Text with Validation Edge Cases', { testIsolation: 
       .should('exist')
   })
 
-  it('should verify dome structure', () => {
+  it('should verify DOM structure', () => {
     cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
       expect(result.valid).to.be.true
       expect(result.errors).have.length(0)

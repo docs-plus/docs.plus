@@ -32,7 +32,7 @@ type Workspace = {
   hocuspocusProvider?: any
   deviceDetect?: any
   isAuthServiceAvailable?: boolean
-  joined2Workspace?: boolean
+  joinedWorkspace?: boolean
 }
 
 export interface IWorkspaceStore {
@@ -62,7 +62,7 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
       isEditable: false
     },
     hocuspocusProvider: undefined,
-    joined2Workspace: false
+    joinedWorkspace: false
   },
   // Update a single setting
   setWorkspaceSetting: (key, value) => {

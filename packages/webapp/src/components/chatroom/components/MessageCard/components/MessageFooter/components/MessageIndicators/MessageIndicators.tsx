@@ -1,7 +1,7 @@
 import { twMerge } from 'tailwind-merge'
 
 import { EditedBadge } from './components/EditedBadge'
-import MessageSeen from './components/MesageSeen'
+import MessageSeen from './components/MessageSeen'
 import { ReplyCount } from './components/ReplyCount'
 
 type Props = {

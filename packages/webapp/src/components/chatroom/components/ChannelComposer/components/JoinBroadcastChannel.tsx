@@ -1,4 +1,4 @@
-import { join2Channel } from '@api'
+import { joinChannel } from '@api'
 import Button from '@components/ui/Button'
 import { useApi } from '@hooks/useApi'
 import { Icons } from '@icons'
@@ -21,7 +21,7 @@ export default function JoinBroadcastChannel() {
   // @ts-ignore
   const { isUserChannelMember } = channelSettings || {}
   const user = useAuthStore((state) => state.profile)
-  const { loading, request: request2JoinChannel } = useApi(join2Channel, null, false)
+  const { loading, request: request2JoinChannel } = useApi(joinChannel, null, false)
 
   const channelMemberInfo = useChatStore((state) => state.channelMembers.get(channelId))
   const setOrUpdateChannel = useChatStore((state) => state.setOrUpdateChannel)

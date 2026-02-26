@@ -24,7 +24,7 @@ const EditContext = ({ onDismiss }: { onDismiss?: () => void }) => {
       <Icons.edit size={24} />
       <div className="text-base-content flex w-full flex-col justify-start pl-3 text-base">
         <span className="text-primary font-semibold antialiased">
-          Edite message
+          Edit message
           <span className="ml-1 font-normal">{replyToUser}</span>
         </span>
         <span className="text-sm text-wrap break-words wrap-anywhere whitespace-pre-line whitespace-pre-wrap">

@@ -1,4 +1,4 @@
-import { join2Workspace } from '@api'
+import { joinWorkspace } from '@api'
 import { useApi } from '@hooks/useApi'
 import { useAuthStore, useStore } from '@stores'
 import { useEffect } from 'react'
@@ -12,26 +12,26 @@ export default function useJoinWorkspace({ documentId, loading }: UseJoinWorkspa
   const user = useAuthStore((state) => state.profile)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
 
-  const { request: join2WorkspaceRequest, loading: join2WorkspaceLoading } = useApi(
-    join2Workspace,
+  const { request: joinWorkspaceRequest, loading: joinWorkspaceLoading } = useApi(
+    joinWorkspace,
     null,
     false
   )
 
   useEffect(() => {
     if (!user || !documentId || loading) return
-    join2WorkspaceRequest({
+    joinWorkspaceRequest({
       workspaceId: documentId
     }).catch((error) => {
-      console.error('[workspace], join2WorkspaceRequest!', error)
+      console.error('[workspace], joinWorkspaceRequest!', error)
     })
-  }, [user?.id, documentId, loading, join2WorkspaceRequest])
+  }, [user?.id, documentId, loading, joinWorkspaceRequest])
 
   useEffect(() => {
-    if (!join2WorkspaceLoading) return
+    if (!joinWorkspaceLoading) return
 
-    setWorkspaceSetting('joined2Workspace', true)
-  }, [join2WorkspaceLoading])
+    setWorkspaceSetting('joinedWorkspace', true)
+  }, [joinWorkspaceLoading])
 
-  return { join2WorkspaceLoading }
+  return { joinWorkspaceLoading }
 }

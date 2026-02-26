@@ -6,9 +6,9 @@
  */
 
 import { performMaintenanceCleanup } from '@db/messageComposerDB'
-import { useBroadcastListner } from '@hooks/useBroadcastListner'
+import { useBroadcastListener } from '@hooks/useBroadcastListener'
 import { useCatchUserPresences } from '@hooks/useCatchUserPresences'
-import { useHandleUserStatus } from '@hooks/useHanelUserStatus'
+import { useHandleUserStatus } from '@hooks/useHandleUserStatus'
 import { useInitialSteps } from '@hooks/useInitialSteps'
 import { useOnAuthStateChange } from '@hooks/useOnAuthStateChange'
 import useServiceWorker from '@hooks/useServiceWorker'
@@ -29,7 +29,7 @@ export default function AppProviders({ isMobileInitial }: AppProvidersProps) {
   useServiceWorker()
   useOnAuthStateChange()
   useCatchUserPresences()
-  useBroadcastListner()
+  useBroadcastListener()
   useHandleUserStatus()
   useInitialSteps(isMobileInitial)
 

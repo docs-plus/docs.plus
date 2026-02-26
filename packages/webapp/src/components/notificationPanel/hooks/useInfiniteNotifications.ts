@@ -1,4 +1,4 @@
-import { getPaginatedLastReadedNotifications, getUnreadNotificationsPaginated } from '@api'
+import { getPaginatedLastReadNotifications, getUnreadNotificationsPaginated } from '@api'
 import { useAuthStore, useStore } from '@stores'
 import { TNotification, TTab } from '@types'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -54,7 +54,7 @@ export const useInfiniteNotifications = (): UseInfiniteNotificationsResult => {
 
       setLoadingNotification(true)
       try {
-        const { data, error } = await getPaginatedLastReadedNotifications(
+        const { data, error } = await getPaginatedLastReadNotifications(
           user.id,
           workspaceId || '',
           1,
@@ -89,7 +89,7 @@ export const useInfiniteNotifications = (): UseInfiniteNotificationsResult => {
 
       try {
         if (tab === 'Read') {
-          const { data, error } = await getPaginatedLastReadedNotifications(
+          const { data, error } = await getPaginatedLastReadNotifications(
             user.id,
             workspaceId || '',
             pageNum,

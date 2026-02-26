@@ -1,5 +1,5 @@
 export * from './useAutoScrollForNewMessages'
-export * from './useChannleInitialData'
+export * from './useChannelInitialData'
 export * from './useChatContainerResizeHandler'
 export * from './useCheckReadMessage'
 export * from './useEmojiBoxHandler'

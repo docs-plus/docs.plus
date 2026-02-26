@@ -25,9 +25,9 @@ export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props)
   const channelSettings = useChatStore((state: any) =>
     state.workspaceSettings.channels.get(channelId)
   )
-  const { lastReadMessageId, totalMsgSincLastRead } = channelSettings || {
+  const { lastReadMessageId, totalMsgSinceLastRead } = channelSettings || {
     lastReadMessageId: '',
-    totalMsgSincLastRead: 0
+    totalMsgSinceLastRead: 0
   }
 
   const getItemKey = useCallback(
@@ -72,7 +72,7 @@ export const MessageLoop = ({ children, displaySystemNotifyChip = true }: Props)
           virtualRow.index === 0 ||
           (previousMessage && isNewDay(message.created_at, previousMessage.created_at))
         const showUnreadIndicator =
-          lastReadMessageId === message.id && (totalMsgSincLastRead ?? 0) >= 6
+          lastReadMessageId === message.id && (totalMsgSinceLastRead ?? 0) >= 6
 
         const renderMessageContent = () => {
           if (message.type === 'notification') {

@@ -3,7 +3,7 @@ import { useAuthStore } from '@stores'
 import { supabaseClient } from '@utils/supabase'
 import { useEffect, useState } from 'react'
 
-import { dbMessagesListener } from './listner'
+import { dbMessagesListener } from './listener'
 
 // there is not relation join in realtime subscription
 // so we first get the online members and save it to the channel member state store
