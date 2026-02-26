@@ -341,6 +341,16 @@ docs.plus/
 └── Makefile                 # 🛠️ Build commands
 ```
 
+### Docker / production images
+
+When adding or changing a **Dockerfile** (e.g. for a new service or image):
+
+- **Monorepo, no flatten:** Keep workspace layout (`packages/<name>`) in the image; do not copy a single package to `/app` and discard the rest.
+- **One `bun install` per stage;** do not copy `node_modules` between stages (Bun symlinks break).
+- **Minimal copy set:** Root workspace files + full copies only of packages the service needs; use stub `package.json` for other workspaces so the lockfile resolves.
+
+Full conventions, copy-set rules, stages, entrypoints, and checklist: **[CI/CD Improvement Roadmap — § 11. Dockerfile & Monorepo Conventions (Team Guide)](Notes/CI_CD_Improvement_Roadmap.md#11-dockerfile--monorepo-conventions-team-guide).**
+
 ## 🎯 Areas for Contribution
 
 We welcome contributions in all areas:

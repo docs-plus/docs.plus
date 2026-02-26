@@ -284,10 +284,16 @@ jobs:
           source ${{ env.ENV_FILE }}
           set +a
 
-          # Build with parallel execution (must run from repo root so context: . includes packages/)
+          # Backend (rest-api, hocuspocus-server, hocuspocus-worker share one image): build without cache
+          # so entrypoint/script changes are always picked up (avoids "Cannot find package 'hono'" from old path-rewriting entrypoint).
           docker compose -f ${{ env.COMPOSE_FILE }} \
             --env-file ${{ env.ENV_FILE }} \
-            build --parallel
+            build --no-cache rest-api hocuspocus-server hocuspocus-worker
+
+          # Rest: use cache (faster). traefik/redis use image: only, no build.
+          docker compose -f ${{ env.COMPOSE_FILE }} \
+            --env-file ${{ env.ENV_FILE }} \
+            build --parallel webapp admin-dashboard
 
           echo "✅ Images built"
 
