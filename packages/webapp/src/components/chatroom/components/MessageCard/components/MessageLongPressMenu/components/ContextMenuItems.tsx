@@ -49,7 +49,7 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
       title: 'Reply',
       icon: <Icons.reply size={20} />,
       onClickFn: () => replyInMessageHandler(message),
-      display: true, //settings.contextMenue?.reply ?? true,
+      display: true, //settings.contextMenu?.reply ?? true,
       className: ''
     },
     {
@@ -60,7 +60,7 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
         <Icons.link size={20} />
       ),
       onClickFn: () => copyMessageLinkHandler(message),
-      display: true, //settings.contextMenue?.copyLink ?? true,
+      display: true, //settings.contextMenu?.copyLink ?? true,
       className: `border-b border-base-300 pb-1 mb-1 ${linkCopied ? 'text-success' : ''}`
     },
     {
@@ -72,21 +72,21 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
           <Icons.bookmarkPlus size={20} />
         ),
       onClickFn: () => bookmarkMessageHandler(message),
-      display: true, //settings.contextMenue?.bookmark ?? true,
+      display: true, //settings.contextMenu?.bookmark ?? true,
       className: ''
     },
     {
       title: 'Copy to Doc',
       icon: <Icons.fileOpen size={20} />,
       onClickFn: () => copyMessageToDocHandler(message),
-      display: true, //settings.contextMenue?.copyToDoc ?? true,
+      display: true, //settings.contextMenu?.copyToDoc ?? true,
       className: ''
     },
     {
       title: 'Reply in Thread',
       icon: <Icons.thread size={20} />,
       onClickFn: () => replyInThreadHandler(message),
-      display: true, //settings.contextMenue?.replyInThread ?? true,
+      display: true, //settings.contextMenu?.replyInThread ?? true,
       className: 'text-primary'
     },
 
@@ -94,21 +94,21 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
       title: 'Forward',
       icon: <Icons.forward size={20} />,
       onClickFn: () => {}, //openModal('forwardMessageModal', messageData),
-      display: false, //settings.contextMenue?.forward ?? true,
+      display: false, //settings.contextMenu?.forward ?? true,
       className: ''
     },
     {
       title: isPinned ? 'Unpin' : 'Pin',
       icon: isPinned ? <Icons.pinOff size={20} /> : <Icons.pin size={20} />,
       onClickFn: () => pinMessageHandler(message),
-      display: false, //settings.contextMenue?.pin ?? true,
+      display: false, //settings.contextMenu?.pin ?? true,
       className: ''
     },
     {
       title: 'Edit',
       icon: <Icons.edit size={20} />,
       onClickFn: () => editMessageHandler(message),
-      display: isOwner, //true, //settings.contextMenue?.edite ?? true,
+      display: isOwner, //true, //settings.contextMenu?.edit ?? true,
       className: 'border-t pt-1 mt-1 border-base-300'
     },
     {
@@ -119,7 +119,7 @@ export const LongPressMenuItems = ({ message, isInteractive = true }: Props) => 
           size: 'sm'
         })
       },
-      display: isOwner, //true, //settings.contextMenue?.delete ?? true,
+      display: isOwner, //true, //settings.contextMenu?.delete ?? true,
       className: 'text-error'
     }
   ]

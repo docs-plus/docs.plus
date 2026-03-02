@@ -39,7 +39,7 @@ const changeHeadingLevelH1 = (args: CommandArgs, attributes: HeadingAttributes):
 
   const contentWrapper = getRangeBlocks(doc, titleStartPos + 1, titleEndPos)
 
-  // TODO: handel this case later
+  // TODO: handle this case later
   if ($from.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE && $from.pos !== $to.pos) {
     logger.error('[Heading]: Cannot change heading level when content is selected within a heading')
     return false

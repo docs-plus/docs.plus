@@ -125,7 +125,7 @@ const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalP
     clearForm()
   }
 
-  const handelFilterAlgorithm = () => {
+  const handleFilterAlgorithm = () => {
     if (!slugs) return
 
     setFilterAlgorithm(!filterAlgorithm)
@@ -199,7 +199,7 @@ const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalP
                 name="Filter Algorithm"
                 description="Use sequential heading order instead of relevance"
                 checked={filterAlgorithm}
-                onChange={handelFilterAlgorithm}
+                onChange={handleFilterAlgorithm}
               />
             </div>
           </div>

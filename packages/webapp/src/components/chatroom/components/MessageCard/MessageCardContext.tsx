@@ -44,13 +44,13 @@ export const MessageCardProvider: React.FC<{
   const { variant } = useChatroomContext()
   const user = useAuthStore((state) => state.profile)
   const handleDoubleClick = useCallback(() => {
-    // if (!settings.contextMenue?.reply) return
+    // if (!settings.contextMenu?.reply) return
 
     setReplyMessageMemory(message.channel_id, message)
 
     // Trigger editor focus
     document.dispatchEvent(new CustomEvent('editor:focus'))
-  }, [message, /*settings.contextMenue?.reply, */ setReplyMessageMemory])
+  }, [message, /*settings.contextMenu?.reply, */ setReplyMessageMemory])
 
   const isEmojiOnlyMessage = isOnlyEmoji(message?.content?.trim() || '')
   const isGroupStart = message.isGroupStart

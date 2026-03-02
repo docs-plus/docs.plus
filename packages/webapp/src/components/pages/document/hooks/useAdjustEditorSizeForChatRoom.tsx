@@ -4,7 +4,7 @@ import { RefObject, useEffect } from 'react'
 export const useAdjustEditorSizeForChatRoom = (editorWrapperRef: RefObject<HTMLDivElement>) => {
   const chatRoom = useChatStore((state) => state.chatRoom)
 
-  // adjust the editor size base on the chat room pannel height
+  // adjust the editor size based on the chat room panel height
   useEffect(() => {
     const editorWrapper = editorWrapperRef.current
 
