@@ -487,7 +487,7 @@ describe('Select-All + Paste — Clipboard Round-Trip', () => {
   // ============================================================================
 
   describe('Clipboard Data Standardization', () => {
-    it('pasted headings are adjusted to respect context level (HN-10 child > parent)', () => {
+    it('pasted headings are adjusted to respect context level (child > parent)', () => {
       const doc = [section('Root', [heading(2, 'Parent H2', [paragraph('Parent body')])])]
       cy.createDocument(doc)
 

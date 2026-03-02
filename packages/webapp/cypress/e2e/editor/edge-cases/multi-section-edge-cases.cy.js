@@ -207,7 +207,7 @@ const assertTextPresent = (...texts) =>
 // TEST SUITE
 // =============================================================================
 
-describe('HN-10 Multi-Section Edge Cases — 2nd & 3rd H1', () => {
+describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
   beforeEach(() => {
     cy.visitEditor({ persist: false, clearDoc: true })
     cy.get('.docy_editor', { timeout: 15000 }).should('be.visible')
@@ -249,7 +249,7 @@ describe('HN-10 Multi-Section Edge Cases — 2nd & 3rd H1', () => {
       assertSchemaValid('A.2 — 3rd H1→H2')
     })
 
-    it('A.3 2nd H1→H3: non-sequential downgrade (HN-10 §6.2 allows gaps)', () => {
+    it('2nd H1→H3: non-sequential downgrade allows gaps', () => {
       createThreeSections()
 
       putCaretInHeading(1, 'Section Beta', 'start')
@@ -736,7 +736,7 @@ describe('HN-10 Multi-Section Edge Cases — 2nd & 3rd H1', () => {
       assertSchemaValid('D.5 — cross-section nested delete')
     })
 
-    it('D.6 Delete selection ending in 2nd section contentHeading (RISK-001)', () => {
+    it('Delete selection ending in 2nd section contentHeading', () => {
       cy.createDocument([
         section('First', [paragraph('first paragraph')]),
         section('Second', [paragraph('second paragraph')])
@@ -856,7 +856,7 @@ describe('HN-10 Multi-Section Edge Cases — 2nd & 3rd H1', () => {
       assertSchemaValid('E.5 — paste text into 2nd H1 title')
     })
 
-    it('E.6 Paste 2 H1s into 3rd section (BUG-001 variant)', () => {
+    it('Paste 2 H1s into 3rd section', () => {
       createThreeSections()
 
       clickContentAreaByTitle(1, 'Section Gamma')

@@ -137,7 +137,7 @@ const waitForPlugin = () => cy.wait(800)
 // TEST SUITE
 // =============================================================================
 
-describe('HN-10 Production Readiness — Comprehensive E2E', () => {
+describe('Heading Schema Production Readiness — Comprehensive E2E', () => {
   beforeEach(() => {
     cy.visitEditor({ persist: false, clearDoc: true })
     cy.get('.docy_editor', { timeout: 15000 }).should('be.visible')
@@ -458,7 +458,7 @@ describe('HN-10 Production Readiness — Comprehensive E2E', () => {
       assertSchemaValid('5.2')
     })
 
-    it('5.3 Paste single H1 creates new root section (BUG-001 base case)', () => {
+    it('Paste single H1 creates new root section', () => {
       cy.createDocument([section('Original', [paragraph('original content')])])
       cy.wait(300)
 
@@ -476,7 +476,7 @@ describe('HN-10 Production Readiness — Comprehensive E2E', () => {
       })
     })
 
-    it('5.4 Paste 2 H1 headings creates 2 new root sections (BUG-001)', () => {
+    it('Paste 2 H1 headings creates 2 new root sections', () => {
       cy.createDocument([section('First', [paragraph('content')])])
       cy.wait(300)
 
@@ -697,7 +697,7 @@ describe('HN-10 Production Readiness — Comprehensive E2E', () => {
       assertSchemaValid('6.1')
     })
 
-    it('6.2 Delete selection ending in contentHeading falls back safely (RISK-001)', () => {
+    it('Delete selection ending in contentHeading falls back safely', () => {
       cy.createDocument([
         section('Sec', [
           paragraph('First paragraph'),
@@ -729,7 +729,7 @@ describe('HN-10 Production Readiness — Comprehensive E2E', () => {
       assertSchemaValid('6.2 — RISK-001')
     })
 
-    it('6.3 Backspace with selection ending in contentHeading (RISK-001)', () => {
+    it('Backspace with selection ending in contentHeading', () => {
       cy.createDocument([
         section('Sec', [paragraph('Before'), heading(2, 'After', [paragraph('Inside')])])
       ])

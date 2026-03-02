@@ -13,7 +13,7 @@
 import { TEST_TITLE, TEST_CONTENT } from '../../../support/commands'
 import { section, paragraph, heading } from '../../../fixtures/docMaker'
 
-describe('HN-10 Schema Validation', () => {
+describe('Heading Schema Validation', () => {
   beforeEach(() => {
     cy.visitEditor({ persist: false, clearDoc: true, docName: 'hn10-validation-test' })
   })

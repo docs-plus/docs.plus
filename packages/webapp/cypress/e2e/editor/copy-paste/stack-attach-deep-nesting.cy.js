@@ -21,7 +21,7 @@ describe('STACK-ATTACH Non-Sequential Paste & Deep Nesting Boundary', () => {
   // TG-5: Non-sequential paste (H1→H4 STACK-ATTACH in browser)
   // =========================================================================
 
-  describe('TG-5: Non-sequential level jumps during paste', () => {
+  describe('Non-sequential level jumps during paste', () => {
     it('pasting H4 inside H1 nests it under H1 (not as sibling)', () => {
       cy.createDocument([
         section('Target Section', [heading(2, 'Existing H2', [paragraph('existing body')])])
@@ -148,7 +148,7 @@ describe('STACK-ATTACH Non-Sequential Paste & Deep Nesting Boundary', () => {
   // TG-7: Deep nesting boundary — paste at contextLevel 9/10
   // =========================================================================
 
-  describe('TG-7: Deep nesting boundary (contextLevel 9/10)', () => {
+  describe('Deep nesting boundary (contextLevel 9/10)', () => {
     it('paste at level-9 context clamps child headings to 10', () => {
       // Build a deeply nested document: H1 > H2 > H3 > ... > H9
       cy.createDocument([

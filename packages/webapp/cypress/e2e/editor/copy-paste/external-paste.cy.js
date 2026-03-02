@@ -314,7 +314,7 @@ describe('External Paste - HTML from Other Sources', () => {
   }
 
   describe('Real-World HTML: minimax.io blog post (H1 + 12x H3)', () => {
-    it('select-all + paste produces valid HN-10 tree', () => {
+    it('select-all + paste produces valid heading tree', () => {
       cy.createDocument([section('Old Section', [paragraph('old content')])])
 
       // CMD+A → paste
@@ -408,7 +408,7 @@ describe('External Paste - HTML from Other Sources', () => {
       })
     })
 
-    it('paste into contentWrapper produces valid HN-10 tree', () => {
+    it('paste into contentWrapper produces valid heading tree', () => {
       cy.createDocument([section('Existing Section', [paragraph('Existing content')])])
       cy.wait(500)
 
