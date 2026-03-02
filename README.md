@@ -419,6 +419,8 @@ Production-ready setup for **mid-level scale deployments** (small-medium teams, 
 # Building
 make build             # Production build
 make build-dev         # Development build
+make build-backend-prod   # Backend prod image only
+make run-backend-prod-local  # Run backend prod image locally (needs .env.local, ports 4000/4001/4002)
 
 # Running (Full Docker)
 make up-prod           # Start production

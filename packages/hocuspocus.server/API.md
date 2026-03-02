@@ -64,7 +64,7 @@ Check service health and dependencies.
 
 ### GET /health
 
-Overall health check for all dependencies.
+Overall health check for all dependencies (database, Redis, Supabase).
 
 **Response:**
 
