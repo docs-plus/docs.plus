@@ -17,7 +17,7 @@ const schema = createTestSchema()
 // TG-4: linearizeHeadingNodes — malformed input
 // ===========================================================================
 
-describe('linearizeHeadingNodes — malformed input resilience (TG-4)', () => {
+describe('linearizeHeadingNodes — malformed input resilience', () => {
   it('skips null/undefined entries without crashing', () => {
     const input = [null, undefined] as any[]
     expect(() => linearizeHeadingNodes(input)).not.toThrow()
@@ -65,7 +65,7 @@ describe('linearizeHeadingNodes — malformed input resilience (TG-4)', () => {
 // TG-4: transformClipboardToStructured — malformed input
 // ===========================================================================
 
-describe('transformClipboardToStructured — malformed input resilience (TG-4)', () => {
+describe('transformClipboardToStructured — malformed input resilience', () => {
   it('returns empty arrays for empty input', () => {
     const [paragraphs, headings] = transformClipboardToStructured([], { schema })
     expect(paragraphs).toEqual([])
@@ -109,7 +109,7 @@ describe('transformClipboardToStructured — malformed input resilience (TG-4)',
 // TG-8: insertHeadingsByNodeBlocks — null nodeAtStart guard (CP-2)
 // ===========================================================================
 
-describe('insertHeadingsByNodeBlocks — null nodeAtStart guard (TG-8)', () => {
+describe('insertHeadingsByNodeBlocks — null nodeAtStart guard', () => {
   it('skips heading when startBlockPos points to an invalid position', () => {
     const doc = buildDoc(schema, [heading(schema, 1, 'Root', [paragraph(schema, 'body')])])
     const state = EditorState.create({ doc, schema })

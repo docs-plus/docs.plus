@@ -103,7 +103,7 @@ describe('changeHeadingLevel — forward (level increase)', () => {
     expect(sub!.level).toBe(3)
   })
 
-  it('H3 → H5 (non-sequential jump) is valid per HN-10 §6.2', () => {
+  it('H3 → H5 (non-sequential jump) is valid', () => {
     const doc = buildDoc(schema, [
       heading(schema, 1, 'Root', [
         paragraph(schema, 'p1'),

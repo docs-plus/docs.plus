@@ -51,7 +51,7 @@ describe('deleteSelectedRange: select-all detection consistency', () => {
 // 2. transformCopied must produce structurally valid clipboard data
 // ===========================================================================
 
-describe('transformCopied: clipboard data must be HN-10 standardized', () => {
+describe('transformCopied: clipboard data must be standardized', () => {
   it('getSelectionBlocks on a cut document returns contentHeading blocks with level', () => {
     const doc = buildDoc(schema, [
       heading(schema, 1, 'Root', [
@@ -152,7 +152,7 @@ describe('transformClipboardToStructured: clipboard data standardization', () =>
 // 4. adjustHeadingLevelsForContext: HN-10 level adjustment
 // ===========================================================================
 
-describe('adjustHeadingLevelsForContext: HN-10 compliant level adjustment', () => {
+describe('adjustHeadingLevelsForContext: level adjustment compliance', () => {
   it('shifts heading levels so min becomes contextLevel + 1', () => {
     const headingsJson = [
       {
@@ -331,7 +331,7 @@ describe('clipboard round-trip: structure is preserved after standardization', (
     expect(headings[0].child(1).type.name).toBe(TIPTAP_NODES.CONTENT_WRAPPER_TYPE)
   })
 
-  it('a complete copy→standardize→paste cycle produces valid HN-10 nodes', () => {
+  it('a complete copy→standardize→paste cycle produces valid heading nodes', () => {
     // 1. Create a document
     const doc = buildDoc(schema, [
       heading(schema, 1, 'Root', [

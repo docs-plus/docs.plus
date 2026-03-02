@@ -7,11 +7,11 @@ jest.mock('../changeHeadingLevel-backward', () => jest.fn(() => true))
 jest.mock('../changeHeadingLevel-forward', () => jest.fn(() => true))
 jest.mock('../changeHeadingLevel-h1', () => jest.fn(() => true))
 
-const mockedBackward = changeHeadingLevelBackward
-const mockedForward = changeHeadingLevelForward
-const mockedForwardH1 = changeHeadingLevelForwardH1
+const mockedBackward = jest.mocked(changeHeadingLevelBackward)
+const mockedForward = jest.mocked(changeHeadingLevelForward)
+const mockedForwardH1 = jest.mocked(changeHeadingLevelForwardH1)
 
-const buildArgs = (currentLevel) => ({
+const buildArgs = (currentLevel: number) => ({
   state: {
     selection: {
       $from: {
@@ -81,8 +81,7 @@ describe('changeHeadingLevel router', () => {
     expect(mockedForwardH1).not.toHaveBeenCalled()
   })
 
-  // V-3: HN-10 §1 — levels must be clamped to L = {1..10}
-  it('clamps level 0 to 1 (HN-10 §1 lower bound)', () => {
+  it('clamps level 0 to 1 (lower bound)', () => {
     const args = buildArgs(5)
     changeHeadingLevel(args, { level: 0 })
 
@@ -93,7 +92,7 @@ describe('changeHeadingLevel router', () => {
     expect(mockedBackward).toHaveBeenCalledWith(args, { level: 1 })
   })
 
-  it('clamps level 11 to 10 (HN-10 §1 upper bound)', () => {
+  it('clamps level 11 to 10 (upper bound)', () => {
     const args = buildArgs(5)
     changeHeadingLevel(args, { level: 11 })
 

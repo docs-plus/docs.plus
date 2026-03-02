@@ -31,13 +31,13 @@ const makeEditor = () => {
   }
 }
 
-const getPluginProps = (plugin) => plugin.props || plugin.spec.props
+const getPluginProps = (plugin: any) => plugin.props || plugin.spec.props
 
 describe('copyPastePlugin', () => {
   beforeEach(() => {
-    clipboardPaste.mockClear()
-    deleteSelectedRange.mockClear()
-    getSelectionBlocks.mockReset()
+    jest.mocked(clipboardPaste).mockClear()
+    jest.mocked(deleteSelectedRange).mockClear()
+    jest.mocked(getSelectionBlocks).mockReset()
   })
 
   it('transformPastedHTML converts actual div tags and preserves text/attributes', () => {
@@ -92,7 +92,9 @@ describe('copyPastePlugin', () => {
     const props = getPluginProps(plugin)
 
     const schema = editor.state.schema
-    getSelectionBlocks.mockReturnValue([paragraph(schema, 'copied paragraph').toJSON()])
+    jest
+      .mocked(getSelectionBlocks)
+      .mockReturnValue([paragraph(schema, 'copied paragraph').toJSON()])
 
     props.handleDOMEvents.cut()
     const result = props.transformCopied()
@@ -109,7 +111,9 @@ describe('copyPastePlugin', () => {
     const props = getPluginProps(plugin)
 
     const schema = editor.state.schema
-    getSelectionBlocks.mockReturnValue([paragraph(schema, 'copied paragraph').toJSON()])
+    jest
+      .mocked(getSelectionBlocks)
+      .mockReturnValue([paragraph(schema, 'copied paragraph').toJSON()])
 
     props.handleDOMEvents.copy()
     props.transformCopied()
@@ -124,7 +128,9 @@ describe('copyPastePlugin', () => {
     const props = getPluginProps(plugin)
 
     const schema = editor.state.schema
-    getSelectionBlocks.mockReturnValue([paragraph(schema, 'copied paragraph').toJSON()])
+    jest
+      .mocked(getSelectionBlocks)
+      .mockReturnValue([paragraph(schema, 'copied paragraph').toJSON()])
 
     props.handleDOMEvents.cut()
     props.transformCopied()

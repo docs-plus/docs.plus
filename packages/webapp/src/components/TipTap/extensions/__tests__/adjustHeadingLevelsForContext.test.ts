@@ -64,7 +64,7 @@ describe('adjustHeadingLevelsForContext', () => {
     expect(result.h1Headings).toEqual([])
   })
 
-  it('clamps all levels to 10 when contextLevel is 10 (HN-10 §1 boundary)', () => {
+  it('clamps all levels to 10 when contextLevel is 10 (level boundary)', () => {
     const headingsJson = [makeHeadingJson(2, 'A'), makeHeadingJson(5, 'B'), makeHeadingJson(8, 'C')]
 
     const { adjustedHeadings, h1Headings } = adjustHeadingLevelsForContext(headingsJson, 10, schema)

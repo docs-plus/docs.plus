@@ -46,7 +46,7 @@ describe('E-8: input rules respect parent context level', () => {
     expect(contextLevel).toBe(8)
   })
 
-  it('a heading with level <= context level is invalid per HN-10 §6.1', () => {
+  it('a heading with level <= context level is invalid', () => {
     // Inside H8's contentWrapper, creating H6 would violate child > parent (6 <= 8)
     const contextLevel = 8
     const candidateLevel = 6

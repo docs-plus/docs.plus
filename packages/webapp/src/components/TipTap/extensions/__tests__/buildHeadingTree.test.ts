@@ -52,7 +52,7 @@ const getLevel = (heading: JSONNode): number => {
   return (heading.content?.[0]?.attrs?.level as number) ?? (heading.attrs?.level as number) ?? 1
 }
 
-describe('buildHeadingTree — STACK-ATTACH algorithm (HN-10 §5)', () => {
+describe('buildHeadingTree — STACK-ATTACH algorithm', () => {
   it('returns empty array for empty input', () => {
     expect(buildHeadingTree([])).toEqual([])
   })
@@ -204,7 +204,7 @@ describe('buildHeadingTree — STACK-ATTACH algorithm (HN-10 §5)', () => {
     expect(headings).toHaveLength(1)
   })
 
-  it('full 10-level chain: H1→H2→...→H10 nests each under its predecessor (HN-10 §1 boundary)', () => {
+  it('full 10-level chain: H1→H2→...→H10 nests each under its predecessor (level boundary)', () => {
     const input = Array.from({ length: 10 }, (_, i) => makeHeadingJson(i + 1, `Level ${i + 1}`))
     const result = buildHeadingTree(input)
 
@@ -262,7 +262,7 @@ describe('buildHeadingTree — STACK-ATTACH algorithm (HN-10 §5)', () => {
 // TG-4: Malformed input resilience
 // ===========================================================================
 
-describe('buildHeadingTree — malformed input resilience (TG-4)', () => {
+describe('buildHeadingTree — malformed input resilience', () => {
   it('handles heading with missing content array', () => {
     const input: JSONNode[] = [{ type: TIPTAP_NODES.HEADING_TYPE, attrs: { level: 1 } }]
     expect(() => buildHeadingTree(input)).not.toThrow()

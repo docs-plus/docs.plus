@@ -7,7 +7,7 @@ import {
   paragraph
 } from '../testUtils/testSchema'
 
-const findTextPos = (doc, needle) => {
+const findTextPos = (doc: any, needle: string) => {
   let found = -1
   doc.descendants((node, pos) => {
     if (found !== -1) return false

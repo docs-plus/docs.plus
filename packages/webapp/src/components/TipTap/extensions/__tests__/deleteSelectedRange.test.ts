@@ -14,22 +14,23 @@ jest.mock('@tiptap/pm/state', () => {
   return {
     ...actual,
     TextSelection: class MockTextSelection {
-      constructor($pos) {
+      $pos: unknown
+      constructor($pos: unknown) {
         this.$pos = $pos
       }
     }
   }
 })
 
-const createEditorMock = (overrides = {}) => {
+const createEditorMock = (overrides: Record<string, any> = {}) => {
   const tr = {
     deleteRange: jest.fn(),
     insert: jest.fn(),
     delete: jest.fn(),
     setSelection: jest.fn(),
-    mapping: { map: (pos) => pos },
+    mapping: { map: (pos: number) => pos },
     doc: {
-      resolve: (pos) => ({ pos })
+      resolve: (pos: number) => ({ pos })
     },
     ...(overrides.tr || {})
   }
@@ -65,7 +66,7 @@ const createEditorMock = (overrides = {}) => {
     resolve: () => ({
       parent: { type: { name: TIPTAP_NODES.PARAGRAPH_TYPE } }
     }),
-    descendants: (cb) => {
+    descendants: (cb: Function) => {
       cb(
         { type: { name: TIPTAP_NODES.CONTENT_HEADING_TYPE }, isBlock: true, content: { size: 10 } },
         1,
@@ -103,9 +104,9 @@ const createEditorMock = (overrides = {}) => {
 
 describe('deleteSelectedRange', () => {
   beforeEach(() => {
-    getSelectionRangeBlocks.mockReset()
-    getSelectionRangeSlice.mockReset()
-    insertRemainingHeadings.mockReset()
+    jest.mocked(getSelectionRangeBlocks).mockReset()
+    jest.mocked(getSelectionRangeSlice).mockReset()
+    jest.mocked(insertRemainingHeadings).mockReset()
   })
 
   it('returns false for full-document selection and defers to default behavior', () => {
@@ -121,7 +122,7 @@ describe('deleteSelectedRange', () => {
       },
       doc: {
         content: { size: 200 },
-        descendants: (cb) => {
+        descendants: (cb: Function) => {
           cb(
             {
               type: { name: TIPTAP_NODES.CONTENT_HEADING_TYPE },
@@ -156,7 +157,7 @@ describe('deleteSelectedRange', () => {
         resolve: () => ({
           parent: { type: { name: TIPTAP_NODES.CONTENT_HEADING_TYPE } }
         }),
-        descendants: (cb) => {
+        descendants: (cb: Function) => {
           cb(
             {
               type: { name: TIPTAP_NODES.CONTENT_HEADING_TYPE },
@@ -187,14 +188,17 @@ describe('deleteSelectedRange', () => {
   it('returns false when only one block is selected', () => {
     const editor = createEditorMock()
 
-    getSelectionRangeSlice
+    jest
+      .mocked(getSelectionRangeSlice)
       .mockReturnValueOnce([])
       .mockReturnValueOnce([
         { type: TIPTAP_NODES.PARAGRAPH_TYPE, startBlockPos: 31, endBlockPos: 35 }
       ])
-    getSelectionRangeBlocks.mockReturnValue([
-      { type: TIPTAP_NODES.PARAGRAPH_TYPE, startBlockPos: 20, endBlockPos: 25, content: [] }
-    ])
+    jest
+      .mocked(getSelectionRangeBlocks)
+      .mockReturnValue([
+        { type: TIPTAP_NODES.PARAGRAPH_TYPE, startBlockPos: 20, endBlockPos: 25, content: [] }
+      ])
 
     const result = deleteSelectedRange(editor)
 
@@ -205,7 +209,8 @@ describe('deleteSelectedRange', () => {
   it('dispatches and returns true when multi-block delete is handled', () => {
     const editor = createEditorMock()
 
-    getSelectionRangeSlice
+    jest
+      .mocked(getSelectionRangeSlice)
       .mockReturnValueOnce([
         { type: TIPTAP_NODES.HEADING_TYPE, startBlockPos: 35, endBlockPos: 50, content: [] }
       ])
@@ -218,7 +223,7 @@ describe('deleteSelectedRange', () => {
         }
       ])
 
-    getSelectionRangeBlocks.mockReturnValue([
+    jest.mocked(getSelectionRangeBlocks).mockReturnValue([
       {
         type: TIPTAP_NODES.PARAGRAPH_TYPE,
         startBlockPos: 20,
@@ -232,7 +237,7 @@ describe('deleteSelectedRange', () => {
         content: [{ type: TIPTAP_NODES.TEXT_TYPE, text: 'b' }]
       }
     ])
-    insertRemainingHeadings.mockReturnValue(true)
+    jest.mocked(insertRemainingHeadings).mockReturnValue(true)
 
     const result = deleteSelectedRange(editor)
 

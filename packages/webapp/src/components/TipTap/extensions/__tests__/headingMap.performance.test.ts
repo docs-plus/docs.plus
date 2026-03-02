@@ -12,7 +12,7 @@ import {
 
 const now = () => (typeof performance !== 'undefined' ? performance.now() : Date.now())
 
-const findTextPos = (doc, needle) => {
+const findTextPos = (doc: any, needle: string) => {
   let found = -1
   doc.descendants((node, pos) => {
     if (found !== -1) return false
@@ -26,7 +26,7 @@ const findTextPos = (doc, needle) => {
   return found
 }
 
-const buildLargeDoc = (schema, rootCount, childrenPerRoot) => {
+const buildLargeDoc = (schema: any, rootCount: number, childrenPerRoot: number) => {
   const roots = Array.from({ length: rootCount }, (_, rootIndex) =>
     heading(schema, 1, `Root ${rootIndex}`, [
       paragraph(schema, `root-${rootIndex}-body`),
@@ -41,7 +41,7 @@ const buildLargeDoc = (schema, rootCount, childrenPerRoot) => {
   return buildDoc(schema, roots)
 }
 
-const buildPastedHeadingsJson = (schema, count) =>
+const buildPastedHeadingsJson = (schema: any, count: number) =>
   Array.from({ length: count }, (_, index) => {
     const level = index % 3 === 0 ? 2 : 3
     return heading(schema, level, `Pasted-${index}`, [
@@ -92,7 +92,7 @@ describe('heading map performance guards', () => {
     expect(getHeadingSnapshot(tr.doc).length).toBe(initialHeadingCount + pastedHeadings.length)
   })
 
-  it('CR-2: insertHeadingsByNodeBlocks scales for large paste (100 headings)', () => {
+  it('insertHeadingsByNodeBlocks scales for large paste (100 headings)', () => {
     const doc = buildLargeDoc(schema, 5, 10)
     const initialHeadingCount = getHeadingSnapshot(doc).length
 
