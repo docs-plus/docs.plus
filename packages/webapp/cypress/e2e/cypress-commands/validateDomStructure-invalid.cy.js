@@ -1,7 +1,7 @@
 describe('DOM Structure Validation - Invalid Structure', () => {
   beforeEach(() => {
     // Load the invalid test fixture
-    cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dome-test-invalid.html')
+    cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dom-test-invalid.html')
   })
 
   it('detects level 1 headings nested inside another heading', () => {

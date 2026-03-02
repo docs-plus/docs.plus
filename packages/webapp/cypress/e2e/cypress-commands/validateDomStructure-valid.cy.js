@@ -1,7 +1,7 @@
 describe('DOM Structure Validation - Valid Structure', () => {
-  it('validates dome-test-1.html structure', () => {
+  it('validates dom-test-1.html structure', () => {
     // Load the test fixture
-    cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dome-test-1.html')
+    cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dom-test-1.html')
 
     // Validate the structure - should pass
     cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
@@ -21,9 +21,9 @@ describe('DOM Structure Validation - Valid Structure', () => {
     })
   })
 
-  it('validates dome-test-2.html structure with skipped heading levels', () => {
+  it('validates dom-test-2.html structure with skipped heading levels', () => {
     // Load the second test fixture which has level jumps (like level 3 to level 5)
-    cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dome-test-2.html')
+    cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dom-test-2.html')
 
     // Validate the structure - should pass despite level jumps (which are allowed)
     cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
@@ -51,9 +51,9 @@ describe('DOM Structure Validation - Valid Structure', () => {
     })
   })
 
-  it('compares structure between dome-test-1 and dome-test-2', () => {
+  it('compares structure between dom-test-1 and dom-test-2', () => {
     // First load test-1 and capture structure
-    cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dome-test-1.html')
+    cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dom-test-1.html')
     let structure1
 
     cy.validateDomStructure({ throwOnError: false, logResults: false })
@@ -62,7 +62,7 @@ describe('DOM Structure Validation - Valid Structure', () => {
         expect(result1.valid).to.be.true
 
         // Now load test-2 and compare
-        cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dome-test-2.html')
+        cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dom-test-2.html')
 
         return cy.validateDomStructure({ throwOnError: false, logResults: false })
       })
@@ -81,13 +81,13 @@ describe('DOM Structure Validation - Valid Structure', () => {
         expect(JSON.stringify(levels1)).not.to.equal(JSON.stringify(levels2))
 
         // Log the differences for reference
-        cy.log('Heading levels in dome-test-1:', JSON.stringify(levels1))
-        cy.log('Heading levels in dome-test-2:', JSON.stringify(levels2))
+        cy.log('Heading levels in dom-test-1:', JSON.stringify(levels1))
+        cy.log('Heading levels in dom-test-2:', JSON.stringify(levels2))
       })
   })
 
   it('validates nested content and HTML elements within headings', () => {
-    cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dome-test-1.html')
+    cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dom-test-1.html')
 
     cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
       expect(result.valid).to.be.true

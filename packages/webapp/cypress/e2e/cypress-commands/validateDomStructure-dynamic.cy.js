@@ -1,7 +1,7 @@
 describe('DOM Structure Validation - Dynamic Modifications', () => {
   beforeEach(() => {
     // Start with a valid document
-    cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dome-test-1.html')
+    cy.visit('/cypress/fixtures/cypress-commands/validateDomStructure/dom-test-1.html')
 
     // Verify it's initially valid
     cy.validateDomStructure({ throwOnError: false, logResults: false }).then((result) => {
@@ -19,7 +19,7 @@ describe('DOM Structure Validation - Dynamic Modifications', () => {
 
       // Create a new invalid level 1 heading
       const newHeadingElement = win.document.createElement('div')
-      newHeadingElement.className = 'heading opend'
+      newHeadingElement.className = 'heading opened'
       newHeadingElement.setAttribute('level', '1')
       newHeadingElement.setAttribute('data-type', 'heading')
       newHeadingElement.setAttribute('data-id', 'dynamic-test-id-1')
@@ -28,7 +28,7 @@ describe('DOM Structure Validation - Dynamic Modifications', () => {
       newHeadingElement.innerHTML = `
         <div class="wrapBlock" data-id="dynamic-test-id-1">
           <h1 class="title" level="1"><span>Dynamically Added Heading</span></h1>
-          <div class="contentWrapper opend" data-type="contentWrapper">
+          <div class="contentWrapper opened" data-type="contentWrapper">
             <div class="contents">
               <p>This heading was dynamically added to create an invalid structure.</p>
             </div>
@@ -64,7 +64,7 @@ describe('DOM Structure Validation - Dynamic Modifications', () => {
 
       // Create a new invalid level 2 heading (lower level than parent)
       const newHeadingElement = win.document.createElement('div')
-      newHeadingElement.className = 'heading opend'
+      newHeadingElement.className = 'heading opened'
       newHeadingElement.setAttribute('level', '2')
       newHeadingElement.setAttribute('data-type', 'heading')
       newHeadingElement.setAttribute('data-id', 'dynamic-test-id-2')
@@ -73,7 +73,7 @@ describe('DOM Structure Validation - Dynamic Modifications', () => {
       newHeadingElement.innerHTML = `
         <div class="wrapBlock" data-id="dynamic-test-id-2">
           <h2 class="title" level="2"><span>Invalid Level 2 Inside Level 3</span></h2>
-          <div class="contentWrapper opend" data-type="contentWrapper">
+          <div class="contentWrapper opened" data-type="contentWrapper">
             <div class="contents">
               <p>This heading violates the heading hierarchy rules.</p>
             </div>
@@ -111,7 +111,7 @@ describe('DOM Structure Validation - Dynamic Modifications', () => {
 
       // Create a new heading with invalid level
       const newHeadingElement = win.document.createElement('div')
-      newHeadingElement.className = 'heading opend'
+      newHeadingElement.className = 'heading opened'
       newHeadingElement.setAttribute('level', '15') // Invalid level (outside 1-10 range)
       newHeadingElement.setAttribute('data-type', 'heading')
       newHeadingElement.setAttribute('data-id', 'dynamic-test-id-3')
@@ -120,7 +120,7 @@ describe('DOM Structure Validation - Dynamic Modifications', () => {
       newHeadingElement.innerHTML = `
         <div class="wrapBlock" data-id="dynamic-test-id-3">
           <h6 class="title" level="15"><span>Invalid Level 15 Heading</span></h6>
-          <div class="contentWrapper opend" data-type="contentWrapper">
+          <div class="contentWrapper opened" data-type="contentWrapper">
             <div class="contents">
               <p>This heading has an invalid level (15).</p>
             </div>
@@ -189,10 +189,10 @@ describe('DOM Structure Validation - Dynamic Modifications', () => {
       // 1. Add an invalid nested level 1 heading
       const level2Heading = win.document.querySelector('.heading[level="2"]')
       level2Heading.querySelector('.contents').innerHTML += `
-        <div class="heading opend" level="1" data-type="heading" data-id="multi-error-1">
+        <div class="heading opened" level="1" data-type="heading" data-id="multi-error-1">
           <div class="wrapBlock" data-id="multi-error-1">
             <h1 class="title" level="1"><span>Invalid Nested Section</span></h1>
-            <div class="contentWrapper opend" data-type="contentWrapper">
+            <div class="contentWrapper opened" data-type="contentWrapper">
               <div class="contents">
                 <p>Invalid nested level 1 heading.</p>
               </div>
@@ -204,10 +204,10 @@ describe('DOM Structure Validation - Dynamic Modifications', () => {
       // 2. Add a heading with invalid level
       const level1Heading = win.document.querySelector('.heading[level="1"]')
       level1Heading.querySelector('.contents').innerHTML += `
-        <div class="heading opend" level="12" data-type="heading" data-id="multi-error-2">
+        <div class="heading opened" level="12" data-type="heading" data-id="multi-error-2">
           <div class="wrapBlock" data-id="multi-error-2">
             <h6 class="title" level="12"><span>Invalid Level 12 Heading</span></h6>
-            <div class="contentWrapper opend" data-type="contentWrapper">
+            <div class="contentWrapper opened" data-type="contentWrapper">
               <div class="contents">
                 <p>Invalid level 12 heading.</p>
               </div>
@@ -219,10 +219,10 @@ describe('DOM Structure Validation - Dynamic Modifications', () => {
       // 3. Add a hierarchy violation
       const level4Heading = win.document.querySelector('.heading[level="4"]')
       level4Heading.querySelector('.contents').innerHTML += `
-        <div class="heading opend" level="3" data-type="heading" data-id="multi-error-3">
+        <div class="heading opened" level="3" data-type="heading" data-id="multi-error-3">
           <div class="wrapBlock" data-id="multi-error-3">
             <h3 class="title" level="3"><span>Invalid Hierarchy Level 3</span></h3>
-            <div class="contentWrapper opend" data-type="contentWrapper">
+            <div class="contentWrapper opened" data-type="contentWrapper">
               <div class="contents">
                 <p>Invalid hierarchy - level 3 inside level 4.</p>
               </div>

@@ -1,7 +1,7 @@
 // Helper functions for creating DOM elements
 function createHeading(win, level, title) {
   const heading = win.document.createElement('div')
-  heading.className = 'heading opend'
+  heading.className = 'heading opened'
   heading.setAttribute('level', level.toString())
   heading.setAttribute('data-id', `heading-${Math.random().toString(36).substr(2, 9)}`)
   heading.setAttribute('data-type', 'heading')
