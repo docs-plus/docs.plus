@@ -1,0 +1,77 @@
+---
+description: Naming conventions for test files, directories, and test descriptions across the project
+alwaysApply: false
+globs:
+  - '**/*.test.ts'
+  - '**/*.test.js'
+  - '**/*.cy.js'
+  - '**/*.cy.ts'
+  - '**/*.spec.ts'
+  - '**/*.spec.js'
+  - '**/cypress/**'
+  - '**/__tests__/**'
+---
+
+# Test Naming Conventions
+
+## Cypress E2E Tests (`cypress/e2e/`)
+
+### Directories
+
+- **kebab-case only**: `copy-paste/`, `heading/`, `keyboard-shortcuts/`
+- Never PascalCase or camelCase for directories
+
+### Files
+
+- **kebab-case only**: `clipboard-validation.cy.js`, `bullet-list.cy.js`
+- Never PascalCase (`BulletList.cy.js`) or camelCase (`bulletList.cy.js`)
+- No `e2e-` prefix — files are already inside `cypress/e2e/`, the prefix is redundant
+- No numeric prefixes for ordering unless there is a documented reason
+
+### Examples
+
+```
+# CORRECT
+cypress/e2e/editor/formatting/bold.cy.js
+cypress/e2e/editor/lists/task-list.cy.js
+cypress/e2e/editor/heading/change/heading-level-change-complex.cy.js
+
+# WRONG
+cypress/e2e/editor/Formatting/Bold.cy.js        # PascalCase dir + file
+cypress/e2e/editor/lists/TaskList.cy.js          # PascalCase file
+cypress/e2e/editor/e2e-heading-change.cy.js      # redundant e2e- prefix
+```
+
+## Unit Tests (`__tests__/`)
+
+### Files
+
+- **camelCase**: matches the source module being tested
+- Pattern: `<moduleName>.test.ts`
+- Name describes the **module or concern**, not the project phase or sprint
+- Performance tests: `<moduleName>.performance.test.ts`
+
+### Examples
+
+```
+# CORRECT — name matches the module
+findPrevBlock.test.ts           → tests findPrevBlock.ts
+copyPastePlugin.test.ts         → tests createCopyPastePlugin
+validateHeadingHierarchy.test.ts → tests validateHeadingHierarchy.ts
+
+# WRONG — name describes a sprint/phase
+auditFixes.test.ts              → name says nothing about what it tests
+sprintFixes.test.ts             → same problem
+```
+
+## Cypress Support & Fixtures
+
+- **Support files** (commands, validators): camelCase — these are JS/TS modules (`schemaValidator.js`)
+- **Fixture directories**: camelCase when mirroring a command name (`createSelection/`) is acceptable
+- **Fixture files** (HTML, JSON): kebab-case (`basic-single-section-document.html`)
+
+## Test Descriptions
+
+- Use `it()` everywhere — never `test()`
+- Describe behavior, not ticket IDs: `'merges first block into heading on backspace'` not `'fixes #1234'`
+- Use `should` prefix OR bare verb consistently within a file — do not mix
