@@ -51,10 +51,10 @@
     "@tiptap/pm": "^3.10.7"
   },
   "devDependencies": {
-    "@tiptap/core": "^3.10.7",
-    "@tiptap/pm": "^3.10.7",
+    "@tiptap/core": "^3.20.0",
+    "@tiptap/pm": "^3.20.0",
     "typescript": "^5.9.3",
     "tsup": "^8.5.1",
-    "eslint": "^9.39.1"
+    "eslint": "^9.39.3"
   }
 }

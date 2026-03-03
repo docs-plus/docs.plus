@@ -45,7 +45,7 @@
     "prosemirror"
   ],
   "dependencies": {
-    "@floating-ui/dom": "^1.7.4",
+    "@floating-ui/dom": "^1.7.6",
     "linkifyjs": "^4.3.2"
   },
   "peerDependencies": {
@@ -53,12 +53,12 @@
     "@tiptap/pm": "^3.10.7"
   },
   "devDependencies": {
-    "@tiptap/core": "^3.10.7",
-    "@tiptap/pm": "^3.10.7",
-    "@eslint/js": "^9.39.1",
-    "@typescript-eslint/eslint-plugin": "^8.46.4",
-    "@typescript-eslint/parser": "^8.46.4",
-    "eslint": "^9.39.1",
+    "@tiptap/core": "^3.20.0",
+    "@tiptap/pm": "^3.20.0",
+    "@eslint/js": "^9.39.3",
+    "@typescript-eslint/eslint-plugin": "^8.56.1",
+    "@typescript-eslint/parser": "^8.56.1",
+    "eslint": "^9.39.3",
     "globals": "^16.5.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
