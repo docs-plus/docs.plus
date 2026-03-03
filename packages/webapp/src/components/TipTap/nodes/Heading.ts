@@ -7,6 +7,7 @@ import {
   TIPTAP_NODES,
   type ViewMutationRecord
 } from '@types'
+import { logger } from '@utils/logger'
 
 import changeHeadingLevel from '../extensions/changeHeadingLevel'
 import changeHeadingToParagraphs from '../extensions/changeHeadingToParagraphs'
@@ -124,12 +125,7 @@ const Heading = Node.create({
     }
   },
   parseHTML() {
-    return [
-      // Primary parser for current schema-generated heading nodes.
-      { tag: `div[data-type="${this.name}"]` },
-      // Backward-compatible parser for legacy serialized markup.
-      { tag: `div.${TIPTAP_NODES.HEADING_TYPE}[level]` }
-    ]
+    return [{ tag: `div[data-type="${this.name}"]` }]
   },
   renderHTML({ HTMLAttributes }): DOMOutputSpec {
     return [
@@ -180,7 +176,7 @@ const Heading = Node.create({
         // we need detect the selection
         if ($anchor?.pos === $head?.pos) return false
 
-        console.info('[Heading] Delete key pressed')
+        logger.info('[Heading] Delete key pressed')
 
         if (isEntireDocumentSelected(this.editor.state.doc, $anchor.pos, $head.pos)) return false
 
@@ -224,9 +220,6 @@ const Heading = Node.create({
           parentLastChildFirstChild?.type.name === TIPTAP_NODES.HEADING_TYPE
         ) {
           // If there is not any contentWrapper
-          // if first child of the heading is another heading
-          // console.log(parent.lastChild.type.name === "contentWrapper")
-          // console.log(parent.lastChild.content.lastChild.type.name === "heading")
           // if the contentWrapper does not contain any content
           if (
             !parentLastChild ||

@@ -3,6 +3,7 @@ import { CHAT_COMMENT } from '@services/eventsHub'
 import type { ResolvedPos } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { type Editor, type EditorView, type Selection, TIPTAP_NODES } from '@types'
+import { logger } from '@utils/logger'
 import PubSub from 'pubsub-js'
 
 import { HEADING_ACTIONS_CLASSES } from '../types'
@@ -111,7 +112,7 @@ const openChatComment = (editor: Editor): void => {
   const headingId = headingNode?.attrs.id
 
   if (!headingId) {
-    console.error('[selectionChat]: No headingId found')
+    logger.error('[selectionChat]: No headingId found')
     return
   }
 

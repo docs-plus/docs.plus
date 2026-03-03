@@ -8,6 +8,7 @@ import {
   TRANSACTION_META,
   type ViewMutationRecord
 } from '@types'
+import { logger } from '@utils/logger'
 
 import deleteSelectedRange from '../extensions/deleteSelectedRange'
 import { getNodeState } from '../extensions/helper'
@@ -221,7 +222,7 @@ const ContentWrapper = Node.create({
 
         // if we have selection, node range || multiple lines block
         if ($anchor.pos !== $head.pos) {
-          console.info('[Heading][Backspace]: Delete selected range')
+          logger.info('[Heading][Backspace]: Delete selected range')
           // Check if both $anchor and $head parents are content headings
           if (
             $anchor.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE &&
