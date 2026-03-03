@@ -35,13 +35,13 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
       editor.view.dom.dispatchEvent(pasteEvent)
     })
-    cy.wait(500)
+    cy.wait(100)
   }
 
   describe('ContentHeading (Title) Boundaries', () => {
     it('should paste plain text at START of title', () => {
       cy.createDocument([section('Original Title', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       // Click at the very start of the title
       cy.get('.docy_editor .heading[level="1"] .title').click()
@@ -55,7 +55,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
     it('should paste plain text at END of title', () => {
       cy.createDocument([section('Original Title', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .title').click()
       cy.realPress('End')
@@ -68,7 +68,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
     it('should paste plain text in MIDDLE of title', () => {
       cy.createDocument([section('OriginalTitle', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       // Position caret in middle of title
       cy.get('.docy_editor .heading[level="1"] .title').click()
@@ -86,7 +86,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
     it('should paste heading tag into title (should flatten to text)', () => {
       cy.createDocument([section('Title', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .title').click()
       cy.realPress('End')
@@ -104,7 +104,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
       cy.on('uncaught:exception', () => false)
 
       cy.createDocument([section('Title', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .title').click()
       cy.realPress('End')
@@ -117,7 +117,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
     it('should paste multiline text into title (should merge into single line)', () => {
       cy.createDocument([section('Title', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .title').click()
       cy.realPress('End')
@@ -137,7 +137,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
   describe('ContentWrapper Start Boundaries', () => {
     it('should paste paragraph at START of contentWrapper', () => {
       cy.createDocument([section('Section', [paragraph('Existing paragraph content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       // Click at start of first paragraph in contentWrapper
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
@@ -154,7 +154,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
     it('should paste heading at START of contentWrapper', () => {
       cy.createDocument([section('Section', [paragraph('First paragraph')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('Home')
@@ -167,7 +167,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
     it('should paste complex structure at START of contentWrapper', () => {
       cy.createDocument([section('Section', [paragraph('Original content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('Home')
@@ -188,7 +188,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
   describe('ContentWrapper End Boundaries', () => {
     it('should paste paragraph at END of contentWrapper', () => {
       cy.createDocument([section('Section', [paragraph('Existing content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').last().click()
       cy.realPress('End')
@@ -204,7 +204,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
     it('should paste heading at END of contentWrapper', () => {
       cy.createDocument([section('Section', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').last().click()
       cy.realPress('End')
@@ -217,7 +217,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
     it('should paste list at END of contentWrapper', () => {
       cy.createDocument([section('Section', [paragraph('Content before list')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').last().click()
       cy.realPress('End')
@@ -236,7 +236,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
     it('should paste deeply nested structure at END', () => {
       cy.createDocument([section('Section', [paragraph('Existing')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').last().click()
       cy.realPress('End')
@@ -261,7 +261,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
     it('should paste into empty contentWrapper', () => {
       // Create a heading with just empty paragraph
       cy.createDocument([section('Empty Section', [paragraph('')])])
-      cy.wait(500)
+      cy.wait(100)
 
       // Click in the empty paragraph
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
@@ -277,7 +277,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
     it('should paste heading structure into empty contentWrapper', () => {
       cy.createDocument([section('Empty Section', [paragraph('')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.wait(100)
@@ -298,7 +298,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
           heading(2, 'Second H2', [paragraph('Second content')])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       // Click at end of first H2's paragraph content and type to verify focus
       cy.get('.docy_editor .heading[level="2"] .contentWrapper p').first().click()
@@ -307,7 +307,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
       // Type directly to verify cursor position
       cy.realType(' + appended text')
-      cy.wait(300)
+      cy.wait(100)
 
       cy.get('.docy_editor').should('contain', 'appended text')
     })
@@ -321,7 +321,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
           heading(2, 'Second H2', [paragraph('Second content here')])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       // Focus on second H2's paragraph
       cy.get('.docy_editor .heading[level="2"]').last().find('.contentWrapper p').click()
@@ -330,7 +330,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
       // Type to verify cursor position
       cy.realType(' and more text')
-      cy.wait(300)
+      cy.wait(100)
 
       cy.get('.docy_editor').should('contain', 'and more text')
     })
@@ -341,7 +341,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
           heading(2, 'L2', [heading(3, 'L3', [heading(4, 'L4', [paragraph('Deep content')])])])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       // Click at end of L4's content
       cy.get('.docy_editor .heading[level="4"] .contentWrapper p').click()
@@ -357,7 +357,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
   describe('Complex Clipboard Content at Boundaries', () => {
     it('should paste mixed content (paragraphs, lists, headings) at contentWrapper start', () => {
       cy.createDocument([section('Section', [paragraph('Original')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('Home')
@@ -386,7 +386,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
       cy.on('uncaught:exception', () => false)
 
       cy.createDocument([section('Title', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .title').click()
       cy.realPress('End')
@@ -402,7 +402,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
     it('should paste table-like content at contentWrapper end', () => {
       cy.createDocument([section('Section', [paragraph('Before table')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').last().click()
       cy.realPress('End')
@@ -422,7 +422,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
     it('should handle paste with embedded images (graceful handling)', () => {
       cy.createDocument([section('Section', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').last().click()
       cy.realPress('End')
@@ -441,7 +441,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
   describe('H2 ContentHeading Boundaries', () => {
     it('should paste at START of H2 title', () => {
       cy.createDocument([section('Section', [heading(2, 'H2 Title', [paragraph('Content')])])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="2"] .title').click()
       cy.realPress('Home')
@@ -454,7 +454,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
 
     it('should paste at END of H2 title', () => {
       cy.createDocument([section('Section', [heading(2, 'H2 Title', [paragraph('Content')])])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="2"] .title').click()
       cy.realPress('End')
@@ -475,7 +475,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
           ])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="5"] .contentWrapper p').click()
       cy.realPress('End')
@@ -492,7 +492,7 @@ describe('Node Boundary Paste - Edge Cases', () => {
           heading(2, 'L2', [heading(3, 'L3', [heading(4, 'Target L4', [paragraph('L4 content')])])])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="4"] .contentWrapper p').click()
       cy.realPress('End')

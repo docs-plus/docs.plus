@@ -34,7 +34,7 @@ describe('External Paste - HTML from Other Sources', () => {
 
       editor.view.dom.dispatchEvent(pasteEvent)
     })
-    cy.wait(500)
+    cy.wait(100)
   }
 
   /**
@@ -56,13 +56,13 @@ describe('External Paste - HTML from Other Sources', () => {
 
       editor.view.dom.dispatchEvent(pasteEvent)
     })
-    cy.wait(500)
+    cy.wait(100)
   }
 
   describe('Plain HTML Headings', () => {
     it('should paste external H1 as new section', () => {
       cy.createDocument([section('Existing Section', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('End')
@@ -80,7 +80,7 @@ describe('External Paste - HTML from Other Sources', () => {
 
     it('should paste H2-H6 tags correctly', () => {
       cy.createDocument([section('Section', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('End')
@@ -101,7 +101,7 @@ describe('External Paste - HTML from Other Sources', () => {
 
     it('should handle mixed heading levels from external source', () => {
       cy.createDocument([section('Section', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('End')
@@ -130,7 +130,7 @@ describe('External Paste - HTML from Other Sources', () => {
   describe('Rich Text from Apps', () => {
     it('should paste Google Docs style HTML', () => {
       cy.createDocument([section('Section', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('End')
@@ -147,7 +147,7 @@ describe('External Paste - HTML from Other Sources', () => {
 
     it('should paste Word/Office HTML', () => {
       cy.createDocument([section('Section', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('End')
@@ -167,7 +167,7 @@ describe('External Paste - HTML from Other Sources', () => {
   describe('Lists and Structured Content', () => {
     it('should paste bullet lists', () => {
       cy.createDocument([section('Section', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('End')
@@ -186,7 +186,7 @@ describe('External Paste - HTML from Other Sources', () => {
 
     it('should paste numbered lists', () => {
       cy.createDocument([section('Section', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('End')
@@ -206,7 +206,7 @@ describe('External Paste - HTML from Other Sources', () => {
   describe('Formatted Text', () => {
     it('should preserve bold and italic formatting', () => {
       cy.createDocument([section('Section', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('End')
@@ -221,7 +221,7 @@ describe('External Paste - HTML from Other Sources', () => {
 
     it('should preserve links', () => {
       cy.createDocument([section('Section', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('End')
@@ -320,10 +320,10 @@ describe('External Paste - HTML from Other Sources', () => {
       // CMD+A → paste
       cy.get('.docy_editor > .tiptap.ProseMirror').click({ force: true })
       cy.realPress(['Meta', 'a'])
-      cy.wait(200)
+      cy.wait(100)
 
       pasteHtml(MINIMAX_HTML)
-      cy.wait(800)
+      cy.wait(300)
 
       // Root H1 should exist
       cy.get('.docy_editor .heading[level="1"]').should('exist')
@@ -343,10 +343,10 @@ describe('External Paste - HTML from Other Sources', () => {
       // ── FIRST CYCLE: CMD+A → paste ──
       cy.get('.docy_editor > .tiptap.ProseMirror').click({ force: true })
       cy.realPress(['Meta', 'a'])
-      cy.wait(200)
+      cy.wait(100)
 
       pasteHtml(MINIMAX_HTML)
-      cy.wait(800)
+      cy.wait(300)
 
       cy.get('.docy_editor .heading[level="1"]').should('exist')
       cy.get('.docy_editor').should('contain', 'MiniMax M2.5')
@@ -365,10 +365,10 @@ describe('External Paste - HTML from Other Sources', () => {
       // ── SECOND CYCLE: CMD+A → paste again ──
       cy.get('.docy_editor > .tiptap.ProseMirror').click({ force: true })
       cy.realPress(['Meta', 'a'])
-      cy.wait(200)
+      cy.wait(100)
 
       pasteHtml(MINIMAX_HTML)
-      cy.wait(800)
+      cy.wait(300)
 
       cy.get('.docy_editor .heading[level="1"]').should('exist')
       cy.get('.docy_editor').should('contain', 'MiniMax M2.5')
@@ -390,16 +390,16 @@ describe('External Paste - HTML from Other Sources', () => {
       // CMD+A + paste
       cy.get('.docy_editor > .tiptap.ProseMirror').click({ force: true })
       cy.realPress(['Meta', 'a'])
-      cy.wait(200)
+      cy.wait(100)
 
       pasteHtml(MINIMAX_HTML)
-      cy.wait(800)
+      cy.wait(300)
 
       cy.get('.docy_editor').should('contain', 'MiniMax M2.5')
 
       // Undo should restore original
       cy.realPress(['Meta', 'z'])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"]').should('exist')
 
@@ -410,14 +410,14 @@ describe('External Paste - HTML from Other Sources', () => {
 
     it('paste into contentWrapper produces valid heading tree', () => {
       cy.createDocument([section('Existing Section', [paragraph('Existing content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('End')
       cy.wait(100)
 
       pasteHtml(MINIMAX_HTML)
-      cy.wait(800)
+      cy.wait(300)
 
       cy.get('.docy_editor').should('contain', 'MiniMax M2.5')
 
@@ -428,14 +428,14 @@ describe('External Paste - HTML from Other Sources', () => {
 
     it('H1 title appears BEFORE its H3 children when pasted into a section (ordering fix)', () => {
       cy.createDocument([section('Empty Section', [paragraph('')])])
-      cy.wait(500)
+      cy.wait(100)
 
       // Click into the empty paragraph inside the contentWrapper
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.wait(100)
 
       pasteHtml(MINIMAX_HTML)
-      cy.wait(1000)
+      cy.wait(300)
 
       // The H1 "MiniMax M2.5" must exist
       cy.get('.docy_editor').should('contain', 'MiniMax M2.5')
@@ -495,10 +495,10 @@ describe('External Paste - HTML from Other Sources', () => {
 
       cy.get('.docy_editor > .tiptap.ProseMirror').click({ force: true })
       cy.realPress(['Meta', 'a'])
-      cy.wait(200)
+      cy.wait(100)
 
       pasteHtml(MINIMAX_HTML)
-      cy.wait(800)
+      cy.wait(300)
 
       // Bold marks from <strong> tags should be preserved
       cy.get('.docy_editor').should('contain', 'MiniMax-M2.5.')
@@ -511,7 +511,7 @@ describe('External Paste - HTML from Other Sources', () => {
   describe('Edge Cases', () => {
     it('should handle empty paste', () => {
       cy.createDocument([section('Section', [paragraph('Original')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.wait(100)
@@ -523,7 +523,7 @@ describe('External Paste - HTML from Other Sources', () => {
 
     it('should handle emoji and unicode', () => {
       cy.createDocument([section('Section', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('End')
@@ -536,7 +536,7 @@ describe('External Paste - HTML from Other Sources', () => {
 
     it('should paste plain text without creating rich-text marks', () => {
       cy.createDocument([section('Section', [paragraph('Original content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('End')
@@ -555,7 +555,7 @@ describe('External Paste - HTML from Other Sources', () => {
 
     it('should handle transformPastedHTML (div to span conversion)', () => {
       cy.createDocument([section('Section', [paragraph('Content')])])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
       cy.realPress('End')

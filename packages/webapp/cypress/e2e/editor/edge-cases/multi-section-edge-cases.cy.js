@@ -108,7 +108,7 @@ const pasteHTML = (html) => {
       new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true })
     )
   })
-  cy.wait(500)
+  cy.wait(100)
 }
 
 /** Sets caret in a heading with the given text at a specific level. */
@@ -124,7 +124,7 @@ const toNormalText = () =>
   cy.get('.docy_editor > .tiptap.ProseMirror').realPress(['Alt', 'Meta', '0'])
 
 /** Waits for hierarchy validation plugin to settle. */
-const waitForPlugin = () => cy.wait(800)
+const waitForPlugin = () => cy.wait(300)
 
 /** Clicks inside a contentWrapper paragraph for a heading with specific title. */
 const clickContentAreaByTitle = (level, titleText) => {
@@ -174,7 +174,6 @@ const createThreeSections = (opts = {}) => {
     section('Section Beta', s2Children),
     section('Section Gamma', s3Children)
   ])
-  cy.wait(300)
 }
 
 /** Asserts the number of root-level H1 sections in the document. */
@@ -207,10 +206,14 @@ const assertTextPresent = (...texts) =>
 // TEST SUITE
 // =============================================================================
 
-describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
-  beforeEach(() => {
-    cy.visitEditor({ persist: false, clearDoc: true })
+describe('Multi-Section Edge Cases — 2nd & 3rd H1', { testIsolation: false }, () => {
+  before(() => {
+    cy.visitEditor({ persist: false })
     cy.get('.docy_editor', { timeout: 15000 }).should('be.visible')
+  })
+
+  beforeEach(() => {
+    cy.clearEditor()
   })
 
   // ===========================================================================
@@ -267,7 +270,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('First', [paragraph('first content')]),
         section('Second', [paragraph('second content')])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       putCaretInHeading(1, 'Second', 'start')
       // Change level sequentially — the shortcut supports single digits
@@ -317,7 +320,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
           ])
         ])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       putCaretInHeading(1, 'Second', 'start')
       changeLevel(2)
@@ -338,7 +341,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
           heading(2, 'Gamma Sub2', [paragraph('gamma sub2 body')])
         ])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       putCaretInHeading(1, 'Gamma', 'start')
       changeLevel(2)
@@ -375,7 +378,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('First', [paragraph('first body')]),
         section('Second', [paragraph('second body')])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       // Step 1: H1→H2
       putCaretInHeading(1, 'Second', 'start')
@@ -398,11 +401,10 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
 
     it('A.9 Same-level change on 2nd H1 is no-op', () => {
       cy.createDocument([section('First', [paragraph('a')]), section('Second', [paragraph('b')])])
-      cy.wait(300)
 
       putCaretInHeading(1, 'Second', 'start')
       changeLevel(1) // same level
-      cy.wait(300)
+      cy.wait(100)
 
       assertH1Count(2, 'A.9')
       assertSchemaValid('A.9 — same level no-op on 2nd H1')
@@ -418,7 +420,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('First', [paragraph('first')]),
         section('Second', [heading(2, 'Promoted Sub', [paragraph('sub content')])])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       putCaretInHeading(2, 'Promoted Sub', 'start')
       changeLevel(1)
@@ -436,7 +438,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
           heading(2, 'Parent H2', [heading(3, 'Deep H3', [paragraph('deep content')])])
         ])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       putCaretInHeading(3, 'Deep H3', 'start')
       changeLevel(1)
@@ -453,7 +455,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('S2', [paragraph('s2')]),
         section('S3', [heading(2, 'Breakout', [paragraph('breakout body')])])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       putCaretInHeading(2, 'Breakout', 'start')
       changeLevel(1)
@@ -475,7 +477,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
           ])
         ])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       putCaretInHeading(2, 'Will Become H1', 'start')
       changeLevel(1)
@@ -496,7 +498,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('First', [paragraph('first body')]),
         section('Second', [paragraph('second body')])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       putCaretInHeading(1, 'Second', 'start')
       toNormalText()
@@ -540,7 +542,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
           ])
         ])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       putCaretInHeading(1, 'Second', 'start')
       toNormalText()
@@ -558,7 +560,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
           heading(2, 'To Keep', [paragraph('keep body')])
         ])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       putCaretInHeading(2, 'To Remove', 'start')
       toNormalText()
@@ -608,7 +610,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         if (from && to) editor.commands.setTextSelection({ from, to })
       })
 
-      cy.wait(200)
+      cy.wait(100)
       cy.get('.docy_editor > .tiptap.ProseMirror').realPress('Delete')
       waitForPlugin()
 
@@ -636,7 +638,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         if (from && to) editor.commands.setTextSelection({ from, to })
       })
 
-      cy.wait(200)
+      cy.wait(100)
       cy.get('.docy_editor > .tiptap.ProseMirror').realPress('Delete')
       waitForPlugin()
 
@@ -650,7 +652,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('First', [paragraph('first body')]),
         section('Second', [paragraph('second body')])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       putCaretInHeading(1, 'Second', 'start')
       cy.get('.docy_editor > .tiptap.ProseMirror').realPress('Backspace')
@@ -688,7 +690,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         }
       })
 
-      cy.wait(200)
+      cy.wait(100)
       cy.get('.docy_editor > .tiptap.ProseMirror').realPress('Backspace')
       waitForPlugin()
 
@@ -709,7 +711,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
           heading(2, 'S2-H2b', [paragraph('s2h2b body')])
         ])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       cy.window().then((win) => {
         const editor = win._editor
@@ -729,7 +731,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         if (from && to) editor.commands.setTextSelection({ from, to })
       })
 
-      cy.wait(200)
+      cy.wait(100)
       cy.get('.docy_editor > .tiptap.ProseMirror').realPress('Delete')
       waitForPlugin()
 
@@ -741,7 +743,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('First', [paragraph('first paragraph')]),
         section('Second', [paragraph('second paragraph')])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       cy.window().then((win) => {
         const editor = win._editor
@@ -761,9 +763,9 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         if (from && to) editor.commands.setTextSelection({ from, to })
       })
 
-      cy.wait(200)
+      cy.wait(100)
       cy.get('.docy_editor > .tiptap.ProseMirror').realPress('Delete')
-      cy.wait(300)
+      cy.wait(100)
 
       // RISK-001: should fall back safely, not silently swallow
       assertSchemaValid('D.6 — cross-section into contentHeading')
@@ -779,7 +781,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('First', [paragraph('first')]),
         section('Second', [paragraph('second')])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       clickContentAreaByTitle(1, 'Second')
       pasteHTML(
@@ -797,7 +799,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('First', [paragraph('first')]),
         section('Second', [paragraph('second')])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       clickContentAreaByTitle(1, 'Second')
       pasteHTML('<h1>Pasted Root</h1><p>pasted root body</p>')
@@ -830,7 +832,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('First', [paragraph('first')]),
         section('Second', [heading(2, 'Existing Child', [paragraph('existing body')])])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       clickContentAreaByTitle(1, 'Second')
       pasteHTML('<h2>New Child</h2><p>new child body</p>')
@@ -846,7 +848,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('First', [paragraph('first')]),
         section('Second', [paragraph('second')])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       putCaretInHeading(1, 'Second', 'end')
       pasteHTML('<p> Appended</p>')
@@ -878,7 +880,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('First', [paragraph('first')]),
         section('Second', [paragraph('second')])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       clickContentAreaByTitle(1, 'Second')
       pasteHTML('<h2>Sib X</h2><p>x</p><h2>Sib Y</h2><p>y</p><h2>Sib Z</h2><p>z</p>')
@@ -908,7 +910,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
           heading(2, 'S3-C', [paragraph('s3c')])
         ])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       assertH1Count(3, 'F.1')
       assertSchemaValid('F.1 — 3 sections with deep nesting')
@@ -919,7 +921,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('Alpha', [paragraph('alpha')]),
         section('Beta', [heading(2, 'Beta Child', [paragraph('beta child body')])])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       // Step 1: Beta H1→H2
       putCaretInHeading(1, 'Beta', 'start')
@@ -959,7 +961,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('First', [paragraph('first')]),
         section('Morphing', [paragraph('morph content')])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       // H1→H3
       putCaretInHeading(1, 'Morphing', 'start')
@@ -1015,7 +1017,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('S2', [deepChain('S2')]),
         section('S3', [deepChain('S3')])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       assertH1Count(3, 'F.5')
 
@@ -1066,7 +1068,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
           heading(8, 'H8 child', [paragraph('h8')])
         ])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       assertH1Count(2, 'F.7')
       assertTextPresent('H2 child', 'H5 child', 'H3 child', 'H8 child')
@@ -1078,7 +1080,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('First', [paragraph('first')]),
         section('Second', [paragraph('second')])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       // Paste a H2 into 2nd section
       clickContentAreaByTitle(1, 'Second')
@@ -1138,7 +1140,7 @@ describe('Multi-Section Edge Cases — 2nd & 3rd H1', () => {
         section('Empty Two', [paragraph('\u00A0')]),
         section('Empty Three', [paragraph('\u00A0')])
       ])
-      cy.wait(300)
+      cy.wait(100)
 
       assertH1Count(3, 'F.10')
       assertSchemaValid('F.10 — empty sections')

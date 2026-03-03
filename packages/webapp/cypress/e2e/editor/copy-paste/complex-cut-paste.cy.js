@@ -13,10 +13,14 @@
 
 import { section, heading, paragraph } from '../../../fixtures/docMaker'
 
-describe('Complex Cut/Paste Operations', () => {
-  beforeEach(() => {
-    cy.visitEditor({ persist: false, clearDoc: true })
+describe('Complex Cut/Paste Operations', { testIsolation: false }, () => {
+  before(() => {
+    cy.visitEditor({ persist: false })
     cy.get('.docy_editor', { timeout: 15000 }).should('be.visible')
+  })
+
+  beforeEach(() => {
+    cy.clearEditor()
   })
 
   /**
@@ -80,13 +84,13 @@ describe('Complex Cut/Paste Operations', () => {
           heading(2, 'Target H2', [paragraph('Target content')])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       // Cut the complex H2
       cy.get('.docy_editor .heading[level="2"]').first().clickAndSelectCopy('heading')
-      cy.wait(200)
+      cy.wait(100)
       cy.realPress(['Meta', 'x'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Paste at START of Target H2's contentWrapper (use first() for the p inside contentWrapper)
       cy.get('.docy_editor .heading[level="2"]').first().find('.contentWrapper p').first().click()
@@ -94,7 +98,7 @@ describe('Complex Cut/Paste Operations', () => {
       cy.wait(100)
 
       cy.realPress(['Meta', 'v'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Verify content pasted
       cy.get('.docy_editor').should('contain', 'Complex H2')
@@ -121,13 +125,13 @@ describe('Complex Cut/Paste Operations', () => {
           heading(2, 'Target H2', [paragraph('Target para 1'), paragraph('Target para 2')])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       // Cut the complex H2
       cy.get('.docy_editor .heading[level="2"]').first().clickAndSelectCopy('heading')
-      cy.wait(200)
+      cy.wait(100)
       cy.realPress(['Meta', 'x'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Paste at END of Target H2's contentWrapper
       cy.get('.docy_editor .heading[level="2"]').first().find('.contentWrapper p').last().click()
@@ -135,7 +139,7 @@ describe('Complex Cut/Paste Operations', () => {
       cy.wait(100)
 
       cy.realPress(['Meta', 'v'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Verify content pasted
       cy.get('.docy_editor').should('contain', 'Complex H2')
@@ -161,13 +165,13 @@ describe('Complex Cut/Paste Operations', () => {
           ])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       // Cut complex H2
       cy.get('.docy_editor .heading[level="2"]').first().clickAndSelectCopy('heading')
-      cy.wait(200)
+      cy.wait(100)
       cy.realPress(['Meta', 'x'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Click at END of the middle paragraph (middle of contentWrapper)
       cy.get('.docy_editor .heading[level="2"]').first().find('.contentWrapper p').eq(1).click()
@@ -175,7 +179,7 @@ describe('Complex Cut/Paste Operations', () => {
       cy.wait(100)
 
       cy.realPress(['Meta', 'v'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Verify content pasted
       cy.get('.docy_editor').should('contain', 'Complex H2')
@@ -203,13 +207,13 @@ describe('Complex Cut/Paste Operations', () => {
           ])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       // Cut the second H3 (To Cut H3)
       cy.get('.docy_editor .heading[level="3"]').eq(1).clickAndSelectCopy('heading')
-      cy.wait(200)
+      cy.wait(100)
       cy.realPress(['Meta', 'x'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Paste at end of Fourth H3's content (between Third and Fourth)
       cy.get('.docy_editor .heading[level="3"]').last().find('.contentWrapper p').click()
@@ -217,7 +221,7 @@ describe('Complex Cut/Paste Operations', () => {
       cy.wait(100)
 
       cy.realPress(['Meta', 'v'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Verify content
       cy.get('.docy_editor').should('contain', 'To Cut H3')
@@ -245,13 +249,13 @@ describe('Complex Cut/Paste Operations', () => {
           heading(2, 'Target H2', [paragraph('Target content')])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       // Cut H4
       cy.get('.docy_editor .heading[level="4"]').clickAndSelectCopy('heading')
-      cy.wait(200)
+      cy.wait(100)
       cy.realPress(['Meta', 'x'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Paste at end of Target H2's content
       cy.get('.docy_editor .heading[level="2"]').last().find('.contentWrapper p').click()
@@ -259,7 +263,7 @@ describe('Complex Cut/Paste Operations', () => {
       cy.wait(100)
 
       cy.realPress(['Meta', 'v'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Content should be pasted
       cy.get('.docy_editor').should('contain', 'H4 to Cut')
@@ -280,7 +284,7 @@ describe('Complex Cut/Paste Operations', () => {
           ])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       // Add another section first
       cy.window().then((win) => {
@@ -303,13 +307,13 @@ describe('Complex Cut/Paste Operations', () => {
           ]
         })
       })
-      cy.wait(300)
+      cy.wait(100)
 
       // Cut the first H1 section
       cy.get('.docy_editor .heading[level="1"]').first().clickAndSelectCopy('heading')
-      cy.wait(200)
+      cy.wait(100)
       cy.realPress(['Meta', 'x'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Move to end of document
       cy.get('.docy_editor').click()
@@ -317,7 +321,7 @@ describe('Complex Cut/Paste Operations', () => {
       cy.wait(100)
 
       cy.realPress(['Meta', 'v'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Verify content
       cy.get('.docy_editor').should('contain', 'Source Section')
@@ -338,7 +342,7 @@ describe('Complex Cut/Paste Operations', () => {
           heading(2, 'Target', [paragraph('Target content')])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       // Click in second H2's title and type
       cy.get('.docy_editor .heading[level="2"]').last().find('.title').click()
@@ -347,7 +351,7 @@ describe('Complex Cut/Paste Operations', () => {
 
       // Type some text to verify the title is editable
       cy.realType(' Appended')
-      cy.wait(300)
+      cy.wait(100)
 
       // Verify
       cy.get('.docy_editor .heading[level="2"]').last().find('.title').should('contain', 'Appended')
@@ -362,13 +366,13 @@ describe('Complex Cut/Paste Operations', () => {
           heading(2, 'H2', [heading(3, 'H3 to Cut', [paragraph('H3 content')])])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       // Cut H3
       cy.get('.docy_editor .heading[level="3"]').clickAndSelectCopy('heading')
-      cy.wait(200)
+      cy.wait(100)
       cy.realPress(['Meta', 'x'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Position at very START of first paragraph in H1
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
@@ -376,7 +380,7 @@ describe('Complex Cut/Paste Operations', () => {
       cy.wait(100)
 
       cy.realPress(['Meta', 'v'])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor').should('contain', 'H3 to Cut')
 
@@ -393,7 +397,7 @@ describe('Complex Cut/Paste Operations', () => {
           paragraph('') // Empty paragraph
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       // Select first paragraph
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').first().click()
@@ -402,7 +406,7 @@ describe('Complex Cut/Paste Operations', () => {
 
       // Cut
       cy.realPress(['Meta', 'x'])
-      cy.wait(300)
+      cy.wait(100)
 
       // Click in empty paragraph
       cy.get('.docy_editor .heading[level="1"] .contentWrapper p').last().click()
@@ -410,7 +414,7 @@ describe('Complex Cut/Paste Operations', () => {
 
       // Paste
       cy.realPress(['Meta', 'v'])
-      cy.wait(300)
+      cy.wait(100)
 
       cy.get('.docy_editor').should('contain', 'Paragraph to cut')
     })
@@ -427,20 +431,20 @@ describe('Complex Cut/Paste Operations', () => {
           heading(2, 'Target H2', [paragraph('Target')])
         ])
       ])
-      cy.wait(500)
+      cy.wait(100)
 
       // This test verifies basic cut/paste works with heading structure
       cy.get('.docy_editor .heading[level="2"]').first().clickAndSelectCopy('heading')
-      cy.wait(200)
+      cy.wait(100)
       cy.realPress(['Meta', 'x'])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor .heading[level="2"]').first().find('.contentWrapper p').click()
       cy.realPress('End')
       cy.wait(100)
 
       cy.realPress(['Meta', 'v'])
-      cy.wait(500)
+      cy.wait(100)
 
       cy.get('.docy_editor').should('contain', 'H2 with List')
     })

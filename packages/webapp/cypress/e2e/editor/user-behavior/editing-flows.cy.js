@@ -9,16 +9,20 @@
 import { TEST_TITLE, TEST_CONTENT } from '../../../support/commands'
 import { section, paragraph, heading } from '../../../fixtures/docMaker'
 
-describe('User Editing Flows', () => {
+describe('User Editing Flows', { testIsolation: false }, () => {
+  before(() => {
+    cy.visitEditor({ persist: false, docName: 'editing-flows-test' })
+  })
+
   beforeEach(() => {
-    cy.visitEditor({ persist: false, clearDoc: true, docName: 'editing-flows-test' })
+    cy.clearEditor()
   })
 
   describe('Document Creation Flow', () => {
     it('should allow user to create a complete document from scratch', () => {
       // Start with empty editor and build a document
       cy.get('.docy_editor .tiptap').click()
-      cy.wait(200)
+      cy.wait(100)
 
       // Type first section title
       cy.realType('My First Document')
@@ -38,7 +42,7 @@ describe('User Editing Flows', () => {
       // Add content to subsection
       cy.realPress('Enter')
       cy.realType('Here is how to get started with our product.')
-      cy.wait(200)
+      cy.wait(100)
 
       // Verify structure
       cy.get('.heading[level="1"] .title').should('contain', 'My First Document')
@@ -72,7 +76,7 @@ describe('User Editing Flows', () => {
       cy.realType('Level 4 Heading')
       cy.realPress('Enter')
       cy.realType('Level 4 content')
-      cy.wait(300)
+      cy.wait(100)
 
       // Verify nested structure
       cy.get('.heading[level="1"] .heading[level="2"] .heading[level="3"] .heading[level="4"]')
@@ -99,13 +103,13 @@ describe('User Editing Flows', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
+      cy.wait(100)
 
       // User wants to make "Should be nested" a child of "Introduction"
       // Change it to H3
       cy.putPosCaretInHeading(2, 'Should be nested', 'start')
       cy.realPress(['Alt', 'Meta', '3'])
-      cy.wait(300)
+      cy.wait(100)
 
       // Should now be nested under Introduction
       cy.get('.heading[level="2"] .title')
@@ -133,12 +137,12 @@ describe('User Editing Flows', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
+      cy.wait(100)
 
       // Promote H3 to H1 (new section)
       cy.putPosCaretInHeading(3, 'Should become new section', 'start')
       cy.realPress(['Alt', 'Meta', '1'])
-      cy.wait(500)
+      cy.wait(100)
 
       // Should now be a separate H1 section
       cy.get('.docy_editor > .tiptap > .heading[level="1"]').should('have.length', 2)
@@ -159,13 +163,13 @@ describe('User Editing Flows', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
+      cy.wait(100)
 
       // Click on heading to focus it, then type
       cy.get('.heading[level="1"] .title').first().click()
       cy.realPress('End') // Go to end
       cy.realType(' Modified')
-      cy.wait(300)
+      cy.wait(100)
 
       // Verify change and structure integrity
       cy.get('.heading[level="1"] .title').first().should('contain', 'Modified')
@@ -189,13 +193,13 @@ describe('User Editing Flows', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
+      cy.wait(100)
 
       // Add paragraph after "First Heading"
       cy.putPosCaretInHeading(2, 'First Heading', 'end')
       cy.realPress('Enter')
       cy.realType('New paragraph between headings')
-      cy.wait(300)
+      cy.wait(100)
 
       // Verify paragraph is inside First Heading's contentWrapper
       cy.get('.heading[level="2"]')
@@ -218,13 +222,13 @@ describe('User Editing Flows', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
+      cy.wait(100)
 
       // Click on heading title and type
       cy.get('.heading[level="1"] .title').click()
       cy.realPress('End')
       cy.realType(' Extended')
-      cy.wait(200)
+      cy.wait(100)
 
       cy.get('.heading[level="1"] .title').should('contain', 'Extended')
     })
@@ -237,7 +241,7 @@ describe('User Editing Flows', () => {
       cy.realType('Section One')
       cy.realPress('Enter')
       cy.realType('Content for section one')
-      cy.wait(200)
+      cy.wait(100)
 
       // Create second section (new H1)
       cy.realPress('Enter')
@@ -245,7 +249,7 @@ describe('User Editing Flows', () => {
       cy.realType('Section Two')
       cy.realPress('Enter')
       cy.realType('Content for section two')
-      cy.wait(200)
+      cy.wait(100)
 
       // Create third section
       cy.realPress('Enter')
@@ -253,7 +257,7 @@ describe('User Editing Flows', () => {
       cy.realType('Section Three')
       cy.realPress('Enter')
       cy.realType('Content for section three')
-      cy.wait(300)
+      cy.wait(100)
 
       // Verify 3 sections
       cy.get('.docy_editor > .tiptap > .heading[level="1"]').should('have.length', 3)
@@ -273,11 +277,11 @@ describe('User Editing Flows', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
+      cy.wait(100)
 
       // Use TOC to move "Move This" after "Target Location"
       cy.dragTocItem('Move This', 'Target Location', { position: 'after' })
-      cy.wait(500)
+      cy.wait(100)
 
       // Verify move happened
       cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
@@ -294,12 +298,12 @@ describe('User Editing Flows', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
+      cy.wait(100)
 
       // Type in empty heading
       cy.get('.heading[level="1"] .title').click()
       cy.realType('New Title')
-      cy.wait(200)
+      cy.wait(100)
 
       cy.get('.heading[level="1"] .title').should('contain', 'New Title')
     })
@@ -311,13 +315,13 @@ describe('User Editing Flows', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
+      cy.wait(100)
 
       cy.putPosCaretInHeading(1, 'Initial', 'end')
 
       // Rapid typing
       cy.realType(' - typing very fast without stopping to see if editor handles it well')
-      cy.wait(300)
+      cy.wait(100)
 
       cy.get('.heading[level="1"] .title').should('contain', 'typing very fast')
 
@@ -338,17 +342,17 @@ describe('User Editing Flows', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
+      cy.wait(100)
 
       // Select all and delete
       cy.get('.docy_editor .tiptap').click()
       cy.realPress(['Meta', 'a'])
       cy.realPress('Backspace')
-      cy.wait(300)
+      cy.wait(100)
 
       // Type new content
       cy.realType('Fresh Start')
-      cy.wait(200)
+      cy.wait(100)
 
       // Should have new section
       cy.get('.heading[level="1"] .title').should('contain', 'Fresh Start')
@@ -370,11 +374,11 @@ describe('User Editing Flows', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
+      cy.wait(100)
 
       // Click on TOC item
       cy.getTocItem('Target Heading').click()
-      cy.wait(300)
+      cy.wait(100)
 
       // The heading should be visible (scrolled into view)
       cy.get('.heading .title').contains('Target Heading').should('be.visible')
@@ -387,12 +391,12 @@ describe('User Editing Flows', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
+      cy.wait(100)
 
       // Edit the heading
       cy.putPosCaretInHeading(2, 'Subheading', 'end')
       cy.realType(' Updated')
-      cy.wait(500)
+      cy.wait(100)
 
       // TOC should update
       cy.getTocItem('Subheading Updated').should('exist')

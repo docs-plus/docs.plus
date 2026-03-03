@@ -169,10 +169,14 @@ function takeScreenshots(testName, action) {
 // TEST SUITES
 // =============================================================================
 
-describe('TOC Complex Structure Tests', () => {
+describe('TOC Complex Structure Tests', { testIsolation: false }, () => {
+  before(() => {
+    cy.visitEditor({ persist: false, docName: 'toc-complex-test' })
+    cy.get('.docy_editor', { timeout: 15000 }).should('be.visible')
+  })
+
   beforeEach(() => {
-    cy.visitEditor({ persist: false, docName: 'toc-complex-test', clearDoc: true })
-    cy.wait(500)
+    cy.clearEditor()
   })
 
   // ===========================================================================

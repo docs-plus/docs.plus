@@ -9,9 +9,13 @@
 import { TEST_TITLE, TEST_CONTENT } from '../../../support/commands'
 import { section, paragraph, heading } from '../../../fixtures/docMaker'
 
-describe('User Keyboard Shortcuts', () => {
+describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
+  before(() => {
+    cy.visitEditor({ persist: false, docName: 'keyboard-shortcuts-test' })
+  })
+
   beforeEach(() => {
-    cy.visitEditor({ persist: false, clearDoc: true, docName: 'keyboard-shortcuts-test' })
+    cy.clearEditor()
   })
 
   describe('Heading Level Shortcuts (Alt+Meta+1-9)', () => {
@@ -24,7 +28,6 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Test each level 1-9
       const levels = [3, 5, 7, 9, 8, 6, 4, 2]
@@ -47,11 +50,10 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       cy.putPosCaretInHeading(3, 'Convert Me', 'start')
       cy.realPress(['Alt', 'Meta', '0'])
-      cy.wait(300)
+      cy.wait(100)
 
       // Should be converted to paragraph
       cy.get('.heading .title').contains('Convert Me').should('not.exist')
@@ -65,7 +67,6 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Click in the paragraph
       cy.get('p').contains('Make me a heading').click()
@@ -73,7 +74,7 @@ describe('User Keyboard Shortcuts', () => {
 
       // Convert to heading level 2
       cy.realPress(['Alt', 'Meta', '2'])
-      cy.wait(300)
+      cy.wait(100)
 
       // Should now be a heading
       cy.get('.heading[level="2"] .title').should('contain', 'Make me a heading')
@@ -88,16 +89,15 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Position at end of heading title
       cy.putPosCaretInHeading(2, 'My Heading', 'end')
       cy.realPress('Enter')
-      cy.wait(200)
+      cy.wait(100)
 
       // Type in the new paragraph
       cy.realType('New paragraph text')
-      cy.wait(200)
+      cy.wait(100)
 
       // Should have new paragraph
       cy.get('p').contains('New paragraph text').should('exist')
@@ -110,12 +110,11 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Position in middle of heading (after "First")
       cy.putPosCaretInHeading(2, 'FirstSecond', 5) // After "First"
       cy.realPress('Enter')
-      cy.wait(300)
+      cy.wait(100)
 
       // "Second" should now be in a new element (either paragraph or heading)
       cy.get('.heading[level="2"] .title').should('contain', 'First')
@@ -135,12 +134,11 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Position at start of heading title
       cy.putPosCaretInHeading(2, 'Heading to merge', 'start')
       cy.realPress('Backspace')
-      cy.wait(300)
+      cy.wait(100)
 
       // Structure should still be valid
       cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
@@ -155,12 +153,11 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Position after "Delete " (7 characters)
       cy.putPosCaretInHeading(2, 'Delete Test', 7)
       cy.realPress('Backspace')
-      cy.wait(200)
+      cy.wait(100)
 
       // Should now be "DeleteTest"
       cy.get('.heading[level="2"] .title').should('contain', 'DeleteTest')
@@ -175,12 +172,11 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Position after "Test" (4 characters)
       cy.putPosCaretInHeading(2, 'Test Delete', 4)
       cy.realPress('Delete')
-      cy.wait(200)
+      cy.wait(100)
 
       // Should now be "TestDelete"
       cy.get('.heading[level="2"] .title').should('contain', 'TestDelete')
@@ -198,14 +194,13 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Focus editor
       cy.get('.docy_editor .tiptap').click()
 
       // Select all
       cy.realPress(['Meta', 'a'])
-      cy.wait(200)
+      cy.wait(100)
 
       // Check selection exists (window selection should have content)
       cy.window().then((win) => {
@@ -221,7 +216,6 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Click at start of paragraph
       cy.get('p').contains('Select this text').click()
@@ -250,7 +244,6 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Select "this"
       cy.get('p').contains('Make this bold').click()
@@ -272,7 +265,7 @@ describe('User Keyboard Shortcuts', () => {
       })
 
       cy.realPress(['Meta', 'b'])
-      cy.wait(200)
+      cy.wait(100)
 
       // Check for bold styling
       cy.get('strong').contains('this').should('exist')
@@ -285,7 +278,6 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Select "this"
       cy.window().then((win) => {
@@ -303,7 +295,7 @@ describe('User Keyboard Shortcuts', () => {
       })
 
       cy.realPress(['Meta', 'i'])
-      cy.wait(200)
+      cy.wait(100)
 
       // Check for italic styling
       cy.get('em').contains('this').should('exist')
@@ -316,7 +308,6 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Select "this"
       cy.window().then((win) => {
@@ -334,7 +325,7 @@ describe('User Keyboard Shortcuts', () => {
       })
 
       cy.realPress(['Meta', 'u'])
-      cy.wait(200)
+      cy.wait(100)
 
       // Check for underline styling
       cy.get('u').contains('this').should('exist')
@@ -349,20 +340,19 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Add some text
       cy.get('p').contains('Original text').click()
       cy.realPress('End')
       cy.realType(' added text')
-      cy.wait(200)
+      cy.wait(100)
 
       // Verify text was added
       cy.get('p').contains('Original text added text').should('exist')
 
       // Undo
       cy.realPress(['Meta', 'z'])
-      cy.wait(200)
+      cy.wait(100)
 
       // Text should be removed (or partially)
       // Note: Undo behavior may vary based on how text was typed
@@ -375,21 +365,21 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(500)
+      cy.wait(100)
 
       // Make a change
       cy.get('p').contains('Original').click()
       cy.realPress('End')
       cy.realType(' change')
-      cy.wait(200)
+      cy.wait(100)
 
       // Undo
       cy.realPress(['Meta', 'z'])
-      cy.wait(200)
+      cy.wait(100)
 
       // Redo
       cy.realPress(['Meta', 'Shift', 'z'])
-      cy.wait(200)
+      cy.wait(100)
 
       // Change should be back
       cy.get('p').should('contain', 'change')
@@ -404,7 +394,6 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Click in paragraph
       cy.get('p').contains('Navigate with arrows').click()
@@ -418,7 +407,7 @@ describe('User Keyboard Shortcuts', () => {
 
       // Type to verify we moved
       cy.realType('X')
-      cy.wait(200)
+      cy.wait(100)
 
       // Should have inserted X somewhere in the text
       cy.get('p').should('contain', 'X')
@@ -431,7 +420,6 @@ describe('User Keyboard Shortcuts', () => {
       }
 
       cy.createDocument(doc)
-      cy.wait(300)
 
       // Click in paragraph
       cy.get('p').contains('One two three').click()
