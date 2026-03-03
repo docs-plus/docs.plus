@@ -1,6 +1,6 @@
 /* eslint-disable no-undef */
-import { TEST_TITLE, TEST_CONTENT } from '../../support/commands'
-import { section, paragraph, heading } from '../../fixtures/docMaker'
+import { TEST_TITLE, TEST_CONTENT } from '../../../support/commands'
+import { section, paragraph, heading } from '../../../fixtures/docMaker'
 
 const DocumentStructureSchema1 = {
   documentName: TEST_TITLE.HelloDocy,

@@ -1,5 +1,5 @@
 /* eslint-disable no-undef */
-import { TEST_CONTENT, TEST_TITLE } from '../../support/commands'
+import { TEST_CONTENT, TEST_TITLE } from '../../../support/commands'
 import {
   heading,
   paragraph,
@@ -7,7 +7,7 @@ import {
   orderedList,
   section,
   bulletList
-} from '../../fixtures/docMaker'
+} from '../../../fixtures/docMaker'
 
 const DocumentStructure = {
   documentName: TEST_TITLE.HelloDocy,

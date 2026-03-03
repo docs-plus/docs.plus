@@ -151,6 +151,7 @@ describe('G-1: Level change with deeply nested children', () => {
   beforeEach(() => {
     cy.visitEditor({ persist: false, clearDoc: true })
     cy.get('.docy_editor', { timeout: 15000 }).should('be.visible')
+    cy.viewport(1200, 1600)
   })
 
   it('should change H2→H5 when children at H6→H7→H8→H9 (4 levels deep)', () => {
