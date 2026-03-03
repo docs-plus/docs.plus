@@ -1,4 +1,4 @@
-import { mergeAttributes, Node } from '@tiptap/core'
+import { type Editor, mergeAttributes, Node } from '@tiptap/core'
 import { TextSelection } from '@tiptap/pm/state'
 import {
   type DOMOutputSpec,
@@ -84,6 +84,69 @@ function expandElement(
   }
 
   elem.addEventListener('transitionend', callback)
+}
+
+function handleSelectionBackspace(
+  editor: Editor,
+  selection: { $anchor: ResolvedPos; $head: ResolvedPos }
+): boolean {
+  const { $anchor, $head } = selection
+
+  logger.info('[Heading][Backspace]: Delete selected range')
+
+  if (
+    $anchor.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE &&
+    $head.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
+  ) {
+    return false
+  }
+
+  if (isEntireDocumentSelected(editor.state.doc, $anchor.pos, $head.pos)) return false
+
+  return deleteSelectedRange(editor)
+}
+
+function mergeFirstBlockIntoHeading(
+  editor: Editor,
+  blockRange: { start: number; end: number }
+): boolean {
+  const { selection, schema, tr } = editor.state
+  const { $anchor } = selection
+
+  const paragraphNode = getClosestAncestorNodeByTypeName($anchor, TIPTAP_NODES.PARAGRAPH_TYPE)
+  if (!paragraphNode) return false
+  const paragraphContent = paragraphNode.content.toJSON()
+
+  const filteredContent = paragraphContent.filter(
+    (node: { type?: string }) => node.type !== TIPTAP_NODES.HARD_BREAK_TYPE
+  )
+
+  const newNode = schema.nodeFromJSON({
+    type: TIPTAP_NODES.PARAGRAPH_TYPE,
+    content: filteredContent
+  })
+
+  tr.delete(blockRange.start, blockRange.end)
+  // contentHeading only accepts inline content, so insert the fragment, not the block node
+  tr.insert(blockRange.start - 2, newNode.content)
+  tr.setSelection(new TextSelection(tr.doc.resolve(blockRange.start - 2)))
+
+  editor.view.dispatch(tr)
+  return true
+}
+
+function deleteEmptyFirstBlock(
+  editor: Editor,
+  blockRange: { start: number; end: number }
+): boolean {
+  const { tr } = editor.state
+
+  tr.delete(blockRange.start, blockRange.end)
+  tr.setSelection(new TextSelection(tr.doc.resolve(blockRange.start - 2)))
+  tr.scrollIntoView()
+
+  editor.view.dispatch(tr)
+  return true
 }
 
 /**
@@ -213,96 +276,41 @@ const ContentWrapper = Node.create({
   },
   addKeyboardShortcuts() {
     return {
-      //TODO: refactor needed
       Backspace: (): boolean => {
         const { editor } = this
-        const { schema, selection, tr } = editor.state
+        const { schema, selection } = editor.state
         const { $anchor, $from, $head, $to } = selection
-        const blockRange = $from.blockRange($to)
 
-        // if we have selection, node range || multiple lines block
         if ($anchor.pos !== $head.pos) {
-          logger.info('[Heading][Backspace]: Delete selected range')
-          // Check if both $anchor and $head parents are content headings
-          if (
-            $anchor.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE &&
-            $head.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
-          ) {
-            return false
-          }
-
-          if (isEntireDocumentSelected(editor.state.doc, $anchor.pos, $head.pos)) return false
-
-          return deleteSelectedRange(editor)
+          return handleSelectionBackspace(editor, selection)
         }
 
-        // If backspace hit not at the start of the node, do nothing
         // TODO: Revise this condition, maybe it's better to use "textOffset"
         if ($anchor.parentOffset !== 0) return false
 
-        const contentWrapper = $anchor.doc?.nodeAt($from?.before(blockRange!.depth))
-        const nodeType = contentWrapper!.type.name
+        const blockRange = $from.blockRange($to)
+        if (!blockRange) return false
 
-        // If the Backspace is not in the contentWrapper, do nothing
+        const contentWrapper = $anchor.doc?.nodeAt($from?.before(blockRange.depth))
+        if (!contentWrapper) return false
+
         if (
-          nodeType === schema.nodes.contentHeading.name ||
-          nodeType !== schema.nodes.contentWrapper.name
+          contentWrapper.type.name === schema.nodes.contentHeading.name ||
+          contentWrapper.type.name !== schema.nodes.contentWrapper.name
         ) {
           return false
         }
 
-        // Get the contentWrapper node pos
         const contentWrapperPos = $from.before(2)
 
-        // When cursor is in the first line of contentWrapper
-        if (blockRange!.start - 1 === contentWrapperPos) {
-          // If there is no previous node in the selection (i.e., current node is the first node of the contentWrapper)
-          if ($anchor.nodeBefore === null) {
-            // If there's a text node following the current node
-            if ($anchor.nodeAfter?.type.name === TIPTAP_NODES.TEXT_TYPE) {
-              const paragraphNode = getClosestAncestorNodeByTypeName(
-                $anchor,
-                TIPTAP_NODES.PARAGRAPH_TYPE
-              )
-              if (!paragraphNode) return false
-              const paragraphContent = paragraphNode.content.toJSON()
+        if (blockRange.start - 1 !== contentWrapperPos) return false
+        if ($anchor.nodeBefore !== null) return false
 
-              // Filter out the "hardBreak" nodes from the paragraph content
-              const filteredContent = paragraphContent.filter(
-                (node: { type?: string }) => node.type !== TIPTAP_NODES.HARD_BREAK_TYPE
-              )
-
-              const cloneCurrentNodeAsParagraph = {
-                type: TIPTAP_NODES.PARAGRAPH_TYPE,
-                content: filteredContent
-              }
-
-              const newNode = editor.state.schema.nodeFromJSON(cloneCurrentNodeAsParagraph)
-
-              tr.delete(blockRange!.start, blockRange!.end)
-
-              // we can not append block node to contentHeading node, so we just append the inline node
-              tr.insert(blockRange!.start - 2, newNode.content)
-
-              const newSelection = new TextSelection(tr.doc.resolve(blockRange!.start - 2))
-              tr.setSelection(newSelection)
-
-              editor.view.dispatch(tr)
-              return true
-            } else {
-              // If no text node is following, just delete the current node and move the cursor to the end of the heading
-              this.editor
-                .chain()
-                .deleteRange({ from: blockRange!.start, to: blockRange!.end })
-                .setTextSelection(blockRange!.start - 2)
-                .scrollIntoView()
-                .run()
-              return true
-            }
-          }
+        if ($anchor.nodeAfter?.type.name === TIPTAP_NODES.TEXT_TYPE) {
+          return mergeFirstBlockIntoHeading(editor, blockRange)
         }
 
-        return false
+        return deleteEmptyFirstBlock(editor, blockRange)
       },
       // When the cursor is in the heading zone of a contentWrapper (after child
       // headings), Enter should create a new sibling heading — not a paragraph.
