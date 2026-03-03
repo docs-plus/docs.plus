@@ -34,8 +34,9 @@ bun run dev:local       # Uses .env.local
 | `start`        | Start production server         |
 | `lint`         | Run ESLint                      |
 | `lint:fix`     | Fix ESLint issues               |
-| `test`         | Run Jest tests                  |
-| `cypress:open` | Open Cypress E2E                |
+| `test`         | Run Jest unit tests             |
+| `cypress:open` | Open Cypress E2E (interactive)  |
+| `cypress:run`  | Run Cypress E2E (headless)      |
 
 ## Project Structure
 
@@ -67,13 +68,22 @@ See `.env.example` in the monorepo root. Key variables:
 ## Testing
 
 ```bash
-# Unit tests
+# Unit tests (Jest)
 bun run test
 
-# E2E tests
-bun run cypress:open    # Interactive
-bun run cypress:run     # Headless
+# E2E tests — parallel (from monorepo root)
+bun run test:e2e          # 4 workers (default)
+bun run test:e2e:2        # 2 workers
+bun run test:e2e:8        # 8 workers
+
+# E2E — interactive (single instance)
+bun run cypress:open
+
+# Run everything (unit + E2E, report saved to Notes/)
+bun run test:all
 ```
+
+E2E tests use [cypress-split](https://github.com/bahmutov/cypress-split) to distribute spec files across parallel Cypress instances. Results are aggregated into a dashboard with per-worker stats, timing, and parallelism factor. See [CONTRIBUTING.md](../../CONTRIBUTING.md#-testing) for details.
 
 ## Related Packages
 

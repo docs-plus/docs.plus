@@ -74,7 +74,7 @@ declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Cypress {
     interface Chainable {
-      clearEditor(title?: string, sentencesCount?: number): Chainable<Element>
+      clearEditor(): Chainable<void>
       createHeading(
         title: string,
         headingLevel: number,
@@ -380,13 +380,11 @@ Cypress.Commands.add('createDocument', (doc: any) => {
   cy.window().then((w) => {
     const win = w as unknown as EditorWindow
     if (typeof win._createDocumentFromStructure === 'function') {
-      // Fast path: direct insertion (no typing simulation)
       const success = win._createDocumentFromStructure(normalizedDoc as Record<string, unknown>)
       if (!success) {
         throw new Error('Failed to create document via _createDocumentFromStructure')
       }
     } else {
-      // Fallback: slow path with typing simulation
       console.warn('_createDocumentFromStructure not available, using slow typing method')
       const sections = doc.sections
 
@@ -403,6 +401,8 @@ Cypress.Commands.add('createDocument', (doc: any) => {
       }
     }
   })
+
+  cy.get('.docy_editor .heading[level="1"]').should('exist')
 })
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -551,6 +551,13 @@ Cypress.Commands.add(
     }
   }
 )
+
+Cypress.Commands.add('clearEditor', () => {
+  cy.get('.docy_editor > .tiptap.ProseMirror')
+    .scrollIntoView()
+    .click({ force: true })
+    .realPress(['Meta', 'a', 'Backspace'])
+})
 
 // @ts-expect-error — Cypress prevSubject typing limitation
 Cypress.Commands.add(

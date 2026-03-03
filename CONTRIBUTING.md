@@ -204,6 +204,16 @@ printf 'refs/heads/feature/demo 0000000000000000000000000000000000000000 refs/he
 
 ## 🧪 Testing
 
+### Running All Tests
+
+Run unit + E2E tests together with a single command:
+
+```bash
+bun run test:all          # unit + E2E, report saved to Notes/
+bun run test:unit         # unit only
+bun run test:e2e          # E2E only (4 parallel workers by default)
+```
+
 ### Unit Tests
 
 Run unit tests with Jest:
@@ -215,15 +225,35 @@ bun test
 
 ### E2E Tests
 
-Run Cypress E2E tests:
+Cypress E2E tests run in **parallel** across multiple workers using [cypress-split](https://github.com/bahmutov/cypress-split). This splits spec files across N Cypress instances for faster feedback.
 
 ```bash
-# Interactive mode
+# Interactive mode (single instance)
 bun run cypress:open
 
-# Headless mode
-bun run cypress:run
+# Headless — parallel (default 4 workers)
+bun run test:e2e
+
+# Explicit worker counts
+bun run test:e2e:2        # 2 parallel workers
+bun run test:e2e:4        # 4 parallel workers
+bun run test:e2e:8        # 8 parallel workers
+
+# Ad-hoc worker count
+CYPRESS_PARALLEL=6 bun run test:e2e
 ```
+
+> **Prerequisites:** The dev server must be running (`make dev-local`) before running E2E tests. By default tests hit `http://localhost:3001` — override with `BASE_URL`.
+
+**Choosing a worker count:**
+
+| Workers | RAM needed | Best for                               |
+| ------- | ---------- | -------------------------------------- |
+| 2       | ~1 GB      | Low-resource machines, CI containers   |
+| 4       | ~2 GB      | Default — good balance on most laptops |
+| 8       | ~4 GB      | 16 GB+ RAM, 8+ cores                   |
+
+After a run you get an aggregated results dashboard with per-worker stats, timing breakdown, and parallelism factor. Reports are saved to `Notes/test-results-*.txt`.
 
 ### Test Coverage
 
