@@ -1,5 +1,6 @@
 import { Plugin, PluginKey } from '@tiptap/pm/state'
-import { TRANSACTION_META } from '@types'
+import { ReplaceAroundStep, ReplaceStep } from '@tiptap/pm/transform'
+import { type Transaction, TRANSACTION_META } from '@types'
 import { logger } from '@utils/logger'
 
 import {
@@ -9,6 +10,46 @@ import {
 } from '../validateHeadingHierarchy'
 
 const hierarchyValidationPluginKey = new PluginKey('hierarchyValidation')
+
+/**
+ * Extracts the affected position range from structural transactions,
+ * mapped to the final document coordinates.
+ *
+ * Each step's positions are in the coordinate space of the document
+ * at the point that step is applied. We use Mapping.slice(stepIndex)
+ * to map through only the subsequent step maps within that transaction,
+ * then through all later transactions — avoiding double-mapping.
+ */
+const getChangedRange = (
+  transactions: readonly Transaction[]
+): { from: number; to: number } | undefined => {
+  let from = Infinity
+  let to = -Infinity
+
+  for (let i = 0; i < transactions.length; i++) {
+    const tr = transactions[i]
+    if (!tr.docChanged) continue
+
+    tr.steps.forEach((step, stepIdx) => {
+      if (!(step instanceof ReplaceStep || step instanceof ReplaceAroundStep)) return
+
+      const toEndOfTr = tr.mapping.slice(stepIdx)
+      let mappedFrom = toEndOfTr.map(step.from, -1)
+      let mappedTo = toEndOfTr.map(step.to, 1)
+
+      for (let j = i + 1; j < transactions.length; j++) {
+        mappedFrom = transactions[j].mapping.map(mappedFrom, -1)
+        mappedTo = transactions[j].mapping.map(mappedTo, 1)
+      }
+
+      from = Math.min(from, mappedFrom)
+      to = Math.max(to, mappedTo)
+    })
+  }
+
+  if (from === Infinity || to === -Infinity) return undefined
+  return { from, to }
+}
 
 /**
  * ProseMirror plugin that automatically validates and fixes heading hierarchy
@@ -51,12 +92,11 @@ export const createHierarchyValidationPlugin = (): Plugin => {
       const shouldForceInitialValidation = !hasRunInitialValidation
       if (!canAffectHierarchy && !shouldForceInitialValidation) return null
 
-      // Check if there are any violations
-      const hasViolations = hasHierarchyViolations(newState.doc)
+      // Scope the check to affected sections when possible
+      const range = shouldForceInitialValidation ? undefined : getChangedRange(transactions)
+      const hasViolations = hasHierarchyViolations(newState.doc, range?.from, range?.to)
       hasRunInitialValidation = true
-      if (!hasViolations) {
-        return null
-      }
+      if (!hasViolations) return null
 
       logger.warn('[HierarchyValidationPlugin] Found hierarchy violations, fixing...')
 
@@ -65,7 +105,7 @@ export const createHierarchyValidationPlugin = (): Plugin => {
       tr.setMeta(TRANSACTION_META.ADD_TO_HISTORY, false)
 
       try {
-        validateAndFixHeadingHierarchy(tr)
+        validateAndFixHeadingHierarchy(tr, range?.from, range?.to)
       } catch (error) {
         logger.error(
           '[HierarchyValidationPlugin] Fix threw — discarding fix transaction to prevent editor crash',

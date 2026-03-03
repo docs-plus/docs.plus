@@ -59,7 +59,8 @@ export const transactionMayAffectHierarchy = (tr: Transaction): boolean => {
       if (rangeSize < 8 && (step.slice.content.size === 0 || isTextOnlySlice(step))) {
         return false
       }
-      if (sliceContainsHeadingNode(step)) return true
+      // Large deletions/replacements may remove or restructure headings
+      // even if the replacement slice contains no headings.
       return true
     }
 
@@ -76,18 +77,30 @@ export const transactionMayAffectHierarchy = (tr: Transaction): boolean => {
  * - H1 cannot be nested inside any heading
  * - Child level must be > parent level
  *
- * Call this after any heading manipulation to ensure schema compliance.
+ * When a changed range is provided, the first scan is scoped to the
+ * enclosing H1 sections. After each fix (which moves nodes), subsequent
+ * scans fall back to full-document to catch any cascading violations.
  */
-export const validateAndFixHeadingHierarchy = (tr: Transaction): Transaction => {
+export const validateAndFixHeadingHierarchy = (
+  tr: Transaction,
+  changedFrom?: number,
+  changedTo?: number
+): Transaction => {
   let hasChanges = true
   let iterations = 0
-  const MAX_ITERATIONS = 10 // Prevent infinite loops
+  const MAX_ITERATIONS = 10
 
   while (hasChanges && iterations < MAX_ITERATIONS) {
     hasChanges = false
     iterations++
 
-    const violations = findHierarchyViolations(tr.doc)
+    // Scope the first iteration to the affected section range.
+    // After a fix moves nodes, positions shift — fall back to full-doc.
+    const range =
+      iterations === 1 && changedFrom !== undefined && changedTo !== undefined
+        ? getEnclosingSectionRange(tr.doc, changedFrom, changedTo)
+        : undefined
+    const violations = findHierarchyViolations(tr.doc, range?.from, range?.to)
 
     for (const violation of violations) {
       let fixed = false
@@ -100,11 +113,9 @@ export const validateAndFixHeadingHierarchy = (tr: Transaction): Transaction => 
 
       if (fixed) {
         hasChanges = true
-        break // Re-scan after modification
+        break
       }
 
-      // If the fix failed (intermediate invalid state), stop trying —
-      // further fixes on a partially-corrupted transaction will also fail.
       if (!fixed && violation.type) {
         logger.warn('[validateHeadingHierarchy] Aborting fix loop — cannot safely restructure')
         hasChanges = false
@@ -131,21 +142,30 @@ interface HierarchyViolation {
 }
 
 /**
- * Finds all hierarchy violations in the document
+ * Finds all hierarchy violations in the document.
+ * Uses selective descent — only enters doc and contentWrapper nodes,
+ * skipping paragraphs, lists, and text nodes entirely.
+ *
+ * When a range is provided, scans only that section of the document.
  */
-function findHierarchyViolations(doc: ProseMirrorNode): HierarchyViolation[] {
+function findHierarchyViolations(
+  doc: ProseMirrorNode,
+  from?: number,
+  to?: number
+): HierarchyViolation[] {
   const violations: HierarchyViolation[] = []
   const headingStack: HeadingInfo[] = []
 
-  doc.descendants((node, pos) => {
-    if (node.type.name !== TIPTAP_NODES.HEADING_TYPE) return
+  const visitor = (node: ProseMirrorNode, pos: number): boolean | void => {
+    if (node.type.name !== TIPTAP_NODES.HEADING_TYPE) {
+      return node.type.name === 'doc' || node.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE
+    }
 
     const level = node.firstChild?.attrs?.level || 1
     const endPos = pos + node.nodeSize
     const contentWrapperPos = pos + (node.firstChild?.nodeSize || 0) + 1
     const contentWrapperEndPos = endPos - 1
 
-    // Pop stack until we find a valid parent (level < current)
     while (headingStack.length > 0) {
       const parent = headingStack[headingStack.length - 1]
       if (pos >= parent.endPos) {
@@ -155,11 +175,9 @@ function findHierarchyViolations(doc: ProseMirrorNode): HierarchyViolation[] {
       }
     }
 
-    // Check for violations
     if (headingStack.length > 0) {
       const parent = headingStack[headingStack.length - 1]
 
-      // Rule: H1 cannot be nested
       if (level === 1) {
         violations.push({
           type: 'h1-nested',
@@ -170,9 +188,7 @@ function findHierarchyViolations(doc: ProseMirrorNode): HierarchyViolation[] {
           parentLevel: parent.level,
           parentEndPos: parent.endPos
         })
-      }
-      // Rule: Child level must be > parent level
-      else if (level <= parent.level) {
+      } else if (level <= parent.level) {
         violations.push({
           type: 'invalid-child-level',
           childPos: pos,
@@ -192,7 +208,15 @@ function findHierarchyViolations(doc: ProseMirrorNode): HierarchyViolation[] {
       contentWrapperPos,
       contentWrapperEndPos
     })
-  })
+
+    return true
+  }
+
+  if (from !== undefined && to !== undefined) {
+    doc.nodesBetween(from, to, visitor)
+  } else {
+    doc.descendants(visitor)
+  }
 
   return violations
 }
@@ -269,16 +293,22 @@ function extractInvalidChild(tr: Transaction, violation: HierarchyViolation): bo
  * Bail-early: stops scanning on the first violation found.
  * Only descends into nodes that can contain headings (doc, contentWrapper),
  * skipping paragraphs, lists, and text nodes entirely.
+ *
+ * When a changed range is provided, scans only the top-level H1 sections
+ * overlapping that range instead of the full document.
  */
-export const hasHierarchyViolations = (doc: ProseMirrorNode): boolean => {
+export const hasHierarchyViolations = (
+  doc: ProseMirrorNode,
+  changedFrom?: number,
+  changedTo?: number
+): boolean => {
   const headingStack: { pos: number; level: number; endPos: number }[] = []
   let found = false
 
-  doc.descendants((node, pos) => {
+  const visitor = (node: ProseMirrorNode, pos: number): boolean | void => {
     if (found) return false
 
     if (node.type.name !== TIPTAP_NODES.HEADING_TYPE) {
-      // Only descend into nodes that can contain headings
       return node.type.name === 'doc' || node.type.name === TIPTAP_NODES.CONTENT_WRAPPER_TYPE
     }
 
@@ -299,9 +329,41 @@ export const hasHierarchyViolations = (doc: ProseMirrorNode): boolean => {
 
     headingStack.push({ pos, level, endPos })
     return true
-  })
+  }
+
+  if (changedFrom !== undefined && changedTo !== undefined) {
+    const { from, to } = getEnclosingSectionRange(doc, changedFrom, changedTo)
+    doc.nodesBetween(from, to, visitor)
+  } else {
+    doc.descendants(visitor)
+  }
 
   return found
+}
+
+/**
+ * Finds the start/end positions of the top-level H1 sections that
+ * enclose the given range. Used to scope hierarchy checks.
+ */
+const getEnclosingSectionRange = (
+  doc: ProseMirrorNode,
+  changedFrom: number,
+  changedTo: number
+): { from: number; to: number } => {
+  let from = 0
+  let to = doc.content.size
+
+  doc.forEach((node, offset) => {
+    const sectionEnd = offset + node.nodeSize
+    if (offset <= changedFrom && sectionEnd > changedFrom) {
+      from = offset
+    }
+    if (offset <= changedTo && sectionEnd > changedTo) {
+      to = sectionEnd
+    }
+  })
+
+  return { from, to }
 }
 
 /**
