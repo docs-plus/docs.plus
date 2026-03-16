@@ -39,6 +39,8 @@ services:
     image: traefik:v3.6
     container_name: traefik
     restart: unless-stopped
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
     command:
       - '--certificatesresolvers.letsencrypt.acme.email=${ACME_EMAIL:-admin@docs.plus}'
     ports:
