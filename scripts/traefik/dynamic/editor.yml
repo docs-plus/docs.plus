@@ -1,0 +1,47 @@
+# =============================================================================
+# editor.docs.plus - TinyDocy (docs-plus/editor)
+# Next.js + Hocuspocus WebSocket - routes to host processes via host.docker.internal
+# =============================================================================
+#
+# Requires:
+#   - Traefik extra_hosts: host.docker.internal:host-gateway
+#   - PM2 running Next.js (3847) and Hocuspocus (3848) on host (ecosystem.config.cjs)
+#   - DNS: editor.docs.plus, ws.editor.docs.plus -> server IP
+#
+# =============================================================================
+
+http:
+  routers:
+    editor-web:
+      rule: 'Host(`editor.docs.plus`)'
+      entryPoints:
+        - websecure
+      service: editor-web
+      middlewares:
+        - security-headers@file
+        - compress@file
+      tls:
+        certResolver: letsencrypt
+
+    editor-websocket:
+      rule: 'Host(`ws.editor.docs.plus`)'
+      entryPoints:
+        - websecure
+      service: editor-websocket
+      middlewares:
+        - security-headers@file
+      tls:
+        certResolver: letsencrypt
+
+  services:
+    editor-web:
+      loadBalancer:
+        servers:
+          - url: 'http://host.docker.internal:3847'
+        passHostHeader: true
+
+    editor-websocket:
+      loadBalancer:
+        servers:
+          - url: 'http://host.docker.internal:3848'
+        passHostHeader: true
