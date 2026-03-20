@@ -1,19 +1,19 @@
 # =============================================================================
-# editor.docs.plus - TinyDocy (docs-plus/editor)
+# tiny.docs.plus - TinyDocy (docs-plus/editor)
 # Next.js + Hocuspocus WebSocket - routes to host processes via host.docker.internal
 # =============================================================================
 #
 # Requires:
 #   - Traefik extra_hosts: host.docker.internal:host-gateway
 #   - PM2 running Next.js (3847) and Hocuspocus (3848) on host (ecosystem.config.cjs)
-#   - DNS: editor.docs.plus, ws.editor.docs.plus -> server IP
+#   - DNS: tiny.docs.plus, ws.tiny.docs.plus -> server IP
 #
 # =============================================================================
 
 http:
   routers:
     editor-web:
-      rule: 'Host(`editor.docs.plus`)'
+      rule: 'Host(`tiny.docs.plus`)'
       entryPoints:
         - websecure
       service: editor-web
@@ -24,7 +24,7 @@ http:
         certResolver: letsencrypt
 
     editor-websocket:
-      rule: 'Host(`ws.editor.docs.plus`)'
+      rule: 'Host(`ws.tiny.docs.plus`)'
       entryPoints:
         - websecure
       service: editor-websocket
