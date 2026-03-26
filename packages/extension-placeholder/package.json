@@ -1,0 +1,57 @@
+{
+  "name": "@docs.plus/extension-placeholder",
+  "version": "0.1.0",
+  "description": "A performance-optimized TipTap placeholder extension using O(1) cursor-based decoration",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.cjs"
+      }
+    }
+  },
+  "author": "Hossein Marzban",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/docs-plus/docs.plus",
+    "directory": "packages/extension-placeholder"
+  },
+  "scripts": {
+    "build": "NODE_ENV=production bunx tsup",
+    "build:dev": "bunx tsup",
+    "dev": "bunx tsup --watch",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "update:packages": "bunx npm-check-updates -u"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "tiptap",
+    "tiptap extension",
+    "placeholder",
+    "prosemirror",
+    "docs.plus"
+  ],
+  "peerDependencies": {
+    "@tiptap/core": "^3.20.4",
+    "@tiptap/pm": "^3.20.4"
+  },
+  "devDependencies": {
+    "@tiptap/core": "^3.20.4",
+    "@tiptap/pm": "^3.20.4",
+    "typescript": "^5.9.3",
+    "tsup": "^8.5.1",
+    "eslint": "^9.39.3"
+  }
+}

@@ -42,6 +42,7 @@ COPY packages/extension-hyperlink/package.json ./packages/extension-hyperlink/
 COPY packages/extension-hypermultimedia/package.json ./packages/extension-hypermultimedia/
 COPY packages/extension-indent/package.json ./packages/extension-indent/
 COPY packages/extension-inline-code/package.json ./packages/extension-inline-code/
+COPY packages/extension-placeholder/package.json ./packages/extension-placeholder/
 COPY packages/webapp/package.json ./packages/webapp/
 COPY packages/admin-dashboard/package.json ./packages/admin-dashboard/
 COPY packages/hocuspocus.server/package.json ./packages/hocuspocus.server/
@@ -52,6 +53,7 @@ COPY packages/extension-hyperlink ./packages/extension-hyperlink
 COPY packages/extension-hypermultimedia ./packages/extension-hypermultimedia
 COPY packages/extension-indent ./packages/extension-indent
 COPY packages/extension-inline-code ./packages/extension-inline-code
+COPY packages/extension-placeholder ./packages/extension-placeholder
 
 # Install all dependencies (Docker layer cache handles caching naturally)
 # Skip Cypress binary download to save time and network
@@ -78,6 +80,7 @@ COPY packages/extension-hyperlink ./packages/extension-hyperlink
 COPY packages/extension-hypermultimedia ./packages/extension-hypermultimedia
 COPY packages/extension-indent ./packages/extension-indent
 COPY packages/extension-inline-code ./packages/extension-inline-code
+COPY packages/extension-placeholder ./packages/extension-placeholder
 
 ENV CYPRESS_INSTALL_BINARY=0
 RUN bun install --frozen-lockfile
@@ -87,6 +90,7 @@ RUN cd packages/extension-hyperlink && bun run build
 RUN cd packages/extension-hypermultimedia && bun run build
 RUN cd packages/extension-indent && bun run build
 RUN cd packages/extension-inline-code && bun run build
+RUN cd packages/extension-placeholder && bun run build
 
 # ============================================================================
 # Stage 4: Build Webapp - Build Next.js application
@@ -184,12 +188,14 @@ COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-hyper
 COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-hypermultimedia/dist ./packages/extension-hypermultimedia/dist
 COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-indent/dist ./packages/extension-indent/dist
 COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-inline-code/dist ./packages/extension-inline-code/dist
+COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-placeholder/dist ./packages/extension-placeholder/dist
 
 # Copy package.json files for workspace resolution (from build-extensions for consistency)
 COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-hyperlink/package.json ./packages/extension-hyperlink/
 COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-hypermultimedia/package.json ./packages/extension-hypermultimedia/
 COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-indent/package.json ./packages/extension-indent/
 COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-inline-code/package.json ./packages/extension-inline-code/
+COPY --from=build-extensions --chown=nextjs:nodejs /app/packages/extension-placeholder/package.json ./packages/extension-placeholder/
 
 USER nextjs
 
