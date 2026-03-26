@@ -14,8 +14,8 @@
     "lint:fix": "eslint . --fix"
   },
   "dependencies": {
-    "@supabase/ssr": "^0.8.0",
-    "@supabase/supabase-js": "^2.98.0",
+    "@supabase/ssr": "^0.9.0",
+    "@supabase/supabase-js": "^2.100.0",
     "@tanstack/react-query": "^5.90.21",
     "clsx": "^2.1.1",
     "daisyui": "^5.5.19",
@@ -29,18 +29,18 @@
     "react-icons": "^5.5.0",
     "recharts": "^3.7.0",
     "tailwind-merge": "^3.5.0",
-    "tailwindcss": "^4.2.1",
-    "zustand": "^5.0.11"
+    "tailwindcss": "^4.2.2",
+    "zustand": "^5.0.12"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4.2.2",
     "@types/node": "^25.3.3",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
-    "typescript": "^5.9.3",
-    "@tailwindcss/postcss": "^4.2.1",
-    "postcss": "^8.5.8",
     "eslint": "^9.39.3",
     "eslint-config-next": "^16.1.6",
-    "sass": "^1.97.3"
+    "postcss": "^8.5.8",
+    "sass": "^1.97.3",
+    "typescript": "^5.9.3"
   }
 }
