@@ -71,11 +71,11 @@ services:
   # ---------------------------------------------------------------------------
   rest-api:
     build:
-      context: ./packages/hocuspocus.server
-      dockerfile: docker/Dockerfile.bun
+      context: .
+      dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
       target: base
     restart: unless-stopped
-    entrypoint: ['/app/scripts/docker-entrypoint.sh']
+    entrypoint: ['/app/packages/hocuspocus.server/scripts/docker-entrypoint.sh']
     command: ['bun', '--watch', 'src/index.ts']
     container_name: docsy-rest-api-dev
     ports:
@@ -103,8 +103,8 @@ services:
       DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
       DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
     volumes:
-      - ./packages/hocuspocus.server/src:/app/src
-      - ./packages/hocuspocus.server/package.json:/app/package.json
+      - ./packages/hocuspocus.server/src:/app/packages/hocuspocus.server/src
+      - ./packages/hocuspocus.server/package.json:/app/packages/hocuspocus.server/package.json
       - /app/node_modules
     depends_on:
       # Use started instead of healthy for faster dev startup
@@ -133,11 +133,11 @@ services:
   # ---------------------------------------------------------------------------
   hocuspocus-server:
     build:
-      context: ./packages/hocuspocus.server
-      dockerfile: docker/Dockerfile.bun
+      context: .
+      dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
       target: base
     restart: unless-stopped
-    entrypoint: ['/app/scripts/docker-entrypoint.sh']
+    entrypoint: ['/app/packages/hocuspocus.server/scripts/docker-entrypoint.sh']
     command: ['bun', '--watch', 'src/hocuspocus.server.ts']
     container_name: docsy-hocuspocus-server-dev
     # All environment variables loaded from .env.development file
@@ -160,8 +160,8 @@ services:
       HOCUSPOCUS_THROTTLE_ATTEMPTS: ${HOCUSPOCUS_THROTTLE_ATTEMPTS:-100}
       HOCUSPOCUS_THROTTLE_BANTIME: ${HOCUSPOCUS_THROTTLE_BANTIME:-60000}
     volumes:
-      - ./packages/hocuspocus.server/src:/app/src
-      - ./packages/hocuspocus.server/package.json:/app/package.json
+      - ./packages/hocuspocus.server/src:/app/packages/hocuspocus.server/src
+      - ./packages/hocuspocus.server/package.json:/app/packages/hocuspocus.server/package.json
       - /app/node_modules
     depends_on:
       # Use started instead of healthy for faster dev startup
@@ -190,11 +190,11 @@ services:
   # ---------------------------------------------------------------------------
   hocuspocus-worker:
     build:
-      context: ./packages/hocuspocus.server
-      dockerfile: docker/Dockerfile.bun
+      context: .
+      dockerfile: packages/hocuspocus.server/docker/Dockerfile.bun
       target: base
     restart: unless-stopped
-    entrypoint: ['/app/scripts/docker-entrypoint.sh']
+    entrypoint: ['/app/packages/hocuspocus.server/scripts/docker-entrypoint.sh']
     command: ['bun', '--watch', 'src/hocuspocus.worker.ts']
     container_name: docsy-hocuspocus-worker-dev
     # All environment variables loaded from .env.development file
@@ -222,8 +222,8 @@ services:
       DO_STORAGE_ACCESS_KEY_ID: ${DO_STORAGE_ACCESS_KEY_ID}
       DO_STORAGE_SECRET_ACCESS_KEY: ${DO_STORAGE_SECRET_ACCESS_KEY}
     volumes:
-      - ./packages/hocuspocus.server/src:/app/src
-      - ./packages/hocuspocus.server/package.json:/app/package.json
+      - ./packages/hocuspocus.server/src:/app/packages/hocuspocus.server/src
+      - ./packages/hocuspocus.server/package.json:/app/packages/hocuspocus.server/package.json
       - /app/node_modules
     depends_on:
       # Use started instead of healthy for faster dev startup

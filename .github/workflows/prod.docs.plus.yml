@@ -76,11 +76,8 @@ jobs:
       - name: 🥟 Setup Environment
         uses: ./.github/actions/setup-bun
 
-      - name: 🔍 ESLint
-        run: bun run lint
-
-      - name: 🎨 Prettier Check
-        run: bun run format:check
+      - name: 🔍 Lint, format & styles
+        run: bun run check:static
 
   typecheck:
     name: 📝 Type Check
