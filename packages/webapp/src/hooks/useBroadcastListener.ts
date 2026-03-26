@@ -18,7 +18,7 @@ type TTypeIndicator = {
 }
 
 export const useBroadcastListener = () => {
-  const { broadcaster } = useStore((state) => state.settings)
+  const broadcaster = useStore((state) => state.settings.broadcaster)
   const addChannelPinnedMessage = useChatStore((state) => state.addChannelPinnedMessage)
   const removeChannelPinnedMessage = useChatStore((state) => state.removeChannelPinnedMessage)
 

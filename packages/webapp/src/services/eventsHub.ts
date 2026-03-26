@@ -1,9 +1,14 @@
+import { HEADING_ACTIONS_CLASSES } from '@components/TipTap/extensions/HeadingActions/types'
+import { TOC_CLASSES } from '@components/toc/tocClasses'
 import { SheetType, useAuthStore, useChatStore, useSheetStore, useStore } from '@stores'
 import { scrollToHeading } from '@utils/index'
 import { NextRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 
 import { retryWithBackoff } from '../utils/retryWithBackoff'
+
+const headingChatBtnSelector = `.${HEADING_ACTIONS_CLASSES.chatBtn}`
+const tocChatTriggerSelector = `.${TOC_CLASSES.chatTrigger}`
 
 export const CHAT_COMMENT = Symbol('chat.comment')
 export const CHAT_OPEN = Symbol('chat.open')
@@ -272,14 +277,11 @@ export const eventsHub = (router: NextRouter) => {
    * - data-count-dir="down" → number slides from top (count decreased)
    *
    * Selectors updated (by data-heading-id):
-   * - .btnOpenChatBox[data-heading-id] (floating chat buttons via ProseMirror)
-   * - .btn_chat[data-heading-id] (TOC chat buttons)
-   * - .btn_openChatBox[data-heading-id] (mobile chat buttons)
+   * - .ha-chat-btn[data-heading-id] (editor heading chat, ProseMirror)
+   * - .toc__chat-trigger[data-heading-id] (TOC)
    *
-   * Fallback selectors (by parent wrapBlock):
-   * - .wrapBlock[data-id] > .title .btnOpenChatBox
-   * - .wrapBlock[data-id] > .title .ha-group
-   * - .wrapBlock[data-id] > .buttonWrapper .btn_openChatBox
+   * Fallback (inside [data-toc-id] heading):
+   * - .ha-chat-btn, .ha-group
    *
    * - [data-notification-badge] (notification bell)
    */
@@ -312,9 +314,8 @@ export const eventsHub = (router: NextRouter) => {
 
     // Strategy 1: Update elements with data-heading-id attribute
     const directSelectors = [
-      '.btnOpenChatBox[data-heading-id]',
-      '.btn_chat[data-heading-id]',
-      '.btn_openChatBox[data-heading-id]'
+      `${headingChatBtnSelector}[data-heading-id]`,
+      `${tocChatTriggerSelector}[data-heading-id]`
     ]
 
     document.querySelectorAll<HTMLElement>(directSelectors.join(',')).forEach((el) => {
@@ -325,19 +326,17 @@ export const eventsHub = (router: NextRouter) => {
       updateElement(el, channel?.unread_message_count ?? 0)
     })
 
-    // Strategy 2: Fallback - Update elements via parent wrapBlock[data-id]
-    // (for elements that don't have data-heading-id yet)
+    // Strategy 2: Fallback - Update elements near heading with data-toc-id
     channels.forEach((channel, channelId) => {
       if (!channel || channel.unread_message_count === undefined) return
 
-      const fallbackSelectors = [
-        `.wrapBlock[data-id="${channelId}"] > .title .btnOpenChatBox:not([data-heading-id])`,
-        `.wrapBlock[data-id="${channelId}"] > .title .ha-group`,
-        `.wrapBlock[data-id="${channelId}"] > .buttonWrapper .btn_openChatBox:not([data-heading-id])`
-      ]
+      const headingEl = document.querySelector<HTMLElement>(`[data-toc-id="${channelId}"]`)
+      if (!headingEl) return
+
+      const fallbackSelectors = [`${headingChatBtnSelector}:not([data-heading-id])`, '.ha-group']
 
       fallbackSelectors.forEach((selector) => {
-        const el = document.querySelector<HTMLElement>(selector)
+        const el = headingEl.querySelector<HTMLElement>(selector)
         if (el) {
           updateElement(el, channel.unread_message_count ?? 0)
         }

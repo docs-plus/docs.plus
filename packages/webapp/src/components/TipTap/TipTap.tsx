@@ -1,5 +1,5 @@
 import Config from '@config'
-import { createHyperlinkPopover, Hyperlink } from '@docs.plus/extension-hyperlink'
+import { createHyperlinkPopover } from '@docs.plus/extension-hyperlink'
 import {
   HyperMultimediaKit,
   imageModal as _imageModal,
@@ -10,42 +10,24 @@ import {
 } from '@docs.plus/extension-hypermultimedia'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
+import { Placeholder } from '@docs.plus/extension-placeholder'
 import type { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
 import { authStore } from '@stores'
-// Other Nodes and Extensions
-import { Blockquote } from '@tiptap/extension-blockquote'
-// Basic Formatting
-import { Bold } from '@tiptap/extension-bold'
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
-// Collaboration
 import { Collaboration, isChangeOrigin } from '@tiptap/extension-collaboration'
 import { CollaborationCaret } from '@tiptap/extension-collaboration-caret'
-import { HardBreak } from '@tiptap/extension-hard-break'
-// Code and Syntax Highlighting
-import { Highlight } from '@tiptap/extension-highlight'
-import { Italic } from '@tiptap/extension-italic'
-// Lists and Items
-import { BulletList, ListItem, OrderedList, TaskItem, TaskList } from '@tiptap/extension-list'
-import { Strike } from '@tiptap/extension-strike'
 import { Subscript } from '@tiptap/extension-subscript'
 import { Superscript } from '@tiptap/extension-superscript'
-// Table
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
 import { TextAlign } from '@tiptap/extension-text-align'
-// Typography
 import { Typography } from '@tiptap/extension-typography'
-import { Underline } from '@tiptap/extension-underline'
 import { UniqueID } from '@tiptap/extension-unique-id'
-import { Gapcursor, UndoRedo } from '@tiptap/extensions'
+import { UndoRedo } from '@tiptap/extensions'
+import { Markdown } from '@tiptap/markdown'
 import { UseEditorOptions } from '@tiptap/react'
-import {
-  type Editor as TipTapEditor,
-  type ProseMirrorNode,
-  type ResolvedPos,
-  TIPTAP_NODES,
-  type Transaction
-} from '@types'
+import StarterKit from '@tiptap/starter-kit'
+import { TIPTAP_NODES, type Transaction } from '@types'
 import bash from 'highlight.js/lib/languages/bash'
 import css from 'highlight.js/lib/languages/css'
 import js from 'highlight.js/lib/languages/javascript'
@@ -58,23 +40,26 @@ import yaml from 'highlight.js/lib/languages/yaml'
 import { createLowlight } from 'lowlight'
 import randomColor from 'randomcolor'
 import ShortUniqueId from 'short-unique-id'
+
+const headingTableUid = new ShortUniqueId()
 import { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
 
+import { HeadingDrag } from './extensions/heading-drag'
+import { HeadingFilter } from './extensions/heading-filter'
+import { HeadingFold, headingFoldPluginKey } from './extensions/heading-fold'
+import { HeadingScale } from './extensions/heading-scale'
 import { HeadingActionsExtension } from './extensions/HeadingActions'
+import {
+  HighlightWithMarkdown,
+  HyperlinkWithMarkdown,
+  ImageWithMarkdown
+} from './extensions/markdown-extensions'
+import { MarkdownPaste } from './extensions/markdown-paste'
+import { TitleDocument } from './extensions/title-document'
 import previewHyperlink from './hyperlinkPopovers/previewHyperlink'
-import ContentHeading from './nodes/ContentHeading'
-import ContentWrapper from './nodes/ContentWrapper'
-// CustomNodes
-import Document from './nodes/Document'
-import Heading from './nodes/Heading'
-// import Placeholders from './placeholders'
-// import { Placeholder } from './Placeholder'
 import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
-import Paragraph from './nodes/Paragraph'
-import Text from './nodes/Text'
 import { IOSCaretFix } from './plugins/iosCaretFixPlugin'
-import { OptimizedPlaceholder } from './plugins/optimizedPlaceholderPlugin'
 
 const lowlight = createLowlight()
 type LowlightLanguage = Parameters<typeof lowlight.register>[1]
@@ -94,81 +79,22 @@ const scrollDown = () => {
 
   if (!id) return
   setTimeout(() => {
-    document.querySelector(`[data-id="${url.searchParams.get('id')}"]`)?.scrollIntoView(true)
+    document.querySelector(`[data-toc-id="${id}"]`)?.scrollIntoView(true)
   }, 200)
 }
 
-interface PlaceholderData {
-  node: ProseMirrorNode
-  editor: TipTapEditor
-  pos?: number
-  $anchor?: ResolvedPos
+const PLACEHOLDER_TEXT: Record<string, string> = {
+  heading: 'Heading',
+  paragraph: 'Type something…',
+  codeBlock: 'Write code…'
 }
 
-const TASK_ITEM_NODE_TYPE = 'taskItem'
-const TASK_ITEM_PLACEHOLDER_TEXT = 'Task item'
-
-const getResolvedPosForPlaceholder = (editor: TipTapEditor, pos?: number): ResolvedPos => {
-  if (typeof pos === 'number') {
-    try {
-      return editor.state.doc.resolve(pos)
-    } catch {
-      // Fall back to current selection when decoration position can't be resolved.
-    }
-  }
-
-  return editor.view.state.selection.$head
+const PARENT_PLACEHOLDER: Record<string, string> = {
+  listItem: 'List',
+  taskItem: 'To-do',
+  blockquote: 'Quote'
 }
 
-const isInsideTaskItem = (resolvedPos: ResolvedPos): boolean => {
-  for (let depth = resolvedPos.depth; depth > 0; depth--) {
-    if (resolvedPos.node(depth).type.name === TASK_ITEM_NODE_TYPE) {
-      return true
-    }
-  }
-
-  return false
-}
-
-const getHeadingBreadcrumb = (resolvedPos: ResolvedPos): string => {
-  const breadcrumb: string[] = []
-
-  for (let depth = 0; depth <= resolvedPos.depth; depth++) {
-    const nodeAtDepth = resolvedPos.node(depth)
-    if (nodeAtDepth.type.name !== TIPTAP_NODES.HEADING_TYPE) continue
-
-    const headingTitle = nodeAtDepth.firstChild?.textContent?.trim()
-    if (headingTitle) breadcrumb.push(headingTitle)
-  }
-
-  return breadcrumb.join(' / ')
-}
-
-const generatePlaceholderText = ({
-  node,
-  editor,
-  pos,
-  $anchor
-}: PlaceholderData): string | null => {
-  if (!editor.isFocused) return null
-
-  const nodeType = node.type.name
-  if (nodeType === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
-    return `Heading ${node.attrs.level}`
-  }
-
-  if (nodeType !== TIPTAP_NODES.PARAGRAPH_TYPE) return null
-
-  const resolvedPos = $anchor || getResolvedPosForPlaceholder(editor, pos)
-  if (isInsideTaskItem(resolvedPos)) {
-    return TASK_ITEM_PLACEHOLDER_TEXT
-  }
-
-  const headingBreadcrumb = getHeadingBreadcrumb(resolvedPos)
-  return headingBreadcrumb || null
-}
-
-// TODO: editor extensions should be dynamic
 const Editor = ({
   provider,
   spellcheck = false,
@@ -188,49 +114,67 @@ const Editor = ({
     }
   } = useStore.getState()
 
-  // Base extensions that don't require provider
   const baseExtensions = [
+    StarterKit.configure({
+      document: false,
+      undoRedo: false,
+      heading: {
+        levels: [1, 2, 3, 4, 5, 6]
+      },
+      codeBlock: false
+    }),
+
+    Markdown.configure({
+      markedOptions: {
+        tokenizer: { html: () => undefined }
+      } as Record<string, unknown>
+    }),
+
+    TitleDocument,
+
     UniqueID.configure({
-      types: [TIPTAP_NODES.HEADING_TYPE, TIPTAP_NODES.HYPERLINK_TYPE],
+      attributeName: 'toc-id',
+      types: [TIPTAP_NODES.HEADING_TYPE, TIPTAP_NODES.HYPERLINK_TYPE, TIPTAP_NODES.TABLE_TYPE],
       filterTransaction: (transaction: Transaction) => !isChangeOrigin(transaction),
-      generateID: () => {
-        const uid = new ShortUniqueId()
-        return uid.stamp(16)
+      generateID: () => headingTableUid.stamp(16)
+    }),
+
+    HeadingScale,
+    HeadingFold.configure({
+      documentId: docName
+    }),
+    HeadingDrag,
+    HeadingFilter.configure({
+      foldAdapter: {
+        getFoldedIds: (state) => {
+          return headingFoldPluginKey.getState(state)?.foldedIds ?? new Set<string>()
+        },
+        setTemporaryFolds: (tr, ids) => {
+          tr.setMeta(headingFoldPluginKey, { type: 'set', ids, persist: false })
+          return tr
+        },
+        restoreFolds: (tr, savedIds) => {
+          tr.setMeta(headingFoldPluginKey, { type: 'set', ids: savedIds, persist: true })
+          return tr
+        }
       }
     }),
-    Document,
-    Bold,
-    Italic,
-    BulletList,
-    Strike,
-    HardBreak,
-    Gapcursor,
-    Paragraph,
-    Text,
+
     Indent.configure({
-      indentChars: '\t',
-      enabled: true
+      indentChars: '\t'
     }),
-    ListItem,
-    OrderedList,
-    Heading.configure(),
     CodeBlockLowlight.configure({
       lowlight
     }),
     InlineCode,
-    ContentHeading,
-    ContentWrapper,
     Superscript,
     Subscript,
-    Blockquote,
     TextAlign,
-    Underline,
     HeadingActionsExtension.configure({
       hoverChat: true,
-      selectionChat: !isMobile,
-      headingToggle: true
+      selectionChat: !isMobile
     }),
-    Hyperlink.configure({
+    HyperlinkWithMarkdown.configure({
       protocols: ['ftp', 'mailto'],
       hyperlinkOnPaste: false,
       autoHyperlink: true,
@@ -245,15 +189,15 @@ const Editor = ({
         allowBase64: true
       }
     }),
-    MediaUploadPlaceholder,
-    TaskList,
-    TaskItem.configure({
-      nested: true,
-      HTMLAttributes: {
-        class: 'tasks-class'
-      }
+    // Registers parseMarkdown/renderMarkdown hooks for Image nodes.
+    // Duplicates the kit's Image name (console warning) — MarkdownManager picks up hooks from this one.
+    ImageWithMarkdown.configure({
+      inline: true,
+      allowBase64: true
     }),
-    Highlight,
+    MediaUploadPlaceholder,
+    MarkdownPaste,
+    HighlightWithMarkdown,
     Typography,
     Table.configure({
       resizable: true
@@ -261,16 +205,24 @@ const Editor = ({
     TableRow,
     TableHeader,
     TableCell,
-    OptimizedPlaceholder.configure({
-      showOnlyWhenEditable: false,
-      placeholder: (data: PlaceholderData) => generatePlaceholderText(data) || ''
+    // Why not @tiptap/extensions Placeholder?
+    // The built-in uses doc.descendants() — O(N) on every transaction.
+    // @docs.plus/extension-placeholder uses state.init/apply with cursor-only
+    // checks — O(1) for the common typing case. Critical for large collab docs.
+    Placeholder.configure({
+      placeholder: ({ editor, node, pos }) => {
+        if (node.type.name === 'heading' && pos === 0) return 'Enter document name'
+        if (node.type.name === 'paragraph') {
+          const parent = editor.state.doc.resolve(pos).parent.type.name
+          if (parent in PARENT_PLACEHOLDER) return PARENT_PLACEHOLDER[parent]
+        }
+        return PLACEHOLDER_TEXT[node.type.name] ?? ''
+      }
     }),
-    // iOS Safari: Fix caret positioning when tapping in middle of words
     IOSCaretFix
   ]
 
   if (!provider) {
-    // Create local persistence if enabled
     const extensions = [
       ...baseExtensions,
       UndoRedo.configure({
@@ -303,7 +255,6 @@ const Editor = ({
     }
   }
 
-  // Configure collaboration caret when provider exists
   const CollaborationCaretConfig = getCollaborationCaretConfig(provider)
 
   return {
@@ -318,7 +269,9 @@ const Editor = ({
       }
     },
     immediatelyRender: false,
-    shouldRerenderOnTransaction: true,
+    // Keep false: true re-renders the whole `useEditor` host (e.g. document layout) every keystroke.
+    // Toolbars use `useReRenderOnEditorTransaction` for `isActive` / marks.
+    shouldRerenderOnTransaction: false,
     editable,
     extensions: [
       ...baseExtensions,
@@ -331,7 +284,6 @@ const Editor = ({
   }
 }
 
-// Helper function to get collaboration caret config
 const getCollaborationCaretConfig = (provider: HocuspocusProvider) => {
   const profile = authStore.getState().profile
   const user = {

@@ -2,11 +2,6 @@ import { ReplaceAroundStep, ReplaceStep } from '@tiptap/pm/transform'
 import { DecorationSet } from '@tiptap/pm/view'
 import { type EditorState, type ProseMirrorNode, type Transaction } from '@types'
 
-/**
- * Helper functions for optimizing ProseMirror decorations performance
- */
-
-// Local type definitions using ProseMirror types
 type BuildDecorationsFunction = (doc: ProseMirrorNode) => DecorationSet
 type PluginStateApplyFunction = (tr: Transaction, old: DecorationSet) => DecorationSet
 
@@ -20,11 +15,46 @@ interface DecorationPluginProps {
 }
 
 /**
- * Creates an optimized apply function for decoration plugins
- * @param buildDecorationsFunc - Function that builds decorations from document
- * @param targetNodeTypes - Array of node type names to watch for changes
- * @returns Optimized apply function
+ * O(k) check on the changed range — did the transaction insert or delete
+ * any nodes of the target types?  Replaces the previous O(N) approach that
+ * called `DecorationSet.find().length` (which allocates the full decoration
+ * array just to count it).
  */
+function transactionAffectsTargetNodes(tr: Transaction, targetNodeTypes: string[]): boolean {
+  for (const step of tr.steps) {
+    if (!(step instanceof ReplaceStep) && !(step instanceof ReplaceAroundStep)) return true
+
+    const { slice } = step
+    let found = false
+
+    if (slice?.content.childCount) {
+      slice.content.descendants((node: ProseMirrorNode) => {
+        if (targetNodeTypes.includes(node.type.name)) {
+          found = true
+          return false
+        }
+        return !found
+      })
+    }
+    if (found) return true
+
+    if (step.from < step.to) {
+      const clampedTo = Math.min(step.to, tr.before.content.size)
+      if (step.from < clampedTo) {
+        tr.before.nodesBetween(step.from, clampedTo, (node: ProseMirrorNode) => {
+          if (targetNodeTypes.includes(node.type.name)) {
+            found = true
+            return false
+          }
+        })
+      }
+    }
+    if (found) return true
+  }
+
+  return false
+}
+
 export function createOptimizedDecorationApply(
   buildDecorationsFunc: BuildDecorationsFunction,
   targetNodeTypes: string[]
@@ -36,14 +66,10 @@ export function createOptimizedDecorationApply(
 
     // Fast path: text-only changes (typing, backspace within text) cannot
     // add or remove structural nodes, so mapped decorations are always correct.
-    // This avoids the expensive find() array comparison on every keystroke.
     const isTextOnly = tr.steps.every((step) => {
       if (step instanceof ReplaceAroundStep) return false
       if (!(step instanceof ReplaceStep)) return false
       const { slice } = step
-      // Empty slice = deletion. Small range (< 8) means it's within inline
-      // content (heading minimum nodeSize is ~8). Large range could span
-      // structural boundaries and delete heading/contentWrapper nodes.
       if (slice.content.childCount === 0) return step.to - step.from < 8
       let textOnly = true
       slice.content.descendants((node: ProseMirrorNode) => {
@@ -57,31 +83,10 @@ export function createOptimizedDecorationApply(
     })
     if (isTextOnly) return mapped
 
-    // Structural change path: check if inserted content contains target nodes
-    let needsRebuild = false
-    tr.steps.forEach((step) => {
-      if (needsRebuild) return
-      if (!(step instanceof ReplaceStep || step instanceof ReplaceAroundStep)) return
-      const { slice } = step
-      if (slice && slice.content) {
-        slice.content.descendants((node: ProseMirrorNode) => {
-          if (targetNodeTypes.includes(node.type.name)) {
-            needsRebuild = true
-            return false
-          }
-        })
-      }
-    })
-
-    // Detect deleted target nodes: when a heading is removed, its decoration
-    // is unmapped, reducing the count. Only runs for structural changes (rare).
-    if (!needsRebuild) {
-      const currentCount = mapped.find().length
-      const originalCount = old.find().length
-      needsRebuild = currentCount !== originalCount
-    }
-
-    return needsRebuild ? buildDecorationsFunc(tr.doc) : mapped
+    // Structural change: O(k) check on changed ranges only — no full doc traversal.
+    return transactionAffectsTargetNodes(tr, targetNodeTypes)
+      ? buildDecorationsFunc(tr.doc)
+      : mapped
   }
 }
 

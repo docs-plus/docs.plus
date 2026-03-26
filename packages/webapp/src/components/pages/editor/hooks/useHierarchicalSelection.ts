@@ -53,15 +53,11 @@ export const useHierarchicalSelection = (editor: Editor | null) => {
         }
 
         case 'section':
-          // Find the section container
-          targetElement = element.closest('.heading[level="1"]') as HTMLElement
+          targetElement = element.closest('h1[data-toc-id]') as HTMLElement
           break
 
         case 'heading':
-          // Find the nearest heading
-          console.log('heading', { element })
-          targetElement = element.closest('.heading') as HTMLElement
-          console.log('targetElement', { targetElement })
+          targetElement = element.closest('h1, h2, h3, h4, h5, h6') as HTMLElement
           break
 
         case 'list':

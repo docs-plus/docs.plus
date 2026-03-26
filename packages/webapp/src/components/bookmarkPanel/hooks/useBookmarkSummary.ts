@@ -5,7 +5,7 @@ import { useAuthStore, useChatStore, useStore } from '@stores'
 import { useEffect } from 'react'
 
 export const useBookmarkSummary = () => {
-  const { workspaceId } = useStore((state) => state.settings)
+  const workspaceId = useStore((state) => state.settings.workspaceId)
   const { isOpen } = usePopoverState()
   const user = useAuthStore((state) => state.profile)
   const {

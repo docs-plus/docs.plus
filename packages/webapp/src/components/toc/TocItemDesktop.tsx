@@ -10,6 +10,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useActiveHeading, usePresentUsers, useTocActions, useUnreadCount } from './hooks'
+import { TOC_CLASSES } from './tocClasses'
 import { buildNestedToc, scrollToHeading } from './utils'
 
 interface TocItemDesktopProps {
@@ -33,9 +34,7 @@ export function TocItemDesktop({
   })
 
   const { headingId } = useChatStore((state) => state.chatRoom)
-  const {
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   const focusedHeadingId = useFocusedHeadingStore((s) => s.focusedHeadingId)
   const isFocused = focusedHeadingId === item.id
@@ -97,7 +96,7 @@ export function TocItemDesktop({
   const liClassName = twMerge(
     'toc__item relative w-full',
     !item.open && 'closed',
-    isFocused && 'focusSight',
+    isFocused && TOC_CLASSES.itemFocused,
     isGhosted && 'is-ghosted',
     isDragging && 'is-dragging',
     hasChildren && 'has-children',
@@ -106,7 +105,7 @@ export function TocItemDesktop({
 
   const aClassName = twMerge(
     'group relative rounded has-drag-handle whitespace-pre-line hyphens-auto',
-    isActive && 'active activeTocBorder bg-base-300'
+    isActive && `active ${TOC_CLASSES.activeBorder} bg-base-300`
   )
 
   return (
@@ -117,7 +116,7 @@ export function TocItemDesktop({
       {...(presentUsersCount > 0 && { 'data-present-users-count': presentUsersCount })}>
       <a className={aClassName} onClick={handleClick} href={`?${item.id}`} data-id={item.id}>
         {/* Level badge - visible during drag */}
-        <span className="toc-item-level">H{item.level}</span>
+        <span className={TOC_CLASSES.levelBadge}>H{item.level}</span>
 
         {/* Drag handle */}
         <Button
@@ -134,7 +133,7 @@ export function TocItemDesktop({
 
         {/* Level picker on hover */}
         {isHoveringHandle && !isDragging && (
-          <div className="toc-drag-levels toc-hover-levels">
+          <div className={`toc-drag-levels ${TOC_CLASSES.levelPicker}`}>
             {Array.from({ length: 6 }, (_, i) => i + 1)
               .filter(
                 (level) =>
@@ -156,7 +155,10 @@ export function TocItemDesktop({
             variant="ghost"
             size="xs"
             shape="square"
-            className={twMerge('btnFold size-5 min-w-5 !p-0', item.open ? 'opened' : 'closed')}
+            className={twMerge(
+              `${TOC_CLASSES.foldBtn} size-5 min-w-5 !p-0`,
+              item.open ? 'opened' : 'closed'
+            )}
             onClick={handleToggle}
             startIcon={<Icons.chevronRight size={18} className="text-base-content/80" />}
             tooltip="Toggle"
@@ -169,12 +171,15 @@ export function TocItemDesktop({
 
         {/* Chat button */}
         <Tooltip title="Chat Room" placement="left">
-          <span className="btn_chat relative ml-auto size-5 min-w-5" onClick={handleChatClick}>
+          <span
+            className={`${TOC_CLASSES.chatTrigger} relative ml-auto size-5 min-w-5`}
+            data-heading-id={item.id}
+            onClick={handleChatClick}>
             {unreadCount > 0 ? (
               <UnreadBadge count={unreadCount} size="sm" />
             ) : (
               <Icons.chatroom
-                className="btnChat text-base-content/40 group-hover:text-primary hover:text-primary cursor-pointer transition-colors"
+                className={`${TOC_CLASSES.chatIcon} text-base-content/40 group-hover:text-primary hover:text-primary cursor-pointer transition-colors`}
                 size={20}
               />
             )}
@@ -197,7 +202,7 @@ export function TocItemDesktop({
 
       {/* Nested children */}
       {hasChildren && (
-        <ul className={twMerge('childrenWrapper', !item.open && 'hidden')}>
+        <ul className={twMerge(TOC_CLASSES.children, !item.open && 'hidden')}>
           {nestedChildren.map(({ item: childItem, children: grandChildren }) => (
             <TocItemDesktop
               key={childItem.id}

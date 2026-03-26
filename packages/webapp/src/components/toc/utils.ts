@@ -5,7 +5,8 @@ import PubSub from 'pubsub-js'
 import slugify from 'slugify'
 
 /**
- * Scrolls the editor to a specific heading and updates the URL
+ * Scrolls the editor to a specific heading and updates the URL.
+ * Builds a breadcrumb path by walking preceding headings (flat schema).
  */
 export function scrollToHeading(
   editor: Editor,
@@ -14,38 +15,36 @@ export function scrollToHeading(
 ) {
   const { openChatRoom = false, updateUrl = true } = options
 
-  const targetHeading = document.querySelector(`.heading[data-id="${headingId}"]`)
+  const targetHeading = document.querySelector(`[data-toc-id="${headingId}"]`)
   if (!targetHeading) return
 
-  const posAt = editor.view.posAtDOM(targetHeading, 0)
-  if (posAt === -1) return
-
-  // Build heading path for URL
   if (updateUrl) {
-    const nodePos = editor.view.state.doc.resolve(posAt)
-    // @ts-ignore - path exists on ResolvedPos
-    const headingPath = nodePos.path
-      .filter((x: any) => x?.type?.name === TIPTAP_NODES.HEADING_TYPE)
-      .map((x: any) => slugify(x.firstChild?.textContent?.toLowerCase()?.trim() || ''))
+    const doc = editor.state.doc
+    const breadcrumb: string[] = []
+
+    for (let i = 0; i < doc.content.childCount; i++) {
+      const child = doc.content.child(i)
+
+      if (child.type.name !== TIPTAP_NODES.HEADING_TYPE) continue
+
+      breadcrumb.push(slugify(child.textContent?.toLowerCase()?.trim() || ''))
+
+      if ((child.attrs['toc-id'] as string) === headingId) break
+    }
 
     const url = new URL(window.location.href)
-    url.searchParams.set('h', headingPath.join('>'))
+    url.searchParams.set('h', breadcrumb.join('>'))
     url.searchParams.set('id', headingId)
     window.history.replaceState({}, '', url)
   }
 
-  // Scroll to heading
   targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' })
 
-  // Open chat room if requested
   if (openChatRoom) {
     PubSub.publish(CHAT_OPEN, { headingId })
   }
 }
 
-/**
- * Scrolls to the document title (first heading)
- */
 export function scrollToDocTitle(options: {
   workspaceId?: string
   title: string
@@ -53,9 +52,7 @@ export function scrollToDocTitle(options: {
 }) {
   const { workspaceId, title, openChatRoom = false } = options
 
-  document
-    .querySelector('.tiptap__editor.docy_editor .heading')
-    ?.scrollIntoView({ behavior: 'smooth' })
+  document.querySelector('.tiptap__editor.docy_editor h1')?.scrollIntoView({ behavior: 'smooth' })
 
   if (!workspaceId) return
 
@@ -69,9 +66,6 @@ export function scrollToDocTitle(options: {
   }
 }
 
-/**
- * Builds nested structure from flat TOC items based on level
- */
 export function buildNestedToc<T extends { level: number }>(
   items: T[]
 ): Array<{ item: T; children: T[] }> {
@@ -82,7 +76,6 @@ export function buildNestedToc<T extends { level: number }>(
     const children: T[] = []
     let j = i + 1
 
-    // Collect all items with higher level (deeper nesting) as children
     while (j < items.length && items[j].level > item.level) {
       children.push(items[j])
       j++

@@ -19,9 +19,7 @@ export const useChannelInitialData = (
 ): UseChannelInitialData => {
   const [isChannelDataLoaded, setIsChannelDataLoaded] = useState<boolean>(false)
   const [msgLength, setMsgLength] = useState<number>(0)
-  const {
-    metadata: { documentId: workspaceId }
-  } = useStore((state) => state.settings)
+  const workspaceId = useStore((state) => state.settings.metadata?.documentId)
 
   const bulkSetChannelPinnedMessages = useChatStore(
     (state: any) => state.bulkSetChannelPinnedMessages

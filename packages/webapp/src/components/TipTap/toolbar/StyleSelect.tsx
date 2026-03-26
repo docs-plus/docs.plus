@@ -10,11 +10,7 @@ const BLOCK_STYLES = [
   { value: '3', label: 'Heading 3' },
   { value: '4', label: 'Heading 4' },
   { value: '5', label: 'Heading 5' },
-  { value: '6', label: 'Heading 6' },
-  { value: '7', label: 'Heading 7' },
-  { value: '8', label: 'Heading 8' },
-  { value: '9', label: 'Heading 9' },
-  { value: '10', label: 'Heading 10' }
+  { value: '6', label: 'Heading 6' }
 ]
 
 interface StyleSelectProps {
@@ -23,8 +19,8 @@ interface StyleSelectProps {
 
 const StyleSelect = ({ editor }: StyleSelectProps) => {
   const currentValue = useMemo(() => {
-    for (let i = 1; i <= 10; i++) {
-      if (editor.isActive('contentHeading', { level: i })) return String(i)
+    for (let i = 1; i <= 6; i++) {
+      if (editor.isActive('heading', { level: i })) return String(i)
     }
     return 'p'
   }, [editor.state.selection])
@@ -32,16 +28,20 @@ const StyleSelect = ({ editor }: StyleSelectProps) => {
   const handleChange = useCallback(
     (value: string) => {
       if (value === 'p') {
-        editor.chain().focus().normalText().run()
+        editor.chain().focus().setParagraph().run()
       } else {
-        editor.chain().focus().wrapBlock({ level: +value }).run()
+        editor
+          .chain()
+          .focus()
+          .toggleHeading({ level: +value as 1 | 2 | 3 | 4 | 5 | 6 })
+          .run()
       }
     },
     [editor]
   )
 
   return (
-    <Tooltip title="Styles (⌘+⌥+[0-9])" placement="bottom">
+    <Tooltip title="Styles (⌘+⌥+[1-6])" placement="bottom">
       <div>
         <Select
           value={currentValue}

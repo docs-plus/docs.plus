@@ -117,7 +117,7 @@ const UserProfileButton = ({ user, onProfileClick }: UserProfileButtonProps) => 
 
 const NotificationButton = () => {
   const { openNotifications } = useBottomSheet()
-  const { workspaceId } = useStore((state) => state.settings)
+  const workspaceId = useStore((state) => state.settings.workspaceId)
   const unreadCount = useNotificationCount({ workspaceId })
 
   return (
@@ -170,7 +170,8 @@ const UndoRedoButtons = ({ editor, className }: UndoRedoButtonsProps) => {
 // ---------------------------------------------------------------------------
 
 const TitleEditContent = () => {
-  const { metadata, hocuspocusProvider } = useStore((state) => state.settings)
+  const metadata = useStore((state) => state.settings.metadata)
+  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const closeDialog = useStore((state) => state.closeDialog)
   const { isLoading, mutate } = useUpdateDocMetadata()
@@ -250,11 +251,10 @@ const TitleEditContent = () => {
 
 const MobilePadTitle = () => {
   const user = useAuthStore((state) => state.profile)
-  const {
-    editor: { isEditable, instance: editor },
-    metadata,
-    hocuspocusProvider
-  } = useStore((state) => state.settings)
+  const isEditable = useStore((state) => state.settings.editor.isEditable)
+  const editor = useStore((state) => state.settings.editor.instance)
+  const metadata = useStore((state) => state.settings.metadata)
+  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
   const openDialog = useStore((state) => state.openDialog)
   const [isProfileModalOpen, setProfileModalOpen] = useState(false)

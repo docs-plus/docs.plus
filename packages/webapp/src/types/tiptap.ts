@@ -18,8 +18,6 @@ import type { Node as ProseMirrorNode } from '@tiptap/pm/model'
  * Used for PubSub communication between components
  */
 export const TIPTAP_EVENTS = {
-  /** Fold/unfold heading section (crinkle) */
-  FOLD_AND_UNFOLD: 'foldAndUnfold',
   /** New heading was created */
   NEW_HEADING_CREATED: 'newHeadingCreated'
 } as const
@@ -29,24 +27,13 @@ export const TIPTAP_EVENTS = {
  * Used to mark transactions for specific handling (e.g., TOC updates)
  */
 export const TRANSACTION_META = {
-  /** Fold/unfold event occurred - triggers TOC update */
-  FOLD_AND_UNFOLD: 'foldAndUnfold',
-  /** Request to render/rebuild TOC */
   RENDER_TOC: 'renderTOC',
-  /** Content was pasted */
   PASTE: 'paste',
-  /** New heading was created */
-  NEW_HEADING_CREATED: 'newHeadingCreated',
-  /** Heading level changed */
-  HEADING_LEVEL_CHANGED: 'headingLevelChanged',
-  /** Heading was deleted */
-  HEADING_DELETED: 'headingDeleted',
-  /** Heading text changed */
-  HEADING_TEXT_CHANGED: 'headingTextChanged',
-  /** Skip history for this transaction */
   ADD_TO_HISTORY: 'addToHistory',
-  /** Content copied to document from chat */
-  COPY_TO_DOC: 'copyToDoc'
+  COPY_TO_DOC: 'copyToDoc',
+  NEW_HEADING_CREATED: 'newHeadingCreated',
+  HEADING_DELETED: 'headingDeleted',
+  HEADING_TEXT_CHANGED: 'headingTextChanged'
 } as const
 
 /**
@@ -55,8 +42,6 @@ export const TRANSACTION_META = {
 export const TIPTAP_NODES = {
   DOC_TYPE: 'doc',
   HEADING_TYPE: 'heading',
-  CONTENT_HEADING_TYPE: 'contentHeading',
-  CONTENT_WRAPPER_TYPE: 'contentWrapper',
   PARAGRAPH_TYPE: 'paragraph',
   HYPERLINK_TYPE: 'hyperlink',
   TEXT_TYPE: 'text',
@@ -114,14 +99,7 @@ export type TransactionMetaKey = (typeof TRANSACTION_META)[keyof typeof TRANSACT
 // Core Editor Types (Re-exports from TipTap/ProseMirror)
 // ============================================================================
 
-declare module '@tiptap/core' {
-  interface Commands<ReturnType> {
-    heading: {
-      normalText: () => ReturnType
-      wrapBlock: (attributes: { level: number }) => ReturnType
-    }
-  }
-}
+// Command augmentations removed — flat schema uses standard toggleHeading/setParagraph from StarterKit
 
 /**
  * TipTap editor instance type
@@ -180,13 +158,6 @@ export interface EditorEventData {
 // ============================================================================
 
 /**
- * Content wrapper block data structure
- */
-export interface ContentWrapperBlock extends NodePosition {
-  headingId: string | null
-}
-
-/**
  * Heading node data structure
  */
 export interface HeadingNodeData extends NodePosition {
@@ -207,20 +178,4 @@ export interface HeadingNodeData extends NodePosition {
 // DOM Event Types
 // ============================================================================
 
-/**
- * Custom DOM event for heading section toggle
- */
-export interface HeadingToggleEvent extends CustomEvent {
-  detail: {
-    headingId: string
-    el: HTMLElement
-  }
-}
-
-/**
- * Fold wrapper click event data
- */
-export interface FoldClickEventData {
-  headingId: string | null
-  open: boolean
-}
+// HeadingToggleEvent and FoldClickEventData removed — fold is now plugin-driven via HeadingFold

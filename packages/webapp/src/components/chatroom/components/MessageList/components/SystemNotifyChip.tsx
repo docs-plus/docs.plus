@@ -19,9 +19,7 @@ type Props = {
 }
 
 export const SystemNotifyChip = ({ message }: Props) => {
-  const {
-    settings: { metadata: docMetadata }
-  } = useStore((state) => state)
+  const docMetadata = useStore((state) => state.settings.metadata)
   const cardRef = useRef<MessageCardDesktopElement>(null)
 
   const { handleMentionClick } = useMessageListContext()

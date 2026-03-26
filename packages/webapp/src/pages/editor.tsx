@@ -4,7 +4,7 @@ import editorConfig from '@components/TipTap/TipTap'
 import EditorToolbar from '@components/TipTap/toolbar/EditorToolbar'
 import { TocDesktop } from '@components/toc/TocDesktop'
 import { moveHeadingById } from '@components/toc/utils/moveHeading'
-import { applyEditorPreferences, useEditorPreferences, useStore } from '@stores'
+import { useStore } from '@stores'
 import { Editor, EditorContent as TiptapEditor, useEditor } from '@tiptap/react'
 import { GetServerSideProps } from 'next'
 import { useEffect } from 'react'
@@ -25,6 +25,8 @@ declare global {
       position: 'before' | 'after',
       newLevel?: number
     ) => boolean
+    _getMarkdown?: () => string
+    _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
   }
 }
 
@@ -39,14 +41,6 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
     []
   )
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
-  const setPreference = useEditorPreferences((state) => state.setPreference)
-
-  // Always enable indent heading and h1 section break on this page
-  useEffect(() => {
-    setPreference('indentHeading', true)
-    setPreference('h1SectionBreak', true)
-    applyEditorPreferences({ indentHeading: true, h1SectionBreak: true })
-  }, [setPreference])
 
   useEffect(() => {
     if (!editor) return
@@ -61,12 +55,18 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
       return moveHeadingById(editor, sourceId, targetId, position, newLevel)
     }
 
+    // Expose Markdown helpers for Cypress tests
+    window._getMarkdown = () => editor.getMarkdown()
+    window._parseMarkdown = (md: string) => editor.markdown?.parse(md)
+
     setWorkspaceEditorSetting('instance', editor)
     setWorkspaceEditorSetting('loading', false)
     setWorkspaceEditorSetting('providerSyncing', false)
 
     return () => {
       delete window._moveHeading
+      delete window._getMarkdown
+      delete window._parseMarkdown
     }
   }, [editor])
 

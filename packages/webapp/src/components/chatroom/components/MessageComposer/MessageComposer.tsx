@@ -64,10 +64,8 @@ const MessageComposer = ({
   // const usersPresence = useStore((state: any) => state.usersPresence)
   const startThreadMessage = useChatStore((state) => state.startThreadMessage)
   const channels = useChatStore((state) => state.channels)
-  const {
-    workspaceId,
-    editor: { isMobile }
-  } = useStore((state) => state.settings)
+  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const isMobile = useStore((state) => state.settings.editor.isMobile)
   const editorRef = useRef<HTMLDivElement | null>(null)
   const [isToolbarOpen, setIsToolbarOpen] = useState(false)
   const setOrUpdateChatRoom = useChatStore((state) => state.setOrUpdateChatRoom)

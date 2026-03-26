@@ -36,10 +36,10 @@ const NotificationPanel = dynamic(
 
 const PadTitle = () => {
   const user = useAuthStore((state) => state.profile)
-  const { isAuthServiceAvailable } = useStore((state) => state.settings)
+  const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
   const [isProfileModalOpen, setProfileModalOpen] = useState(false)
   const [isShareModalOpen, setShareModalOpen] = useState(false)
-  const { workspaceId } = useStore((state) => state.settings)
+  const workspaceId = useStore((state) => state.settings.workspaceId)
 
   const unreadCount = useNotificationCount({ workspaceId })
 

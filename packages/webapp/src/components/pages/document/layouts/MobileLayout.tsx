@@ -20,11 +20,7 @@ const MobileLeftSidePanel = () => {
 }
 
 const MobileLayout = () => {
-  const {
-    settings: {
-      editor: { isMobile }
-    }
-  } = useStore((state) => state)
+  const isMobile = useStore((state) => state.settings.editor.isMobile)
 
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
 

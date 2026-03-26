@@ -15,9 +15,10 @@ interface TocModalProps {
 const TocModal = ({ filterModalRef: _filterModalRef }: TocModalProps) => {
   const { close: closeModal } = useModal() || {}
   const { openSheet } = useSheetStore()
-  const {
-    editor: { loading, applyingFilters, providerSyncing, instance: editor }
-  } = useStore((state) => state.settings)
+  const loading = useStore((state) => state.settings.editor.loading)
+  const applyingFilters = useStore((state) => state.settings.editor.applyingFilters)
+  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   if (loading || !editor || applyingFilters || providerSyncing) {
     return null

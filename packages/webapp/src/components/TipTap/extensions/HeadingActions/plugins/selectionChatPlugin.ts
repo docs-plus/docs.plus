@@ -1,38 +1,27 @@
 import { AddCommentSVG } from '@icons'
 import { CHAT_COMMENT } from '@services/eventsHub'
-import type { ResolvedPos } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { type Editor, type EditorView, type Selection, TIPTAP_NODES } from '@types'
 import { logger } from '@utils/logger'
 import PubSub from 'pubsub-js'
 
+import { getTocId } from '../../shared/get-toc-id'
 import { HEADING_ACTIONS_CLASSES } from '../types'
 
-// Layout constants
 const BUTTON_HALF_SIZE = 16
 const DEFAULT_RIGHT_POSITION = '9px'
-
-const findAncestorOfType = ($pos: ResolvedPos, typeName: string) => {
-  for (let d = $pos.depth; d > 0; d--) {
-    const node = $pos.node(d)
-    if (node.type.name === typeName) return node
-  }
-  return null
-}
 
 const shouldShow = (editor: Editor): boolean => {
   const { state, view } = editor
   const { from, to, empty } = state.selection
   const hasText = state.doc.textBetween(from, to).length > 0
 
-  // Don't show if selection is in contentHeading (hoverChatPlugin handles that)
-  const isInContentHeading =
-    state.selection.$anchor.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
+  // Don't show if selection is in a heading (hoverChatPlugin handles that)
+  const isInHeading = state.selection.$anchor.parent.type.name === TIPTAP_NODES.HEADING_TYPE
 
-  return view.hasFocus() && editor.isEditable && !empty && hasText && !isInContentHeading
+  return view.hasFocus() && editor.isEditable && !empty && hasText && !isInHeading
 }
 
-// Cached button element for performance - reuse instead of recreate
 let cachedButton: HTMLButtonElement | null = null
 let cachedClickHandler: (() => void) | null = null
 
@@ -42,7 +31,7 @@ const getOrCreateButton = (): HTMLButtonElement => {
   cachedButton = document.createElement('button')
   cachedButton.innerHTML = AddCommentSVG({ size: 22, fill: 'currentColor' })
   cachedButton.classList.add(
-    HEADING_ACTIONS_CLASSES.selectionChatBtn,
+    HEADING_ACTIONS_CLASSES.commentBtn,
     'btn',
     'btn-circle',
     'btn-primary',
@@ -88,17 +77,14 @@ const showSelectionChatButton = (editor: Editor, view: EditorView, selection: Se
 
   const button = getOrCreateButton()
 
-  // Update click handler with current editor
   if (cachedClickHandler) {
     button.removeEventListener('click', cachedClickHandler)
   }
   cachedClickHandler = () => openChatComment(editor)
   button.addEventListener('click', cachedClickHandler)
 
-  // Update position
   updateButtonPosition(button, view, selection)
 
-  // Append if not already in DOM
   if (!button.parentNode) {
     parentNode.appendChild(button)
   }
@@ -108,8 +94,20 @@ const openChatComment = (editor: Editor): void => {
   const { selection } = editor.state
   if (selection.empty) return
 
-  const headingNode = findAncestorOfType(selection.$from, TIPTAP_NODES.HEADING_TYPE)
-  const headingId = headingNode?.attrs.id
+  // In flat doc, walk up top-level children to find the nearest heading before selection
+  const { doc } = editor.state
+  const selPos = selection.from
+  let headingId: string | null = null
+  let offset = 0
+
+  for (let i = 0; i < doc.content.childCount; i++) {
+    const child = doc.content.child(i)
+    if (child.type.name === TIPTAP_NODES.HEADING_TYPE) {
+      headingId = getTocId(child.attrs) ?? null
+    }
+    offset += child.nodeSize
+    if (offset > selPos) break
+  }
 
   if (!headingId) {
     logger.error('[selectionChat]: No headingId found')
@@ -122,7 +120,6 @@ const openChatComment = (editor: Editor): void => {
     headingId
   })
 
-  // Clear selection after opening comment
   editor.commands.setTextSelection(selection.to)
 }
 
@@ -143,10 +140,6 @@ const cleanup = (): void => {
   }
 }
 
-/**
- * Creates the selection chat plugin
- * Shows a floating comment button when text is selected
- */
 export function createSelectionChatPlugin(editor: Editor): Plugin {
   return new Plugin({
     key: new PluginKey('selectionChat'),
@@ -158,11 +151,11 @@ export function createSelectionChatPlugin(editor: Editor): Plugin {
           } else {
             hideSelectionChatButton()
           }
-          return false // Allow event to propagate to other handlers
+          return false
         },
         mousedown: () => {
           hideSelectionChatButton()
-          return false // Allow event to propagate
+          return false
         }
       }
     },

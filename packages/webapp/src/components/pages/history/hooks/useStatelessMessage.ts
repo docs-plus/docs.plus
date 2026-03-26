@@ -5,7 +5,10 @@ import { getContentFromYdocObject } from '../helpers'
 import { useVersionContent } from './useVersionContent'
 
 export const useStatelessMessage = () => {
-  const { setHistoryList, setActiveHistory, setLoadingHistory, editor } = useStore((state) => state)
+  const setHistoryList = useStore((state) => state.setHistoryList)
+  const setActiveHistory = useStore((state) => state.setActiveHistory)
+  const setLoadingHistory = useStore((state) => state.setLoadingHistory)
+  const editor = useStore((state) => state.editor)
   const { watchVersionContent } = useVersionContent()
 
   const handleStatelessMessage = useCallback(

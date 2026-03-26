@@ -1,0 +1,150 @@
+$crinkle-height: 45px;
+$crinkle-height-peek: 62px;
+
+.heading-fold-hidden {
+  display: none !important;
+}
+
+// --- Fold widget (3D accordion) ---
+
+.heading-fold-crinkle {
+  perspective: 180px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  height: $crinkle-height;
+  user-select: none;
+  margin-left: -3rem;
+  margin-right: -3rem;
+  box-shadow:
+    inset 0 0.5px 0 rgba(0, 0, 0, 0.06),
+    inset 0 -0.5px 0 rgba(0, 0, 0, 0.06);
+
+  > div {
+    flex: 1;
+    transition: transform 200ms ease;
+
+    &:not(:first-child) {
+      border-top: 0.5px solid rgba(0, 0, 0, 0.08);
+    }
+
+    &:nth-child(odd) {
+      transform: rotateX(-4deg);
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.015) 0%, rgba(0, 0, 0, 0.06) 100%);
+    }
+
+    &:nth-child(even) {
+      transform: rotateX(4deg);
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0.015) 100%);
+    }
+  }
+}
+
+// --- Animation states (driven by adjacent heading class) ---
+
+.heading-section-folding + .heading-fold-crinkle {
+  animation: fold-crinkle var(--editor-fold-duration, 350ms) var(--editor-easing-cubic) forwards;
+}
+
+.heading-section-folded + .heading-fold-crinkle {
+  cursor: pointer;
+  transition:
+    height 250ms ease,
+    box-shadow 200ms ease;
+
+  &:hover {
+    height: $crinkle-height-peek;
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.08),
+      inset 0 -1px 2px rgba(0, 0, 0, 0.08),
+      0 0 0 1px var(--border-color-tint);
+
+    > div:nth-child(odd) {
+      transform: rotateX(-6deg);
+    }
+
+    > div:nth-child(even) {
+      transform: rotateX(6deg);
+    }
+  }
+}
+
+.heading-section-unfolding + .heading-fold-crinkle {
+  animation: unfold-crinkle var(--editor-fold-duration, 350ms) var(--editor-easing-cubic) forwards;
+}
+
+@keyframes fold-crinkle {
+  from {
+    height: var(--fold-content-height, #{$crinkle-height});
+  }
+  to {
+    height: #{$crinkle-height};
+  }
+}
+
+@keyframes unfold-crinkle {
+  from {
+    height: #{$crinkle-height};
+  }
+  to {
+    height: var(--fold-content-height, #{$crinkle-height});
+  }
+}
+
+// --- Mobile: match narrower editor padding ---
+
+@media screen and (max-width: 480px) {
+  .heading-fold-crinkle {
+    margin-left: -1.5rem;
+    margin-right: -1.5rem;
+  }
+}
+
+// --- Dark mode ---
+
+.dark .heading-fold-crinkle {
+  box-shadow:
+    inset 0 0.5px 0 rgba(255, 255, 255, 0.04),
+    inset 0 -0.5px 0 rgba(255, 255, 255, 0.04);
+
+  > div {
+    &:not(:first-child) {
+      border-top-color: rgba(255, 255, 255, 0.06);
+    }
+
+    &:nth-child(odd) {
+      background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.015) 0%,
+        rgba(255, 255, 255, 0.05) 100%
+      );
+    }
+
+    &:nth-child(even) {
+      background: linear-gradient(
+        to bottom,
+        rgba(255, 255, 255, 0.05) 0%,
+        rgba(255, 255, 255, 0.015) 100%
+      );
+    }
+  }
+}
+
+.dark .heading-section-folded + .heading-fold-crinkle:hover {
+  box-shadow:
+    inset 0 1px 2px rgba(255, 255, 255, 0.06),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.06),
+    0 0 0 1px var(--border-color-tint);
+}
+
+// --- Print: show all content ---
+
+@media print {
+  .heading-fold-hidden {
+    display: block !important;
+  }
+
+  .heading-fold-crinkle {
+    display: none;
+  }
+}

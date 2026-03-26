@@ -16,9 +16,8 @@ export function TocContextMenu({ headingId, isOpen, onToggle }: TocContextMenuPr
 
   if (!headingId) return null
 
-  // Get heading level for insert submenu
-  const headingEl = document.querySelector(`.heading[data-id="${headingId}"]`)
-  const headingLevel = headingEl?.getAttribute('level')
+  const headingEl = document.querySelector(`[data-toc-id="${headingId}"]`)
+  const headingLevel = headingEl?.tagName?.match(/^H(\d)$/)?.[1] ?? null
 
   const menuItems = [
     {

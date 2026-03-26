@@ -26,9 +26,7 @@ const useResizeContainer = () => {
   const setOrUpdateChatPanelHeight = useChatStore((state) => state.setOrUpdateChatPanelHeight)
   const { panelHeight: storeHeight } = useChatStore((state) => state.chatRoom)
   const [isResizing, setIsResizing] = useState(false)
-  const {
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   // Load persisted height on mount (or use default)
   useEffect(() => {

@@ -8,7 +8,9 @@ import { useEffect, useRef } from 'react'
  * CRITICAL: This hook only tracks state - layout is handled by CSS + _app.tsx
  */
 const useVirtualKeyboard = () => {
-  const { setKeyboardOpen, setKeyboardHeight, setVirtualKeyboardState } = useStore((state) => state)
+  const setKeyboardOpen = useStore((state) => state.setKeyboardOpen)
+  const setKeyboardHeight = useStore((state) => state.setKeyboardHeight)
+  const setVirtualKeyboardState = useStore((state) => state.setVirtualKeyboardState)
   const previousIsOpenRef = useRef<boolean | null>(null)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 

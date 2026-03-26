@@ -17,7 +17,9 @@ import {
 import { useVersionContent } from '../hooks/useVersionContent'
 
 const Sidebar = ({ className }: { className?: string }) => {
-  const { loadingHistory, activeHistory, historyList } = useStore((state) => state)
+  const loadingHistory = useStore((state) => state.loadingHistory)
+  const activeHistory = useStore((state) => state.activeHistory)
+  const historyList = useStore((state) => state.historyList)
   const { watchVersionContent } = useVersionContent()
   const { close: closeModal } = useModal() || {}
 

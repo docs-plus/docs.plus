@@ -3,10 +3,8 @@ import { useEffect } from 'react'
 
 const useEditorEditableState = () => {
   const user = useAuthStore((state) => state.profile)
-  const {
-    metadata,
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
+  const metadata = useStore((state) => state.settings.metadata)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   // update editable state
   // this runs when the document is opened

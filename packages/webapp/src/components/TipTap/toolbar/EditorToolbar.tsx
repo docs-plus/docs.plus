@@ -5,6 +5,7 @@ import Button from '@components/ui/Button'
 import { Modal, ModalContent } from '@components/ui/Dialog'
 import Loading from '@components/ui/Loading'
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/Popover'
+import useReRenderOnEditorTransaction from '@hooks/useReRenderOnEditorTransaction'
 import { Icons } from '@icons'
 import useCopyDocumentToClipboard from '@pages/document/hooks/useCopyDocumentToClipboard'
 import useTurnSelectedTextIntoComment from '@pages/document/hooks/useTurnSelectedTextIntoComment'
@@ -50,12 +51,14 @@ const Divider = () => <div className="bg-base-300 mx-2 h-5 w-px" />
 /* ── Component ── */
 
 const EditorToolbar = () => {
-  const {
-    editor: { instance: editor, loading, providerSyncing },
-    isAuthServiceAvailable
-  } = useStore((state) => state.settings)
+  const editor = useStore((state) => state.settings.editor.instance)
+  const loading = useStore((state) => state.settings.editor.loading)
+  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
+  const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
   const user = useAuthStore((state) => state.profile)
   const [isDocumentsOpen, setDocumentsOpen] = useState(false)
+
+  useReRenderOnEditorTransaction(editor ?? null)
 
   const { createComment } = useTurnSelectedTextIntoComment()
   const { copyDocumentToClipboard, copied } = useCopyDocumentToClipboard(editor ?? null)

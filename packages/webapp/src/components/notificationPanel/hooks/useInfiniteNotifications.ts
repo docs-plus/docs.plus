@@ -19,16 +19,13 @@ interface UseInfiniteNotificationsResult {
  * Uses IntersectionObserver to trigger loading more when sentinel is visible.
  */
 export const useInfiniteNotifications = (): UseInfiniteNotificationsResult => {
-  const { workspaceId } = useStore((state) => state.settings)
+  const workspaceId = useStore((state) => state.settings.workspaceId)
   const user = useAuthStore((state) => state.profile)
-  const {
-    notifications,
-    notificationActiveTab,
-    setNotifications: _setNotifications,
-    updateNotifications,
-    setLoadingNotification,
-    loadingNotification
-  } = useStore((state) => state)
+  const notifications = useStore((state) => state.notifications)
+  const notificationActiveTab = useStore((state) => state.notificationActiveTab)
+  const updateNotifications = useStore((state) => state.updateNotifications)
+  const setLoadingNotification = useStore((state) => state.setLoadingNotification)
+  const loadingNotification = useStore((state) => state.loadingNotification)
 
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(true)

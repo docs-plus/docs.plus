@@ -1,4 +1,5 @@
 import { useChatroomContext } from '@components/chatroom/ChatroomContext'
+import { computeSection } from '@components/TipTap/extensions/shared'
 import { useStore } from '@stores'
 import { TIPTAP_NODES, TMsgRow, TRANSACTION_META } from '@types'
 import { useCallback } from 'react'
@@ -51,9 +52,7 @@ const createParagraphNodeJson = (message: TMsgRow) => {
 }
 
 export const useCopyMessageToDocHandler = () => {
-  const {
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
+  const editor = useStore((state) => state.settings.editor.instance)
   const { channelId } = useChatroomContext()
 
   const copyMessageToDocHandler = useCallback(
@@ -61,47 +60,46 @@ export const useCopyMessageToDocHandler = () => {
       if (!message || !editor || !channelId) return
 
       const headingId = channelId
-
-      // Find the heading with matching ID in the document
       const { doc, tr } = editor.state
-      let headingPos: number | null = null
-      let headingNode: any = null
 
-      // Traverse the document to find the heading with matching ID
-      doc.descendants((node: any, pos: any) => {
+      let headingPos: number | null = null
+      let headingLevel = 1
+      let headingChildIndex = -1
+      let offset = 0
+
+      for (let i = 0; i < doc.content.childCount; i++) {
+        const child = doc.content.child(i)
+        const pos = offset
+        offset += child.nodeSize
+
         if (
-          node.type.name === TIPTAP_NODES.HEADING_TYPE &&
-          node.attrs.id === headingId &&
-          !headingPos
+          child.type.name === TIPTAP_NODES.HEADING_TYPE &&
+          (child.attrs['toc-id'] as string) === headingId
         ) {
           headingPos = pos
-          headingNode = node
-          return false
+          headingLevel = child.attrs.level as number
+          headingChildIndex = i
+          break
         }
-      })
+      }
 
-      const headingContentNode = headingNode?.firstChild
-      const contentWrapperNode = headingNode?.lastChild
+      if (headingPos === null || headingChildIndex < 0) return
 
-      let foundFirstHeading = false
-      let firstHeadingOffset = contentWrapperNode.content.size
+      const section = computeSection(doc, headingPos, headingLevel, headingChildIndex)
 
-      // find a first heading in the contentWrapper, if it deos not exsits,
-      // the end of the contentWrapper is the end pos
-      contentWrapperNode.content.forEach((child: any, offset: number) => {
-        if (child.type.name === TIPTAP_NODES.HEADING_TYPE && !foundFirstHeading) {
-          foundFirstHeading = true
-          firstHeadingOffset = offset
-          return true
-        }
-      })
-
-      const insertPosition = headingPos + headingContentNode.nodeSize + 2 + firstHeadingOffset
+      let insertPosition = headingPos + doc.content.child(headingChildIndex).nodeSize
+      let contentOffset = insertPosition
+      for (let j = headingChildIndex + 1; j < doc.content.childCount; j++) {
+        const child = doc.content.child(j)
+        if (contentOffset >= section.to) break
+        if (child.type.name === TIPTAP_NODES.HEADING_TYPE) break
+        contentOffset += child.nodeSize
+        insertPosition = contentOffset
+      }
 
       tr.insert(insertPosition, editor.state.schema.nodeFromJSON(createParagraphNodeJson(message)))
       editor.view.dispatch(tr)
 
-      // Insert content at calculated position
       const insertAndUpdate = () => {
         editor
           .chain()
@@ -116,8 +114,6 @@ export const useCopyMessageToDocHandler = () => {
       }
 
       insertAndUpdate()
-
-      return
     },
     [editor, channelId]
   )

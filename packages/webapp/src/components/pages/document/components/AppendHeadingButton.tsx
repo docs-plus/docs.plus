@@ -38,9 +38,9 @@ const findNewHeadingId = (doc: any, insertPosition: number): string | null => {
   const searchEnd = Math.min(doc.content.size, insertPosition + SEARCH_RANGE_BUFFER)
 
   doc.nodesBetween(searchStart, searchEnd, (node: any) => {
-    if (node.type.name === TIPTAP_NODES.HEADING_TYPE && node.attrs?.id) {
-      headingId = node.attrs.id
-      return false // Stop iteration
+    if (node.type.name === TIPTAP_NODES.HEADING_TYPE && node.attrs?.['toc-id']) {
+      headingId = node.attrs['toc-id']
+      return false
     }
   })
 
@@ -48,9 +48,8 @@ const findNewHeadingId = (doc: any, insertPosition: number): string | null => {
 }
 
 const AppendHeadingButton = ({ className }: { className: string }) => {
-  const {
-    editor: { instance: editor, isMobile }
-  } = useStore((state) => state.settings)
+  const editor = useStore((state) => state.settings.editor.instance)
+  const isMobile = useStore((state) => state.settings.editor.isMobile)
 
   const { close: closeModal } = isMobile ? useModal() || {} : {}
 
@@ -61,20 +60,13 @@ const AppendHeadingButton = ({ className }: { className: string }) => {
       type: TIPTAP_NODES.PARAGRAPH_TYPE
     })
 
-    const jsonNode = {
-      type: TIPTAP_NODES.HEADING_TYPE,
-      attrs: { level: 1 },
-      content: [
-        {
-          type: TIPTAP_NODES.CONTENT_HEADING_TYPE,
-          attrs: { level: 1 }
-        },
-        {
-          type: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
-          content: emptyParagraphs
-        }
-      ]
-    }
+    const jsonNode = [
+      {
+        type: TIPTAP_NODES.HEADING_TYPE,
+        attrs: { level: 1 }
+      },
+      ...emptyParagraphs
+    ]
 
     const selectionPos = editor.state.doc.content.size
 

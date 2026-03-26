@@ -433,7 +433,7 @@ interface MediaFormProps {
 }
 
 const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
-  const { metadata: docMetadata } = useStore((state) => state.settings)
+  const docMetadata = useStore((state) => state.settings.metadata)
   const [mediaURL, setMediaURL] = useState('')
   const [mediaType, setMediaType] = useState<MediaType>('Picture')
   const inputRef = useRef<HTMLInputElement>(null)
@@ -541,9 +541,7 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
 }
 
 const InsertMultimediaForm = () => {
-  const {
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   const insertMedia = useCallback(
     async (mediaUrl: string, mediaType: MediaType) => {

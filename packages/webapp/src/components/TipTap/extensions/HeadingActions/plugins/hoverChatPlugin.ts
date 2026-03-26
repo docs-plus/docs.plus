@@ -11,14 +11,12 @@ import {
 } from '../../plugins/decorationHelpers'
 import { HEADING_ACTIONS_CLASSES, type HeadingNodeData } from '../types'
 
-/** ProseMirror widget factory signature */
 type WidgetFactory = (view: EditorView, getPos: () => number | undefined) => HTMLElement
 
 const createChatButton = (headingId: string, editor: Editor): HTMLButtonElement => {
   const button = document.createElement('button')
   button.classList.add(
-    HEADING_ACTIONS_CLASSES.hoverChatBtn,
-    'btnOpenChatBox',
+    HEADING_ACTIONS_CLASSES.chatBtn,
     'btn',
     'btn-circle',
     'btn-primary',
@@ -47,7 +45,6 @@ const createChatButton = (headingId: string, editor: Editor): HTMLButtonElement 
     e.stopPropagation()
     PubSub.publish(CHAT_OPEN, { headingId })
 
-    // Clear selection after opening chat
     const { selection } = editor.state
     if (!selection.empty) {
       editor.commands.setTextSelection(selection.to)
@@ -57,13 +54,10 @@ const createChatButton = (headingId: string, editor: Editor): HTMLButtonElement 
   return button
 }
 
-/**
- * Creates the comment button element (for selection)
- */
 const createCommentButton = (headingId: string, editor: Editor): HTMLButtonElement => {
   const button = document.createElement('button')
   button.classList.add(
-    HEADING_ACTIONS_CLASSES.selectionChatBtn,
+    HEADING_ACTIONS_CLASSES.commentBtn,
     'btn',
     'btn-circle',
     'btn-primary',
@@ -89,7 +83,6 @@ const createCommentButton = (headingId: string, editor: Editor): HTMLButtonEleme
       headingId
     })
 
-    // Clear selection after opening comment
     editor.commands.setTextSelection(selection.to)
   })
 
@@ -98,18 +91,15 @@ const createCommentButton = (headingId: string, editor: Editor): HTMLButtonEleme
 
 const createHoverChatWidget = (editor: Editor, headingId: string): WidgetFactory => {
   return () => {
-    // Wrapper element
     const wrapper = document.createElement('div')
-    wrapper.classList.add(HEADING_ACTIONS_CLASSES.hoverWrapper)
+    wrapper.classList.add(HEADING_ACTIONS_CLASSES.wrap)
     wrapper.dataset.headingId = headingId
 
-    // Single chat button (default state)
     const singleBtn = createChatButton(headingId, editor)
-    singleBtn.classList.add('ha-single')
+    singleBtn.classList.add(HEADING_ACTIONS_CLASSES.single)
 
-    // Grouped buttons (when selection exists in this heading)
     const group = document.createElement('div')
-    group.classList.add(HEADING_ACTIONS_CLASSES.hoverGroup)
+    group.classList.add(HEADING_ACTIONS_CLASSES.group)
     group.appendChild(createChatButton(headingId, editor))
     group.appendChild(createCommentButton(headingId, editor))
 
@@ -122,14 +112,12 @@ const createHoverChatWidget = (editor: Editor, headingId: string): WidgetFactory
 
 const findHeadingNodes = (doc: ProseMirrorNode): HeadingNodeData[] => {
   const result: HeadingNodeData[] = []
-  let lastHeadingId: string | null = null
 
   doc.descendants((node: ProseMirrorNode, pos: number) => {
     if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
-      lastHeadingId = node.attrs.id
-    }
-    if (node.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE) {
-      result.push({ to: pos + node.nodeSize, headingId: lastHeadingId })
+      const headingId = (node.attrs['toc-id'] as string) || null
+      result.push({ to: pos + node.nodeSize, headingId })
+      return false
     }
   })
 
@@ -155,48 +143,32 @@ const createHoverChatDecorations = (doc: ProseMirrorNode, editor: Editor): Decor
   return DecorationSet.create(doc, decos)
 }
 
-// Track the currently active wrapper to clear it efficiently
 let activeWrapper: HTMLElement | null = null
 
-/**
- * Finds the heading ID that contains the current selection
- */
 const findSelectionHeadingId = (view: EditorView): string | null => {
   const { selection } = view.state
+  if (selection.empty) return null
 
-  const isInContentHeading =
-    !selection.empty && selection.$anchor.parent.type.name === TIPTAP_NODES.CONTENT_HEADING_TYPE
-
-  if (!isInContentHeading) return null
-
-  const $from = selection.$from
-  for (let d = $from.depth; d > 0; d--) {
-    const node = $from.node(d)
-    if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
-      return node.attrs.id
-    }
+  // In flat schema, heading is at depth 1. Check if anchor is in a heading.
+  const { $anchor } = selection
+  if ($anchor.parent.type.name === TIPTAP_NODES.HEADING_TYPE) {
+    return ($anchor.parent.attrs['toc-id'] as string) || null
   }
 
   return null
 }
 
-/**
- * Updates selection state on hover wrappers
- */
 const updateSelectionState = (view: EditorView): void => {
-  // Clear previous
   if (activeWrapper) {
     activeWrapper.classList.remove(HEADING_ACTIONS_CLASSES.hasSelection)
     activeWrapper = null
   }
 
-  // Find heading with selection
   const headingId = findSelectionHeadingId(view)
   if (!headingId) return
 
-  // Update wrapper
   const wrapper = view.dom.querySelector<HTMLElement>(
-    `.${HEADING_ACTIONS_CLASSES.hoverWrapper}[data-heading-id="${headingId}"]`
+    `.${HEADING_ACTIONS_CLASSES.wrap}[data-heading-id="${headingId}"]`
   )
   if (wrapper) {
     wrapper.classList.add(HEADING_ACTIONS_CLASSES.hasSelection)
@@ -204,13 +176,8 @@ const updateSelectionState = (view: EditorView): void => {
   }
 }
 
-/**
- * Creates the hover chat plugin
- * Shows a chat button inside each heading's content area on hover
- * Shows additional comment button when text is selected in that heading
- */
 export function createHoverChatPlugin(editor: Editor): Plugin {
-  const targetNodeTypes = [TIPTAP_NODES.HEADING_TYPE, TIPTAP_NODES.CONTENT_HEADING_TYPE]
+  const targetNodeTypes = [TIPTAP_NODES.HEADING_TYPE]
 
   const buildDecorations = (doc: ProseMirrorNode): DecorationSet =>
     createHoverChatDecorations(doc, editor)

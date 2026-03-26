@@ -5,7 +5,7 @@ import { useDocumentHistory } from './useDocumentHistory'
 import { useStatelessMessage } from './useStatelessMessage'
 
 export const useHocuspocusStateless = () => {
-  const { hocuspocusProvider } = useStore((state) => state.settings)
+  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const { handleStatelessMessage } = useStatelessMessage()
   const { fetchHistory } = useDocumentHistory()
 

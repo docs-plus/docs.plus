@@ -13,11 +13,7 @@ import { MobileLayout } from './MobileLayout'
  * <MessageComposer.Editor />
  */
 export const Editor = () => {
-  const {
-    settings: {
-      editor: { isMobile }
-    }
-  } = useStore((state) => state)
+  const isMobile = useStore((state) => state.settings.editor.isMobile)
 
   // Render appropriate layout based on device type
   return isMobile ? <MobileLayout /> : <DesktopLayout />

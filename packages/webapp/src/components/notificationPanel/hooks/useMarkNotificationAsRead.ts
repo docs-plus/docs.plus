@@ -2,8 +2,10 @@ import { markNotificationAsRead } from '@api'
 import { useStore } from '@stores'
 
 export const useMarkNotificationAsRead = () => {
-  const { updateNotifications, setLoadingNotification, notificationActiveTab, notifications } =
-    useStore((state) => state)
+  const updateNotifications = useStore((state) => state.updateNotifications)
+  const setLoadingNotification = useStore((state) => state.setLoadingNotification)
+  const notificationActiveTab = useStore((state) => state.notificationActiveTab)
+  const notifications = useStore((state) => state.notifications)
 
   const handleMarkAsRead = async (e: any, notificationId: string) => {
     e.preventDefault()

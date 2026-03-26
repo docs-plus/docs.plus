@@ -74,11 +74,7 @@ const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalP
   )
   const [isSectionOpen, setIsSectionOpen] = useState(false)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
-  const {
-    editor: {
-      filterResult: { sortedSlugs }
-    }
-  } = useStore((state) => state.settings)
+  const sortedSlugs = useStore((state) => state.settings.editor.filterResult.sortedSlugs)
 
   const datalist = useMemo(
     () =>

@@ -29,9 +29,7 @@ const DocumentPage = ({
   const router = useRouter()
   const slugs = (router.query.slugs as string[]) || []
   const { loading } = useMapDocumentAndWorkspace(docMetadata, channels)
-  const {
-    editor: { providerSyncing }
-  } = useStore((state) => state.settings)
+  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
 
   useDocumentMetadata(slugs, docMetadata)
   useInitiateDocumentAndWorkspace(docMetadata)

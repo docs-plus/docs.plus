@@ -4,7 +4,8 @@ import { useStore } from '@stores'
 import { EditorContent as TiptapEditorContent } from '@tiptap/react'
 
 const EditorContent = () => {
-  const { loadingHistory, editor } = useStore((state) => state)
+  const loadingHistory = useStore((state) => state.loadingHistory)
+  const editor = useStore((state) => state.editor)
 
   if (loadingHistory || !editor) {
     return (

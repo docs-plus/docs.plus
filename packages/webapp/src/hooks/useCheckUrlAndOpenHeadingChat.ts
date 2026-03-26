@@ -7,7 +7,8 @@ import { useEffect } from 'react'
 const useCheckUrlAndOpenHeadingChat = () => {
   const { slugs } = useRouter().query
   const user = useAuthStore((state) => state.profile)
-  const { workspaceId, editor: editorSetting } = useStore((state) => state.settings)
+  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const editorSetting = useStore((state) => state.settings.editor)
 
   useEffect(() => {
     if (!workspaceId) return

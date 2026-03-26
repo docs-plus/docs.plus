@@ -29,10 +29,8 @@ const getCursorUser = (user: any) => {
 const useProviderAwareness = () => {
   const user = useAuthStore((state) => state.profile)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
-  const {
-    hocuspocusProvider: provider,
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
+  const provider = useStore((state) => state.settings.hocuspocusProvider)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   // update user awareness
   useEffect(() => {

@@ -4,9 +4,10 @@ import { ScrollArea } from '@components/ui/ScrollArea'
 import { useStore } from '@stores'
 
 const TOC = ({ className = '' }: { className?: string }) => {
-  const {
-    editor: { loading, applyingFilters, providerSyncing, instance: editor }
-  } = useStore((state) => state.settings)
+  const loading = useStore((state) => state.settings.editor.loading)
+  const applyingFilters = useStore((state) => state.settings.editor.applyingFilters)
+  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   if (loading || !editor || applyingFilters || providerSyncing) {
     return (

@@ -9,7 +9,7 @@ import { useEffect, useRef } from 'react'
 
 export const useCatchUserPresences = () => {
   const profile = useAuthStore((state) => state.profile)
-  const { workspaceId } = useStore((state) => state.settings)
+  const workspaceId = useStore((state) => state.settings.workspaceId)
   const setOrUpdateUserPresence = useStore((state) => state.setOrUpdateUserPresence)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
 
