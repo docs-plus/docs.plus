@@ -2,12 +2,10 @@ import { useStore } from '@stores'
 import { useCallback } from 'react'
 
 export const useVersionContent = () => {
-  const {
-    hocuspocusProvider,
-    metadata: { documentId }
-  } = useStore((state) => state.settings)
+  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
+  const documentId = useStore((state) => state.settings.metadata?.documentId)
 
-  const { setLoadingHistory } = useStore((state) => state)
+  const setLoadingHistory = useStore((state) => state.setLoadingHistory)
 
   const watchVersionContent = useCallback(
     (version: number) => {

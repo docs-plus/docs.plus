@@ -8,8 +8,7 @@ const DocumentStructure = {
   sections: [section(TEST_TITLE.short, [])]
 }
 
-const getParagraph = () =>
-  cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p').first().as('paragraph')
+const getParagraph = () => cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
 const selectTarget = (text, start, end) =>
   cy.createSelection({
@@ -38,7 +37,6 @@ describe('Italic Formatting', () => {
 
     cy.get('@paragraph').find('em').should('contain', 'italic-target')
     cy.get('@paragraph').should('contain', 'Prefix italic-target suffix')
-    cy.assertFullSchemaValid()
   })
 
   it('applies and stops italic with toolbar button', () => {
@@ -51,7 +49,6 @@ describe('Italic Formatting', () => {
 
     cy.get('@paragraph').find('em').should('contain', 'toolbar-italic')
     cy.get('@paragraph').should('contain', 'Prefix toolbar-italic suffix')
-    cy.assertFullSchemaValid()
   })
 
   it('applies italic on selected text without changing surrounding text', () => {
@@ -64,6 +61,5 @@ describe('Italic Formatting', () => {
     cy.get('.docy_editor').realPress(['Meta', 'i'])
     cy.get('@paragraph').find('em').should('contain', 'target')
     cy.get('@paragraph').should('contain', text)
-    cy.assertFullSchemaValid()
   })
 })

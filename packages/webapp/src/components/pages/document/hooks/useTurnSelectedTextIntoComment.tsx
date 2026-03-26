@@ -7,20 +7,28 @@ const useTurnSelectedTextIntoComment = () => {
   const createComment = useCallback((editor: Editor) => {
     const { selection } = editor.view.state
 
-    // if no selection, do nothing
     if (selection.empty) return
-    // TODO: check for higher heading node
-    let headingNode = null
-    let depth = selection.$from.depth
-    while (depth > 0) {
-      const node = selection.$from.node(depth)
-      if (node.type.name.startsWith('heading')) {
-        headingNode = node
-        break
+
+    const doc = editor.state.doc
+    const selPos = selection.from
+    let headingId: string | null = null
+    let offset = 0
+
+    for (let i = 0; i < doc.content.childCount; i++) {
+      const child = doc.content.child(i)
+      if (offset + child.nodeSize > selPos) break
+      if (child.type.name === 'heading') {
+        headingId = child.attrs['toc-id'] as string
       }
-      depth--
+      offset += child.nodeSize
     }
-    const headingId = headingNode?.attrs.id
+
+    if (!headingId) {
+      const firstChild = doc.content.firstChild
+      if (firstChild?.type.name === 'heading') {
+        headingId = firstChild.attrs['toc-id'] as string
+      }
+    }
 
     if (!headingId) {
       console.error('[chatComment]: No headingId found')
@@ -28,7 +36,7 @@ const useTurnSelectedTextIntoComment = () => {
     }
 
     const selectedText = editor.state.doc.textBetween(selection.from, selection.to, '\n')
-    const selectedHtml = '' //editor.view.dom.innerHTML.slice(selection.from, selection.to)
+    const selectedHtml = ''
 
     PubSub.publish(CHAT_COMMENT, {
       content: selectedText,
@@ -36,10 +44,7 @@ const useTurnSelectedTextIntoComment = () => {
       headingId
     })
 
-    // Deselect the text after creating the comment
     editor.commands.setTextSelection(selection.to)
-
-    // scroll the document to the top of the page
     editor.commands.scrollIntoView()
 
     const WindowsSelection = window?.getSelection()?.anchorNode?.parentElement as HTMLElement | null

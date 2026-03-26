@@ -19,9 +19,7 @@ describe('Bullet List', { testIsolation: false }, () => {
   describe('Creating bullet lists with keyboard shortcuts', () => {
     it('should create a bullet list using keyboard shortcuts', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -60,9 +58,7 @@ describe('Bullet List', { testIsolation: false }, () => {
 
     it('should create a bullet list using toolbar button', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -94,9 +90,7 @@ describe('Bullet List', { testIsolation: false }, () => {
 
     it('should create a nested bullet list structure with multiple indentation levels', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -169,9 +163,7 @@ describe('Bullet List', { testIsolation: false }, () => {
 
     it('should convert bullet list to ordered list', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -199,9 +191,7 @@ describe('Bullet List', { testIsolation: false }, () => {
 
     it('should convert bullet list to task list', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()

@@ -21,12 +21,9 @@ export function createClient() {
         },
         // Only reconnect if we're actually online
         reconnectAfterMs: (tries: number) => {
-          // If offline, don't reconnect (prevents spam)
-          // This callback only runs on client when realtime tries to reconnect
           if (!navigator.onLine) {
-            return null // Stop reconnecting
+            return 60_000
           }
-          // Exponential backoff: 1s, 2s, 4s, 8s, max 10s
           return Math.min(1000 * Math.pow(2, tries), 10000)
         }
       },

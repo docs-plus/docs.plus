@@ -8,8 +8,7 @@ const DocumentStructure = {
   sections: [section(TEST_TITLE.short, [])]
 }
 
-const getParagraph = () =>
-  cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p').first().as('paragraph')
+const getParagraph = () => cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
 const selectTarget = (text, start, end) =>
   cy.createSelection({
@@ -38,7 +37,6 @@ describe('Highlight Formatting', () => {
 
     cy.get('@paragraph').find('mark').should('contain', 'highlight-target')
     cy.get('@paragraph').should('contain', 'Prefix highlight-target suffix')
-    cy.assertFullSchemaValid()
   })
 
   it('combines highlight with bold on selected text', () => {
@@ -53,7 +51,6 @@ describe('Highlight Formatting', () => {
 
     cy.get('@paragraph').find('strong').should('contain', 'target')
     cy.get('@paragraph').find('mark').should('contain', 'target')
-    cy.assertFullSchemaValid()
   })
 
   it('applies highlight with Mod+Shift+H shortcut', () => {
@@ -65,6 +62,5 @@ describe('Highlight Formatting', () => {
     selectTarget(text, 7, 22)
     cy.get('.docy_editor').realPress(['Meta', 'Shift', 'h'])
     cy.get('@paragraph').find('mark').should('contain', 'shortcut-target')
-    cy.assertFullSchemaValid()
   })
 })

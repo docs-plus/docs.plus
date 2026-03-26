@@ -1,17 +1,15 @@
+import { computeSection } from '@components/TipTap/extensions/shared'
 import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useStore } from '@stores'
-import { type ResolvedPos, TIPTAP_NODES } from '@types'
+import { TIPTAP_NODES } from '@types'
 import { copyToClipboard } from '@utils/clipboard'
 import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 import { useCallback } from 'react'
 import slugify from 'slugify'
 
-/**
- * Dialog content for delete confirmation
- */
 function DeleteSectionDialog({ headingId }: { headingId: string }) {
   const {
     closeDialog,
@@ -22,36 +20,25 @@ function DeleteSectionDialog({ headingId }: { headingId: string }) {
 
   const handleDelete = () => {
     closeDialog()
+    if (!editor) return
 
-    const headingElement = document.querySelector(`.heading[data-id="${headingId}"]`)
-    if (!headingElement) return
+    const doc = editor.state.doc
+    let offset = 0
 
-    const contentHeadingPos = editor?.view.posAtDOM(headingElement, -4, 4)
-    const contentHeadingNode = editor?.state.doc.nodeAt(contentHeadingPos as number)
+    for (let i = 0; i < doc.content.childCount; i++) {
+      const child = doc.content.child(i)
+      const pos = offset
+      offset += child.nodeSize
 
-    if ((contentHeadingPos && contentHeadingPos === -1) || !contentHeadingNode) return
-
-    const $pos = editor?.state.doc.resolve(contentHeadingPos as number) as ResolvedPos
-    let parentHeadingPos: number | null = null
-    let parentHeadingNode = null
-
-    for (let depth = $pos.depth; depth > 0; depth--) {
-      const node = $pos.node(depth)
-      if (node.type.name === TIPTAP_NODES.HEADING_TYPE) {
-        parentHeadingPos = $pos.start(depth)
-        parentHeadingNode = node
-        break
-      }
-    }
-
-    if (parentHeadingPos !== null && parentHeadingNode) {
-      const tr = editor?.state.tr
-      const startPos = parentHeadingPos - 4
-      const endPos = parentHeadingPos + parentHeadingNode.nodeSize
-
-      tr?.delete(startPos, endPos)
-      if (tr) {
-        editor?.view.dispatch(tr)
+      if (
+        child.type.name === TIPTAP_NODES.HEADING_TYPE &&
+        (child.attrs['toc-id'] as string) === headingId
+      ) {
+        const section = computeSection(doc, pos, child.attrs.level as number, i)
+        const tr = editor.state.tr
+        tr.delete(section.from, section.to)
+        editor.view.dispatch(tr)
+        return
       }
     }
   }
@@ -71,16 +58,11 @@ function DeleteSectionDialog({ headingId }: { headingId: string }) {
   )
 }
 
-/**
- * Hook that provides all TOC actions
- */
 export function useTocActions() {
   const router = useRouter()
   const { openDialog } = useStore()
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
-  const {
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   const openChatroom = useCallback(
     (headingId: string, options?: { scrollTo?: boolean; focusEditor?: boolean }) => {
@@ -99,20 +81,24 @@ export function useTocActions() {
     async (headingId: string) => {
       if (!headingId || !editor) return
 
-      const targetHeading = document.querySelector(`.heading[data-id="${headingId}"]`)
-      if (!targetHeading) return
+      const doc = editor.state.doc
+      const breadcrumb: string[] = []
 
-      const posAt = editor.view.posAtDOM(targetHeading, 0)
-      if (posAt === -1) return
+      for (let i = 0; i < doc.content.childCount; i++) {
+        const child = doc.content.child(i)
 
-      const nodePos = editor.view.state.doc.resolve(posAt)
-      // @ts-ignore - path exists on ResolvedPos
-      const headingPath = nodePos.path
-        .filter((x: any) => x?.type?.name === TIPTAP_NODES.HEADING_TYPE)
-        .map((x: any) => slugify(x.firstChild?.textContent?.toLowerCase()?.trim() || ''))
+        if (child.type.name !== TIPTAP_NODES.HEADING_TYPE) continue
+
+        const tocId = child.attrs['toc-id'] as string
+        if (tocId === headingId) {
+          breadcrumb.push(slugify(child.textContent?.toLowerCase()?.trim() || ''))
+          break
+        }
+        breadcrumb.push(slugify(child.textContent?.toLowerCase()?.trim() || ''))
+      }
 
       const url = new URL(window.location.href)
-      url.searchParams.set('h', headingPath.join('>'))
+      url.searchParams.set('h', breadcrumb.join('>'))
       url.searchParams.set('id', headingId)
 
       const success = await copyToClipboard(url.toString())
@@ -127,11 +113,9 @@ export function useTocActions() {
 
   const focusSection = useCallback(
     (headingId: string) => {
-      if (!headingId) return
+      if (!headingId || !editor) return
 
-      const headingElement = document.querySelector(
-        `.heading[data-id="${headingId}"] .title`
-      ) as HTMLElement
+      const headingElement = document.querySelector(`[data-toc-id="${headingId}"]`) as HTMLElement
       if (!headingElement) return
 
       const headingText = (headingElement.innerText || headingElement.textContent || '').trim()
@@ -151,7 +135,7 @@ export function useTocActions() {
       router.push(url.toString(), undefined, { shallow: true })
       setWorkspaceEditorSetting('applyingFilters', true)
     },
-    [router, setWorkspaceEditorSetting]
+    [editor, router, setWorkspaceEditorSetting]
   )
 
   const deleteSection = useCallback(

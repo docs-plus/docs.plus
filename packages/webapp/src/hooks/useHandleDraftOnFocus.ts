@@ -9,25 +9,24 @@ interface UseHandleDraftOnFocusProps {
 }
 
 const useHandleDraftOnFocus = ({ editor, provider }: UseHandleDraftOnFocusProps): void => {
-  const {
-    metadata: { documentId }
-  } = useStore((state) => state.settings)
+  const documentId = useStore((state) => state.settings.metadata?.documentId)
 
-  // handle focus event to set the document to not draft
   useEffect(() => {
     if (!editor || !provider) return
 
     const meta = provider.configuration.document.getMap('metadata')
-    const isADraftDocument = meta.get('isDraft')
+    if (!meta.get('isDraft')) return
 
-    if (!isADraftDocument) return
-
-    editor.on('focus', () => {
-      const isDraft = meta.get('isDraft')
-      if (isDraft) {
+    const handleFocus = () => {
+      if (meta.get('isDraft')) {
         meta.set('isDraft', false)
       }
-    })
+    }
+
+    editor.on('focus', handleFocus)
+    return () => {
+      editor.off('focus', handleFocus)
+    }
   }, [editor, provider, documentId])
 }
 

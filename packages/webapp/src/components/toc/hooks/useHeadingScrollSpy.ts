@@ -8,9 +8,7 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
   const observerRef = useRef<IntersectionObserver | null>(null)
   const visibleHeadingsRef = useRef<Map<string, Element>>(new Map())
 
-  const {
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
+  const editor = useStore((state) => state.settings.editor.instance)
   const setFocusedHeadingId = useFocusedHeadingStore((s) => s.setFocusedHeadingId)
 
   const updateFocus = useCallback(() => {
@@ -57,7 +55,7 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
     observerRef.current?.disconnect()
     visibleHeadingsRef.current.clear()
 
-    const headings = container.querySelectorAll('.heading[data-id]')
+    const headings = container.querySelectorAll('[data-toc-id]')
     if (headings.length === 0) return
 
     observerRef.current = new IntersectionObserver(
@@ -65,7 +63,7 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
         if (useFocusedHeadingStore.getState().isScrollLocked) return
 
         for (const entry of entries) {
-          const id = entry.target.getAttribute('data-id')
+          const id = entry.target.getAttribute('data-toc-id')
           if (!id) continue
 
           if (entry.isIntersecting) {
@@ -80,7 +78,7 @@ export function useHeadingScrollSpy(scrollContainerRef: RefObject<HTMLElement | 
     )
 
     headings.forEach((h) => {
-      if (h.getAttribute('data-id')) observerRef.current?.observe(h)
+      if (h.getAttribute('data-toc-id')) observerRef.current?.observe(h)
     })
   }, [scrollContainerRef, debouncedUpdate])
 

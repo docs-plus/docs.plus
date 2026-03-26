@@ -20,7 +20,7 @@ interface UseInfiniteBookmarksResult {
  * Uses IntersectionObserver to trigger loading more when sentinel is visible.
  */
 export const useInfiniteBookmarks = (): UseInfiniteBookmarksResult => {
-  const { workspaceId } = useStore((state) => state.settings)
+  const workspaceId = useStore((state) => state.settings.workspaceId)
   const { bookmarks, bookmarkActiveTab, setBookmarks, updateBookmarks, loadingBookmarks } =
     useChatStore((state) => state)
 

@@ -11,7 +11,7 @@ echo -e "${BLUE}📦 Building extensions...${NC}"
 cd "$(dirname "$0")/../../.."
 
 # Build extensions sequentially (webapp depends on them)
-for ext in extension-hyperlink extension-hypermultimedia extension-indent extension-inline-code; do
+for ext in extension-hyperlink extension-hypermultimedia extension-indent extension-inline-code extension-placeholder; do
   echo -e "${YELLOW}  → Building $ext${NC}"
   cd "packages/$ext" && bun run build && cd ../..
 done

@@ -47,16 +47,24 @@
     max-width: 100%;
   }
 
-  .heading {
+  :is(h1, h2, h3, h4, h5, h6) {
     border: none !important;
     background-color: transparent;
     margin: 8pt 0;
     padding: inherit;
   }
 
-  .heading[level='1'],
-  .heading[level='1']:first-of-type {
+  h1[data-toc-id],
+  h1[data-toc-id]:first-of-type {
     margin: inherit;
+  }
+
+  .heading-fold-hidden {
+    display: block !important;
+  }
+
+  .heading-fold-crinkle {
+    display: none !important;
   }
 
   .history_editor {

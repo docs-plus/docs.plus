@@ -8,6 +8,7 @@ import { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useActiveHeading, useTocActions, useUnreadCount } from './hooks'
+import { TOC_CLASSES } from './tocClasses'
 import { buildNestedToc, scrollToHeading } from './utils'
 
 interface TocItemMobileProps {
@@ -18,9 +19,7 @@ interface TocItemMobileProps {
 
 export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps) {
   const { headingId } = useChatStore((state) => state.chatRoom)
-  const {
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   const focusedHeadingId = useFocusedHeadingStore((s) => s.focusedHeadingId)
   const isFocused = focusedHeadingId === item.id
@@ -74,12 +73,12 @@ export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps
   const liClassName = twMerge(
     'toc__item relative w-full',
     !item.open && 'closed',
-    isFocused && 'focusSight'
+    isFocused && TOC_CLASSES.itemFocused
   )
 
   const aClassName = twMerge(
     'group relative rounded !py-2 pr-10',
-    isActive && 'active activeTocBorder bg-base-300',
+    isActive && `active ${TOC_CLASSES.activeBorder} bg-base-300`,
     item.level === 1 && 'ml-3'
   )
 
@@ -92,7 +91,10 @@ export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps
             variant="ghost"
             size="xs"
             shape="square"
-            className={twMerge('btnFold size-5 min-w-5 !p-0', item.open ? 'opened' : 'closed')}
+            className={twMerge(
+              `${TOC_CLASSES.foldBtn} size-5 min-w-5 !p-0`,
+              item.open ? 'opened' : 'closed'
+            )}
             onClick={handleToggle}
             aria-label={item.open ? 'Collapse section' : 'Expand section'}
             startIcon={<Icons.chevronRight size={18} className="text-base-content" />}
@@ -104,7 +106,12 @@ export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps
 
         {/* Chat button — absolute right, consistent across nesting levels */}
         <button
-          className="absolute top-1/2 right-1 flex size-8 -translate-y-1/2 items-center justify-center rounded-full"
+          type="button"
+          className={twMerge(
+            TOC_CLASSES.chatTrigger,
+            'absolute top-1/2 right-1 flex size-8 -translate-y-1/2 items-center justify-center rounded-full'
+          )}
+          data-heading-id={item.id}
           onClick={handleChatClick}
           aria-label={unreadCount > 0 ? `${unreadCount} unread — open chat` : 'Open chat'}>
           {unreadCount > 0 ? (
@@ -120,7 +127,7 @@ export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps
 
       {/* Nested children */}
       {hasChildren && (
-        <ul className={twMerge('childrenWrapper', !item.open && 'hidden')}>
+        <ul className={twMerge(TOC_CLASSES.children, !item.open && 'hidden')}>
           {nestedChildren.map(({ item: childItem, children: grandChildren }) => (
             <TocItemMobile
               key={childItem.id}

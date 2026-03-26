@@ -12,9 +12,7 @@ import {
 } from 'react-icons/md'
 
 export const MobileBubbleMenu = () => {
-  const {
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   const { createComment } = useTurnSelectedTextIntoComment()
   const { cut, copy, paste, copied } = useClipboard(editor)

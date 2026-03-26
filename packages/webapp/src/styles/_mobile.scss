@@ -133,24 +133,12 @@ html.m_mobile #__next {
     h6,
     li,
     blockquote,
-    .heading,
-    .contentWrapper,
-    .contents,
-    .content,
     div[data-type] {
       caret-color: inherit !important;
-
-      // iOS Safari: Ensure nested elements don't clip caret
       overflow: visible !important;
     }
 
-    .heading {
-      &[level='1'] {
-        border: none;
-      }
-    }
-
-    .title {
+    :is(h1, h2, h3, h4, h5, h6)[data-toc-id] {
       padding-right: 70px;
       position: relative;
 
@@ -160,20 +148,8 @@ html.m_mobile #__next {
         top: 50%;
         transform: translateY(-50%);
 
-        .ha-single.btnOpenChatBox {
-          // Force visibility - override desktop hidden styles
-          display: flex !important;
-          visibility: visible !important;
-          opacity: 1 !important;
-
-          // Reset positioning - override desktop absolute positioning
-          position: absolute !important;
-          right: -12px !important;
-          left: auto !important;
-          top: auto !important;
-          transform: none !important;
-
-          // Pill style base
+        .ha-single.ha-chat-btn {
+          // Pill style (visibility follows _heading-actions.scss: coarse pointer = always on)
           align-items: center;
           justify-content: center;
           gap: 6px;
@@ -238,29 +214,10 @@ html.m_mobile #__next {
       }
     }
 
-    // iOS Safari: Ensure text selection/caret works properly in heading content
-    .heading-content {
+    :is(h1, h2, h3, h4, h5, h6)[data-toc-id] {
       -webkit-user-select: text;
       user-select: text;
-      // Force iOS to use proper caret positioning
       -webkit-tap-highlight-color: transparent;
-    }
-
-    div.heading {
-      .foldWrapper .fold {
-        width: calc(100% + 1rem + 6px);
-        left: -12px;
-      }
-
-      &.closed {
-        &[level='1'] {
-          > .wrapBlock > .foldWrapper .fold {
-            transition: none;
-            width: calc(100% + 1rem + 6px);
-            left: -11px;
-          }
-        }
-      }
     }
   }
 
@@ -298,8 +255,8 @@ html.m_mobile #__next {
     0 8px 12px 0 color-mix(in oklch, var(--color-base-content) 8%, transparent);
 }
 
-[data-theme='docsplus-dark'] .ha-single.btnOpenChatBox,
-[data-theme='docsplus-dark-hc'] .ha-single.btnOpenChatBox {
+[data-theme='docsplus-dark'] .ha-single.ha-chat-btn,
+[data-theme='docsplus-dark-hc'] .ha-single.ha-chat-btn {
   box-shadow: 0 2px 6px color-mix(in oklch, var(--color-base-content) 10%, transparent);
 }
 

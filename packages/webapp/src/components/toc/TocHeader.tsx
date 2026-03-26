@@ -4,8 +4,10 @@ import { Tooltip } from '@components/ui/Tooltip'
 import UnreadBadge from '@components/ui/UnreadBadge'
 import { Icons } from '@icons'
 import { useChatStore, useStore } from '@stores'
+import { twMerge } from 'tailwind-merge'
 
 import { usePresentUsers, useTocActions, useUnreadCount } from './hooks'
+import { TOC_CLASSES } from './tocClasses'
 import { scrollToDocTitle } from './utils'
 
 interface TocHeaderProps {
@@ -13,7 +15,8 @@ interface TocHeaderProps {
 }
 
 export function TocHeader({ variant }: TocHeaderProps) {
-  const { metadata: docMetadata, workspaceId } = useStore((state) => state.settings)
+  const docMetadata = useStore((state) => state.settings.metadata)
+  const workspaceId = useStore((state) => state.settings.workspaceId)
   const { headingId } = useChatStore((state) => state.chatRoom)
   const unreadCount = useUnreadCount(workspaceId || '')
   const presentUsers = usePresentUsers(workspaceId || '')
@@ -49,14 +52,20 @@ export function TocHeader({ variant }: TocHeaderProps) {
         <div className="group relative flex items-center justify-between py-2">
           <span className="text-base-content text-lg font-bold">{docMetadata?.title}</span>
           <button
-            className="flex size-8 items-center justify-center rounded-full"
+            type="button"
+            className={`${TOC_CLASSES.chatTrigger} flex size-8 items-center justify-center rounded-full`}
+            data-heading-id={workspaceId || undefined}
             onClick={handleChatClick}
             aria-label={unreadCount > 0 ? `${unreadCount} unread — open chat` : 'Open chat'}>
             {unreadCount > 0 ? (
               <UnreadBadge count={unreadCount} size="sm" variant="error" />
             ) : (
               <Icons.chatroom
-                className={`text-base-content/40 ${isActive && 'text-accent'}`}
+                className={twMerge(
+                  TOC_CLASSES.chatIcon,
+                  'text-base-content/40',
+                  isActive && 'text-accent'
+                )}
                 size={18}
               />
             )}
@@ -69,16 +78,22 @@ export function TocHeader({ variant }: TocHeaderProps) {
   return (
     <div className="border-base-300 bg-base-200 relative sticky top-0 z-10 w-full border-b pt-2 pb-1">
       <div
-        className={`group hover:bg-base-300/50 flex cursor-pointer items-center justify-between gap-0.5 rounded-md p-1 px-2 pr-3 ${isActive && 'activeTocBorder bg-base-300'}`}
+        className={twMerge(
+          'group hover:bg-base-300/50 flex cursor-pointer items-center justify-between gap-0.5 rounded-md p-1 px-2 pr-3',
+          isActive && `${TOC_CLASSES.activeBorder} bg-base-300`
+        )}
         onClick={handleClick}>
         <span className="text-base-content text-lg font-bold">{docMetadata?.title}</span>
         <Tooltip title="Chat Room" placement="top">
-          <span className="btn_chat relative ml-auto" onClick={handleChatClick}>
+          <span
+            className={`${TOC_CLASSES.chatTrigger} relative ml-auto`}
+            data-heading-id={workspaceId || undefined}
+            onClick={handleChatClick}>
             {unreadCount > 0 ? (
               <UnreadBadge count={unreadCount} size="sm" />
             ) : (
               <Icons.chatroom
-                className="btnChat text-base-content/60 hover:text-primary ml-1 cursor-pointer transition-colors"
+                className={`${TOC_CLASSES.chatIcon} text-base-content/60 hover:text-primary ml-1 cursor-pointer transition-colors`}
                 size={16}
               />
             )}

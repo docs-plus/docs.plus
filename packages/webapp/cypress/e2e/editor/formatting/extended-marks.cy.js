@@ -8,8 +8,7 @@ const DocumentStructure = {
   sections: [section(TEST_TITLE.short, [])]
 }
 
-const getParagraph = () =>
-  cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p').first().as('paragraph')
+const getParagraph = () => cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
 const setSelectionBySubstring = (target) =>
   cy.window().then((win) => {
@@ -51,7 +50,6 @@ describe('Extended Formatting Marks', () => {
     cy.get('.docy_editor').realPress(['Meta', 'e'])
 
     cy.get('@paragraph').find('code').should('contain', 'inline-token')
-    cy.assertFullSchemaValid()
   })
 
   it('applies superscript and subscript with shortcuts (Mod+. and Mod+,)', () => {
@@ -72,6 +70,5 @@ describe('Extended Formatting Marks', () => {
 
     cy.get('@paragraph').find('sup').should('contain', '2')
     cy.get('@paragraph').find('sub').should('contain', '2')
-    cy.assertFullSchemaValid()
   })
 })

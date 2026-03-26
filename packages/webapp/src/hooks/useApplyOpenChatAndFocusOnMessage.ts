@@ -4,12 +4,9 @@ import PubSub from 'pubsub-js'
 import { useEffect } from 'react'
 
 export default function useApplyOpenChatAndFocusOnMessage() {
-  const {
-    settings: {
-      editor: { providerSyncing, loading },
-      joinedWorkspace
-    }
-  } = useStore((state) => state)
+  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
+  const loading = useStore((state) => state.settings.editor.loading)
+  const joinedWorkspace = useStore((state) => state.settings.joinedWorkspace)
 
   useEffect(() => {
     if (loading || providerSyncing || !joinedWorkspace) return

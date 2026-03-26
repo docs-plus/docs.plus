@@ -34,9 +34,7 @@ describe('Task List Alignment', () => {
   })
 
   it('keeps newly created task items aligned to the left', () => {
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-      .first()
-      .as('paragraph')
+    cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
     cy.get('@paragraph').click()
 
     cy.get('.docy_editor').realPress(['Meta', 'Shift', '9'])
@@ -54,14 +52,10 @@ describe('Task List Alignment', () => {
         `Expected task item text to start at approximately same left position (first=${firstLeft}, second=${secondLeft})`
       )
     })
-
-    cy.assertFullSchemaValid()
   })
 
   it('keeps empty focused task items anchored left without breadcrumb placeholders', () => {
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-      .first()
-      .as('paragraph')
+    cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
     cy.get('@paragraph').click()
 
     cy.get('.docy_editor').realPress(['Meta', 'Shift', '9'])
@@ -93,7 +87,5 @@ describe('Task List Alignment', () => {
       const beforeContent = win.getComputedStyle(p, '::before').content
       expect(beforeContent).to.contain('Task item')
     })
-
-    cy.assertFullSchemaValid()
   })
 })

@@ -2,12 +2,11 @@ import { useStore } from '@stores'
 import { useEffect } from 'react'
 
 const useEditableDocControl = () => {
-  const {
-    deviceDetect,
-    editor: { instance: editor, loading }
-  } = useStore((state) => state.settings)
+  const deviceDetect = useStore((state) => state.settings.deviceDetect)
+  const editor = useStore((state) => state.settings.editor.instance)
+  const loading = useStore((state) => state.settings.editor.loading)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
-  const { isKeyboardOpen } = useStore((state) => state)
+  const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
 
   useEffect(() => {
     if (!editor) return

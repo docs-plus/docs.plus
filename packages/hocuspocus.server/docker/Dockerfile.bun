@@ -24,6 +24,7 @@ COPY packages/extension-hyperlink/package.json ./packages/extension-hyperlink/
 COPY packages/extension-hypermultimedia/package.json ./packages/extension-hypermultimedia/
 COPY packages/extension-indent/package.json ./packages/extension-indent/
 COPY packages/extension-inline-code/package.json ./packages/extension-inline-code/
+COPY packages/extension-placeholder/package.json ./packages/extension-placeholder/
 COPY packages/supabase/package.json ./packages/supabase/
 COPY packages/webapp/package.json ./packages/webapp/
 

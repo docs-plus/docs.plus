@@ -27,7 +27,7 @@ const LoadingSkeleton = () => (
 export default forwardRef((props, ref) => {
   const [selectedIndex, setSelectedIndex] = useState(0)
   const [workspaceUsers, setWorkspaceUsers] = useState([])
-  const { workspaceId } = useStore((state) => state.settings)
+  const workspaceId = useStore((state) => state.settings.workspaceId)
   const listRef = useRef(null)
 
   const { request: searchWorkspaceUsersRequest, loading: searchWorkspaceUsersLoading } = useApi(

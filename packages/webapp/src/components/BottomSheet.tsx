@@ -70,7 +70,7 @@ const BottomSheet = () => {
   const chatRoomOpen = useChatStore((state) => state.chatRoom.open)
   const setSheetContainerRef = useSheetStore((state) => state.setSheetContainerRef)
   const setSheetState = useSheetStore((state) => state.setSheetState)
-  const { deviceDetect } = useStore((state) => state.settings)
+  const deviceDetect = useStore((state) => state.settings.deviceDetect)
 
   const isDeviceIOS = useMemo(() => deviceDetect?.os() === 'iOS', [deviceDetect])
 

@@ -13,20 +13,8 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
   const updateActiveSectionType = useCallback((args: any) => {
     if (!args || !args.editor || !args?.transaction.selectionSet) return
 
-    const { selection } = args.editor.state
-    const {
-      $from: { pos }
-    } = selection
-
-    // Get the DOM node at the current position
-    const domNode = args.editor.view.domAtPos(pos).node
-    // Find the closest parent with the ".heading" class
-    const closestHeadingLevel = +domNode?.parentElement?.closest('.heading')?.getAttribute('level')
-    // If the closest heading level is not a number, set the heading level to 1
-    setHeadingLevel(isNaN(closestHeadingLevel) ? 1 : closestHeadingLevel)
-
-    for (let i = 1; i <= 9; i++) {
-      if (args.editor.isActive('contentHeading', { level: i })) {
+    for (let i = 1; i <= 6; i++) {
+      if (args.editor.isActive('heading', { level: i })) {
         setActiveSectionType('heading')
         setHeadingLevel(i)
         return
@@ -37,7 +25,7 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
 
   const changeHeadingLevel = useCallback(
     (hLevel: number) => {
-      if ((hLevel < 0 && headingLevel > 1) || (hLevel > 0 && headingLevel < 9)) {
+      if ((hLevel < 0 && headingLevel > 1) || (hLevel > 0 && headingLevel < 6)) {
         const newLevel = headingLevel + hLevel
         setHeadingLevel(newLevel)
         applyHeadingLevel(newLevel)
@@ -51,11 +39,15 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
     const { $anchor } = editor.state.selection
 
     if (activeSectionType === 'heading') {
-      // Prevent changing or removing the first Title node
-      if ($anchor.pos - $anchor.parentOffset === 2) {
+      // Prevent changing the title H1 (first heading in doc at pos 0)
+      if ($anchor.before($anchor.depth) === 0) {
         return
       }
-      editor.chain().focus().wrapBlock({ level }).run()
+      editor
+        .chain()
+        .focus()
+        .toggleHeading({ level: level as 1 | 2 | 3 | 4 | 5 | 6 })
+        .run()
     }
   }
 
@@ -63,15 +55,19 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
     editor.view.focus()
     const { $anchor } = editor.state.selection
 
-    // Prevent changing or removing the first Title node
-    if ($anchor.pos - $anchor.parentOffset === 2) {
+    // Prevent changing the title H1
+    if ($anchor.before($anchor.depth) === 0) {
       return
     }
 
     if (activeSectionType === 'p') {
-      editor.chain().focus().wrapBlock({ level: headingLevel }).run()
+      editor
+        .chain()
+        .focus()
+        .toggleHeading({ level: headingLevel as 1 | 2 | 3 | 4 | 5 | 6 })
+        .run()
     } else {
-      editor.chain().focus().normalText().run()
+      editor.chain().focus().setParagraph().run()
     }
   }, [headingLevel, editor, activeSectionType])
 
@@ -107,7 +103,7 @@ const HeadingSelection = ({ editor }: HeadingSelectionProps) => {
         shape="square"
         className="join-item"
         onTouchEnd={() => changeHeadingLevel(1)}
-        disabled={headingLevel === 9}
+        disabled={headingLevel === 6}
         startIcon={<MdAdd size={20} />}
       />
     </div>

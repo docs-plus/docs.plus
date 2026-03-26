@@ -34,12 +34,12 @@ globs:
 # CORRECT
 cypress/e2e/editor/formatting/bold.cy.js
 cypress/e2e/editor/lists/task-list.cy.js
-cypress/e2e/editor/heading/change/heading-level-change-complex.cy.js
+cypress/e2e/editor/user-behavior/editing-flows.cy.js
 
 # WRONG
 cypress/e2e/editor/Formatting/Bold.cy.js        # PascalCase dir + file
 cypress/e2e/editor/lists/TaskList.cy.js          # PascalCase file
-cypress/e2e/editor/e2e-heading-change.cy.js      # redundant e2e- prefix
+cypress/e2e/editor/e2e-editing-flows.cy.js       # redundant e2e- prefix
 ```
 
 ## Unit Tests (`__tests__/`)
@@ -55,9 +55,9 @@ cypress/e2e/editor/e2e-heading-change.cy.js      # redundant e2e- prefix
 
 ```
 # CORRECT — name matches the module
-findPrevBlock.test.ts           → tests findPrevBlock.ts
-copyPastePlugin.test.ts         → tests createCopyPastePlugin
-validateHeadingHierarchy.test.ts → tests validateHeadingHierarchy.ts
+computeSection.test.ts          → tests computeSection.ts
+headingFold.test.ts             → tests HeadingFold extension
+decorationHelpers.test.ts       → tests decorationHelpers.ts
 
 # WRONG — name describes a sprint/phase
 auditFixes.test.ts              → name says nothing about what it tests

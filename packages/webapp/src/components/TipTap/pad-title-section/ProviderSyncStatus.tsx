@@ -3,7 +3,7 @@ import { Icons } from '@icons'
 import { useStore } from '@stores'
 
 const ProviderSyncStatus = () => {
-  const { providerStatus } = useStore((state) => state.settings)
+  const providerStatus = useStore((state) => state.settings.providerStatus)
 
   const statusConfig = {
     saving: {

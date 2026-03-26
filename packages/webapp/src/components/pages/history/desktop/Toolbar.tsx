@@ -9,7 +9,8 @@ import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
 import { useVersionRestore } from '../hooks/useVersionRestore'
 
 const Toolbar = () => {
-  const { activeHistory, historyList } = useStore((state) => state)
+  const activeHistory = useStore((state) => state.activeHistory)
+  const historyList = useStore((state) => state.historyList)
   const { handleRestore } = useVersionRestore()
   const versionInfo = useGetVersionInfo()()
 

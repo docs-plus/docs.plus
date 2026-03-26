@@ -5,7 +5,7 @@
 // ======================
 // Utility Classes
 // ======================
-.activeTocBorder::after {
+.toc__active-border::after {
   content: '';
   position: absolute;
   top: 0;
@@ -35,16 +35,16 @@
   .toc__list.is-dragging {
     user-select: none;
 
-    // .btnFold,
-    .btn_chat,
+    // .toc__fold-btn,
+    .toc__chat-trigger,
     .toc-drag-handle,
     .avatar-group,
-    .focusSight > a::after {
+    .toc__item--focused > a::after {
       opacity: 0 !important;
       pointer-events: none;
     }
 
-    .toc-item-level {
+    .toc__level-badge {
       display: block;
     }
 
@@ -114,7 +114,7 @@
   }
 
   // Focus sight indicator
-  &.focusSight > a::after {
+  &.toc__item--focused > a::after {
     content: '';
     position: absolute;
     top: 0;
@@ -126,7 +126,7 @@
     transition: left 0.2s ease-in-out;
   }
 
-  &.focusSight:hover > a::after {
+  &.toc__item--focused:hover > a::after {
     left: -22px !important;
   }
 
@@ -135,7 +135,7 @@
     color: var(--color-primary);
   }
 
-  > a.active > span > .btnChat {
+  > a.active > span > .toc__chat-icon {
     fill: var(--color-docsy);
     opacity: 1;
   }
@@ -151,7 +151,7 @@
       opacity: 0.5;
     }
 
-    .btnFold {
+    .toc__fold-btn {
       opacity: 0.4;
     }
   }
@@ -165,7 +165,7 @@
 // ======================
 // Fold Button
 // ======================
-.toc__item .btnFold {
+.toc__item .toc__fold-btn {
   opacity: 1;
   cursor: pointer;
   transition: opacity 0.2s ease-in-out;
@@ -193,7 +193,7 @@
 // Chat Button
 // ======================
 .toc__item {
-  .btn_chat {
+  .toc__chat-trigger {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -206,7 +206,7 @@
     }
   }
 
-  .btnChat {
+  .toc__chat-icon {
     opacity: 0;
     padding: 1px;
     transition:
@@ -214,11 +214,11 @@
       background-color 0.2s ease-in-out;
   }
 
-  &:hover > a > span > .btnChat {
+  &:hover > a > span > .toc__chat-icon {
     opacity: 1;
   }
 
-  a:not(:active, .active):hover .btnChat {
+  a:not(:active, .active):hover .toc__chat-icon {
     background-color: var(--base-300);
   }
 }
@@ -264,7 +264,7 @@
 // ======================
 // Hover Level Picker (reuses drag-levels styles)
 // ======================
-.toc-hover-levels {
+.toc__level-picker {
   position: absolute;
   left: -16px;
   top: -28px; // Position above the TOC item (matches drag overlay position)
@@ -274,7 +274,7 @@
 // ======================
 // Level Badge (hidden until drag)
 // ======================
-.toc-item-level {
+.toc__level-badge {
   display: none;
   position: absolute;
   right: 0px;
@@ -479,8 +479,14 @@
 // Mobile Overrides
 // ======================
 .m_mobile {
-  .btnChat {
+  .toc__chat-icon {
     opacity: 1 !important;
+  }
+
+  // Mobile row uses a larger hit target than desktop’s 24px trigger
+  .toc__item > a > button.toc__chat-trigger {
+    width: 2rem;
+    height: 2rem;
   }
 
   .toc__item {
@@ -488,7 +494,7 @@
       line-height: 2 !important;
     }
 
-    .btnFold {
+    .toc__fold-btn {
       opacity: 1 !important;
     }
   }

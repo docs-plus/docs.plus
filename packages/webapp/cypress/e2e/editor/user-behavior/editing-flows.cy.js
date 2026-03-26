@@ -45,8 +45,8 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Verify structure
-      cy.get('.heading[level="1"] .title').should('contain', 'My First Document')
-      cy.get('.heading[level="2"] .title').should('contain', 'Getting Started')
+      cy.get('h1[data-toc-id]').should('contain', 'My First Document')
+      cy.get('h2[data-toc-id]').should('contain', 'Getting Started')
       cy.get('p').should('contain', 'introduction paragraph')
       cy.get('p').should('contain', 'get started')
     })
@@ -78,10 +78,10 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.realType('Level 4 content')
       cy.wait(100)
 
-      // Verify nested structure
-      cy.get('.heading[level="1"] .heading[level="2"] .heading[level="3"] .heading[level="4"]')
-        .should('exist')
-        .and('contain', 'Level 4')
+      cy.get('h1[data-toc-id]').should('exist')
+      cy.get('h2[data-toc-id]').should('exist')
+      cy.get('h3[data-toc-id]').should('exist')
+      cy.get('h4[data-toc-id]').should('exist').and('contain', 'Level 4')
 
       cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
         expect(result.valid).to.be.true
@@ -111,12 +111,8 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.realPress(['Alt', 'Meta', '3'])
       cy.wait(100)
 
-      // Should now be nested under Introduction
-      cy.get('.heading[level="2"] .title')
-        .contains('Introduction')
-        .closest('.heading')
-        .find('.heading[level="3"]')
-        .should('contain', 'Should be nested')
+      cy.get('h2[data-toc-id]').contains('Introduction').should('exist')
+      cy.get('h3[data-toc-id]').contains('Should be nested').should('exist')
 
       cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
         expect(result.valid).to.be.true
@@ -145,7 +141,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Should now be a separate H1 section
-      cy.get('.docy_editor > .tiptap > .heading[level="1"]').should('have.length', 2)
+      cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length', 2)
 
       cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
         expect(result.valid).to.be.true
@@ -166,14 +162,14 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Click on heading to focus it, then type
-      cy.get('.heading[level="1"] .title').first().click()
+      cy.get('h1[data-toc-id]').first().click()
       cy.realPress('End') // Go to end
       cy.realType(' Modified')
       cy.wait(100)
 
       // Verify change and structure integrity
-      cy.get('.heading[level="1"] .title').first().should('contain', 'Modified')
-      cy.get('.heading[level="2"]').should('exist')
+      cy.get('h1[data-toc-id]').first().should('contain', 'Modified')
+      cy.get('h2[data-toc-id]').should('exist')
       cy.get('p').should('contain', 'Content here')
 
       cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
@@ -201,12 +197,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.realType('New paragraph between headings')
       cy.wait(100)
 
-      // Verify paragraph is inside First Heading's contentWrapper
-      cy.get('.heading[level="2"]')
-        .contains('First Heading')
-        .closest('.heading')
-        .find('p')
-        .should('contain', 'New paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror p').contains('New paragraph').should('exist')
 
       cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
         expect(result.valid).to.be.true
@@ -225,12 +216,12 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Click on heading title and type
-      cy.get('.heading[level="1"] .title').click()
+      cy.get('h1[data-toc-id]').click()
       cy.realPress('End')
       cy.realType(' Extended')
       cy.wait(100)
 
-      cy.get('.heading[level="1"] .title').should('contain', 'Extended')
+      cy.get('h1[data-toc-id]').should('contain', 'Extended')
     })
   })
 
@@ -260,7 +251,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Verify 3 sections
-      cy.get('.docy_editor > .tiptap > .heading[level="1"]').should('have.length', 3)
+      cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length', 3)
 
       cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
         expect(result.valid).to.be.true
@@ -301,11 +292,11 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Type in empty heading
-      cy.get('.heading[level="1"] .title').click()
+      cy.get('h1[data-toc-id]').click()
       cy.realType('New Title')
       cy.wait(100)
 
-      cy.get('.heading[level="1"] .title').should('contain', 'New Title')
+      cy.get('h1[data-toc-id]').should('contain', 'New Title')
     })
 
     it('should handle rapid typing in heading', () => {
@@ -323,7 +314,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.realType(' - typing very fast without stopping to see if editor handles it well')
       cy.wait(100)
 
-      cy.get('.heading[level="1"] .title').should('contain', 'typing very fast')
+      cy.get('h1[data-toc-id]').should('contain', 'typing very fast')
 
       cy.validateDomStructure({ throwOnError: false, logResults: true }).then((result) => {
         expect(result.valid).to.be.true
@@ -355,7 +346,7 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Should have new section
-      cy.get('.heading[level="1"] .title').should('contain', 'Fresh Start')
+      cy.get('h1[data-toc-id]').should('contain', 'Fresh Start')
     })
   })
 
@@ -381,7 +372,9 @@ describe('User Editing Flows', { testIsolation: false }, () => {
       cy.wait(100)
 
       // The heading should be visible (scrolled into view)
-      cy.get('.heading .title').contains('Target Heading').should('be.visible')
+      cy.get(':is(h1, h2, h3, h4, h5, h6)[data-toc-id]')
+        .contains('Target Heading')
+        .should('be.visible')
     })
 
     it('should reflect heading changes in TOC', () => {

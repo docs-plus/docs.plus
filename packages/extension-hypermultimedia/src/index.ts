@@ -2,6 +2,7 @@ export * from './hyperMultimediaKit'
 export * from './modals/image'
 export * from './modals/twitter'
 export * from './modals/youtube'
+export { Image as HyperMultimediaImage } from './nodes/image/image'
 export * from './utils/floating-toolbar'
 export * from './utils/media-placement'
 

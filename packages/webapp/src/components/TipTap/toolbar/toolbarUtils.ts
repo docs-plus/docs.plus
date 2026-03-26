@@ -33,7 +33,7 @@ interface SearchResult {
 }
 
 export const searchThroughHeading = (search: string): SearchResult => {
-  const headings = document.querySelectorAll('.title')
+  const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6')
 
   const filteredHeadings = Array.from(headings).filter((heading) => {
     const key = search
@@ -91,7 +91,7 @@ export const saveDocReadOnlyPage = <TData = unknown, TError = unknown, TContext 
 }
 
 export const highlightTocHeadings = (headings: Element[]): void => {
-  const headingIds = headings.map((heading) => heading.closest('.heading')?.getAttribute('data-id'))
+  const headingIds = headings.map((heading) => heading.getAttribute('data-toc-id'))
   const tocHeadings = document.querySelectorAll('.tiptap__toc .toc__item a')
 
   tocHeadings.forEach((tocItem) => {

@@ -7,16 +7,14 @@ import PubSub from 'pubsub-js'
 import { useCallback, useEffect } from 'react'
 
 export const useNotificationSummary = () => {
-  const { workspaceId } = useStore((state) => state.settings)
+  const workspaceId = useStore((state) => state.settings.workspaceId)
   const user = useAuthStore((state) => state.profile)
-  const {
-    setNotificationSummary,
-    setNotifications,
-    clearNotifications,
-    setLoadingNotification,
-    setNotificationTab,
-    setNotificationPage
-  } = useStore((state) => state)
+  const setNotificationSummary = useStore((state) => state.setNotificationSummary)
+  const setNotifications = useStore((state) => state.setNotifications)
+  const clearNotifications = useStore((state) => state.clearNotifications)
+  const setLoadingNotification = useStore((state) => state.setLoadingNotification)
+  const setNotificationTab = useStore((state) => state.setNotificationTab)
+  const setNotificationPage = useStore((state) => state.setNotificationPage)
 
   const { request: summaryRequest } = useApi(getNotificationsSummary, null, false)
 

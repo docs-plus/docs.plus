@@ -47,7 +47,8 @@ const DocTitle = ({ className }: { className?: string }) => {
   const [showSaved, setShowSaved] = useState(false)
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { hocuspocusProvider, metadata: docMetadata } = useStore((state) => state.settings)
+  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
+  const docMetadata = useStore((state) => state.settings.metadata)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
 
   // Initialize title from metadata

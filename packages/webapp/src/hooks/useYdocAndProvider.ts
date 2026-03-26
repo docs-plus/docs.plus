@@ -22,9 +22,8 @@ interface UseYdocAndProviderProps {
 }
 
 const useYdocAndProvider = ({ accessToken, deviceType = 'desktop' }: UseYdocAndProviderProps) => {
-  const {
-    metadata: { documentId, slug }
-  } = useStore((state) => state.settings)
+  const documentId = useStore((state) => state.settings.metadata?.documentId)
+  const slug = useStore((state) => state.settings.metadata?.slug)
 
   const [destroyed, setDestroyed] = useState(false)
   const ydocRef = useRef(new Y.Doc())
@@ -33,7 +32,8 @@ const useYdocAndProvider = ({ accessToken, deviceType = 'desktop' }: UseYdocAndP
   const syncedTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const setWorkspaceSetting = useStore((state) => state.setWorkspaceSetting)
-  const { hocuspocusProvider, providerStatus } = useStore((state) => state.settings)
+  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
+  const providerStatus = useStore((state) => state.settings.providerStatus)
 
   useEffect(() => {
     if (!documentId) return

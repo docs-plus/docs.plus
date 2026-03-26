@@ -53,17 +53,9 @@
 }
 
 // =============================================================================
-// Floating Chat Button (.btnOpenChatBox)
+// TOC chat trigger (.toc__chat-trigger)
 // =============================================================================
-.btnOpenChatBox[data-unread-count]:not([data-unread-count='']) {
-  @include unread-badge($top: -4px, $right: -8px, $size: 20px, $font-size: 11px);
-  visibility: visible !important;
-}
-
-// =============================================================================
-// TOC Chat Button (.btn_chat)
-// =============================================================================
-.btn_chat[data-unread-count]:not([data-unread-count='']) {
+.toc__chat-trigger[data-unread-count]:not([data-unread-count='']) {
   @include unread-badge($top: -2px, $right: -6px, $size: 16px, $font-size: 10px);
 
   // Hide the chat icon when badge is shown
@@ -71,13 +63,6 @@
   svg {
     display: none;
   }
-}
-
-// =============================================================================
-// Mobile Chat Button (.btn_openChatBox)
-// =============================================================================
-.btn_openChatBox[data-unread-count]:not([data-unread-count='']) {
-  @include unread-badge($top: 2px, $right: 2px, $size: 18px, $font-size: 10px);
 }
 
 // =============================================================================

@@ -18,9 +18,10 @@ const RenderLoader = ({ className }: { className?: string }) => {
 }
 
 const EditorContent = ({ className }: { className?: string }) => {
-  const {
-    editor: { instance: editor, loading, providerSyncing, applyingFilters }
-  } = useStore((state) => state.settings)
+  const editor = useStore((state) => state.settings.editor.instance)
+  const loading = useStore((state) => state.settings.editor.loading)
+  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
+  const applyingFilters = useStore((state) => state.settings.editor.applyingFilters)
   const editorElement = useRef<HTMLDivElement>(null)
   const { enableAndFocus, isKeyboardOpen } = useEnableEditor()
 

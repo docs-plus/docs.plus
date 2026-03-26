@@ -5,8 +5,9 @@ import { useCallback } from 'react'
 import { getContentFromYdocObject } from '../helpers'
 
 export const useVersionRestore = () => {
-  const { hocuspocusProvider } = useStore((state) => state.settings)
-  const { setLoadingHistory, activeHistory } = useStore((state) => state)
+  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
+  const setLoadingHistory = useStore((state) => state.setLoadingHistory)
+  const activeHistory = useStore((state) => state.activeHistory)
   const user = useAuthStore((state) => state.profile)
 
   const handleRestore = useCallback(() => {

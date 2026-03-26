@@ -177,7 +177,7 @@ We use **Husky** to enforce local quality gates before code reaches remote branc
 - Active hooks:
   - `pre-commit`: runs `bun run lint:staged` (staged-file lint/format checks)
   - `commit-msg`: validates commit message format
-  - `pre-push`: runs selective build checks and always runs `bun run check` for **every push**
+  - `pre-push`: runs selective build checks and always runs `bun run check:full` for **every push** (lint + format + types + Stylelint)
   - `post-merge`: runs `bun install` when `package.json` or `bun.lock` changes
 
 You can trigger hooks manually:
@@ -200,7 +200,16 @@ printf 'refs/heads/feature/demo 0000000000000000000000000000000000000000 refs/he
 - Use TypeScript for all new code
 - Avoid `any` types - use proper types or `unknown`
 - Enable strict mode in your IDE
-- Run type checking: `bun run build` (will fail on type errors)
+- Run type checking: `bun run check:types` or `bun run build` (will fail on type errors)
+- Tooling policy and CI parity: [docs/engineering/toolchain.md](./docs/engineering/toolchain.md)
+
+### Quality commands (summary)
+
+| Command                | Use case                                  |
+| ---------------------- | ----------------------------------------- |
+| `bun run check`        | Lint + Prettier check + typecheck         |
+| `bun run check:full`   | Above + Stylelint (matches pre-push gate) |
+| `bun run check:static` | Lint + Prettier + Stylelint (no `tsc`)    |
 
 ## 🧪 Testing
 
@@ -220,7 +229,7 @@ Run unit tests with Jest:
 
 ```bash
 cd packages/webapp
-bun test
+bun run test
 ```
 
 ### E2E Tests

@@ -8,7 +8,7 @@ import MsgComposer from '../../MessageComposer'
  * Shows actions/formatting toolbar based on keyboard state and user preference
  */
 const MobileToolbar = () => {
-  const { isKeyboardOpen } = useStore((state) => state)
+  const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
   const { isToolbarOpen, toggleToolbar } = useMessageComposer()
 
   if (!isKeyboardOpen) return null

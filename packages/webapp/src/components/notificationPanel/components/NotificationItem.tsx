@@ -16,7 +16,7 @@ const isSystemNotification = (notification: any): boolean =>
 
 export const NotificationItem = ({ notification }: { notification: any }) => {
   const { handleMarkAsRead } = useMarkNotificationAsRead()
-  const { notificationActiveTab } = useStore((state) => state)
+  const notificationActiveTab = useStore((state) => state.notificationActiveTab)
 
   const { headingId } = useChatStore((state) => state.chatRoom)
   const destroyChatRoom = useChatStore((state) => state.destroyChatRoom)

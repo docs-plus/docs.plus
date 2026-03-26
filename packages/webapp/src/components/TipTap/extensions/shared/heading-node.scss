@@ -1,0 +1,71 @@
+.tiptap.ProseMirror {
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    position: relative;
+    color: inherit;
+    font-style: inherit;
+    font-weight: 700;
+    line-height: 1.15;
+  }
+
+  > h1:first-child,
+  > h2:first-child,
+  > h3:first-child,
+  > h4:first-child,
+  > h5:first-child,
+  > h6:first-child,
+  > .ProseMirror-widget + h1,
+  > .ProseMirror-widget + h2,
+  > .ProseMirror-widget + h3,
+  > .ProseMirror-widget + h4,
+  > .ProseMirror-widget + h5,
+  > .ProseMirror-widget + h6 {
+    margin-top: 0;
+  }
+
+  h1 {
+    font-size: var(--hd-size, 20pt);
+    margin-top: 1.33em;
+  }
+
+  > h1:first-of-type {
+    margin-bottom: 0.5em;
+  }
+
+  > h1:first-child:has(> br:only-child):not(.has-focus)::before {
+    content: 'Enter document name';
+    color: var(--muted-foreground);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+
+  h2 {
+    font-size: var(--hd-size, 16pt);
+    margin-top: 1.15em;
+  }
+
+  h3 {
+    font-size: var(--hd-size, 14pt);
+    margin-top: 1em;
+  }
+
+  h4 {
+    font-size: var(--hd-size, 12pt);
+    margin-top: 1em;
+  }
+
+  h5 {
+    font-size: var(--hd-size, 11pt);
+    margin-top: 1em;
+  }
+
+  h6 {
+    font-size: var(--hd-size, 10pt);
+    margin-top: 1em;
+  }
+}

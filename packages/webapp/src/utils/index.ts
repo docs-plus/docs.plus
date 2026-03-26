@@ -13,7 +13,7 @@ export { copyRichContentToClipboard, copyToClipboard } from './clipboard'
 
 //
 export const getPostAtDOM = (editor: any, id: string = '1') => {
-  const heading = document.querySelector(`.heading[data-id="${id}"]`)
+  const heading = document.querySelector(`[data-toc-id="${id}"]`)
   if (!heading) return -1
   return editor?.view?.posAtDOM(heading, 0)
 }

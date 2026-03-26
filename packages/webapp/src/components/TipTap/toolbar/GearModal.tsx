@@ -6,7 +6,8 @@ import Textarea from '@components/ui/Textarea'
 import Toggle from '@components/ui/Toggle'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
-import { useAuthStore, useEditorPreferences, useStore } from '@stores'
+import { useAuthStore, useStore } from '@stores'
+import { downloadAsMarkdown, importMarkdownFile } from '@utils/markdown'
 import Image from 'next/image'
 import React, { useEffect, useState } from 'react'
 import { TagsInput } from 'react-tag-input-component'
@@ -57,14 +58,10 @@ const GearModal = ({ className, onClose }: GearModalProps) => {
   const popoverState = usePopoverState()
   const handleClose = onClose || popoverState.close
   const user = useAuthStore((state) => state.profile)
-  const {
-    hocuspocusProvider,
-    isAuthServiceAvailable,
-    metadata: docMetadata
-  } = useStore((state) => state.settings)
-
-  // Editor preferences from store (persisted in localStorage)
-  const { preferences, togglePreference } = useEditorPreferences()
+  const editor = useStore((state) => state.settings.editor.instance)
+  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
+  const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
+  const docMetadata = useStore((state) => state.settings.metadata)
 
   const [docDescription, setDocDescription] = useState(docMetadata.description || '')
   const { isLoading, isSuccess, mutate } = useUpdateDocMetadata()
@@ -96,9 +93,6 @@ const GearModal = ({ className, onClose }: GearModalProps) => {
       else toast.Success('Description and keywords updated')
     }
   }, [isSuccess])
-
-  const toggleIndentSetting = () => togglePreference('indentHeading')
-  const toggleH1SectionBreakSetting = () => togglePreference('h1SectionBreak')
 
   const OwnerProfile = () => {
     const { full_name, username } = docMetadata.ownerProfile
@@ -147,31 +141,6 @@ const GearModal = ({ className, onClose }: GearModalProps) => {
 
       {/* Content */}
       <div className="flex flex-col gap-4 p-4">
-        {/* Page Preferences */}
-        <div className="collapse-arrow rounded-box border-base-300 bg-base-100 collapse border">
-          <input type="radio" className="peer" name="gear-accordion" />
-          <div className="collapse-title text-base-content flex items-center gap-2 font-medium">
-            <Icons.splitVertical size={16} className="text-base-content/50" />
-            Page Preferences
-          </div>
-          <div className="collapse-content border-base-300 border-t px-4">
-            <div className="divide-base-300 divide-y">
-              <ToggleSection
-                name="Heading Indentation"
-                description="Indent headings for better readability"
-                checked={preferences.indentHeading}
-                onChange={toggleIndentSetting}
-              />
-              <ToggleSection
-                name="H1 Section Break"
-                description="Insert a break after H1 headings"
-                checked={preferences.h1SectionBreak}
-                onChange={toggleH1SectionBreakSetting}
-              />
-            </div>
-          </div>
-        </div>
-
         {/* Document Preferences */}
         <div className="collapse-arrow rounded-box border-base-300 bg-base-100 collapse border">
           <input type="radio" className="peer" name="gear-accordion" defaultChecked />
@@ -221,6 +190,49 @@ const GearModal = ({ className, onClose }: GearModalProps) => {
 
               {/* Owner Profile */}
               {docMetadata.ownerProfile && isAuthServiceAvailable && <OwnerProfile />}
+            </div>
+          </div>
+        </div>
+
+        {/* Markdown Import / Export */}
+        <div className="collapse-arrow rounded-box border-base-300 bg-base-100 collapse border">
+          <input type="radio" className="peer" name="gear-accordion" />
+          <div className="collapse-title text-base-content flex items-center gap-2 font-medium">
+            <Icons.fileText size={16} className="text-base-content/50" />
+            Markdown
+          </div>
+          <div className="collapse-content border-base-300 border-t px-4 pt-4">
+            <p className="text-base-content/60 mb-4 text-xs">
+              Import a Markdown file to replace the current document, or export the document as
+              Markdown.
+            </p>
+            <div className="flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={!editor}
+                className="border-base-300 flex-1 border"
+                onClick={async () => {
+                  if (!editor) return
+                  const { ok, error } = await importMarkdownFile(editor)
+                  if (ok) toast.Success('Markdown imported')
+                  else if (error) toast.Error(error)
+                }}>
+                <Icons.upload size={14} />
+                Import .md
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                disabled={!editor || (!docMetadata.title && editor.isEmpty)}
+                className="border-base-300 flex-1 border"
+                onClick={() => {
+                  if (!editor) return
+                  downloadAsMarkdown(editor, docMetadata.title || '')
+                }}>
+                <Icons.download size={14} />
+                Export .md
+              </Button>
             </div>
           </div>
         </div>

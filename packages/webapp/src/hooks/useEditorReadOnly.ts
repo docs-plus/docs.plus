@@ -2,10 +2,8 @@ import { useStore } from '@stores'
 import { useEffect } from 'react'
 
 const useEditorReadOnly = () => {
-  const {
-    hocuspocusProvider: provider,
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
+  const provider = useStore((state) => state.settings.hocuspocusProvider)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   // This runs when stateless event is fired
   useEffect(() => {

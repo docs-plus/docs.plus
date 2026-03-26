@@ -2,12 +2,10 @@ import { markAllNotificationsAsRead } from '@api'
 import { useAuthStore, useStore } from '@stores'
 
 export const useMarkAllNotificationsAsRead = () => {
-  const {
-    setNotificationActiveTab,
-    emptyNotifications,
-    setLoadingNotification,
-    setNotificationTab
-  } = useStore((state) => state)
+  const setNotificationActiveTab = useStore((state) => state.setNotificationActiveTab)
+  const emptyNotifications = useStore((state) => state.emptyNotifications)
+  const setLoadingNotification = useStore((state) => state.setLoadingNotification)
+  const setNotificationTab = useStore((state) => state.setNotificationTab)
   const user = useAuthStore((state) => state.profile)
 
   const handleMarkAllAsRead = async () => {

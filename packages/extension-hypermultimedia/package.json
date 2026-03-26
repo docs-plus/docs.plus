@@ -49,16 +49,16 @@
     "docs.plus"
   ],
   "peerDependencies": {
-    "@tiptap/core": "^3.10.7",
-    "@tiptap/pm": "^3.10.7"
+    "@tiptap/core": "^3.20.4",
+    "@tiptap/pm": "^3.20.4"
   },
   "dependencies": {
     "@floating-ui/dom": "^1.7.6",
     "tippy.js": "^6.3.7"
   },
   "devDependencies": {
-    "@tiptap/core": "^3.20.0",
-    "@tiptap/pm": "^3.20.0",
+    "@tiptap/core": "^3.20.4",
+    "@tiptap/pm": "^3.20.4",
     "@eslint/js": "^9.39.3",
     "@types/minimatch": "^6.0.0",
     "@typescript-eslint/eslint-plugin": "^8.56.1",

@@ -12,7 +12,8 @@ interface StatelessPayloadEvent {
 }
 
 const ReadOnlyIndicator = ({ className }: ReadOnlyIndicatorProps) => {
-  const { hocuspocusProvider, metadata } = useStore((state) => state.settings)
+  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
+  const metadata = useStore((state) => state.settings.metadata)
   const [isReadOnly, setIsReadOnly] = useState(metadata?.readOnly)
 
   useEffect(() => {

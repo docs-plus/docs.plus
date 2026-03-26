@@ -23,9 +23,7 @@ describe('Combined Lists', { testIsolation: false }, () => {
 
     it('should convert bullet list to ordered list and back', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // Focus on the paragraph
       cy.get('@paragraph').click()
@@ -89,9 +87,7 @@ describe('Combined Lists', { testIsolation: false }, () => {
 
     it('should convert ordered list to task list and back', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // Focus on the paragraph
       cy.get('@paragraph').click()
@@ -157,9 +153,7 @@ describe('Combined Lists', { testIsolation: false }, () => {
 
     it('should support bullet list with nested ordered list', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // Focus on the paragraph
       cy.get('@paragraph').click()
@@ -207,9 +201,7 @@ describe('Combined Lists', { testIsolation: false }, () => {
 
     it('should support ordered list with nested task list', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // Focus on the paragraph
       cy.get('@paragraph').click()
@@ -266,9 +258,7 @@ describe('Combined Lists', { testIsolation: false }, () => {
 
     it('should support three levels of different list types', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // Focus on the paragraph
       cy.get('@paragraph').click()
@@ -351,9 +341,7 @@ describe('Combined Lists', { testIsolation: false }, () => {
 
     it('should maintain list type when continuing after text input', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // Focus on the paragraph
       cy.get('@paragraph').click()
@@ -369,8 +357,8 @@ describe('Combined Lists', { testIsolation: false }, () => {
       cy.get('.docy_editor ul > li').eq(1).realPress('Enter')
 
       // Type normal paragraph text
-      cy.get('.docy_editor .contents > p').last().realType('Normal paragraph text')
-      cy.get('.docy_editor .contents > p').last().realPress('Enter')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').last().realType('Normal paragraph text')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').last().realPress('Enter')
 
       // 2. Create ordered list
       cy.get('.docy_editor').realPress(['Meta', 'Shift', '7'])
@@ -381,8 +369,8 @@ describe('Combined Lists', { testIsolation: false }, () => {
       cy.get('.docy_editor ol > li').eq(1).realPress('Enter')
 
       // Type normal paragraph text
-      cy.get('.docy_editor .contents > p').last().realType('More normal text')
-      cy.get('.docy_editor .contents > p').last().realPress('Enter')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').last().realType('More normal text')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').last().realPress('Enter')
 
       // 3. Create task list
       cy.get('.docy_editor').realPress(['Meta', 'Shift', '9'])
@@ -392,8 +380,8 @@ describe('Combined Lists', { testIsolation: false }, () => {
       cy.get('.docy_editor ul').should('have.length.at.least', 2) // Bullet and task lists
       cy.get('.docy_editor ol').should('have.length', 1)
       cy.get('.docy_editor input[type="checkbox"]').should('have.length.at.least', 1)
-      cy.get('.docy_editor .contents > p').should('have.length.at.least', 2)
-      cy.get('.docy_editor .contents > p').eq(-1).should('contain', 'More normal text')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').should('have.length.at.least', 2)
+      cy.get('.docy_editor .tiptap.ProseMirror > p').eq(-1).should('contain', 'More normal text')
     })
   })
 })

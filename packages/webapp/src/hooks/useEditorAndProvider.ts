@@ -14,12 +14,10 @@ import useNewDocumentTip from './useNewDocumentTip'
 import useProviderAwareness from './useProviderAwareness'
 
 const useEditorAndProvider = ({ provider }: { provider: any }) => {
-  const { editor: editorSetting } = useStore((state) => state.settings)
-
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
-  const editor = useEditor(editorConfig({ provider, spellcheck: false }), [
-    editorSetting?.applyingFilters
-  ])
+  // Never put `applyingFilters` (or other UI flags) here — deps recreate the editor and
+  // destroy ProseMirror, which feels like freezes/glitches. Visibility is handled in EditorContent.
+  const editor = useEditor(editorConfig({ provider, spellcheck: false }), [provider])
 
   // Set initial content if the document is new
   useInitializeNewDocument({ editor, provider })
@@ -41,19 +39,6 @@ const useEditorAndProvider = ({ provider }: { provider: any }) => {
     setWorkspaceEditorSetting('instance', editor)
     setWorkspaceEditorSetting('loading', false)
   }, [editor])
-
-  // The selection has changed.
-  useEffect(() => {
-    if (!editor || editorSetting?.loading) return
-
-    editor.on('selectionUpdate', ({ editor }) => {
-      setWorkspaceEditorSetting('selectionPos', editor.state.selection?.$anchor?.pos)
-    })
-
-    return () => {
-      editor.off('selectionUpdate')
-    }
-  }, [editor, editorSetting?.loading])
 
   return { editor, provider }
 }

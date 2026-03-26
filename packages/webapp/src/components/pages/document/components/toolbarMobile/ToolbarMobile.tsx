@@ -9,12 +9,11 @@ import HeadingSelection from './HeadingSelection'
 
 const ToolbarMobile = () => {
   const [isFormatSelectionVisible, setIsFormatSelectionVisible] = useState(false)
-  const {
-    editor: { instance: editor, isEditable }
-  } = useStore((state) => state.settings)
+  const editor = useStore((state) => state.settings.editor.instance)
+  const isEditable = useStore((state) => state.settings.editor.isEditable)
 
   const { createComment } = useTurnSelectedTextIntoComment()
-  const { isKeyboardOpen } = useStore((state) => state)
+  const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
 
   useEffect(() => {
     if (isEditable) {

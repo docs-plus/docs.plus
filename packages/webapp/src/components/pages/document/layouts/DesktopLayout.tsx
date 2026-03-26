@@ -8,11 +8,7 @@ import React from 'react'
 import DesktopEditor from '../components/DesktopEditor'
 
 const DesktopLayout = () => {
-  const {
-    settings: {
-      editor: { isMobile }
-    }
-  } = useStore((state) => state)
+  const isMobile = useStore((state) => state.settings.editor.isMobile)
 
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
   const isHistoryView = useHashRouter()

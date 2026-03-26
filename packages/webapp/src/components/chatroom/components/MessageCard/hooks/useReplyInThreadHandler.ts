@@ -1,36 +1,27 @@
+import { computeSection } from '@components/TipTap/extensions/shared'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useStore } from '@stores'
 import { TIPTAP_NODES, TMsgRow, TRANSACTION_META } from '@types'
 import PubSub from 'pubsub-js'
 import { useCallback } from 'react'
 
-// For reply in thread feature
 const emptyParagraphs = Array(5).fill({
   type: TIPTAP_NODES.PARAGRAPH_TYPE
 })
 
 const createHeadingNodeJson = (messageContent: string, headingLevel: number) => {
-  return {
-    type: TIPTAP_NODES.HEADING_TYPE,
-    attrs: { level: Math.min(headingLevel, 10) },
-    content: [
-      {
-        type: TIPTAP_NODES.CONTENT_HEADING_TYPE,
-        content: [{ type: TIPTAP_NODES.TEXT_TYPE, text: messageContent }],
-        attrs: { level: Math.min(headingLevel, 10) }
-      },
-      {
-        type: TIPTAP_NODES.CONTENT_WRAPPER_TYPE,
-        content: emptyParagraphs
-      }
-    ]
-  }
+  return [
+    {
+      type: TIPTAP_NODES.HEADING_TYPE,
+      attrs: { level: Math.min(headingLevel, 6) },
+      content: [{ type: TIPTAP_NODES.TEXT_TYPE, text: messageContent }]
+    },
+    ...emptyParagraphs
+  ]
 }
 
 export const useReplyInThreadHandler = () => {
-  const {
-    editor: { instance: editor }
-  } = useStore((state) => state.settings)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   const replyInThreadHandler = useCallback(
     (message: TMsgRow) => {
@@ -39,38 +30,46 @@ export const useReplyInThreadHandler = () => {
       const messageContent = message.content?.trim() || ''
       const headingId = message.channel_id
 
-      // Find the heading with matching ID in the document
       const { doc } = editor.state
       let headingPos: number | null = null
       let headingLevel = 1
-      let headingNode: any = null
+      let headingChildIndex = -1
+      let offset = 0
 
-      // Traverse the document to find the heading with matching ID
-      doc.descendants((node: any, pos: any) => {
-        if (node.type.name === TIPTAP_NODES.HEADING_TYPE && node.attrs.id === headingId) {
+      for (let i = 0; i < doc.content.childCount; i++) {
+        const child = doc.content.child(i)
+        const pos = offset
+        offset += child.nodeSize
+
+        if (
+          child.type.name === TIPTAP_NODES.HEADING_TYPE &&
+          (child.attrs['toc-id'] as string) === headingId
+        ) {
           headingPos = pos
-          headingLevel = node.attrs.level
-          headingNode = node
-          return false // Stop traversal once found
+          headingLevel = child.attrs.level as number
+          headingChildIndex = i
+          break
         }
-      })
+      }
 
-      // Calculate position where content should be inserted
-      const insertPosition =
-        headingPos !== null && headingNode
-          ? headingPos + Number(headingNode.content.size) // End of current heading's content
-          : doc.content.size || 0 // End of document if heading not found
+      let insertPosition: number
+      if (headingPos !== null && headingChildIndex >= 0) {
+        const section = computeSection(doc, headingPos, headingLevel, headingChildIndex)
+        insertPosition = section.to
+      } else {
+        insertPosition = doc.content.size || 0
+      }
 
-      // Insert content at calculated position
+      const newNodes = createHeadingNodeJson(
+        messageContent,
+        headingPos !== null ? headingLevel + 1 : 1
+      )
+
       const insertAndUpdate = () => {
         editor
           .chain()
           .focus()
-          .insertContentAt(
-            Number(insertPosition),
-            createHeadingNodeJson(messageContent, headingPos !== null ? headingLevel + 1 : 1),
-            { updateSelection: true }
-          )
+          .insertContentAt(Number(insertPosition), newNodes, { updateSelection: true })
           .command(({ tr }) => {
             tr.setMeta(TRANSACTION_META.RENDER_TOC, true)
             return true
@@ -78,25 +77,22 @@ export const useReplyInThreadHandler = () => {
           .run()
       }
 
-      // Execute insert and scroll to new position
       insertAndUpdate()
 
-      // After scrollIntoView and open Chatroom
       setTimeout(() => {
         const { doc } = editor.state
         let newHeadingId: string | null = null
 
-        // Search in a range around the insertion point
         const searchStart = Math.max(0, insertPosition - 10)
         const searchEnd = Math.min(doc.content.size, insertPosition + messageContent.length + 100)
 
-        doc.nodesBetween(searchStart, searchEnd, (node: any, _pos: any) => {
+        doc.nodesBetween(searchStart, searchEnd, (node: any) => {
           if (
             node.type.name === TIPTAP_NODES.HEADING_TYPE &&
             node.textContent.trim() === messageContent &&
-            node.attrs.id
+            node.attrs['toc-id']
           ) {
-            newHeadingId = node.attrs.id
+            newHeadingId = node.attrs['toc-id']
             return false
           }
         })

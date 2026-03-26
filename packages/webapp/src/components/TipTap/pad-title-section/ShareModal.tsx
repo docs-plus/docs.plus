@@ -66,7 +66,7 @@ interface ShareModalProps {
 
 const ShareModal = ({ setIsOpen }: ShareModalProps) => {
   const [href, setHref] = useState('')
-  const { metadata: docMetadata } = useStore((state) => state.settings)
+  const docMetadata = useStore((state) => state.settings.metadata)
   const { copy, copied } = useCopyToClipboard({ successMessage: 'Link copied!' })
 
   useEffect(() => {

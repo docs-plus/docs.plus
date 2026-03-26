@@ -74,12 +74,9 @@ const FilterBar = ({
   className?: string
   displayRestButton?: boolean
 }) => {
-  const {
-    editor: {
-      isMobile,
-      filterResult: { sortedSlugs, selectedNodes }
-    }
-  } = useStore((state) => state.settings)
+  const isMobile = useStore((state) => state.settings.editor.isMobile)
+  const sortedSlugs = useStore((state) => state.settings.editor.filterResult.sortedSlugs)
+  const selectedNodes = useStore((state) => state.settings.editor.filterResult.selectedNodes)
   const typedSortedSlugs = sortedSlugs as SortedSlug[]
   const typedSelectedNodes = selectedNodes as FilterNode[]
 

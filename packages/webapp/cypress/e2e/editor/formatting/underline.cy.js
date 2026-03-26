@@ -8,8 +8,7 @@ const DocumentStructure = {
   sections: [section(TEST_TITLE.short, [])]
 }
 
-const getParagraph = () =>
-  cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p').first().as('paragraph')
+const getParagraph = () => cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
 const selectTarget = (text, start, end) =>
   cy.createSelection({
@@ -38,7 +37,6 @@ describe('Underline Formatting', () => {
 
     cy.get('@paragraph').find('u').should('contain', 'underline-target')
     cy.get('@paragraph').should('contain', 'Prefix underline-target suffix')
-    cy.assertFullSchemaValid()
   })
 
   it('applies and stops underline with toolbar button', () => {
@@ -51,7 +49,6 @@ describe('Underline Formatting', () => {
 
     cy.get('@paragraph').find('u').should('contain', 'toolbar-underline')
     cy.get('@paragraph').should('contain', 'Prefix toolbar-underline suffix')
-    cy.assertFullSchemaValid()
   })
 
   it('applies underline on selected text without changing surrounding text', () => {
@@ -64,6 +61,5 @@ describe('Underline Formatting', () => {
     cy.get('.docy_editor').realPress(['Meta', 'u'])
     cy.get('@paragraph').find('u').should('contain', 'target')
     cy.get('@paragraph').should('contain', text)
-    cy.assertFullSchemaValid()
   })
 })

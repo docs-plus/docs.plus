@@ -36,13 +36,10 @@
       width: 100%;
       max-width: 56rem;
 
-      .heading[level='1'] {
-        background-color: var(--color-base-100);
-
-        /* Fix caret visibility */
+      h1[data-toc-id] {
+        // background-color: var(--color-base-100);
         caret-color: var(--caret-color);
 
-        /* Ensure caret is visible in all child elements */
         * {
           caret-color: inherit;
         }
@@ -89,11 +86,6 @@
     caret-color: var(--caret-color-inverse);
   }
 
-  /* Fix caret visibility in all child elements */
-  .heading,
-  .contentWrapper,
-  .contents,
-  .content,
   div[data-type],
   p,
   h1,
@@ -114,8 +106,7 @@
     caret-color: inherit;
   }
 
-  /* Elements with white/light backgrounds (e.g. inline styles) need explicit caret color; selectors intentionally match hex/word */
-  .heading[level='1'],
+  h1[data-toc-id],
   [style*='background-color: #fff'],
   [style*='background-color: white'],
   [style*='background: #fff'],
@@ -203,12 +194,11 @@
     list-style-type: decimal;
   }
 
-  :is(h1, h2, h3, h4, h5, h6, h7, h8, h9, h10) {
+  :is(h1, h2, h3, h4, h5, h6) {
     display: block;
     font-weight: bold;
     margin-bottom: 0.5rem;
     margin-top: 0;
-    font-weight: bold;
   }
 
   h1 {
@@ -236,7 +226,7 @@
     padding-top: 9.1pt; /* Half of 18.2pt */
   }
 
-  :is(h6, h7, h8, h9, h10) {
+  h6 {
     font-size: 1.25rem;
     padding-top: 8.4pt; /* Half of 16.8pt */
   }

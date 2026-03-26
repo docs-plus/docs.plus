@@ -9,9 +9,9 @@ import Sidebar from './Sidebar'
 import Toolbar from './Toolbar'
 
 const DesktopHistory = () => {
-  const { hocuspocusProvider } = useStore((state) => state.settings)
+  const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const editor = useEditor(editorConfig({ editable: false }), [hocuspocusProvider])
-  const { setEditor } = useStore((state) => state)
+  const setEditor = useStore((state) => state.setEditor)
 
   useEffect(() => {
     if (editor) setEditor(editor)

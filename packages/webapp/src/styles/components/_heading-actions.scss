@@ -1,46 +1,102 @@
-// Heading Actions
+// Heading Actions — chat / comment widgets (ProseMirror decorations inside headings)
 // =============================================================================
 
-.ha-wrap {
-  display: inline-flex;
-  align-items: center;
+$heading-chat-gutter: 3rem;
 
-  .ha-single {
-    display: inline-flex;
-  }
-  .ha-group {
-    display: none;
-  }
-
-  &.has-selection {
-    .ha-single {
-      display: none;
-    }
-    .ha-group {
-      display: flex;
-    }
-  }
+@mixin heading-chat-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto; // re-enable on control (parent .ha-wrap is pointer-events: none)
 }
 
-.title {
-  // Base positioning (always)
-  .ha-wrap.has-selection > .ha-group {
+@mixin heading-chat-hidden {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+:is(h1, h2, h3, h4, h5, h6)[data-toc-id] {
+  position: relative;
+  padding-right: $heading-chat-gutter;
+
+  .ha-wrap {
     position: absolute;
-    right: -3.9rem;
+    right: 0;
     top: 50%;
     transform: translateY(-50%);
     z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-shrink: 0;
+    min-height: 2.5rem;
+    padding-left: 0.5rem;
+    // Let clicks pass through the gutter; only interactive children re-enable hits
+    pointer-events: none;
 
-    // Default: hide chat until “open” state
+    .ha-single {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition:
+        opacity 0.15s ease,
+        visibility 0.15s ease;
+    }
+
+    .ha-group {
+      display: none;
+    }
+
+    &.has-selection {
+      pointer-events: auto;
+
+      .ha-single {
+        display: none;
+      }
+
+      .ha-group {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        pointer-events: auto;
+      }
+    }
+  }
+
+  // Single chat: hidden until hover / focus / unread (fine pointers only)
+  .ha-wrap:not(.has-selection) .ha-single {
+    @include heading-chat-hidden;
+  }
+
+  .ha-wrap:not(.has-selection)
+    .ha-single.ha-chat-btn[data-unread-count]:not([data-unread-count='']) {
+    @include heading-chat-visible;
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    &:hover .ha-wrap:not(.has-selection) .ha-single,
+    .ha-wrap:not(.has-selection):hover .ha-single,
+    &:focus-within .ha-wrap:not(.has-selection) .ha-single {
+      @include heading-chat-visible;
+    }
+  }
+
+  @media (hover: none), (pointer: coarse) {
+    .ha-wrap:not(.has-selection) .ha-single {
+      @include heading-chat-visible;
+    }
+  }
+
+  // Selection in heading: stack chat + comment; compact until hover / unread on group
+  .ha-wrap.has-selection > .ha-group {
     .ha-chat-btn {
       display: none;
     }
   }
 
-  // “Open” state:
-  // - on hover
-  // - OR when unread count exists on the group
   &:hover .ha-wrap.has-selection > .ha-group,
+  .ha-wrap.has-selection:hover > .ha-group,
   .ha-wrap.has-selection > .ha-group[data-unread-count]:not([data-unread-count='']) {
     flex-direction: column;
     align-items: center;
@@ -52,7 +108,6 @@
     gap: 2px;
     border-radius: 46%;
 
-    // Shared button reset + show buttons
     :is(.ha-chat-btn, .ha-comment-btn) {
       position: relative !important;
       transform: none !important;
@@ -64,7 +119,6 @@
       display: flex;
     }
 
-    // Keep your “capsule” corners
     .ha-chat-btn {
       border-radius: 46% 46% 0 0 !important;
     }
@@ -74,25 +128,16 @@
     }
   }
 
-  // Dark: softer shadow so no light halo on dark canvas
   [data-theme='docsplus-dark'] &:hover .ha-wrap.has-selection > .ha-group,
   [data-theme='docsplus-dark-hc'] &:hover .ha-wrap.has-selection > .ha-group,
-  [data-theme='docsplus-dark']
-    &
-    .ha-wrap.has-selection
-    > .ha-group[data-unread-count]:not([data-unread-count='']),
-  [data-theme='docsplus-dark-hc']
-    &
-    .ha-wrap.has-selection
-    > .ha-group[data-unread-count]:not([data-unread-count='']) {
+  [data-theme='docsplus-dark'] .ha-wrap.has-selection:hover > .ha-group,
+  [data-theme='docsplus-dark-hc'] .ha-wrap.has-selection:hover > .ha-group {
     box-shadow:
       0 1px 3px 0 color-mix(in oklch, var(--color-base-content) 6%, transparent),
       0 1px 2px 0 color-mix(in oklch, var(--color-base-content) 4%, transparent),
       0 0 0 1px color-mix(in oklch, var(--color-base-content) 3%, transparent);
   }
 
-  // Unread-only extras (force visibility)
-  // Badge styles are in _unread-badge.scss
   .ha-wrap.has-selection > .ha-group[data-unread-count]:not([data-unread-count='']) {
     :is(.ha-chat-btn, .ha-comment-btn) {
       display: flex !important;
@@ -101,10 +146,7 @@
   }
 }
 
-// Icon nudge (cleaner selector)
 :is(.ha-chat-btn, .ha-comment-btn) svg {
   position: relative;
   top: 1px;
 }
-
-// Note: Unread badge styles are now in _unread-badge.scss for consistency

@@ -2,7 +2,6 @@ import { Icons } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore, useStore } from '@stores'
 import { TIPTAP_NODES } from '@types'
-import { getPostAtDOM } from '@utils/index'
 import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 import React, { useCallback, useEffect, useState } from 'react'
@@ -15,6 +14,52 @@ type Props = {
   className?: string
 }
 
+/**
+ * Build breadcrumb path from flat doc by walking backwards through heading levels.
+ * For a target heading at level N, collect the nearest preceding heading at each
+ * level 1..N-1 to form the ancestor chain.
+ */
+function buildHeadingPath(editor: any, headingId: string): Array<{ text: string; id: string }> {
+  const doc = editor.state.doc
+  const result: Array<{ text: string; id: string; level: number }> = []
+  let targetLevel = 0
+
+  for (let i = 0; i < doc.content.childCount; i++) {
+    const child = doc.content.child(i)
+
+    if (child.type.name !== TIPTAP_NODES.HEADING_TYPE) continue
+
+    const tocId = child.attrs['toc-id'] as string
+    const level = child.attrs.level as number
+    const text = child.textContent?.trim() || ''
+
+    if (tocId === headingId) {
+      targetLevel = level
+      result.push({ text, id: tocId, level })
+      break
+    }
+
+    result.push({ text, id: tocId, level })
+  }
+
+  if (targetLevel === 0) return []
+
+  const ancestors: Array<{ text: string; id: string }> = []
+  const seen = new Set<number>()
+
+  for (let i = result.length - 2; i >= 0; i--) {
+    const h = result[i]
+    if (h.level < targetLevel && !seen.has(h.level)) {
+      seen.add(h.level)
+      ancestors.unshift({ text: h.text, id: h.id })
+      if (h.level === 1) break
+    }
+  }
+
+  const target = result[result.length - 1]
+  return [...ancestors, { text: target.text, id: target.id }]
+}
+
 export const Breadcrumb = ({ className }: Props) => {
   const { query } = useRouter()
   const { variant } = useChatroomContext()
@@ -22,35 +67,23 @@ export const Breadcrumb = ({ className }: Props) => {
   const { headingId } = useChatStore((state) => state.chatRoom)
   const [headingPath, setHeadingPath] = useState<any>([])
 
-  const {
-    workspaceId,
-    metadata,
-    editor: { instance: editor, providerSyncing, loading }
-  } = useStore((state) => state.settings)
+  const workspaceId = useStore((state) => state.settings.workspaceId)
+  const metadata = useStore((state) => state.settings.metadata)
+  const editor = useStore((state) => state.settings.editor.instance)
+  const providerSyncing = useStore((state) => state.settings.editor.providerSyncing)
+  const loading = useStore((state) => state.settings.editor.loading)
 
   useEffect(() => {
     if (!editor || !headingId || providerSyncing || editor.isDestroyed) return
     if (headingId === workspaceId) return
 
-    let posAtDOM = getPostAtDOM(editor, headingId)
-    if (posAtDOM == null || posAtDOM < 0) {
-      posAtDOM = getPostAtDOM(editor, '1')
-    }
-    if (posAtDOM == null || posAtDOM < 0) return
+    const path = buildHeadingPath(editor, headingId)
+    if (path.length === 0) return
 
-    const nodePos = editor.view.state.doc.resolve(posAtDOM) as any
-
-    const headingPath = nodePos.path
-      .filter((x: any) => x?.type?.name === TIPTAP_NODES.HEADING_TYPE)
-      .map((x: any) => {
-        const text = x.firstChild.textContent.trim()
-        return { text, id: x.attrs.id }
-      })
-
-    const headingAddress = headingPath.map((x: any, index: any) => {
-      const prevHeadingPath = headingPath
+    const headingAddress = path.map((x, index) => {
+      const prevHeadingPath = path
         .slice(0, index)
-        .map((x: any) => slugify(x.text, { lower: true, strict: true }))
+        .map((h) => slugify(h.text, { lower: true, strict: true }))
         .join('>')
 
       const url = new URL(window.location.origin + `/${query.slugs?.at(0)}`)
@@ -88,7 +121,6 @@ export const Breadcrumb = ({ className }: Props) => {
     })
   }
 
-  // Document Root
   if (headingId === workspaceId) {
     return <span className="text-base-content truncate text-sm font-medium">{metadata.title}</span>
   }
