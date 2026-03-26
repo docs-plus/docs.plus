@@ -21,8 +21,7 @@ const ComplexHierarchyDocument = {
   ]
 }
 
-const getParagraph = () =>
-  cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p').first().as('paragraph')
+const getParagraph = () => cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
 const selectTarget = (text, start, end) =>
   cy.createSelection({
@@ -59,7 +58,6 @@ describe('Combined Formatting', () => {
     cy.get('@paragraph').find('u').should('contain', 'combo')
     cy.get('@paragraph').find('s').should('contain', 'combo')
     cy.get('@paragraph').should('contain', text)
-    cy.assertFullSchemaValid()
   })
 
   it('applies combined marks with toolbar buttons and keeps unformatted suffix clean', () => {
@@ -78,7 +76,6 @@ describe('Combined Formatting', () => {
     cy.get('@paragraph').find('strong').should('contain', 'toolbar-combo')
     cy.get('@paragraph').find('u').should('contain', 'toolbar-combo')
     cy.get('@paragraph').should('contain', 'Prefix toolbar-combo suffix')
-    cy.assertFullSchemaValid()
   })
 
   it('clears all marks for selected text via command path while preserving content', () => {
@@ -173,7 +170,6 @@ describe('Combined Formatting', () => {
     cy.get('@paragraph').find('s').should('not.exist')
     cy.get('@paragraph').find('mark').should('not.exist')
     cy.get('@paragraph').should('contain', text)
-    cy.assertFullSchemaValid()
   })
 
   it('keeps schema valid when clear formatting toolbar action is clicked on selection', () => {
@@ -192,14 +188,13 @@ describe('Combined Formatting', () => {
     cy.get('[data-testid="toolbar-clear-formatting"]').click()
 
     cy.get('@paragraph').should('contain', text)
-    cy.assertFullSchemaValid()
   })
 
   it('supports combined formatting in deep headings across a 7-section forest', () => {
     cy.createDocument(ComplexHierarchyDocument)
     cy.wait(350)
 
-    cy.get('.docy_editor > .tiptap > .heading[level="1"]').should('have.length', 7)
+    cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length', 7)
 
     cy.putPosCaretInHeading(7, 'S4-H7', 'end')
     cy.get('.docy_editor').realPress(['Meta', 'b'])
@@ -210,13 +205,11 @@ describe('Combined Formatting', () => {
     cy.get('.docy_editor').realPress(['Meta', 'i'])
     cy.get('.docy_editor').realPress(['Meta', 'b'])
 
-    cy.get('.heading[level="7"] .title').within(() => {
+    cy.get('h7[data-toc-id]').within(() => {
       cy.get('strong').should('exist')
       cy.get('em').should('exist')
       cy.get('mark').should('exist')
       cy.contains('formatted')
     })
-
-    cy.assertFullSchemaValid()
   })
 })

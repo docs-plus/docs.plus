@@ -8,7 +8,7 @@ const DocumentStructure = {
   sections: [section(TEST_TITLE.short, [])]
 }
 
-const ROOT = '.docy_editor .heading[level="1"] .contentWrapper > .contents'
+const ROOT = '.docy_editor .tiptap.ProseMirror'
 const BULLET_ITEMS = `${ROOT} > ul:not([data-type="taskList"]) > li`
 const ORDERED_ITEMS = `${ROOT} > ol > li`
 const TASK_ITEMS_TOP = `${ROOT} > ul[data-type="taskList"] > li`
@@ -244,7 +244,6 @@ describe('List Clipboard Combinations', () => {
     cy.get(`${ROOT} s`).filter(':contains("GAMMA")').should('have.length', 2)
     cy.get(`${ROOT} mark`).filter(':contains("GAMMA")').should('have.length', 2)
     cy.get(`${ROOT} code`).filter(':contains("GAMMA")').should('have.length', 2)
-    cy.assertFullSchemaValid()
   })
 
   it('cuts several ordered items with mixed formatting + links and pastes them back into the list', () => {
@@ -300,7 +299,6 @@ describe('List Clipboard Combinations', () => {
     cy.get(`${ROOT} u`).filter(':contains("CUT-BETA")').should('have.length', 1)
     cy.get(`${ROOT} s`).filter(':contains("CUT-GAMMA")').should('have.length', 1)
     cy.get(`${ROOT} mark`).filter(':contains("CUT-GAMMA")').should('have.length', 1)
-    cy.assertFullSchemaValid()
   })
 
   it('copies nested task items with mixed formatting + links and pastes them back with depth preserved', () => {
@@ -350,7 +348,6 @@ describe('List Clipboard Combinations', () => {
     cy.get(`${ROOT} u`).filter(':contains("TASK-CHILD-BETA")').should('have.length', 2)
     cy.get(`${ROOT} s`).filter(':contains("TASK-CHILD-GAMMA")').should('have.length', 2)
     cy.get(`${ROOT} mark`).filter(':contains("TASK-CHILD-GAMMA")').should('have.length', 2)
-    cy.assertFullSchemaValid()
   })
 
   it('cuts nested task items with mixed formatting + links and pastes them back into the list', () => {
@@ -408,6 +405,5 @@ describe('List Clipboard Combinations', () => {
     cy.get(`${ROOT} u`).filter(':contains("TASK-CUT-CHILD-BETA")').should('have.length', 1)
     cy.get(`${ROOT} s`).filter(':contains("TASK-CUT-CHILD-GAMMA")').should('have.length', 1)
     cy.get(`${ROOT} mark`).filter(':contains("TASK-CUT-CHILD-GAMMA")').should('have.length', 1)
-    cy.assertFullSchemaValid()
   })
 })

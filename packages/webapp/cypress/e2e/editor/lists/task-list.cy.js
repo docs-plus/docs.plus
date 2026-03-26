@@ -19,9 +19,7 @@ describe('Task List', { testIsolation: false }, () => {
   describe('Creating task lists with keyboard shortcuts', () => {
     it('should create a task list using keyboard shortcuts', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -61,9 +59,7 @@ describe('Task List', { testIsolation: false }, () => {
 
     it('should create a task list using toolbar button', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -96,9 +92,7 @@ describe('Task List', { testIsolation: false }, () => {
 
     it('should create a nested task list structure using tab key', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -153,9 +147,7 @@ describe('Task List', { testIsolation: false }, () => {
 
     it('should toggle task checkboxes when clicked', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -207,9 +199,7 @@ describe('Task List', { testIsolation: false }, () => {
 
     it('should convert task list to bullet list', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -237,9 +227,7 @@ describe('Task List', { testIsolation: false }, () => {
 
     it('should convert task list to ordered list', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()

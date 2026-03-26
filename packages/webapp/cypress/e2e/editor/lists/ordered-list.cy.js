@@ -19,9 +19,7 @@ describe('Ordered List', { testIsolation: false }, () => {
   describe('Creating ordered lists with keyboard shortcuts', () => {
     it('should create an ordered list using keyboard shortcuts', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -60,9 +58,7 @@ describe('Ordered List', { testIsolation: false }, () => {
 
     it('should create an ordered list using toolbar button', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -94,9 +90,7 @@ describe('Ordered List', { testIsolation: false }, () => {
 
     it('should create a nested ordered list structure using tab key', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -149,9 +143,7 @@ describe('Ordered List', { testIsolation: false }, () => {
 
     it('should convert ordered list to bullet list', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
-        .first()
-        .as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -192,7 +184,7 @@ describe('Ordered List', { testIsolation: false }, () => {
 
     it('should allow deleting list items and exiting list mode', () => {
       // Get the paragraph element
-      cy.get('.docy_editor .contents > p').first().as('paragraph')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
       // First, click on the paragraph to focus it
       cy.get('@paragraph').click()
@@ -216,12 +208,12 @@ describe('Ordered List', { testIsolation: false }, () => {
       cy.get('.docy_editor ol > li').eq(2).realPress('Enter')
 
       // Type text in normal paragraph
-      cy.get('.docy_editor .contents > p').realType('Back to normal text')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').realType('Back to normal text')
 
       // Verify structure
       cy.get('.docy_editor ol').should('exist')
       cy.get('.docy_editor ol > li').should('have.length', 2)
-      cy.get('.docy_editor .contents > p').should('contain', 'Back to normal text')
+      cy.get('.docy_editor .tiptap.ProseMirror > p').should('contain', 'Back to normal text')
     })
   })
 })

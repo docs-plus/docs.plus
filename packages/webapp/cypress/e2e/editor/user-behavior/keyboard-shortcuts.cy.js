@@ -36,10 +36,9 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
 
       levels.forEach((level) => {
         cy.realPress(['Alt', 'Meta', String(level)]).wait(200)
-        cy.get('.heading .title')
+        cy.get(`:is(h1, h2, h3, h4, h5, h6)[data-toc-id]`)
           .contains('Test Heading')
-          .closest('.heading')
-          .should('have.attr', 'level', String(level))
+          .should('match', `h${level}`)
       })
     })
 
@@ -56,7 +55,7 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Should be converted to paragraph
-      cy.get('.heading .title').contains('Convert Me').should('not.exist')
+      cy.get(':is(h1, h2, h3, h4, h5, h6)[data-toc-id]').contains('Convert Me').should('not.exist')
       cy.get('p').contains('Convert Me').should('exist')
     })
 
@@ -77,7 +76,7 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Should now be a heading
-      cy.get('.heading[level="2"] .title').should('contain', 'Make me a heading')
+      cy.get('h2[data-toc-id]').should('contain', 'Make me a heading')
     })
   })
 
@@ -117,7 +116,7 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
       cy.wait(100)
 
       // "Second" should now be in a new element (either paragraph or heading)
-      cy.get('.heading[level="2"] .title').should('contain', 'First')
+      cy.get('h2[data-toc-id]').should('contain', 'First')
     })
   })
 
@@ -160,7 +159,7 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Should now be "DeleteTest"
-      cy.get('.heading[level="2"] .title').should('contain', 'DeleteTest')
+      cy.get('h2[data-toc-id]').should('contain', 'DeleteTest')
     })
   })
 
@@ -179,7 +178,7 @@ describe('User Keyboard Shortcuts', { testIsolation: false }, () => {
       cy.wait(100)
 
       // Should now be "TestDelete"
-      cy.get('.heading[level="2"] .title').should('contain', 'TestDelete')
+      cy.get('h2[data-toc-id]').should('contain', 'TestDelete')
     })
   })
 

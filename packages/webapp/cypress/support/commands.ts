@@ -22,6 +22,9 @@ interface EditorWindow {
   _editorSelect?: (level: SelectionLevel) => void
   _editorSelectAndCopy?: (level: SelectionLevel) => void
   _editorSelectElement?: (level: SelectionLevel) => void
+  /** Markdown helpers – available when @tiptap/markdown is loaded */
+  _getMarkdown?: () => string
+  _parseMarkdown?: (md: string) => Record<string, unknown> | undefined
 }
 
 // ---------------------------------------------------------------------------
@@ -66,9 +69,7 @@ function generatePredictableText(sentenceCount: number): string {
   return Array.from({ length: sentenceCount }, (_, i) => generateSentence(i)).join(' ')
 }
 
-// Import and register document structure validator
-import { registerDocumentValidator } from '../fixtures/docTestHelper'
-registerDocumentValidator()
+// Document validators removed — flat schema uses decoration-based structure
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -85,108 +86,41 @@ declare global {
       createDocument(doc: any): Chainable<Element>
       createOrderedList(items: Array<{ text: string; indent?: number }>): Chainable<void>
       createBulletList(items: Array<{ text: string; indent?: number }>): Chainable<void>
-      createIndentHeading(content: {
+      createHeadingWithContent(content: {
         level: number
         title: string
         contents: Array<{
           type: 'paragraph' | 'orderedList' | 'bulletList' | 'heading'
-          content?: string
+          content?: any
           contents?: any[]
         }>
       }): Chainable<Element>
       visitEditor(options: { persist?: boolean; docName: string }): Chainable<Element>
 
-      /**
-       * Validates document structure follows proper heading level hierarchy rules
-       * @param documentStructure - The document structure to validate
-       * @param options - Validation options
-       * @example cy.validateDocumentStructure(myDocStructure, { throwOnError: true })
-       */
-      validateDocumentStructure(
-        documentStructure: any,
-        options?: {
-          throwOnError?: boolean
-          logResults?: boolean
-          verbose?: boolean
-        }
-      ): Chainable<{ valid: boolean; error?: string }>
       clearInlineNode(): Chainable<Element>
+      pasteAsPlainText(text: string): Chainable<void>
+      pasteWithMimeTypes(data: Record<string, string>, extraTypes?: string[]): Chainable<void>
       writeToClipboard(text: string): Chainable<Element>
       readFromClipboard(): Chainable<Element>
       copySelectionToClipboard(): Chainable<Element>
       pasteClipboardHtml(): Chainable<Element>
 
-      /**
-       * Selects content at the specified hierarchical level starting from the clicked element
-       * @param level - The hierarchical level to select
-       * @example cy.get('.heading[level="2"]').clickAndSelect('heading')
-       */
       clickAndSelect(level: SelectionLevel): Chainable<Element>
-
-      /**
-       * Selects content at the specified hierarchical level and copies it to clipboard
-       * @param level - The hierarchical level to select and copy
-       * @example cy.get('.heading[level="2"]').clickAndSelectCopy('heading')
-       */
       clickAndSelectCopy(level: SelectionLevel): Chainable<Element>
-
-      /**
-       * Applies a heading level change to the specified heading text
-       * @param headingText - The text of the heading to change
-       * @param currentLevel - The current level of the heading
-       * @param newLevel - The new level to apply
-       * @example cy.applyHeadingLevelChange('Heading Text', 2, 3)
-       */
       applyHeadingLevelChange(
         headingText: string,
         currentLevel: number,
         newLevel: number
       ): Chainable<Element>
-
-      /**
-       * Validates a heading level change
-       * @param headingText - The text of the heading to validate
-       * @param currentLevel - The current level of the heading
-       * @param newLevel - The new level to validate
-       * @example cy.validateHeadingLevelChange('Heading Text', 2, 3)
-       */
       validateHeadingLevelChange(
         headingText: string,
         currentLevel: number,
         newLevel: number
       ): Chainable<Element>
-
-      /**
-       * Validates the DOM structure according to editor schema rules
-       * - Level 1 headings (sections) cannot be nested inside each other
-       * - Headings range from level 2-10 and must be nested inside a section
-       * - Heading hierarchy must be maintained (child level > parent level)
-       */
       validateDomStructure(options?: {
         throwOnError: boolean
         logResults: boolean
       }): Chainable<{ valid: boolean; errors: string[]; structure: any[] }>
-
-      // Schema validators (from schemaValidator.js)
-      validateDocumentSchema(): Chainable<{
-        valid: boolean
-        errors: string[]
-        errorCount?: number
-        skipped?: boolean
-      }>
-      assertValidSchema(): Chainable<void>
-      logDocumentStructure(): Chainable<void>
-
-      // DOM Schema validators (from domSchemaValidator.js)
-      validateDOMSchema(): Chainable<{
-        valid: boolean
-        errors: string[]
-        errorCount: number
-        structure: any[]
-      }>
-      assertValidDOMSchema(): Chainable<void>
-      logDOMStructure(): Chainable<void>
-      assertFullSchemaValid(): Chainable<void>
 
       createSelection(options: {
         editorSelector?: string
@@ -335,7 +269,7 @@ Cypress.Commands.add(
 )
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-Cypress.Commands.add('createIndentHeading', (content: any) => {
+Cypress.Commands.add('createHeadingWithContent', (content: any) => {
   const editor = cy.get('.docy_editor > .tiptap.ProseMirror')
   const { level, title, contents } = content
 
@@ -345,7 +279,6 @@ Cypress.Commands.add('createIndentHeading', (content: any) => {
     .realPress(['Alt', 'Meta', String(level)] as any)
     .realPress('Enter')
 
-  // Skip content processing if contents array is empty or undefined
   if (!contents || contents.length === 0) return
 
   for (const item of contents) {
@@ -360,7 +293,7 @@ Cypress.Commands.add('createIndentHeading', (content: any) => {
         cy.createBulletList(item.content)
         break
       case 'heading':
-        cy.createIndentHeading(item)
+        cy.createHeadingWithContent(item)
         break
     }
   }
@@ -402,7 +335,7 @@ Cypress.Commands.add('createDocument', (doc: any) => {
     }
   })
 
-  cy.get('.docy_editor .heading[level="1"]').should('exist')
+  cy.get('.docy_editor h1[data-toc-id]').should('exist')
 })
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -435,7 +368,7 @@ Cypress.Commands.add('createSection', (section: any) => {
         break
 
       case 'heading':
-        cy.createIndentHeading(content)
+        cy.createHeadingWithContent(content)
         break
     }
   }
@@ -559,6 +492,46 @@ Cypress.Commands.add('clearEditor', () => {
     .realPress(['Meta', 'a', 'Backspace'])
 })
 
+Cypress.Commands.add('pasteAsPlainText', (text: string) => {
+  cy.get('.docy_editor > .tiptap.ProseMirror').then(($el) => {
+    const clipboardData = new DataTransfer()
+    clipboardData.setData('text/plain', text)
+
+    const pasteEvent = new ClipboardEvent('paste', {
+      clipboardData,
+      bubbles: true,
+      cancelable: true
+    })
+
+    $el[0].dispatchEvent(pasteEvent)
+  })
+})
+
+Cypress.Commands.add(
+  'pasteWithMimeTypes',
+  (data: Record<string, string>, extraTypes?: string[]) => {
+    cy.get('.docy_editor > .tiptap.ProseMirror').then(($el) => {
+      const clipboardData = new DataTransfer()
+      for (const [mime, value] of Object.entries(data)) {
+        clipboardData.setData(mime, value)
+      }
+      if (extraTypes) {
+        for (const t of extraTypes) {
+          clipboardData.setData(t, '')
+        }
+      }
+
+      const pasteEvent = new ClipboardEvent('paste', {
+        clipboardData,
+        bubbles: true,
+        cancelable: true
+      })
+
+      $el[0].dispatchEvent(pasteEvent)
+    })
+  }
+)
+
 // @ts-expect-error — Cypress prevSubject typing limitation
 Cypress.Commands.add(
   'copySelectionToClipboard',
@@ -629,24 +602,22 @@ Cypress.Commands.add(
         )
       }
 
-      // Find the heading node in the Tiptap document
       let headingFound = false
       let headingPos = 0
       let headingNodeSize = 0
 
       editor.state.doc.descendants((node, pos) => {
-        if (headingFound) return false // Skip if already found
+        if (headingFound) return false
 
-        // in real world, user can not put caret in heading node pos, the caret will be place in contentheading node pos
         if (
-          node.type.name === 'contentHeading' &&
+          node.type.name === 'heading' &&
           node.attrs.level === level &&
           node.textContent.includes(headingText)
         ) {
           headingFound = true
           headingPos = pos
           headingNodeSize = node.nodeSize
-          return false // Stop traversal
+          return false
         }
       })
 
@@ -798,9 +769,8 @@ Cypress.Commands.add(
       // Rule 1: Heading levels 2-9 must be nested within a section (level 1)
       // This is implicitly handled by the editor structure, as all content should be in sections
 
-      // Rule 2: New level must be between 2-9
-      if (newLevel < 2 || newLevel > 9) {
-        return { valid: false, reason: `Heading level must be between 2-9, got ${newLevel}` }
+      if (newLevel < 1 || newLevel > 6) {
+        return { valid: false, reason: `Heading level must be between 1-6, got ${newLevel}` }
       }
 
       // Rule 3: If parent exists, new level must be greater than parent level
@@ -922,13 +892,12 @@ Cypress.Commands.add(
                 // Use exact title matching to avoid substring collisions
                 // (e.g. "Direct Subsection" matching "Another Direct Subsection").
                 return cy
-                  .get('.heading')
+                  .get(':is(h1, h2, h3, h4, h5, h6)[data-toc-id]')
                   .filter((_i, el) => {
-                    const title = el.querySelector('.title')?.textContent?.trim()
-                    return title === headingText
+                    return el.textContent?.trim() === headingText
                   })
                   .first()
-                  .should('have.attr', 'level', `${newLevel}`)
+                  .should('match', `h${newLevel}`)
                   .then(() => {
                     return cy.wrap({
                       applied: true,
@@ -1084,56 +1053,42 @@ Cypress.Commands.add('createSelection', (options: any) => {
   }): any {
     let element = editor
 
-    // Find section if specified
     if (section) {
-      const sectionSelector =
-        typeof section === 'object' ? `.heading[level="1"]` : `.heading[level="1"]`
-
-      const sections = Array.from(editor.querySelectorAll(sectionSelector))
+      const sections = Array.from(editor.querySelectorAll('h1[data-toc-id]'))
       let foundSection
 
       if (typeof section === 'object') {
-        // Find by properties like title content
         const { title } = section
         foundSection = sections.find((s: unknown) => {
-          const titleElement = (s as Element).querySelector('.title')
-          return titleElement && titleElement.textContent?.includes(title)
+          return (s as Element).textContent?.includes(title)
         })
       } else if (typeof section === 'number') {
-        // Find by index
-        foundSection = sections[section - 1] // 1-based index for user-friendliness
+        foundSection = sections[section - 1]
       }
 
       if (!foundSection) throw new Error(`Section not found: ${JSON.stringify(section)}`)
       element = foundSection
     }
 
-    // Find heading if specified
     if (heading) {
-      const headingSelector = typeof heading === 'object' ? `.heading` : `.heading`
-
-      const headings = Array.from(element.querySelectorAll(headingSelector))
+      const headings = Array.from(
+        element.querySelectorAll(':is(h1, h2, h3, h4, h5, h6)[data-toc-id]')
+      )
       let foundHeading
 
       if (typeof heading === 'object') {
-        // Find by properties
         const { level, title } = heading
         foundHeading = headings.find((h: unknown) => {
           const el = h as Element
-          const titleElement = el.querySelector('.title')
-          const headingLevel = parseInt(el.getAttribute('level') || '0')
-          return (
-            (!level || headingLevel === level) &&
-            (!title || (titleElement && titleElement.textContent?.includes(title)))
-          )
+          const headingLevel = parseInt(el.tagName.replace('H', '') || '0')
+          return (!level || headingLevel === level) && (!title || el.textContent?.includes(title))
         })
       } else if (typeof heading === 'number') {
-        // Find by index
-        foundHeading = headings[heading - 1] // 1-based index
+        foundHeading = headings[heading - 1]
       }
 
       if (!foundHeading) throw new Error(`Heading not found: ${JSON.stringify(heading)}`)
-      element = foundHeading //foundHeading.querySelector('.contents') || foundHeading
+      element = foundHeading
     }
 
     // Find paragraph if specified
@@ -1285,65 +1240,32 @@ Cypress.Commands.add(
       const errors: string[] = []
       const structure: any[] = []
 
-      // Function to recursively parse and validate the heading structure
-      function parseHeadingStructure(
-        element: Element,
-        parentLevel: number = 0,
-        path: string = 'root'
-      ): void {
-        // Get all immediate heading children
-        const headings = Array.from(element.querySelectorAll(':scope > .heading'))
+      function parseHeadingStructure(editorEl: Element): void {
+        const headings = Array.from(
+          editorEl.querySelectorAll(':is(h1, h2, h3, h4, h5, h6)[data-toc-id]')
+        )
 
         headings.forEach((heading, index) => {
-          const level = parseInt(heading.getAttribute('level') || '0', 10)
-          const titleElement = heading.querySelector('.title')
-          const title = titleElement ? titleElement.textContent : 'Untitled'
-          const headingPath = `${path} > heading[${index}](level=${level}, title="${title}")`
+          const level = parseInt(heading.tagName.replace('H', '') || '0', 10)
+          const title = heading.textContent || 'Untitled'
+          const headingPath = `heading[${index}](level=${level}, title="${title}")`
 
-          const headingInfo = {
-            level,
-            title,
-            children: [],
-            path: headingPath
-          }
+          structure.push({ level, title, path: headingPath })
 
-          // Add to structure
-          structure.push(headingInfo)
-
-          // Validate level 1 headings (sections)
-          if (level === 1 && parentLevel !== 0) {
+          if (level < 1 || level > 6) {
             errors.push(
-              `Section (level 1) cannot be nested inside another heading: "${title}" at ${headingPath}`
+              `Heading level must be between 1 and 6, found ${level}: "${title}" at ${headingPath}`
             )
           }
 
-          // Validate headings range
-          if (level < 1 || level > 10) {
+          if (index === 0 && level !== 1) {
             errors.push(
-              `Heading level must be between 1 and 10, found ${level}: "${title}" at ${headingPath}`
+              `First heading must be level 1, found ${level}: "${title}" at ${headingPath}`
             )
-          }
-
-          // Validate heading hierarchy (child level > parent level)
-          if (parentLevel > 0 && level <= parentLevel && level > 1) {
-            errors.push(
-              `Heading hierarchy violated: Level ${level} heading "${title}" cannot be nested inside level ${parentLevel} at ${headingPath}`
-            )
-          }
-
-          // Recursively validate content wrapper
-          const contentWrapper = heading.querySelector('.contentWrapper')
-          if (contentWrapper) {
-            const contents = contentWrapper.querySelector('.contents')
-            if (contents) {
-              // Recursively parse nested headings
-              parseHeadingStructure(contents, level, headingPath)
-            }
           }
         })
       }
 
-      // Start parsing from the root
       const editor = $editor[0]
       const editorContent = editor.querySelector('.ProseMirror')
       if (editorContent) {

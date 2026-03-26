@@ -8,8 +8,7 @@ const DocumentStructure = {
   sections: [section(TEST_TITLE.short, [])]
 }
 
-const getParagraph = () =>
-  cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p').first().as('paragraph')
+const getParagraph = () => cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
 const selectTarget = (text, start, end) =>
   cy.createSelection({
@@ -38,7 +37,6 @@ describe('Bold Formatting', () => {
 
     cy.get('@paragraph').find('strong').should('contain', 'bold-target')
     cy.get('@paragraph').should('contain', 'Prefix bold-target suffix')
-    cy.assertFullSchemaValid()
   })
 
   it('applies and stops bold with toolbar button', () => {
@@ -51,7 +49,6 @@ describe('Bold Formatting', () => {
 
     cy.get('@paragraph').find('strong').should('contain', 'toolbar-bold')
     cy.get('@paragraph').should('contain', 'Prefix toolbar-bold suffix')
-    cy.assertFullSchemaValid()
   })
 
   it('applies bold on selected text without changing surrounding text', () => {
@@ -64,6 +61,5 @@ describe('Bold Formatting', () => {
     cy.get('.docy_editor').realPress(['Meta', 'b'])
     cy.get('@paragraph').find('strong').should('contain', 'target')
     cy.get('@paragraph').should('contain', text)
-    cy.assertFullSchemaValid()
   })
 })

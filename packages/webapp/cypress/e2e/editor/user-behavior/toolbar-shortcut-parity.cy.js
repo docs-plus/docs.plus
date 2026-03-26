@@ -44,7 +44,6 @@ describe('Toolbar/Shortcut Parity', () => {
       .contains(TARGET_TEXT)
       .should('have.attr', 'href')
       .and('include', 'https://example.com')
-    cy.assertFullSchemaValid()
   })
 
   it('applies hyperlink with Mod+K shortcut', () => {
@@ -61,7 +60,6 @@ describe('Toolbar/Shortcut Parity', () => {
       .contains(TARGET_TEXT)
       .should('have.attr', 'href')
       .and('include', 'https://example.org')
-    cy.assertFullSchemaValid()
   })
 
   it('applies highlight with Mod+Shift+H shortcut', () => {
@@ -69,7 +67,6 @@ describe('Toolbar/Shortcut Parity', () => {
     cy.get('.docy_editor').realPress(['Meta', 'Shift', 'h'])
 
     cy.get('.docy_editor mark').contains(TARGET_TEXT).should('exist')
-    cy.assertFullSchemaValid()
   })
 
   it('triggers comment action from toolbar and collapses selection', () => {
@@ -82,7 +79,6 @@ describe('Toolbar/Shortcut Parity', () => {
     cy.window().then((win) => {
       expect(win._editor.state.selection.empty).to.equal(true)
     })
-    cy.assertFullSchemaValid()
   })
 
   it('triggers comment action with Mod+Alt+M shortcut and collapses selection', () => {
@@ -95,6 +91,5 @@ describe('Toolbar/Shortcut Parity', () => {
     cy.window().then((win) => {
       expect(win._editor.state.selection.empty).to.equal(true)
     })
-    cy.assertFullSchemaValid()
   })
 })

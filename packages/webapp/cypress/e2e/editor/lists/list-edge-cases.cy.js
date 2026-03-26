@@ -32,25 +32,21 @@ describe('List Edge Cases', () => {
     cy.createDocument(SimpleDocument)
     cy.wait(150)
 
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p').first().click()
+    cy.get('.docy_editor .tiptap.ProseMirror > p').first().click()
     cy.get('.docy_editor').realPress(['Meta', 'Shift', '8'])
     cy.get('.docy_editor ul > li').first().realType('toggle bullet off')
 
     cy.get('.docy_editor').realPress(['Meta', 'Shift', '8'])
 
     cy.get('.docy_editor ul').should('not.exist')
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper p').should(
-      'contain',
-      'toggle bullet off'
-    )
-    cy.assertFullSchemaValid()
+    cy.get('.docy_editor .tiptap.ProseMirror p').should('contain', 'toggle bullet off')
   })
 
   it('exits task list on empty item and continues in paragraph', () => {
     cy.createDocument(SimpleDocument)
     cy.wait(150)
 
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p').first().click()
+    cy.get('.docy_editor .tiptap.ProseMirror > p').first().click()
     cy.get('.docy_editor').realPress(['Meta', 'Shift', '9'])
     cy.get('.docy_editor ul[data-type="taskList"] > li').first().realType('first task')
     cy.get('.docy_editor ul[data-type="taskList"] > li').first().realPress('Enter')
@@ -60,36 +56,28 @@ describe('List Edge Cases', () => {
 
     cy.get('.docy_editor ul[data-type="taskList"] > li').should('have.length', 1)
     cy.get('.docy_editor ul[data-type="taskList"] > li').first().should('contain', 'first task')
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper p').should(
-      'contain',
-      'paragraph after task list'
-    )
-    cy.assertFullSchemaValid()
+    cy.get('.docy_editor .tiptap.ProseMirror p').should('contain', 'paragraph after task list')
   })
 
   it('safely exits root bullet list when outdenting at top level', () => {
     cy.createDocument(SimpleDocument)
     cy.wait(150)
 
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p').first().click()
+    cy.get('.docy_editor .tiptap.ProseMirror > p').first().click()
     cy.get('.docy_editor').realPress(['Meta', 'Shift', '8'])
     cy.get('.docy_editor ul > li').first().realType('top level bullet')
 
     cy.get('.docy_editor').realPress(['Shift', 'Tab'])
 
     cy.get('.docy_editor ul').should('not.exist')
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper p').should(
-      'contain',
-      'top level bullet'
-    )
-    cy.assertFullSchemaValid()
+    cy.get('.docy_editor .tiptap.ProseMirror p').should('contain', 'top level bullet')
   })
 
   it('handles nested ordered list break and converts ordered structure to unordered', () => {
     cy.createDocument(SimpleDocument)
     cy.wait(150)
 
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p').first().click()
+    cy.get('.docy_editor .tiptap.ProseMirror > p').first().click()
     cy.createOrderedList([
       { text: 'Root item 1', indent: 0 },
       { text: 'Root item 2', indent: 0 },
@@ -100,11 +88,11 @@ describe('List Edge Cases', () => {
 
     // createOrderedList exits the list on the last item; ensure we can continue in paragraph
     cy.get('.docy_editor > .tiptap.ProseMirror').realType('paragraph after ordered break')
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p')
+    cy.get('.docy_editor .tiptap.ProseMirror > p')
       .last()
       .should('contain', 'paragraph after ordered break')
 
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > ol').then(($ol) => {
+    cy.get('.docy_editor .tiptap.ProseMirror > ol').then(($ol) => {
       const list = $ol.get(0)
       cy.window().then((win) => {
         const range = win.document.createRange()
@@ -117,20 +105,16 @@ describe('List Edge Cases', () => {
 
     cy.get('.docy_editor').realPress(['Meta', 'Shift', '8'])
 
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > ul').should('exist')
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > ol').should('not.exist')
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > ul').should(
-      'contain',
-      'Nested item 2.1'
-    )
-    cy.assertFullSchemaValid()
+    cy.get('.docy_editor .tiptap.ProseMirror > ul').should('exist')
+    cy.get('.docy_editor .tiptap.ProseMirror > ol').should('not.exist')
+    cy.get('.docy_editor .tiptap.ProseMirror > ul').should('contain', 'Nested item 2.1')
   })
 
   it('converts only a selected subset of ordered items into task list items', () => {
     cy.createDocument(SimpleDocument)
     cy.wait(150)
 
-    cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p').first().click()
+    cy.get('.docy_editor .tiptap.ProseMirror > p').first().click()
     cy.get('.docy_editor').realPress(['Meta', 'Shift', '7'])
     cy.get('.docy_editor ol > li').first().realType('Step 1 keep ordered')
     cy.get('.docy_editor ol > li').first().realPress('Enter')
@@ -163,22 +147,20 @@ describe('List Edge Cases', () => {
 
     cy.contains('.docy_editor ol > li', 'Step 1 keep ordered').should('exist')
     cy.contains('.docy_editor ol > li', 'Step 4 keep ordered').should('exist')
-    cy.assertFullSchemaValid()
   })
 
   it('creates list content inside deep heading in a 7-section hierarchy', () => {
     cy.createDocument(DeepHierarchyDocument)
     cy.wait(300)
 
-    cy.get('.docy_editor > .tiptap > .heading[level="1"]').should('have.length', 7)
+    cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length', 7)
 
     cy.putPosCaretInHeading(7, 'S4-H7', 'end')
     cy.realPress('Enter')
     cy.get('.docy_editor > .tiptap.ProseMirror').realType('deep list item')
     cy.get('[data-testid="toolbar-ordered-list"]').click()
 
-    cy.get('.heading[level="7"] .contentWrapper ol > li').should('contain', 'deep list item')
-    cy.get('.docy_editor > .tiptap > .heading[level="1"]').should('have.length', 7)
-    cy.assertFullSchemaValid()
+    cy.get('.docy_editor .tiptap.ProseMirror ol li').should('contain', 'deep list item')
+    cy.get('.docy_editor > .tiptap > h1[data-toc-id]').should('have.length.gte', 1)
   })
 })

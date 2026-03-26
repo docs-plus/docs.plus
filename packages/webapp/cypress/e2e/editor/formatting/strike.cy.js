@@ -8,8 +8,7 @@ const DocumentStructure = {
   sections: [section(TEST_TITLE.short, [])]
 }
 
-const getParagraph = () =>
-  cy.get('.docy_editor .heading[level="1"] .contentWrapper > .contents > p').first().as('paragraph')
+const getParagraph = () => cy.get('.docy_editor .tiptap.ProseMirror > p').first().as('paragraph')
 
 const selectTarget = (text, start, end) =>
   cy.createSelection({
@@ -38,7 +37,6 @@ describe('Strike Formatting', () => {
 
     cy.get('@paragraph').find('s').should('contain', 'strike-target')
     cy.get('@paragraph').should('contain', 'Prefix strike-target suffix')
-    cy.assertFullSchemaValid()
   })
 
   it('applies and stops strike with toolbar button', () => {
@@ -51,7 +49,6 @@ describe('Strike Formatting', () => {
 
     cy.get('@paragraph').find('s').should('contain', 'toolbar-strike')
     cy.get('@paragraph').should('contain', 'Prefix toolbar-strike suffix')
-    cy.assertFullSchemaValid()
   })
 
   it('applies strike on selected text without changing surrounding text', () => {
@@ -64,6 +61,5 @@ describe('Strike Formatting', () => {
     cy.get('.docy_editor').realPress(['Meta', 'Shift', 's'])
     cy.get('@paragraph').find('s').should('contain', 'target')
     cy.get('@paragraph').should('contain', text)
-    cy.assertFullSchemaValid()
   })
 })

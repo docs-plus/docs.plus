@@ -21,7 +21,7 @@ const createDocument = () => {
  * Verify that the document is completely empty
  */
 const isDocumentEmpty = () => {
-  cy.get('.docy_editor .heading[level="1"]')
+  cy.get('.docy_editor h1[data-toc-id]')
     .should('have.length', 1)
     .should('have.class', 'is-empty')
     .should('have.class', 'is-editor-empty')
