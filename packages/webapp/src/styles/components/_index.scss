@@ -4,5 +4,5 @@
 @use './tableOfContents';
 @use './toolbar';
 @use './heading-actions';
-@use './heading-fold';
+@use '../editor';
 @use './unread-badge';

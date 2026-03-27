@@ -5,9 +5,8 @@
 
     .editorWrapper {
       padding-bottom: 300px;
-      overflow-x: hidden; // Prevent horizontal scroll from absolutely positioned chat buttons
+      overflow-x: hidden;
 
-      // Styled scrollbar - consistent with ScrollArea but native for performance
       scrollbar-width: thin;
       scrollbar-color: var(--color-base-300) transparent;
 
@@ -37,7 +36,6 @@
       max-width: 56rem;
 
       h1[data-toc-id] {
-        // background-color: var(--color-base-100);
         caret-color: var(--caret-color);
 
         * {
@@ -59,7 +57,6 @@
   audio,
   iframe {
     pointer-events: none;
-
     cursor: default;
   }
 }
@@ -70,22 +67,19 @@
   border-top: 1px solid var(--color-base-300);
 }
 
+// Pad document surface — prose rules live in _prose-mirror-body.scss; only tokens + layout here.
 .editorWrapper .ProseMirror {
-  // Override only the shared task-list placeholder tint in editor context.
-  --task-list-placeholder-color: color-mix(in oklch, var(--color-base-content) 50%, transparent);
+  --prose-placeholder-mix: 50%;
+  --prose-pre-padding-block: 0.75rem;
+  --prose-pre-padding-inline: 1rem;
+  --prose-blockquote-canvas-mix: 4%;
+  --prose-empty-before-width: 100%;
+
   text-align: left;
-  outline: none;
   min-height: 800px;
   scroll-padding-top: 100px;
 
-  /* Ensure caret is always visible */
-  caret-color: var(--caret-color);
-
-  /* Ensure caret is visible on different backgrounds */
-  &.dark-theme {
-    caret-color: var(--caret-color-inverse);
-  }
-
+  // Caret inheritance — children inherit from .ProseMirror (set in globals.scss)
   div[data-type],
   p,
   h1,
@@ -106,6 +100,7 @@
     caret-color: inherit;
   }
 
+  // White-bg hack: h1 section backgrounds override caret visibility
   h1[data-toc-id],
   [style*='background-color: #fff'],
   [style*='background-color: white'],
@@ -118,272 +113,7 @@
     }
   }
 
-  .is-empty::before {
-    content: attr(data-placeholder);
-    float: left;
-    color: color-mix(in oklch, var(--color-base-content) 50%, transparent);
-    pointer-events: none;
-    height: 0;
-  }
-
-  &.unselectable {
-    -moz-user-select: -moz-none;
-    -khtml-user-select: none;
-    -webkit-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-
   > * + * {
     margin-top: 0.75em;
-  }
-
-  .is-editor-empty:first-child::before {
-    color: color-mix(in oklch, var(--color-base-content) 50%, transparent);
-    content: attr(data-placeholder);
-    float: left;
-    height: 0;
-    pointer-events: none;
-  }
-
-  .collaboration-cursor__caret {
-    border-left: 1px solid var(--color-base-content);
-    border-right: 1px solid var(--color-base-content);
-    margin-left: -1px;
-    margin-right: -1px;
-    pointer-events: none;
-    position: relative;
-    word-break: normal;
-  }
-
-  .collaboration-cursor__label {
-    border-radius: 3px 3px 3px 0;
-    color: var(--color-base-content);
-    font-size: 12px;
-    font-weight: 600;
-    left: -1px;
-    line-height: normal;
-    padding: 0.1rem 0.3rem;
-    position: absolute;
-    top: -1.4em;
-    user-select: none;
-    white-space: nowrap;
-  }
-
-  .collaboration-cursor__avatar {
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    border: 2px solid var(--color-base-300);
-    position: absolute;
-    background-size: contain;
-    top: -38px;
-    left: -22px;
-  }
-
-  ul,
-  ol {
-    padding: 0 1rem;
-  }
-
-  ul {
-    list-style-type: revert;
-  }
-
-  ol {
-    list-style-type: decimal;
-  }
-
-  :is(h1, h2, h3, h4, h5, h6) {
-    display: block;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    margin-top: 0;
-  }
-
-  h1 {
-    font-size: 3.75rem;
-    padding-top: 13.8pt; /* Half of 27.6pt */
-  }
-
-  h2 {
-    font-size: 3rem;
-    padding-top: 12pt; /* Half of 24pt */
-  }
-
-  h3 {
-    font-size: 2.25rem;
-    padding-top: 10.8pt; /* Half of 21.6pt */
-  }
-
-  h4 {
-    font-size: 1.875rem;
-    padding-top: 10pt; /* Half of 20pt */
-  }
-
-  h5 {
-    font-size: 1.5rem;
-    padding-top: 9.1pt; /* Half of 18.2pt */
-  }
-
-  h6 {
-    font-size: 1.25rem;
-    padding-top: 8.4pt; /* Half of 16.8pt */
-  }
-
-  code {
-    background-color: color-mix(in oklch, var(--color-base-content) 10%, transparent);
-    color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
-  }
-
-  img {
-    max-width: 100%;
-    height: auto;
-  }
-
-  hr {
-    border: none;
-    border-top: 2px solid var(--color-base-100);
-    margin: 2rem 0;
-  }
-
-  .is-empty::before {
-    content: attr(data-placeholder);
-    float: left;
-    color: color-mix(in oklch, var(--color-base-content) 50%, transparent);
-    pointer-events: none;
-    height: 0;
-    width: 100%;
-  }
-
-  pre {
-    background: var(--color-neutral);
-    border-radius: 0.5rem;
-    color: var(--color-neutral-content);
-    font-family: 'JetBrainsMono', monospace;
-    padding: 0.75rem 1rem;
-
-    code {
-      background: none;
-      color: inherit;
-      font-size: 0.8rem;
-      padding: 0;
-    }
-
-    .hljs-comment,
-    .hljs-quote {
-      color: color-mix(in oklch, var(--color-neutral-content) 60%, transparent);
-    }
-
-    .hljs-variable,
-    .hljs-template-variable,
-    .hljs-attribute,
-    .hljs-tag,
-    .hljs-name,
-    .hljs-regexp,
-    .hljs-link,
-    .hljs-name,
-    .hljs-selector-id,
-    .hljs-selector-class {
-      color: var(--color-error);
-    }
-
-    .hljs-number,
-    .hljs-meta,
-    .hljs-built_in,
-    .hljs-builtin-name,
-    .hljs-literal,
-    .hljs-type,
-    .hljs-params {
-      color: var(--color-warning);
-    }
-
-    .hljs-string,
-    .hljs-symbol,
-    .hljs-bullet {
-      color: var(--color-success);
-    }
-
-    .hljs-title,
-    .hljs-section {
-      color: var(--color-accent);
-    }
-
-    .hljs-keyword,
-    .hljs-selector-tag {
-      color: var(--color-info);
-    }
-
-    .hljs-emphasis {
-      font-style: italic;
-    }
-
-    .hljs-strong {
-      font-weight: 700;
-    }
-  }
-
-  table {
-    border-collapse: collapse;
-    margin: 0;
-    overflow: hidden;
-    table-layout: fixed;
-    width: 100%;
-
-    td,
-    th {
-      border: 2px solid var(--color-base-300);
-      box-sizing: border-box;
-      min-width: 1em;
-      padding: 3px 5px;
-      position: relative;
-      vertical-align: top;
-
-      > * {
-        margin-bottom: 0;
-      }
-    }
-
-    th {
-      background-color: var(--color-base-200);
-      font-weight: bold;
-      text-align: left;
-    }
-
-    .selectedCell:after {
-      background: color-mix(in oklch, var(--color-primary) 40%, transparent);
-      content: '';
-      left: 0;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      pointer-events: none;
-      position: absolute;
-      z-index: 2;
-    }
-
-    .column-resize-handle {
-      background-color: color-mix(in oklch, var(--color-primary) 50%, transparent);
-      bottom: -2px;
-      position: absolute;
-      right: -2px;
-      pointer-events: none;
-      top: 0;
-      width: 4px;
-    }
-
-    p {
-      margin: 0;
-    }
-  }
-
-  .tableWrapper {
-    padding: 1rem 0;
-    overflow-x: auto;
-  }
-
-  .resize-cursor {
-    cursor: ew-resize;
-    cursor: col-resize;
   }
 }

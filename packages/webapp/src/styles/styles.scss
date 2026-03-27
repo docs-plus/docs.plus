@@ -1,16 +1,24 @@
+// App styles pipeline (after globals.scss): layout → UI components → theme → feature layers
 @use './blocks';
-@use './headings';
 @use './print';
 @use './components/index';
 @use './daisyui';
 @use './mobile';
-@use './desktop';
 @use './chat_editor';
 
 $pad-header-height: 64px;
 $pad-toolbar-height: 38px;
 
 .ProseMirror {
+  /* TipTap Highlight — inline `background-color` on <mark> would ignore theme; force accent tint */
+  mark {
+    background-color: color-mix(in oklch, var(--color-accent) 40%, transparent) !important;
+    color: inherit !important;
+    border-radius: 0.2em;
+    box-decoration-break: clone;
+    padding: 0.05em 0;
+  }
+
   .mention,
   [data-type='mention'] {
     background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
@@ -32,50 +40,6 @@ $pad-toolbar-height: 38px;
   a:hover {
     color: var(--color-primary);
     opacity: 0.85;
-  }
-}
-
-.nd_modal {
-  &.left {
-    .modalBg {
-      opacity: 0;
-      transition: all 0.2s;
-      transition-timing-function: linear;
-
-      &.active {
-        opacity: 0.4;
-      }
-    }
-
-    .modalWrapper {
-      transform: translateX(-100%);
-      transition: all 0.2s linear;
-
-      &.active {
-        transform: translateX(0);
-      }
-    }
-  }
-
-  &.bottom {
-    .modalBg {
-      opacity: 0;
-      transition: all 0.2s;
-      transition-timing-function: linear;
-
-      &.active {
-        opacity: 0.4;
-      }
-    }
-
-    .modalWrapper {
-      transform: translateY(100%);
-      transition: all 0.2s linear;
-
-      &.active {
-        transform: translateY(0);
-      }
-    }
   }
 }
 
@@ -237,21 +201,16 @@ $pad-toolbar-height: 38px;
   .metadata-fallback,
   .metadata-loading {
     a {
+      display: block;
       max-width: 200px;
       font-size: 0.9rem;
+      font-weight: 500;
       margin-right: 6px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
       color: var(--color-primary);
       text-decoration: none;
-      font-weight: 500;
-      font-size: 0.9rem;
-      margin-right: 6px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      display: block;
     }
     .metadata-special,
     .metadata-content {
@@ -259,10 +218,6 @@ $pad-toolbar-height: 38px;
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      // .metadata-icon-special {
-      //   width: 20px;
-      //   height: 20px;
-      // }
     }
   }
 

@@ -90,10 +90,10 @@
   border: none;
 }
 
-button {
-  &[disabled] {
-    svg {
-      fill: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-    }
+.tiptap__toolbar,
+.chatroom__toolbar,
+.tiptap-toolbar-mobile {
+  button[disabled] svg {
+    fill: color-mix(in oklch, var(--color-base-content) 40%, transparent);
   }
 }

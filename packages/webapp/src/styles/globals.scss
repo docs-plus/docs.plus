@@ -1,4 +1,4 @@
-@use './task-list-placeholder' as taskListPlaceholder;
+@use './prose-mirror-body' as proseMirrorBody;
 @import 'tailwindcss';
 @plugin 'daisyui';
 
@@ -182,17 +182,14 @@
 
 @theme {
   --color-docsy: oklch(54.6% 0.245 262.881);
-  --bg-docy: oklch(54.6% 0.245 262.881);
 }
 
 :root {
-  --font-family: 'Helvetica, Arial, sans-serif';
-  /* Theme-aware aliases — resolve to the active DaisyUI theme's tokens */
   --color-docsy: var(--color-primary);
-  --text-docsy: var(--color-primary);
-  --bg-docy: var(--color-primary);
   --caret-color: var(--color-primary);
   --caret-color-inverse: var(--color-primary-content);
+  --border-color-tint: color-mix(in oklch, var(--color-base-content) 14%, transparent);
+  --muted-foreground: color-mix(in oklch, var(--color-base-content) 50%, transparent);
 }
 
 * {
@@ -223,9 +220,6 @@ input {
 
 .ProseMirror {
   height: 100%;
-  outline: none;
-
-  /* Ensure caret is always visible across all ProseMirror instances */
   caret-color: var(--caret-color);
 }
 
@@ -243,109 +237,12 @@ html:not(.m_mobile) {
     min-height: 100%;
     padding: 0;
   }
-}
 
-html:not(.m_mobile) {
   #root,
   #__next {
     height: 100%;
     min-height: 100vh;
     min-height: calc(var(--vh, 1vh) * 100);
-  }
-}
-
-.tippy-box {
-  .hyperlink-preview-modal,
-  .hyperlink-set-modal,
-  .hyperlink-edit-modal {
-    background-color: var(--color-base-100);
-    color: var(--color-base-content);
-    border-radius: 10px;
-    border: 1px solid var(--color-base-300);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 6px 6px;
-    box-shadow: 0 1px 3px 1px color-mix(in oklch, var(--color-base-content) 15%, transparent);
-    margin-top: -6px;
-
-    &__metadata {
-      width: 200px;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      flex-direction: row-reverse;
-      a {
-        font-size: 0.9rem;
-        margin-right: 6px;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-      img {
-        width: 18px;
-        height: 18px;
-        border-radius: 50%;
-        margin-right: 8px;
-      }
-    }
-
-    &__remove-button,
-    &__edit-button,
-    &__copy-button,
-    &__apply-button {
-      width: 30px;
-      height: 30px;
-      border-radius: 50%;
-      margin: 0 0.25rem;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background-color 0.1s ease-in-out;
-      &:hover {
-        background-color: var(--color-base-200);
-      }
-      > svg {
-        width: 16px;
-        height: 16px;
-      }
-    }
-
-    form {
-      display: flex;
-      align-items: flex-end;
-      width: 100%;
-      input {
-        border: 1px solid var(--color-base-300);
-        border-radius: 6px;
-        padding: 0.4rem 0.8rem;
-        margin-bottom: 0.2rem;
-        width: 100%;
-        background-color: var(--color-base-100);
-        color: var(--color-base-content);
-        &:last-of-type {
-          margin-bottom: 0;
-        }
-      }
-      .hyperlink-set-modal__buttons-wrapper,
-      .hyperlink-edit-modal__buttons-wrapper {
-        margin-left: 8px;
-        button {
-          border-radius: 6px;
-          padding: 4px 14px;
-          width: 70px;
-          margin-bottom: 0.2rem;
-          color: var(--color-primary);
-          &:hover {
-            background: color-mix(in oklch, var(--color-primary) 4%, transparent);
-          }
-        }
-      }
-    }
-  }
-
-  .tippy-svg-arrow {
-    top: -6px !important;
   }
 }
 
@@ -599,7 +496,7 @@ html:not(.m_mobile) {
   }
 
   &__modal {
-    padding: 8px 8px;
+    padding: 8px;
     background-color: var(--color-base-100);
     color: var(--color-base-content);
     border-radius: 6px;
@@ -639,11 +536,6 @@ html:not(.m_mobile) {
       }
     }
 
-    &__btn--resize {
-      svg {
-      }
-    }
-
     &--active {
       background-color: var(--color-primary);
       fill: var(--color-primary-content);
@@ -659,42 +551,16 @@ html:not(.m_mobile) {
   }
 }
 
-/*message*/
-/*TODO: refactor needed*/
-
 .message--card__content {
-  /* margin-top: 10px; */
-}
+  ul,
+  ol {
+    padding: 0 1rem;
+  }
 
-.message--card__content ul,
-ol {
-  padding: 0 1rem;
-}
-
-.message--card__content p {
-  margin: 0;
-  line-height: 1.5rem;
-}
-
-/* styles.css */
-.bubble_group-end::before {
-  display: block;
-  content: '';
-
-  /* Define other properties for your before element here */
-}
-
-.bubble_group-start::before {
-  display: none;
-  content: '';
-  /* Define other properties for your before element if needed */
-}
-
-.chat_group-start {
-  margin-top: -6px;
-}
-.chat_group-end {
-  margin-top: -6px;
+  p {
+    margin: 0;
+    line-height: 1.5rem;
+  }
 }
 
 /* This styles the scrollbar track (the part the thumb moves along) */
@@ -714,250 +580,9 @@ ol {
   background: color-mix(in oklch, var(--color-base-content) 30%, transparent);
 }
 
-/* Hide the scrollbar by default */
-.scrollable-container::-webkit-scrollbar-thumb {
-  background-color: transparent;
-  transition: all 2s ease-in-out;
-}
-
-.scrollable-container:hover::-webkit-scrollbar-thumb {
-  background: color-mix(in oklch, var(--color-base-content) 30%, transparent);
-}
-
 .ProseMirror,
 .msg_card {
-  outline: none;
-
-  &.unselectable {
-    -moz-user-select: -moz-none;
-    -khtml-user-select: none;
-    -webkit-user-select: none;
-    -ms-user-select: none;
-    user-select: none;
-  }
-
-  p.is-editor-empty:first-child::before {
-    color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-    content: attr(data-placeholder);
-    float: left;
-    height: 0;
-    pointer-events: none;
-  }
-
-  .collaboration-cursor__caret {
-    border-left: 1px solid var(--color-base-content);
-    border-right: 1px solid var(--color-base-content);
-    margin-left: -1px;
-    margin-right: -1px;
-    pointer-events: none;
-    position: relative;
-    word-break: normal;
-  }
-
-  .collaboration-cursor__label {
-    border-radius: 3px 3px 3px 0;
-    color: var(--color-base-content);
-    font-size: 12px;
-    font-weight: 600;
-    left: -1px;
-    line-height: normal;
-    padding: 0.1rem 0.3rem;
-    position: absolute;
-    top: -1.4em;
-    user-select: none;
-    white-space: nowrap;
-  }
-
-  .collaboration-cursor__avatar {
-    border-radius: 50%;
-    width: 30px;
-    height: 30px;
-    border: 2px solid var(--color-base-300);
-    position: absolute;
-    background-size: contain;
-    top: -38px;
-    left: -22px;
-  }
-
-  // Keep task-list placeholder behavior centralized in one source.
-  // Consumers can override only this variable when a different tint is needed.
-  --task-list-placeholder-color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-  @include taskListPlaceholder.task-list-placeholder-overrides(var(--task-list-placeholder-color));
-
-  ul,
-  ol {
-    padding: 0 1rem;
-  }
-
-  ul {
-    list-style-type: revert;
-  }
-
-  ol {
-    list-style-type: decimal;
-  }
-
-  code {
-    background-color: color-mix(in oklch, var(--color-base-content) 10%, transparent);
-    color: color-mix(in oklch, var(--color-base-content) 60%, transparent);
-  }
-
-  img {
-    max-width: 100%;
-    height: auto;
-  }
-
-  blockquote {
-    border-left: 2px solid var(--color-base-300);
-    margin: 0;
-    padding: 0.2rem 0.4rem;
-  }
-
-  hr {
-    border: none;
-    border-top: 2px solid var(--color-base-300);
-    margin: 2rem 0;
-  }
-
-  .is-empty::before {
-    content: attr(data-placeholder);
-    float: left;
-    color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-    pointer-events: none;
-    height: 0;
-  }
-
-  pre {
-    background: var(--color-neutral);
-    border-radius: 0.5rem;
-    color: var(--color-neutral-content);
-    font-family: 'JetBrainsMono', monospace;
-    overflow: auto;
-    padding: 2px 10px;
-
-    code {
-      background: none;
-      color: inherit;
-      font-size: 0.8rem;
-      padding: 0;
-    }
-
-    .hljs-comment,
-    .hljs-quote {
-      color: color-mix(in oklch, var(--color-neutral-content) 60%, transparent);
-    }
-
-    .hljs-variable,
-    .hljs-template-variable,
-    .hljs-attribute,
-    .hljs-tag,
-    .hljs-name,
-    .hljs-regexp,
-    .hljs-link,
-    .hljs-name,
-    .hljs-selector-id,
-    .hljs-selector-class {
-      color: var(--color-error);
-    }
-
-    .hljs-number,
-    .hljs-meta,
-    .hljs-built_in,
-    .hljs-builtin-name,
-    .hljs-literal,
-    .hljs-type,
-    .hljs-params {
-      color: var(--color-warning);
-    }
-
-    .hljs-string,
-    .hljs-symbol,
-    .hljs-bullet {
-      color: var(--color-success);
-    }
-
-    .hljs-title,
-    .hljs-section {
-      color: var(--color-accent);
-    }
-
-    .hljs-keyword,
-    .hljs-selector-tag {
-      color: var(--color-info);
-    }
-
-    .hljs-emphasis {
-      font-style: italic;
-    }
-
-    .hljs-strong {
-      font-weight: 700;
-    }
-  }
-
-  table {
-    border-collapse: collapse;
-    margin: 0;
-    overflow: hidden;
-    table-layout: fixed;
-    width: 100%;
-
-    td,
-    th {
-      border: 2px solid var(--color-base-300);
-      box-sizing: border-box;
-      min-width: 1em;
-      padding: 3px 5px;
-      position: relative;
-      vertical-align: top;
-
-      > * {
-        margin-bottom: 0;
-      }
-    }
-
-    th {
-      background-color: var(--color-base-200);
-      font-weight: bold;
-      text-align: left;
-    }
-
-    .selectedCell:after {
-      background: color-mix(in oklch, var(--color-primary) 20%, transparent);
-      content: '';
-      left: 0;
-      right: 0;
-      top: 0;
-      bottom: 0;
-      pointer-events: none;
-      position: absolute;
-      z-index: 2;
-    }
-
-    .column-resize-handle {
-      background-color: var(--color-info);
-      bottom: -2px;
-      position: absolute;
-      right: -2px;
-      pointer-events: none;
-      top: 0;
-      width: 4px;
-    }
-
-    p {
-      margin: 0;
-    }
-  }
-
-  .tableWrapper {
-    padding: 1rem 0;
-    overflow-x: auto;
-  }
-
-  .resize-cursor {
-    cursor: ew-resize;
-    cursor: col-resize;
-  }
+  @include proseMirrorBody.editor-prose-shared;
 }
 
 [data-floating-ui-portal] {
@@ -972,16 +597,6 @@ ol {
 .documentKeywordInput .rti--input {
   font-size: 14px;
 }
-
-// .rti--container {
-//   --rti-bg: "#fff",
-//   --rti-border: "#ccc",
-//   --rti-main: "#3182ce",
-//   --rti-radius: "0.375rem",
-//   --rti-s: "0.5rem", /* spacing */
-//   --rti-tag: "#edf2f7",
-//   --rti-tag-remove: "#e53e3e",
-// }
 
 .collapse-title,
 :where(.collapse > input[type='radio']) {
@@ -1089,82 +704,7 @@ ol {
   display: none;
 }
 
-@keyframes bg-ping-animation {
-  0%,
-  100% {
-    background-color: var(--color-base-200);
-  }
-  50% {
-    background-color: var(--color-base-300);
-  }
-}
-
-.bg-ping {
-  position: relative;
-  animation: bg-ping-animation 2s ease-in-out infinite;
-}
-
-/* Primary color variant */
-.bg-ping-primary {
-  position: relative;
-  animation: bg-ping-primary 2s ease-in-out infinite;
-}
-
-@keyframes bg-ping-primary {
-  0%,
-  100% {
-    background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
-  }
-  50% {
-    background-color: color-mix(in oklch, var(--color-primary) 30%, transparent);
-  }
-}
-
-/* Border ping animation - shiny version */
-@keyframes border-ping-animation {
-  0%,
-  100% {
-    border-color: var(--color-base-300);
-    box-shadow: 0 0 5px color-mix(in oklch, var(--color-primary) 10%, transparent);
-  }
-  50% {
-    border-color: var(--color-primary);
-    box-shadow: 0 0 8px color-mix(in oklch, var(--color-primary) 50%, transparent);
-  }
-}
-
-.border-ping {
-  position: relative;
-  border-width: 2px;
-  border-style: solid;
-  animation: border-ping-animation 2s ease-in-out infinite;
-  transition: all 0.3s ease;
-}
-
-/* Primary color border variant - shiny version */
-.border-ping-primary {
-  position: relative;
-  border-width: 2px;
-  border-style: solid;
-  animation: border-ping-primary 2s ease-in-out infinite;
-  transition: all 0.3s ease;
-}
-
-@keyframes border-ping-primary {
-  0%,
-  100% {
-    border-color: color-mix(in oklch, var(--color-primary) 40%, transparent);
-    box-shadow: 0 0 5px color-mix(in oklch, var(--color-primary) 10%, transparent);
-  }
-  50% {
-    border-color: color-mix(in oklch, var(--color-primary) 90%, transparent);
-    box-shadow:
-      0 0 12px color-mix(in oklch, var(--color-primary) 30%, transparent),
-      0 0 5px color-mix(in oklch, var(--color-primary) 50%, transparent);
-  }
-}
-
-/* Extra shiny version with glow */
+/* Highlight glow — used by chat message highlight (useHighlightMessage) */
 .border-ping-glow {
   position: relative;
   border-width: 2px;
@@ -1392,32 +932,6 @@ ol {
 .scrollbar-hide:hover::-webkit-scrollbar-thumb:hover {
   background: color-mix(in oklch, var(--color-base-content) 60%, transparent);
   background-clip: content-box;
-}
-
-/* Primary color scrollbar variant */
-.scrollbar-primary {
-  scrollbar-color: color-mix(in oklch, var(--color-primary) 40%, transparent) transparent;
-}
-
-.scrollbar-primary::-webkit-scrollbar-thumb {
-  background: color-mix(in oklch, var(--color-primary) 40%, transparent);
-}
-
-.scrollbar-primary::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in oklch, var(--color-primary) 60%, transparent);
-}
-
-/* Dark scrollbar variant */
-.scrollbar-dark {
-  scrollbar-color: color-mix(in oklch, var(--color-neutral) 50%, transparent) transparent;
-}
-
-.scrollbar-dark::-webkit-scrollbar-thumb {
-  background: color-mix(in oklch, var(--color-neutral) 50%, transparent);
-}
-
-.scrollbar-dark::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in oklch, var(--color-neutral) 70%, transparent);
 }
 
 /* em-emoji-picker (emoji-mart) — border and shadow for separation (same UX as Popover/context menu). */
