@@ -1,5 +1,5 @@
 import type { Node as PMNode } from '@tiptap/pm/model'
-import { Plugin, PluginKey, TextSelection } from '@tiptap/pm/state'
+import { Plugin, PluginKey, TextSelection, type Transaction } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
 import {
@@ -281,6 +281,8 @@ export function createHeadingFilterPlugin(
                 savedFoldIds = new Set(options.foldAdapter.getFoldedIds(view.state))
               }
 
+              let tr: Transaction | null = null
+
               if (hasFilters) {
                 const allSections = findAllSections(view.state.doc)
                 const sectionsToFold = new Set<string>()
@@ -290,52 +292,47 @@ export function createHeadingFilterPlugin(
                   }
                 }
 
-                const tr = options.foldAdapter.setTemporaryFolds(view.state.tr, sectionsToFold)
-                view.dispatch(tr)
+                tr = options.foldAdapter.setTemporaryFolds(view.state.tr, sectionsToFold)
               } else if (hadFilters && !hasFilters) {
-                const tr = options.foldAdapter.restoreFolds(
+                tr = options.foldAdapter.restoreFolds(
                   view.state.tr,
                   savedFoldIds ?? new Set<string>()
                 )
-                view.dispatch(tr)
                 savedFoldIds = null
               }
+
+              // Check if cursor is in a folded section and fix in the same transaction
+              if (tr && slugsChanged && hasFilters && current.matchedSectionIds.size > 0) {
+                const { doc } = view.state
+                const cursorPos = view.state.selection.$head.pos
+                let cursorInFolded = false
+                let offset = 0
+
+                for (let i = 0; i < doc.content.childCount; i++) {
+                  const child = doc.content.child(i)
+                  offset += child.nodeSize
+
+                  if (i === 0) continue
+                  if (child.type.name !== 'heading') continue
+
+                  const tocId = child.attrs['toc-id'] as string
+                  if (!tocId || current.matchedSectionIds.has(tocId)) continue
+
+                  if (cursorPos >= offset - child.nodeSize && cursorPos < offset) {
+                    cursorInFolded = true
+                    break
+                  }
+                }
+
+                if (cursorInFolded) {
+                  const $pos = doc.resolve(1)
+                  tr.setSelection(TextSelection.near($pos)).scrollIntoView()
+                }
+              }
+
+              if (tr) view.dispatch(tr)
             } catch {
               /* adapter error — degrade gracefully */
-            }
-          }
-
-          if (
-            options.foldAdapter &&
-            slugsChanged &&
-            hasFilters &&
-            current.matchedSectionIds.size > 0
-          ) {
-            const { doc, selection } = view.state
-            const cursorPos = selection.$head.pos
-            let cursorInFolded = false
-            let offset = 0
-
-            for (let i = 0; i < doc.content.childCount; i++) {
-              const child = doc.content.child(i)
-              offset += child.nodeSize
-
-              if (i === 0) continue
-              if (child.type.name !== 'heading') continue
-
-              const tocId = child.attrs['toc-id'] as string
-              if (!tocId || current.matchedSectionIds.has(tocId)) continue
-
-              if (cursorPos >= offset - child.nodeSize && cursorPos < offset) {
-                cursorInFolded = true
-                break
-              }
-            }
-
-            if (cursorInFolded) {
-              const $pos = doc.resolve(1)
-              const tr = view.state.tr.setSelection(TextSelection.near($pos))
-              view.dispatch(tr.scrollIntoView())
             }
           }
         },
