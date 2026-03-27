@@ -1,5 +1,5 @@
 import Config from '@config'
-import { createHyperlinkPopover } from '@docs.plus/extension-hyperlink'
+import { createHyperlinkPopover, registerCustomProtocol } from '@docs.plus/extension-hyperlink'
 import {
   HyperMultimediaKit,
   imageModal as _imageModal,
@@ -40,6 +40,9 @@ import yaml from 'highlight.js/lib/languages/yaml'
 import { createLowlight } from 'lowlight'
 import randomColor from 'randomcolor'
 import ShortUniqueId from 'short-unique-id'
+
+registerCustomProtocol('ftp')
+registerCustomProtocol('mailto')
 
 const headingTableUid = new ShortUniqueId()
 import { IndexeddbPersistence } from 'y-indexeddb'
@@ -184,13 +187,8 @@ const Editor = ({
       }
     }),
     HyperMultimediaKit.configure({
-      Image: {
-        inline: true,
-        allowBase64: true
-      }
+      Image: false
     }),
-    // Registers parseMarkdown/renderMarkdown hooks for Image nodes.
-    // Duplicates the kit's Image name (console warning) — MarkdownManager picks up hooks from this one.
     ImageWithMarkdown.configure({
       inline: true,
       allowBase64: true
@@ -210,11 +208,10 @@ const Editor = ({
     // @docs.plus/extension-placeholder uses state.init/apply with cursor-only
     // checks — O(1) for the common typing case. Critical for large collab docs.
     Placeholder.configure({
-      placeholder: ({ editor, node, pos }) => {
+      placeholder: ({ node, pos, parentName }) => {
         if (node.type.name === 'heading' && pos === 0) return 'Enter document name'
-        if (node.type.name === 'paragraph') {
-          const parent = editor.state.doc.resolve(pos).parent.type.name
-          if (parent in PARENT_PLACEHOLDER) return PARENT_PLACEHOLDER[parent]
+        if (node.type.name === 'paragraph' && parentName in PARENT_PLACEHOLDER) {
+          return PARENT_PLACEHOLDER[parentName]
         }
         return PLACEHOLDER_TEXT[node.type.name] ?? ''
       }
@@ -250,6 +247,7 @@ const Editor = ({
         }
       },
       immediatelyRender: false,
+      shouldRerenderOnTransaction: false,
       editable,
       extensions
     }

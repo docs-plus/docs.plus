@@ -144,12 +144,12 @@ const createHoverChatDecorations = (doc: ProseMirrorNode, editor: Editor): Decor
 }
 
 let activeWrapper: HTMLElement | null = null
+let lastSelectionHeadingId: string | null = null
 
 const findSelectionHeadingId = (view: EditorView): string | null => {
   const { selection } = view.state
   if (selection.empty) return null
 
-  // In flat schema, heading is at depth 1. Check if anchor is in a heading.
   const { $anchor } = selection
   if ($anchor.parent.type.name === TIPTAP_NODES.HEADING_TYPE) {
     return ($anchor.parent.attrs['toc-id'] as string) || null
@@ -159,12 +159,16 @@ const findSelectionHeadingId = (view: EditorView): string | null => {
 }
 
 const updateSelectionState = (view: EditorView): void => {
+  const headingId = findSelectionHeadingId(view)
+
+  if (headingId === lastSelectionHeadingId) return
+  lastSelectionHeadingId = headingId
+
   if (activeWrapper) {
     activeWrapper.classList.remove(HEADING_ACTIONS_CLASSES.hasSelection)
     activeWrapper = null
   }
 
-  const headingId = findSelectionHeadingId(view)
   if (!headingId) return
 
   const wrapper = view.dom.querySelector<HTMLElement>(
