@@ -5,7 +5,6 @@ export interface ChannelPinnedMessagesState {
   pinnedMessages: Map<string, Map<string, any>>
   addChannelPinnedMessage: (channelId: string, message: any) => void
   removeChannelPinnedMessage: (channelId: string, messageId: string) => void
-  clearChannelPinnedMessages: (channelId: string) => void
   bulkSetChannelPinnedMessages: (channelId: string, messages: any[]) => void
 }
 
@@ -26,11 +25,6 @@ const channelPinnedMessagesStore = immer<ChannelPinnedMessagesState>((set) => ({
       if (channelMessages) {
         channelMessages.delete(messageId)
       }
-    }),
-
-  clearChannelPinnedMessages: (channelId) =>
-    set((state) => {
-      state.pinnedMessages.delete(channelId)
     }),
 
   bulkSetChannelPinnedMessages: (channelId, messages) =>

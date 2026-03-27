@@ -11,15 +11,12 @@ type WorkspaceSettings = {
 
 export interface IWorkspaceSettingsStore {
   workspaceSettings: WorkspaceSettings
-  setWorkspaceChannelSettings: (channelId: string, value: TChannelSettings) => void
   setWorkspaceChannelSetting: (channelId: string, key: keyof TChannelSettings, value: any) => void
   setWorkspaceSetting: (key: keyof WorkspaceSettings, value: any) => void
-  setWorkspaceSettings: (settings: WorkspaceSettings) => void
   setCommentMessageMemory: (channelId: string, message: any) => void
   setReplyMessageMemory: (channelId: string, message: any) => void
   setMessageDraftMemory: (channelId: string, message: any) => void
   setEditMessageMemory: (channelId: string, message: any) => void
-  setForwardMessageMemory: (channelId: string, message: any) => void
   setTypingIndicator: (channelId: string, user: any) => void
   removeTypingIndicator: (channelId: string, user: any) => void
   clearMemoryStates: (channelId: string) => void
@@ -34,12 +31,6 @@ const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
     typingIndicators: {}
   },
 
-  setWorkspaceChannelSettings: (channelId, value) => {
-    set((state) => {
-      state.workspaceSettings.channels.set(channelId, value)
-    })
-  },
-
   setWorkspaceChannelSetting: (channelId, key, value) => {
     set((state) => {
       const channelSettings =
@@ -52,12 +43,6 @@ const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
   setWorkspaceSetting: (key, value) => {
     set((state) => {
       state.workspaceSettings[key] = value
-    })
-  },
-
-  setWorkspaceSettings: (settings) => {
-    set((state) => {
-      Object.assign(state.workspaceSettings, settings)
     })
   },
 
@@ -78,10 +63,6 @@ const useWorkspaceSettingsStore = immer<IWorkspaceSettingsStore>((set) => ({
 
   setEditMessageMemory: (channelId, message) => {
     setMemory(set, 'editMessageMemory', channelId, message)
-  },
-
-  setForwardMessageMemory: (channelId, message) => {
-    setMemory(set, 'forwardMessageMemory', channelId, message)
   },
 
   setTypingIndicator: (channelId, user) => {

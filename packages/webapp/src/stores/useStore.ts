@@ -1,7 +1,6 @@
 import { enableMapSet } from 'immer'
 import { create } from 'zustand'
 
-import chatRoom from './chat/chatroom'
 import dialogStore from './dialogStore'
 import history from './history'
 import notification from './notification'
@@ -15,7 +14,6 @@ interface IStore
   extends
     ReturnType<typeof usersPresence>,
     ReturnType<typeof workspaceStore>,
-    ReturnType<typeof chatRoom>,
     ReturnType<typeof notification>,
     ReturnType<typeof history>,
     ReturnType<typeof virtualKeyboardStore>,
@@ -24,7 +22,6 @@ interface IStore
 export const useStore = create<IStore>((...props) => ({
   ...workspaceStore(...props),
   ...usersPresence(...props),
-  ...chatRoom(...props),
   ...history(...props),
   ...notification(...props),
   ...virtualKeyboardStore(...props),

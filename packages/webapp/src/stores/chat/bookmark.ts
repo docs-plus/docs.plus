@@ -63,7 +63,6 @@ interface IBookmarkStore {
   removeBookmark: (bookmarkId: number) => void
   updateBookmarkStatus: (bookmarkId: number, updates: Partial<TBookmark>) => void
   moveBookmarkBetweenTabs: (bookmarkId: number, fromTab: TBookmarkTab, toTab: TBookmarkTab) => void
-  updateTabCounts: () => void
 }
 
 const bookmark = immer<IBookmarkStore>((set) => ({
@@ -199,15 +198,6 @@ const bookmark = immer<IBookmarkStore>((set) => ({
           count: (state.bookmarks.get(tab.label) || []).length
         }))
       }
-    })
-  },
-
-  updateTabCounts: () => {
-    set((state) => {
-      state.bookmarkTabs = state.bookmarkTabs.map((tab) => ({
-        ...tab,
-        count: (state.bookmarks.get(tab.label) || []).length
-      }))
     })
   }
 }))

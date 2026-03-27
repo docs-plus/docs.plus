@@ -8,7 +8,6 @@ export interface IChannelStore {
   setOrUpdateChannel: (channelId: string, channelData: TChannel) => void
   updateChannelRow: (channelId: string, channelData: TChannel) => void
   removeChannel: (channelId: string) => void
-  clearChannels: () => void
 }
 
 const channelsStore = immer<IChannelStore>((set) => ({
@@ -50,12 +49,6 @@ const channelsStore = immer<IChannelStore>((set) => ({
   removeChannel: (channelId) => {
     set((state) => {
       state.channels.delete(channelId)
-    })
-  },
-
-  clearChannels: () => {
-    set((state) => {
-      state.channels.clear()
     })
   },
 

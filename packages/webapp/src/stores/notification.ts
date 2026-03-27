@@ -24,7 +24,6 @@ interface INotificationStore {
   clearNotifications: () => void
   emptyNotifications: () => void
   updateNotifications: (tab: TTab, newNotifications: TNotification[]) => void
-  clearNotificationSummary: () => void
 }
 
 const notification = immer<INotificationStore>((set) => ({
@@ -102,17 +101,6 @@ const notification = immer<INotificationStore>((set) => ({
   setNotificationPage: (page: number) => {
     set((state) => {
       state.notificationPage = page
-    })
-  },
-
-  clearNotificationSummary: () => {
-    set((state) => {
-      state.notificationSummary = {
-        unread_count: 0,
-        unread_mention_count: 0,
-        last_unread: [],
-        last_unread_mention: []
-      }
     })
   },
 

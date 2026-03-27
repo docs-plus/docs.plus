@@ -38,7 +38,6 @@ type Workspace = {
 export interface IWorkspaceStore {
   settings: Workspace
   setWorkspaceSetting: (key: keyof Workspace, value: any) => void
-  setWorkspaceSettings: (settings: Workspace) => void
   setWorkspaceEditorSettings: (settings: EditorSettings) => void
   setWorkspaceEditorSetting: (key: keyof EditorSettings, value: any) => void
 }
@@ -68,13 +67,6 @@ const workspaceStore = immer<IWorkspaceStore>((set) => ({
   setWorkspaceSetting: (key, value) => {
     return set((state) => ({
       settings: { ...state.settings, [key]: value }
-    }))
-  },
-
-  // Update multiple settings at once
-  setWorkspaceSettings: (settings) => {
-    return set((state) => ({
-      settings: { ...state.settings, ...settings }
     }))
   },
 

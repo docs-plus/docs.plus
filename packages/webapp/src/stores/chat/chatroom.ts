@@ -31,7 +31,6 @@ interface IChatroomStore {
   updateChatRoom: (key: keyof TChatRoom, value: any) => void
   openChatRoom: () => void
   closeChatRoom: () => void
-  toggleChatRoom: () => void
   destroyChatRoom: () => void
   setOrUpdateChatPanelHeight: (height: number) => void
   setOrUpdateChatRoom: (key: keyof TChatRoom, value: any) => void
@@ -126,12 +125,6 @@ const chatRoom = immer<IChatroomStore>((set, get) => ({
       const broadcaster = (get() as any).settings?.broadcaster
       broadcastPresence(broadcaster, user, channelId)
     }
-  },
-
-  toggleChatRoom: () => {
-    set((state) => {
-      state.chatRoom.open = !state.chatRoom.open
-    })
   },
 
   destroyChatRoom: () => {

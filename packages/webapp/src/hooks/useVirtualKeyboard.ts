@@ -10,7 +10,6 @@ import { useEffect, useRef } from 'react'
 const useVirtualKeyboard = () => {
   const setKeyboardOpen = useStore((state) => state.setKeyboardOpen)
   const setKeyboardHeight = useStore((state) => state.setKeyboardHeight)
-  const setVirtualKeyboardState = useStore((state) => state.setVirtualKeyboardState)
   const previousIsOpenRef = useRef<boolean | null>(null)
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -41,7 +40,6 @@ const useVirtualKeyboard = () => {
         if (previousIsOpen !== isKeyboardOpen) {
           setKeyboardHeight(keyboardHeight)
           setKeyboardOpen(isKeyboardOpen)
-          setVirtualKeyboardState(isKeyboardOpen ? 'open' : 'closed')
           previousIsOpenRef.current = isKeyboardOpen
         }
       }, DEBOUNCE_MS)
@@ -59,7 +57,7 @@ const useVirtualKeyboard = () => {
         clearTimeout(debounceTimerRef.current)
       }
     }
-  }, [setKeyboardOpen, setKeyboardHeight, setVirtualKeyboardState])
+  }, [setKeyboardOpen, setKeyboardHeight])
 }
 
 export default useVirtualKeyboard
