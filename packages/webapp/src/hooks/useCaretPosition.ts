@@ -132,8 +132,8 @@ const ensureCaretVisible = (editor: Editor): void => {
  * - Ensures caret visibility with proper scroll handling
  */
 export const useCaretPosition = () => {
-  const { settings, isKeyboardOpen } = useStore()
-  const { instance: editor } = settings.editor
+  const editor = useStore((state) => state.settings.editor.instance)
+  const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
 
   // Save caret position when keyboard closes
   useEffect(() => {
@@ -218,8 +218,8 @@ export const useCaretPosition = () => {
  * Used by EditorContent (double-tap) and EditFAB (button tap).
  */
 export const useEnableEditor = () => {
-  const { settings, isKeyboardOpen } = useStore()
-  const { instance: editor } = settings.editor
+  const editor = useStore((state) => state.settings.editor.instance)
+  const isKeyboardOpen = useStore((state) => state.isKeyboardOpen)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
 
   /**
@@ -283,8 +283,7 @@ export const useEnableEditor = () => {
  * Use this in components that render the editor.
  */
 export const useEditorFocusScroll = () => {
-  const { settings } = useStore()
-  const { instance: editor } = settings.editor
+  const editor = useStore((state) => state.settings.editor.instance)
 
   useEffect(() => {
     if (!editor || !isMobile()) return

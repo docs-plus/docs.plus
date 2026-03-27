@@ -14,9 +14,9 @@ interface NotificationPanelProps {
 }
 
 export const NotificationPanel = ({ onClose }: NotificationPanelProps) => {
-  const { notificationActiveTab, notificationTabs, setNotificationActiveTab } = useStore(
-    (state) => state
-  )
+  const notificationActiveTab = useStore((state) => state.notificationActiveTab)
+  const notificationTabs = useStore((state) => state.notificationTabs)
+  const setNotificationActiveTab = useStore((state) => state.setNotificationActiveTab)
 
   useNotificationSummary()
 

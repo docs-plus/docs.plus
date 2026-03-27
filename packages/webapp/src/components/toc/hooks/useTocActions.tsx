@@ -11,12 +11,8 @@ import { useCallback } from 'react'
 import slugify from 'slugify'
 
 function DeleteSectionDialog({ headingId }: { headingId: string }) {
-  const {
-    closeDialog,
-    settings: {
-      editor: { instance: editor }
-    }
-  } = useStore()
+  const closeDialog = useStore((state) => state.closeDialog)
+  const editor = useStore((state) => state.settings.editor.instance)
 
   const handleDelete = () => {
     closeDialog()
@@ -60,7 +56,7 @@ function DeleteSectionDialog({ headingId }: { headingId: string }) {
 
 export function useTocActions() {
   const router = useRouter()
-  const { openDialog } = useStore()
+  const openDialog = useStore((state) => state.openDialog)
   const setWorkspaceEditorSetting = useStore((state) => state.setWorkspaceEditorSetting)
   const editor = useStore((state) => state.settings.editor.instance)
 

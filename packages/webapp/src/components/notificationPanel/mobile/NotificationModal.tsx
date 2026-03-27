@@ -10,9 +10,9 @@ import { useInfiniteNotifications } from '../hooks/useInfiniteNotifications'
 import { useNotificationSummary } from '../hooks/useNotificationSummary'
 
 const NotificationModal = () => {
-  const { notificationActiveTab, notificationTabs, setNotificationActiveTab } = useStore(
-    (state) => state
-  )
+  const notificationActiveTab = useStore((state) => state.notificationActiveTab)
+  const notificationTabs = useStore((state) => state.notificationTabs)
+  const setNotificationActiveTab = useStore((state) => state.setNotificationActiveTab)
 
   useNotificationSummary()
 

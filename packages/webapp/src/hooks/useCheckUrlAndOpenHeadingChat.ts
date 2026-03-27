@@ -8,7 +8,7 @@ const useCheckUrlAndOpenHeadingChat = () => {
   const { slugs } = useRouter().query
   const user = useAuthStore((state) => state.profile)
   const workspaceId = useStore((state) => state.settings.workspaceId)
-  const editorSetting = useStore((state) => state.settings.editor)
+  const editorLoading = useStore((state) => state.settings.editor.loading)
 
   useEffect(() => {
     if (!workspaceId) return
@@ -16,7 +16,7 @@ const useCheckUrlAndOpenHeadingChat = () => {
     const url = new URL(window.location.href)
     const openHeadingChatId = url.searchParams.get('open_heading_chat')
 
-    if (openHeadingChatId && !editorSetting?.loading) {
+    if (openHeadingChatId && !editorLoading) {
       // TODO: we need better flag rather than using setTimeout
       setTimeout(() => {
         PubSub.publish(CHAT_OPEN, {
@@ -24,7 +24,7 @@ const useCheckUrlAndOpenHeadingChat = () => {
         })
       }, 800)
     }
-  }, [editorSetting?.loading, slugs, workspaceId, user])
+  }, [editorLoading, slugs, workspaceId, user])
 }
 
 export default useCheckUrlAndOpenHeadingChat
