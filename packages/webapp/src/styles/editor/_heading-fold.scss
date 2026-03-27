@@ -5,8 +5,6 @@ $crinkle-height-peek: 62px;
   display: none !important;
 }
 
-// --- Fold widget (3D accordion) ---
-
 .heading-fold-crinkle {
   perspective: 180px;
   display: flex;
@@ -17,30 +15,36 @@ $crinkle-height-peek: 62px;
   margin-left: -3rem;
   margin-right: -3rem;
   box-shadow:
-    inset 0 0.5px 0 rgba(0, 0, 0, 0.06),
-    inset 0 -0.5px 0 rgba(0, 0, 0, 0.06);
+    inset 0 0.5px 0 color-mix(in oklch, var(--color-base-content) 6%, transparent),
+    inset 0 -0.5px 0 color-mix(in oklch, var(--color-base-content) 6%, transparent);
 
   > div {
     flex: 1;
     transition: transform 200ms ease;
 
     &:not(:first-child) {
-      border-top: 0.5px solid rgba(0, 0, 0, 0.08);
+      border-top: 0.5px solid color-mix(in oklch, var(--color-base-content) 8%, transparent);
     }
 
     &:nth-child(odd) {
       transform: rotateX(-4deg);
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.015) 0%, rgba(0, 0, 0, 0.06) 100%);
+      background: linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--color-base-content) 2%, transparent) 0%,
+        color-mix(in oklch, var(--color-base-content) 6%, transparent) 100%
+      );
     }
 
     &:nth-child(even) {
       transform: rotateX(4deg);
-      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.06) 0%, rgba(0, 0, 0, 0.015) 100%);
+      background: linear-gradient(
+        to bottom,
+        color-mix(in oklch, var(--color-base-content) 6%, transparent) 0%,
+        color-mix(in oklch, var(--color-base-content) 2%, transparent) 100%
+      );
     }
   }
 }
-
-// --- Animation states (driven by adjacent heading class) ---
 
 .heading-section-folding + .heading-fold-crinkle {
   animation: fold-crinkle var(--editor-fold-duration, 350ms) var(--editor-easing-cubic) forwards;
@@ -55,8 +59,8 @@ $crinkle-height-peek: 62px;
   &:hover {
     height: $crinkle-height-peek;
     box-shadow:
-      inset 0 1px 2px rgba(0, 0, 0, 0.08),
-      inset 0 -1px 2px rgba(0, 0, 0, 0.08),
+      inset 0 1px 2px color-mix(in oklch, var(--color-base-content) 8%, transparent),
+      inset 0 -1px 2px color-mix(in oklch, var(--color-base-content) 8%, transparent),
       0 0 0 1px var(--border-color-tint);
 
     > div:nth-child(odd) {
@@ -91,53 +95,12 @@ $crinkle-height-peek: 62px;
   }
 }
 
-// --- Mobile: match narrower editor padding ---
-
 @media screen and (max-width: 480px) {
   .heading-fold-crinkle {
     margin-left: -1.5rem;
     margin-right: -1.5rem;
   }
 }
-
-// --- Dark mode ---
-
-.dark .heading-fold-crinkle {
-  box-shadow:
-    inset 0 0.5px 0 rgba(255, 255, 255, 0.04),
-    inset 0 -0.5px 0 rgba(255, 255, 255, 0.04);
-
-  > div {
-    &:not(:first-child) {
-      border-top-color: rgba(255, 255, 255, 0.06);
-    }
-
-    &:nth-child(odd) {
-      background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.015) 0%,
-        rgba(255, 255, 255, 0.05) 100%
-      );
-    }
-
-    &:nth-child(even) {
-      background: linear-gradient(
-        to bottom,
-        rgba(255, 255, 255, 0.05) 0%,
-        rgba(255, 255, 255, 0.015) 100%
-      );
-    }
-  }
-}
-
-.dark .heading-section-folded + .heading-fold-crinkle:hover {
-  box-shadow:
-    inset 0 1px 2px rgba(255, 255, 255, 0.06),
-    inset 0 -1px 2px rgba(255, 255, 255, 0.06),
-    0 0 0 1px var(--border-color-tint);
-}
-
-// --- Print: show all content ---
 
 @media print {
   .heading-fold-hidden {

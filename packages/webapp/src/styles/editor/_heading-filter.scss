@@ -1,0 +1,5 @@
+// Heading filter / TOC preview highlight
+.heading-filter-highlight {
+  background-color: color-mix(in oklch, var(--color-accent) 38%, transparent);
+  border-radius: 2px;
+}
