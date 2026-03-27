@@ -96,9 +96,9 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
     this.options.protocols.forEach((protocol) => {
       if (typeof protocol === 'string') {
         registerCustomProtocol(protocol)
-        return
+      } else {
+        registerCustomProtocol(protocol.scheme, protocol.optionalSlashes)
       }
-      registerCustomProtocol(protocol.scheme, protocol.optionalSlashes)
     })
   },
 
