@@ -14,6 +14,8 @@ export interface PlaceholderOptions {
         node: ProseMirrorNode
         pos: number
         hasAnchor: boolean
+        /** Parent node type name (e.g. 'doc', 'listItem', 'blockquote'). Safe during apply(). */
+        parentName: string
       }) => string)
     | string
   showOnlyWhenEditable: boolean
@@ -42,9 +44,10 @@ function buildFromCursor(
   if (node.isLeaf || !isNodeEmpty(node)) return DecorationSet.empty
 
   const pos = $anchor.before($anchor.depth)
+  const parentName = $anchor.depth >= 2 ? $anchor.node($anchor.depth - 1).type.name : 'doc'
   const placeholderText =
     typeof options.placeholder === 'function'
-      ? options.placeholder({ editor, node, pos, hasAnchor: true })
+      ? options.placeholder({ editor, node, pos, hasAnchor: true, parentName })
       : options.placeholder
 
   if (!placeholderText) return DecorationSet.empty
