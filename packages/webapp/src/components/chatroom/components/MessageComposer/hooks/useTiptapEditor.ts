@@ -27,7 +27,7 @@ import html from 'highlight.js/lib/languages/xml'
 import yaml from 'highlight.js/lib/languages/yaml'
 // load all highlight.js languages
 import { createLowlight } from 'lowlight'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import suggestion from '../helpers/suggestion'
 const lowlight = createLowlight()
@@ -45,6 +45,8 @@ import { isOnlyEmoji } from '@utils/emojis'
 
 import { handleTypingIndicator, TypingIndicatorType } from '../helpers/handleTypingIndicator'
 
+const UPDATE_DEBOUNCE_MS = 150
+
 export const useTiptapEditor = ({
   loading,
   onSubmit,
@@ -61,6 +63,7 @@ export const useTiptapEditor = ({
   const [html, setHtml] = useState('')
   const [text, setText] = useState('')
   const [isEmojiOnly, setIsEmojiOnly] = useState(false)
+  const updateTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   const editor: Editor | null = useEditor(
     {
@@ -104,22 +107,27 @@ export const useTiptapEditor = ({
         })
       ],
       onUpdate: ({ editor }) => {
-        const text = editor?.getText()
-        const html = editor?.getHTML()
-
-        setHtml(html)
-        setText(text)
-        setIsEmojiOnly(isOnlyEmoji(text))
-        if (text.length) handleTypingIndicator(TypingIndicatorType.StartTyping)
-
-        // Persist draft to IndexedDB with debouncing (500ms)
-        if (workspaceId && channelId && text && html) {
-          setComposerStateDebounced(workspaceId, channelId, {
-            text,
-            html,
-            isToolbarOpen
-          })
+        if (editor?.getText().length) {
+          handleTypingIndicator(TypingIndicatorType.StartTyping)
         }
+
+        if (updateTimerRef.current) clearTimeout(updateTimerRef.current)
+        updateTimerRef.current = setTimeout(() => {
+          updateTimerRef.current = null
+          const text = editor?.getText() ?? ''
+          const html = editor?.getHTML() ?? ''
+          setHtml(html)
+          setText(text)
+          setIsEmojiOnly(isOnlyEmoji(text))
+
+          if (workspaceId && channelId && text && html) {
+            setComposerStateDebounced(workspaceId, channelId, {
+              text,
+              html,
+              isToolbarOpen
+            })
+          }
+        }, UPDATE_DEBOUNCE_MS)
       },
       onBlur: () => {
         if (text.length) handleTypingIndicator(TypingIndicatorType.StopTyping)
@@ -216,11 +224,13 @@ export const useTiptapEditor = ({
 
   useEffect(() => {
     if (!editor) return
-    // custom event listener, to handle focus on editor
     const handleFocus = () => {
       editor.commands.focus()
     }
     document.addEventListener('editor:focus', handleFocus)
+    return () => {
+      document.removeEventListener('editor:focus', handleFocus)
+    }
   }, [editor])
 
   useEffect(() => {

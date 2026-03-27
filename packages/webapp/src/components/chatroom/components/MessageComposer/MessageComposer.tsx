@@ -465,33 +465,54 @@ const MessageComposer = ({
     if (editorRef.current) setOrUpdateChatRoom('editorRef', editorRef.current)
   }, [editor, editorRef])
 
-  const contextValue = {
-    sendMsg,
-    sendComment,
-    updateMsg,
-    sendThreadMsg,
-    isSendingMsg,
-    isSendingComment,
-    isUpdatingMsg,
-    isSendingThreadMsg,
-    loading,
-    editor,
-    text,
-    html,
-    replyMessageMemory,
-    editMessageMemory,
-    commentMessageMemory,
-    messageDraftMemory: messageDraftMemory ?? null,
-    setEditMsgMemory,
-    setReplyMsgMemory,
-    setCommentMsgMemory,
-    contextType,
-    isToolbarOpen,
-    toggleToolbar,
-    submitMessage,
-    editorRef,
-    isEmojiOnly
-  }
+  const contextValue = useMemo(
+    () => ({
+      sendMsg,
+      sendComment,
+      updateMsg,
+      sendThreadMsg,
+      isSendingMsg,
+      isSendingComment,
+      isUpdatingMsg,
+      isSendingThreadMsg,
+      loading,
+      editor,
+      text,
+      html,
+      replyMessageMemory,
+      editMessageMemory,
+      commentMessageMemory,
+      messageDraftMemory: messageDraftMemory ?? null,
+      setEditMsgMemory,
+      setReplyMsgMemory,
+      setCommentMsgMemory,
+      contextType,
+      isToolbarOpen,
+      toggleToolbar,
+      submitMessage,
+      editorRef,
+      isEmojiOnly
+    }),
+    [
+      sendMsg,
+      sendComment,
+      updateMsg,
+      sendThreadMsg,
+      loading,
+      editor,
+      text,
+      html,
+      replyMessageMemory,
+      editMessageMemory,
+      commentMessageMemory,
+      messageDraftMemory,
+      contextType,
+      isToolbarOpen,
+      toggleToolbar,
+      submitMessage,
+      isEmojiOnly
+    ]
+  )
 
   return (
     <MessageComposerContext.Provider value={contextValue}>
