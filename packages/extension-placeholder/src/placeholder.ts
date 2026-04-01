@@ -5,19 +5,20 @@ import type { EditorState, Transaction } from '@tiptap/pm/state'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
+/** Arguments passed to the `placeholder` callback when it is a function. */
+export interface PlaceholderRenderProps {
+  editor: Editor
+  node: ProseMirrorNode
+  pos: number
+  hasAnchor: boolean
+  /** Parent node type name (e.g. 'doc', 'listItem', 'blockquote'). Safe during apply(). */
+  parentName: string
+}
+
 export interface PlaceholderOptions {
   emptyEditorClass: string
   emptyNodeClass: string
-  placeholder:
-    | ((props: {
-        editor: Editor
-        node: ProseMirrorNode
-        pos: number
-        hasAnchor: boolean
-        /** Parent node type name (e.g. 'doc', 'listItem', 'blockquote'). Safe during apply(). */
-        parentName: string
-      }) => string)
-    | string
+  placeholder: ((props: PlaceholderRenderProps) => string) | string
   showOnlyWhenEditable: boolean
 }
 
