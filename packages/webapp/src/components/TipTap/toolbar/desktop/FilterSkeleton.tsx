@@ -1,9 +1,9 @@
 /**
- * Skeleton loader for the FilterModal when dynamically loaded.
+ * Skeleton loader for FilterPanel when dynamically loaded.
  * Matches the visual structure of the actual panel.
  */
 
-export const FilterPanelSkeleton = () => {
+export const FilterSkeleton = () => {
   return (
     <div className="bg-base-100 flex w-full flex-col">
       {/* Header skeleton */}
@@ -43,4 +43,4 @@ export const FilterPanelSkeleton = () => {
   )
 }
 
-export default FilterPanelSkeleton
+export default FilterSkeleton

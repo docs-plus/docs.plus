@@ -20,7 +20,7 @@ const LOCAL_STORAGE_KEY = 'docsy:toc-width'
  *
  * @returns TOC resize state and handlers
  */
-export const useTOCResize = () => {
+export const useTocResize = () => {
   const tocRef = useRef<HTMLDivElement>(null)
   const [tocWidth, setTocWidth] = useState<number>(TOC_DEFAULT_WIDTH)
   const [isResizing, setIsResizing] = useState(false)
@@ -112,4 +112,4 @@ export const useTOCResize = () => {
   }
 }
 
-export default useTOCResize
+export default useTocResize

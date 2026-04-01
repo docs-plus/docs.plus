@@ -35,8 +35,7 @@
       "@db/*": ["src/db/*"],
       "@services/*": ["src/services/*"],
       "@config": ["src/config/index.ts"],
-      "@layouts": ["src/layouts/index.ts"],
-      "@helpers": ["src/lib/helpers/index.ts"]
+      "@layouts": ["src/layouts/index.ts"]
     }
   },
   "include": [

@@ -3,18 +3,21 @@ import type { Node as PMNode } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { Decoration, DecorationSet } from '@tiptap/pm/view'
 
-import { canMapDecorations, transactionAffectsNodeType } from '../shared'
-
+/** Matches brainstorm: body H1 visual cap and H4 fallback floor. */
 const MAX_SIZE = 20
 const MIN_SIZE = 12
 
-export const headingScalePluginKey = new PluginKey<DecorationSet>('headingScale')
+export const headingScalePluginKey = new PluginKey<HeadingScaleState>('headingScale')
+
+type HeadingScaleState = {
+  fingerprint: string
+  decorations: DecorationSet
+}
 
 type HeadingEntry = { pos: number; level: number; nodeSize: number }
 
-function buildDecorations(doc: PMNode): DecorationSet {
+function collectTopLevelHeadings(doc: PMNode): HeadingEntry[] {
   const headings: HeadingEntry[] = []
-
   doc.forEach((node, offset) => {
     if (node.type.name === 'heading') {
       headings.push({
@@ -24,7 +27,18 @@ function buildDecorations(doc: PMNode): DecorationSet {
       })
     }
   })
+  return headings
+}
 
+/** Structural fingerprint: heading levels in document order (top-level blocks only). */
+function computeHeadingFingerprint(doc: PMNode): string {
+  return collectTopLevelHeadings(doc)
+    .map((h) => h.level)
+    .join(',')
+}
+
+function buildDecorations(doc: PMNode): DecorationSet {
+  const headings = collectTopLevelHeadings(doc)
   if (headings.length === 0) return DecorationSet.empty
 
   const sections: HeadingEntry[][] = []
@@ -49,10 +63,12 @@ function buildDecorations(doc: PMNode): DecorationSet {
       const rank = distinct.indexOf(h.level)
       const size =
         totalRanks === 1 ? MAX_SIZE : MAX_SIZE - (rank * (MAX_SIZE - MIN_SIZE)) / (totalRanks - 1)
+      const rank1 = rank + 1
+      const pt = Number(size.toFixed(2))
 
       decorations.push(
         Decoration.node(h.pos, h.pos + h.nodeSize, {
-          style: `--hd-size: ${Number(size.toFixed(2))}pt`
+          style: `--hd-size: ${pt}pt; --hd-rank: ${rank1}; --hd-total: ${totalRanks}`
         })
       )
     }
@@ -66,30 +82,48 @@ export const HeadingScale = Extension.create({
 
   addProseMirrorPlugins() {
     return [
-      new Plugin<DecorationSet>({
+      new Plugin<HeadingScaleState>({
         key: headingScalePluginKey,
 
         state: {
           init(_, state) {
-            return buildDecorations(state.doc)
+            const doc = state.doc
+            return {
+              fingerprint: computeHeadingFingerprint(doc),
+              decorations: buildDecorations(doc)
+            }
           },
 
-          apply(tr, prev, oldState, newState) {
+          apply(tr, prev, _oldState, newState) {
             if (!tr.docChanged) return prev
-            if (tr.getMeta('y-sync$')) return buildDecorations(newState.doc)
-            if (canMapDecorations(tr, oldState.doc)) {
-              return prev.map(tr.mapping, newState.doc)
+
+            const doc = newState.doc
+
+            if (tr.getMeta('y-sync$')) {
+              return {
+                fingerprint: computeHeadingFingerprint(doc),
+                decorations: buildDecorations(doc)
+              }
             }
-            if (!transactionAffectsNodeType(tr, 'heading')) {
-              return prev.map(tr.mapping, newState.doc)
+
+            const newFp = computeHeadingFingerprint(doc)
+            if (newFp === prev.fingerprint) {
+              return {
+                fingerprint: prev.fingerprint,
+                decorations: prev.decorations.map(tr.mapping, doc)
+              }
             }
-            return buildDecorations(newState.doc)
+
+            return {
+              fingerprint: newFp,
+              decorations: buildDecorations(doc)
+            }
           }
         },
 
         props: {
           decorations(state) {
-            return headingScalePluginKey.getState(state) ?? DecorationSet.empty
+            return headingScalePluginKey.getState(state)?.decorations ?? DecorationSet.empty
           }
         }
       })

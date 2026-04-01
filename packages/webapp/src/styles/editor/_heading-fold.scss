@@ -1,56 +1,135 @@
-$crinkle-height: 45px;
-$crinkle-height-peek: 62px;
+// Tall enough that 5 strips each get ~7px+ — at 20px total the skew read as a flat gray line.
+$crinkle-height: 40px;
+$crinkle-height-peek: 58px;
+$crinkle-fold-duration: 350ms;
+$crinkle-easing: cubic-bezier(0.4, 0, 0.2, 1);
+$crinkle-skew: 44deg;
+// Folded hover “peek”: same fold handedness, smaller angle (flatter crinkle).
+$crinkle-skew-hover: 30deg;
+$crinkle-strip-offset: -47px;
+$crinkle-strip-offset-hover: -46px;
 
 .heading-fold-hidden {
   display: none !important;
 }
 
+// Edge-to-edge inside the sheet: pull into .tiptap__editor horizontal padding so the crinkle
+// matches the sheet border, not the text inset. Uses the same token the heading-action straddle reads.
 .heading-fold-crinkle {
-  perspective: 180px;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  // overflow: hidden;
   height: $crinkle-height;
   user-select: none;
-  margin-left: -3rem;
-  margin-right: -3rem;
-  box-shadow:
-    inset 0 0.5px 0 color-mix(in oklch, var(--color-base-content) 6%, transparent),
-    inset 0 -0.5px 0 color-mix(in oklch, var(--color-base-content) 6%, transparent);
+  // margin-left: calc(-1 * var(--tiptap-inline-pad-end, 1.5rem));
+  // margin-right: calc(-1 * var(--tiptap-inline-pad-end, 1.5rem));
+  background-color: var(--color-base-300);
+  position: relative;
+  z-index: 2;
+  margin-top: -2px;
 
+  // Each strip is wider than the container and offset left — skewed ::before/::after are clipped
+  // by overflow:hidden so left/right edges read as a paper break (docs.plus parity).
+  // Odd/even strips flip skew sign so faces alternate → zigzag / concertina, not uniform sawteeth.
   > div {
-    flex: 1;
-    transition: transform 200ms ease;
+    flex: 1 1 0;
+    position: relative;
+    min-height: 0;
+    width: calc(100% + 5rem + 6px);
+    left: $crinkle-strip-offset;
+    padding: 0 10px;
+    transition: left 250ms ease;
+    margin-top: -2px;
+    display: flex;
+    flex-direction: column;
+    background-color: var(--color-base-200);
 
-    &:not(:first-child) {
-      border-top: 0.5px solid color-mix(in oklch, var(--color-base-content) 8%, transparent);
-    }
-
+    // Phase A: dark face / light face (skew opposite so the seam reads as a fold)
     &:nth-child(odd) {
-      transform: rotateX(-4deg);
-      background: linear-gradient(
-        to bottom,
-        color-mix(in oklch, var(--color-base-content) 2%, transparent) 0%,
-        color-mix(in oklch, var(--color-base-content) 6%, transparent) 100%
-      );
+      --skew-before: -#{$crinkle-skew};
+      --skew-after: #{$crinkle-skew};
+      &::before {
+        border-top: 1px solid var(--color-base-300) !important;
+      }
     }
 
     &:nth-child(even) {
-      transform: rotateX(4deg);
-      background: linear-gradient(
-        to bottom,
-        color-mix(in oklch, var(--color-base-content) 6%, transparent) 0%,
-        color-mix(in oklch, var(--color-base-content) 2%, transparent) 100%
-      );
+      --skew-before: -#{$crinkle-skew};
+      --skew-after: #{$crinkle-skew};
+    }
+
+    &:nth-last-of-type(1) {
+      &::after {
+        border-bottom: 1px solid var(--color-base-300);
+        box-shadow: none;
+      }
+    }
+
+    &:first-of-type {
+      &::before {
+        border-top: 1px solid
+          color-mix(in oklch, var(--color-base-content) 3%, var(--color-base-300)) !important;
+        box-shadow: none !important;
+      }
+    }
+
+    &::before,
+    &::after {
+      content: '';
+      display: block;
+      flex: 1 1 50%;
+      min-height: 0;
+      width: 100%;
+      transition:
+        transform $crinkle-fold-duration $crinkle-easing,
+        box-shadow $crinkle-fold-duration $crinkle-easing;
+      border-right: 1px solid
+        color-mix(in oklch, var(--color-base-content) 1%, var(--color-base-300));
+      border-left: 1px solid
+        color-mix(in oklch, var(--color-base-content) 1%, var(--color-base-300));
+      transform-origin: center center;
+    }
+
+    &::before {
+      background-color: var(--color-base-300);
+      transform: skew(var(--skew-before, -#{$crinkle-skew}));
+      // border-bottom: none;
+      box-shadow: 0 1px 5px 1px color-mix(in oklch, var(--color-base-content) 12%, transparent);
+    }
+
+    &::after {
+      background-color: var(--color-base-100);
+      transform: skew(var(--skew-after, #{$crinkle-skew}));
     }
   }
 }
 
-.heading-section-folding + .heading-fold-crinkle {
-  animation: fold-crinkle var(--editor-fold-duration, 350ms) var(--editor-easing-cubic) forwards;
+// Fold / unfold: animate skew from 0 → strip-specific angle (inherits --skew-* from parent row)
+.heading-fold-crinkle[data-fold-phase='folding'] {
+  animation: fold-crinkle $crinkle-fold-duration $crinkle-easing forwards;
+
+  > div::before {
+    animation: foldCrinkle_before $crinkle-fold-duration $crinkle-easing forwards;
+  }
+
+  > div::after {
+    animation: foldCrinkle_after $crinkle-fold-duration $crinkle-easing forwards;
+  }
 }
 
-.heading-section-folded + .heading-fold-crinkle {
+.heading-fold-crinkle[data-fold-phase='unfolding'] {
+  animation: unfold-crinkle $crinkle-fold-duration $crinkle-easing forwards;
+
+  > div::before {
+    animation: unfoldCrinkle_before $crinkle-fold-duration $crinkle-easing forwards;
+  }
+
+  > div::after {
+    animation: unfoldCrinkle_after $crinkle-fold-duration $crinkle-easing forwards;
+  }
+}
+
+.heading-fold-crinkle[data-fold-phase='folded'] {
   cursor: pointer;
   transition:
     height 250ms ease,
@@ -60,21 +139,21 @@ $crinkle-height-peek: 62px;
     height: $crinkle-height-peek;
     box-shadow:
       inset 0 1px 2px color-mix(in oklch, var(--color-base-content) 8%, transparent),
-      inset 0 -1px 2px color-mix(in oklch, var(--color-base-content) 8%, transparent),
-      0 0 0 1px var(--border-color-tint);
+      inset 0 -1px 2px color-mix(in oklch, var(--color-base-content) 8%, transparent);
 
-    > div:nth-child(odd) {
-      transform: rotateX(-6deg);
+    > div {
+      left: $crinkle-strip-offset-hover;
     }
 
-    > div:nth-child(even) {
-      transform: rotateX(6deg);
+    // Ease toward flatter folds while peeking (transform transitions on pseudos)
+    > div::before {
+      transform: skew(-$crinkle-skew-hover);
+    }
+
+    > div::after {
+      transform: skew($crinkle-skew-hover);
     }
   }
-}
-
-.heading-section-unfolding + .heading-fold-crinkle {
-  animation: unfold-crinkle var(--editor-fold-duration, 350ms) var(--editor-easing-cubic) forwards;
 }
 
 @keyframes fold-crinkle {
@@ -95,10 +174,59 @@ $crinkle-height-peek: 62px;
   }
 }
 
-@media screen and (max-width: 480px) {
-  .heading-fold-crinkle {
-    margin-left: -1.5rem;
-    margin-right: -1.5rem;
+@keyframes foldCrinkle_before {
+  from {
+    transform: skew(0deg);
+    box-shadow: none;
+  }
+  to {
+    transform: skew(var(--skew-before, -#{$crinkle-skew}));
+    box-shadow: 0 1px 5px 1px color-mix(in oklch, var(--color-base-content) 15%, transparent);
+  }
+}
+
+@keyframes foldCrinkle_after {
+  from {
+    transform: skew(0deg);
+  }
+  to {
+    transform: skew(var(--skew-after, #{$crinkle-skew}));
+  }
+}
+
+@keyframes unfoldCrinkle_before {
+  from {
+    transform: skew(var(--skew-before, -#{$crinkle-skew}));
+    box-shadow: 0 1px 5px 1px color-mix(in oklch, var(--color-base-content) 15%, transparent);
+  }
+  to {
+    transform: skew(0deg);
+    box-shadow: none;
+  }
+}
+
+@keyframes unfoldCrinkle_after {
+  from {
+    transform: skew(var(--skew-after, #{$crinkle-skew}));
+  }
+  to {
+    transform: skew(0deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .heading-fold-crinkle[data-fold-phase='folding'],
+  .heading-fold-crinkle[data-fold-phase='unfolding'] {
+    animation: none;
+
+    > div::before,
+    > div::after {
+      animation: none;
+    }
+  }
+
+  .heading-fold-crinkle[data-fold-phase='folded'] {
+    transition: none;
   }
 }
 

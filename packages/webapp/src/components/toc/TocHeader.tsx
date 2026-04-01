@@ -48,7 +48,7 @@ export function TocHeader({ variant }: TocHeaderProps) {
 
   if (variant === 'mobile') {
     return (
-      <div className="border-base-300 bg-base-100 sticky top-0 z-10 border-b">
+      <div className="border-base-300 bg-base-100 sticky top-0 isolate z-30 border-b">
         <div className="group relative flex items-center justify-between py-2">
           <span className="text-base-content text-lg font-bold">{docMetadata?.title}</span>
           <button
@@ -76,21 +76,23 @@ export function TocHeader({ variant }: TocHeaderProps) {
   }
 
   return (
-    <div className="border-base-300 bg-base-200 relative sticky top-0 z-10 w-full border-b pt-2 pb-1">
+    <div className="border-base-300 bg-base-200 relative sticky top-0 isolate z-30 w-full border-b pt-2 pb-1">
       <div
         className={twMerge(
-          'group hover:bg-base-300/50 flex cursor-pointer items-center justify-between gap-0.5 rounded-md p-1 px-2 pr-3',
-          isActive && `${TOC_CLASSES.activeBorder} bg-base-300`
+          `${TOC_CLASSES.headerRow} group hover:bg-base-300/50 flex cursor-pointer items-center justify-between gap-0.5 rounded-md p-1 pr-3 pl-2`,
+          isActive && `${TOC_CLASSES.activeBorder} bg-base-300 !pl-4`
         )}
         onClick={handleClick}>
-        <span className="text-base-content text-lg font-bold">{docMetadata?.title}</span>
+        <span className="text-base-content relative z-[1] min-w-0 flex-1 text-lg font-bold">
+          {docMetadata?.title}
+        </span>
         <Tooltip title="Chat Room" placement="top">
           <span
-            className={`${TOC_CLASSES.chatTrigger} relative ml-auto`}
+            className={`${TOC_CLASSES.chatTrigger} relative ml-auto shrink-0`}
             data-heading-id={workspaceId || undefined}
             onClick={handleChatClick}>
             {unreadCount > 0 ? (
-              <UnreadBadge count={unreadCount} size="sm" />
+              <UnreadBadge count={unreadCount} size="sm" variant="error" />
             ) : (
               <Icons.chatroom
                 className={`${TOC_CLASSES.chatIcon} text-base-content/60 hover:text-primary ml-1 cursor-pointer transition-colors`}

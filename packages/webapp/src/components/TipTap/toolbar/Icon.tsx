@@ -13,7 +13,7 @@ const LEGACY_KEYS: Record<string, IconName> = {
   Bold: 'bold',
   Italic: 'italic',
   Underline: 'underline',
-  Stric: 'strikethrough',
+  Strike: 'strikethrough',
   HighlightMarker: 'highlight',
   ClearMark: 'clearFormatting',
   OrderList: 'orderedList',

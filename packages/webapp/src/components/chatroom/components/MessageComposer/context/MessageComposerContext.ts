@@ -1,4 +1,4 @@
-import { PostgrestResponse, PostgrestSingleResponse } from '@supabase/postgrest-js'
+import type { PostgrestResponse, PostgrestSingleResponse } from '@supabase/supabase-js'
 import { Editor } from '@tiptap/react'
 import { TSendCommentArgs, TSendMessageArgs, TSendThreadMsgArgs, TUpdateMsgArgs } from '@types'
 import { createContext } from 'react'

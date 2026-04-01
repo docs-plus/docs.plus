@@ -4,10 +4,10 @@ import Button from '@components/ui/Button'
 import { usePopoverState } from '@components/ui/Popover'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore, useStore } from '@stores'
+import { formatTimeAgo } from '@utils/formatTime'
 import PubSub from 'pubsub-js'
 import { LuLink, LuTriangleAlert } from 'react-icons/lu'
 
-import { formatTimeAgo } from '../helpers'
 import { useMarkNotificationAsRead } from '../hooks/useMarkNotificationAsRead'
 import NotificationIcon from './NotificationIcon'
 

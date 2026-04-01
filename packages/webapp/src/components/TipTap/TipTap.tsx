@@ -17,6 +17,7 @@ import { authStore } from '@stores'
 import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight'
 import { Collaboration, isChangeOrigin } from '@tiptap/extension-collaboration'
 import { CollaborationCaret } from '@tiptap/extension-collaboration-caret'
+import { TaskItem, TaskList } from '@tiptap/extension-list'
 import { Subscript } from '@tiptap/extension-subscript'
 import { Superscript } from '@tiptap/extension-superscript'
 import { Table, TableCell, TableHeader, TableRow } from '@tiptap/extension-table'
@@ -40,11 +41,6 @@ import yaml from 'highlight.js/lib/languages/yaml'
 import { createLowlight } from 'lowlight'
 import randomColor from 'randomcolor'
 import ShortUniqueId from 'short-unique-id'
-
-registerCustomProtocol('ftp')
-registerCustomProtocol('mailto')
-
-const headingTableUid = new ShortUniqueId()
 import { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
 
@@ -59,10 +55,16 @@ import {
   ImageWithMarkdown
 } from './extensions/markdown-extensions'
 import { MarkdownPaste } from './extensions/markdown-paste'
+import { ParagraphStyle } from './extensions/paragraph-style'
 import { TitleDocument } from './extensions/title-document'
 import previewHyperlink from './hyperlinkPopovers/previewHyperlink'
 import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
 import { IOSCaretFix } from './plugins/iosCaretFixPlugin'
+
+registerCustomProtocol('ftp')
+registerCustomProtocol('mailto')
+
+const headingTableUid = new ShortUniqueId()
 
 const lowlight = createLowlight()
 type LowlightLanguage = Parameters<typeof lowlight.register>[1]
@@ -121,10 +123,19 @@ const Editor = ({
     StarterKit.configure({
       document: false,
       undoRedo: false,
+      paragraph: false,
       heading: {
         levels: [1, 2, 3, 4, 5, 6]
       },
       codeBlock: false
+    }),
+
+    ParagraphStyle,
+
+    // Task lists live in @tiptap/extension-list (not StarterKit). Required for toggleTaskList / taskList schema.
+    TaskList,
+    TaskItem.configure({
+      nested: true
     }),
 
     Markdown.configure({
@@ -210,6 +221,12 @@ const Editor = ({
     Placeholder.configure({
       placeholder: ({ node, pos, parentName }) => {
         if (node.type.name === 'heading' && pos === 0) return 'Enter document name'
+        if (
+          node.type.name === 'paragraph' &&
+          (node.attrs as { paragraphStyle?: string | null }).paragraphStyle === 'subtitle'
+        ) {
+          return 'Subtitle'
+        }
         if (node.type.name === 'paragraph' && parentName in PARENT_PLACEHOLDER) {
           return PARENT_PLACEHOLDER[parentName]
         }

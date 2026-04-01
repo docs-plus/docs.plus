@@ -1,8 +1,37 @@
 import { headingFoldPluginKey } from '@components/TipTap/extensions/heading-fold'
 import { useStore } from '@stores'
+import type { Transaction } from '@tiptap/pm/state'
 import type { TocItem } from '@types'
-import { TIPTAP_NODES, type Transaction, TRANSACTION_META } from '@types'
-import { useCallback, useEffect, useState } from 'react'
+import { TIPTAP_NODES, TRANSACTION_META } from '@types'
+import throttle from 'lodash/throttle'
+import { useCallback, useEffect, useRef, useState } from 'react'
+
+type HeadingFoldSlice = ReturnType<typeof headingFoldPluginKey.getState>
+
+type FoldSnapshot = {
+  foldedIds: Set<string>
+  animating: Map<string, 'folding' | 'unfolding'>
+}
+
+/** Clone fold state for diffing — `transaction.before` is the pre-tx doc (Node), not EditorState. */
+function snapshotFoldState(state: HeadingFoldSlice): FoldSnapshot {
+  return {
+    foldedIds: new Set(state?.foldedIds ?? []),
+    animating: new Map(state?.animating ?? [])
+  }
+}
+
+function foldSnapshotsEqual(a: FoldSnapshot, b: FoldSnapshot): boolean {
+  if (a.foldedIds.size !== b.foldedIds.size) return false
+  for (const id of a.foldedIds) {
+    if (!b.foldedIds.has(id)) return false
+  }
+  if (a.animating.size !== b.animating.size) return false
+  for (const [k, v] of a.animating) {
+    if (b.animating.get(k) !== v) return false
+  }
+  return true
+}
 
 function isHeadingRelatedChange(transaction: Transaction): boolean {
   if (transaction.getMeta(headingFoldPluginKey)) return false
@@ -55,6 +84,8 @@ export function useToc() {
 
   const editor = useStore((state) => state.settings.editor.instance)
 
+  const foldSnapshotRef = useRef<FoldSnapshot>(snapshotFoldState(undefined))
+
   const buildTocItems = useCallback(() => {
     if (!editor || editor.isDestroyed) return
 
@@ -63,6 +94,7 @@ export function useToc() {
 
     const foldState = headingFoldPluginKey.getState(editor.state)
     const foldedIds = foldState?.foldedIds ?? new Set<string>()
+    const animating = foldState?.animating ?? new Map<string, 'folding' | 'unfolding'>()
 
     let offset = 0
     for (let i = 0; i < doc.content.childCount; i++) {
@@ -75,7 +107,7 @@ export function useToc() {
       const headingId = node.attrs['toc-id'] as string
       if (!headingId || !node.textContent) continue
 
-      const isOpen = !foldedIds.has(headingId)
+      const isOpen = !foldedIds.has(headingId) || animating.get(headingId) === 'unfolding'
 
       let dom: HTMLHeadingElement | null = null
       try {
@@ -102,16 +134,12 @@ export function useToc() {
     }
 
     setItems(headings)
+    foldSnapshotRef.current = snapshotFoldState(headingFoldPluginKey.getState(editor.state))
   }, [editor])
 
   const toggleSection = useCallback(
     (id: string) => {
       if (!editor) return
-
-      setItems((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, open: !item.open } : item))
-      )
-
       editor.commands.toggleFold(id)
     },
     [editor]
@@ -120,36 +148,24 @@ export function useToc() {
   useEffect(() => {
     if (!editor) return
 
-    let debounceTimer: ReturnType<typeof setTimeout>
-    let lastUpdateTime = 0
-    const MIN_UPDATE_INTERVAL = 100
+    foldSnapshotRef.current = snapshotFoldState(headingFoldPluginKey.getState(editor.state))
+
+    const HEADING_REBUILD_THROTTLE_MS = 100
+    const throttledHeadingRebuild = throttle(() => buildTocItems(), HEADING_REBUILD_THROTTLE_MS, {
+      leading: true,
+      trailing: true
+    })
 
     const handleTransaction = ({ transaction }: { transaction: Transaction }) => {
-      const foldMeta = transaction.getMeta(headingFoldPluginKey)
-      if (foldMeta) {
-        clearTimeout(debounceTimer)
-        debounceTimer = setTimeout(buildTocItems, 100)
+      const nextSnap = snapshotFoldState(headingFoldPluginKey.getState(editor.state))
+      if (!foldSnapshotsEqual(foldSnapshotRef.current, nextSnap)) {
+        throttledHeadingRebuild.cancel()
+        buildTocItems()
         return
       }
 
       if (!isHeadingRelatedChange(transaction)) return
-
-      const now = Date.now()
-      const timeSinceLastUpdate = now - lastUpdateTime
-
-      clearTimeout(debounceTimer)
-
-      if (timeSinceLastUpdate < MIN_UPDATE_INTERVAL) {
-        debounceTimer = setTimeout(() => {
-          lastUpdateTime = Date.now()
-          buildTocItems()
-        }, MIN_UPDATE_INTERVAL - timeSinceLastUpdate)
-      } else {
-        debounceTimer = setTimeout(() => {
-          lastUpdateTime = Date.now()
-          buildTocItems()
-        }, 50)
-      }
+      throttledHeadingRebuild()
     }
 
     editor.on('transaction', handleTransaction)
@@ -158,7 +174,7 @@ export function useToc() {
 
     return () => {
       editor.off('transaction', handleTransaction)
-      clearTimeout(debounceTimer)
+      throttledHeadingRebuild.cancel()
       clearTimeout(initTimer)
     }
   }, [editor, buildTocItems])

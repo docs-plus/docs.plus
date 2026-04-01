@@ -18,7 +18,7 @@ export const StrikethroughButton = ({ className, size = 16, ...props }: Props) =
       tooltip="Strike (⌘+⇧+S)"
       className={className}
       {...props}>
-      <Icon type="Stric" size={size} />
+      <Icon type="Strike" size={size} />
     </Button>
   )
 }

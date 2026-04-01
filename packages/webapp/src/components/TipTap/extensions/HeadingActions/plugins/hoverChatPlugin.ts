@@ -17,12 +17,12 @@ const createChatButton = (headingId: string, editor: Editor): HTMLButtonElement 
   const button = document.createElement('button')
   button.classList.add(
     HEADING_ACTIONS_CLASSES.chatBtn,
-    'btn',
-    'btn-circle',
-    'btn-primary',
-    'size-12',
-    'min-h-10',
-    'shadow-md'
+    'inline-flex',
+    'size-11',
+    'min-h-11',
+    'shrink-0',
+    'items-center',
+    'justify-center'
   )
   button.setAttribute('type', 'button')
   button.setAttribute('title', 'Open chat')
@@ -58,12 +58,12 @@ const createCommentButton = (headingId: string, editor: Editor): HTMLButtonEleme
   const button = document.createElement('button')
   button.classList.add(
     HEADING_ACTIONS_CLASSES.commentBtn,
-    'btn',
-    'btn-circle',
-    'btn-primary',
-    'size-12',
-    'min-h-10',
-    'shadow-md'
+    'inline-flex',
+    'size-11',
+    'min-h-11',
+    'shrink-0',
+    'items-center',
+    'justify-center'
   )
   button.setAttribute('type', 'button')
   button.setAttribute('title', 'Add comment')

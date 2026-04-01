@@ -179,3 +179,11 @@ export interface HeadingNodeData extends NodePosition {
 // ============================================================================
 
 // HeadingToggleEvent and FoldClickEventData removed — fold is now plugin-driven via HeadingFold
+
+/** Flat chain commands from @docs.plus/extension-hyperlink (runtime); package augments under `link`. */
+declare module '@tiptap/core' {
+  interface Commands<ReturnType> {
+    setHyperlink: (attributes?: { href: string; target?: string | null }) => ReturnType
+    unsetHyperlink: () => ReturnType
+  }
+}

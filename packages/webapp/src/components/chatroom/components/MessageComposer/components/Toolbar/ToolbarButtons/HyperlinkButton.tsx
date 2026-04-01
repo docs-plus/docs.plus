@@ -12,7 +12,6 @@ export const HyperlinkButton = ({ className, size = 16, ...props }: Props) => {
 
   return (
     <Button
-      // @ts-ignore - setHyperlink is a valid command but TypeScript types aren't picking it up in Docker builds
       onPress={() => editor?.chain().focus().setHyperlink().run()}
       editor={editor}
       type="hyperlink"

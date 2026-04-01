@@ -26,8 +26,9 @@ export interface HeadingFoldPluginOptions {
 
 export const headingFoldPluginKey = new PluginKey<HeadingFoldState>('headingFold')
 
-const MIN_FOLD_STRIPS = 4
-const MAX_FOLD_STRIPS = 8
+/** More folded content → more crinkle strips, capped for perf and layout. */
+const MIN_FOLD_STRIPS = 2
+const MAX_FOLD_STRIPS = 4
 const CONTENT_HEIGHT_PER_STRIP = 150
 const FOLD_ANIMATION_MS = 350
 const ANIMATION_SAFETY_MS = 50
@@ -106,9 +107,17 @@ export function findSectionDom(
   return { headingEl: null, contentNodes: [], nextSiblingEl: null }
 }
 
-function createFoldWidget(headingId: string, contentHeight: number, view: EditorView): HTMLElement {
+type FoldCrinklePhase = 'folding' | 'unfolding' | 'folded'
+
+function createFoldWidget(
+  headingId: string,
+  contentHeight: number,
+  view: EditorView,
+  foldPhase: FoldCrinklePhase
+): HTMLElement {
   const wrapper = document.createElement('div')
   wrapper.className = 'heading-fold-crinkle'
+  wrapper.dataset.foldPhase = foldPhase
   wrapper.style.setProperty('--fold-content-height', `${contentHeight}px`)
 
   const stripCount = Math.min(
@@ -157,23 +166,21 @@ function buildFoldDecorations(
     const height = contentHeights.get(tocId) ?? FALLBACK_CONTENT_HEIGHT
     const isNested = pos < outerFoldEnd
 
-    let headingClass: string
-    if (phase === 'folding') {
-      headingClass = 'heading-section-folding'
-    } else if (phase === 'unfolding') {
-      headingClass = 'heading-section-unfolding'
-    } else {
-      headingClass = 'heading-section-folded'
-    }
-
-    decorations.push(Decoration.node(pos, pos + child.nodeSize, { class: headingClass }))
-
     if (!isNested) {
       const section = computeSection(doc, pos, child.attrs.level as number, i)
       const widgetPos = pos + child.nodeSize
+      const foldPhase: FoldCrinklePhase =
+        phase === 'folding' ? 'folding' : phase === 'unfolding' ? 'unfolding' : 'folded'
+      const widgetKey =
+        phase === 'folding'
+          ? `fold-${tocId}-folding`
+          : phase === 'unfolding'
+            ? `fold-${tocId}-unfolding`
+            : `fold-${tocId}`
+
       decorations.push(
-        Decoration.widget(widgetPos, (view) => createFoldWidget(tocId, height, view), {
-          key: `fold-${tocId}`,
+        Decoration.widget(widgetPos, (view) => createFoldWidget(tocId, height, view, foldPhase), {
+          key: widgetKey,
           side: 1,
           stopEvent: stopFoldWidgetEvent
         })

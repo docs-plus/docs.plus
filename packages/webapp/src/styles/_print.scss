@@ -45,6 +45,9 @@
   .tiptap__editor {
     margin: auto;
     max-width: 100%;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
   }
 
   :is(h1, h2, h3, h4, h5, h6) {

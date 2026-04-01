@@ -53,19 +53,6 @@
 }
 
 // =============================================================================
-// TOC chat trigger (.toc__chat-trigger)
-// =============================================================================
-.toc__chat-trigger[data-unread-count]:not([data-unread-count='']) {
-  @include unread-badge($top: -2px, $right: -6px, $size: 16px, $font-size: 10px);
-
-  // Hide the chat icon when badge is shown
-  .chatLeft,
-  svg {
-    display: none;
-  }
-}
-
-// =============================================================================
 // Notification Bell Badge ([data-notification-badge])
 // =============================================================================
 [data-notification-badge][data-unread-count]:not([data-unread-count='']) {
@@ -73,17 +60,8 @@
 }
 
 // =============================================================================
-// Heading Actions Group Badge
+// Heading Actions — badge only on .ha-chat-btn (not .ha-group) to avoid duplicates
 // =============================================================================
-.ha-group[data-unread-count]:not([data-unread-count='']) {
-  @include unread-badge($top: 0, $right: 0, $size: 20px, $font-size: 12px);
-
-  &::before {
-    left: 23px;
-    right: auto;
-  }
-}
-
 .ha-chat-btn[data-unread-count]:not([data-unread-count='']) {
   @include unread-badge($top: 0, $right: 0, $size: 20px, $font-size: 16px);
   visibility: visible !important;
@@ -96,4 +74,16 @@
   &::after {
     display: none;
   }
+}
+
+// Mobile: count is an inline chip inside the docked tab (_mobile.scss), not a floating corner dot
+.m_mobile .ProseMirror .ha-chat-btn[data-unread-count]:not([data-unread-count=''])::before {
+  position: static !important;
+  inset: auto !important;
+  left: auto !important;
+  right: auto !important;
+  top: auto !important;
+  z-index: auto !important;
+  transform: none !important;
+  margin: 0 !important;
 }

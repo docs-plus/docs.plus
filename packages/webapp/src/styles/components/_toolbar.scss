@@ -1,32 +1,7 @@
+// Mobile editor toolbar shell (not the desktop `.tiptap__toolbar` bar — that uses Tailwind on `EditorToolbar`).
 .tiptap-toolbar-mobile {
   user-select: none;
   pointer-events: none;
-
-  .divided {
-    display: inline-block;
-    height: 24px;
-    margin-left: 10px;
-    margin-right: 10px;
-    margin-top: 6px;
-    margin-bottom: 6px;
-    border-left-width: 1px;
-  }
-
-  button {
-    &.is-active {
-      background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
-      color: var(--color-primary);
-
-      svg {
-        fill: var(--color-primary);
-      }
-    }
-
-    &[disabled]:hover {
-      color: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-      background-color: transparent;
-    }
-  }
 
   &__main {
     pointer-events: auto;
@@ -40,30 +15,21 @@
   }
 }
 
+// Shared button chrome (pad / chat composer / mobile).
+// Lucide icons are stroke-based; forcing `fill` on `.is-active` paints closed paths solid (wrong look).
 .tiptap__toolbar,
-.chatroom__toolbar {
-  border-top-width: 1px;
-  border-bottom-width: 1px;
-  border-color: var(--color-base-300);
-
-  .divided {
-    display: inline-block;
-    height: 20px;
-    margin-left: 10px;
-    margin-right: 10px;
-    margin-top: 6px;
-    margin-bottom: 6px;
-    border-left-width: 1px;
-    border-color: var(--color-base-300);
-  }
-
+.chatroom__toolbar,
+.tiptap-toolbar-mobile {
   button {
-    &.is-active {
+    // `.select.select-ghost` from StyleSelect can outrank plain `button.is-active` in the cascade
+    &.is-active,
+    &.select.select-ghost.is-active {
       background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
       color: var(--color-primary);
 
       svg {
-        fill: var(--color-primary);
+        fill: none;
+        stroke: currentColor;
       }
     }
 
@@ -73,27 +39,19 @@
     }
   }
 
-  .gearModal,
-  .filterModal {
-    width: 430px;
-    background: var(--color-base-100);
-    border-radius: var(--rounded-box);
-
-    .content {
-      display: flex;
-      align-items: center;
-    }
-  }
-}
-
-.chatroom__toolbar {
-  border: none;
-}
-
-.tiptap__toolbar,
-.chatroom__toolbar,
-.tiptap-toolbar-mobile {
   button[disabled] svg {
-    fill: color-mix(in oklch, var(--color-base-content) 40%, transparent);
+    fill: none;
+    stroke: currentColor;
+  }
+
+  // StyleSelect “Document title” row — non-interactive `div` mimicking the select trigger (not a `button`)
+  div.select.select-ghost.is-active {
+    background-color: color-mix(in oklch, var(--color-primary) 10%, transparent);
+    color: var(--color-primary);
+
+    svg {
+      fill: none;
+      stroke: currentColor;
+    }
   }
 }

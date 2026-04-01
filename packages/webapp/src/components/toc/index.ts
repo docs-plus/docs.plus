@@ -21,6 +21,7 @@ export {
 
 // Utils
 export { TOC_CLASSES, type TocClassName } from './tocClasses'
+export type { NestedTocNode } from './utils'
 export { buildNestedToc, scrollToDocTitle, scrollToHeading } from './utils'
 
 // Types (re-export from @types)

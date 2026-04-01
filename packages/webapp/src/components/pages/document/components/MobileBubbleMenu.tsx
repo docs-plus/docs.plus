@@ -34,7 +34,6 @@ export const MobileBubbleMenu = () => {
 
   const handleLink = useCallback(() => {
     if (!editor) return
-    // @ts-ignore - setHyperlink is a valid command
     editor.chain().focus().setHyperlink().run()
   }, [editor])
 

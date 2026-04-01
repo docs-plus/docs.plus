@@ -1,5 +1,5 @@
 /**
- * Skeleton loader for the GearModal when dynamically loaded.
+ * Skeleton loader for DocumentSettingsPanel when dynamically loaded.
  * Matches the visual structure of the actual panel.
  */
 
@@ -12,7 +12,7 @@ const AccordionSkeleton = () => (
   </div>
 )
 
-export const GearPanelSkeleton = () => {
+export const DocumentSettingsSkeleton = () => {
   return (
     <div className="bg-base-100 flex w-full flex-col">
       {/* Header skeleton */}
@@ -23,7 +23,7 @@ export const GearPanelSkeleton = () => {
 
       {/* Content skeleton */}
       <div className="flex flex-col gap-4 p-4">
-        {/* Page Preferences accordion skeleton */}
+        {/* Document Preferences accordion skeleton */}
         <AccordionSkeleton />
 
         {/* Document Preferences accordion skeleton */}
@@ -46,4 +46,4 @@ export const GearPanelSkeleton = () => {
   )
 }
 
-export default GearPanelSkeleton
+export default DocumentSettingsSkeleton

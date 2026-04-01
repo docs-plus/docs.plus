@@ -1,13 +1,13 @@
 import { Chatroom } from '@components/chatroom'
 import { useMessageFeedContext } from '@components/chatroom/components/MessageFeed/MessageFeedContext'
-import EditorToolbar from '@components/TipTap/toolbar/EditorToolbar'
+import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
 import { useHeadingScrollSpy } from '@components/toc/hooks'
 import { HoverMenu } from '@components/ui/HoverMenu'
 import ResizeHandle from '@components/ui/ResizeHandle'
 import { useUnreadSync } from '@hooks/useUnreadSync'
 import { useCallback, useRef } from 'react'
 
-import { useAdjustEditorSizeForChatRoom, useTOCResize } from '../hooks'
+import { useAdjustEditorSizeForChatRoom, useTocResize } from '../hooks'
 import EditorContent from './EditorContent'
 import TOC from './Toc'
 
@@ -32,7 +32,7 @@ const DesktopEditor = () => {
   const editorWrapperRef = useRef<HTMLDivElement>(null)
 
   // Hook for TOC resize functionality
-  const { tocRef, tocWidth, isResizing, handleMouseDown, editorContainerStyle } = useTOCResize()
+  const { tocRef, tocWidth, isResizing, handleMouseDown, editorContainerStyle } = useTocResize()
 
   // @ts-ignore
   useAdjustEditorSizeForChatRoom(editorWrapperRef)
@@ -56,7 +56,7 @@ const DesktopEditor = () => {
           {/* Editor wrapper - Design System: bg-base-100 for editor canvas */}
           <div
             ref={editorWrapperRef}
-            className="editorWrapper bg-base-100 flex h-full grow items-start justify-center overflow-y-auto border-t-0 p-0 sm:py-4">
+            className="editorWrapper scrollbar-custom scrollbar-thin bg-base-200 flex h-full grow items-start justify-center overflow-y-auto scroll-smooth border-t-0 px-3 py-4 sm:px-6 sm:py-6">
             <EditorContent className="mb-12 border-t-0 px-6 pt-8 sm:mb-0 sm:p-8" />
           </div>
 
@@ -163,7 +163,7 @@ const DesktopEditor = () => {
         {/* TOC Sidebar - Design System: bg-base-200 for side panels */}
         <div
           ref={tocRef}
-          className="tableOfContents bg-base-200 relative h-full max-h-full"
+          className="tableOfContents bg-base-200 relative isolate z-0 h-full max-h-full min-h-0 min-w-0"
           style={{ width: tocWidth }}>
           {/* Resize Handle - Design System compliant */}
           <ResizeHandle

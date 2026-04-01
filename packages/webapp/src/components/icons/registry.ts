@@ -30,7 +30,6 @@ import {
   LuEllipsisVertical,
   LuExternalLink,
   LuEye,
-  LuFileCode,
   LuFileText,
   LuFilter,
   LuFilterX,
@@ -57,6 +56,7 @@ import {
   LuMessageSquarePlus,
   LuMessageSquareText,
   LuMessagesSquare,
+  LuMinus,
   LuPencil,
   LuPenOff,
   LuPin,
@@ -73,6 +73,7 @@ import {
   LuShare2,
   LuSmile,
   LuSmilePlus,
+  LuSquareCode,
   LuSquareSplitVertical,
   LuStrikethrough,
   LuTextQuote,
@@ -181,6 +182,7 @@ export const Icons = {
   info: LuInfo,
   gripVertical: LuGripVertical,
   listTree: LuListTree,
+  minus: LuMinus,
   plus: LuPlus,
   pin: LuPin,
   pinOff: LuPinOff,
@@ -199,7 +201,7 @@ export const Icons = {
 
   // ── Code ─────────────────────────────────────────────────
   code: LuCode,
-  codeBlock: LuFileCode,
+  codeBlock: LuSquareCode,
   blockquote: LuTextQuote,
 
   // ── Misc ─────────────────────────────────────────────────

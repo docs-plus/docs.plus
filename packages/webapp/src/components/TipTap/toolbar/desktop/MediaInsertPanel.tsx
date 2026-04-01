@@ -540,7 +540,7 @@ const MediaForm: React.FC<MediaFormProps> = ({ onSubmit, editor }) => {
   )
 }
 
-const InsertMultimediaForm = () => {
+const MediaInsertPanel = () => {
   const editor = useStore((state) => state.settings.editor.instance)
 
   const insertMedia = useCallback(
@@ -579,4 +579,4 @@ const InsertMultimediaForm = () => {
   return <MediaForm onSubmit={insertMedia} editor={editor ?? null} />
 }
 
-export default InsertMultimediaForm
+export default MediaInsertPanel

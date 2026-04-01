@@ -1,65 +1,80 @@
+import FilterBar from '@components/TipTap/pad-title-section/FilterBar'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { usePopoverState } from '@components/ui/Popover'
 import TextInput from '@components/ui/TextInput'
-import Toggle from '@components/ui/Toggle'
 import { Icons } from '@icons'
 import { RESET_FILTER } from '@services/eventsHub'
 import { useStore } from '@stores'
+import type { NextRouter } from 'next/router'
 import { useRouter } from 'next/router'
 import PubSub from 'pubsub-js'
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-import FilterBar from '../pad-title-section/FilterBar'
-import {
-  applySearchThroughHeading,
-  highlightTocHeadings,
-  searchThroughHeading
-} from './toolbarUtils'
-import { useBooleanLocalStorageState } from './toolbarUtils'
+import ToggleSection from '../ToggleSection'
 
-interface ToggleSectionProps {
-  name: string
-  className?: string
-  description: string
-  value?: string
-  checked: boolean
-  onChange: () => void
+const useBooleanLocalStorageState = (
+  key: string,
+  defaultValue: boolean
+): [boolean, (v: boolean) => void] => {
+  const [state, setState] = useState(() => {
+    const stored = localStorage.getItem(key)
+    return stored !== null ? stored === 'true' : defaultValue
+  })
+  const update = (v: boolean) => {
+    setState(v)
+    localStorage.setItem(key, String(v))
+  }
+  return [state, update]
 }
 
-const ToggleSection = ({
-  name,
-  className,
-  description,
-  value,
-  checked,
-  onChange
-}: ToggleSectionProps) => {
-  return (
-    <div className={twMerge('flex items-center justify-between gap-4 py-3', className)}>
-      <div className="min-w-0 flex-1">
-        <p className="text-base-content text-sm font-medium">{name}</p>
-        <p className="text-base-content/50 text-xs">{description}</p>
-      </div>
-      <Toggle
-        id={value}
-        checked={checked}
-        onChange={() => onChange()}
-        size="sm"
-        variant="primary"
-      />
-    </div>
-  )
+interface SearchResult {
+  searchValue: string
+  filteredHeadings: Element[]
+  totalSearch: number
+  totalHeadings: number
 }
 
-interface FilterModalProps {
+const searchThroughHeading = (search: string): SearchResult => {
+  const headings = document.querySelectorAll('h1, h2, h3, h4, h5, h6')
+  const regex = new RegExp(search, 'i')
+  const filteredHeadings = Array.from(headings).filter((h) => regex.test(h.textContent || ''))
+  return {
+    searchValue: search,
+    filteredHeadings,
+    totalSearch: filteredHeadings.length,
+    totalHeadings: headings.length
+  }
+}
+
+const applySearchThroughHeading = (searchInput: string, router: NextRouter): void => {
+  const url = new URL(router.asPath, window.location.origin)
+  url.pathname = `${url.pathname}/${encodeURIComponent(searchInput)}`
+  router.push(url.toString(), undefined, { shallow: true })
+}
+
+const highlightTocHeadings = (headings: Element[]): void => {
+  const headingIds = headings.map((h) => h.getAttribute('data-toc-id'))
+  const tocItems = document.querySelectorAll('.tiptap__toc .toc__item a')
+  tocItems.forEach((el) => {
+    if (headingIds.includes(el.getAttribute('data-id'))) {
+      el.classList.add('bg-warning/20')
+      el.classList.remove('text-base-content')
+    } else {
+      el.classList.add('text-base-content')
+      el.classList.remove('bg-warning/20')
+    }
+  })
+}
+
+interface FilterPanelProps {
   totalHeading?: number
   className?: string
   onClose?: () => void
 }
 
-const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalProps) => {
+const FilterPanel = ({ totalHeading = 0, className = '', onClose }: FilterPanelProps) => {
   const popoverState = usePopoverState()
   const handleClose = onClose || popoverState.close
   const router = useRouter()
@@ -246,4 +261,4 @@ const FilterModal = ({ totalHeading = 0, className = '', onClose }: FilterModalP
   )
 }
 
-export default FilterModal
+export default FilterPanel

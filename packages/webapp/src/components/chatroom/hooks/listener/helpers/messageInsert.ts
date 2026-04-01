@@ -40,7 +40,7 @@ export const messageInsert = async (payload: any) => {
   let userdata = usersPresence.get(payload.new.user_id)
 
   // Fetch user details if not in presence store
-  // Mosty this must hanndle by useOnAuthStateChange or useCatchUserPresences hook in realtime
+  // Mostly this must be handled by useOnAuthStateChange or useCatchUserPresences hook in realtime
   if (!userdata) {
     const fetchedUser = await fetchUserDetails(payload.new.user_id)
     if (fetchedUser) {

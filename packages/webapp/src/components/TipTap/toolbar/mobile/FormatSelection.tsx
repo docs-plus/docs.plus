@@ -1,27 +1,26 @@
-import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import { Icons } from '@icons'
 import { Editor } from '@tiptap/core'
 import { useEffect, useRef } from 'react'
+
+import { clearFormatting } from '../clearFormatting'
+import ToolbarButton from '../ToolbarButton'
+import ToolbarDivider from '../ToolbarDivider'
 
 const FormatSelection = ({ isVisible, editor }: { isVisible: boolean; editor: Editor }) => {
   const containerRef = useRef<HTMLDivElement>(null)
   const timeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
-  // Handle visibility and transitions
   useEffect(() => {
     const container = containerRef.current
     if (!container) return
 
-    // Clear any pending timeout
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
 
     if (isVisible) {
-      // Show: make visible immediately for smooth transition
       container.style.visibility = 'visible'
     } else {
-      // Hide: wait for transition to complete (300ms), then hide from DOM
       timeoutRef.current = setTimeout(() => {
         if (container && !isVisible) {
           container.style.visibility = 'hidden'
@@ -95,29 +94,8 @@ const FormatSelection = ({ isVisible, editor }: { isVisible: boolean; editor: Ed
           type="orderedList">
           <Icons.orderedList size={24} />
         </ToolbarButton>
-        <div className="divided"></div>
-
-        <ToolbarButton
-          onTouchEnd={() => {
-            try {
-              const selection = editor.state.selection
-
-              if (!selection.empty) {
-                editor.chain().focus().unsetAllMarks().run()
-                return
-              }
-
-              const cleared = editor.chain().focus().clearNodes().run()
-              if (!cleared) {
-                editor.chain().focus().unsetAllMarks().run()
-              }
-            } catch (error) {
-              console.warn('[FormatSelection] clear formatting fallback', error)
-              editor.chain().focus().unsetAllMarks().run()
-            }
-          }}
-          editor={editor}
-          type="clearFormatting">
+        <ToolbarDivider className="h-6" />
+        <ToolbarButton onTouchEnd={() => clearFormatting(editor)}>
           <Icons.clearFormatting size={24} />
         </ToolbarButton>
       </div>

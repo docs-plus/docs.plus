@@ -3,13 +3,13 @@ import EditFAB from '@components/pages/document/components/EditFAB'
 import TocModal from '@components/pages/document/components/TocModal'
 import MobileHistory from '@components/pages/history/mobile/MobileHistory'
 import MobilePadTitle from '@components/TipTap/pad-title-section/MobilePadTitle'
+import ToolbarMobile from '@components/TipTap/toolbar/mobile/ToolbarMobile'
 import { ModalDrawer } from '@components/ui/ModalDrawer'
 import { useHashRouter } from '@hooks/useHashRouter'
 import useVirtualKeyboard from '@hooks/useVirtualKeyboard'
 import { useStore } from '@stores'
 
 import MobileEditor from '../components/MobileEditor'
-import ToolbarMobile from '../components/toolbarMobile/ToolbarMobile'
 
 const MobileLeftSidePanel = () => {
   return (

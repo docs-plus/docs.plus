@@ -8,7 +8,7 @@ import PubSub from 'pubsub-js'
 import { getTocId } from '../../shared/get-toc-id'
 import { HEADING_ACTIONS_CLASSES } from '../types'
 
-const BUTTON_HALF_SIZE = 16
+const BUTTON_HALF_SIZE = 22 // half of size-11 (2.75rem) for vertical centering
 const DEFAULT_RIGHT_POSITION = '9px'
 
 const shouldShow = (editor: Editor): boolean => {
@@ -32,12 +32,12 @@ const getOrCreateButton = (): HTMLButtonElement => {
   cachedButton.innerHTML = AddCommentSVG({ size: 22, fill: 'currentColor' })
   cachedButton.classList.add(
     HEADING_ACTIONS_CLASSES.commentBtn,
-    'btn',
-    'btn-circle',
-    'btn-primary',
-    'size-12',
-    'min-h-10',
-    'shadow-md',
+    'inline-flex',
+    'size-11',
+    'min-h-11',
+    'shrink-0',
+    'items-center',
+    'justify-center',
     'z-1'
   )
   cachedButton.setAttribute('title', 'Add comment')

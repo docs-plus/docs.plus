@@ -89,7 +89,7 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
         <SortableContext items={flatItems.map((f) => f.id)} strategy={verticalListSortingStrategy}>
           <ul className={`toc__list menu w-full p-0 ${activeId ? 'is-dragging' : ''}`}>
             <ContextMenu
-              className="menu bg-base-100 border-base-300 absolute z-20 m-0 rounded-xl border p-1.5 shadow-xl outline-none"
+              className="menu bg-base-100 border-base-300 absolute z-40 m-0 rounded-xl border p-1.5 shadow-xl outline-none"
               parrentRef={contextMenuRef}
               onBeforeShow={handleBeforeShow}
               onClose={handleContextMenuClose}>
@@ -99,11 +99,11 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
                 onToggle={toggleSection}
               />
             </ContextMenu>
-            {nestedItems.map(({ item, children }) => (
+            {nestedItems.map(({ item, nodes }) => (
               <TocItemDesktop
                 key={item.id}
                 item={item}
-                childItems={children}
+                nestedNodes={nodes}
                 onToggle={toggleSection}
                 activeId={activeId}
                 collapsedIds={collapsedIds}

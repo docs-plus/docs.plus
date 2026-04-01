@@ -28,8 +28,8 @@ export function TocMobile({ className = '', hideAppendButton = false }: TocMobil
     <div className={className}>
       <TocHeader variant="mobile" />
       <ul className="toc__list menu my-2 p-0">
-        {nestedItems.map(({ item, children }) => (
-          <TocItemMobile key={item.id} item={item} childItems={children} onToggle={toggleSection} />
+        {nestedItems.map(({ item, nodes }) => (
+          <TocItemMobile key={item.id} item={item} nestedNodes={nodes} onToggle={toggleSection} />
         ))}
       </ul>
       {!hideAppendButton && <AppendHeadingButton className="mt-4" />}

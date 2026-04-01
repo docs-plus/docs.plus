@@ -1,7 +1,54 @@
 // Heading Actions — chat / comment widgets (ProseMirror decorations inside headings)
+// Surface matches document sheet: base-100 + base-300 border + light shadow (see _blocks.scss).
 // =============================================================================
 
-$heading-chat-gutter: 3rem;
+// Hit target for .ha-single and inner .ha-group actions (keep in sync with HeadingActions plugins: size-11)
+$ha-hit-size: 2.75rem;
+$heading-chat-gutter: $ha-hit-size;
+
+// Inner .ha-chat-btn carries UNREAD_SYNC count; parent group reacts without duplicating the attribute
+$ha-group-has-unread: '.ha-wrap.has-selection > .ha-group:has(.ha-chat-btn[data-unread-count]:not([data-unread-count=""]))';
+
+@mixin ha-btn-surface {
+  appearance: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  border: 1px solid var(--color-base-300);
+  background-color: var(--color-base-100);
+  color: var(--color-primary);
+  border-radius: 9999px;
+  box-shadow: 0 1px 2px color-mix(in oklch, var(--color-base-content) 6%, transparent);
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+
+  &:hover {
+    background-color: color-mix(in oklch, var(--color-primary) 10%, var(--color-base-100));
+    border-color: color-mix(in oklch, var(--color-primary) 28%, var(--color-base-300));
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  &:active {
+    box-shadow: 0 0 0 1px color-mix(in oklch, var(--color-primary) 22%, transparent);
+  }
+}
+
+// Selection comment chip + heading widgets share one look
+:is(.ha-chat-btn, .ha-comment-btn) {
+  @include ha-btn-surface;
+}
 
 @mixin heading-chat-visible {
   opacity: 1;
@@ -23,13 +70,14 @@ $heading-chat-gutter: 3rem;
     position: absolute;
     right: 0;
     top: 50%;
-    transform: translateY(-50%);
+    // Center of .ha-wrap on sheet border: pad + half border + half self width (works for single btn or stacked group)
+    transform: translateY(-50%) translateX(calc(var(--tiptap-inline-pad-end, 1.5rem) + 0.5px + 50%));
     z-index: 10;
     display: flex;
     align-items: center;
     justify-content: flex-end;
     flex-shrink: 0;
-    min-height: 2.5rem;
+    min-height: $ha-hit-size;
     padding-left: 0.5rem;
     // Let clicks pass through the gutter; only interactive children re-enable hits
     pointer-events: none;
@@ -60,6 +108,10 @@ $heading-chat-gutter: 3rem;
         align-items: center;
         position: relative;
         pointer-events: auto;
+
+        .ha-chat-btn {
+          display: none;
+        }
       }
     }
   }
@@ -88,59 +140,63 @@ $heading-chat-gutter: 3rem;
     }
   }
 
-  // Selection in heading: stack chat + comment; compact until hover / unread on group
-  .ha-wrap.has-selection > .ha-group {
-    .ha-chat-btn {
-      display: none;
-    }
-  }
-
+  // Selection + hover (or unread): vertical capsule = same circular language as .ha-single (no rounded-rect tray)
   &:hover .ha-wrap.has-selection > .ha-group,
   .ha-wrap.has-selection:hover > .ha-group,
-  .ha-wrap.has-selection > .ha-group[data-unread-count]:not([data-unread-count='']) {
+  #{$ha-group-has-unread} {
     flex-direction: column;
     align-items: center;
+    gap: 0.2rem;
+    padding: 0.2rem 0.125rem;
+    width: fit-content;
+    max-width: fit-content;
     background-color: var(--color-base-100);
-    box-shadow:
-      0 1px 3px 0 color-mix(in oklch, var(--color-base-content) 10%, transparent),
-      0 1px 2px 0 color-mix(in oklch, var(--color-base-content) 6%, transparent),
-      0 0 0 1px color-mix(in oklch, var(--color-base-content) 5%, transparent);
-    gap: 2px;
-    border-radius: 46%;
+    border: 1px solid var(--color-base-300);
+    border-radius: 9999px;
+    box-shadow: 0 1px 2px color-mix(in oklch, var(--color-base-content) 6%, transparent);
 
     :is(.ha-chat-btn, .ha-comment-btn) {
       position: relative !important;
       transform: none !important;
-      box-shadow: none;
-      border: 0;
-      top: 0 !important;
-      left: 0 !important;
-      right: 0 !important;
-      display: flex;
-    }
+      flex-shrink: 0;
+      width: $ha-hit-size;
+      height: $ha-hit-size;
+      min-width: $ha-hit-size;
+      min-height: $ha-hit-size;
+      padding: 0 !important;
+      border: none !important;
+      box-shadow: none !important;
+      border-radius: 9999px !important;
+      background-color: transparent;
+      color: var(--color-primary);
+      transition:
+        background-color 0.15s ease,
+        color 0.15s ease;
 
-    .ha-chat-btn {
-      border-radius: 46% 46% 0 0 !important;
-    }
+      &:hover {
+        background-color: color-mix(in oklch, var(--color-primary) 10%, var(--color-base-100));
+      }
 
-    .ha-comment-btn {
-      border-radius: 0 0 46% 46% !important;
+      &:active {
+        box-shadow: none !important;
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--color-primary);
+        outline-offset: 2px;
+        z-index: 1;
+      }
     }
   }
 
-  [data-theme='docsplus-dark'] &:hover .ha-wrap.has-selection > .ha-group,
-  [data-theme='docsplus-dark-hc'] &:hover .ha-wrap.has-selection > .ha-group,
-  [data-theme='docsplus-dark'] .ha-wrap.has-selection:hover > .ha-group,
-  [data-theme='docsplus-dark-hc'] .ha-wrap.has-selection:hover > .ha-group {
-    box-shadow:
-      0 1px 3px 0 color-mix(in oklch, var(--color-base-content) 6%, transparent),
-      0 1px 2px 0 color-mix(in oklch, var(--color-base-content) 4%, transparent),
-      0 0 0 1px color-mix(in oklch, var(--color-base-content) 3%, transparent);
+  &:hover .ha-wrap.has-selection > .ha-group .ha-chat-btn,
+  .ha-wrap.has-selection:hover > .ha-group .ha-chat-btn,
+  #{$ha-group-has-unread} .ha-chat-btn {
+    display: flex !important;
   }
 
-  .ha-wrap.has-selection > .ha-group[data-unread-count]:not([data-unread-count='']) {
+  #{$ha-group-has-unread} {
     :is(.ha-chat-btn, .ha-comment-btn) {
-      display: flex !important;
       visibility: visible !important;
     }
   }

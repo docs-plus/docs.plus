@@ -73,15 +73,19 @@ html.m_mobile #__next {
     --category-nav-display: none;
   }
 
-  // Hide the grouped buttons and comment button on mobile - only show single chat button
+  // Hide tray; keep the single chat control visible even when heading has a text selection
   .ha-wrap {
     .ha-group {
       display: none !important;
     }
+
+    &.has-selection .ha-single.ha-chat-btn {
+      display: inline-flex !important;
+    }
   }
 
   // Editor is the ONLY scrollable element - prevents iOS keyboard glitch
-  .editorWrapper {
+  .editor.editorWrapper {
     flex: 1;
     min-height: 0; // Critical for flex child scrolling
     overflow-y: auto;
@@ -90,6 +94,18 @@ html.m_mobile #__next {
     -webkit-overflow-scrolling: touch;
     // GPU layer for smooth scrolling
     transform: translateZ(0);
+    // Inset document from screen edges (mobile has no `.pad` wrapper unlike desktop).
+    // Right padding 0 so heading chat tabs can sit flush to the window; prose gets end inset via `--tiptap-inline-pad-end`.
+    padding: 12px 0 20px 16px;
+    box-sizing: border-box;
+  }
+
+  // End gutter for body text + straddle offset for plugins (heading fold, etc.)
+  .editorWrapper .tiptap__editor.docy_editor {
+    --tiptap-inline-pad-end: 16px;
+    // Editor wrapper has no right padding — inset the document surface here
+    padding-right: var(--tiptap-inline-pad-end);
+    box-sizing: border-box;
   }
 
   .ProseMirror {
@@ -137,74 +153,88 @@ html.m_mobile #__next {
     }
 
     :is(h1, h2, h3, h4, h5, h6)[data-toc-id] {
-      padding-right: 70px;
+      // Space for tab content to the left of the docked control (tab sits at viewport edge)
+      padding-right: 6rem;
       position: relative;
 
       .ha-wrap {
         position: absolute !important;
-        right: 0;
+        // Pull past the prose content edge by the same inset so the flat tab edge meets the window
+        right: calc(-1 * var(--tiptap-inline-pad-end, 16px));
         top: 50%;
+        // Desktop uses translateX to straddle the sheet edge; on mobile that reads as a clipped circle — Y only
         transform: translateY(-50%);
 
-        .ha-single.ha-chat-btn {
-          // Pill style (visibility follows _heading-actions.scss: coarse pointer = always on)
-          align-items: center;
-          justify-content: center;
-          gap: 6px;
-          padding: 4px 6px 4px 10px;
-          min-width: auto;
-          width: auto;
-          height: 28px;
-          min-height: 28px !important;
-          background-color: var(--color-primary);
-          border-radius: 8px 0 0 8px !important;
-          border: none;
-          box-shadow: 0 2px 6px color-mix(in oklch, var(--color-base-content) 20%, transparent);
+        // Always show single chat control on touch (no hover reveal)
+        &:not(.has-selection) .ha-single.ha-chat-btn {
+          opacity: 1 !important;
+          visibility: visible !important;
+          pointer-events: auto !important;
+        }
 
-          // Override size classes
+        // Docked tab: rounded left, square right (reference: pill flush to margin), shadow mostly to the left
+        .ha-single.ha-chat-btn {
+          $ha-tab-h: 2rem;
+
+          display: inline-flex !important;
+          flex-direction: row;
+          align-items: center;
+          justify-content: flex-start;
+          gap: 0.5rem;
+          width: auto;
+          min-width: $ha-tab-h;
+          height: $ha-tab-h;
+          min-height: $ha-tab-h !important;
+          padding: 0 0.625rem 0 0.625rem;
+          background-color: var(--color-primary) !important;
+          border: none !important;
+          border-radius: calc($ha-tab-h / 4) 0 0 calc($ha-tab-h / 4) !important;
+          box-shadow:
+            -3px 2px 8px color-mix(in oklch, var(--color-base-content) 14%, transparent),
+            -1px 0 4px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+          color: var(--color-primary-content);
+
           &.size-12 {
             width: auto;
-            height: 28px;
+            height: $ha-tab-h;
           }
 
           svg.chatLeft {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             flex-shrink: 0;
+            color: inherit;
           }
 
-          // Hide desktop badge pseudo-elements
           &::after {
             display: none !important;
           }
 
-          // Default: just show chat icon (no count)
           &::before {
             display: none !important;
           }
 
           &[data-unread-count]:not([data-unread-count='']) {
-            padding-left: 4px;
+            padding-left: 0.5rem;
 
             &::before {
               content: attr(data-unread-count);
-              display: flex !important;
+              display: inline-flex !important;
               align-items: center;
               justify-content: center;
-              min-width: 20px;
-              height: 20px;
-              padding: 0 4px;
-              background-color: color-mix(in oklch, var(--color-base-content) 25%, transparent);
-              border-radius: 6px;
-              color: var(--color-primary-content);
-              font-size: 11px;
+              min-width: 1.375rem;
+              min-height: 1.375rem;
+              padding: 0 0.3rem;
+              background-color: var(--color-error) !important;
+              color: var(--color-error-content) !important;
+              border-radius: 0.35rem;
+              font-size: 0.6875rem;
               font-weight: 600;
+              line-height: 1;
               order: -1;
               position: static !important;
-              top: auto !important;
-              left: auto !important;
-              right: auto !important;
-              // Entry animation
+              inset: auto !important;
+              z-index: auto;
               animation: badge-entry 0.3s ease-out forwards;
             }
           }
@@ -253,9 +283,11 @@ html.m_mobile #__next {
     0 8px 12px 0 color-mix(in oklch, var(--color-base-content) 8%, transparent);
 }
 
-[data-theme='docsplus-dark'] .ha-single.ha-chat-btn,
-[data-theme='docsplus-dark-hc'] .ha-single.ha-chat-btn {
-  box-shadow: 0 2px 6px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+[data-theme='docsplus-dark'] .m_mobile .ha-single.ha-chat-btn,
+[data-theme='docsplus-dark-hc'] .m_mobile .ha-single.ha-chat-btn {
+  box-shadow:
+    -3px 2px 10px color-mix(in oklch, var(--color-base-content) 18%, transparent),
+    -1px 0 4px color-mix(in oklch, var(--color-base-content) 12%, transparent);
 }
 
 .headingSelection {

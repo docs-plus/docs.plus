@@ -1,7 +1,6 @@
 import { BookmarkPanelSkeleton } from '@components/bookmarkPanel/components/BookmarkPanelSkeleton'
 import SettingsPanelSkeleton from '@components/settings/SettingsPanelSkeleton'
-import ToolbarSkeleton from '@components/skeleton/ToolbarLoader'
-import Button from '@components/ui/Button'
+import ToolbarSkeleton from '@components/skeleton/ToolbarSkeleton'
 import { Modal, ModalContent } from '@components/ui/Dialog'
 import Loading from '@components/ui/Loading'
 import { Popover, PopoverContent, PopoverTrigger } from '@components/ui/Popover'
@@ -13,13 +12,17 @@ import { useAuthStore, useStore } from '@stores'
 import dynamic from 'next/dynamic'
 import React, { useEffect, useRef, useState } from 'react'
 
-import { FilterPanelSkeleton } from './FilterPanelSkeleton'
-import { GearPanelSkeleton } from './GearPanelSkeleton'
+import { clearFormatting } from '../clearFormatting'
+import ToolbarButton from '../ToolbarButton'
+import ToolbarDivider from '../ToolbarDivider'
+import ToolbarSelect from '../ToolbarSelect'
+import { DocumentSettingsSkeleton } from './DocumentSettingsSkeleton'
+import { FilterSkeleton } from './FilterSkeleton'
 import StyleSelect from './StyleSelect'
 
 /* ── Lazy-loaded panels ── */
 
-const MediaInsertPanel = dynamic(() => import('./InsertMultimediaForm'), {
+const MediaInsertPanel = dynamic(() => import('./MediaInsertPanel'), {
   loading: () => <Loading />
 })
 
@@ -27,16 +30,16 @@ const SettingsPanel = dynamic(() => import('@components/settings/SettingsPanel')
   loading: () => <SettingsPanelSkeleton />
 })
 
-const DocumentSettingsPanel = dynamic(() => import('./GearModal'), {
-  loading: () => <GearPanelSkeleton />
+const DocumentSettingsPanel = dynamic(() => import('./DocumentSettingsPanel'), {
+  loading: () => <DocumentSettingsSkeleton />
 })
 
-const BookmarkPanel = dynamic(() => import('./BookmarkModal'), {
+const BookmarkPanel = dynamic(() => import('./BookmarkPanel'), {
   loading: () => <BookmarkPanelSkeleton />
 })
 
-const FilterPanel = dynamic(() => import('./FilterModal'), {
-  loading: () => <FilterPanelSkeleton />
+const FilterPanel = dynamic(() => import('./FilterPanel'), {
+  loading: () => <FilterSkeleton />
 })
 
 /* ── Constants ── */
@@ -44,9 +47,6 @@ const FilterPanel = dynamic(() => import('./FilterModal'), {
 const ICON_SIZE = 16
 const PANEL_CLASS =
   'rounded-box border-base-300 bg-base-100 z-50 w-[28rem] overflow-hidden border p-0 shadow-xl'
-
-/** Visual separator between toolbar groups */
-const Divider = () => <div className="bg-base-300 mx-2 h-5 w-px" />
 
 /* ── Component ── */
 
@@ -86,116 +86,71 @@ const EditorToolbar = () => {
 
   if (loading || providerSyncing || !editor) return <ToolbarSkeleton />
 
-  /** Returns `is-active` class when the given editor mark/node is active */
-  const active = (type: string) => (editor.isActive(type) ? 'is-active' : '')
-
-  const setHyperlink = () => {
-    const chain = editor.chain().focus() as unknown as {
-      setHyperlink: () => { run: () => boolean }
-    }
-    chain.setHyperlink().run()
-  }
-
   return (
     <>
-      <div className="tiptap__toolbar bg-base-100 border-base-300 flex flex-row items-center justify-between gap-0.5 border-b px-3 py-1.5 sm:justify-start">
+      {/* Pad chrome borders: PadTitle `border-b` (header↔toolbar); this row `border-b` only (toolbar↔workspace); sheet top edge is `.tiptap__editor` in _blocks.scss — do not add `border-t` here or you double the header seam. */}
+      <div className="tiptap__toolbar border-base-300 bg-base-100 flex min-w-0 flex-row items-center justify-between gap-0.5 border-b px-3 py-1.5 sm:justify-start">
         <StyleSelect editor={editor} />
 
-        <Divider />
+        <ToolbarDivider />
 
         {/* Text formatting */}
 
-        <Button
-          variant="ghost"
-          size="sm"
-          shape="square"
+        <ToolbarButton
+          editor={editor}
+          type="bold"
           data-testid="toolbar-bold"
-          className={active('bold')}
           onClick={() => editor.chain().focus().toggleBold().run()}
           tooltip="Bold (⌘+B)">
           <Icons.bold size={ICON_SIZE} />
-        </Button>
+        </ToolbarButton>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          shape="square"
+        <ToolbarButton
+          editor={editor}
+          type="italic"
           data-testid="toolbar-italic"
-          className={active('italic')}
           onClick={() => editor.chain().focus().toggleItalic().run()}
           tooltip="Italic (⌘+I)">
           <Icons.italic size={ICON_SIZE} />
-        </Button>
+        </ToolbarButton>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          shape="square"
+        <ToolbarButton
+          editor={editor}
+          type="underline"
           data-testid="toolbar-underline"
-          className={active('underline')}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           tooltip="Underline (⌘+U)">
           <Icons.underline size={ICON_SIZE} />
-        </Button>
+        </ToolbarButton>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          shape="square"
+        <ToolbarButton
+          editor={editor}
+          type="strike"
           data-testid="toolbar-strike"
-          className={active('strike')}
           onClick={() => editor.chain().focus().toggleStrike().run()}
           tooltip="Strikethrough (⌘+⇧+S)">
           <Icons.strikethrough size={ICON_SIZE} />
-        </Button>
+        </ToolbarButton>
 
-        <Divider />
+        <ToolbarButton
+          editor={editor}
+          type="highlight"
+          data-testid="toolbar-highlight"
+          onClick={() => editor.chain().focus().toggleHighlight().run()}
+          tooltip="Highlight (⌘+⇧+H)">
+          <Icons.highlight size={ICON_SIZE} />
+        </ToolbarButton>
 
-        {/* Lists */}
-
-        <Button
-          variant="ghost"
-          size="sm"
-          shape="square"
-          data-testid="toolbar-ordered-list"
-          className={active('orderedList')}
-          onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          tooltip="Ordered List (⌘+⇧+7)">
-          <Icons.orderedList size={ICON_SIZE} />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          shape="square"
-          data-testid="toolbar-bullet-list"
-          className={active('bulletList')}
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          tooltip="Bullet List (⌘+⇧+8)">
-          <Icons.bulletList size={ICON_SIZE} />
-        </Button>
-
-        <Button
-          variant="ghost"
-          size="sm"
-          shape="square"
-          data-testid="toolbar-task-list"
-          className={active('taskList')}
-          onClick={() => editor.chain().focus().toggleTaskList().run()}
-          tooltip="Task List (⌘+⇧+9)">
-          <Icons.taskList size={ICON_SIZE} />
-        </Button>
-
-        <Divider />
+        <ToolbarDivider />
 
         {/* Rich content */}
 
         <Popover placement="bottom-start">
           <PopoverTrigger asChild>
             <div>
-              <Button variant="ghost" size="sm" shape="square" tooltip="Insert Media">
+              <ToolbarButton tooltip="Insert Media">
                 <Icons.image size={ICON_SIZE} />
-              </Button>
+              </ToolbarButton>
             </div>
           </PopoverTrigger>
           <PopoverContent className="rounded-box border-base-300 bg-base-100 border p-4 shadow-lg">
@@ -203,45 +158,90 @@ const EditorToolbar = () => {
           </PopoverContent>
         </Popover>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          shape="square"
+        <ToolbarButton
+          editor={editor}
+          type="chatComment"
           data-testid="toolbar-comment"
-          className={active('chatComment')}
           onClick={() => createComment(editor)}
           tooltip="Comment (⌘+⌥+M)">
           <Icons.comment size={ICON_SIZE} />
-        </Button>
+        </ToolbarButton>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          shape="square"
+        <ToolbarButton
+          editor={editor}
+          type="hyperlink"
           data-testid="toolbar-hyperlink"
-          className={active('hyperlink')}
-          onClick={setHyperlink}
+          onClick={() => editor.chain().focus().setHyperlink().run()}
           tooltip="Hyperlink (⌘+K)">
           <Icons.link size={ICON_SIZE} />
-        </Button>
+        </ToolbarButton>
 
-        <Button
-          variant="ghost"
-          size="sm"
-          shape="square"
-          data-testid="toolbar-highlight"
-          className={active('highlight')}
-          onClick={() => editor.chain().focus().toggleHighlight().run()}
-          tooltip="Highlight (⌘+⇧+H)">
-          <Icons.highlight size={ICON_SIZE} />
-        </Button>
+        {/* Lists dropdown */}
 
-        <Divider />
+        <ToolbarDivider />
 
-        <Button
-          variant="ghost"
-          size="sm"
-          shape="square"
+        <ToolbarSelect
+          editor={editor}
+          fallbackIcon={Icons.bulletList}
+          tooltip="Lists"
+          items={[
+            {
+              value: 'bulletList',
+              label: 'Bullet List',
+              icon: Icons.bulletList,
+              action: () => editor.chain().focus().toggleBulletList().run()
+            },
+            {
+              value: 'orderedList',
+              label: 'Ordered List',
+              icon: Icons.orderedList,
+              action: () => editor.chain().focus().toggleOrderedList().run()
+            },
+            {
+              value: 'taskList',
+              label: 'Task List',
+              icon: Icons.taskList,
+              action: () => editor.chain().focus().toggleTaskList().run()
+            }
+          ]}
+        />
+
+        {/* Blockquote */}
+
+        <ToolbarButton
+          editor={editor}
+          type="blockquote"
+          data-testid="toolbar-blockquote"
+          onClick={() => editor.chain().focus().toggleBlockquote().run()}
+          tooltip="Blockquote">
+          <Icons.blockquote size={ICON_SIZE} />
+        </ToolbarButton>
+
+        {/* Code dropdown */}
+
+        <ToolbarSelect
+          editor={editor}
+          fallbackIcon={Icons.code}
+          tooltip="Code"
+          items={[
+            {
+              value: 'codeBlock',
+              label: 'Code Block',
+              icon: Icons.codeBlock,
+              action: () => editor.chain().focus().toggleCodeBlock().run()
+            },
+            {
+              value: 'inlineCode',
+              label: 'Inline Code',
+              icon: Icons.code,
+              action: () => editor.chain().focus().toggleInlineCode().run()
+            }
+          ]}
+        />
+
+        <ToolbarDivider />
+
+        <ToolbarButton
           data-testid="toolbar-clear-formatting"
           onMouseDown={(event) => {
             event.preventDefault()
@@ -253,67 +253,37 @@ const EditorToolbar = () => {
             }
           }}
           onClick={() => {
-            try {
-              const preservedSelection = clearFormattingSelectionRef.current
-              clearFormattingSelectionRef.current = null
+            const preserved = clearFormattingSelectionRef.current
+            clearFormattingSelectionRef.current = null
 
-              if (
-                preservedSelection &&
-                !preservedSelection.empty &&
-                preservedSelection.from < preservedSelection.to
-              ) {
-                editor
-                  .chain()
-                  .focus()
-                  .setTextSelection({
-                    from: preservedSelection.from,
-                    to: preservedSelection.to
-                  })
-                  .unsetAllMarks()
-                  .run()
-                return
-              }
-
-              const selection = editor.state.selection
-
-              // Keep selected-text behavior deterministic: remove marks only.
-              if (!selection.empty) {
-                editor.chain().focus().unsetAllMarks().run()
-                return
-              }
-
-              // For collapsed selection, try node reset first, then safely fallback.
-              const cleared = editor.chain().focus().clearNodes().run()
-              if (!cleared) {
-                editor.chain().focus().unsetAllMarks().run()
-              }
-            } catch (error) {
-              console.warn('[EditorToolbar] clear formatting fallback', error)
-              editor.chain().focus().unsetAllMarks().run()
+            if (preserved && !preserved.empty && preserved.from < preserved.to) {
+              editor
+                .chain()
+                .focus()
+                .setTextSelection({ from: preserved.from, to: preserved.to })
+                .unsetAllMarks()
+                .run()
+              return
             }
+
+            clearFormatting(editor)
           }}
           tooltip="Clear Formatting">
           <Icons.clearFormatting size={ICON_SIZE} />
-        </Button>
+        </ToolbarButton>
 
         {/* Right-side actions */}
 
         <div className="!ml-auto flex items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="sm"
-            shape="square"
+          <ToolbarButton
             onClick={() => window.open('https://discord.gg/25JPG38J59', '_blank')}
             tooltip="Join Discord Community">
             <Icons.discord size={ICON_SIZE} className="text-[#5865F2]" />
-          </Button>
+          </ToolbarButton>
 
-          <Divider />
+          <ToolbarDivider />
 
-          <Button
-            variant="ghost"
-            size="sm"
-            shape="square"
+          <ToolbarButton
             onClick={copyDocumentToClipboard}
             tooltip={copied ? 'Copied!' : 'Copy Document'}>
             {copied ? (
@@ -321,36 +291,26 @@ const EditorToolbar = () => {
             ) : (
               <Icons.copy size={ICON_SIZE} />
             )}
-          </Button>
+          </ToolbarButton>
 
-          <Button
-            variant="ghost"
-            size="sm"
-            shape="square"
-            onClick={() => window.print()}
-            tooltip="Print (⌘+P)">
+          <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)">
             <Icons.print size={ICON_SIZE} />
-          </Button>
+          </ToolbarButton>
 
           {isAuthServiceAvailable && user && (
-            <Button
-              variant="ghost"
-              size="sm"
-              shape="square"
-              onClick={() => setDocumentsOpen(true)}
-              tooltip="Documents">
+            <ToolbarButton onClick={() => setDocumentsOpen(true)} tooltip="Documents">
               <Icons.documents size={ICON_SIZE} />
-            </Button>
+            </ToolbarButton>
           )}
 
-          {user && <Divider />}
+          {user && <ToolbarDivider />}
 
           <Popover placement="bottom-end">
             <PopoverTrigger asChild>
               <div>
-                <Button variant="ghost" size="sm" shape="square" tooltip="Bookmarks">
+                <ToolbarButton tooltip="Bookmarks">
                   <Icons.bookmark size={ICON_SIZE} />
-                </Button>
+                </ToolbarButton>
               </div>
             </PopoverTrigger>
             <PopoverContent className={PANEL_CLASS}>
@@ -361,9 +321,9 @@ const EditorToolbar = () => {
           <Popover placement="bottom-end">
             <PopoverTrigger asChild>
               <div>
-                <Button variant="ghost" size="sm" shape="square" tooltip="Filter Document">
+                <ToolbarButton tooltip="Filter Document">
                   <Icons.filter size={ICON_SIZE} />
-                </Button>
+                </ToolbarButton>
               </div>
             </PopoverTrigger>
             <PopoverContent className={PANEL_CLASS}>
@@ -371,19 +331,14 @@ const EditorToolbar = () => {
             </PopoverContent>
           </Popover>
 
-          <Divider />
+          <ToolbarDivider />
 
           <Popover placement="bottom-end">
             <PopoverTrigger asChild>
               <div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  shape="square"
-                  tooltip="Document Settings"
-                  tooltipPlacement="left">
+                <ToolbarButton tooltip="Document Settings" tooltipPlacement="left">
                   <Icons.settings size={ICON_SIZE} />
-                </Button>
+                </ToolbarButton>
               </div>
             </PopoverTrigger>
             <PopoverContent className={PANEL_CLASS}>

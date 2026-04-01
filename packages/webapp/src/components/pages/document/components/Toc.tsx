@@ -21,8 +21,7 @@ const TOC = ({ className = '' }: { className?: string }) => {
     <ScrollArea
       className={`${className} tiptap__toc h-full w-full !pt-0`}
       orientation="vertical"
-      scrollbarSize="thin"
-      hideScrollbar>
+      scrollbarSize="thin">
       <TocDesktop className="hover:overscroll-contain" />
     </ScrollArea>
   )

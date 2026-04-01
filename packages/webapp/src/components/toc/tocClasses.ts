@@ -3,6 +3,8 @@
  * Keep in sync with `styles/components/_tableOfContents.scss`.
  */
 export const TOC_CLASSES = {
+  /** Doc title row in TocHeader — paired with `.toc__active-border` for gutter-safe accent */
+  headerRow: 'toc__header-row',
   list: 'toc__list',
   item: 'toc__item',
   link: 'toc__link',
@@ -18,6 +20,8 @@ export const TOC_CLASSES = {
   chatTrigger: 'toc__chat-trigger',
   /** Icon inside chat trigger */
   chatIcon: 'toc__chat-icon',
+  /** Chat open for this row — theme-aware accent (pairs with SCSS `> a.active .toc__chat-icon--active`) */
+  chatIconActive: 'toc__chat-icon--active',
   /** H1–H6 badge (visible during drag) */
   levelBadge: 'toc__level-badge',
   /** Level picker popover next to drag handle */

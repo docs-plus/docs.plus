@@ -6,16 +6,16 @@ import { useSortable } from '@dnd-kit/sortable'
 import { Icons } from '@icons'
 import { useChatStore, useFocusedHeadingStore, useStore } from '@stores'
 import type { TocItem as TocItemType } from '@types'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 import { useActiveHeading, usePresentUsers, useTocActions, useUnreadCount } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
-import { buildNestedToc, scrollToHeading } from './utils'
+import { type NestedTocNode, scrollToHeading } from './utils'
 
 interface TocItemDesktopProps {
   item: TocItemType
-  childItems: TocItemType[]
+  nestedNodes: NestedTocNode<TocItemType>[]
   onToggle: (id: string) => void
   activeId?: string | null
   collapsedIds?: Set<string>
@@ -23,7 +23,7 @@ interface TocItemDesktopProps {
 
 export function TocItemDesktop({
   item,
-  childItems,
+  nestedNodes,
   onToggle,
   activeId = null,
   collapsedIds = new Set()
@@ -45,9 +45,9 @@ export function TocItemDesktop({
   const { openChatroom } = useTocActions()
 
   const isActive = headingId === item.id
-  const hasChildren = childItems.length > 0
-  const hasPresentUsers = useMemo(() => presentUsers.length > 0, [presentUsers])
-  const presentUsersCount = useMemo(() => presentUsers.length, [presentUsers])
+  const hasChildren = nestedNodes.length > 0
+  const hasPresentUsers = presentUsers.length > 0
+  const presentUsersCount = presentUsers.length
 
   // Drag state
   const isDragging = sortable.isDragging
@@ -90,8 +90,6 @@ export function TocItemDesktop({
   )
 
   if (!editor) return null
-
-  const nestedChildren = buildNestedToc(childItems)
 
   const liClassName = twMerge(
     'toc__item relative w-full',
@@ -160,7 +158,7 @@ export function TocItemDesktop({
               item.open ? 'opened' : 'closed'
             )}
             onClick={handleToggle}
-            startIcon={<Icons.chevronRight size={18} className="text-base-content/80" />}
+            startIcon={<Icons.chevronRight size={18} className="fill-none stroke-current" />}
             tooltip="Toggle"
             tooltipPlacement="top"
           />
@@ -176,10 +174,15 @@ export function TocItemDesktop({
             data-heading-id={item.id}
             onClick={handleChatClick}>
             {unreadCount > 0 ? (
-              <UnreadBadge count={unreadCount} size="sm" />
+              <UnreadBadge count={unreadCount} size="sm" variant="error" />
             ) : (
               <Icons.chatroom
-                className={`${TOC_CLASSES.chatIcon} text-base-content/40 group-hover:text-primary hover:text-primary cursor-pointer transition-colors`}
+                className={twMerge(
+                  TOC_CLASSES.chatIcon,
+                  'cursor-pointer fill-none transition-colors',
+                  isActive && TOC_CLASSES.chatIconActive,
+                  !isActive && 'text-base-content/40 group-hover:text-primary hover:text-primary'
+                )}
                 size={20}
               />
             )}
@@ -202,12 +205,12 @@ export function TocItemDesktop({
 
       {/* Nested children */}
       {hasChildren && (
-        <ul className={twMerge(TOC_CLASSES.children, !item.open && 'hidden')}>
-          {nestedChildren.map(({ item: childItem, children: grandChildren }) => (
+        <ul className={TOC_CLASSES.children}>
+          {nestedNodes.map(({ item: childItem, nodes: grandNodes }) => (
             <TocItemDesktop
               key={childItem.id}
               item={childItem}
-              childItems={grandChildren}
+              nestedNodes={grandNodes}
               onToggle={onToggle}
               activeId={activeId}
               collapsedIds={collapsedIds}

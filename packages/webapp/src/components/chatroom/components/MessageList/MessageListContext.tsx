@@ -2,7 +2,7 @@ import { useChatroomContext } from '@components/chatroom/ChatroomContext'
 import { useCheckReadMessage, useMentionClick } from '@components/chatroom/hooks'
 import { useChatStore } from '@stores'
 import type { Virtualizer } from '@tanstack/react-virtual'
-import { debounce } from 'lodash'
+import debounce from 'lodash/debounce'
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react'
 
 import { useMessageFeedContext } from '../MessageFeed/MessageFeedContext'

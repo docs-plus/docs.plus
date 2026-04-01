@@ -5,9 +5,9 @@ import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useChatStore } from '@stores'
+import { formatTimeAgo } from '@utils/formatTime'
 import PubSub from 'pubsub-js'
 
-import { formatTimeAgo } from '../../notificationPanel/helpers'
 import { usePopoverState } from '../../ui/Popover'
 
 export const BookmarkItem = ({ bookmark }: { bookmark: any }) => {

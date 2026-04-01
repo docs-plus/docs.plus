@@ -3,7 +3,6 @@ import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import { usePopoverState } from '@components/ui/Popover'
 import Textarea from '@components/ui/Textarea'
-import Toggle from '@components/ui/Toggle'
 import useUpdateDocMetadata from '@hooks/useUpdateDocMetadata'
 import { Icons } from '@icons'
 import { useAuthStore, useStore } from '@stores'
@@ -13,48 +12,14 @@ import React, { useEffect, useState } from 'react'
 import { TagsInput } from 'react-tag-input-component'
 import { twMerge } from 'tailwind-merge'
 
-import { saveDocDescriptionHandler, saveDocReadOnlyPage } from './toolbarUtils'
+import ToggleSection from '../ToggleSection'
 
-interface ToggleSectionProps {
-  name: string
-  className?: string
-  description: string
-  value?: string
-  checked: boolean
-  onChange: () => void
-}
-
-const ToggleSection = ({
-  name,
-  className,
-  description,
-  value,
-  checked,
-  onChange
-}: ToggleSectionProps) => {
-  return (
-    <div className={twMerge('flex items-center justify-between gap-4 py-3', className)}>
-      <div className="min-w-0 flex-1">
-        <p className="text-base-content text-sm font-medium">{name}</p>
-        <p className="text-base-content/50 text-xs">{description}</p>
-      </div>
-      <Toggle
-        id={value}
-        checked={checked}
-        onChange={() => onChange()}
-        size="sm"
-        variant="primary"
-      />
-    </div>
-  )
-}
-
-interface GearModalProps {
+interface DocumentSettingsPanelProps {
   className?: string
   onClose?: () => void
 }
 
-const GearModal = ({ className, onClose }: GearModalProps) => {
+const DocumentSettingsPanel = ({ className, onClose }: DocumentSettingsPanelProps) => {
   const popoverState = usePopoverState()
   const handleClose = onClose || popoverState.close
   const user = useAuthStore((state) => state.profile)
@@ -66,19 +31,18 @@ const GearModal = ({ className, onClose }: GearModalProps) => {
   const [docDescription, setDocDescription] = useState(docMetadata.description || '')
   const { isLoading, isSuccess, mutate } = useUpdateDocMetadata()
   const [tags, setTags] = useState<string[]>(docMetadata.keywords || [])
-  const [readOnly, setreadOnly] = useState(docMetadata.readOnly || false)
-  const [formTargetHandler, setFormTargetHndler] = useState('description')
+  const [readOnly, setReadOnly] = useState(docMetadata.readOnly || false)
+  const [formTargetHandler, setFormTargetHandler] = useState('description')
 
-  // Save document description
   const saveDescriptionHandler = () => {
-    saveDocDescriptionHandler(mutate, docMetadata.documentId, docDescription, tags)
+    mutate({ documentId: docMetadata.documentId, description: docDescription, keywords: tags })
   }
 
-  const saveDocreadOnlyHandler = () => {
-    setreadOnly(() => {
-      setFormTargetHndler('readOnly')
+  const saveDocReadOnlyHandler = () => {
+    setReadOnly(() => {
+      setFormTargetHandler('readOnly')
       hocuspocusProvider.sendStateless(JSON.stringify({ type: 'readOnly', state: !readOnly }))
-      saveDocReadOnlyPage(mutate, docMetadata.documentId, !readOnly)
+      mutate({ documentId: docMetadata.documentId, readOnly: !readOnly })
       return !readOnly
     })
   }
@@ -92,7 +56,7 @@ const GearModal = ({ className, onClose }: GearModalProps) => {
       if (formTargetHandler === 'readOnly') toast.Success('Read-only status updated')
       else toast.Success('Description and keywords updated')
     }
-  }, [isSuccess])
+  }, [isSuccess, formTargetHandler])
 
   const OwnerProfile = () => {
     const { full_name, username } = docMetadata.ownerProfile
@@ -121,7 +85,7 @@ const GearModal = ({ className, onClose }: GearModalProps) => {
               name="Read-only"
               description="Make this document read-only for viewers"
               checked={readOnly}
-              onChange={saveDocreadOnlyHandler}
+              onChange={saveDocReadOnlyHandler}
             />
           </div>
         )}
@@ -241,4 +205,4 @@ const GearModal = ({ className, onClose }: GearModalProps) => {
   )
 }
 
-export default GearModal
+export default DocumentSettingsPanel

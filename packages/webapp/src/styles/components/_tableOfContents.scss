@@ -17,6 +17,17 @@
   z-index: 1;
 }
 
+// Doc title row: bar in left gutter (!pl-4 when active); title stacks above the accent
+.tiptap__toc .toc__header-row.toc__active-border::after {
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: 4px;
+  height: auto;
+  border-radius: 4px;
+  z-index: 0;
+}
+
 // ======================
 // Main TOC Container
 // ======================
@@ -135,9 +146,17 @@
     color: var(--color-primary);
   }
 
-  > a.active > span > .toc__chat-icon {
-    fill: var(--color-docsy);
+  // Active chat (class from TocItemDesktop) — --color-docsy follows theme via globals.scss :root
+  > a.active .toc__chat-icon--active {
+    fill: none;
+    color: var(--color-docsy);
+    stroke: currentColor;
     opacity: 1;
+  }
+
+  // Section collapsed (editor fold); nested list is a direct child — no Tailwind `hidden` in TSX
+  &.closed > .toc__children {
+    display: none;
   }
 
   // Ghosted state (during drag)
@@ -165,19 +184,38 @@
 // ======================
 // Fold Button
 // ======================
+// Lucide chevron is stroke-based; daisy `btn-ghost` adds a hover fill — override to stroke-only (toolbar parity).
 .toc__item .toc__fold-btn {
   opacity: 1;
   cursor: pointer;
   transition: opacity 0.2s ease-in-out;
 
+  &,
+  &:hover,
+  &:focus-visible,
+  &:active {
+    background-color: transparent !important;
+    border-color: transparent;
+    box-shadow: none;
+  }
+
+  &:focus-visible {
+    outline: 2px solid color-mix(in oklch, var(--color-primary) 45%, transparent);
+    outline-offset: 1px;
+  }
+
   > svg {
+    fill: none;
+    stroke: currentColor;
+    color: color-mix(in oklch, var(--color-base-content) 80%, transparent);
     transition:
-      fill 0.2s ease-in-out,
+      color 0.15s ease-in-out,
       transform 0.2s ease-in-out;
   }
 
-  &:hover > svg {
-    fill: var(--color-primary);
+  &:hover > svg,
+  &:focus-visible > svg {
+    color: var(--color-primary);
   }
 
   &.closed > svg {
@@ -199,27 +237,20 @@
     justify-content: center;
     width: 24px;
     height: 24px;
-    transition: fill 0.2s ease-in-out;
-
-    &:hover {
-      fill: var(--neutral-content);
-    }
   }
 
   .toc__chat-icon {
     opacity: 0;
     padding: 1px;
+    fill: none;
+    stroke: currentColor;
     transition:
       opacity 0.2s ease-in-out,
-      background-color 0.2s ease-in-out;
+      color 0.2s ease-in-out;
   }
 
   &:hover > a > span > .toc__chat-icon {
     opacity: 1;
-  }
-
-  a:not(:active, .active):hover .toc__chat-icon {
-    background-color: var(--base-300);
   }
 }
 
@@ -268,7 +299,8 @@
   position: absolute;
   left: -16px;
   top: -28px; // Position above the TOC item (matches drag overlay position)
-  z-index: 1000;
+  // Below sticky TocHeader (z-30) so rows don’t paint over the title bar when scrolling
+  z-index: 20;
 }
 
 // ======================

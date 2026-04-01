@@ -34,8 +34,7 @@ const customJestConfig = {
     '^@stores$': '<rootDir>/src/stores/index.ts',
     '^@types$': '<rootDir>/src/types/index.ts',
     '^@api$': '<rootDir>/src/api/index.ts',
-    '^@config$': '<rootDir>/src/config/index.ts',
-    '^@helpers$': '<rootDir>/src/lib/helpers/index.ts'
+    '^@config$': '<rootDir>/src/config/index.ts'
   },
   moduleDirectories: ['node_modules', '<rootDir>/']
 }

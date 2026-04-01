@@ -181,7 +181,8 @@
 }
 
 @theme {
-  --color-docsy: oklch(54.6% 0.245 262.881);
+  /* Alias to primary so light / dark / HC themes stay aligned (DaisyUI sets --color-primary per data-theme) */
+  --color-docsy: var(--color-primary);
 }
 
 :root {
@@ -190,6 +191,14 @@
   --caret-color-inverse: var(--color-primary-content);
   --border-color-tint: color-mix(in oklch, var(--color-base-content) 14%, transparent);
   --muted-foreground: color-mix(in oklch, var(--color-base-content) 50%, transparent);
+
+  /* Scrollbars — shared by `::-webkit-scrollbar`, `.scrollbar-custom`, ScrollArea, pad `.editorWrapper` */
+  --scrollbar-size: 8px;
+  --scrollbar-size-thin: 6px;
+  --scrollbar-radius: 8px;
+  --scrollbar-thumb: color-mix(in oklch, var(--color-base-content) 42%, transparent);
+  --scrollbar-thumb-hover: color-mix(in oklch, var(--color-base-content) 62%, transparent);
+  --scrollbar-thumb-active: color-mix(in oklch, var(--color-base-content) 82%, transparent);
 }
 
 * {
@@ -229,6 +238,8 @@ html:not(.m_mobile) {
   max-height: 100%;
   min-height: 100%;
   padding: 0;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 
   body {
     margin: 0;
@@ -236,6 +247,8 @@ html:not(.m_mobile) {
     max-height: 100%;
     min-height: 100%;
     padding: 0;
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
   }
 
   #root,
@@ -563,21 +576,27 @@ html:not(.m_mobile) {
   }
 }
 
-/* This styles the scrollbar track (the part the thumb moves along) */
+/* Default scrollbars (viewport + any overflow without `.scrollbar-custom`) — same tokens as ScrollArea */
 ::-webkit-scrollbar {
-  width: 6px; /* or any size you prefer */
-  height: 6px; /* for horizontal scrollbars */
+  width: var(--scrollbar-size-thin);
+  height: var(--scrollbar-size-thin);
 }
 
-/* This styles the scrollbar thumb (the part you drag) */
+::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: var(--scrollbar-radius);
+}
+
 ::-webkit-scrollbar-thumb {
-  background: color-mix(in oklch, var(--color-base-content) 20%, transparent);
-  border-radius: 6px; /* rounded corners */
+  background: var(--scrollbar-thumb);
+  border-radius: var(--scrollbar-radius);
+  border: 2px solid transparent;
+  background-clip: content-box;
 }
 
-/* This styles the scrollbar thumb on hover */
 ::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in oklch, var(--color-base-content) 30%, transparent);
+  background: var(--scrollbar-thumb-hover);
+  background-clip: content-box;
 }
 
 .ProseMirror,
@@ -833,7 +852,7 @@ html:not(.m_mobile) {
 .scrollbar-custom {
   /* Firefox */
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in oklch, var(--color-base-content) 40%, transparent) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 
   /* Smooth scrolling */
   scroll-behavior: smooth;
@@ -842,30 +861,30 @@ html:not(.m_mobile) {
 
 /* WebKit (Chrome, Safari, Edge) custom scrollbar */
 .scrollbar-custom::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: var(--scrollbar-size);
+  height: var(--scrollbar-size);
 }
 
 .scrollbar-custom::-webkit-scrollbar-track {
   background: transparent;
-  border-radius: 8px;
+  border-radius: var(--scrollbar-radius);
 }
 
 .scrollbar-custom::-webkit-scrollbar-thumb {
-  background: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-  border-radius: 8px;
+  background: var(--scrollbar-thumb);
+  border-radius: var(--scrollbar-radius);
   border: 2px solid transparent;
   background-clip: content-box;
   transition: background 0.2s ease;
 }
 
 .scrollbar-custom::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in oklch, var(--color-base-content) 60%, transparent);
+  background: var(--scrollbar-thumb-hover);
   background-clip: content-box;
 }
 
 .scrollbar-custom::-webkit-scrollbar-thumb:active {
-  background: color-mix(in oklch, var(--color-base-content) 80%, transparent);
+  background: var(--scrollbar-thumb-active);
   background-clip: content-box;
 }
 
@@ -919,18 +938,18 @@ html:not(.m_mobile) {
 
 /* Hover state - reveal the scrollbar */
 .scrollbar-hide:hover {
-  scrollbar-color: color-mix(in oklch, var(--color-base-content) 40%, transparent) transparent;
+  scrollbar-color: var(--scrollbar-thumb) transparent;
 }
 
 .scrollbar-hide:hover::-webkit-scrollbar-thumb {
-  background: color-mix(in oklch, var(--color-base-content) 40%, transparent);
-  border-radius: 8px;
+  background: var(--scrollbar-thumb);
+  border-radius: var(--scrollbar-radius);
   border: 1px solid transparent;
   background-clip: content-box;
 }
 
 .scrollbar-hide:hover::-webkit-scrollbar-thumb:hover {
-  background: color-mix(in oklch, var(--color-base-content) 60%, transparent);
+  background: var(--scrollbar-thumb-hover);
   background-clip: content-box;
 }
 

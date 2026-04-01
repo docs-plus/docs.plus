@@ -9,15 +9,15 @@ import { twMerge } from 'tailwind-merge'
 
 import { useActiveHeading, useTocActions, useUnreadCount } from './hooks'
 import { TOC_CLASSES } from './tocClasses'
-import { buildNestedToc, scrollToHeading } from './utils'
+import { type NestedTocNode, scrollToHeading } from './utils'
 
 interface TocItemMobileProps {
   item: TocItemType
-  childItems: TocItemType[]
+  nestedNodes: NestedTocNode<TocItemType>[]
   onToggle: (id: string) => void
 }
 
-export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps) {
+export function TocItemMobile({ item, nestedNodes, onToggle }: TocItemMobileProps) {
   const { headingId } = useChatStore((state) => state.chatRoom)
   const editor = useStore((state) => state.settings.editor.instance)
 
@@ -30,7 +30,7 @@ export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps
   const modal = useModal()
 
   const isActive = headingId === item.id
-  const hasChildren = childItems.length > 0
+  const hasChildren = nestedNodes.length > 0
 
   const setFocusedHeadingWithLock = useFocusedHeadingStore((s) => s.setFocusedHeadingWithLock)
 
@@ -68,8 +68,6 @@ export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps
 
   if (!editor) return null
 
-  const nestedChildren = buildNestedToc(childItems)
-
   const liClassName = twMerge(
     'toc__item relative w-full',
     !item.open && 'closed',
@@ -97,7 +95,7 @@ export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps
             )}
             onClick={handleToggle}
             aria-label={item.open ? 'Collapse section' : 'Expand section'}
-            startIcon={<Icons.chevronRight size={18} className="text-base-content" />}
+            startIcon={<Icons.chevronRight size={18} className="fill-none stroke-current" />}
           />
         )}
 
@@ -127,12 +125,12 @@ export function TocItemMobile({ item, childItems, onToggle }: TocItemMobileProps
 
       {/* Nested children */}
       {hasChildren && (
-        <ul className={twMerge(TOC_CLASSES.children, !item.open && 'hidden')}>
-          {nestedChildren.map(({ item: childItem, children: grandChildren }) => (
+        <ul className={TOC_CLASSES.children}>
+          {nestedNodes.map(({ item: childItem, nodes: grandNodes }) => (
             <TocItemMobile
               key={childItem.id}
               item={childItem}
-              childItems={grandChildren}
+              nestedNodes={grandNodes}
               onToggle={onToggle}
             />
           ))}

@@ -1,6 +1,6 @@
 const ToolbarSkeleton = () => {
   return (
-    <div className="tiptap__toolbar border-base-300 bg-base-100 flex items-center gap-2 border-b px-4 py-2">
+    <div className="tiptap__toolbar border-base-300 bg-base-100 flex min-w-0 items-center gap-2 border-b px-3 py-1.5">
       {/* Text formatting dropdown */}
       <div className="skeleton h-6 w-24 rounded" />
 

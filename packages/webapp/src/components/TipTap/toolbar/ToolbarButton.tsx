@@ -1,20 +1,14 @@
-import Button from '@components/ui/Button'
-import { Placement } from '@floating-ui/react'
+import Button, { type ButtonProps } from '@components/ui/Button'
 import type { Editor } from '@tiptap/core'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 
-interface ToolbarButtonProps {
+interface ToolbarButtonProps extends Omit<ButtonProps, 'type' | 'shape'> {
   type?: string
   editor?: Editor | null
-  onClick?: (event: React.MouseEvent | React.TouchEvent) => void
-  onTouchEnd?: (event: React.TouchEvent) => void
-  children: React.ReactNode
-  tooltip?: string
-  tooltipPlacement?: Placement
-  className?: string
   isActive?: boolean
-  disabled?: boolean
+  /** Pass `null` to opt out of the default `square` shape */
+  shape?: ButtonProps['shape'] | null
 }
 
 const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
@@ -22,30 +16,26 @@ const ToolbarButton = React.forwardRef<HTMLButtonElement, ToolbarButtonProps>(
     {
       type,
       editor,
-      onClick,
-      onTouchEnd,
-      children,
-      tooltip,
-      tooltipPlacement = 'bottom',
-      className,
       isActive,
-      disabled
+      className,
+      variant = 'ghost',
+      size = 'sm',
+      shape = 'square',
+      ...rest
     },
     ref
   ) => {
-    const buttonClass = isActive || (type ? editor?.isActive(type) : false) ? 'is-active' : ''
+    const active = isActive ?? (type ? editor?.isActive(type) : false)
 
     return (
       <Button
         ref={ref}
-        className={twMerge('btn-ghost btn-sm size-8 p-0 outline-none', buttonClass, className)}
-        onClick={onClick}
-        onTouchEnd={onTouchEnd}
-        disabled={disabled}
-        tooltip={tooltip}
-        tooltipPlacement={tooltipPlacement}>
-        {children}
-      </Button>
+        variant={variant}
+        size={size}
+        shape={shape || undefined}
+        className={twMerge(active ? 'is-active' : '', className)}
+        {...rest}
+      />
     )
   }
 )
