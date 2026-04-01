@@ -21,8 +21,6 @@
     "prisma:migrate:dev": "bun --env-file ../../.env.local prisma migrate dev",
     "prisma:generate": "bun --env-file ../../.env.local prisma generate --schema=./prisma/schema.prisma",
     "fix:migration": "bun scripts/fix-migration.ts",
-    "migrate:nested-to-flat": "bun --env-file ../../.env.local src/scripts/migrate-nested-to-flat.ts",
-    "migrate:nested-to-flat:dry": "bun --env-file ../../.env.local src/scripts/migrate-nested-to-flat.ts --dry-run",
     "update:packages": "bunx npm-check-updates -u"
   },
   "keywords": [],
