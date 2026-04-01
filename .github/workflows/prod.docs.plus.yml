@@ -101,7 +101,8 @@ jobs:
             packages/extension-hypermultimedia/dist
             packages/extension-indent/dist
             packages/extension-inline-code/dist
-          key: ext-${{ runner.os }}-${{ hashFiles('bun.lock', 'packages/extension-hyperlink/package.json', 'packages/extension-hypermultimedia/package.json', 'packages/extension-indent/package.json', 'packages/extension-inline-code/package.json', 'packages/extension-hyperlink/src/**', 'packages/extension-hypermultimedia/src/**', 'packages/extension-indent/src/**', 'packages/extension-inline-code/src/**') }}
+            packages/extension-placeholder/dist
+          key: ext-${{ runner.os }}-${{ hashFiles('bun.lock', 'packages/extension-hyperlink/package.json', 'packages/extension-hypermultimedia/package.json', 'packages/extension-indent/package.json', 'packages/extension-inline-code/package.json', 'packages/extension-placeholder/package.json', 'packages/extension-hyperlink/src/**', 'packages/extension-hypermultimedia/src/**', 'packages/extension-indent/src/**', 'packages/extension-inline-code/src/**', 'packages/extension-placeholder/src/**') }}
           restore-keys: ext-${{ runner.os }}-
 
       - name: 🔧 Build Extensions (required for types)
@@ -111,6 +112,7 @@ jobs:
           bun run --filter @docs.plus/extension-hypermultimedia build
           bun run --filter @docs.plus/extension-indent build
           bun run --filter @docs.plus/extension-inline-code build
+          bun run --filter @docs.plus/extension-placeholder build
 
       - name: 📝 Type Check All
         run: bun run check:types
@@ -189,7 +191,8 @@ jobs:
             packages/extension-hypermultimedia/dist
             packages/extension-indent/dist
             packages/extension-inline-code/dist
-          key: ext-${{ runner.os }}-${{ hashFiles('bun.lock', 'packages/extension-hyperlink/package.json', 'packages/extension-hypermultimedia/package.json', 'packages/extension-indent/package.json', 'packages/extension-inline-code/package.json', 'packages/extension-hyperlink/src/**', 'packages/extension-hypermultimedia/src/**', 'packages/extension-indent/src/**', 'packages/extension-inline-code/src/**') }}
+            packages/extension-placeholder/dist
+          key: ext-${{ runner.os }}-${{ hashFiles('bun.lock', 'packages/extension-hyperlink/package.json', 'packages/extension-hypermultimedia/package.json', 'packages/extension-indent/package.json', 'packages/extension-inline-code/package.json', 'packages/extension-placeholder/package.json', 'packages/extension-hyperlink/src/**', 'packages/extension-hypermultimedia/src/**', 'packages/extension-indent/src/**', 'packages/extension-inline-code/src/**', 'packages/extension-placeholder/src/**') }}
           restore-keys: ext-${{ runner.os }}-
 
       - name: 🔧 Build TipTap Extensions
@@ -199,6 +202,7 @@ jobs:
           bun run --filter @docs.plus/extension-hypermultimedia build
           bun run --filter @docs.plus/extension-indent build
           bun run --filter @docs.plus/extension-inline-code build
+          bun run --filter @docs.plus/extension-placeholder build
 
       - name: 🏗️ Build Webapp
         run: bun run --filter @docs.plus/webapp build:ci

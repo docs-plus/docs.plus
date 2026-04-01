@@ -85,6 +85,7 @@ jobs:
           bun run --filter @docs.plus/extension-hypermultimedia build
           bun run --filter @docs.plus/extension-indent build
           bun run --filter @docs.plus/extension-inline-code build
+          bun run --filter @docs.plus/extension-placeholder build
 
       - name: 📝 Type Check All
         run: bun run check:types
@@ -146,6 +147,7 @@ jobs:
           bun run --filter @docs.plus/extension-hypermultimedia build
           bun run --filter @docs.plus/extension-indent build
           bun run --filter @docs.plus/extension-inline-code build
+          bun run --filter @docs.plus/extension-placeholder build
 
       - name: 🏗️ Build Webapp
         run: bun run --filter @docs.plus/webapp build:ci
