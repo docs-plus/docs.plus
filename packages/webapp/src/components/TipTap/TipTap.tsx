@@ -10,7 +10,7 @@ import {
 } from '@docs.plus/extension-hypermultimedia'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
-import { Placeholder } from '@docs.plus/extension-placeholder'
+import { Placeholder, type PlaceholderRenderProps } from '@docs.plus/extension-placeholder'
 import type { HocuspocusProvider } from '@hocuspocus/provider'
 import { useStore } from '@stores'
 import { authStore } from '@stores'
@@ -219,7 +219,7 @@ const Editor = ({
     // @docs.plus/extension-placeholder uses state.init/apply with cursor-only
     // checks — O(1) for the common typing case. Critical for large collab docs.
     Placeholder.configure({
-      placeholder: ({ node, pos, parentName }) => {
+      placeholder: ({ node, pos, parentName }: PlaceholderRenderProps) => {
         if (node.type.name === 'heading' && pos === 0) return 'Enter document name'
         if (
           node.type.name === 'paragraph' &&
