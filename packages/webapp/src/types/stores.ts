@@ -1,4 +1,4 @@
-export type commentMessageMemory = {
+export type CommentMessageMemory = {
   content: string
   html: string
   text: string
@@ -16,7 +16,7 @@ export type TChannelSettings = {
   isUserChannelAdmin?: boolean
   userPickingEmoji?: boolean
   replyMessageMemory?: any | null
-  commentMessageMemory?: commentMessageMemory | null
+  commentMessageMemory?: CommentMessageMemory | null
   messageDraftMemory?: {
     text: string | null
     html: string | null

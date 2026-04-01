@@ -1,5 +1,5 @@
-import type { LinkMetadata } from '@components/settings/types'
-import { sanitizeMetadata } from '@components/settings/types'
+import type { LinkMetadata } from '@types'
+import { sanitizeMetadata } from '@utils/link-helpers'
 
 /**
  * Fetches and sanitizes Open Graph / metadata for a URL via the

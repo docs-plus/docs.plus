@@ -1,7 +1,7 @@
 import useAddDeviceTypeHtmlClass from '@components/pages/document/hooks/useAddDeviceTypeHtmlClass'
 import { SlugPageLoader } from '@components/skeleton/SlugPageLoader'
 import data from '@emoji-mart/data'
-import { documentServerSideProps } from '@helpers'
+import { documentServerSideProps } from '@utils/documentServerSideProps'
 import { init } from 'emoji-mart'
 import { type GetServerSidePropsContext } from 'next'
 import dynamic from 'next/dynamic'

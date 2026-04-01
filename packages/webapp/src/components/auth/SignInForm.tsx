@@ -3,10 +3,10 @@ import * as toast from '@components/toast'
 import Button from '@components/ui/Button'
 import CloseButton from '@components/ui/CloseButton'
 import TextInput from '@components/ui/TextInput'
-import { useSupabase } from '@hooks/useSupabase'
+import { useAsyncRequest } from '@hooks/useAsyncRequest'
 import { Provider } from '@supabase/supabase-js'
 import { useMutation } from '@tanstack/react-query'
-import { createClient } from '@utils/supabase/component'
+import { supabaseClient } from '@utils/supabase'
 import { useState } from 'react'
 import { FcGoogle } from 'react-icons/fc'
 import { LuMail, LuSparkles } from 'react-icons/lu'
@@ -41,12 +41,11 @@ const SignInForm = ({
   const [btnSubmitText, setBtnSubmitText] = useState('Send magic link')
   const [emailSent, setEmailSent] = useState(false)
 
-  const supabaseClient = createClient()
   const {
     loading: googleLoading,
     request,
     setLoading: setGoogleLoading
-  } = useSupabase(signInWithOAuth, null, false)
+  } = useAsyncRequest(signInWithOAuth, null, false)
 
   const handleOAuthSignIn = async (provider: Provider) => {
     try {

@@ -1,11 +1,10 @@
 import { getUserById } from '@api'
 import { useApi } from '@hooks/useApi'
 import { useAuthStore } from '@stores'
-import { createClient } from '@utils/supabase/component'
+import { supabaseClient } from '@utils/supabase'
 import { useCallback, useEffect, useRef } from 'react'
 
 export const useOnAuthStateChange = () => {
-  const supabaseClient = createClient()
   const setLoading = useAuthStore((state) => state.setLoading)
   const { request: getUserByIdRequest } = useApi(getUserById, null, false)
   const anonymousSignInAttempted = useRef(false)
@@ -40,7 +39,7 @@ export const useOnAuthStateChange = () => {
       console.warn('Anonymous sign-in error:', err)
       setLoading(false)
     }
-  }, [supabaseClient, setLoading])
+  }, [setLoading])
 
   // Handle auth state changes
   useEffect(() => {
@@ -67,7 +66,7 @@ export const useOnAuthStateChange = () => {
       }
       if (/*event === 'SIGNED_IN' ||*/ event === 'INITIAL_SESSION' || event === 'USER_UPDATED') {
         if (!session?.user) {
-          // when user does not login!
+          // User is not logged in
           setLoading(false)
           return
         }
@@ -102,5 +101,5 @@ export const useOnAuthStateChange = () => {
       data.subscription.unsubscribe()
       window.removeEventListener('offline', handleOffline)
     }
-  }, [supabaseClient, signInAnonymously])
+  }, [signInAnonymously])
 }

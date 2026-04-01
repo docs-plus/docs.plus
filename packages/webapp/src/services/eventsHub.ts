@@ -278,15 +278,21 @@ export const eventsHub = (router: NextRouter) => {
    *
    * Selectors updated (by data-heading-id):
    * - .ha-chat-btn[data-heading-id] (editor heading chat, ProseMirror)
-   * - .toc__chat-trigger[data-heading-id] (TOC)
+   *
+   * TOC uses React (useUnreadCount + UnreadBadge); do not set data-unread-count on .toc__chat-trigger.
    *
    * Fallback (inside [data-toc-id] heading):
-   * - .ha-chat-btn, .ha-group
+   * - .ha-chat-btn without data-heading-id (legacy)
    *
    * - [data-notification-badge] (notification bell)
    */
   PubSub.subscribe(UNREAD_SYNC, (msg, data: TUnreadSyncData) => {
     const { channels } = data
+
+    document.querySelectorAll<HTMLElement>(tocChatTriggerSelector).forEach((el) => {
+      delete el.dataset.unreadCount
+      delete el.dataset.countDir
+    })
 
     /**
      * Helper: Update a single element with unread count + animation
@@ -312,19 +318,16 @@ export const eventsHub = (router: NextRouter) => {
       }
     }
 
-    // Strategy 1: Update elements with data-heading-id attribute
-    const directSelectors = [
-      `${headingChatBtnSelector}[data-heading-id]`,
-      `${tocChatTriggerSelector}[data-heading-id]`
-    ]
+    // Strategy 1: ProseMirror heading chat buttons (TOC badges are React-driven)
+    document
+      .querySelectorAll<HTMLElement>(`${headingChatBtnSelector}[data-heading-id]`)
+      .forEach((el) => {
+        const headingId = el.dataset.headingId
+        if (!headingId) return
 
-    document.querySelectorAll<HTMLElement>(directSelectors.join(',')).forEach((el) => {
-      const headingId = el.dataset.headingId
-      if (!headingId) return
-
-      const channel = channels.get(headingId)
-      updateElement(el, channel?.unread_message_count ?? 0)
-    })
+        const channel = channels.get(headingId)
+        updateElement(el, channel?.unread_message_count ?? 0)
+      })
 
     // Strategy 2: Fallback - Update elements near heading with data-toc-id
     channels.forEach((channel, channelId) => {
@@ -333,14 +336,12 @@ export const eventsHub = (router: NextRouter) => {
       const headingEl = document.querySelector<HTMLElement>(`[data-toc-id="${channelId}"]`)
       if (!headingEl) return
 
-      const fallbackSelectors = [`${headingChatBtnSelector}:not([data-heading-id])`, '.ha-group']
-
-      fallbackSelectors.forEach((selector) => {
-        const el = headingEl.querySelector<HTMLElement>(selector)
-        if (el) {
-          updateElement(el, channel.unread_message_count ?? 0)
-        }
-      })
+      const el = headingEl.querySelector<HTMLElement>(
+        `${headingChatBtnSelector}:not([data-heading-id])`
+      )
+      if (el) {
+        updateElement(el, channel.unread_message_count ?? 0)
+      }
     })
 
     // Update notification bell badge

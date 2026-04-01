@@ -1,22 +1,8 @@
-export enum LinkType {
-  Email = 'email',
-  Social = 'social',
-  Simple = 'simple',
-  Phone = 'phone'
-}
+import type { LinkItem, LinkMetadata } from '@types'
+import { LinkType } from '@types'
 
-export interface LinkMetadata {
-  title?: string
-  description?: string
-  icon?: string
-  themeColor?: string
-}
-
-export interface LinkItem {
-  url: string
-  type: LinkType
-  metadata?: LinkMetadata
-}
+export type { LinkItem, LinkMetadata }
+export { LinkType }
 
 // --- Link constants ---
 
@@ -60,20 +46,6 @@ export const extractDomain = (url: string): string | null => {
 }
 
 /**
- * Build the correct href for a link based on its type.
- */
-export const getFormattedHref = (link: LinkItem): string => {
-  switch (link.type) {
-    case LinkType.Email:
-      return link.url.startsWith('mailto:') ? link.url : `mailto:${link.url}`
-    case LinkType.Phone:
-      return link.url.startsWith('tel:') ? link.url : `tel:${link.url}`
-    default:
-      return link.url.startsWith('http') ? link.url : `https://${link.url}`
-  }
-}
-
-/**
  * Validate and classify a user-input string as a link type.
  */
 export const validateLink = (
@@ -102,40 +74,6 @@ export const validateLink = (
   }
 
   return { valid: false, error: 'Invalid URL format!' }
-}
-
-/**
- * Build a Google Favicon Service URL for any domain.
- * Always returns a valid, cached PNG — industry-standard approach
- * used by Notion, Raindrop, Arc, etc.
- * Returns undefined for non-URL types (email/phone) or invalid URLs.
- */
-export const getGoogleFaviconUrl = (url: string, size: 32 | 64 = 32): string | undefined => {
-  try {
-    const withProtocol = url.startsWith('http') ? url : `https://${url}`
-    const { origin } = new URL(withProtocol)
-    return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(origin)}&sz=${size}`
-  } catch {
-    return undefined
-  }
-}
-
-/**
- * Sanitize raw API metadata response into a clean LinkMetadata object.
- * Strips unused fields (socialBanner, socialBannerSize, etc.) and
- * ensures all values are either valid strings or undefined.
- * Falls back icon → favicon for best icon availability.
- */
-export const sanitizeMetadata = (raw: Record<string, unknown>): LinkMetadata => {
-  const str = (val: unknown): string | undefined =>
-    typeof val === 'string' && val.trim() !== '' ? val.trim() : undefined
-
-  return {
-    title: str(raw.title),
-    description: str(raw.description),
-    icon: str(raw.icon) || str(raw.favicon),
-    themeColor: str(raw.themeColor)
-  }
 }
 
 // --- Notification types ---

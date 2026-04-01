@@ -1,5 +1,4 @@
 import createClient from '@utils/supabase/api'
-import type { NextApiHandler as _NextApiHandler } from 'next'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { parse } from 'querystring'
 import { URL } from 'url'
@@ -23,8 +22,6 @@ const isValidPath = (path: string): boolean => {
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   try {
-    // const { searchParams, origin } = new URL(request.url)
-
     if (req.method !== 'GET') {
       res.status(405).appendHeader('Allow', 'GET').end()
       return
@@ -56,22 +53,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (code) {
-      // const supabase = await createClient()
       const supabase = createClient(req, res)
+      const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code)
 
-      const { error, data: _data } = await supabase.auth.exchangeCodeForSession(code)
-
-      if (!error) {
-        // const forwardedHost = req.headers.get('x-forwarded-host') // original origin before load balancer
-        // const isLocalEnv = process.env.NODE_ENV === 'development'
-        // if (isLocalEnv) {
-        //   // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
-        //   return res.redirect(`${origin}${next}`)
-        // } else if (forwardedHost) {
-        //   return res.redirect(`https://${forwardedHost}${next}`)
-        // } else {
-        //   return res.redirect(`${origin}${next}`)
-        // }
+      if (exchangeError) {
+        console.error('Code exchange failed:', exchangeError)
+        const errorUrl = new URL(
+          '/auth/error',
+          `${req.headers['x-forwarded-proto'] || 'http'}://${req.headers.host}`
+        )
+        errorUrl.searchParams.append('error', exchangeError.message)
+        errorUrl.searchParams.append('error_code', exchangeError.status?.toString() || '500')
+        return res.redirect(errorUrl.toString())
       }
     }
 

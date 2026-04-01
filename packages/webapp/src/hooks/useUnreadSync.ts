@@ -9,8 +9,8 @@ import { useEffect } from 'react'
  * Architecture:
  * 1. Subscribes to zustand chat store
  * 2. Publishes UNREAD_SYNC event when channels change
- * 3. Event handler updates DOM attributes
- * 4. CSS handles all visuals and animations
+ * 3. Event handler updates DOM attributes for editor heading buttons + notification bell
+ * 4. TOC unread uses useUnreadCount + UnreadBadge (React); UNREAD_SYNC clears stale attrs on .toc__chat-trigger
  *
  * Performance:
  * - Zero React re-renders for badge elements

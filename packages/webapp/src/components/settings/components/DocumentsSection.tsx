@@ -2,8 +2,7 @@ import { Avatar } from '@components/ui/Avatar'
 import Button from '@components/ui/Button'
 import TextInput from '@components/ui/TextInput'
 import { useQuery } from '@tanstack/react-query'
-import axios from 'axios'
-import { debounce } from 'lodash'
+import debounce from 'lodash/debounce'
 import { useCallback, useState } from 'react'
 import { LuChevronLeft, LuChevronRight, LuFileText, LuSearch } from 'react-icons/lu'
 
@@ -39,12 +38,13 @@ const DocumentsSection = () => {
 
   const fetchDocuments = async ({ queryKey }: { queryKey: (string | number)[] }) => {
     const [, page, search] = queryKey
-    const response = await axios.get(
-      `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents?limit=${ITEMS_PER_PAGE}&offset=${
-        Number(page) * ITEMS_PER_PAGE
-      }${search ? '&title=' + search : ''}`
-    )
-    return response.data.data as DocumentsResponse
+    const url = `${process.env.NEXT_PUBLIC_RESTAPI_URL}/documents?limit=${ITEMS_PER_PAGE}&offset=${
+      Number(page) * ITEMS_PER_PAGE
+    }${search ? '&title=' + search : ''}`
+    const response = await fetch(url)
+    if (!response.ok) throw new Error(`Failed to fetch documents: ${response.status}`)
+    const json = await response.json()
+    return json.data as DocumentsResponse
   }
 
   const { isLoading, isError, data } = useQuery({

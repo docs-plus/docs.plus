@@ -5,7 +5,7 @@
  * Works with the Supabase push_subscriptions table.
  */
 
-import { createClient } from '@utils/supabase/component'
+import { supabaseClient } from '@utils/supabase'
 
 import { getDevicePlatform } from './platform'
 
@@ -88,7 +88,7 @@ function getDeviceId(): string {
 
 /**
  * Detect platform for push subscription.
- * Delegates to the shared platform utility (src/lib/platform.ts).
+ * Delegates to the shared platform utility (src/utils/platform.ts).
  */
 function getPlatform(): 'ios' | 'android' | 'web' {
   return getDevicePlatform()
@@ -352,8 +352,7 @@ export async function unregisterPushSubscription(): Promise<boolean> {
     }
 
     // Remove from Supabase
-    const supabase = createClient()
-    const { data, error } = await supabase.rpc('unregister_push_subscription', {
+    const { data, error } = await supabaseClient.rpc('unregister_push_subscription', {
       p_device_id: getDeviceId()
     })
 
@@ -407,8 +406,7 @@ function clearSubscriptionTimestamp(): void {
 
 /** Save subscription to database (shared by register and refresh) */
 async function saveSubscriptionToDatabase(subscription: PushSubscription): Promise<void> {
-  const supabase = createClient()
-  const { error } = await supabase.rpc('register_push_subscription', {
+  const { error } = await supabaseClient.rpc('register_push_subscription', {
     p_device_id: getDeviceId(),
     p_device_name: getDeviceName(),
     p_platform: getPlatform(),

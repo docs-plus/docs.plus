@@ -1,4 +1,8 @@
-import { PostgrestError, PostgrestResponse, PostgrestSingleResponse } from '@supabase/postgrest-js'
+import type {
+  PostgrestError,
+  PostgrestResponse,
+  PostgrestSingleResponse
+} from '@supabase/supabase-js'
 import { useCallback, useEffect, useState } from 'react'
 
 // Define a generic type for the API function

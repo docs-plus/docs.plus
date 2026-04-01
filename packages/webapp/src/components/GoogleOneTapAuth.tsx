@@ -1,4 +1,4 @@
-import { createClient } from '@utils/supabase/component'
+import { supabaseClient } from '@utils/supabase'
 import type { CredentialResponse, PromptMomentNotification } from 'google-one-tap'
 import { useRouter } from 'next/router'
 import Script from 'next/script'
@@ -21,8 +21,8 @@ const generateNonce = async (): Promise<[string, string]> => {
 const GOOGLE_SCRIPT_LOAD_TIMEOUT_MS = 4000
 const POLL_INTERVAL_MS = 200
 
-const OneTapComponent = () => {
-  const supabase = createClient()
+const GoogleOneTapAuth = () => {
+  const supabase = supabaseClient
   const router = useRouter()
   const isInitialized = useRef(false)
   const nonceRef = useRef<string | null>(null)
@@ -128,4 +128,4 @@ const OneTapComponent = () => {
   )
 }
 
-export default OneTapComponent
+export default GoogleOneTapAuth

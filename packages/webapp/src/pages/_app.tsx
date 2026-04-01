@@ -8,14 +8,12 @@ import { PWAInstallPrompt } from '@components/pwa'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import dynamic from 'next/dynamic'
 import Head from 'next/head'
+import { useState } from 'react'
 import { Toaster } from 'react-hot-toast'
 
 // Dynamically import router-dependent hooks (client-side only)
 // This prevents SSG errors on static pages like 404/500
 const AppProviders = dynamic(() => import('@components/AppProviders'), { ssr: false })
-
-// Create a client
-const queryClient = new QueryClient()
 
 const Header = () => {
   return (
@@ -39,6 +37,7 @@ const Header = () => {
 }
 
 export default function MyApp({ Component, pageProps }: any) {
+  const [queryClient] = useState(() => new QueryClient())
   const isMobileInitial = pageProps.isMobile || false
 
   return (

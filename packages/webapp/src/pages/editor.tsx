@@ -1,7 +1,7 @@
 import Controllers from '@components/pages/editor/Controllers'
 import { createDocumentFromStructure } from '@components/pages/editor/helpers/createDocumentFromStructure'
 import editorConfig from '@components/TipTap/TipTap'
-import EditorToolbar from '@components/TipTap/toolbar/EditorToolbar'
+import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
 import { TocDesktop } from '@components/toc/TocDesktop'
 import { moveHeadingById } from '@components/toc/utils/moveHeading'
 import { useStore } from '@stores'
@@ -90,7 +90,7 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
           <div className="pad tiptap history_editor flex flex-col border-solid">
             <div className="editor relative flex size-full flex-row justify-around align-top">
               <div className="mainWrapper relative flex w-full max-w-full flex-col align-top">
-                <div className="editorWrapper flex h-full grow items-start justify-center overflow-y-auto border-t-0 p-0 sm:py-4">
+                <div className="editorWrapper scrollbar-custom scrollbar-thin bg-base-200 flex h-full grow items-start justify-center overflow-y-auto scroll-smooth border-t-0 px-3 py-4 sm:px-6 sm:py-6">
                   <TiptapEditor className={`tiptap__editor docy_editor relative`} editor={editor} />
                 </div>
               </div>

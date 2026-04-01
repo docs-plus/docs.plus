@@ -1,9 +1,6 @@
 import { markNotificationAsRead } from '@api'
 import { CHAT_OPEN } from '@services/eventsHub'
 import { useStore } from '@stores'
-import PubSub from 'pubsub-js'
-import { useCallback, useEffect, useState } from 'react'
-
 import {
   getPermissionStatus,
   isPushSupported,
@@ -13,10 +10,12 @@ import {
   refreshSubscriptionIfNeeded,
   registerPushSubscription,
   unregisterPushSubscription
-} from '../lib/push-notifications'
+} from '@utils/push-notifications'
+import PubSub from 'pubsub-js'
+import { useCallback, useEffect, useState } from 'react'
 
 export type SubscribeResult = 'success' | 'denied' | 'dismissed' | 'error'
-export type { PushErrorCode } from '../lib/push-notifications'
+export type { PushErrorCode } from '@utils/push-notifications'
 
 // Event for notification state changes (used by notification panel to refresh)
 export const NOTIFICATION_STATE_CHANGED = Symbol('notification.stateChanged')

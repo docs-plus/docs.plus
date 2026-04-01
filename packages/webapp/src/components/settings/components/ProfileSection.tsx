@@ -5,7 +5,7 @@ import Textarea from '@components/ui/Textarea'
 import TextInput from '@components/ui/TextInput'
 import { useAuthStore } from '@stores'
 import type { ProfileData } from '@types'
-import { debounce } from 'lodash'
+import debounce from 'lodash/debounce'
 import { useCallback, useRef, useState } from 'react'
 import { LuCamera, LuLink, LuUser } from 'react-icons/lu'
 

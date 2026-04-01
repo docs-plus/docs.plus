@@ -17,9 +17,9 @@ export const useCatchUserPresences = () => {
   const addChannelMember = useChatStore((state) => state.addChannelMember)
   const channelMembers = useChatStore((state) => state.channelMembers)
 
-  const ananymousSubscription = useRef<RealtimeChannel | null>(null)
+  const anonymousSubscription = useRef<RealtimeChannel | null>(null)
 
-  const channelMemebrs = (payload: any) => {
+  const channelMembersHandler = (payload: any) => {
     if (payload.table === 'channel_members') {
       updateChannelRow(payload.new.channel_id, payload.new)
       if (!channelMembers.has(payload.new.channel_id)) {
@@ -35,7 +35,7 @@ export const useCatchUserPresences = () => {
     if (!navigator.onLine) return
 
     if (!profile) {
-      ananymousSubscription.current = supabaseClient
+      anonymousSubscription.current = supabaseClient
         .channel(`anonymous:${workspaceId}`, {
           config: {
             broadcast: { self: true }
@@ -52,7 +52,9 @@ export const useCatchUserPresences = () => {
           dbChannelMessageCountsListener
         )
         .subscribe()
-      return
+      return () => {
+        anonymousSubscription.current?.unsubscribe()
+      }
     }
 
     const messageSubscription = supabaseClient
@@ -69,7 +71,7 @@ export const useCatchUserPresences = () => {
           table: 'channel_members',
           filter: `member_id=eq.${profile.id}`
         },
-        channelMemebrs
+        channelMembersHandler
       )
       .on(
         'postgres_changes',
@@ -82,7 +84,7 @@ export const useCatchUserPresences = () => {
         dbChannelsListener
       )
       .on('presence', { event: 'join' }, ({ newPresences }) => {
-        // when a new user joins the channel, I need to send the current users status to the new user
+        // When a new user joins the channel, send the current user's status to them
         const usersPresence = useStore.getState().usersPresence
 
         const payload = Array.from(usersPresence.values())
@@ -139,7 +141,7 @@ export const useCatchUserPresences = () => {
         }
 
         // close the anonymous subscription
-        ananymousSubscription.current?.unsubscribe()
+        anonymousSubscription.current?.unsubscribe()
 
         await messageSubscription.track(profile).catch((err) => {
           console.error('Failed to track profile:', err)
@@ -149,16 +151,16 @@ export const useCatchUserPresences = () => {
 
     // Unsubscribe when going offline
     const handleOffline = () => {
-      ananymousSubscription.current?.unsubscribe()
+      anonymousSubscription.current?.unsubscribe()
       messageSubscription?.unsubscribe()
     }
 
     window.addEventListener('offline', handleOffline)
 
     return () => {
-      ananymousSubscription.current?.unsubscribe()
+      anonymousSubscription.current?.unsubscribe()
       messageSubscription?.unsubscribe()
       window.removeEventListener('offline', handleOffline)
     }
-  }, [profile, workspaceId, setOrUpdateUserPresence, supabaseClient, ananymousSubscription.current])
+  }, [profile, workspaceId, setOrUpdateUserPresence])
 }

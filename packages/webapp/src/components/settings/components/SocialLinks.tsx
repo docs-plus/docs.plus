@@ -4,19 +4,13 @@ import Button from '@components/ui/Button'
 import TextInput from '@components/ui/TextInput'
 import { useAuthStore } from '@stores'
 import type { ProfileData } from '@types'
+import { getFormattedHref, getGoogleFaviconUrl } from '@utils/link-helpers'
 import { useCallback, useMemo, useState } from 'react'
 import { LuExternalLink, LuLink, LuMail, LuPhone, LuPlus, LuTrash2 } from 'react-icons/lu'
 
 import { getSocialColor, getSocialIcon, isSocialDomain } from '../constants'
 import type { LinkItem, LinkMetadata } from '../types'
-import {
-  extractDomain,
-  getFormattedHref,
-  getGoogleFaviconUrl,
-  MAX_LINKS,
-  normalizeUrl,
-  validateLink
-} from '../types'
+import { extractDomain, MAX_LINKS, normalizeUrl, validateLink } from '../types'
 
 // --- Pure helper functions ---
 

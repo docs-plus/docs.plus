@@ -1,13 +1,13 @@
 import { getUserProfileForModal } from '@api'
 import { getSocialColor, getSocialIcon } from '@components/settings/constants'
-import type { LinkItem } from '@components/settings/types'
-import { getGoogleFaviconUrl } from '@components/settings/types'
 import { Avatar } from '@components/ui/Avatar'
 import CloseButtonUI from '@components/ui/CloseButton'
 import Loading from '@components/ui/Loading'
-import { useSupabase } from '@hooks/useSupabase'
+import { useAsyncRequest } from '@hooks/useAsyncRequest'
 import { useStore } from '@stores'
 import type { PostgrestError } from '@supabase/supabase-js'
+import type { LinkItem } from '@types'
+import { getGoogleFaviconUrl } from '@utils/link-helpers'
 import { useEffect, useMemo } from 'react'
 import { LuLink, LuMail, LuPhone } from 'react-icons/lu'
 
@@ -136,7 +136,7 @@ export const UserProfileDialog = ({ userId }: UserProfileDialogProps) => {
     request,
     setData,
     error
-  } = useSupabase<UserProfileRecord | null, PostgrestError | null>(
+  } = useAsyncRequest<UserProfileRecord | null, PostgrestError | null>(
     getUserProfileForModal,
     null,
     false

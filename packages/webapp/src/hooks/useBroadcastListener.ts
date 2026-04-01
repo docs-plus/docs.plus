@@ -1,5 +1,5 @@
 import { useChatStore, useStore } from '@stores'
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 
 type TBroadcastPayload = {
   event: 'pinnedMessage'
@@ -8,8 +8,8 @@ type TBroadcastPayload = {
 }
 
 type TTypeIndicator = {
-  event: 'pinnedMessage'
-  type: 'typingIndicator'
+  event: 'typingIndicator'
+  type: 'broadcast'
   payload: {
     activeChannelId: string
     user: any
@@ -26,8 +26,12 @@ export const useBroadcastListener = () => {
   const removeTypingIndicator = useChatStore((state) => state.removeTypingIndicator)
   const updateUserStatus = useStore((state) => state.updateUserStatus)
 
+  const registered = useRef(false)
+
   useEffect(() => {
-    if (!broadcaster) return
+    if (!broadcaster || registered.current) return
+    registered.current = true
+
     broadcaster
       .on('broadcast', { event: 'pinnedMessage' }, ({ payload }: TBroadcastPayload) => {
         const message = payload.message
@@ -43,13 +47,15 @@ export const useBroadcastListener = () => {
         const payload = data.payload
         if (payload.type === 'startTyping') {
           setTypingIndicator(payload.activeChannelId, payload.user)
-          // @ts-ignore
           updateUserStatus(payload.user.id, 'TYPING')
         } else if (payload.type === 'stopTyping') {
           removeTypingIndicator(payload.activeChannelId, payload.user)
-          // @ts-ignore
           updateUserStatus(payload.user.id, 'ONLINE')
         }
       })
+
+    return () => {
+      registered.current = false
+    }
   }, [broadcaster])
 }

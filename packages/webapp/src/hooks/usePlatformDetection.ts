@@ -7,9 +7,8 @@
  * Core detection logic (isIPadDevice, isIOSDevice, getIOSVersion, etc.)
  * lives in `@/lib/platform.ts` — shared with push-notifications.ts.
  */
+import { getDevicePlatform, getIOSVersion, isIOSDevice } from '@utils/platform'
 import { useCallback, useEffect, useState } from 'react'
-
-import { getDevicePlatform, getIOSVersion, isIOSDevice } from '../lib/platform'
 
 export interface PlatformInfo {
   /** Device platform */

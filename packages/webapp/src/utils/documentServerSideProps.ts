@@ -1,9 +1,10 @@
 import { getChannelsByWorkspaceAndUserids, upsertWorkspace } from '@api'
-import { getDeviceInfo } from '@helpers'
 import { fetchDocument } from '@utils/fetchDocument'
 import { logger } from '@utils/logger'
 import { createClient } from '@utils/supabase/server-props'
 import { type GetServerSidePropsContext } from 'next'
+
+import { getDeviceInfo } from './getDeviceInfo'
 
 export async function handleUserSessionForServerProp(
   docMetadata: any,

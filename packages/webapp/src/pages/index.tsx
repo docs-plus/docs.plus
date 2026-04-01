@@ -1,7 +1,7 @@
 import HomePage from '@components/pages/home/HomePage'
+import { getDeviceInfo } from '@utils/getDeviceInfo'
 import { GetServerSidePropsContext } from 'next'
 
-import { getDeviceInfo } from '../lib/helpers'
 import { getHostname } from '../utils'
 
 function Home({ hostname }: { hostname: string }) {
