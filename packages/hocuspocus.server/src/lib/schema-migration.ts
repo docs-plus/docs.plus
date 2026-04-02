@@ -150,6 +150,83 @@ function flattenContentRecursive(content: PMNode[]): PMNode[] {
   return result
 }
 
+/** Block parents whose `content` is block+ in the editor schema. */
+const LEGACY_STRIP_BLOCK_PARENTS = new Set([
+  'doc',
+  'blockquote',
+  'bulletList',
+  'orderedList',
+  'listItem',
+  'taskList',
+  'taskItem',
+  'table',
+  'tableRow',
+  'tableCell',
+  'tableHeader'
+])
+
+/**
+ * Remove legacy wrappers left outside the heading flatten path (orphaned
+ * contentHeading / contentWrapper inside tables, lists, etc.).
+ */
+function stripOrphanLegacyWrappers(doc: PMNode): PMNode {
+  if (!doc.content) return doc
+  return { ...doc, content: stripBlockSegment(doc.content) }
+}
+
+function stripInlineSegment(nodes: PMNode[]): PMNode[] {
+  const out: PMNode[] = []
+  for (const n of nodes) {
+    if (n.type === 'contentHeading') {
+      out.push(...stripInlineSegment(n.content ?? []))
+      continue
+    }
+    if (n.type === 'text' || n.text !== undefined) {
+      out.push(n)
+      continue
+    }
+    if (!n.content) {
+      out.push(n)
+      continue
+    }
+    out.push({ ...n, content: stripInlineSegment(n.content) })
+  }
+  return out
+}
+
+function stripBlockSegment(nodes: PMNode[]): PMNode[] {
+  const out: PMNode[] = []
+  for (const n of nodes) {
+    if (n.type === 'contentWrapper') {
+      out.push(...stripBlockSegment(n.content ?? []))
+      continue
+    }
+    if (n.type === 'contentHeading') {
+      out.push({
+        type: 'paragraph',
+        content: stripInlineSegment(n.content ?? [])
+      })
+      continue
+    }
+    out.push(stripNodeDeep(n))
+  }
+  return out
+}
+
+function stripNodeDeep(n: PMNode): PMNode {
+  if (!n.content) return n
+  if (LEGACY_STRIP_BLOCK_PARENTS.has(n.type)) {
+    return { ...n, content: stripBlockSegment(n.content) }
+  }
+  if (n.type === 'paragraph' || n.type === 'heading') {
+    return { ...n, content: stripInlineSegment(n.content) }
+  }
+  if (n.type === 'codeBlock') {
+    return { ...n, content: stripInlineSegment(n.content) }
+  }
+  return { ...n, content: stripBlockSegment(n.content) }
+}
+
 /**
  * Transform an old nested-schema PM JSON document into the new flat schema.
  * Idempotent: if the doc is already flat, returns it unchanged.
@@ -164,5 +241,10 @@ export function transformNestedToFlat(doc: PMNode): PMNode {
     flatContent.push(...flattenNode(topNode))
   }
 
-  return { ...doc, content: flatContent }
+  let out: PMNode = { ...doc, content: flatContent }
+  if (isOldSchema(out)) {
+    out = stripOrphanLegacyWrappers(out)
+  }
+
+  return out
 }

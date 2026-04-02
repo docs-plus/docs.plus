@@ -291,4 +291,38 @@ describe('transformNestedToFlat', () => {
     const result = transformNestedToFlat(doc)
     expect(result.content![0].attrs!.level).toBe(6)
   })
+
+  it('strips orphaned contentHeading inside tableCell (not under heading)', () => {
+    const doc = {
+      type: 'doc',
+      content: [
+        {
+          type: 'table',
+          content: [
+            {
+              type: 'tableRow',
+              content: [
+                {
+                  type: 'tableCell',
+                  content: [
+                    {
+                      type: 'contentHeading',
+                      content: [{ type: 'text', text: 'Oops' }]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+
+    const result = transformNestedToFlat(doc)
+    expect(isOldSchema(result)).toBe(false)
+    const cell = result.content![0].content![0].content![0]
+    expect(cell.type).toBe('tableCell')
+    expect(cell.content![0].type).toBe('paragraph')
+    expect(cell.content![0].content![0]).toEqual({ type: 'text', text: 'Oops' })
+  })
 })

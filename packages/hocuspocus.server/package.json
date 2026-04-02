@@ -38,6 +38,8 @@
   },
   "dependencies": {
     "@docs.plus/email-templates": "workspace:*",
+    "@docs.plus/extension-hypermultimedia": "workspace:*",
+    "@docs.plus/extension-inline-code": "workspace:*",
     "@hocuspocus/extension-database": "^3.4.4",
     "@hocuspocus/extension-logger": "^3.4.4",
     "@hocuspocus/extension-redis": "^3.4.4",
@@ -53,6 +55,9 @@
     "@tiptap/extension-heading": "^3.20.5",
     "@tiptap/extension-list": "^3.20.4",
     "@tiptap/extension-paragraph": "^3.20.4",
+    "@tiptap/extension-subscript": "^3.20.4",
+    "@tiptap/extension-superscript": "^3.20.4",
+    "@tiptap/extension-table": "^3.20.4",
     "@tiptap/extension-text": "^3.20.4",
     "@tiptap/html": "^3.20.4",
     "@tiptap/pm": "^3.20.4",
