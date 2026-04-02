@@ -1,3 +1,4 @@
+import { TiptapTransformer } from '@hocuspocus/transformer'
 import * as Y from 'yjs'
 import { Database } from '@hocuspocus/extension-database'
 import { Throttle } from '@hocuspocus/extension-throttle'
@@ -10,6 +11,8 @@ import { RedisSubscriberExtension } from '../extensions/redis-subscriber.extensi
 import { DocumentViewsExtension } from '../extensions/document-views.extension'
 import { prisma } from '../lib/prisma'
 import { dbLogger } from '../lib/logger'
+import { isOldSchema, transformNestedToFlat } from '../lib/schema-migration'
+import { migrationExtensions } from '../lib/migration-extensions'
 
 export { Database }
 
@@ -80,6 +83,36 @@ const configureExtensions = () => {
           })
 
           const rawState = doc?.data ?? generateDefaultState()
+
+          // On-load migration: convert old nested schema to flat on first open.
+          // Controlled by ENABLE_SCHEMA_MIGRATION env var — remove after all docs migrated.
+          if (doc?.data && checkEnvBolean(process.env.ENABLE_SCHEMA_MIGRATION)) {
+            try {
+              const ydoc = new Y.Doc()
+              const buffer = rawState instanceof Buffer ? new Uint8Array(rawState) : rawState
+              Y.applyUpdate(ydoc, buffer)
+              const pmJson = TiptapTransformer.fromYdoc(ydoc, 'default') as Record<
+                string,
+                unknown
+              > | null
+
+              if (pmJson && isOldSchema(pmJson as any)) {
+                dbLogger.info({ documentName }, 'On-load schema migration: nested → flat')
+                const flatJson = transformNestedToFlat(pmJson as any)
+                const newYdoc = TiptapTransformer.toYdoc(
+                  flatJson as unknown as Record<string, unknown>,
+                  'default',
+                  migrationExtensions
+                )
+                return Y.encodeStateAsUpdate(newYdoc)
+              }
+            } catch (migrationErr) {
+              dbLogger.warn(
+                { err: migrationErr, documentName },
+                'Schema migration failed, serving original'
+              )
+            }
+          }
 
           return rawState
         } catch (err) {
