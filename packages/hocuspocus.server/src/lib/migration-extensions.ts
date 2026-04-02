@@ -2,12 +2,14 @@
  * Minimal TipTap extension stubs for schema migration.
  *
  * TiptapTransformer.toYdoc() needs a PM schema that knows about every node/mark
- * type present in the document. These stubs cover custom types not in StarterKit.
+ * type present in the document. StarterKit omits task lists — they live in
+ * @tiptap/extension-list (must match the editor: TaskList + nested TaskItem).
  * Remove after all documents are migrated to the flat schema.
  */
 
 import { Mark, Node } from '@tiptap/core'
 import Heading from '@tiptap/extension-heading'
+import { TaskItem, TaskList } from '@tiptap/extension-list'
 import { StarterKit } from '@tiptap/starter-kit'
 
 const MigrationHeading = Heading.extend({
@@ -51,6 +53,8 @@ const Highlight = Mark.create({
 export const migrationExtensions = [
   StarterKit.configure({ heading: false }),
   MigrationHeading,
+  TaskList,
+  TaskItem.configure({ nested: true }),
   ImageNode,
   Hyperlink,
   Highlight
