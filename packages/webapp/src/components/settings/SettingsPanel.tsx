@@ -229,7 +229,7 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
         </div>
 
         {/* Scrollable content area */}
-        <ScrollArea className="flex-1 p-4 sm:p-6" scrollbarSize="thin">
+        <ScrollArea className="min-h-0 flex-1 p-4 sm:p-6" scrollbarSize="thin">
           {/* User info header */}
           <div className="bg-base-200 rounded-box mb-4 flex items-center gap-2.5 p-2.5">
             <Avatar
@@ -360,7 +360,7 @@ const SettingsPanel = ({ defaultTab = 'profile', onClose }: SettingsPanelProps) 
         </div>
 
         {/* Scrollable content */}
-        <ScrollArea orientation="vertical" className="bg-base-200 flex-1">
+        <ScrollArea className="bg-base-200 min-h-0 flex-1" scrollbarSize="thin">
           <div className="mx-auto max-w-2xl p-4 sm:p-6">{renderContent()}</div>
         </ScrollArea>
       </div>

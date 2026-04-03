@@ -43,15 +43,15 @@ export const PatternsSection = () => {
             title="Sidebar + Content Panel"
             code={`<div className="flex h-[100dvh] flex-col md:flex-row md:overflow-hidden">
   {/* Sidebar */}
-  <aside className="w-full shrink-0 border-slate-200 md:w-72 md:border-r lg:w-80">
-    <ScrollArea className="flex-1 p-4">
+  <aside className="flex min-h-0 w-full shrink-0 flex-col border-slate-200 md:w-72 md:border-r lg:w-80">
+    <ScrollArea className="min-h-0 flex-1 p-4" scrollbarSize="thin">
       {/* Navigation */}
     </ScrollArea>
   </aside>
 
   {/* Content */}
-  <main className="min-h-0 flex-1">
-    <ScrollArea className="h-full p-4 sm:p-6">
+  <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+    <ScrollArea className="min-h-0 flex-1 p-4 sm:p-6" scrollbarSize="thin">
       {/* Content */}
     </ScrollArea>
   </main>

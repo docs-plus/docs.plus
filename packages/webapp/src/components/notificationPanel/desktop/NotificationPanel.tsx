@@ -24,7 +24,7 @@ export const NotificationPanel = ({ onClose }: NotificationPanelProps) => {
     useInfiniteNotifications()
 
   return (
-    <div className="bg-base-100 flex w-full flex-col">
+    <div className="bg-base-100 flex min-h-0 w-full flex-col overflow-hidden">
       {/* Header */}
       <div className="border-base-300 border-b px-4 py-3">
         <NotificationHeader onClose={onClose} />

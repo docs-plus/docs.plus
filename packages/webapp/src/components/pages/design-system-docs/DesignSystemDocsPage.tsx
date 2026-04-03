@@ -32,7 +32,7 @@ import { DesignSystemDocsProvider } from './context/DesignSystemDocsContext'
  */
 const MainContent = () => {
   return (
-    <ScrollArea className="flex-1" scrollbarSize="thin">
+    <ScrollArea className="min-h-0 flex-1" scrollbarSize="thin">
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Getting Started */}
         <GettingStartedSection />
@@ -110,7 +110,7 @@ const PageContent = () => {
         <Sidebar />
 
         {/* Main area */}
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {/* Mobile header */}
           <Header />
 

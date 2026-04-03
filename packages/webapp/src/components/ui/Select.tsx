@@ -331,14 +331,14 @@ const Select = ({
       <div
         ref={refs.setFloating}
         style={floatingStyles}
-        className="bg-base-100 border-base-300 rounded-box z-50 flex flex-col overflow-hidden border shadow-lg"
+        className="bg-base-100 border-base-300 rounded-box z-50 flex min-h-0 flex-col overflow-hidden border shadow-lg"
         onKeyDown={handleKeyDown}
         role="listbox"
         aria-activedescendant={
           highlightedIndex >= 0 ? `${id}-option-${highlightedIndex}` : undefined
         }
         {...getFloatingProps()}>
-        <ScrollArea scrollbarSize="thin" preserveWidth={false} className="min-h-0 flex-1">
+        <ScrollArea scrollbarSize="thin" preserveWidth={false} className="min-h-0 min-w-0 flex-1">
           <div ref={listRef} className="py-1">
             {options.map((option, index) => {
               const isSelected = option.value === value

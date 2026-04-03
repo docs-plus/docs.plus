@@ -2,7 +2,7 @@ import { ScrollArea } from '@components/ui/ScrollArea'
 
 const SidebarLoader = () => {
   return (
-    <div className="bg-base-100 border-base-300 flex h-full w-64 flex-col border-l">
+    <div className="bg-base-100 border-base-300 flex h-full min-h-0 w-64 flex-col overflow-hidden border-l">
       {/* Header */}
       <div className="border-base-300 border-b p-4">
         <div className="skeleton h-5 w-36 rounded" />
@@ -10,7 +10,7 @@ const SidebarLoader = () => {
       </div>
 
       {/* Version list */}
-      <ScrollArea className="flex-1" orientation="vertical" scrollbarSize="thin" hideScrollbar>
+      <ScrollArea className="min-h-0 flex-1" scrollbarSize="thin" hideScrollbar>
         {[1, 2, 3].map((day) => (
           <div key={day} className="border-base-200 border-b">
             {/* Day header */}

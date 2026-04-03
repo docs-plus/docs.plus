@@ -191,14 +191,6 @@
   --caret-color-inverse: var(--color-primary-content);
   --border-color-tint: color-mix(in oklch, var(--color-base-content) 14%, transparent);
   --muted-foreground: color-mix(in oklch, var(--color-base-content) 50%, transparent);
-
-  /* Scrollbars — shared by `::-webkit-scrollbar`, `.scrollbar-custom`, ScrollArea, pad `.editorWrapper` */
-  --scrollbar-size: 8px;
-  --scrollbar-size-thin: 6px;
-  --scrollbar-radius: 8px;
-  --scrollbar-thumb: color-mix(in oklch, var(--color-base-content) 42%, transparent);
-  --scrollbar-thumb-hover: color-mix(in oklch, var(--color-base-content) 62%, transparent);
-  --scrollbar-thumb-active: color-mix(in oklch, var(--color-base-content) 82%, transparent);
 }
 
 * {
@@ -576,29 +568,6 @@ html:not(.m_mobile) {
   }
 }
 
-/* Default scrollbars (viewport + any overflow without `.scrollbar-custom`) — same tokens as ScrollArea */
-::-webkit-scrollbar {
-  width: var(--scrollbar-size-thin);
-  height: var(--scrollbar-size-thin);
-}
-
-::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: var(--scrollbar-radius);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: var(--scrollbar-radius);
-  border: 2px solid transparent;
-  background-clip: content-box;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-  background-clip: content-box;
-}
-
 .ProseMirror,
 .msg_card {
   @include proseMirrorBody.editor-prose-shared;
@@ -842,115 +811,6 @@ html:not(.m_mobile) {
 
 .hide-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
-}
-
-/* ============================================
-   Custom ScrollArea Component Styles
-   ============================================ */
-
-/* Base custom scrollbar styles */
-.scrollbar-custom {
-  /* Firefox */
-  scrollbar-width: thin;
-  scrollbar-color: var(--scrollbar-thumb) transparent;
-
-  /* Smooth scrolling */
-  scroll-behavior: smooth;
-  -webkit-overflow-scrolling: touch;
-}
-
-/* WebKit (Chrome, Safari, Edge) custom scrollbar */
-.scrollbar-custom::-webkit-scrollbar {
-  width: var(--scrollbar-size);
-  height: var(--scrollbar-size);
-}
-
-.scrollbar-custom::-webkit-scrollbar-track {
-  background: transparent;
-  border-radius: var(--scrollbar-radius);
-}
-
-.scrollbar-custom::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: var(--scrollbar-radius);
-  border: 2px solid transparent;
-  background-clip: content-box;
-  transition: background 0.2s ease;
-}
-
-.scrollbar-custom::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-  background-clip: content-box;
-}
-
-.scrollbar-custom::-webkit-scrollbar-thumb:active {
-  background: var(--scrollbar-thumb-active);
-  background-clip: content-box;
-}
-
-.scrollbar-custom::-webkit-scrollbar-corner {
-  background: transparent;
-}
-
-/* Thin scrollbar variant */
-.scrollbar-thin {
-  scrollbar-width: thin;
-}
-
-.scrollbar-thin::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-.scrollbar-thin::-webkit-scrollbar-thumb {
-  border: 1px solid transparent;
-}
-
-/* Default scrollbar size */
-.scrollbar-default::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-/* Hide scrollbar by default, show on hover - preserves width */
-.scrollbar-hide {
-  /* Firefox: use transparent color to preserve gutter space */
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-}
-
-.scrollbar-hide::-webkit-scrollbar {
-  /* Keep width consistent - don't set to 0 */
-  width: 6px;
-  height: 6px;
-}
-
-.scrollbar-hide::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.scrollbar-hide::-webkit-scrollbar-thumb {
-  /* Transparent by default - space is preserved */
-  background: transparent;
-  border-radius: 8px;
-  transition: background 0.2s ease;
-}
-
-/* Hover state - reveal the scrollbar */
-.scrollbar-hide:hover {
-  scrollbar-color: var(--scrollbar-thumb) transparent;
-}
-
-.scrollbar-hide:hover::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-  border-radius: var(--scrollbar-radius);
-  border: 1px solid transparent;
-  background-clip: content-box;
-}
-
-.scrollbar-hide:hover::-webkit-scrollbar-thumb:hover {
-  background: var(--scrollbar-thumb-hover);
-  background-clip: content-box;
 }
 
 /* em-emoji-picker (emoji-mart) — border and shadow for separation (same UX as Popover/context menu). */

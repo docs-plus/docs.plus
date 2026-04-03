@@ -70,7 +70,7 @@ export const Sidebar = () => {
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-slate-200 bg-white transition-transform duration-300 lg:static lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex min-h-0 w-72 flex-col border-r border-slate-200 bg-white transition-transform duration-300 lg:static lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
         {/* Header */}
@@ -123,7 +123,7 @@ export const Sidebar = () => {
         </div>
 
         {/* Navigation */}
-        <ScrollArea className="flex-1" scrollbarSize="thin">
+        <ScrollArea className="min-h-0 flex-1" scrollbarSize="thin">
           <nav className="p-4 pt-0">
             {NAV_SECTIONS.map((section) => (
               <div key={section.id} className="mb-4">

@@ -199,7 +199,7 @@ export const SlugPageLoader = ({
       {!isMobile && <ToolbarSkeleton />}
 
       {/* Main content area */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         {/* Table of Contents - desktop only */}
         {!isMobile && (
           <aside className="border-base-300 bg-base-100 hidden w-64 shrink-0 border-r md:block">
@@ -208,7 +208,7 @@ export const SlugPageLoader = ({
         )}
 
         {/* Document content */}
-        <ScrollArea className="bg-base-100 flex-1" orientation="vertical">
+        <ScrollArea className="bg-base-100 min-h-0 flex-1">
           <DocumentSkeleton />
         </ScrollArea>
       </div>

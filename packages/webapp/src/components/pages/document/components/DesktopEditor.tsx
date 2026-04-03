@@ -170,6 +170,7 @@ const DesktopEditor = () => {
             orientation="vertical"
             onMouseDown={handleMouseDown}
             isResizing={isResizing}
+            className="z-[40]"
           />
           <TOC />
         </div>
