@@ -21,13 +21,18 @@ COPY packages/hocuspocus.server ./packages/hocuspocus.server
 COPY packages/admin-dashboard/package.json ./packages/admin-dashboard/
 COPY packages/eslint-config/package.json ./packages/eslint-config/
 COPY packages/extension-hyperlink/package.json ./packages/extension-hyperlink/
-COPY packages/extension-hypermultimedia/package.json ./packages/extension-hypermultimedia/
+# Full source: migration-extensions imports these; package "main" points at dist/ (not in repo).
+COPY packages/extension-hypermultimedia ./packages/extension-hypermultimedia/
 COPY packages/extension-indent/package.json ./packages/extension-indent/
-COPY packages/extension-inline-code/package.json ./packages/extension-inline-code/
+COPY packages/extension-inline-code ./packages/extension-inline-code/
 COPY packages/extension-placeholder/package.json ./packages/extension-placeholder/
 COPY packages/supabase/package.json ./packages/supabase/
 COPY packages/webapp/package.json ./packages/webapp/
 
+# Dev install + build dist/, then prune — production-only install cannot run tsup.
+RUN bun install --frozen-lockfile --ignore-scripts
+RUN bun run --filter @docs.plus/extension-hypermultimedia build \
+  && bun run --filter @docs.plus/extension-inline-code build
 RUN bun install --frozen-lockfile --production --ignore-scripts
 
 # Production runs its own install + generate; no need to generate in base.
