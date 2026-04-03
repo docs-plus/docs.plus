@@ -44,7 +44,6 @@ import ShortUniqueId from 'short-unique-id'
 import { IndexeddbPersistence } from 'y-indexeddb'
 import * as Y from 'yjs'
 
-import { HeadingDrag } from './extensions/heading-drag'
 import { HeadingFilter } from './extensions/heading-filter'
 import { HeadingFold, headingFoldPluginKey } from './extensions/heading-fold'
 import { HeadingScale } from './extensions/heading-scale'
@@ -157,7 +156,6 @@ const Editor = ({
     HeadingFold.configure({
       documentId: docName
     }),
-    HeadingDrag,
     HeadingFilter.configure({
       foldAdapter: {
         getFoldedIds: (state) => {
