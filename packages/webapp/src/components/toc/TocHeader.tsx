@@ -48,7 +48,7 @@ export function TocHeader({ variant }: TocHeaderProps) {
 
   if (variant === 'mobile') {
     return (
-      <div className="border-base-300 bg-base-100 sticky top-0 isolate z-30 border-b">
+      <div className="border-base-300 bg-base-100 isolate z-30 shrink-0 border-b">
         <div className="group relative flex items-center justify-between py-2">
           <span className="text-base-content text-lg font-bold">{docMetadata?.title}</span>
           <button
@@ -76,7 +76,7 @@ export function TocHeader({ variant }: TocHeaderProps) {
   }
 
   return (
-    <div className="border-base-300 bg-base-200 relative sticky top-0 isolate z-30 w-full border-b pt-2 pb-1">
+    <div className="border-base-300 bg-base-200 relative isolate z-30 w-full shrink-0 border-b pt-2 pb-1">
       <div
         className={twMerge(
           `${TOC_CLASSES.headerRow} group hover:bg-base-300/50 flex cursor-pointer items-center justify-between gap-0.5 rounded-md p-1 pr-3 pl-2`,

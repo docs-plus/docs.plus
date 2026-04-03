@@ -32,7 +32,6 @@
 // Main TOC Container
 // ======================
 .tiptap__toc {
-  padding-left: 18px;
   padding-top: 8px;
 
   // List indentation override (daisyui)
@@ -50,9 +49,8 @@
     .toc__chat-trigger,
     .toc-drag-handle,
     .avatar-group,
-    .toc__item--focused > a::after {
+    .toc__item--focused > a::before {
       opacity: 0 !important;
-      pointer-events: none;
     }
 
     .toc__level-badge {
@@ -70,6 +68,10 @@
       }
     }
   }
+}
+
+.toc__list {
+  padding-left: 16px;
 }
 
 // ======================
@@ -124,21 +126,33 @@
     color: var(--color-base-content);
   }
 
-  // Focus sight indicator
-  &.toc__item--focused > a::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -8.5px;
-    width: 4px;
-    height: 100%;
-    background-color: var(--color-docsy);
-    border-radius: 4px;
-    transition: left 0.2s ease-in-out;
-  }
+  // Focus sight — ::before keeps a square rail inside the link (no box-shadow); `border-radius: 0`
+  // on the row avoids Tailwind `rounded` clipping the bar into curves.
+  &.toc__item--focused > a {
+    border-radius: 0;
 
-  &.toc__item--focused:hover > a::after {
-    left: -22px !important;
+    &::before {
+      content: '';
+      position: absolute;
+      left: -8px;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background-color: var(--color-docsy);
+      border-radius: 0;
+      pointer-events: none;
+      transition: left 0.2s ease-in-out;
+      border-radius: 10px;
+    }
+
+    &:hover::before {
+      opacity: 1;
+      left: -21px;
+    }
+
+    transition:
+      background-color 0.2s ease-in-out,
+      color 0.2s ease-in-out;
   }
 
   // Active state
@@ -299,7 +313,7 @@
   position: absolute;
   left: -16px;
   top: -28px; // Position above the TOC item (matches drag overlay position)
-  // Below sticky TocHeader (z-30) so rows don’t paint over the title bar when scrolling
+  // Below TocHeader (z-30) when overlapping; header now sits outside the list scroll area
   z-index: 20;
 }
 

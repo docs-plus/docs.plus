@@ -3,6 +3,7 @@ import { createDocumentFromStructure } from '@components/pages/editor/helpers/cr
 import editorConfig from '@components/TipTap/TipTap'
 import EditorToolbar from '@components/TipTap/toolbar/desktop/EditorToolbar'
 import { TocDesktop } from '@components/toc/TocDesktop'
+import { TocHeader } from '@components/toc/TocHeader'
 import { moveHeadingById } from '@components/toc/utils/moveHeading'
 import { useStore } from '@stores'
 import { Editor, EditorContent as TiptapEditor, useEditor } from '@tiptap/react'
@@ -81,8 +82,11 @@ const EditorPage = ({ localPersistence, docName }: EditorPageProps) => {
       {/* Main content with TOC sidebar */}
       <div className="flex flex-1 overflow-hidden">
         {/* TOC Sidebar */}
-        <aside className="border-base-300 bg-base-100 w-64 shrink-0 overflow-y-auto border-r">
-          <TocDesktop className="p-2" />
+        <aside className="border-base-300 bg-base-100 flex w-64 shrink-0 flex-col overflow-hidden border-r">
+          <TocHeader variant="desktop" />
+          <div className="scrollbar-custom scrollbar-thin min-h-0 flex-1 overflow-y-auto p-2">
+            <TocDesktop />
+          </div>
         </aside>
 
         {/* Editor */}

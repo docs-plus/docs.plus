@@ -2,7 +2,6 @@ import AppendHeadingButton from '@components/pages/document/components/AppendHea
 import React from 'react'
 
 import { useToc, useTocAutoScroll } from './hooks'
-import { TocHeader } from './TocHeader'
 import { TocItemMobile } from './TocItemMobile'
 import { buildNestedToc } from './utils'
 
@@ -26,7 +25,6 @@ export function TocMobile({ className = '', hideAppendButton = false }: TocMobil
 
   return (
     <div className={className}>
-      <TocHeader variant="mobile" />
       <ul className="toc__list menu my-2 p-0">
         {nestedItems.map(({ item, nodes }) => (
           <TocItemMobile key={item.id} item={item} nestedNodes={nodes} onToggle={toggleSection} />

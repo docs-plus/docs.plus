@@ -8,7 +8,6 @@ import React, { useCallback, useRef, useState } from 'react'
 import { DropIndicatorPortal, pointerYCollision, tocDragModifier } from './dnd'
 import { useToc, useTocAutoScroll, useTocDrag } from './hooks'
 import { TocContextMenu } from './TocContextMenu'
-import { TocHeader } from './TocHeader'
 import { TocItemDesktop } from './TocItemDesktop'
 import { buildNestedToc } from './utils'
 
@@ -71,16 +70,11 @@ export function TocDesktop({ className = '' }: TocDesktopProps) {
   const nestedItems = buildNestedToc(items)
 
   if (!items.length) {
-    return (
-      <div className={`${className}`}>
-        <TocHeader variant="desktop" />
-      </div>
-    )
+    return <div className={className} />
   }
 
   return (
-    <div className={`${className}`} ref={contextMenuRef}>
-      <TocHeader variant="desktop" />
+    <div className={className} ref={contextMenuRef}>
       <DndContext
         sensors={sensors}
         collisionDetection={pointerYCollision}

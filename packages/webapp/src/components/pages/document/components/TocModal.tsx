@@ -1,7 +1,8 @@
 import AppendHeadingButton from '@components/pages/document/components/AppendHeadingButton'
-import { TocMobile } from '@components/toc'
+import { TocHeader, TocMobile } from '@components/toc'
 import Button from '@components/ui/Button'
 import { useModal } from '@components/ui/ModalDrawer'
+import { ScrollArea } from '@components/ui/ScrollArea'
 import { DocsPlusIcon } from '@icons'
 import { Icons } from '@icons'
 import { useSheetStore, useStore } from '@stores'
@@ -77,9 +78,12 @@ const TocModal = ({ filterModalRef: _filterModalRef }: TocModalProps) => {
           </div>
         </header>
 
-        {/* Content — scrollable TOC list */}
-        <div className="bg-base-200 flex-1 overflow-y-auto">
-          <TocMobile className="tiptap__toc w-full pb-4 !pl-2" hideAppendButton />
+        {/* Content — doc title outside scroll so list viewport matches scrollIntoView */}
+        <div className="bg-base-200 flex min-h-0 flex-1 flex-col overflow-hidden">
+          <TocHeader variant="mobile" />
+          <ScrollArea className="min-h-0 flex-1" scrollbarSize="thin" hideScrollbar>
+            <TocMobile className="tiptap__toc w-full pb-4 !pl-2" hideAppendButton />
+          </ScrollArea>
         </div>
 
         {/* Sticky footer — add heading button */}

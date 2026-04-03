@@ -1,7 +1,8 @@
 import TableOfContentsLoader from '@components/skeleton/TableOfContentsLoader'
-import { TocDesktop } from '@components/toc'
+import { TocDesktop, TocHeader } from '@components/toc'
 import { ScrollArea } from '@components/ui/ScrollArea'
 import { useStore } from '@stores'
+import { twMerge } from 'tailwind-merge'
 
 const TOC = ({ className = '' }: { className?: string }) => {
   const loading = useStore((state) => state.settings.editor.loading)
@@ -18,12 +19,12 @@ const TOC = ({ className = '' }: { className?: string }) => {
   }
 
   return (
-    <ScrollArea
-      className={`${className} tiptap__toc h-full w-full !pt-0`}
-      orientation="vertical"
-      scrollbarSize="thin">
-      <TocDesktop className="hover:overscroll-contain" />
-    </ScrollArea>
+    <div className={twMerge('tiptap__toc flex h-full min-h-0 w-full flex-col !pt-0', className)}>
+      <TocHeader variant="desktop" />
+      <ScrollArea className="min-h-0 flex-1 !pt-0" scrollbarSize="thin" hideScrollbar>
+        <TocDesktop className="hover:overscroll-contain" />
+      </ScrollArea>
+    </div>
   )
 }
 
