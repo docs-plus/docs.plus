@@ -1,13 +1,16 @@
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
+import { useStore } from '@stores'
 
-import { formatVersionDate } from '../helpers'
+import { HistoryRestoreModal } from '../components/HistoryRestoreModal'
+import { HistoryToolbarVersionBlock } from '../components/HistoryToolbarVersionBlock'
 import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
 import { useVersionRestore } from '../hooks/useVersionRestore'
 
 const Toolbar = () => {
-  const { handleRestore } = useVersionRestore()
-  const versionInfo = useGetVersionInfo()()
+  const activeHistory = useStore((state) => state.activeHistory)
+  const versionInfo = useGetVersionInfo()
+  const { restoreOpen, setRestoreOpen, requestRestore, confirmRestore } = useVersionRestore()
 
   return (
     <div className="docTitle bg-base-100 sticky top-0 left-0 z-10 h-auto w-full">
@@ -25,34 +28,28 @@ const Toolbar = () => {
           />
           <div className="divider divider-horizontal m-0 h-10 p-0" />
 
-          {versionInfo && !versionInfo.isLatestVersion && (
-            <Button
-              variant="primary"
-              onClick={handleRestore}
-              aria-label="Restore this version"
-              tooltip={`Restore document to ${versionInfo.version} version`}
-              tooltipPlacement="bottom">
-              Restore this version
-            </Button>
-          )}
-          {versionInfo && (
-            <div className="text-center text-sm">
-              <span className="font-medium">{formatVersionDate(versionInfo.createdAt).date}</span>
-              <br />
-              <span className="text-base-content/60">
-                {formatVersionDate(versionInfo.createdAt).time}
-              </span>
-            </div>
-          )}
+          <HistoryToolbarVersionBlock
+            variant="mobile"
+            versionInfo={versionInfo}
+            onRequestRestore={requestRestore}
+          />
+
           <div className="divider divider-horizontal m-0 h-10 p-0" />
           <label
             htmlFor="mobile_history_panel"
-            aria-label="close sidebar"
+            aria-label="Open version history"
             className="btn btn-ghost drawer-button shrink-0 px-2">
             <Icons.menu size={30} />
           </label>
         </div>
       </div>
+
+      <HistoryRestoreModal
+        open={restoreOpen}
+        onOpenChange={setRestoreOpen}
+        version={activeHistory?.version}
+        onConfirm={confirmRestore}
+      />
     </div>
   )
 }

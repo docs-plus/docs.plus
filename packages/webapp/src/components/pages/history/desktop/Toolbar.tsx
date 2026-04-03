@@ -2,21 +2,21 @@ import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
-import React from 'react'
 
-import { formatVersionDate } from '../helpers'
+import { HistoryRestoreModal } from '../components/HistoryRestoreModal'
+import { HistoryToolbarVersionBlock } from '../components/HistoryToolbarVersionBlock'
 import { useGetVersionInfo } from '../hooks/useGetVersionInfo'
 import { useVersionRestore } from '../hooks/useVersionRestore'
 
 const Toolbar = () => {
   const activeHistory = useStore((state) => state.activeHistory)
   const historyList = useStore((state) => state.historyList)
-  const { handleRestore } = useVersionRestore()
-  const versionInfo = useGetVersionInfo()()
+  const versionInfo = useGetVersionInfo()
+  const { restoreOpen, setRestoreOpen, requestRestore, confirmRestore } = useVersionRestore()
 
   return (
     <div className="toolbar bg-base-100 border-base-300 flex flex-col border-b">
-      <div className="flex items-center space-x-2 px-6 py-3">
+      <div className="flex items-center gap-2 px-6 py-3">
         <Button
           shape="square"
           onClick={() => (window.location.hash = '')}
@@ -25,32 +25,16 @@ const Toolbar = () => {
           tooltip="Back to the Editor"
           tooltipPlacement="right"
         />
-        <div className="flex w-full items-center space-x-3">
-          <div className="ml-auto">
-            {versionInfo && !versionInfo.isLatestVersion && (
-              <Button
-                variant="primary"
-                className="font-normal"
-                onClick={handleRestore}
-                aria-label="Restore this version"
-                tooltip={`Restore document to ${versionInfo.version} version`}
-                tooltipPlacement="bottom">
-                Restore this version
-              </Button>
-            )}
-          </div>
-          {versionInfo && (
-            <div className="ml-auto text-sm">
-              <span className="font-medium">{formatVersionDate(versionInfo.createdAt).date}</span>
-              <span className="text-base-content/60 ml-2">
-                {formatVersionDate(versionInfo.createdAt).time}
-              </span>
-            </div>
-          )}
+        <div className="flex min-w-0 flex-1 justify-end">
+          <HistoryToolbarVersionBlock
+            variant="desktop"
+            versionInfo={versionInfo}
+            onRequestRestore={requestRestore}
+          />
         </div>
       </div>
 
-      <div className="border-base-300 flex flex-row items-center justify-between space-x-1 border-t px-6">
+      <div className="border-base-300 flex flex-row items-center justify-between gap-1 border-t px-6">
         <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)" aria-label="Print">
           <Icons.print size={16} />
         </ToolbarButton>
@@ -61,6 +45,13 @@ const Toolbar = () => {
           </div>
         )}
       </div>
+
+      <HistoryRestoreModal
+        open={restoreOpen}
+        onOpenChange={setRestoreOpen}
+        version={activeHistory?.version}
+        onConfirm={confirmRestore}
+      />
     </div>
   )
 }

@@ -1,8 +1,10 @@
 import SidebarLoader from '@components/skeleton/SidebarLoader'
 import Button from '@components/ui/Button'
 import { useModal } from '@components/ui/ModalDrawer'
+import { ScrollArea } from '@components/ui/ScrollArea'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
+import type { HistoryItem } from '@types'
 import { useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
@@ -30,10 +32,13 @@ const Sidebar = ({ className }: { className?: string }) => {
 
   return (
     <div
-      className={twMerge('sidebar bg-base-100 border-base-300 h-full w-[25%] border-l', className)}>
-      <div className="flex h-full flex-col">
+      className={twMerge(
+        'sidebar bg-base-100 border-base-300 h-full min-h-0 w-[25%] shrink-0 border-l',
+        className
+      )}>
+      <div className="flex h-full min-h-0 flex-col overflow-hidden">
         {/* Header */}
-        <div className="border-base-300 border-b px-4 py-4">
+        <div className="border-base-300 shrink-0 border-b px-4 py-4">
           <h2 className="text-base-content text-lg font-bold">Version History</h2>
           <p className="text-base-content/60 mt-0.5 text-xs">
             {historyList.length} version{historyList.length !== 1 ? 's' : ''}
@@ -41,7 +46,7 @@ const Sidebar = ({ className }: { className?: string }) => {
         </div>
 
         {/* Version List */}
-        <div className="flex-1 overflow-y-auto">
+        <ScrollArea className="min-h-0 flex-1" scrollbarSize="thin" hideScrollbar>
           {Object.entries(groupedByDay).map(([dayLabel, sessions]) => (
             <DayGroup
               key={dayLabel}
@@ -56,7 +61,7 @@ const Sidebar = ({ className }: { className?: string }) => {
               defaultOpen={dayContainsVersion(sessions, activeHistory.version)}
             />
           ))}
-        </div>
+        </ScrollArea>
       </div>
     </div>
   )
@@ -135,7 +140,6 @@ const SessionItem = ({
   const isActive = sessionContainsVersion(session, activeVersion)
   const isLatestSession = session.isLatest
 
-  // Single version - show directly
   if (!hasMultipleVersions) {
     const version = session.versions[0]
     const isCurrentActive = version.version === activeVersion
@@ -151,51 +155,21 @@ const SessionItem = ({
             ? 'bg-primary/15 hover:bg-base-300'
             : 'hover:bg-base-200 active:bg-base-200'
         )}>
-        {/* Timeline dot */}
         <div className="flex flex-col items-center pt-1">
-          <div
-            className={twMerge(
-              'hover:bg-primary h-2.5 w-2.5 rounded-full transition-colors',
-              isCurrentActive ? 'bg-primary' : 'bg-base-300'
-            )}
-          />
+          <HistoryTimelineDot active={isCurrentActive} dimmedHover className="h-2.5 w-2.5" />
         </div>
-
-        {/* Content */}
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <span
-              className={twMerge(
-                'text-sm font-medium',
-                isCurrentActive ? 'text-primary' : 'text-base-content'
-              )}>
-              {formatTime(version.createdAt)}
-            </span>
-            {isLatest && (
-              <span className="bg-primary text-primary-content rounded-sm px-1.5 py-0.5 text-[10px] font-semibold">
-                Latest
-              </span>
-            )}
-          </div>
-          <p
-            className={twMerge(
-              'mt-0.5 text-xs',
-              isCurrentActive ? 'text-primary/70' : 'text-base-content/50'
-            )}>
-            {formatRelativeTime(version.createdAt)}
-          </p>
-          {version.commitMessage && (
-            <p className="text-base-content/70 mt-1 truncate text-xs">{version.commitMessage}</p>
-          )}
-        </div>
+        <VersionSummary
+          version={version}
+          active={isCurrentActive}
+          showLatest={isLatest}
+          titleClassName="text-sm"
+        />
       </Button>
     )
   }
 
-  // Multiple versions - collapsible session
   return (
     <div className={twMerge('transition-colors', isActive ? 'bg-primary/5' : '')}>
-      {/* Session header */}
       <Button
         onClick={() => setIsExpanded(!isExpanded)}
         variant="ghost"
@@ -203,23 +177,15 @@ const SessionItem = ({
           'flex h-auto w-full cursor-pointer items-start gap-3 rounded-none px-4 py-2 text-left transition-all',
           'hover:bg-base-200/50 active:bg-base-200'
         )}>
-        {/* Timeline dot with count badge */}
         <div className="flex flex-col items-center pt-1">
           <div className="relative">
-            <div
-              className={twMerge(
-                'h-2.5 w-2.5 rounded-full transition-colors',
-                isActive ? 'bg-primary' : 'bg-base-300'
-              )}
-            />
-            {/* Count badge */}
+            <HistoryTimelineDot active={isActive} className="h-2.5 w-2.5" />
             <span className="bg-base-content text-base-100 absolute -top-1.5 -right-1.5 flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold">
               {session.versions.length}
             </span>
           </div>
         </div>
 
-        {/* Content */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span
@@ -229,11 +195,7 @@ const SessionItem = ({
               )}>
               {formatTime(session.startTime)} – {formatTime(session.endTime)}
             </span>
-            {isLatestSession && (
-              <span className="bg-primary text-primary-content rounded-sm px-1.5 py-0.5 text-[10px] font-semibold">
-                Latest
-              </span>
-            )}
+            {isLatestSession && <HistoryLatestBadge />}
           </div>
           <p
             className={twMerge(
@@ -244,7 +206,6 @@ const SessionItem = ({
           </p>
         </div>
 
-        {/* Expand icon */}
         <div className="pt-0.5">
           {isExpanded ? (
             <Icons.chevronUp className="text-base-content/50" size={16} />
@@ -254,7 +215,6 @@ const SessionItem = ({
         </div>
       </Button>
 
-      {/* Expanded versions list */}
       {isExpanded && (
         <div className="border-base-200 ml-[26px] border-l-2 py-1 pl-4">
           {session.versions.map((version) => {
@@ -273,14 +233,7 @@ const SessionItem = ({
                     ? 'bg-primary/15 hover:bg-primary/20'
                     : 'hover:bg-base-200/60 active:bg-base-200'
                 )}>
-                {/* Mini dot */}
-                <div
-                  className={twMerge(
-                    'h-1.5 w-1.5 rounded-full',
-                    isCurrentActive ? 'bg-primary' : 'bg-base-300'
-                  )}
-                />
-
+                <HistoryTimelineDot active={isCurrentActive} className="h-1.5 w-1.5" />
                 <span
                   className={twMerge(
                     'text-xs font-medium',
@@ -288,16 +241,78 @@ const SessionItem = ({
                   )}>
                   {formatTime(version.createdAt)}
                 </span>
-
-                {isLatest && (
-                  <span className="bg-primary text-primary-content rounded-sm px-1 py-0.5 text-[9px] font-semibold">
-                    Latest
-                  </span>
-                )}
+                {isLatest && <HistoryLatestBadge compact />}
               </Button>
             )
           })}
         </div>
+      )}
+    </div>
+  )
+}
+
+function HistoryTimelineDot({
+  active,
+  dimmedHover,
+  className
+}: {
+  active: boolean
+  dimmedHover?: boolean
+  className?: string
+}) {
+  return (
+    <div
+      className={twMerge(
+        'rounded-full transition-colors',
+        active ? 'bg-primary' : 'bg-base-300',
+        !active && dimmedHover && 'hover:bg-primary',
+        className
+      )}
+    />
+  )
+}
+
+function HistoryLatestBadge({ compact }: { compact?: boolean }) {
+  return (
+    <span
+      className={twMerge(
+        'bg-primary text-primary-content rounded-sm font-semibold',
+        compact ? 'px-1 py-0.5 text-[9px]' : 'px-1.5 py-0.5 text-[10px]'
+      )}>
+      Latest
+    </span>
+  )
+}
+
+function VersionSummary({
+  version,
+  active,
+  showLatest,
+  titleClassName
+}: {
+  version: HistoryItem
+  active: boolean
+  showLatest: boolean
+  titleClassName: string
+}) {
+  return (
+    <div className="min-w-0 flex-1">
+      <div className="flex items-center gap-2">
+        <span
+          className={twMerge(
+            titleClassName,
+            'font-medium',
+            active ? 'text-primary' : 'text-base-content'
+          )}>
+          {formatTime(version.createdAt)}
+        </span>
+        {showLatest && <HistoryLatestBadge />}
+      </div>
+      <p className={twMerge('mt-0.5 text-xs', active ? 'text-primary/70' : 'text-base-content/50')}>
+        {formatRelativeTime(version.createdAt)}
+      </p>
+      {version.commitMessage && (
+        <p className="text-base-content/70 mt-1 truncate text-xs">{version.commitMessage}</p>
       )}
     </div>
   )

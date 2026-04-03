@@ -6,11 +6,13 @@ export const useVersionContent = () => {
   const documentId = useStore((state) => state.settings.metadata?.documentId)
 
   const setLoadingHistory = useStore((state) => state.setLoadingHistory)
+  const setPendingWatchVersion = useStore((state) => state.setPendingWatchVersion)
 
   const watchVersionContent = useCallback(
     (version: number) => {
       if (!hocuspocusProvider) return
 
+      setPendingWatchVersion(version)
       setLoadingHistory(true)
 
       hocuspocusProvider.sendStateless(
@@ -22,7 +24,7 @@ export const useVersionContent = () => {
         })
       )
     },
-    [hocuspocusProvider, documentId]
+    [hocuspocusProvider, documentId, setLoadingHistory, setPendingWatchVersion]
   )
 
   return { watchVersionContent }

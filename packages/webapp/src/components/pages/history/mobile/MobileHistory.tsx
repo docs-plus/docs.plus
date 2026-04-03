@@ -11,8 +11,8 @@ import Toolbar from './Toolbar'
 
 const MobileLeftSidePanel = () => {
   return (
-    <ModalDrawer modalId="mobile_history_panel" position="right" width={76}>
-      <Sidebar className="w-[76%]" />
+    <ModalDrawer modalId="mobile_history_panel" position="right">
+      <Sidebar className="bg-base-100 h-full w-full max-w-none border-l-0" />
     </ModalDrawer>
   )
 }
@@ -29,7 +29,7 @@ const MobileHistory = () => {
   useHocuspocusStateless()
 
   return (
-    <div className="pad tiptap history_editor border-base-300 relative flex h-dvh min-h-0 flex-col border-solid">
+    <div className="mobileLayoutRoot pad tiptap history_editor border-base-300 flex min-h-0 w-full flex-col overflow-hidden border-solid">
       <Toolbar />
       <div className="min-h-0 flex-1 overflow-hidden">
         <EditorContent />

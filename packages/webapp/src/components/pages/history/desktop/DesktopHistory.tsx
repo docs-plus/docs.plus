@@ -22,9 +22,9 @@ const DesktopHistory = () => {
   if (!editor) return null
 
   return (
-    <div className="pad tiptap history_editor bg-base-200 flex h-full flex-col">
-      <div className="editor relative flex size-full flex-row justify-around align-top">
-        <div className="mainWrapper relative flex flex-1 flex-col align-top">
+    <div className="pad tiptap history_editor bg-base-200 flex h-full min-h-0 flex-col overflow-hidden">
+      <div className="editor relative flex min-h-0 min-w-0 flex-1 flex-row justify-around align-top">
+        <div className="mainWrapper relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden align-top">
           <Toolbar />
           <EditorContent />
         </div>

@@ -2,12 +2,15 @@ import { useStore } from '@stores'
 import { useEffect } from 'react'
 
 import { useDocumentHistory } from './useDocumentHistory'
+import { useHistoryEditorApplyWhenReady } from './useHistoryEditorApplyWhenReady'
 import { useStatelessMessage } from './useStatelessMessage'
 
 export const useHocuspocusStateless = () => {
   const hocuspocusProvider = useStore((state) => state.settings.hocuspocusProvider)
   const { handleStatelessMessage } = useStatelessMessage()
   const { fetchHistory } = useDocumentHistory()
+
+  useHistoryEditorApplyWhenReady()
 
   useEffect(() => {
     if (!hocuspocusProvider) return

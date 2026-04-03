@@ -25,6 +25,16 @@ export const getContentFromYdocObject = (content: string) => {
   return prosemirrorJson.default
 }
 
+/** Safe for network payloads — returns `null` on bad base64 / corrupt Yjs. */
+export const tryGetProsemirrorFromHistoryYdoc = (content: string | undefined): unknown | null => {
+  if (content == null || content === '') return null
+  try {
+    return getContentFromYdocObject(content)
+  } catch {
+    return null
+  }
+}
+
 /**
  * Format relative time (e.g., "2 min ago", "1 hour ago", "Yesterday")
  */
