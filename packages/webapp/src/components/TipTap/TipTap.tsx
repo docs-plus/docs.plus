@@ -183,8 +183,9 @@ const Editor = ({
     Subscript,
     TextAlign,
     HeadingActionsExtension.configure({
-      hoverChat: true,
-      selectionChat: !isMobile
+      // Read-only (e.g. version history): no heading chat/comment affordances
+      hoverChat: editable,
+      selectionChat: editable && !isMobile
     }),
     HyperlinkWithMarkdown.configure({
       protocols: ['ftp', 'mailto'],

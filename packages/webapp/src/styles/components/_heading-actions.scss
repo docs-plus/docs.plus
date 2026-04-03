@@ -79,10 +79,28 @@ $ha-group-has-unread: '.ha-wrap.has-selection > .ha-group:has(.ha-chat-btn[data-
     flex-shrink: 0;
     min-height: $ha-hit-size;
     padding-left: 0.5rem;
-    // Let clicks pass through the gutter; only interactive children re-enable hits
+    // Wrapper stays inert so clicks on heading text still hit the heading; a ::before bridge
+    // (hover tunnel) re-enables hits only in the gutter so moving to the docked btn doesn’t
+    // fall through to the sheet and kill :hover before pointer reaches .ha-single.
     pointer-events: none;
 
+    // Invisible strip: covers reserved padding + sheet gutter up to the translated button.
+    &:not(.has-selection)::before {
+      content: '';
+      position: absolute;
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+      width: calc(var(--tiptap-inline-pad-end, 1.5rem) + #{$ha-hit-size} * 1.5 + 12px);
+      min-height: $ha-hit-size;
+      height: $ha-hit-size;
+      pointer-events: auto;
+      z-index: 0;
+    }
+
     .ha-single {
+      position: relative;
+      z-index: 1;
       display: inline-flex;
       align-items: center;
       justify-content: center;
@@ -107,6 +125,7 @@ $ha-group-has-unread: '.ha-wrap.has-selection > .ha-group:has(.ha-chat-btn[data-
         flex-direction: column;
         align-items: center;
         position: relative;
+        z-index: 1;
         pointer-events: auto;
 
         .ha-chat-btn {

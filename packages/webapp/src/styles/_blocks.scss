@@ -19,6 +19,7 @@
     .tiptap__editor {
       // Matches EditorContent px-6 / sm:p-8 — drives heading-action straddle offset
       --tiptap-inline-pad-end: 1.5rem;
+      height: max-content;
 
       @media (min-width: 640px) {
         --tiptap-inline-pad-end: 2rem;
@@ -47,6 +48,11 @@
 
 .history_editor {
   .tippy-box {
+    display: none !important;
+  }
+
+  /* Read-only: no heading chat/comment widgets (extension off; belt-and-suspenders for decorations). */
+  .ha-wrap {
     display: none !important;
   }
 

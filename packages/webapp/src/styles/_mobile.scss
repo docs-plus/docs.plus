@@ -267,6 +267,23 @@ html.m_mobile #__next {
       user-select: text !important;
     }
   }
+
+  /* Version history (read-only): match main mobile scroll shell; symmetric horizontal inset (no chat straddle). */
+  .history_editor {
+    .editor.editorWrapper.history-mobile-editor {
+      padding: 12px 16px 28px;
+    }
+
+    .editorWrapper .tiptap__editor.docy_editor {
+      --tiptap-inline-pad-end: 16px;
+      padding-left: 16px;
+      padding-right: 16px;
+    }
+
+    .ProseMirror :is(h1, h2, h3, h4, h5, h6)[data-toc-id] {
+      padding-right: 0 !important;
+    }
+  }
 }
 
 .edit-fab {
