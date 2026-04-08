@@ -1,0 +1,23 @@
+---
+description: Jest and library test tooling — single source of truth at repo root
+alwaysApply: true
+---
+
+# Jest / unit tests (monorepo)
+
+## Source of truth
+
+- **Jest, `babel-jest`, `jest-environment-jsdom`, `@types/jest`, and `@babel/preset-typescript`** (plus shared Babel bits) are **repo-root** `devDependencies` — do **not** duplicate these in workspace packages (`packages/*`) unless there is an exceptional, documented reason.
+- **Library packages** that need Jest use a **local** `jest.config.cjs` next to that package (`roots`, `testMatch`, `transform` / `testEnvironment` as needed). Inline is fine for one package; **extract a shared preset** only when a second package would copy the same block.
+- **Do not** add a per-package `babel.config.cjs` for Jest unless you need package-specific Babel behavior — prefer inline `babel-jest` options in `jest.config.cjs`.
+- **`@docs.plus/webapp`** keeps its own **`jest.config.js`** using **`next/jest`** — that stays app-specific.
+
+## Adding tests in a new library package
+
+1. Add `jest.config.cjs` in the package (self-contained or require a shared preset if you introduced one).
+2. Add `"test": "jest --config jest.config.cjs"` (or equivalent) in that package’s `scripts`.
+3. Do **not** add Jest-related packages to that package’s `devDependencies` — use root only.
+
+## Bun
+
+- **`bun install`** at the repo root installs hoisted dev tools; **`bun test`** is Bun’s **native** runner and is **not** a substitute for Jest where Next/Jest or this config is used — do not conflate them.

@@ -11,7 +11,8 @@ This document is the **single source of truth** for how we install dependencies,
 
 ## Phase 1 — Version policy (no heroics)
 
-- **Own versions at the root** for shared dev tools: ESLint, Prettier, TypeScript, Stylelint, `@typescript-eslint/*`, `lint-staged`, etc.
+- **Own versions at the root** for shared dev tools: ESLint, Prettier, TypeScript, Stylelint, `@typescript-eslint/*`, `lint-staged`, **Jest** (`jest`, `babel-jest`, `jest-environment-jsdom`, `@types/jest`, `@babel/preset-typescript`), etc.
+- **Library Jest:** each package that needs unit tests keeps a **local** `jest.config.cjs` (Jest deps stay at repo root only). Extract a shared preset when two or more packages would otherwise duplicate the same Jest block (see `.cursor/rules/monorepo-jest.mdc`).
 - **Do not bump** those independently in leaf packages unless a package truly needs a different major (rare); prefer one PR that updates root + lockfile and re-runs `bun run check:full`.
 - **Workspace packages** may list `eslint` / `typescript` for editor resolution; keep ranges aligned with root.
 

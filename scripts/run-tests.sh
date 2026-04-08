@@ -32,6 +32,7 @@ NC='\033[0m'
 
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 WEBAPP_DIR="$ROOT_DIR/packages/webapp"
+EXTENSION_INDENT_DIR="$ROOT_DIR/packages/extension-indent"
 REPORT_DIR="$ROOT_DIR/Notes"
 TIMESTAMP="$(date +%Y-%m-%d_%H%M%S)"
 REPORT="$REPORT_DIR/test-results-${TIMESTAMP}.txt"
@@ -108,16 +109,34 @@ if $RUN_UNIT; then
     echo ""
   } >> "$REPORT"
 
+  UNIT_EXIT=0
+
+  cd "$EXTENSION_INDENT_DIR"
+  echo -e "${DIM}  → @docs.plus/extension-indent (Jest)${NC}"
+  if ! bun run test --verbose 2>&1 | tee -a "$REPORT"; then
+    UNIT_EXIT=1
+    echo ""
+    echo -e "${RED}@docs.plus/extension-indent unit tests failed.${NC}"
+  fi
+  echo ""
+
   cd "$WEBAPP_DIR"
+  echo -e "${DIM}  → @docs.plus/webapp (Jest)${NC}"
 
   if bun run test --verbose 2>&1 | tee -a "$REPORT"; then
-    UNIT_EXIT=0
-    echo ""
-    echo -e "${GREEN}Unit tests passed.${NC}"
+    if [ "$UNIT_EXIT" -eq 0 ]; then
+      echo ""
+      echo -e "${GREEN}Unit tests passed.${NC}"
+    fi
   else
-    UNIT_EXIT=$?
+    UNIT_EXIT=1
     echo ""
-    echo -e "${RED}Unit tests failed (exit code: $UNIT_EXIT).${NC}"
+    echo -e "${RED}@docs.plus/webapp unit tests failed.${NC}"
+  fi
+
+  if [ "$UNIT_EXIT" -ne 0 ]; then
+    echo ""
+    echo -e "${RED}One or more unit test suites failed.${NC}"
   fi
 
   {
