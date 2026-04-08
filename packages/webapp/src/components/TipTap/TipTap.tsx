@@ -173,7 +173,12 @@ const Editor = ({
     }),
 
     Indent.configure({
-      indentChars: '\t'
+      indentChars: '\t',
+      allowedIndentContexts: [
+        { textblock: 'paragraph', parent: 'doc' },
+        { textblock: 'paragraph', parent: 'blockquote' },
+        { textblock: 'heading', parent: 'doc' }
+      ]
     }),
     CodeBlockLowlight.configure({
       lowlight

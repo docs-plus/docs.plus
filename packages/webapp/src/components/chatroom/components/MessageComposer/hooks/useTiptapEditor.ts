@@ -81,7 +81,9 @@ export const useTiptapEditor = ({
           }
         }),
         InlineCode,
-        Indent,
+        Indent.configure({
+          indentChars: '\t'
+        }),
         CodeBlockLowlight.configure({
           lowlight
         }),
