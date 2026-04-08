@@ -1,6 +1,6 @@
 {
   "name": "@docs.plus/extension-indent",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "description": "A Tiptap extension for managing text indentation in documents",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -29,6 +29,7 @@
     "build": "NODE_ENV=production bunx tsup",
     "build:dev": "bunx tsup",
     "dev": "bunx tsup --watch",
+    "test": "jest --config jest.config.cjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "update:packages": "bunx npm-check-updates -u"
@@ -53,8 +54,9 @@
   "devDependencies": {
     "@tiptap/core": "^3.20.4",
     "@tiptap/pm": "^3.20.4",
-    "typescript": "^5.9.3",
+    "@tiptap/starter-kit": "^3.20.4",
+    "eslint": "^9.39.3",
     "tsup": "^8.5.1",
-    "eslint": "^9.39.3"
+    "typescript": "^5.9.3"
   }
 }
