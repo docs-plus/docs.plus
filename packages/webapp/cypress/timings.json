@@ -1,66 +1,260 @@
 {
   "durations": [
-    { "spec": "e2e-doc-structure-generator.cy.js", "duration": 20000 },
-    { "spec": "edge-cases/multi-section-edge-cases", "duration": 40000 },
-    { "spec": "user-behavior/editing-flows.cy.js", "duration": 45000 },
-    { "spec": "doc-schema-generator/demo-doc-test-", "duration": 7000 },
-    { "spec": "schema/hn10-validation.cy.js", "duration": 60000 },
-    { "spec": "Formatting/Bold.cy.js", "duration": 16000 },
-    { "spec": "Formatting/ExtendedMarks.cy.js", "duration": 13000 },
-    { "spec": "Formatting/Underline.cy.js", "duration": 15000 },
-    { "spec": "Heading/create-heading-complex-part", "duration": 62000 },
-    { "spec": "Lists/CombinedLists.cy.js", "duration": 44000 },
-    { "spec": "Lists/TaskList.cy.js", "duration": 19000 },
-    { "spec": "copy-paste/internal-copy-paste.cy.j", "duration": 38000 },
-    { "spec": "copy-paste/stack-attach-deep-nestin", "duration": 20000 },
-    { "spec": "copy-paste/undo-redo.cy.js", "duration": 26000 },
-    { "spec": "Heading/Change/selection/heading-pa", "duration": 4000 },
-    { "spec": "Heading/Change/normal-text/heading-", "duration": 3000 },
-    { "spec": "Heading/create-heading-complex.cy.j", "duration": 65000 },
-    { "spec": "Lists/ListClipboardCombinations.cy.", "duration": 47000 },
-    { "spec": "Toc/toc-complex-structure.cy.js", "duration": 12000 },
-    { "spec": "Toc/toc-drag-drop.cy.js", "duration": 103000 },
-    { "spec": "doc-schema-generator/validate-docum", "duration": 142 },
-    { "spec": "Formatting/CombinedFormatting.cy.js", "duration": 55000 },
-    { "spec": "Formatting/Strike.cy.js", "duration": 21000 },
-    { "spec": "keyboard-action-flow/select-all-and", "duration": 46000 },
-    { "spec": "copy-paste/critical-schema-test.cy.", "duration": 20000 },
-    { "spec": "copy-paste/external-paste.cy.js", "duration": 88000 },
-    { "spec": "copy-paste/native-list-clipboard-he", "duration": 291 },
-    { "spec": "copy-paste/node-boundary-paste.cy.j", "duration": 43000 },
-    { "spec": "Heading/KeyboardShortcuts/delete.cy", "duration": 3000 },
-    { "spec": "Heading/Change/selection/heading-se", "duration": 3000 },
-    { "spec": "Heading/Change/normal-text/heading-", "duration": 6000 },
-    { "spec": "Heading/Change/normal-text/heading-", "duration": 4000 },
-    { "spec": "e2e-doc-structure-manually.cy.js", "duration": 18000 },
-    { "spec": "Heading/create-heading-deep-nested-", "duration": 31000 },
-    { "spec": "Heading/create-heading-simple.cy.js", "duration": 48000 },
-    { "spec": "copy-paste/cut-operations.cy.js", "duration": 20000 },
-    { "spec": "copy-paste/schema-validation-paste.", "duration": 73000 },
-    { "spec": "copy-paste/select-all-paste-clipboa", "duration": 120000 },
-    { "spec": "Lists/ListEdgeCases.cy.js", "duration": 41000 },
-    { "spec": "Lists/TaskListAlignment.cy.js", "duration": 12000 },
-    { "spec": "schema/hierarchy-validation-plugin.", "duration": 41000 },
-    { "spec": "doc-schema-generator/e2e-doc-struct", "duration": 4000 },
-    { "spec": "Formatting/Highlight.cy.js", "duration": 23000 },
-    { "spec": "Heading/Change/heading-level-change", "duration": 19000 },
-    { "spec": "Heading/KeyboardShortcuts/enter.cy.", "duration": 5000 },
-    { "spec": "Heading/Change/normal-text/heading-", "duration": 2000 },
-    { "spec": "Heading/Change/selection/heading-se", "duration": 2000 },
-    { "spec": "e2e-heading-change-manually.cy.js", "duration": 27000 },
-    { "spec": "Formatting/Italic.cy.js", "duration": 26000 },
-    { "spec": "Heading/create-heading-deep-nested.", "duration": 27000 },
-    { "spec": "Lists/BulletList.cy.js", "duration": 24000 },
-    { "spec": "Lists/OrderedList.cy.js", "duration": 21000 },
-    { "spec": "doc-schema-generator/sample-documen", "duration": 6000 },
-    { "spec": "edge-cases/bug-fixes-edge-cases.cy.", "duration": 35000 },
-    { "spec": "user-behavior/keyboard-shortcuts.cy", "duration": 17000 },
-    { "spec": "user-behavior/toolbar-shortcut-pari", "duration": 26000 },
-    { "spec": "copy-paste/clipboard-validation.cy.", "duration": 42000 },
-    { "spec": "copy-paste/complex-cut-paste.cy.js", "duration": 20000 },
-    { "spec": "copy-paste/level-adjustment-paste.c", "duration": 45000 },
-    { "spec": "copy-paste/native-external-clipboar", "duration": 4000 },
-    { "spec": "Heading/Change/heading-level-change", "duration": 110000 },
-    { "spec": "Heading/Change/selection/heading-cr", "duration": 5000 }
+    {
+      "spec": "copy-paste/clipboard-validation.cy.",
+      "duration": 42000
+    },
+    {
+      "spec": "copy-paste/complex-cut-paste.cy.js",
+      "duration": 20000
+    },
+    {
+      "spec": "copy-paste/critical-schema-test.cy.",
+      "duration": 20000
+    },
+    {
+      "spec": "copy-paste/cut-operations.cy.js",
+      "duration": 20000
+    },
+    {
+      "spec": "copy-paste/external-paste.cy.js",
+      "duration": 88000
+    },
+    {
+      "spec": "copy-paste/internal-copy-paste.cy.j",
+      "duration": 38000
+    },
+    {
+      "spec": "copy-paste/level-adjustment-paste.c",
+      "duration": 45000
+    },
+    {
+      "spec": "copy-paste/native-external-clipboar",
+      "duration": 4000
+    },
+    {
+      "spec": "copy-paste/native-list-clipboard-he",
+      "duration": 291
+    },
+    {
+      "spec": "copy-paste/node-boundary-paste.cy.j",
+      "duration": 43000
+    },
+    {
+      "spec": "copy-paste/schema-validation-paste.",
+      "duration": 73000
+    },
+    {
+      "spec": "copy-paste/select-all-paste-clipboa",
+      "duration": 120000
+    },
+    {
+      "spec": "copy-paste/stack-attach-deep-nestin",
+      "duration": 20000
+    },
+    {
+      "spec": "copy-paste/undo-redo.cy.js",
+      "duration": 26000
+    },
+    {
+      "spec": "cypress/e2e/editor/keyboard-action-flow/select-all-and-empty-doc.cy.js",
+      "duration": 48402
+    },
+    {
+      "spec": "cypress/e2e/editor/lists/combined-lists.cy.js",
+      "duration": 24714
+    },
+    {
+      "spec": "doc-schema-generator/demo-doc-test-",
+      "duration": 7000
+    },
+    {
+      "spec": "doc-schema-generator/e2e-doc-struct",
+      "duration": 4000
+    },
+    {
+      "spec": "doc-schema-generator/sample-documen",
+      "duration": 6000
+    },
+    {
+      "spec": "doc-schema-generator/validate-docum",
+      "duration": 142
+    },
+    {
+      "spec": "e2e-doc-structure-generator.cy.js",
+      "duration": 20000
+    },
+    {
+      "spec": "e2e-doc-structure-manually.cy.js",
+      "duration": 18000
+    },
+    {
+      "spec": "e2e-heading-change-manually.cy.js",
+      "duration": 27000
+    },
+    {
+      "spec": "edge-cases/bug-fixes-edge-cases.cy.",
+      "duration": 35000
+    },
+    {
+      "spec": "edge-cases/multi-section-edge-cases",
+      "duration": 40000
+    },
+    {
+      "spec": "Formatting/Bold.cy.js",
+      "duration": 16000
+    },
+    {
+      "spec": "Formatting/CombinedFormatting.cy.js",
+      "duration": 55000
+    },
+    {
+      "spec": "Formatting/ExtendedMarks.cy.js",
+      "duration": 13000
+    },
+    {
+      "spec": "Formatting/Highlight.cy.js",
+      "duration": 23000
+    },
+    {
+      "spec": "Formatting/Italic.cy.js",
+      "duration": 26000
+    },
+    {
+      "spec": "Formatting/Strike.cy.js",
+      "duration": 21000
+    },
+    {
+      "spec": "Formatting/Underline.cy.js",
+      "duration": 15000
+    },
+    {
+      "spec": "Heading/Change/heading-level-change",
+      "duration": 19000
+    },
+    {
+      "spec": "Heading/Change/heading-level-change",
+      "duration": 110000
+    },
+    {
+      "spec": "Heading/Change/normal-text/heading-",
+      "duration": 3000
+    },
+    {
+      "spec": "Heading/Change/normal-text/heading-",
+      "duration": 6000
+    },
+    {
+      "spec": "Heading/Change/normal-text/heading-",
+      "duration": 4000
+    },
+    {
+      "spec": "Heading/Change/normal-text/heading-",
+      "duration": 2000
+    },
+    {
+      "spec": "Heading/Change/selection/heading-cr",
+      "duration": 5000
+    },
+    {
+      "spec": "Heading/Change/selection/heading-pa",
+      "duration": 4000
+    },
+    {
+      "spec": "Heading/Change/selection/heading-se",
+      "duration": 3000
+    },
+    {
+      "spec": "Heading/Change/selection/heading-se",
+      "duration": 2000
+    },
+    {
+      "spec": "Heading/create-heading-complex-part",
+      "duration": 62000
+    },
+    {
+      "spec": "Heading/create-heading-complex.cy.j",
+      "duration": 65000
+    },
+    {
+      "spec": "Heading/create-heading-deep-nested-",
+      "duration": 31000
+    },
+    {
+      "spec": "Heading/create-heading-deep-nested.",
+      "duration": 27000
+    },
+    {
+      "spec": "Heading/create-heading-simple.cy.js",
+      "duration": 48000
+    },
+    {
+      "spec": "Heading/KeyboardShortcuts/delete.cy",
+      "duration": 3000
+    },
+    {
+      "spec": "Heading/KeyboardShortcuts/enter.cy.",
+      "duration": 5000
+    },
+    {
+      "spec": "keyboard-action-flow/select-all-and",
+      "duration": 46000
+    },
+    {
+      "spec": "Lists/BulletList.cy.js",
+      "duration": 24000
+    },
+    {
+      "spec": "Lists/CombinedLists.cy.js",
+      "duration": 44000
+    },
+    {
+      "spec": "Lists/ListClipboardCombinations.cy.",
+      "duration": 47000
+    },
+    {
+      "spec": "Lists/ListEdgeCases.cy.js",
+      "duration": 41000
+    },
+    {
+      "spec": "Lists/OrderedList.cy.js",
+      "duration": 21000
+    },
+    {
+      "spec": "Lists/TaskList.cy.js",
+      "duration": 19000
+    },
+    {
+      "spec": "Lists/TaskListAlignment.cy.js",
+      "duration": 12000
+    },
+    {
+      "spec": "schema/hierarchy-validation-plugin.",
+      "duration": 41000
+    },
+    {
+      "spec": "schema/hn10-validation.cy.js",
+      "duration": 60000
+    },
+    {
+      "spec": "Toc/toc-complex-structure.cy.js",
+      "duration": 12000
+    },
+    {
+      "spec": "Toc/toc-drag-drop.cy.js",
+      "duration": 103000
+    },
+    {
+      "spec": "user-behavior/editing-flows.cy.js",
+      "duration": 45000
+    },
+    {
+      "spec": "user-behavior/keyboard-shortcuts.cy",
+      "duration": 17000
+    },
+    {
+      "spec": "user-behavior/toolbar-shortcut-pari",
+      "duration": 26000
+    }
   ]
 }
