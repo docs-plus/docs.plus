@@ -565,6 +565,33 @@ export type Database = {
         }
         Relationships: []
       }
+      email_bounces: {
+        Row: {
+          bounce_type: string
+          created_at: string
+          email: string
+          id: string
+          provider: string | null
+          reason: string | null
+        }
+        Insert: {
+          bounce_type: string
+          created_at?: string
+          email: string
+          id?: string
+          provider?: string | null
+          reason?: string | null
+        }
+        Update: {
+          bounce_type?: string
+          created_at?: string
+          email?: string
+          id?: string
+          provider?: string | null
+          reason?: string | null
+        }
+        Relationships: []
+      }
       email_queue: {
         Row: {
           attempts: number
@@ -1091,6 +1118,52 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      ack_email_message: { Args: { p_msg_id: number }; Returns: boolean }
+      ack_push_message: { Args: { p_msg_id: number }; Returns: boolean }
+      admin_get_document_member_counts: {
+        Args: { p_slugs: string[] }
+        Returns: {
+          member_count: number
+          slug: string
+        }[]
+      }
+      admin_get_failed_push_subs: {
+        Args: { p_limit?: number }
+        Returns: {
+          created_at: string
+          device_name: string
+          failed_count: number
+          id: string
+          is_active: boolean
+          last_error: string
+          last_used_at: string
+          platform: string
+          user_id: string
+          username: string
+        }[]
+      }
+      admin_get_recent_push_activity: {
+        Args: { p_limit?: number }
+        Returns: {
+          created_at: string
+          device_name: string
+          failed_count: number
+          id: string
+          is_active: boolean
+          last_error: string
+          last_used_at: string
+          platform: string
+          user_id: string
+          username: string
+        }[]
+      }
+      admin_get_user_notification_subs: {
+        Args: never
+        Returns: {
+          platforms: string[]
+          user_id: string
+        }[]
+      }
       aggregate_document_view_stats: { Args: never; Returns: Json }
       archive_bookmark: {
         Args: { p_archive?: boolean; p_bookmark_id: number }
@@ -1099,6 +1172,23 @@ export type Database = {
       cleanup_email_queue: { Args: never; Returns: undefined }
       cleanup_old_document_views: { Args: never; Returns: Json }
       cleanup_push_subscriptions: { Args: never; Returns: undefined }
+      compile_digest_emails: { Args: never; Returns: Json }
+      consume_email_queue: {
+        Args: { p_batch_size?: number; p_visibility_timeout?: number }
+        Returns: {
+          enqueued_at: string
+          msg_id: number
+          payload: Json
+        }[]
+      }
+      consume_push_queue: {
+        Args: { p_batch_size?: number; p_visibility_timeout?: number }
+        Returns: {
+          enqueued_at: string
+          msg_id: number
+          payload: Json
+        }[]
+      }
       create_direct_message_channel: {
         Args: { user_id: string; workspace_uid: string }
         Returns: Json
@@ -1112,6 +1202,17 @@ export type Database = {
           p_workspace_id: string
         }
         Returns: undefined
+      }
+      disable_failed_subscriptions: {
+        Args: {
+          p_error_pattern?: string
+          p_min_failures?: number
+          p_subscription_ids?: string[]
+        }
+        Returns: {
+          disabled_count: number
+          subscription_ids: string[]
+        }[]
       }
       enqueue_document_view: {
         Args: {
@@ -1220,11 +1321,72 @@ export type Database = {
           views: number
         }[]
       }
+      get_email_bounces: {
+        Args: { p_bounce_type?: string; p_days?: number; p_limit?: number }
+        Returns: {
+          bounce_id: string
+          bounce_type: string
+          bounced_at: string
+          email: string
+          provider: string
+          reason: string
+          user_id: string
+          username: string
+        }[]
+      }
+      get_email_failure_summary: {
+        Args: never
+        Returns: {
+          affected_users: number
+          error_category: string
+          failure_count: number
+          last_failure_at: string
+          source: string
+        }[]
+      }
       get_email_footer_links: {
         Args: { p_base_url?: string; p_user_id: string }
         Returns: Json
       }
       get_email_notification_stats: { Args: never; Returns: Json }
+      get_failed_push_subscriptions: {
+        Args: { p_limit?: number; p_min_failures?: number }
+        Returns: {
+          created_at: string
+          error_category: string
+          failed_count: number
+          is_active: boolean
+          last_error: string
+          last_failure_at: string
+          platform: string
+          subscription_id: string
+          user_email: string
+          user_id: string
+          username: string
+        }[]
+      }
+      get_ghost_summary_public: {
+        Args: never
+        Returns: {
+          active_count: number
+          never_active_count: number
+          soft_deleted_count: number
+          total_public_users: number
+        }[]
+      }
+      get_inactive_users: {
+        Args: { p_min_age_days?: number }
+        Returns: {
+          age_days: number
+          channel_count: number
+          created_at: string
+          email: string
+          message_count: number
+          online_at: string
+          user_id: string
+          username: string
+        }[]
+      }
       get_message_type_distribution: {
         Args: { p_days?: number }
         Returns: {
@@ -1233,8 +1395,21 @@ export type Database = {
           percentage: number
         }[]
       }
+      get_notification_health: { Args: never; Returns: Json }
       get_notification_reach: { Args: never; Returns: Json }
+      get_push_failure_summary: {
+        Args: never
+        Returns: {
+          affected_users: number
+          error_category: string
+          failure_count: number
+          last_failure_at: string
+          platform: string
+          sample_errors: string[]
+        }[]
+      }
       get_push_notification_stats: { Args: never; Returns: Json }
+      get_push_queue_stats: { Args: never; Returns: Json }
       get_push_subscriptions: {
         Args: never
         Returns: {
@@ -1312,6 +1487,17 @@ export type Database = {
           workspace_slug: string
         }[]
       }
+      get_user_deletion_impact: {
+        Args: { p_user_id: string }
+        Returns: {
+          channel_memberships: number
+          email_queue_items: number
+          has_blocking_messages: boolean
+          message_count: number
+          notifications_received: number
+          push_subscriptions: number
+        }[]
+      }
       get_user_lifecycle_segments: { Args: never; Returns: Json }
       get_workspace_notifications: {
         Args: {
@@ -1338,6 +1524,15 @@ export type Database = {
       process_document_views_queue: { Args: never; Returns: Json }
       process_email_queue: { Args: never; Returns: Json }
       process_unsubscribe: { Args: { p_token: string }; Returns: Json }
+      record_email_bounce: {
+        Args: {
+          p_bounce_type: string
+          p_email: string
+          p_provider?: string
+          p_reason?: string
+        }
+        Returns: string
+      }
       register_push_subscription: {
         Args: {
           p_device_id: string
