@@ -2,6 +2,8 @@
   "compilerOptions": {
     "target": "ES2017",
     "lib": ["dom", "dom.iterable", "esnext"],
+    // Before TS 7: drop ignoreDeprecations and migrate off deprecated baseUrl (https://aka.ms/ts6).
+    "ignoreDeprecations": "6.0",
     "baseUrl": ".",
     "allowJs": true,
     "skipLibCheck": true,
