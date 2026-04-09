@@ -9,7 +9,7 @@
   content: '';
   position: absolute;
   top: 0;
-  left: 0.5px;
+  left: -8px;
   width: 4px;
   height: 100%;
   background-color: var(--color-docsy);
@@ -137,12 +137,12 @@
       left: -8px;
       top: 0;
       bottom: 0;
-      width: 3px;
+      width: 4px;
       background-color: var(--color-docsy);
       border-radius: 0;
       pointer-events: none;
       transition: left 0.2s ease-in-out;
-      border-radius: 10px;
+      border-radius: 4px;
     }
 
     &:hover::before {
