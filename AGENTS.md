@@ -8,7 +8,7 @@
 - TDD for fixes/features; schema-first test design; fix behavior when the spec is wrong — don't weaken tests to match broken behavior
 - Always run `bun run build` after major refactors to verify type-safety before claiming completion
 - Before large migrations, audit all config/doc/rule paths (.cursor/rules, Notes/, AGENTS.md) for stale references to removed concepts
-- Notes/ folder is local-only (.gitignore); never commit local notes or plans; `.cursor/hooks/state/continual-learning.json` is local hook churn — keep out of commits (restore if staged)
+- Notes/ folder is local-only (.gitignore); never commit local notes or plans; `.cursor/hooks/state/continual-learning.json` and `continual-learning-index.json` are local hook churn — keep out of commits (restore if staged)
 - Keep debug/info loggers on editor core paths; don't strip them for "cleanup"
 - Cypress tests: split by concern with README for scope; kebab-case dirs, `it()` not `test()`; consolidate overlapping tests
 - Theme/UI color consistency is first-class — all surfaces (including third-party pickers) must follow design tokens
@@ -19,10 +19,11 @@
 
 - **Bun-only** for install/run (`bun install`, `bun run`, `bunx`); see [docs/engineering/toolchain.md](docs/engineering/toolchain.md) for phases, CI parity, and version policy.
 - **Quality gates:** `bun run check` = lint + Prettier check + typecheck; `bun run check:full` adds Stylelint (used at end of `pre-push`); `bun run check:static` = lint + Prettier + Stylelint (no `tsc`, used in CI lint job).
-- **Shared devtool versions** (ESLint, TypeScript, Prettier, Stylelint, etc.) are owned at the **repo root** — avoid drifting copies in leaf packages.
+- **Shared devtool versions** (ESLint, TypeScript, Prettier, Stylelint, etc.) are owned at the **repo root** — avoid drifting copies in leaf packages; root **`catalog:`** in `package.json` centralizes pins where used — workspaces reference matching deps as **`\"package\": \"catalog:\"`**.
 - **Jest / library unit tests:** `jest`, `babel-jest`, `jest-environment-jsdom`, `@types/jest`, `@babel/preset-typescript` — **repo root `devDependencies` only** (single version pin). Library packages use a **local** `jest.config.cjs` (inline config is fine); no per-package Jest stack in `package.json`. **`@docs.plus/webapp`** keeps **`next/jest`** for the app suite; see `.cursor/rules/monorepo-jest.mdc`.
 - **Tests:** root `test:all` → `scripts/run-tests.sh`; Jest (unit) + Cypress (E2E); parallel via `CYPRESS_PARALLEL` env.
 - **Unit test order:** `run-tests.sh` runs `@docs.plus/extension-indent` Jest (`jest.config.cjs` in that package) then `@docs.plus/webapp` Jest; webapp `test` uses `jest --passWithNoTests` so an empty or temporarily absent app Jest suite does not fail CI/local runs.
+- **Dependency updates:** `npm-check-updates` and per-package `update:packages` scripts are removed; `scripts/reinstall-packages.sh` / `reinstall:all-packages` are gone. Use **`bun update`** from the repo root, or **`bun run update:all-packages`** (`scripts/update-packages.sh`), then **`bun install`** at root if the lockfile or install tree needs healing. Do **not** run **parallel `bun update`** in multiple `packages/*` directories — shared `bun.lock` / hoisted installs can race and fail with **`EEXIST`**.
 - Stay on ESLint 9.x / TypeScript 5.x until a dedicated migration — ESLint 10 and TS 6 have breaking changes.
 
 ## Learned Workspace Facts
