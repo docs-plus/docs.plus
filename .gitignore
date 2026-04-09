@@ -152,6 +152,9 @@ packages/hocuspocus.server/temp/
 .env.development
 
 
+# Cursor — local hook state (machine-specific; do not commit)
+.cursor/hooks/state/
+
 # local Notes and scripts
 Notes/
 
