@@ -61,14 +61,20 @@
 
 // =============================================================================
 // Heading Actions — badge only on .ha-chat-btn (not .ha-group) to avoid duplicates
+// Hit target is size-11 (2.75rem ≈ 44px): keep badge clearly subordinate to the icon.
 // =============================================================================
 .ha-chat-btn[data-unread-count]:not([data-unread-count='']) {
-  @include unread-badge($top: 0, $right: 0, $size: 20px, $font-size: 16px);
+  @include unread-badge($top: -1px, $right: -1px, $size: 18px, $font-size: 13px);
   visibility: visible !important;
 
   &::before {
-    left: 23px;
-    right: auto;
+    left: auto;
+    padding: 0 4px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    // Upper-right of the circle without dominating the 44px hit target
+    top: 1px;
+    right: 1px;
   }
 
   &::after {
