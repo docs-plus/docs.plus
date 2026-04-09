@@ -1,12 +1,45 @@
-import { PostgrestResponse } from '@supabase/supabase-js'
-import { Channel as TChannel } from '@types'
+import type { PostgrestResponse } from '@supabase/supabase-js'
+import type { Channel } from '@types'
 import { supabaseClient } from '@utils/supabase'
 
+type UnreadCountRow = {
+  channel_id: string
+  unread_message_count: number | null
+}
+
+async function fetchUnreadCountsBestEffort(
+  userId: string,
+  channelIds: string[]
+): Promise<UnreadCountRow[] | null> {
+  if (channelIds.length === 0) {
+    return null
+  }
+
+  const [outcome] = await Promise.allSettled([
+    supabaseClient
+      .from('channel_members')
+      .select('channel_id, unread_message_count')
+      .eq('member_id', userId)
+      .in('channel_id', channelIds)
+  ])
+
+  if (outcome.status === 'rejected') {
+    return null
+  }
+
+  const res = outcome.value
+  if (res.error) {
+    return null
+  }
+
+  return res.data ?? null
+}
+
+/** Supabase list responses use `PostgrestResponse<R>` with `data: R[]` (do not pass `R[]` as `R` or you get `R[][]`). */
 export const getChannels = async (
   workspaceId: string,
   userId?: string
-): Promise<PostgrestResponse<any>> => {
-  // Get channels
+): Promise<PostgrestResponse<Channel>> => {
   const channelsQuery = supabaseClient
     .from('channels')
     .select(
@@ -18,9 +51,8 @@ export const getChannels = async (
     .eq('workspace_id', workspaceId)
     .neq('type', 'THREAD')
     .order('last_activity_at', { ascending: false })
-    .returns<TChannel[]>()
+    .returns<Channel[]>()
 
-  // If no userId provided, just return channels without unread counts
   if (!userId) {
     const result = await channelsQuery
     if (result.error) {
@@ -29,67 +61,39 @@ export const getChannels = async (
     return result
   }
 
-  // Run both queries in parallel
-  const [channelsResult, unreadCountsResult] = await Promise.allSettled([
-    channelsQuery,
-    channelsQuery.then((result) => {
-      const channels = result.data || []
+  const channelsResult = await channelsQuery
 
-      if (channels.length === 0) {
-        return {
-          data: [],
-          count: null,
-          status: 200,
-          statusText: 'OK',
-          error: null
-        } as PostgrestResponse<any>
-      }
-
-      return supabaseClient
-        .from('channel_members')
-        .select('channel_id, unread_message_count')
-        .eq('member_id', userId)
-        .in('channel_id', channels.map((c) => c?.id as string).filter(Boolean))
-    })
-  ])
-
-  // Handle errors from channel query
-  if (channelsResult.status === 'rejected') {
-    throw channelsResult.reason
+  if (channelsResult.error) {
+    throw channelsResult.error
   }
 
-  if (channelsResult.value.error) {
-    throw channelsResult.value.error
-  }
+  const channels = channelsResult.data ?? []
 
-  const channels = channelsResult.value.data || []
-
-  // If no channels found, return early
   if (channels.length === 0) {
-    return channelsResult.value
+    return channelsResult
   }
 
-  // Create a map of channel_id to unread_message_count
-  const unreadCountsMap: Record<string, number> = {}
+  const channelIds = channels.map((c) => c?.id).filter((id): id is string => Boolean(id))
+  const unreadRows = await fetchUnreadCountsBestEffort(userId, channelIds)
 
-  if (unreadCountsResult.status === 'fulfilled' && unreadCountsResult.value?.data) {
-    for (const item of unreadCountsResult.value.data) {
-      if (item && item.channel_id) {
-        unreadCountsMap[item.channel_id] = item.unread_message_count || 0
+  const unreadCountsMap: Record<string, number> = {}
+  if (unreadRows) {
+    for (const item of unreadRows) {
+      if (item?.channel_id) {
+        unreadCountsMap[item.channel_id] = item.unread_message_count ?? 0
       }
     }
   }
 
-  // Merge the unread counts into the channels data
   const channelsWithUnreadCounts = channels.map((channel) => {
     if (!channel) return channel
     return {
       ...channel,
-      unread_message_count: channel.id ? unreadCountsMap[channel.id] || 0 : 0
+      unread_message_count: channel.id ? (unreadCountsMap[channel.id] ?? 0) : 0
     }
   })
 
-  return { ...channelsResult.value, data: channelsWithUnreadCounts } as PostgrestResponse<any>
+  return { ...channelsResult, data: channelsWithUnreadCounts }
 }
 
 export const getChannelsWithMessageCounts = async (
@@ -100,7 +104,7 @@ export const getChannelsWithMessageCounts = async (
     .select('*, count:channel_message_counts(message_count)::int')
     .eq('workspace_id', workspaceId)
     .neq('type', 'THREAD')
-    .returns<TChannel[]>()
+    .returns<Channel[]>()
     .throwOnError()
 }
 
@@ -148,7 +152,7 @@ export const getChannelById = async (channelId: string): Promise<PostgrestRespon
     .from('channels')
     .select('*')
     .eq('id', channelId)
-    .returns<TChannel>()
+    .returns<Channel>()
     .single()
     .throwOnError()
 }
