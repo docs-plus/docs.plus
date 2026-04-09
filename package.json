@@ -188,19 +188,5 @@
     "globals": "^17.4.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"
-  },
-  "overrides": {
-    "bn.js": "4.12.3",
-    "dompurify": "3.3.3",
-    "flatted": "3.4.2",
-    "handlebars": "4.7.9",
-    "happy-dom": "20.8.9",
-    "markdown-it": "14.1.1",
-    "picomatch": "4.0.4",
-    "postcss": "8.5.9",
-    "qs": "6.15.1",
-    "rollup": "4.60.1",
-    "undici": "8.0.2",
-    "yaml": "2.8.3"
   }
 }
