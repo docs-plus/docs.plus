@@ -1066,6 +1066,7 @@ export async function deleteGhostAccount(c: AppContext) {
     if (!adminAuth) return c.json({ error: 'Supabase not configured' }, 500)
 
     const userId = c.req.param('id')
+    if (!userId) return c.json({ error: 'Missing user id' }, 400)
 
     const { data: impact } = await adminAuth.rpc('get_user_deletion_impact', { p_user_id: userId })
     const row = Array.isArray(impact) ? impact[0] : impact

@@ -33,6 +33,7 @@ const handleError = (c: AppContext, error: unknown, context: Record<string, unkn
 export const getDocumentBySlug = async (c: AppContext): Promise<Response> => {
   const prisma = c.get('prisma')
   const docName = c.req.param('docName')
+  if (docName === undefined) return c.json({ error: 'Missing document name' }, 400)
 
   try {
     const doc = await documentsService.getDocumentBySlug(prisma, docName)
@@ -90,6 +91,7 @@ export const createDocument = async (c: AppContext): Promise<Response> => {
 export const updateDocument = async (c: AppContext): Promise<Response> => {
   const prisma = c.get('prisma')
   const docId = c.req.param('docId')
+  if (docId === undefined) return c.json({ error: 'Missing document id' }, 400)
   const body = getValidJson<UpdateDocumentMetadataInput>(c)
 
   try {
@@ -102,6 +104,9 @@ export const updateDocument = async (c: AppContext): Promise<Response> => {
 
 export const getMedia = async (c: AppContext): Promise<Response> => {
   const { documentId, mediaId } = c.req.param()
+  if (documentId === undefined || mediaId === undefined) {
+    return c.json({ error: 'Missing document or media id' }, 400)
+  }
 
   try {
     return await mediaService.getMedia(documentId, mediaId, c)
@@ -112,6 +117,7 @@ export const getMedia = async (c: AppContext): Promise<Response> => {
 
 export const uploadMedia = async (c: AppContext): Promise<Response> => {
   const documentId = c.req.param('documentId')
+  if (documentId === undefined) return c.json({ error: 'Missing document id' }, 400)
 
   try {
     const formData = await c.req.formData()

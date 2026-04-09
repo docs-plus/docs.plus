@@ -308,7 +308,9 @@ export async function listDocuments(c: AppContext) {
 export async function updateDocument(c: AppContext) {
   const prisma = c.get('prisma')
   try {
-    const id = parseInt(c.req.param('id'), 10)
+    const idRaw = c.req.param('id')
+    if (idRaw === undefined) return c.json({ error: 'Missing document ID' }, 400)
+    const id = parseInt(idRaw, 10)
     if (isNaN(id)) return c.json({ error: 'Invalid document ID' }, 400)
 
     const body = await c.req.json()
@@ -359,7 +361,9 @@ export async function updateDocument(c: AppContext) {
 export async function getDocumentDeletionImpact(c: AppContext) {
   const prisma = c.get('prisma')
   try {
-    const id = parseInt(c.req.param('id'), 10)
+    const idRaw = c.req.param('id')
+    if (idRaw === undefined) return c.json({ error: 'Missing document ID' }, 400)
+    const id = parseInt(idRaw, 10)
     if (isNaN(id)) return c.json({ error: 'Invalid document ID' }, 400)
 
     const document = await prisma.documentMetadata.findUnique({
@@ -436,7 +440,9 @@ export async function getDocumentDeletionImpact(c: AppContext) {
 export async function deleteDocument(c: AppContext) {
   const prisma = c.get('prisma')
   try {
-    const id = parseInt(c.req.param('id'), 10)
+    const idRaw = c.req.param('id')
+    if (idRaw === undefined) return c.json({ error: 'Missing document ID' }, 400)
+    const id = parseInt(idRaw, 10)
     if (isNaN(id)) return c.json({ error: 'Invalid document ID' }, 400)
 
     const body = await c.req.json().catch(() => ({}))
@@ -520,6 +526,7 @@ export async function toggleAdminRole(c: AppContext) {
     if (!supabase) return c.json({ error: 'Supabase not configured' }, 500)
 
     const userId = c.req.param('id')
+    if (!userId) return c.json({ error: 'Missing user id' }, 400)
     const currentAdminId = c.get('userId')
 
     if (userId === currentAdminId) {
