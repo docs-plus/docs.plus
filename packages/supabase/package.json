@@ -4,7 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "update:packages": "bunx npm-check-updates -u",
     "start": "dotenv -e ../../.env.local -- supabase start",
     "stop": "dotenv -e ../../.env.local -- supabase stop",
     "status": "dotenv -e ../../.env.local -- supabase status",
@@ -16,7 +15,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "dotenv-cli": "^11.0.0",
-    "supabase": "^2.83.0"
+    "dotenv-cli": "catalog:",
+    "supabase": "catalog:"
   }
 }

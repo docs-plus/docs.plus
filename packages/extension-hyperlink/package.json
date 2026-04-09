@@ -30,8 +30,7 @@
     "build:dev": "bunx tsup",
     "dev": "bunx tsup --watch",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "update:packages": "bunx npm-check-updates -u"
+    "lint:fix": "eslint . --fix"
   },
   "files": [
     "dist"
@@ -49,18 +48,18 @@
     "linkifyjs": "^4.3.2"
   },
   "peerDependencies": {
-    "@tiptap/core": "^3.20.4",
-    "@tiptap/pm": "^3.20.4"
+    "@tiptap/core": "catalog:",
+    "@tiptap/pm": "catalog:"
   },
   "devDependencies": {
-    "@tiptap/core": "^3.20.4",
-    "@tiptap/pm": "^3.20.4",
-    "@eslint/js": "^9.39.3",
-    "@typescript-eslint/eslint-plugin": "^8.56.1",
-    "@typescript-eslint/parser": "^8.56.1",
-    "eslint": "^9.39.3",
-    "globals": "^16.5.0",
-    "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "@tiptap/core": "catalog:",
+    "@tiptap/pm": "catalog:",
+    "@eslint/js": "catalog:",
+    "@typescript-eslint/eslint-plugin": "catalog:",
+    "@typescript-eslint/parser": "catalog:",
+    "eslint": "catalog:",
+    "globals": "catalog:",
+    "tsup": "catalog:",
+    "typescript": "catalog:"
   }
 }

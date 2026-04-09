@@ -30,8 +30,7 @@
     "build:dev": "bunx tsup",
     "dev": "bunx tsup --watch",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix",
-    "update:packages": "bunx npm-check-updates -u"
+    "lint:fix": "eslint . --fix"
   },
   "files": [
     "dist"
@@ -44,14 +43,14 @@
     "docs.plus"
   ],
   "peerDependencies": {
-    "@tiptap/core": "^3.20.4",
-    "@tiptap/pm": "^3.20.4"
+    "@tiptap/core": "catalog:",
+    "@tiptap/pm": "catalog:"
   },
   "devDependencies": {
-    "@tiptap/core": "^3.20.4",
-    "@tiptap/pm": "^3.20.4",
-    "typescript": "^5.9.3",
-    "tsup": "^8.5.1",
-    "eslint": "^9.39.3"
+    "@tiptap/core": "catalog:",
+    "@tiptap/pm": "catalog:",
+    "typescript": "catalog:",
+    "tsup": "catalog:",
+    "eslint": "catalog:"
   }
 }
