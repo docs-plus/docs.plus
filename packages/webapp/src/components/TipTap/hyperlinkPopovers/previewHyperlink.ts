@@ -1,3 +1,4 @@
+import { parseHistoryHash } from '@components/pages/history/historyShareUrl'
 import {
   Copy,
   copyToClipboard,
@@ -13,6 +14,7 @@ import { APPLY_FILTER, CHAT_OPEN } from '@services/eventsHub'
 import { Editor } from '@tiptap/core'
 import { EditorView } from '@tiptap/pm/view'
 import { scrollToHeading } from '@utils/index'
+import Router from 'next/router'
 import PubSub from 'pubsub-js'
 
 import * as Icons from './iconList'
@@ -51,54 +53,65 @@ interface ErrorResponse {
 
 type ApiResponse = MetadataResponse | ErrorResponse
 
-const hrefEventHandller = (href: string) => (event: MouseEvent) => {
-  event.preventDefault()
-  const newUrl = new URL(href)
-  const slugs = location.pathname.split('/').slice(1)
+const hrefEventHandler =
+  (href: string) =>
+  (event: MouseEvent): void => {
+    event.preventDefault()
+    const newUrl = new URL(href)
+    const slugs = location.pathname.split('/').slice(1)
 
-  const headingId = newUrl.searchParams.get('id')
-  const isSameDoc = newUrl.pathname.startsWith(`/${slugs[0]}`)
-  const newUrlSlugs = newUrl.pathname.split('/').slice(1)
-  const chatroomId = newUrl.searchParams.get('chatroom')
-  const act = newUrl.searchParams.get('act')
-  const messageId = newUrl.searchParams.get('m_id')
-  const channelId = newUrl.searchParams.get('c_id')
+    const headingId = newUrl.searchParams.get('id')
+    const isSameDoc = newUrl.pathname.startsWith(`/${slugs[0]}`)
+    const newUrlSlugs = newUrl.pathname.split('/').slice(1)
+    const chatroomId = newUrl.searchParams.get('chatroom')
+    const act = newUrl.searchParams.get('act')
+    const messageId = newUrl.searchParams.get('m_id')
+    const channelId = newUrl.searchParams.get('c_id')
 
-  // if the new url belong to the current document
-  if (isSameDoc) {
-    // if there are more than one slug, it means it is a filter, so apply filter
-    if (newUrlSlugs.length > 1) {
-      hideCurrentToolbar()
-      // drop the first slug, which is the document name (e.g. /doc-name/slug1/slug2)
-      PubSub.publish(APPLY_FILTER, { slugs: newUrlSlugs.slice(1), href })
-      return true
+    // if the new url belongs to the current document
+    if (isSameDoc) {
+      // revision history deep link (#history / #history?version=) — update URL only; layout handles view
+      if (parseHistoryHash(newUrl.hash).isHistory) {
+        hideCurrentToolbar()
+        const target = `${newUrl.pathname}${newUrl.search}${newUrl.hash}`
+        void Router.push(target, undefined, { shallow: true })
+        return
+      }
+
+      // if there is more than one slug, it is a filter — apply filter
+      if (newUrlSlugs.length > 1) {
+        hideCurrentToolbar()
+        // drop the first slug, which is the document name (e.g. /doc-name/slug1/slug2)
+        PubSub.publish(APPLY_FILTER, { slugs: newUrlSlugs.slice(1), href })
+        return
+      }
+
+      // if it is a chatroom, open chatroom
+      if (chatroomId) {
+        PubSub.publish(CHAT_OPEN, { headingId: chatroomId, scroll2Heading: true })
+        return
+      }
+
+      // otherwise, scroll to heading
+      if (headingId) {
+        scrollToHeading(headingId)
+        return
+      }
+
+      if (act === 'ch' && messageId && channelId) {
+        hideCurrentToolbar()
+
+        PubSub.publish(CHAT_OPEN, {
+          headingId: channelId,
+          scroll2Heading: true,
+          fetchMsgsFromId: messageId
+        })
+        return
+      }
     }
 
-    // if it is a chatroom, open chatroom
-    if (chatroomId) {
-      PubSub.publish(CHAT_OPEN, { headingId: chatroomId, scroll2Heading: true })
-      return true
-    }
-
-    // otherwise, scroll to heading
-    if (headingId) {
-      return scrollToHeading(headingId)
-    }
-
-    if (act === 'ch' && messageId && channelId) {
-      hideCurrentToolbar()
-
-      PubSub.publish(CHAT_OPEN, {
-        headingId: channelId,
-        scroll2Heading: true,
-        fetchMsgsFromId: messageId
-      })
-      return true
-    }
+    window.open(href, '_blank')
   }
-
-  return window.open(href, '_blank')
-}
 
 // Create SVG icon element
 const createSvgIcon = (iconName: string, className: string = ''): HTMLElement => {
@@ -145,7 +158,7 @@ const createMetadataContent = (data: MetadataResponse | null, href: string): HTM
     className: 'metadata-title'
   }) as HTMLAnchorElement
 
-  titleLink.addEventListener('click', hrefEventHandller(href))
+  titleLink.addEventListener('click', hrefEventHandler(href))
 
   container.append(titleLink)
 
