@@ -29,6 +29,7 @@ import { Markdown } from '@tiptap/markdown'
 import { UseEditorOptions } from '@tiptap/react'
 import StarterKit from '@tiptap/starter-kit'
 import { TIPTAP_NODES, type Transaction } from '@types'
+import { scrollElementInMobilePadEditor } from '@utils/scrollMobilePadEditor'
 import bash from 'highlight.js/lib/languages/bash'
 import css from 'highlight.js/lib/languages/css'
 import js from 'highlight.js/lib/languages/javascript'
@@ -83,7 +84,11 @@ const scrollDown = () => {
 
   if (!id) return
   setTimeout(() => {
-    document.querySelector(`[data-toc-id="${id}"]`)?.scrollIntoView(true)
+    const el = document.querySelector(`[data-toc-id="${id}"]`)
+    if (!el) return
+    if (!scrollElementInMobilePadEditor(el, { block: 'nearest', behavior: 'auto' })) {
+      el.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'auto' })
+    }
   }, 200)
 }
 

@@ -1,6 +1,7 @@
 import { CHAT_OPEN } from '@services/eventsHub'
 import type { Editor } from '@tiptap/react'
 import { TIPTAP_NODES } from '@types'
+import { scrollElementInMobilePadEditor } from '@utils/scrollMobilePadEditor'
 import PubSub from 'pubsub-js'
 import slugify from 'slugify'
 
@@ -38,7 +39,9 @@ export function scrollToHeading(
     window.history.replaceState({}, '', url)
   }
 
-  targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  if (!scrollElementInMobilePadEditor(targetHeading, { behavior: 'smooth', block: 'start' })) {
+    targetHeading.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   if (openChatRoom) {
     PubSub.publish(CHAT_OPEN, { headingId })
@@ -52,7 +55,13 @@ export function scrollToDocTitle(options: {
 }) {
   const { workspaceId, title, openChatRoom = false } = options
 
-  document.querySelector('.tiptap__editor.docy_editor h1')?.scrollIntoView({ behavior: 'smooth' })
+  const docTitleHeading = document.querySelector('.tiptap__editor.docy_editor h1')
+  if (
+    docTitleHeading &&
+    !scrollElementInMobilePadEditor(docTitleHeading, { behavior: 'smooth', block: 'start' })
+  ) {
+    docTitleHeading.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }
 
   if (!workspaceId) return
 

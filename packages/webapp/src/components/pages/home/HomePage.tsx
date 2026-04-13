@@ -41,7 +41,6 @@ const HomePage = ({ hostname }: HomePageProps) => {
   const router = useRouter()
   const user = useAuthStore((state) => state.profile)
   const isAuthServiceAvailable = useStore((state) => state.settings.isAuthServiceAvailable)
-  const keyboardHeight = useStore((state) => state.keyboardHeight)
 
   const [documentName, setDocumentName] = useState('')
   const [isLoading, setIsLoading] = useState(false)
@@ -86,7 +85,7 @@ const HomePage = ({ hostname }: HomePageProps) => {
 
       <div
         className="bg-base-200 flex flex-col"
-        style={{ minHeight: keyboardHeight > 0 ? `calc(100dvh - ${keyboardHeight}px)` : '100dvh' }}>
+        style={{ minHeight: 'var(--visual-viewport-height, 100dvh)' }}>
         {/* Header */}
         <header className="flex shrink-0 items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
           <div className="flex items-center gap-2">

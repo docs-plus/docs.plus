@@ -2,6 +2,11 @@ type Props = {
   children: React.ReactNode
 }
 
+/**
+ * Chat composer shell on mobile. Document pad uses `--visual-viewport-height` + `syncVisualViewportToCssVars`
+ * for keyboard-safe layout; this wrapper stays a pass-through. Older experiments toggled sheet height from
+ * `isKeyboardOpen` — left commented to avoid fighting `react-modal-sheet` + global mobile shell CSS.
+ */
 // const SHEET_STYLES = {
 //   keyboardOpen: {
 //     height: '100%',

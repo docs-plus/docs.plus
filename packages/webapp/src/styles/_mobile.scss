@@ -26,15 +26,16 @@ html.m_mobile #__next {
 }
 
 .m_mobile {
-  // Main mobile layout container
-  // CRITICAL: Do NOT use offsetTop - it causes feedback loops with iOS Safari auto-scroll
-  // Height is updated immediately via rAF in _app.tsx
+  // Main mobile layout container — box matches `window.visualViewport` (size + offset).
+  // Offsets are set in AppProviders / focus resync; without them, fixed `top:0` drifts when
+  // Safari reports `visualViewport.offsetTop` > 0 (keyboard + layout scroll; see debug logs).
   .mobileLayoutRoot {
     position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    // Height tracks visual viewport - updated via JS on resize
+    top: var(--visual-viewport-offset-top, 0px);
+    left: var(--visual-viewport-offset-left, 0px);
+    width: var(--visual-viewport-width, 100%);
+    right: auto;
+    // Height tracks visual viewport - updated via JS on resize/scroll
     // Fallback to 100dvh (dynamic viewport height that adjusts for browser chrome)
     height: var(--visual-viewport-height, 100dvh);
     display: flex;
@@ -42,17 +43,22 @@ html.m_mobile #__next {
     overflow: hidden;
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
-    // No transition - immediate updates feel more native on iOS
-    will-change: height;
-    contain: layout style;
+    // Avoid `contain` / `will-change` here — on iOS they can interact badly with nested
+    // scroll + fixed html/body (caret painted in wrong place, phantom layout gaps).
 
-    // Header - fixed size, no shrink
-    > .sticky:first-child {
-      flex-shrink: 0;
-      position: relative;
+    // Middle column: header + drawer + editor. flex-1 + min-h-0 so the editor is the only
+    // scroll surface; footer is a sibling row (no mt-auto) — avoids WebKit leaving ~60px dead
+    // space below the toolbar when flex-1 + mt-auto both apply on long documents.
+    .mobileLayoutMain {
+      flex: 1 1 0;
+      min-height: 0;
+      min-width: 0;
     }
 
-    // Footer toolbar - fixed size, no shrink
+    .mobilePadTitleShell {
+      flex-shrink: 0;
+    }
+
     > .mobileToolbarBottom {
       flex-shrink: 0;
       position: relative;
@@ -92,8 +98,9 @@ html.m_mobile #__next {
     overflow-x: hidden;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
-    // GPU layer for smooth scrolling
-    transform: translateZ(0);
+    // Do NOT use translateZ(0) / promotion hacks here — iOS Safari often draws the
+    // contenteditable caret at the wrong screen position when the scroll container is
+    // on its own compositor layer under fixed-position html/body.
     // Inset document from screen edges (mobile has no `.pad` wrapper unlike desktop).
     // Right padding 0 so heading chat tabs can sit flush to the window; prose gets end inset via `--tiptap-inline-pad-end`.
     padding: 12px 0 20px 16px;

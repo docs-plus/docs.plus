@@ -1,26 +1,42 @@
 import Button from '@components/ui/Button'
-import { useCaretPosition, useEnableEditor } from '@hooks/useCaretPosition'
+import { useEnableEditor } from '@hooks/useCaretPosition'
 import { Icons } from '@icons'
-import React, { useCallback } from 'react'
+import React, { useCallback, useRef } from 'react'
 
 /**
- * Floating Action Button for entering edit mode.
- * Places caret at optimal viewport position and opens keyboard.
+ * Same `enableAndFocus()` as double-tap on the editor. On iOS, `click` on a `fixed`
+ * control races focus vs the delayed synthetic click — mirror the editor’s `touchEnd`
+ * path and suppress the follow-up `click`.
  */
 const EditFAB = () => {
-  const { isKeyboardOpen, getTargetCaretPos } = useCaretPosition()
-  const { enableAndFocusAt } = useEnableEditor()
+  const { isKeyboardOpen, enableAndFocus } = useEnableEditor()
+  const suppressClickRef = useRef(false)
 
-  const handleClick = useCallback(() => {
-    const targetPos = getTargetCaretPos()
-    enableAndFocusAt(targetPos)
-  }, [getTargetCaretPos, enableAndFocusAt])
+  const activate = useCallback(() => {
+    enableAndFocus()
+  }, [enableAndFocus])
 
   if (isKeyboardOpen) return null
 
   return (
     <Button
-      onClick={handleClick}
+      type="button"
+      onTouchEnd={(e) => {
+        e.preventDefault()
+        e.stopPropagation()
+        suppressClickRef.current = true
+        window.setTimeout(() => {
+          suppressClickRef.current = false
+        }, 450)
+        activate()
+      }}
+      onClick={(e) => {
+        if (suppressClickRef.current) {
+          e.preventDefault()
+          return
+        }
+        activate()
+      }}
       variant="primary"
       shape="circle"
       className="edit-fab fixed right-6 bottom-8 z-20 size-16"

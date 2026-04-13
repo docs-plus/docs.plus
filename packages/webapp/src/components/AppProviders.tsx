@@ -14,6 +14,7 @@ import { useOnAuthStateChange } from '@hooks/useOnAuthStateChange'
 import useServiceWorker from '@hooks/useServiceWorker'
 import { eventsHub } from '@services/eventsHub'
 import { resolveTheme, useThemeStore } from '@stores'
+import { syncVisualViewportToCssVars } from '@utils/visualViewportCss'
 import { useRouter } from 'next/router'
 import { useEffect } from 'react'
 
@@ -48,43 +49,41 @@ export default function AppProviders({ isMobileInitial }: AppProvidersProps) {
       // Silently fail - cleanup is best-effort
     })
 
-    // iOS Safari keyboard viewport fix
+    // iOS Safari keyboard viewport fix — always mirror visualViewport.height (no magnitude
+    // filter) so small post-animation resize steps are not dropped.
     const doc = document.documentElement
-    let lastHeight = window.visualViewport?.height ?? window.innerHeight
     let rafId: number | null = null
 
-    const vv = window.visualViewport
-    if (vv) {
-      doc.style.setProperty('--visual-viewport-height', `${vv.height}px`)
-      doc.style.setProperty('--vh', `${vv.height * 0.01}px`)
+    syncVisualViewportToCssVars(doc)
+
+    function scheduleVisualViewportSync() {
+      if (rafId) cancelAnimationFrame(rafId)
+      rafId = requestAnimationFrame(() => {
+        syncVisualViewportToCssVars(doc)
+        rafId = null
+      })
     }
 
     function handleViewportResize() {
-      if (rafId) cancelAnimationFrame(rafId)
-
-      rafId = requestAnimationFrame(() => {
-        const vv = window.visualViewport
-        if (!vv) return
-
-        const height = vv.height
-        if (Math.abs(height - lastHeight) < 50) return
-
-        lastHeight = height
-        doc.style.setProperty('--visual-viewport-height', `${height}px`)
-        doc.style.setProperty('--vh', `${height * 0.01}px`)
-      })
+      scheduleVisualViewportSync()
     }
 
     let scrollResetTimeout: ReturnType<typeof setTimeout> | null = null
 
     function handleViewportScroll() {
+      scheduleVisualViewportSync()
+
       const vv = window.visualViewport
       if (!vv || vv.offsetTop === 0) return
 
       if (scrollResetTimeout) clearTimeout(scrollResetTimeout)
 
       scrollResetTimeout = setTimeout(() => {
-        if (window.visualViewport && window.visualViewport.offsetTop > 0) {
+        const vv = window.visualViewport
+        if (!vv || vv.offsetTop <= 0) return
+        // Including mobile pad: a non-zero layout scrollY (often == offsetTop) breaks fixed
+        // shell + ProseMirror getBoundingClientRect (zeros / wrong caret) after keyboard cycles.
+        if (window.scrollY > 0) {
           window.scrollTo(0, 0)
         }
       }, 100)

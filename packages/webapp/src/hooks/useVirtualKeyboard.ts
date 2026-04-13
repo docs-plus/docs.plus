@@ -1,63 +1,55 @@
-import { useStore } from '@stores'
+import {
+  applyVirtualKeyboardToStore,
+  resetVirtualKeyboardSessionBaseline
+} from '@utils/virtualKeyboardMetrics'
 import { useEffect, useRef } from 'react'
 
 /**
  * Tracks virtual keyboard state for mobile devices.
- * Uses 300ms debounce to wait for full iOS keyboard animation completion.
+ * Coalesces with requestAnimationFrame (same frame as layout) — no long debounce, so
+ * ToolbarMobile mount and flex layout do not drift after rapid keyboard cycles.
  *
- * CRITICAL: This hook only tracks state - layout is handled by CSS + _app.tsx
+ * CRITICAL: This hook only tracks state - layout is handled by CSS + AppProviders.
  */
 const useVirtualKeyboard = () => {
-  const setKeyboardOpen = useStore((state) => state.setKeyboardOpen)
-  const setKeyboardHeight = useStore((state) => state.setKeyboardHeight)
-  const previousIsOpenRef = useRef<boolean | null>(null)
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const rafIdRef = useRef<number | null>(null)
 
   useEffect(() => {
     const visualViewport = window.visualViewport
     if (!visualViewport) return
 
-    // Threshold to consider keyboard "open" (accounts for browser chrome variations)
-    const KEYBOARD_THRESHOLD = 100
-    // iOS keyboard animation takes ~300-400ms
-    const DEBOUNCE_MS = 300
-
     const handleViewportChange = () => {
-      const windowHeight = window.innerHeight
-      const viewportHeight = visualViewport.height
-      const keyboardHeight = Math.max(0, windowHeight - viewportHeight)
-      const isKeyboardOpen = keyboardHeight > KEYBOARD_THRESHOLD
-
-      // Debounce ALL state changes to prevent rapid updates during animation
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current)
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current)
       }
-
-      debounceTimerRef.current = setTimeout(() => {
-        const previousIsOpen = previousIsOpenRef.current
-
-        // Only update if state actually changed
-        if (previousIsOpen !== isKeyboardOpen) {
-          setKeyboardHeight(keyboardHeight)
-          setKeyboardOpen(isKeyboardOpen)
-          previousIsOpenRef.current = isKeyboardOpen
-        }
-      }, DEBOUNCE_MS)
+      rafIdRef.current = requestAnimationFrame(() => {
+        rafIdRef.current = null
+        applyVirtualKeyboardToStore()
+      })
     }
 
-    // Initial check
-    handleViewportChange()
+    applyVirtualKeyboardToStore()
 
-    // Only listen to resize events - scroll events cause glitches!
+    const onOrientation = () => {
+      resetVirtualKeyboardSessionBaseline()
+      applyVirtualKeyboardToStore()
+    }
+
     visualViewport.addEventListener('resize', handleViewportChange)
+    // iOS Safari: keyboard / URL bar shifts sometimes update offset via `scroll` without a `resize`.
+    visualViewport.addEventListener('scroll', handleViewportChange)
+    window.addEventListener('orientationchange', onOrientation)
 
     return () => {
       visualViewport.removeEventListener('resize', handleViewportChange)
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current)
+      visualViewport.removeEventListener('scroll', handleViewportChange)
+      window.removeEventListener('orientationchange', onOrientation)
+      if (rafIdRef.current !== null) {
+        cancelAnimationFrame(rafIdRef.current)
+        rafIdRef.current = null
       }
     }
-  }, [setKeyboardOpen, setKeyboardHeight])
+  }, [])
 }
 
 export default useVirtualKeyboard

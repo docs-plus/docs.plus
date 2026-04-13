@@ -7,6 +7,10 @@ import ToolbarButton from '../ToolbarButton'
 import FormatSelection from './FormatSelection'
 import HeadingSelection from './HeadingSelection'
 
+/** Matches `FormatSelection` `-translate-y-[134px]` + `tiptap-toolbar-mobile__main` `h-14` (56px). */
+const FORMAT_PANEL_LIFT_PX = 134
+const TOOLBAR_MAIN_ROW_PX = 56
+
 const ToolbarMobile = () => {
   const [isFormatSelectionVisible, setIsFormatSelectionVisible] = useState(false)
   const editor = useStore((state) => state.settings.editor.instance)
@@ -39,8 +43,8 @@ const ToolbarMobile = () => {
         const range = selection.getRangeAt(0)
         const caretRect = range.getBoundingClientRect()
         const wrapperRect = editorWrapper.getBoundingClientRect()
-        const panelHeight = 150
-        const visibleBottom = wrapperRect.bottom - panelHeight
+        const obstructionPx = FORMAT_PANEL_LIFT_PX + TOOLBAR_MAIN_ROW_PX
+        const visibleBottom = wrapperRect.bottom - obstructionPx
 
         if (caretRect.bottom > visibleBottom) {
           editorWrapper.scrollTop += caretRect.bottom - visibleBottom + 20
