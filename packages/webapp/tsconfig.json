@@ -47,5 +47,12 @@
     "src/pages/**/*.tsx",
     "src/middleware.ts"
   ],
-  "exclude": ["node_modules", "cypress", "src/**/__tests__", "src/**/testUtils"]
+  "exclude": [
+    "node_modules",
+    "cypress",
+    "src/**/__tests__",
+    "src/**/testUtils",
+    "src/**/*.test.ts",
+    "src/**/*.test.tsx"
+  ]
 }
