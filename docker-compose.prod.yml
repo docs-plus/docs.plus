@@ -510,8 +510,8 @@ services:
     image: docsplus-admin:${DEPLOY_TAG:-latest}
     env_file: .env.production
     build:
-      context: ./packages/admin-dashboard
-      dockerfile: docker/Dockerfile.bun
+      context: .
+      dockerfile: packages/admin-dashboard/docker/Dockerfile.bun
       target: runner
       args:
         NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL}

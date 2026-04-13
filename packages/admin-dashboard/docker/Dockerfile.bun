@@ -2,18 +2,10 @@
 # =============================================================================
 # Admin Dashboard - Next.js Standalone Dockerfile
 # =============================================================================
-# Industry-standard multi-stage build with:
-#   - BuildKit cache mounts for fast dependency installs
-#   - Proper layer ordering for maximum cache hits
-#   - Minimal production image
-#
-# Build context: packages/admin-dashboard/
+# Build context: monorepo root (.). Bun catalog: deps resolve from root package.json;
+# the lockfile is repo-root bun.lock. Workspace package.json stubs match hocuspocus.docker.
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# Stage 1: Dependencies
-# -----------------------------------------------------------------------------
-# Use latest Bun 1.x (floating tag); same tag across all Dockerfiles for cohesion
 FROM oven/bun:1-slim AS deps
 
 RUN rm -rf /var/lib/apt/lists/* && \
@@ -22,14 +14,23 @@ RUN rm -rf /var/lib/apt/lists/* && \
 
 WORKDIR /app
 
-# Copy package files first (layer cached until these change)
-COPY package.json bun.lock* ./
+COPY package.json bun.lock* bunfig.toml ./
+COPY packages/email-templates ./packages/email-templates
+COPY packages/eslint-config ./packages/eslint-config
+COPY packages/admin-dashboard/package.json ./packages/admin-dashboard/
+COPY packages/webapp/package.json ./packages/webapp/
+COPY packages/hocuspocus.server/package.json ./packages/hocuspocus.server/
+COPY packages/extension-hyperlink/package.json ./packages/extension-hyperlink/
+COPY packages/extension-hypermultimedia/package.json ./packages/extension-hypermultimedia/
+COPY packages/extension-indent/package.json ./packages/extension-indent/
+COPY packages/extension-inline-code/package.json ./packages/extension-inline-code/
+COPY packages/extension-placeholder/package.json ./packages/extension-placeholder/
+COPY packages/supabase/package.json ./packages/supabase/
 
-# Install dependencies (Docker layer cache handles caching naturally)
-RUN bun install --frozen-lockfile
+RUN bun install --frozen-lockfile --ignore-scripts
 
 # -----------------------------------------------------------------------------
-# Stage 2: Build
+# Build
 # -----------------------------------------------------------------------------
 FROM oven/bun:1-slim AS builder
 
@@ -39,7 +40,6 @@ RUN rm -rf /var/lib/apt/lists/* && \
 
 WORKDIR /app
 
-# Build args for Next.js public env vars (baked into client bundle)
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_API_URL
@@ -52,17 +52,19 @@ ENV NODE_ENV=production \
     NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL} \
     NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 
-# Copy dependencies from deps stage
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/package.json ./
+COPY --from=deps /app/bun.lock* ./
+COPY --from=deps /app/bunfig.toml ./
+COPY --from=deps /app/packages ./packages
+COPY packages/admin-dashboard ./packages/admin-dashboard
 
-# Copy source files (layer invalidates when source changes)
-COPY . .
+RUN bun install --frozen-lockfile --ignore-scripts
 
-# Build Next.js application
+WORKDIR /app/packages/admin-dashboard
 RUN bun run build:ci
 
 # -----------------------------------------------------------------------------
-# Stage 3: Runner (Production)
+# Runner (Production)
 # -----------------------------------------------------------------------------
 FROM oven/bun:1-slim AS runner
 
@@ -77,16 +79,12 @@ ENV NODE_ENV=production \
     PORT=3100 \
     HOSTNAME="0.0.0.0"
 
-# Create non-root user for security (Debian slim: groupadd/useradd)
 RUN groupadd -r -g 1001 nodejs && \
     useradd -r -u 1001 -g nodejs nextjs
 
-# Copy standalone build output
-# Next.js standalone creates: .next/standalone/app/server.js (monorepo structure)
-# Static and public files must be placed relative to server.js location
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./app/.next/static
-COPY --from=builder --chown=nextjs:nodejs /app/public ./app/public
+COPY --from=builder --chown=nextjs:nodejs /app/packages/admin-dashboard/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/packages/admin-dashboard/.next/static ./packages/admin-dashboard/.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/packages/admin-dashboard/public ./packages/admin-dashboard/public
 
 USER nextjs
 
@@ -95,5 +93,4 @@ EXPOSE 3100
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
     CMD bun -e "fetch('http://localhost:3100/api/health').then(r => r.ok ? process.exit(0) : process.exit(1)).catch(() => process.exit(1))"
 
-# server.js is at app/server.js in standalone output
-CMD ["bun", "app/server.js"]
+CMD ["bun", "packages/admin-dashboard/server.js"]
