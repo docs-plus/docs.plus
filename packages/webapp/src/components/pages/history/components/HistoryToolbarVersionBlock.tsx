@@ -1,6 +1,8 @@
 import Button from '@components/ui/Button'
+import { Icons } from '@icons'
 
 import { formatVersionDate } from '../helpers'
+import { copyHistoryVersionLinkToClipboard, copyVersionLinkTitle } from '../historyShareUrl'
 import type { HistoryToolbarVersion } from '../hooks/useGetVersionInfo'
 
 type Props = {
@@ -18,19 +20,36 @@ export function HistoryToolbarVersionBlock({ versionInfo, onRequestRestore, vari
   const { date, time } = formatVersionDate(versionInfo.createdAt)
   const showRestore = !versionInfo.isLatestVersion
 
+  const onCopyLink = () => {
+    void copyHistoryVersionLinkToClipboard(versionInfo.version)
+  }
+  const copyTitle = copyVersionLinkTitle(versionInfo.version)
+
   if (variant === 'mobile') {
     return (
       <>
-        {showRestore && (
+        <div className="flex flex-wrap items-center justify-center gap-2">
+          {showRestore && (
+            <Button
+              variant="primary"
+              onClick={onRequestRestore}
+              aria-label="Restore this version"
+              tooltip={`Restore document to version ${versionInfo.version}`}
+              tooltipPlacement="bottom">
+              Restore this version
+            </Button>
+          )}
           <Button
-            variant="primary"
-            onClick={onRequestRestore}
-            aria-label="Restore this version"
-            tooltip={`Restore document to version ${versionInfo.version}`}
+            variant="ghost"
+            shape="square"
+            className="min-h-11 min-w-11 shrink-0"
+            onClick={onCopyLink}
+            aria-label={copyTitle}
+            tooltip={copyTitle}
             tooltipPlacement="bottom">
-            Restore this version
+            <Icons.link size={22} />
           </Button>
-        )}
+        </div>
         <div className="text-center text-sm">
           <span className="font-medium">{date}</span>
           <br />

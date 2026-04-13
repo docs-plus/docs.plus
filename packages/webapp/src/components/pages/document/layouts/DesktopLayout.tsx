@@ -11,7 +11,7 @@ const DesktopLayout = () => {
   const isMobile = useStore((state) => state.settings.editor.isMobile)
 
   const deviceClass = isMobile ? 'm_mobile' : 'm_desktop'
-  const isHistoryView = useHashRouter()
+  const { isHistoryView } = useHashRouter()
 
   if (isHistoryView) return <DesktopHistory />
 

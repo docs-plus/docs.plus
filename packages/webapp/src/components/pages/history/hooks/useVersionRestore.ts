@@ -1,5 +1,7 @@
+import { clearHistoryHash } from '@components/pages/history/historyShareUrl'
 import * as toast from '@components/toast'
 import { useAuthStore, useStore } from '@stores'
+import { logger } from '@utils/logger'
 import { useCallback, useState } from 'react'
 
 import { tryGetProsemirrorFromHistoryYdoc } from '../helpers'
@@ -46,9 +48,9 @@ export const useVersionRestore = () => {
         const meta = hocuspocusProvider.configuration.document.getMap('metadata')
         meta.set('commitMessage', `Reverted to version ${activeHistory.version}`)
         editor.commands.setContent(content)
-        window.location.hash = ''
+        clearHistoryHash()
       } catch (e) {
-        console.error(e)
+        logger.error('History restore: setContent failed', e)
         toast.Error('Could not apply this version.')
       } finally {
         setLoadingHistory(false)

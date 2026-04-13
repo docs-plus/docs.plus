@@ -1,3 +1,4 @@
+import { clearHistoryHash } from '@components/pages/history/historyShareUrl'
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
 import { useStore } from '@stores'
@@ -19,7 +20,7 @@ const Toolbar = () => {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => (window.location.hash = '')}
+            onClick={() => clearHistoryHash()}
             aria-label="Back to Editor"
             startIcon={Icons.back}
             iconSize={22}

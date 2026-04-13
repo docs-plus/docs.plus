@@ -1,23 +1,32 @@
+import { parseHistoryHash } from '@components/pages/history/historyShareUrl'
 import { useEffect, useState } from 'react'
 
-export const useHashRouter = () => {
-  const [isHistoryView, setIsHistoryView] = useState(false)
+function readHistoryHashState() {
+  if (typeof window === 'undefined') {
+    return { isHistoryView: false, requestedVersion: null as number | null }
+  }
+  const p = parseHistoryHash(window.location.hash)
+  const requestedVersion = p.versionQueryInvalid ? null : p.version
+  return { isHistoryView: p.isHistory, requestedVersion }
+}
+
+export type HashRouterState = {
+  isHistoryView: boolean
+  requestedVersion: number | null
+}
+
+export const useHashRouter = (): HashRouterState => {
+  const [state, setState] = useState<HashRouterState>(readHistoryHashState)
 
   useEffect(() => {
-    // Check initial hash
     const checkHash = () => {
-      setIsHistoryView(window.location.hash === '#history')
+      setState(readHistoryHashState())
     }
 
-    // Check on mount
     checkHash()
-
-    // Listen for hash changes
     window.addEventListener('hashchange', checkHash)
-
-    // Cleanup
     return () => window.removeEventListener('hashchange', checkHash)
   }, [])
 
-  return isHistoryView
+  return state
 }

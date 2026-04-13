@@ -1,3 +1,4 @@
+import { sendHistoryListRequest } from '@components/pages/history/historyStatelessWire'
 import { useStore } from '@stores'
 import { useCallback } from 'react'
 
@@ -9,13 +10,7 @@ export const useDocumentHistory = () => {
   const fetchHistory = useCallback(() => {
     if (!hocuspocusProvider) return
     setLoadingHistory(true)
-    hocuspocusProvider.sendStateless(
-      JSON.stringify({
-        msg: 'history',
-        type: 'history.list',
-        documentId: documentId
-      })
-    )
+    sendHistoryListRequest(hocuspocusProvider, documentId)
   }, [hocuspocusProvider, documentId, setLoadingHistory])
 
   return { fetchHistory }

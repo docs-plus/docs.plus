@@ -9,7 +9,7 @@ interface IHistoryStore {
   /** Last `history.watch` version we asked for — ignore older `history.watch` payloads (race). */
   pendingWatchVersion: number | null
   setHistoryList: (historyList: HistoryItem[]) => void
-  setActiveHistory: (activeHistory: HistoryItem) => void
+  setActiveHistory: (activeHistory: HistoryItem | null) => void
   setLoadingHistory: (loadingHistory: boolean) => void
   setEditor: (editor: Editor | null) => void
   setPendingWatchVersion: (version: number | null) => void
@@ -27,7 +27,7 @@ const history = immer<IHistoryStore>((set) => ({
     })
   },
 
-  setActiveHistory: (activeHistory: HistoryItem) => {
+  setActiveHistory: (activeHistory: HistoryItem | null) => {
     set((state) => {
       state.activeHistory = activeHistory
     })

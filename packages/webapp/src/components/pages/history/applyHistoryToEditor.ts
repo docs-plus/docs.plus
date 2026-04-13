@@ -11,6 +11,10 @@ import { tryGetProsemirrorFromHistoryYdoc } from './helpers'
 
 export type ApplyHistoryToEditorResult = 'applied' | 'decode_failed' | 'no_editor'
 
+/** Toast copy when a history snapshot cannot be decoded or applied (single source for all apply paths). */
+export const HISTORY_DECODE_FAILED_MESSAGE =
+  'Could not display this version. Try another revision or reload the page.'
+
 /** Yjs snapshot (base64) → ProseMirror → TipTap `setContent` — single path for all history hydrations. */
 export function applyHistoryItemToEditor(
   editor: Editor | null,

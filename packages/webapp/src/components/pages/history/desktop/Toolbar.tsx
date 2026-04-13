@@ -1,3 +1,8 @@
+import {
+  clearHistoryHash,
+  copyHistoryVersionLinkToClipboard,
+  copyVersionLinkTitle
+} from '@components/pages/history/historyShareUrl'
 import ToolbarButton from '@components/TipTap/toolbar/ToolbarButton'
 import Button from '@components/ui/Button'
 import { Icons } from '@icons'
@@ -19,7 +24,7 @@ const Toolbar = () => {
       <div className="flex items-center gap-2 px-6 py-3">
         <Button
           shape="square"
-          onClick={() => (window.location.hash = '')}
+          onClick={() => clearHistoryHash()}
           aria-label="Back to Editor"
           startIcon={Icons.back}
           tooltip="Back to the Editor"
@@ -35,9 +40,19 @@ const Toolbar = () => {
       </div>
 
       <div className="border-base-300 flex flex-row items-center justify-between gap-1 border-t px-6">
-        <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)" aria-label="Print">
-          <Icons.print size={16} />
-        </ToolbarButton>
+        <div className="flex items-center gap-0.5">
+          <ToolbarButton onClick={() => window.print()} tooltip="Print (⌘+P)" aria-label="Print">
+            <Icons.print size={16} />
+          </ToolbarButton>
+          {versionInfo && (
+            <ToolbarButton
+              onClick={() => void copyHistoryVersionLinkToClipboard(versionInfo.version)}
+              tooltip={copyVersionLinkTitle(versionInfo.version)}
+              aria-label={copyVersionLinkTitle(versionInfo.version)}>
+              <Icons.link size={16} />
+            </ToolbarButton>
+          )}
+        </div>
 
         {activeHistory && (
           <div className="text-base-content/60 text-sm">

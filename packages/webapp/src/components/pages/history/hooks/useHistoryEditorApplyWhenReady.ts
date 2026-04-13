@@ -1,7 +1,9 @@
+import * as toast from '@components/toast'
 import { useStore } from '@stores'
+import { logger } from '@utils/logger'
 import { useEffect } from 'react'
 
-import { applyHistoryItemToEditor } from '../applyHistoryToEditor'
+import { applyHistoryItemToEditor, HISTORY_DECODE_FAILED_MESSAGE } from '../applyHistoryToEditor'
 
 /**
  * Server data can arrive before `history` store `editor` is set (one frame / slow mount).
@@ -28,6 +30,8 @@ export function useHistoryEditorApplyWhenReady() {
       return
     }
     if (result === 'decode_failed') {
+      logger.error('History: decode_failed when applying activeHistory (editor became ready)')
+      toast.Error(HISTORY_DECODE_FAILED_MESSAGE)
       setLoadingHistory(false)
     }
   }, [editor, activeHistory, loadingHistory, pendingWatchVersion, setLoadingHistory])
