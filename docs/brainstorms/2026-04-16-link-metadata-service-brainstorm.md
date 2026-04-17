@@ -1,18 +1,22 @@
-# Brainstorm: Link Metadata Service (Backend Endpoint)
+# Spec: Link Metadata Service (Backend Endpoint)
 
 **Date:** 2026-04-16
 **Status:** spec — pending implementation plan
 
+## Goal
+
+Every URL pasted into a docsy editor should render as a rich preview card — title, description, favicon, image, publisher, author, and (where supported) an embeddable iframe — including for sites that block naive scrapers.
+
 ## What We're Building
 
-A new backend endpoint on `packages/hocuspocus.server` that fetches rich metadata for arbitrary URLs (link unfurling). It replaces `packages/webapp/src/pages/api/metadata.ts` (Next.js API route, deleted at the end of cutover). The webapp's existing hyperlink-preview popover (`packages/webapp/src/components/TipTap/hyperlinkPopovers/`) is rewired to consume the new endpoint and renders a richer card based on the new structured response shape.
+A new backend endpoint on `packages/hocuspocus.server` that fetches rich metadata for arbitrary URLs (link unfurling). It replaces `packages/webapp/src/pages/api/metadata.ts`, the existing Next.js API route, which is deleted at the end of cutover. The webapp's existing hyperlink-preview popover (`packages/webapp/src/components/TipTap/hyperlinkPopovers/`) is rewired to consume the new endpoint and renders a richer card based on the new structured response shape.
 
 `@docs.plus/extension-hyperlink` is **not** modified.
 
 ## Why This Approach
 
 - The Next.js endpoint has limited coverage (single-stage HTML scrape, weak User-Agent, no charset detection, no oEmbed, broken relative URL resolution after redirects). Many real-world URLs return "Untitled" or no preview at all.
-- Centralizing on the Hono/Bun backend matches the rest of the platform (email, push, documents, hypermultimedia, admin all live there). Removes a Next.js/Bun split for non-page server logic.
+- Centralizing on the Hono/Bun backend matches the rest of the platform — email, push, documents, hypermultimedia, and admin all live there — and ends the awkward split where a single piece of server logic ran outside Bun just because Next.js happened to expose API routes.
 - A rich, structured response shape (`publisher`, `author`, `oembed.html`, `image{width,height,alt}`, etc.) lets the editor render Slack/Notion-quality link cards instead of flat title+thumbnail.
 - A layered pipeline (oEmbed → special handlers → HTML scrape) is the standard pattern used by Slack-Unfurler, Discord embed-service, Iframely, Microlink, and Linear. It's the only known approach that handles the hostile-to-scraping platforms (X, Instagram) without paid SaaS.
 
@@ -23,7 +27,7 @@ A new backend endpoint on `packages/hocuspocus.server` that fetches rich metadat
 - **Method:** `GET /api/metadata?url=<encoded>`
 - **Input limits (zod schema):** `url` required, `string().url()`, max length 2048 chars.
 - **Headers:** Hono passes through client `Accept-Language` to upstream fetch and varies cache key on it. When the client sends no `Accept-Language`, the cache-key `lang` segment is the literal string `_` (so the no-lang variant doesn't collide with any real language code).
-- **HTTP status codes:** `200` for any `success: true` response (including the fallback). `400` for validation/SSRF rejections (`INVALID_URL`, `BLOCKED_URL`). `429` is emitted by the existing global rate-limit middleware in its own shape (not our `ErrorResponse`). The endpoint never returns `5xx` for upstream failures.
+- **HTTP status codes:** `200` for any `success: true` response (including the fallback). `400` for validation/SSRF rejections (`INVALID_URL`, `BLOCKED_URL`). `429` is emitted by the existing global rate-limit middleware in its own shape (not our `ErrorResponse`). The endpoint **never returns `5xx` for upstream failures** — failure to scrape is a normal mode (random URLs in docs), and the fallback path always renders something useful. `5xx` is reserved for our bugs.
 - **No `?refresh=1`** in v1 (deferred — stale cache will revalidate naturally after TTL).
 - **No batch endpoint** in v1 (deferred — single-fetch latency is bounded by the 8s timeout, and Redis hits are sub-ms).
 
@@ -46,7 +50,9 @@ fallback                                          (always succeeds; cached as ne
   ↓ { title: hostname, favicon: google-favicon-service, success: true }
 ```
 
-"Hit" means the stage returned a usable response. A stage that _matches_ the URL (e.g. oEmbed registry recognized a YouTube host) but the upstream call errored or timed out falls through to the next stage; it does not fail the request. Total worst-case latency is bounded by the sum of per-stage timeouts (3 + 3 + 8 = 14s); typical case is well under 1s when any earlier stage hits.
+"Hit" means the stage returned a usable response. A stage that _matches_ the URL (e.g. oEmbed registry recognized a YouTube host) but whose upstream call errored or timed out falls through to the next stage; it does not fail the request. Total worst-case latency is bounded by the sum of per-stage timeouts (3 + 3 + 8 = 14s); typical case is well under 1s when any earlier stage hits.
+
+Whichever stage produces the response, the result is written to Redis with the appropriate TTL (24h positive / 10min negative) before being returned to the client.
 
 ### Response shape (rich, industry-standard)
 
@@ -85,9 +91,7 @@ interface ErrorResponse {
 }
 ```
 
-The endpoint **never returns 5xx for upstream failures**. Failure to scrape is a normal mode (random URLs in docs). It returns a graceful fallback so the client always renders something useful. 5xx is reserved for our bugs.
-
-### HTML fetch hardening (Tier A)
+### HTML fetch hardening
 
 - **User-Agent:** `Mozilla/5.0 (compatible; DocsPlusBot/1.0; +https://docs.plus) facebookexternalhit/1.1` — compound identity that gets allowlisted by sites that whitelist `facebookexternalhit` while staying transparent about origin.
 - **Headers:** `Accept-Language` from client, `Accept-Encoding: gzip, deflate, br`, `Accept: text/html, application/xhtml+xml`.
@@ -96,19 +100,19 @@ The endpoint **never returns 5xx for upstream failures**. Failure to scrape is a
 - **Base URL:** use `response.url` (post-redirect) as the base for resolving relative OG image / favicon paths, not the original request URL.
 - **Limits:** 8s timeout, 5MB body cap, follow redirects.
 
-### oEmbed registry (Tier B)
+### oEmbed registry
 
-Hostname → endpoint map for the 11 providers above. Fetch JSON, normalize into the response shape (`oembed.html` for embed-capable types, `image.url` from `thumbnail_url`, `author` from `author_name`/`author_url`, `publisher` from `provider_name`/`provider_url`).
+Hostname → endpoint map for the 11 providers listed in the pipeline diagram. Fetch JSON, normalize into the response shape: `oembed.html` for embed-capable types, `image.url` from `thumbnail_url`, `author` from `author_name`/`author_url`, `publisher` from `provider_name`/`provider_url`.
 
-### Special handlers (Tier C)
+### Special handlers
 
 - **GitHub repo:** `api.github.com/repos/{owner}/{repo}` → richer than scraping (description, stars, language, topics).
 - **Wikipedia article:** `*.wikipedia.org/api/rest_v1/page/summary/{slug}` → clean summary + thumbnail.
 - **Reddit thread:** append `.json` to the URL → official JSON response.
 
-### Library
+### Scraping library
 
-`metascraper` core + 9 plugins: `metascraper-title`, `-description`, `-image`, `-logo`, `-author`, `-publisher`, `-url`, `-date`, `-lang`. Better heuristics than `open-graph-scraper`; used in production by Microlink. Adds 10 small npm packages total (each ~20–50 LOC of selector logic).
+`metascraper` core plus 9 plugins (`title`, `description`, `image`, `logo`, `author`, `publisher`, `url`, `date`, `lang`). Better selector heuristics than `open-graph-scraper` and used in production by Microlink. Total addition: 10 small npm packages.
 
 ### Caching
 
@@ -202,9 +206,11 @@ app.route('/api/metadata', metadata.router)
 
 No domain code changes. No client changes (URL shape and response shape are identical).
 
-### What we are deliberately NOT adding for v1
+### Extraction-readiness non-goals (kept simple on purpose)
 
-- **Full hexagonal ports/adapters split** (`CacheStore`, `HttpClient`, `Scraper` interfaces with multiple implementations) — premature; one infra adapter per dependency is enough today.
+These are decisions about the module structure itself — how far to take the extraction-ready abstraction. Feature non-goals (batch endpoints, image proxies, etc.) are listed separately in the [Out of Scope](#out-of-scope-deferred) section at the bottom of the doc.
+
+- **Full hexagonal ports/adapters split with multiple implementations** (`CacheStore` with both Redis and Memcached backends, `HttpClient` with retry+circuit-breaker variants, swappable `Scraper`) — premature. Boundary rule 4 still requires tiny inline port types where domain code crosses into infra (e.g. a `Cache = { get; set }` type so `domain/stages/cache.ts` doesn't import `ioredis`); we just don't proliferate them or add a second implementation.
 - **Module-internal `/health` endpoint** — host already exposes `/healthz`; the module gets its own only when it becomes a separate process.
 - **URL versioning (`/api/v1/metadata`)** — inconsistent with the rest of the platform. The internal `meta:v1:` cache key handles versioning; if the wire contract ever breaks, mint `/api/metadata/v2` then.
 - **Module `config.ts` with zod-validated env schema** — only ~3 env vars touch this module; revisit when the surface grows past 5.
@@ -219,26 +225,26 @@ packages/hocuspocus.server/src/
 │       ├── index.ts                            # PUBLIC: { router, init, types }
 │       ├── module.ts                           # init({ redis, logger }) → builds router, returns public API
 │       ├── http/
-│       │   ├── router.ts                       # Hono router; only file in domain/* tree that imports Hono
+│       │   ├── router.ts                       # Hono router; the only Hono import in the module
 │       │   ├── controller.ts                   # request → service → response shape
 │       │   └── schema.ts                       # zod query schema (the wire contract)
 │       ├── domain/                             # framework-free; no Hono / ioredis / metascraper imports
 │       │   ├── pipeline.ts                     # orchestrates stages in order, handles fall-through
 │       │   ├── canonicalize.ts                 # tracking-param stripping
 │       │   ├── ssrf.ts                         # ported from Next.js endpoint
-│       │   ├── types.ts                        # MetadataResponse, ErrorResponse, internal types, port interfaces
+│       │   ├── types.ts                        # MetadataResponse, ErrorResponse, inline port types (Cache, Scraper)
 │       │   └── stages/
-│       │       ├── cache.ts                    # uses CacheStore interface (defined in types.ts)
+│       │       ├── cache.ts                    # takes a `Cache` port (just `get` / `set`); injected at init()
 │       │       ├── oembed.ts                   # provider registry + JSON fetch + normalization (11 providers)
 │       │       ├── handlers/
 │       │       │   ├── github.ts               # api.github.com/repos/{owner}/{repo}
 │       │       │   ├── wikipedia.ts            # rest_v1/page/summary
 │       │       │   └── reddit.ts               # append .json
-│       │       ├── htmlScrape.ts               # fetch + charset + content-type gate + metascraper
+│       │       ├── htmlScrape.ts               # fetch + charset + content-type gate; takes a `Scraper` port
 │       │       └── fallback.ts                 # hostname + google-favicon-service
-│       ├── infra/                              # the only place SDK adapters live
-│       │   ├── redisCache.ts                   # ioredis-backed CacheStore implementation
-│       │   └── metascraper.ts                  # metascraper instance factory (10 plugins)
+│       ├── infra/                              # all SDK adapters (the only place ioredis / metascraper are imported)
+│       │   ├── redisCache.ts                   # implements the `Cache` port using ioredis
+│       │   └── metascraper.ts                  # implements the `Scraper` port; metascraper instance factory (10 plugins)
 │       └── __tests__/
 │           ├── unit/
 │           │   ├── canonicalize.test.ts
@@ -262,7 +268,7 @@ packages/webapp/
 ## Cutover Plan (high level — full sequence in implementation plan)
 
 1. Scaffold `modules/link-metadata/` with the boundary structure above (empty stubs + README documenting the 7 boundary rules).
-2. Implement the domain pipeline + infra adapters + tests inside the module. Wire `init()` from `hocuspocus.server/src/index.ts`. Endpoint is live but unused.
+2. Implement the domain pipeline + infra adapters + tests inside the module. Wire `init()` from `hocuspocus.server/src/index.ts`. The endpoint is reachable, but no clients call it yet.
 3. Rewrite webapp client `fetchMetadata.ts` to call the new endpoint with the new shape.
 4. Update `previewShared.ts` / `previewMobileSheet.ts` to render new fields (publisher, author, `oembed.html` for embeddable cards).
 5. Delete `packages/webapp/src/pages/api/metadata.ts` and remove `cheerio` + `open-graph-scraper` from `packages/webapp/package.json`.
@@ -270,7 +276,7 @@ packages/webapp/
 
 ## Out of Scope (deferred)
 
-Each item below has a real argument for inclusion but is left out of v1 to keep the surface area lean. Each can be added later without changing the v1 contract.
+Feature non-goals — items left out of v1 to keep surface area lean. (For module-structure non-goals, see [Extraction-readiness non-goals](#extraction-readiness-non-goals-kept-simple-on-purpose).) Each item below has a real argument for inclusion and can be added later without changing the v1 contract.
 
 - **Batch endpoint** (`POST /api/metadata/batch`) — useful when a doc opens with many links; adds another route + schema + controller. Defer until measured need.
 - **`?refresh=1` cache bust** — useful when a site updates and preview goes stale; adds a write-amplification path that needs its own rate limit. Stale-while-revalidate already provides eventual consistency.
