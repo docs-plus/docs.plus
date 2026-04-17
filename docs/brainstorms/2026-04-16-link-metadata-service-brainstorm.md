@@ -133,56 +133,140 @@ Hostname → endpoint map for the 11 providers above. Fetch JSON, normalize into
 
 Pino structured logs already wrap the route via existing `pinoLogger()` middleware. Add per-stage log fields in the service: `pipeline_stage` (`oembed`/`special`/`scrape`/`fallback`), `cache_hit` (bool), `host` (target hostname), `duration_ms`. No new metrics infrastructure.
 
+## Extraction Readiness (modular-monolith design)
+
+The feature ships inside `hocuspocus.server` but is structured as a self-contained module so that future extraction into a standalone microservice is a same-day mechanical move rather than a multi-week refactor.
+
+### The 7 boundary rules
+
+1. **Single bounded folder.** All code, tests, types, and infra adapters live under `modules/link-metadata/`. Files under that path may not import from anywhere outside it except: framework primitives (`hono`), shared logger (`lib/logger`), and the host's `lib/redis` (passed through DI, see rule 3 — never imported from inside the module's domain code).
+2. **One public surface.** The module exposes exactly one entry point: `modules/link-metadata/index.ts`, which re-exports `{ router, init, type MetadataResponse, type ErrorResponse }`. The host's `index.ts` imports only from this entry point. Internal files are private by convention (enforced in code review and via an ESLint `no-restricted-imports` rule mirroring the existing `eslint.config.js` patterns).
+3. **Dependency injection at the seam.** The module exports `init({ redis, logger })`. It does not call `getRedisClient()` or read env vars itself for infrastructure clients. The host wires concrete instances at startup. The future microservice's `server.ts` does the same wiring with its own Redis + Pino instances.
+4. **Framework-free domain.** Files under `modules/link-metadata/domain/` contain pure functions and orchestration logic. They import zero infrastructure SDKs (no `ioredis`, no `hono`, no `metascraper` directly — metascraper is wrapped in `infra/`). They depend only on TypeScript interfaces defined inside the module.
+5. **Stable wire contract.** The zod schema in `http/schema.ts` and the `MetadataResponse` / `ErrorResponse` types in `domain/types.ts` are the published contract. Changes are additive (optional fields) within v1; breaking changes mint a new path. The `meta:v1:` cache-key prefix gives an internal version dimension so the future microservice can safely share the same Redis cluster during cutover.
+6. **No shared mutable state.** No module-level singletons, no globals, no top-level side effects. The metascraper instance, Redis pool reference, and any other state are constructed inside `init()` and held in closure. Two instances (monolith + extracted service) can run side by side during traffic cutover without colliding.
+7. **Tests live inside the module.** `modules/link-metadata/__tests__/` rides with the folder during extraction. Integration tests use the public `init()` with a fake Redis adapter, exactly the way the future standalone server will use it.
+
+### `init()` contract
+
+```ts
+// modules/link-metadata/index.ts
+export { type MetadataResponse, type ErrorResponse } from './domain/types'
+
+export function init(deps: {
+  redis: Redis // ioredis instance (or any compatible client)
+  logger: Logger // pino logger (or any compatible)
+}): {
+  router: Hono // mount with: app.route('/api/metadata', router)
+}
+```
+
+### Host wiring (today)
+
+```ts
+// packages/hocuspocus.server/src/index.ts
+import * as linkMetadata from './modules/link-metadata'
+import { getRedisClient } from './lib/redis'
+import { logger } from './lib/logger'
+
+const metadata = linkMetadata.init({
+  redis: getRedisClient(),
+  logger: logger.child({ module: 'link-metadata' })
+})
+
+app.route('/api/metadata', metadata.router)
+```
+
+### Future extraction recipe (for reference — not v1 work)
+
+1. `mv packages/hocuspocus.server/src/modules/link-metadata packages/link-metadata-service/src`
+2. Copy `package.json` deps for `metascraper*`, `ioredis`, `hono`, `pino`, `zod` into the new package.
+3. Add a 10-line `server.ts` in the new package:
+
+   ```ts
+   import { Hono } from 'hono'
+   import Redis from 'ioredis'
+   import pino from 'pino'
+   import * as linkMetadata from './index'
+
+   const metadata = linkMetadata.init({
+     redis: new Redis(process.env.REDIS_URL!),
+     logger: pino({ name: 'link-metadata' })
+   })
+
+   export default new Hono().route('/api/metadata', metadata.router)
+   ```
+
+4. Replace the host's import with the new package name and remove the deps that moved.
+5. Deploy as a separate process; route traffic via Traefik path rule.
+
+No domain code changes. No client changes (URL shape and response shape are identical).
+
+### What we are deliberately NOT adding for v1
+
+- **Full hexagonal ports/adapters split** (`CacheStore`, `HttpClient`, `Scraper` interfaces with multiple implementations) — premature; one infra adapter per dependency is enough today.
+- **Module-internal `/health` endpoint** — host already exposes `/healthz`; the module gets its own only when it becomes a separate process.
+- **URL versioning (`/api/v1/metadata`)** — inconsistent with the rest of the platform. The internal `meta:v1:` cache key handles versioning; if the wire contract ever breaks, mint `/api/metadata/v2` then.
+- **Module `config.ts` with zod-validated env schema** — only ~3 env vars touch this module; revisit when the surface grows past 5.
+
 ## Code Layout
 
 ```
 packages/hocuspocus.server/src/
-├── api/
-│   ├── metadata.ts                          # one-line re-export, like health.ts
-│   ├── routers/metadata.router.ts           # Hono router + zod query validator
-│   ├── controllers/metadata.controller.ts   # HTTP shape only
-│   └── services/metadata.service.ts         # pipeline orchestrator
-├── lib/metadata/
-│   ├── canonicalize.ts                      # tracking-param stripping
-│   ├── ssrf.ts                              # ported from Next.js endpoint
-│   ├── cache.ts                             # Redis wrapper (positive + negative)
-│   ├── htmlFetch.ts                         # fetch + charset detect + content-type gate
-│   ├── scraper.ts                           # metascraper instance + extraction
-│   ├── oembed/
-│   │   ├── registry.ts                      # provider lookup table (11 providers)
-│   │   └── fetch.ts                         # JSON fetch + normalization to MetadataResponse
-│   ├── handlers/
-│   │   ├── github.ts                        # api.github.com/repos/{owner}/{repo}
-│   │   ├── wikipedia.ts                     # rest_v1/page/summary
-│   │   └── reddit.ts                        # append .json
-│   └── types.ts                             # MetadataResponse + ErrorResponse + internal types
-├── schemas/metadata.schema.ts               # zod query schema
-└── index.ts                                 # add: app.route('/api/metadata', metadataRouter)
-
-packages/hocuspocus.server/tests/
-├── unit/metadata.canonicalize.test.ts
-├── unit/metadata.ssrf.test.ts
-├── unit/metadata.cache.test.ts
-├── unit/metadata.htmlFetch.test.ts          # charset detection + content-type gate + base-url resolution
-├── unit/metadata.oembed.test.ts
-├── unit/metadata.handlers.test.ts
-└── integration/metadata.test.ts             # end-to-end via Hono app fetch with mocked outbound
+├── modules/
+│   └── link-metadata/                          # entire bounded context — extractable as-is
+│       ├── README.md                           # restates the 7 boundary rules + extraction recipe
+│       ├── index.ts                            # PUBLIC: { router, init, types }
+│       ├── module.ts                           # init({ redis, logger }) → builds router, returns public API
+│       ├── http/
+│       │   ├── router.ts                       # Hono router; only file in domain/* tree that imports Hono
+│       │   ├── controller.ts                   # request → service → response shape
+│       │   └── schema.ts                       # zod query schema (the wire contract)
+│       ├── domain/                             # framework-free; no Hono / ioredis / metascraper imports
+│       │   ├── pipeline.ts                     # orchestrates stages in order, handles fall-through
+│       │   ├── canonicalize.ts                 # tracking-param stripping
+│       │   ├── ssrf.ts                         # ported from Next.js endpoint
+│       │   ├── types.ts                        # MetadataResponse, ErrorResponse, internal types, port interfaces
+│       │   └── stages/
+│       │       ├── cache.ts                    # uses CacheStore interface (defined in types.ts)
+│       │       ├── oembed.ts                   # provider registry + JSON fetch + normalization (11 providers)
+│       │       ├── handlers/
+│       │       │   ├── github.ts               # api.github.com/repos/{owner}/{repo}
+│       │       │   ├── wikipedia.ts            # rest_v1/page/summary
+│       │       │   └── reddit.ts               # append .json
+│       │       ├── htmlScrape.ts               # fetch + charset + content-type gate + metascraper
+│       │       └── fallback.ts                 # hostname + google-favicon-service
+│       ├── infra/                              # the only place SDK adapters live
+│       │   ├── redisCache.ts                   # ioredis-backed CacheStore implementation
+│       │   └── metascraper.ts                  # metascraper instance factory (10 plugins)
+│       └── __tests__/
+│           ├── unit/
+│           │   ├── canonicalize.test.ts
+│           │   ├── ssrf.test.ts
+│           │   ├── htmlFetch.test.ts           # charset detection + content-type gate + base-url resolution
+│           │   ├── cache.test.ts
+│           │   ├── oembed.test.ts
+│           │   └── handlers.test.ts
+│           └── integration/
+│               └── http.test.ts                # spins up via init() with a fake Redis; exercises the router
+└── index.ts                                    # one line: app.route('/api/metadata', linkMetadata.router)
 
 packages/webapp/
 ├── src/components/TipTap/hyperlinkPopovers/
-│   ├── fetchMetadata.ts                     # rewrite: GET `${process.env.NEXT_PUBLIC_API_URL}/api/metadata?url=...` (existing env var, no new config)
-│   ├── previewShared.ts                     # consume rich shape; render publisher/author/embed when present
-│   └── previewMobileSheet.ts                # consume rich shape (same fields)
-└── src/pages/api/metadata.ts                # DELETE
+│   ├── fetchMetadata.ts                        # rewrite: GET `${process.env.NEXT_PUBLIC_API_URL}/api/metadata?url=...` (existing env var)
+│   ├── previewShared.ts                        # consume rich shape; render publisher/author/embed when present
+│   └── previewMobileSheet.ts                   # consume rich shape (same fields)
+└── src/pages/api/metadata.ts                   # DELETE
 ```
 
 ## Cutover Plan (high level — full sequence in implementation plan)
 
-1. Add new endpoint + pipeline + tests on `hocuspocus.server`. Endpoint is live but unused.
-2. Rewrite webapp client `fetchMetadata.ts` to call the new endpoint with the new shape.
-3. Update `previewShared.ts` / `previewMobileSheet.ts` to render new fields (publisher, author, `oembed.html` for embeddable cards).
-4. Delete `packages/webapp/src/pages/api/metadata.ts` and remove `cheerio` + `open-graph-scraper` from `packages/webapp/package.json`.
-5. Manual smoke on representative URLs (YouTube, X, GitHub repo, Wikipedia article, Cloudflare-fronted news site, random blog, broken/dead URL).
+1. Scaffold `modules/link-metadata/` with the boundary structure above (empty stubs + README documenting the 7 boundary rules).
+2. Implement the domain pipeline + infra adapters + tests inside the module. Wire `init()` from `hocuspocus.server/src/index.ts`. Endpoint is live but unused.
+3. Rewrite webapp client `fetchMetadata.ts` to call the new endpoint with the new shape.
+4. Update `previewShared.ts` / `previewMobileSheet.ts` to render new fields (publisher, author, `oembed.html` for embeddable cards).
+5. Delete `packages/webapp/src/pages/api/metadata.ts` and remove `cheerio` + `open-graph-scraper` from `packages/webapp/package.json`.
+6. Manual smoke on representative URLs (YouTube, X, GitHub repo, Wikipedia article, Cloudflare-fronted news site, random blog, broken/dead URL).
 
 ## Out of Scope (deferred)
 
@@ -197,6 +281,7 @@ Each item below has a real argument for inclusion but is left out of v1 to keep 
 - **WebSocket / queue async pattern** — Slack-style POST → ack → push; necessary at Slack scale, overkill here.
 - **Headless-browser fallback** (Playwright for JS-rendered SPAs) — adds ~250MB image weight + cold-start cost; defer until measured need.
 - **Per-host outbound rate limit** — defensive against being IP-banned by `github.com` etc; defer until logs show it's needed.
+- **Actual extraction into a standalone `link-metadata-service` package** — the boundary structure (see _Extraction Readiness_) makes this a same-day move. Defer until traffic / on-call data justifies a separate process.
 
 ## Open Questions
 
