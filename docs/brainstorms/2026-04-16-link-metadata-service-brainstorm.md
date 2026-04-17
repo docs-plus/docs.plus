@@ -21,11 +21,13 @@ A new backend endpoint on `packages/hocuspocus.server` that fetches rich metadat
 ### Endpoint shape
 
 - **Method:** `GET /api/metadata?url=<encoded>`
-- **Headers:** Hono passes through client `Accept-Language` to upstream fetch and varies cache key on it.
+- **Input limits (zod schema):** `url` required, `string().url()`, max length 2048 chars.
+- **Headers:** Hono passes through client `Accept-Language` to upstream fetch and varies cache key on it. When the client sends no `Accept-Language`, the cache-key `lang` segment is the literal string `_` (so the no-lang variant doesn't collide with any real language code).
+- **HTTP status codes:** `200` for any `success: true` response (including the fallback). `400` for validation/SSRF rejections (`INVALID_URL`, `BLOCKED_URL`). `429` is emitted by the existing global rate-limit middleware in its own shape (not our `ErrorResponse`). The endpoint never returns `5xx` for upstream failures.
 - **No `?refresh=1`** in v1 (deferred — stale cache will revalidate naturally after TTL).
 - **No batch endpoint** in v1 (deferred — single-fetch latency is bounded by the 8s timeout, and Redis hits are sub-ms).
 
-### Pipeline (each stage short-circuits on hit)
+### Pipeline (each stage short-circuits on success; matched-but-failed stages fall through)
 
 ```
 canonicalize url
@@ -33,16 +35,18 @@ canonicalize url
 ssrf guard
   ↓ blocks private/loopback/link-local/.local/.internal (port from existing endpoint)
 redis L3 lookup
-  ↓ key: meta:v1:{sha1(canonical_url)}:{lang}
-oEmbed registry
+  ↓ key: meta:v1:{sha1(canonical_url)}:{lang}    (lang = "_" when client sends no Accept-Language)
+oEmbed registry                                   (per-call timeout: 3s)
   ↓ YouTube, Vimeo, X, Spotify, SoundCloud, Reddit, GitHub Gist, CodePen, Figma, Loom, TikTok
-special handlers
+special handlers                                  (per-call timeout: 3s)
   ↓ GitHub repo (api.github.com), Wikipedia (REST summary), Reddit (.json suffix)
-HTML fetch + metascraper
+HTML fetch + metascraper                          (per-call timeout: 8s)
   ↓ compound UA, charset detection, content-type gate, response.url as base
-fallback
+fallback                                          (always succeeds; cached as negative — 10min TTL)
   ↓ { title: hostname, favicon: google-favicon-service, success: true }
 ```
+
+"Hit" means the stage returned a usable response. A stage that _matches_ the URL (e.g. oEmbed registry recognized a YouTube host) but the upstream call errored or timed out falls through to the next stage; it does not fail the request. Total worst-case latency is bounded by the sum of per-stage timeouts (3 + 3 + 8 = 14s); typical case is well under 1s when any earlier stage hits.
 
 ### Response shape (rich, industry-standard)
 
@@ -77,7 +81,7 @@ interface MetadataResponse {
 interface ErrorResponse {
   success: false
   message: string
-  code: 'INVALID_URL' | 'BLOCKED_URL' | 'METHOD_NOT_ALLOWED'
+  code: 'INVALID_URL' | 'BLOCKED_URL'
 }
 ```
 
@@ -104,18 +108,23 @@ Hostname → endpoint map for the 11 providers above. Fetch JSON, normalize into
 
 ### Library
 
-`metascraper` + plugin set: `metascraper-title`, `-description`, `-image`, `-logo`, `-author`, `-publisher`, `-url`, `-date`, `-lang`. Better heuristics than `open-graph-scraper`; used in production by Microlink. Adds 7 small npm packages (each ~20–50 LOC of selector logic).
+`metascraper` core + 9 plugins: `metascraper-title`, `-description`, `-image`, `-logo`, `-author`, `-publisher`, `-url`, `-date`, `-lang`. Better heuristics than `open-graph-scraper`; used in production by Microlink. Adds 10 small npm packages total (each ~20–50 LOC of selector logic).
 
 ### Caching
 
-- **Redis L3** (positive 24h, negative 10min). Key: `meta:v1:{sha1(canonical_url)}:{lang}`. Stored as JSON.
-- **HTTP** `Cache-Control: public, max-age=3600, stale-while-revalidate=86400`. `Vary: Accept-Language`. Lets Traefik / browser / any future CDN cache responses too.
+- **Redis L3** uses the existing main client from `getRedisClient()` in `lib/redis.ts` — no new connection.
+  - Positive TTL: 24h (oEmbed / special-handler / metascraper success).
+  - Negative TTL: 10min (the hostname-only fallback also uses the negative TTL — it's a successful response shape but represents a fetch failure we want to retry sooner).
+  - Key: `meta:v1:{sha1(canonical_url)}:{lang}`.
+  - Stored payload: the response body **without** `cached` and `fetched_at` (those are added on read so `cached: true` correctly reflects the L3 hit).
+  - The `cached` field in the response means "served from Redis L3" specifically — not the browser session cache.
+- **HTTP** `Cache-Control: public, max-age=3600, stale-while-revalidate=86400` for positive responses, `public, max-age=600` for negative/fallback responses. `Vary: Accept-Language`. Lets Traefik / browser / any future CDN cache responses too.
 - **Webapp client L1+L2** (the existing in-memory session cache in `fetchMetadata.ts` + persisted Y.js mark attrs) stays unchanged. No change to client cache strategy.
 
 ### Security
 
 - **SSRF:** port the existing `isValidUrl()` from the Next.js endpoint as-is. Block `localhost`, loopback (`127.*`, `[::1]`), private ranges (`10.*`, `192.168.*`, `172.16-31.*`), link-local (`169.254.*`, `0.*`), `*.local`, `*.internal`. Only `http:` / `https:` schemes.
-- **Rate limit:** rely on the existing global rate limiter in `packages/hocuspocus.server/src/middleware/index.ts` (currently 100 req / 15 min per IP+UA). **No per-route limiter added** — global is sufficient given v1 has no `?refresh=1` write-amplification path.
+- **Rate limit:** rely on the existing global rate limiter in `packages/hocuspocus.server/src/middleware/index.ts` (currently `RATE_LIMIT_MAX || 100` req / 15 min per IP+UA, with Docker-network IPs and `x-internal-request: true` exempted). **No per-route limiter added** — global is sufficient given v1 has no `?refresh=1` write-amplification path. Browser-direct calls from the webapp count against the limit; server-to-server calls from the webapp container do not.
 - **CORS:** existing middleware allowlist applies as-is.
 - **CSP / secureHeaders:** unchanged.
 - **Outbound timeout:** 8s. Body cap: 5MB.
@@ -154,14 +163,14 @@ packages/hocuspocus.server/tests/
 ├── unit/metadata.canonicalize.test.ts
 ├── unit/metadata.ssrf.test.ts
 ├── unit/metadata.cache.test.ts
-├── unit/metadata.charset.test.ts
+├── unit/metadata.htmlFetch.test.ts          # charset detection + content-type gate + base-url resolution
 ├── unit/metadata.oembed.test.ts
 ├── unit/metadata.handlers.test.ts
 └── integration/metadata.test.ts             # end-to-end via Hono app fetch with mocked outbound
 
 packages/webapp/
 ├── src/components/TipTap/hyperlinkPopovers/
-│   ├── fetchMetadata.ts                     # rewrite: GET ${NEXT_PUBLIC_API_URL}/api/metadata?url=...
+│   ├── fetchMetadata.ts                     # rewrite: GET `${process.env.NEXT_PUBLIC_API_URL}/api/metadata?url=...` (existing env var, no new config)
 │   ├── previewShared.ts                     # consume rich shape; render publisher/author/embed when present
 │   └── previewMobileSheet.ts                # consume rich shape (same fields)
 └── src/pages/api/metadata.ts                # DELETE
