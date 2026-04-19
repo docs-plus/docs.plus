@@ -71,10 +71,10 @@ describe('runOembed', () => {
 
   test('respects per-call timeout via AbortSignal', async () => {
     let receivedSignal: AbortSignal | undefined
-    fetchSpy.mockImplementation(async (_url, init) => {
-      receivedSignal = (init as RequestInit).signal as AbortSignal
+    fetchSpy.mockImplementation((async (_url: unknown, init?: RequestInit) => {
+      receivedSignal = init?.signal as AbortSignal
       return new Response('{}', { status: 200, headers: { 'content-type': 'application/json' } })
-    })
+    }) as typeof fetch)
     await runOembed('https://www.youtube.com/watch?v=abc')
     expect(receivedSignal).toBeDefined()
   })

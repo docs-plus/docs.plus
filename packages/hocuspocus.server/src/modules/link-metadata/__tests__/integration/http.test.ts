@@ -4,6 +4,23 @@ import pino from 'pino'
 
 import { init } from '../../module'
 
+// Wire shape that tests assert against. Kept independent of the production
+// types because the discriminated union (success: true vs false) collapses
+// to `never` when intersected, and toBe() narrows expected values from the
+// receiver's type. `success: boolean` here is intentional.
+interface WireBody {
+  success?: boolean
+  message?: string
+  code?: string
+  title?: string
+  publisher?: { name?: string }
+  cached?: boolean
+  fetched_at?: string
+  oembed?: { html?: string }
+}
+const readBody = async (response: Response): Promise<WireBody> =>
+  (await response.json()) as WireBody
+
 const silentLogger = pino({ level: 'silent' })
 
 const makeMockRedis = () => {
@@ -40,7 +57,7 @@ describe('GET /api/metadata (integration)', () => {
     const app = buildApp()
     const response = await app.request('http://localhost/api/metadata')
     expect(response.status).toBe(400)
-    const body = await response.json()
+    const body = await readBody(response)
     expect(body.success).toBe(false)
     expect(body.code).toBe('INVALID_URL')
     expect(typeof body.message).toBe('string')
@@ -50,7 +67,7 @@ describe('GET /api/metadata (integration)', () => {
     const app = buildApp()
     const response = await app.request('http://localhost/api/metadata?url=not-a-url')
     expect(response.status).toBe(400)
-    const body = await response.json()
+    const body = await readBody(response)
     expect(body.success).toBe(false)
     expect(body.code).toBe('INVALID_URL')
   })
@@ -73,7 +90,7 @@ describe('GET /api/metadata (integration)', () => {
       'http://localhost/api/metadata?url=' +
         encodeURIComponent('https://www.youtube.com/watch?v=xss')
     )
-    const body = await response.json()
+    const body = (await response.json()) as { oembed?: { html?: string } }
     expect(body.oembed?.html).toBeUndefined()
   })
 
@@ -83,7 +100,7 @@ describe('GET /api/metadata (integration)', () => {
       'http://localhost/api/metadata?url=' + encodeURIComponent('http://192.168.1.1')
     )
     expect(response.status).toBe(400)
-    const body = await response.json()
+    const body = await readBody(response)
     expect(body.code).toBe('BLOCKED_URL')
   })
 
@@ -109,10 +126,10 @@ describe('GET /api/metadata (integration)', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toContain('max-age=3600')
     expect(response.headers.get('vary')).toBe('Accept-Language')
-    const body = await response.json()
+    const body = await readBody(response)
     expect(body.success).toBe(true)
     expect(body.title).toBe('Test')
-    expect(body.publisher.name).toBe('YouTube')
+    expect(body.publisher?.name).toBe('YouTube')
     expect(body.cached).toBe(false)
     expect(body.fetched_at).toBeDefined()
   })
@@ -127,7 +144,7 @@ describe('GET /api/metadata (integration)', () => {
 
     expect(response.status).toBe(200)
     expect(response.headers.get('cache-control')).toContain('max-age=600')
-    const body = await response.json()
+    const body = await readBody(response)
     expect(body.success).toBe(true)
     expect(body.title).toBe('random-blog.example.com')
   })
@@ -146,10 +163,10 @@ describe('GET /api/metadata (integration)', () => {
       encodeURIComponent('https://www.youtube.com/watch?v=cached')
 
     const first = await app.request(url)
-    expect((await first.json()).cached).toBe(false)
+    expect((await readBody(first)).cached).toBe(false)
 
     const second = await app.request(url)
-    const body = await second.json()
+    const body = await readBody(second)
     expect(body.cached).toBe(true)
   })
 })

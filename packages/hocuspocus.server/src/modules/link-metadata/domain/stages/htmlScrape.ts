@@ -41,7 +41,11 @@ const decodeBody = (bytes: Uint8Array, contentType: string | null): string => {
     charset = parseCharsetFromMeta(firstKb)
   }
   try {
-    return new TextDecoder(charset || 'utf-8', { fatal: false }).decode(bytes)
+    // Bun's TextDecoder ctor types the encoding as a closed union, but the
+    // value here is parsed from arbitrary HTTP / HTML and cannot be narrowed
+    // statically. Invalid encodings throw RangeError, which the catch below
+    // turns into a utf-8 fallback.
+    return new TextDecoder((charset || 'utf-8') as never, { fatal: false }).decode(bytes)
   } catch {
     return new TextDecoder('utf-8', { fatal: false }).decode(bytes)
   }
