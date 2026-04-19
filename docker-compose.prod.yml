@@ -19,6 +19,22 @@
 # Usage:
 #   docker compose -f docker-compose.prod.yml --env-file .env.production up -d
 #
+# Debugging (500 / crash loops) — run on the host that runs Compose:
+#   docker compose -f docker-compose.prod.yml --env-file .env.production ps -a
+#   docker compose -f docker-compose.prod.yml --env-file .env.production logs -f --tail=300 webapp
+#   docker compose -f docker-compose.prod.yml --env-file .env.production logs -f --tail=300 rest-api
+#   docker compose -f docker-compose.prod.yml --env-file .env.production logs -f --tail=200 traefik
+#   docker compose -f docker-compose.prod.yml --env-file .env.production logs -f --tail=200 hocuspocus-server
+# Traefik dashboard (bound to 127.0.0.1:8080): ssh tunnel then open http://127.0.0.1:8080
+#
+# Temporary verbose backend logs (add to .env.production, redeploy rest-api / worker / ws):
+#   LOG_LEVEL=debug
+#   HTTP_LOG_LEVEL=debug
+#   REST_LOG_LEVEL=debug          # rest-api route/service logs (default error-only)
+#   HOCUSPOCUS_LOGGER=true        # noisy; only when debugging collab
+#
+# Local notes: copy this block into Notes/server if you keep a private runbook there (Notes/ is gitignored).
+#
 # Naming Convention:
 #   - Project: docsplus
 #   - Containers: docsplus-{service}-{replica} (e.g., docsplus-webapp-1)
@@ -149,6 +165,10 @@ services:
     environment:
       NODE_ENV: production
       APP_PORT: 4000
+      # Pino — see packages/hocuspocus.server/src/lib/logger.ts
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      HTTP_LOG_LEVEL: ${HTTP_LOG_LEVEL:-}
+      REST_LOG_LEVEL: ${REST_LOG_LEVEL:-error}
       DATABASE_URL: ${DATABASE_URL}
       REDIS_HOST: docsplus-redis
       REDIS_PORT: 6379
@@ -246,6 +266,9 @@ services:
     environment:
       NODE_ENV: production
       HOCUSPOCUS_PORT: 4001
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      HTTP_LOG_LEVEL: ${HTTP_LOG_LEVEL:-}
+      WS_LOG_LEVEL: ${WS_LOG_LEVEL:-}
       DATABASE_URL: ${DATABASE_URL}
       REDIS_HOST: docsplus-redis
       REDIS_PORT: 6379
@@ -344,6 +367,8 @@ services:
     environment:
       NODE_ENV: production
       WORKER_HEALTH_PORT: 4002
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      WORKER_LOG_LEVEL: ${WORKER_LOG_LEVEL:-}
       DATABASE_URL: ${DATABASE_URL}
       REDIS_HOST: docsplus-redis
       REDIS_PORT: 6379
