@@ -1,5 +1,5 @@
 import { Hyperlink } from './hyperlink'
-export * from './helpers/floating-toolbar'
+export * from './helpers/floatingToolbar'
 export * from './hyperlink'
 export * from './popovers'
 export * from './utils'

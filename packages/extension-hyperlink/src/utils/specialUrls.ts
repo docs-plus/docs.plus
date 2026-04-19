@@ -6,7 +6,12 @@
 export type SpecialUrlInfo = {
   type: string
   title: string
-  icon: string // Function name from iconList.ts (e.g., 'HiMail', 'FaWhatsapp')
+  /**
+   * Icon identifier hint for consumers (e.g. `'HiMail'`, `'FaWhatsapp'`).
+   * Not rendered by the extension — consumers map this to their own icon
+   * components (React icons, SVG sprites, etc.).
+   */
+  icon: string
   category:
     | 'communication'
     | 'social'
@@ -254,12 +259,4 @@ export const getUrlsByCategory = (category: string): Record<string, SpecialUrlIn
   })
 
   return result
-}
-
-export default {
-  getSpecialUrlInfo,
-  getCategories,
-  getUrlsByCategory,
-  ALL_SPECIAL_URLS,
-  DOMAIN_MAPPINGS
 }

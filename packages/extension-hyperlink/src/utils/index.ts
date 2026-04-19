@@ -1,5 +1,6 @@
-export * from './copy2Clipboard'
+export * from './copyToClipboard'
 export * from './createHTMLElement'
 export * from './icons'
+export * from './normalizeHref'
 export * from './specialUrls'
 export * from './validateURL'

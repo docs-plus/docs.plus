@@ -1,64 +1,70 @@
-import { Editor } from '@tiptap/core'
-import { find } from 'linkifyjs'
+import { getMarkRange, type RawCommands } from '@tiptap/core'
 
-type EditHyperlinkOptions = {
-  editor: Editor
-  validate?: (url: string) => boolean
+import { normalizeHref } from '../utils/normalizeHref'
+import { validateURL } from '../utils/validateURL'
+
+type EditHyperlinkAttributes = {
   newURL?: string
   newText?: string
   title?: string
   image?: string
+  markName?: string
+  validate?: (url: string) => boolean
 }
 
-export default function editHyperlink(options: EditHyperlinkOptions) {
-  const { state } = options.editor.view
-  const { from } = state.selection
-  let link: HTMLAnchorElement | null = null
+/**
+ * Edit the hyperlink at the current selection.
+ *
+ * Returns a composable Tiptap command so the caller's `editor.chain()` stays
+ * a single dispatch — a previous footgun dispatched a nested chain inside
+ * here and produced "Applying a mismatched transaction" when composed with
+ * commands like `extendMarkRange`.
+ *
+ * All position + mark lookups happen against `tr.doc` inside the command,
+ * never a state snapshot captured before the chain started.
+ *
+ * `newURL` is run through `normalizeHref` before writing, so bare domains
+ * (`google.com`) become `https://google.com` — matching every other
+ * write-boundary (create popover, `setHyperlink`, autolink, paste).
+ */
+export const editHyperlinkCommand =
+  (attributes: EditHyperlinkAttributes = {}): RawCommands['editHyperlink'] =>
+  () =>
+  ({ tr, dispatch }) => {
+    const { newURL, newText, title, image, validate, markName = 'hyperlink' } = attributes
 
-  const selectedNode = options.editor.view.domAtPos(from - 1).node as HTMLElement
-  const nodeName = selectedNode?.nodeName
+    if (newURL && !validateURL(newURL, { customValidator: validate })) {
+      return false
+    }
 
-  if (nodeName === '#text') {
-    link = (selectedNode.parentNode as HTMLElement)?.closest('a')
-  } else {
-    link = selectedNode?.closest('a')
-  }
+    const markType = tr.doc.type.schema.marks[markName]
+    if (!markType) return false
 
-  // If no link found and node is paragraph, try finding link in sibling/parent
-  if (!link && options.editor.view.domAtPos(from).node.nodeName === 'P' && selectedNode.nextSibling)
-    link =
-      (selectedNode.nextSibling as HTMLAnchorElement) ||
-      (selectedNode.parentElement as HTMLAnchorElement)
+    const { from } = tr.selection
+    const $pos = tr.doc.resolve(from)
+    const range = getMarkRange($pos, markType)
+    if (!range) return false
 
-  if (!link) return true
+    let currentMark
+    try {
+      currentMark = tr.doc.nodeAt(range.from)?.marks.find((m) => m.type === markType)
+    } catch (error) {
+      console.warn('[hyperlink] editHyperlink: failed to read mark at position', error)
+      return false
+    }
+    if (!currentMark) return false
 
-  const text = options.newText || link?.innerText
-  // Get the position of the link in the editor view
-  const nodePos = options.editor.view.posAtDOM(link, 0)
+    if (!dispatch) return true
 
-  const sanitizeURL = find(options.newURL || link.href)
-    .filter((link) => link.isLink)
-    .filter((link) => (options.validate ? options.validate(link.value) : true))
-    // @ts-ignore
-    .at(0)
+    const text = newText || tr.doc.textBetween(range.from, range.to)
+    const href = newURL ? normalizeHref(newURL) : currentMark.attrs.href
 
-  return options.editor
-    .chain()
-    .focus()
-    .command(({ tr }) => {
-      tr.deleteRange(nodePos, nodePos + (link?.innerText || '')?.length).replaceWith(
-        nodePos,
-        nodePos,
-        options.editor.schema.text(text, [
-          options.editor.schema.marks.hyperlink.create({
-            href: sanitizeURL?.href,
-            title: options.title,
-            image: options.image
-          })
-        ])
-      )
-
-      return true
+    const newMark = markType.create({
+      ...currentMark.attrs,
+      href,
+      ...(title !== undefined && { title }),
+      ...(image !== undefined && { image })
     })
-    .run()
-}
+    tr.replaceWith(range.from, range.to, tr.doc.type.schema.text(text, [newMark]))
+    return true
+  }

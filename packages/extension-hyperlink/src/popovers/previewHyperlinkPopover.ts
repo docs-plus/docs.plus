@@ -1,31 +1,37 @@
-import { Editor } from '@tiptap/core'
-import { EditorView } from '@tiptap/pm/view'
-
-import { hideCurrentToolbar } from '../helpers/floating-toolbar'
-import { Copy, copyToClipboard, createHTMLElement, LinkOff, Pencil } from '../utils'
+import { createFloatingToolbar, hideCurrentToolbar } from '../helpers/floatingToolbar'
+import type { PreviewHyperlinkOptions } from '../hyperlink'
+import {
+  Copy,
+  copyToClipboard,
+  createHTMLElement,
+  DANGEROUS_SCHEME_RE,
+  LinkOff,
+  Pencil
+} from '../utils'
 import editHyperlinkPopover from './editHyperlinkPopover'
 
-type HyperlinkModalOptions = {
-  editor: Editor
-  validate?: (url: string) => boolean
-  view: EditorView
-  link: HTMLAnchorElement
-  node?: any
-  nodePos: number
-  event: MouseEvent
-  linkCoords: {
-    x: number
-    y: number
-    width: number
-    height: number
-  }
+function showPreviewToolbar(options: PreviewHyperlinkOptions): void {
+  const content = previewHyperlinkPopover(options)
+  const toolbar = createFloatingToolbar({
+    referenceElement: options.link,
+    content,
+    placement: 'bottom',
+    showArrow: true
+  })
+  toolbar.show()
 }
 
-export default function previewHyperlink(options: HyperlinkModalOptions) {
+export default function previewHyperlinkPopover(options: PreviewHyperlinkOptions): HTMLElement {
   const { link, editor } = options
-  const href = link.href
+  // Prefer the stored mark attribute over `link.href`. The DOM property
+  // silently resolves relative hrefs against `document.baseURI`, which
+  // turns a stored `google.com` into `http://<current-origin>/google.com`
+  // in the preview — see normalizeHref for context. `getAttribute('href')`
+  // returns the raw string as a fallback for callers that construct the
+  // popover by hand (e.g. the XSS-guard spec) without supplying `attrs`.
+  const href = options.attrs?.href ?? link.getAttribute('href') ?? ''
 
-  const hyperlinkLinkModal = createHTMLElement('div', { className: 'hyperlinkPreviewPopover' })
+  const root = createHTMLElement('div', { className: 'hyperlink-preview-popover' })
   const removeButton = createHTMLElement('button', { className: 'remove', innerHTML: LinkOff() })
   const copyButton = createHTMLElement('button', { className: 'copy', innerHTML: Copy() })
   const editButton = createHTMLElement('button', { className: 'edit', innerHTML: Pencil() })
@@ -39,17 +45,21 @@ export default function previewHyperlink(options: HyperlinkModalOptions) {
 
   hrefTitle.addEventListener('click', (event) => {
     event.preventDefault()
-    window.open(href, '_blank')
+    if (!DANGEROUS_SCHEME_RE.test(href)) {
+      window.open(href, '_blank')
+    }
   })
 
   removeButton.addEventListener('click', () => {
     hideCurrentToolbar()
-    // @ts-ignore - unsetHyperlink is a valid command but TypeScript types aren't picking it up in Docker builds
-    return editor.chain().focus().unsetHyperlink().run()
+    editor.chain().focus().unsetHyperlink().run()
   })
 
   editButton.addEventListener('click', () => {
-    editHyperlinkPopover({ ...options, hyperlinkPopover: hyperlinkLinkModal })
+    editHyperlinkPopover({
+      ...options,
+      onBack: () => showPreviewToolbar(options)
+    })
   })
 
   copyButton.addEventListener('click', () => {
@@ -59,7 +69,6 @@ export default function previewHyperlink(options: HyperlinkModalOptions) {
     })
   })
 
-  hyperlinkLinkModal.append(hrefTitle, copyButton, editButton, removeButton)
-
-  return hyperlinkLinkModal
+  root.append(hrefTitle, copyButton, editButton, removeButton)
+  return root
 }

@@ -1,0 +1,323 @@
+/**
+ * @docs.plus/extension-hyperlink — default styles
+ *
+ * A minimal, framework-agnostic stylesheet for the prebuilt create/preview/edit
+ * popovers. Every visual token is exposed as a `--hl-*` CSS custom property so
+ * consumers can retheme without copy-pasting rules.
+ *
+ * Usage:
+ *   import '@docs.plus/extension-hyperlink/styles.css'
+ *
+ * Theming:
+ *   :root {
+ *     --hl-accent: #2563eb;
+ *     --hl-radius: 8px;
+ *   }
+ *
+ * Customizing a specific rule is fine — class names are part of the public API
+ * and are documented in the README.
+ */
+
+/*
+ * Theme tokens use `light-dark()` so the popover follows the nearest
+ * ancestor's `color-scheme` — that means a consumer who toggles
+ * `color-scheme: light | dark` on <html> (or an ancestor) flips the
+ * popover automatically, and it no longer gets stuck in dark mode just
+ * because the OS prefers dark. When `color-scheme` is `normal` (the
+ * default), `light-dark()` falls back to `prefers-color-scheme`, which
+ * preserves the previous OS-driven behaviour for unopinionated hosts.
+ */
+:root {
+  --hl-bg: light-dark(#ffffff, #1f2937);
+  --hl-fg: light-dark(#111827, #f3f4f6);
+  --hl-muted: light-dark(#6b7280, #9ca3af);
+  --hl-border: light-dark(#e5e7eb, #374151);
+  --hl-hover: light-dark(#f3f4f6, #374151);
+  --hl-accent: light-dark(#2563eb, #60a5fa);
+  --hl-accent-fg: light-dark(#ffffff, #0b1220);
+  --hl-danger: light-dark(#dc2626, #f87171);
+  --hl-shadow:
+    0 1px 2px light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.4)),
+    0 4px 12px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.5));
+  --hl-radius: 6px;
+  --hl-radius-sm: 4px;
+  --hl-font:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --hl-font-size: 14px;
+  --hl-z-index: 9999;
+  --hl-transition: 120ms ease-in-out;
+}
+
+/* -------------------------------------------------------------------------
+   Floating toolbar shell (shared by all three popovers)
+   ------------------------------------------------------------------------- */
+.floating-toolbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: var(--hl-z-index);
+  opacity: 0;
+  transform: scale(0.96);
+  transition:
+    opacity var(--hl-transition),
+    transform var(--hl-transition);
+  pointer-events: none;
+  -webkit-tap-highlight-color: transparent;
+  will-change: transform, opacity;
+}
+
+.floating-toolbar.visible {
+  opacity: 1;
+  transform: scale(1);
+  pointer-events: auto;
+}
+
+.floating-toolbar-arrow {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: var(--hl-bg);
+  transform: rotate(45deg);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.floating-toolbar-arrow-top {
+  border-right: 1px solid var(--hl-border);
+  border-bottom: 1px solid var(--hl-border);
+}
+
+.floating-toolbar-arrow-bottom {
+  border-top: 1px solid var(--hl-border);
+  border-left: 1px solid var(--hl-border);
+}
+
+.floating-toolbar-arrow-left {
+  border-right: 1px solid var(--hl-border);
+  border-bottom: 1px solid var(--hl-border);
+}
+
+.floating-toolbar-arrow-right {
+  border-top: 1px solid var(--hl-border);
+  border-left: 1px solid var(--hl-border);
+}
+
+.floating-toolbar-content {
+  position: relative;
+  z-index: 2;
+}
+
+/* -------------------------------------------------------------------------
+   Popover shell — shared shape for create / preview / edit
+   ------------------------------------------------------------------------- */
+.hyperlink-create-popover,
+.hyperlink-preview-popover,
+.hyperlink-edit-popover {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px;
+  background: var(--hl-bg);
+  color: var(--hl-fg);
+  border: 1px solid var(--hl-border);
+  border-radius: var(--hl-radius);
+  box-shadow: var(--hl-shadow);
+  font-family: var(--hl-font);
+  font-size: var(--hl-font-size);
+  line-height: 1.4;
+}
+
+.hyperlink-create-popover form,
+.hyperlink-edit-popover {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  width: 100%;
+}
+
+/* Input groups (create + edit) */
+.hyperlink-create-popover .inputs-wrapper,
+.hyperlink-edit-popover .text-wrapper,
+.hyperlink-edit-popover .href-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 6px 8px;
+  background: var(--hl-bg);
+  border: 1px solid var(--hl-border);
+  border-radius: var(--hl-radius-sm);
+  transition:
+    border-color var(--hl-transition),
+    box-shadow var(--hl-transition);
+}
+
+.hyperlink-create-popover .inputs-wrapper:focus-within,
+.hyperlink-edit-popover .text-wrapper:focus-within,
+.hyperlink-edit-popover .href-wrapper:focus-within {
+  border-color: var(--hl-accent);
+  box-shadow: 0 0 0 1px var(--hl-accent);
+}
+
+.hyperlink-create-popover .inputs-wrapper.error,
+.hyperlink-edit-popover .text-wrapper.error,
+.hyperlink-edit-popover .href-wrapper.error {
+  border-color: var(--hl-danger);
+  box-shadow: 0 0 0 1px var(--hl-danger);
+}
+
+.hyperlink-create-popover input,
+.hyperlink-edit-popover input {
+  flex: 1;
+  min-width: 0;
+  padding: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.hyperlink-create-popover input::placeholder,
+.hyperlink-edit-popover input::placeholder {
+  color: var(--hl-muted);
+}
+
+.hyperlink-create-popover .search-icon,
+.hyperlink-edit-popover .search-icon {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  color: var(--hl-muted);
+}
+
+.hyperlink-create-popover .search-icon svg,
+.hyperlink-edit-popover .search-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.hyperlink-create-popover .error-message,
+.hyperlink-edit-popover .error-message {
+  position: absolute;
+  top: -8px;
+  left: 8px;
+  display: none;
+  padding: 0 4px;
+  background: var(--hl-bg);
+  color: var(--hl-danger);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--hl-radius-sm);
+}
+
+.hyperlink-create-popover .error-message.show,
+.hyperlink-edit-popover .error-message.show {
+  display: block;
+}
+
+/* Action buttons (create submit + edit back/apply) */
+.hyperlink-create-popover .buttons-wrapper,
+.hyperlink-edit-popover .buttons-wrapper {
+  display: flex;
+  flex-shrink: 0;
+  gap: 4px;
+}
+
+.hyperlink-create-popover button[type='submit'],
+.hyperlink-edit-popover .back-button,
+.hyperlink-edit-popover .apply-button {
+  padding: 6px 12px;
+  background: transparent;
+  color: var(--hl-fg);
+  border: none;
+  border-radius: var(--hl-radius-sm);
+  font: inherit;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color var(--hl-transition),
+    color var(--hl-transition);
+}
+
+.hyperlink-create-popover button[type='submit']:hover:not(:disabled),
+.hyperlink-edit-popover .back-button:hover,
+.hyperlink-edit-popover .apply-button:hover {
+  background: var(--hl-accent);
+  color: var(--hl-accent-fg);
+}
+
+.hyperlink-create-popover button[type='submit']:disabled {
+  color: var(--hl-muted);
+  cursor: not-allowed;
+}
+
+/* -------------------------------------------------------------------------
+   Preview popover (anchor + copy / edit / remove icon buttons)
+   ------------------------------------------------------------------------- */
+.hyperlink-preview-popover a {
+  display: inline-block;
+  max-width: 260px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 2px 6px;
+  color: var(--hl-accent);
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.hyperlink-preview-popover a:hover {
+  text-decoration: underline;
+}
+
+.hyperlink-preview-popover button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 5px;
+  background: transparent;
+  border: none;
+  border-radius: var(--hl-radius-sm);
+  color: var(--hl-fg);
+  cursor: pointer;
+  transition: background-color var(--hl-transition);
+}
+
+.hyperlink-preview-popover button:hover {
+  background: var(--hl-hover);
+}
+
+.hyperlink-preview-popover button svg {
+  width: 18px;
+  height: 18px;
+}
+
+.hyperlink-preview-popover .copy {
+  margin-left: auto;
+}
+
+/* -------------------------------------------------------------------------
+   Edit popover — stacked inputs on the left, stacked buttons on the right
+   ------------------------------------------------------------------------- */
+.hyperlink-edit-popover {
+  align-items: flex-end;
+}
+
+.hyperlink-edit-popover .inputs-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  width: 100%;
+}
+
+.hyperlink-edit-popover .buttons-wrapper {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-end;
+  gap: 6px;
+}

@@ -1,3 +1,5 @@
+import { copyFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { defineConfig } from 'tsup'
 
 const isProduction = process.env.NODE_ENV === 'production'
@@ -20,6 +22,11 @@ export default defineConfig({
     }
   },
   esbuildOptions(options) {
-    options.drop = isProduction ? ['console'] : []
+    if (isProduction) {
+      options.pure = ['console.log', 'console.debug']
+    }
+  },
+  async onSuccess() {
+    copyFileSync(resolve('src/styles.css'), resolve('dist/styles.css'))
   }
 })

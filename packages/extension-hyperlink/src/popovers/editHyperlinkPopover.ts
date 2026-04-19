@@ -1,36 +1,38 @@
 import { Editor } from '@tiptap/core'
 import { EditorView } from '@tiptap/pm/view'
 
-import { createFloatingToolbar, hideCurrentToolbar } from '../helpers/floating-toolbar'
+import { createFloatingToolbar, hideCurrentToolbar } from '../helpers/floatingToolbar'
 import { createHTMLElement, Link, Title, validateURL } from '../utils'
 
-type EditHyperlinkModalOptions = {
+const TOOLBAR_SHOW_DELAY_MS = 100
+
+export type EditHyperlinkModalOptions = {
   editor: Editor
   validate?: (url: string) => boolean
   view: EditorView
   link: HTMLAnchorElement
-  hyperlinkPopover: HTMLElement
   linkCoords: {
     x: number
     y: number
     width: number
     height: number
   }
+  onBack?: () => void
+  markName?: string
 }
 
-export default function editHyperlinkPopover(options: EditHyperlinkModalOptions) {
-  const { editor, link, hyperlinkPopover, linkCoords, validate, view } = options
+export default function editHyperlinkPopover(options: EditHyperlinkModalOptions): void {
+  const { editor, link, linkCoords, validate, view } = options
 
-  // Create form elements
-  const form = createHTMLElement('form', { className: 'hyperlinkEditPopover' })
-  const inputsWrapper = createHTMLElement('div', { className: 'inputsWrapper' })
-  const buttonsWrapper = createHTMLElement('div', { className: 'buttonsWrapper' })
+  const form = createHTMLElement('form', { className: 'hyperlink-edit-popover' })
+  const inputsWrapper = createHTMLElement('div', { className: 'inputs-wrapper' })
+  const buttonsWrapper = createHTMLElement('div', { className: 'buttons-wrapper' })
 
-  // Text input section
-  const textWrapper = createHTMLElement('div', { className: 'textWrapper' })
+  // Text input
+  const textWrapper = createHTMLElement('div', { className: 'text-wrapper' })
   const titleIcon = createHTMLElement('div', {
     className: 'search-icon',
-    innerHTML: Title({ size: 24, fill: '#e3e3e3' })
+    innerHTML: Title({ size: 24 })
   })
   const linkTextInput = createHTMLElement('input', {
     type: 'text',
@@ -42,11 +44,11 @@ export default function editHyperlinkPopover(options: EditHyperlinkModalOptions)
     textContent: 'Please enter link text'
   })
 
-  // URL input section
-  const hrefWrapper = createHTMLElement('div', { className: 'hrefWrapper' })
+  // URL input
+  const hrefWrapper = createHTMLElement('div', { className: 'href-wrapper' })
   const anchorIcon = createHTMLElement('div', {
     className: 'search-icon',
-    innerHTML: Link({ size: 24, fill: '#e3e3e3' })
+    innerHTML: Link({ size: 24 })
   })
   const hrefInput = createHTMLElement('input', {
     type: 'text',
@@ -65,18 +67,13 @@ export default function editHyperlinkPopover(options: EditHyperlinkModalOptions)
   const backButton = createHTMLElement('button', {
     type: 'button',
     textContent: 'Back',
-    className: 'backButton'
+    className: 'back-button'
   })
   const applyButton = createHTMLElement('button', {
     type: 'submit',
     textContent: 'Apply',
-    className: 'btn_applyModal'
+    className: 'apply-button'
   })
-
-  // Validation helpers
-  const validateURLWithOptions = (url: string): boolean => {
-    return validateURL(url, { customValidator: validate })
-  }
 
   const showError = (wrapper: HTMLElement, errorEl: HTMLElement) => {
     wrapper.classList.add('error')
@@ -88,10 +85,11 @@ export default function editHyperlinkPopover(options: EditHyperlinkModalOptions)
     errorEl.classList.remove('show')
   }
 
-  // Event listeners
   linkTextInput.addEventListener('input', () => hideError(textWrapper, textError))
   hrefInput.addEventListener('input', () => hideError(hrefWrapper, hrefError))
-  backButton.addEventListener('click', () => setTimeout(() => link.click(), 1))
+  backButton.addEventListener('click', () => {
+    if (options.onBack) options.onBack()
+  })
 
   form.addEventListener('submit', (e) => {
     e.preventDefault()
@@ -105,18 +103,19 @@ export default function editHyperlinkPopover(options: EditHyperlinkModalOptions)
       hasErrors = true
     }
 
-    if (!validateURLWithOptions(newHref)) {
+    if (!validateURL(newHref, { customValidator: validate })) {
       showError(hrefWrapper, hrefError)
       hasErrors = true
     }
 
     if (hasErrors) return
 
-    // @ts-ignore - editHyperlink is a valid command but TypeScript types aren't picking it up in Docker builds
-    editor.chain().focus().extendMarkRange('hyperlink').editHyperlink({
-      newURL: newHref,
-      newText: newText
-    })
+    editor
+      .chain()
+      .focus()
+      .extendMarkRange(options.markName ?? 'hyperlink')
+      .editHyperlink({ newURL: newHref, newText })
+      .run()
 
     hideCurrentToolbar()
   })
@@ -128,9 +127,6 @@ export default function editHyperlinkPopover(options: EditHyperlinkModalOptions)
   buttonsWrapper.append(backButton, applyButton)
   form.append(inputsWrapper, buttonsWrapper)
 
-  // Show the popover
-  hyperlinkPopover.innerHTML = ''
-  hyperlinkPopover.appendChild(form)
   hideCurrentToolbar()
 
   const toolbar = createFloatingToolbar({
@@ -144,10 +140,8 @@ export default function editHyperlinkPopover(options: EditHyperlinkModalOptions)
     content: form,
     placement: 'bottom',
     showArrow: true,
-    enableKeyboardNav: true,
-    onError: (error) => console.error('Hyperlink edit toolbar error:', error),
     onShow: () => linkTextInput.focus()
   })
 
-  setTimeout(() => toolbar.show(), 100)
+  setTimeout(() => toolbar.show(), TOOLBAR_SHOW_DELAY_MS)
 }

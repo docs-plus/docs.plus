@@ -3,14 +3,17 @@ import { MarkType } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { find } from 'linkifyjs'
 
+import { normalizeLinkifyHref } from '../utils/normalizeHref'
+
 type PasteHandlerOptions = {
   editor: Editor
   type: MarkType
+  validate?: (url: string) => boolean
 }
 
-export default function HyperLinkPasteHandlerPlugin(options: PasteHandlerOptions): Plugin {
+export default function pasteHandlerPlugin(options: PasteHandlerOptions): Plugin {
   return new Plugin({
-    key: new PluginKey('HyperLinkPasteHandler'),
+    key: new PluginKey('hyperlinkPasteHandler'),
     props: {
       handlePaste: (view, event, slice) => {
         const { state } = view
@@ -33,8 +36,12 @@ export default function HyperLinkPasteHandlerPlugin(options: PasteHandlerOptions
           return false
         }
 
+        if (options.validate && !options.validate(link.href)) {
+          return false
+        }
+
         options.editor.commands.setMark(options.type, {
-          href: link.href
+          href: normalizeLinkifyHref(link)
         })
 
         return true

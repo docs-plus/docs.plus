@@ -1,85 +1,75 @@
-import { InputRule, Mark, markPasteRule, mergeAttributes } from '@tiptap/core'
+import { Editor, InputRule, Mark, markPasteRule, mergeAttributes } from '@tiptap/core'
 import { Plugin } from '@tiptap/pm/state'
-import { find, registerCustomProtocol, reset } from 'linkifyjs'
+import { EditorView } from '@tiptap/pm/view'
+import { find, registerCustomProtocol } from 'linkifyjs'
 
-import editHyperlinkHelper from './helpers/editHyperlink'
-import AutoHyperlinkPlugin from './plugins/autoHyperlink'
-import HyperLinkClickHandlerPlugin from './plugins/clickHandler'
-import HyperLinkPasteHandlerPlugin from './plugins/pasteHandler'
+import { editHyperlinkCommand } from './helpers/editHyperlink'
+import { createFloatingToolbar } from './helpers/floatingToolbar'
+import autolinkPlugin from './plugins/autolink'
+import clickHandlerPlugin from './plugins/clickHandler'
+import pasteHandlerPlugin from './plugins/pasteHandler'
+import { type LinkifyMatchLike, normalizeHref, normalizeLinkifyHref } from './utils/normalizeHref'
+import { DANGEROUS_SCHEME_RE } from './utils/validateURL'
+
+const INPUT_FOCUS_DELAY_MS = 100
+
 export interface LinkProtocolOptions {
   scheme: string
   optionalSlashes?: boolean
 }
 
+export type HyperlinkAttributes = {
+  href: string | null
+  target: string | null
+  rel: string | null
+  class: string | null
+  title: string | null
+  image: string | null
+  [key: string]: unknown
+}
+
+export type PreviewHyperlinkOptions = {
+  editor: Editor
+  view: EditorView
+  link: HTMLAnchorElement
+  nodePos: number
+  attrs: HyperlinkAttributes
+  linkCoords: { x: number; y: number; width: number; height: number }
+  validate?: (url: string) => boolean
+}
+
+export type CreateHyperlinkOptions = {
+  editor: Editor
+  extensionName: string
+  attributes: Partial<HyperlinkAttributes>
+  validate?: (url: string) => boolean
+}
+
 export interface HyperlinkOptions {
-  /**
-   * If enabled, it adds links as you type, default is true.
-   */
-  autoHyperlink: boolean
-  /**
-   * An array of custom protocols to be registered with linkifyjs.
-   */
+  autolink: boolean
   protocols: Array<LinkProtocolOptions | string>
-  /**
-   * If enabled, links will be opened on click, default is true.
-   */
   openOnClick: boolean
-  /**
-   * Adds a link to the current selection if the pasted content only contains an url, default is true.
-   */
-  hyperlinkOnPaste: boolean
-  /**
-   * A list of HTML attributes to be rendered.
-   */
-  HTMLAttributes: Record<string, any>
-  /**
-   * A list of popovers to be rendered.
-   * @default null
-   * @example
-   */
+  linkOnPaste: boolean
+  HTMLAttributes: Partial<HyperlinkAttributes>
   popovers: {
-    previewHyperlink?: ((options: any) => HTMLElement) | null
-    createHyperlink?: ((options: any) => void) | null
+    previewHyperlink?: ((options: PreviewHyperlinkOptions) => HTMLElement | null) | null
+    createHyperlink?: ((options: CreateHyperlinkOptions) => HTMLElement | null) | null
   }
-  /**
-   * A validation function that modifies link verification for the auto linker.
-   * @param url - The url to be validated.
-   * @returns - True if the url is valid, false otherwise.
-   */
   validate?: (url: string) => boolean
 }
 
 declare module '@tiptap/core' {
   interface Commands<ReturnType> {
-    link: {
-      /**
-       * Edit the hyperlink's text
-       */
-      editHyperLinkText: (text: string) => ReturnType
-
-      /**
-       * Edit the hyperlink's href value
-       */
-      editHyperLinkHref: (href: string) => ReturnType
-
-      /**
-       * Edit the hyperlink's
-       */
+    hyperlink: {
+      editHyperlinkText: (text: string) => ReturnType
+      editHyperlinkHref: (href: string) => ReturnType
       editHyperlink: (attributes?: {
         newText?: string
         newURL?: string
         title?: string
         image?: string
       }) => ReturnType
-
-      /**
-       *  Set a hyperlink
-       */
       setHyperlink: (attributes?: { href: string; target?: string | null }) => ReturnType
-
-      /**
-       * Unset a link mark
-       */
       unsetHyperlink: () => ReturnType
     }
   }
@@ -102,22 +92,22 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
     })
   },
 
-  onDestroy() {
-    reset()
-  },
+  // linkifyjs.reset() was removed intentionally — it clears the global
+  // protocol registry and breaks other editors on the same page.
+  // Registered protocols are additive and persist for the page lifetime.
 
   inclusive() {
-    return this.options.autoHyperlink
+    return this.options.autolink
   },
 
   addOptions() {
     return {
       openOnClick: true,
-      hyperlinkOnPaste: true,
-      autoHyperlink: true,
+      linkOnPaste: true,
+      autolink: true,
       protocols: [],
       HTMLAttributes: {
-        target: '_blank',
+        target: null,
         rel: 'noopener noreferrer nofollow',
         class: null
       },
@@ -135,7 +125,8 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
         default: null
       },
       target: {
-        default: this.options.HTMLAttributes.target
+        default: this.options.HTMLAttributes.target,
+        rendered: false
       },
       rel: {
         default: this.options.HTMLAttributes.rel
@@ -153,7 +144,20 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
   },
 
   parseHTML() {
-    return [{ tag: 'a[href]:not([href *= "javascript:" i])' }]
+    // Reject anchors whose href uses any dangerous scheme. Keeping the list
+    // aligned with DANGEROUS_SCHEME_RE is the one XSS invariant this
+    // extension enforces at every boundary (parseHTML, input rules, paste,
+    // click, preview); update them together.
+    return [
+      {
+        tag: 'a[href]',
+        getAttrs: (node: HTMLElement | string) => {
+          if (typeof node === 'string') return false
+          const href = node.getAttribute('href') ?? ''
+          return DANGEROUS_SCHEME_RE.test(href) ? false : null
+        }
+      }
+    ]
   },
 
   renderHTML({ HTMLAttributes }) {
@@ -166,57 +170,77 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
         (attributes) =>
         ({ editor, chain }) => {
           if (!this.options.popovers.createHyperlink) {
-            return chain()
-              .setMark(this.name, attributes)
-              .setMeta('preventAutohyperlink', true)
-              .run()
-          } else {
-            this.options.popovers.createHyperlink({
-              editor,
-              validate: this.options.validate,
-              extentionName: this.name,
-              attributes: attributes || {}
-            })
-            return true
+            // Normalize at the command boundary so programmatic callers
+            // (no popover) get the same bare-domain → `https://` guarantee
+            // the create popover applies. When a popover IS configured
+            // the factory is responsible for normalizing its own input.
+            const normalized = attributes?.href
+              ? { ...attributes, href: normalizeHref(attributes.href) }
+              : attributes
+            return chain().setMark(this.name, normalized).setMeta('preventAutolink', true).run()
           }
-        },
 
-      editHyperlink:
-        (attributes) =>
-        ({ editor }) => {
-          return editHyperlinkHelper({
-            ...attributes,
-            editor,
-            validate: this.options.validate
-          })
-        },
-
-      editHyperLinkText:
-        (newText) =>
-        ({ editor }) => {
-          return editHyperlinkHelper({
-            editor,
-            newText,
-            validate: this.options.validate
-          })
-        },
-
-      editHyperLinkHref:
-        (newURL) =>
-        ({ editor }) => {
-          return editHyperlinkHelper({
+          const content = this.options.popovers.createHyperlink({
             editor,
             validate: this.options.validate,
-            newURL
+            extensionName: this.name,
+            attributes: attributes || {}
           })
+
+          if (!content) return true
+
+          const { from, to } = editor.state.selection
+          const start = editor.view.coordsAtPos(from)
+          const end = editor.view.coordsAtPos(to)
+
+          const toolbar = createFloatingToolbar({
+            coordinates: {
+              x: start.left,
+              y: start.top,
+              width: end.left - start.left,
+              height: end.bottom - start.top,
+              contextElement: editor.view.dom
+            },
+            content,
+            placement: 'bottom',
+            showArrow: true
+          })
+
+          toolbar.show()
+
+          const input = content.querySelector('input')
+          if (input) setTimeout(() => input.focus(), INPUT_FOCUS_DELAY_MS)
+
+          return true
         },
+
+      editHyperlink: (attributes) =>
+        editHyperlinkCommand({
+          ...attributes,
+          validate: this.options.validate,
+          markName: this.name
+        })(),
+
+      editHyperlinkText: (newText) =>
+        editHyperlinkCommand({
+          newText,
+          validate: this.options.validate,
+          markName: this.name
+        })(),
+
+      editHyperlinkHref: (newURL) =>
+        editHyperlinkCommand({
+          newURL,
+          validate: this.options.validate,
+          markName: this.name
+        })(),
 
       unsetHyperlink:
         () =>
         ({ chain }) => {
           return chain()
             .unsetMark(this.name, { extendEmptyMarkRange: true })
-            .setMeta('preventAutohyperlink', true)
+            .setMeta('preventAutolink', true)
             .run()
         }
     }
@@ -238,11 +262,9 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
           const start = range.from
           const end = range.to
 
-          // Normalize the URL - add https:// if no protocol
-          let normalizedUrl = url.trim()
-          if (!/^https?:\/\//.test(normalizedUrl) && !normalizedUrl.startsWith('//')) {
-            normalizedUrl = `https://${normalizedUrl}`
-          }
+          const trimmed = url.trim()
+          if (DANGEROUS_SCHEME_RE.test(trimmed)) return
+          const normalizedUrl = normalizeHref(trimmed)
 
           // Replace the markdown text with just the link text
           tr.replaceWith(start, end, state.schema.text(linkText))
@@ -273,8 +295,10 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
               data: link
             })),
         type: this.type,
+        // `match.data` is set unconditionally in the `find` callback above,
+        // so the cast is documentary — the branch itself is guaranteed live.
         getAttributes: (match) => ({
-          href: match.data?.href
+          href: normalizeLinkifyHref(match.data as LinkifyMatchLike)
         })
       })
     ]
@@ -283,9 +307,9 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
   addProseMirrorPlugins() {
     const plugins: Plugin[] = []
 
-    if (this.options.autoHyperlink) {
+    if (this.options.autolink) {
       plugins.push(
-        AutoHyperlinkPlugin({
+        autolinkPlugin({
           type: this.type,
           validate: this.options.validate
         })
@@ -294,21 +318,21 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
 
     if (this.options.openOnClick) {
       plugins.push(
-        HyperLinkClickHandlerPlugin({
+        clickHandlerPlugin({
           type: this.type,
           editor: this.editor,
           validate: this.options.validate,
-          view: this.editor.view,
           popover: this.options.popovers.previewHyperlink
         })
       )
     }
 
-    if (this.options.hyperlinkOnPaste) {
+    if (this.options.linkOnPaste) {
       plugins.push(
-        HyperLinkPasteHandlerPlugin({
+        pasteHandlerPlugin({
           editor: this.editor,
-          type: this.type
+          type: this.type,
+          validate: this.options.validate
         })
       )
     }

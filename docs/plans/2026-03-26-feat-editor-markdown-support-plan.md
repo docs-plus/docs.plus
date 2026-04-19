@@ -34,7 +34,7 @@ Install `@tiptap/markdown` (first-party, Marked-based). Wire it into the editor 
 
 Existing handlers fire in plugin registration order. The Markdown paste plugin must slot in correctly.
 
-**Note:** `hyperlinkOnPaste: false` in current config means the hyperlink paste handler is NOT registered at runtime. The actual pipeline is:
+**Note:** `linkOnPaste: false` in current config means the hyperlink paste handler is NOT registered at runtime. The actual pipeline is:
 
 ```
 1. Image paste       → binary file / data URL / image URL → Image node (early exit)
@@ -43,7 +43,7 @@ Existing handlers fire in plugin registration order. The Markdown paste plugin m
 4. Default           → TipTap default paste (HTML or plain text)
 ```
 
-If `hyperlinkOnPaste` is ever re-enabled, it should fire between steps 2 and 3 (before Markdown detection).
+If `linkOnPaste` is ever re-enabled, it should fire between steps 2 and 3 (before Markdown detection).
 
 The Markdown plugin registers via `addProseMirrorPlugins()` and returns `false` from `handlePaste` to pass through if heuristic doesn't match.
 

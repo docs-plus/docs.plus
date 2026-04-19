@@ -1,7 +1,7 @@
 {
   "name": "@docs.plus/extension-hyperlink",
-  "version": "3.0.0",
-  "description": "Hyperlink component for docs.plus",
+  "version": "4.3.0",
+  "description": "Tiptap extension for hyperlinks with built-in popovers, auto-linking, and 50+ URL scheme support",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -12,11 +12,16 @@
         "default": "./dist/index.js"
       },
       "require": {
-        "types": "./dist/index.d.ts",
+        "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
       }
-    }
+    },
+    "./styles.css": "./dist/styles.css",
+    "./package.json": "./package.json"
   },
+  "sideEffects": [
+    "**/*.css"
+  ],
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
