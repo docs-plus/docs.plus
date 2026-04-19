@@ -1,0 +1,216 @@
+name: 'Discord: release announcement'
+
+# ---------------------------------------------------------------------------
+# Why this workflow exists (and what it deliberately does NOT do)
+#
+# - Listens to GitHub Release events and posts a rich embed announcement to
+#   the dedicated #releases Discord channel.
+# - Decoupled from npm publish: publishing is a manual `bun publish` from a
+#   maintainer's laptop (with --otp), and creating a GitHub Release is the
+#   human gate that triggers the announcement. This keeps NPM_TOKEN out of
+#   CI entirely.
+# - Sibling workflow: .github/workflows/discord-activity.yml posts per-push
+#   commit summaries to a different (commits) channel via DISCORD_WEBHOOK.
+#   The two workflows never overlap: push events vs release events are
+#   independent, and they target different webhooks / channels / audiences.
+#
+# Tag conventions supported:
+#   <pkg-name>@<semver>     monorepo per-package release   (preferred)
+#   v<semver>               repo-wide release              (fallback)
+#   anything else           treated as a generic release; the package name
+#                           field renders as the GitHub repo full name
+# ---------------------------------------------------------------------------
+
+on:
+  release:
+    # `published` fires on stable, `prereleased` fires on pre-release. We
+    # listen to both and branch on github.event.release.prerelease for the
+    # visual differentiation (orange border + @next install hint).
+    types: [published, prereleased]
+
+# If a release is edited and re-published quickly, only the latest event
+# wins. Prevents duplicate announcements when a maintainer fixes a typo
+# in the release notes seconds after publishing.
+concurrency:
+  group: discord-release-${{ github.event.release.id }}
+  cancel-in-progress: true
+
+jobs:
+  announce:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      # ----------------------------------------------------------------------
+      # Parse the release event into the variables the embed needs.
+      #
+      # We do all jq / regex / truncation in one bash step (instead of
+      # multiple GHA expressions) because:
+      #   - bash regex with BASH_REMATCH is cleaner than templating extraction
+      #     into the embed at JSON-build time
+      #   - keeps the second step purely about embed assembly + curl
+      # ----------------------------------------------------------------------
+      - name: Parse release metadata
+        id: meta
+        env:
+          RELEASE_JSON: ${{ toJSON(github.event.release) }}
+        run: |
+          set -euo pipefail
+
+          TAG=$(jq -r '.tag_name' <<< "$RELEASE_JSON")
+          NAME=$(jq -r '.name // .tag_name' <<< "$RELEASE_JSON")
+          URL=$(jq -r '.html_url' <<< "$RELEASE_JSON")
+          AUTHOR=$(jq -r '.author.login' <<< "$RELEASE_JSON")
+          AUTHOR_URL=$(jq -r '.author.html_url' <<< "$RELEASE_JSON")
+          IS_PRE=$(jq -r '.prerelease' <<< "$RELEASE_JSON")
+          PUBLISHED_AT=$(jq -r '.published_at' <<< "$RELEASE_JSON")
+
+          # Tag → (package, version) extraction.
+          # Regex notes:
+          #   - The leading @? + slash optional pair handles BOTH unscoped
+          #     (`mypkg@1.0.0`) and scoped (`@docs.plus/extension-hyperlink@4.3.0`)
+          #     names without needing two branches.
+          #   - We allow . and _ in the version segment to admit pre-release
+          #     ids (4.3.0-rc.1, 4.3.0+build.5, 4.3.0-canary_2026-04-19).
+          if [[ "$TAG" =~ ^(@?[A-Za-z0-9._-]+(/[A-Za-z0-9._-]+)?)@(.+)$ ]]; then
+            PKG="${BASH_REMATCH[1]}"
+            VERSION="${BASH_REMATCH[3]}"
+          elif [[ "$TAG" =~ ^v(.+)$ ]]; then
+            PKG="${{ github.repository }}"
+            VERSION="${BASH_REMATCH[1]}"
+          else
+            PKG="${{ github.repository }}"
+            VERSION="$TAG"
+          fi
+
+          # Body trimming. Discord embed.description caps at 4096 chars.
+          # CHANGELOG slices for major versions can run long; truncate with
+          # a clear "...full notes" link to the GitHub Release page so no
+          # information is silently lost.
+          BODY=$(jq -r '.body // ""' <<< "$RELEASE_JSON")
+          if [ ${#BODY} -gt 3800 ]; then
+            BODY="${BODY:0:3800}
+
+          ... [full release notes]($URL)"
+          fi
+
+          # Color: 0x22c55e (green-500) for stable, 0xf97316 (orange-500)
+          # for pre-release. Discord embed.color is a base-10 integer, so
+          # we encode the hex pre-converted.
+          # Color: 24-bit RGB encoded as decimal (Discord embed.color is int).
+          # Verified: $((16#22c55e)) == 2278750 ; $((16#f97316)) == 16347926.
+          if [ "$IS_PRE" = "true" ]; then
+            COLOR=16347926   # #f97316 — Tailwind orange-500
+            BADGE="Pre-release"
+          else
+            COLOR=2278750    # #22c55e — Tailwind green-500
+            BADGE="Release"
+          fi
+
+          # Stash for the next step. Scalars via GITHUB_OUTPUT, multi-line
+          # body via tempfile to side-step the EOF-delimiter quoting trap.
+          {
+            echo "pkg=$PKG"
+            echo "version=$VERSION"
+            echo "url=$URL"
+            echo "author=$AUTHOR"
+            echo "author_url=$AUTHOR_URL"
+            echo "is_pre=$IS_PRE"
+            echo "published_at=$PUBLISHED_AT"
+            echo "color=$COLOR"
+            echo "badge=$BADGE"
+            echo "name=$NAME"
+          } >> "$GITHUB_OUTPUT"
+          printf '%s' "$BODY" > "$RUNNER_TEMP/release_body.md"
+
+      # ----------------------------------------------------------------------
+      # Assemble the Discord embed and POST it.
+      #
+      # The embed is constructed entirely via `jq -n` with --arg / --argjson
+      # so every user-controlled field (release name, body, author login)
+      # is JSON-escaped at the boundary. This is the only safe way; building
+      # JSON via string interpolation would crumble on any release body
+      # containing a literal " or \ or newline (which is most of them).
+      # ----------------------------------------------------------------------
+      - name: Post embed to Discord
+        env:
+          # NOTE: deliberately a different secret from the push-activity
+          # workflow's DISCORD_WEBHOOK. Releases go to #releases (low-noise,
+          # user-facing); pushes go to the existing push channel (high-noise,
+          # team-facing). Naming convention: DISCORD_<qualifier>_WEBHOOK.
+          WEBHOOK: ${{ secrets.DISCORD_RELEASE_WEBHOOK }}
+          PKG: ${{ steps.meta.outputs.pkg }}
+          VERSION: ${{ steps.meta.outputs.version }}
+          NAME: ${{ steps.meta.outputs.name }}
+          URL: ${{ steps.meta.outputs.url }}
+          AUTHOR: ${{ steps.meta.outputs.author }}
+          AUTHOR_URL: ${{ steps.meta.outputs.author_url }}
+          IS_PRE: ${{ steps.meta.outputs.is_pre }}
+          PUBLISHED_AT: ${{ steps.meta.outputs.published_at }}
+          COLOR: ${{ steps.meta.outputs.color }}
+          BADGE: ${{ steps.meta.outputs.badge }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${WEBHOOK:-}" ]; then
+            echo "::error::DISCORD_RELEASE_WEBHOOK secret is not set. See AGENTS.md → Releasing for setup."
+            exit 1
+          fi
+
+          # Install hint. For pre-releases we surface the @next dist-tag as
+          # the primary form so consumers don't accidentally pin a non-stable
+          # as their default. The pinned-version form remains as a comment.
+          if [ "$IS_PRE" = "true" ]; then
+            INSTALL=$(printf '```bash\nbun add %s@next\n# or: npm install %s@%s\n```' "$PKG" "$PKG" "$VERSION")
+          else
+            INSTALL=$(printf '```bash\nbun add %s@%s\n```' "$PKG" "$VERSION")
+          fi
+
+          BODY=$(cat "$RUNNER_TEMP/release_body.md")
+
+          PAYLOAD=$(jq -n \
+            --arg title     "$NAME" \
+            --arg url       "$URL" \
+            --arg desc      "$BODY" \
+            --argjson color "$COLOR" \
+            --arg badge     "$BADGE" \
+            --arg pkg       "$PKG" \
+            --arg version   "$VERSION" \
+            --arg install   "$INSTALL" \
+            --arg author    "$AUTHOR" \
+            --arg authorUrl "$AUTHOR_URL" \
+            --arg published "$PUBLISHED_AT" \
+            '{
+              embeds: [{
+                title: $title,
+                url: $url,
+                description: $desc,
+                color: $color,
+                author: { name: $author, url: $authorUrl },
+                fields: [
+                  { name: "Package", value: ("`" + $pkg + "`"),     inline: true  },
+                  { name: "Version", value: ("`" + $version + "`"), inline: true  },
+                  { name: "Type",    value: $badge,                 inline: true  },
+                  { name: "Install", value: $install,               inline: false }
+                ],
+                footer: { text: "GitHub Releases" },
+                timestamp: $published
+              }]
+            }')
+
+          # Capture HTTP status so a Discord-side rejection (404 invalid
+          # webhook, 400 bad embed, 429 rate limit) fails the workflow loudly
+          # instead of silently no-op-ing the announcement.
+          HTTP_STATUS=$(curl -sS -o /tmp/discord_response.txt -w "%{http_code}" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -d "$PAYLOAD" \
+            "$WEBHOOK")
+
+          echo "Discord HTTP status: $HTTP_STATUS"
+          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+            echo "::error::Discord webhook rejected the request (HTTP $HTTP_STATUS)"
+            cat /tmp/discord_response.txt
+            exit 1
+          fi
