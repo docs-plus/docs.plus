@@ -35,15 +35,29 @@ export const getGoogleFaviconUrl = (url: string, size: 32 | 64 = 32): string | u
  * Strips unused fields (socialBanner, socialBannerSize, etc.) and
  * ensures all values are either valid strings or undefined.
  * Falls back icon -> favicon for best icon availability.
+ *
+ * Image URLs are gated to http(s) only — a hostile metadata source could
+ * otherwise smuggle a `data:` or `javascript:` URL into the icon slot
+ * which is later rendered into `<img src>` somewhere downstream.
  */
 export const sanitizeMetadata = (raw: Record<string, unknown>): LinkMetadata => {
   const str = (val: unknown): string | undefined =>
     typeof val === 'string' && val.trim() !== '' ? val.trim() : undefined
 
+  const httpStr = (val: unknown): string | undefined => {
+    const s = str(val)
+    return s && /^https?:\/\//i.test(s) ? s : undefined
+  }
+
+  const publisher =
+    raw.publisher && typeof raw.publisher === 'object'
+      ? (raw.publisher as Record<string, unknown>)
+      : undefined
+
   return {
     title: str(raw.title),
     description: str(raw.description),
-    icon: str(raw.icon) || str(raw.favicon),
-    themeColor: str(raw.themeColor)
+    icon: httpStr(raw.icon) || httpStr(raw.favicon),
+    themeColor: str(publisher?.theme_color) || str(raw.themeColor)
   }
 }

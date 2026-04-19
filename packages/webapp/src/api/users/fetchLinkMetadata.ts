@@ -1,9 +1,15 @@
 import type { LinkMetadata } from '@types'
 import { sanitizeMetadata } from '@utils/link-helpers'
 
+const apiBaseUrl = (): string => {
+  const base = process.env.NEXT_PUBLIC_RESTAPI_URL
+  if (!base) throw new Error('NEXT_PUBLIC_RESTAPI_URL is not configured')
+  return base
+}
+
 /**
- * Fetches and sanitizes Open Graph / metadata for a URL via the
- * server-side `POST /api/metadata` endpoint (rate-limited, SSRF-protected).
+ * Fetches and sanitizes link metadata via the hocuspocus.server
+ * `GET /api/metadata` endpoint (rate-limited, SSRF-protected, cached).
  *
  * Falls back to `{ title: url }` on any failure — never throws.
  */
@@ -11,11 +17,10 @@ export const fetchLinkMetadata = async (url: string): Promise<LinkMetadata> => {
   const formattedUrl = url.startsWith('http') ? url : `https://${url}`
 
   try {
-    const response = await fetch('/api/metadata', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: formattedUrl })
-    })
+    const response = await fetch(
+      `${apiBaseUrl()}/metadata?url=${encodeURIComponent(formattedUrl)}`,
+      { method: 'GET' }
+    )
 
     if (!response.ok) {
       return { title: url }
