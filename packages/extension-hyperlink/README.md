@@ -4,6 +4,13 @@
 [![Downloads](https://img.shields.io/npm/dm/@docs.plus/extension-hyperlink.svg)](https://npmcharts.com/compare/@docs.plus/extension-hyperlink)
 [![License](https://img.shields.io/npm/l/@docs.plus/extension-hyperlink.svg)](https://www.npmjs.com/package/@docs.plus/extension-hyperlink)
 
+> [!IMPORTANT]
+> **v4 is a major rewrite.** Coming from v1.x? The API has been substantially
+> redesigned (renamed options, renamed commands, kebab-case CSS classes,
+> separate stylesheet, hardened XSS guards). Read the
+> [v1 → v4 migration guide](./CHANGELOG.md#migrating-from-v1x-to-v4x)
+> before upgrading.
+
 A Tiptap extension for hyperlinks. Ships with optional prebuilt popovers for creating, previewing, and editing links, plus auto-linking, markdown input rules, and support for 50+ URL schemes (`mailto:`, `tel:`, `zoommtg:`, `vscode:`, `spotify:`, …).
 
 <p align="center">

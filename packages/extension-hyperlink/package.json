@@ -46,11 +46,18 @@
     "test:open": "bunx start-server-and-test playground http://127.0.0.1:5173 cy:open",
     "cy:run": "bunx cypress run",
     "cy:open": "bunx cypress open",
-    "docs:screenshots": "bun run build && bunx start-server-and-test playground http://127.0.0.1:5173 'bunx cypress run --config specPattern=cypress/docs/**/*.cy.ts'"
+    "docs:screenshots": "bun run build && bunx start-server-and-test playground http://127.0.0.1:5173 'bunx cypress run --config specPattern=cypress/docs/**/*.cy.ts'",
+    "prepack": "bun run scripts/prepack.ts",
+    "prepublishOnly": "bun run scripts/preflight.ts"
   },
   "files": [
-    "dist"
+    "dist",
+    "CHANGELOG.md",
+    "LICENSE"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "keywords": [
     "tiptap",
     "tiptap extension",

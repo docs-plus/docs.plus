@@ -5,6 +5,125 @@
 All notable changes to `@docs.plus/extension-hyperlink` are documented here.
 This project follows [Semantic Versioning](https://semver.org/) and [Conventional Commits](https://conventionalcommits.org). Section headings (`Added` / `Changed` / `Fixed` / `Security`) intentionally repeat per version, per the [Keep a Changelog](https://keepachangelog.com/) convention.
 
+---
+
+## Migrating from v1.x to v4.x
+
+The last npm-published v1 release was `1.5.2`. Versions `2.x` and `3.x` were internal monorepo refactors and were never published. If you are upgrading from `^1.5.2` directly to `4.x`, the API has been substantially redesigned. This section is the short, actionable diff; the full per-version detail lives under [4.0.0](#400--2026-04-15) (renames + popover contract), [4.1.0](#410--2026-04-15) (XSS hardening + bug fixes), [4.2.0](#420--2026-04-15) (stylesheet + clean-room test harness), and [4.3.0](#430--2026-04-16) (unified href canonicalization).
+
+### What changed at a glance
+
+- **Options renamed** to align with Tiptap conventions
+  (`autoHyperlink` → `autolink`, `hyperlinkOnPaste` → `linkOnPaste`).
+- **Commands renamed** with consistent casing
+  (`editHyperLinkText` → `editHyperlinkText`, `editHyperLinkHref` → `editHyperlinkHref`).
+- **CSS classes renamed** from camelCase to kebab-case
+  (`.hyperlinkCreatePopover` → `.hyperlink-create-popover`, …).
+- **Default stylesheet ships separately** — `import '@docs.plus/extension-hyperlink/styles.css'`.
+  v1 inlined CSS via JS; v4 ships a small opt-in CSS file so fully-custom UIs pay zero cost.
+- **Popover contract changed** — `createHyperlink` callback now returns
+  `HTMLElement | null` (was `void`); the extension owns positioning, you own content.
+- **Meta key renamed** — `tr.setMeta('preventAutoHyperlink', …)` → `tr.setMeta('preventAutolink', …)`.
+- **Type augmentation fixed** — commands are augmented under `hyperlink:` (was `link:`).
+- **Hardened XSS guards** — `javascript:`, `data:`, and `vbscript:` are now blocked
+  at every entry point (parse, paste, input rule, click, popover open). If you
+  intentionally stored such URLs, they will now be rejected.
+- **Plausible-host validation** — `validateURL` now rejects typo URLs like
+  `https://googlecom` (no TLD dot, not localhost, not an IP literal).
+
+### Code diff
+
+```diff
+ Hyperlink.configure({
+-  autoHyperlink: true,
+-  hyperlinkOnPaste: true,
++  autolink: true,
++  linkOnPaste: true,
+   popovers: {
+     previewHyperlink: myPreviewFn,
+-    createHyperlink: myCreateFn,   // was (options) => void
++    createHyperlink: myCreateFn,   // now (options) => HTMLElement | null
+   }
+ })
+
+ // Commands
+-editor.commands.editHyperLinkText('New Text')
+-editor.commands.editHyperLinkHref('https://example.com')
++editor.commands.editHyperlinkText('New Text')
++editor.commands.editHyperlinkHref('https://example.com')
+
+ // Meta key in transactions
+-tr.setMeta('preventAutoHyperlink', true)
++tr.setMeta('preventAutolink', true)
+```
+
+```css
+/* CSS selectors */
+- .hyperlinkCreatePopover  { … }
+- .hyperlinkPreviewPopover { … }
+- .hyperlinkEditPopover    { … }
+- .buttonsWrapper { … }
+- .inputsWrapper  { … }
+- .textWrapper    { … }
+- .hrefWrapper    { … }
+- .backButton     { … }
+- .btn_applyModal { … }
++ .hyperlink-create-popover  { … }
++ .hyperlink-preview-popover { … }
++ .hyperlink-edit-popover    { … }
++ .buttons-wrapper { … }
++ .inputs-wrapper  { … }
++ .text-wrapper    { … }
++ .href-wrapper    { … }
++ .back-button     { … }
++ .apply-button    { … }
+```
+
+```ts
+// Popover types — no more hand-rolled types
+import type {
+  PreviewHyperlinkOptions,
+  CreateHyperlinkOptions
+} from '@docs.plus/extension-hyperlink'
+```
+
+### One-shot rename script
+
+For the rename-only changes, run this in your project root and commit the diff:
+
+```bash
+rg -l "autoHyperlink|hyperlinkOnPaste|editHyperLinkText|editHyperLinkHref|preventAutoHyperlink|hyperlinkCreatePopover|hyperlinkPreviewPopover|hyperlinkEditPopover|buttonsWrapper|inputsWrapper|textWrapper|hrefWrapper|backButton|btn_applyModal" \
+  | xargs sed -i.bak \
+    -e 's/autoHyperlink/autolink/g' \
+    -e 's/hyperlinkOnPaste/linkOnPaste/g' \
+    -e 's/editHyperLinkText/editHyperlinkText/g' \
+    -e 's/editHyperLinkHref/editHyperlinkHref/g' \
+    -e 's/preventAutoHyperlink/preventAutolink/g' \
+    -e 's/hyperlinkCreatePopover/hyperlink-create-popover/g' \
+    -e 's/hyperlinkPreviewPopover/hyperlink-preview-popover/g' \
+    -e 's/hyperlinkEditPopover/hyperlink-edit-popover/g' \
+    -e 's/buttonsWrapper/buttons-wrapper/g' \
+    -e 's/inputsWrapper/inputs-wrapper/g' \
+    -e 's/textWrapper/text-wrapper/g' \
+    -e 's/hrefWrapper/href-wrapper/g' \
+    -e 's/backButton/back-button/g' \
+    -e 's/btn_applyModal/apply-button/g'
+```
+
+The rename script handles the mechanical changes. The semantic changes that
+require code review — popover contract returning `HTMLElement | null`, the
+new `styles.css` import, and the stricter URL validation — are not safely
+automatable. Read the [4.0.0](#400--2026-04-15) and [4.1.0](#410--2026-04-15)
+sections to confirm those before shipping the upgrade.
+
+### Need help?
+
+Open an issue at <https://github.com/docs-plus/docs.plus/issues> with the
+label `extension-hyperlink` + `migration` and a snippet of the v1 config
+you're upgrading from.
+
+---
+
 ## [4.3.0] — 2026-04-16
 
 ### Added
