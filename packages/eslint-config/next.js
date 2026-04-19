@@ -1,20 +1,21 @@
-// ESLint config for Next.js apps (extends base config)
+// ESLint config for Next.js / React apps (extends base + adds React)
 // Used by: webapp, admin-dashboard
-const baseConfig = require('./index.js')
+import baseConfig from './index.js'
+import react from 'eslint-plugin-react'
+import reactHooks from 'eslint-plugin-react-hooks'
 
-module.exports = [
+export default [
   ...baseConfig,
+
   {
-    files: ['**/*.{js,jsx,ts,tsx}'],
+    files: ['**/*.{ts,tsx,js,jsx}'],
+    plugins: { react, 'react-hooks': reactHooks },
     rules: {
-      // Next.js specific rules
+      'react/react-in-jsx-scope': 'off',
+      'react/prop-types': 'off',
+      'react-hooks/exhaustive-deps': 'warn',
       '@next/next/no-document-import-in-page': 'off',
       'no-fallthrough': ['error', { commentPattern: 'falls through' }],
-
-      // React hooks
-      'react-hooks/exhaustive-deps': 'warn',
-
-      // Console restrictions - warn instead of error (allow info, warn, error only)
       'no-restricted-syntax': [
         'warn',
         {
@@ -23,22 +24,12 @@ module.exports = [
           message: 'Prefer console.info, console.warn, or console.error in production code.'
         }
       ]
-    }
+    },
+    settings: { react: { version: 'detect' } }
   },
-  // Exempt logger utilities from console restrictions
+
   {
     files: ['**/logger.ts', '**/logger.js', '**/utils/logger.*'],
-    rules: {
-      'no-restricted-syntax': 'off'
-    }
+    rules: { 'no-restricted-syntax': 'off' }
   }
 ]
-
-// Note: For Tailwind CSS linting, install eslint-plugin-tailwindcss in your package
-// and add to your local eslint.config.js:
-//
-// const tailwindcss = require('eslint-plugin-tailwindcss')
-// module.exports = [
-//   ...require('@docs.plus/eslint-config/next'),
-//   { plugins: { tailwindcss }, rules: tailwindcss.configs.recommended.rules }
-// ]

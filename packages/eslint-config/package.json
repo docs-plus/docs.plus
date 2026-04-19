@@ -1,22 +1,14 @@
 {
   "name": "@docs.plus/eslint-config",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
+  "type": "module",
   "description": "Shared ESLint configuration for docs.plus monorepo",
   "main": "index.js",
   "exports": {
-    ".": {
-      "require": "./index.js",
-      "import": "./index.js"
-    },
-    "./next": {
-      "require": "./next.js",
-      "import": "./next.js"
-    },
-    "./library": {
-      "require": "./library.js",
-      "import": "./library.js"
-    }
+    ".": "./index.js",
+    "./next": "./next.js",
+    "./library": "./library.js"
   },
   "files": [
     "index.js",
@@ -31,9 +23,9 @@
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
     "eslint-config-prettier": "catalog:",
-    "eslint-plugin-prettier": "catalog:",
     "eslint-plugin-react": "catalog:",
     "eslint-plugin-react-hooks": "catalog:",
+    "eslint-plugin-simple-import-sort": "catalog:",
     "globals": "catalog:"
   }
 }

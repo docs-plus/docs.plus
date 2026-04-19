@@ -185,6 +185,7 @@
     "eslint-plugin-prettier": "^5.5.5",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-simple-import-sort": "^13.0.0",
     "globals": "^17.4.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3"

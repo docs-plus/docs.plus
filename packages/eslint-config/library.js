@@ -1,14 +1,16 @@
-// ESLint config for library packages (extends base config)
-const baseConfig = require('./index.js')
+// ESLint config for library packages (extends base + adds strictness)
+// Used by: extension-hyperlink, extension-indent, extension-inline-code,
+//          extension-placeholder, extension-hypermultimedia
+import baseConfig from './index.js'
 
-module.exports = [
+export default [
   ...baseConfig,
+
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.ts'],
     rules: {
-      // Library-specific rules - stricter
       '@typescript-eslint/explicit-module-boundary-types': 'warn',
-      'no-console': 'warn' // Libraries should avoid console
+      'no-console': 'warn'
     }
   }
 ]

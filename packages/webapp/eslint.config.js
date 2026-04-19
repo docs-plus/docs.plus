@@ -1,3 +1,3 @@
-// Next.js app config - uses shared Next.js config
-// Use relative path for workspace package resolution
-module.exports = require('../eslint-config/next.js')
+import nextConfig from '../eslint-config/next.js'
+
+export default nextConfig
