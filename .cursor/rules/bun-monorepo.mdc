@@ -37,6 +37,124 @@ bun run --filter '*' build
 - Node >= 24.11.0
 - Bun >= 1.3.7
 
+## Publishing packages to npm
+
+- Always publish with `bun publish` (or `bun pm pack` for inspection).
+  Never use `npm publish`, `yarn publish`, or `pnpm publish`.
+- Reason: `peerDependencies` use the `catalog:` protocol so every package
+  tracks the same Tiptap / Hocuspocus / etc. version pinned in the root
+  `package.json`'s `catalog` block. Only Bun resolves `catalog:` to a
+  concrete semver range at pack time. `npm publish` would ship a literal
+  `"catalog:"` string in the published `package.json` and break every
+  consumer install with `Invalid Version: catalog:`.
+- Publishable packages enforce this with a `prepublishOnly` preflight
+  (e.g. `packages/extension-hyperlink/scripts/preflight.ts`) that fails
+  fast if the publisher is not Bun. When you add a new publishable
+  package, copy that preflight or move it into a shared package.
+
+## Shared config / single source of truth
+
+The monorepo prefers root-level shared config files referenced by relative
+path over per-package duplication. Three patterns are in active use:
+
+### `LICENSE` — root file + `prepack` sync
+
+- The canonical `LICENSE` lives at the **monorepo root** (one committed
+  file, one SPDX identity).
+- Each **publishable** package adds `/LICENSE` (anchored to the package
+  root, so a vendored dep's nested `LICENSE` isn't silently ignored) to
+  its `.gitignore` and a `scripts/prepack.ts` that copies the root
+  `LICENSE` into the package directory before `bun publish` /
+  `bun pm pack`. Wire it via:
+
+  ```jsonc
+  // package.json
+  "scripts": { "prepack": "bun run scripts/prepack.ts" }
+  ```
+
+- Symlinks and hard links **do not work** here:
+  - Bun's pack silently drops symlinks from the tarball.
+  - Hard links work locally but git stores them as two independent files,
+    so contributors who clone get two copies that drift silently.
+- The `prepack` lifecycle (not `prepublishOnly`) is the right hook
+  because both `bun publish` AND `bun pm pack` honor it, so dry-run
+  packs still produce a realistic tarball.
+- Currently only `extension-hyperlink` is wired this way; copy the same
+  three pieces (`/LICENSE` in `.gitignore`, `scripts/prepack.ts`, the
+  `prepack` script entry) when a second package is prepared for publish.
+
+### `tsconfig.base.json` — root base + per-package `extends`
+
+- `tsconfig.base.json` at the monorepo root holds the shared
+  `compilerOptions` (target, module, strict, etc.). Per-package
+  `tsconfig.json` files only declare what's actually different
+  (`outDir`, `rootDir`, `include`, `exclude`):
+
+  ```jsonc
+  {
+    "extends": "../../tsconfig.base.json",
+    "compilerOptions": { "outDir": "dist" },
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "dist"]
+  }
+  ```
+
+### `tsup.base.ts` — root factory + per-package call
+
+- `tsup.base.ts` at the monorepo root exports a
+  `defineTiptapExtensionConfig()` factory with the shared
+  Tiptap-extension build shape (ESM+CJS, dts, `@tiptap/core` /
+  `@tiptap/pm` external, prod sourcemaps/minify,
+  `console.log/debug` stripped via `esbuildOptions.pure` while
+  `console.warn/error` are preserved to match the eslint allowlist
+  — do **not** use `drop: ['console']` which strips warn/error too).
+- The name follows the tsup ecosystem `define*` verb convention and is
+  honestly scoped: the factory hardcodes Tiptap externals, so it is
+  **not** a generic library factory. A future non-Tiptap library
+  package should not reach for this factory; either add its own config
+  or refactor the factory to take externals as a parameter.
+- A package's `tsup.config.ts` becomes a four-line file:
+
+  ```ts
+  import { defineConfig } from 'tsup'
+  import { defineTiptapExtensionConfig } from '../../tsup.base'
+
+  export default defineConfig(defineTiptapExtensionConfig())
+  ```
+
+- Pass overrides for genuinely package-specific concerns (e.g. an
+  `onSuccess` hook to copy `styles.css` into `dist`).
+- **Override semantics — shallow spread, NOT deep merge.** Function-valued
+  options (`esbuildOptions`, `external`, `dts`) passed to
+  `defineTiptapExtensionConfig({...})` fully replace the base. If you
+  ever override `esbuildOptions`, you must call the base's `pure` policy
+  yourself or `console.log`/`debug` will silently survive into the
+  production bundle. JSDoc on the factory spells out the recipe; add a
+  deep-merge layer the day a second caller actually needs it, not
+  before.
+- **Behavior change at adoption:** the prior per-package configs used
+  `drop: ['console']` which stripped warn/error too. Switching to the
+  factory restores `console.warn`/`console.error` in production.
+  - 3 packages (`extension-indent`, `extension-inline-code`,
+    `extension-placeholder`): no console calls in source → byte-identical
+    dist trees, no observable change.
+  - 1 package (`extension-hypermultimedia`): the `Logger` class in
+    `src/utils/floating-toolbar.ts` wraps `console.warn`/`console.error`
+    — those calls now reach consumer consoles in production. This was
+    the author's clear intent; the prior behavior was an accidental
+    over-strip. Note this in the next `extension-hypermultimedia`
+    CHANGELOG entry when it's republished.
+
+### What we deliberately do **not** share
+
+- `README.md`, `CHANGELOG.md`, package source — these are inherently
+  per-package.
+- `eslint.config.js` per package — already a 3-line shim importing from
+  `@docs.plus/eslint-config`; further dedup adds no value.
+- `package.json` itself — generators that synthesize `package.json`
+  fields fight semver tooling, registries, and contributor expectations.
+  Keep these manual.
+
 ## Docker base image (single source of truth)
 
 - All Dockerfiles use **one tag**: `oven/bun:1-slim` (latest Bun 1.x, floating; no hardcoded patch version).
