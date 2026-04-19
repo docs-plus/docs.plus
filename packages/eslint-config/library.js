@@ -10,7 +10,9 @@ export default [
     files: ['**/*.ts'],
     rules: {
       '@typescript-eslint/explicit-module-boundary-types': 'warn',
-      'no-console': 'warn'
+      // console.warn / console.error survive production builds on purpose
+      // (tsup keeps them as diagnostic channels); only console.log is noise.
+      'no-console': ['warn', { allow: ['warn', 'error'] }]
     }
   }
 ]

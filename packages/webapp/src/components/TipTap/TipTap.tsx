@@ -51,7 +51,10 @@ import { HeadingScale } from './extensions/heading-scale'
 import { HeadingActionsExtension } from './extensions/HeadingActions'
 import {
   HighlightWithMarkdown,
-  HyperlinkWithMarkdown
+  // Kept as a roll-back hatch for the legacy markdown-link path; flip the
+  // import name back to `HyperlinkWithMarkdown` and swap it into `extensions`
+  // below if the new mobile sheet pipeline regresses.
+  HyperlinkWithMarkdown as _HyperlinkWithMarkdown
   // ImageWithMarkdown
 } from './extensions/markdown-extensions'
 import { MarkdownPaste } from './extensions/markdown-paste'
