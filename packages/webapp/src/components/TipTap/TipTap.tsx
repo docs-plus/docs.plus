@@ -1,13 +1,13 @@
 import Config from '@config'
-import { createHyperlinkPopover, registerCustomProtocol } from '@docs.plus/extension-hyperlink'
-import {
-  HyperMultimediaKit,
-  imageModal as _imageModal,
-  soundCloudModal as _soundCloudModal,
-  twitterModal as _twitterModal,
-  vimeoModal as _vimeoModal,
-  youtubeModal as _youtubeModal
-} from '@docs.plus/extension-hypermultimedia'
+import { createHyperlinkPopover, Hyperlink } from '@docs.plus/extension-hyperlink'
+// import {
+//   // HyperMultimediaKit,
+//   imageModal as _imageModal,
+//   soundCloudModal as _soundCloudModal,
+//   twitterModal as _twitterModal,
+//   vimeoModal as _vimeoModal,
+//   youtubeModal as _youtubeModal
+// } from '@docs.plus/extension-hypermultimedia'
 import { Indent } from '@docs.plus/extension-indent'
 import { InlineCode } from '@docs.plus/extension-inline-code'
 import { Placeholder, type PlaceholderRenderProps } from '@docs.plus/extension-placeholder'
@@ -51,18 +51,16 @@ import { HeadingScale } from './extensions/heading-scale'
 import { HeadingActionsExtension } from './extensions/HeadingActions'
 import {
   HighlightWithMarkdown,
-  HyperlinkWithMarkdown,
-  ImageWithMarkdown
+  HyperlinkWithMarkdown
+  // ImageWithMarkdown
 } from './extensions/markdown-extensions'
 import { MarkdownPaste } from './extensions/markdown-paste'
 import { ParagraphStyle } from './extensions/paragraph-style'
 import { TitleDocument } from './extensions/title-document'
+import createHyperlinkMobile from './hyperlinkPopovers/createHyperlink'
 import previewHyperlink from './hyperlinkPopovers/previewHyperlink'
-import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
+// import MediaUploadPlaceholder from './nodes/MediaUploadPlaceholder'
 import { IOSCaretFix } from './plugins/iosCaretFixPlugin'
-
-registerCustomProtocol('ftp')
-registerCustomProtocol('mailto')
 
 const headingTableUid = new ShortUniqueId()
 
@@ -197,23 +195,23 @@ const Editor = ({
       hoverChat: editable,
       selectionChat: editable && !isMobile
     }),
-    HyperlinkWithMarkdown.configure({
+    Hyperlink.configure({
       protocols: ['ftp', 'mailto'],
-      hyperlinkOnPaste: false,
-      autoHyperlink: true,
+      linkOnPaste: false,
+      autolink: true,
       popovers: {
-        previewHyperlink: previewHyperlink,
-        createHyperlink: createHyperlinkPopover
+        previewHyperlink,
+        createHyperlink: isMobile ? createHyperlinkMobile : createHyperlinkPopover
       }
     }),
-    HyperMultimediaKit.configure({
-      Image: false
-    }),
-    ImageWithMarkdown.configure({
-      inline: true,
-      allowBase64: true
-    }),
-    MediaUploadPlaceholder,
+    // HyperMultimediaKit.configure({
+    //   Image: false
+    // }),
+    // ImageWithMarkdown.configure({
+    //   inline: true,
+    //   allowBase64: true
+    // }),
+    // MediaUploadPlaceholder,
     MarkdownPaste,
     HighlightWithMarkdown,
     Typography,

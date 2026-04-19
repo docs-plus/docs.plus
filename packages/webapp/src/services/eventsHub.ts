@@ -57,6 +57,36 @@ type TUnreadSyncData = {
   channels: Map<string, { unread_message_count?: number }>
 }
 
+/**
+ * Exit document edit mode before a mobile chat sheet seats, releasing the
+ * iOS soft keyboard on the way out.
+ *
+ * Tiptap `setEditable(false)` synchronously runs `view.updateState(...)`,
+ * which flips `contenteditable` on the editor DOM in the same tick — so
+ * the attribute write is NOT load-bearing. What iOS Safari actually needs
+ * is the focused element to *lose focus*: with `contenteditable=false` but
+ * focus still on the host, the keyboard stays up. That's why the final
+ * `view.dom.blur()` is the critical line here.
+ *
+ * Simpler than `previewHyperlink.dismissSoftKeyboard`: that helper must
+ * collapse the selection and defer the blur one tick to win a race against
+ * ProseMirror's same-tick selection management on link taps. Here the
+ * callers already gate the `openSheet` call with a 200 ms `setTimeout`,
+ * and `setEditable(false)` prevents ProseMirror from re-asserting focus,
+ * so a synchronous blur is enough.
+ *
+ * No-op when the keyboard is already down.
+ */
+const exitDocEditModeForSheet = (): void => {
+  const { isKeyboardOpen, settings, setWorkspaceEditorSetting } = useStore.getState()
+  if (!isKeyboardOpen) return
+  const editor = settings.editor.instance
+  if (!editor) return
+  setWorkspaceEditorSetting('isEditable', false)
+  editor.setEditable(false)
+  editor.view.dom.blur()
+}
+
 export const eventsHub = (router: NextRouter) => {
   console.info('eventsHub initialized')
 
@@ -82,6 +112,8 @@ export const eventsHub = (router: NextRouter) => {
     })
 
     if (headingId === openedHeadingId) return destroyChatRoom()
+
+    exitDocEditModeForSheet()
 
     setTimeout(() => {
       if (workspaceId) {
@@ -129,15 +161,7 @@ export const eventsHub = (router: NextRouter) => {
       if (scroll2Heading) scrollToHeading(headingId)
     }, 200)
 
-    const { isKeyboardOpen, settings } = useStore.getState()
-
-    // if the keyboard is open, unfocus the document editor
-    if (isKeyboardOpen) {
-      const proseMirrorEl = document.querySelector('.tiptap.ProseMirror') as HTMLElement
-      proseMirrorEl?.setAttribute('contenteditable', 'false')
-      useStore.getState().setWorkspaceEditorSetting('isEditable', false)
-      settings.editor.instance?.setEditable(false)
-    }
+    exitDocEditModeForSheet()
 
     if (insertContent) {
       retryWithBackoff(

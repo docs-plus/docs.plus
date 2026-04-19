@@ -1,6 +1,8 @@
 import FilterModal from '@components/pages/document/components/FilterModal'
 import {
   CHATROOM_OVERLAY_SHEETS,
+  type SheetData,
+  type SheetDataMap,
   type SheetType,
   useChatStore,
   useSheetStore,
@@ -12,13 +14,20 @@ import { Sheet, SheetProps } from 'react-modal-sheet'
 import { EmojiPanel } from './chatroom/components/EmojiPanel'
 import NotificationModal from './notificationPanel/mobile/NotificationModal'
 import ChatContainerMobile from './pages/document/components/chat/ChatContainerMobile'
+import LinkEditorSheet from './TipTap/hyperlinkPopovers/LinkEditorSheet'
+import LinkPreviewSheet from './TipTap/hyperlinkPopovers/LinkPreviewSheet'
 
 // ---------------------------------------------------------------------------
 // Sheet content registry – maps a sheet type to its rendered content.
-// Adding a new sheet only requires a new entry here + in SheetType union.
+// Each renderer receives its sheet's typed payload (`SheetDataMap[K]`) so
+// content components can be plain props-driven views — no `as` casts at
+// the consumer side. Adding a new sheet only requires a new entry here
+// plus a SheetDataMap key in sheetStore.
 // ---------------------------------------------------------------------------
 
-const SHEET_CONTENT: Record<Exclude<SheetType, null>, () => React.ReactNode> = {
+type SheetRenderer<K extends Exclude<SheetType, null>> = (data: SheetDataMap[K]) => React.ReactNode
+
+const SHEET_CONTENT: { [K in Exclude<SheetType, null>]: SheetRenderer<K> } = {
   chatroom: () => <ChatContainerMobile />,
   notifications: () => <NotificationModal />,
   filters: () => <FilterModal />,
@@ -26,7 +35,9 @@ const SHEET_CONTENT: Record<Exclude<SheetType, null>, () => React.ReactNode> = {
     <EmojiPanel variant="mobile">
       <EmojiPanel.Selector />
     </EmojiPanel>
-  )
+  ),
+  linkPreview: (data) => <LinkPreviewSheet data={data} />,
+  linkEditor: (data) => <LinkEditorSheet data={data} />
 }
 
 // ---------------------------------------------------------------------------
@@ -53,6 +64,14 @@ const SHEET_PROPS: Record<Exclude<SheetType, null>, Partial<SheetProps>> = {
   },
   emojiPicker: {
     id: 'emoji_picker_sheet',
+    detent: 'content'
+  },
+  linkPreview: {
+    id: 'link_preview_sheet',
+    detent: 'content'
+  },
+  linkEditor: {
+    id: 'link_editor_sheet',
     detent: 'content'
   }
 }
@@ -102,16 +121,20 @@ const BottomSheet = () => {
   // Render helpers
   // ---------------------------------------------------------------------------
 
-  const renderContent = () => {
+  const content = useMemo((): React.ReactNode => {
     if (!activeSheet) return null
-    const renderer = SHEET_CONTENT[activeSheet]
-    return renderer ? renderer() : null
-  }
+    // Single type-narrowing boundary: the registry's per-key signatures
+    // are precise (`SheetDataMap[K]`), but the indexed lookup widens
+    // back to the union — collapse it here so the renderers themselves
+    // stay strictly typed.
+    const renderer = SHEET_CONTENT[activeSheet] as (data: SheetData) => React.ReactNode
+    return renderer(sheetData)
+  }, [activeSheet, sheetData])
 
-  const getSheetProps = (): Partial<SheetProps> => {
+  const sheetProps = useMemo<Partial<SheetProps>>(() => {
     if (!activeSheet) return DEFAULT_SHEET_PROPS
     return SHEET_PROPS[activeSheet] ?? DEFAULT_SHEET_PROPS
-  }
+  }, [activeSheet])
 
   // ---------------------------------------------------------------------------
   // Close handler – each sheet type may need specific teardown logic
@@ -168,7 +191,7 @@ const BottomSheet = () => {
         onOpenEnd={handleOpenEnd}
         onCloseStart={handleCloseStart}
         onCloseEnd={handleCloseEnd}
-        {...getSheetProps()}>
+        {...sheetProps}>
         <Sheet.Container ref={setSheetContainerRef}>
           <Sheet.Header />
           <Sheet.Content
@@ -189,10 +212,10 @@ const BottomSheet = () => {
              */}
             {isChatroom ? (
               <div className="flex h-full flex-col" onPointerDown={(e) => e.stopPropagation()}>
-                {renderContent()}
+                {content}
               </div>
             ) : (
-              renderContent()
+              content
             )}
           </Sheet.Content>
         </Sheet.Container>

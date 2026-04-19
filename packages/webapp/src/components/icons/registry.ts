@@ -83,6 +83,7 @@ import {
   LuUnderline,
   LuUndo2,
   LuUnfoldVertical,
+  LuUnlink2,
   LuUpload,
   LuUser,
   LuUserPlus,
@@ -124,6 +125,7 @@ export const Icons = {
 
   // ── Insert / Rich Content ────────────────────────────────
   link: LuLink,
+  unlink: LuUnlink2,
   image: LuImage,
   comment: LuMessageSquarePlus,
   reply: LuReply,

@@ -1,277 +1,116 @@
-import { parseHistoryHash } from '@components/pages/history/historyShareUrl'
 import {
   Copy,
   copyToClipboard,
   createHTMLElement,
   editHyperlinkPopover,
-  getSpecialUrlInfo,
   hideCurrentToolbar,
   LinkOff,
   Pencil,
-  updateCurrentToolbarPosition
+  type PreviewHyperlinkOptions
 } from '@docs.plus/extension-hyperlink'
-import { APPLY_FILTER, CHAT_OPEN } from '@services/eventsHub'
-import { Editor } from '@tiptap/core'
-import { EditorView } from '@tiptap/pm/view'
-import { scrollToHeading } from '@utils/index'
-import Router from 'next/router'
-import PubSub from 'pubsub-js'
+import { useSheetStore, useStore } from '@stores'
+import type { Editor } from '@tiptap/core'
 
-import * as Icons from './iconList'
+import { observeDetachment, type PreviewContext, renderMetadataInto } from './previewShared'
 
-type HyperlinkModalOptions = {
-  editor: Editor
-  validate?: (url: string) => boolean
-  view: EditorView
-  link: HTMLAnchorElement
-  node?: unknown
-  nodePos: number
-  event: MouseEvent
-  linkCoords: {
-    x: number
-    y: number
-    width: number
-    height: number
-  }
-  attrs: Record<string, unknown>
-}
+/**
+ * Dismiss the iOS soft keyboard before the link preview sheet seats.
+ *
+ * Read-mode taps are handled at the source: `useEditableDocControl`
+ * keeps `contenteditable="false"` after edit→read, so iOS never
+ * focuses the editor on the tap and this call is a no-op.
+ *
+ * The case this exists for is **edit-mode taps** — the user is
+ * actively typing (keyboard up, contenteditable focused) and taps a
+ * link. iOS reliably releases the keyboard only when both the focused
+ * element loses focus AND there is no active selection range inside
+ * the contenteditable. We collapse the selection, then defer the blur
+ * one tick (matches the `useClipboard.dismissMenuAndKeyboard` pattern
+ * — synchronous blur is flaky on iOS against ProseMirror's same-tick
+ * selection management). We also blur the actual `activeElement` if
+ * focus landed on a descendant (e.g. the tapped `<a>`); blurring the
+ * editor host alone wouldn't release a focused child.
+ */
+const KEYBOARD_DISMISS_DELAY_MS = 50
 
-interface MetadataResponse {
-  title: string
-  description?: string
-  image?: string
-  icon?: string
-  favicon?: string
-  themeColor?: string
-  success: true
-}
+const dismissSoftKeyboard = (editor: Editor): void => {
+  const { to } = editor.state.selection
+  editor.chain().setTextSelection(to).run()
 
-interface ErrorResponse {
-  success: false
-  message: string
-}
-
-type ApiResponse = MetadataResponse | ErrorResponse
-
-const hrefEventHandler =
-  (href: string) =>
-  (event: MouseEvent): void => {
-    event.preventDefault()
-    const newUrl = new URL(href)
-    const slugs = location.pathname.split('/').slice(1)
-
-    const headingId = newUrl.searchParams.get('id')
-    const isSameDoc = newUrl.pathname.startsWith(`/${slugs[0]}`)
-    const newUrlSlugs = newUrl.pathname.split('/').slice(1)
-    const chatroomId = newUrl.searchParams.get('chatroom')
-    const act = newUrl.searchParams.get('act')
-    const messageId = newUrl.searchParams.get('m_id')
-    const channelId = newUrl.searchParams.get('c_id')
-
-    // if the new url belongs to the current document
-    if (isSameDoc) {
-      // revision history deep link (#history / #history?version=) — update URL only; layout handles view
-      if (parseHistoryHash(newUrl.hash).isHistory) {
-        hideCurrentToolbar()
-        const target = `${newUrl.pathname}${newUrl.search}${newUrl.hash}`
-        void Router.push(target, undefined, { shallow: true })
-        return
-      }
-
-      // if there is more than one slug, it is a filter — apply filter
-      if (newUrlSlugs.length > 1) {
-        hideCurrentToolbar()
-        // drop the first slug, which is the document name (e.g. /doc-name/slug1/slug2)
-        PubSub.publish(APPLY_FILTER, { slugs: newUrlSlugs.slice(1), href })
-        return
-      }
-
-      // if it is a chatroom, open chatroom
-      if (chatroomId) {
-        PubSub.publish(CHAT_OPEN, { headingId: chatroomId, scroll2Heading: true })
-        return
-      }
-
-      // otherwise, scroll to heading
-      if (headingId) {
-        scrollToHeading(headingId)
-        return
-      }
-
-      if (act === 'ch' && messageId && channelId) {
-        hideCurrentToolbar()
-
-        PubSub.publish(CHAT_OPEN, {
-          headingId: channelId,
-          scroll2Heading: true,
-          fetchMsgsFromId: messageId
-        })
-        return
-      }
+  setTimeout(() => {
+    if (editor.isDestroyed) return
+    const active = document.activeElement as HTMLElement | null
+    if (active && editor.view.dom.contains(active) && active !== editor.view.dom) {
+      active.blur()
     }
-
-    window.open(href, '_blank')
-  }
-
-// Create SVG icon element
-const createSvgIcon = (iconName: string, className: string = ''): HTMLElement => {
-  // Get the icon function from our iconList
-  const iconFunction = (Icons as Record<string, (props: { size?: number }) => string>)[iconName]
-
-  if (iconFunction && typeof iconFunction === 'function') {
-    const iconContainer = createHTMLElement('div', {
-      className: `svg-icon-container ${className}`,
-      innerHTML: iconFunction({ size: 20 })
-    })
-    return iconContainer
-  }
-
-  // Fallback to a default icon if the specific icon is not found
-  const fallbackContainer = createHTMLElement('div', {
-    className: `svg-icon-container ${className}`,
-    innerHTML: `<div class="icon-fallback">${iconName.substring(0, 2).toUpperCase()}</div>`
-  })
-  return fallbackContainer
+    editor.view.dom.blur()
+  }, KEYBOARD_DISMISS_DELAY_MS)
 }
 
-const createMetadataContent = (data: MetadataResponse | null, href: string): HTMLElement => {
-  const specialInfo = getSpecialUrlInfo(href)
-  let iconElement: HTMLElement | null = null
-
-  if (specialInfo) {
-    // Add SVG icon with category-specific styling
-    iconElement = createSvgIcon(
-      specialInfo.icon,
-      `metadata-icon-special icon-${specialInfo.category}`
-    )
-  }
-
-  const container = createHTMLElement('div', {
-    className: `metadata-content ${specialInfo ? 'metadata-content-special' : ''}`
-  })
-
-  const titleLink = createHTMLElement('a', {
-    target: '_blank',
-    rel: 'noreferrer',
-    href,
-    innerText: data?.title || href,
-    className: 'metadata-title'
-  }) as HTMLAnchorElement
-
-  titleLink.addEventListener('click', hrefEventHandler(href))
-
-  container.append(titleLink)
-
-  if (iconElement) container.prepend(iconElement)
-
-  // Prefer icon over image for compact display, fallback to image
-  const imageUrl = data?.icon || data?.image
-  if (imageUrl) {
-    const img = createHTMLElement('img', {
-      src: imageUrl,
-      alt: data.title,
-      className: 'metadata-image',
-      onerror: function (this: HTMLImageElement) {
-        this.style.display = 'none'
-      }
-    }) as HTMLImageElement
-    if (iconElement) container.removeChild(iconElement)
-    container.prepend(img)
-  }
-
-  return container
-}
-
-const fetchMetadata = async (
-  href: string,
-  metadataContainer: HTMLDivElement,
-  editor: Editor,
-  _nodePos: number
-): Promise<void> => {
-  const defaultContent = createMetadataContent(null, href)
-  metadataContainer.appendChild(defaultContent)
-
-  try {
-    const response = await fetch('/api/metadata', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: href })
-    })
-
-    if (!response.ok) {
-      console.error('Metadata API error:', response.statusText)
-      return
-    }
-
-    const data: ApiResponse = await response.json()
-
-    if (data.success) {
-      metadataContainer.removeChild(defaultContent)
-      const content = createMetadataContent(data, href)
-      metadataContainer.appendChild(content)
-
-      editor
-        .chain()
-        .focus()
-        .extendMarkRange('hyperlink')
-        .updateAttributes('hyperlink', {
-          title: data.title,
-          image: data.image
-        })
-        .run()
-
-      const { from } = editor.state.selection
-      const { left: x, top: y } = editor.view.coordsAtPos(from)
-      let el = document.elementFromPoint(x, y)
-      el = el?.closest('a[href]') as HTMLElement | null
-      if (el) updateCurrentToolbarPosition(el as HTMLElement)
-    } else {
-      console.error('Metadata API error:', data.message)
-    }
-  } catch (error) {
-    console.error('Error fetching metadata:', error)
-  }
-}
-
-export default function previewHyperlink(options: HyperlinkModalOptions) {
-  const { link, editor, nodePos, node: _node, attrs } = options
+/**
+ * Thin orchestrator for the webapp's hyperlink preview popover.
+ *
+ * - On desktop, builds the historical inline popover (metadata + copy /
+ *   edit / remove icon buttons) anchored to the link by the extension's
+ *   floating-toolbar wrapper.
+ * - On mobile, opens the React `linkPreview` bottom sheet via the
+ *   global sheet store and returns `null`. The Tiptap extension's
+ *   click handler treats `null` as "no popover, just hide the toolbar"
+ *   (see clickHandler.ts in @docs.plus/extension-hyperlink), so the
+ *   floating-toolbar machinery is bypassed entirely on mobile and the
+ *   sheet renders through the same react-modal-sheet pipeline as every
+ *   other mobile sheet in the app.
+ *
+ * Desktop variant cancels its in-flight `fetchMetadata` request via
+ * AbortController the moment the popover is detached (outside-click,
+ * scroll-out, etc.), and defers the L1 mark-attr write until after
+ * detachment to avoid the floating-ui referenceHidden race.
+ */
+export default function previewHyperlink(options: PreviewHyperlinkOptions): HTMLElement | null {
+  const { link, editor, nodePos, attrs } = options
   const href = link.href
+  const isMobile = useStore.getState().settings.editor.isMobile ?? false
 
-  const hyperlinkLinkModal = createHTMLElement('div', { className: 'hyperlinkPreviewPopover' })
-  const removeButton = createHTMLElement('button', { className: 'remove', innerHTML: LinkOff() })
+  if (isMobile) {
+    useSheetStore.getState().openSheet('linkPreview', { href, editor, nodePos, attrs })
+    dismissSoftKeyboard(editor)
+    return null
+  }
+
+  const controller = new AbortController()
+  const ctx: PreviewContext = { href, editor, nodePos, attrs, signal: controller.signal }
+  const built = buildDesktopPopover(ctx, options)
+
+  // Flush the mark-attr write (L1 cache) only AFTER the popover detaches.
+  // Writing while open would re-render the underlying `<a>` element and
+  // floating-ui would hide the popover via the referenceHidden middleware.
+  observeDetachment(built.element, () => {
+    controller.abort()
+    built.flush()
+  })
+
+  return built.element
+}
+
+/**
+ * Desktop popover: preserves the pre-refactor DOM/class contract so the
+ * existing `.hyperlink-preview-popover` CSS and Cypress specs keep
+ * working.
+ */
+const buildDesktopPopover = (
+  ctx: PreviewContext,
+  options: PreviewHyperlinkOptions
+): { element: HTMLElement; flush: () => void } => {
+  const { href, editor } = ctx
+  const { link, view, linkCoords, validate } = options
+
+  const popover = createHTMLElement('div', { className: 'hyperlink-preview-popover' })
+  const metadataContainer = createHTMLElement('div', { className: 'metadata' })
   const copyButton = createHTMLElement('button', { className: 'copy', innerHTML: Copy() })
   const editButton = createHTMLElement('button', { className: 'edit', innerHTML: Pencil() })
-  const metadataContainer = createHTMLElement('div', { className: 'metadata' })
+  const removeButton = createHTMLElement('button', { className: 'remove', innerHTML: LinkOff() })
 
-  // Check if metadata already exists in node attributes
-  const existingTitle = typeof attrs?.title === 'string' ? attrs.title : undefined
-  const existingImage = typeof attrs?.image === 'string' ? attrs.image : undefined
-
-  if (existingTitle) {
-    // Use existing metadata
-    const cachedMetadata: MetadataResponse = {
-      title: existingTitle,
-      image: existingImage,
-      success: true
-    }
-    const content = createMetadataContent(cachedMetadata, href)
-    metadataContainer.appendChild(content)
-  } else {
-    // Fetch metadata if not cached
-    fetchMetadata(href, metadataContainer, editor, nodePos)
-  }
-
-  removeButton.addEventListener('click', () => {
-    hideCurrentToolbar()
-    const chain = editor.chain().focus() as unknown as {
-      unsetHyperlink: () => { run: () => boolean }
-    }
-    return chain.unsetHyperlink().run()
-  })
-
-  editButton.addEventListener('click', () => {
-    editHyperlinkPopover({ ...options, hyperlinkPopover: hyperlinkLinkModal })
-  })
+  const { flush } = renderMetadataInto(metadataContainer, ctx)
 
   copyButton.addEventListener('click', () => {
     copyToClipboard(href, (success) => {
@@ -280,7 +119,15 @@ export default function previewHyperlink(options: HyperlinkModalOptions) {
     })
   })
 
-  hyperlinkLinkModal.append(metadataContainer, copyButton, editButton, removeButton)
+  editButton.addEventListener('click', () => {
+    editHyperlinkPopover({ editor, view, link, linkCoords, validate })
+  })
 
-  return hyperlinkLinkModal
+  removeButton.addEventListener('click', () => {
+    hideCurrentToolbar()
+    editor.chain().focus().unsetHyperlink().run()
+  })
+
+  popover.append(metadataContainer, copyButton, editButton, removeButton)
+  return { element: popover, flush }
 }

@@ -99,9 +99,9 @@ export const useTiptapEditor = ({
         }),
         Hyperlink.configure({
           protocols: ['ftp', 'mailto'],
-          hyperlinkOnPaste: true,
+          linkOnPaste: true,
           openOnClick: true,
-          autoHyperlink: true,
+          autolink: true,
           popovers: {
             previewHyperlink: previewHyperlinkPopover,
             createHyperlink: createHyperlinkPopover

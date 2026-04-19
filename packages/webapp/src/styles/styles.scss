@@ -43,9 +43,9 @@ $pad-toolbar-height: 38px;
   }
 }
 
-.hyperlinkCreatePopover,
-.hyperlinkPreviewPopover,
-.hyperlinkEditPopover {
+.hyperlink-create-popover,
+.hyperlink-preview-popover,
+.hyperlink-edit-popover {
   background-color: var(--color-base-100);
   color: var(--color-base-content);
   border: 1px solid var(--color-base-300);
@@ -64,9 +64,9 @@ $pad-toolbar-height: 38px;
     width: 100%;
   }
 
-  .inputsWrapper,
-  .hrefWrapper,
-  .textWrapper {
+  .inputs-wrapper,
+  .href-wrapper,
+  .text-wrapper {
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -135,11 +135,11 @@ $pad-toolbar-height: 38px;
     }
   }
 
-  .buttonsWrapper {
+  .buttons-wrapper {
     flex-shrink: 0;
 
     button[type='submit'],
-    .backButton {
+    .back-button {
       background-color: transparent;
       border: none;
       border-radius: 0.25rem;
@@ -196,12 +196,18 @@ $pad-toolbar-height: 38px;
   }
 }
 
-.hyperlinkPreviewPopover {
+.hyperlink-preview-popover {
+  // Flex children default to `min-width: auto` (= content size), which overrides
+  // the nested `max-width: 200px` caps whenever the href is wider than its cap.
+  // Resetting `min-width: 0` down the chain lets the anchor actually shrink and
+  // the ellipsis kick in, so the popover stays a fixed width regardless of href
+  // length.
   .metadata,
-  .metadata-fallback,
   .metadata-loading {
+    min-width: 0;
     a {
       display: block;
+      min-width: 0;
       max-width: 200px;
       font-size: 0.9rem;
       font-weight: 500;
@@ -214,6 +220,7 @@ $pad-toolbar-height: 38px;
     }
     .metadata-special,
     .metadata-content {
+      min-width: 0;
       max-width: 200px;
       display: flex;
       align-items: center;
@@ -238,17 +245,11 @@ $pad-toolbar-height: 38px;
       height: 18px;
     }
   }
-  .linkCopyButton {
-    margin-left: auto;
-  }
-  .linkRemoveButton {
-    margin-left: 0.5rem;
-  }
 }
 
-.hyperlinkEditPopover {
+.hyperlink-edit-popover {
   align-items: flex-end;
-  .inputsWrapper {
+  .inputs-wrapper {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.25rem;
@@ -263,7 +264,7 @@ $pad-toolbar-height: 38px;
       box-shadow: none;
     }
   }
-  .buttonsWrapper {
+  .buttons-wrapper {
     flex-direction: column;
     display: flex;
     justify-content: space-around;
@@ -271,7 +272,7 @@ $pad-toolbar-height: 38px;
     gap: 0.7rem;
     height: 100%;
   }
-  .textWrapper {
+  .text-wrapper {
     svg {
       width: 26px;
       height: 26px;
@@ -285,6 +286,67 @@ $pad-toolbar-height: 38px;
 .tippy-svg-arrow {
   top: -12px !important;
   fill: color-mix(in oklch, var(--color-base-content) 40%, transparent);
+}
+
+// --------------------------------------------------------------------------
+// Hyperlink preview: loading skeleton (shared desktop + mobile)
+// --------------------------------------------------------------------------
+
+@keyframes hyperlink-preview-shimmer {
+  0% {
+    background-position: -200px 0;
+  }
+  100% {
+    background-position: 200px 0;
+  }
+}
+
+.metadata-title {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+  display: block;
+}
+
+.metadata-image {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  object-fit: cover;
+}
+
+.metadata-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+
+  .skeleton-favicon,
+  .skeleton-bar {
+    background: linear-gradient(
+      90deg,
+      color-mix(in oklch, var(--color-base-content) 8%, transparent) 0%,
+      color-mix(in oklch, var(--color-base-content) 16%, transparent) 50%,
+      color-mix(in oklch, var(--color-base-content) 8%, transparent) 100%
+    );
+    background-size: 400px 100%;
+    animation: hyperlink-preview-shimmer 1.2s ease-in-out infinite;
+    border-radius: 4px;
+  }
+
+  .skeleton-favicon {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .skeleton-bar {
+    height: 12px;
+    flex: 1;
+    min-width: 80px;
+  }
 }
 
 .dropdown-menu {
