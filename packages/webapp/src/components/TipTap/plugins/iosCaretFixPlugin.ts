@@ -22,7 +22,22 @@ const isIOSSafari = (): boolean => {
 // Store touch coordinates from touchstart (more accurate than click on iOS)
 let lastTouchCoords: { x: number; y: number } | null = null
 
+/**
+ * The caret-fix exists to correct word-boundary jumping when the user
+ * is positioning a caret in plain text. A tap on a hyperlink is a
+ * different gesture entirely — the hyperlink extension owns it and
+ * opens its own UI (popover / mobile sheet). Dispatching a selection
+ * change here fights that flow and, on a contenteditable=true host,
+ * triggers iOS Safari's "scroll focused element into view" behavior.
+ */
+const isLinkTarget = (target: EventTarget | null): boolean =>
+  target instanceof Element && target.closest('a') !== null
+
 const handleTouchStart = (view: EditorView, event: TouchEvent): boolean => {
+  if (isLinkTarget(event.target)) {
+    lastTouchCoords = null
+    return false
+  }
   const touch = event.touches[0]
   if (touch) {
     lastTouchCoords = { x: touch.clientX, y: touch.clientY }
@@ -38,6 +53,12 @@ const handleTouchEnd = (_view: EditorView, _event: TouchEvent): boolean => {
 const handleClick = (view: EditorView, event: MouseEvent): boolean => {
   // Only apply fix for iOS Safari
   if (!isIOSSafari()) {
+    lastTouchCoords = null
+    return false
+  }
+
+  // Hyperlinks are owned by the hyperlink extension — leave them alone.
+  if (isLinkTarget(event.target)) {
     lastTouchCoords = null
     return false
   }
