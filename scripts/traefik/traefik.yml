@@ -24,14 +24,14 @@ log:
   level: WARN # Reduced from INFO to reduce log volume
   format: json
 
-# Access logs - only log errors (4xx/5xx) to reduce volume
+# Access logs — 4xx/5xx only (keeps volume low but still captures fast 500s).
+# Traefik combines filter fields with AND; retryAttempts + minDuration meant
+# most errors never appeared in logs. See docker-compose.prod.yml "Debugging".
 accessLog:
   format: json
   filters:
     statusCodes:
       - '400-599'
-    retryAttempts: true # Only log retries
-    minDuration: '1s' # Only log slow requests (>1s)
 
 # -----------------------------------------------------------------------------
 # Entrypoints
