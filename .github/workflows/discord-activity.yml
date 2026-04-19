@@ -8,6 +8,30 @@ jobs:
   notify:
     runs-on: ubuntu-latest
     steps:
+      # ----------------------------------------------------------------------
+      # Build the per-commit lines.
+      #
+      # Wire format per line (one commit):
+      #   N. **`type(scope):`** subject · [`abc1234`](url) · author
+      #
+      # Notes for future maintainers (and for whoever reads this from the
+      # Discord side):
+      #   - We render the SUBJECT only. Bodies are intentionally omitted —
+      #     they fragment readability in chat and the hash link gives the
+      #     full git show one click away.
+      #   - The previous version stripped (), [], and ` from the message to
+      #     "protect" the [hash](url) link that follows. That was a false
+      #     positive: Discord's link parser only triggers on `]` IMMEDIATELY
+      #     followed by `(`, and our hash link sits behind a ` · ` separator
+      #     so subject-side punctuation is safe. Stripping parens turned
+      #     `fix(editor):` into `fixeditor:` and is the bug we are fixing.
+      #   - Conventional Commit prefix (type, optional scope, optional !)
+      #     is detected with a single capture and rendered as bold inline
+      #     code so it pops without breaking non-conventional commits.
+      #   - Control characters (\u0000-\u001f) are still stripped because
+      #     they break Discord rendering and have no legitimate place in a
+      #     commit subject.
+      # ----------------------------------------------------------------------
       - name: Build commit summary (for push)
         id: build
         env:
@@ -17,8 +41,8 @@ jobs:
           REF=$(jq -r '.ref' <<< "$EVENT_JSON" | sed 's|refs/heads/||')
           COMPARE=$(jq -r '.compare' <<< "$EVENT_JSON")
 
-          # Check if this is a build trigger commit (skip notification)
-          # Use jq for comparison to avoid shell escaping issues with special chars
+          # Skip the synthetic "build front back" deploy-trigger commit so
+          # the channel does not get a one-line notification with no signal.
           SKIP_NOTIFICATION="false"
           if [ "$COUNT" -eq 1 ]; then
             FIRST_MSG=$(jq -r '.commits[0].message // "" | split("\n")[0]' <<< "$EVENT_JSON")
@@ -28,12 +52,33 @@ jobs:
             fi
           fi
 
-          # Write commits directly to file (avoids shell interpolation issues)
           REPO_URL="https://github.com/${{ github.repository }}"
-          jq -r --arg repo "$REPO_URL" '.commits | to_entries[] |
-            (1 + .key | tostring) + ". " +
-            (.value.message | gsub("\\r?\\n"; " ") | gsub("[\\(\\)\\[\\]`]"; "")) +
-            " [" + .value.id[0:7] + "](" + $repo + "/commit/" + .value.id + ") by " + .value.author.name' <<< "$EVENT_JSON" > /tmp/commits.txt
+
+          jq -r --arg repo "$REPO_URL" '
+            .commits | to_entries[] |
+              ((1 + .key) | tostring) as $n |
+              (.value.id[0:7]) as $sha |
+              ($repo + "/commit/" + .value.id) as $url |
+              (.value.message
+                | split("\n")[0]
+                | gsub("[\u0000-\u001f]"; " ")
+                | gsub("\\s+"; " ")
+                | gsub("^\\s+|\\s+$"; "")
+              ) as $subject |
+              # capture() returns an empty stream (not null) on no match,
+              # which would silently drop the entire commit line. Wrap it in
+              # an array so non-conventional commits resolve to null and fall
+              # through to the plain-subject branch below.
+              ([$subject
+                | capture("^(?<prefix>[a-zA-Z]+(?:\\([^)]+\\))?!?:)\\s*(?<rest>.*)$")
+              ] | .[0]) as $cc |
+              (if $cc != null then
+                  "**`" + $cc.prefix + "`** " + ($cc.rest | .[0:180])
+                else
+                  ($subject | .[0:200])
+                end) as $title |
+              $n + ". " + $title + " · [`" + $sha + "`](" + $url + ") · " + .value.author.name
+          ' <<< "$EVENT_JSON" > /tmp/commits.txt
 
           {
             echo "COUNT=$COUNT"
@@ -42,44 +87,52 @@ jobs:
             echo "SKIP_NOTIFICATION=$SKIP_NOTIFICATION"
           } >> "$GITHUB_ENV"
 
+      # ----------------------------------------------------------------------
+      # Post to Discord.
+      #
+      # Splitting:
+      #   Discord caps content at 2000 chars. We pack as many commit lines as
+      #   fit under MAX_LEN (1900, leaving ~100 char buffer for trailing JSON
+      #   and a bit of slack), then flush. The HEADER is only included in the
+      #   first chunk so subsequent chunks read as continuations.
+      #
+      # flags: 4 == SUPPRESS_EMBEDS — keeps the message compact (no GitHub
+      # link previews stacking under every commit).
+      # ----------------------------------------------------------------------
       - name: Post to Discord (smart split)
         if: env.SKIP_NOTIFICATION != 'true'
         run: |
-          HEADER="🚀 **Push Event**
-          📦 Repository: \`${{ github.repository }}\`
-          👤 Author: \`${{ github.actor }}\`
-          🌿 Branch: \`${{ env.REF }}\`
-          📝 Commits: \`${{ env.COUNT }}\`
-          🔗 [View Diff](${{ env.COMPARE }})
+          HEADER="🚀 **Push** to \`${{ env.REF }}\` by \`${{ github.actor }}\`
+          📦 \`${{ github.repository }}\` · 📝 ${{ env.COUNT }} commits · 🔗 [View Diff](${{ env.COMPARE }})
 
-          **Commit List:**
+          **Commits**
           "
 
-          MAX_LEN=1900  # Leave buffer for safety
+          MAX_LEN=1900
 
-          # Split commits into chunks
           CURRENT_CHUNK=""
           CHUNK_NUM=1
 
+          send_chunk() {
+            local message="$1"
+            curl -sS -H "Content-Type: application/json" \
+                 -d "{\"content\": $(printf '%s' "$message" | jq -Rs .), \"flags\": 4}" \
+                 "${{ secrets.DISCORD_WEBHOOK }}"
+            sleep 1
+          }
+
           while IFS= read -r line || [ -n "$line" ]; do
-            # Skip empty lines
             [ -z "$line" ] && continue
 
             TEST_MSG="${HEADER}${CURRENT_CHUNK}${line}"$'\n'
 
             if [ ${#TEST_MSG} -gt $MAX_LEN ] && [ -n "$CURRENT_CHUNK" ]; then
-              # Send current chunk
               if [ $CHUNK_NUM -eq 1 ]; then
-                MESSAGE="${HEADER}${CURRENT_CHUNK}"
+                send_chunk "${HEADER}${CURRENT_CHUNK}"
               else
-                MESSAGE="${CURRENT_CHUNK}"
+                send_chunk "${CURRENT_CHUNK}"
               fi
 
-              curl -H "Content-Type: application/json" \
-                   -d "{\"content\": $(printf '%s' "$MESSAGE" | jq -Rs .), \"flags\": 4}" \
-                   "${{ secrets.DISCORD_WEBHOOK }}"
-
-              sleep 1  # Rate limit protection
               CHUNK_NUM=$((CHUNK_NUM + 1))
               CURRENT_CHUNK="${line}"$'\n'
             else
@@ -87,15 +140,10 @@ jobs:
             fi
           done < /tmp/commits.txt
 
-          # Send final chunk
           if [ -n "$CURRENT_CHUNK" ]; then
             if [ $CHUNK_NUM -eq 1 ]; then
-              MESSAGE="${HEADER}${CURRENT_CHUNK}"
+              send_chunk "${HEADER}${CURRENT_CHUNK}"
             else
-              MESSAGE="${CURRENT_CHUNK}"
+              send_chunk "${CURRENT_CHUNK}"
             fi
-
-            curl -H "Content-Type: application/json" \
-                 -d "{\"content\": $(printf '%s' "$MESSAGE" | jq -Rs .), \"flags\": 4}" \
-                 "${{ secrets.DISCORD_WEBHOOK }}"
           fi
