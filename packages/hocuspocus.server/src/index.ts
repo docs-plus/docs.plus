@@ -6,11 +6,12 @@ import emailRouter from './api/email'
 import healthRouter from './api/health'
 import hypermultimediaRouter from './api/hypermultimedia'
 import { emailGateway } from './lib/email'
-import { restApiLogger } from './lib/logger'
+import { logger, restApiLogger } from './lib/logger'
 import { prisma, shutdownDatabase } from './lib/prisma'
 import { pushGateway } from './lib/push'
 import { disconnectRedis, getRedisClient } from './lib/redis'
 import { setupMiddleware } from './middleware'
+import * as linkMetadata from './modules/link-metadata'
 import { checkEnvBolean } from './utils'
 
 const {
@@ -47,6 +48,11 @@ app.route('/api/email', emailRouter)
 // NOTE: /api/push endpoint removed - push notifications now use pgmq Consumer architecture
 // See: docs/PUSH_NOTIFICATION_PGMQ.md
 app.route('/api/admin', adminRouter)
+const linkMetadataModule = linkMetadata.init({
+  redis: getRedisClient(),
+  logger: logger.child({ module: 'link-metadata' })
+})
+app.route('/api/metadata', linkMetadataModule.router)
 
 // Initialize gateways (queue-only mode - workers run in hocuspocus-worker)
 // This allows rest-api to scale to multiple replicas without duplicate workers
