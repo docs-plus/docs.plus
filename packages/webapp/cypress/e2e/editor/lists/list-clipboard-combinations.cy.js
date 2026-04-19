@@ -144,9 +144,9 @@ const applyFormattingAndHyperlink = (itemText, shortcuts, href) => {
   // Use the real hyperlink command path so tests validate the same behavior users trigger.
   selectItemRange(itemText)
   cy.get('.docy_editor').realPress(['Meta', 'k'])
-  cy.get('.hyperlinkCreatePopover').should('be.visible')
-  cy.get('.hyperlinkCreatePopover input[name="hyperlink-url"]').clear().type(href)
-  cy.get('.hyperlinkCreatePopover button[type="submit"]').click()
+  cy.get('.hyperlink-create-popover').should('be.visible')
+  cy.get('.hyperlink-create-popover input[name="hyperlink-url"]').clear().type(href)
+  cy.get('.hyperlink-create-popover button[type="submit"]').click()
 }
 
 const pasteSliceAtListEnd = (itemSelector, aliasName) => {

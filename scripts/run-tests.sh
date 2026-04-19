@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # =============================================================================
 # Editor Test Suite Runner
-# Runs unit tests (Jest) and E2E tests (Cypress), saves results to a report file.
+# Runs unit tests (Jest) + per-package clean-room suites, plus webapp E2E
+# (Cypress), saving results to a report file. The unit block runs:
+#   1. @docs.plus/extension-indent (Jest)
+#   2. @docs.plus/extension-hyperlink (clean-room Cypress against dist/)
+#   3. @docs.plus/webapp (Jest)
 #
 # Usage:
 #   bun run test:all                  # unit + E2E, report saved to Notes/
@@ -33,6 +37,7 @@ NC='\033[0m'
 ROOT_DIR="$(cd "$(dirname "$0")/.." && pwd)"
 WEBAPP_DIR="$ROOT_DIR/packages/webapp"
 EXTENSION_INDENT_DIR="$ROOT_DIR/packages/extension-indent"
+EXTENSION_HYPERLINK_DIR="$ROOT_DIR/packages/extension-hyperlink"
 REPORT_DIR="$ROOT_DIR/Notes"
 TIMESTAMP="$(date +%Y-%m-%d_%H%M%S)"
 REPORT="$REPORT_DIR/test-results-${TIMESTAMP}.txt"
@@ -117,6 +122,20 @@ if $RUN_UNIT; then
     UNIT_EXIT=1
     echo ""
     echo -e "${RED}@docs.plus/extension-indent unit tests failed.${NC}"
+  fi
+  echo ""
+
+  # Clean-room E2E for @docs.plus/extension-hyperlink: boots its own
+  # Bun.serve playground (no Vite, no bundler config) against the built
+  # dist/ and runs a self-contained Cypress suite. Runs in the unit block
+  # because it's a per-package release gate, not part of the webapp's
+  # shared-server E2E fleet.
+  cd "$EXTENSION_HYPERLINK_DIR"
+  echo -e "${DIM}  → @docs.plus/extension-hyperlink (clean-room Cypress)${NC}"
+  if ! bun run test 2>&1 | tee -a "$REPORT"; then
+    UNIT_EXIT=1
+    echo ""
+    echo -e "${RED}@docs.plus/extension-hyperlink clean-room E2E failed.${NC}"
   fi
   echo ""
 

@@ -34,11 +34,11 @@ describe('Toolbar/Shortcut Parity', () => {
     selectTargetText()
     cy.get('[data-testid="toolbar-hyperlink"]').click()
 
-    cy.get('.hyperlinkCreatePopover').should('be.visible')
-    cy.get('.hyperlinkCreatePopover input[name="hyperlink-url"]')
+    cy.get('.hyperlink-create-popover').should('be.visible')
+    cy.get('.hyperlink-create-popover input[name="hyperlink-url"]')
       .clear()
       .type('https://example.com')
-    cy.get('.hyperlinkCreatePopover button[type="submit"]').click()
+    cy.get('.hyperlink-create-popover button[type="submit"]').click()
 
     cy.get('.docy_editor a')
       .contains(TARGET_TEXT)
@@ -50,11 +50,11 @@ describe('Toolbar/Shortcut Parity', () => {
     selectTargetText()
     cy.get('.docy_editor').realPress(['Meta', 'k'])
 
-    cy.get('.hyperlinkCreatePopover').should('be.visible')
-    cy.get('.hyperlinkCreatePopover input[name="hyperlink-url"]')
+    cy.get('.hyperlink-create-popover').should('be.visible')
+    cy.get('.hyperlink-create-popover input[name="hyperlink-url"]')
       .clear()
       .type('https://example.org')
-    cy.get('.hyperlinkCreatePopover button[type="submit"]').click()
+    cy.get('.hyperlink-create-popover button[type="submit"]').click()
 
     cy.get('.docy_editor a')
       .contains(TARGET_TEXT)
