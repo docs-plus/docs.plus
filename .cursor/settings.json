@@ -2,6 +2,9 @@
   "plugins": {
     "continual-learning": {
       "enabled": true
+    },
+    "superpowers": {
+      "enabled": true
     }
   }
 }

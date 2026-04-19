@@ -5,20 +5,20 @@ description: Review staged/unstaged changes and generate grouped, production-gra
 
 # Commit Review
 
-Act as a **Head of Engineering** with a **Senior Technical Writer** at your side. Your job: review all changes, group them by intent, and produce commit messages that belong in a Fortune 500 engineering org's git history.
+Review all changes, group them by intent, and produce Conventional Commit messages clean enough for any company's `git log`.
 
-## Standard
+## The rule that overrides everything
 
-All commit messages **must** follow the [Conventional Commits](https://www.conventionalcommits.org/) specification. This is non-negotiable.
+**Never commit without explicit user approval.** Always present the report first and wait for a "go". No exceptions, no shortcuts, no "this one is obvious".
 
-### Format
+## Format
 
 ```
 <type>(<scope>): <imperative summary>
 
 <body — what changed and WHY, not how>
 
-<footer — breaking changes, ticket refs>
+<footer — breaking changes, issue refs>
 ```
 
 ### Allowed types
@@ -36,29 +36,39 @@ All commit messages **must** follow the [Conventional Commits](https://www.conve
 | `chore`    | Maintenance that doesn't fit above    |
 | `revert`   | Reverts a previous commit             |
 
-### Message quality bar
+### Choosing a scope
 
-- **Intuitive and descriptive** — a product manager or new hire should understand the intent without reading the diff
-- **Plain language** — avoid jargon, acronyms, and overly technical words
-- **Imperative mood** — "add", "fix", "remove" (not "added", "fixes", "removed")
-- **Atomic** — each commit does exactly one thing
-- **Summary ≤ 72 characters**, no trailing period
-- **Body wraps at 72 characters**, explains the "why" not the "how"
-- **Breaking changes** use `!` suffix: `feat(api)!: remove legacy endpoints`
+Pick the most specific shared thing the change touches. The scope should help a future reader filter `git log` quickly.
+
+- **Single-app repo**: feature or module name — `auth`, `parser`, `cli`, `editor`
+- **Monorepo**: derive from the path — files under `packages/foo/*`, `apps/foo/*`, `libs/foo/*`, or `services/foo/*` → scope `foo`
+- **Cross-cutting**: a domain noun — `deps`, `build`, `config`, `ci`, `docs`
+- **No useful scope**: omit it — write `feat: …` rather than `feat(misc): …`
+
+### Quality bar
+
+- Imperative mood: `add`, `fix`, `remove` — never `added`, `fixed`, `updated`
+- Plain language a new hire would understand without reading the diff
+- Atomic — if the summary needs "and", it's two commits
+- Summary ≤ 72 characters, no trailing period; body wraps at 72
+- Body explains **why**, not how
+- Breaking changes use `!`: `feat(api)!: drop legacy /v1`
+- Internal issue refs go in the footer: `Closes #123`, `Refs PROJ-42`
+- After drafting each summary, count characters — if > 72, rewrite before proposing
 
 ### Strictly forbidden
 
-- Mentioning AI, agent, Cursor, copilot, ChatGPT, or any tool — anywhere in the message (summary, body, or footer)
-- Trailers like `Made-with: Cursor`, `Co-authored-by: AI`, or any machine-generated footer — **strip them entirely**
-- Documentation references or links in the message
-- Vague summaries ("update files", "fix bug", "misc changes")
+- Any mention of AI, agent, Cursor, Copilot, ChatGPT, Claude, or any tool — in summary, body, or footer
+- Auto-generated trailers (`Made-with: …`, `Co-authored-by: AI`, etc.) — strip them entirely
+- Vague summaries: `update files`, `fix bug`, `misc`, `stuff`
+- Past tense, tautology (`refactor: refactor code`), filler (`just`, `simply`, `basically`)
+- Documentation links inside the message
 - Combining unrelated changes in one commit
-- Past tense ("added", "fixed", "updated")
-- Filler words ("just", "simply", "basically", "actually")
+- `--no-verify` to skip hooks
 
 ## Workflow
 
-### Step 1: Gather changes
+### 1. Gather
 
 Run in parallel:
 
@@ -69,75 +79,80 @@ git diff --cached
 git log --oneline -10
 ```
 
-### Step 2: Understand the full picture
+- If there is nothing to commit, stop and tell the user.
+- If the diff includes anything that looks like a secret or machine-local file — `.env*`, `credentials*`, `*.pem`, `*.key`, `id_rsa*`, `*secret*`, `*token*`, or paths normally listed in `.gitignore` that slipped in — **exclude them from every group** and flag them in the report so the user can decide.
 
-Before grouping, answer internally:
+### 2. Propose
 
-1. What was the **user's intent** across all changes?
-2. Are there **logical boundaries** between changes (different features, different bug fixes)?
-3. Would a future engineer doing `git log --oneline` get a **clear story** of what happened?
-4. Could any change be **split further** into a more atomic commit?
+Group by intent: one logical concern per group, regardless of file count. Each group must be revertable on its own without breaking unrelated work. Tests and supporting config belong with the change they support, not in a separate `chore`.
 
-### Step 3: Group by intent
+**Single group?** Use the compact form:
 
-Group changes by **action and purpose**, not by file or directory. Each group must represent a single logical change that could be reverted independently without breaking anything else.
+```
+<type>(<scope>): <summary>
+Files: <list>
+Why: <one sentence>
 
-Principles:
+<full message, including body if any>
+```
 
-- One concern per commit — if you need "and" in the summary, it's probably two commits
-- Config changes that support a feature belong with that feature, not in a separate `chore` commit
-- Test changes belong with the code they test, unless they're standalone test improvements
-
-### Step 4: Write commit messages
-
-For each group, craft the message. Before finalizing, run this mental checklist:
-
-- [ ] Would this message make sense in a CHANGELOG?
-- [ ] Could a new team member understand it on day one?
-- [ ] Does it tell the reader **why** this change matters?
-- [ ] Is it specific enough to distinguish from similar past commits?
-- [ ] Is it free of any tool/AI references?
-
-### Step 5: Generate report for review
-
-**Do NOT commit anything yet.** First, present a full report for the user to review.
-
-Format the report as:
+**Two or more groups?** Use the full report:
 
 ```
 ## Commit Review Report
 
 ### Group 1: <type>(<scope>): <summary>
-**Files:**
-- path/to/file1.tsx
-- path/to/file2.ts
+Files:
+- path/to/file1
+- path/to/file2
+Why: <one sentence>
 
-**What changed:** <1-2 sentence plain-language explanation>
-
-**Proposed commit message:**
-<full commit message with body if applicable>
-
----
-
-### Group 2: ...
-(repeat for each group)
+Message:
+<full commit message>
 
 ---
 
-**Total: X commits across Y files**
+### Group 2: …
+
+---
+
+Total: X commits across Y files
+Excluded: N files (<reason>)   ← only if anything was flagged
 ```
 
-After presenting the report, **wait for explicit user approval** before committing anything. Ask the user to:
+Then wait. Ask the user to:
 
-1. Approve all — proceed to commit sequentially
-2. Edit — adjust specific messages
-3. Regroup — merge or split groups
-4. Drop — skip specific groups
-5. Reject all — discard and start over
+1. **Approve all** — proceed to commit
+2. **Edit** — adjust specific messages
+3. **Regroup** — merge or split groups
+4. **Drop** — skip specific groups
+5. **Reject all** — discard and start over
+
+### 3. Execute (only after approval)
+
+For each approved group, in order:
+
+1. **Stage exactly that group's files** — `git add <paths>`. Never `git add -A` or `git add .` during sequential commits; that destroys the grouping.
+2. **Commit with a HEREDOC** so multi-line bodies keep their newlines:
+
+   ```bash
+   git commit -m "$(cat <<'EOF'
+   feat(auth): add passkey enrollment
+
+   Allow users to register a WebAuthn credential during onboarding,
+   replacing the optional SMS step that had a 12% failure rate.
+   EOF
+   )"
+   ```
+
+3. **If a pre-commit hook auto-modifies files**, re-stage those files and amend that single commit (`git commit --amend --no-edit`). Only amend the commit you just created.
+4. **If a hook rejects the commit**, fix the underlying issue and create a **new** commit — do not amend, do not pass `--no-verify`.
+
+After all commits, run `git status` and `git log --oneline -<N>` and report the result.
 
 ## Examples
 
-**Excellent — production-grade:**
+**Good:**
 
 ```
 feat(editor): add inline code formatting toggle
@@ -154,26 +169,18 @@ due to a missing state update in the route change handler
 ```
 
 ```
-refactor(auth): consolidate token refresh into single entry point
+perf(build): lazy-load extension bundles on first use
 
-Reduce three separate refresh paths to one shared utility,
-eliminating inconsistent expiry handling across the app
+Defer loading of table and image bundles until the user
+activates them, cutting initial load time by ~40%
 ```
 
-```
-perf(editor): lazy-load extension bundles on first use
-
-Defer loading of table and image extensions until the user
-activates them, reducing initial editor load time by ~40%
-```
-
-**Bad — would be rejected in code review:**
+**Bad:**
 
 ```
 update files                          # zero information
 fix: fixed the bug in the component   # past tense, vague, no scope
 docs: update per AI suggestion        # mentions AI
-feat: add feature (see docs#123)      # doc reference, vague
 chore: stuff                          # meaningless
 refactor: refactor code               # tautology
 fix(editor): fix issue                # what issue?
