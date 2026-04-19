@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@docs.plus/extension-hyperlink — clean-room playground</title>
+    <style>
+      /* Page chrome — light by default, dark via [data-theme="dark"].
+         Higher specificity than :root so it beats the extension's own
+         @media (prefers-color-scheme: dark) block when the user has
+         manually chosen a theme. */
+      html {
+        color-scheme: light;
+      }
+
+      html[data-theme='dark'] {
+        color-scheme: dark;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        font-family:
+          system-ui,
+          -apple-system,
+          sans-serif;
+      }
+
+      /* Background lives on <html> (not <body>) so it always fills the
+       viewport — body height shrinks to its content and would leak the
+       default white through below the card otherwise. */
+      html {
+        background: #f9fafb;
+        color: #111827;
+        min-height: 100%;
+      }
+
+      html[data-theme='dark'] {
+        background: #0b1220;
+        color: #f3f4f6;
+      }
+
+      /* Center the card in the viewport vertically + horizontally. */
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 2rem;
+        box-sizing: border-box;
+      }
+
+      main {
+        width: 100%;
+        max-width: 720px;
+        padding: 1.5rem;
+        background: #fff;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        box-sizing: border-box;
+      }
+
+      html[data-theme='dark'] main {
+        background: #1f2937;
+        border-color: #374151;
+      }
+
+      .header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+      }
+
+      h1 {
+        font-size: 1rem;
+        color: #6b7280;
+        margin: 0;
+        font-weight: 500;
+      }
+
+      html[data-theme='dark'] h1 {
+        color: #9ca3af;
+      }
+
+      .theme-toggle {
+        appearance: none;
+        border: 1px solid #e5e7eb;
+        background: transparent;
+        color: inherit;
+        border-radius: 6px;
+        padding: 0.35rem 0.75rem;
+        font: inherit;
+        font-size: 0.875rem;
+        line-height: 1;
+        min-width: 4rem;
+        cursor: pointer;
+      }
+
+      .theme-toggle:hover {
+        background: #f3f4f6;
+      }
+
+      html[data-theme='dark'] .theme-toggle {
+        border-color: #374151;
+      }
+
+      html[data-theme='dark'] .theme-toggle:hover {
+        background: #374151;
+      }
+
+      #editor {
+        border: 1px solid #e5e7eb;
+        border-radius: 6px;
+        min-height: 200px;
+        padding: 1rem;
+      }
+
+      html[data-theme='dark'] #editor {
+        border-color: #374151;
+      }
+
+      #editor:focus-within {
+        border-color: #2563eb;
+        outline: none;
+      }
+
+      #editor .ProseMirror {
+        outline: none;
+        min-height: 180px;
+      }
+
+      #editor .ProseMirror p {
+        margin: 0.5em 0;
+      }
+
+      /* Force the extension's --hl-* tokens to match the chosen theme.
+         Attribute selectors have higher specificity than :root alone, so
+         they beat both the extension's default tokens and the
+         @media (prefers-color-scheme: dark) fallback that Bun's CSS
+         bundler emits from `light-dark()`. Without the `[data-theme='light']`
+         branch, a user on a dark-mode OS who clicks "Light" would see a
+         light page chrome but a dark popover, because the @media block
+         would still apply. */
+      html[data-theme='light'] {
+        --hl-bg: #ffffff;
+        --hl-fg: #111827;
+        --hl-muted: #6b7280;
+        --hl-border: #e5e7eb;
+        --hl-hover: #f3f4f6;
+        --hl-accent: #2563eb;
+        --hl-accent-fg: #ffffff;
+        --hl-danger: #dc2626;
+        --hl-shadow: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.08);
+      }
+
+      html[data-theme='dark'] {
+        --hl-bg: #1f2937;
+        --hl-fg: #f3f4f6;
+        --hl-muted: #9ca3af;
+        --hl-border: #374151;
+        --hl-hover: #374151;
+        --hl-accent: #60a5fa;
+        --hl-accent-fg: #0b1220;
+        --hl-danger: #f87171;
+        --hl-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 4px 12px rgba(0, 0, 0, 0.5);
+      }
+    </style>
+    <script>
+      // Apply the persisted (or system-preferred) theme before first paint
+      // so there is no light → dark flash. Falls back to the extension's
+      // own @media query when the user has not made a choice.
+      ;(function () {
+        var saved = null
+        try {
+          saved = localStorage.getItem('theme')
+        } catch (_) {}
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.setAttribute('data-theme', saved)
+        }
+      })()
+    </script>
+  </head>
+
+  <body>
+    <main>
+      <div class="header">
+        <h1>@docs.plus/extension-hyperlink — clean-room playground</h1>
+        <button id="theme-toggle" class="theme-toggle" type="button"></button>
+      </div>
+      <div id="editor"></div>
+    </main>
+    <script>
+      ;(function () {
+        var btn = document.getElementById('theme-toggle')
+        var root = document.documentElement
+        function render() {
+          var isDark =
+            root.getAttribute('data-theme') === 'dark' ||
+            (root.getAttribute('data-theme') === null &&
+              matchMedia('(prefers-color-scheme: dark)').matches)
+          // Button text is the *action* (what clicking it will do),
+          // which matches the tooltip so sighted + keyboard users see
+          // the same intent.
+          var nextLabel = isDark ? 'Light' : 'Dark'
+          btn.textContent = nextLabel
+          btn.title = 'Switch to ' + nextLabel.toLowerCase() + ' theme'
+          btn.setAttribute('aria-label', btn.title)
+        }
+        btn.addEventListener('click', function () {
+          var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'
+          root.setAttribute('data-theme', next)
+          try {
+            localStorage.setItem('theme', next)
+          } catch (_) {}
+          render()
+        })
+        render()
+      })()
+    </script>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

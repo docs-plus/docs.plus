@@ -35,7 +35,14 @@
     "build:dev": "bunx tsup",
     "dev": "bunx tsup --watch",
     "lint": "eslint .",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "playground": "bun --hot ./test/playground/server.ts",
+    "pretest": "bun run build",
+    "test": "bunx start-server-and-test playground http://127.0.0.1:5173 cy:run",
+    "test:open": "bunx start-server-and-test playground http://127.0.0.1:5173 cy:open",
+    "cy:run": "bunx cypress run",
+    "cy:open": "bunx cypress open",
+    "docs:screenshots": "bun run build && bunx start-server-and-test playground http://127.0.0.1:5173 'bunx cypress run --config specPattern=cypress/docs/**/*.cy.ts'"
   },
   "files": [
     "dist"
@@ -57,13 +64,18 @@
     "@tiptap/pm": "catalog:"
   },
   "devDependencies": {
+    "@eslint/js": "catalog:",
     "@tiptap/core": "catalog:",
     "@tiptap/pm": "catalog:",
-    "@eslint/js": "catalog:",
+    "@tiptap/starter-kit": "catalog:",
+    "@types/node": "catalog:",
     "@typescript-eslint/eslint-plugin": "catalog:",
     "@typescript-eslint/parser": "catalog:",
+    "cypress": "catalog:",
+    "cypress-real-events": "catalog:",
     "eslint": "catalog:",
     "globals": "catalog:",
+    "start-server-and-test": "catalog:",
     "tsup": "catalog:",
     "typescript": "catalog:"
   }

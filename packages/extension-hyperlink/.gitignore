@@ -2,3 +2,8 @@ node_modules
 dist
 *.log
 .DS_Store
+
+# Cypress artifacts
+cypress/screenshots
+cypress/videos
+cypress/downloads
