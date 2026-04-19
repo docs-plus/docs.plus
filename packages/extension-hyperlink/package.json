@@ -25,6 +25,10 @@
   "author": "Hossein Marzban",
   "license": "MIT",
   "type": "module",
+  "homepage": "https://github.com/docs-plus/docs.plus/tree/main/packages/extension-hyperlink#readme",
+  "bugs": {
+    "url": "https://github.com/docs-plus/docs.plus/issues"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/docs-plus/docs.plus",
@@ -52,8 +56,12 @@
     "tiptap extension",
     "hyperlink",
     "link",
-    "docs.plus",
-    "prosemirror"
+    "autolink",
+    "rich-text-editor",
+    "floating-ui",
+    "url-validation",
+    "prosemirror",
+    "docs.plus"
   ],
   "dependencies": {
     "@floating-ui/dom": "^1.7.6",

@@ -1,376 +1,347 @@
-# Hyperlink
+# @docs.plus/extension-hyperlink
 
 [![Version](https://img.shields.io/npm/v/@docs.plus/extension-hyperlink.svg?label=version)](https://www.npmjs.com/package/@docs.plus/extension-hyperlink)
 [![Downloads](https://img.shields.io/npm/dm/@docs.plus/extension-hyperlink.svg)](https://npmcharts.com/compare/@docs.plus/extension-hyperlink)
 [![License](https://img.shields.io/npm/l/@docs.plus/extension-hyperlink.svg)](https://www.npmjs.com/package/@docs.plus/extension-hyperlink)
 
-The Link extension adds support for `<a>` tags to the editor. The extension is headless too, there is no actual UI to add, modify or delete links. The usage example below uses the native JavaScript prompt to show you how that could work.
+A Tiptap extension for hyperlinks. Ships with optional prebuilt popovers for creating, previewing, and editing links, plus auto-linking, markdown input rules, and support for 50+ URL schemes (`mailto:`, `tel:`, `zoommtg:`, `vscode:`, `spotify:`, …).
 
-In a real world application, you would probably add a more sophisticated user interface.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/docs-plus/docs.plus/main/packages/extension-hyperlink/docs/screenshots/preview-dark.png">
+    <img alt="Hyperlink preview popover anchored to a link, with copy / edit / remove actions" width="640" src="https://raw.githubusercontent.com/docs-plus/docs.plus/main/packages/extension-hyperlink/docs/screenshots/preview-light.png">
+  </picture>
+</p>
 
-> **Smart Auto-Linking**: URLs are automatically detected and converted to links, with intelligent markdown syntax protection and punctuation handling.
-
-## ✨ Enhanced URL Support
-
-This extension provides comprehensive support for:
-
-- **Standard URLs**: `https://example.com`, `http://example.com`
-- **Communication**: `mailto:user@example.com`, `tel:+1234567890`, `sms:+1234567890`
-- **Social Media**: `whatsapp://send?text=hello`, `discord://user/123`, `tg://resolve?domain=username`
-- **Video Conferencing**: `zoommtg://zoom.us/join?confno=123`, `msteams://l/meetup-join/19:meeting`
-- **Development Tools**: `github://user/repo`, `vscode://file/path`, `figma://file/abc123`
-- **Apple Apps**: `maps://address`, `music://album/123`, `facetime://user@example.com`
-- **Entertainment**: `youtube://watch?v=abc123`, `spotify://track/123`, `twitch://stream/username`
-- **And 50+ more special schemes**
-
-All these URL types are automatically detected and converted to clickable links as you type!
-
-**Smart Features:**
-
-- 🧠 **Markdown-aware**: Converts `[text](url)` to links, protects `![image](url)` syntax
-- 🔗 **URL Normalization**: Automatically adds `https://` to URLs without protocols
-- 🧹 **Clean URLs**: Automatically removes trailing punctuation
-- ⚡ **Priority handling**: Works seamlessly with other extensions
-
-## Installation
+## Install
 
 ```sh
-npm install @docsplus/extension-hyperlink
+npm install @docs.plus/extension-hyperlink
 ```
 
-## Settings
+Peer dependencies:
 
-### protocols
-
-Additional custom protocols you would like to be recognized as links.
-
-Default: `[]`
-
-```js
-Hyperlink.configure({
-  protocols: ['ftp', 'mailto']
-})
+```sh
+npm install @tiptap/core @tiptap/pm
 ```
 
-By default, [linkify](https://linkify.js.org/docs/) adds `//` to the end of a protocol however this behavior can be changed by passing `optionalSlashes` option
+## Usage
 
-```js
-Hyperlink.configure({
-  protocols: [
-    {
-      scheme: 'tel',
-      optionalSlashes: true
-    }
+```ts
+import { useEditor } from '@tiptap/react'
+import StarterKit from '@tiptap/starter-kit'
+import {
+  Hyperlink,
+  createHyperlinkPopover,
+  previewHyperlinkPopover
+} from '@docs.plus/extension-hyperlink'
+import '@docs.plus/extension-hyperlink/styles.css'
+
+const editor = useEditor({
+  extensions: [
+    StarterKit.configure({ link: false }),
+    Hyperlink.configure({
+      popovers: {
+        previewHyperlink: previewHyperlinkPopover,
+        createHyperlink: createHyperlinkPopover
+      }
+    })
   ]
 })
 ```
 
-**Note**: The extension automatically supports 50+ special URL schemes including `mailto:`, `tel:`, `whatsapp:`, `discord:`, `zoom:`, `github:`, `vscode:`, `spotify:`, and many more. You only need to configure additional protocols if you have custom schemes not already supported.
+The `styles.css` import and `popovers` options are optional — see [Popovers](#popovers) and [Styling](#styling) to bring your own UI.
 
-### autolink
+## Options
 
-If enabled, it adds links as you type.
+| Option           | Type                                      | Default   | Description                                                                                     |
+| ---------------- | ----------------------------------------- | --------- | ----------------------------------------------------------------------------------------------- |
+| `autolink`       | `boolean`                                 | `true`    | Convert URLs to links as you type.                                                              |
+| `openOnClick`    | `boolean`                                 | `true`    | Open links on click. Overridden by `popovers.previewHyperlink` when set.                        |
+| `linkOnPaste`    | `boolean`                                 | `true`    | Wrap the current selection in a link when a URL is pasted.                                      |
+| `protocols`      | `Array<string \| LinkProtocolOptions>`    | `[]`      | Extra protocols to register with [linkifyjs](https://linkify.js.org). 50+ are already built in. |
+| `HTMLAttributes` | `Record<string, any>`                     | `{ ... }` | Attributes applied to rendered `<a>` tags. Set a key to `null` to remove it.                    |
+| `validate`       | `(url: string) => boolean`                | —         | Reject auto-linked URLs when this returns `false`.                                              |
+| `popovers`       | `{ previewHyperlink?, createHyperlink? }` | —         | Factory functions that return `HTMLElement`. See [Popovers](#popovers).                         |
 
-Default: `true`
-
-```js
-Hyperlink.configure({
-  autolink: false
-})
-```
-
-### openOnClick
-
-If enabled, links will be opened on click.
-
-Default: `true`
-
-```js
-Hyperlink.configure({
-  openOnClick: false
-})
-```
-
-### linkOnPaste
-
-Adds a link to the current selection if the pasted content only contains an url.
-
-Default: `true`
-
-```js
-Hyperlink.configure({
-  linkOnPaste: false
-})
-```
-
-### HTMLAttributes
-
-Custom HTML attributes that should be added to the rendered HTML tag.
-
-```js
-Hyperlink.configure({
-  HTMLAttributes: {
-    class: 'my-custom-class'
-  }
-})
-```
-
-### Markdown-Aware Auto-Linking
-
-The extension intelligently respects markdown syntax and provides clean URL detection:
-
-#### Markdown Syntax Protection
-
-Auto-linking intelligently handles markdown syntax:
-
-```markdown
-![Alt text](https://example.com/image.jpg) ❌ Won't auto-link (protected for image syntax)
-[Link text](https://example.com/page.html) ✅ Converts to hyperlink (link syntax)
-Visit https://example.com ✅ Will auto-link (normal text)
-```
-
-**Markdown Link Syntax**: `[text](url)` is automatically converted to proper hyperlinks with the text as the display and url as the href.
-
-**URL Normalization**: URLs without protocols are automatically normalized:
-
-```markdown
-[Google](www.google.com) → Becomes link to https://www.google.com
-[Example](example.com) → Becomes link to https://example.com
-[Full URL](https://site.com) → Becomes link to https://site.com (unchanged)
-```
-
-**Image Syntax Protection**: `![alt](url)` patterns are protected to allow image input rules to work correctly.
-
-#### Smart Punctuation Handling
-
-URLs are automatically cleaned of trailing punctuation that's not part of the actual URL:
-
-```
-Check out (https://example.com) for details.  → https://example.com
-Visit https://example.com!                    → https://example.com
-See https://example.com.                      → https://example.com
-```
-
-Cleaned punctuation includes: `. , ; : ! ? ) ] }`
-
-#### Priority Handling
-
-The extension works seamlessly with other TipTap extensions through intelligent priority management, ensuring markdown input rules and auto-linking coexist without conflicts.
-
-### Toolbars
-
-The toolbars configuration option lets you incorporate an interactive user interface similar to Google Docs for setting and previewing hyperlinks. This provides users with a more intuitive and interactive experience;
-
-- [Dive into the code](https://github.com/HMarzban/extension-hyperlink/blob/4f37ffa18237f10d76c316844b1c2ab20b751fe9/packages/nextjs/src/components/Tiptap.tsx#L21-L28)
-- [Demo](https://github.com/HMarzban/extension-hyperlink#test-drive-with-our-demo-)
-
-<details>
-<summary>The `previewHyperlinkToolbar` function</summary>
-
-```ts
-type HyperlinkToolbarOptions = {
-  editor: Editor;
-  validate?: (url: string) => boolean;
-  view: EditorView;
-  link: HTMLAnchorElement;
-  node?: any;
-  nodePos: number;
-  tippy: Tooltip;
-};
-
-const previewHyperlink(options: HyperlinkToolbarOptions): HTMLElement {
-  const href = options.link.href;
-  const hyperlinkLinkToolbar = document.createElement("div");
-
-  const hrefTitle = document.createElement("a");
-  hrefTitle.setAttribute("target", "_blank");
-  hrefTitle.setAttribute("rel", "noreferrer");
-  hrefTitle.setAttribute("href", href);
-  hrefTitle.innerText = href;
-
-  hyperlinkLinkToolbar.append(hrefTitle);
-
-  return hyperlinkLinkToolbar;
-}
-```
-
-</details>
-
-<details>
-<summary>The `setHyperlinks` function</summary>
-
-```ts
-type setHyperlinkToolbarOptions = {
-  editor: Editor;
-  validate?: (url: string) => boolean;
-  extentionName: string;
-  attributes: Record<string, any>;
-};
-
-let tooltip: Tooltip = undefined;
-
-
-const setHyperlink(options: setHyperlinkToolbarOptions): void {
-  // Create the tooltip instance
-  if (!tooltip) tooltip = new Tooltip({ ...options, view: options.editor.view });
-
-  // Initialize the tooltip
-  let { tippyToolbar } = tooltip.init();
-
-  const hyperlinkLinkToolbar = document.createElement("div");
-  const buttonsWrapper = document.createElement("div");
-  const inputsWrapper = document.createElement("div");
-
-  hyperlinkLinkToolbar.classList.add("hyperlinkLinkToolbar");
-
-  buttonsWrapper.classList.add("buttonsWrapper");
-  inputsWrapper.classList.add("inputsWrapper");
-
-  // create a form that contain url input and a button for submit
-  const form = document.createElement("form");
-  const input = document.createElement("input");
-  const button = document.createElement("button");
-
-  input.setAttribute("type", "text");
-  input.setAttribute("placeholder", "https://example.com");
-  button.setAttribute("type", "submit");
-  button.innerText = "Submit";
-
-  inputsWrapper.append(input);
-  buttonsWrapper.append(button);
-  form.append(inputsWrapper, buttonsWrapper);
-
-  hyperlinkLinkToolbar.append(form);
-
-  tippyToolbar.innerHTML = "";
-  tippyToolbar.append(hyperlinkLinkToolbar);
-
-    // event listenr for submit button
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
-    const url = input.value;
-    if (!url)return;
-
-    return options.editor
-      .chain()
-      .setMark(options.extentionName, { href: url})
-      .setMeta("preventautohyperlink", true)
-      .run();
-  });
-}
-```
-
-</details>
+Example with options:
 
 ```ts
 Hyperlink.configure({
-  toolbars: {
-    previewHyperlink: (data) => {
-      return previewHyperlinkToolbar(data)
-    },
-    setHyperlink: (data) => {
-      return setHyperlinks(data)
-    }
-  }
-})
-```
-
-### Removing and overriding existing html attributes
-
-You can add `rel: null` to HTMLAttributes to remove the default `rel="noopener noreferrer nofollow"`. You can also override the default by using `rel: "your-value"`.
-
-This can also be used to change the `target` from the default value of `_blank`.
-
-```js
-Hyperlink.configure({
-  HTMLAttributes: {
-    // Change rel to different value
-    // Allow search engines to follow links(remove nofollow)
-    rel: 'noopener noreferrer',
-    // Remove target entirely so links open in current tab
-    target: null
-  }
-})
-```
-
-### validate
-
-A function that validates every autolinked link. If it exists, it will be called with the link href as argument. If it returns `false`, the link will be removed.
-
-Can be used to set rules for example excluding or including certain domains, tlds, etc.
-
-```js
-// only autolink urls with a protocol
-Hyperlink.configure({
+  autolink: true,
+  openOnClick: true,
+  linkOnPaste: true,
+  protocols: ['ftp', { scheme: 'tel', optionalSlashes: true }],
+  HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' },
   validate: (href) => /^https?:\/\//.test(href)
 })
 ```
 
 ## Commands
 
-### editHyperLinkText(), editHyperLinkHref(), editHyperlink()
+| Command                                | Description                                                                                     |
+| -------------------------------------- | ----------------------------------------------------------------------------------------------- |
+| `setHyperlink({ href, target? })`      | Create a link on the current selection (or open the `createHyperlink` popover when configured). |
+| `unsetHyperlink()`                     | Remove the link mark from the current selection.                                                |
+| `editHyperlink({ newURL?, newText? })` | Update the href and/or inner text of the link at the current selection.                         |
+| `editHyperlinkHref(url)`               | Shorthand for href-only edits.                                                                  |
+| `editHyperlinkText(text)`              | Shorthand for text-only edits.                                                                  |
 
-These commands allow you to edit the text and href value of a hyperlink.
+```ts
+editor.commands.setHyperlink({ href: 'https://example.com' })
+editor.commands.editHyperlink({ newURL: 'https://new.example.com', newText: 'New label' })
+editor.commands.unsetHyperlink()
 
-```js
-this.editor.commands.editHyperLinkText('New Text')
-this.editor.commands.editHyperLinkHref('https://new-url.com')
-this.editor.commands.editHyperlink({
-  newText: 'New Text',
-  newURL: 'https://new-url.com'
-})
-```
-
-### setHyperlink()
-
-Links the selected text.
-
-```js
-this.editor.commands.setHyperlink({ href: '<https://example.com>' })
-this.editor.commands.setHyperlink({ href: '<https://example.com>', target: '_blank' })
-this.editor.commands.unsetHyperlink()
-```
-
-### unsetHyperlink()
-
-Removes a Hyperlink.
-
-```js
-this.editor.commands.unsetHyperlink()
+editor.getAttributes('hyperlink').href // read current href
 ```
 
 ## Keyboard shortcuts
 
-The extension provides a built-in keyboard shortcut:
+| Shortcut | Action                                               |
+| -------- | ---------------------------------------------------- |
+| `Mod-k`  | Create or edit a hyperlink on the current selection. |
 
-- **`Mod-k`** (Ctrl+k on Windows/Linux, Cmd+k on Mac): Opens a popover to create or edit a hyperlink for the current selection.
+## Popovers
 
-## Get the current value
+The extension is headless — you decide what the UI looks like. Three paths, from easiest to most flexible:
 
-Did you know that you can use `getAttributes` to find out which attributes, for example which href, is currently set? Don't confuse it with a <u>command</u> (which changes the state), it's just a method. Here is how that could look like:
+1. **Use the prebuilt popovers** (shown in [Usage](#usage)) and import `styles.css`.
+2. **Restyle the prebuilt popovers** by overriding `--hl-*` custom properties (see [Styling](#styling)).
+3. **Bring your own popover** — each popover is a factory that returns an `HTMLElement`. The extension handles positioning, outside-click dismissal, keyboard navigation, and cleanup.
 
-```js
-this.editor.getAttributes('link').href
+<details>
+<summary><b>Custom <code>previewHyperlink</code></b></summary>
+
+```ts
+import {
+  Hyperlink,
+  hideCurrentToolbar,
+  type PreviewHyperlinkOptions
+} from '@docs.plus/extension-hyperlink'
+
+function previewHyperlink(options: PreviewHyperlinkOptions): HTMLElement {
+  const { editor, attrs } = options
+  const root = document.createElement('div')
+
+  const link = document.createElement('a')
+  link.href = attrs.href
+  link.textContent = attrs.href
+  link.target = '_blank'
+  link.rel = 'noreferrer'
+
+  const remove = document.createElement('button')
+  remove.textContent = 'Remove'
+  remove.addEventListener('click', () => {
+    hideCurrentToolbar()
+    editor.chain().focus().unsetHyperlink().run()
+  })
+
+  root.append(link, remove)
+  return root
+}
+
+Hyperlink.configure({ popovers: { previewHyperlink } })
 ```
 
-## Sorce code and Example
+</details>
 
-- Demo:
-  [packages/extension-hyperlink](https://github.com/HMarzban/extension-hyperlink)
-- Extension:
-  [packages/extension-hyperlink](https://github.com/HMarzban/extension-hyperlink/tree/main/packages/extension-hyperlink)
-- Usage: [packages/nextjs/src/components/Tiptap.tsx](https://github.com/HMarzban/extension-hyperlink/blob/59f45eba1886202f4840eb2112c34574c16fe68a/packages/nextjs/src/components/Tiptap.tsx#L19-L29)
+<details>
+<summary><b>Custom <code>createHyperlink</code></b></summary>
 
-## Inspiration and Acknowledgment, Let's Connect
+```ts
+import {
+  Hyperlink,
+  hideCurrentToolbar,
+  normalizeHref,
+  validateURL,
+  type CreateHyperlinkOptions
+} from '@docs.plus/extension-hyperlink'
 
-Hey there! Thanks so much for taking an interest in our Hyperlink extension, a part of the awesome world of docs.plus. At docs.plus, we're all about making collaboration and knowledge sharing not just simpler, but downright enjoyable!
+function createHyperlink(options: CreateHyperlinkOptions): HTMLElement {
+  const { editor, extensionName, validate } = options
+  const form = document.createElement('form')
 
-Let us share a little behind-the-scenes story with you. Our extension was inspired by Tiptap's [extension-link](https://github.com/ueberdosis/tiptap/tree/main/packages/extension-link). We were so impressed by their "headless" approach that we decided to take it further and add our own touch to make it even more user-friendly and versatile.
+  const input = document.createElement('input')
+  input.type = 'url'
+  input.placeholder = 'https://example.com'
 
-Now, let's be clear, we're not officially affiliated with Tiptap, but we firmly believe in giving credit where it's due. Their brilliant work laid the foundation for our extension, and we're truly grateful for that!
+  const submit = document.createElement('button')
+  submit.type = 'submit'
+  submit.textContent = 'Apply'
 
-But enough about us, let's talk about you! We genuinely appreciate your interest in our work. If you have any ideas or suggestions on how we can make this extension even better, or if you're simply curious about Docs.plus, we'd love to chat.
+  form.append(input, submit)
+  form.addEventListener('submit', (event) => {
+    event.preventDefault()
+    const url = input.value.trim()
+    if (!validateURL(url, { customValidator: validate })) return
 
-If you want to dive deeper into what we're all about, feel free to explore the [docs.plus repository](https://github.com/docs-plus/docs.plus) - it's there for you!
+    // Canonicalize before writing to the mark. `google.com` is a valid
+    // link, but stored verbatim it resolves against the host page's
+    // origin on click — `normalizeHref` prepends `https://` for bare
+    // domains and preserves anything already scheme-prefixed.
+    const href = normalizeHref(url)
 
-Once again, thank you for dropping by. We're thrilled to see what incredible things we can create together in this amazing world of open source!
+    hideCurrentToolbar()
+    editor.chain().setMark(extensionName, { href }).setMeta('preventAutolink', true).run()
+  })
+
+  return form
+}
+
+Hyperlink.configure({ popovers: { createHyperlink } })
+```
+
+</details>
+
+Popover content can control the floating toolbar via `hideCurrentToolbar()` and `updateCurrentToolbarPosition(ref)`, both exported from the package.
+
+## Styling
+
+The prebuilt popovers ship with a small, framework-agnostic stylesheet. Import it once:
+
+```ts
+import '@docs.plus/extension-hyperlink/styles.css'
+```
+
+The CSS is opt-in — the extension's JavaScript never imports it, so custom UIs pay zero CSS cost.
+
+### Theming
+
+Every visual token is a `--hl-*` custom property. Colors use [`light-dark()`](https://developer.mozilla.org/docs/Web/CSS/color_value/light-dark), so the popover follows the nearest ancestor's `color-scheme` — or the OS preference when none is set.
+
+<details>
+<summary>Default values</summary>
+
+```css
+:root {
+  --hl-bg: light-dark(#ffffff, #1f2937);
+  --hl-fg: light-dark(#111827, #f3f4f6);
+  --hl-muted: light-dark(#6b7280, #9ca3af);
+  --hl-border: light-dark(#e5e7eb, #374151);
+  --hl-hover: light-dark(#f3f4f6, #374151);
+  --hl-accent: light-dark(#2563eb, #60a5fa);
+  --hl-accent-fg: light-dark(#ffffff, #0b1220);
+  --hl-danger: light-dark(#dc2626, #f87171);
+  --hl-shadow:
+    0 1px 2px light-dark(rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.4)),
+    0 4px 12px light-dark(rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.5));
+  --hl-radius: 6px;
+  --hl-radius-sm: 4px;
+  --hl-font: system-ui, sans-serif;
+  --hl-font-size: 14px;
+  --hl-z-index: 9999;
+  --hl-transition: 120ms ease-in-out;
+}
+```
+
+</details>
+
+#### Switching themes
+
+If your app has a light/dark toggle, set `color-scheme` on the theme root — the popover follows along:
+
+```css
+html[data-theme='light'] {
+  color-scheme: light;
+}
+html[data-theme='dark'] {
+  color-scheme: dark;
+}
+```
+
+> **Bundler note.** Some CSS minifiers (lightningcss, for one) down-level `light-dark()` into a `@media (prefers-color-scheme: dark)` block, which pins colors to the OS preference. If that happens, re-declare the tokens on each branch — the attribute selector wins over the media query:
+>
+> ```css
+> html[data-theme='light'] {
+>   --hl-bg: #ffffff;
+>   --hl-fg: #111827; /* … */
+> }
+> html[data-theme='dark'] {
+>   --hl-bg: #1f2937;
+>   --hl-fg: #f3f4f6; /* … */
+> }
+> ```
+
+### Class names
+
+Stable class names for consumers who want to write their own rules:
+
+| Class                        | Element                                              |
+| ---------------------------- | ---------------------------------------------------- |
+| `.floating-toolbar`          | Toolbar container (adds `.visible` after mount).     |
+| `.floating-toolbar-arrow`    | Arrow pointing at the reference element.             |
+| `.floating-toolbar-content`  | Content wrapper inside the toolbar.                  |
+| `.hyperlink-create-popover`  | Create-link popover root.                            |
+| `.hyperlink-preview-popover` | Preview popover root.                                |
+| `.hyperlink-edit-popover`    | Edit popover root.                                   |
+| `.inputs-wrapper`            | Input group container (adds `.error` on validation). |
+| `.buttons-wrapper`           | Button group container.                              |
+| `.search-icon`               | Leading icon inside an input group.                  |
+| `.error-message`             | Validation error text (shown with `.show`).          |
+
+## URL handling
+
+Every write path canonicalizes hrefs before storing them:
+
+- **Bare domains** get `https://` prepended: `google.com` → `https://google.com`.
+- **Explicit schemes** pass through as typed: `http://`, `ftp://`, `whatsapp://`, `mailto:`.
+- **Protocol-relative URLs** stay as-is: `//example.com`.
+
+The create popover, markdown input rule, autolink, and paste all produce the same `href` for the same input.
+
+Validation also rejects scheme-prefixed typos with no real host. `https://googlecom` fails; `http://localhost`, `https://127.0.0.1`, and any registered custom scheme pass.
+
+Two helpers are exported for custom popovers:
+
+| Helper                    | Use when                                             |
+| ------------------------- | ---------------------------------------------------- |
+| `normalizeHref(raw)`      | You have a raw URL string.                           |
+| `normalizeLinkifyHref(m)` | You have a linkifyjs match (e.g. from `find(text)`). |
+
+## Security
+
+Dangerous schemes (`javascript:`, `data:`, `vbscript:`) are blocked everywhere a link enters or leaves the editor:
+
+- `parseHTML` strips matching `<a>` tags on document load and paste.
+- The markdown input rule rejects `[text](javascript:…)` at creation.
+- The click handler and preview popover short-circuit `window.open(…)` when the stored href matches.
+
+On the read side, both handlers prefer the stored mark attribute over the DOM `link.href` property — so a relative href injected via `setContent` won't resolve against the host page's origin.
+
+The shared `DANGEROUS_SCHEME_RE` regex is exported for custom popovers that need the same check.
+
+## TypeScript
+
+Definitions are bundled. Public types: `HyperlinkOptions`, `HyperlinkAttributes`, `PreviewHyperlinkOptions`, `CreateHyperlinkOptions`, `EditHyperlinkModalOptions`, `LinkProtocolOptions`, `FloatingToolbarOptions`, `FloatingToolbarInstance`, `LinkifyMatchLike`.
+
+## Testing
+
+Cypress runs against the built `dist/` output in a tiny `Bun.serve` playground — the same bytes an npm consumer installs.
+
+```sh
+bun run test             # build + run Cypress headless
+bun run test:open        # build + open the Cypress runner
+bun run playground       # just the playground at http://127.0.0.1:5173
+bun run docs:screenshots # regenerate README hero PNGs in docs/screenshots/
+```
+
+Append `?popover=custom` to the playground URL to swap in minimal BYO factories — that's how `custom-popover.cy.ts` exercises the public contract.
+
+| Spec                   | Covers                                                                 |
+| ---------------------- | ---------------------------------------------------------------------- |
+| `create.cy.ts`         | `Mod+K`, Apply state, href canonicalization, host validation, dismiss. |
+| `preview-edit.cy.ts`   | Click → preview → edit/copy/remove, Back, Escape lifecycle.            |
+| `autolink.cy.ts`       | Autolink, paste, and `mailto:` all produce the same `href`.            |
+| `xss-guards.cy.ts`     | `javascript:` / `data:` / `vbscript:` blocked at every entry point.    |
+| `styling.cy.ts`        | `styles.css` loaded, `--hl-*` tokens resolve, `light-dark()` branch.   |
+| `custom-popover.cy.ts` | BYO factory contract — options, mount lifecycle, exports.              |
+
+The suite also runs from the repo root via `bun run test:all`, alongside the Jest and webapp Cypress suites.
+
+## License
+
+MIT
+
+## Credits
+
+Inspired by Tiptap's [@tiptap/extension-link](https://github.com/ueberdosis/tiptap/tree/main/packages/extension-link). Part of [docs.plus](https://github.com/docs-plus/docs.plus).
