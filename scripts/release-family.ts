@@ -16,7 +16,7 @@
 
 import { existsSync, readFileSync, statSync, writeFileSync, readdirSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { execFileSync, spawnSync } from 'node:child_process'
+import { spawnSync } from 'node:child_process'
 import { createInterface } from 'node:readline'
 import process from 'node:process'
 
@@ -112,7 +112,7 @@ function die(msg: string): never {
 // ---------------------------------------------------------------------------
 // Process helpers
 //
-// Use execFileSync (no shell) for all commands. This keeps secrets like the
+// Use spawnSync (no shell) for all commands. This keeps secrets like the
 // npm OTP off the shell command line and out of `ps aux` argv visibility.
 // ---------------------------------------------------------------------------
 
@@ -531,14 +531,18 @@ function ensureLocalTag(pkg: PackageInfo, targetVersion: string, dryRun: boolean
   ok(`Created tag: ${tag}`)
 }
 
-function pushTags(dryRun: boolean) {
+function pushTags(tags: string[], dryRun: boolean) {
   section('Pushing tags')
-  if (dryRun) {
-    info('[dry-run] would run: git push origin --tags')
+  if (tags.length === 0) {
+    info('No tags to push')
     return
   }
-  runOk('git', ['push', 'origin', '--tags'])
-  ok('Pushed')
+  if (dryRun) {
+    info(`[dry-run] would run: git push origin ${tags.join(' ')}`)
+    return
+  }
+  runOk('git', ['push', 'origin', ...tags])
+  for (const tag of tags) ok(`Pushed: ${tag}`)
 }
 
 function extractChangelogSlice(changelogPath: string, version: string): string {
@@ -552,6 +556,10 @@ function extractChangelogSlice(changelogPath: string, version: string): string {
   const after = content.slice(start + headerLen)
   const nextHeaderMatch = /^## \[/m.exec(after)
   return nextHeaderMatch ? after.slice(0, nextHeaderMatch.index).trim() : after.trim()
+}
+
+function ghReleaseExists(tagName: string): boolean {
+  return run('gh', ['release', 'view', tagName], { allowFail: true }).status === 0
 }
 
 function createGithubReleases(
@@ -572,10 +580,14 @@ function createGithubReleases(
     }
     if (dryRun) {
       info(
-        `[dry-run] would run: gh release create '${tagName}' --notes-file <slice> ${
-          isPrerelease ? '--prerelease' : ''
+        `[dry-run] would check: gh release view '${tagName}', then create if missing ${
+          isPrerelease ? '(--prerelease)' : ''
         }`
       )
+      continue
+    }
+    if (ghReleaseExists(tagName)) {
+      ok(`Already exists: ${tagName}`)
       continue
     }
     const notesFile = join('/tmp', `release-notes-${pkg.shortName}-${targetVersion}.md`)
@@ -653,8 +665,10 @@ async function main() {
 
   const { published, skipped } = await publishLoop(packages, targetVersion, args.tag, args.dryRun)
 
-  pushTags(args.dryRun)
-  createGithubReleases(published, targetVersion, args.tag, args.dryRun)
+  const releasedPackages = [...published, ...skipped]
+  const tagsToPush = releasedPackages.map((pkg) => `${pkg.fullName}@${targetVersion}`)
+  pushTags(tagsToPush, args.dryRun)
+  createGithubReleases(releasedPackages, targetVersion, args.tag, args.dryRun)
 
   section('Summary')
   process.stdout.write(`  Target version: ${targetVersion}\n`)
