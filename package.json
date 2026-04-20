@@ -10,6 +10,7 @@
     "prepare": "husky",
     "postinstall": "bun run --filter @docs.plus/hocuspocus prisma:generate || true",
     "doctor": "bun scripts/doctor.ts",
+    "release:family": "bun scripts/release-family.ts",
     "start:webapp": "cd packages/webapp && bun run start",
     "dev": "bun --filter @docs.plus/webapp run dev",
     "dev:local": "make dev-local",
