@@ -10,7 +10,7 @@
 ## 1. Goals
 
 1. Ship `@docs.plus/extension-hyperlink@2.0.0` as a production-ready Tiptap 3 mark extension.
-2. Close every blocker, major, and test-gap item from the multi-agent code review (27 items; the 11 nits are explicitly out of scope).
+2. Close 25 of 27 review items: 5 blockers + 11 of 12 majors + all 9 test gaps + the strategic cohesion decision (S1, addressed by §3.2). **Deferred:** M12 (rationale in §7.1). **Out of scope:** the 11 nits.
 3. Meet the following industry-standard quality flags:
    - **publint** clean on every publish.
    - **WCAG 2.1 AA** verified via `cypress-axe` on every popover flow.
@@ -18,6 +18,7 @@
    - **Conventional Commits** in commit messages (commitlint already exists at repo root).
    - **Accurate README** including a migration section from `@tiptap/extension-link`.
 4. Zero data migration for docs.plus production: the schema mark name `hyperlink` is preserved.
+5. Update the `packages/webapp` consumer in lock-step so docs.plus production keeps working through the API change in M4 (see §12.1).
 
 ## 2. Non-goals
 
@@ -110,18 +111,28 @@ export function isSafeHyperlinkHref(
 - Custom `protocols` registered via the option are appended to the allowlist.
 - If `isAllowedUri` is provided by the consumer, its boolean return value is final (Tiptap-Link parity).
 
-`isSafeHyperlinkHref` is called at every write site:
+`isSafeHyperlinkHref` is called at every site that writes, reads, or navigates to an `href`:
 
-| Site                                  | File                                  | Why                                                                        |
-| ------------------------------------- | ------------------------------------- | -------------------------------------------------------------------------- |
-| `setMark` chain inside `setHyperlink` | `hyperlink.ts`                        | Programmatic call protection                                               |
-| `parseHTML.getAttrs`                  | `hyperlink.ts`                        | Untrusted HTML import                                                      |
-| `renderHTML`                          | `hyperlink.ts`                        | Defense in depth — strip bad `href` from output even if state was tampered |
-| `pasteHandler`                        | `plugins/pasteHandler.ts`             | User paste                                                                 |
-| `markPasteRule` (markdown `[t](u)`)   | `hyperlink.ts`                        | Markdown autolinking                                                       |
-| `autolink`                            | `plugins/autolink.ts`                 | Typed-text autolink                                                        |
-| `clickHandler` navigation             | `plugins/clickHandler.ts`             | `window.open` gate                                                         |
-| Preview popover render                | `popovers/previewHyperlinkPopover.ts` | Display-time gate                                                          |
+| Site                                  | File                                  | Kind     | Why                                                                        |
+| ------------------------------------- | ------------------------------------- | -------- | -------------------------------------------------------------------------- |
+| `setMark` chain inside `setHyperlink` | `hyperlink.ts`                        | write    | Programmatic call protection                                               |
+| `parseHTML.getAttrs`                  | `hyperlink.ts`                        | write    | Untrusted HTML import                                                      |
+| `renderHTML`                          | `hyperlink.ts`                        | write    | Defense in depth — strip bad `href` from output even if state was tampered |
+| `pasteHandler`                        | `plugins/pasteHandler.ts`             | write    | User paste                                                                 |
+| `markPasteRule` (markdown `[t](u)`)   | `hyperlink.ts`                        | write    | Markdown autolinking                                                       |
+| `autolink`                            | `plugins/autolink.ts`                 | write    | Typed-text autolink                                                        |
+| `clickHandler` navigation             | `plugins/clickHandler.ts`             | navigate | `window.open` gate                                                         |
+| Preview popover render                | `popovers/previewHyperlinkPopover.ts` | read     | Display- and Open-button gate                                              |
+
+### 3.4 Option precedence
+
+Three options can each veto an `href`. The order is fixed and documented in JSDoc on the option types:
+
+1. **`isAllowedUri(href, ctx)` — if defined, its return value is final.** Highest precedence; lets consumers override built-in policy.
+2. **`isSafeHyperlinkHref` built-in denylist + allowlist** — only consulted when `isAllowedUri` is not defined.
+3. **`validate(href)` — legacy escape hatch.** Runs _after_ `isAllowedUri`/`isSafeHyperlinkHref` accept; can additionally reject on business rules. Cannot accept what the safety layer rejected.
+
+`shouldAutoLink(url)` runs only inside the autolink plugin and is independent — it gates whether autolink fires at all, and runs before `isSafeHyperlinkHref`.
 
 ## 4. Public API changes
 
@@ -154,13 +165,24 @@ export function isSafeHyperlinkHref(
 
 ### 4.3 Keyboard shortcut
 
-`Mod-k` runs `openCreateHyperlinkPopover()` if a popover factory is configured, else `setHyperlink({ href: '' })` is intentionally a no-op (the mark cannot apply without a valid `href`). Documented in README.
+`Mod-k` runs `openCreateHyperlinkPopover()` unconditionally. The command itself returns `false` (no-op) when no `popovers.createHyperlink` factory is configured, so consumers without UI must override the shortcut to bind their own UX. This keeps the mark fully UI-free per the seam in §3.2; the shortcut is the only place the extension assumes UI exists, and even then it degrades gracefully. Documented in README §5.
 
-### 4.4 Mark schema additions
+### 4.4 Webapp-consumer impact (M4 breaking change)
+
+Four call sites in `packages/webapp` currently invoke `setHyperlink()` with no arguments and rely on the deprecated popover side-effect:
+
+- `packages/webapp/src/components/pages/document/components/MobileBubbleMenu.tsx:37`
+- `packages/webapp/src/components/TipTap/toolbar/desktop/EditorToolbar.tsx:174`
+- `packages/webapp/src/components/chatroom/components/MessageComposer/components/Toolbar/ToolbarButtons/HyperlinkButton.tsx:15`
+- `packages/webapp/src/components/TipTap/toolbar/mobile/ToolbarMobile.tsx:74`
+
+All four are mechanically rewritten in PR 2 to `editor.chain().focus().openCreateHyperlinkPopover().run()`. No semantic change to UX. The webapp's existing call sites for `unsetHyperlink()` and the popover wiring in `LinkPreviewSheet.tsx` / `previewHyperlink.ts` continue to work unchanged.
+
+### 4.5 Mark schema additions
 
 - `exitable: true` (M3 — Tiptap-Link parity).
-- `target` attribute: remove `rendered: false` so the attribute round-trips through `renderHTML` correctly (M9). Snapshot test covers parse → render fidelity.
-- Default `markdownTokenName: 'link'`, default `parseMarkdown` and `renderMarkdown` (M3). Webapp's `Hyperlink.extend({ markdownTokenName, parseMarkdown, renderMarkdown })` continues to override at consumer level.
+- `target` attribute: remove `rendered: false` so the attribute round-trips through `renderHTML` correctly (M9). **Compatibility note:** existing stored docs that have a `target` attribute on the mark will now render it into the output `<a target="…">` where they previously dropped it silently. This matches user expectation and does not require data migration. Parse → render snapshot test covers fidelity.
+- Default `markdownTokenName: 'link'`, default `parseMarkdown` and `renderMarkdown` (M3). Webapp's `Hyperlink.extend({ markdownTokenName, parseMarkdown, renderMarkdown })` in `packages/webapp/src/components/TipTap/extensions/markdown-extensions.ts` continues to override at consumer level — `.extend()` always wins over base.
 
 ## 5. Plugin behavior fixes
 
@@ -169,7 +191,10 @@ export function isSafeHyperlinkHref(
 - Skip ranges that already carry the hyperlink mark: copy the `getMarksBetween(...).some(m => m.mark.type === options.type)` guard from `@tiptap/extension-link@3.22.4`.
 - Skip ranges inside the `code` mark when present in the schema: `newState.doc.rangeHasMark(link.from, link.to, schema.marks.code)`.
 - Replace `split(' ')` and `endsWith(' ')` with the official `UNICODE_WHITESPACE_REGEX` / `UNICODE_WHITESPACE_REGEX_END` patterns from `tiptap/packages/extension-link/src/helpers/whitespace.ts`. The regex constants are inlined into a new `src/utils/whitespace.ts` (single file, two exported `RegExp`s — no folder).
-- Apply `isSafeHyperlinkHref` before `tr.addMark`.
+- Per-candidate filter order before `tr.addMark`, mirroring §3.4:
+  1. `shouldAutoLink(url)` — bail if `false`.
+  2. `isSafeHyperlinkHref(href, ctx)` — bail if `false`.
+  3. `validate(href)` (legacy) — bail if `false`.
 
 ### 5.2 `plugins/clickHandler.ts` (M6)
 
@@ -204,24 +229,24 @@ export function isSafeHyperlinkHref(
 
 ### 6.3 Verification
 
-`cypress-axe` is wired into `cypress/support/e2e.ts`. A new spec `cypress/e2e/a11y.cy.ts` opens each popover state and runs `cy.checkA11y()` with WCAG 2.1 AA rules. CI fails on any violation.
+`cypress-axe` (added to `devDependencies` in PR 2 — see §8) is wired into `cypress/support/e2e.ts` via `import 'cypress-axe'`. A new spec `cypress/e2e/a11y.cy.ts` opens each popover state (preview, create, edit, error states) and runs `cy.injectAxe()` then `cy.checkA11y(null, { runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'] } })`. CI fails on any violation.
 
 ## 7. Testing strategy
 
 ### 7.1 New / modified Cypress specs
 
-| File                                     | Status     | Coverage                                                                                                                                                                                                                                                                                            |
-| ---------------------------------------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `cypress/e2e/xss-guards.cy.ts`           | **extend** | Add table-driven attack vectors: `file:///`, `blob:https://…`, `about:blank`, `chrome://settings`, `view-source:https://…`, `data:image/svg+xml,…`, `data:text/html;base64,…`, `https://user:pass@evil.com`, `JAVASCRIPT:alert(1)`, ` javascript:alert(1)` (leading space), `vbscript:msgbox`. (T8) |
-| `cypress/e2e/paste-policy.cy.ts`         | **NEW**    | Same input matrix run through autolink, paste, and `markPasteRule`; assert identical reject/normalize behavior. (T9)                                                                                                                                                                                |
-| `cypress/e2e/undo-redo.cy.ts`            | **NEW**    | `Mod-Z` / `Mod-Shift-Z` after create, edit, autolink, paste-over-selection, remove-link. (T1)                                                                                                                                                                                                       |
-| `cypress/e2e/ime.cy.ts`                  | **NEW**    | `compositionstart` → input → `compositionend` then assert autolink fires once. (T2)                                                                                                                                                                                                                 |
-| `cypress/e2e/multi-link.cy.ts`           | **NEW**    | Selection spans two adjacent links: `setHyperlink` and popover behavior. (T3)                                                                                                                                                                                                                       |
-| `cypress/e2e/rich-paste.cy.ts`           | **NEW**    | Paste HTML with multiple `<a>` and `linkOnPaste` partial-selection edge cases. (T4)                                                                                                                                                                                                                 |
-| `cypress/e2e/mobile-touch.cy.ts`         | **NEW**    | Viewport `375×667`, `touchstart` / `touchend` on link → preview opens; outside-touch dismisses. (T5)                                                                                                                                                                                                |
-| `cypress/e2e/preview-edit.cy.ts`         | **extend** | Stub `navigator.clipboard.writeText`; assert Copy button calls it with the correct href. (T6)                                                                                                                                                                                                       |
-| `cypress/e2e/edit-popover-partial.cy.ts` | **NEW**    | Apply with only-text change, only-URL change, cancel without apply, Tab order. (T7)                                                                                                                                                                                                                 |
-| `cypress/e2e/a11y.cy.ts`                 | **NEW**    | `cy.checkA11y()` on each popover state.                                                                                                                                                                                                                                                             |
+| File                                     | Status     | Coverage                                                                                                                                                                                                                                                                                           |
+| ---------------------------------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `cypress/e2e/xss-guards.cy.ts`           | **extend** | Add table-driven attack vectors: `file:///`, `blob:https://…`, `about:blank`, `chrome://settings`, `view-source:https://…`, `data:image/svg+xml,…`, `data:text/html;base64,…`, `https://user:pass@evil.com`, `JAVASCRIPT:alert(1)`, `javascript:alert(1)` (leading space), `vbscript:msgbox`. (T8) |
+| `cypress/e2e/paste-policy.cy.ts`         | **NEW**    | Same input matrix run through autolink, paste, and `markPasteRule`; assert identical reject/normalize behavior. (T9)                                                                                                                                                                               |
+| `cypress/e2e/undo-redo.cy.ts`            | **NEW**    | `Mod-Z` / `Mod-Shift-Z` after create, edit, autolink, paste-over-selection, remove-link. (T1)                                                                                                                                                                                                      |
+| `cypress/e2e/ime.cy.ts`                  | **NEW**    | `compositionstart` → input → `compositionend` then assert autolink fires once. (T2)                                                                                                                                                                                                                |
+| `cypress/e2e/multi-link.cy.ts`           | **NEW**    | Selection spans two adjacent links: `setHyperlink` and popover behavior. (T3)                                                                                                                                                                                                                      |
+| `cypress/e2e/rich-paste.cy.ts`           | **NEW**    | Paste HTML with multiple `<a>` and `linkOnPaste` partial-selection edge cases. (T4)                                                                                                                                                                                                                |
+| `cypress/e2e/mobile-touch.cy.ts`         | **NEW**    | Viewport `375×667`, `touchstart` / `touchend` on link → preview opens; outside-touch dismisses. (T5)                                                                                                                                                                                               |
+| `cypress/e2e/preview-edit.cy.ts`         | **extend** | Stub `navigator.clipboard.writeText`; assert Copy button calls it with the correct href. (T6)                                                                                                                                                                                                      |
+| `cypress/e2e/edit-popover-partial.cy.ts` | **NEW**    | Apply with only-text change, only-URL change, cancel without apply, Tab order. (T7)                                                                                                                                                                                                                |
+| `cypress/e2e/a11y.cy.ts`                 | **NEW**    | `cy.checkA11y()` on each popover state.                                                                                                                                                                                                                                                            |
 
 All `Mod+K` tests use:
 
@@ -239,25 +264,29 @@ cy.realPress([ModKey, 'K'])
 
 ### 7.3 Coverage gate
 
-`bun test --coverage --coverage-reporter=lcov` runs in CI. Threshold gate enforces:
+Bun (≥1.3) supports inline coverage thresholds via `bunfig.toml`. A new `packages/extension-hyperlink/bunfig.toml` declares:
 
-- `src/utils/validateURL.ts`: ≥95% lines
-- `src/utils/normalizeHref.ts`: ≥95% lines
-- `src/hyperlink.ts`: ≥90% lines
-- `src/plugins/**`: ≥85% lines
+```toml
+[test]
+coverage = true
+coverageReporter = ["text", "lcov"]
+coverageThreshold = { line = 0.90 }
+```
 
-Threshold check is a small node script in CI that parses the lcov report and exits non-zero on miss.
+Path-level thresholds (validateURL ≥95%, normalizeHref ≥95%, hyperlink.ts ≥90%, plugins ≥85%) are enforced by a 30-line `scripts/check-coverage.ts` that parses the lcov output and exits non-zero on miss. CI runs `bun test --coverage` followed by `bun run scripts/check-coverage.ts`. No external coverage service.
 
 ## 8. Packaging & DX
 
-| Item                                         | Action                                                                                                                                                        |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `bun-types: "latest"`                        | Pin to `catalog:` like the rest of the workspace. (M7)                                                                                                        |
-| `linkifyjs`                                  | Move from `dependencies` to `peerDependencies` (apps often already ship it). Add `peerDependenciesMeta.linkifyjs.optional = false`. (M8)                      |
-| `@floating-ui/dom`                           | Stays as `dependencies`. The bundled UI is the default reason to install this package; consumers using their own UI tree-shake it via factory injection. (M8) |
-| `package.json#files`                         | Add `README.md`.                                                                                                                                              |
-| `prepublishOnly`                             | Extend `scripts/preflight.ts` to run `bunx publint dist/` and fail on any error.                                                                              |
-| README documented `normalizeLinkifyHref` row | **Remove** — internal helper, stays unexported. (B5)                                                                                                          |
+| Item                                         | Action                                                                                                                                                                     |
+| -------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bun-types: "latest"`                        | Pin to `catalog:` like the rest of the workspace. (M7)                                                                                                                     |
+| `linkifyjs`                                  | Move from `dependencies` to `peerDependencies` (required, default `optional: false`). The webapp will need to add `linkifyjs` to its own dependencies in the same PR. (M8) |
+| `@floating-ui/dom`                           | Stays as `dependencies`. The bundled UI is the default reason to install this package; consumers using their own UI tree-shake it via factory injection. (M8)              |
+| `cypress-axe`                                | **NEW devDependency** for the a11y verification suite (§6.3).                                                                                                              |
+| `publint`                                    | **NEW devDependency** for the publish gate.                                                                                                                                |
+| `package.json#files`                         | Add `README.md`.                                                                                                                                                           |
+| `prepublishOnly`                             | Extend `scripts/preflight.ts` to run `bunx publint dist/` and fail on any error.                                                                                           |
+| README documented `normalizeLinkifyHref` row | **Remove** — internal helper, stays unexported. (B5)                                                                                                                       |
 
 ## 9. CI workflow
 
@@ -270,10 +299,11 @@ New file: `.github/workflows/extension-hyperlink.yml`
   2. `bun install --frozen-lockfile`.
   3. `bun run --filter @docs.plus/extension-hyperlink lint`.
   4. `bun run --filter @docs.plus/extension-hyperlink test:unit -- --coverage`.
-  5. Coverage threshold check (parses lcov).
+  5. `bun run --filter @docs.plus/extension-hyperlink coverage:check` (path-level thresholds).
   6. `bun run --filter @docs.plus/extension-hyperlink build`.
   7. `bunx publint packages/extension-hyperlink/`.
   8. `bun run --filter @docs.plus/extension-hyperlink test:e2e` (uses existing `start-server-and-test` flow).
+  9. On failure: upload `cypress/screenshots/**` and `cypress/videos/**` as workflow artifacts (debug aid).
 - Branch protection on `main` requires this check.
 
 ## 10. README rewrite (B5 + M10)
@@ -282,14 +312,15 @@ New top-level structure:
 
 1. Install
 2. Quick start (StarterKit + Hyperlink)
-3. Options reference (table — every option from §4.1)
+3. Options reference (table — every option from §4.1, with the §3.4 precedence rules called out)
 4. Commands reference (table — every command from §4.2)
-5. Custom popovers (factory contract, type signatures)
-6. URL policy (denylist, allowlist, `isAllowedUri` callback)
-7. Markdown integration (default + how to override)
-8. Migration from `@tiptap/extension-link`
-9. Accessibility statement (WCAG 2.1 AA)
-10. Test files
+5. Keyboard shortcuts (Mod-k behavior including no-popover degradation, §4.3)
+6. Custom popovers (factory contract, exported type signatures: `CreateHyperlinkPopoverFactory`, `EditHyperlinkPopoverFactory`, `PreviewHyperlinkPopoverFactory`)
+7. URL policy (denylist, allowlist, custom `protocols`, `isAllowedUri` callback)
+8. Markdown integration (default + `Hyperlink.extend()` override pattern)
+9. Migration from `@tiptap/extension-link`
+10. Accessibility statement (WCAG 2.1 AA, verified via `cypress-axe` on every release)
+11. Test files
 
 Migration section content:
 
@@ -309,13 +340,21 @@ N1 (duplicate keydown listeners — covered as collateral fix in §6.2), N2 (con
 
 ## 12. Implementation sequencing
 
-Implementation happens in a sibling worktree at `../docsy-extension-hyperlink-2.0` on branch `feat/extension-hyperlink-2.0`, in **3 PRs**:
+Implementation happens in a sibling worktree at `../docsy-extension-hyperlink-2.0` on branch `feat/extension-hyperlink-2.0`. Three PRs, each one merge-ready and shippable on its own (the existing `setHyperlink` popover behavior stays intact through PR 1, and is only refactored in PR 2 alongside the webapp call-site updates).
 
-| PR                                           | Title                                                                                                  | Items                                                                      |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------- |
-| **PR 1 — Safety + parity foundations**       | URL policy, plugin fixes, packaging hygiene, CI bootstrap                                              | B1, B4, B5, M1, M5, M6, M7, M8, M9, T8, T9, ESLint seam rule, publint gate |
-| **PR 2 — Command surface, markdown, a11y**   | `setHyperlink` refactor, new commands, markdown defaults, popover a11y, lifecycle teardown, axe-core   | B2, B3, M2, M3, M4, T2, T3, T4, T6, T7                                     |
-| **PR 3 — Coverage + remaining tests + docs** | Remaining tests, coverage gate enforcement, README rewrite + migration section, platform-aware Mod key | T1, T5, M10, M11, coverage threshold, WCAG verification suite              |
+### 12.1 PR breakdown
+
+| PR                                           | Title                                                                                                                                | Items                                                                                                                           | Notes                                                                                                                                            |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **PR 1 — Safety + parity foundations**       | URL policy, plugin fixes, packaging hygiene, CI bootstrap                                                                            | B1, B4, B5, M1, M5, M6, M7, M8, M9, **M11**, T8, T9, ESLint seam rule, publint gate                                             | M11 (platform-aware Mod key helper) lands here so all subsequent tests use the right pattern from day one.                                       |
+| **PR 2 — Command surface, markdown, a11y**   | `setHyperlink` refactor, new commands, markdown defaults, popover a11y, lifecycle teardown, axe-core, **webapp call-site migration** | B2, B3, M2, M3, M4, T2, T3, T4, T6, T7, a11y.cy.ts, webapp `setHyperlink()` → `openCreateHyperlinkPopover()` (4 files per §4.4) | Webapp updates ship in the same PR as the breaking command-API change. CI runs the webapp test suite as part of merge gate to catch regressions. |
+| **PR 3 — Coverage + remaining tests + docs** | Remaining tests, coverage gate enforcement, README rewrite + migration section                                                       | T1, T5, M10, coverage threshold, WCAG verification audit                                                                        | No new code paths — purely raising the bar.                                                                                                      |
+
+### 12.2 Cross-PR invariants
+
+- **Every PR is green on the CI workflow added in PR 1** (lint + unit + coverage check + build + publint + Cypress).
+- **No PR removes a public API in a way that breaks the webapp** without updating the webapp in the same PR. PR 2 is the only PR with cross-package changes; PR 1 and PR 3 are extension-local.
+- Each PR includes a CHANGELOG entry (manually authored in `packages/extension-hyperlink/CHANGELOG.md`) following keep-a-changelog format.
 
 Estimated effort: ~5 working days total.
 
