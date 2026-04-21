@@ -158,8 +158,15 @@ packages/hocuspocus.server/temp/
 # local Notes and scripts
 Notes/
 
+# Temporary scratch files (e.g. tmp/badge-icon-only.svg)
+tmp/
+**/tmp/
+
 # Sensitive documentation (contains env templates)
 QUICKSTART.md
 DEPLOYMENT.md
 ENV_SETUP.md
 DOCS_SUMMARY.md
+
+# Reference repos (sparse-cloned for design / spec exploration only)
+.reference/
