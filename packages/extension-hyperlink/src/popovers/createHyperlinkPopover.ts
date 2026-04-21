@@ -1,6 +1,7 @@
 import { hideCurrentToolbar } from '../helpers/floatingToolbar'
 import type { CreateHyperlinkOptions } from '../hyperlink'
-import { createHTMLElement, Link, normalizeHref, validateURL } from '../utils'
+import { createHTMLElement, normalizeHref, validateURL } from '../utils'
+import { Link } from '../utils/icons'
 
 type HyperlinkElements = {
   root: HTMLElement
