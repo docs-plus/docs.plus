@@ -1,6 +1,6 @@
 # 📚 docs.plus
 
-[![Version](https://img.shields.io/badge/version-2.0.0-green.svg)](https://docs.plus)
+[![Version](https://img.shields.io/github/v/tag/docs-plus/docs.plus?label=version&color=green)](https://github.com/docs-plus/docs.plus/releases)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2.svg?logo=discord&logoColor=white)](https://discord.com/invite/25JPG38J59)
@@ -269,13 +269,13 @@ make up-dev
 
 **Services:** 🎯
 
-- 🌐 Webapp: http://localhost:3000
-- 🔌 REST API: http://localhost:4000
+- 🌐 Webapp: <http://localhost:3000>
+- 🔌 REST API: <http://localhost:4000>
 - ⚡ WebSocket: ws://localhost:4001
-- 👷 Worker: http://localhost:4002
+- 👷 Worker: <http://localhost:4002>
 - 🐘 PostgreSQL: localhost:5432
 - 🔴 Redis: localhost:6379
-- 🗄️ Supabase Studio: http://127.0.0.1:54323
+- 🗄️ Supabase Studio: <http://127.0.0.1:54323>
 
 </details>
 
@@ -350,13 +350,13 @@ bun run dev:webapp   # Start frontend only
 
 **Access points:**
 
-- 🌐 Webapp: http://localhost:3000
-- 🔌 REST API: http://localhost:4000
+- 🌐 Webapp: <http://localhost:3000>
+- 🔌 REST API: <http://localhost:4000>
 - ⚡ WebSocket: ws://localhost:4001
-- 👷 Worker: http://localhost:4002
+- 👷 Worker: <http://localhost:4002>
 - 🐘 PostgreSQL: localhost:5432
 - 🔴 Redis: localhost:6379
-- 🗄️ Supabase Studio: http://127.0.0.1:54323
+- 🗄️ Supabase Studio: <http://127.0.0.1:54323>
 
 **Stop infrastructure:**
 
@@ -398,6 +398,7 @@ Production-ready setup for **mid-level scale deployments** (small-medium teams, 
 
 3. **📈 Scaling**
    Adjust replicas in `.env.production`:
+
    ```bash
    REST_REPLICAS=2
    WS_REPLICAS=3
@@ -484,6 +485,43 @@ PRs welcome! See [contributing guidelines](CONTRIBUTING.md) for details.
 - Pick an issue labeled [good first issue](https://github.com/docs-plus/docs.plus/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22good%20first%20issue%22) or [help wanted](https://github.com/docs-plus/docs.plus/issues?q=is%3Aissue%20is%3Aopen%20label%3A%22help%20wanted%22).
 - Confirm your setup with `bun run check` before opening a PR.
 - Use our issue and PR templates to speed up review.
+
+## 🎨 Badges
+
+Using docs.plus? Add a badge to your README and link back.
+
+### Variants
+
+| Style         | Preview                                                                 | File                               |
+| ------------- | ----------------------------------------------------------------------- | ---------------------------------- |
+| Default       | ![docs.plus](https://docs.plus/badges/badge-docsplus.svg)               | `badge-docsplus.svg`               |
+| Light         | ![docs.plus](https://docs.plus/badges/badge-docsplus-light.svg)         | `badge-docsplus-light.svg`         |
+| Dark          | ![docs.plus](https://docs.plus/badges/badge-docsplus-dark.svg)          | `badge-docsplus-dark.svg`          |
+| Flat-square   | ![docs.plus](https://docs.plus/badges/badge-docsplus-flat-square.svg)   | `badge-docsplus-flat-square.svg`   |
+| For-the-badge | ![docs.plus](https://docs.plus/badges/badge-docsplus-for-the-badge.svg) | `badge-docsplus-for-the-badge.svg` |
+
+### Usage
+
+**Markdown:**
+
+```markdown
+[![docs.plus](https://docs.plus/badges/badge-docsplus.svg)](https://docs.plus)
+```
+
+**HTML** — auto light/dark switching for GitHub READMEs:
+
+```html
+<a href="https://docs.plus">
+  <picture>
+    <source
+      media="(prefers-color-scheme: dark)"
+      srcset="https://docs.plus/badges/badge-docsplus-dark.svg" />
+    <img alt="docs.plus" height="20" src="https://docs.plus/badges/badge-docsplus.svg" />
+  </picture>
+</a>
+```
+
+Swap the filename for any variant in the table above.
 
 ## 📄 License
 

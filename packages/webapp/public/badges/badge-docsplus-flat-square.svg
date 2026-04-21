@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="79" height="20" viewBox="0 0 79 20" role="img" aria-label="docs.plus">
+  <title>docs.plus</title>
+
+  <!--
+    FLAT-SQUARE variant of the docs.plus badge (flat-file revision).
+
+    Same dimensions, icon, and text positioning as the default - only two visual
+    differences (matches shields.io's `style=flat-square`):
+      1. No rounded corners: the rx=3 pill from the default becomes a sharp
+         rectangle (no clipPath needed).
+      2. No gradient overlay: just a solid #2678FF fill, which gives the cleaner,
+         more minimal "modern flat" look that pairs with contemporary design systems
+         (Material 3, Vercel, Tailwind UI, etc.).
+
+    Margins: equal 2.3 px on top/bottom/left, ~2.5 px on right - same balanced
+    "icon block" the default uses. Fold flap is the realistic inward dog-ear
+    (triangle (14,1) -> (20,7) -> (14,7) - the corner folded over the page,
+    exposing the underside) filled flat with #8AB5FF. Shared geometry and color
+    with all the other variants for visual consistency.
+  -->
+
+  <rect width="79" height="20" fill="#2678FF"/>
+
+  <g transform="translate(-0.5 1.6) scale(0.7)">
+    <path fill="#FFFFFF" d="M6 1 H14 L20 7 V21 Q20 23 18 23 H6 Q4 23 4 21 V3 Q4 1 6 1 Z"/>
+    <path fill="#8AB5FF" d="M14 1 L20 7 L14 7 Z"/>
+    <rect x="8" y="11.5" width="8" height="2" rx="1" fill="#2678FF"/>
+    <rect x="11" y="8.5" width="2" height="8" rx="1" fill="#2678FF"/>
+  </g>
+
+  <g fill="#FFFFFF" text-anchor="start" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="110" text-rendering="geometricPrecision">
+    <text x="175" y="150" transform="scale(.1)" fill="#010101" fill-opacity=".3" textLength="590">docs.plus</text>
+    <text x="175" y="140" transform="scale(.1)" textLength="590">docs.plus</text>
+  </g>
+</svg>

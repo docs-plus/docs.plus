@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="79" height="20" viewBox="0 0 79 20" role="img" aria-label="docs.plus">
+  <title>docs.plus</title>
+
+  <!--
+    LIGHT theme variant of the docs.plus badge (flat-file revision).
+
+    Same geometry as the default: 79 x 20, icon at translate(-0.5 1.6) scale(0.7),
+    doc occupies actual (2.3, 2.3) to (13.5, 17.7) -> equal 2.3 px margin on top,
+    bottom, AND left for a balanced "icon block" feel.
+
+    Color scheme is inverted vs the default:
+      - Background: white (#FFFFFF) with a 1 px #E5E7EB border so the badge keeps a
+        crisp silhouette on white page backgrounds.
+      - Doc body: brand blue (#2678FF), now the dominant on-badge color.
+      - Fold flap: triangle (14,1) -> (20,7) -> (14,7) - the corner folded
+        INWARD over the page, exposing a triangular underside. Filled with the
+        brand page-back color #8AB5FF (kept consistent across all five variants
+        - lighter blue on the brand-blue doc still reads as a folded corner at
+        this scale). Flat fill, no gradient or shadow.
+      - Plus: white (cuts cleanly through the blue doc body).
+      - Text: brand blue, no drop shadow (drop shadow only reads on dark backgrounds).
+  -->
+
+  <clipPath id="r"><rect width="79" height="20" rx="3" fill="#fff"/></clipPath>
+
+  <g clip-path="url(#r)">
+    <rect width="79" height="20" fill="#FFFFFF"/>
+  </g>
+
+  <rect x="0.5" y="0.5" width="78" height="19" rx="2.5" fill="none" stroke="#E5E7EB" stroke-width="1"/>
+
+  <g transform="translate(-0.5 1.6) scale(0.7)">
+    <path fill="#2678FF" d="M6 1 H14 L20 7 V21 Q20 23 18 23 H6 Q4 23 4 21 V3 Q4 1 6 1 Z"/>
+    <path fill="#8AB5FF" d="M14 1 L20 7 L14 7 Z"/>
+    <rect x="8" y="11.5" width="8" height="2" rx="1" fill="#FFFFFF"/>
+    <rect x="11" y="8.5" width="2" height="8" rx="1" fill="#FFFFFF"/>
+  </g>
+
+  <g fill="#2678FF" text-anchor="start" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="110" text-rendering="geometricPrecision">
+    <text x="175" y="140" transform="scale(.1)" textLength="590">docs.plus</text>
+  </g>
+</svg>

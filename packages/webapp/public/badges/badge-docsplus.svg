@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="79" height="20" viewBox="0 0 79 20" role="img" aria-label="docs.plus">
+  <title>docs.plus</title>
+
+  <defs>
+    <!-- Subtle top-to-bottom shading, same idea as shields.io for visual depth. -->
+    <linearGradient id="g" x2="0" y2="100%">
+      <stop offset="0" stop-color="#fff" stop-opacity=".12"/>
+      <stop offset="1" stop-color="#000" stop-opacity=".15"/>
+    </linearGradient>
+
+    <!-- Pill clip; rx=3 matches the radius shields uses on its 20px badges. -->
+    <clipPath id="r"><rect width="79" height="20" rx="3" fill="#fff"/></clipPath>
+  </defs>
+
+  <g clip-path="url(#r)">
+    <rect width="79" height="20" fill="#2678FF"/>
+    <rect width="79" height="20" fill="url(#g)"/>
+  </g>
+
+  <!--
+    Logo: docs.plus brand mark adapted for badge scale (flat-file revision).
+
+    Layout (badge units):
+      left-pad = 2.3, icon = 11.2 wide, gap = 4, text = 59 wide, right-pad = 2.5 -> total = 79.
+      Vertical: icon = 15.4 tall, padded 2.3 px on top AND bottom -> all four margins
+      around the icon are now visually equal (left = top = bottom = 2.3 px), giving
+      the badge the balanced, intentional "icon block" feel of a senior-designed mark.
+
+    Geometry (24-viewBox local, scaled by 0.7):
+      - Body: 16 wide x 22 tall (0.73 aspect, matches the source mark at 0.72).
+      - Dog-ear cut: a 6x6 diagonal from (14,1) to (20,7) where the corner has been
+        folded INWARD over the page. The corner that used to live at (20,1) is now
+        mirrored across the seam to land at (14,7), exposing a triangular underside.
+      - Fold flap: triangle (14,1) -> (20,7) -> (14,7), filled with a single
+        flat brand "page back" color (#8AB5FF). No gradient, no drop shadow -
+        the contrast against #fff alone carries the "folded page" read at badge
+        scale, and a flat fill keeps the mark crisp and minimal. This is the
+        textbook "page corner folded toward you" silhouette - the underside of
+        the page is the visible triangle, not a rectangular sticker patch.
+      - Plus: 8 long x 2 thick (4:1 arms, slimmer than the source's 3.7:1 to feel less
+        chunky at small size). Pill caps. Center is offset to (12, 12.5) - 0.5 unit
+        BELOW the doc's geometric center on purpose: the inward dog-ear removes
+        ~18 sq units of visible white from the top-right, dragging the visible-
+        surface centroid down to ~y=12.4. Sitting the plus at y=12.5 puts it on
+        the optical center of the page-as-you-see-it instead of the page-as-
+        bbox, which is what the eye actually expects.
+
+    Translate-x is -0.5 (negative on purpose): we keep the doc's local origin at (4, 1)
+    for parity with all the variant SVGs, and shift the group left so the actual left
+    edge lands at 2.3 px - matching the 2.3 px top/bottom padding for equal margins.
+  -->
+  <g transform="translate(-0.5 1.6) scale(0.7)">
+    <path fill="#fff" d="M6 1 H14 L20 7 V21 Q20 23 18 23 H6 Q4 23 4 21 V3 Q4 1 6 1 Z"/>
+    <path fill="#8AB5FF" d="M14 1 L20 7 L14 7 Z"/>
+    <rect x="8" y="11.5" width="8" height="2" rx="1" fill="#2678FF"/>
+    <rect x="11" y="8.5" width="2" height="8" rx="1" fill="#2678FF"/>
+  </g>
+
+  <!--
+    Text: shields.io rendering technique - font-size 110 with scale(.1) for sub-pixel
+    fidelity, 1px drop-shadow for the embossed look, textLength to lock width across
+    fallback fonts. Starts at badge x=17.5 (4 px gap after the icon's right edge at
+    13.5), ends at x=76.5 -> 2.5 px right pad, ~equal to the 2.3 px left pad.
+  -->
+  <g fill="#fff" text-anchor="start" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="110" text-rendering="geometricPrecision">
+    <text x="175" y="150" transform="scale(.1)" fill="#010101" fill-opacity=".3" textLength="590">docs.plus</text>
+    <text x="175" y="140" transform="scale(.1)" textLength="590">docs.plus</text>
+  </g>
+</svg>

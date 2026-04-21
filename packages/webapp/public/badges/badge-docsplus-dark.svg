@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="79" height="20" viewBox="0 0 79 20" role="img" aria-label="docs.plus">
+  <title>docs.plus</title>
+
+  <!--
+    DARK theme variant of the docs.plus badge (flat-file revision).
+
+    Same geometry as the default: 79 x 20, icon at translate(-0.5 1.6) scale(0.7),
+    doc occupies actual (2.3, 2.3) to (13.5, 17.7) -> equal 2.3 px margin on top,
+    bottom, AND left.
+
+    Color scheme:
+      - Background: slate-900 (#0F172A) - matches Tailwind's slate-900 / GitHub's
+        dark-mode body color, so the badge integrates with mainstream dark themes.
+      - Subtle top-to-bottom shading kept (same gradient idea as the default), with
+        the top highlight dialed down to .06 since white-on-near-black already has
+        plenty of contrast.
+      - Doc body: white.
+      - Fold flap: triangle (14,1) -> (20,7) -> (14,7) - the corner folded
+        INWARD over the page, exposing a triangular underside. Filled with
+        slate-300 (#CBD5E1) instead of the brand-blue #8AB5FF used in the other
+        variants - on this dark background the doc body is white (not blue), so
+        a blue underside breaks the "real folded paper" read AND no longer has
+        a surrounding blue context to justify itself as a brand cue. A neutral
+        slate-300 reads as a white page underside catching ambient shadow,
+        which is the physically correct behavior. Flat fill, no gradient or
+        shadow.
+      - Plus: matches the badge background (#0F172A) so it reads as the page being
+        "punched through" - same negative-space treatment as the default.
+      - Text: white with the standard 1 px black drop-shadow.
+  -->
+
+  <linearGradient id="g" x2="0" y2="100%">
+    <stop offset="0" stop-color="#fff" stop-opacity=".06"/>
+    <stop offset="1" stop-color="#000" stop-opacity=".15"/>
+  </linearGradient>
+
+  <clipPath id="r"><rect width="79" height="20" rx="3" fill="#fff"/></clipPath>
+
+  <g clip-path="url(#r)">
+    <rect width="79" height="20" fill="#0F172A"/>
+    <rect width="79" height="20" fill="url(#g)"/>
+  </g>
+
+  <g transform="translate(-0.5 1.6) scale(0.7)">
+    <path fill="#FFFFFF" d="M6 1 H14 L20 7 V21 Q20 23 18 23 H6 Q4 23 4 21 V3 Q4 1 6 1 Z"/>
+    <path fill="#CBD5E1" d="M14 1 L20 7 L14 7 Z"/>
+    <rect x="8" y="11.5" width="8" height="2" rx="1" fill="#0F172A"/>
+    <rect x="11" y="8.5" width="2" height="8" rx="1" fill="#0F172A"/>
+  </g>
+
+  <g fill="#FFFFFF" text-anchor="start" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="110" text-rendering="geometricPrecision">
+    <text x="175" y="150" transform="scale(.1)" fill="#010101" fill-opacity=".5" textLength="590">docs.plus</text>
+    <text x="175" y="140" transform="scale(.1)" textLength="590">docs.plus</text>
+  </g>
+</svg>

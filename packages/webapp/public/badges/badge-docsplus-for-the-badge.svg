@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="108" height="28" viewBox="0 0 108 28" role="img" aria-label="docs.plus">
+  <title>docs.plus</title>
+
+  <!--
+    FOR-THE-BADGE variant of the docs.plus badge (flat-file revision).
+
+    Follows shields.io's `style=for-the-badge` conventions:
+      - 28 px tall (vs 20 px), sharp corners (no rx), no gradient.
+      - Bold uppercase text with letter-spacing locked via textLength.
+      - 1 px drop-shadow on the text for the embossed look at this larger size.
+      - Brand-blue (#2678FF) background, matching the default badge.
+
+    Layout (badge units): left-pad 3.55 + icon 15.2 + gap 6 + text 80 + right-pad 3.25 = 108.
+    Vertical: icon = 20.9 tall (22 * 0.95), centered with 3.55 px padding both top
+    and bottom (translate y = 2.6 -> doc local y range 1..23 -> actual y range 3.55..24.45).
+    All four icon margins are equal (3.55 px on top, bottom, AND left) for the same
+    balanced "icon block" feel the other variants now use.
+
+    Fold flap is the realistic inward dog-ear (triangle (14,1) -> (20,7) ->
+    (14,7) - the corner folded over the page, exposing the underside) filled
+    flat with #8AB5FF. Shared geometry and color with the other variants - at
+    this larger 28 px height the fold reads especially cleanly.
+  -->
+
+  <rect width="108" height="28" fill="#2678FF"/>
+
+  <g transform="translate(-0.25 2.6) scale(0.95)">
+    <path fill="#FFFFFF" d="M6 1 H14 L20 7 V21 Q20 23 18 23 H6 Q4 23 4 21 V3 Q4 1 6 1 Z"/>
+    <path fill="#8AB5FF" d="M14 1 L20 7 L14 7 Z"/>
+    <rect x="8" y="11.5" width="8" height="2" rx="1" fill="#2678FF"/>
+    <rect x="11" y="8.5" width="2" height="8" rx="1" fill="#2678FF"/>
+  </g>
+
+  <g fill="#FFFFFF" text-anchor="start" font-family="Verdana,Geneva,DejaVu Sans,sans-serif" font-size="110" font-weight="bold" text-rendering="geometricPrecision">
+    <text x="248" y="200" transform="scale(.1)" fill="#010101" fill-opacity=".3" textLength="800">DOCS.PLUS</text>
+    <text x="248" y="190" transform="scale(.1)" textLength="800">DOCS.PLUS</text>
+  </g>
+</svg>
