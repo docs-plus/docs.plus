@@ -189,16 +189,48 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
 
           if (!content) return true
 
+          // Capture the selection range ONCE at popover open. The
+          // coords callback below recomputes viewport coords from these
+          // doc positions on every reposition (mount, scroll, resize)
+          // so the popover stays glued to the selection while the user
+          // scrolls.
           const { from, to } = editor.state.selection
-          const start = editor.view.coordsAtPos(from)
-          const end = editor.view.coordsAtPos(to)
 
           const toolbar = createFloatingToolbar({
             coordinates: {
-              x: start.left,
-              y: start.top,
-              width: end.left - start.left,
-              height: end.bottom - start.top,
+              getBoundingClientRect: () => {
+                // Local edits are blocked while the popover is open, but
+                // remote collab ops (Yjs/Hocuspocus) can shrink the doc
+                // and make `from`/`to` out-of-range, at which point
+                // `coordsAtPos` throws. The anchor is gone — there's no
+                // text left for the link to attach to — so dismiss the
+                // popover entirely. Returning an off-screen rect alone
+                // would leave the form invisibly open with `autoUpdate`
+                // still firing and focus still trapped inside it.
+                //
+                // The hide is queued on a microtask (not called inline)
+                // because we're running inside `computePosition` via
+                // `autoUpdate`. Deferring keeps the coords callback
+                // single-purpose and lets `computePosition` resolve
+                // before the toolbar is torn down — `updatePosition`'s
+                // post-await `!visible` guard then bails out cleanly.
+                // The off-screen rect bridges the one-microtask gap so
+                // the popover doesn't flash at its last-known position
+                // before `hide()` lands.
+                try {
+                  const start = editor.view.coordsAtPos(from)
+                  const end = editor.view.coordsAtPos(to)
+                  return {
+                    x: start.left,
+                    y: start.top,
+                    width: end.left - start.left,
+                    height: end.bottom - start.top
+                  }
+                } catch {
+                  queueMicrotask(() => toolbar.hide())
+                  return { x: -9999, y: -9999, width: 0, height: 0 }
+                }
+              },
               contextElement: editor.view.dom
             },
             content,

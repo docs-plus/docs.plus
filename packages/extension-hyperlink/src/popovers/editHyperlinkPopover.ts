@@ -1,28 +1,21 @@
 import { Editor } from '@tiptap/core'
-import { EditorView } from '@tiptap/pm/view'
 
 import { createFloatingToolbar, hideCurrentToolbar } from '../helpers/floatingToolbar'
-import { createHTMLElement, Link, Title, validateURL } from '../utils'
+import { createHTMLElement, validateURL } from '../utils'
+import { Link, Title } from '../utils/icons'
 
 const TOOLBAR_SHOW_DELAY_MS = 100
 
 export type EditHyperlinkModalOptions = {
   editor: Editor
   validate?: (url: string) => boolean
-  view: EditorView
   link: HTMLAnchorElement
-  linkCoords: {
-    x: number
-    y: number
-    width: number
-    height: number
-  }
   onBack?: () => void
   markName?: string
 }
 
 export default function editHyperlinkPopover(options: EditHyperlinkModalOptions): void {
-  const { editor, link, linkCoords, validate, view } = options
+  const { editor, link, validate } = options
 
   const form = createHTMLElement('form', { className: 'hyperlink-edit-popover' })
   const inputsWrapper = createHTMLElement('div', { className: 'inputs-wrapper' })
@@ -129,14 +122,13 @@ export default function editHyperlinkPopover(options: EditHyperlinkModalOptions)
 
   hideCurrentToolbar()
 
+  // Use the live `<a>` DOM node — its `getBoundingClientRect()` is
+  // recomputed by the browser on every call, so the popover follows
+  // the link during scroll. Cached `linkCoords` (snapshotted at click
+  // time in clickHandler) would freeze the toolbar at its viewport
+  // position and let the link scroll out from under it.
   const toolbar = createFloatingToolbar({
-    coordinates: {
-      x: linkCoords.x,
-      y: linkCoords.y,
-      width: linkCoords.width,
-      height: linkCoords.height,
-      contextElement: view.dom
-    },
+    referenceElement: link,
     content: form,
     placement: 'bottom',
     showArrow: true,

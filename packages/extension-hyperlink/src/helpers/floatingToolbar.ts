@@ -13,11 +13,26 @@ import {
 
 export interface FloatingToolbarOptions {
   referenceElement?: HTMLElement
+  /**
+   * Live virtual-reference factory for anchors that have no persistent
+   * DOM node (a ProseMirror selection, a synthetic point on a canvas,
+   * etc.). `getBoundingClientRect` is invoked on every position
+   * recomputation — mount, scroll, resize — so it MUST return current
+   * viewport coordinates each call, not a value cached at popover open.
+   *
+   * Cached coords were the previous shape and broke scroll-stickiness:
+   * `position: fixed` + a frozen rect means `computePosition` keeps
+   * writing the same `top` / `left` while the underlying anchor
+   * scrolls away. Real DOM elements (`referenceElement`) don't hit
+   * this because the browser recomputes their rect on every call;
+   * virtual refs have to do it explicitly.
+   *
+   * `contextElement` anchors `autoUpdate`'s overflow-ancestor walk —
+   * pass the editor / canvas / scroll container DOM node so the
+   * scroll listeners attach to the right ancestors.
+   */
   coordinates?: {
-    x: number
-    y: number
-    width?: number
-    height?: number
+    getBoundingClientRect: () => { x: number; y: number; width: number; height: number }
     contextElement?: HTMLElement
   }
   content: HTMLElement
@@ -54,18 +69,20 @@ let currentToolbar: FloatingToolbarInstance | null = null
 function createVirtualReference(
   coords: NonNullable<FloatingToolbarOptions['coordinates']>
 ): VirtualElement {
-  const { x, y, width = 0, height = 0 } = coords
   return {
-    getBoundingClientRect: () => ({
-      width,
-      height,
-      top: y,
-      right: x + width,
-      bottom: y + height,
-      left: x,
-      x,
-      y
-    }),
+    getBoundingClientRect: () => {
+      const { x, y, width, height } = coords.getBoundingClientRect()
+      return {
+        width,
+        height,
+        top: y,
+        right: x + width,
+        bottom: y + height,
+        left: x,
+        x,
+        y
+      }
+    },
     contextElement: coords.contextElement || document.body
   }
 }
@@ -255,7 +272,17 @@ export function createFloatingToolbar(options: FloatingToolbarOptions): Floating
     updateReference: (ref?: HTMLElement, coords?: FloatingToolbarOptions['coordinates']) => {
       if (ref) reference = ref
       else if (coords) reference = createVirtualReference(coords)
-      updatePosition()
+      // `autoUpdate` was bound to the *previous* reference's scroll ancestors.
+      // If the new reference lives in a different overflow container (likely
+      // when callers swap virtual → real DOM, or move across panes), those
+      // listeners are stale and the popover stops following scroll. Tear
+      // down and re-subscribe so the listener set tracks the live reference.
+      if (visible) {
+        autoUpdateCleanup?.()
+        autoUpdateCleanup = autoUpdate(reference, toolbar, updatePosition)
+      } else {
+        updatePosition()
+      }
     }
   }
 
@@ -263,16 +290,8 @@ export function createFloatingToolbar(options: FloatingToolbarOptions): Floating
   return instance
 }
 
-export const getCurrentToolbar = (): FloatingToolbarInstance | null => currentToolbar
-
-export const isToolbarVisible = (): boolean => currentToolbar?.isVisible() ?? false
-
 export const hideCurrentToolbar = (): void => {
   currentToolbar?.hide()
-}
-
-export const destroyCurrentToolbar = (): void => {
-  currentToolbar?.destroy()
 }
 
 export const updateCurrentToolbarPosition = (
