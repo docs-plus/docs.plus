@@ -1,7 +1,8 @@
 import {
   createHTMLElement,
   getSpecialUrlInfo,
-  type HyperlinkAttributes
+  type HyperlinkAttributes,
+  type SpecialUrlType
 } from '@docs.plus/extension-hyperlink'
 import type { Editor } from '@tiptap/core'
 
@@ -9,6 +10,70 @@ import { fetchMetadata, type MetadataResponse } from './fetchMetadata'
 import { hrefEventHandler } from './hrefEventHandler'
 import * as Icons from './iconList'
 import { safeImageSrc, writeLinkMetadataAttrs } from './linkMarkUtils'
+
+type IconRenderer = (props: { size?: number }) => string
+
+/**
+ * Per-app icon for the special-URL fallback path.
+ *
+ * The extension's `getSpecialUrlInfo` returns a brand-neutral
+ * `{ type, title, category }` — it deliberately does NOT ship an icon
+ * catalog so the published bundle stays small for consumers that pick
+ * their own visual treatment. This table is the webapp's choice for
+ * which heroicon represents each `type`.
+ *
+ * Typed as `Partial<Record<SpecialUrlType, …>>` so TypeScript catches
+ * typos and renames against the extension's exported union, but absence
+ * is allowed — domain-catalog types (`meet`, plus the web variants of
+ * `github`, `notion`, …) are intentionally omitted because the favicon
+ * path always wins for `https://` URLs and a static icon would never
+ * render for them.
+ */
+const TYPE_TO_ICON: Partial<Record<SpecialUrlType, IconRenderer>> = {
+  email: Icons.HiMail,
+  phone: Icons.HiPhone,
+  'facetime-audio': Icons.HiPhone,
+  sms: Icons.HiChatBubbleLeftRight,
+  facetime: Icons.HiVideoCamera,
+  whatsapp: Icons.HiChatBubbleLeftRight,
+  telegram: Icons.HiChatBubbleLeftRight,
+  discord: Icons.HiChatBubbleLeftRight,
+  skype: Icons.HiChatBubbleLeftRight,
+  slack: Icons.HiChatBubbleLeftRight,
+  twitter: Icons.HiUsers,
+  facebook: Icons.HiUsers,
+  instagram: Icons.HiUsers,
+  linkedin: Icons.HiUsers,
+  snapchat: Icons.HiUsers,
+  reddit: Icons.HiUsers,
+  tiktok: Icons.HiUsers,
+  contacts: Icons.HiUsers,
+  zoom: Icons.HiVideoCamera,
+  teams: Icons.HiVideoCamera,
+  webex: Icons.HiVideoCamera,
+  calendar: Icons.HiCalendar,
+  reminders: Icons.HiCalendar,
+  maps: Icons.HiMapPin,
+  uber: Icons.HiMapPin,
+  lyft: Icons.HiMapPin,
+  music: Icons.HiMusicalNote,
+  spotify: Icons.HiMusicalNote,
+  'apple-tv': Icons.HiTv,
+  youtube: Icons.HiTv,
+  netflix: Icons.HiTv,
+  twitch: Icons.HiTv,
+  notes: Icons.HiDocumentText,
+  shortcuts: Icons.HiDocumentText,
+  github: Icons.HiDocumentText,
+  gitlab: Icons.HiDocumentText,
+  vscode: Icons.HiDocumentText,
+  notion: Icons.HiDocumentText,
+  obsidian: Icons.HiDocumentText,
+  figma: Icons.HiDocumentText,
+  photos: Icons.HiPhoto,
+  'app-store': Icons.HiLightningBolt,
+  amazon: Icons.HiLightningBolt
+}
 
 /**
  * Context shared by the desktop popover and the mobile sheet. Kept as a
@@ -22,17 +87,10 @@ export interface PreviewContext {
   signal: AbortSignal
 }
 
-const createSvgIcon = (iconName: string, className = ''): HTMLElement => {
-  const iconFunction = (Icons as Record<string, (props: { size?: number }) => string>)[iconName]
-  if (iconFunction && typeof iconFunction === 'function') {
-    return createHTMLElement('div', {
-      className: `svg-icon-container ${className}`,
-      innerHTML: iconFunction({ size: 20 })
-    })
-  }
+const createSvgIcon = (renderer: IconRenderer, className = ''): HTMLElement => {
   return createHTMLElement('div', {
     className: `svg-icon-container ${className}`,
-    innerHTML: `<div class="icon-fallback">${iconName.substring(0, 2).toUpperCase()}</div>`
+    innerHTML: renderer({ size: 20 })
   })
 }
 
@@ -77,9 +135,17 @@ export const createMetadataContent = (data: MetadataResponse | null, href: strin
     })
     container.prepend(img)
   } else if (specialInfo) {
-    container.prepend(
-      createSvgIcon(specialInfo.icon, `metadata-icon-special icon-${specialInfo.category}`)
-    )
+    // No favicon to fall back to (mailto:, tel:, custom-scheme apps).
+    // `TYPE_TO_ICON` only covers scheme-catalog types — domain-catalog
+    // entries (`meet`, `github`, …) intentionally have no fallback
+    // because the favicon path above virtually always succeeds for
+    // `https://` URLs.
+    const renderer = TYPE_TO_ICON[specialInfo.type]
+    if (renderer) {
+      container.prepend(
+        createSvgIcon(renderer, `metadata-icon-special icon-${specialInfo.category}`)
+      )
+    }
   }
 
   return container
