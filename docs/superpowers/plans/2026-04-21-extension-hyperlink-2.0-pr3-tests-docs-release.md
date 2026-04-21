@@ -25,7 +25,6 @@ git rebase origin/main
 bun install --frozen-lockfile
 bun run --filter @docs.plus/extension-hyperlink lint
 bun run --filter @docs.plus/extension-hyperlink test:unit:coverage
-bun run --filter @docs.plus/extension-hyperlink coverage:check
 bun run --filter @docs.plus/extension-hyperlink build
 bun run --filter @docs.plus/extension-hyperlink test:e2e
 ```
@@ -114,7 +113,7 @@ describe('undo/redo coverage (T1)', () => {
 })
 ```
 
-If the spec exposes that the autolink plugin is dispatching multiple `tr` steps that each get their own undo entry (so one Mod+Z doesn't unlink), bail to a sub-task: in `autolink.ts` `appendTransaction`, mark the appended transaction with `tr.setMeta('addToHistory', false)` to fold it into the previous step's history. Document the fix in a separate commit.
+If the spec exposes a real defect (e.g. autolink takes two undos because it's a separate transaction the user didn't expect), open a sub-issue and document the failure in `cypress/e2e/undo-redo.cy.ts` with a `describe.skip(..., 'expected behavior, see #issue')` block — do **not** silently paper over it with `tr.setMeta('addToHistory', false)`, which would make autolink completely un-undoable and is almost always the wrong fix. The right answer depends on whether one-undo-clears-link or two-undos (one for link, one for text) is the intended UX, which is a product decision worth making explicit.
 
 - [ ] **Step 2: Run and commit**
 
@@ -235,65 +234,55 @@ git commit -m "test(extension-hyperlink): touch + mobile-viewport behavior (T5)"
 
 ---
 
-## Task 3: Tighten coverage thresholds (post-PR-1+2)
+## Task 3: Raise the workspace coverage gate (optional)
 
 **Files:**
 
-- Modify: `packages/extension-hyperlink/scripts/check-coverage.ts`
+- Modify: `packages/extension-hyperlink/bunfig.toml` (only if there is real headroom)
 
-- [ ] **Step 1: Re-run coverage and read actual numbers**
+PR 1 + PR 2 ship a meaningful pile of new unit tests. After all that lands, line coverage will likely sit comfortably above the `0.85` floor in `bunfig.toml`. This task is the only place to consider raising it.
+
+- [ ] **Step 1: Read the actual number**
 
 ```bash
 cd packages/extension-hyperlink
 bun run test:unit:coverage
-bun run coverage:check
 ```
 
-Note the printed percentages.
+Read the bottom-line line-coverage percentage.
 
-- [ ] **Step 2: Raise thresholds toward the target**
+- [ ] **Step 2: Raise the floor only if there's genuine headroom**
 
-In `scripts/check-coverage.ts` `PATH_THRESHOLDS`, update:
+Heuristic: floor = `floor(actual * 100) / 100 - 0.02` (rounded down with a 2-point cushion so a small refactor doesn't trip the gate).
 
-```ts
-const PATH_THRESHOLDS: Array<{ pattern: RegExp; min: number; label: string }> = [
-  { pattern: /src\/utils\/validateURL\.ts$/, min: 0.95, label: 'utils/validateURL.ts' },
-  { pattern: /src\/utils\/normalizeHref\.ts$/, min: 0.95, label: 'utils/normalizeHref.ts' },
-  { pattern: /src\/utils\/specialUrls\.ts$/, min: 0.9, label: 'utils/specialUrls.ts' },
-  { pattern: /src\/utils\/phone\.ts$/, min: 0.9, label: 'utils/phone.ts' },
-  { pattern: /src\/utils\/a11y\.ts$/, min: 0.9, label: 'utils/a11y.ts' },
-  { pattern: /src\/hyperlink\.ts$/, min: 0.9, label: 'hyperlink.ts' },
-  { pattern: /src\/plugins\//, min: 0.9, label: 'plugins/**' },
-  { pattern: /src\/helpers\//, min: 0.85, label: 'helpers/**' }
-]
+- Actual `0.92` → set floor to `0.90`.
+- Actual `0.86` → leave at `0.85`.
+- Actual below `0.85` → it's a regression in PR 1 / PR 2; fix the gap with a real test, do **not** lower the floor.
+
+If raising the floor, edit `bunfig.toml`:
+
+```toml
+[test]
+coverageThreshold = { line = 0.90 }
 ```
 
-If a path is currently below the new threshold, write the missing tests first (in `src/**/__tests__/`) before raising the bar. Don't lower a threshold below where the code already sits.
-
-- [ ] **Step 3: Re-run and verify**
+- [ ] **Step 3: Re-run, then commit (if changed)**
 
 ```bash
 bun run test:unit:coverage
-bun run coverage:check
 ```
-
-Expected: every row is `✓`.
-
-- [ ] **Step 4: Commit**
 
 ```bash
-git add packages/extension-hyperlink/scripts/check-coverage.ts \
-        packages/extension-hyperlink/src
-git commit -m "test(extension-hyperlink): raise per-path coverage thresholds
+git add packages/extension-hyperlink/bunfig.toml
+git commit -m "test(extension-hyperlink): raise coverage floor to <X>%
 
-After PR 1 + PR 2 land their own tests (validateURL, isSafeHyperlinkHref,
-renderRoundTrip, attack-vector matrix, paste-policy parity) the
-realized coverage is well above the placeholder thresholds set in
-PR 1. Tighten check-coverage.ts so future regressions are caught.
-
-Adds individual rows for specialUrls, phone, a11y; promotes plugins/**
-from 0.85 → 0.90; adds helpers/** at 0.85."
+PR 1 + PR 2's new unit tests (validateURL, isSafeHyperlinkHref,
+renderRoundTrip, attack-vector matrix, paste-policy parity) put us
+well above the original 0.85 floor. Tighten the gate to <X>% with
+a 2-point cushion."
 ```
+
+If no change is warranted, skip the commit and move on.
 
 ---
 
@@ -341,9 +330,11 @@ bun add @docs.plus/extension-hyperlink @floating-ui/dom linkifyjs
 \`\`\`ts
 import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
-import { Hyperlink } from '@docs.plus/extension-hyperlink'
-import createHyperlinkPopover from '@docs.plus/extension-hyperlink/popovers/createHyperlink'
-import previewHyperlinkPopover from '@docs.plus/extension-hyperlink/popovers/previewHyperlink'
+import {
+Hyperlink,
+createHyperlinkPopover,
+previewHyperlinkPopover
+} from '@docs.plus/extension-hyperlink'
 
 const editor = new Editor({
 extensions: [
@@ -580,9 +571,19 @@ CHANGELOG / LICENSE)."
 
 - Modify: `packages/extension-hyperlink/CHANGELOG.md`
 
-- [ ] **Step 1: Rename the section header**
+> Note: `package.json` `version` is **already** `2.0.0` on `main` (it was bumped earlier as part of preparing the 2.0 line). This task only promotes the CHANGELOG section.
 
-Edit `CHANGELOG.md`. Replace `## [Unreleased]` with:
+- [ ] **Step 1: Verify version is already 2.0.0 (sanity check)**
+
+```bash
+node -p "require('./packages/extension-hyperlink/package.json').version"
+```
+
+Expected: `2.0.0`. If anything else, stop and reconcile before continuing.
+
+- [ ] **Step 2: Rename the section header**
+
+Edit `packages/extension-hyperlink/CHANGELOG.md`. Replace `## [Unreleased]` with:
 
 ```markdown
 ## [2.0.0] - 2026-04-21
@@ -600,28 +601,27 @@ Then keep the existing `### Security`, `### Added`, `### Changed`, `### Fixed`, 
 
 - **T1** New `undo-redo.cy.ts` covering create / autolink / unset / paste / edit-text via undo + redo.
 - **T5** New `mobile-touch.cy.ts` covering `touchend`, outside-`touchstart`, scroll repositioning, and factory opt-out.
-- Coverage thresholds raised to ≥0.90 across all source paths (utils ≥0.95).
+- Coverage floor in `bunfig.toml` (only if Task 3 raised it — note the new value here).
 - README rewritten with migration cookbook (M10).
 ```
 
-- [ ] **Step 2: Bump `package.json` version**
-
-In `packages/extension-hyperlink/package.json` change `version` to `"2.0.0"`.
-
-- [ ] **Step 3: Verify the package builds and publints with the bump**
+- [ ] **Step 3: Verify the package builds clean with the promoted CHANGELOG**
 
 ```bash
 bun run --filter @docs.plus/extension-hyperlink build
 cd packages/extension-hyperlink && bun run scripts/preflight.ts
 ```
 
-Expected: clean.
+Note: `preflight.ts` will fail at the publisher check unless `npm_config_user_agent` is `bun/...`. To smoke-test the LICENSE sync + build artifacts without the publisher gate, use `bun run scripts/prepack.ts` instead — full publisher gating happens in Task 7.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add packages/extension-hyperlink/CHANGELOG.md packages/extension-hyperlink/package.json
+git add packages/extension-hyperlink/CHANGELOG.md
 git commit -m "release(extension-hyperlink): 2.0.0
+
+Promote the CHANGELOG [Unreleased] section to [2.0.0]. Version
+in package.json was already 2.0.0 on main.
 
 See CHANGELOG.md for the full list of changes. Highlights:
 
@@ -630,7 +630,7 @@ See CHANGELOG.md for the full list of changes. Highlights:
 - Pure setHyperlink + dedicated open*Popover commands (M4) ← BREAKING.
 - WCAG 2.1 AA popovers (B2).
 - Popover lifecycle owned by the mark (B3).
-- New CI workflow with publint + axe gates (B4).
+- New CI workflow with publint gate (B4).
 - README rewritten with migration cookbook from @tiptap/extension-link (M10)."
 ```
 
@@ -647,7 +647,6 @@ cd /Users/macbook/workspace/docsy-extension-hyperlink-2.0
 bun install --frozen-lockfile
 bun run --filter @docs.plus/extension-hyperlink lint
 bun run --filter @docs.plus/extension-hyperlink test:unit:coverage
-bun run --filter @docs.plus/extension-hyperlink coverage:check
 bun run --filter @docs.plus/extension-hyperlink build
 cd packages/extension-hyperlink && bunx publint --strict .
 cd ../.. && bun run --filter @docs.plus/extension-hyperlink test:e2e
@@ -666,7 +665,7 @@ bun run playground
 
 Manually verify in a real browser:
 
-1. Type `https://example.com ` — autolinks.
+1. Type `https://example.com` — autolinks.
 2. Type `select me`, select all, `Cmd+K`, paste `https://other.com`, Enter — link applied.
 3. Click the link — preview popover appears with Copy, Edit, Remove.
 4. Click Copy — clipboard contains the URL.
@@ -719,17 +718,17 @@ git tag -a @docs.plus/extension-hyperlink@2.0.0 -m "extension-hyperlink 2.0.0"
 git push origin @docs.plus/extension-hyperlink@2.0.0
 ```
 
-- [ ] **Step 3: Publish to npm**
+- [ ] **Step 3: Publish to npm via `bun publish`**
+
+The package's `peerDependencies` use the `catalog:` protocol — only `bun publish` (and `pnpm publish`) resolve those at pack time. `npm publish` would ship a literal `"catalog:"` string and break every consumer install. `scripts/preflight.ts` enforces this at the `prepublishOnly` hook and will hard-fail any non-Bun publisher.
 
 ```bash
 cd packages/extension-hyperlink
-# Dry-run first to inspect the tarball.
-npm pack --dry-run
-# When everything looks right:
-npm publish --access public
+bun pm pack --dry-run        # inspect the tarball contents
+bun publish --access public  # the real thing
 ```
 
-`prepublishOnly` (added in PR 1) runs `preflight.ts` which runs `publint --strict` — a packaging issue blocks the publish.
+`prepublishOnly` runs `scripts/preflight.ts` which (1) asserts `bun publish` is the publisher, (2) verifies the dist artifacts the `exports` map points at exist, (3) does a defense-in-depth grep for `"catalog:"` leakage in the bundle, and (4) is augmented in PR 1 Task 14 with `bunx publint --strict .` so any packaging issue blocks the publish.
 
 - [ ] **Step 4: Verify the published package**
 
@@ -759,7 +758,7 @@ git branch -d feat/extension-hyperlink-2.0
 - [ ] README has a migration row for every renamed command/option.
 - [ ] `bun run test` passes locally on every PR commit.
 - [ ] CI is green on the merged branch.
-- [ ] `npm publish --dry-run` shows a tarball that contains exactly: `dist/`, `README.md`, `CHANGELOG.md`, `LICENSE`, `package.json`.
+- [ ] `bun pm pack --dry-run` shows a tarball that contains exactly: `dist/`, `README.md`, `CHANGELOG.md`, `LICENSE`, `package.json`.
 - [ ] No code comment narrates _what_ — only _why_.
-- [ ] No `TODO(PR2-Task5)` or `TODO(PR3)` markers remain in the source tree.
+- [ ] No `TODO(...)` markers from the 2.0 development cycle remain in the source tree.
 - [ ] Worktree removed after merge.

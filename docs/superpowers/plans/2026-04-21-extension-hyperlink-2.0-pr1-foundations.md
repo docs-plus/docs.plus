@@ -39,7 +39,7 @@ Expected: new directory created, branch is `feat/extension-hyperlink-2.0`.
 bun install --frozen-lockfile
 ```
 
-Expected: `node_modules` populated. If `--frozen-lockfile` fails because the existing lockfile entry for `bun-types` is `latest`, drop the flag for this single install and continue.
+Expected: `node_modules` populated. The lockfile is consistent with `main`'s `package.json` so `--frozen-lockfile` succeeds. Subsequent tasks that change deps (Task 1, Task 2 of PR 1) will use plain `bun install`.
 
 - [ ] **Step 3: Add `cypress-axe` and `publint` as devDependencies**
 
@@ -60,12 +60,12 @@ coverage = true
 coverageReporter = ["text", "lcov"]
 coverageDir = "coverage"
 
-# Workspace-level threshold (per-path thresholds enforced by
-# scripts/check-coverage.ts in Task 16).
-coverageThreshold = { line = 0.85, function = 0.80 }
+# Single workspace-wide line-coverage gate. Per-path enforcement is
+# unnecessary because the highest-risk paths (URL safety, paste, autolink)
+# are pinned by table-driven E2E specs (xss-guards, paste-policy) that
+# fail loudly before this threshold is even consulted.
+coverageThreshold = { line = 0.85 }
 
-# Only collect coverage on first-party source — exclude tests, scripts,
-# the playground, and dist.
 coveragePathIgnorePatterns = [
   "**/__tests__/**",
   "**/test/**",
@@ -90,9 +90,11 @@ Expected: all existing unit tests pass and a coverage table prints. If any test 
 git add packages/extension-hyperlink/package.json packages/extension-hyperlink/bunfig.toml bun.lock
 git commit -m "chore(extension-hyperlink): bootstrap 2.0 worktree
 
-- Add cypress-axe and publint as devDependencies (used by Tasks 14 and 16).
-- Add bunfig.toml with coverage settings (per-path thresholds enforced by
-  scripts/check-coverage.ts in Task 16)."
+- Add publint (used by PR 1 Task 14) and cypress-axe (used by PR 2 Task 7) as devDependencies.
+- Add bunfig.toml with single workspace line-coverage threshold (0.85)
+  plus path-ignore patterns. Security paths are pinned by E2E
+  attack-vector tests; per-path coverage thresholds would be
+  bookkeeping without additional safety."
 ```
 
 ---
@@ -115,7 +117,11 @@ Look for the entry under a workspace catalog reference (e.g. `"bun-types": "cata
 
 - [ ] **Step 2: Update `packages/extension-hyperlink/package.json`**
 
-Change the `devDependencies.bun-types` value from `"latest"` to `"catalog:"`. Move `linkifyjs` from `dependencies` to `peerDependencies`. Add `peerDependenciesMeta` with `linkifyjs.optional: false`.
+Three coordinated changes (current state for reference: `linkifyjs ^4.3.2` is currently in `dependencies`; `bun-types` is `"latest"` in `devDependencies`):
+
+1. Pin `devDependencies["bun-types"]` from `"latest"` → `"catalog:"`. (Verified: `bun-types ^1.3.11` exists in the root `package.json` `catalog` field.)
+2. Remove `linkifyjs` from `dependencies`.
+3. Add a new `peerDependencies` entry for `linkifyjs` and add it back as a `devDependency` so the package's own self-tests and build still resolve it.
 
 Final shape (only the changed fields shown):
 
@@ -138,8 +144,6 @@ Final shape (only the changed fields shown):
   }
 }
 ```
-
-`linkifyjs` stays in `devDependencies` so the package's own tests and build still find it.
 
 - [ ] **Step 3: Add `linkifyjs` to the webapp's dependencies**
 
@@ -213,103 +217,9 @@ documented API honest."
 
 ---
 
-## Task 3: Add ESLint seam rule (§3.2)
+## Task 3: Platform-aware Mod-key Cypress helper (M11)
 
-**Files:**
-
-- Modify: `packages/extension-hyperlink/eslint.config.js`
-
-- [ ] **Step 1: Read the current eslint.config.js**
-
-```bash
-cat packages/extension-hyperlink/eslint.config.js
-```
-
-Note the existing structure (it likely just re-exports a shared config).
-
-- [ ] **Step 2: Append the seam rule**
-
-Add (or merge) the following block to the exported config:
-
-```js
-import baseConfig from '../../eslint.config.js' // adjust path if needed
-
-export default [
-  ...baseConfig,
-  {
-    files: ['src/hyperlink.ts', 'src/plugins/**/*.ts'],
-    rules: {
-      'no-restricted-imports': [
-        'error',
-        {
-          patterns: [
-            {
-              group: [
-                './popovers/*',
-                '../popovers/*',
-                './helpers/floatingToolbar*',
-                '../helpers/floatingToolbar*'
-              ],
-              message:
-                'Core mark/plugins must not import UI. Use the popover factory passed via Hyperlink options.'
-            }
-          ]
-        }
-      ]
-    }
-  }
-]
-```
-
-Note the existing rule for `@tiptap/extension-link` parity: `helpers/editHyperlink` is a pure transaction helper (allowed) — only `floatingToolbar` is UI.
-
-- [ ] **Step 3: Run lint and capture current violations**
-
-```bash
-bun run --filter @docs.plus/extension-hyperlink lint 2>&1 | tee /tmp/lint-baseline.txt
-```
-
-Expected: at least one violation in `src/plugins/clickHandler.ts:9-10` (it currently imports from `../helpers/floatingToolbar`). This violation will be resolved in PR 2 Task 5 when the click handler stops needing the toolbar directly. For PR 1, **temporarily** add `// eslint-disable-next-line no-restricted-imports` above each violating import in `clickHandler.ts` with a comment pointing at the PR 2 fix:
-
-```ts
-// eslint-disable-next-line no-restricted-imports
-// TODO(PR2-Task5): clickHandler should not own the popover lifecycle.
-import {
-  createFloatingToolbar,
-  DEFAULT_OFFSET,
-  hideCurrentToolbar
-} from '../helpers/floatingToolbar'
-```
-
-The disable scope is intentionally line-by-line so PR 2 can grep for `TODO(PR2-Task5)` and remove them as part of the refactor.
-
-- [ ] **Step 4: Run lint and verify clean**
-
-```bash
-bun run --filter @docs.plus/extension-hyperlink lint
-```
-
-Expected: exit code 0.
-
-- [ ] **Step 5: Commit**
-
-```bash
-git add packages/extension-hyperlink/eslint.config.js packages/extension-hyperlink/src/plugins/clickHandler.ts
-git commit -m "chore(extension-hyperlink): enforce mark/UI seam via ESLint (S1, §3.2)
-
-The mark and ProseMirror plugins must not reach into popovers/* or
-helpers/floatingToolbar.ts. Tiptap-Link parity demands the mark stay
-fully UI-agnostic. The seam is enforced via no-restricted-imports
-rather than a folder restructure to avoid churn.
-
-Two existing violations in clickHandler.ts are temporarily suppressed
-with TODO(PR2-Task5) markers; PR 2 removes them as part of the
-command-surface refactor."
-```
-
----
-
-## Task 4: Platform-aware Mod-key Cypress helper (M11)
+> **Note:** The ESLint seam rule (S1 / spec §3.2) was originally Task 3 of this PR. It moved to PR 2 Task 5 because PR 1 keeps the click handler still importing `helpers/floatingToolbar`, and shipping the rule here would mean adding then immediately suppressing it — code-debt by design. PR 2's clickHandler refactor removes the import and lands the rule in one commit.
 
 **Files:**
 
@@ -404,7 +314,7 @@ on every CI runner OS, not just developer Macs."
 
 ---
 
-## Task 5: Build `isSafeHyperlinkHref` with TDD (B1, M1)
+## Task 4: Build `isSafeHyperlinkHref` with TDD (B1, M1)
 
 **Files:**
 
@@ -720,7 +630,7 @@ shape detection for autolink); next tasks rewire callers."
 
 ---
 
-## Task 6: Add new `HyperlinkOptions` (M1)
+## Task 5: Add new `HyperlinkOptions` (M1)
 
 **Files:**
 
@@ -853,7 +763,7 @@ in the JSDoc and enforced by call-site order in subsequent tasks."
 
 ---
 
-## Task 7: Wire `isSafeHyperlinkHref` into `hyperlink.ts` (B1)
+## Task 6: Wire `isSafeHyperlinkHref` into `hyperlink.ts` (B1)
 
 **Files:**
 
@@ -1034,7 +944,7 @@ keeps working; PR 2 refactors it."
 
 ---
 
-## Task 8: Wire `isSafeHyperlinkHref` into the autolink plugin (B1 + M5 partial)
+## Task 7: Wire `isSafeHyperlinkHref` into the autolink plugin (B1 + M5 partial)
 
 **Files:**
 
@@ -1134,7 +1044,7 @@ Unicode whitespace) land in the next task."
 
 ---
 
-## Task 9: Autolink correctness fixes (M5)
+## Task 8: Autolink correctness fixes (M5)
 
 **Files:**
 
@@ -1265,7 +1175,7 @@ Three correctness fixes mirroring @tiptap/extension-link@3.22.4:
 
 ---
 
-## Task 10: Click handler — Cmd/Ctrl/middle-click + noopener (M6)
+## Task 9: Click handler — Cmd/Ctrl/middle-click + noopener (M6)
 
 **Files:**
 
@@ -1367,7 +1277,7 @@ Referer header. Fallback target is '_blank' when none is set."
 
 ---
 
-## Task 11: Wire policy into `pasteHandler.ts`
+## Task 10: Wire policy into `pasteHandler.ts`
 
 **Files:**
 
@@ -1467,7 +1377,7 @@ matches the rest of the extension when consumers override it."
 
 ---
 
-## Task 12: Render `target` attribute correctly (M9)
+## Task 11: Render `target` attribute correctly (M9)
 
 **Files:**
 
@@ -1616,7 +1526,7 @@ Snapshot test added for parse → render fidelity (target + rel)."
 
 ---
 
-## Task 13: Extend xss-guards.cy.ts with attack vectors (T8)
+## Task 12: Extend xss-guards.cy.ts with attack vectors (T8)
 
 **Files:**
 
@@ -1715,7 +1625,7 @@ Both paths must reject — no <a> in the DOM after either action."
 
 ---
 
-## Task 14: Paste vs autolink vs markPasteRule policy parity (T9)
+## Task 13: Paste vs autolink vs markPasteRule policy parity (T9)
 
 **Files:**
 
@@ -1811,7 +1721,7 @@ denylist."
 
 ---
 
-## Task 15: publint pre-publish gate
+## Task 14: publint pre-publish gate
 
 **Files:**
 
@@ -1872,111 +1782,37 @@ becomes a hard publish gate."
 
 ---
 
-## Task 16: CI workflow (B4)
+## Task 15: CI workflow (B4)
 
 **Files:**
 
 - Create: `.github/workflows/extension-hyperlink.yml`
-- Create: `packages/extension-hyperlink/scripts/check-coverage.ts`
 - Modify: `packages/extension-hyperlink/package.json` (scripts)
 
-- [ ] **Step 1: Write the coverage threshold check script**
+Coverage enforcement is the workspace-wide line threshold defined in `bunfig.toml` (Task 0) — `bun test --coverage` exits non-zero if it slips below. No per-path script, no separate gate to maintain. Security paths (URL policy, paste, autolink) are pinned by the table-driven E2E specs in Tasks 12 + 13 which fail with a recognizable signature long before coverage drift can hide a regression.
 
-Create `packages/extension-hyperlink/scripts/check-coverage.ts`:
-
-```ts
-#!/usr/bin/env bun
-/**
- * Parses coverage/lcov.info and enforces per-path line thresholds
- * defined in PATH_THRESHOLDS below. Exits 1 if any path is below.
- *
- * Bun's bunfig.toml supports a single workspace-level coverageThreshold
- * but no per-path thresholds — this script fills that gap.
- */
-import { readFileSync, existsSync } from 'node:fs'
-
-const PATH_THRESHOLDS: Array<{ pattern: RegExp; min: number; label: string }> = [
-  { pattern: /src\/utils\/validateURL\.ts$/, min: 0.95, label: 'utils/validateURL.ts' },
-  { pattern: /src\/utils\/normalizeHref\.ts$/, min: 0.95, label: 'utils/normalizeHref.ts' },
-  { pattern: /src\/hyperlink\.ts$/, min: 0.9, label: 'hyperlink.ts' },
-  { pattern: /src\/plugins\//, min: 0.85, label: 'plugins/**' }
-]
-
-const lcovPath = `${import.meta.dirname}/../coverage/lcov.info`
-if (!existsSync(lcovPath)) {
-  console.error(`[coverage] ${lcovPath} not found — did you run bun test --coverage?`)
-  process.exit(1)
-}
-
-const lcov = readFileSync(lcovPath, 'utf-8')
-
-type Entry = { file: string; linesFound: number; linesHit: number }
-const entries: Entry[] = []
-
-let current: Partial<Entry> = {}
-for (const line of lcov.split('\n')) {
-  if (line.startsWith('SF:')) current = { file: line.slice(3) }
-  else if (line.startsWith('LF:')) current.linesFound = Number(line.slice(3))
-  else if (line.startsWith('LH:')) current.linesHit = Number(line.slice(3))
-  else if (line === 'end_of_record') {
-    entries.push(current as Entry)
-    current = {}
-  }
-}
-
-let failures = 0
-for (const t of PATH_THRESHOLDS) {
-  const matching = entries.filter((e) => t.pattern.test(e.file))
-  if (matching.length === 0) {
-    console.warn(`[coverage] no files matched ${t.label} — ignoring`)
-    continue
-  }
-  const totals = matching.reduce(
-    (acc, e) => ({ found: acc.found + e.linesFound, hit: acc.hit + e.linesHit }),
-    { found: 0, hit: 0 }
-  )
-  const pct = totals.found === 0 ? 1 : totals.hit / totals.found
-  const ok = pct >= t.min
-  const arrow = ok ? '✓' : '✗'
-  console.log(
-    `${arrow} ${t.label}: ${(pct * 100).toFixed(1)}% (need ≥${(t.min * 100).toFixed(0)}%)`
-  )
-  if (!ok) failures++
-}
-
-if (failures > 0) {
-  console.error(`\n[coverage] ${failures} path(s) below threshold`)
-  process.exit(1)
-}
-console.log('\n[coverage] all path-level thresholds met')
-```
-
-Make it executable:
-
-```bash
-chmod +x packages/extension-hyperlink/scripts/check-coverage.ts
-```
-
-- [ ] **Step 2: Wire the script into package.json**
+- [ ] **Step 1: Add the coverage script to package.json**
 
 Add to `packages/extension-hyperlink/package.json` `scripts`:
 
 ```json
-"coverage:check": "bun run scripts/check-coverage.ts",
 "test:unit:coverage": "bun test --coverage src"
 ```
 
-- [ ] **Step 3: Run locally to set the baseline**
+The threshold from `bunfig.toml` is consulted automatically by `bun test --coverage`.
+
+- [ ] **Step 2: Run locally to verify the threshold passes**
 
 ```bash
 cd packages/extension-hyperlink
 bun run test:unit:coverage
-bun run coverage:check
 ```
 
-Expected: a table of per-path percentages. If any path is below threshold today, that's a known gap PR 3 will fill — for PR 1 the gate must still pass, so either lower the threshold temporarily or add a small test to clear the bar. If you lower thresholds, leave a `// TODO(PR3)` comment in the script.
+Expected: green. If coverage slips below 0.85, add the missing tests now (PR 1 ships new test files for `isSafeHyperlinkHref` already; that should bring the line up). Do **not** lower the threshold to make it pass.
 
-- [ ] **Step 4: Write the GitHub Actions workflow**
+- [ ] **Step 3: Write the GitHub Actions workflow**
+
+Create `.github/workflows/extension-hyperlink.yml`:
 
 Create `.github/workflows/extension-hyperlink.yml`:
 
@@ -2020,9 +1856,6 @@ jobs:
       - name: Unit tests + coverage
         run: bun run --filter @docs.plus/extension-hyperlink test:unit:coverage
 
-      - name: Coverage threshold check
-        run: bun run --filter @docs.plus/extension-hyperlink coverage:check
-
       - name: Build
         run: bun run --filter @docs.plus/extension-hyperlink build
 
@@ -2044,42 +1877,39 @@ jobs:
           retention-days: 7
 ```
 
-- [ ] **Step 5: Validate the workflow YAML**
+- [ ] **Step 4: Validate the workflow YAML**
 
 ```bash
-bunx --bun yaml-validator .github/workflows/extension-hyperlink.yml 2>/dev/null || true
-# Or use actionlint if available:
 bunx actionlint .github/workflows/extension-hyperlink.yml || true
 ```
 
 Expected: no syntax errors. If actionlint flags something, fix.
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add .github/workflows/extension-hyperlink.yml \
-        packages/extension-hyperlink/scripts/check-coverage.ts \
-        packages/extension-hyperlink/package.json
-git commit -m "ci(extension-hyperlink): add CI workflow + coverage gate (B4)
+git add .github/workflows/extension-hyperlink.yml packages/extension-hyperlink/package.json
+git commit -m "ci(extension-hyperlink): gate the package on PR (B4)
 
-New job runs on every PR touching the package and on main pushes:
-  lint → unit tests + coverage → coverage threshold → build →
-  publint --strict → Cypress E2E → upload artifacts on failure.
+New workflow runs on every PR touching the package and on main pushes:
+  lint → unit tests + coverage → build → publint --strict →
+  Cypress E2E → upload artifacts on failure.
 
-Coverage thresholds enforced per-path via scripts/check-coverage.ts:
-  validateURL.ts ≥95%, normalizeHref.ts ≥95%, hyperlink.ts ≥90%,
-  plugins/** ≥85%.
+Coverage threshold is the single workspace gate from bunfig.toml
+(line ≥0.85). No per-path script — the highest-risk paths (URL
+safety, paste, autolink) are pinned by table-driven E2E specs
+(xss-guards, paste-policy) added in Tasks 12 + 13, which fail
+with a recognizable signature long before coverage drift can
+hide a regression.
 
-Concurrency cancels superseded runs. Frozen lockfile install. Cypress
-artifacts uploaded as workflow artifacts on failure (7-day retention).
-
-Branch protection on main should be configured to require this check
-once the workflow lands."
+Concurrency cancels superseded runs. Frozen lockfile install.
+Branch protection on main should be configured to require this
+check once the workflow lands."
 ```
 
 ---
 
-## Task 17: PR 1 wrap-up — run the full quality gate locally
+## Task 16: PR 1 wrap-up — run the full quality gate locally
 
 **Files:** none (verification only)
 
@@ -2090,7 +1920,6 @@ cd /Users/macbook/workspace/docsy-extension-hyperlink-2.0
 bun install --frozen-lockfile
 bun run --filter @docs.plus/extension-hyperlink lint
 bun run --filter @docs.plus/extension-hyperlink test:unit:coverage
-bun run --filter @docs.plus/extension-hyperlink coverage:check
 bun run --filter @docs.plus/extension-hyperlink build
 cd packages/extension-hyperlink && bunx publint --strict .
 cd ../.. && bun run --filter @docs.plus/extension-hyperlink test:e2e
@@ -2127,8 +1956,7 @@ Edit `packages/extension-hyperlink/CHANGELOG.md`. At the top, add an `[Unrelease
 
 ### Internal
 
-- **S1 / §3.2** ESLint rule prevents the mark and plugins from importing the popover layer (`no-restricted-imports`). Two existing violations in `clickHandler.ts` are temporarily suppressed with `TODO(PR2-Task5)`.
-- **B4** New CI workflow gating the package on lint, unit + coverage, build, publint, and Cypress.
+- **B4** New CI workflow gating the package on lint, unit + coverage, build, publint, and Cypress. Single workspace-wide line-coverage gate (≥0.85) via `bunfig.toml`.
 - **T8** New attack-vector matrix in `xss-guards.cy.ts` covering 13 dangerous URL forms.
 - **T9** New `paste-policy.cy.ts` asserts policy parity across paste / markPasteRule / autolink.
 - **M11** Cross-platform `Mod` key Cypress helper (`pressMod`) replaces hard-coded `'Meta'` so tests pass on Linux CI.
@@ -2169,11 +1997,14 @@ keeps working unchanged (the breaking command-API refactor is in PR 2).
   `noopener,noreferrer`.
 - **M9** `target` attribute round-trips through HTML correctly.
 - **M7 / M8** `bun-types` pinned, `linkifyjs` moved to peer deps.
-- **B4** CI workflow gates lint, unit, coverage, build, publint, E2E.
+- **B4** CI workflow gates lint, unit + coverage, build, publint, E2E.
 - **B5** README inaccuracy removed.
-- **S1** Mark/UI seam enforced via ESLint (no folder rename).
 - **T8 / T9 / M11** Test coverage for attack vectors, path parity,
   and platform-aware Mod key.
+
+> Note: the mark/UI seam ESLint rule (S1 / §3.2) lands in PR 2 as part of
+> the click handler refactor — shipping it here would force two
+> immediate suppressions for code PR 2 deletes anyway.
 
 ### What's NOT in this PR
 
@@ -2187,8 +2018,7 @@ keeps working unchanged (the breaking command-API refactor is in PR 2).
 ### Test plan
 
 - [x] \`bun run --filter @docs.plus/extension-hyperlink lint\`
-- [x] \`bun run --filter @docs.plus/extension-hyperlink test:unit:coverage\`
-- [x] \`bun run --filter @docs.plus/extension-hyperlink coverage:check\`
+- [x] \`bun run --filter @docs.plus/extension-hyperlink test:unit:coverage\` (gates the workspace ≥0.85 line threshold)
 - [x] \`bun run --filter @docs.plus/extension-hyperlink build\`
 - [x] \`bunx publint --strict packages/extension-hyperlink/\`
 - [x] \`bun run --filter @docs.plus/extension-hyperlink test:e2e\`
@@ -2207,9 +2037,8 @@ Wait for the new \`extension-hyperlink\` workflow to complete on the PR. Address
 
 - [ ] Every task ends with a commit.
 - [ ] Every commit message mentions the review item ID (B1, M5, etc.) it addresses.
-- [ ] No commit introduces lint violations (the seam rule + existing rules).
+- [ ] No commit introduces lint violations.
 - [ ] `bun run --filter @docs.plus/extension-hyperlink test` passes locally.
 - [ ] CI on the PR is green.
 - [ ] CHANGELOG `[Unreleased]` section reflects every change.
 - [ ] No code comment narrates _what_ the code does — only _why_ (per AGENTS.md).
-- [ ] No `TODO(PR2-Task5)` suppressions exist outside `clickHandler.ts` (those are intentional).

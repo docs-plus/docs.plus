@@ -270,10 +270,10 @@ Bun (≥1.3) supports inline coverage thresholds via `bunfig.toml`. A new `packa
 [test]
 coverage = true
 coverageReporter = ["text", "lcov"]
-coverageThreshold = { line = 0.90 }
+coverageThreshold = { line = 0.85 }
 ```
 
-Path-level thresholds (validateURL ≥95%, normalizeHref ≥95%, hyperlink.ts ≥90%, plugins ≥85%) are enforced by a 30-line `scripts/check-coverage.ts` that parses the lcov output and exits non-zero on miss. CI runs `bun test --coverage` followed by `bun run scripts/check-coverage.ts`. No external coverage service.
+The single workspace-wide line-coverage gate is the only coverage enforcement. Per-path thresholds were dropped from the design — they would be ~130 lines of bookkeeping (lcov parser + per-path table) that adds no real safety beyond what the table-driven attack-vector specs (`xss-guards.cy.ts`, `paste-policy.cy.ts`) already pin: those specs fail with a recognizable `URL <foo> was unexpectedly accepted` signature long before coverage drift could hide a regression. PR 3 raises the floor only if there is real headroom after PR 1+2 land.
 
 ## 8. Packaging & DX
 
@@ -298,12 +298,11 @@ New file: `.github/workflows/extension-hyperlink.yml`
   1. Checkout, setup Bun.
   2. `bun install --frozen-lockfile`.
   3. `bun run --filter @docs.plus/extension-hyperlink lint`.
-  4. `bun run --filter @docs.plus/extension-hyperlink test:unit -- --coverage`.
-  5. `bun run --filter @docs.plus/extension-hyperlink coverage:check` (path-level thresholds).
-  6. `bun run --filter @docs.plus/extension-hyperlink build`.
-  7. `bunx publint packages/extension-hyperlink/`.
-  8. `bun run --filter @docs.plus/extension-hyperlink test:e2e` (uses existing `start-server-and-test` flow).
-  9. On failure: upload `cypress/screenshots/**` and `cypress/videos/**` as workflow artifacts (debug aid).
+  4. `bun run --filter @docs.plus/extension-hyperlink test:unit:coverage` (gates the workspace-wide ≥0.85 line threshold via `bunfig.toml`).
+  5. `bun run --filter @docs.plus/extension-hyperlink build`.
+  6. `bunx publint packages/extension-hyperlink/`.
+  7. `bun run --filter @docs.plus/extension-hyperlink test:e2e` (uses existing `start-server-and-test` flow).
+  8. On failure: upload `cypress/screenshots/**` and `cypress/videos/**` as workflow artifacts (debug aid).
 - Branch protection on `main` requires this check.
 
 ## 10. README rewrite (B5 + M10)

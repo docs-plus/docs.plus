@@ -38,7 +38,6 @@ bun install --frozen-lockfile
 ```bash
 bun run --filter @docs.plus/extension-hyperlink lint
 bun run --filter @docs.plus/extension-hyperlink test:unit:coverage
-bun run --filter @docs.plus/extension-hyperlink coverage:check
 bun run --filter @docs.plus/extension-hyperlink build
 bun run --filter @docs.plus/extension-hyperlink test:e2e
 ```
@@ -585,13 +584,16 @@ the mark instead of extending it."
 
 ---
 
-## Task 5: Lifecycle teardown (B3)
+## Task 5: Lifecycle teardown + mark/UI seam (B3, S1, §3.2)
 
 **Files:**
 
 - Modify: `packages/extension-hyperlink/src/plugins/clickHandler.ts`
 - Modify: `packages/extension-hyperlink/src/hyperlink.ts`
 - Modify: `packages/extension-hyperlink/src/helpers/floatingToolbar.ts`
+- Modify: `packages/extension-hyperlink/eslint.config.js` (Step 6 — adds the seam rule)
+
+This task lands two related concerns in one commit because they share an invariant: the mark and ProseMirror plugins must not own the popover lifecycle. Step 1 stops the click handler from importing `helpers/floatingToolbar` (eliminating the last consumer of that import outside the popover layer); Step 6 then enforces the seam permanently with `no-restricted-imports`. Doing both here means the rule lands clean — zero suppressions.
 
 - [ ] **Step 1: Stop clickHandler from owning the toolbar lifecycle**
 
@@ -701,7 +703,7 @@ export default function clickHandlerPlugin(options: ClickHandlerOptions): Plugin
 }
 ```
 
-The two `TODO(PR2-Task5)` ESLint suppressions from PR 1 Task 3 are gone — the click handler no longer imports from `helpers/floatingToolbar`. Delete them along with this rewrite.
+After this rewrite the click handler no longer imports from `helpers/floatingToolbar` — the seam rule in Step 6 below can land without a single ESLint suppression.
 
 - [ ] **Step 2: Update the call site in `hyperlink.ts`**
 
@@ -820,8 +822,65 @@ Three lifecycle fixes:
 
 3. floatingToolbar.setContent() now removes the previous keyboard-nav
    listeners before adding new ones (prevents listener accumulation
-   across content swaps)."
+   across content swaps).
+
+4. ESLint no-restricted-imports now forbids the mark and plugins from
+   importing the popover layer (S1 / spec §3.2). The seam holds because
+   step 1 above eliminated the last violator."
 ```
+
+- [ ] **Step 6: Add the ESLint seam rule (S1, §3.2)**
+
+Now that `clickHandler.ts` no longer imports from `helpers/floatingToolbar` (Step 1), the rule lands without a single suppression.
+
+In `packages/extension-hyperlink/eslint.config.js`, extend the existing config:
+
+```js
+import libraryConfig from '../eslint-config/library.js'
+
+export default [
+  ...libraryConfig,
+  {
+    files: ['src/hyperlink.ts', 'src/plugins/**/*.ts'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          patterns: [
+            {
+              group: [
+                './popovers/*',
+                '../popovers/*',
+                './helpers/floatingToolbar*',
+                '../helpers/floatingToolbar*'
+              ],
+              message:
+                'Core mark/plugins must not import UI. Use the popover factory passed via Hyperlink options.'
+            }
+          ]
+        }
+      ]
+    }
+  }
+]
+```
+
+Run lint to confirm zero violations:
+
+```bash
+bun run --filter @docs.plus/extension-hyperlink lint
+```
+
+Expected: exit code 0. If violations show up they indicate a missed dependency — fix the import, never add a suppression. Bake the rule into the same commit as Step 5; it is the structural enforcement of everything Steps 1-4 just established by convention.
+
+- [ ] **Step 7: Amend the commit to include the ESLint config**
+
+```bash
+git add packages/extension-hyperlink/eslint.config.js
+git commit --amend --no-edit
+```
+
+(Safe to amend: this commit is local-only; remote has not been updated.)
 
 ---
 
@@ -855,6 +914,13 @@ const nextId = () => `hyperlink-a11y-${++_idCounter}`
  * The input gets an id, aria-describedby pointing to an error
  * element (id returned in `errorId`), and aria-invalid wired so the
  * caller only needs to toggle `setError(true|false)`.
+ *
+ * Implementation note: createHTMLElement uses Object.assign which sets
+ * DOM *properties*. Hyphenated HTML attributes (aria-*, role, etc.)
+ * MUST be set via setAttribute or they'll silently no-op — Object.assign
+ * would just attach a stray expando property of the same name, which
+ * axe and screen readers cannot see. All ARIA in this helper goes
+ * through setAttribute for that reason.
  */
 export function makeLabeledInput(args: {
   labelText: string
@@ -873,10 +939,10 @@ export function makeLabeledInput(args: {
 
   const input = createHTMLElement('input', {
     ...args.inputAttrs,
-    id: inputId,
-    'aria-describedby': errorId,
-    'aria-invalid': 'false'
+    id: inputId
   }) as HTMLInputElement
+  input.setAttribute('aria-describedby', errorId)
+  input.setAttribute('aria-invalid', 'false')
 
   const label = createHTMLElement('label', {
     htmlFor: inputId,
@@ -887,10 +953,10 @@ export function makeLabeledInput(args: {
   const error = createHTMLElement('div', {
     id: errorId,
     className: 'error-message',
-    role: 'alert',
-    'aria-live': 'polite',
     textContent: args.errorText
   })
+  error.setAttribute('role', 'alert')
+  error.setAttribute('aria-live', 'polite')
 
   const setError = (on: boolean): void => {
     input.setAttribute('aria-invalid', on ? 'true' : 'false')
@@ -939,11 +1005,11 @@ import { createHTMLElement, makeLabeledInput, normalizeHref, validateURL } from 
 import { Link } from '../utils/icons'
 
 const buildElements = () => {
-  const root = createHTMLElement('div', {
-    className: 'hyperlink-create-popover',
-    role: 'dialog',
-    'aria-label': 'Create hyperlink'
-  })
+  const root = createHTMLElement('div', { className: 'hyperlink-create-popover' })
+  // role/aria-* must be set via setAttribute — see makeLabeledInput JSDoc.
+  root.setAttribute('role', 'dialog')
+  root.setAttribute('aria-label', 'Create hyperlink')
+
   const form = createHTMLElement('form', {})
   const inputsWrapper = createHTMLElement('div', { className: 'inputs-wrapper' })
   const buttonsWrapper = createHTMLElement('div', { className: 'buttons-wrapper' })
@@ -969,9 +1035,9 @@ const buildElements = () => {
 
   const searchIcon = createHTMLElement('div', {
     className: 'search-icon',
-    innerHTML: Link({ size: 24 }),
-    'aria-hidden': 'true'
+    innerHTML: Link({ size: 24 })
   })
+  searchIcon.setAttribute('aria-hidden', 'true')
 
   inputsWrapper.append(searchIcon, label, input, error)
   buttonsWrapper.append(button)
@@ -1041,7 +1107,7 @@ cat packages/extension-hyperlink/src/popovers/editHyperlinkPopover.ts
 
 Apply the analogous changes:
 
-1. Wrap root in `<div role="dialog" aria-label="Edit hyperlink">`.
+1. Set `role="dialog"` + `aria-label="Edit hyperlink"` on the root via `setAttribute` (same reason as Step 2: `Object.assign` would no-op).
 2. Replace each input with the `makeLabeledInput` pattern (URL field + Text field).
 3. Add `aria-label` to icon buttons (Save, Cancel) via `labelIconButton`.
 4. Wire `setError` for validation feedback.
@@ -1053,9 +1119,9 @@ Because the structure is similar to `createHyperlinkPopover`, factor the common 
 
 Read the current file. Add to it:
 
-1. Root `role="dialog" aria-label="Hyperlink preview"`.
-2. `aria-label` on each icon-only action button (Copy, Edit, Remove).
-3. Decorative icons get `aria-hidden="true"`.
+1. Root `role="dialog"` + `aria-label="Hyperlink preview"` via `setAttribute`.
+2. `aria-label` on each icon-only action button (Copy, Edit, Remove) via `labelIconButton`.
+3. Decorative icons get `aria-hidden="true"` via `setAttribute`.
 4. The displayed URL gets `dir="ltr"` so RTL contexts don't reverse it. (Truncation per N4 stays out of scope.)
 
 Example pattern for a Copy button:
@@ -1523,7 +1589,6 @@ git commit -m "test(extension-hyperlink): preview Copy + edit-popover partial up
 cd /Users/macbook/workspace/docsy-extension-hyperlink-2.0
 bun run --filter @docs.plus/extension-hyperlink lint
 bun run --filter @docs.plus/extension-hyperlink test:unit:coverage
-bun run --filter @docs.plus/extension-hyperlink coverage:check
 bun run --filter @docs.plus/extension-hyperlink build
 cd packages/extension-hyperlink && bunx publint --strict .
 cd ../.. && bun run --filter @docs.plus/extension-hyperlink test:e2e
@@ -1585,7 +1650,7 @@ Update the PR description to call out the breaking change loudly:
 
 - [ ] Every webapp `setHyperlink()` no-arg call is migrated.
 - [ ] No popover code calls `editor.commands.focus()` directly — `onHide` does it.
-- [ ] `clickHandler.ts` no longer imports from `helpers/floatingToolbar`. ESLint passes without `TODO(PR2-Task5)` suppressions.
+- [ ] `clickHandler.ts` no longer imports from `helpers/floatingToolbar`. ESLint passes with the seam rule active and zero suppressions.
 - [ ] `a11y.cy.ts` axe assertions pass on idle / create / create-error / preview / edit popovers.
 - [ ] `Hyperlink.onDestroy` is wired and visited by the test suite.
 - [ ] CHANGELOG `[Unreleased]` BREAKING section calls out M4 in plain language.
