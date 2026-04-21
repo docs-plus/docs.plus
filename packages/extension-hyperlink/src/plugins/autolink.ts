@@ -10,6 +10,7 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 import { find, test } from 'linkifyjs'
 
 import { normalizeLinkifyHref } from '../utils/normalizeHref'
+import { isBarePhone } from '../utils/phone'
 import { validateURL } from '../utils/validateURL'
 
 type AutolinkOptions = {
@@ -62,12 +63,33 @@ const findLinks = (text: string) => {
     }
   }
 
+  // E.164 phones. `text` is already a single whitespace-delimited
+  // token, and linkifyjs has no phone matcher, so neither an inline
+  // scan nor an `alreadyCovered` check is needed. Tagged `type:
+  // 'phone'` so `normalizeLinkifyHref` returns the canonical
+  // `tel:+CCNSN` href verbatim instead of re-running `normalizeHref`.
+  const phone = isBarePhone(text)
+  if (phone.ok) {
+    links.push({
+      type: 'phone',
+      href: phone.href,
+      value: text,
+      start: 0,
+      end: text.length,
+      isLink: true
+    })
+  }
+
   return links.map(stripTrailingPunct)
 }
 
 const testUrl = (text: string): boolean => {
   if (test(text)) return true
-  return SPECIAL_SCHEME_REGEX.test(text) && validateURL(text)
+  if (SPECIAL_SCHEME_REGEX.test(text) && validateURL(text)) return true
+  // Phone-shape check so the appendTransaction "removed link if the
+  // edited text no longer looks like a link" branch fires when the
+  // user backspaces a digit out of an autolinked phone.
+  return isBarePhone(text).ok
 }
 
 export default function autolinkPlugin(options: AutolinkOptions): Plugin {

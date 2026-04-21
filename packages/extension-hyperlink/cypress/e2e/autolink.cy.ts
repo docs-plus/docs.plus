@@ -53,6 +53,28 @@ describe('Autolink + paste — canonical href consistency', () => {
       cy.editorFirstLinkHref().should('eq', 'mailto:hello@example.com')
     })
 
+    it('emits tel:+E.164 for bare phone numbers (+4733378901)', () => {
+      // E.164 phones are detected by the `findLinks` phone branch.
+      // linkifyjs has no phone matcher (issue #133, open since 2016)
+      // — without our explicit `isBarePhone` check, this autolink
+      // never fires and the user is left with raw text.
+      typeThroughAutolink('+4733378901')
+      cy.editorFirstLinkHref().should('eq', 'tel:+4733378901')
+    })
+
+    it('canonicalizes formatted single-token phones (+1-555-123-4567 → tel:+15551234567)', () => {
+      typeThroughAutolink('+1-555-123-4567')
+      cy.editorFirstLinkHref().should('eq', 'tel:+15551234567')
+    })
+
+    it('does NOT autolink bare digit strings (5551234567 stays plain text)', () => {
+      // No `+` → not E.164 → must stay plain text. Pins the absence
+      // of false positives that would silently `tel:`-ify years,
+      // ZIPs, and arbitrary numbers in prose.
+      typeThroughAutolink('5551234567')
+      cy.get('#editor a').should('not.exist')
+    })
+
     it('strips trailing punctuation without eating linkifyjs scheme', () => {
       // `Visit google.com.` autolinks `google.com`, not `google.com.`.
       // Pins both the trailing-punct strip and the invariant that the

@@ -103,10 +103,63 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
       cy.editorFirstLinkHref().should('eq', 'http://localhost:3000')
     })
 
+    it('upgrades bare localhost:port to https:// (regression: not stored as localhost: scheme)', () => {
+      // Regression: `localhost:3000` matched normalizeHref's old
+      // `^[a-z][...]+:` regex and was returned unchanged — the
+      // browser then resolved `localhost:` as a scheme name and the
+      // link broke. The fix detects host:port shape and re-prefixes.
+      cy.get('body').realPress(['Meta', 'K'])
+      cy.get(INPUT).type('localhost:3000{enter}')
+      cy.editorFirstLinkHref().should('eq', 'https://localhost:3000')
+    })
+
+    it('upgrades bare host:port to https:// for any host (mydomain.com:8080)', () => {
+      cy.get('body').realPress(['Meta', 'K'])
+      cy.get(INPUT).type('mydomain.com:8080{enter}')
+      cy.editorFirstLinkHref().should('eq', 'https://mydomain.com:8080')
+    })
+
     it('accepts IPv4 literals', () => {
       cy.get('body').realPress(['Meta', 'K'])
       cy.get(INPUT).type('http://127.0.0.1{enter}')
       cy.editorFirstLinkHref().should('contain', '127.0.0.1')
+    })
+
+    it('emits tel:+E.164 when the user types a bare phone number', () => {
+      // Strict E.164: starts with `+`, 8–15 digits. The href is
+      // canonicalized (digits-only after the `+`) per RFC 3966 even
+      // when the user typed formatting.
+      cy.get('body').realPress(['Meta', 'K'])
+      cy.get(INPUT).type('+4733378901{enter}')
+      cy.editorFirstLinkHref().should('eq', 'tel:+4733378901')
+    })
+
+    it('strips formatting from formatted phones (+1 (555) 123-4567 → tel:+15551234567)', () => {
+      cy.get('body').realPress(['Meta', 'K'])
+      cy.get(INPUT).type('+1 (555) 123-4567{enter}')
+      cy.editorFirstLinkHref().should('eq', 'tel:+15551234567')
+    })
+
+    it('rejects bare numerics that lack the leading + (no false positive on 5551234567)', () => {
+      // A writing surface must NOT silently turn `5551234567` into a
+      // `tel:` link — too many false positives in prose. Only E.164
+      // (`+CCNSN`) is recognized.
+      cy.get('body').realPress(['Meta', 'K'])
+      cy.get(INPUT).type('5551234567{enter}')
+      cy.get(POPOVER).should('be.visible')
+      cy.get(WRAPPER).should('have.class', 'error')
+      cy.get('#editor a').should('not.exist')
+    })
+
+    it('emits mailto: when the user types a bare email (regression: matches autolink path)', () => {
+      // Regression: bare emails went through the URL-prepend branch
+      // and came out as `https://user@example.com` — a syntactically
+      // valid URL whose `user@` is HTTP basic-auth credentials, not
+      // the address the user intended. Now matches what the autolink
+      // path emits when the same email is typed mid-paragraph.
+      cy.get('body').realPress(['Meta', 'K'])
+      cy.get(INPUT).type('hi@example.com{enter}')
+      cy.editorFirstLinkHref().should('eq', 'mailto:hi@example.com')
     })
 
     it('clears the error state once the user types again', () => {

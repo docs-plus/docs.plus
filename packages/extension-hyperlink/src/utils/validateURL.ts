@@ -1,5 +1,6 @@
 import { find } from 'linkifyjs'
 
+import { isBarePhone } from './phone'
 import { getSpecialUrlInfo } from './specialUrls'
 
 /** Schemes that must never be used as link hrefs (XSS vectors). */
@@ -91,6 +92,13 @@ export const validateURL = (url: string, options?: ValidateURLOptions): boolean 
   if (!url.trim()) return false
 
   try {
+    // E.164 phones have no scheme prefix and would otherwise fall
+    // through to linkifyjs, which has no phone matcher.
+    if (isBarePhone(url.trim()).ok) {
+      if (options?.customValidator) return options.customValidator(url)
+      return true
+    }
+
     // First check if it's a special scheme URL or recognized domain
     if (isValidSpecialScheme(url)) {
       // Apply custom validator if provided
@@ -122,16 +130,10 @@ export const validateURL = (url: string, options?: ValidateURLOptions): boolean 
 }
 
 /**
- * Get the scheme/protocol from a URL
- * @param url - The URL to extract scheme from
- * @returns The scheme (e.g., 'https', 'mailto', 'tel') or null if invalid
- *
- * @example
- * ```typescript
- * getUrlScheme('https://example.com') // 'https'
- * getUrlScheme('mailto:user@example.com') // 'mailto'
- * getUrlScheme('invalid') // null
- * ```
+ * Lowercased scheme component of `url`, or `null` if it has no `:`.
+ * Internal helper for the host-shape gate in `validateURL`; exported
+ * so the unit tests can pin the parsing rules independently of the
+ * full `validateURL` flow.
  */
 export const getUrlScheme = (url: string): string | null => {
   if (!url.trim()) return null
@@ -140,20 +142,4 @@ export const getUrlScheme = (url: string): string | null => {
   if (colonIndex === -1) return null
 
   return url.substring(0, colonIndex).toLowerCase()
-}
-
-/**
- * Check if a URL is a special app/protocol scheme (not http/https)
- * @param url - The URL to check
- * @returns true if it's a special scheme, false for standard web URLs
- *
- * @example
- * ```typescript
- * isSpecialSchemeUrl('mailto:user@example.com') // true
- * isSpecialSchemeUrl('https://example.com') // false
- * ```
- */
-export const isSpecialSchemeUrl = (url: string): boolean => {
-  const scheme = getUrlScheme(url)
-  return scheme !== null && !['http', 'https', 'ftp', 'ftps'].includes(scheme)
 }
