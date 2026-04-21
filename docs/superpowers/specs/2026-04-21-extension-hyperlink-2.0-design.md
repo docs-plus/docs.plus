@@ -182,7 +182,7 @@ All four are mechanically rewritten in PR 2 to `editor.chain().focus().openCreat
 
 - `exitable: true` (M3 — Tiptap-Link parity).
 - `target` attribute: remove `rendered: false` so the attribute round-trips through `renderHTML` correctly (M9). **Compatibility note:** existing stored docs that have a `target` attribute on the mark will now render it into the output `<a target="…">` where they previously dropped it silently. This matches user expectation and does not require data migration. Parse → render snapshot test covers fidelity.
-- Default `markdownTokenName: 'link'`, default `parseMarkdown` and `renderMarkdown` (M3). Webapp's `Hyperlink.extend({ markdownTokenName, parseMarkdown, renderMarkdown })` in `packages/webapp/src/components/TipTap/extensions/markdown-extensions.ts` continues to override at consumer level — `.extend()` always wins over base.
+- Default `markdownTokenName: 'link'` (M3). `parseMarkdown` / `renderMarkdown` are **not** added as base options — they were considered for Tiptap-Link parity but dropped, since the extension itself never reads them and the webapp's `markdown-extensions.ts` overrides via `Hyperlink.extend({ ... })` at the consumer level (which has always been the right place for parse/render hooks). Adding them as base options would be dead API surface.
 
 ## 5. Plugin behavior fixes
 

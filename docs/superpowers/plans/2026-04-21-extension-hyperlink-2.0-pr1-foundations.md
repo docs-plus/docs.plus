@@ -103,23 +103,27 @@ git commit -m "chore(extension-hyperlink): bootstrap 2.0 worktree
 
 **Files:**
 
+- Modify: `package.json` (root — add `bun-types` to the catalog)
 - Modify: `packages/extension-hyperlink/package.json`
 - Modify: `packages/webapp/package.json`
 
-- [ ] **Step 1: Find the workspace catalog version of `bun-types`**
+- [ ] **Step 1: Add `bun-types` to the workspace catalog**
 
-```bash
-cd /Users/macbook/workspace/docsy-extension-hyperlink-2.0
-rg '"bun-types"' --type json -B1 -A1 packages/
+The root `package.json` `catalog` block (verified by reading `package.json:115`) does **not** currently contain `bun-types` — it lives only in root `devDependencies` (`package.json:83`). Pinning the package to `"catalog:"` without the catalog entry would fail `bun install` with "no matching catalog entry for bun-types".
+
+Edit `package.json` and add to the `catalog` block (preserving the existing alphabetical-within-group ordering — slot near `cypress` / `cypress-real-events`):
+
+```json
+"bun-types": "^1.3.11",
 ```
 
-Look for the entry under a workspace catalog reference (e.g. `"bun-types": "catalog:"` and the catalog definition in the root `package.json` or `pnpm-workspace.yaml` / `bunfig.toml`).
+The literal version must match what's already in root `devDependencies` so installed versions stay identical.
 
 - [ ] **Step 2: Update `packages/extension-hyperlink/package.json`**
 
 Three coordinated changes (current state for reference: `linkifyjs ^4.3.2` is currently in `dependencies`; `bun-types` is `"latest"` in `devDependencies`):
 
-1. Pin `devDependencies["bun-types"]` from `"latest"` → `"catalog:"`. (Verified: `bun-types ^1.3.11` exists in the root `package.json` `catalog` field.)
+1. Pin `devDependencies["bun-types"]` from `"latest"` → `"catalog:"` (now resolvable thanks to Step 1).
 2. Remove `linkifyjs` from `dependencies`.
 3. Add a new `peerDependencies` entry for `linkifyjs` and add it back as a `devDependency` so the package's own self-tests and build still resolve it.
 
@@ -174,9 +178,11 @@ Expected: `dist/` is regenerated, no warnings about missing `linkifyjs`.
 - [ ] **Step 6: Commit**
 
 ```bash
-git add packages/extension-hyperlink/package.json packages/webapp/package.json bun.lock
+git add package.json packages/extension-hyperlink/package.json packages/webapp/package.json bun.lock
 git commit -m "chore(extension-hyperlink): pin bun-types, peer linkifyjs (M7, M8)
 
+- Add bun-types to the workspace catalog (root package.json) so the
+  extension can pin to 'catalog:' like every other shared dev dep.
 - bun-types: 'latest' was a CI footgun; pin to catalog: like the rest
   of the workspace.
 - linkifyjs is moved from dependencies to peerDependencies so apps can
@@ -825,32 +831,31 @@ renderHTML({ HTMLAttributes }) {
 },
 ```
 
-- [ ] **Step 4: Tighten `setHyperlink` command**
+- [ ] **Step 4: Tighten `setHyperlink` command (the safety check must run on BOTH branches)**
 
-In the existing `setHyperlink` command (currently lines 169-247), the `chain().setMark(...)` call should be guarded. Find the line:
+In the existing `setHyperlink` command (currently lines 169-247) the function body splits on whether a popover factory is configured. The safety policy must run **before** that split — otherwise a programmatic `editor.commands.setHyperlink({ href: 'javascript:alert(1)' })` against an editor that has the default popover would skip validation entirely (the popover branch trusts whatever `attributes` it was handed). Spec §3.3 is explicit: the policy runs at "every site that writes, reads, or navigates to an `href`."
 
-```ts
-return chain().setMark(this.name, normalized).setMeta('preventAutolink', true).run()
-```
-
-Replace the surrounding block with:
+Insert a guard at the **top** of the command body, immediately after destructuring `attributes` and before the `if (this.options.popovers.createHyperlink) { … }` branch:
 
 ```ts
-if (!this.options.popovers.createHyperlink) {
-  const normalized = attributes?.href
-    ? { ...attributes, href: normalizeHref(attributes.href) }
-    : attributes
-  if (normalized?.href && !isSafeHyperlinkHref(normalized.href, policyCtx(this.options))) {
-    return false
-  }
-  if (normalized?.href && this.options.validate && !this.options.validate(normalized.href)) {
-    return false
-  }
-  return chain().setMark(this.name, normalized).setMeta('preventAutolink', true).run()
+if (attributes?.href) {
+  const normalizedHref = normalizeHref(attributes.href)
+  if (!isSafeHyperlinkHref(normalizedHref, policyCtx(this.options))) return false
+  if (this.options.validate && !this.options.validate(normalizedHref)) return false
+  attributes = { ...attributes, href: normalizedHref }
 }
 ```
 
-The order matches §3.4: safety layer → legacy `validate`. The popover branch below is unchanged for now — PR 2 refactors it.
+Then leave the existing popover branch unchanged (PR 2 refactors it) and replace the no-popover fallback with:
+
+```ts
+const normalized = attributes // already safety-checked + normalized above
+return chain().setMark(this.name, normalized).setMeta('preventAutolink', true).run()
+```
+
+The order matches §3.4: normalize → safety layer → legacy `validate`. Both the popover and the direct-set paths now share one guard.
+
+> **Carryover note:** PR 2 Task 2 introduces a clean `setHyperlink` that has no popover branch (popover-opening is split into `openCreateHyperlinkPopover` / `openEditHyperlinkPopover`). The same guard pattern lands there too — but PR 2's version is structurally simpler because the branch goes away.
 
 - [ ] **Step 5: Tighten the input rule (`addInputRules`)**
 
@@ -1564,12 +1569,10 @@ describe('attack-vector matrix (T8)', () => {
 
   dangerous.forEach((href) => {
     it(`rejects ${href} via setHyperlink command`, () => {
-      cy.visit('http://127.0.0.1:5173')
+      cy.visitPlayground()
       cy.get('#editor').click().type('select me{selectall}')
       cy.window().then((win) => {
-        // Use the editor instance the playground exposes on window.
-        const editor = (win as any).editor
-        const ok = editor.chain().focus().setHyperlink({ href }).run()
+        const ok = win._editor.chain().focus().setHyperlink({ href }).run()
         expect(ok).to.equal(false)
       })
       // No anchor should have appeared in the editor.
@@ -1577,13 +1580,12 @@ describe('attack-vector matrix (T8)', () => {
     })
 
     it(`rejects ${href} when pasted`, () => {
-      cy.visit('http://127.0.0.1:5173')
+      cy.visitPlayground()
       cy.get('#editor').click().type('select me{selectall}')
       cy.window().then((win) => {
         const dt = new DataTransfer()
         dt.setData('text/plain', href)
-        const editor = (win as any).editor
-        editor.view.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt }))
+        win._editor.view.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt }))
       })
       cy.get('#editor a').should('not.exist')
     })
@@ -1591,13 +1593,7 @@ describe('attack-vector matrix (T8)', () => {
 })
 ```
 
-If the playground does not currently expose `window.editor`, add this single line to `packages/extension-hyperlink/test/playground/main.ts` after editor creation:
-
-```ts
-;(window as any).editor = editor
-```
-
-Wrap with `if (import.meta.env.DEV)` if the playground has env handling — otherwise plain assignment is fine for the test playground.
+> **Convention note:** the playground already exposes the editor as `window._editor` and ships a `cy.visitPlayground()` custom command via `cypress/support/e2e.ts`. Every existing spec (`xss-guards.cy.ts`, `create.cy.ts`, etc.) uses these, so this new spec must follow the same convention. Do **not** add a new `window.editor` assignment to `test/playground/main.ts` — `_editor` is the single source of truth.
 
 - [ ] **Step 3: Run the new spec**
 
@@ -1611,8 +1607,7 @@ Expected: all attack-vector rows pass. If any passes (i.e. an anchor IS rendered
 - [ ] **Step 4: Commit**
 
 ```bash
-git add packages/extension-hyperlink/cypress/e2e/xss-guards.cy.ts \
-        packages/extension-hyperlink/test/playground/main.ts
+git add packages/extension-hyperlink/cypress/e2e/xss-guards.cy.ts
 git commit -m "test(extension-hyperlink): table-driven attack-vector matrix (T8)
 
 Adds 13 dangerous-URL inputs covering: javascript: (3 forms), data:
@@ -1638,7 +1633,7 @@ import { pressMod } from '../support/keyboard'
 
 describe('URL policy parity across paste / markPasteRule / autolink (T9)', () => {
   beforeEach(() => {
-    cy.visit('http://127.0.0.1:5173')
+    cy.visitPlayground()
     cy.get('#editor').click()
   })
 
@@ -1658,7 +1653,7 @@ describe('URL policy parity across paste / markPasteRule / autolink (T9)', () =>
       cy.window().then((win) => {
         const dt = new DataTransfer()
         dt.setData('text/plain', href)
-        ;(win as any).editor.view.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt }))
+        win._editor.view.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt }))
       })
       cy.get('#editor a').should('not.exist')
 
@@ -1679,7 +1674,7 @@ describe('URL policy parity across paste / markPasteRule / autolink (T9)', () =>
       cy.window().then((win) => {
         const dt = new DataTransfer()
         dt.setData('text/plain', href)
-        ;(win as any).editor.view.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt }))
+        win._editor.view.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt }))
       })
       cy.get('#editor a').should('have.attr', 'href', href)
 
@@ -1917,7 +1912,7 @@ check once the workflow lands."
 
 ```bash
 cd /Users/macbook/workspace/docsy-extension-hyperlink-2.0
-bun install --frozen-lockfile
+bun install
 bun run --filter @docs.plus/extension-hyperlink lint
 bun run --filter @docs.plus/extension-hyperlink test:unit:coverage
 bun run --filter @docs.plus/extension-hyperlink build
@@ -1927,17 +1922,24 @@ cd ../.. && bun run --filter @docs.plus/extension-hyperlink test:e2e
 
 Expected: every command exits 0.
 
-- [ ] **Step 2: Add a CHANGELOG entry**
+- [ ] **Step 2: Amend the existing `[2.0.0]` CHANGELOG entry with PR 1's items**
 
-Edit `packages/extension-hyperlink/CHANGELOG.md`. At the top, add an `[Unreleased]` section (or append to it if already present):
+`packages/extension-hyperlink/CHANGELOG.md` already contains a comprehensive `## [2.0.0] — 2026-04-20` entry from earlier work that documents most of the rewrite (popover architecture, normalizeHref, special-URL catalog, the 3-scheme `DANGEROUS_SCHEME_RE`, default stylesheet, Cypress harness). PR 1 / PR 2 / PR 3 are **completing the 2.0 commitments**, not opening a new release. Strategy: **amend the existing entry in place** — add this PR's specific new items into the right subsections, do **not** add a `[Unreleased]` header (it would land as the second 2.0.0 header at release time).
+
+First read the current file end-to-end so you understand which subsections already exist and where to slot the new items:
+
+```bash
+cat packages/extension-hyperlink/CHANGELOG.md | head -200
+```
+
+Then add the following items, **inserted into the existing subsections** (look for the `### Security`, `### Added`, `### Changed`, `### Internal` headings under `## [2.0.0] — 2026-04-20`). Match the existing prose style — concise, one bullet per item, prefix with the review-item ID in bold:
 
 ```markdown
-## [Unreleased]
+### Security (insert these alongside what's already there)
 
-### Security
-
-- **B1** Single URL safety policy (`isSafeHyperlinkHref`) applied at every href write site (parseHTML, renderHTML, setHyperlink, input rule, markPasteRule, paste, autolink, click navigation). Denylist expanded to cover `file:`, `blob:`, `about:`, `chrome:`, `view-source:` in addition to the original `javascript:`, `data:`, `vbscript:`. Embedded credentials (`user:pass@host`) rejected by default for web schemes.
-- **M6** Click handler respects Cmd/Ctrl/middle-click and now passes `noopener,noreferrer` to `window.open`.
+- **B1** Denylist expanded from `javascript:` / `data:` / `vbscript:` (the original `DANGEROUS_SCHEME_RE`) to also cover `file:`, `blob:`, `about:`, `chrome:`, `view-source:`. Embedded credentials (`user:pass@host`) rejected by default for web schemes. The exported `DANGEROUS_SCHEME_RE` is updated in lockstep.
+- **B1** Single URL safety policy (`isSafeHyperlinkHref`) applied at every href write site (parseHTML, renderHTML, setHyperlink, input rule, markPasteRule, paste, autolink, click navigation) — replaces the previous mix of `DANGEROUS_SCHEME_RE` checks and ad-hoc validation.
+- **M6** Click handler now respects Cmd/Ctrl/middle-click and passes `noopener,noreferrer` to `window.open`.
 
 ### Added
 
@@ -1947,26 +1949,28 @@ Edit `packages/extension-hyperlink/CHANGELOG.md`. At the top, add an `[Unrelease
 
 - **M5** Autolink skips ranges already carrying the hyperlink mark, ranges inside `code`, and uses Unicode whitespace boundaries (`UNICODE_WHITESPACE_REGEX`) instead of ASCII space.
 - **M9** `target` attribute now round-trips through `renderHTML` (previously had `rendered: false`).
-- **M7** `bun-types` pinned to workspace catalog (was `latest`).
-- **M8** `linkifyjs` moved from `dependencies` to `peerDependencies` for app-level deduplication.
+- **M7** `bun-types` pinned to workspace catalog (was `latest`); `bun-types` added to the workspace catalog in `package.json`.
+- **M8** `linkifyjs` moved from `dependencies` to `peerDependencies` for app-level deduplication. Webapp `dependencies` add `linkifyjs` explicitly.
 
 ### Fixed
 
 - **B5** Removed `normalizeLinkifyHref` row from the README (it was never exported).
 
-### Internal
+### Internal (or add the section if it doesn't exist yet)
 
-- **B4** New CI workflow gating the package on lint, unit + coverage, build, publint, and Cypress. Single workspace-wide line-coverage gate (≥0.85) via `bunfig.toml`.
+- **B4** New CI workflow (`.github/workflows/extension-hyperlink.yml`) gating the package on lint, unit + coverage, build, publint, and Cypress. Single workspace-wide line-coverage gate (≥0.85) via `bunfig.toml`.
 - **T8** New attack-vector matrix in `xss-guards.cy.ts` covering 13 dangerous URL forms.
 - **T9** New `paste-policy.cy.ts` asserts policy parity across paste / markPasteRule / autolink.
 - **M11** Cross-platform `Mod` key Cypress helper (`pressMod`) replaces hard-coded `'Meta'` so tests pass on Linux CI.
 ```
 
+> **Conflict guard:** if any item you'd add already appears in the existing `[2.0.0]` entry (e.g. the original `DANGEROUS_SCHEME_RE` security note), **edit that bullet in place** rather than duplicating it. The bullet for B1's expanded denylist supersedes the existing 3-scheme bullet.
+
 - [ ] **Step 3: Commit the CHANGELOG**
 
 ```bash
 git add packages/extension-hyperlink/CHANGELOG.md
-git commit -m "docs(extension-hyperlink): CHANGELOG for PR 1 (foundations)"
+git commit -m "docs(extension-hyperlink): amend [2.0.0] CHANGELOG with PR 1 items"
 ```
 
 - [ ] **Step 4: Push and open the PR**
@@ -2040,5 +2044,5 @@ Wait for the new \`extension-hyperlink\` workflow to complete on the PR. Address
 - [ ] No commit introduces lint violations.
 - [ ] `bun run --filter @docs.plus/extension-hyperlink test` passes locally.
 - [ ] CI on the PR is green.
-- [ ] CHANGELOG `[Unreleased]` section reflects every change.
+- [ ] CHANGELOG `[2.0.0] — 2026-04-20` section is amended to reflect every PR 1 change (no separate `[Unreleased]` header).
 - [ ] No code comment narrates _what_ the code does — only _why_ (per AGENTS.md).

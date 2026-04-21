@@ -434,18 +434,21 @@ M4 together) is now complete."
 - Modify: `packages/webapp/src/components/chatroom/components/MessageComposer/components/Toolbar/ToolbarButtons/HyperlinkButton.tsx`
 - Modify: `packages/webapp/src/components/TipTap/toolbar/mobile/ToolbarMobile.tsx`
 
-- [ ] **Step 1: Search for every webapp call site**
+- [ ] **Step 1: Search for every webapp call site (zero-arg AND with-args)**
+
+The breaking change is two-fold: (1) zero-arg `setHyperlink()` no longer opens the popover, and (2) the argument is no longer optional in the type signature. Both forms need auditing — a `setHyperlink({ href: foo })` site that currently expects optional args will type-fail under the new signature even if its runtime behavior is unchanged.
 
 ```bash
 cd /Users/macbook/workspace/docsy-extension-hyperlink-2.0
-rg "setHyperlink\(\)" packages/webapp/src
+rg "setHyperlink\(" packages/webapp/src       # ALL call sites
+rg "setHyperlink\(\)" packages/webapp/src     # zero-arg subset (the popover-opening migration)
 ```
 
-Expected: the four files listed above. If any new file appeared, include it.
+Expected: the four known files listed above show up in the zero-arg subset. Any additional file that calls `setHyperlink(...)` with args still type-checks (no UI change) but should be visually scanned for code that _expected_ the popover to open.
 
-- [ ] **Step 2: Replace each call**
+- [ ] **Step 2: Replace each zero-arg call**
 
-For each match, change:
+For each match in the zero-arg subset, change:
 
 ```tsx
 editor?.chain().focus().setHyperlink().run()
@@ -459,13 +462,15 @@ editor?.chain().focus().openCreateHyperlinkPopover().run()
 
 (Keep the `editor?` optional chain or `editor.chain()` based on what each file already uses.)
 
-- [ ] **Step 3: Verify no remaining no-arg calls**
+For with-args sites: leave the runtime behavior alone — the only change is the safety policy now runs against the supplied `href`, which is correct.
+
+- [ ] **Step 3: Verify no remaining no-arg calls and the type signature compiles**
 
 ```bash
 rg "setHyperlink\(\)" packages/webapp/src
 ```
 
-Expected: no matches.
+Expected: no matches. Then run the webapp typecheck (Step 4) — that will surface any with-args site that broke under the now-required argument.
 
 - [ ] **Step 4: Type-check the webapp**
 
@@ -503,7 +508,9 @@ open the create UI in extension-hyperlink 2.0."
 
 - Modify: `packages/extension-hyperlink/src/hyperlink.ts`
 
-- [ ] **Step 1: Add the option, default markdown hooks, and `exitable: true`**
+> **Scope note (revised after review):** earlier drafts of this task added `parseMarkdown` and `renderMarkdown` options. Both were dropped — the webapp's existing markdown layer (`packages/webapp/src/components/TipTap/extensions/markdown-extensions.ts`) overrides via `Hyperlink.extend({ ... })` and the extension itself does not call either hook. Shipping option keys that no consumer reads is dead API surface. Only `markdownTokenName` (the one option the webapp actually consumes for tokenization) is added.
+
+- [ ] **Step 1: Add `markdownTokenName` and `exitable: true`**
 
 In `hyperlink.ts`, extend `HyperlinkOptions` (Task 6 of PR 1 already added the others; add to the same interface):
 
@@ -517,12 +524,6 @@ export interface HyperlinkOptions {
    * standard markdown link. Webapp can override via .extend({ ... }).
    */
   markdownTokenName: string
-
-  /** Markdown parse hook (called by the markdown pipeline). */
-  parseMarkdown?: (token: unknown) => Partial<HyperlinkAttributes> | null
-
-  /** Markdown render hook (called by the markdown pipeline). */
-  renderMarkdown?: (attrs: HyperlinkAttributes, text: string) => string
 }
 ```
 
@@ -530,8 +531,6 @@ In `addOptions()`:
 
 ```ts
 markdownTokenName: 'link',
-parseMarkdown: undefined,
-renderMarkdown: undefined,
 ```
 
 - [ ] **Step 2: Add `exitable: true` to the mark schema**
@@ -567,19 +566,19 @@ bun run --filter @docs.plus/extension-hyperlink test:e2e
 
 ```bash
 git add packages/extension-hyperlink/src/hyperlink.ts
-git commit -m "feat(extension-hyperlink): markdown defaults + exitable mark (M3)
-
-Adds three options for markdown-pipeline parity with
-@tiptap/extension-link:
+git commit -m "feat(extension-hyperlink): markdownTokenName option + exitable mark (M3)
 
   - markdownTokenName (default 'link') — token name used by the
-    @docs.plus markdown serializer/parser.
-  - parseMarkdown / renderMarkdown — optional hooks consumed by the
-    markdown pipeline. Webapp can override via .extend({ ... }) and
-    its override takes precedence per Tiptap option resolution.
+    @docs.plus markdown serializer/parser. Webapp can override via
+    .extend({ markdownTokenName: '...' }) and its override takes
+    precedence per Tiptap option resolution.
+  - exitable: true on the mark schema so → at the end of a link
+    exits the mark instead of extending it (Tiptap-Link parity).
 
-Sets exitable: true on the mark so → at the end of a link exits
-the mark instead of extending it."
+Note: parseMarkdown / renderMarkdown were considered for parity with
+@tiptap/extension-link but dropped — the webapp's existing markdown
+layer doesn't read them and the extension never calls them, so
+shipping them would have been dead API surface."
 ```
 
 ---
@@ -615,6 +614,28 @@ type ClickHandlerOptions = {
   validate?: (url: string) => boolean
   policyCtx: IsSafeHyperlinkHrefContext
   hasPreviewPopover: boolean
+  enableClickSelection: boolean
+}
+
+function selectLinkAt(
+  editor: Editor,
+  view: EditorView,
+  link: HTMLAnchorElement,
+  clickPos: number
+): boolean {
+  // Mirrors @tiptap/extension-link's enableClickSelection: expand the
+  // selection across the contiguous range of the same hyperlink mark
+  // around clickPos. Returns true if a selection was applied.
+  const $pos = view.state.doc.resolve(clickPos)
+  const mark = $pos.marks().find((m) => m.type === editor.schema.marks.hyperlink)
+  if (!mark) return false
+  let from = clickPos
+  let to = clickPos
+  while (from > 0 && view.state.doc.rangeHasMark(from - 1, from, mark.type)) from -= 1
+  const docSize = view.state.doc.content.size
+  while (to < docSize && view.state.doc.rangeHasMark(to, to + 1, mark.type)) to += 1
+  editor.chain().focus().setTextSelection({ from, to }).run()
+  return true
 }
 
 function findLinkFromEvent(event: MouseEvent | TouchEvent, root: HTMLElement) {
@@ -642,10 +663,14 @@ function handleActivation(
   }
 
   if (clickPos !== undefined) {
-    options.editor
-      .chain()
-      .focus(clickPos === 0 ? 'start' : clickPos)
-      .run()
+    if (options.enableClickSelection) {
+      selectLinkAt(options.editor, view, link, clickPos)
+    } else {
+      options.editor
+        .chain()
+        .focus(clickPos === 0 ? 'start' : clickPos)
+        .run()
+    }
   }
   return options.editor.commands.openEditHyperlinkPopover()
 }
@@ -717,7 +742,8 @@ if (this.options.openOnClick) {
       editor: this.editor,
       validate: this.options.validate,
       policyCtx: policyCtx(this.options),
-      hasPreviewPopover: !!this.options.popovers.previewHyperlink
+      hasPreviewPopover: !!this.options.popovers.previewHyperlink,
+      enableClickSelection: this.options.enableClickSelection
     })
   )
 }
@@ -790,48 +816,11 @@ const setContent = (el: HTMLElement): void => {
 setContent(content)
 ```
 
-And in `hide()` (line 200), call `keyboardNavCleanup?.()` before the existing cleanups loop.
+And in **both** `hide()` (line 200, before the existing cleanups loop) **and** `destroy()` (call before/after the existing `hide()` invocation — `hide()` is a no-op if `!visible`, so destroy must clean up the listeners independently), call `keyboardNavCleanup?.()`. Without the destroy-time call, an editor unmounted with an open popover leaks the keyboard-nav listeners attached to whatever DOM the toolbar last contained.
 
-- [ ] **Step 5: Build, run unit + E2E**
+- [ ] **Step 5: Add the ESLint seam rule (S1, §3.2)**
 
-```bash
-bun run --filter @docs.plus/extension-hyperlink build
-bun test src
-bun run --filter @docs.plus/extension-hyperlink test:e2e
-```
-
-Expected: green. The click handler refactor is the largest behavioral change here — pay attention to `create.cy.ts` (links opened via click should still show the preview popover).
-
-- [ ] **Step 6: Commit**
-
-```bash
-git add packages/extension-hyperlink/src/plugins/clickHandler.ts \
-        packages/extension-hyperlink/src/hyperlink.ts \
-        packages/extension-hyperlink/src/helpers/floatingToolbar.ts
-git commit -m "refactor(extension-hyperlink): popover lifecycle owned by mark, not click handler (B3)
-
-Three lifecycle fixes:
-
-1. clickHandler.ts no longer creates floating toolbars directly. It
-   delegates to the openEditHyperlinkPopover command (added in Task 2)
-   which lives in helpers/openEditPopover.ts. The PR 1 ESLint
-   suppressions in clickHandler.ts are now gone.
-
-2. Hyperlink.onDestroy() calls hideCurrentToolbar() so popovers and
-   their outside-click listeners can't outlive the editor.
-
-3. floatingToolbar.setContent() now removes the previous keyboard-nav
-   listeners before adding new ones (prevents listener accumulation
-   across content swaps).
-
-4. ESLint no-restricted-imports now forbids the mark and plugins from
-   importing the popover layer (S1 / spec §3.2). The seam holds because
-   step 1 above eliminated the last violator."
-```
-
-- [ ] **Step 6: Add the ESLint seam rule (S1, §3.2)**
-
-Now that `clickHandler.ts` no longer imports from `helpers/floatingToolbar` (Step 1), the rule lands without a single suppression.
+Now that `clickHandler.ts` no longer imports from `helpers/floatingToolbar` (Step 1), the rule lands without a single suppression — it is the structural enforcement of everything Steps 1-4 established by convention.
 
 In `packages/extension-hyperlink/eslint.config.js`, extend the existing config:
 
@@ -871,16 +860,46 @@ Run lint to confirm zero violations:
 bun run --filter @docs.plus/extension-hyperlink lint
 ```
 
-Expected: exit code 0. If violations show up they indicate a missed dependency — fix the import, never add a suppression. Bake the rule into the same commit as Step 5; it is the structural enforcement of everything Steps 1-4 just established by convention.
+Expected: exit code 0. If violations show up they indicate a missed dependency — fix the import, never add a suppression.
 
-- [ ] **Step 7: Amend the commit to include the ESLint config**
+- [ ] **Step 6: Build, run unit + E2E**
 
 ```bash
-git add packages/extension-hyperlink/eslint.config.js
-git commit --amend --no-edit
+bun run --filter @docs.plus/extension-hyperlink build
+bun test src
+bun run --filter @docs.plus/extension-hyperlink test:e2e
 ```
 
-(Safe to amend: this commit is local-only; remote has not been updated.)
+Expected: green. The click handler refactor is the largest behavioral change here — pay attention to `create.cy.ts` (links opened via click should still show the preview popover).
+
+- [ ] **Step 7: Commit (single commit, no amend)**
+
+```bash
+git add packages/extension-hyperlink/src/plugins/clickHandler.ts \
+        packages/extension-hyperlink/src/hyperlink.ts \
+        packages/extension-hyperlink/src/helpers/floatingToolbar.ts \
+        packages/extension-hyperlink/eslint.config.js
+git commit -m "refactor(extension-hyperlink): popover lifecycle owned by mark, not click handler (B3, S1)
+
+Four lifecycle / seam fixes shipping as one unit because the lint rule
+in (4) only holds once (1) lands:
+
+1. clickHandler.ts no longer creates floating toolbars directly. It
+   delegates to the openEditHyperlinkPopover command (added in Task 2)
+   which lives in helpers/openEditPopover.ts.
+
+2. Hyperlink.onDestroy() calls hideCurrentToolbar() so popovers and
+   their outside-click listeners can't outlive the editor.
+
+3. floatingToolbar.setContent() removes the previous keyboard-nav
+   listeners before adding new ones, and destroy() runs the same
+   cleanup so listeners can't leak when an editor is torn down with
+   an open popover.
+
+4. ESLint no-restricted-imports forbids the mark and plugins from
+   importing the popover layer (S1 / spec §3.2). The seam holds with
+   zero suppressions because step 1 eliminated the last violator."
+```
 
 ---
 
@@ -1227,7 +1246,7 @@ import { pressMod } from '../support/keyboard'
 
 describe('extension-hyperlink WCAG 2.1 AA', () => {
   beforeEach(() => {
-    cy.visit('http://127.0.0.1:5173')
+    cy.visitPlayground()
     cy.get('#editor').click()
   })
 
@@ -1320,7 +1339,7 @@ import { pressMod } from '../support/keyboard'
 
 describe('autolink + IME composition (T2)', () => {
   beforeEach(() => {
-    cy.visit('http://127.0.0.1:5173')
+    cy.visitPlayground()
     cy.get('#editor').click()
   })
 
@@ -1383,7 +1402,7 @@ If the spec fails because the existing autolink plugin doesn't track `compositio
 ```ts
 describe('selections spanning multiple links (T3)', () => {
   beforeEach(() => {
-    cy.visit('http://127.0.0.1:5173')
+    cy.visitPlayground()
     cy.get('#editor').click()
   })
 
@@ -1393,7 +1412,7 @@ describe('selections spanning multiple links (T3)', () => {
 
     cy.get('#editor').type('{selectall}')
     cy.window().then((win) => {
-      ;(win as any).editor.chain().focus().setHyperlink({ href: 'https://merged.com' }).run()
+      win._editor.chain().focus().setHyperlink({ href: 'https://merged.com' }).run()
     })
     cy.get('#editor a').should('have.length', 1)
     cy.get('#editor a').should('have.attr', 'href', 'https://merged.com')
@@ -1403,7 +1422,7 @@ describe('selections spanning multiple links (T3)', () => {
     cy.get('#editor').type('https://a.com https://b.com ')
     cy.get('#editor').type('{selectall}')
     cy.window().then((win) => {
-      ;(win as any).editor.chain().focus().unsetHyperlink().run()
+      win._editor.chain().focus().unsetHyperlink().run()
     })
     cy.get('#editor a').should('not.exist')
   })
@@ -1412,7 +1431,7 @@ describe('selections spanning multiple links (T3)', () => {
     cy.get('#editor').type('plain https://a.com plain ')
     cy.get('#editor').type('{selectall}')
     cy.window().then((win) => {
-      ;(win as any).editor.chain().focus().toggleHyperlink({ href: 'https://a.com' }).run()
+      win._editor.chain().focus().toggleHyperlink({ href: 'https://a.com' }).run()
     })
     cy.get('#editor a').should('not.exist')
   })
@@ -1440,7 +1459,7 @@ git commit -m "test(extension-hyperlink): multi-link selection behavior (T3)"
 ```ts
 describe('rich-paste with multiple links (T4)', () => {
   beforeEach(() => {
-    cy.visit('http://127.0.0.1:5173')
+    cy.visitPlayground()
     cy.get('#editor').click()
   })
 
@@ -1449,7 +1468,7 @@ describe('rich-paste with multiple links (T4)', () => {
       const dt = new DataTransfer()
       dt.setData('text/html', html)
       dt.setData('text/plain', html.replace(/<[^>]+>/g, ''))
-      ;(win as any).editor.view.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt }))
+      win._editor.view.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt }))
     })
   }
 
@@ -1471,7 +1490,7 @@ describe('rich-paste with multiple links (T4)', () => {
     cy.window().then((win) => {
       const dt = new DataTransfer()
       dt.setData('text/plain', 'https://example.com')
-      ;(win as any).editor.view.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt }))
+      win._editor.view.dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt }))
     })
     cy.get('#editor a').should('have.length', 1)
     cy.get('#editor a').should('have.attr', 'href', 'https://example.com')
@@ -1520,7 +1539,7 @@ import { pressMod } from '../support/keyboard'
 
 describe('edit popover partial-update behavior (T7)', () => {
   beforeEach(() => {
-    cy.visit('http://127.0.0.1:5173')
+    cy.visitPlayground()
     cy.get('#editor').click()
     cy.get('#editor').type('https://example.com ')
     cy.get('#editor a').first().click()
@@ -1598,12 +1617,14 @@ bun run --filter @docs.plus/webapp build
 
 Expected: every command exits 0.
 
-- [ ] **Step 2: Update CHANGELOG**
+- [ ] **Step 2: Amend the existing `[2.0.0]` CHANGELOG entry with PR 2's items**
 
-Append to the `[Unreleased]` section in `packages/extension-hyperlink/CHANGELOG.md`:
+Same strategy as PR 1: edit `packages/extension-hyperlink/CHANGELOG.md` in place, slot the items below into the matching subsections of the existing `## [2.0.0] — 2026-04-20` entry. Do **not** add a `[Unreleased]` header.
+
+Note: the existing entry's "Breaking Changes (from 1.5.2)" section already documents the popover contract change (`createHyperlink` returns `HTMLElement | null`, default stylesheet no longer auto-injects). The M4 break below is **new** — add it as its own bullet under the existing "Breaking Changes" section, in the "Popover contract — requires code review" subsection if present, otherwise as a standalone bullet.
 
 ```markdown
-### BREAKING
+### Breaking Changes (additions to the existing list)
 
 - **M4** `setHyperlink({ href })` is now a pure mark command and no longer opens a popover as a side effect. The popover-opening behavior moves to the new commands `openCreateHyperlinkPopover(attrs?)` and `openEditHyperlinkPopover()`. The `Mod-K` keyboard shortcut is wired to whichever is appropriate based on cursor position. The webapp's four call sites that called `setHyperlink()` with no arguments are updated in this release.
 - **M4** The `setHyperlink` argument is now required (was optional).
@@ -1611,23 +1632,24 @@ Append to the `[Unreleased]` section in `packages/extension-hyperlink/CHANGELOG.
 ### Added
 
 - **M2** `toggleHyperlink({ href })` command (Tiptap-Link parity).
-- **M3** `markdownTokenName` (default `'link'`), `parseMarkdown`, `renderMarkdown` options for markdown-pipeline parity.
+- **M3** `markdownTokenName` (default `'link'`) option for markdown-pipeline parity. (`parseMarkdown` / `renderMarkdown` are deliberately not added — extend the mark in your serializer layer.)
 - **M3** Mark schema now `exitable: true` — pressing → at the end of a link exits the mark.
 
 ### Changed
 
 - **B2** Popovers (create / edit / preview) now meet WCAG 2.1 AA: every input has a label, validation uses `aria-invalid` + `aria-describedby` + `role="alert"`, icon-only buttons have `aria-label`, decorative icons have `aria-hidden`. Focus returns to the editor on every dismiss path.
-- **B3** `clickHandler` no longer owns the popover lifecycle; it delegates to `openEditHyperlinkPopover`. Popovers can no longer outlive the editor (`Hyperlink.onDestroy` calls `hideCurrentToolbar`). `floatingToolbar.setContent` cleans up old keyboard listeners before adding new ones.
+- **B3** `clickHandler` no longer owns the popover lifecycle; it delegates to `openEditHyperlinkPopover`. Popovers can no longer outlive the editor (`Hyperlink.onDestroy` calls `hideCurrentToolbar`). `floatingToolbar.setContent` and `destroy()` clean up keyboard-nav listeners so they can't accumulate or leak.
+- **S1 / §3.2** ESLint `no-restricted-imports` enforces that `src/hyperlink.ts` and `src/plugins/**/*.ts` cannot import the popover layer. The seam is structural now, not just convention.
 
 ### Internal
 
 - **T2 / T3 / T4 / T6 / T7** New Cypress specs: IME composition, multi-link selections, rich-paste with multiple links, preview Copy clipboard assertion, edit-popover partial-update paths.
-- New helper module `src/utils/a11y.ts` (`makeLabeledInput`, `labelIconButton`).
+- New helper module `src/utils/a11y.ts` (`makeLabeledInput`, `labelIconButton`) used by all three popover factories.
 ```
 
 ```bash
 git add packages/extension-hyperlink/CHANGELOG.md
-git commit -m "docs(extension-hyperlink): CHANGELOG for PR 2 (commands, a11y, lifecycle)"
+git commit -m "docs(extension-hyperlink): amend [2.0.0] CHANGELOG with PR 2 items"
 ```
 
 - [ ] **Step 3: Push and update the existing PR (or open a new one)**
@@ -1653,5 +1675,5 @@ Update the PR description to call out the breaking change loudly:
 - [ ] `clickHandler.ts` no longer imports from `helpers/floatingToolbar`. ESLint passes with the seam rule active and zero suppressions.
 - [ ] `a11y.cy.ts` axe assertions pass on idle / create / create-error / preview / edit popovers.
 - [ ] `Hyperlink.onDestroy` is wired and visited by the test suite.
-- [ ] CHANGELOG `[Unreleased]` BREAKING section calls out M4 in plain language.
+- [ ] CHANGELOG `[2.0.0]` "Breaking Changes" section adds the M4 bullet calling out the popover side-effect removal in plain language.
 - [ ] No code comment narrates _what_ — only _why_.
