@@ -5,7 +5,7 @@ description: Review staged/unstaged changes and generate grouped, production-gra
 
 # Commit Review
 
-Review all changes, group them by intent, and produce Conventional Commit messages clean enough for any company's `git log`.
+Review all changes, group them by intent, and produce Conventional Commit messages terse and exact enough for any company's `git log`. Why over what. No fluff.
 
 ## The rule that overrides everything
 
@@ -16,7 +16,7 @@ Review all changes, group them by intent, and produce Conventional Commit messag
 ```
 <type>(<scope>): <imperative summary>
 
-<body — what changed and WHY, not how>
+<body — only if "why" isn't obvious from the subject>
 
 <footer — breaking changes, issue refs>
 ```
@@ -33,6 +33,7 @@ Review all changes, group them by intent, and produce Conventional Commit messag
 | `test`     | Test additions or corrections         |
 | `build`    | Build system or dependency changes    |
 | `ci`       | CI/CD pipeline changes                |
+| `docs`     | Documentation only                    |
 | `chore`    | Maintenance that doesn't fit above    |
 | `revert`   | Reverts a previous commit             |
 
@@ -45,24 +46,56 @@ Pick the most specific shared thing the change touches. The scope should help a 
 - **Cross-cutting**: a domain noun — `deps`, `build`, `config`, `ci`, `docs`
 - **No useful scope**: omit it — write `feat: …` rather than `feat(misc): …`
 
-### Quality bar
+### Subject line — quality bar
 
-- Imperative mood: `add`, `fix`, `remove` — never `added`, `fixed`, `updated`
-- Plain language a new hire would understand without reading the diff
+- Imperative mood: `add`, `fix`, `remove` — never `added`, `fixed`, `updated`, `adding`
+- ≤ 50 characters when possible, **hard cap 72**
+- No trailing period
+- Match the project's capitalization convention after the colon (check `git log --oneline -20`)
 - Atomic — if the summary needs "and", it's two commits
-- Summary ≤ 72 characters, no trailing period; body wraps at 72
-- Body explains **why**, not how
-- Breaking changes use `!`: `feat(api)!: drop legacy /v1`
-- Internal issue refs go in the footer: `Closes #123`, `Refs PROJ-42`
-- After drafting each summary, count characters — if > 72, rewrite before proposing
+- Don't restate the filename when the scope already says it
+- After drafting, count characters — if > 72, rewrite before proposing
+
+### Body — only when needed
+
+**Skip the body entirely** when the subject is self-explanatory. Padding noise into a body is worse than no body.
+
+**Add a body only for:**
+
+- Non-obvious _why_ (the diff already shows _what_)
+- Breaking changes and migration notes
+- Security fixes
+- Data migrations
+- Reverts of prior commits
+- Linked issues or trade-offs worth recording
+
+**Body rules:**
+
+- Wrap at 72 chars
+- Bullets use `-`, not `*`
+- Reference issues at the end: `Closes #42`, `Refs PROJ-17`
+- Breaking changes use `!` in the subject **and** a `BREAKING CHANGE:` footer
 
 ### Strictly forbidden
 
+**In the message:**
+
+- `I`, `we`, `now`, `currently`, `This commit does X`, `As requested by …` — the diff says what
+- Past tense (`added`, `fixed`, `updated`) or gerunds (`adding`, `fixing`)
+- Tautology (`refactor: refactor code`, `fix(editor): fix issue`)
+- Filler: `just`, `simply`, `basically`, `actually`
+- Vague summaries: `update files`, `fix bug`, `misc`, `stuff`, `various changes`
+- Emoji, unless the project's existing `git log` uses them
+- Documentation links inside the message body
+
+**Attribution / tooling:**
+
 - Any mention of AI, agent, Cursor, Copilot, ChatGPT, Claude, or any tool — in summary, body, or footer
-- Auto-generated trailers (`Made-with: …`, `Co-authored-by: AI`, etc.) — strip them entirely
-- Vague summaries: `update files`, `fix bug`, `misc`, `stuff`
-- Past tense, tautology (`refactor: refactor code`), filler (`just`, `simply`, `basically`)
-- Documentation links inside the message
+- Auto-generated trailers (`Made-with: …`, `Generated-by: …`, `Co-authored-by: AI`, etc.) — strip them entirely
+- Use `Co-authored-by:` only for real human collaborators
+
+**Process:**
+
 - Combining unrelated changes in one commit
 - `--no-verify` to skip hooks
 
@@ -80,6 +113,7 @@ git log --oneline -10
 ```
 
 - If there is nothing to commit, stop and tell the user.
+- Use `git log --oneline -20` to detect project conventions: capitalization after colon, scope style, whether bodies are common.
 - If the diff includes anything that looks like a secret or machine-local file — `.env*`, `credentials*`, `*.pem`, `*.key`, `id_rsa*`, `*secret*`, `*token*`, or paths normally listed in `.gitignore` that slipped in — **exclude them from every group** and flag them in the report so the user can decide.
 
 ### 2. Propose
@@ -91,9 +125,9 @@ Group by intent: one logical concern per group, regardless of file count. Each g
 ```
 <type>(<scope>): <summary>
 Files: <list>
-Why: <one sentence>
+Why: <one sentence — or "obvious from subject">
 
-<full message, including body if any>
+<full message; omit body if subject is self-explanatory>
 ```
 
 **Two or more groups?** Use the full report:
@@ -105,10 +139,10 @@ Why: <one sentence>
 Files:
 - path/to/file1
 - path/to/file2
-Why: <one sentence>
+Why: <one sentence — or "obvious from subject">
 
 Message:
-<full commit message>
+<full commit message — body omitted when not needed>
 
 ---
 
@@ -133,14 +167,16 @@ Then wait. Ask the user to:
 For each approved group, in order:
 
 1. **Stage exactly that group's files** — `git add <paths>`. Never `git add -A` or `git add .` during sequential commits; that destroys the grouping.
-2. **Commit with a HEREDOC** so multi-line bodies keep their newlines:
+2. **Commit with a HEREDOC** so multi-line bodies keep their newlines. For subject-only commits, a `-m` flag is fine:
 
    ```bash
    git commit -m "$(cat <<'EOF'
    feat(auth): add passkey enrollment
 
-   Allow users to register a WebAuthn credential during onboarding,
-   replacing the optional SMS step that had a 12% failure rate.
+   Replaces the optional SMS step, which had a 12% failure rate
+   on cold-launch screens.
+
+   Closes #128
    EOF
    )"
    ```
@@ -152,36 +188,72 @@ After all commits, run `git status` and `git log --oneline -<N>` and report the 
 
 ## Examples
 
-**Good:**
+### Subject-only is enough
+
+```
+fix(parser): handle empty input
+```
+
+```
+docs(readme): correct install command
+```
+
+```
+test(auth): cover expired-token branch
+```
+
+```
+chore(deps): bump zod to 3.23.8
+```
+
+### Body earns its keep
 
 ```
 feat(editor): add inline code formatting toggle
 
-Allow users to wrap selected text in inline code blocks
-using the toolbar button or Cmd+E shortcut
+Toolbar button and Cmd+E shortcut wrap the current selection.
+Matches Notion/Slack muscle memory users were already trying.
 ```
 
 ```
 fix(tab-bar): restore active tab highlight after navigation
 
-The active indicator was lost when switching between tabs
-due to a missing state update in the route change handler
+The route-change handler was overwriting the active state
+before the highlight effect read it.
+
+Closes #412
 ```
 
 ```
 perf(build): lazy-load extension bundles on first use
 
-Defer loading of table and image bundles until the user
-activates them, cutting initial load time by ~40%
+Cuts initial bundle by ~40% on cold load. Table and image
+extensions now resolve only when their nodes appear.
 ```
 
-**Bad:**
+### Breaking change
+
+```
+feat(api)!: rename /v1/orders to /v1/checkout
+
+BREAKING CHANGE: clients on /v1/orders must migrate to
+/v1/checkout before 2026-06-01. Old route returns 410 after
+that date.
+```
+
+### Bad — do not produce
 
 ```
 update files                          # zero information
 fix: fixed the bug in the component   # past tense, vague, no scope
-docs: update per AI suggestion        # mentions AI
 chore: stuff                          # meaningless
 refactor: refactor code               # tautology
 fix(editor): fix issue                # what issue?
+docs: update per AI suggestion        # mentions a tool
+feat: now adds a new endpoint         # "now", and diff already shows it
+feat(api): I added GET /users/:id     # "I"
 ```
+
+## Boundaries
+
+This skill **proposes** and, after approval, **executes** commits. It does not push, force-push, rebase, amend prior commits, or run `git commit --no-verify`. If the user wants any of those, they ask explicitly.
