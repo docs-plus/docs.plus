@@ -83,7 +83,7 @@ function byoPreviewHyperlink(options: HyperlinkModule.PreviewHyperlinkOptions): 
   link.href = attrs.href ?? ''
   link.textContent = attrs.href ?? ''
   link.target = '_blank'
-  link.rel = 'noreferrer'
+  link.rel = 'noopener noreferrer'
 
   const remove = document.createElement('button')
   remove.type = 'button'

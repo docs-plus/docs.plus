@@ -140,6 +140,7 @@ export default function editHyperlinkPopover(options: EditHyperlinkPopoverOption
     content: form,
     placement: 'bottom',
     showArrow: true,
+    surface: 'edit',
     onShow: () => linkTextInput.focus()
   })
 

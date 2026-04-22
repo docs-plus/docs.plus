@@ -1,47 +1,31 @@
-import {
-  type CommandProps,
-  Editor,
-  InputRule,
-  Mark,
-  markPasteRule,
-  mergeAttributes
-} from '@tiptap/core'
+import { Editor, Mark, mergeAttributes } from '@tiptap/core'
 import { MarkType } from '@tiptap/pm/model'
-import { Plugin } from '@tiptap/pm/state'
-import { EditorView } from '@tiptap/pm/view'
-import { find, registerCustomProtocol } from 'linkifyjs'
+import { registerCustomProtocol } from 'linkifyjs'
 
-import { HYPERLINK_MARK_NAME, PREVENT_AUTOLINK_META } from './constants'
-import { editHyperlinkCommand } from './helpers/editHyperlink'
-import { openCreateHyperlinkPopover as openCreateHyperlinkPopoverHelper } from './helpers/openCreateHyperlinkPopover'
-import autolinkPlugin from './plugins/autolink'
-import clickHandlerPlugin from './plugins/clickHandler'
-import pasteHandlerPlugin from './plugins/pasteHandler'
-import {
-  DEFAULT_PROTOCOL,
-  type LinkifyMatchLike,
-  normalizeHref,
-  normalizeLinkifyHref
-} from './utils/normalizeHref'
-import { isSafeHref } from './utils/validateURL'
+import { buildHyperlinkCommands } from './commands'
+import { HYPERLINK_MARK_NAME } from './constants'
+import { createInteractions, createLinkContext } from './interactions'
+import { isSafeHref } from './url-decisions'
+import { DEFAULT_PROTOCOL } from './utils/normalizeHref'
+
+// Re-export keeps the v2.0.0 import paths for downstream consumers.
+export type {
+  EditHyperlinkAttributes,
+  HyperlinkPublicCommands,
+  SetHyperlinkAttributes
+} from './commands'
 
 export interface LinkProtocolOptions {
   scheme: string
   optionalSlashes?: boolean
 }
 
-/**
- * Context handed to the user-supplied `isAllowedUri` hook so callers
- * can compose against the extension's own validators instead of
- * re-implementing them. Mirrors `@tiptap/extension-link`'s signature so
- * existing policies port over without rewrites.
- */
+/** Context for the user `isAllowedUri` hook; mirrors `@tiptap/extension-link`. */
 export type IsAllowedUriContext = {
-  /** Built-in safety gate (`isSafeHref` / `DANGEROUS_SCHEME_RE`). */
+  /** Built-in safety gate (`isSafeHref`). */
   defaultValidate: (uri: string) => boolean
-  /** Custom protocols registered via the `protocols` option. */
+  /** Protocols registered via the `protocols` option. */
   protocols: Array<LinkProtocolOptions | string>
-  /** Configured `defaultProtocol` (e.g. `'https'`). */
   defaultProtocol: string
 }
 
@@ -57,18 +41,13 @@ export type HyperlinkAttributes = {
 
 export type PreviewHyperlinkOptions = {
   editor: Editor
-  view: EditorView
+  view: import('@tiptap/pm/view').EditorView
   link: HTMLAnchorElement
   nodePos: number
   attrs: HyperlinkAttributes
   linkCoords: { x: number; y: number; width: number; height: number }
   validate?: (url: string) => boolean
-  /**
-   * Composed XSS + `isAllowedUri` gate threaded down from the click
-   * handler. BYO popovers should call it before any `window.open` so a
-   * tightened policy applies to every navigation surface. Defaults to
-   * `isSafeHref` when the popover is mounted outside the plugin.
-   */
+  /** Composed XSS + `isAllowedUri` gate; BYO popovers must call this before any `window.open`. */
   isAllowedUri?: (uri: string) => boolean
 }
 
@@ -102,112 +81,6 @@ export interface HyperlinkOptions {
   exitable: boolean
 }
 
-/**
- * Argument shape for every set/toggle hyperlink command (and their
- * `setLink` / `toggleLink` aliases). Hoisted so both the `Commands`
- * declaration and the runtime command bodies share one source of
- * truth — adding a new optional attr only touches this type.
- */
-export type SetHyperlinkAttributes = {
-  href: string
-  target?: string | null
-  title?: string | null
-  image?: string | null
-} & Record<string, unknown>
-
-declare module '@tiptap/core' {
-  interface Commands<ReturnType> {
-    hyperlink: {
-      /**
-       * Pure command: write the hyperlink mark over the current
-       * selection. Returns `false` (no-op) when `href` is missing or
-       * fails the XSS / `isAllowedUri` gate. To open the create popover
-       * instead, use `openCreateHyperlinkPopover()`.
-       */
-      setHyperlink: (attributes: SetHyperlinkAttributes) => ReturnType
-      /** Remove the hyperlink mark from the current selection. */
-      unsetHyperlink: () => ReturnType
-      /** Toggle the hyperlink mark; same gates as `setHyperlink`. */
-      toggleHyperlink: (attributes: SetHyperlinkAttributes) => ReturnType
-      /**
-       * UI command: open the create-hyperlink popover anchored to the
-       * selection. No-op when no `popovers.createHyperlink` factory is
-       * configured. (Side-effecting half of the historic
-       * `setHyperlink()` no-args behaviour, split out per Tiptap canon.)
-       */
-      openCreateHyperlinkPopover: (attributes?: Partial<HyperlinkAttributes>) => ReturnType
-      editHyperlinkText: (text: string) => ReturnType
-      editHyperlinkHref: (href: string) => ReturnType
-      editHyperlink: (attributes?: {
-        newText?: string
-        newURL?: string
-        title?: string
-        image?: string
-      }) => ReturnType
-      /** Drop-in alias for `setHyperlink` — eases migration from `@tiptap/extension-link`. */
-      setLink: (attributes: SetHyperlinkAttributes) => ReturnType
-      /** Drop-in alias for `unsetHyperlink`. */
-      unsetLink: () => ReturnType
-      /** Drop-in alias for `toggleHyperlink`. */
-      toggleLink: (attributes: SetHyperlinkAttributes) => ReturnType
-    }
-  }
-}
-
-/**
- * Compose the built-in `isSafeHref` gate with the user-supplied
- * `isAllowedUri` hook. Wired at every WRITE boundary so the safety
- * floor (no dangerous schemes) is impossible to bypass.
- */
-const buildHrefGate = (options: HyperlinkOptions) => {
-  return (href: string | null | undefined): href is string => {
-    if (!isSafeHref(href)) return false
-    if (!options.isAllowedUri) return true
-    return options.isAllowedUri(href, {
-      defaultValidate: isSafeHref,
-      protocols: options.protocols,
-      defaultProtocol: options.defaultProtocol
-    })
-  }
-}
-
-/**
- * Shared body for `setHyperlink` / `setLink` / `toggleHyperlink` (set
- * branch). Normalizes href, runs the full gate, applies the mark, and
- * stamps `PREVENT_AUTOLINK_META`. Composable — uses `commands.setMark`
- * on the parent `tr` so `chain().extendMarkRange().setHyperlink(…).run()`
- * stays a single transaction (a nested `chain().run()` would throw
- * "Applying a mismatched transaction"; same fix lives in
- * `editHyperlinkCommand`).
- */
-const applySetHyperlink = (
-  markName: string,
-  options: HyperlinkOptions,
-  attributes: SetHyperlinkAttributes,
-  { commands, tr, dispatch }: CommandProps
-): boolean => {
-  const rawHref = attributes.href
-  if (!rawHref) return false
-  const normalizedHref = normalizeHref(rawHref, options.defaultProtocol)
-  if (!buildHrefGate(options)(normalizedHref)) return false
-  const ok = commands.setMark(markName, { ...attributes, href: normalizedHref })
-  if (ok && dispatch) tr.setMeta(PREVENT_AUTOLINK_META, true)
-  return ok
-}
-
-/**
- * Composable counterpart for `unsetHyperlink` / `unsetLink`. Same
- * shared-`tr` rationale as `applySetHyperlink`.
- */
-const applyUnsetHyperlink = (
-  markName: string,
-  { commands, tr, dispatch }: CommandProps
-): boolean => {
-  const ok = commands.unsetMark(markName, { extendEmptyMarkRange: true })
-  if (ok && dispatch) tr.setMeta(PREVENT_AUTOLINK_META, true)
-  return ok
-}
-
 export const Hyperlink = Mark.create<HyperlinkOptions>({
   name: HYPERLINK_MARK_NAME,
 
@@ -225,9 +98,7 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
     })
   },
 
-  // linkifyjs.reset() was removed intentionally — it clears the global
-  // protocol registry and breaks other editors on the same page.
-  // Registered protocols are additive and persist for the page lifetime.
+  // No `onDestroy` linkifyjs.reset() — it clears the global registry and breaks coexisting editors.
 
   inclusive() {
     return this.options.autolink
@@ -262,13 +133,9 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
       href: {
         default: null
       },
-      // `target` is stored on the mark for backwards compatibility with
-      // older Yjs docs that recorded `target: "_blank"`, but is
-      // INTENTIONALLY not serialized to the DOM (`rendered: false`) —
-      // the click handler decides where to open the link, and emitting
-      // `<a target="_blank">` would let the browser bypass the
-      // click-handler guard entirely (and revive the historical
-      // `target="_blank"` phishing surface). Pinned by AGENTS.md.
+      // `target` stays on the mark (Yjs back-compat) but `rendered: false` — emitting
+      // `<a target="_blank">` would let the browser bypass the click-handler guard and
+      // revive the historical `target="_blank"` phishing surface. Pinned by AGENTS.md.
       target: {
         default: this.options.HTMLAttributes.target,
         rendered: false
@@ -279,14 +146,10 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
       class: {
         default: this.options.HTMLAttributes.class
       },
-      // `title` is the standard HTML tooltip attribute — let it round-trip.
       title: {
         default: null
       },
-      // `image` is metadata used only by the preview popover (favicon /
-      // OG image). `<a>` has no standard `image` attribute, so rendering
-      // it produces invalid HTML and pollutes downstream sanitizers.
-      // Keep it on the mark for the popover, drop it from the DOM.
+      // `image` is preview-popover metadata (favicon / OG); `<a>` has no such attr, so don't emit.
       image: {
         default: null,
         rendered: false
@@ -295,12 +158,9 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
   },
 
   parseHTML() {
-    // Reject anchors whose href uses any dangerous scheme. `isSafeHref`
-    // is the single XSS gate the extension uses at every boundary
-    // (parseHTML, input rules, paste rules, paste handler, command,
-    // click, preview); centralizing the check there means a future
-    // policy change (e.g. blocking `file:`) flows everywhere from one
-    // edit. Returning `false` here tells ProseMirror to skip the mark.
+    // `isSafeHref` is the single XSS gate at every boundary (parseHTML,
+    // input/paste rules, command, click, preview). Returning `false`
+    // here tells ProseMirror to skip the mark.
     return [
       {
         tag: 'a[href]',
@@ -314,14 +174,10 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
   },
 
   renderHTML({ HTMLAttributes }) {
-    // Defense-in-depth on the READ side. `parseHTML` rejects dangerous
-    // schemes on document load and `buildHrefGate` rejects them at every
-    // write boundary, but a hostile mark could still reach renderHTML
-    // through Yjs op replay, raw `addMark` from a downstream extension,
-    // or schema migrations from older versions of this package. Blank
-    // the href on serialize so a bad mark in the doc never round-trips
-    // into a clickable `javascript:` (or any other dangerous scheme)
-    // anchor downstream — matches `@tiptap/extension-link` v3 canon.
+    // Defense-in-depth on READ — a hostile mark could reach here via
+    // Yjs replay, foreign `addMark`, or schema migration. Blank the
+    // href so a bad mark never round-trips into a clickable
+    // `javascript:` anchor downstream. (Matches @tiptap/extension-link v3.)
     const safe = isSafeHref(HTMLAttributes.href as string | null | undefined)
       ? HTMLAttributes
       : { ...HTMLAttributes, href: '' }
@@ -329,79 +185,20 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
   },
 
   addCommands() {
-    const editHyperlinkOptions = {
-      validate: this.options.validate,
+    return buildHyperlinkCommands({
       markName: this.name,
-      defaultProtocol: this.options.defaultProtocol,
-      isAllowedUri: buildHrefGate(this.options)
-    }
-
-    const setHyperlinkCommand = (attributes: SetHyperlinkAttributes) => (props: CommandProps) =>
-      applySetHyperlink(this.name, this.options, attributes, props)
-
-    const unsetHyperlinkCommand = () => (props: CommandProps) =>
-      applyUnsetHyperlink(this.name, props)
-
-    const toggleHyperlinkCommand =
-      (attributes: SetHyperlinkAttributes) => (props: CommandProps) => {
-        if (props.editor.isActive(this.name)) return applyUnsetHyperlink(this.name, props)
-        return applySetHyperlink(this.name, this.options, attributes, props)
-      }
-
-    return {
-      setHyperlink: setHyperlinkCommand,
-      unsetHyperlink: unsetHyperlinkCommand,
-      toggleHyperlink: toggleHyperlinkCommand,
-
-      // Side-effecting UI command (split out of the historic
-      // `setHyperlink()` no-args behaviour). No-op when no popover
-      // factory is wired up.
-      openCreateHyperlinkPopover:
-        (attributes) =>
-        ({ editor }) =>
-          openCreateHyperlinkPopoverHelper({
-            editor,
-            options: this.options,
-            extensionName: this.name,
-            attributes: attributes ?? {}
-          }),
-
-      // One options bag for the whole `editHyperlink*` family — keeps
-      // the markName / validate / defaultProtocol / hrefGate wiring in
-      // a single place so a future option only lands here once.
-      editHyperlink: (attributes) =>
-        editHyperlinkCommand({ ...attributes, ...editHyperlinkOptions })(),
-
-      editHyperlinkText: (newText) => editHyperlinkCommand({ newText, ...editHyperlinkOptions })(),
-
-      editHyperlinkHref: (newURL) => editHyperlinkCommand({ newURL, ...editHyperlinkOptions })(),
-
-      // `@tiptap/extension-link` migration aliases. Implemented as
-      // delegators (not as `Object.assign`'d references) so that future
-      // policy changes to the canonical commands flow through automatically.
-      setLink: setHyperlinkCommand,
-      unsetLink: unsetHyperlinkCommand,
-      toggleLink: toggleHyperlinkCommand
-    }
+      options: this.options,
+      urls: makeContext(this).urls
+    })
   },
 
   addKeyboardShortcuts() {
+    // BREAKING (v2): Mod-k routes to `openCreateHyperlinkPopover` (was overloaded `setHyperlink()`).
     const shortcuts: Record<string, () => boolean> = {
-      // BREAKING (v2): Mod-k now opens the create popover via the
-      // dedicated `openCreateHyperlinkPopover` command instead of the
-      // overloaded `setHyperlink()` no-args call. Behaviour for users
-      // is identical when a popover factory is configured; programmatic
-      // callers that relied on `setHyperlink()` opening the popover
-      // must migrate.
       'Mod-k': () => this.editor.commands.openCreateHyperlinkPopover()
     }
 
     if (this.options.exitable) {
-      // Exit the mark when the user steps off the right edge of a
-      // hyperlink so the next typed character is plain text. We don't
-      // *consume* ArrowRight (return `false`) — ProseMirror still moves
-      // the caret as usual; we just clear the mark from `storedMarks`
-      // for that single insertion. Mirrors `@tiptap/extension-link`.
       shortcuts.ArrowRight = () => exitMarkOnArrowRight(this.editor, this.type)
     }
 
@@ -409,123 +206,25 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
   },
 
   addInputRules() {
-    const isAllowed = buildHrefGate(this.options)
-    return [
-      new InputRule({
-        find: /(\[([^\]]+)\]\(([^)]+)\))$/,
-        handler: ({ state, range, match }) => {
-          const [_fullMatch, , linkText, url] = match
-          const { tr } = state
-          const start = range.from
-          const end = range.to
-
-          const trimmed = url.trim()
-          const normalizedUrl = normalizeHref(trimmed, this.options.defaultProtocol)
-          if (!isAllowed(normalizedUrl)) return
-
-          tr.replaceWith(start, end, state.schema.text(linkText))
-          tr.addMark(start, start + linkText.length, this.type.create({ href: normalizedUrl }))
-        }
-      })
-    ]
+    return createInteractions(makeContext(this)).inputRules
   },
 
   addPasteRules() {
-    const isAllowed = buildHrefGate(this.options)
-    const { defaultProtocol, shouldAutoLink, validate } = this.options
-    return [
-      markPasteRule({
-        find: (text) =>
-          find(text)
-            .filter((link) => link.isLink)
-            // Defense-in-depth: linkifyjs only emits its registered
-            // protocols (http(s), mailto, tel, plus any registered via
-            // `registerCustomProtocol`), so a `javascript:` href should
-            // never reach this point. Re-check the full gate anyway —
-            // a downstream extension might register a hostile protocol,
-            // and we want one consistent gate at every write site.
-            .filter((link) => isAllowed(normalizeLinkifyHref(link, defaultProtocol)))
-            .filter((link) => (validate ? validate(link.value) : true))
-            .filter((link) =>
-              shouldAutoLink ? shouldAutoLink(normalizeLinkifyHref(link, defaultProtocol)) : true
-            )
-            .map((link) => ({
-              text: link.value,
-              index: link.start,
-              data: link
-            })),
-        type: this.type,
-        // `match.data` is set unconditionally in the `find` callback above,
-        // so the cast is documentary — the branch itself is guaranteed live.
-        getAttributes: (match) => ({
-          href: normalizeLinkifyHref(match.data as LinkifyMatchLike, defaultProtocol)
-        })
-      })
-    ]
+    return createInteractions(makeContext(this)).pasteRules
   },
 
   addProseMirrorPlugins() {
-    const plugins: Plugin[] = []
-
-    if (this.options.autolink) {
-      plugins.push(
-        autolinkPlugin({
-          type: this.type,
-          validate: this.options.validate,
-          shouldAutoLink: this.options.shouldAutoLink,
-          isAllowedUri: buildHrefGate(this.options),
-          defaultProtocol: this.options.defaultProtocol
-        })
-      )
-    }
-
-    if (this.options.openOnClick) {
-      plugins.push(
-        clickHandlerPlugin({
-          type: this.type,
-          editor: this.editor,
-          validate: this.options.validate,
-          // Same gate the write boundaries use: dangerous schemes are
-          // blocked unconditionally, then the user-supplied policy hook
-          // runs. Readonly navigation (window.open) and middle-click
-          // both honor this — a stale URL written before a tightened
-          // `isAllowedUri` policy can still be visible in the doc but
-          // can never be navigated to.
-          isAllowedUri: buildHrefGate(this.options),
-          popover: this.options.popovers.previewHyperlink,
-          enableClickSelection: this.options.enableClickSelection
-        })
-      )
-    }
-
-    // pasteHandlerPlugin delegates to `editor.commands.setHyperlink`,
-    // which runs the buildHrefGate composition itself — no need to
-    // re-pass `isAllowedUri` here. `shouldAutoLink` IS passed because
-    // it's a per-URI autolink veto, not part of the safety floor.
-    if (this.options.linkOnPaste) {
-      plugins.push(
-        pasteHandlerPlugin({
-          editor: this.editor,
-          type: this.type,
-          validate: this.options.validate,
-          shouldAutoLink: this.options.shouldAutoLink,
-          defaultProtocol: this.options.defaultProtocol
-        })
-      )
-    }
-
-    return plugins
+    return createInteractions(makeContext(this)).plugins
   }
 })
 
-/**
- * Implements the `exitable` option. ArrowRight at the right boundary
- * of a hyperlink mark clears the mark from `storedMarks` for the
- * upcoming insertion, so the next typed character lands outside the
- * link. Returns `false` so ProseMirror still performs the default
- * cursor movement — we're piggy-backing on the keystroke, not
- * consuming it.
- */
+// One `LinkContext` allocation per extension hook (each fires once per init) — no storage, no cache.
+function makeContext(self: { editor: Editor; type: MarkType; options: HyperlinkOptions }) {
+  return createLinkContext({ editor: self.editor, type: self.type, options: self.options })
+}
+
+// `exitable` ArrowRight handler — clears the link mark from `storedMarks` so the next
+// typed char lands outside the link. Returns `false` so ProseMirror still moves the caret.
 function exitMarkOnArrowRight(editor: Editor, type: MarkType): boolean {
   const { state } = editor
   const { selection, tr } = state

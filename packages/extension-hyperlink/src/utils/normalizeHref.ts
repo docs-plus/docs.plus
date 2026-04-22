@@ -39,16 +39,10 @@ const isBareEmail = (
 export const DEFAULT_PROTOCOL = 'https' as const
 
 /**
- * Canonicalize a user-supplied href so it points somewhere absolute.
- * `<a href="google.com">` is a relative URL the browser resolves
- * against `document.baseURI` — running every user-typed href through
- * this helper at the write boundary keeps stored marks pointing where
- * the user intended.
- *
- * Order: trim → bare E.164 phone → `tel:+<digits>` → bare email →
- * `mailto:<email>` → already-absolute (returned unchanged) → otherwise
- * prepend `<defaultProtocol>://`. Custom protocols registered via
- * linkifyjs's `registerCustomProtocol` are honored as-is.
+ * Canonicalize a user-supplied href so stored marks point somewhere
+ * absolute (bare `google.com` would otherwise resolve against
+ * `document.baseURI` at render time). See README → Normalization for
+ * the full pipeline order.
  */
 export const normalizeHref = (raw: string, defaultProtocol: string = DEFAULT_PROTOCOL): string => {
   const trimmed = raw.trim()
@@ -65,9 +59,9 @@ export const normalizeHref = (raw: string, defaultProtocol: string = DEFAULT_PRO
 }
 
 /**
- * Shape we depend on from a linkifyjs match (plus autolink's
- * manually-constructed special-scheme entries, which also set `type`).
- * Loosened to avoid leaking linkifyjs types across the public boundary.
+ * Shape `findLinks` produces (linkifyjs match + our synthetic
+ * special-scheme / phone entries). Loosened so linkifyjs types don't
+ * leak across the public boundary.
  */
 export type LinkifyMatchLike = {
   type: string
@@ -75,12 +69,7 @@ export type LinkifyMatchLike = {
   href: string
 }
 
-/**
- * Canonicalize a linkifyjs match for storage. URL matches are run
- * through `normalizeHref` so bare-domain promotion uses the
- * extension's `defaultProtocol`; non-URL matches (emails, etc.)
- * already carry a meaningful `href` scheme and pass through unchanged.
- */
+/** Canonicalize a linkifyjs match for storage; non-URL matches pass through unchanged. */
 export const normalizeLinkifyHref = (
   link: LinkifyMatchLike,
   defaultProtocol: string = DEFAULT_PROTOCOL

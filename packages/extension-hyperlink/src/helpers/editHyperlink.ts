@@ -1,9 +1,9 @@
 import { getMarkRange, type RawCommands } from '@tiptap/core'
 
 import { HYPERLINK_MARK_NAME } from '../constants'
+import { createURLDecisions, type URLDecisions } from '../url-decisions'
 import { logger } from '../utils/logger'
-import { DEFAULT_PROTOCOL, normalizeHref } from '../utils/normalizeHref'
-import { isSafeHref, validateURL } from '../utils/validateURL'
+import { validateURL } from '../utils/validateURL'
 
 type EditHyperlinkAttributes = {
   newURL?: string
@@ -12,27 +12,20 @@ type EditHyperlinkAttributes = {
   image?: string
   markName?: string
   validate?: (url: string) => boolean
-  /** Bare-domain promotion target (defaults to `https`). */
-  defaultProtocol?: string
-  /** Composed XSS + `isAllowedUri` gate (defaults to plain `isSafeHref`). */
-  isAllowedUri?: (uri: string) => boolean
+  /** URL Decisions instance; defaults to a vanilla one so manual/test callers work standalone. */
+  urls?: URLDecisions
 }
 
-/**
- * Edit the hyperlink at the current selection.
- *
- * Returns a composable Tiptap command so the caller's `editor.chain()` stays
- * a single dispatch — a previous footgun dispatched a nested chain inside
- * here and produced "Applying a mismatched transaction" when composed with
- * commands like `extendMarkRange`.
- *
- * All position + mark lookups happen against `tr.doc` inside the command,
- * never a state snapshot captured before the chain started.
- *
- * `newURL` is run through `normalizeHref` before writing, so bare domains
- * (`google.com`) become `https://google.com` — matching every other
- * write-boundary (create popover, `setHyperlink`, autolink, paste).
- */
+// Edit the hyperlink at the current selection.
+//
+// Returns a composable `Command` thunk so the caller's `editor.chain()`
+// stays a single dispatch (a nested chain here historically produced
+// "Applying a mismatched transaction" when composed with extendMarkRange).
+//
+// `newURL` flows through `urls.forWrite` (normalize + gate) so the edit
+// surface stays in lock-step with `setHyperlink`. `validateURL` runs as
+// a pre-gate shape check (historical contract: rejects `https://googlecom`
+// typos before the gate sees them).
 export const editHyperlinkCommand =
   (attributes: EditHyperlinkAttributes = {}): RawCommands['editHyperlink'] =>
   () =>
@@ -44,8 +37,7 @@ export const editHyperlinkCommand =
       image,
       validate,
       markName = HYPERLINK_MARK_NAME,
-      defaultProtocol = DEFAULT_PROTOCOL,
-      isAllowedUri = isSafeHref
+      urls = createURLDecisions()
     } = attributes
 
     if (newURL && !validateURL(newURL, { customValidator: validate })) {
@@ -72,12 +64,14 @@ export const editHyperlinkCommand =
     if (!dispatch) return true
 
     const text = newText || tr.doc.textBetween(range.from, range.to)
-    const href = newURL ? normalizeHref(newURL, defaultProtocol) : currentMark.attrs.href
 
-    // Defense-in-depth: even with `validateURL` upstream, a custom
-    // `validate` override could be permissive. Re-run the composed
-    // XSS + `isAllowedUri` gate at the actual write site.
-    if (newURL && !isAllowedUri(href)) return false
+    let href: string = currentMark.attrs.href
+    if (newURL) {
+      // `validate` is re-passed for defense-in-depth against a permissive `validateURL`.
+      const [decision] = urls.forWrite({ kind: 'href', href: newURL }, { validate })
+      if (!decision) return false
+      href = decision.href
+    }
 
     const newMark = markType.create({
       ...currentMark.attrs,

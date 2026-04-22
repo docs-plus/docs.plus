@@ -18,22 +18,12 @@ type OpenCreateHyperlinkPopoverArgs = {
   attributes: Partial<HyperlinkAttributes>
 }
 
-/**
- * Open the create-hyperlink popover anchored to the current selection.
- *
- * Lives in its own helper because the side-effecting popover surface is
- * deliberately split out from the pure `setHyperlink` command (Tiptap
- * canon: commands stay pure; UI-opening is its own command). The
- * Mod-k shortcut and the public `openCreateHyperlinkPopover` command
- * both call this entry point so the popover behaves identically
- * whichever path the user takes.
- *
- * Returns `true` when the popover was successfully shown (Tiptap
- * convention for "command applied"), `false` when there is nothing to
- * open — either no `popovers.createHyperlink` factory was configured
- * or the factory itself returned `null` (host opted out, e.g. mobile
- * bottom sheet).
- */
+// Open the create-hyperlink popover anchored to the current selection.
+// Single entry point for both Mod-k and the `openCreateHyperlinkPopover`
+// command, so behaviour is identical via either path.
+//
+// Returns `true` when shown, `false` when the host opted out (no
+// `popovers.createHyperlink` factory, or factory returned `null`).
 export function openCreateHyperlinkPopover({
   editor,
   options,
@@ -90,7 +80,8 @@ export function openCreateHyperlinkPopover({
     },
     content,
     placement: 'bottom',
-    showArrow: true
+    showArrow: true,
+    surface: 'create'
   })
 
   toolbar.show()

@@ -11,7 +11,8 @@ function showPreviewToolbar(options: PreviewHyperlinkOptions): void {
     referenceElement: options.link,
     content,
     placement: 'bottom',
-    showArrow: true
+    showArrow: true,
+    surface: 'preview'
   })
   toolbar.show()
 }

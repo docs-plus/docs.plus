@@ -11,16 +11,11 @@ import {
   type VirtualElement
 } from '@floating-ui/dom'
 
+import { getDefaultController, type SurfaceKind } from '../ui-controller'
+
 export interface FloatingToolbarOptions {
   referenceElement?: HTMLElement
-  /**
-   * Live virtual-reference factory for anchors with no persistent DOM
-   * node (e.g. a ProseMirror selection). `getBoundingClientRect` MUST
-   * recompute on every call — caching breaks scroll-stickiness because
-   * `position: fixed` + a frozen rect leaves the popover behind as the
-   * anchor scrolls. Pass `contextElement` so `autoUpdate`'s scroll-
-   * ancestor walk attaches to the right scroll container.
-   */
+  /** Live virtual-reference factory; `getBoundingClientRect` MUST recompute on every call (a frozen rect breaks scroll-stickiness). */
   coordinates?: {
     getBoundingClientRect: () => { x: number; y: number; width: number; height: number }
     contextElement?: HTMLElement
@@ -33,6 +28,8 @@ export interface FloatingToolbarOptions {
   zIndex?: number
   onShow?: () => void
   onHide?: () => void
+  /** Tag for the UI Controller (`'preview' | 'edit' | 'create' | 'unknown'`); see README → UI Controller. */
+  surface?: SurfaceKind
 }
 
 export interface FloatingToolbarInstance {
@@ -53,8 +50,6 @@ const DEFAULT_Z_INDEX = 9999
 const SHIFT_PADDING = 8
 const ARROW_STATIC_OFFSET = '-5px'
 const OUTSIDE_CLICK_DEFER_MS = 50
-
-let currentToolbar: FloatingToolbarInstance | null = null
 
 function createVirtualReference(
   coords: NonNullable<FloatingToolbarOptions['coordinates']>
@@ -96,7 +91,7 @@ function setupKeyboardNav(container: HTMLElement): void {
 }
 
 export function createFloatingToolbar(options: FloatingToolbarOptions): FloatingToolbarInstance {
-  currentToolbar?.destroy()
+  const controller = getDefaultController()
 
   const {
     referenceElement,
@@ -108,7 +103,8 @@ export function createFloatingToolbar(options: FloatingToolbarOptions): Floating
     className = '',
     zIndex = DEFAULT_Z_INDEX,
     onShow,
-    onHide
+    onHide,
+    surface = 'unknown'
   } = options
 
   if (!referenceElement && !coordinates) {
@@ -187,6 +183,9 @@ export function createFloatingToolbar(options: FloatingToolbarOptions): Floating
     }
   }
 
+  // Set after `controller.register` below; `hide()` reads it to drop the controller to `idle` on self-dismiss.
+  let unregister: (() => void) | null = null
+
   const hide = (): void => {
     if (!visible) return
     visible = false
@@ -199,6 +198,10 @@ export function createFloatingToolbar(options: FloatingToolbarOptions): Floating
 
     cleanups.forEach((fn) => fn())
     cleanups.length = 0
+
+    // Drop the controller back to idle so `getState()` reflects the truth on self-dismissal.
+    unregister?.()
+    unregister = null
 
     onHide?.()
   }
@@ -248,8 +251,8 @@ export function createFloatingToolbar(options: FloatingToolbarOptions): Floating
   }
 
   const destroy = (): void => {
+    // `hide()` calls `unregister?.()`; it's a no-op on the replacement path (controller already cleared `current`).
     hide()
-    if (currentToolbar === instance) currentToolbar = null
   }
 
   const instance: FloatingToolbarInstance = {
@@ -262,11 +265,7 @@ export function createFloatingToolbar(options: FloatingToolbarOptions): Floating
     updateReference: (ref?: HTMLElement, coords?: FloatingToolbarOptions['coordinates']) => {
       if (ref) reference = ref
       else if (coords) reference = createVirtualReference(coords)
-      // `autoUpdate` was bound to the *previous* reference's scroll ancestors.
-      // If the new reference lives in a different overflow container (likely
-      // when callers swap virtual → real DOM, or move across panes), those
-      // listeners are stale and the popover stops following scroll. Tear
-      // down and re-subscribe so the listener set tracks the live reference.
+      // Re-subscribe `autoUpdate` so scroll-ancestor listeners track the new reference's overflow container.
       if (visible) {
         autoUpdateCleanup?.()
         autoUpdateCleanup = autoUpdate(reference, toolbar, updatePosition)
@@ -276,17 +275,20 @@ export function createFloatingToolbar(options: FloatingToolbarOptions): Floating
     }
   }
 
-  currentToolbar = instance
+  // Hand ownership to the controller — `register` enforces singleton replacement.
+  unregister = controller.register(instance, surface)
   return instance
 }
 
+/** Hide the currently-mounted toolbar. Used by BYO popover factories; routes through the UI Controller. */
 export const hideCurrentToolbar = (): void => {
-  currentToolbar?.hide()
+  getDefaultController().close()
 }
 
+/** Reposition the current toolbar against a new reference. Routes through the UI Controller. */
 export const updateCurrentToolbarPosition = (
   referenceElement?: HTMLElement,
   coordinates?: FloatingToolbarOptions['coordinates']
 ): void => {
-  currentToolbar?.updateReference(referenceElement, coordinates)
+  getDefaultController().reposition(referenceElement, coordinates)
 }

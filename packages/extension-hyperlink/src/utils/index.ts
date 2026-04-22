@@ -1,7 +1,8 @@
 // Public utility surface — explicit named re-exports (no `export *`) so
 // the package contract is auditable from this one file. Module-internal
-// helpers (icons, `getURLScheme`, `isBarePhone`, `normalizeLinkifyHref`)
-// stay reachable from siblings but do NOT leak through this barrel.
+// helpers (`Link` / `Title` icons, `getURLScheme`, `isBarePhone`,
+// `normalizeLinkifyHref`) stay reachable from siblings but do NOT leak
+// through this barrel.
 
 export { SAFE_WINDOW_FEATURES } from '../constants'
 export { copyToClipboard } from './copyToClipboard'

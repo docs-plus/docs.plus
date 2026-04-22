@@ -1,19 +1,13 @@
 import { Hyperlink } from './hyperlink'
 
-/**
- * Floating-toolbar surface that ships as part of the public package.
- *
- * The two types are referenced by the README's "Public types" section.
- * `hideCurrentToolbar` and `updateCurrentToolbarPosition` are documented
- * as the supported way for popover content to control the surrounding
- * toolbar; both are also pinned by the e2e suite (`custom-popover.cy.ts`).
- *
- * `createFloatingToolbar` and `DEFAULT_OFFSET` stay module-private:
- * they exist for the prebuilt popovers and the click handler inside
- * this package, and exposing them would invite consumers to create
- * orphan toolbars that bypass the singleton-replacement contract.
- */
+// Public package exports. `createFloatingToolbar` always registers via
+// `getDefaultController()`, so consumers cannot build orphan toolbars
+// that bypass the controller's singleton-replacement — exposing it lets
+// BYO popovers re-mount the preview surface from an edit-popover
+// `onBack`, mirroring the prebuilt `previewHyperlinkPopover`.
 export {
+  createFloatingToolbar,
+  DEFAULT_OFFSET,
   type FloatingToolbarInstance,
   type FloatingToolbarOptions,
   hideCurrentToolbar,
@@ -21,6 +15,8 @@ export {
 } from './helpers/floatingToolbar'
 export * from './hyperlink'
 export * from './popovers'
+// `getDefaultController()` is the entry point for `.subscribe(...)` observers.
+export { getDefaultController, type HyperlinkUIController } from './ui-controller'
 export * from './utils'
 export { registerCustomProtocol } from 'linkifyjs'
 

@@ -1,6 +1,5 @@
 import { find } from 'linkifyjs'
 
-import { DEFAULT_PROTOCOL, normalizeLinkifyHref } from './normalizeHref'
 import { isBarePhone } from './phone'
 import { validateURL } from './validateURL'
 
@@ -50,13 +49,17 @@ export const findLinks = (text: string): FoundLink[] => {
   const standardLinks = (find(text) as FoundLink[]).filter((link) => link.isLink)
   links.push(...standardLinks)
 
-  for (const match of text.matchAll(SPECIAL_SCHEME_REGEX_GLOBAL)) {
-    const url = match[0]
-    const start = match.index!
-    const end = start + url.length
-    const alreadyCovered = standardLinks.some((link) => start >= link.start && end <= link.end)
-    if (!alreadyCovered && validateURL(url)) {
-      links.push({ type: 'url', href: url, value: url, start, end, isLink: true })
+  // The special-scheme regex requires a `:`; skip the iterator entirely
+  // on common keyword-token inputs that can't contain a scheme.
+  if (text.includes(':')) {
+    for (const match of text.matchAll(SPECIAL_SCHEME_REGEX_GLOBAL)) {
+      const url = match[0]
+      const start = match.index!
+      const end = start + url.length
+      const alreadyCovered = standardLinks.some((link) => start >= link.start && end <= link.end)
+      if (!alreadyCovered && validateURL(url)) {
+        links.push({ type: 'url', href: url, value: url, start, end, isLink: true })
+      }
     }
   }
 
@@ -77,6 +80,3 @@ export const findLinks = (text: string): FoundLink[] => {
 
   return links.map(stripTrailingPunctuation)
 }
-
-// Re-exported so `findLinks` callers don't need a second import.
-export { DEFAULT_PROTOCOL, normalizeLinkifyHref }
