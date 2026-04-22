@@ -34,12 +34,9 @@ type ClickHandlerOptions = {
 }
 
 /**
- * Walk outward from `pos` along marks of `type` to recover the
- * `[from, to)` doc range covered by the hyperlink mark at the click.
- *
- * ProseMirror exposes the mark via `nodeAt(pos).marks` but no helper
- * to find the contiguous range — implement it directly so
- * `enableClickSelection` can place a real selection over the link.
+ * Walk outward from `pos` to recover the `[from, to)` range covered by
+ * the hyperlink mark at that position, so `enableClickSelection` can
+ * place a real selection over the whole link.
  */
 function getHyperlinkRangeAtPos(
   view: EditorView,

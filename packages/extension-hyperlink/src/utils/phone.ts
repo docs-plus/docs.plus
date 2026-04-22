@@ -1,29 +1,16 @@
-/**
- * E.164 phone-number detection and `tel:` URI canonicalization.
- *
- * Strict by design: only `+`-prefixed numbers with 8–15 digits are
- * recognized, so years (`2024`), ZIPs (`90210`), and bare numerics
- * (`5551234567`) never get silently turned into broken `tel:` links
- * inside prose.
- *
- * Formatting (space, dash, dot, parens) is accepted on input and
- * stripped from the canonical href per RFC 3966 (`tel:+E.164`).
- */
+// E.164 phone detection + `tel:` canonicalization. `+`-prefix and
+// 8–15 digits required so years, ZIPs, and bare numerics don't autolink.
+// Formatting (space, dash, dot, parens) is stripped per RFC 3966.
 
-// `+`, digit, 4–18 chars of digits + permitted formatting, digit. The
-// digit anchors at both ends turn the caller-must-trim contract into a
-// defense-in-depth check rather than a convention.
+// Anchored at both ends so the caller-must-trim contract is enforced.
 const PHONE_SHAPE_RE = /^\+\d[\d\s.\-()]{4,18}\d$/
 
 const NON_DIGIT_RE = /\D/g
 
 /**
  * True iff the entire trimmed input is one E.164-compatible phone
- * number. Returns the canonical `tel:+CCNSN` href on success.
- *
- * Strict full-match only — does NOT find phones embedded in larger
- * strings; that's autolink's job (which already operates on a single
- * whitespace-delimited token).
+ * number. Returns the canonical `tel:+CCNSN` href on success. Strict
+ * full-match only — autolink handles embedded phones.
  */
 export const isBarePhone = (
   trimmed: string

@@ -14,22 +14,12 @@ import {
 export interface FloatingToolbarOptions {
   referenceElement?: HTMLElement
   /**
-   * Live virtual-reference factory for anchors that have no persistent
-   * DOM node (a ProseMirror selection, a synthetic point on a canvas,
-   * etc.). `getBoundingClientRect` is invoked on every position
-   * recomputation — mount, scroll, resize — so it MUST return current
-   * viewport coordinates each call, not a value cached at popover open.
-   *
-   * Cached coords were the previous shape and broke scroll-stickiness:
-   * `position: fixed` + a frozen rect means `computePosition` keeps
-   * writing the same `top` / `left` while the underlying anchor
-   * scrolls away. Real DOM elements (`referenceElement`) don't hit
-   * this because the browser recomputes their rect on every call;
-   * virtual refs have to do it explicitly.
-   *
-   * `contextElement` anchors `autoUpdate`'s overflow-ancestor walk —
-   * pass the editor / canvas / scroll container DOM node so the
-   * scroll listeners attach to the right ancestors.
+   * Live virtual-reference factory for anchors with no persistent DOM
+   * node (e.g. a ProseMirror selection). `getBoundingClientRect` MUST
+   * recompute on every call — caching breaks scroll-stickiness because
+   * `position: fixed` + a frozen rect leaves the popover behind as the
+   * anchor scrolls. Pass `contextElement` so `autoUpdate`'s scroll-
+   * ancestor walk attaches to the right scroll container.
    */
   coordinates?: {
     getBoundingClientRect: () => { x: number; y: number; width: number; height: number }

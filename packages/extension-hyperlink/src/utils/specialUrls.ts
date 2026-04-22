@@ -6,18 +6,11 @@
  */
 
 /**
- * Discriminator returned in `SpecialUrlInfo.type`. Exported as a string
- * literal union so consumers (e.g. `webapp/.../previewShared.ts`) can
- * declare their `type → icon` table as
- * `Partial<Record<SpecialUrlType, IconRenderer>>` and get exhaustive
- * autocomplete + typo-protection at compile time. Type-only — adds zero
- * runtime bytes (the extension still ships no icon catalog).
- *
- * Naming convention: lowercase single word for single-word brands
- * (`whatsapp`, `figma`), kebab-case for multi-word (`facetime-audio`,
- * `apple-tv`, `app-store`). Mirrors the spelling of the official brand,
- * not the URL scheme abbreviation (`tg:` → `'telegram'`, `fb:` →
- * `'facebook'`).
+ * Discriminator returned in `SpecialUrlInfo.type`. String-literal union
+ * so consumers can declare a `Partial<Record<SpecialUrlType, …>>` icon
+ * map with exhaustive autocomplete. Type-only — zero runtime bytes.
+ * Naming convention (lowercase brand, kebab-case for multi-word) lives
+ * in AGENTS.md alongside the rest of the package's public-API rules.
  */
 export type SpecialUrlType =
   // Communication
@@ -201,15 +194,10 @@ const DOMAIN_MAPPINGS: Record<string, SpecialUrlInfo> = {
 }
 
 /**
- * Detect a special URL and return its classification, or `null` for
- * plain web URLs the consumer should treat with the generic favicon
- * path.
- *
- * The returned `type` and `category` tell the consumer which app the
- * URL targets; mapping those to an icon (or any other UI affordance)
- * is the consumer's job. The extension stays brand-neutral on purpose
- * so the package payload doesn't ship an icon catalog every consumer
- * has to override anyway.
+ * Classify `url` against the catalog (scheme prefix or host suffix).
+ * Returns `null` for plain web URLs — the consumer should fall back to
+ * a generic favicon. Mapping `type`/`category` to an icon is the
+ * consumer's job; the extension stays brand-neutral on purpose.
  */
 export const getSpecialUrlInfo = (url: string): SpecialUrlInfo | null => {
   const lowerUrl = url.toLowerCase()

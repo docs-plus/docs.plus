@@ -7,12 +7,7 @@ import { validateURL } from './validateURL'
 const SPECIAL_SCHEME_REGEX_GLOBAL = /\b[a-zA-Z][a-zA-Z0-9+.-]*:[^\s]+/g
 const TRAILING_PUNCTUATION_RE = /[.,;:!?)\]}]+$/
 
-/**
- * Shape every entry in the `findLinks` result satisfies. Compatible with
- * linkifyjs's own match shape (which carries `type`, `href`, `value`,
- * `start`, `end`, `isLink`) plus the manually constructed special-scheme
- * and bare-phone entries `findLinks` synthesises.
- */
+/** Shape every `findLinks` entry satisfies. Mirrors linkifyjs match shape plus our synthetic special-scheme / bare-phone entries. */
 export type FoundLink = {
   type: string
   href: string
@@ -24,10 +19,8 @@ export type FoundLink = {
 
 /**
  * Trim trailing punctuation from the match range so "Visit google.com."
- * autolinks `google.com`, not `google.com.`. `href` and `value` only
- * diverge for linkifyjs email / custom-scheme matches (`mailto:…` vs
- * raw email text) — there the scheme prefix means `href` won't share
- * the trailing punctuation, so we leave it alone.
+ * autolinks `google.com`, not `google.com.`. Only trims `href` when it
+ * shares the trailing chars (i.e. plain URL matches, not `mailto:` etc.).
  */
 const stripTrailingPunctuation = <T extends { value: string; href: string; end: number }>(
   link: T
@@ -44,21 +37,12 @@ const stripTrailingPunctuation = <T extends { value: string; href: string; end: 
 }
 
 /**
- * Find every link inside a single token of text.
- *
- * Three sources are merged into one stable result list:
- *   1. linkifyjs's own matches (`http(s)://`, `mailto:`, `tel:`, …).
- *   2. Special-scheme matches (`whatsapp://`, `vscode:`, …) — linkifyjs
- *      doesn't ship matchers for app deep-links, so we scan with a
- *      regex and gate them through `validateURL` before promoting them
- *      to "URL" matches. Tagged `type: 'url'` so `normalizeLinkifyHref`
- *      passes them through unchanged (they already carry a scheme).
- *   3. Bare E.164 phones — linkifyjs has no phone matcher. Tagged
- *      `type: 'phone'` so `normalizeLinkifyHref` returns the canonical
- *      `tel:+CCNSN` href verbatim instead of re-running `normalizeHref`.
- *
- * `defaultProtocol` is consumed by callers via `normalizeLinkifyHref`
- * for bare-domain promotion; `findLinks` itself only identifies.
+ * Find every link inside `text`. Merges three sources: linkifyjs
+ * matches, special-scheme matches (gated through `validateURL` because
+ * linkifyjs has no app-deep-link matchers), and bare E.164 phones.
+ * The synthesized entries' `type` (`'url'` for special schemes,
+ * `'phone'` for E.164) is load-bearing — `normalizeLinkifyHref` keys
+ * off it to decide whether to re-canonicalize or pass through.
  */
 export const findLinks = (text: string): FoundLink[] => {
   const links: FoundLink[] = []
@@ -94,9 +78,5 @@ export const findLinks = (text: string): FoundLink[] => {
   return links.map(stripTrailingPunctuation)
 }
 
-/**
- * Re-export so callers that already import `findLinks` can keep the
- * `defaultProtocol` accessible for downstream `normalizeLinkifyHref`
- * calls without a separate import.
- */
+// Re-exported so `findLinks` callers don't need a second import.
 export { DEFAULT_PROTOCOL, normalizeLinkifyHref }

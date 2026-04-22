@@ -37,11 +37,11 @@ export interface LinkProtocolOptions {
  * existing policies port over without rewrites.
  */
 export type IsAllowedUriContext = {
-  /** The built-in safety gate (`isSafeHref`). Returns `false` for any scheme matched by `DANGEROUS_SCHEME_RE` (`javascript:`, `data:`, `vbscript:`, `file:`, `blob:`). */
+  /** Built-in safety gate (`isSafeHref` / `DANGEROUS_SCHEME_RE`). */
   defaultValidate: (uri: string) => boolean
   /** Custom protocols registered via the `protocols` option. */
   protocols: Array<LinkProtocolOptions | string>
-  /** The configured `defaultProtocol` (e.g. `'https'`). */
+  /** Configured `defaultProtocol` (e.g. `'https'`). */
   defaultProtocol: string
 }
 
@@ -64,12 +64,10 @@ export type PreviewHyperlinkOptions = {
   linkCoords: { x: number; y: number; width: number; height: number }
   validate?: (url: string) => boolean
   /**
-   * Composed XSS + `isAllowedUri` gate (defaults to plain `isSafeHref`
-   * if the popover is invoked outside the click-handler plugin). The
-   * prebuilt preview popover's "Open" button calls this before
-   * `window.open`, so a tightened `isAllowedUri` policy applies to
-   * every navigation surface — not just the click handler. BYO factories
-   * should call it for the same reason.
+   * Composed XSS + `isAllowedUri` gate threaded down from the click
+   * handler. BYO popovers should call it before any `window.open` so a
+   * tightened policy applies to every navigation surface. Defaults to
+   * `isSafeHref` when the popover is mounted outside the plugin.
    */
   isAllowedUri?: (uri: string) => boolean
 }
@@ -122,27 +120,20 @@ declare module '@tiptap/core' {
     hyperlink: {
       /**
        * Pure command: write the hyperlink mark over the current
-       * selection. Returns `false` (no-op) if no `href` is supplied,
-       * if the href fails the XSS gate, or if it fails the user's
-       * `isAllowedUri`. To open the create popover instead, use
-       * `openCreateHyperlinkPopover()`.
+       * selection. Returns `false` (no-op) when `href` is missing or
+       * fails the XSS / `isAllowedUri` gate. To open the create popover
+       * instead, use `openCreateHyperlinkPopover()`.
        */
       setHyperlink: (attributes: SetHyperlinkAttributes) => ReturnType
       /** Remove the hyperlink mark from the current selection. */
       unsetHyperlink: () => ReturnType
-      /**
-       * Toggle the hyperlink mark over the current selection. When the
-       * selection already carries the mark, removes it; otherwise sets
-       * it with the supplied attributes. Same XSS / `isAllowedUri`
-       * gates as `setHyperlink`.
-       */
+      /** Toggle the hyperlink mark; same gates as `setHyperlink`. */
       toggleHyperlink: (attributes: SetHyperlinkAttributes) => ReturnType
       /**
        * UI command: open the create-hyperlink popover anchored to the
-       * current selection. No-op if `popovers.createHyperlink` is not
-       * configured. This is the side-effecting half of the historic
-       * `setHyperlink()` (no-args) behaviour, split out per Tiptap
-       * canon (commands stay pure; UI is its own command).
+       * selection. No-op when no `popovers.createHyperlink` factory is
+       * configured. (Side-effecting half of the historic
+       * `setHyperlink()` no-args behaviour, split out per Tiptap canon.)
        */
       openCreateHyperlinkPopover: (attributes?: Partial<HyperlinkAttributes>) => ReturnType
       editHyperlinkText: (text: string) => ReturnType
@@ -165,10 +156,8 @@ declare module '@tiptap/core' {
 
 /**
  * Compose the built-in `isSafeHref` gate with the user-supplied
- * `isAllowedUri` hook. Used at every WRITE boundary inside the
- * extension. Centralizing the composition here means the safety floor
- * (no `javascript:`/`data:`/`vbscript:`) is impossible to bypass — even
- * a permissive `isAllowedUri` runs AFTER `isSafeHref`.
+ * `isAllowedUri` hook. Wired at every WRITE boundary so the safety
+ * floor (no dangerous schemes) is impossible to bypass.
  */
 const buildHrefGate = (options: HyperlinkOptions) => {
   return (href: string | null | undefined): href is string => {
@@ -184,18 +173,12 @@ const buildHrefGate = (options: HyperlinkOptions) => {
 
 /**
  * Shared body for `setHyperlink` / `setLink` / `toggleHyperlink` (set
- * branch). Normalizes the href against `defaultProtocol`, runs the
- * full XSS + `isAllowedUri` gate, applies the mark, and stamps
- * `PREVENT_AUTOLINK_META` so the autolink plugin doesn't immediately
- * undo the explicit edit. Returns `false` (Tiptap "no-op") on any
- * gate failure so command chains short-circuit cleanly.
- *
- * Composable: operates on the parent `tr` via `commands.setMark` (which
- * shares `tr` across the chain), so `editor.chain().extendMarkRange().setHyperlink({...}).run()`
- * dispatches a single transaction. An earlier draft used `chain().run()`
- * inside this body and produced "Applying a mismatched transaction"
- * when composed with `extendMarkRange` — same footgun fixed for
- * `editHyperlinkCommand` (see AGENTS.md).
+ * branch). Normalizes href, runs the full gate, applies the mark, and
+ * stamps `PREVENT_AUTOLINK_META`. Composable — uses `commands.setMark`
+ * on the parent `tr` so `chain().extendMarkRange().setHyperlink(…).run()`
+ * stays a single transaction (a nested `chain().run()` would throw
+ * "Applying a mismatched transaction"; same fix lives in
+ * `editHyperlinkCommand`).
  */
 const applySetHyperlink = (
   markName: string,

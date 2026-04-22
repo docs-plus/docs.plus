@@ -5,25 +5,16 @@ import { isBarePhone } from './phone'
 import { getSpecialUrlInfo } from './specialUrls'
 
 /**
- * Schemes that must never be used as link hrefs.
- *
- * - `javascript:` / `vbscript:` — direct script execution on click.
- * - `data:` — can render arbitrary HTML in the top frame.
- * - `file:` — exposes local filesystem; usually inert in browsers but
- *   blocked here because the user almost never means it and we don't
- *   want collab docs to surface platform-dependent surprises.
- * - `blob:` — points at in-page memory; legitimate uses (download
- *   anchors) build the URL at click time, not at storage time, so a
- *   stored `blob:` href in shared content is always a leak vector.
+ * Schemes blocked at every write boundary: `javascript:` / `vbscript:`
+ * (script execution), `data:` (arbitrary HTML), `file:` (local FS),
+ * `blob:` (in-page memory; never legitimate in stored content).
  */
 export const DANGEROUS_SCHEME_RE = /^\s*(javascript|data|vbscript|file|blob):/i
 
 /**
- * The single XSS gate the extension uses at every write boundary
- * (parseHTML, input/paste rules, paste handler, commands, click →
- * window.open, preview "Open"). Centralizing the check means policy
- * changes flow from one edit. Returns `false` for nullish/empty hrefs
- * and any scheme matched by {@link DANGEROUS_SCHEME_RE}.
+ * Single XSS gate used at every read/write boundary. Returns `false`
+ * for nullish/empty hrefs and any scheme matched by
+ * {@link DANGEROUS_SCHEME_RE}. See README → Security.
  */
 export const isSafeHref = (href: string | null | undefined): href is string => {
   if (typeof href !== 'string' || href.length === 0) return false
@@ -84,36 +75,11 @@ const hasPlausibleHost = (url: string): boolean => {
 }
 
 /**
- * Validates URLs including both standard web URLs and special app/protocol schemes
- *
- * Supports:
- * - Standard web URLs (http, https, ftp)
- * - Email addresses (mailto:)
- * - Phone numbers (tel:, sms:)
- * - App deep links (whatsapp:, discord:, etc.)
- * - Apple app schemes (maps:, music:, etc.)
- * - Development tools (github:, vscode:, etc.)
- * - Domain-based detection (wa.me, t.me, etc.)
- *
- * For http(s)/ftp(s) URLs, the host must also look real — a TLD dot,
- * `localhost`, or an IP literal. This rejects scheme-prefixed typos like
- * `https://googlecom` that linkifyjs alone would accept.
- *
- * @param url - The URL string to validate
- * @param options - Optional configuration
- * @param options.customValidator - Custom validation function to apply additional checks
- * @returns true if the URL is valid, false otherwise
- *
- * @example
- * ```typescript
- * validateURL('https://example.com') // true
- * validateURL('mailto:user@example.com') // true
- * validateURL('tel:+1234567890') // true
- * validateURL('whatsapp://send?text=hello') // true
- * validateURL('wa.me/1234567890') // true
- * validateURL('https://googlecom') // false (no TLD, no localhost, no IP)
- * validateURL('invalid-url') // false
- * ```
+ * Shape-validate a URL. Accepts web schemes (with a plausible host —
+ * TLD dot, `localhost`, IP literal), special app/protocol schemes from
+ * the `getSpecialUrlInfo` catalog, and bare E.164 phone numbers.
+ * Rejects schemes matched by {@link DANGEROUS_SCHEME_RE}. See README →
+ * Validation for the full policy.
  */
 export const validateURL = (url: string, options?: ValidateURLOptions): boolean => {
   const trimmed = url.trim()
@@ -160,14 +126,7 @@ export const validateURL = (url: string, options?: ValidateURLOptions): boolean 
   }
 }
 
-/**
- * Lowercased scheme component of `url`, or `null` if it has no `:`.
- * Internal helper for the host-shape gate in `validateURL`; exported
- * so the unit tests can pin the parsing rules independently of the
- * full `validateURL` flow. Acronym casing follows the package-wide
- * SCREAMING-acronym policy (`URL`, `HTML`, `XSS` — matches Tiptap canon
- * `setLink({ href })` and our public `validateURL` / `DANGEROUS_SCHEME_RE`).
- */
+/** Lowercased scheme component of `url`, or `null` if it has no `:`. Module-internal; exported for unit tests only. */
 export const getURLScheme = (url: string): string | null => {
   if (!url.trim()) return null
 
