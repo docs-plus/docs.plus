@@ -72,9 +72,9 @@ The `styles.css` import and `popovers` options are optional — see [Popovers](#
 | `HTMLAttributes`       | `Partial<HyperlinkAttributes>`            | `{ rel: 'noopener noreferrer nofollow' }` | Attributes applied to rendered `<a>` tags. Set a key to `null` to remove it. `target` and `image` are stored on the mark but **never** rendered to the DOM (the click handler decides where to open the link, and `<a image>` isn't valid HTML). |
 | `validate`             | `(url: string) => boolean`                | —                                         | Reject auto-linked URLs when this returns `false`.                                                                                                                                                                                               |
 | `popovers`             | `{ previewHyperlink?, createHyperlink? }` | —                                         | Factory functions that return `HTMLElement`. See [Popovers](#popovers).                                                                                                                                                                          |
-| `defaultProtocol`      | `string`                                  | `'https'`                                 | Scheme used by `normalizeHref` when promoting bare domains (`example.com` → `${defaultProtocol}://example.com`).                                                                                                                                 |
+| `defaultProtocol`      | `string`                                  | `'https'`                                 | Scheme used when promoting bare domains (`example.com` → `${defaultProtocol}://example.com`). See [URL handling](#url-handling).                                                                                                                 |
 | `isAllowedUri`         | `(uri, ctx) => boolean`                   | —                                         | Optional URI policy hook. Runs AFTER the built-in `isSafeHref` gate (so dangerous schemes are always blocked) and BEFORE the mark is written. `ctx` mirrors `extension-link`.                                                                    |
-| `shouldAutoLink`       | `(uri) => boolean`                        | —                                         | Optional per-link autolink veto. Called for every candidate the autolink plugin and paste rules detect; return `false` to skip autolinking that specific URI.                                                                                    |
+| `shouldAutoLink`       | `(uri) => boolean`                        | —                                         | Optional per-URI autolink veto. Called by the autolink plugin, the paste handler (smart-paste over a non-empty selection), AND the markdown paste rule. Return `false` to skip autolinking that specific URI.                                    |
 | `enableClickSelection` | `boolean`                                 | `false`                                   | When `true`, clicking inside a link in editable mode selects the entire mark range. Mirrors `@tiptap/extension-link`.                                                                                                                            |
 | `exitable`             | `boolean`                                 | `false`                                   | When `true`, ArrowRight at the end of a hyperlink mark exits the mark — the next typed character is plain text.                                                                                                                                  |
 
@@ -89,7 +89,7 @@ Hyperlink.configure({
   linkOnPaste: true,
   defaultProtocol: 'https',
   protocols: ['ftp', { scheme: 'tel', optionalSlashes: true }],
-  HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' },
+  HTMLAttributes: { rel: 'noopener noreferrer nofollow' }, // `target` and `image` are stored on the mark but not rendered to the DOM
   validate: (href) => /^https?:\/\//.test(href),
   isAllowedUri: (uri, ctx) => ctx.defaultValidate(uri) && !uri.includes('blocked.example'),
   shouldAutoLink: (uri) => !uri.startsWith('@'),
@@ -138,7 +138,55 @@ The extension is headless — you decide what the UI looks like. Three paths, fr
 
 1. **Use the prebuilt popovers** (shown in [Usage](#usage)) and import `styles.css`.
 2. **Restyle the prebuilt popovers** by overriding `--hl-*` custom properties (see [Styling](#styling)).
-3. **Bring your own popover** — each popover is a factory that returns an `HTMLElement`. The extension handles positioning, outside-click dismissal, keyboard navigation, and cleanup.
+3. **Bring your own popover** — each popover is a factory that returns an `HTMLElement` (or `null` to opt out). The extension handles positioning, outside-click dismissal, keyboard navigation, and cleanup. See [option shapes](#popover-factory-option-shapes) and the [BYO examples](#bring-your-own-popover) below.
+
+For a fully custom toolbar that bypasses the click handler entirely (e.g. a quick-toggle inline UI), drop down to the [Floating-toolbar primitive](#floating-toolbar-primitive).
+
+### Popover-factory option shapes
+
+Every BYO factory receives one `options` argument. The shape depends on which slot it fills.
+
+**`PreviewHyperlinkOptions`** — passed to `popovers.previewHyperlink` on every link click.
+
+| Field           | Type                       | Description                                                                                                                                               |
+| --------------- | -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `editor`        | `Editor`                   | The Tiptap editor instance.                                                                                                                               |
+| `view`          | `EditorView`               | The ProseMirror view (escape hatch for advanced cases — most factories don't need it).                                                                    |
+| `link`          | `HTMLAnchorElement`        | The clicked `<a>` node. Use it as the toolbar's `referenceElement` so the popover follows the link on scroll.                                             |
+| `nodePos`       | `number`                   | Document position of the link mark; pair with `editor.state.doc.nodeAt(nodePos)` to read the mark.                                                        |
+| `attrs`         | `HyperlinkAttributes`      | The mark's stored attributes. Prefer `attrs.href` over `link.href` (the DOM property resolves against `document.baseURI` and would leak the host origin). |
+| `linkCoords`    | `{ x, y, width, height }`  | Snapshot of the link's `getBoundingClientRect()` at click time.                                                                                           |
+| `validate?`     | `(url: string) => boolean` | The configured `validate` option, forwarded.                                                                                                              |
+| `isAllowedUri?` | `(uri: string) => boolean` | Composed XSS + `isAllowedUri` policy gate. **BYO popovers must call this before any `window.open`.**                                                      |
+
+Return `null` to opt out for this click (e.g. open a mobile bottom sheet); the extension hides the floating toolbar.
+
+**`CreateHyperlinkOptions`** — passed to `popovers.createHyperlink` when `Mod-k` (or `editor.commands.openCreateHyperlinkPopover()`) fires.
+
+| Field           | Type                           | Description                                                                                               |
+| --------------- | ------------------------------ | --------------------------------------------------------------------------------------------------------- |
+| `editor`        | `Editor`                       | The Tiptap editor instance.                                                                               |
+| `extensionName` | `string`                       | The mark name (`'hyperlink'` by default). Pass it to commands when you've renamed the mark.               |
+| `attributes`    | `Partial<HyperlinkAttributes>` | Pre-fill values forwarded from `openCreateHyperlinkPopover(attributes?)`. Empty when invoked via `Mod-k`. |
+| `validate?`     | `(url: string) => boolean`     | The configured `validate` option, forwarded.                                                              |
+
+Return `null` if the popover can't open (e.g. DOM construction fails); the command then returns `false`.
+
+**`EditHyperlinkPopoverOptions`** — passed to the standalone [`editHyperlinkPopover`](#wiring-the-edit-popovers-back-button) factory (typically called from your preview popover's "Edit" button).
+
+| Field       | Type                       | Description                                                                                                                            |
+| ----------- | -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `editor`    | `Editor`                   | The Tiptap editor instance.                                                                                                            |
+| `link`      | `HTMLAnchorElement`        | The link being edited — anchors the toolbar.                                                                                           |
+| `validate?` | `(url: string) => boolean` | The configured `validate` option, forwarded — the edit form rejects the same URLs as `Mod-k`.                                          |
+| `onBack?`   | `() => void`               | Invoked when the user taps **Back**. Without it, Back is a no-op. See [wiring the Back button](#wiring-the-edit-popovers-back-button). |
+| `markName?` | `string`                   | Mark name to extend the range over. Defaults to `'hyperlink'`; override when you've renamed the mark.                                  |
+
+> `EditHyperlinkModalOptions` is a `@deprecated` alias scheduled for removal in 3.0. New code uses `EditHyperlinkPopoverOptions`.
+
+### Bring your own popover
+
+Two minimal factories matching the option shapes above. Both are runnable as written.
 
 <details>
 <summary><b>Custom <code>previewHyperlink</code></b></summary>
@@ -158,7 +206,7 @@ function previewHyperlink(options: PreviewHyperlinkOptions): HTMLElement {
   link.href = attrs.href
   link.textContent = attrs.href
   link.target = '_blank'
-  link.rel = 'noreferrer'
+  link.rel = 'noopener noreferrer'
 
   const remove = document.createElement('button')
   remove.textContent = 'Remove'
@@ -221,11 +269,141 @@ Hyperlink.configure({ popovers: { createHyperlink } })
 
 </details>
 
-Popover content can control the floating toolbar via `hideCurrentToolbar()` and `updateCurrentToolbarPosition(ref)`, both exported from the package.
+### Wiring the edit popover's `Back` button
+
+Tapping **Back** in `editHyperlinkPopover` invokes `onBack` — and nothing else. Without it, the button is a silent no-op. BYO preview popovers must pass `onBack` and re-mount themselves on the `'preview'` surface; the prebuilt `previewHyperlinkPopover` does the same.
+
+```ts
+import {
+  createFloatingToolbar,
+  editHyperlinkPopover,
+  type PreviewHyperlinkOptions
+} from '@docs.plus/extension-hyperlink'
+
+function previewHyperlink(options: PreviewHyperlinkOptions): HTMLElement {
+  const { editor, link, validate } = options
+  const root = document.createElement('div')
+  const editButton = document.createElement('button')
+  editButton.textContent = 'Edit'
+
+  editButton.addEventListener('click', () => {
+    editHyperlinkPopover({
+      editor,
+      link,
+      validate,
+      onBack: () => showPreview(options)
+    })
+  })
+
+  root.append(editButton /* + your other buttons */)
+  return root
+}
+
+function showPreview(options: PreviewHyperlinkOptions): void {
+  createFloatingToolbar({
+    referenceElement: options.link,
+    content: previewHyperlink(options),
+    placement: 'bottom',
+    showArrow: true,
+    surface: 'preview'
+  }).show()
+}
+```
+
+`createFloatingToolbar` registers through [`getDefaultController()`](#ui-controller), so re-mounting the preview tears down the edit popover automatically and inherits outside-click dismissal.
+
+> Mobile-only popovers that return `null` from the factory (to open a bottom sheet instead) handle Back through their own UI and don't need this wiring.
+
+### Floating-toolbar primitive
+
+`createFloatingToolbar(options)` mounts every popover the extension shows. It handles Floating-UI placement, scroll-stickiness, outside-click dismissal, keyboard navigation, and registration with the [UI controller](#ui-controller). Reach for it directly when you want a toolbar without the click handler — e.g. a quick-toggle inline UI driven by your own selection logic.
+
+`FloatingToolbarOptions`:
+
+| Field               | Type                                         | Default                | Description                                                                                                                                 |
+| ------------------- | -------------------------------------------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| `referenceElement?` | `HTMLElement`                                | —                      | Anchor element. **One of `referenceElement` or `coordinates` is required.**                                                                 |
+| `coordinates?`      | `{ getBoundingClientRect, contextElement? }` | —                      | Virtual reference factory. `getBoundingClientRect` MUST recompute on every call (a frozen rect breaks scroll-stickiness).                   |
+| `content`           | `HTMLElement`                                | —                      | Popover content node.                                                                                                                       |
+| `placement?`        | `Placement`                                  | `'bottom-start'`       | Floating-UI placement. Auto-flips to fit the viewport.                                                                                      |
+| `offset?`           | `number`                                     | `DEFAULT_OFFSET` (`8`) | Distance in px between the reference and the toolbar.                                                                                       |
+| `showArrow?`        | `boolean`                                    | `false`                | Render an arrow pointing at the reference.                                                                                                  |
+| `className?`        | `string`                                     | `''`                   | Extra class on the toolbar root (in addition to `.floating-toolbar`).                                                                       |
+| `zIndex?`           | `number`                                     | `9999`                 | Stacking context for the toolbar.                                                                                                           |
+| `onShow?`           | `() => void`                                 | —                      | Fires after the toolbar's first paint and `.visible` class is applied.                                                                      |
+| `onHide?`           | `() => void`                                 | —                      | Fires when the toolbar is dismissed (outside click, programmatic `hide()`, or controller replacement).                                      |
+| `surface?`          | `SurfaceKind`                                | `'unknown'`            | Tag observed by the [UI controller](#ui-controller). One of `'preview' \| 'edit' \| 'create' \| 'unknown'`; match it to the popover's role. |
+
+Returns a `FloatingToolbarInstance`:
+
+| Member                           | Description                                                   |
+| -------------------------------- | ------------------------------------------------------------- |
+| `element`                        | The toolbar root (`.floating-toolbar` div).                   |
+| `show()`                         | Mount and reveal. Idempotent.                                 |
+| `hide()`                         | Dismiss without destroying. Re-callable via `show()`.         |
+| `destroy()`                      | Tear down for good — removes from DOM and stops `autoUpdate`. |
+| `isVisible()`                    | `true` between `show()` and `hide()`/`destroy()`.             |
+| `setContent(el)`                 | Swap the content node in place without re-positioning.        |
+| `updateReference(ref?, coords?)` | Re-anchor to a different element or virtual reference.        |
+
+```ts
+import { createFloatingToolbar } from '@docs.plus/extension-hyperlink'
+
+const toolbar = createFloatingToolbar({
+  referenceElement: someButton,
+  content: myMenu,
+  placement: 'top',
+  showArrow: true,
+  surface: 'unknown'
+})
+toolbar.show()
+// later: toolbar.destroy()
+```
+
+Three companion exports:
+
+| Export                               | What it does                                                                                                |
+| ------------------------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `hideCurrentToolbar()`               | Dismiss the active toolbar from inside its own content (e.g. after a form submits). No instance ref needed. |
+| `updateCurrentToolbarPosition(ref?)` | Re-anchor the active toolbar after the link mark moves (external edit, doc rewrite).                        |
+| `DEFAULT_OFFSET`                     | The default offset (`8` px). Import this rather than hardcoding `8`.                                        |
+
+### UI controller
+
+`getDefaultController()` returns the singleton that owns the floating-popover lifecycle. Subscribe to surface-state changes from custom outer toolbars, devtools panels, or e2e harnesses — no DOM spelunking required.
+
+`ControllerState`:
+
+```ts
+type SurfaceKind = 'preview' | 'edit' | 'create' | 'unknown'
+type ControllerState = { kind: 'idle' } | { kind: 'mounted'; surface: SurfaceKind }
+```
+
+`HyperlinkUIController`:
+
+| Member                         | Description                                                                                                        |
+| ------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `subscribe(listener)`          | Register a state-change listener. Returns an unsubscribe function. Fires once with the current state on subscribe. |
+| `getState()`                   | One-shot read of `ControllerState`.                                                                                |
+| `close()`                      | Dismiss the active surface (no-op when idle).                                                                      |
+| `reposition(ref?, coords?)`    | Re-anchor the active surface — same semantics as `updateCurrentToolbarPosition`.                                   |
+| `register(instance, surface?)` | Internal-style hook used by `createFloatingToolbar`; consumers rarely need it directly.                            |
+
+```ts
+import { getDefaultController } from '@docs.plus/extension-hyperlink'
+
+const unsubscribe = getDefaultController().subscribe((state) => {
+  console.log('[hyperlink-ui]', state)
+  // { kind: 'idle' } | { kind: 'mounted', surface: 'preview' | 'edit' | 'create' | 'unknown' }
+})
+
+// later:
+unsubscribe()
+```
 
 ## Styling
 
-The prebuilt popovers ship with a small, framework-agnostic stylesheet. Import it once:
+The prebuilt popovers ship with a framework-agnostic stylesheet. Import it once:
 
 ```ts
 import '@docs.plus/extension-hyperlink/styles.css'
@@ -292,7 +470,7 @@ html[data-theme='dark'] {
 
 ### Class names
 
-Stable class names for consumers who want to write their own rules:
+Stable class names you can target:
 
 | Class                        | Element                                              |
 | ---------------------------- | ---------------------------------------------------- |
@@ -317,24 +495,46 @@ Every write path canonicalizes hrefs before storing them:
 
 The create popover, markdown input rule, autolink, and paste all produce the same `href` for the same input.
 
-Validation also rejects scheme-prefixed typos with no real host. `https://googlecom` fails; `http://localhost`, `https://127.0.0.1`, and any registered custom scheme pass.
+Validation rejects scheme-prefixed typos with no real host. `https://googlecom` fails; `http://localhost`, `https://127.0.0.1`, and any registered custom scheme pass.
 
-For custom popovers, `normalizeHref(raw, defaultProtocol?)` is exported — pass the user's input string and it returns the canonical href the editor would have stored. (linkifyjs match objects are normalized internally; the `normalizeLinkifyHref` helper stays module-private.)
+`normalizeHref(raw, defaultProtocol?)` returns the canonical href the editor would store. Use it in custom popovers to mirror the canonicalization.
+
+### Scheme classification
+
+`getSpecialUrlInfo(href)` classifies a URL against the 50+ scheme catalog and returns `{ type, title, category } | null`. The extension ships **no** icon catalog — `type` is a string-literal `SpecialUrlType` you map to your own renderer:
+
+```ts
+import { getSpecialUrlInfo, type SpecialUrlType } from '@docs.plus/extension-hyperlink'
+import * as Icons from './icons'
+
+const TYPE_TO_ICON: Partial<Record<SpecialUrlType, () => string>> = {
+  email: Icons.Mail,
+  phone: Icons.Phone,
+  whatsapp: Icons.Chat,
+  spotify: Icons.Music
+  // …one entry per `type` you want a fallback icon for
+}
+
+const info = getSpecialUrlInfo(href)
+if (info) renderIcon(TYPE_TO_ICON[info.type])
+```
+
+`Partial<Record<SpecialUrlType, …>>` gives autocomplete and typo-protection against the catalog without forcing exhaustiveness. Domain-only types (`meet`, web `github`, …) can be omitted — the favicon path always wins for plain `https://` URLs.
 
 ## Security
 
-Dangerous schemes (`javascript:`, `data:`, `vbscript:`, `file:`, `blob:`) are blocked everywhere a link enters or leaves the editor:
+Dangerous schemes (`javascript:`, `data:`, `vbscript:`, `file:`, `blob:`) are blocked at every entry point:
 
-- `parseHTML` strips matching `<a>` tags on document load and paste.
-- Every write boundary (input rule, paste rule, paste handler, `setHyperlink` / `toggleHyperlink` / `editHyperlink`, autolink) routes through the shared `isSafeHref` gate composed with the user's `isAllowedUri` policy.
-- `renderHTML` re-checks `isSafeHref` on serialize — a hostile mark that ever lands in the doc (legacy migration, raw `addMark`, Yjs replay) is emitted with an empty `href` instead of round-tripping the dangerous URL.
-- Click handlers (primary, middle, touch) and the preview "Open" button short-circuit `window.open(…)` for unsafe hrefs and pass `'noopener,noreferrer'` features so opened tabs cannot read `window.opener` or leak Referer.
+- **Parse** — `parseHTML` strips matching `<a>` tags on document load and paste.
+- **Write** — input rule, paste rule, paste handler, autolink, and `setHyperlink` / `toggleHyperlink` / `editHyperlink` all route through the shared `isSafeHref` gate composed with the user's `isAllowedUri` policy.
+- **Serialize** — `renderHTML` re-checks `isSafeHref` and emits an empty `href` if a hostile mark ever lands in the doc (legacy migration, raw `addMark`, Yjs replay).
+- **Navigate** — primary click, middle-click (`auxclick`), touch, and the preview "Open" button short-circuit `window.open(…)` for unsafe hrefs and pass `'noopener,noreferrer'` so opened tabs cannot read `window.opener` or leak Referer.
 
-On the read side, both click handlers prefer the stored mark attribute over the DOM `link.href` property — so a relative href injected via `setContent` won't resolve against the host page's origin.
+On the read side, the click handlers prefer the stored mark attribute over the DOM `link.href` property — a relative href injected via `setContent` won't resolve against the host page's origin.
 
 `isSafeHref(href)` and `DANGEROUS_SCHEME_RE` are exported for custom popovers that need the same check; prefer `isSafeHref` (returns a TS type guard).
 
-`SAFE_WINDOW_FEATURES` is also exported — it's the `'noopener,noreferrer'` features string the extension passes to every `window.open(href, '_blank', …)` call. BYO popovers and custom click-handlers should pin the same constant so a future tightening (e.g. adding `nofollow`) flows everywhere from one place:
+`SAFE_WINDOW_FEATURES` is the `'noopener,noreferrer'` string the extension passes to every `window.open(href, '_blank', …)` call. BYO popovers and custom click-handlers should pin the same constant — future tightening (e.g. adding `nofollow`) then propagates from one place:
 
 ```ts
 import { isSafeHref, SAFE_WINDOW_FEATURES } from '@docs.plus/extension-hyperlink'
@@ -346,29 +546,52 @@ if (isSafeHref(href)) {
 
 ## TypeScript
 
-Definitions are bundled. Public types: `HyperlinkOptions`, `HyperlinkAttributes`, `IsAllowedUriContext`, `PreviewHyperlinkOptions`, `CreateHyperlinkOptions`, `EditHyperlinkPopoverOptions` (formerly `EditHyperlinkModalOptions`, kept as a deprecated alias), `LinkProtocolOptions`, `FloatingToolbarOptions`, `FloatingToolbarInstance`, `LinkifyMatchLike`. Public utility predicates: `isSafeHref`, `validateURL`, `DANGEROUS_SCHEME_RE`. Public constant: `SAFE_WINDOW_FEATURES`.
+Definitions are bundled. Full public surface:
+
+- **Extension** — `Hyperlink` (default export) + `HyperlinkOptions`, `HyperlinkAttributes`, `IsAllowedUriContext`, `LinkProtocolOptions`.
+- **Popovers** — `previewHyperlinkPopover`, `createHyperlinkPopover`, `editHyperlinkPopover` factories. Option types `PreviewHyperlinkOptions`, `CreateHyperlinkOptions`, `EditHyperlinkPopoverOptions` are documented under [Popover-factory option shapes](#popover-factory-option-shapes); `EditHyperlinkModalOptions` is a `@deprecated` alias.
+- **Floating toolbar** — `createFloatingToolbar`, `DEFAULT_OFFSET`, `hideCurrentToolbar`, `updateCurrentToolbarPosition`, types `FloatingToolbarOptions` / `FloatingToolbarInstance`. See [Floating-toolbar primitive](#floating-toolbar-primitive).
+- **UI controller** — `getDefaultController()`, types `HyperlinkUIController` / `SurfaceKind` / `ControllerState`. See [UI controller](#ui-controller).
+- **URL utilities** — `normalizeHref`, `getSpecialUrlInfo`, `validateURL`, `isSafeHref`, `DANGEROUS_SCHEME_RE`, `SAFE_WINDOW_FEATURES`; types `SpecialUrlInfo`, `SpecialUrlType`, `LinkifyMatchLike`.
+- **Linkify re-export** — `registerCustomProtocol` (passes through to [linkifyjs](https://linkify.js.org)).
 
 ## Testing
 
-Cypress runs against the built `dist/` output in a tiny `Bun.serve` playground — the same bytes an npm consumer installs.
+Two suites: a Bun-native unit suite (~95 ms) and Cypress E2E that runs against the built `dist/` output via a `Bun.serve` playground — the same bytes an npm consumer installs.
 
 ```sh
-bun run test             # build + run Cypress headless
+bun run test             # unit + build + Cypress headless
+bun run test:unit        # unit only (Bun native, ~95 ms)
+bun run test:unit:watch  # unit in watch mode
+bun run test:e2e         # build + Cypress headless (skip unit)
 bun run test:open        # build + open the Cypress runner
-bun run playground       # just the playground at http://127.0.0.1:5173
+bun run playground       # playground only, http://127.0.0.1:5173
 bun run docs:screenshots # regenerate README hero PNGs in docs/screenshots/
 ```
 
-Append `?popover=custom` to the playground URL to swap in minimal BYO factories — that's how `custom-popover.cy.ts` exercises the public contract.
+The playground accepts query-string flags so the dedicated specs can exercise opt-in behaviors without forking the bootstrap:
 
-| Spec                   | Covers                                                                 |
-| ---------------------- | ---------------------------------------------------------------------- |
-| `create.cy.ts`         | `Mod+K`, Apply state, href canonicalization, host validation, dismiss. |
-| `preview-edit.cy.ts`   | Click → preview → edit/copy/remove, Back, Escape lifecycle.            |
-| `autolink.cy.ts`       | Autolink, paste, and `mailto:` all produce the same `href`.            |
-| `xss-guards.cy.ts`     | `javascript:` / `data:` / `vbscript:` blocked at every entry point.    |
-| `styling.cy.ts`        | `styles.css` loaded, `--hl-*` tokens resolve, `light-dark()` branch.   |
-| `custom-popover.cy.ts` | BYO factory contract — options, mount lifecycle, exports.              |
+| Flag                    | Effect                                                                          |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| `?popover=custom`       | Swap prebuilt popovers for minimal BYO factories that record calls on `_byo`.   |
+| `?shouldAutoLink=block` | Wire `shouldAutoLink: () => false` so the per-URI veto is exercised everywhere. |
+| `?clickSelection=on`    | Set `enableClickSelection: true` (click-to-select-mark-range).                  |
+| `?exitable=on`          | Set `exitable: true` (ArrowRight at the right edge clears the storedMark).      |
+
+Cypress specs (10 files, ~132 tests):
+
+| Spec                      | Covers                                                                                           |
+| ------------------------- | ------------------------------------------------------------------------------------------------ |
+| `create.cy.ts`            | `Mod+K`, Apply state, href canonicalization, host validation, dismiss.                           |
+| `preview-edit.cy.ts`      | Click → preview → edit/copy/remove, Back, Escape lifecycle.                                      |
+| `autolink.cy.ts`          | Autolink, paste, and `mailto:` produce the same `href`; `code`-mark skip; `shouldAutoLink` veto. |
+| `special-schemes.cy.ts`   | 50+ scheme catalog (`whatsapp:`, `tg:`, `vscode:`, `spotify:`, …) parses + previews.             |
+| `xss-guards.cy.ts`        | `javascript:` / `data:` / `vbscript:` / `file:` / `blob:` blocked; `renderHTML` re-validation.   |
+| `nav-guards.cy.ts`        | Middle-click safety — safe-href passthrough, dangerous-scheme refusal, right-click untouched.    |
+| `canon-options.cy.ts`     | `enableClickSelection` and `exitable` canon-option semantics.                                    |
+| `styling.cy.ts`           | `styles.css` loaded, `--hl-*` tokens resolve, `light-dark()` branch.                             |
+| `custom-popover.cy.ts`    | BYO factory contract — options, mount lifecycle, exports.                                        |
+| `scroll-stickiness.cy.ts` | Popover follows its anchor across scroll without drift.                                          |
 
 The suite also runs from the repo root via `bun run test:all`, alongside the Jest and webapp Cypress suites.
 
