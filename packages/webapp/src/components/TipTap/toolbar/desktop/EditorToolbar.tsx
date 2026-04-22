@@ -171,7 +171,7 @@ const EditorToolbar = () => {
           editor={editor}
           type="hyperlink"
           data-testid="toolbar-hyperlink"
-          onClick={() => editor.chain().focus().setHyperlink().run()}
+          onClick={() => editor.chain().focus().openCreateHyperlinkPopover().run()}
           tooltip="Hyperlink (⌘+K)">
           <Icons.link size={ICON_SIZE} />
         </ToolbarButton>

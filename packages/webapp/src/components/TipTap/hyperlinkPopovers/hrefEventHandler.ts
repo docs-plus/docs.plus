@@ -1,9 +1,19 @@
 import { parseHistoryHash } from '@components/pages/history/historyShareUrl'
-import { hideCurrentToolbar } from '@docs.plus/extension-hyperlink'
+import {
+  hideCurrentToolbar,
+  isSafeHref,
+  SAFE_WINDOW_FEATURES
+} from '@docs.plus/extension-hyperlink'
 import { APPLY_FILTER, CHAT_OPEN } from '@services/eventsHub'
 import { scrollToHeading } from '@utils/index'
 import Router from 'next/router'
 import PubSub from 'pubsub-js'
+
+// The webapp ships its own preview popover (`previewHyperlink` factory
+// wired into `Hyperlink.configure`), so the extension's hardened
+// `previewHyperlinkPopover` is never on this click path. Reuse the
+// extension's exported `SAFE_WINDOW_FEATURES` so both stacks pass the
+// same `'noopener,noreferrer'` to `window.open`.
 
 /**
  * Resolve a hyperlink href against the current document and navigate.
@@ -16,7 +26,26 @@ import PubSub from 'pubsub-js'
  * for imperative DOM listeners.
  */
 export const navigateHref = (href: string): void => {
-  const newUrl = new URL(href)
+  // Defense-in-depth — `parseHTML` strips dangerous schemes on document
+  // load and `renderHTML` re-validates on serialize, but a tampered
+  // mark could still reach this navigate path via direct `addMark`,
+  // collaborative replay, or a downstream HTML transformer. Refuse
+  // navigation on `javascript:`, `data:`, `vbscript:`, `file:`, `blob:`
+  // before doing anything else.
+  if (!isSafeHref(href)) return
+
+  // `isSafeHref` accepts scheme-less hrefs (relative paths, fragments,
+  // root-relative URLs) by design — see AGENTS.md "Read-vs-write
+  // separation" — so `new URL(href)` can throw here for legacy docs,
+  // raw `addMark`, or external setContent paths. Fall through to the
+  // new-tab open in that case; in-app routing requires a parseable URL.
+  let newUrl: URL
+  try {
+    newUrl = new URL(href)
+  } catch {
+    window.open(href, '_blank', SAFE_WINDOW_FEATURES)
+    return
+  }
   const slugs = location.pathname.split('/').slice(1)
 
   const headingId = newUrl.searchParams.get('id')
@@ -65,7 +94,7 @@ export const navigateHref = (href: string): void => {
     }
   }
 
-  window.open(href, '_blank')
+  window.open(href, '_blank', SAFE_WINDOW_FEATURES)
 }
 
 /**

@@ -12,7 +12,7 @@ export const HyperlinkButton = ({ className, size = 16, ...props }: Props) => {
 
   return (
     <Button
-      onPress={() => editor?.chain().focus().setHyperlink().run()}
+      onPress={() => editor?.chain().focus().openCreateHyperlinkPopover().run()}
       editor={editor}
       type="hyperlink"
       tooltip="Hyperlink (⌘+K)"

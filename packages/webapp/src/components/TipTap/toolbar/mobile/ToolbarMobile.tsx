@@ -71,7 +71,7 @@ const ToolbarMobile = () => {
           onTouchEnd={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            editor.chain().focus().setHyperlink().run()
+            editor.chain().focus().openCreateHyperlinkPopover().run()
           }}>
           <Icons.link size={26} />
         </ToolbarButton>

@@ -34,7 +34,7 @@ export const MobileBubbleMenu = () => {
 
   const handleLink = useCallback(() => {
     if (!editor) return
-    editor.chain().focus().setHyperlink().run()
+    editor.chain().focus().openCreateHyperlinkPopover().run()
   }, [editor])
 
   if (!editor) return null

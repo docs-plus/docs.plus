@@ -102,7 +102,7 @@ const buildDesktopPopover = (
   options: PreviewHyperlinkOptions
 ): { element: HTMLElement; flush: () => void } => {
   const { href, editor } = ctx
-  const { link, view, linkCoords, validate } = options
+  const { link, validate } = options
 
   const popover = createHTMLElement('div', { className: 'hyperlink-preview-popover' })
   const metadataContainer = createHTMLElement('div', { className: 'metadata' })
@@ -120,7 +120,7 @@ const buildDesktopPopover = (
   })
 
   editButton.addEventListener('click', () => {
-    editHyperlinkPopover({ editor, view, link, linkCoords, validate })
+    editHyperlinkPopover({ editor, link, validate })
   })
 
   removeButton.addEventListener('click', () => {
