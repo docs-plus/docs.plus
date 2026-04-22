@@ -1,6 +1,7 @@
 import {
   Copy,
   copyToClipboard,
+  createFloatingToolbar,
   createHTMLElement,
   editHyperlinkPopover,
   hideCurrentToolbar,
@@ -77,6 +78,18 @@ export default function previewHyperlink(options: PreviewHyperlinkOptions): HTML
     return null
   }
 
+  return buildAndObserveDesktopPopover(options)
+}
+
+/**
+ * Build the desktop popover and wire its detachment observer. Used by
+ * the initial click-handler path (returns the element so the extension
+ * mounts it via its own `createFloatingToolbar` call) and by the
+ * back-from-edit re-show path (mounts directly and returns nothing).
+ */
+const buildAndObserveDesktopPopover = (options: PreviewHyperlinkOptions): HTMLElement => {
+  const { link, editor, nodePos, attrs } = options
+  const href = link.href
   const controller = new AbortController()
   const ctx: PreviewContext = { href, editor, nodePos, attrs, signal: controller.signal }
   const built = buildDesktopPopover(ctx, options)
@@ -90,6 +103,23 @@ export default function previewHyperlink(options: PreviewHyperlinkOptions): HTML
   })
 
   return built.element
+}
+
+/**
+ * Re-mount the desktop preview surface — used as the `onBack` callback
+ * for `editHyperlinkPopover`. Mirrors the prebuilt `showPreviewToolbar`
+ * helper in `previewHyperlinkPopover.ts`. The controller's singleton-
+ * replacement tears down the edit popover automatically.
+ */
+const showDesktopPreview = (options: PreviewHyperlinkOptions): void => {
+  const content = buildAndObserveDesktopPopover(options)
+  createFloatingToolbar({
+    referenceElement: options.link,
+    content,
+    placement: 'bottom',
+    showArrow: true,
+    surface: 'preview'
+  }).show()
 }
 
 /**
@@ -120,7 +150,12 @@ const buildDesktopPopover = (
   })
 
   editButton.addEventListener('click', () => {
-    editHyperlinkPopover({ editor, link, validate })
+    editHyperlinkPopover({
+      editor,
+      link,
+      validate,
+      onBack: () => showDesktopPreview(options)
+    })
   })
 
   removeButton.addEventListener('click', () => {
