@@ -168,5 +168,6 @@ DEPLOYMENT.md
 ENV_SETUP.md
 DOCS_SUMMARY.md
 
-# Code-janitor skill reports
-docs/skills-output/
+# Root documentation (plans, brainstorms, local notes, skill output)
+/docs/
+
