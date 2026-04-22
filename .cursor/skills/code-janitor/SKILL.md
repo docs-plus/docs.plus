@@ -1,21 +1,50 @@
 ---
 name: code-janitor
-description: Reviews and cleans up code in a folder/package or recent git changes by grouping files by intent, then running a 4-chain pipeline (Simplification → Abstraction → Readability → Documentation) per group with parallel supervisor review for a production-ready flag. Use when the user asks to clean up, simplify, polish, organize utils/helpers, fix typos or naming, improve JSDoc, tidy a package, or says "review my files", "cleanup", "polish", "organize", "code janitor", or "tidy".
+description: Reviews and cleans up code in a folder/package or recent git changes by grouping files by intent, then running a 4-chain pipeline (Simplification → Abstraction → Readability → Documentation) per group with one supervisor granting a production-ready flag. Use when the user asks to clean up, simplify, polish, organize utils/helpers, fix typos or naming, improve JSDoc, tidy a package, or says "review my files", "cleanup", "polish", "organize", "code janitor", or "tidy".
 ---
 
 # Code Janitor 🧹
 
-Tactical, principle-driven cleanup pipeline that adapts to any workspace. Reviews a folder/package (or the current git changes) in four ordered chains — Simplification → Abstraction → Readability → Documentation — with three parallel supervisors granting a production-ready flag at the end. The first phase auto-detects the workspace's package manager, scripts, monorepo layout, agent-instructions doc, and adjacent skills, so the same skill works in a Bun/pnpm/yarn/npm repo, a single-package or workspaces layout, with or without a sibling commit-review skill.
+Tactical, principle-driven cleanup pipeline that adapts to any workspace. Reviews a folder/package (or the current git changes) in four ordered chains — Simplification → Abstraction → Readability → Documentation — with one supervisor granting a production-ready flag at the end. Phase A auto-detects the workspace's package manager, scripts, monorepo layout, agent-instructions doc, and adjacent skills, so the same skill works in a Bun/pnpm/yarn/npm repo, a single-package or workspaces layout, with or without a sibling commit-review skill.
 
-> **Heavyweight, by design.** Budget ≈ 30–60 minutes of interactive review per group of ~5 files (multiple sub-agents, per-file approval gates, supervisor pass). For a quick polish on one or two files, use a lighter approach.
+> **Autonomous by default; opt-in review.** Auto-applies edits, prints one terse line per file. Pass `--review` to gate every file or `--with-tests` to run unit tests. The skill always stops on its own for the six gated edit types (see § Constraints) regardless of flags.
+>
+> **Senior-level scope.** Performs real cleanup — rename exported symbols, fix typos in identifiers and i18n keys, split overgrown files, move files, bump dep versions — when the new shape is materially better. Algorithm rewrites and net-new dependencies remain forbidden.
 
-## The rules that override everything
+## Constraints
 
-1. **Never change runtime behavior.** Any edit that _might_ alter what the code does for any input is forbidden, no matter how clean it would be. Conflicts that would require behavior change → stop and ask the user.
-2. **Never commit.** This skill leaves a dirty working tree at exit. If the workspace bootstrap (Phase A.0) detected a `commit-review` (or equivalent) skill, hand off to it; otherwise, stop and let the user commit.
-3. **Never create branches or worktrees.** Everything happens in the current directory and current branch. Do not invoke any branch- or worktree-creation flow.
-4. **Hesitation gate — when in doubt, ask.** If grouping is ambiguous, a principle conflict isn't clearly resolvable, an edit's safety is uncertain, or a supervisor finding has unclear scope → pause and present a Q&A. Never guess.
-5. **Defer to tools.** Anything the workspace's formatter, linter, or type-checker already enforces is out of scope. The skill only touches what tools can't catch.
+Single source of truth. Two tiers: **Forbidden** (absolute, no escape) and **Gated** (allowed via the forced-approval mechanism in Phase B).
+
+### Forbidden — no flag, gate, or supervisor verdict overrides these
+
+1. **Change runtime behavior** for any input the program currently handles.
+2. **Edit generated files** — bootstrap-detected exclusion list, sibling `.d.ts` for `.ts` source, lockfiles, `CHANGELOG.md`.
+3. **Edit test fixtures, snapshots, or recorded HTTP responses.**
+4. **Reformat for style** — defer to the workspace's formatter/linter via Chain 0.
+5. **Refactor algorithms** — defer to a detected architecture skill (e.g. `improve-codebase-architecture`); else surface as INFO. Naming/structure cleanup is fine; replacing a sort or rewriting a loop's logic is not.
+6. **Add net-new dependencies, frameworks, or build tools** (Boring Technology). Bumping or removing an _existing_ dep is gated, not forbidden.
+7. **Commit** — defer to the detected commit-skill, or stop and let the user commit.
+8. **Create branches or worktrees** — work happens in the current branch only.
+9. **Introduce new debug/info loggers** in paths that didn't have them. Warn/error logs are fine when the workspace's existing pattern uses them.
+10. **Delete pre-existing debug/info loggers** unless the agent-instructions doc explicitly authorises removal on the surrounding paths.
+
+### Gated — allowed via Phase B forced-approval, with one discipline rule
+
+Six edit types stop the skill regardless of flags:
+
+1. Rename an exported symbol (function, class, type, interface, const, default).
+2. Rename an i18n key — only when every translation file in the repo can be updated in the same diff. If any appears externally managed (Phrase, Crowdin, Lokalise), skip and surface as INFO.
+3. Move a file (intra-package or across-package).
+4. Split a file or function.
+5. Change a public API signature.
+6. Bump or remove a dependency version.
+
+**Discipline rule (non-negotiable for all six)** — every call site, import, re-export, doc reference, and test reference must update in the **same diff** as the edit. The forced-approval prompt shows the change + every dependent edit as one atomic unit. If the skill can't enumerate all dependents, it skips the edit and surfaces it as INFO.
+
+### Default behavior
+
+- **Autonomous.** Apply edits silently with one-line status. Stop only on the six gated edit types, on diff-sanity violations, or when the hesitation gate fires.
+- **Hesitation gate.** Stop and ask only when there's no clear, cohesive decision: grouping is a coin-flip, or a principle conflict can't be broken by the resolution ladder. Routine progress = no prompt.
 
 ## Pipeline
 
@@ -24,19 +53,18 @@ Phase A — Triage
    A.0  workspace bootstrap (detect package manager, scripts, layout,
         agent-instructions doc, adjacent skills, generated paths)
    A.1  scope discovery → group files (semantic intent / feature / arch fallback)
-        → build dependency tree → user approves groups + ownership
+        → build dependency tree → auto-proceed (only stop if grouping is ambiguous)
 
 Phase B — Per-group execution (sequential; next group's read-only triage pipelined)
-   for each approved group:
+   for each group:
      Chain 0       Tooling pass        (deterministic; no per-file gate)
-     Reasoning     Chains 1 → 4 run conceptually across the whole group
-     Application   per-file Model-D gate aggregates all chain proposals for that file
+     Chains 1→4    plan across whole group, then apply per file
      Validation    group gates (diff-sanity + type-check + lint; opt-in tests)
 
-Phase C — Supervisor review (3 parallel code-reviewer sub-agents)
+Phase C — Supervisor review (one fresh code-reviewer; three checklists)
    Correctness · Principle-Adherence · Production-Readiness
-   verdict: PASS | FIX-AND-PROCEED | BLOCK
-   on FIX/BLOCK → fresh fix-pass agent → re-supervise (capped 3/2/0)
+   verdict: PASS | FIX | BLOCK
+   on FIX/BLOCK → fresh fix-pass agent → re-supervise (cap: 2 per group)
 
 Phase D — Summary + handoff
    summary report at <skills-output-dir>/YYYY-MM-DD-HH-MM-cleanup.md
@@ -45,7 +73,10 @@ Phase D — Summary + handoff
 
 ## Phase A — Triage
 
-**Invocation flags** — detect from the user's message text: `--with-tests` or "with tests" / "run tests" enables the unit-test gate (off by default). All other escape hatches still require explicit per-prompt approval; there is no `--auto`.
+**Invocation flags** — detect from the user's message text:
+
+- `--with-tests` / "with tests" / "run tests" → enables the unit-test gate (off by default).
+- `--review` / "let me review" / "ask me each file" → enables per-file approval (off by default; the skill auto-applies otherwise).
 
 ### A.0 — Workspace bootstrap (run first, every invocation)
 
@@ -65,12 +96,10 @@ Before scope discovery, detect the workspace toolchain and conventions. Cache th
    - **unit-test**: `test:unit` → `test` (only if Jest/Vitest config detected; never E2E runners like Cypress/Playwright)
    - If a gate has no resolvable command → mark that gate `skipped` and proceed.
 3. **Monorepo layout** — read `package.json` `"workspaces"` or `pnpm-workspace.yaml` to identify package roots (commonly `packages/*`, `apps/*`, `libs/*`). Single-package repos skip per-package scoping in Chain 0.
-4. **Agent-instructions doc** — search in this priority order; first hit wins: `AGENTS.md` → `CLAUDE.md` → `.cursor/rules/*.mdc` (read all) → `.github/copilot-instructions.md` → top-of-`README.md`. Treat its durable rules as workspace facts in conflict resolution. If two docs disagree, surface to user.
-5. **Adjacent skills** — list skills under `.cursor/skills/`, `.claude/skills/`, `~/.agents/skills/`. Note presence of: a `commit-review` (or `commit`, `caveman-commit`) skill for Phase D handoff; an architecture/refactor skill (e.g. `improve-codebase-architecture`) to which algorithm changes are deferred.
+4. **Agent-instructions doc** — search in this priority order; first hit wins: `AGENTS.md` → `CLAUDE.md` → `.cursor/rules/*.mdc` (read all) → `.github/copilot-instructions.md` → top-of-`README.md`. Treat its durable rules as workspace facts in conflict resolution.
+5. **Adjacent skills** — list skills under `.cursor/skills/`, `.claude/skills/`, `~/.agents/skills/`. Note any skill whose name matches `*commit*` (for Phase D handoff) and any architecture/refactor skill (e.g. `improve-codebase-architecture`, to which algorithm changes are deferred).
 6. **Generated/excluded paths** — start with the universal list (`node_modules/`, `dist/`, `build/`, `out/`, `.next/`, `.nuxt/`, `coverage/`, `.turbo/`, `.cache/`, `__snapshots__/`, `*.lock`, `*.lockb`) and append any path the workspace's `.gitignore` flags as build/state output. Also exclude any path the agent-instructions doc lists as off-limits (e.g. notes folders, hook state files).
 7. **Skills-output dir** — choose `docs/skills-output/` if `docs/` exists, else `.skills-output/` at repo root. Ensure it's in `.gitignore`; add the entry if missing.
-
-If any conflict is detected (e.g. agent-instructions doc has a rule that contradicts a chain principle, or two scripts could plausibly serve one gate), pause and ask the user before continuing.
 
 ### A.1 — Scope discovery
 
@@ -99,43 +128,21 @@ Each group's source attribution **must** be shown (e.g. _"derived from git diff 
 
 ### Dependency tree
 
-For every file in a group, run an import/export trace to identify **related files** (files imported by or importing the group's files, even if those files are out of scope). The tree must label:
+For every file in a group, run an import/export trace to find **related files** — files importing or imported by the group's files, even if out of scope. Mark each as **primary** (the group will edit it) or **related** (read-only context for the group's sub-agent). If the same file is primary in two groups, collapse those groups or assign editing rights to the group with the stronger semantic claim — never let two groups edit one file.
 
-- **Primary** — files the group will edit
-- **Related** — read-only context for the group's sub-agent
-- **Owner of N** — when a file is a related-context for N>1 groups, exactly one group owns the right to _edit_ it. Owner is the group with the strongest semantic claim. Surfaced in the tree with `← (owner; read by G1, G3)`.
+### Auto-proceed (Surface 1)
 
-### User approval (Surface 1 + Surface 2)
-
-Render Surface 1 (proposed groups list) followed by Surface 2 (dependency tree). Wait for: `y` / `edit` / `regroup` / `abort`. **Never proceed without explicit approval.**
+Render Surface 1 (one-line group summary) and proceed immediately to Phase B. **Only stop and ask** when the grouping is genuinely ambiguous — e.g. the in-scope files split equally between two themes with no diff or transcript to break the tie, or a file plausibly belongs to two groups and the editing-owner pick is a coin-flip. Otherwise, just go.
 
 ## Phase B — Per-group execution
 
-Groups run **sequentially**. While the user reviews Group N's per-file proposals, the **read-only triage** of Group N+1 runs in the background (`explore` sub-agent producing the next group's report). Edits are always sequential — there is no parallel writing.
+Groups run sequentially; the next group's read-only triage is pipelined in the background (`explore` sub-agent). Edits are always sequential — no parallel writing.
 
-Each group runs through the chains in order. Each chain reshapes inputs for the next; no chain may revisit a chain that has already settled.
-
-### Reasoning vs. Application (how a group actually executes)
-
-Two axes — chain (Chain 0 → 1 → 2 → 3 → 4) and file (1 of K → 2 of K → … → K of K) — are sequenced **differently**:
-
-1. **Chain 0** runs across all files in the group at once. Deterministic. No per-file gate.
-2. **Reasoning phase** — the per-group sub-agent loads the whole group into context and runs Chains 1 → 4 _as a single conceptual pass_, in order. Cross-file principles (DRY, naming consistency) work here because the sub-agent sees every file at once. Output: a per-file edit plan containing proposals from all four chains.
-3. **Application phase** — render Surface 3 for File 1 with all four chains' proposals listed together. User approves. Apply edits to File 1. Then File 2. Then File 3. Sequential, file-major.
-4. **Group validation gates** run once after all per-file applications complete.
-
-Never run "Chain 1 across all files → gate → Chain 2 across all files → gate." That fragments per-file review across four prompts and lets a Chain 1 deletion break a Chain 3 rename mid-flight.
+For each group: run Chain 0, then load all files into one sub-agent and plan Chains 1 → 4 as a single conceptual pass (cross-file principles like DRY and naming consistency need the whole-group view), then apply the resulting edit plan file-by-file. Each chain's settled edits are inputs to later chains; no chain revisits a settled one.
 
 ### Chain 0 — Tooling pass
 
-Use the package manager and scripts resolved in A.0. Determine the working directory by group scope:
-
-| Group scope                                                                                  | `cwd` for the commands       |
-| -------------------------------------------------------------------------------------------- | ---------------------------- |
-| All in-scope files live under one detected package root (e.g. `packages/<pkg>/`)             | run inside that package root |
-| Files span multiple packages                                                                 | run from repo root           |
-| Files mix package code and repo-root files (e.g. config, agent-instructions doc, `.github/`) | run from repo root           |
-| Single-package repo                                                                          | always run from repo root    |
+Use the package manager and scripts resolved in A.0. Run from the smallest scope that contains all in-scope files: a package root if every file lives under one detected package, otherwise repo root.
 
 ```bash
 <pm> run <lint-fix>     # e.g. bun run lint:fix
@@ -143,9 +150,9 @@ Use the package manager and scripts resolved in A.0. Determine the working direc
 <pm> run <typecheck>    # e.g. yarn check:types
 ```
 
-Where `<pm>` and the script names come from A.0. If a package-local `package.json` lacks a script, fall back to the root equivalent. If a tool isn't installed at all (e.g. no Prettier), log `"Chain 0 skipped: no <tool> available"` and proceed without it.
+If a package-local `package.json` lacks a script, fall back to the root equivalent. If a tool isn't installed (e.g. no Prettier), log `"Chain 0 skipped: no <tool> available"` and proceed.
 
-Capture the tooling-produced diff separately from the LLM diff: snapshot `git diff` output before LLM edits start, and treat anything new in `git diff` after edits as the LLM's contribution. Tooling-only changes do not require per-file approval (they're deterministic).
+Snapshot `git diff` before LLM edits start so the tooling-produced diff is distinguishable from the LLM's contribution. Tooling-only changes never need per-file approval.
 
 ### Chain 1 — Simplification
 
@@ -163,7 +170,7 @@ Order matters. **Internal precedence:** YAGNI overrides DRY (deletion beats cons
 
 | Step | Principle                                      | Look for                                                                                                                              |
 | ---- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| 2.1  | **SoC** — Separation of Concerns               | One file, one concern. Propose splits during per-file gate; **never auto-split**.                                                     |
+| 2.1  | **SoC** — Separation of Concerns               | One file, one concern. File splits go through the forced-approval gate (all imports updated in the same diff).                        |
 | 2.2  | **HCLC** — High Cohesion, Low Coupling         | High cohesion within file/module, low coupling across them.                                                                           |
 | 2.3  | **LoB** — Locality of Behavior                 | Co-locate single-use helpers (used in exactly one neighbor, < 10 lines).                                                              |
 | 2.4  | **LoD** — Law of Demeter                       | No reaching through chains (`a.b.c.d.e`).                                                                                             |
@@ -175,18 +182,18 @@ Order matters. **Internal precedence:** YAGNI overrides DRY (deletion beats cons
 
 ### Chain 3 — Readability
 
-| Step | Principle                                                               | Look for                                                                                           |
-| ---- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| 3.1  | **NMM** — Naming Matters Most                                           | Rename **internals only** (no exported symbols). Fix typos in identifiers (`recieve` → `receive`). |
-| 3.2  | **DOT** — Do One Thing                                                  | One function = one thing. Propose splits, never auto-split.                                        |
-| 3.3  | **WNW** — Why, Not What                                                 | Comments explain _why_, never _what_. Delete narrating comments; keep intent.                      |
-| 3.4  | **PoLA** — Principle of Least Astonishment                              | Surprising behavior gets a `// Note:` with reason; non-surprising gets nothing.                    |
-| 3.5  | **BSR** — Boy-Scout Rule                                                | Micro-improvements within files you're already touching; never expand scope.                       |
-| 3.6  | **ROR / RRT** — Readability over Cleverness / Respect the Reader's Time | Meta-check: would a new reader understand this faster than before? If not, revert.                 |
+| Step | Principle                                                               | Look for                                                                                                                                                                                                                                                |
+| ---- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 3.1  | **NMM** — Naming Matters Most                                           | Rename internals freely. Rename exported symbols and i18n keys when materially clearer or to fix a typo (`recieve` → `receive`) — these go through the forced-approval gate with all-usages-updated discipline. Skip if dependents can't be enumerated. |
+| 3.2  | **DOT** — Do One Thing                                                  | One function = one thing. Splits go through the forced-approval gate (all imports/calls updated in the same diff).                                                                                                                                      |
+| 3.3  | **WNW** — Why, Not What                                                 | Comments explain _why_, never _what_. Delete narrating comments; keep intent.                                                                                                                                                                           |
+| 3.4  | **PoLA** — Principle of Least Astonishment                              | Surprising behavior gets a `// Note:` with reason; non-surprising gets nothing.                                                                                                                                                                         |
+| 3.5  | **BSR** — Boy-Scout Rule                                                | Micro-improvements within files you're already touching; never expand scope.                                                                                                                                                                            |
+| 3.6  | **ROR / RRT** — Readability over Cleverness / Respect the Reader's Time | Meta-check: would a new reader understand this faster than before? If not, revert.                                                                                                                                                                      |
 
 ### Chain 4 — Documentation
 
-**Voice — senior technical writer:** active, present-tense, lead with the verb, no "this method" / "this function", never restate the signature.
+**Voice — senior technical writer:** active, present-tense, lead with the verb, no "this method" / "this function", never restate the signature. Canonical voice rules live in the [`tech-writer`](../tech-writer/SKILL.md) skill — invoke it whenever Chain 4 work needs more than the table below (e.g. file-header rewrites, README touch-ups inside the in-scope group).
 
 **Published-library caveat** — for any package the workspace publishes (npm/pnpm/Cargo/PyPI/etc.), JSDoc on exported symbols ships into consumers' installs (for TypeScript, into the bundled `.d.ts`). Verbose preambles measurably bloat install size (often >5% of the typings bundle). Treat any package whose `package.json` has no `"private": true` flag, or that the agent-instructions doc identifies as published, under this caveat: file headers 1–2 lines, per-symbol blocks 1–3 lines, point at `README.md` for option semantics. Preserve only the _why_. Internal/private packages may use longer prose at the author's discretion.
 
@@ -198,41 +205,21 @@ Order matters. **Internal precedence:** YAGNI overrides DRY (deletion beats cons
 | 4.4  | **DTS** — Document the Surprises      | Edge cases, side effects, async behavior, error modes. Never the obvious.                                                                                   |
 | 4.5  | **SSL** — Short, Single Line          | Short, single line preferred. Hard cap: 5 lines including `@param`/`@returns`/`@throws`/`@example`. `@example` only when behavior is non-obvious AND short. |
 
-### Cross-cutting guardrails (apply in every chain)
+### How conflicts resolve
 
-| Guardrail                           | Effect                                                                                                              |
-| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| **BT** — Boring Technology          | Never propose a new dependency, framework, or build tool.                                                           |
-| **RFD** — Reversibility First       | Two equivalent edits → pick the one easier to revert. One-line edits beat moves; moves beat directory restructures. |
-| **CvP** — Conventions vs Principles | Anything tools enforce → out of scope.                                                                              |
-| **FF** — Fail Fast                  | Validate at boundaries, throw early, never swallow — but don't rewrite working error handling (behavior change).    |
-| **RRT** — Respect the Reader's Time | When in doubt between two valid edits, pick the smaller diff.                                                       |
+Top wins:
 
-### How conflicts resolve (single source of truth)
+1. **§ Constraints (Forbidden) and the workspace agent-instructions doc** beat any chain principle. Repo-specific rules (preferred logger, banned APIs, naming conventions) beat generic defaults.
+2. **Within and across chains** — Chain 1 internal precedence is YAGNI > RoT > DRY > KISS. Earlier chains' settled edits are inputs to later chains; later chains may not undo them. Equivalent options → pick the smaller, more reversible diff.
+3. **Hesitation gate** — if still unresolved, stop and ask. Never guess.
 
-When two principles or rules disagree on the same edit, apply this precedence — top wins:
+### Per-file application
 
-1. **Override-everything rules** (§ The rules that override everything) — beat every chain principle. _Example:_ DRY says "consolidate two copies"; doing so would change behavior → DRY loses.
-2. **Workspace agent-instructions doc** (the file resolved in A.0 — `AGENTS.md`, `CLAUDE.md`, etc.) — repo-specific constraints (e.g. preferred logger, banned APIs, package-manager pinning, naming conventions) beat generic principle defaults.
-3. **Within Chain 1**: YAGNI > RoT > DRY > KISS. (Deletion beats consolidation; wait for the third occurrence.)
-4. **Across chains**: an earlier chain's settled edits are inputs to later chains. Chain 3 may not undo a Chain 1 deletion or a Chain 2 split.
-5. **RFD / RRT tie-break** — equivalent edits → pick the smaller, more reversible diff.
-6. **Hesitation gate** — if the conflict still isn't clearly resolvable, **stop and ask the user**. Never guess.
+**Default (auto):** apply silently, log one Surface 3 line per file.
 
-### Per-file approval gates (Model D)
+**Forced approval:** stop on any of the six gated edit types in § Constraints. The prompt shows the change plus every dependent edit as one atomic unit (the discipline rule). If dependents can't be enumerated, skip and surface as INFO.
 
-Default mode: **report → user approves → execute**, per file. Render Surface 3 (per-file report). Wait for:
-
-- `y` / `select <ids>` / `skip-file` / `auto-rest-of-group` / `abort`
-
-`auto-rest-of-group` (escape hatch) is **forbidden** when any pending edit:
-
-- renames an exported symbol
-- moves a file
-- changes a public API signature
-- adds, removes, or modifies a dependency
-
-In those cases, force per-file approval regardless of `--auto`.
+**`--review` mode:** prompt on every file. The per-file prompt lists each proposed edit by chain (e.g. `1.1 DRY`, `3.3 WNW`); reply `y` (apply all), `select <ids>`, `skip-file`, or `abort`.
 
 ### Group validation gates
 
@@ -245,85 +232,38 @@ After all per-file edits in a group apply, run in sequence using the commands re
 
 Any gate marked `skipped` in A.0 is treated as a soft pass with a note in Surface 4. Render Surface 4 **only on failure or skip**. On PASS, log a single line and move on.
 
-### Shared-file rule
-
-A file appearing in N groups' related-files trees is **owned by exactly one group** for editing. Other groups may _read_ it for context but **cannot propose edits to it**. Owner is set during Phase A approval; the per-group sub-agent is briefed with the ownership map and must respect it.
-
 ## Phase C — Supervisor review
 
-After all groups complete Phase B, dispatch **three `code-reviewer` sub-agents in parallel** (read-only):
+After all groups complete Phase B, dispatch **one fresh `code-reviewer` sub-agent** (read-only) to audit the full aggregated diff against three checklists:
 
-### Three supervisors
+1. **Correctness** — re-run diff sanity check, the resolved typecheck and lint commands; verify no runtime behavior change; cross-reference § Constraints (Forbidden) against the diff.
+2. **Principle-Adherence** — re-read against Chains 1–4. Catches cross-group misses neither per-group agent could see: duplications across groups, naming inconsistency, doc-voice drift, KISS regressions from overzealous Chain 2 work.
+3. **Production-Readiness** — security regressions per agent-instructions doc rules for the touched paths (XSS gates, auth boundaries, secret handling), published-package doc bloat for any package without `"private": true`, i18n key safety, generated-file bypass attempts, new debug loggers, TODO/FIXME/XXX/HACK comments. **Owns the production-ready flag.**
 
-1. **Correctness Supervisor** — re-reads the full aggregated diff. Re-runs the diff sanity check. Re-runs the bootstrap-resolved typecheck and lint commands. Verifies the "no runtime behavior change" rule. Cross-references the Forbidden list against the diff.
-2. **Principle-Adherence Supervisor** — re-reads the diff against Chains 1–4. Catches **cross-group misses**: duplications neither local agent could see, naming inconsistency across groups, doc-voice drift, comments that violate WNW, KISS regressions from overzealous Chain 2 work.
-3. **Production-Readiness Supervisor** — security regressions (any rule the agent-instructions doc declares for the touched paths — e.g. XSS gates, auth boundaries, secret-handling), published-package doc bloat for any package without `"private": true`, i18n key safety, generated-file bypass attempts, new debug-logger introductions, and any TODO/FIXME/XXX/HACK comments added. **Owns the production-ready flag.**
+The supervisor returns a list of findings; each is `severity` (`BLOCK` | `FIX` | `INFO`), `scope` (group id, `cross-group`, or `global`), and a one-line summary with evidence.
 
-### Verdict format (each supervisor)
+### Verdict and remediation
 
-```
-findings: [
-  {
-    severity: BLOCK | FIX | INFO,
-    scope: 'group:<group-id>' | 'cross-group' | 'global',
-    files: [...],
-    rule: 'Q4#1' | 'Chain1.DRY' | 'Chain4.SSL' | ...,
-    summary: 'one-line description',
-    detail: 'evidence + suggested fix'
-  }
-]
-```
+- **PASS / PASS-WITH-NOTES** (all green, or only INFO) → flag granted, proceed to Phase D.
+- **FIX** → dispatch a fresh `generalPurpose` fix-pass agent scoped to the offending group(s) or `cross-group` (never reuse a prior agent's context). Re-supervise after each fix-pass.
+- **BLOCK** (behavior change, Forbidden violation, surviving test regression) → same as FIX, but the group is marked at risk. No global revert.
 
-### Aggregate verdict + remediation
+**Cap: 2 remediation iterations per group.** At the cap, mark `STUCK` and escalate. A `global`-scope finding escalates immediately (no auto-loop).
 
-| Aggregate verdict   | Trigger                                                                                   | Action                                                                                                                                                                                                                                |
-| ------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **PASS**            | All three green                                                                           | Production-ready flag granted. Proceed to Phase D.                                                                                                                                                                                    |
-| **PASS-WITH-NOTES** | Green except `INFO`-severity findings                                                     | Flag still granted. Notes appear in summary.                                                                                                                                                                                          |
-| **FIX-AND-PROCEED** | One or more `FIX`-severity findings                                                       | Dispatch a fresh **fix-pass `generalPurpose` agent** scoped to the supervisor's exact findings. Spawn a brand-new sub-agent on every remediation iteration — never reuse the prior one's context. Re-run Phase C after each fix-pass. |
-| **BLOCK**           | Behavior change, FORBIDDEN-list violation, or test regression that survived earlier gates | Identify offending group(s) by `scope`. Re-run that group's chains with the supervisor's findings as brief. **No global revert.** Re-supervise after fix.                                                                             |
+### Exit states
 
-### Loop bounds (hard caps)
-
-| Loop                    | Cap                  | Behavior at cap                           |
-| ----------------------- | -------------------- | ----------------------------------------- |
-| Per-group remediation   | **3**                | Group marked `STUCK`. Batched escalation. |
-| Cross-group remediation | **2**                | Marked `STUCK`. Batched escalation.       |
-| Global findings         | **0** (no auto-loop) | Immediate batched escalation.             |
-
-### Exit states (skill ends in exactly one)
-
-- **PASS** — all green, flag granted
-- **PASS-WITH-NOTES** — flag granted, INFO findings in summary
-- **ESCALATED** — one or more groups STUCK, OR a `global`-scope finding hit on first pass. Flag NOT granted. User decides next move.
-- **USER-ABORTED** — user halted explicitly. Working tree left in current state with halt-point note in summary.
+- **PASS** / **PASS-WITH-NOTES** — flag granted.
+- **ESCALATED** — at least one STUCK group or first-pass global finding. Flag not granted; user decides next move.
+- **USER-ABORTED** — explicit halt. Working tree left as-is with halt-point note in the disk report.
 
 ## Phase D — Summary + handoff
 
-Render **Surface 6 (final summary)** in chat AND save to `<skills-output-dir>/YYYY-MM-DD-HH-MM-cleanup.md` (path resolved in A.0). The bootstrap already ensured the directory exists in `.gitignore`.
+Save the full **Surface 6 (final summary)** to `<skills-output-dir>/YYYY-MM-DD-HH-MM-cleanup.md` (path from A.0; directory already in `.gitignore`). The disk report follows the [`tech-writer`](../tech-writer/SKILL.md) **Report / status / summary** spine. Print only the **one-line chat summary** (see Surface 6 below) — never paste the full report into chat.
 
-The handoff prompt depends on what A.0 detected:
+Then hand off automatically:
 
-- **A `commit-review` (or equivalent) skill is present** → end with **"Run `<detected-commit-skill>` now? (y/n)"**.
-  - `y` → invoke that skill via the `Skill` tool (read its SKILL.md and follow it).
-  - `n` → stop. Working tree is dirty; user takes it from here.
-- **No commit-related skill detected** → end with **"Working tree has N modified files (uncommitted). Stop here? (y)"**. Do not attempt to commit directly under any circumstances.
-
-## Forbidden taxonomy (override-everything rules)
-
-What's _allowed_ is anything the four chains explicitly call out. This list is what the chains may **never** do, regardless of which principle suggests it:
-
-1. Never change runtime behavior
-2. Never rename exported symbols
-3. Never move files across packages; intra-package moves require explicit per-file approval
-4. Never edit generated files (anything in the bootstrap-detected exclusion list, sibling `.d.ts` for `.ts` source, any lockfile, `CHANGELOG.md`)
-5. Never edit test fixtures, snapshots, or recorded HTTP responses
-6. Never touch i18n key strings — only the surrounding code
-7. Never reformat for style (defer to the workspace's formatter/linter via Chain 0)
-8. Never refactor algorithms — defer to the architecture/refactor skill detected in A.0 (e.g. `improve-codebase-architecture`); if none exists, surface as a finding instead
-9. Never add new dependencies (BT)
-10. Never commit (defer to the detected commit-review skill, or stop and let the user commit)
-11. Never introduce new debug/info loggers (`console.log`, `console.debug`, `print`, `println!`, `logger.debug` calls in code paths that didn't have them). Warn/error logs are fine when the workspace's existing pattern uses them. **Never delete pre-existing debug/info loggers** unless the agent-instructions doc explicitly authorises removal on the surrounding paths — they may be load-bearing for runtime debugging, and removing them is a behavior change.
+- **Commit-skill detected in A.0** → invoke it directly via the `Skill` tool. The detected skill has its own approval gates; the user can interrupt there.
+- **No commit-skill detected** → stop. Print one line: _"N files modified. Working tree dirty — commit when ready."_ Do not commit directly under any circumstances.
 
 ## Diff sanity check
 
@@ -346,154 +286,71 @@ Programmatic post-check on the diff before any group is declared PASS. Each rule
 ✗ diff adds new files outside in-scope groups (Phase A claimed scope) → abort
 ```
 
-## Sub-agent type assignments
-
-| Role                                                                   | subagent_type                                |
-| ---------------------------------------------------------------------- | -------------------------------------------- |
-| Phase A triage (file enumeration, dependency tracing, transcript scan) | `explore`                                    |
-| Phase B per-group **read-only triage preview** (pipelined next group)  | `explore`                                    |
-| Phase B per-group **edit phase**                                       | `generalPurpose`                             |
-| Phase C supervisors (×3)                                               | `code-reviewer`                              |
-| Phase C fix-pass agent (group-scoped or cross-group)                   | `generalPurpose`                             |
-| Phase D commit-skill handoff (when detected)                           | invoked via `Skill` tool, runs in main agent |
-
-## Within-session pause-and-continue
-
-User can halt at any gate (Ctrl-C, "stop", "pause"). Record progress in chat as a single line:
-
-> _"Paused at Phase B / Group 2 / File 3 of 5. Say 'continue' to resume from this point."_
-
-On `continue` (same session only), pick up at the recorded gate without re-running prior phases. **No cross-session resume** — working tree drift makes persisted state unreliable.
-
 ## Output templates
 
-Render in this exact form. Inconsistency across surfaces makes the skill feel like six tools.
+Chat output is **terse one-liners**. The full audit report is written to disk (Surface 6 file) — never pasted into chat. Only `--review` mode uses long-form Surface 3.
 
-### Surface 1 — Proposed Groups (Phase A)
-
-```
-## Proposed Groups (N) — <scope>
-
-[1] <group title>                                              (<n> files)
-    Source: <attribution — diff/semantic/transcript ids>
-    Files:
-      M  <path>                                                (primary)
-      M  <path>                                                (primary)
-      A  <new path>                                            (primary)
-    Related (read-only context):
-      -  <path>                                                (owned by Group N)
-
-[2] ...
-
-Approve groups? [y / edit / regroup / abort]
-```
-
-### Surface 2 — Dependency Tree (Phase A)
+### Surface 1 — Phase A status (one line per group)
 
 ```
-## Dependency Tree
-
-<root>/
-├─ Group 1: <title>
-│  ├─ <primary file>
-│  │  └─ imports: <related> [GN owns]
-│  ├─ <primary file>
-│  └─ <primary file>                                           ← (owner; read by G2, G3)
-│
-└─ Group N: <title>
-   └─ <primary file>
+Scope: <N> files in <path-or-git-status>. Groups: G1 <title> (<n>f) · G2 <title> (<n>f) · G3 <title> (<n>f). Proceeding.
 ```
 
-### Surface 3 — Per-File Report (Phase B)
+(If grouping is ambiguous, append: _"Ambiguous — pick: <option a> | <option b>?"_ and stop.)
+
+### Surface 3 — Phase B per-file (one line per file, default mode)
 
 ```
-## Group N / File M of K — <path>
-
-Chain 0 (tooling): <X lint fixes, Y format fixes, tsc clean>
-
-Proposed edits (LLM):
-  [1] Chain X / <PRINCIPLE>   <one-line description>
-                              → <suggested action>
-  [2] ...
-
-Apply? [y / select <ids> / skip-file / auto-rest-of-group / abort]
+G<n>/F<m>: <basename> — <chain summary, e.g. DRY×1 NMM×2 SSL×1> → applied
 ```
 
-### Surface 4 — Group Validation (Phase B, only on failure)
+On a forced-approval edit (export rename, i18n-key rename, file move, split, public-API change, dep bump):
 
 ```
-## Group N — Validation
-
-✗ <gate>                                  — <failure detail>
-...
-
-Group N result: <STATE>
-<remediation note or escalation prompt>
+G<n>/F<m>: <basename> — STOP: <edit type> on <symbol>. Apply? [y/skip/abort]
 ```
 
-### Surface 5 — Supervisor Verdicts (Phase C)
+In `--review` mode, expand each file's status into its proposed-edit list (one row per edit, prefixed with the chain step like `1.1 DRY` or `3.3 WNW`) and wait for `y / select <ids> / skip-file / abort`.
+
+### Surface 4 — Phase B validation (only printed on failure)
 
 ```
-## Supervisor Review
-
-### 1. Correctness Supervisor
-Verdict: <PASS|FIX-AND-PROCEED|BLOCK>
-Findings: <X> BLOCK / <Y> FIX / <Z> INFO
-  [<sev>]  <rule>    scope: <scope>
-           <summary>
-           Files: <list>
-
-### 2. Principle-Adherence Supervisor
-...
-
-### 3. Production-Readiness Supervisor
-...
-
-## Aggregate verdict: <STATE>
-<remediation action or proceed note>
+G<n> validation FAIL: <gate> — <one-line detail>. Remediating.
 ```
 
-### Surface 6 — Final Summary (Phase D, in chat + saved)
+Pass case prints nothing.
+
+### Surface 5 — Phase C supervisor (one line)
 
 ```
-# Cleanup Summary — YYYY-MM-DD HH:MM
+Supervisor: ✓ Correctness · ✓ Principles · <flag> Production (<n> findings). Verdict: <PASS|PASS-WITH-NOTES|FIX|BLOCK>.
+```
 
-Final verdict: <PASS|PASS-WITH-NOTES|ESCALATED|USER-ABORTED>
-Production-ready flag: <GRANTED|WITHHELD>
-Snapshot: <stash@{N} or "none — working tree was clean">
+If FIX/BLOCK, follow with one line per remediation iteration: `Fix-pass <i>: <scope> — <action>`.
 
-Scope: <scope> (<mode>)
-Groups: <N>
-Files touched: <M modified> + <N new> = <total>
-Iterations: Group 1 = <n>, Group 2 = <n>, ...
+### Surface 6 — Phase D final (one line in chat; full report on disk)
 
-## Group 1 — <title> (<n> files) — <STATE>
-  Chain 0: <tooling summary>
-  Chain 1: <simplification summary>
-  Chain 2: <abstraction summary>
-  Chain 3: <readability summary>
-  Chain 4: <docs summary>
-  User-rejected proposals: <n>
+**Chat (one line):**
 
-## Cross-cutting (supervisor-driven)
-  <fix-pass summary if any>
+```
+Done. <M> files cleaned across <G> groups, <E> edits, <S> STUCK. Flag: <GRANTED|WITHHELD>. Report: <skills-output-dir>/<file>.md. <handoff line>
+```
 
-## Notes (INFO findings, not blocking)
+**Disk report** (`<skills-output-dir>/YYYY-MM-DD-HH-MM-cleanup.md`) keeps the longer per-group breakdown for audit. Format:
+
+```
+# Cleanup — YYYY-MM-DD HH:MM
+Verdict: <STATE> · Flag: <GRANTED|WITHHELD>
+Scope: <scope> · Groups: <N> · Files: <M> · Edits: <E> · Iterations: G1=<n> G2=<n>
+Snapshot: <stash@{N} or none>
+
+## G1 <title> — <STATE>
+  Chains: 0=<tooling> · 1=<n edits> · 2=<n edits> · 3=<n edits> · 4=<n edits>
+  Rejected: <n>  Notes: <list or none>
+
+## Cross-cutting
+  <fix-pass summary or none>
+
+## INFO findings
   - <rule>: <suggestion>
-
-## Next step
-<n> modified files in working tree (uncommitted).
-<handoff prompt — exact text depends on whether a commit-skill was detected in A.0>
 ```
-
-## Boundaries
-
-This skill **proposes and applies** cleanup edits, then either hands off to a detected commit skill or stops with the working tree dirty. It does not:
-
-- commit, push, force-push, rebase, amend, or bypass commit hooks
-- create branches or worktrees
-- modify any file outside the in-scope groups
-- run E2E test suites (Cypress, Playwright, Selenium, etc.)
-- add or remove dependencies
-- refactor algorithms — defer to a detected architecture/refactor skill, or surface as a finding
-- review or change behavior (that's the user's job)
