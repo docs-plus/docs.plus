@@ -202,6 +202,7 @@ const Editor = ({
       protocols: ['ftp', 'mailto'],
       linkOnPaste: false,
       autolink: true,
+      exitable: true,
       popovers: {
         previewHyperlink,
         createHyperlink: isMobile ? createHyperlinkMobile : createHyperlinkPopover
