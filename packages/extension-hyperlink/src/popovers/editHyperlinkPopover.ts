@@ -1,12 +1,13 @@
 import { Editor } from '@tiptap/core'
 
+import { HYPERLINK_MARK_NAME } from '../constants'
 import { createFloatingToolbar, hideCurrentToolbar } from '../helpers/floatingToolbar'
 import { createHTMLElement, validateURL } from '../utils'
 import { Link, Title } from '../utils/icons'
 
 const TOOLBAR_SHOW_DELAY_MS = 100
 
-export type EditHyperlinkModalOptions = {
+export type EditHyperlinkPopoverOptions = {
   editor: Editor
   validate?: (url: string) => boolean
   link: HTMLAnchorElement
@@ -14,7 +15,14 @@ export type EditHyperlinkModalOptions = {
   markName?: string
 }
 
-export default function editHyperlinkPopover(options: EditHyperlinkModalOptions): void {
+/**
+ * @deprecated Renamed to `EditHyperlinkPopoverOptions` to match the file
+ * name and the rest of the popover-options naming (`PreviewHyperlinkOptions`,
+ * `CreateHyperlinkOptions`). Will be removed in the next major.
+ */
+export type EditHyperlinkModalOptions = EditHyperlinkPopoverOptions
+
+export default function editHyperlinkPopover(options: EditHyperlinkPopoverOptions): void {
   const { editor, link, validate } = options
 
   const form = createHTMLElement('form', { className: 'hyperlink-edit-popover' })
@@ -106,7 +114,7 @@ export default function editHyperlinkPopover(options: EditHyperlinkModalOptions)
     editor
       .chain()
       .focus()
-      .extendMarkRange(options.markName ?? 'hyperlink')
+      .extendMarkRange(options.markName ?? HYPERLINK_MARK_NAME)
       .editHyperlink({ newURL: newHref, newText })
       .run()
 

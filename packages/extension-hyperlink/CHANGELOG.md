@@ -8,6 +8,54 @@ The extension's major version tracks the docs.plus product line. `1.x` correspon
 
 ---
 
+## [2.1.0] — 2026-04-21
+
+Post-`2.0.0` hardening pass. No public-API breakage: every change widens an existing safety net or closes a parity gap with `@tiptap/extension-link` v3. Minor (not patch) bump because the public barrel grew: `SAFE_WINDOW_FEATURES` and `EditHyperlinkPopoverOptions` are new re-exports from the package root — per the project's semver policy any new symbol on the barrel is a minor.
+
+### Security
+
+- **Widened dangerous-scheme blocklist.** `DANGEROUS_SCHEME_RE` now also rejects `file:` and `blob:` URIs at every entry point (`parseHTML`, input rule, paste handler, paste rule, click handler, preview popover, autolink). `file:` exfiltrates local-disk paths from the host page when followed; `blob:` URLs persist scriptable HTML across the document's lifetime. Both are now uniformly refused. The exported `DANGEROUS_SCHEME_RE` and `isSafeHref` helpers reflect the new floor — BYO popovers automatically inherit the wider blocklist.
+- **Defensive `isSafeHref` gate inside `validateURL`.** Belt-and-braces — even if a downstream consumer skips the regex, the `WHATWG URL`-based validator now refuses dangerous schemes before parsing. Closes the "validator-as-public-API" hole where consumers used `validateURL` directly to vet user input.
+- **`renderHTML` re-validation.** The mark serializer now passes the stored `href` through `isSafeHref` and blanks the attribute if it fails. Even if a tampered document smuggles `<a href="javascript:…">` past parse — e.g. via collaborative edits, a misbehaving extension, or a downstream HTML serializer — it is never written back into the editor DOM as a live anchor.
+- **`window.open` safety harness.** All read-side navigation paths (preview "Open" button, `clickHandler` read-only fallback, new middle-click `auxclick` handler) now:
+  - re-check `isSafeHref(href)`,
+  - run the composed `isAllowedUri` policy (mirroring write-side),
+  - and pass `'noopener,noreferrer'` as the `window.open` features arg, so the new tab cannot reach back into `window.opener` or leak a Referer header. Tabnabbing surface eliminated end-to-end.
+- **`isAllowedUri` threaded through the preview popover.** `PreviewHyperlinkOptions` gains an optional `isAllowedUri` field (defaulted from the click-handler plugin to the composed gate); the prebuilt preview popover's "Open" button consults it before `window.open`. Closes the last asymmetry where a tightened `isAllowedUri` policy was honored on click + middle-click but not on the popover's anchor button. BYO popovers should call the same gate for parity.
+
+### Added
+
+- **Middle-click (`auxclick`) handler.** Without it, middle-click bypasses the capture-phase primary-click guard and the browser would happily open `javascript:` / `data:` / `file:` / `blob:` anchors in a new tab — a full circumvention of the security posture above. The new handler runs `isSafeHref` + `isAllowedUri`, then opens with `noopener,noreferrer`. Right-click (`button === 2`) is left untouched so the native context menu still works.
+- **`shouldAutoLink` honored by paste handler plugin.** Previously only the `markPasteRule` and `autolinkPlugin` consulted the per-URI veto, leaving the smart-paste path (paste a URL with a non-empty selection) as a hole. The plugin now respects the same hook for full parity with `@tiptap/extension-link` v3 and with the rest of the package's autolink policy surface.
+- **Internal `logger` helper.** New `src/utils/logger.ts` standardizes `[extension-hyperlink]` prefixed `console.warn` / `console.error` calls. Bundlers strip `console.log`/`debug` in production builds but keep `warn`/`error` — using a typed wrapper makes the lifecycle explicit and the prefix gives library users a single string to grep when triaging issues. All in-package call sites (`editHyperlink`, `copyToClipboard`, `createHyperlinkPopover`, `previewHyperlinkPopover`, `validateURL`) migrated.
+
+### Changed
+
+- **Autolink boundary detection now Unicode-aware.** Word splitting uses `/\s+/` (not just `' '`), so links followed by a tab, NBSP, em-space, ideographic space, or any other Unicode whitespace are recognized as link boundaries. Fixes silent autolink misses in CJK / European-typography content.
+- **Autolink skips `code` marks.** A URL typed inside an inline `code` mark is content, not a navigation target — it must round-trip verbatim. The autolink plugin now consults `state.schema.marks.code` and refuses to apply a hyperlink mark inside any range that already carries the `code` mark. Mirrors `@tiptap/extension-link` v3 canon and matches user expectation in technical documents.
+- **`setHyperlink` / `unsetHyperlink` / `toggleHyperlink` are now strictly composable.** The shared body operates on the parent transaction via `commands.setMark` (which shares `tr` across the chain) instead of dispatching a nested `chain().run()`. `editor.chain().extendMarkRange('hyperlink').setHyperlink({ href }).run()` now lands as a single transaction — same fix that landed for `editHyperlinkCommand` in v2.0.0 ("Applying a mismatched transaction"). No behavior change for the common single-command call site.
+
+### Fixed
+
+- **`README` accuracy pass.** `HTMLAttributes` no longer documents `target` / `image` (those keys are stripped on render); the BYO `setHyperlink` example uses `editor.chain().setHyperlink({ href }).run()` (was `setMark`); the URL-handling section names `normalizeHref` (the actual export) instead of `normalizeLinkifyHref` (internal); the Security section reflects the widened blocklist, the `renderHTML` re-validation, and the `noopener,noreferrer` features arg.
+
+### Tests
+
+- **Bun unit suite** extended with coverage for `file:` and `blob:` schemes across `validateURL`, `DANGEROUS_SCHEME_RE`, and `isSafeHref`.
+- **Cypress E2E** gains:
+  - `nav-guards.cy.ts` — middle-click navigation safety (safe-href passthrough with `noopener,noreferrer`, `javascript:` / `file:` / `blob:` refusal, right-click left untouched).
+  - `xss-guards.cy.ts` — wider dangerous-scheme regex assertion plus a new `renderHTML` re-validation block that injects a tampered mark via raw transaction and asserts the serialized anchor's `href` is blanked.
+  - `autolink.cy.ts` — pins the `code`-mark autolink skip, and a new `shouldAutoLink` veto block that exercises the policy hook across all three autolink surfaces (autolink plugin, paste handler, paste rule) — closes the regression hole where the paste handler bypassed `shouldAutoLink`.
+  - `canon-options.cy.ts` (new) — pins `enableClickSelection: true` (click-to-select-mark-range) and `exitable: true` (ArrowRight at the right edge clears the storedMark).
+
+### Internal
+
+- **Playground accepts policy/option flags via query string** (`?shouldAutoLink=block`, `?clickSelection=on`, `?exitable=on`) so the dedicated specs can exercise opt-in behaviors without forking the playground bootstrap.
+- **Public popover types are now actually exported.** `EditHyperlinkPopoverOptions` / `EditHyperlinkModalOptions` (the deprecated alias) are re-exported from `src/popovers/index.ts` so they reach the public barrel — they were referenced in TypeScript section of the README but unreachable via `import { EditHyperlinkPopoverOptions } from '@docs.plus/extension-hyperlink'`.
+- **Webapp `navigateHref` guards relative hrefs.** `isSafeHref` accepts scheme-less hrefs by design (relative paths / fragments) but `new URL(href)` would throw on them; wrap the parse in a `try/catch` and fall through to the new-tab open path so legacy / external-authoring hrefs don't crash navigation.
+
+---
+
 ## [2.0.0] — 2026-04-20
 
 **First major release since `1.5.2`.** This entry rolls up every user-facing change made while docs.plus was iterating toward alpha v2. Treat the upgrade as effectively a rewrite of the public surface — the option names, popover contract, CSS selectors, validation rules, URL canonicalization, and type exports are all new. The bones (Tiptap extension that marks hyperlinks, autolinks on whitespace, opens a popover on click) are the same.
@@ -19,9 +67,10 @@ A complete migration guide from `1.5.2` is at the end of this entry, including a
 - **New popover architecture** built on `@floating-ui/dom` — preview / create / edit popovers ship as small DOM-returning factory functions, the extension owns positioning, and the toolbar stays stuck to its anchor on scroll (no more drift).
 - **Unified write-boundary URL canonicalization** — one `normalizeHref` used by the create popover, edit popover, `setHyperlink` command, markdown input rule, autolink plugin, paste handler, and paste rule. Bare phones become `tel:+CCNSN`, bare emails become `mailto:…`, bare domains become `https://…`, and user-typed schemes pass through untouched. The same input produces the same stored `href` no matter how it entered the editor.
 - **50+ special URL scheme catalog** (`whatsapp://`, `tg://`, `vscode://`, `slack://`, `zoom://`, `figma://`, `spotify:`, and friends) exposed as a brand-neutral `SpecialUrlType` union plus a `getSpecialUrlInfo(href)` classifier. Consumers map types to their own icon set — the extension ships zero icon catalog.
-- **Defence-in-depth XSS guards** — `javascript:`, `data:`, and `vbscript:` are rejected at every entry point: `parseHTML`, paste handler, input rule, click handler, and popover open. The regex is exported as `DANGEROUS_SCHEME_RE` so BYO popovers can apply the same check.
+- **Defense-in-depth XSS guards** — `javascript:`, `data:`, and `vbscript:` are rejected at every entry point: `parseHTML`, paste handler, input rule, click handler, and popover open. The regex is exported as `DANGEROUS_SCHEME_RE` so BYO popovers can apply the same check.
 - **Default stylesheet ships separately** (`import '@docs.plus/extension-hyperlink/styles.css'`) and is fully themeable via `--hl-*` CSS custom properties with `light-dark()` support. Fully-custom UIs pay zero CSS cost.
-- **Bun-native unit suite + clean-room Cypress E2E** — 199 unit tests (`bun test src`, ~80 ms) plus ~112 E2E tests that exercise the **built `dist/` loaded via the published `exports` map**, i.e. exactly what an npm consumer installs.
+- **Bun-native unit suite + clean-room Cypress E2E** — 215 unit tests (`bun test src`, ~80 ms) plus ~112 E2E tests that exercise the **built `dist/` loaded via the published `exports` map**, i.e. exactly what an npm consumer installs.
+- **`@tiptap/extension-link` canon parity** — `setHyperlink` is a pure command (writes the mark only); the side-effecting popover lives behind a dedicated `openCreateHyperlinkPopover` command so chains stay transactional. New `toggleHyperlink` plus migration aliases `setLink` / `unsetLink` / `toggleLink`. New options `defaultProtocol`, `isAllowedUri`, `shouldAutoLink`, `enableClickSelection`, `exitable` mirror the upstream Link-extension surface so existing policies port over without rewrites.
 
 ### Breaking Changes (from `1.5.2`)
 
@@ -99,6 +148,21 @@ Grouped by migration friction. The mechanical renames at the top have a [one-sho
 - `getSpecialUrlInfo(href)` — classifies a URL against a 50+ scheme catalog and returns `{ type, title, category } | null`. Type is a `SpecialUrlType` string-literal.
 - `isBarePhone(trimmed)` _(module-internal, pinned by 39 unit tests)_ — one-shot E.164 detection + canonicalization. Returns `{ ok: true, href: 'tel:+CCNSN' } | { ok: false }`. Strict: only `+`-prefixed 8–15 digit numbers are recognized, so years (`2024`), ZIPs (`90210`), and bare numerics (`5551234567`) never get turned into broken `tel:` links.
 - `DANGEROUS_SCHEME_RE` — shared regex for the XSS check; exported so BYO popovers apply the same invariant as the prebuilt ones.
+- `isSafeHref(href)` — single-call boolean predicate (with type narrowing) wrapping `DANGEROUS_SCHEME_RE`. Used at every WRITE boundary in the extension (`setHyperlink`, paste handler, paste rule, input rule, `parseHTML`, `editHyperlink`); exported so BYO popovers reuse the exact same gate.
+
+**Tiptap canon options.**
+
+- `defaultProtocol: string` (default `'https'`) — scheme used by `normalizeHref` when promoting bare domains.
+- `isAllowedUri?: (uri, ctx) => boolean` — composes WITH the built-in safety floor. Receives `{ defaultValidate, protocols, defaultProtocol }` so policies can reuse `isSafeHref` instead of re-implementing it. Mirrors the `@tiptap/extension-link` shape; `IsAllowedUriContext` is exported.
+- `shouldAutoLink?: (uri) => boolean` — per-link veto inside the autolink plugin and paste rules. Lets hosts block app-wide categories (e.g. internal mention syntax) without losing paste-as-link UX for everything else.
+- `enableClickSelection: boolean` (default `false`) — when `true`, clicking inside a link in editable mode selects the entire mark range.
+- `exitable: boolean` (default `false`) — when `true`, ArrowRight at the end of a hyperlink mark exits the mark so the next typed character is plain text.
+
+**Tiptap canon commands.**
+
+- `openCreateHyperlinkPopover(attributes?)` — dedicated UI command that opens the create popover anchored to the current selection. The historic side-effect on `setHyperlink()` (no-args) lives here now; `Mod-k` rebinds to it. No-op when no popover factory is wired up.
+- `toggleHyperlink({ href, … })` — toggles the mark on/off across the current selection. Same XSS + `isAllowedUri` gates as `setHyperlink`.
+- `setLink` / `unsetLink` / `toggleLink` — drop-in delegating aliases that ease migration from `@tiptap/extension-link`. They forward to the canonical `setHyperlink` / `unsetHyperlink` / `toggleHyperlink`, so future policy changes flow through automatically.
 
 **Default stylesheet.**
 
@@ -111,7 +175,7 @@ Grouped by migration friction. The mechanical renames at the top have a [one-sho
 - **Bare-phone canonicalization** at create / edit / markdown input rule / `setHyperlink`. Typing `+1 (555) 123-4567` stores `tel:+15551234567` — formatting stripped, digits-only after the `+`. Matches what autolink produces on whitespace; all paths now agree.
 - **Bare-email canonicalization** at the same boundary. `hi@example.com` stores `mailto:hi@example.com` instead of `https://hi@example.com` (which browsers resolve as HTTP basic-auth credentials).
 - **Deep-link autolink** — whitespace-triggered autolink now handles `whatsapp://`, `tg://`, `vscode://`, `slack://`, `spotify:`, `zoom://`, and 40+ others in addition to `http(s)://`. Custom protocols registered via `registerCustomProtocol('mychat')` pass through untouched.
-- **Read-side origin-leak defence** — the click handler and preview popover prefer the stored mark attribute (`attrs.href`) over the DOM `link.href` property, which resolves relative URLs against `document.baseURI`. Prevents `<a href="google.com">` injected via `setContent` from rendering as `http://<host-origin>/google.com`.
+- **Read-side origin-leak defense** — the click handler and preview popover prefer the stored mark attribute (`attrs.href`) over the DOM `link.href` property, which resolves relative URLs against `document.baseURI`. Prevents `<a href="google.com">` injected via `setContent` from rendering as `http://<host-origin>/google.com`.
 
 **Test harness.**
 
@@ -132,6 +196,12 @@ Grouped by migration friction. The mechanical renames at the top have a [one-sho
 - **`TOOLBAR_OFFSET`** in `clickHandler.ts` deduplicated; callers use the shared `DEFAULT_OFFSET` from `floatingToolbar.ts`.
 - **Plugin factories and keys** renamed camelCase: `autolinkPlugin`, `clickHandlerPlugin`, `pasteHandlerPlugin`; plugin-key strings `hyperlinkAutolink`, `hyperlinkClickHandler`, `hyperlinkPasteHandler`.
 - **File renames** to match casing: `copy2Clipboard.ts` → `copyToClipboard.ts`, `floating-toolbar.ts` → `floatingToolbar.ts`, `autoHyperlink.ts` → `autolink.ts`.
+- **`setHyperlink` is now a pure command.** The historic no-args overload that opened the create popover is split out into `openCreateHyperlinkPopover()` per Tiptap canon (commands stay pure; UI is its own command). The Mod-k shortcut rebinds automatically; programmatic callers that relied on `editor.commands.setHyperlink()` opening the popover must migrate to `editor.commands.openCreateHyperlinkPopover()`. With an `href` (`setHyperlink({ href })`), behaviour is unchanged.
+- **`Hyperlink` mark `image` attribute is no longer rendered to the DOM** (`rendered: false`). `<a>` has no standard `image` attribute, so the previous behaviour produced invalid HTML and polluted downstream sanitizers. The mark still carries the value for the preview popover (favicon / OG image); only the DOM serialization changed.
+- **Popover-internal write paths now route through `setHyperlink`.** The prebuilt `createHyperlink` popover used to call `editor.chain().setMark(...).setMeta(...).run()` directly; it now delegates to `editor.chain().setHyperlink({ href }).run()` so the composed XSS + `isAllowedUri` gate runs unconditionally. The popover surfaces a "Please enter a valid URL" error if the gate rejects.
+- **Symbol renames for naming consistency** (`getUrlScheme` → `getURLScheme` to match the SCREAMING-acronym policy used by `validateURL` / `DANGEROUS_SCHEME_RE`; internal `isValidSpecialScheme` → `isRecognizedSpecialScheme`; `EditHyperlinkModalOptions` → `EditHyperlinkPopoverOptions` with a `@deprecated` alias kept for one major; internal `showPopover` → `openHyperlinkToolbar`; autolink internals `TRAILING_PUNCT_RE` / `stripTrailingPunct` → `TRAILING_PUNCTUATION_RE` / `stripTrailingPunctuation`).
+- **All cross-module string literals replaced by `src/constants.ts`** — `HYPERLINK_MARK_NAME` (`'hyperlink'`) and `PREVENT_AUTOLINK_META` (`'preventAutolink'`) are imported by every site that previously had the magic string inline. Internal-only — neither is re-exported from the public barrel.
+- **`autolinkPlugin` `findLinks` core extracted to `utils/findLinks.ts`** for unit testing without spinning up a ProseMirror editor. The plugin's `appendTransaction` body shrinks; matcher behaviour is now pinned by an additional 12 unit tests covering URLs, emails, special schemes, phones, and trailing-punctuation stripping.
 
 ### Fixed
 
@@ -188,7 +258,7 @@ Grouped by migration friction. The mechanical renames at the top have a [one-sho
 
 ### Internal
 
-- **Bundle size**: ESM `dist/index.js` 23.48 KB, CJS 24.23 KB, DTS 9.35 KB. The DTS grew slightly versus late-cycle drafts because the `SpecialUrlType` literal union surfaces 43 string members in the public types — intentional trade-off for compile-time typo-protection on consumer icon tables.
+- **Bundle size**: ESM `dist/index.js` 25.78 KB, CJS 26.54 KB, DTS 14.91 KB. The DTS grew slightly versus late-cycle drafts because the `SpecialUrlType` literal union surfaces 43 string members in the public types and the new canon options + commands add to the declared command surface — intentional trade-off for compile-time typo-protection.
 - `tsconfig.json` excludes `src/**/__tests__/**` and `src/**/*.test.ts` from the build so unit tests don't leak into `dist/`. `bun-types` added as a dev dep so test files typecheck against `bun:test` without polluting the build.
 - `utils/index.ts` doc comment documents the explicit-named-export contract and lists every module-internal helper that intentionally does not leak through the public barrel.
 - `AGENTS.md` updated with the new `SpecialUrlType` contract, the naming convention (lowercase single-word brands, kebab-case for multi-word, brand spelling over URL-scheme abbreviation), the consumer `Partial<Record<SpecialUrlType, IconRenderer>>` pattern, and the `floatingToolbar.ts` invariant that virtual references must use a live `getBoundingClientRect` callback — never a snapshotted rect.

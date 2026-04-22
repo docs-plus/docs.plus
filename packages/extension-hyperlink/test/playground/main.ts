@@ -18,7 +18,17 @@ const { Hyperlink, createHyperlinkPopover, previewHyperlinkPopover, hideCurrentT
 const element = document.querySelector<HTMLElement>('#editor')
 if (!element) throw new Error('#editor mount point missing')
 
-const useCustomPopovers = new URLSearchParams(window.location.search).get('popover') === 'custom'
+const params = new URLSearchParams(window.location.search)
+const useCustomPopovers = params.get('popover') === 'custom'
+// `?shouldAutoLink=block` wires a `shouldAutoLink: () => false` veto so the
+// paste-handler / autolink / paste-rule plugins can be exercised against
+// the per-URI policy hook without changing default playground behavior.
+const blockAutoLink = params.get('shouldAutoLink') === 'block'
+// `?clickSelection=on` and `?exitable=on` flip the matching options for
+// dedicated click-selection / mark-exit specs without disturbing default
+// playground behavior.
+const enableClickSelection = params.get('clickSelection') === 'on'
+const exitable = params.get('exitable') === 'on'
 
 // A stable function reference we pass as `Hyperlink.configure({ validate })`
 // so `custom-popover.cy.ts` can assert the factory receives the *same*
@@ -59,7 +69,7 @@ function byoCreateHyperlink(options: HyperlinkModule.CreateHyperlinkOptions): HT
 
 // Mirrors the `previewHyperlink` example in README.md so the spec can
 // verify the snippet as-written: anchor from `attrs.href` + Remove button
-// wiring `hideCurrentToolbar()` and `editor.unsetHyperlink()`.
+// wiring `hideCurrentToolbar()` and `editor.chain().focus().unsetHyperlink().run()`.
 function byoPreviewHyperlink(options: HyperlinkModule.PreviewHyperlinkOptions): HTMLElement {
   byoState.previewCalls.push(options)
   const { editor, attrs } = options
@@ -98,8 +108,11 @@ const editor = new Editor({
       linkOnPaste: true,
       protocols: ['ftp', 'mailto'],
       // `validate` is only wired on the BYO branch so the prebuilt specs
-      // keep their exact prior behaviour (they don't pass a validator).
+      // keep their exact prior behavior (they don't pass a validator).
       ...(useCustomPopovers ? { validate: configuredValidate } : {}),
+      ...(blockAutoLink ? { shouldAutoLink: () => false } : {}),
+      ...(enableClickSelection ? { enableClickSelection: true } : {}),
+      ...(exitable ? { exitable: true } : {}),
       popovers: useCustomPopovers
         ? { previewHyperlink: byoPreviewHyperlink, createHyperlink: byoCreateHyperlink }
         : { previewHyperlink: previewHyperlinkPopover, createHyperlink: createHyperlinkPopover }

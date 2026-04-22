@@ -42,13 +42,15 @@ describe('BYO popover factories — README public contract', () => {
       })
     })
 
-    it('forwards setHyperlink attributes into CreateHyperlinkOptions.attributes', () => {
-      // Mod+K calls setHyperlink with no args, so `attributes` arrives as
-      // `{}` (a pass-through test of a literal empty object is useless).
-      // Drive setHyperlink from the spec with real attributes so we prove
-      // the extension's `attributes || {}` branch actually forwards.
+    it('forwards openCreateHyperlinkPopover attributes into CreateHyperlinkOptions.attributes', () => {
+      // v2 split: `setHyperlink` writes the mark; the side-effecting
+      // popover lives behind `openCreateHyperlinkPopover`. Mod+K calls
+      // it with no args (attributes default to `{}`), so a literal
+      // empty-object pass-through test is useless. Drive the command
+      // from the spec with real attributes to prove the extension's
+      // `attributes ?? {}` branch actually forwards.
       cy.window().then((win) => {
-        win._editor.commands.setHyperlink({ href: 'https://forwarded.example' })
+        win._editor.commands.openCreateHyperlinkPopover({ href: 'https://forwarded.example' })
       })
       cy.get(BYO_CREATE).should('be.visible')
       cy.window().its('_byo.createCalls').should('have.length', 1)

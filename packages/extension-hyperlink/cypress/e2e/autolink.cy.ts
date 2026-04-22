@@ -46,7 +46,7 @@ describe('Autolink + paste — canonical href consistency', () => {
     })
 
     it('emits mailto: for email matches (not https://user@...)', () => {
-      // Defence-in-depth: the helper must NOT run emails through the
+      // Defense-in-depth: the helper must NOT run emails through the
       // URL-normalization path. This would have been the regression
       // mode when fixing the `findLinks` href-clobber bug.
       typeThroughAutolink('hello@example.com')
@@ -85,6 +85,29 @@ describe('Autolink + paste — canonical href consistency', () => {
     })
   })
 
+  describe('code mark', () => {
+    it('does NOT autolink URLs typed inside an inline code mark', () => {
+      // Code-marked text is *content*, not a navigation target — a
+      // URL there must round-trip verbatim. Pins the v2.x autolink
+      // gate that consults `schema.marks.code` and skips ranges that
+      // already carry it. Mirrors @tiptap/extension-link v3 canon.
+      cy.getEditor().then((editor) => {
+        editor
+          .chain()
+          .focus()
+          .insertContent({
+            type: 'text',
+            text: 'example.com',
+            marks: [{ type: 'code' }]
+          })
+          .insertContent(' ')
+          .run()
+      })
+      cy.get('#editor a').should('not.exist')
+      cy.get('#editor code').should('contain.text', 'example.com')
+    })
+  })
+
   describe('paste over selection', () => {
     it('upgrades bare-domain paste to https://', () => {
       cy.setEditorContent('<p>Replace this word with a link.</p>')
@@ -105,3 +128,59 @@ describe('Autolink + paste — canonical href consistency', () => {
     })
   })
 })
+
+describe('shouldAutoLink veto — parity across autolink + paste-handler + paste-rule', () => {
+  // Reload with a `shouldAutoLink: () => false` policy wired into the
+  // extension. Without the veto, all three surfaces would autolink the
+  // pasted/typed URL — these tests pin that the policy is honored
+  // consistently across every entry point. Earlier the paste handler
+  // plugin alone bypassed `shouldAutoLink` (regression mode).
+  beforeEach(() => {
+    cy.visit('/?shouldAutoLink=block')
+    cy.window({ timeout: 10000 }).should('have.property', '_editor')
+    cy.setEditorContent('<p></p>')
+  })
+
+  it('autolink plugin: refuses to linkify on whitespace boundary', () => {
+    cy.getEditor().then((editor) => {
+      editor.chain().focus().insertContent('example.com').run()
+    })
+    cy.getEditor().then((editor) => {
+      editor.chain().insertContent(' ').run()
+    })
+    cy.get('#editor a').should('not.exist')
+  })
+
+  it('paste handler: refuses to linkify pasted URL over a non-empty selection', () => {
+    cy.setEditorContent('<p>replace word here</p>')
+    cy.selectText('word')
+    cy.window().then((win) => {
+      const dt = new win.DataTransfer()
+      dt.setData('text/plain', 'example.com')
+      cy.get('#editor [contenteditable="true"]').trigger('paste', {
+        clipboardData: dt,
+        bubbles: true,
+        cancelable: true
+      })
+    })
+    cy.get('#editor a').should('not.exist')
+  })
+
+  it('paste rule (markPasteRule): refuses to linkify pasted URL inside a paragraph', () => {
+    cy.window().then((win) => {
+      const dt = new win.DataTransfer()
+      dt.setData('text/plain', 'visit example.com today')
+      cy.get('#editor [contenteditable="true"]').trigger('paste', {
+        clipboardData: dt,
+        bubbles: true,
+        cancelable: true
+      })
+    })
+    cy.get('#editor a').should('not.exist')
+  })
+})
+
+// Make this file an ES module so the top-level `typeThroughAutolink`
+// helper doesn't collide with the same identifier in
+// `special-schemes.cy.ts` under Cypress's shared TS project.
+export {}

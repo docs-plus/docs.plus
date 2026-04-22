@@ -12,7 +12,7 @@
 
 // `+`, digit, 4–18 chars of digits + permitted formatting, digit. The
 // digit anchors at both ends turn the caller-must-trim contract into a
-// defence-in-depth check rather than a convention.
+// defense-in-depth check rather than a convention.
 const PHONE_SHAPE_RE = /^\+\d[\d\s.\-()]{4,18}\d$/
 
 const NON_DIGIT_RE = /\D/g

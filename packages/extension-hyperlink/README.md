@@ -63,52 +63,74 @@ The `styles.css` import and `popovers` options are optional — see [Popovers](#
 
 ## Options
 
-| Option           | Type                                      | Default   | Description                                                                                     |
-| ---------------- | ----------------------------------------- | --------- | ----------------------------------------------------------------------------------------------- |
-| `autolink`       | `boolean`                                 | `true`    | Convert URLs to links as you type.                                                              |
-| `openOnClick`    | `boolean`                                 | `true`    | Open links on click. Overridden by `popovers.previewHyperlink` when set.                        |
-| `linkOnPaste`    | `boolean`                                 | `true`    | Wrap the current selection in a link when a URL is pasted.                                      |
-| `protocols`      | `Array<string \| LinkProtocolOptions>`    | `[]`      | Extra protocols to register with [linkifyjs](https://linkify.js.org). 50+ are already built in. |
-| `HTMLAttributes` | `Record<string, any>`                     | `{ ... }` | Attributes applied to rendered `<a>` tags. Set a key to `null` to remove it.                    |
-| `validate`       | `(url: string) => boolean`                | —         | Reject auto-linked URLs when this returns `false`.                                              |
-| `popovers`       | `{ previewHyperlink?, createHyperlink? }` | —         | Factory functions that return `HTMLElement`. See [Popovers](#popovers).                         |
+| Option                 | Type                                      | Default                                   | Description                                                                                                                                                                                                                                      |
+| ---------------------- | ----------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `autolink`             | `boolean`                                 | `true`                                    | Convert URLs to links as you type.                                                                                                                                                                                                               |
+| `openOnClick`          | `boolean`                                 | `true`                                    | Open links on click. Overridden by `popovers.previewHyperlink` when set.                                                                                                                                                                         |
+| `linkOnPaste`          | `boolean`                                 | `true`                                    | Wrap the current selection in a link when a URL is pasted.                                                                                                                                                                                       |
+| `protocols`            | `Array<string \| LinkProtocolOptions>`    | `[]`                                      | Extra protocols to register with [linkifyjs](https://linkify.js.org). 50+ are already built in.                                                                                                                                                  |
+| `HTMLAttributes`       | `Partial<HyperlinkAttributes>`            | `{ rel: 'noopener noreferrer nofollow' }` | Attributes applied to rendered `<a>` tags. Set a key to `null` to remove it. `target` and `image` are stored on the mark but **never** rendered to the DOM (the click handler decides where to open the link, and `<a image>` isn't valid HTML). |
+| `validate`             | `(url: string) => boolean`                | —                                         | Reject auto-linked URLs when this returns `false`.                                                                                                                                                                                               |
+| `popovers`             | `{ previewHyperlink?, createHyperlink? }` | —                                         | Factory functions that return `HTMLElement`. See [Popovers](#popovers).                                                                                                                                                                          |
+| `defaultProtocol`      | `string`                                  | `'https'`                                 | Scheme used by `normalizeHref` when promoting bare domains (`example.com` → `${defaultProtocol}://example.com`).                                                                                                                                 |
+| `isAllowedUri`         | `(uri, ctx) => boolean`                   | —                                         | Optional URI policy hook. Runs AFTER the built-in `isSafeHref` gate (so dangerous schemes are always blocked) and BEFORE the mark is written. `ctx` mirrors `extension-link`.                                                                    |
+| `shouldAutoLink`       | `(uri) => boolean`                        | —                                         | Optional per-link autolink veto. Called for every candidate the autolink plugin and paste rules detect; return `false` to skip autolinking that specific URI.                                                                                    |
+| `enableClickSelection` | `boolean`                                 | `false`                                   | When `true`, clicking inside a link in editable mode selects the entire mark range. Mirrors `@tiptap/extension-link`.                                                                                                                            |
+| `exitable`             | `boolean`                                 | `false`                                   | When `true`, ArrowRight at the end of a hyperlink mark exits the mark — the next typed character is plain text.                                                                                                                                  |
 
 Example with options:
 
 ```ts
+import { isSafeHref, Hyperlink } from '@docs.plus/extension-hyperlink'
+
 Hyperlink.configure({
   autolink: true,
   openOnClick: true,
   linkOnPaste: true,
+  defaultProtocol: 'https',
   protocols: ['ftp', { scheme: 'tel', optionalSlashes: true }],
   HTMLAttributes: { rel: 'noopener noreferrer nofollow', target: '_blank' },
-  validate: (href) => /^https?:\/\//.test(href)
+  validate: (href) => /^https?:\/\//.test(href),
+  isAllowedUri: (uri, ctx) => ctx.defaultValidate(uri) && !uri.includes('blocked.example'),
+  shouldAutoLink: (uri) => !uri.startsWith('@'),
+  enableClickSelection: true,
+  exitable: true
 })
 ```
 
 ## Commands
 
-| Command                                | Description                                                                                     |
-| -------------------------------------- | ----------------------------------------------------------------------------------------------- |
-| `setHyperlink({ href, target? })`      | Create a link on the current selection (or open the `createHyperlink` popover when configured). |
-| `unsetHyperlink()`                     | Remove the link mark from the current selection.                                                |
-| `editHyperlink({ newURL?, newText? })` | Update the href and/or inner text of the link at the current selection.                         |
-| `editHyperlinkHref(url)`               | Shorthand for href-only edits.                                                                  |
-| `editHyperlinkText(text)`              | Shorthand for text-only edits.                                                                  |
+| Command                                              | Description                                                                                                                                                    |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `setHyperlink({ href, target?, title?, image? })`    | Pure command — write the hyperlink mark over the current selection. Returns `false` (no-op) if `href` is empty/missing or fails the XSS / `isAllowedUri` gate. |
+| `unsetHyperlink()`                                   | Remove the link mark from the current selection.                                                                                                               |
+| `toggleHyperlink({ href, target?, title?, image? })` | Toggle the hyperlink mark on/off across the current selection. Same gates as `setHyperlink`.                                                                   |
+| `openCreateHyperlinkPopover(attributes?)`            | UI command — open the create-hyperlink popover anchored to the current selection. No-op when no popover factory is configured.                                 |
+| `editHyperlink({ newURL?, newText? })`               | Update the href and/or inner text of the link at the current selection.                                                                                        |
+| `editHyperlinkHref(url)`                             | Shorthand for href-only edits.                                                                                                                                 |
+| `editHyperlinkText(text)`                            | Shorthand for text-only edits.                                                                                                                                 |
+| `setLink` / `unsetLink` / `toggleLink`               | Drop-in delegating aliases for `setHyperlink` / `unsetHyperlink` / `toggleHyperlink` to ease migration from `@tiptap/extension-link`.                          |
 
 ```ts
 editor.commands.setHyperlink({ href: 'https://example.com' })
+editor.commands.toggleHyperlink({ href: 'https://example.com' })
+editor.commands.openCreateHyperlinkPopover() // bound to Mod-k
 editor.commands.editHyperlink({ newURL: 'https://new.example.com', newText: 'New label' })
 editor.commands.unsetHyperlink()
 
 editor.getAttributes('hyperlink').href // read current href
 ```
 
+> **v2 note** — `setHyperlink` is now a pure command. The historic
+> `setHyperlink()` (no-args) overload that opened the create popover
+> moved to `openCreateHyperlinkPopover()`. `Mod-k` rebinds automatically.
+
 ## Keyboard shortcuts
 
-| Shortcut | Action                                               |
-| -------- | ---------------------------------------------------- |
-| `Mod-k`  | Create or edit a hyperlink on the current selection. |
+| Shortcut     | Action                                                                                                      |
+| ------------ | ----------------------------------------------------------------------------------------------------------- |
+| `Mod-k`      | Open the create-hyperlink popover anchored to the current selection (no-op without a popover factory).      |
+| `ArrowRight` | When `exitable: true`, exits the hyperlink mark at the right boundary so the next typed char is plain text. |
 
 ## Popovers
 
@@ -161,13 +183,12 @@ Hyperlink.configure({ popovers: { previewHyperlink } })
 import {
   Hyperlink,
   hideCurrentToolbar,
-  normalizeHref,
   validateURL,
   type CreateHyperlinkOptions
 } from '@docs.plus/extension-hyperlink'
 
 function createHyperlink(options: CreateHyperlinkOptions): HTMLElement {
-  const { editor, extensionName, validate } = options
+  const { editor, validate } = options
   const form = document.createElement('form')
 
   const input = document.createElement('input')
@@ -184,14 +205,12 @@ function createHyperlink(options: CreateHyperlinkOptions): HTMLElement {
     const url = input.value.trim()
     if (!validateURL(url, { customValidator: validate })) return
 
-    // Canonicalize before writing to the mark. `google.com` is a valid
-    // link, but stored verbatim it resolves against the host page's
-    // origin on click — `normalizeHref` prepends `https://` for bare
-    // domains and preserves anything already scheme-prefixed.
-    const href = normalizeHref(url)
-
-    hideCurrentToolbar()
-    editor.chain().setMark(extensionName, { href }).setMeta('preventAutolink', true).run()
+    // Delegate to the canonical command — it normalizes against
+    // `defaultProtocol`, runs the composed XSS + `isAllowedUri` gate,
+    // and stamps the autolink-suppression meta. Returns `false` (no-op)
+    // when the gate rejects, so the popover can stay open and re-prompt.
+    const applied = editor.chain().setHyperlink({ href: url }).run()
+    if (applied) hideCurrentToolbar()
   })
 
   return form
@@ -300,28 +319,34 @@ The create popover, markdown input rule, autolink, and paste all produce the sam
 
 Validation also rejects scheme-prefixed typos with no real host. `https://googlecom` fails; `http://localhost`, `https://127.0.0.1`, and any registered custom scheme pass.
 
-Two helpers are exported for custom popovers:
-
-| Helper                    | Use when                                             |
-| ------------------------- | ---------------------------------------------------- |
-| `normalizeHref(raw)`      | You have a raw URL string.                           |
-| `normalizeLinkifyHref(m)` | You have a linkifyjs match (e.g. from `find(text)`). |
+For custom popovers, `normalizeHref(raw, defaultProtocol?)` is exported — pass the user's input string and it returns the canonical href the editor would have stored. (linkifyjs match objects are normalized internally; the `normalizeLinkifyHref` helper stays module-private.)
 
 ## Security
 
-Dangerous schemes (`javascript:`, `data:`, `vbscript:`) are blocked everywhere a link enters or leaves the editor:
+Dangerous schemes (`javascript:`, `data:`, `vbscript:`, `file:`, `blob:`) are blocked everywhere a link enters or leaves the editor:
 
 - `parseHTML` strips matching `<a>` tags on document load and paste.
-- The markdown input rule rejects `[text](javascript:…)` at creation.
-- The click handler and preview popover short-circuit `window.open(…)` when the stored href matches.
+- Every write boundary (input rule, paste rule, paste handler, `setHyperlink` / `toggleHyperlink` / `editHyperlink`, autolink) routes through the shared `isSafeHref` gate composed with the user's `isAllowedUri` policy.
+- `renderHTML` re-checks `isSafeHref` on serialize — a hostile mark that ever lands in the doc (legacy migration, raw `addMark`, Yjs replay) is emitted with an empty `href` instead of round-tripping the dangerous URL.
+- Click handlers (primary, middle, touch) and the preview "Open" button short-circuit `window.open(…)` for unsafe hrefs and pass `'noopener,noreferrer'` features so opened tabs cannot read `window.opener` or leak Referer.
 
-On the read side, both handlers prefer the stored mark attribute over the DOM `link.href` property — so a relative href injected via `setContent` won't resolve against the host page's origin.
+On the read side, both click handlers prefer the stored mark attribute over the DOM `link.href` property — so a relative href injected via `setContent` won't resolve against the host page's origin.
 
-The shared `DANGEROUS_SCHEME_RE` regex is exported for custom popovers that need the same check.
+`isSafeHref(href)` and `DANGEROUS_SCHEME_RE` are exported for custom popovers that need the same check; prefer `isSafeHref` (returns a TS type guard).
+
+`SAFE_WINDOW_FEATURES` is also exported — it's the `'noopener,noreferrer'` features string the extension passes to every `window.open(href, '_blank', …)` call. BYO popovers and custom click-handlers should pin the same constant so a future tightening (e.g. adding `nofollow`) flows everywhere from one place:
+
+```ts
+import { isSafeHref, SAFE_WINDOW_FEATURES } from '@docs.plus/extension-hyperlink'
+
+if (isSafeHref(href)) {
+  window.open(href, '_blank', SAFE_WINDOW_FEATURES)
+}
+```
 
 ## TypeScript
 
-Definitions are bundled. Public types: `HyperlinkOptions`, `HyperlinkAttributes`, `PreviewHyperlinkOptions`, `CreateHyperlinkOptions`, `EditHyperlinkModalOptions`, `LinkProtocolOptions`, `FloatingToolbarOptions`, `FloatingToolbarInstance`, `LinkifyMatchLike`.
+Definitions are bundled. Public types: `HyperlinkOptions`, `HyperlinkAttributes`, `IsAllowedUriContext`, `PreviewHyperlinkOptions`, `CreateHyperlinkOptions`, `EditHyperlinkPopoverOptions` (formerly `EditHyperlinkModalOptions`, kept as a deprecated alias), `LinkProtocolOptions`, `FloatingToolbarOptions`, `FloatingToolbarInstance`, `LinkifyMatchLike`. Public utility predicates: `isSafeHref`, `validateURL`, `DANGEROUS_SCHEME_RE`. Public constant: `SAFE_WINDOW_FEATURES`.
 
 ## Testing
 

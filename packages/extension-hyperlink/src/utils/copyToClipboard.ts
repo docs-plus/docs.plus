@@ -1,3 +1,5 @@
+import { logger } from './logger'
+
 export const copyToClipboard = async (
   text: string,
   callback?: (success: boolean) => void
@@ -17,7 +19,7 @@ export const copyToClipboard = async (
     callback?.(true)
     return true
   } catch (error) {
-    console.warn('Failed to copy to clipboard:', error)
+    logger.warn('copyToClipboard failed', error)
     callback?.(false)
     return false
   }

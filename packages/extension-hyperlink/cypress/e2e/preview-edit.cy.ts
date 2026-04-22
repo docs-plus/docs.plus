@@ -69,7 +69,7 @@ describe('previewHyperlinkPopover + editHyperlinkPopover — prebuilt preview / 
     it('dismisses on Escape when focus is inside the toolbar', () => {
       // The Escape handler is attached to the floating-toolbar element, so focus
       // must live inside it for the key to reach the listener — this matches the
-      // behaviour of the create popover where the input is auto-focused.
+      // behavior of the create popover where the input is auto-focused.
       cy.get('#editor a').click()
       cy.get(PREVIEW).should('be.visible')
       cy.get(`${PREVIEW} .edit`).focus()

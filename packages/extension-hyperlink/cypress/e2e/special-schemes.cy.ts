@@ -115,7 +115,7 @@ describe('Deep links and domain mappings — autolink + create popover', () => {
     })
 
     it('rejects an unregistered scheme (foo://bar)', () => {
-      // Defence-in-depth: only the catalog in `specialUrls.ts` should
+      // Defense-in-depth: only the catalog in `specialUrls.ts` should
       // wave non-web schemes through. Anything else must trip the
       // `inputs-wrapper.error` branch and not create an `<a>`.
       cy.get('body').realPress(['Meta', 'K'])

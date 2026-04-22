@@ -1,7 +1,8 @@
 import { hideCurrentToolbar } from '../helpers/floatingToolbar'
 import type { CreateHyperlinkOptions } from '../hyperlink'
-import { createHTMLElement, normalizeHref, validateURL } from '../utils'
+import { createHTMLElement, validateURL } from '../utils'
 import { Link } from '../utils/icons'
+import { logger } from '../utils/logger'
 
 type HyperlinkElements = {
   root: HTMLElement
@@ -51,7 +52,7 @@ const createHyperlinkElements = (): HyperlinkElements | null => {
 
     return { root, form, input, button, inputsWrapper, errorMessage }
   } catch (error) {
-    console.error('Failed to create hyperlink elements:', error)
+    logger.error('createHyperlinkPopover: failed to build DOM', error)
     return null
   }
 }
@@ -92,23 +93,28 @@ const setupEventListeners = (elements: HyperlinkElements, options: CreateHyperli
     if (button.disabled) return
 
     const url = input.value.trim()
+    // Pre-submit UX gate: shape + user `validate` only. The full XSS +
+    // `isAllowedUri` policy runs INSIDE `setHyperlink`; if it rejects
+    // the href, the command returns `false` and the popover stays open
+    // so the user can correct the input. (Hosts that need inline error
+    // messaging for `isAllowedUri` rejections should mirror the same
+    // policy in their `validate` hook.)
     if (!validateURL(url, { customValidator: options.validate })) {
       showError()
       return
     }
 
-    // Canonicalize before writing to the mark. `google.com` is a valid
-    // link per linkifyjs, but stored verbatim it becomes a *relative*
-    // href that resolves to the host page's origin on click. See
-    // `normalizeHref` for the full rationale.
-    const href = normalizeHref(url)
-
+    // Delegate to the canonical command: it normalizes against
+    // `defaultProtocol`, runs the composed XSS + `isAllowedUri` gate,
+    // and stamps `PREVENT_AUTOLINK_META`. Keeping the popover off the
+    // raw `setMark` path means a future policy change (e.g. blocking a
+    // new scheme) flows here without an extra edit.
+    const applied = options.editor.chain().setHyperlink({ href: url }).run()
+    if (!applied) {
+      showError()
+      return
+    }
     hideCurrentToolbar()
-    options.editor
-      .chain()
-      .setMark(options.extensionName, { href })
-      .setMeta('preventAutolink', true)
-      .run()
   })
 }
 

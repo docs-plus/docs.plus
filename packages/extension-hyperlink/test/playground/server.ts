@@ -6,7 +6,7 @@
  * bundles the referenced `<script>` and `<link>` tags (TypeScript + CSS)
  * on demand — no config, no plugins, no dedupe knobs. The CSS + JS come
  * from `@docs.plus/extension-hyperlink`'s published exports map, so the
- * Cypress suite exercises the same artefact a fresh npm consumer gets.
+ * Cypress suite exercises the same artifact a fresh npm consumer gets.
  */
 
 import index from './index.html'

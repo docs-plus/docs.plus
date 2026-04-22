@@ -23,7 +23,7 @@ import { isBarePhone } from './phone'
  *      `user@` is treated as HTTP basic-auth credentials.
  *   4. Already-absolute (`scheme://…`, `//cdn.foo.com`, or a recognized
  *      `scheme:opaque` like `mailto:`) → return unchanged.
- *   5. Otherwise → prepend `https://`.
+ *   5. Otherwise → prepend `<defaultProtocol>://` (`https` by default).
  *
  * The custom-protocol contract (`registerCustomProtocol('mychat')`)
  * still works: any single-token scheme (no dot, not `localhost`, not
@@ -78,7 +78,9 @@ const isBareEmail = (
   return { ok: true, href: only.href }
 }
 
-export const normalizeHref = (raw: string): string => {
+export const DEFAULT_PROTOCOL = 'https' as const
+
+export const normalizeHref = (raw: string, defaultProtocol: string = DEFAULT_PROTOCOL): string => {
   const trimmed = raw.trim()
   if (!trimmed) return ''
 
@@ -89,7 +91,7 @@ export const normalizeHref = (raw: string): string => {
   if (email.ok) return email.href
 
   if (hasRealScheme(trimmed)) return trimmed
-  return `https://${trimmed}`
+  return `${defaultProtocol}://${trimmed}`
 }
 
 /**
@@ -106,12 +108,16 @@ export type LinkifyMatchLike = {
 /**
  * Canonicalize a linkifyjs match for storage.
  *
- * linkifyjs defaults URL matches to `http://…`; we prefer `https://` to
- * stay consistent with the create popover and markdown input rule, so
- * URL matches run through `normalizeHref(value)`. Non-URL matches
- * (emails → `mailto:`, etc.) already carry a meaningful scheme in `href`
- * and are returned unchanged.
+ * linkifyjs defaults URL matches to `http://…`; we prefer the
+ * extension's `defaultProtocol` (https unless overridden) to stay
+ * consistent with the create popover and markdown input rule, so URL
+ * matches run through `normalizeHref(value, defaultProtocol)`. Non-URL
+ * matches (emails → `mailto:`, etc.) already carry a meaningful scheme
+ * in `href` and are returned unchanged.
  */
-export const normalizeLinkifyHref = (link: LinkifyMatchLike): string => {
-  return link.type === 'url' ? normalizeHref(link.value) : link.href
+export const normalizeLinkifyHref = (
+  link: LinkifyMatchLike,
+  defaultProtocol: string = DEFAULT_PROTOCOL
+): string => {
+  return link.type === 'url' ? normalizeHref(link.value, defaultProtocol) : link.href
 }

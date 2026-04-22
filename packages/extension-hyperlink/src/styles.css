@@ -25,7 +25,7 @@
  * popover automatically, and it no longer gets stuck in dark mode just
  * because the OS prefers dark. When `color-scheme` is `normal` (the
  * default), `light-dark()` falls back to `prefers-color-scheme`, which
- * preserves the previous OS-driven behaviour for unopinionated hosts.
+ * preserves the previous OS-driven behavior for unopinionated hosts.
  */
 :root {
   --hl-bg: light-dark(#ffffff, #1f2937);

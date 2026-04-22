@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 
-import { DANGEROUS_SCHEME_RE, getUrlScheme, validateURL } from '../validateURL'
+import { DANGEROUS_SCHEME_RE, getURLScheme, isSafeHref, validateURL } from '../validateURL'
 
 /**
  * Pins `validateURL` (the gate every write boundary calls) for the three
@@ -147,12 +147,22 @@ describe('validateURL', () => {
 
   describe('rejects dangerous XSS schemes (linkify never matches them)', () => {
     // `validateURL` is the gate that powers `<a href>` storage — any
-    // `true` here would mean the editor accepts an XSS vector.
+    // `true` here would mean the editor accepts an XSS vector. The
+    // `file:` / `blob:` cases pin the v2.x security-floor widening
+    // (added defensively when `validateURL` started calling
+    // `isSafeHref` upfront, so a future custom protocol registration
+    // can never accidentally re-open these doors).
     for (const url of [
       'javascript:alert(1)',
       'JAVASCRIPT:alert(1)',
       'data:text/html,<script>alert(1)</script>',
-      'vbscript:msgbox("xss")'
+      'vbscript:msgbox("xss")',
+      'file:///etc/passwd',
+      'FILE:///etc/passwd',
+      'blob:https://evil.example/abc',
+      'BLOB:https://evil.example/abc',
+      ' javascript:alert(1)',
+      '\tdata:text/html,evil'
     ]) {
       it(`rejects ${url}`, () => {
         expect(validateURL(url)).toBe(false)
@@ -175,38 +185,42 @@ describe('validateURL', () => {
   })
 })
 
-describe('getUrlScheme', () => {
+describe('getURLScheme', () => {
   it('returns the lowercased scheme', () => {
-    expect(getUrlScheme('HTTPS://Example.com')).toBe('https')
-    expect(getUrlScheme('mailto:foo@example.com')).toBe('mailto')
-    expect(getUrlScheme('WhatsApp://send')).toBe('whatsapp')
+    expect(getURLScheme('HTTPS://Example.com')).toBe('https')
+    expect(getURLScheme('mailto:foo@example.com')).toBe('mailto')
+    expect(getURLScheme('WhatsApp://send')).toBe('whatsapp')
   })
 
   it('returns null when there is no colon', () => {
-    expect(getUrlScheme('example.com')).toBeNull()
-    expect(getUrlScheme('foo')).toBeNull()
+    expect(getURLScheme('example.com')).toBeNull()
+    expect(getURLScheme('foo')).toBeNull()
   })
 
   it('returns null for empty / whitespace input', () => {
-    expect(getUrlScheme('')).toBeNull()
-    expect(getUrlScheme('   ')).toBeNull()
+    expect(getURLScheme('')).toBeNull()
+    expect(getURLScheme('   ')).toBeNull()
   })
 
   it('reads up to the first colon (not the last)', () => {
-    expect(getUrlScheme('mailto:foo:bar@example.com')).toBe('mailto')
+    expect(getURLScheme('mailto:foo:bar@example.com')).toBe('mailto')
   })
 })
 
 describe('DANGEROUS_SCHEME_RE', () => {
   // The regex is consumed by parseHTML / click-handler guards. Pinning
   // it here lets us catch a `^\s*` drop or a missing alternative.
-  it('matches javascript:, data:, vbscript: case-insensitively', () => {
+  it('matches javascript:, data:, vbscript:, file:, blob: case-insensitively', () => {
     for (const url of [
       'javascript:alert(1)',
       'JAVASCRIPT:alert(1)',
       ' javascript:alert(1)',
       'data:text/html,<script>',
-      'vbscript:msgbox("xss")'
+      'vbscript:msgbox("xss")',
+      'file:///etc/passwd',
+      'FILE:///etc/passwd',
+      'blob:https://evil.example/abc',
+      'BLOB:https://evil.example/abc'
     ]) {
       expect(DANGEROUS_SCHEME_RE.test(url)).toBe(true)
     }
@@ -217,9 +231,66 @@ describe('DANGEROUS_SCHEME_RE', () => {
       'https://example.com',
       'mailto:foo@example.com',
       'whatsapp://send',
-      'data-foo://x'
+      'data-foo://x',
+      'fileserver://x',
+      'blobby://x'
     ]) {
       expect(DANGEROUS_SCHEME_RE.test(url)).toBe(false)
+    }
+  })
+})
+
+describe('isSafeHref', () => {
+  // Single XSS gate the extension uses at every WRITE boundary
+  // (setHyperlink, paste handler, paste rule, input rule, parseHTML).
+  // A regression here would let a hostile programmatic call land a
+  // `javascript:` href in the document — pin all the cases.
+  it('rejects empty / nullish hrefs', () => {
+    expect(isSafeHref(null)).toBe(false)
+    expect(isSafeHref(undefined)).toBe(false)
+    expect(isSafeHref('')).toBe(false)
+  })
+
+  it('rejects every dangerous scheme', () => {
+    for (const href of [
+      'javascript:alert(1)',
+      'JAVASCRIPT:alert(1)',
+      ' javascript:alert(1)',
+      '\tjavascript:alert(1)',
+      'data:text/html,<script>',
+      'DATA:text/html,foo',
+      'vbscript:msgbox("xss")',
+      'file:///etc/passwd',
+      'FILE:///etc/passwd',
+      'blob:https://evil.example/abc',
+      'BLOB:https://evil.example/abc'
+    ]) {
+      expect(isSafeHref(href)).toBe(false)
+    }
+  })
+
+  it('accepts safe schemes (http(s), mailto, tel, deep links, bare domains)', () => {
+    for (const href of [
+      'https://example.com',
+      'http://example.com/path?q=1',
+      'mailto:foo@example.com',
+      'tel:+15551234567',
+      'whatsapp://send?text=hi',
+      'wa.me/15551234567',
+      'example.com',
+      'data-foo://x'
+    ]) {
+      expect(isSafeHref(href)).toBe(true)
+    }
+  })
+
+  it('narrows the type when used as a guard', () => {
+    const value: string | null = 'https://example.com'
+    if (isSafeHref(value)) {
+      const safe: string = value
+      expect(safe).toBe('https://example.com')
+    } else {
+      throw new Error('expected isSafeHref to narrow')
     }
   })
 })

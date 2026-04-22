@@ -152,7 +152,7 @@ describe('normalizeHref', () => {
     }
 
     it('only converts when the entire trimmed input is one email', () => {
-      // Defence-in-depth: don't mangle sentences that happen to
+      // Defense-in-depth: don't mangle sentences that happen to
       // contain an email — they were never valid hyperlink targets,
       // and the popover's `validateURL` would have rejected them
       // upstream. We assert the *value* the helper would emit so a

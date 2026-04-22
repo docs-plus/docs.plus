@@ -1,10 +1,34 @@
 import { find } from 'linkifyjs'
 
+import { logger } from './logger'
 import { isBarePhone } from './phone'
 import { getSpecialUrlInfo } from './specialUrls'
 
-/** Schemes that must never be used as link hrefs (XSS vectors). */
-export const DANGEROUS_SCHEME_RE = /^\s*(javascript|data|vbscript):/i
+/**
+ * Schemes that must never be used as link hrefs.
+ *
+ * - `javascript:` / `vbscript:` — direct script execution on click.
+ * - `data:` — can render arbitrary HTML in the top frame.
+ * - `file:` — exposes local filesystem; usually inert in browsers but
+ *   blocked here because the user almost never means it and we don't
+ *   want collab docs to surface platform-dependent surprises.
+ * - `blob:` — points at in-page memory; legitimate uses (download
+ *   anchors) build the URL at click time, not at storage time, so a
+ *   stored `blob:` href in shared content is always a leak vector.
+ */
+export const DANGEROUS_SCHEME_RE = /^\s*(javascript|data|vbscript|file|blob):/i
+
+/**
+ * The single XSS gate the extension uses at every write boundary
+ * (parseHTML, input/paste rules, paste handler, commands, click →
+ * window.open, preview "Open"). Centralizing the check means policy
+ * changes flow from one edit. Returns `false` for nullish/empty hrefs
+ * and any scheme matched by {@link DANGEROUS_SCHEME_RE}.
+ */
+export const isSafeHref = (href: string | null | undefined): href is string => {
+  if (typeof href !== 'string' || href.length === 0) return false
+  return !DANGEROUS_SCHEME_RE.test(href)
+}
 
 /** Web schemes whose host must look like a real domain (TLD / localhost / IP). */
 const STANDARD_WEB_SCHEMES = new Set(['http', 'https', 'ftp', 'ftps'])
@@ -17,11 +41,14 @@ type ValidateURLOptions = {
 }
 
 /**
- * Check if a URL uses a valid special scheme or domain
- * @param url - The URL to check
- * @returns true if the URL uses a recognized special scheme or domain
+ * Whether `url` matches an entry in the `getSpecialUrlInfo` catalog —
+ * an app deep-link scheme (`whatsapp:`, `vscode:`, …) or a domain
+ * mapping (`wa.me`, `t.me`, …). Catalog membership only; this is NOT
+ * a security gate and says nothing about whether the URL is safe to
+ * render. Web schemes (`http(s)`/`ftp(s)`) are checked separately by
+ * `hasPlausibleHost` further down.
  */
-const isValidSpecialScheme = (url: string): boolean => {
+const isRecognizedSpecialScheme = (url: string): boolean => {
   return getSpecialUrlInfo(url) !== null
 }
 
@@ -36,7 +63,7 @@ const isValidSpecialScheme = (url: string): boolean => {
  *   - looks like an IPv4 or IPv6 literal.
  *
  * Non-standard schemes (mailto, tel, whatsapp, …) don't go through this
- * gate — they're handled by `isValidSpecialScheme`.
+ * gate — they're handled by `isRecognizedSpecialScheme`.
  */
 const hasPlausibleHost = (url: string): boolean => {
   let parsed: URL
@@ -89,42 +116,46 @@ const hasPlausibleHost = (url: string): boolean => {
  * ```
  */
 export const validateURL = (url: string, options?: ValidateURLOptions): boolean => {
-  if (!url.trim()) return false
+  const trimmed = url.trim()
+  if (!trimmed) return false
+
+  // Defense-in-depth security floor: dangerous schemes must NEVER pass
+  // shape validation, regardless of how linkifyjs evolves or which
+  // custom protocols a host has registered. The write-boundary command
+  // (`buildHrefGate`) re-checks `isSafeHref`, but pinning it here keeps
+  // popover UX in lockstep with the security policy — a future scheme
+  // added to `DANGEROUS_SCHEME_RE` will be rejected by the create form
+  // immediately, not silently passed through to a downstream gate.
+  if (!isSafeHref(trimmed)) return false
 
   try {
     // E.164 phones have no scheme prefix and would otherwise fall
     // through to linkifyjs, which has no phone matcher.
-    if (isBarePhone(url.trim()).ok) {
+    if (isBarePhone(trimmed).ok) {
       if (options?.customValidator) return options.customValidator(url)
       return true
     }
 
-    // First check if it's a special scheme URL or recognized domain
-    if (isValidSpecialScheme(url)) {
-      // Apply custom validator if provided
-      if (options?.customValidator) {
-        return options.customValidator(url)
-      }
+    if (isRecognizedSpecialScheme(url)) {
+      if (options?.customValidator) return options.customValidator(url)
       return true
     }
 
-    // For standard URLs, use linkifyjs to validate
     const validURL = find(url).find(
       (link) =>
         link.isLink && (options?.customValidator ? options.customValidator(link.value) : true)
     )
-
     if (!validURL?.href) return false
 
     // linkifyjs waves through anything scheme-shaped — require a plausible
     // host for web schemes so typos like `https://googlecom` are rejected.
-    const scheme = getUrlScheme(validURL.href)
+    const scheme = getURLScheme(validURL.href)
     if (scheme && STANDARD_WEB_SCHEMES.has(scheme)) {
       return hasPlausibleHost(validURL.href)
     }
     return true
   } catch (error) {
-    console.error('URL validation error:', error)
+    logger.error('validateURL threw', error)
     return false
   }
 }
@@ -133,9 +164,11 @@ export const validateURL = (url: string, options?: ValidateURLOptions): boolean 
  * Lowercased scheme component of `url`, or `null` if it has no `:`.
  * Internal helper for the host-shape gate in `validateURL`; exported
  * so the unit tests can pin the parsing rules independently of the
- * full `validateURL` flow.
+ * full `validateURL` flow. Acronym casing follows the package-wide
+ * SCREAMING-acronym policy (`URL`, `HTML`, `XSS` — matches Tiptap canon
+ * `setLink({ href })` and our public `validateURL` / `DANGEROUS_SCHEME_RE`).
  */
-export const getUrlScheme = (url: string): string | null => {
+export const getURLScheme = (url: string): string | null => {
   if (!url.trim()) return null
 
   const colonIndex = url.indexOf(':')

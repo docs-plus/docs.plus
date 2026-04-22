@@ -7,81 +7,38 @@ import {
 } from '@tiptap/core'
 import { MarkType } from '@tiptap/pm/model'
 import { Plugin, PluginKey } from '@tiptap/pm/state'
-import { find, test } from 'linkifyjs'
+import { test } from 'linkifyjs'
 
-import { normalizeLinkifyHref } from '../utils/normalizeHref'
+import { PREVENT_AUTOLINK_META } from '../constants'
+import { findLinks } from '../utils/findLinks'
+import { DEFAULT_PROTOCOL, normalizeLinkifyHref } from '../utils/normalizeHref'
 import { isBarePhone } from '../utils/phone'
-import { validateURL } from '../utils/validateURL'
+import { isSafeHref, validateURL } from '../utils/validateURL'
 
 type AutolinkOptions = {
   type: MarkType
   validate?: (url: string) => boolean
+  /** Per-link veto that runs AFTER `validate`. Mirrors the extension option. */
+  shouldAutoLink?: (uri: string) => boolean
+  /** Composed XSS + `isAllowedUri` gate. Defaults to plain `isSafeHref`. */
+  isAllowedUri?: (uri: string) => boolean
+  /** Bare-domain promotion target for linkify URL matches. */
+  defaultProtocol?: string
 }
 
-const SPECIAL_SCHEME_REGEX_GLOBAL = /\b[a-zA-Z][a-zA-Z0-9+.-]*:[^\s]+/g
 const SPECIAL_SCHEME_REGEX = /\b[a-zA-Z][a-zA-Z0-9+.-]*:[^\s]+/
+const TRAILING_WHITESPACE_RE = /\s$/
 const IMAGE_MARKDOWN_CONTEXT_CHARS = 15
 
-const TRAILING_PUNCT_RE = /[.,;:!?)\]}]+$/
-
 /**
- * Trim trailing punctuation from the match range so "Visit google.com."
- * autolinks `google.com`, not `google.com.`. `href` and `value` only
- * diverge for linkifyjs email / custom-scheme matches (`mailto:…` vs raw
- * email text) — there the scheme prefix means `href` won't share the
- * trailing punctuation, so we leave it alone.
+ * Whitespace tokenizer for the "last word before whitespace" heuristic.
+ * Plain `.split(' ')` only splits on U+0020 — NBSP (U+00A0), narrow
+ * NBSP (U+202F), tabs, and ideographic spaces all roll through as
+ * part of the previous token, so an autolink boundary on those
+ * characters never fires. `\s+` covers every Unicode whitespace
+ * character ProseMirror's serializer can emit.
  */
-const stripTrailingPunct = <T extends { value: string; href: string; end: number }>(link: T): T => {
-  const tail = link.value.match(TRAILING_PUNCT_RE)
-  if (!tail) return link
-  const len = tail[0].length
-  return {
-    ...link,
-    value: link.value.slice(0, -len),
-    href: link.href.endsWith(tail[0]) ? link.href.slice(0, -len) : link.href,
-    end: link.end - len
-  }
-}
-
-const findLinks = (text: string) => {
-  const links = []
-
-  const standardLinks = find(text).filter((link) => link.isLink)
-  links.push(...standardLinks)
-
-  // Custom special-scheme entries (e.g. `whatsapp://send`) that linkifyjs
-  // doesn't recognize. Tagged `type: 'url'` so `normalizeLinkifyHref`
-  // routes them through the same code path as real URL matches (which is
-  // a no-op when a scheme is already present).
-  for (const match of text.matchAll(SPECIAL_SCHEME_REGEX_GLOBAL)) {
-    const url = match[0]
-    const start = match.index!
-    const end = start + url.length
-    const alreadyCovered = standardLinks.some((link) => start >= link.start && end <= link.end)
-    if (!alreadyCovered && validateURL(url)) {
-      links.push({ type: 'url', href: url, value: url, start, end, isLink: true })
-    }
-  }
-
-  // E.164 phones. `text` is already a single whitespace-delimited
-  // token, and linkifyjs has no phone matcher, so neither an inline
-  // scan nor an `alreadyCovered` check is needed. Tagged `type:
-  // 'phone'` so `normalizeLinkifyHref` returns the canonical
-  // `tel:+CCNSN` href verbatim instead of re-running `normalizeHref`.
-  const phone = isBarePhone(text)
-  if (phone.ok) {
-    links.push({
-      type: 'phone',
-      href: phone.href,
-      value: text,
-      start: 0,
-      end: text.length,
-      isLink: true
-    })
-  }
-
-  return links.map(stripTrailingPunct)
-}
+const tokenizeWords = (text: string): string[] => text.split(/\s+/).filter((s) => s !== '')
 
 const testUrl = (text: string): boolean => {
   if (test(text)) return true
@@ -93,16 +50,20 @@ const testUrl = (text: string): boolean => {
 }
 
 export default function autolinkPlugin(options: AutolinkOptions): Plugin {
+  const defaultProtocol = options.defaultProtocol ?? DEFAULT_PROTOCOL
+  const isAllowed = options.isAllowedUri ?? isSafeHref
+  // Looked up lazily inside appendTransaction so the plugin still
+  // works in schemas that omit the `code` mark (e.g. plain-text editor).
   return new Plugin({
     key: new PluginKey('hyperlinkAutolink'),
     appendTransaction: (transactions, oldState, newState) => {
       const docChanges =
         transactions.some((transaction) => transaction.docChanged) && !oldState.doc.eq(newState.doc)
-      const preventAutolink = transactions.some((transaction) =>
-        transaction.getMeta('preventAutolink')
+      const shouldSkipAutolink = transactions.some((transaction) =>
+        transaction.getMeta(PREVENT_AUTOLINK_META)
       )
 
-      if (!docChanges || preventAutolink) {
+      if (!docChanges || shouldSkipAutolink) {
         return
       }
 
@@ -110,6 +71,7 @@ export default function autolinkPlugin(options: AutolinkOptions): Plugin {
       const transform = combineTransactionSteps(oldState.doc, [...transactions])
       const { mapping } = transform
       const changes = getChangedRanges(transform)
+      const codeMarkType = newState.schema.marks.code ?? null
 
       for (const { oldRange, newRange } of changes) {
         // Check if we need to remove links
@@ -155,7 +117,9 @@ export default function autolinkPlugin(options: AutolinkOptions): Plugin {
           )
         } else if (
           nodesInChangedRanges.length &&
-          newState.doc.textBetween(newRange.from, newRange.to, ' ', ' ').endsWith(' ')
+          TRAILING_WHITESPACE_RE.test(
+            newState.doc.textBetween(newRange.from, newRange.to, ' ', ' ')
+          )
         ) {
           textBlock = nodesInChangedRanges[0]
           textBeforeWhitespace = newState.doc.textBetween(
@@ -168,7 +132,7 @@ export default function autolinkPlugin(options: AutolinkOptions): Plugin {
 
         if (!textBlock || !textBeforeWhitespace) continue
 
-        const wordsBeforeWhitespace = textBeforeWhitespace.split(' ').filter((s) => s !== '')
+        const wordsBeforeWhitespace = tokenizeWords(textBeforeWhitespace)
         if (wordsBeforeWhitespace.length <= 0) continue
 
         const lastWordBeforeSpace = wordsBeforeWhitespace[wordsBeforeWhitespace.length - 1]
@@ -179,29 +143,34 @@ export default function autolinkPlugin(options: AutolinkOptions): Plugin {
 
         findLinks(lastWordBeforeSpace)
           .filter((link) => link.isLink)
-          .filter((link) => {
-            if (options.validate) {
-              return options.validate(link.value)
-            }
-            return true
-          })
+          .filter((link) => (options.validate ? options.validate(link.value) : true))
+          // Resolve the canonical href once — `normalizeLinkifyHref` is
+          // non-trivial (phone/email/scheme promotion) and was being
+          // recomputed up to three times per candidate downstream.
           .map((link) => ({
-            ...link,
+            href: normalizeLinkifyHref(link, defaultProtocol),
             from: lastWordAndBlockOffset + link.start + 1,
             to: lastWordAndBlockOffset + link.end + 1
           }))
-          .filter((link) => {
-            const contextStart = Math.max(0, link.from - IMAGE_MARKDOWN_CONTEXT_CHARS)
-            const beforeLink = newState.doc.textBetween(contextStart, link.from, ' ', ' ')
+          .filter(({ href }) => isAllowed(href))
+          .filter(({ href }) => (options.shouldAutoLink ? options.shouldAutoLink(href) : true))
+          .filter(({ from }) => {
+            const contextStart = Math.max(0, from - IMAGE_MARKDOWN_CONTEXT_CHARS)
+            const beforeLink = newState.doc.textBetween(contextStart, from, ' ', ' ')
             const isInsideImageMarkdown = beforeLink.includes('![') && beforeLink.endsWith('](')
             return !isInsideImageMarkdown
           })
-          .forEach((link) => {
-            tr.addMark(
-              link.from,
-              link.to,
-              options.type.create({ href: normalizeLinkifyHref(link) })
-            )
+          // Skip ranges that already carry the inline `code` mark — a
+          // URL inside `<code>` is content, not a navigation target.
+          // Mirrors `@tiptap/extension-link` v3 (its rendered <a> as a
+          // descendant of <code> would lose its semantics anyway).
+          .filter(({ from }) => {
+            if (!codeMarkType) return true
+            const node = newState.doc.nodeAt(from)
+            return !node?.marks.some((m) => m.type === codeMarkType)
+          })
+          .forEach(({ from, to, href }) => {
+            tr.addMark(from, to, options.type.create({ href }))
           })
       }
 
