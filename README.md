@@ -1,7 +1,7 @@
 # 📚 docs.plus
 
 [![Version](https://img.shields.io/github/v/tag/docs-plus/docs.plus?label=version&color=green)](https://github.com/docs-plus/docs.plus/releases)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-green.svg)](https://github.com/docs-plus/docs.plus/pulls)
 [![Discord](https://img.shields.io/badge/Discord-Join-5865F2.svg?logo=discord&logoColor=white)](https://discord.com/invite/25JPG38J59)
 [![Supabase](https://img.shields.io/badge/Supabase-Powered-3ECF8E.svg?logo=supabase&logoColor=white)](https://supabase.com)
@@ -525,7 +525,7 @@ Swap the filename for any variant in the table above.
 
 ## 📄 License
 
-MIT License - See [LICENSE.md](LICENSE.md)
+MIT License - See [LICENSE](LICENSE)
 
 ## 💬 Support
 
