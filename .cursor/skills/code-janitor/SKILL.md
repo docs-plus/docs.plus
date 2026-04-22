@@ -1,15 +1,17 @@
 ---
 name: code-janitor
-description: Reviews and cleans up code in a folder/package or recent git changes by grouping files by intent, then running a 4-chain pipeline (Simplification → Abstraction → Readability → Documentation) per group with one supervisor granting a production-ready flag. Use when the user asks to clean up, simplify, polish, organize utils/helpers, fix typos or naming, improve JSDoc, tidy a package, or says "review my files", "cleanup", "polish", "organize", "code janitor", or "tidy".
+description: Reviews, cleans up, and verifies code as production-ready in a folder/package or recent git changes. Groups files by intent, then runs a 5-chain pipeline per group (Simplification → Abstraction → Readability → Documentation → Production-Readiness Sweep) with one supervisor granting an industry-standard production-ready flag. Use when the user asks to clean up, simplify, polish, organize utils/helpers, fix typos or naming, improve JSDoc, tidy a package, ship-ready review, or says "review my files", "cleanup", "polish", "organize", "code janitor", "production ready", or "tidy".
 ---
 
 # Code Janitor 🧹
 
-Tactical, principle-driven cleanup pipeline that adapts to any workspace. Reviews a folder/package (or the current git changes) in four ordered chains — Simplification → Abstraction → Readability → Documentation — with one supervisor granting a production-ready flag at the end. Phase A auto-detects the workspace's package manager, scripts, monorepo layout, agent-instructions doc, and adjacent skills, so the same skill works in a Bun/pnpm/yarn/npm repo, a single-package or workspaces layout, with or without a sibling commit-review skill.
+Tactical, principle-driven cleanup pipeline that adapts to any workspace and ends with an industry-standard production-ready verdict. Reviews a folder/package (or the current git changes) in five ordered chains — Simplification → Abstraction → Readability → Documentation → Production-Readiness Sweep — with one supervisor granting the flag at the end. Phase A auto-detects the workspace's package manager, scripts, monorepo layout, agent-instructions doc, and adjacent skills, so the same skill works in a Bun/pnpm/yarn/npm repo, a single-package or workspaces layout, with or without a sibling commit-review skill.
 
 > **Autonomous by default; opt-in review.** Auto-applies edits, prints one terse line per file. Pass `--review` to gate every file or `--with-tests` to run unit tests. The skill always stops on its own for the six gated edit types (see § Constraints) regardless of flags.
 >
 > **Senior-level scope.** Performs real cleanup — rename exported symbols, fix typos in identifiers and i18n keys, split overgrown files, move files, bump dep versions — when the new shape is materially better. Algorithm rewrites and net-new dependencies remain forbidden.
+>
+> **Multiple goals, one flag.** Chains 1–4 polish (simpler, better-bounded, readable, documented). Chain 5 sweeps for bugs, performance regressions, weak typing, dead code, security issues, and missing test coverage — absorbing `/simplify` and `/review` into the pipeline. The supervisor grants the **industry-standard production-ready flag** only when every chain is green and no `BLOCK`-severity finding survives.
 
 ## Constraints
 
@@ -21,7 +23,7 @@ Single source of truth. Two tiers: **Forbidden** (absolute, no escape) and **Gat
 2. **Edit generated files** — bootstrap-detected exclusion list, sibling `.d.ts` for `.ts` source, lockfiles, `CHANGELOG.md`.
 3. **Edit test fixtures, snapshots, or recorded HTTP responses.**
 4. **Reformat for style** — defer to the workspace's formatter/linter via Chain 0.
-5. **Refactor algorithms** — defer to a detected architecture skill (e.g. `improve-codebase-architecture`); else surface as INFO. Naming/structure cleanup is fine; replacing a sort or rewriting a loop's logic is not.
+5. **Refactor algorithms** — defer to a detected architecture skill (e.g. [`improve-codebase-architecture`](../improve-codebase-architecture/SKILL.md)); else surface as INFO. Naming/structure cleanup is fine; replacing a sort or rewriting a loop's logic is not.
 6. **Add net-new dependencies, frameworks, or build tools** (Boring Technology). Bumping or removing an _existing_ dep is gated, not forbidden.
 7. **Commit** — defer to the detected commit-skill, or stop and let the user commit.
 8. **Create branches or worktrees** — work happens in the current branch only.
@@ -59,6 +61,8 @@ Phase B — Per-group execution (sequential; next group's read-only triage pipel
    for each group:
      Chain 0       Tooling pass        (deterministic; no per-file gate)
      Chains 1→4    plan across whole group, then apply per file
+     Chain 5       Production-readiness sweep (3 parallel reviewers;
+                   findings → apply / gate / surface)
      Validation    group gates (diff-sanity + type-check + lint; opt-in tests)
 
 Phase C — Supervisor review (one fresh code-reviewer; three checklists)
@@ -68,6 +72,7 @@ Phase C — Supervisor review (one fresh code-reviewer; three checklists)
 
 Phase D — Summary + handoff
    summary report at <skills-output-dir>/YYYY-MM-DD-HH-MM-cleanup.md
+   industry-standard production-ready flag: GRANTED or WITHHELD
    prompt: hand off to detected commit-review skill (if any), else stop
 ```
 
@@ -97,7 +102,7 @@ Before scope discovery, detect the workspace toolchain and conventions. Cache th
    - If a gate has no resolvable command → mark that gate `skipped` and proceed.
 3. **Monorepo layout** — read `package.json` `"workspaces"` or `pnpm-workspace.yaml` to identify package roots (commonly `packages/*`, `apps/*`, `libs/*`). Single-package repos skip per-package scoping in Chain 0.
 4. **Agent-instructions doc** — search in this priority order; first hit wins: `AGENTS.md` → `CLAUDE.md` → `.cursor/rules/*.mdc` (read all) → `.github/copilot-instructions.md` → top-of-`README.md`. Treat its durable rules as workspace facts in conflict resolution.
-5. **Adjacent skills** — list skills under `.cursor/skills/`, `.claude/skills/`, `~/.agents/skills/`. Note any skill whose name matches `*commit*` (for Phase D handoff) and any architecture/refactor skill (e.g. `improve-codebase-architecture`, to which algorithm changes are deferred).
+5. **Adjacent skills** — list skills under `.cursor/skills/`, `.claude/skills/`, `~/.agents/skills/`. Note any skill whose name matches `*commit*` (for Phase D handoff) and any architecture/refactor skill (e.g. [`improve-codebase-architecture`](../improve-codebase-architecture/SKILL.md), to which algorithm changes are deferred).
 6. **Generated/excluded paths** — start with the universal list (`node_modules/`, `dist/`, `build/`, `out/`, `.next/`, `.nuxt/`, `coverage/`, `.turbo/`, `.cache/`, `__snapshots__/`, `*.lock`, `*.lockb`) and append any path the workspace's `.gitignore` flags as build/state output. Also exclude any path the agent-instructions doc lists as off-limits (e.g. notes folders, hook state files).
 7. **Skills-output dir** — choose `docs/skills-output/` if `docs/` exists, else `.skills-output/` at repo root. Ensure it's in `.gitignore`; add the entry if missing.
 
@@ -138,7 +143,7 @@ Render Surface 1 (one-line group summary) and proceed immediately to Phase B. **
 
 Groups run sequentially; the next group's read-only triage is pipelined in the background (`explore` sub-agent). Edits are always sequential — no parallel writing.
 
-For each group: run Chain 0, then load all files into one sub-agent and plan Chains 1 → 4 as a single conceptual pass (cross-file principles like DRY and naming consistency need the whole-group view), then apply the resulting edit plan file-by-file. Each chain's settled edits are inputs to later chains; no chain revisits a settled one.
+For each group: run Chain 0, then load all files into one sub-agent and plan Chains 1 → 4 as a single conceptual pass (cross-file principles like DRY and naming consistency need the whole-group view), then apply the resulting edit plan file-by-file. After application, run Chain 5 (three parallel read-only reviewers) on the post-edit state; their findings feed a second per-file pass under the same auto-apply / forced-approval / surface classification. Each chain's settled edits are inputs to later chains; no chain revisits a settled one.
 
 ### Chain 0 — Tooling pass
 
@@ -205,6 +210,26 @@ Order matters. **Internal precedence:** YAGNI overrides DRY (deletion beats cons
 | 4.4  | **DTS** — Document the Surprises      | Edge cases, side effects, async behavior, error modes. Never the obvious.                                                                                   |
 | 4.5  | **SSL** — Short, Single Line          | Short, single line preferred. Hard cap: 5 lines including `@param`/`@returns`/`@throws`/`@example`. `@example` only when behavior is non-obvious AND short. |
 
+### Chain 5 — Production-readiness sweep
+
+Runs after Chains 1–4 have applied. Dispatch **three parallel `code-reviewer` sub-agents** (read-only) over the group's primary files in their post-Chain-4 state. They produce findings only — every fix is owned by the per-group edit agent so the chain ordering and discipline rules still apply. This is the chain that turns a _clean_ group into a _production-ready_ one.
+
+| Reviewer                                                        | Looks for                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Quality** (from `/simplify` code-quality + `/simplify` reuse) | Low-information comments (restate code instead of intent / edge cases / invariants). One-off helpers used in exactly one place that obscure flow. Nullable proliferation forcing defensive checks. Catch-all `try/catch` that swallows or mis-labels errors. Unnecessary abstraction (config objects, generic wrappers) introduced before reuse exists. Weak type escape hatches (`any`, casts, non-null assertions, overly broad types). Duplicated or stale derived state. Dead branches, unused parameters, abandoned compatibility code. Existing patterns/helpers in the codebase or this diff that the new code should reuse. |
+| **Performance** (from `/simplify` performance)                  | Blocking sync ops in hot paths or in the event loop. Uncached repeat-computations / parsing / lookups. Busy waits (polling without backoff). Quadratic string concat in loops. N+1 I/O (per-item DB / FS / network / RPC where batching applies). Chatty logging or telemetry inside tight loops.                                                                                                                                                                                                                                                                                                                                   |
+| **Bugs · Security · Test coverage** (from `/review`)            | Logic bugs, off-by-one, null-deref, race conditions. Behavioral regressions vs the pre-edit code. Security issues per the agent-instructions doc (XSS, injection, secrets, auth boundaries, unsafe deserialization). Critical paths in the diff with no test coverage (no test exists, or the existing test doesn't cover the changed branch).                                                                                                                                                                                                                                                                                      |
+
+Each finding carries a reviewer-suggested **class**; the per-group edit agent makes the final routing call:
+
+| Class                                                               | Routing                                                                                                                                                                                                                                                                          | Examples                                                                                                                                                                                                                |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Apply** — behavior-preserving                                     | Folds into a second per-file edit pass; auto-applied per § Per-file application.                                                                                                                                                                                                 | Inline a one-off helper, narrow a weak type, delete a dead branch, remove a low-info comment, swap to a found-reusable helper.                                                                                          |
+| **Gate** — touches one of the six gated edit types                  | Routed through the forced-approval gate as usual; discipline rule applies.                                                                                                                                                                                                       | Quality finding that requires a public API signature change; reuse finding that requires moving a file.                                                                                                                 |
+| **Surface** — would change runtime behavior, or needs user judgment | Emitted with severity `INFO` (default) or `BLOCK` (critical: real exploitable vulnerability, data-loss bug, auth boundary breach). **Never auto-applied** (Forbidden #1). The supervisor re-audits and may re-classify; a surviving `BLOCK` withholds the production-ready flag. | INFO: a perf rewrite (caching changes timing), missing test, algorithm-level perf change, refactor suggestion. BLOCK: confirmed XSS or injection sink, secret leaked into logs, race condition causing data corruption. |
+
+If Chain 5 produces zero findings, log `Chain 5: clean` and proceed to validation.
+
 ### How conflicts resolve
 
 Top wins:
@@ -215,11 +240,13 @@ Top wins:
 
 ### Per-file application
 
-**Default (auto):** apply silently, log one Surface 3 line per file.
+A group can run this section twice: once after Chains 1–4 plan, then again after Chain 5's Apply-class findings come back. Same gates and prompts apply on both passes.
+
+**Default (auto):** apply silently, log one Surface 3 line per file (per pass).
 
 **Forced approval:** stop on any of the six gated edit types in § Constraints. The prompt shows the change plus every dependent edit as one atomic unit (the discipline rule). If dependents can't be enumerated, skip and surface as INFO.
 
-**`--review` mode:** prompt on every file. The per-file prompt lists each proposed edit by chain (e.g. `1.1 DRY`, `3.3 WNW`); reply `y` (apply all), `select <ids>`, `skip-file`, or `abort`.
+**`--review` mode:** prompt on every file. The per-file prompt lists each proposed edit by its chain step — `1.1 DRY`, `3.3 WNW`, `4.5 SSL` for Chains 1–4; `5.Q`, `5.P`, `5.B` for Chain 5 (Quality / Performance / Bugs · Security · Tests). Reply `y` (apply all), `select <ids>`, `skip-file`, or `abort`.
 
 ### Group validation gates
 
@@ -238,23 +265,27 @@ After all groups complete Phase B, dispatch **one fresh `code-reviewer` sub-agen
 
 1. **Correctness** — re-run diff sanity check, the resolved typecheck and lint commands; verify no runtime behavior change; cross-reference § Constraints (Forbidden) against the diff.
 2. **Principle-Adherence** — re-read against Chains 1–4. Catches cross-group misses neither per-group agent could see: duplications across groups, naming inconsistency, doc-voice drift, KISS regressions from overzealous Chain 2 work.
-3. **Production-Readiness** — security regressions per agent-instructions doc rules for the touched paths (XSS gates, auth boundaries, secret handling), published-package doc bloat for any package without `"private": true`, i18n key safety, generated-file bypass attempts, new debug loggers, TODO/FIXME/XXX/HACK comments. **Owns the production-ready flag.**
+3. **Production-Readiness** — re-aggregates Chain 5 findings across groups; catches **cross-group production-readiness misses** that no single group's Chain 5 could see (a perf regression that surfaces only when two groups' edits combine, a duplicated bug pattern, a security boundary weakened by edits in two places). Confirms every Chain 5 INFO finding is correctly classified (no real `BLOCK`-severity bug or vulnerability slipped into INFO). Standing checks: published-package doc bloat for any package without `"private": true`, i18n key safety, generated-file bypass attempts, new debug loggers, TODO/FIXME/XXX/HACK comments. **Owns the industry-standard production-ready flag** — granted only when this checklist is green and no surviving `BLOCK`-severity finding exists.
 
 The supervisor returns a list of findings; each is `severity` (`BLOCK` | `FIX` | `INFO`), `scope` (group id, `cross-group`, or `global`), and a one-line summary with evidence.
 
 ### Verdict and remediation
 
-- **PASS / PASS-WITH-NOTES** (all green, or only INFO) → flag granted, proceed to Phase D.
+- **PASS / PASS-WITH-NOTES** (all green, or only INFO) → industry-standard production-ready flag **granted**, proceed to Phase D.
 - **FIX** → dispatch a fresh `generalPurpose` fix-pass agent scoped to the offending group(s) or `cross-group` (never reuse a prior agent's context). Re-supervise after each fix-pass.
-- **BLOCK** (behavior change, Forbidden violation, surviving test regression) → same as FIX, but the group is marked at risk. No global revert.
+- **BLOCK** (behavior change, Forbidden violation, surviving test regression, surviving Chain 5 BLOCK finding) — **two paths depending on origin**:
+  - _Janitor introduced it_ (e.g. Chain 5 Apply-class fix subtly altered semantics, or a Chain 3 rename broke a test) → fix-pass agent **reverts the offending edit only** (not the whole group). Re-supervise.
+  - _Pre-existing in the codebase_ (real bug or vulnerability the reviewer found in code untouched by janitor) → no auto-fix possible without violating Forbidden #1. Flag stays **WITHHELD**; the disk report lists the BLOCK finding under "Chain 5 surfaced findings" with severity `BLOCK` and the user resolves manually. Re-running janitor on the same diff will hit the same wall — the user must fix the bug separately.
+
+  No global revert in either case. The group is marked at risk in the disk report.
 
 **Cap: 2 remediation iterations per group.** At the cap, mark `STUCK` and escalate. A `global`-scope finding escalates immediately (no auto-loop).
 
 ### Exit states
 
-- **PASS** / **PASS-WITH-NOTES** — flag granted.
-- **ESCALATED** — at least one STUCK group or first-pass global finding. Flag not granted; user decides next move.
-- **USER-ABORTED** — explicit halt. Working tree left as-is with halt-point note in the disk report.
+- **PASS** / **PASS-WITH-NOTES** — production-ready flag granted.
+- **ESCALATED** — at least one STUCK group or first-pass global finding. Flag **withheld**; user decides next move.
+- **USER-ABORTED** — explicit halt. Working tree left as-is with halt-point note in the disk report. Flag withheld.
 
 ## Phase D — Summary + handoff
 
@@ -301,8 +332,10 @@ Scope: <N> files in <path-or-git-status>. Groups: G1 <title> (<n>f) · G2 <title
 ### Surface 3 — Phase B per-file (one line per file, default mode)
 
 ```
-G<n>/F<m>: <basename> — <chain summary, e.g. DRY×1 NMM×2 SSL×1> → applied
+G<n>/F<m>: <basename> — <chain summary, e.g. DRY×1 NMM×2 SSL×1 5.Q×1> → applied
 ```
+
+The chain summary lists each chain step that applied an edit: `<step>×<count>` for Chains 1–4 (e.g. `DRY×1`, `NMM×2`); `5.<reviewer>×<count>` for Chain 5 (`5.Q`, `5.P`, `5.B`). One Surface 3 line is printed per file per pass — files touched in both the Chain 1–4 pass and the Chain 5 pass log twice.
 
 On a forced-approval edit (export rename, i18n-key rename, file move, split, public-API change, dep bump):
 
@@ -340,17 +373,20 @@ Done. <M> files cleaned across <G> groups, <E> edits, <S> STUCK. Flag: <GRANTED|
 
 ```
 # Cleanup — YYYY-MM-DD HH:MM
-Verdict: <STATE> · Flag: <GRANTED|WITHHELD>
+Verdict: <STATE> · Industry-standard production-ready flag: <GRANTED|WITHHELD>
 Scope: <scope> · Groups: <N> · Files: <M> · Edits: <E> · Iterations: G1=<n> G2=<n>
 Snapshot: <stash@{N} or none>
 
 ## G1 <title> — <STATE>
   Chains: 0=<tooling> · 1=<n edits> · 2=<n edits> · 3=<n edits> · 4=<n edits>
+         · 5=<a applied / g gated / s surfaced>
   Rejected: <n>  Notes: <list or none>
 
 ## Cross-cutting
   <fix-pass summary or none>
 
-## INFO findings
-  - <rule>: <suggestion>
+## Chain 5 surfaced findings (production-readiness — not auto-applied)
+  Apply-class and Gate-class fixes are in the diff. Only "Surface" findings list here.
+  - [<INFO|BLOCK>] <reviewer>/<rule>: <one-line summary> (<file>:<line>)
+    Fix sketch: <one-line suggestion>
 ```
