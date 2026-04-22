@@ -14,11 +14,11 @@
  *   bun run release:family --help
  */
 
-import { existsSync, readFileSync, statSync, writeFileSync, readdirSync } from 'node:fs'
-import { join, resolve } from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { createInterface } from 'node:readline'
+import { existsSync, readdirSync,readFileSync, statSync, writeFileSync } from 'node:fs'
+import { join, resolve } from 'node:path'
 import process from 'node:process'
+import { createInterface } from 'node:readline'
 
 const REPO_ROOT = resolve(import.meta.dir, '..')
 

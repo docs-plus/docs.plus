@@ -1,5 +1,5 @@
-import { Hono } from 'hono'
 import type { PrismaClient } from '@prisma/client'
+import { Hono } from 'hono'
 
 /**
  * Test server helper for API testing
