@@ -14,9 +14,11 @@ import {
 
 import { getDefaultController, type VirtualCoordinates } from './controller'
 
-export interface PopoverOptions {
-  referenceElement?: HTMLElement
-  coordinates?: VirtualCoordinates
+type PopoverAnchor =
+  | { referenceElement: HTMLElement; coordinates?: never }
+  | { referenceElement?: never; coordinates: VirtualCoordinates }
+
+type PopoverShellOptions = {
   content: HTMLElement
   placement?: Placement
   offset?: number
@@ -26,6 +28,8 @@ export interface PopoverOptions {
   onShow?: () => void
   onHide?: () => void
 }
+
+export type PopoverOptions = PopoverAnchor & PopoverShellOptions
 
 export interface Popover {
   element: HTMLElement
@@ -86,6 +90,8 @@ export function createPopover(options: PopoverOptions): Popover {
     onHide
   } = options
 
+  // Defence-in-depth for `any`-typed and JS-only callers; the discriminated
+  // union in `PopoverOptions` already makes this case a compile error.
   if (!referenceElement && !coordinates) {
     throw new Error('Either referenceElement or coordinates must be provided')
   }
