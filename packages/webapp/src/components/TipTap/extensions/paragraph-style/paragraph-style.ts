@@ -44,5 +44,31 @@ export const ParagraphStyle = Paragraph.extend({
           return chain().focus().setParagraph().run()
         }
     }
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      ...this.parent?.(),
+      // ProseMirror's default splitBlock copies all parent attributes onto the
+      // new block, so pressing Enter inside a subtitle would inherit
+      // `paragraphStyle: 'subtitle'`. Mirror Google Docs / Word: at the END of
+      // a subtitle, Enter starts a fresh normal paragraph. Mid-paragraph and
+      // at-start splits keep the inherited style (so the user can split a
+      // subtitle in two without losing the style).
+      Enter: ({ editor }) => {
+        const { $from, empty } = editor.state.selection
+        if (!empty) return false
+        const node = $from.parent
+        if (node.type.name !== 'paragraph') return false
+        if (node.attrs.paragraphStyle !== 'subtitle') return false
+        const atEnd = $from.parentOffset === node.content.size
+        if (!atEnd) return false
+        return editor
+          .chain()
+          .splitBlock()
+          .updateAttributes('paragraph', { paragraphStyle: null })
+          .run()
+      }
+    }
   }
 })
