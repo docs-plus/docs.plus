@@ -1,7 +1,7 @@
-// packages/extension-hyperlink/src/floating-popover/__tests__/controller.test.ts
 import { describe, expect, it, mock } from 'bun:test'
 
 import {
+  type AdoptMetadata,
   type ControllerState,
   createPopoverController,
   type ManagedPopover,
@@ -36,6 +36,15 @@ function makePopover(): ManagedPopover & {
   }
 }
 
+// Tests are headless — fake `HTMLElement` references via plain object
+// stand-ins. The controller never reads any DOM property; it only
+// stores and forwards them.
+const fakeEl = (id: string): HTMLElement => ({ __test_id: id }) as unknown as HTMLElement
+const meta = (
+  el: HTMLElement = fakeEl('el'),
+  ref: HTMLElement | null = fakeEl('ref')
+): AdoptMetadata => ({ element: el, referenceElement: ref })
+
 describe('createPopoverController', () => {
   it('starts in idle state', () => {
     expect(createPopoverController().getState()).toEqual({ kind: 'idle' })
@@ -44,33 +53,39 @@ describe('createPopoverController', () => {
   describe('adopt', () => {
     it('transitions to mounted with the supplied kind', () => {
       const controller = createPopoverController()
-      controller.adopt(makePopover(), 'preview')
-      expect(controller.getState()).toEqual({ kind: 'mounted', popoverKind: 'preview' })
+      const md = meta()
+      controller.adopt(makePopover(), 'preview', md)
+      expect(controller.getState()).toEqual({
+        kind: 'mounted',
+        popoverKind: 'preview',
+        element: md.element,
+        referenceElement: md.referenceElement
+      })
     })
 
     it('destroys the previously-adopted popover on replacement', () => {
       const controller = createPopoverController()
       const first = makePopover()
       const second = makePopover()
-      controller.adopt(first, 'preview')
-      controller.adopt(second, 'edit')
+      controller.adopt(first, 'preview', meta())
+      controller.adopt(second, 'edit', meta())
       expect(first.destroyCalls).toBe(1)
       expect(second.destroyCalls).toBe(0)
-      expect(controller.getState()).toEqual({ kind: 'mounted', popoverKind: 'edit' })
+      expect(controller.getState()).toMatchObject({ kind: 'mounted', popoverKind: 'edit' })
     })
 
     it('is idempotent when re-adopting the same instance — no destroy fires, kind updates', () => {
       const controller = createPopoverController()
       const popover = makePopover()
-      controller.adopt(popover, 'preview')
-      controller.adopt(popover, 'edit')
+      controller.adopt(popover, 'preview', meta())
+      controller.adopt(popover, 'edit', meta())
       expect(popover.destroyCalls).toBe(0)
-      expect(controller.getState()).toEqual({ kind: 'mounted', popoverKind: 'edit' })
+      expect(controller.getState()).toMatchObject({ kind: 'mounted', popoverKind: 'edit' })
     })
 
     it('returns an unregister callback that flips state to idle', () => {
       const controller = createPopoverController()
-      const unregister = controller.adopt(makePopover(), 'create')
+      const unregister = controller.adopt(makePopover(), 'create', meta())
       unregister()
       expect(controller.getState()).toEqual({ kind: 'idle' })
     })
@@ -79,16 +94,43 @@ describe('createPopoverController', () => {
       const controller = createPopoverController()
       const first = makePopover()
       const second = makePopover()
-      const firstUnregister = controller.adopt(first, 'preview')
-      controller.adopt(second, 'edit')
+      const firstUnregister = controller.adopt(first, 'preview', meta())
+      controller.adopt(second, 'edit', meta())
       firstUnregister()
-      expect(controller.getState()).toEqual({ kind: 'mounted', popoverKind: 'edit' })
+      expect(controller.getState()).toMatchObject({ kind: 'mounted', popoverKind: 'edit' })
     })
 
     it('accepts arbitrary string kinds (open-string union for future extensions)', () => {
       const controller = createPopoverController()
-      controller.adopt(makePopover(), 'media' as PopoverKind)
-      expect(controller.getState()).toEqual({ kind: 'mounted', popoverKind: 'media' })
+      controller.adopt(makePopover(), 'media' as PopoverKind, meta())
+      expect(controller.getState()).toMatchObject({ kind: 'mounted', popoverKind: 'media' })
+    })
+  })
+
+  describe('mounted state metadata', () => {
+    it('exposes element and referenceElement to subscribers', () => {
+      const controller = createPopoverController()
+      const element = fakeEl('popover-root')
+      const referenceElement = fakeEl('anchor')
+      controller.adopt(makePopover(), 'preview', { element, referenceElement })
+      expect(controller.getState()).toEqual({
+        kind: 'mounted',
+        popoverKind: 'preview',
+        element,
+        referenceElement
+      })
+    })
+
+    it('referenceElement is null when virtual coordinates were used', () => {
+      const controller = createPopoverController()
+      const element = fakeEl('popover-root')
+      controller.adopt(makePopover(), 'create', { element, referenceElement: null })
+      expect(controller.getState()).toEqual({
+        kind: 'mounted',
+        popoverKind: 'create',
+        element,
+        referenceElement: null
+      })
     })
   })
 
@@ -96,7 +138,7 @@ describe('createPopoverController', () => {
     it('hides the adopted popover and transitions to idle', () => {
       const controller = createPopoverController()
       const popover = makePopover()
-      controller.adopt(popover, 'preview')
+      controller.adopt(popover, 'preview', meta())
       controller.close()
       expect(popover.hideCalls).toBe(1)
       expect(controller.getState()).toEqual({ kind: 'idle' })
@@ -111,7 +153,7 @@ describe('createPopoverController', () => {
     it('does NOT destroy the popover (only hide)', () => {
       const controller = createPopoverController()
       const popover = makePopover()
-      controller.adopt(popover, 'preview')
+      controller.adopt(popover, 'preview', meta())
       controller.close()
       expect(popover.destroyCalls).toBe(0)
     })
@@ -121,7 +163,7 @@ describe('createPopoverController', () => {
     it('forwards to the adopted popover', () => {
       const controller = createPopoverController()
       const popover = makePopover()
-      controller.adopt(popover, 'preview')
+      controller.adopt(popover, 'preview', meta())
       controller.reposition()
       expect(popover.updateCalls).toBe(1)
     })
@@ -137,10 +179,10 @@ describe('createPopoverController', () => {
       const controller = createPopoverController()
       const seen: ControllerState[] = []
       controller.subscribe((s) => seen.push(s))
-      controller.adopt(makePopover(), 'preview')
-      controller.adopt(makePopover(), 'edit')
+      controller.adopt(makePopover(), 'preview', meta())
+      controller.adopt(makePopover(), 'edit', meta())
       controller.close()
-      expect(seen).toEqual([
+      expect(seen).toMatchObject([
         { kind: 'mounted', popoverKind: 'preview' },
         { kind: 'mounted', popoverKind: 'edit' },
         { kind: 'idle' }
@@ -151,16 +193,16 @@ describe('createPopoverController', () => {
       const controller = createPopoverController()
       const seen: ControllerState[] = []
       controller.subscribe((s) => seen.push(s))
-      const unregister = controller.adopt(makePopover(), 'create')
+      const unregister = controller.adopt(makePopover(), 'create', meta())
       unregister()
-      expect(seen).toEqual([{ kind: 'mounted', popoverKind: 'create' }, { kind: 'idle' }])
+      expect(seen).toMatchObject([{ kind: 'mounted', popoverKind: 'create' }, { kind: 'idle' }])
     })
 
     it('returns an unsubscribe function that stops further deliveries', () => {
       const controller = createPopoverController()
       const listener = mock<(state: ControllerState) => void>(() => undefined)
       const unsubscribe = controller.subscribe(listener)
-      controller.adopt(makePopover(), 'preview')
+      controller.adopt(makePopover(), 'preview', meta())
       expect(listener).toHaveBeenCalledTimes(1)
       unsubscribe()
       controller.close()

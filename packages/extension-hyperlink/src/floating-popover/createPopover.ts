@@ -1,4 +1,3 @@
-// packages/extension-hyperlink/src/floating-popover/createPopover.ts
 import {
   arrow,
   autoUpdate,
@@ -236,6 +235,9 @@ export function createPopover(options: PopoverOptions): Popover {
     }
   }
 
-  unregister = controller.adopt(popover, 'unknown')
+  unregister = controller.adopt(popover, 'unknown', {
+    element: root,
+    referenceElement: referenceElement ?? null
+  })
   return popover
 }

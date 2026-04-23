@@ -1,10 +1,6 @@
-// packages/extension-hyperlink/src/floating-popover/controller.ts
-//
-// Extension-agnostic single-popover lifecycle owner.
-//
-// `adopt(popover, kind)` takes ownership of an already-built `Popover`,
-// destroying the previous owner. `close()` hides the current popover and
-// drops to idle. `reposition()` re-anchors. `subscribe(fn)` observes
+// Extension-agnostic single-popover lifecycle owner. `adopt` takes
+// ownership of a built popover (destroying the previous owner), `close`
+// hides + idles, `reposition` re-anchors, `subscribe` observes
 // idle ↔ mounted transitions.
 
 export type PopoverKind = 'preview' | 'edit' | 'create' | (string & {})
@@ -20,10 +16,19 @@ export interface ManagedPopover {
   updateReference: (referenceElement?: HTMLElement, coordinates?: VirtualCoordinates) => void
 }
 
-export type ControllerState = { kind: 'idle' } | { kind: 'mounted'; popoverKind: PopoverKind }
+export type AdoptMetadata = {
+  /** The popover's root element — what subscribers attach focus rings, scroll-freezes, or DOM observers to. */
+  element: HTMLElement
+  /** The anchor the popover is glued to — `null` for virtual-coords popovers (e.g. selection-anchored create). */
+  referenceElement: HTMLElement | null
+}
+
+export type ControllerState =
+  | { kind: 'idle' }
+  | ({ kind: 'mounted'; popoverKind: PopoverKind } & AdoptMetadata)
 
 export interface PopoverController {
-  adopt(popover: ManagedPopover, kind: PopoverKind): () => void
+  adopt(popover: ManagedPopover, kind: PopoverKind, metadata: AdoptMetadata): () => void
   close(): void
   reposition(referenceElement?: HTMLElement, coordinates?: VirtualCoordinates): void
   getState(): ControllerState
@@ -31,11 +36,18 @@ export interface PopoverController {
 }
 
 export function createPopoverController(): PopoverController {
-  let current: { popover: ManagedPopover; kind: PopoverKind } | null = null
+  let current: { popover: ManagedPopover; kind: PopoverKind; metadata: AdoptMetadata } | null = null
   const listeners = new Set<(state: ControllerState) => void>()
 
   const snapshot = (): ControllerState =>
-    current === null ? { kind: 'idle' } : { kind: 'mounted', popoverKind: current.kind }
+    current === null
+      ? { kind: 'idle' }
+      : {
+          kind: 'mounted',
+          popoverKind: current.kind,
+          element: current.metadata.element,
+          referenceElement: current.metadata.referenceElement
+        }
 
   const notify = (): void => {
     const state = snapshot()
@@ -43,9 +55,9 @@ export function createPopoverController(): PopoverController {
   }
 
   return {
-    adopt(popover, kind) {
+    adopt(popover, kind, metadata) {
       if (current?.popover === popover) {
-        current = { popover, kind }
+        current = { popover, kind, metadata }
         notify()
         return () => {
           if (current?.popover === popover) {
@@ -55,7 +67,7 @@ export function createPopoverController(): PopoverController {
         }
       }
       const previous = current
-      current = { popover, kind }
+      current = { popover, kind, metadata }
       previous?.popover.destroy()
       notify()
       return () => {

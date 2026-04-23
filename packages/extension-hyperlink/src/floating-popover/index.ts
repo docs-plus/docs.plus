@@ -1,5 +1,5 @@
-// packages/extension-hyperlink/src/floating-popover/index.ts
 export {
+  type AdoptMetadata,
   type ControllerState,
   createPopoverController,
   getDefaultController,
