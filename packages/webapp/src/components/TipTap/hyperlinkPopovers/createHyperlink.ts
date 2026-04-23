@@ -7,7 +7,7 @@ import { useSheetStore } from '@stores'
  * Opens the React `linkEditor` bottom sheet via the global sheet store
  * and returns `null`. The Tiptap extension treats `null` as "no
  * popover" and exits cleanly (see hyperlink.ts setHyperlink command),
- * so the floating-toolbar machinery is bypassed entirely on mobile and
+ * so the floating-popover machinery is bypassed entirely on mobile and
  * the sheet renders through the same react-modal-sheet pipeline as
  * every other mobile sheet in the app.
  */

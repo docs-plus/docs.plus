@@ -74,8 +74,8 @@ describe('Hyperlink Edge Cases', () => {
       cy.wait(500)
       cy.get(PREVIEW_POPOVER).should('be.visible')
 
-      // Dispatch Escape on the toolbar itself (keydown listener is on .floating-toolbar)
-      cy.get('.floating-toolbar').then(($toolbar) => {
+      // Dispatch Escape on the popover itself (keydown listener is on .floating-popover)
+      cy.get('.floating-popover').then(($toolbar) => {
         $toolbar[0].dispatchEvent(
           new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
         )

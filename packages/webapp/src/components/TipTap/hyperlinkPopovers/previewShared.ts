@@ -227,7 +227,7 @@ export const renderMetadataInto = (container: HTMLElement, ctx: PreviewContext):
 /**
  * Watch for the popover element being detached from the DOM (by any
  * trigger — backdrop tap, Escape, extension's outside-click listener,
- * updateCurrentToolbarPosition swap, etc.) and fire `onDetach` exactly
+ * controller.reposition swap, etc.) and fire `onDetach` exactly
  * once. Used to abort the in-flight metadata fetch.
  *
  * The extension doesn't expose a "popover closed" event, so a

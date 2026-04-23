@@ -1,11 +1,10 @@
 import {
   Copy,
   copyToClipboard,
-  createFloatingToolbar,
   createHTMLElement,
-  editHyperlinkPopover,
-  hideCurrentToolbar,
+  getDefaultController,
   LinkOff,
+  openEditHyperlink,
   Pencil,
   type PreviewHyperlinkOptions
 } from '@docs.plus/extension-hyperlink'
@@ -53,12 +52,12 @@ const dismissSoftKeyboard = (editor: Editor): void => {
  *
  * - On desktop, builds the historical inline popover (metadata + copy /
  *   edit / remove icon buttons) anchored to the link by the extension's
- *   floating-toolbar wrapper.
+ *   floating-popover wrapper.
  * - On mobile, opens the React `linkPreview` bottom sheet via the
  *   global sheet store and returns `null`. The Tiptap extension's
  *   click handler treats `null` as "no popover, just hide the toolbar"
  *   (see clickHandler.ts in @docs.plus/extension-hyperlink), so the
- *   floating-toolbar machinery is bypassed entirely on mobile and the
+ *   floating-popover machinery is bypassed entirely on mobile and the
  *   sheet renders through the same react-modal-sheet pipeline as every
  *   other mobile sheet in the app.
  *
@@ -82,10 +81,10 @@ export default function previewHyperlink(options: PreviewHyperlinkOptions): HTML
 }
 
 /**
- * Build the desktop popover and wire its detachment observer. Used by
- * the initial click-handler path (returns the element so the extension
- * mounts it via its own `createFloatingToolbar` call) and by the
- * back-from-edit re-show path (mounts directly and returns nothing).
+ * Build the desktop popover and wire its detachment observer. The
+ * extension mounts the returned element through the controller; the
+ * back-from-edit re-open is handled by `openEditHyperlink`'s stash, so
+ * no explicit `onBack` re-show wiring is needed at this layer.
  */
 const buildAndObserveDesktopPopover = (options: PreviewHyperlinkOptions): HTMLElement => {
   const { link, editor, nodePos, attrs } = options
@@ -103,23 +102,6 @@ const buildAndObserveDesktopPopover = (options: PreviewHyperlinkOptions): HTMLEl
   })
 
   return built.element
-}
-
-/**
- * Re-mount the desktop preview surface — used as the `onBack` callback
- * for `editHyperlinkPopover`. Mirrors the prebuilt `showPreviewToolbar`
- * helper in `previewHyperlinkPopover.ts`. The controller's singleton-
- * replacement tears down the edit popover automatically.
- */
-const showDesktopPreview = (options: PreviewHyperlinkOptions): void => {
-  const content = buildAndObserveDesktopPopover(options)
-  createFloatingToolbar({
-    referenceElement: options.link,
-    content,
-    placement: 'bottom',
-    showArrow: true,
-    surface: 'preview'
-  }).show()
 }
 
 /**
@@ -144,22 +126,17 @@ const buildDesktopPopover = (
 
   copyButton.addEventListener('click', () => {
     copyToClipboard(href, (success) => {
-      if (success) hideCurrentToolbar()
+      if (success) getDefaultController().close()
       else console.error('Failed to copy to clipboard')
     })
   })
 
   editButton.addEventListener('click', () => {
-    editHyperlinkPopover({
-      editor,
-      link,
-      validate,
-      onBack: () => showDesktopPreview(options)
-    })
+    openEditHyperlink(editor, { editor, link, validate })
   })
 
   removeButton.addEventListener('click', () => {
-    hideCurrentToolbar()
+    getDefaultController().close()
     editor.chain().focus().unsetHyperlink().run()
   })
 

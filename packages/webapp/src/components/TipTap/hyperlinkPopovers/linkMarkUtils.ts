@@ -31,7 +31,7 @@ export interface MarkMetadata {
  * Timing rule:
  *   - **Desktop floating popover:** MUST defer until after the popover
  *     detaches. Changing mark attrs causes ProseMirror to re-render the
- *     underlying `<a>` element; the floating-toolbar pins to that `<a>`
+ *     underlying `<a>` element; the floating-popover pins to that `<a>`
  *     via `referenceElement`, and floating-ui's
  *     `hide({ strategy: 'referenceHidden' })` middleware detects the
  *     now-detached reference and hides the popover. Use the `flush`

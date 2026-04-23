@@ -1,6 +1,6 @@
 import { parseHistoryHash } from '@components/pages/history/historyShareUrl'
 import {
-  hideCurrentToolbar,
+  getDefaultController,
   isSafeHref,
   SAFE_WINDOW_FEATURES
 } from '@docs.plus/extension-hyperlink'
@@ -60,7 +60,7 @@ export const navigateHref = (href: string): void => {
     // Revision history deep link (#history / #history?version=) — update URL
     // only; the layout reacts to the hash change and mounts the history view.
     if (parseHistoryHash(newUrl.hash).isHistory) {
-      hideCurrentToolbar()
+      getDefaultController().close()
       const target = `${newUrl.pathname}${newUrl.search}${newUrl.hash}`
       void Router.push(target, undefined, { shallow: true })
       return
@@ -68,7 +68,7 @@ export const navigateHref = (href: string): void => {
 
     // More than one slug past the doc name means a filter (e.g. /doc/slug1/slug2).
     if (newUrlSlugs.length > 1) {
-      hideCurrentToolbar()
+      getDefaultController().close()
       PubSub.publish(APPLY_FILTER, { slugs: newUrlSlugs.slice(1), href })
       return
     }
@@ -84,7 +84,7 @@ export const navigateHref = (href: string): void => {
     }
 
     if (act === 'ch' && messageId && channelId) {
-      hideCurrentToolbar()
+      getDefaultController().close()
       PubSub.publish(CHAT_OPEN, {
         headingId: channelId,
         scroll2Heading: true,
