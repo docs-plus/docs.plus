@@ -48,10 +48,15 @@ $pad-toolbar-height: 38px;
 .hyperlink-edit-popover {
   background-color: var(--color-base-100);
   color: var(--color-base-content);
-  border: 1px solid var(--color-base-300);
-  border-radius: 0.375rem;
-  box-shadow: 0 0px 2px 0px color-mix(in oklch, var(--color-base-content) 10%, transparent);
+  border: var(--border) solid var(--border-color-tint);
+  border-radius: var(--radius-field);
+  box-shadow:
+    0 1px 2px color-mix(in oklch, var(--color-base-content) 6%, transparent),
+    0 8px 24px color-mix(in oklch, var(--color-base-content) 10%, transparent);
   padding: 8px;
+  width: 22rem;
+  max-width: calc(100vw - 1rem);
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -79,6 +84,9 @@ $pad-toolbar-height: 38px;
       box-shadow 0.15s ease-in-out;
     position: relative;
     width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
 
     &:focus-within {
       border-color: var(--color-primary);
@@ -247,37 +255,54 @@ $pad-toolbar-height: 38px;
   }
 }
 
-.hyperlink-edit-popover {
-  align-items: flex-end;
+.hyperlink-create-popover {
   .inputs-wrapper {
+    width: auto;
+    flex: 1;
+    min-width: 0;
+  }
+}
+
+.hyperlink-edit-popover {
+  align-items: stretch;
+
+  .inputs-wrapper {
+    display: flex;
     flex-direction: column;
-    align-items: flex-start;
     gap: 0.25rem;
+    flex: 1;
+    min-width: 0;
+    width: auto;
     border: none;
     padding: 0;
     background-color: transparent;
-    > div {
-      width: 100%;
-    }
+
     &:focus-within {
       border: none;
       box-shadow: none;
     }
   }
+
   .buttons-wrapper {
-    flex-direction: column;
     display: flex;
-    justify-content: space-around;
-    align-items: flex-start;
-    gap: 0.7rem;
-    height: 100%;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex-shrink: 0;
   }
-  .text-wrapper {
-    svg {
-      width: 26px;
-      height: 26px;
-    }
+
+  .back-button,
+  .apply-button {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
+
+  .text-wrapper svg {
+    width: 26px;
+    height: 26px;
+  }
+
   svg {
     fill: color-mix(in oklch, var(--color-base-content) 40%, transparent);
   }
@@ -490,8 +515,8 @@ $pad-toolbar-height: 38px;
   }
 }
 
-// Floating Toolbar Styles
-.floating-toolbar {
+// Floating Popover Styles
+.floating-popover {
   position: absolute;
   top: 0;
   left: 0;
@@ -522,31 +547,23 @@ $pad-toolbar-height: 38px;
     z-index: 3;
 
     &-top {
-      border-top: none;
-      border-left: none;
-      border-right: 1px solid var(--color-base-300);
-      border-bottom: 1px solid var(--color-base-300);
+      border-right: var(--border) solid var(--border-color-tint);
+      border-bottom: var(--border) solid var(--border-color-tint);
     }
 
     &-bottom {
-      border-right: none;
-      border-bottom: none;
-      border-top: 1px solid var(--color-base-300);
-      border-left: 1px solid var(--color-base-300);
+      border-top: var(--border) solid var(--border-color-tint);
+      border-left: var(--border) solid var(--border-color-tint);
     }
 
     &-left {
-      border-top: none;
-      border-left: none;
-      border-right: 1px solid var(--color-base-300);
-      border-bottom: 1px solid var(--color-base-300);
+      border-right: var(--border) solid var(--border-color-tint);
+      border-bottom: var(--border) solid var(--border-color-tint);
     }
 
     &-right {
-      border-right: none;
-      border-bottom: none;
-      border-top: 1px solid var(--color-base-300);
-      border-left: 1px solid var(--color-base-300);
+      border-top: var(--border) solid var(--border-color-tint);
+      border-left: var(--border) solid var(--border-color-tint);
     }
   }
 
