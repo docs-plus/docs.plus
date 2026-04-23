@@ -3,8 +3,8 @@
 /**
  * Pins the BYO factory contract documented in README.md → "Custom popover
  * factories": the options shape (including forwarding of `validate` and
- * `attributes`), the floating-toolbar lifecycle, and the exported helpers
- * (`hideCurrentToolbar`, `updateCurrentToolbarPosition`, `validateURL`,
+ * `attributes`), the floating-popover lifecycle, and the exported helpers
+ * (`getDefaultController`, `validateURL`,
  * `DANGEROUS_SCHEME_RE`) that the README snippets call. The playground's
  * `?popover=custom` mode records every factory invocation on
  * `window._byo` so assertions target the live object graph.
@@ -63,15 +63,15 @@ describe('BYO popover factories — README public contract', () => {
 
     it('mounts the returned element inside the floating toolbar', () => {
       cy.get('body').realPress(['Meta', 'K'])
-      cy.get('.floating-toolbar-content').find(BYO_CREATE).should('exist')
+      cy.get('.floating-popover-content').find(BYO_CREATE).should('exist')
     })
 
-    it('hideCurrentToolbar() invoked from the custom DOM closes the popover', () => {
+    it('getDefaultController().close() invoked from the custom DOM closes the popover', () => {
       cy.get('body').realPress(['Meta', 'K'])
       cy.get(BYO_CREATE).should('be.visible')
       cy.get(BYO_CLOSE).click()
       cy.get(BYO_CREATE).should('not.exist')
-      cy.get('.floating-toolbar').should('not.exist')
+      cy.get('.floating-popover').should('not.exist')
     })
 
     it('dismisses on Escape once focus is inside the toolbar', () => {
@@ -97,13 +97,9 @@ describe('BYO popover factories — README public contract', () => {
       cy.window().then((win) => {
         const opts = win._byo!.previewCalls[0]
         expect(opts.editor).to.equal(win._editor)
-        expect(opts.view.state).to.exist
-        expect(opts.view.dispatch).to.be.a('function')
         expect(opts.link.tagName).to.equal('A')
         expect(opts.link.href).to.contain('example.com')
         expect(opts.attrs.href).to.equal('https://example.com')
-        expect(opts.linkCoords).to.include.all.keys('x', 'y', 'width', 'height')
-        expect(opts.linkCoords.width).to.be.greaterThan(0)
         expect(typeof opts.nodePos).to.equal('number')
         // Same reference-equality guarantee as the create factory.
         expect(opts.validate).to.equal(win._byo!.configuredValidate)
@@ -112,15 +108,15 @@ describe('BYO popover factories — README public contract', () => {
 
     it('mounts the returned element inside the floating toolbar on click', () => {
       cy.get('#editor a').click()
-      cy.get('.floating-toolbar-content').find(BYO_PREVIEW).should('exist')
+      cy.get('.floating-popover-content').find(BYO_PREVIEW).should('exist')
     })
 
     it('Remove button closes the toolbar and unsets the link mark on the editor', () => {
       cy.get('#editor a').click()
       cy.get(BYO_REMOVE).click()
 
-      // `hideCurrentToolbar()` from the factory tears down the whole toolbar.
-      cy.get('.floating-toolbar').should('not.exist')
+      // `getDefaultController().close()` from the factory tears down the whole popover.
+      cy.get('.floating-popover').should('not.exist')
 
       // `editor.chain().unsetHyperlink().run()` strips the anchor, keeps the
       // text, and — critically — clears the mark from the editor's doc
@@ -138,17 +134,17 @@ describe('BYO popover factories — README public contract', () => {
   })
 
   describe('exported helpers referenced by the README', () => {
-    it('updateCurrentToolbarPosition(ref) repositions the active toolbar', () => {
+    it('getDefaultController().reposition(ref) repositions the active popover', () => {
       // README.md (under "Custom popover factories") promises:
-      //   "Popover content can control the floating toolbar via
-      //    hideCurrentToolbar() and updateCurrentToolbarPosition(ref)".
+      //   "Popover content can control the floating popover via
+      //    getDefaultController().close() and getDefaultController().reposition(ref)".
       // This pins the second half of that sentence.
       cy.setEditorContent('<p>Select this word.</p>')
       cy.selectText('word')
       cy.get('body').realPress(['Meta', 'K'])
-      cy.get('.floating-toolbar.visible').should('exist')
+      cy.get('.floating-popover.visible').should('exist')
 
-      cy.get('.floating-toolbar').then(($tb) => {
+      cy.get('.floating-popover').then(($tb) => {
         const before = $tb[0].getBoundingClientRect()
 
         cy.window().then((win) => {
@@ -162,12 +158,12 @@ describe('BYO popover factories — README public contract', () => {
           })
           target.setAttribute('data-testid', 'byo-position-target')
           win.document.body.appendChild(target)
-          win._hyperlink.updateCurrentToolbarPosition(target)
+          win._hyperlink.getDefaultController().reposition(target)
         })
 
-        cy.get('.floating-toolbar').should(($after) => {
+        cy.get('.floating-popover').should(($after) => {
           const after = $after[0].getBoundingClientRect()
-          // placement is 'bottom', so the toolbar sits below the target
+          // placement is 'bottom', so the popover sits below the target
           // (top=500 + height=20 + offset≈8 = ~528). The pre-move position
           // was anchored to selected text near the top of the editor.
           expect(Math.abs(after.top - before.top)).to.be.greaterThan(100)

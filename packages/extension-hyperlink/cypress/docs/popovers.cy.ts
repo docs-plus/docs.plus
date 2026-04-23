@@ -23,7 +23,7 @@ const DOC_WITH_LINK =
 const setTheme = (theme: 'light' | 'dark') =>
   cy.window().then((w) => w.document.documentElement.setAttribute('data-theme', theme))
 
-// Wait long enough for the floating-toolbar opacity/transform transition
+// Wait long enough for the floating-popover opacity/transform transition
 // (120ms per `--hl-transition`) plus a frame of slack — `be.visible`
 // resolves at first paint, not at end of animation.
 const TRANSITION_SETTLE_MS = 250

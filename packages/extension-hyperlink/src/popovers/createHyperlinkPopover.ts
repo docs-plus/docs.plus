@@ -1,4 +1,4 @@
-import { hideCurrentToolbar } from '../helpers/floatingToolbar'
+import { getDefaultController } from '../floating-popover'
 import type { CreateHyperlinkOptions } from '../hyperlink'
 import { createHTMLElement, validateURL } from '../utils'
 import { Link } from '../utils/icons'
@@ -83,7 +83,7 @@ const setupEventListeners = (elements: HyperlinkElements, options: CreateHyperli
   input.addEventListener('keydown', (event: KeyboardEvent) => {
     if (event.key === 'Escape') {
       event.preventDefault()
-      hideCurrentToolbar()
+      getDefaultController().close()
       options.editor.commands.focus()
     }
   })
@@ -114,16 +114,15 @@ const setupEventListeners = (elements: HyperlinkElements, options: CreateHyperli
       showError()
       return
     }
-    hideCurrentToolbar()
+    getDefaultController().close()
   })
 }
 
-export default function createHyperlinkPopover(
-  options: CreateHyperlinkOptions
-): HTMLElement | null {
+export default function createHyperlinkPopover(options: CreateHyperlinkOptions): HTMLElement {
   const elements = createHyperlinkElements()
-  if (!elements) return null
-
+  if (!elements) {
+    throw new Error('createHyperlinkPopover: failed to build DOM')
+  }
   setupEventListeners(elements, options)
   return elements.root
 }

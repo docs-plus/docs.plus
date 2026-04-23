@@ -8,12 +8,9 @@ import { Plugin, PluginKey } from '@tiptap/pm/state'
 import type { EditorView } from '@tiptap/pm/view'
 
 import { SAFE_WINDOW_FEATURES } from '../constants'
-import {
-  createFloatingToolbar,
-  DEFAULT_OFFSET,
-  hideCurrentToolbar
-} from '../helpers/floatingToolbar'
+import { getDefaultController } from '../floating-popover'
 import type { HyperlinkAttributes } from '../hyperlink'
+import { openPreviewHyperlink } from '../openers/openPreviewHyperlink'
 import type { LinkContext } from './types'
 
 /** Walk outward from `pos` to recover `[from, to)` of the hyperlink mark — used by `enableClickSelection`. */
@@ -41,11 +38,6 @@ function getHyperlinkRangeAtPos(
     to += 1
   }
   return { from, to }
-}
-
-const getLinkCoordinates = (el: HTMLElement) => {
-  const rect = el.getBoundingClientRect()
-  return { x: rect.left, y: rect.top, width: rect.width, height: rect.height }
 }
 
 function findLinkFromEvent(
@@ -82,8 +74,8 @@ function isNavigable(href: string | null | undefined, ctx: LinkContext): href is
 // Open the floating toolbar (preview popover or fallback `window.open`)
 // for the just-clicked link. Three branches:
 //   1. No popover + read-only editor → gated `window.open(href)`.
-//   2. Popover returns `null` → host opted out (mobile bottom sheet).
-//   3. Popover returns content → mount toolbar, place caret.
+//   2. Popover slot returns `null` → host opted out (mobile bottom sheet).
+//   3. Popover slot returns content → mount, then place caret.
 function openHyperlinkToolbar(
   view: EditorView,
   link: HTMLAnchorElement,
@@ -105,30 +97,27 @@ function openHyperlinkToolbar(
   }
 
   if (!href) {
-    hideCurrentToolbar()
+    getDefaultController().close()
     return true
   }
 
-  const linkCoords = getLinkCoordinates(link)
-
-  // Invoke FIRST: a `null` return lets the host opt out (e.g. mobile bottom sheet).
-  // When opting out, never `.focus()` — iOS Safari scrolls the contenteditable into view.
-  const content = ctx.previewPopover({
+  // Single slot-factory invocation routed through the canonical opener.
+  // The opener re-resolves the slot, builds the content, adopts under
+  // `'preview'`, and returns `false` if the host opted out (`null`
+  // return from the slot). Caret placement is gated on a successful
+  // mount because focusing the editor on opt-out scrolls the
+  // contenteditable into view on iOS Safari.
+  const mounted = openPreviewHyperlink(ctx.editor, {
     editor: ctx.editor,
-    view,
     link,
     nodePos,
     attrs,
-    linkCoords,
     validate: ctx.validate,
     // Synthesize from `forRead` so the popover's "Open" honours the same composed gate as click/aux.
     isAllowedUri: (uri: string) => ctx.urls.forRead(uri).navigable
   })
 
-  if (!content) {
-    hideCurrentToolbar()
-    return true
-  }
+  if (!mounted) return true
 
   if (clickPos !== undefined) {
     const { from, to } = view.state.selection
@@ -154,16 +143,6 @@ function openHyperlinkToolbar(
     }
   }
 
-  const toolbar = createFloatingToolbar({
-    referenceElement: link,
-    content,
-    placement: 'bottom',
-    offset: DEFAULT_OFFSET,
-    showArrow: true,
-    surface: 'preview'
-  })
-
-  toolbar.show()
   return true
 }
 

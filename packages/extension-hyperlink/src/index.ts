@@ -1,23 +1,41 @@
 import { Hyperlink } from './hyperlink'
 
-// Public package exports. `createFloatingToolbar` always registers via
-// `getDefaultController()`, so consumers cannot build orphan toolbars
-// that bypass the controller's singleton-replacement — exposing it lets
-// BYO popovers re-mount the preview surface from an edit-popover
-// `onBack`, mirroring the prebuilt `previewHyperlinkPopover`.
+// Layer 1 — three named openers (the 90% case).
 export {
-  createFloatingToolbar,
+  buildPreviewOptionsFromAnchor,
+  type BuildPreviewOptionsFromAnchorArgs,
+  openCreateHyperlink,
+  openEditHyperlink,
+  openPreviewHyperlink
+} from './openers'
+
+// Layer 2 — generic controller for lifecycle observation (the 10% case).
+export {
+  type AdoptMetadata,
+  type ControllerState,
+  getDefaultController,
+  type PopoverController,
+  type PopoverKind,
+  type VirtualCoordinates
+} from './floating-popover'
+
+// Primitive — fully custom popover that still participates in the
+// singleton lifecycle (the <1% case).
+export {
+  createPopover,
   DEFAULT_OFFSET,
-  type FloatingToolbarInstance,
-  type FloatingToolbarOptions,
-  hideCurrentToolbar,
-  updateCurrentToolbarPosition
-} from './helpers/floatingToolbar'
+  type Popover,
+  type PopoverOptions
+} from './floating-popover'
+
+// Extension + factories + option types
 export * from './hyperlink'
-export * from './popovers'
-// `getDefaultController()` is the entry point for `.subscribe(...)` observers.
-export { getDefaultController, type HyperlinkUIController } from './ui-controller'
+export { createHyperlinkPopover, editHyperlinkPopover, previewHyperlinkPopover } from './popovers'
+
+// Utilities (validateURL, isSafeHref, …) re-exported for BYO popovers.
 export * from './utils'
+
+// Linkify protocol registration — kept for parity with v1.
 export { registerCustomProtocol } from 'linkifyjs'
 
 export default Hyperlink

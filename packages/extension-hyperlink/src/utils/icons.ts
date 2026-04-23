@@ -38,7 +38,7 @@ export const Pencil = ({ size = 24, fill = 'currentColor' }: IconProps = {}): st
 export const Title = ({ size = 24, fill = 'currentColor' }: IconProps = {}): string => {
   return `
     <svg xmlns="http://www.w3.org/2000/svg" height="${size}" viewBox="0 -960 960 960" width="${size}" fill="${fill}">
-      <path d="M420-160v-520H200v-120h560v120H540v520H420Z"/>
+      <path d="M160-560v-80h360v80H160Zm0 160v-80h640v80H160Z"/>
     </svg>
   `
 }

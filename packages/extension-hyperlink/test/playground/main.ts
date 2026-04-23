@@ -12,7 +12,7 @@ import * as HyperlinkModule from '@docs.plus/extension-hyperlink'
 import { Editor } from '@tiptap/core'
 import StarterKit from '@tiptap/starter-kit'
 
-const { Hyperlink, createHyperlinkPopover, previewHyperlinkPopover, hideCurrentToolbar } =
+const { Hyperlink, createHyperlinkPopover, previewHyperlinkPopover, getDefaultController } =
   HyperlinkModule
 
 const element = document.querySelector<HTMLElement>('#editor')
@@ -61,7 +61,7 @@ function byoCreateHyperlink(options: HyperlinkModule.CreateHyperlinkOptions): HT
   close.type = 'button'
   close.className = 'byo-close'
   close.textContent = 'Close'
-  close.addEventListener('click', () => hideCurrentToolbar())
+  close.addEventListener('click', () => getDefaultController().close())
 
   root.append(close)
   return root
@@ -69,7 +69,7 @@ function byoCreateHyperlink(options: HyperlinkModule.CreateHyperlinkOptions): HT
 
 // Mirrors the `previewHyperlink` example in README.md so the spec can
 // verify the snippet as-written: anchor from `attrs.href` + Remove button
-// wiring `hideCurrentToolbar()` and `editor.chain().focus().unsetHyperlink().run()`.
+// wiring `getDefaultController().close()` and `editor.chain().focus().unsetHyperlink().run()`.
 function byoPreviewHyperlink(options: HyperlinkModule.PreviewHyperlinkOptions): HTMLElement {
   byoState.previewCalls.push(options)
   const { editor, attrs } = options
@@ -90,7 +90,7 @@ function byoPreviewHyperlink(options: HyperlinkModule.PreviewHyperlinkOptions): 
   remove.className = 'byo-remove'
   remove.textContent = 'Remove'
   remove.addEventListener('click', () => {
-    hideCurrentToolbar()
+    getDefaultController().close()
     editor.chain().focus().unsetHyperlink().run()
   })
 

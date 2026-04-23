@@ -186,8 +186,8 @@ describe('createHyperlinkPopover — prebuilt create flow', () => {
 
     it('is hosted inside the floating toolbar shell', () => {
       cy.get('body').realPress(['Meta', 'K'])
-      cy.get('.floating-toolbar').should('have.class', 'visible')
-      cy.get(`.floating-toolbar .floating-toolbar-content ${POPOVER}`).should('exist')
+      cy.get('.floating-popover').should('have.class', 'visible')
+      cy.get(`.floating-popover .floating-popover-content ${POPOVER}`).should('exist')
     })
   })
 })

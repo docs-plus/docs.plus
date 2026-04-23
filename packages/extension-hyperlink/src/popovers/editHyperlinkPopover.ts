@@ -1,35 +1,19 @@
-import { Editor } from '@tiptap/core'
-
 import { HYPERLINK_MARK_NAME } from '../constants'
-import { createFloatingToolbar, hideCurrentToolbar } from '../helpers/floatingToolbar'
+import { getDefaultController } from '../floating-popover'
+import type { EditHyperlinkOptions } from '../hyperlink'
+import { buildPreviewOptionsFromAnchor } from '../openers/buildPreviewOptionsFromAnchor'
+import { consumeStashedEditOptions } from '../openers/openEditHyperlink'
+import { openPreviewHyperlink } from '../openers/openPreviewHyperlink'
 import { createHTMLElement, validateURL } from '../utils'
 import { Link, Title } from '../utils/icons'
 
-const TOOLBAR_SHOW_DELAY_MS = 100
-
-export type EditHyperlinkPopoverOptions = {
-  editor: Editor
-  validate?: (url: string) => boolean
-  link: HTMLAnchorElement
-  onBack?: () => void
-  markName?: string
-}
-
-/**
- * @deprecated Renamed to `EditHyperlinkPopoverOptions` to match the file
- * name and the rest of the popover-options naming (`PreviewHyperlinkOptions`,
- * `CreateHyperlinkOptions`). Will be removed in the next major.
- */
-export type EditHyperlinkModalOptions = EditHyperlinkPopoverOptions
-
-export default function editHyperlinkPopover(options: EditHyperlinkPopoverOptions): void {
+export default function editHyperlinkPopover(options: EditHyperlinkOptions): HTMLElement {
   const { editor, link, validate } = options
 
   const form = createHTMLElement('form', { className: 'hyperlink-edit-popover' })
   const inputsWrapper = createHTMLElement('div', { className: 'inputs-wrapper' })
   const buttonsWrapper = createHTMLElement('div', { className: 'buttons-wrapper' })
 
-  // Text input
   const textWrapper = createHTMLElement('div', { className: 'text-wrapper' })
   const titleIcon = createHTMLElement('div', {
     className: 'search-icon',
@@ -45,7 +29,6 @@ export default function editHyperlinkPopover(options: EditHyperlinkPopoverOption
     textContent: 'Please enter link text'
   })
 
-  // URL input
   const hrefWrapper = createHTMLElement('div', { className: 'href-wrapper' })
   const anchorIcon = createHTMLElement('div', {
     className: 'search-icon',
@@ -64,7 +47,6 @@ export default function editHyperlinkPopover(options: EditHyperlinkPopoverOption
     textContent: 'Please enter a valid URL'
   })
 
-  // Buttons
   const backButton = createHTMLElement('button', {
     type: 'button',
     textContent: 'Back',
@@ -80,7 +62,6 @@ export default function editHyperlinkPopover(options: EditHyperlinkPopoverOption
     wrapper.classList.add('error')
     errorEl.classList.add('show')
   }
-
   const hideError = (wrapper: HTMLElement, errorEl: HTMLElement) => {
     wrapper.classList.remove('error')
     errorEl.classList.remove('show')
@@ -88,61 +69,76 @@ export default function editHyperlinkPopover(options: EditHyperlinkPopoverOption
 
   linkTextInput.addEventListener('input', () => hideError(textWrapper, textError))
   hrefInput.addEventListener('input', () => hideError(hrefWrapper, hrefError))
+
+  // Back button — re-opens the preview popover via the stash that
+  // `openEditHyperlink` set on entry. `onBack` is an opt-in escape
+  // hatch; when neither path applies (e.g. host adopted the edit
+  // popover by hand), just close.
   backButton.addEventListener('click', () => {
-    if (options.onBack) options.onBack()
+    if (options.onBack) {
+      options.onBack()
+      return
+    }
+    const stashed = consumeStashedEditOptions()
+    if (!stashed) {
+      getDefaultController().close()
+      return
+    }
+    openPreviewHyperlink(
+      stashed.editor,
+      buildPreviewOptionsFromAnchor({
+        editor: stashed.editor,
+        link: stashed.opts.link,
+        validate: stashed.opts.validate,
+        markName: stashed.opts.markName
+      })
+    )
   })
 
   form.addEventListener('submit', (e) => {
     e.preventDefault()
-
     const newText = linkTextInput.value.trim()
     const newHref = hrefInput.value.trim()
     let hasErrors = false
-
     if (!newText) {
       showError(textWrapper, textError)
       hasErrors = true
     }
-
     if (!validateURL(newHref, { customValidator: validate })) {
       showError(hrefWrapper, hrefError)
       hasErrors = true
     }
-
     if (hasErrors) return
 
-    editor
+    // `editHyperlink` returns `false` when the URL fails the composed
+    // XSS + `isAllowedUri` gate (input passed `validateURL` but not the
+    // host policy — e.g. `https://blocked.example` under a custom
+    // `isAllowedUri`). Surface the same inline error and keep the
+    // popover open so the user can correct the href without losing
+    // their typed text.
+    const ok = editor
       .chain()
       .focus()
       .extendMarkRange(options.markName ?? HYPERLINK_MARK_NAME)
       .editHyperlink({ newURL: newHref, newText })
       .run()
+    if (!ok) {
+      showError(hrefWrapper, hrefError)
+      return
+    }
 
-    hideCurrentToolbar()
+    getDefaultController().close()
   })
 
-  // Assemble DOM
   textWrapper.append(titleIcon, linkTextInput, textError)
   hrefWrapper.append(anchorIcon, hrefInput, hrefError)
   inputsWrapper.append(textWrapper, hrefWrapper)
   buttonsWrapper.append(backButton, applyButton)
   form.append(inputsWrapper, buttonsWrapper)
 
-  hideCurrentToolbar()
+  // Auto-focus the text input on first show. Caller (the opener) is
+  // responsible for `popover.show()`; we don't know when that is here.
+  queueMicrotask(() => linkTextInput.focus())
 
-  // Use the live `<a>` DOM node — its `getBoundingClientRect()` is
-  // recomputed by the browser on every call, so the popover follows
-  // the link during scroll. Cached `linkCoords` (snapshotted at click
-  // time in clickHandler) would freeze the toolbar at its viewport
-  // position and let the link scroll out from under it.
-  const toolbar = createFloatingToolbar({
-    referenceElement: link,
-    content: form,
-    placement: 'bottom',
-    showArrow: true,
-    surface: 'edit',
-    onShow: () => linkTextInput.focus()
-  })
-
-  setTimeout(() => toolbar.show(), TOOLBAR_SHOW_DELAY_MS)
+  return form
 }

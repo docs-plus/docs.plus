@@ -1,31 +1,19 @@
 import { SAFE_WINDOW_FEATURES } from '../constants'
-import { createFloatingToolbar, hideCurrentToolbar } from '../helpers/floatingToolbar'
+import { getDefaultController } from '../floating-popover'
 import type { PreviewHyperlinkOptions } from '../hyperlink'
+import { openEditHyperlink } from '../openers/openEditHyperlink'
 import { Copy, copyToClipboard, createHTMLElement, isSafeHref, LinkOff, Pencil } from '../utils'
 import { logger } from '../utils/logger'
-import editHyperlinkPopover from './editHyperlinkPopover'
-
-function showPreviewToolbar(options: PreviewHyperlinkOptions): void {
-  const content = previewHyperlinkPopover(options)
-  const toolbar = createFloatingToolbar({
-    referenceElement: options.link,
-    content,
-    placement: 'bottom',
-    showArrow: true,
-    surface: 'preview'
-  })
-  toolbar.show()
-}
 
 export default function previewHyperlinkPopover(options: PreviewHyperlinkOptions): HTMLElement {
   const { link, editor } = options
-  // Prefer the stored mark attribute over `link.href`. The DOM property
-  // silently resolves relative hrefs against `document.baseURI`, which
-  // turns a stored `google.com` into `http://<current-origin>/google.com`
-  // in the preview — see normalizeHref for context. `getAttribute('href')`
-  // returns the raw string as a fallback for callers that construct the
-  // popover by hand (e.g. the XSS-guard spec) without supplying `attrs`.
-  const href = options.attrs?.href ?? link.getAttribute('href') ?? ''
+  // Read href from the validated mark attribute. The DOM `link.href`
+  // property silently resolves relative hrefs against `document.baseURI`
+  // (turning a stored `google.com` into `http://<origin>/google.com`),
+  // and `getAttribute('href')` returns the raw stored value — both can
+  // serve a `javascript:` href that escaped validation. `attrs.href`
+  // is the only path that's been through the safety gate.
+  const href = options.attrs.href ?? ''
   // Mirror `renderHTML`'s defense-in-depth posture on the popover surface
   // too. The click handler short-circuits via `isSafeHref`, but a middle-
   // click on the rendered anchor would bypass it and trigger native
@@ -64,20 +52,21 @@ export default function previewHyperlinkPopover(options: PreviewHyperlinkOptions
   })
 
   removeButton.addEventListener('click', () => {
-    hideCurrentToolbar()
+    getDefaultController().close()
     editor.chain().focus().unsetHyperlink().run()
   })
 
   editButton.addEventListener('click', () => {
-    editHyperlinkPopover({
-      ...options,
-      onBack: () => showPreviewToolbar(options)
-    })
+    // Route through the canonical opener so the slot resolution + stash
+    // wiring stays in one place. The default Back behaviour
+    // (`buildPreviewOptionsFromAnchor` → `openPreviewHyperlink`) is
+    // exactly what `onBack` would have re-run, so no override is needed.
+    openEditHyperlink(editor, { editor, link, validate: options.validate })
   })
 
   copyButton.addEventListener('click', () => {
     copyToClipboard(href, (success) => {
-      if (success) hideCurrentToolbar()
+      if (success) getDefaultController().close()
       else logger.error('previewHyperlink: copy to clipboard failed')
     })
   })

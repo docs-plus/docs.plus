@@ -25,7 +25,7 @@
 const PREVIEW = '.hyperlink-preview-popover'
 const CREATE = '.hyperlink-create-popover'
 const EDIT = '.hyperlink-edit-popover'
-const FLOATING = '.floating-toolbar'
+const FLOATING = '.floating-popover'
 
 // Tall enough that the playground's centered card overflows the 800px
 // viewport and the document scrolls. 80 paragraphs ≈ 2400px of doc

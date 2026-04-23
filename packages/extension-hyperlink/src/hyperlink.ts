@@ -4,7 +4,7 @@ import { registerCustomProtocol } from 'linkifyjs'
 
 import { buildHyperlinkCommands } from './commands'
 import { HYPERLINK_MARK_NAME } from './constants'
-import { createInteractions, createLinkContext } from './interactions'
+import { createInteractions, createLinkContext, type LinkContext } from './interactions'
 import { isSafeHref } from './url-decisions'
 import { DEFAULT_PROTOCOL } from './utils/normalizeHref'
 
@@ -29,23 +29,37 @@ export type IsAllowedUriContext = {
   defaultProtocol: string
 }
 
-export type HyperlinkAttributes = {
+/**
+ * Built-in hyperlink mark attributes.
+ *
+ * `Extra` lets consumers extend the shape with their own typed fields
+ * without losing autocomplete on the built-ins:
+ *
+ * ```ts
+ * type CampaignAttrs = HyperlinkAttributes<{ campaign?: string }>
+ * const attrs: CampaignAttrs = { href: 'https://x', campaign: 'spring' }
+ * attrs.href      // string | null
+ * attrs.campaign  // string | undefined
+ * ```
+ *
+ * Defaulting `Extra` to `Record<string, unknown>` preserves the open
+ * index signature the v2 surface shipped with — `attrs[someUntypedKey]`
+ * still resolves to `unknown` when no `Extra` is supplied.
+ */
+export type HyperlinkAttributes<Extra extends Record<string, unknown> = Record<string, unknown>> = {
   href: string | null
   target: string | null
   rel: string | null
   class: string | null
   title: string | null
   image: string | null
-  [key: string]: unknown
-}
+} & Extra
 
 export type PreviewHyperlinkOptions = {
   editor: Editor
-  view: import('@tiptap/pm/view').EditorView
   link: HTMLAnchorElement
   nodePos: number
   attrs: HyperlinkAttributes
-  linkCoords: { x: number; y: number; width: number; height: number }
   validate?: (url: string) => boolean
   /** Composed XSS + `isAllowedUri` gate; BYO popovers must call this before any `window.open`. */
   isAllowedUri?: (uri: string) => boolean
@@ -58,6 +72,16 @@ export type CreateHyperlinkOptions = {
   validate?: (url: string) => boolean
 }
 
+export type EditHyperlinkOptions = {
+  editor: Editor
+  link: HTMLAnchorElement
+  validate?: (url: string) => boolean
+  /** Override the default Back behaviour. Default re-opens the preview popover via `openPreviewHyperlink`. */
+  onBack?: () => void
+  /** Mark name; defaults to `HYPERLINK_MARK_NAME`. */
+  markName?: string
+}
+
 export interface HyperlinkOptions {
   autolink: boolean
   protocols: Array<LinkProtocolOptions | string>
@@ -66,6 +90,7 @@ export interface HyperlinkOptions {
   HTMLAttributes: Partial<HyperlinkAttributes>
   popovers: {
     previewHyperlink?: ((options: PreviewHyperlinkOptions) => HTMLElement | null) | null
+    editHyperlink?: ((options: EditHyperlinkOptions) => HTMLElement | null) | null
     createHyperlink?: ((options: CreateHyperlinkOptions) => HTMLElement | null) | null
   }
   validate?: (url: string) => boolean
@@ -81,12 +106,26 @@ export interface HyperlinkOptions {
   exitable: boolean
 }
 
-export const Hyperlink = Mark.create<HyperlinkOptions>({
+/** Extension storage; one slot per editor instance. */
+export interface HyperlinkStorage {
+  /**
+   * Cached `LinkContext` for the editor. Populated on first access from
+   * any of the four `add*` hooks; downstream calls reuse the same
+   * URL Decisions pipeline instead of allocating a fresh one each time.
+   */
+  context: LinkContext | null
+}
+
+export const Hyperlink = Mark.create<HyperlinkOptions, HyperlinkStorage>({
   name: HYPERLINK_MARK_NAME,
 
   priority: 1000,
 
   keepOnSplit: false,
+
+  addStorage() {
+    return { context: null }
+  },
 
   onCreate() {
     this.options.protocols.forEach((protocol) => {
@@ -117,6 +156,7 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
       },
       popovers: {
         previewHyperlink: null,
+        editHyperlink: null,
         createHyperlink: null
       },
       validate: undefined,
@@ -188,7 +228,7 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
     return buildHyperlinkCommands({
       markName: this.name,
       options: this.options,
-      urls: makeContext(this).urls
+      urls: getContext(this).urls
     })
   },
 
@@ -206,21 +246,31 @@ export const Hyperlink = Mark.create<HyperlinkOptions>({
   },
 
   addInputRules() {
-    return createInteractions(makeContext(this)).inputRules
+    return createInteractions(getContext(this)).inputRules
   },
 
   addPasteRules() {
-    return createInteractions(makeContext(this)).pasteRules
+    return createInteractions(getContext(this)).pasteRules
   },
 
   addProseMirrorPlugins() {
-    return createInteractions(makeContext(this)).plugins
+    return createInteractions(getContext(this)).plugins
   }
 })
 
-// One `LinkContext` allocation per extension hook (each fires once per init) — no storage, no cache.
-function makeContext(self: { editor: Editor; type: MarkType; options: HyperlinkOptions }) {
-  return createLinkContext({ editor: self.editor, type: self.type, options: self.options })
+// One `LinkContext` per editor — cached on `storage.context` and shared
+// across the four `add*` hooks so the URL Decisions pipeline (and its
+// validate / autolink / shouldAutoLink closures) are allocated once.
+function getContext(self: {
+  editor: Editor
+  type: MarkType
+  options: HyperlinkOptions
+  storage: HyperlinkStorage
+}): LinkContext {
+  if (self.storage.context) return self.storage.context
+  const ctx = createLinkContext({ editor: self.editor, type: self.type, options: self.options })
+  self.storage.context = ctx
+  return ctx
 }
 
 // `exitable` ArrowRight handler — clears the link mark from `storedMarks` so the next

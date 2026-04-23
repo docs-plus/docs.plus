@@ -111,18 +111,23 @@ describe('XSS guards — dangerous URL schemes blocked at every entry point', ()
         const tamperedAnchor = w.document.createElement('a')
         tamperedAnchor.setAttribute('href', 'javascript:alert(1)')
 
-        // Intentionally omit `nodePos`/`attrs` to exercise the
-        // `link.getAttribute('href')` fallback inside the popover. The
-        // public type marks both required because the production call
-        // sites always supply them; cast here to bypass the check
-        // for the fallback test.
+        // Construct the popover directly with a tampered href stored in
+        // `attrs` — the path validated marks come through. The popover
+        // must still refuse `window.open` because `isSafeHref` blanks
+        // dangerous schemes before any navigation.
         const preview = w._hyperlink.previewHyperlinkPopover({
           editor: w._editor,
           link: tamperedAnchor,
-          view: w._editor.view,
-          linkCoords: { x: 0, y: 0, width: 10, height: 10 }
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        } as any)
+          nodePos: 0,
+          attrs: {
+            href: 'javascript:alert(1)',
+            target: null,
+            rel: null,
+            class: null,
+            title: null,
+            image: null
+          }
+        })
         if (!preview) throw new Error('previewHyperlinkPopover returned null')
         mount.appendChild(preview)
 
