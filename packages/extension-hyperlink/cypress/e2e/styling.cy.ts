@@ -29,10 +29,10 @@ const DOCUMENTED_CSS_VARS = [
 ]
 
 const PUBLIC_CLASS_NAMES = [
-  '.floating-toolbar',
-  '.floating-toolbar.visible',
-  '.floating-toolbar-arrow',
-  '.floating-toolbar-content',
+  '.floating-popover',
+  '.floating-popover.visible',
+  '.floating-popover-arrow',
+  '.floating-popover-content',
   '.hyperlink-create-popover',
   '.hyperlink-preview-popover',
   '.hyperlink-edit-popover'
@@ -63,7 +63,7 @@ describe('Default stylesheet — packaging, tokens, class contract', () => {
     it('registers a stylesheet that defines the popover shell', () => {
       cy.document().then((doc) => {
         expect(ruleExists(doc, '.hyperlink-create-popover')).to.equal(true)
-        expect(ruleExists(doc, '.floating-toolbar')).to.equal(true)
+        expect(ruleExists(doc, '.floating-popover')).to.equal(true)
       })
     })
 

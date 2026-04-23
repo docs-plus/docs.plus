@@ -49,9 +49,9 @@
 }
 
 /* -------------------------------------------------------------------------
-   Floating toolbar shell (shared by all three popovers)
+   Floating popover shell (shared by all three popovers — preview / edit / create)
    ------------------------------------------------------------------------- */
-.floating-toolbar {
+.floating-popover {
   position: absolute;
   top: 0;
   left: 0;
@@ -66,13 +66,13 @@
   will-change: transform, opacity;
 }
 
-.floating-toolbar.visible {
+.floating-popover.visible {
   opacity: 1;
   transform: scale(1);
   pointer-events: auto;
 }
 
-.floating-toolbar-arrow {
+.floating-popover-arrow {
   position: absolute;
   width: 10px;
   height: 10px;
@@ -82,27 +82,27 @@
   z-index: 1;
 }
 
-.floating-toolbar-arrow-top {
+.floating-popover-arrow-top {
   border-right: 1px solid var(--hl-border);
   border-bottom: 1px solid var(--hl-border);
 }
 
-.floating-toolbar-arrow-bottom {
+.floating-popover-arrow-bottom {
   border-top: 1px solid var(--hl-border);
   border-left: 1px solid var(--hl-border);
 }
 
-.floating-toolbar-arrow-left {
+.floating-popover-arrow-left {
   border-right: 1px solid var(--hl-border);
   border-bottom: 1px solid var(--hl-border);
 }
 
-.floating-toolbar-arrow-right {
+.floating-popover-arrow-right {
   border-top: 1px solid var(--hl-border);
   border-left: 1px solid var(--hl-border);
 }
 
-.floating-toolbar-content {
+.floating-popover-content {
   position: relative;
   z-index: 2;
 }
@@ -168,6 +168,14 @@
   box-shadow: 0 0 0 1px var(--hl-danger);
 }
 
+.hyperlink-create-popover .inputs-wrapper,
+.hyperlink-edit-popover .text-wrapper,
+.hyperlink-edit-popover .href-wrapper {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 .hyperlink-create-popover input,
 .hyperlink-edit-popover input {
   flex: 1;
@@ -216,6 +224,12 @@
 .hyperlink-create-popover .error-message.show,
 .hyperlink-edit-popover .error-message.show {
   display: block;
+}
+
+.hyperlink-create-popover .inputs-wrapper {
+  width: auto;
+  flex: 1;
+  min-width: 0;
 }
 
 /* Action buttons (create submit + edit back/apply) */
@@ -300,24 +314,29 @@
   margin-left: auto;
 }
 
-/* -------------------------------------------------------------------------
-   Edit popover — stacked inputs on the left, stacked buttons on the right
-   ------------------------------------------------------------------------- */
 .hyperlink-edit-popover {
-  align-items: flex-end;
+  align-items: stretch;
 }
 
 .hyperlink-edit-popover .inputs-wrapper {
   display: flex;
   flex-direction: column;
-  align-items: stretch;
   gap: 6px;
-  width: 100%;
+  flex: 1;
+  min-width: 0;
 }
 
 .hyperlink-edit-popover .buttons-wrapper {
+  display: flex;
   flex-direction: column;
-  align-items: stretch;
-  justify-content: flex-end;
   gap: 6px;
+  flex-shrink: 0;
+}
+
+.hyperlink-edit-popover .back-button,
+.hyperlink-edit-popover .apply-button {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
